@@ -28,13 +28,14 @@ from roster.config import (
     is_room_open_on_weekday,
     DEFAULT_GLOBAL_LOAD_MULTIPLIER,
     get_roster_rows, get_base_role,
+    AHP_ROLE as _AHP_ROLE, REGULAR_ROLE as _REGULAR_ROLE,
 )
 
 # Phase 1: Extracted constants for magic strings and role names (reduces duplication and magic values)
 _UNASSIGNED_MARKERS = {"", "X", "⬜", "請假撤銷"}
 _ASSIST_ROLE = "Assist. in charge"
-_AHP_ROLE = "Assistant Head Study Prefect"
-_REGULAR_ROLE = "Study Prefect"
+# 使用統一中文職位（從 config 匯入，支援 legacy 英文）
+# _AHP_ROLE and _REGULAR_ROLE 已從 config import 覆蓋
 
 
 def _check_role_gate(is_assist_role: bool, person_role: str) -> bool:

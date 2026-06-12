@@ -12,6 +12,7 @@ import pandas as pd
 import datetime
 import io
 import random
+import textwrap
 
 # ====================== 模組導入 ======================
 from roster.config import (
@@ -42,6 +43,7 @@ def show_daily_verse():
     - 深色漸層 + 金色文字，視覺突出（graphic-design）。
     - 支援雙語顯示（中文為主，英文反思為輔），符合 UI 中文 + 可選雙語要求。
     - 融入僕人領袖與服事文化（evangelical-theology）。
+    - 使用 dedent + unsafe_allow_html 確保 HTML 正確渲染，不顯示 raw 標籤。
     """
     if "current_verse" not in st.session_state or st.session_state.current_verse is None:
         st.session_state.current_verse = random.choice(ALL_VERSES)
@@ -58,20 +60,22 @@ def show_daily_verse():
             "</div>"
         )
 
-    st.markdown(f"""
-    <div class="verse-card" style="text-align: center;">
-        <h3 style="margin: 0 0 6px 0; color: #D4AF37; font-size: 17px; letter-spacing: 1px; font-weight: 700;">
+    verse_html = textwrap.dedent(f"""
+    <div class="verse-card" style="text-align: center; padding: 14px 12px; border-radius: 10px; margin: 8px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="margin: 0 0 8px 0; color: #D4AF37; font-size: 17px; letter-spacing: 1px; font-weight: 700;">
             📖 今日聖經金句
         </h3>
-        <p style="font-size: 14px; margin: 0; color: #F5E8C7; line-height: 1.5; font-weight: 500;">
+        <p style="font-size: 14px; margin: 0; color: #F5E8C7; line-height: 1.55; font-weight: 500;">
             {verse_text}
         </p>
         {bilingual_html}
-        <div style="margin-top: 6px; font-size: 9px; color: #A8A8A8;">
+        <div style="margin-top: 8px; font-size: 9px; color: #A8A8A8; opacity: 0.9;">
             —— 聖言中學導學風紀團隊靈修提醒 | 僕人領袖，以服事為本
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """).strip()
+
+    st.markdown(verse_html, unsafe_allow_html=True)
 
     col1, col2 = st.columns([3, 2])
     with col1:
@@ -99,31 +103,48 @@ def render_sidebar():
             is_dark = st.toggle("🌙 深色模式", value=st.session_state.get("theme", "light") == "dark", key="theme_toggle")
             st.session_state.theme = "dark" if is_dark else "light"
         with col_lang:
-            is_en = st.toggle("🇬🇧 English (exports)", value=st.session_state.get("ui_language", "zh") == "en", key="lang_toggle")
-            st.session_state.ui_language = "en" if is_en else "zh"
-            if is_en:
-                st.caption("Exports forced English")
+            # 更完整的語言模式：中文介面 / 英文介面
+            # UI 主要保持中文（學校情境），匯出與部分標題可同步英文
+            lang_options = ["中文介面", "英文介面"]
+            current = st.session_state.get("ui_language", "zh")
+            default_idx = 0 if current == "zh" else 1
+            selected_lang = st.selectbox(
+                "語言 / Language", 
+                lang_options, 
+                index=default_idx, 
+                key="lang_select"
+            )
+            st.session_state.ui_language = "zh" if selected_lang == "中文介面" else "en"
+            if st.session_state.ui_language == "en":
+                st.caption("英文介面 + 專業英文匯出")
+            else:
+                st.caption("中文介面（匯出支援英文）")
 
         # Apply theme CSS (graphic-design + streamlit-best-practices) - improved for full coverage and smoothness
+        # Enhanced to make sidebar + main area fully consistent for Light/Dark
         if st.session_state.theme == "dark":
             st.markdown("""
             <style>
             .stApp { background-color: #0e1117; color: #fafafa; }
+            .stSidebar { background-color: #161b22 !important; }
             .stButton > button { background-color: #262730; color: #fafafa; border: 1px solid #4b5563; }
             .stButton > button:hover { background-color: #374151; }
             .kpi-card { background-color: #1f2937 !important; border-left-color: #D4AF37 !important; color: #fafafa; }
-            .verse-card { background: linear-gradient(180deg, #1a1f2e 0%, #0e1117 100%) !important; }
+            .verse-card { background: linear-gradient(180deg, #1a1f2e 0%, #0e1117 100%) !important; border: 1px solid #4b5563; }
             .stDataFrame, [data-testid="stDataEditor"] { background-color: #1f2937; color: #fafafa; }
             .stAlert { background-color: #1f2937; color: #fafafa; }
+            .stTextInput > div > div > input, .stSelectbox > div > div { background-color: #262730; color: #fafafa; }
             </style>
             """, unsafe_allow_html=True)
         else:
             st.markdown("""
             <style>
             .stApp { background-color: #ffffff; color: #1a1a2e; }
+            .stSidebar { background-color: #f8f9fa !important; }
             .stButton > button { background-color: #f0f0f0; color: #1a1a2e; }
             .kpi-card { background-color: #f8f9fa !important; border-left-color: #0B1E3D !important; }
-            .verse-card { background: linear-gradient(180deg, #1A1A2E 0%, #0B1E3D 100%) !important; }
+            .verse-card { background: linear-gradient(180deg, #1A1A2E 0%, #0B1E3D 100%) !important; border: 1px solid #D4AF37; }
+            .stTextInput > div > div > input, .stSelectbox > div > div { background-color: #ffffff; color: #1a1a2e; }
             </style>
             """, unsafe_allow_html=True)
 
@@ -161,12 +182,12 @@ def render_sidebar():
         st.subheader("🗄️ 名冊管理")
         col_demo, col_sample = st.columns(2)
         with col_demo:
-            if st.button("💡 一鍵載入官方示範名冊", use_container_width=True):
+            if st.button("💡 一鍵載入官方示範名冊"):
                 st.session_state.students_df = get_demo_dataframe()
                 st.success("✅ 示範名冊載入完成")
                 st.rerun()
         with col_sample:
-            if st.button("📥 下載格式範例", use_container_width=True):
+            if st.button("📥 下載格式範例"):
                 sample_df = get_sample_format_dataframe()
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -176,10 +197,10 @@ def render_sidebar():
         uploaded_roster = st.file_uploader("上傳名冊 (Excel/CSV)", type=["csv", "xlsx", "xls"], key="roster_importer")
         col_trad, col_ai = st.columns(2)
         with col_trad:
-            if uploaded_roster and st.button("📋 傳統導入", use_container_width=True):
+            if uploaded_roster and st.button("📋 傳統導入"):
                 process_roster_import(uploaded_roster)
         with col_ai:
-            if uploaded_roster and st.button("🤖 AI 智能匹配", type="primary", use_container_width=True):
+            if uploaded_roster and st.button("🤖 AI 智能匹配", type="primary"):
                 smart_process_roster_import(uploaded_roster)
 
         st.caption("💡 AI 支援任意欄位順序，節省您的時間")
@@ -200,7 +221,7 @@ def render_sidebar():
             column_config={
                 "name": st.column_config.TextColumn("姓名 *", required=True),
                 "form": st.column_config.SelectboxColumn("年級", options=["F.3", "F.4", "F.5", "F.6"]),
-                "role": st.column_config.SelectboxColumn("職級", options=["Head Study Prefect", "Assistant Head Study Prefect", "Study Prefect"]),
+                "role": st.column_config.SelectboxColumn("職級", options=["首席導學風紀", "助理首席導學風紀", "導學風紀"]),
                 "fixed_general_duty": st.column_config.SelectboxColumn("固定值班", options=["NONE", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]),
                 "available": st.column_config.TextColumn("可用日子"),
                 "history_duties": st.column_config.NumberColumn("歷史次數", min_value=0),
@@ -208,7 +229,6 @@ def render_sidebar():
                 "remarks": st.column_config.TextColumn("備註")
             },
             num_rows="dynamic",
-            use_container_width=True,
             hide_index=True,
             key="student_editor_widget"
         )
@@ -219,13 +239,13 @@ def render_sidebar():
                     st.session_state.students_df["role"].astype(str).str.contains(search_term, case=False, na=False))
             filtered = st.session_state.students_df[mask]
             st.caption(f"顯示 {len(filtered)} / {len(st.session_state.students_df)} 位學生 (搜尋結果)")
-            st.dataframe(filtered, use_container_width=True, hide_index=True)
+            st.dataframe(filtered, hide_index=True)
 
         st.divider()
 
         # ==================== AI 解析 ====================
         st.subheader("🤖 AI 智能解析")
-        if st.button("🚀 執行 AI 解析 Remarks", use_container_width=True, type="secondary"):
+        if st.button("🚀 執行 AI 解析 Remarks", type="secondary"):
             with st.spinner("AI 正在智能分析..."):
                 updated_df = ai_parse_remarks(st.session_state.students_df)
                 st.session_state.students_df = updated_df
@@ -250,7 +270,7 @@ def render_sidebar():
         st.subheader("➕ 智慧新增學生 (Smart Autocomplete)")
         st.caption("輸入姓名，選擇職級 (僅三種選項)，快速新增")
         new_name = st.text_input("姓名 (Name)", key="new_name_input")
-        new_role = st.selectbox("職級 (Role)", ["Head Study Prefect", "Assistant Head Study Prefect", "Study Prefect"], key="new_role_select")
+        new_role = st.selectbox("職級 (Role)", ["首席導學風紀", "助理首席導學風紀", "導學風紀"], key="new_role_select")
         if st.button("新增學生 (Add Student)", key="add_student_btn") and new_name.strip():
             new_row = pd.DataFrame([{
                 "name": new_name.strip(),
@@ -328,14 +348,14 @@ def render_sidebar():
         # 自動備份提醒
         if st.session_state.get("backup_reminder", False):
             st.warning("🔔 重要操作完成！強烈建議立即下載 JSON 備份（動態數據），並將重要版本上傳到 GitHub 的 backups/ 資料夾長期保存，以避免資料遺失。")
-            if st.button("立即備份", key="reminder_backup", type="primary", use_container_width=True):
+            if st.button("立即備份", key="reminder_backup", type="primary"):
                 backup_json = export_system_backup(st.session_state.get("master_report_df", pd.DataFrame()))
-                st.download_button("📥 下載備份 JSON", backup_json, f"SYSS_Backup_{datetime.date.today().strftime('%Y%m%d_%H%M')}.json", use_container_width=True)
+                st.download_button("📥 下載備份 JSON", backup_json, f"SYSS_Backup_{datetime.date.today().strftime('%Y%m%d_%H%M')}.json")
                 clear_backup_reminder()
                 st.rerun()
 
         # 導出目前狀態
-        if st.button("⬇️ 導出目前完整備份", use_container_width=True):
+        if st.button("⬇️ 導出目前完整備份"):
             backup_json = export_system_backup(st.session_state.get("master_report_df", pd.DataFrame()))
             st.download_button(
                 "📥 下載 JSON 備份",

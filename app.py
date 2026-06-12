@@ -22,7 +22,8 @@ from typing import Optional
 # Theme and language toggles in sidebar.
 from roster.config import (
     DAYS, ROWS_ROSTER, VERSION, APP_TITLE, PROJECT_FULL_NAME, PROJECT_FULL_NAME_EN,
-    NASA_COLORS, get_role_style, DEFAULT_GLOBAL_LOAD_MULTIPLIER, get_weight
+    NASA_COLORS, get_role_style, DEFAULT_GLOBAL_LOAD_MULTIPLIER, get_weight,
+    AHP_ROLE, REGULAR_ROLE
 )
 from roster.data import (
     get_demo_dataframe, get_sample_format_dataframe,
@@ -137,8 +138,12 @@ def main():
     # ====================== 主畫面 ======================
     render_sidebar()
 
-    st.markdown(f'<p class="main-title">{PROJECT_FULL_NAME}</p>', unsafe_allow_html=True)
-    st.markdown(f'<p class="main-subtitle">F.3–F.6 導學風紀當值平台 | {VERSION}</p>', unsafe_allow_html=True)
+    # 語言模式同步：中文介面優先，英文介面時使用 EN 標題（主畫面仍以中文為主，匯出專業英文）
+    ui_lang = st.session_state.get("ui_language", "zh")
+    main_title = PROJECT_FULL_NAME_EN if ui_lang == "en" else PROJECT_FULL_NAME
+    main_sub = "F.3–F.6 Study Prefect Duty Platform | " + VERSION if ui_lang == "en" else f"F.3–F.6 導學風紀當值平台 | {VERSION}"
+    st.markdown(f'<p class="main-title">{main_title}</p>', unsafe_allow_html=True)
+    st.markdown(f'<p class="main-subtitle">{main_sub}</p>', unsafe_allow_html=True)
 
     # Enhanced Daily Verse with optional bilingual (evangelical-theology + streamlit-best-practices)
     show_daily_verse()
@@ -153,6 +158,18 @@ def main():
 
     st.write("---")
     selected_closures = render_control_buttons()
+
+    # 角色名稱統一正規化（支援 legacy 英文 + 中文，確保 AHP/生成邏輯正確）
+    role_map = {
+        "Assistant Head Study Prefect": AHP_ROLE,
+        "Head Study Prefect": AHP_ROLE,
+        "Study Prefect": REGULAR_ROLE,
+        "助理首席導學風紀": AHP_ROLE,
+        "首席導學風紀": AHP_ROLE,
+        "導學風紀": REGULAR_ROLE,
+    }
+    if not st.session_state.students_df.empty and "role" in st.session_state.students_df.columns:
+        st.session_state.students_df["role"] = st.session_state.students_df["role"].map(lambda x: role_map.get(str(x).strip(), str(x).strip()))
 
     # ====================== 驗證與計算 ======================
     audit_results = validate_and_compute(
@@ -170,7 +187,7 @@ def main():
         st.markdown('<div class="danger-alert"><b>⚠️ 重複排班警告：</b><br>' + '<br>'.join(audit_results["duplicate"][1]) + '</div>', unsafe_allow_html=True)
     if audit_results["leave_conflict"][0]:
         st.markdown('<div class="danger-alert"><b>🛑 請假衝突：</b><br>' + '<br>'.join(audit_results["leave_conflict"][1]) + '</div>', unsafe_allow_html=True)
-        if st.button("🩹 一鍵清除請假同學", type="primary", use_container_width=True):
+        if st.button("🩹 一鍵清除請假同學", type="primary"):
             for d in DAYS:
                 for r in ROWS_ROSTER:
                     if str(st.session_state.roster_df.at[r, d]).strip() in st.session_state.leave_tracker_input:
@@ -212,7 +229,7 @@ def main():
         styled = roster_display.style.apply(
             lambda row: [apply_cell_style(val, row.name, col) for col, val in row.items()], axis=1
         )
-        st.dataframe(styled, use_container_width=True, height=380)
+        st.dataframe(styled, height=380)
 
     with tab_edit:
         st.markdown("<p style='font-size:13px; color:#666;'>💡 直接修改人名或打 X 鎖定</p>", unsafe_allow_html=True)
@@ -282,7 +299,7 @@ def main():
             st.markdown(f'<div class="kpi-card"><div class="label">最低 / 最高</div><div class="value">{min_load:.1f} / {max_load:.1f}</div></div>', unsafe_allow_html=True)
 
         # AHP Insights & Leadership Summary
-        ahp_names = set(st.session_state.students_df[st.session_state.students_df["role"] == "Assistant Head Study Prefect"]["name"].astype(str).str.strip())
+        ahp_names = set(st.session_state.students_df[st.session_state.students_df["role"].isin(["Assistant Head Study Prefect", "助理首席導學風紀", "AHP"])]["name"].astype(str).str.strip())
         if ahp_names and total_students > 0:
             ahp_loads = loads[report["Student Name"].isin(ahp_names)] if "Student Name" in report.columns else pd.Series()
             ahp_avg = ahp_loads.mean() if len(ahp_loads) > 0 else 0
@@ -301,7 +318,7 @@ def main():
         # Historical Trends & Fairness (High Priority)
         st.write("---")
         st.subheader("📊 歷史趨勢與公平性分析")
-        if st.button("💾 儲存本週負荷數據 (Save Current Week for Trends)", use_container_width=True):
+        if st.button("💾 儲存本週負荷數據 (Save Current Week for Trends)"):
             current_loads = {}
             for _, row in report.iterrows():
                 name = str(row.get("Student Name", row.get("學生姓名", ""))).strip()
@@ -352,7 +369,7 @@ def main():
         st.subheader("📋 總結報告生成 (Advanced Summary Report)")
         st.caption("一鍵生成報告，包含公平性、表現者、AHP貢獻、僕人領袖註記。支援中文預覽與專業英文匯出。")
 
-        if st.button("📊 生成總結報告 (Generate Summary Report)", use_container_width=True, type="primary"):
+        if st.button("📊 生成總結報告 (Generate Summary Report)", type="primary"):
             # Use export report for consistent English data
             export_report = get_export_report_df(st.session_state.master_report_df)
             display_report = get_ui_report_df(st.session_state.master_report_df)
