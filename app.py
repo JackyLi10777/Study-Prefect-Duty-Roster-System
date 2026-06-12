@@ -668,19 +668,29 @@ This system promotes fairness, equity, and a culture of service, helping prefect
             st.success("💡 請記得下載 JSON 備份，並建議將此重要調整的備份上傳到 GitHub 的 backups/ 資料夾以長期保存。")
             st.rerun()
 
-    # ====================== 快速導出 (專業英文 - very high priority export system) ======================
-    # Perfect separation: Chinese UI, professional English exports with Chinese student names preserved.
-    st.write("---")
-    st.subheader("📤 專業英文匯出（外部使用 / 官方報告）")
-    st.caption("所有匯出檔案使用專業英文標題、欄位與總結，學生姓名保留中文。適合教師、學校行政與對外展示。")
+    # ====================== 快速導出 (語言跟隨) ======================
+    ui_lang = st.session_state.get("ui_language", "zh")
+    if ui_lang == "en":
+        st.write("---")
+        st.subheader("📤 Export (Professional English / Follow Current Language)")
+        st.caption("Exports use professional titles and columns according to current language setting. Student names always remain in Chinese.")
+    else:
+        st.write("---")
+        st.subheader("📤 匯出（跟隨語言設定）")
+        st.caption("匯出使用目前語言的標題與欄位，學生姓名永遠保留中文。")
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        if st.button("📄 匯出 PDF（專業英文版）", use_container_width=True):
+        ui_lang = st.session_state.get("ui_language", "zh")
+        pdf_label = "📄 Export PDF (English)" if ui_lang == "en" else "📄 匯出 PDF（跟隨語言）"
+        if st.button(pdf_label, use_container_width=True):
             logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
-            export_report = get_export_report_df(st.session_state.master_report_df)
-            pdf_bytes = generate_pdf(st.session_state.roster_df, export_report, logo_b64)
+            if ui_lang == "en":
+                pdf_report = get_export_report_df(st.session_state.master_report_df)
+            else:
+                pdf_report = get_ui_report_df(st.session_state.master_report_df)
+            pdf_bytes = generate_pdf(st.session_state.roster_df, pdf_report, logo_b64)
             if pdf_bytes:
                 st.download_button(
                     "💾 下載 PDF",
@@ -735,45 +745,67 @@ This system promotes fairness, equity, and a culture of service, helping prefect
                 "Compliance": ["AGENTS.md §1 rules fully applied (AHP, Room 302/303, fairness)"]
             }
             pd.DataFrame(summary_data).to_excel(writer, sheet_name='Executive Summary (EN)', index=False)
+        excel_label = "📊 Download Excel (English + Charts)" if ui_lang == "en" else "📊 下載 Excel（跟隨語言 + 圖表 + 條件格式）"
         st.download_button(
-            "📊 下載 Excel（專業英文版 + 圖表 + 條件格式）",
+            excel_label,
             output_excel.getvalue(),
             f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}.xlsx",
             use_container_width=True
         )
 
     with col3:
-        export_report = get_export_report_df(st.session_state.master_report_df)
-        md_data = f"""# {PROJECT_FULL_NAME_EN}
-## Professional English Export Report
+        ui_lang = st.session_state.get("ui_language", "zh")
+        if ui_lang == "en":
+            export_report = get_export_report_df(st.session_state.master_report_df)
+            md_title = PROJECT_FULL_NAME_EN
+            md_sub = "Professional English Export Report"
+            key_principle = "**Key Principle (Servant Leadership):** Lower cumulative load indicates higher priority for future assignments."
+            audit_title = "### Workload Audit (Professional English Columns)"
+            footer = "*This document is formatted for official, external, and leadership use in clean professional English.*"
+            dl_label = "📝 Download Markdown (Professional English)"
+            report_for_md = export_report
+        else:
+            export_report = get_ui_report_df(st.session_state.master_report_df)
+            md_title = PROJECT_FULL_NAME
+            md_sub = "專業中文匯出報告"
+            key_principle = "**核心原則（僕人領袖）：** 累計負荷越低，代表未來值班優先度越高。"
+            audit_title = "### 工作負荷審計（中文欄位）"
+            footer = "*本文件依目前語言設定輸出，官方/外部使用。*"
+            dl_label = "📝 下載 Markdown（跟隨語言）"
+            report_for_md = export_report
+
+        md_data = f"""# {md_title}
+## {md_sub}
 
 **Report Date:** {datetime.date.today().strftime('%Y-%m-%d')}
 **Institution:** Sing Yin Secondary School • Study Prefect Team
 
-**Key Principle (Servant Leadership):** Lower cumulative load indicates higher priority for future assignments. 
+{key_principle}
 Student names are preserved in Chinese per school practice.
 
 ### Weekly Duty Roster
 
 {st.session_state.roster_df.to_markdown()}
 
-### Workload Audit (Professional English Columns)
+{audit_title}
 
-{export_report.to_markdown(index=False) if not export_report.empty else "No data"}
+{report_for_md.to_markdown(index=False) if not report_for_md.empty else "No data"}
 
 ---
-*This document is formatted for official, external, and leadership use in clean professional English.*
+{footer}
 *Internal daily operations use Chinese UI for student accessibility.*
 *Generated in full compliance with school regulations and biblical principles of fairness and service.*
 """
         st.download_button(
-            "📝 下載 Markdown（專業英文版）",
+            dl_label,
             md_data.encode('utf-8'),
             f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}.md",
             use_container_width=True
         )
 
-    st.caption(f"Sing Yin Secondary School Study Prefect Platform | {VERSION} | Internal UI: 中文 | Exports: Professional English")
+    ui_lang = st.session_state.get("ui_language", "zh")
+    cap = "Sing Yin Secondary School Study Prefect Platform | " + VERSION + " | UI: English | Exports: Professional" if ui_lang == "en" else f"聖言中學導學風紀當值排班平台 | {VERSION} | 介面中文 | 匯出專業"
+    st.caption(cap)
 
 
 if __name__ == "__main__":

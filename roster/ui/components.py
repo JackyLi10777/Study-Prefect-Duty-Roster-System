@@ -36,14 +36,17 @@ for day_list in DAILY_VERSES.values():
 # Note: UI layer calls into business logic (generate_roster) per AGENTS.md guidelines.
 # Direct calls are kept for now to preserve exact original behavior during migration.
 
+def _t(zh_text, en_text):
+    """Simple translator based on ui_language. UI follows language, student names always Chinese."""
+    lang = st.session_state.get("ui_language", "zh")
+    return en_text if lang == "en" else zh_text
+
 
 def show_daily_verse():
     """
     神聖莊重每日聖經金句區塊。
-    - 深色漸層 + 金色文字，視覺突出（graphic-design）。
-    - 支援雙語顯示（中文為主，英文反思為輔），符合 UI 中文 + 可選雙語要求。
-    - 融入僕人領袖與服事文化（evangelical-theology）。
-    - 使用 dedent + unsafe_allow_html 確保 HTML 正確渲染，不顯示 raw 標籤。
+    - 使用原生 Streamlit 元件 + CSS class 包裝，避免 raw HTML 標籤顯示。
+    - 文字內容乾淨渲染。
     """
     if "current_verse" not in st.session_state or st.session_state.current_verse is None:
         st.session_state.current_verse = random.choice(ALL_VERSES)
@@ -51,31 +54,21 @@ def show_daily_verse():
     verse_text = st.session_state.current_verse
     show_bilingual = st.session_state.get("verse_bilingual", False)
 
-    bilingual_html = ""
+    # 使用最小 unsafe 包裝 class，內容用原生 markdown 乾淨顯示
+    st.markdown('<div class="verse-card">', unsafe_allow_html=True)
+
+    st.markdown("**📖 今日聖經金句**")
+    st.markdown(verse_text)
+
     if show_bilingual:
-        bilingual_html = (
-            "<div style='margin-top:6px; font-size:11px; color:#C9B896; font-style:italic; border-top:1px solid #D4AF37; padding-top:4px;'>"
-            "English Reflection: “Whoever wants to become great among you must be your servant.” — Mark 10:43<br>"
+        st.markdown(
+            "English Reflection: “Whoever wants to become great among you must be your servant.” — Mark 10:43  \n"
             "默想：以謙卑服事他人，促進公平與責任。"
-            "</div>"
         )
 
-    verse_html = textwrap.dedent(f"""
-    <div class="verse-card" style="text-align: center; padding: 14px 12px; border-radius: 10px; margin: 8px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        <h3 style="margin: 0 0 8px 0; color: #D4AF37; font-size: 17px; letter-spacing: 1px; font-weight: 700;">
-            📖 今日聖經金句
-        </h3>
-        <p style="font-size: 14px; margin: 0; color: #F5E8C7; line-height: 1.55; font-weight: 500;">
-            {verse_text}
-        </p>
-        {bilingual_html}
-        <div style="margin-top: 8px; font-size: 9px; color: #A8A8A8; opacity: 0.9;">
-            —— 聖言中學導學風紀團隊靈修提醒 | 僕人領袖，以服事為本
-        </div>
-    </div>
-    """).strip()
+    st.caption("—— 聖言中學導學風紀團隊靈修提醒 | 僕人領袖，以服事為本")
 
-    st.markdown(verse_html, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     col1, col2 = st.columns([3, 2])
     with col1:
@@ -94,8 +87,8 @@ def show_daily_verse():
 def render_sidebar():
     """側邊欄 - 極簡專業、清晰流程、即時統計與信任感設計"""
     with st.sidebar:
-        st.header("🏫 Sing Yin Secondary School")
-        st.caption("導學風紀當值排班平台")
+        st.header(_t("🏫 Sing Yin Secondary School", "🏫 Sing Yin Secondary School"))
+        st.caption(_t("導學風紀當值排班平台", "Study Prefect Duty Roster Platform"))
 
         # Light / Dark Mode and Language (per requirements)
         col_theme, col_lang = st.columns(2)
@@ -109,7 +102,7 @@ def render_sidebar():
             current = st.session_state.get("ui_language", "zh")
             default_idx = 0 if current == "zh" else 1
             selected_lang = st.selectbox(
-                "語言 / Language", 
+                "中文 / English", 
                 lang_options, 
                 index=default_idx, 
                 key="lang_select"
@@ -130,7 +123,8 @@ def render_sidebar():
             .stButton > button { background-color: #262730; color: #fafafa; border: 1px solid #4b5563; }
             .stButton > button:hover { background-color: #374151; }
             .kpi-card { background-color: #1f2937 !important; border-left-color: #D4AF37 !important; color: #fafafa; }
-            .verse-card { background: linear-gradient(180deg, #1a1f2e 0%, #0e1117 100%) !important; border: 1px solid #4b5563; }
+            .verse-card { background: linear-gradient(180deg, #1a1f2e 0%, #0e1117 100%) !important; border: 1px solid #4b5563; padding: 12px; border-radius: 8px; }
+            .verse-card h3, .verse-card p, .verse-card { color: #ffeb3b !important; } /* 高對比亮黃 */
             .stDataFrame, [data-testid="stDataEditor"] { background-color: #1f2937; color: #fafafa; }
             .stAlert { background-color: #1f2937; color: #fafafa; }
             .stTextInput > div > div > input, .stSelectbox > div > div { background-color: #262730; color: #fafafa; }
@@ -143,7 +137,8 @@ def render_sidebar():
             .stSidebar { background-color: #f8f9fa !important; }
             .stButton > button { background-color: #f0f0f0; color: #1a1a2e; }
             .kpi-card { background-color: #f8f9fa !important; border-left-color: #0B1E3D !important; }
-            .verse-card { background: linear-gradient(180deg, #1A1A2E 0%, #0B1E3D 100%) !important; border: 1px solid #D4AF37; }
+            .verse-card { background: linear-gradient(180deg, #1A1A2E 0%, #0B1E3D 100%) !important; border: 1px solid #D4AF37; padding: 12px; border-radius: 8px; }
+            .verse-card h3, .verse-card p, .verse-card { color: #F5E8C7 !important; }
             .stTextInput > div > div > input, .stSelectbox > div > div { background-color: #ffffff; color: #1a1a2e; }
             </style>
             """, unsafe_allow_html=True)
@@ -165,7 +160,7 @@ def render_sidebar():
         st.divider()
 
         # ==================== 即時統計（公平感與成就感） ====================
-        st.subheader("📊 即時累計統計")
+        st.subheader(_t("📊 即時累計統計", "📊 Live Statistics"))
         if not st.session_state.students_df.empty:
             total = len(st.session_state.students_df)
             total_points = st.session_state.students_df["history_weight"].sum()
@@ -179,7 +174,7 @@ def render_sidebar():
         st.divider()
 
         # ==================== 名冊管理（清晰 CTA） ====================
-        st.subheader("🗄️ 名冊管理")
+        st.subheader(_t("🗄️ 名冊管理", "🗄️ Roster Management"))
         col_demo, col_sample = st.columns(2)
         with col_demo:
             if st.button("💡 一鍵載入官方示範名冊"):
@@ -208,7 +203,7 @@ def render_sidebar():
         st.divider()
 
         # ==================== 名冊即時修改 ====================
-        st.subheader("👥 名冊即時修改")
+        st.subheader(_t("👥 名冊即時修改", "👥 Live Roster Edit"))
         st.caption("修改後自動儲存")
 
         # Quick Search & Filter (by name, form, role)
@@ -244,7 +239,7 @@ def render_sidebar():
         st.divider()
 
         # ==================== AI 解析 ====================
-        st.subheader("🤖 AI 智能解析")
+        st.subheader(_t("🤖 AI 智能解析", "🤖 AI Smart Parse"))
         if st.button("🚀 執行 AI 解析 Remarks", type="secondary"):
             with st.spinner("AI 正在智能分析..."):
                 updated_df = ai_parse_remarks(st.session_state.students_df)
@@ -256,7 +251,7 @@ def render_sidebar():
         st.divider()
 
         # ==================== 請假登記 ====================
-        st.subheader("🛑 請假登記")
+        st.subheader(_t("🛑 請假登記", "🛑 Leave Registration"))
         valid_names = [str(name).strip() for name in st.session_state.students_df["name"].dropna() if str(name).strip()]
         st.session_state.leave_tracker_input = st.multiselect(
             "今日請假人員（可多選）",
@@ -290,8 +285,8 @@ def render_sidebar():
         st.divider()
 
         # ==================== 批量管理 (Batch Leave & Fixed Duty - High Priority) ====================
-        st.subheader("📋 批量管理")
-        st.caption("一次選擇多名學生，批量設定請假或固定值班（方便 Head / AHP 操作）")
+        st.subheader(_t("📋 批量管理", "📋 Batch Management"))
+        st.caption(_t("一次選擇多名學生，批量設定請假或固定值班（方便 Head / AHP 操作）", "Select multiple students for batch leave or fixed duty (convenient for Head / AHP)"))
         valid_names = [str(name).strip() for name in st.session_state.students_df["name"].dropna() if str(name).strip()]
         bulk_selected = st.multiselect(
             "選擇學生（可多選）",
