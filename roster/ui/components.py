@@ -24,7 +24,7 @@ from roster.utils import (
     export_system_backup, import_system_backup
 )
 from roster.data import get_demo_dataframe, get_sample_format_dataframe
-from ai_parser import ai_parse_remarks  # kept pointing to root for now (ai migration pending); will become roster.ai later
+from roster.ai import ai_parse_remarks  # use package path (root ai_parser shim still works for legacy)
 
 # ====================== 合併所有金句供隨機刷新使用 ======================
 ALL_VERSES = []
