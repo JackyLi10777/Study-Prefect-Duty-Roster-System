@@ -1,40 +1,22 @@
-# data.py (root shim / compatibility layer)
+# roster/data/demo.py
 """
-Temporary root-level shim for the modular refactor (see approved plan.md).
+Demo and sample data for the roster system.
 
-All existing `from data import get_demo_dataframe, initialize_session_state, ...`
-continue to work unchanged.
-
-The real data layer is now at:
-    roster/data/
-    (demo.py, state.py, validators.py, models.py)
-
-initialize_session_state and demo data are 100% unchanged.
-
-This file will be cleaned up in the final phase after full verification.
+Extracted from original data.py during modularization.
+All content and behavior kept identical per the migration plan.
 """
-from roster.data import (
-    get_demo_dataframe,
-    get_sample_format_dataframe,
-    get_empty_students_df,
-    initialize_session_state,
-    validate_students_dataframe,
-    reindex_roster_df,
-    get_roster_index,
-    get_days,
-    STUDENT_COLUMNS,
-)
 
-# Re-export config constants that the original data.py exposed for convenience
-from roster.config import ROWS_ROSTER, DAYS, DEFAULT_GLOBAL_LOAD_MULTIPLIER
+import pandas as pd
+from roster.config import DAYS, DEFAULT_GLOBAL_LOAD_MULTIPLIER
 
-print("✅ [shim] root data.py now forwards to roster.data (functionality identical)")
 
 def get_demo_dataframe() -> pd.DataFrame:
     """
     官方示範名冊（可直接一鍵載入測試使用）
-    包含 Assistant Head Study Prefect 與普通 Study Prefect
-    支援歷史負荷與備註解析，符合所有學校業務規則
+
+    包含多位 Assistant Head Study Prefect 與普通 Study Prefect，
+    預設 history_weight 與 remarks 用來示範公平演算法與 AI 解析。
+    完全符合 AGENTS.md §1 學生規則與 §5 驗證需求。
     """
     demo_data = [
         {
@@ -227,68 +209,3 @@ def get_sample_format_dataframe() -> pd.DataFrame:
         },
     ]
     return pd.DataFrame(sample_data)
-
-
-def get_empty_students_df() -> pd.DataFrame:
-    """
-    建立空的學生名冊 DataFrame（供初始化使用）
-    """
-    return pd.DataFrame(columns=[
-        "name", "form", "class", "role",
-        "fixed_general_duty", "available",
-        "history_duties", "history_weight", "remarks"
-    ])
-
-
-def initialize_session_state():
-    """
-    完整初始化所有 session_state（徹底解決 Streamlit Cloud 休眠後資料遺失問題）
-    必須放在 app.py 最前面呼叫
-    """
-    if 'students_df' not in st.session_state:
-        st.session_state.students_df = get_empty_students_df()
-
-    if 'roster_df' not in st.session_state:
-        st.session_state.roster_df = pd.DataFrame(index=ROWS_ROSTER, columns=DAYS).fillna("")
-
-    if 'manual_weights' not in st.session_state:
-        st.session_state.manual_weights = pd.DataFrame(index=ROWS_ROSTER, columns=DAYS).fillna(0.0)
-
-    if 'logo_data' not in st.session_state:
-        st.session_state.logo_data = None
-
-    if 'show_clear_confirm' not in st.session_state:
-        st.session_state.show_clear_confirm = False
-
-    if 'leave_tracker_input' not in st.session_state:
-        st.session_state.leave_tracker_input = []
-
-    if 'master_report_df' not in st.session_state:
-        st.session_state.master_report_df = pd.DataFrame()
-
-    if 'global_load_multiplier' not in st.session_state:
-        st.session_state.global_load_multiplier = DEFAULT_GLOBAL_LOAD_MULTIPLIER
-
-    if 'current_verse' not in st.session_state:
-        st.session_state.current_verse = None
-
-
-def validate_students_dataframe(df: pd.DataFrame) -> tuple[bool, str]:
-    """
-    嚴格驗證學生名冊資料完整性（防止後續排班錯誤）
-    """
-    if df.empty or len(df) == 0:
-        return False, "名冊為空，請先載入學生資料"
-
-    required_cols = ["name", "form", "role"]
-    missing = [col for col in required_cols if col not in df.columns]
-    if missing:
-        return False, f"缺少必要欄位：{missing}"
-
-    if df["name"].isna().any() or (df["name"].astype(str).str.strip() == "").any():
-        return False, "存在空白姓名，請修正後再繼續"
-
-    return True, f"✅ 驗證通過，共 {len(df)} 位領袖生"
-
-
-print("✅ data.py 已載入完成 - 數據初始化與驗證模組就緒")

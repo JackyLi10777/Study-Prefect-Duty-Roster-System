@@ -1,12 +1,55 @@
-# Sing Yin Study Prefect Duty Roster Generator
+# Sing Yin Study Prefect Duty Roster System
 
 **聖言中學導學風紀當值排班平台**  
 Sing Yin Secondary School Study Prefect Duty Roster System
 
-> **v2.4 Final**（最新版本，已完整支援「值班後請假調整」公平性功能）
+> **v2.4**（已完成 `roster/` 套件重構 + 完整文件完善）
 
 為聖言中學（純男校）Study Prefect Team 量身打造的專業、公平、穩定且易用的數位排班管理系統。  
 專為 Streamlit Cloud 部署設計，解決休眠資料遺失問題，並提供即時公平調整機制。
+
+## 專案結構（重構後）
+
+```
+Study-Prefect-Duty-Roster-System/
+├── app.py                  # 入口點（薄層，透過 shim 呼叫 roster/）
+├── roster/                 # 主要套件（新結構）
+│   ├── __init__.py         # 包級文件 + 公開 API
+│   ├── config/             # SSOT（ROOMS_CONFIG、AHP 旗標、Room 302/303 規則）
+│   ├── core/               # 業務邏輯核心（generate_roster 等）
+│   ├── data/               # 資料層（demo、initialize_session_state、驗證）
+│   ├── ui/                 # UI 元件（原 ui_components）
+│   ├── utils/              # 工具（PDF、backup、importers）
+│   └── ai/                 # AI 解析（Gemini）
+├── resources/              # 靜態資源（logo 等）
+├── tests/                  # 測試
+└── （root shims: config.py、core.py 等，僅供相容）
+```
+
+**新程式碼建議 import**：
+```python
+from roster import generate_roster
+from roster.config import ROOMS_CONFIG, is_assistant_head_only_role
+from roster.data.state import initialize_session_state
+from roster.utils.backup import export_system_backup
+```
+
+根目錄的 `config.py` / `core.py` 等檔案為相容性 shim，舊程式碼仍可使用 `from core import ...`。
+
+## 快速開始
+
+```bash
+# 安裝依賴
+pip install -r requirements.txt
+
+# 啟動（開發）
+streamlit run app.py
+
+# Cloud 部署時請確保 packages.txt 已正確設定（WeasyPrint 需要系統字型與 cairo）
+```
+
+詳細規則、驗證 checklist、Room 302/303 限制、AHP 特權請務必閱讀 `AGENTS.md`。
+完整使用說明見應用內「使用說明書」。
 
 ---
 

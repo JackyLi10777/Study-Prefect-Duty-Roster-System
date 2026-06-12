@@ -1,25 +1,26 @@
-# ai_parser.py (root shim / compatibility layer)
+# ai_parser.py
 """
-Temporary root-level shim for the modular refactor (see approved plan.md).
+聖言中學導學風紀當值排班平台 (Sing Yin Secondary School Study Prefect Duty Roster Platform)
+AI 解析模組 - Gemini 智能解析 Remarks + 欄位映射
 
-All existing `from ai_parser import ...` continue to work unchanged.
-
-The real AI parser is now at:
-    roster/ai/parser.py
-    (re-exported via roster/ai/__init__.py)
-
-All original AI parsing functionality is preserved exactly.
-
-This file will be cleaned up in the final phase after full verification.
+作者：Head Study Prefect 26-27 LI Chuangjie Jacky
+版本：v2.3 Final（已徹底解決「一直解析中...」卡住問題）
 """
-from roster.ai import (
-    ai_parse_remarks,
-    get_column_mapping_from_ai,
-    REMARKS_SYSTEM_PROMPT,
-    IMPORT_MAPPING_PROMPT,
-)
 
-print("✅ [shim] root ai_parser.py now forwards to roster.ai (AI functionality identical)")
+import streamlit as st
+import pandas as pd
+import json
+import re
+
+from roster.config import GEMINI_MODEL
+
+# ====================== Gemini 配置 ======================
+if "GEMINI_API_KEY" in st.secrets and st.secrets["GEMINI_API_KEY"]:
+    import google.generativeai as genai
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    model = genai.GenerativeModel(GEMINI_MODEL)
+else:
+    model = None
 
 
 # ====================== AI 系統提示 - Remarks 解析 ======================

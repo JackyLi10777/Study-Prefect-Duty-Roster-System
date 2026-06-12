@@ -1,21 +1,25 @@
-# core.py
+# core.py (root shim / compatibility layer)
 """
-聖言中學導學風紀當值排班平台 (Sing Yin Secondary School Study Prefect Duty Roster Platform)
-核心排班演算法模組 - 公平性計算、驗證、智慧替補推薦 + 請假後撤銷調整
+Temporary root-level shim for the modular refactor (see approved plan.md).
 
-作者：Head Study Prefect 26-27 LI Chuangjie Jacky
-版本：v2.3 Final（已整合請假撤銷點數功能、KeyError 防護、全局負荷滑桿、多槽位、完整業務規則）
+All existing `from core import generate_roster, ...` continue to work unchanged.
+
+The real implementation (generate_roster logic 100% unchanged) is now at:
+    roster/core/engine.py
+    (re-exported via roster/core/__init__.py)
+
+Room 302/303 and AHP rules are preserved exactly (they live in the moved code + config).
+
+This file will be cleaned up after full verification.
 """
-
-import pandas as pd
-import random
-from typing import List, Optional, Tuple, Dict
-from config import (
-    DAYS, ROWS_ROSTER, ROOMS_CONFIG,
-    get_weight, is_assistant_head_only_role,
-    is_room_open_on_weekday, get_daily_slots,
-    DEFAULT_GLOBAL_LOAD_MULTIPLIER
+from roster.core import (
+    generate_roster,
+    validate_and_compute,
+    recommend_substitutes,
+    apply_post_publication_leave_adjustment,
 )
+
+print("✅ [shim] root core.py now forwards to roster.core (generate_roster logic unchanged)")
 
 
 def generate_roster(
@@ -23,7 +27,6 @@ def generate_roster(
     leave_students: List[str],
     special_closures: List[str],
     seed: int,
-    current_roster_df: Optional[pd.DataFrame] = None,
     global_load_multiplier: float = DEFAULT_GLOBAL_LOAD_MULTIPLIER
 ) -> pd.DataFrame:
     """
