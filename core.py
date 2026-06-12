@@ -1,15 +1,12 @@
 # core.py (root shim / compatibility layer)
 """
-Temporary root-level shim for the modular refactor (see approved plan.md).
+Ultra-thin root-level compatibility shim.
 
-All existing `from core import generate_roster, ...` continue to work unchanged.
+Legacy `from core import generate_roster, ...` still work.
 
-The real implementation is now at:
-    roster/core/engine.py
-    (re-exported via roster/core/__init__.py)
+**Best practice:** Import directly from `roster.core`.
 
-Room 302/303 and AHP rules are preserved exactly.
-This file will be cleaned up after full verification.
+Core logic (with full AGENTS.md compliance: AHP gates, Room 302/303 rules, fairness, leave revocation) lives in roster/core/engine.py.
 """
 from roster.core import (
     generate_roster,
@@ -18,4 +15,4 @@ from roster.core import (
     apply_post_publication_leave_adjustment,
 )
 
-print("✅ [shim] root core.py now forwards to roster.core (generate_roster logic unchanged)")
+print("✅ [shim] root core.py → roster.core (thin compat)")

@@ -23,6 +23,7 @@ import random
 # ====================== 應用程式基本設定 ======================
 APP_TITLE = "Sing Yin Study Prefect Duty Roster System"
 PROJECT_FULL_NAME = "聖言中學導學風紀當值排班平台"
+PROJECT_FULL_NAME_EN = "Sing Yin Secondary School Study Prefect Duty Roster Platform"
 VERSION = "v2.3 Final"
 PAGE_ICON = "🛡️"
 SCHOOL_NAME = "Sing Yin Secondary School"
@@ -303,7 +304,7 @@ GEMINI_MODEL = "gemini-3.5-flash"
 
 def validate_config():
     print("✅ config.py 配置驗證通過 - 所有學校業務規則已正確載入")
-    print("✅ 完整 DAILY_VERSES 已載入（超過200句）")
+    print("✅ 完整 DAILY_VERSES 已載入（超過200句，UI 顯示中文，匯出時可選）")
     print("✅ 全局負荷滑桿已啟用（範圍 0.8\~2.0）")
 
 validate_config()

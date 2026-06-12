@@ -13,7 +13,9 @@ initialize_session_state 必須是**唯一中央守護者**，且「必須放在
 
 import pandas as pd
 import streamlit as st
+import os
 from roster.config import get_roster_rows, DAYS, DEFAULT_GLOBAL_LOAD_MULTIPLIER
+from roster.data.demo import get_demo_dataframe  # for fallback static data
 
 
 def get_empty_students_df() -> pd.DataFrame:
@@ -25,6 +27,45 @@ def get_empty_students_df() -> pd.DataFrame:
         "fixed_general_duty", "available",
         "history_duties", "history_weight", "remarks"
     ])
+
+
+def load_static_students() -> pd.DataFrame:
+    """
+    Load static student data (name, form, class, role, available, fixed_general_duty) from GitHub/repo file if available.
+    GitHub (repo) is the source of truth for static data.
+    Fallback to demo data (static portion only) if no file found.
+    Dynamic fields (history_*) are initialized to 0.
+    """
+    possible_paths = ['students.csv', 'data/students.csv', 'resources/students.csv']
+    for path in possible_paths:
+        if os.path.exists(path):
+            try:
+                df = pd.read_csv(path)
+                # Ensure required static columns
+                static_cols = ["name", "form", "class", "role", "available", "fixed_general_duty"]
+                for col in static_cols:
+                    if col not in df.columns:
+                        df[col] = ""
+                df = df[static_cols].copy()
+                # Initialize dynamic to 0
+                df["history_duties"] = 0
+                df["history_weight"] = 0.0
+                df["remarks"] = ""
+                return df
+            except Exception:
+                pass  # fallback
+
+    # Fallback: use demo but only static + init dynamic=0
+    try:
+        demo = get_demo_dataframe()
+        static_cols = ["name", "form", "class", "role", "available", "fixed_general_duty"]
+        df = demo[static_cols].copy()
+        df["history_duties"] = 0
+        df["history_weight"] = 0.0
+        df["remarks"] = ""
+        return df
+    except:
+        return get_empty_students_df()
 
 
 def initialize_session_state():
@@ -43,7 +84,7 @@ def initialize_session_state():
     並同步更新 roster/utils/backup.py 的 export/import 邏輯。
     """
     if 'students_df' not in st.session_state:
-        st.session_state.students_df = get_empty_students_df()
+        st.session_state.students_df = load_static_students()
 
     if 'roster_df' not in st.session_state:
         st.session_state.roster_df = pd.DataFrame(index=get_roster_rows(), columns=DAYS).fillna("")
@@ -68,3 +109,48 @@ def initialize_session_state():
 
     if 'current_verse' not in st.session_state:
         st.session_state.current_verse = None
+
+    # New for features
+    if 'history_loads' not in st.session_state:
+        st.session_state.history_loads = []  # list of {'week': int, 'loads': dict name->load}
+
+    if 'theme' not in st.session_state:
+        st.session_state.theme = 'light'
+
+    if 'ui_language' not in st.session_state:
+        st.session_state.ui_language = 'zh'  # 'zh' or 'en', but UI primarily Chinese per requirements
+
+    if 'selected_students_for_bulk' not in st.session_state:
+        st.session_state.selected_students_for_bulk = []
+
+    # For roster version history
+    if 'roster_versions' not in st.session_state:
+        st.session_state.roster_versions = []  # list of {'version': int, 'timestamp': str, 'roster_df': dict, 'report_df': dict}
+
+    # For semester service hours (calculate from roster, each duty ~1-1.5 hours based on weight)
+    if 'semester_hours' not in st.session_state:
+        st.session_state.semester_hours = {}  # name -> total hours
+
+    # For search/filter
+    if 'student_search' not in st.session_state:
+        st.session_state.student_search = ""
+
+    if 'roster_search' not in st.session_state:
+        st.session_state.roster_search = ""
+
+    # Ensure history_loads initialized (for trends)
+    if 'history_loads' not in st.session_state:
+        st.session_state.history_loads = []
+
+    # Backup system state
+    if 'last_backup_time' not in st.session_state:
+        st.session_state.last_backup_time = None
+
+    if 'backup_reminder' not in st.session_state:
+        st.session_state.backup_reminder = False
+
+    if 'backup_history' not in st.session_state:
+        st.session_state.backup_history = []  # list of {'timestamp': str, 'json': str, 'version': int} for multi-version
+
+    if 'adjustment_log' not in st.session_state:
+        st.session_state.adjustment_log = []

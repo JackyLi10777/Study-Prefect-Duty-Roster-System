@@ -38,9 +38,10 @@ _REGULAR_ROLE = "Study Prefect"
 
 
 def _check_role_gate(is_assist_role: bool, person_role: str) -> bool:
-    """Return True if the person_role is allowed for this role type.
+    """
+    Return True if the person_role is allowed for this role type.
 
-    Strictly implements AGENTS.md §1.3 AHP privileges & restrictions:
+    Strictly implements AGENTS.md §1.3 AHP privileges & restrictions (sing-yin-study-prefect-duty-roster):
     - If is_assist_role=True: only "Assistant Head Study Prefect" allowed.
     - Else: only regular "Study Prefect" allowed.
 
@@ -48,6 +49,8 @@ def _check_role_gate(is_assist_role: bool, person_role: str) -> bool:
     1. Fixed-duty priority phase
     2. Fair candidate collection phase
     3. recommend_substitutes()
+
+    Critical for maintaining school policy on leadership roles.
     """
     if is_assist_role:
         return person_role == _AHP_ROLE
@@ -215,18 +218,20 @@ def validate_and_compute(
     manual_weights: pd.DataFrame
 ) -> Dict:
     """
-    完整驗證 + 動態負荷計算（最終版 + 請假撤銷支援）
+    Complete validation + dynamic workload computation (final version + leave revocation support).
 
-    驗證項目（對應 AGENTS.md §1 與 §5）：
-    - typo: 人名不在名冊（請假撤銷視為非真實人員，自動跳過）
-    - duplicate: 同一天重複排班（注意：目前實作有已知 bug，會誤報跨天正常排班，見 AGENTS §4）
-    - leave_conflict: 請假者仍被排班
-    - vacuum: 空缺（Room202 Tue/Fri 的 ⬜ 不算空缺；請假撤銷不算空缺）
+    Validation items (per AGENTS.md §1 & §5):
+    - typo: Name not in roster (leave revocation treated as non-real, auto-skipped)
+    - duplicate: Same-day duplicate duty (note: known bug in current impl may flag cross-day normal assignments, see AGENTS §4)
+    - leave_conflict: Leave person still assigned
+    - vacuum: Vacancies (Room202 Tue/Fri ⬜ not counted as vacancy; leave revocation not counted)
 
-    負荷計算：
-    - 從學生原有 history_weight 累加本次值班權重（支援 manual_weights 覆蓋）
-    - 嚴格跳過 "請假撤銷" 單元，確保調整後公平性不被重複計算
-    - 輸出 report 總是按「最終總計加權負荷」升序（低者優先派班）
+    Workload calculation:
+    - Accumulate current duty weight from student's prior history_weight (supports manual_weights override)
+    - Strictly skip "請假撤銷" (leave revocation) cells to ensure post-adjustment fairness is not double-counted
+    - Output report is always sorted ascending by "Cumulative Weighted Load (points)" (lower load = higher priority for assignments)
+
+    UI display uses Chinese columns via data/models helpers (streamlit-best-practices); exports use professional English columns while preserving original Chinese student names.
     """
     errors = {
         "typo": (False, []),
@@ -296,21 +301,21 @@ def validate_and_compute(
                     this_week += added
 
         report.append({
-            "學生姓名 (Prefect Name)": name,
-            "年級 (Form)": row.get("form", ""),
-            "班別 (Class)": row.get("class", ""),
-            "職級 (Role)": row.get("role", ""),
-            "當週新增 (次)": round(this_week, 1),
-            "最終總計加權負荷 (點)": round(total_weight, 1)
+            "Student Name": name,
+            "Form": row.get("form", ""),
+            "Class": row.get("class", ""),
+            "Role": row.get("role", ""),
+            "This Week Added (points)": round(this_week, 1),
+            "Cumulative Weighted Load (points)": round(total_weight, 1)
         })
 
     report_df = pd.DataFrame(report)
     if not report_df.empty:
-        report_df = report_df.sort_values(by="最終總計加權負荷 (點)", ascending=True)
+        report_df = report_df.sort_values(by="Cumulative Weighted Load (points)", ascending=True)
     else:
         report_df = pd.DataFrame(columns=[
-            "學生姓名 (Prefect Name)", "年級 (Form)", "班別 (Class)",
-            "職級 (Role)", "當週新增 (次)", "最終總計加權負荷 (點)"
+            "Student Name", "Form", "Class",
+            "Role", "This Week Added (points)", "Cumulative Weighted Load (points)"
         ])
 
     return {
@@ -329,13 +334,15 @@ def recommend_substitutes(
     chosen_role: str
 ) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
     """
-    智慧替補推薦系統（最終版，含角色限制）
+    Smart substitute recommendation system (final version, with role restrictions).
 
-    嚴格遵循 AGENTS.md §1.3 AHP 特權與 §1.1 學生規則：
-    - Assist 崗位僅推薦 AHP
-    - 一般房間崗位僅推薦普通 Study Prefect
-    - 必須符合該日 available
-    - 按當前 history_weight 由低到高排序（公平優先）
+    Strictly follows AGENTS.md §1.3 AHP privileges & §1.1 student rules:
+    - Assist slot only recommends AHPs
+    - Regular room slots only recommend regular Study Prefects
+    - Must match the day's available days
+    - Sorted by current history_weight ascending (fairness priority)
+
+    UI display renames columns to Chinese; internal uses English for consistency with export logic.
     """
     current_person = str(roster_df.at[chosen_role, chosen_day]).strip()
     if not current_person or current_person in _UNASSIGNED_MARKERS:
@@ -356,9 +363,9 @@ def recommend_substitutes(
             continue
 
         subs.append({
-            "姓名": name,
-            "年級": rec.get("form", ""),
-            "當前總點數": float(rec.get("history_weight", 0.0))
+            "Name": name,
+            "Form": rec.get("form", ""),
+            "Current Load (points)": float(rec.get("history_weight", 0.0))
         })
 
     if not subs:

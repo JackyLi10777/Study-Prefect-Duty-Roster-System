@@ -1,16 +1,12 @@
 # data.py (root shim / compatibility layer)
 """
-Temporary root-level shim for the modular refactor (see approved plan.md).
+Ultra-thin root-level compatibility shim.
 
-All existing `from data import get_demo_dataframe, initialize_session_state, ...`
-continue to work unchanged.
+Legacy `from data import ...` still work.
 
-The real data layer is now at:
-    roster/data/
-    (demo.py, state.py, validators.py, models.py)
+**Recommendation:** New code should use `from roster.data import ...` and `from roster.data.models import ...`.
 
-initialize_session_state and demo data are 100% unchanged.
-This file will be cleaned up in the final phase after full verification.
+Real implementation: roster/data/ (demo, state, models with bilingual export/UI helpers).
 """
 from roster.data import (
     get_demo_dataframe,
@@ -24,7 +20,6 @@ from roster.data import (
     STUDENT_COLUMNS,
 )
 
-# Re-export config constants that the original data.py exposed for convenience
 from roster.config import ROWS_ROSTER, DAYS, DEFAULT_GLOBAL_LOAD_MULTIPLIER
 
-print("✅ [shim] root data.py now forwards to roster.data (functionality identical)")
+print("✅ [shim] root data.py → roster.data (thin compat)")

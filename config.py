@@ -1,15 +1,13 @@
 # config.py (root shim / compatibility layer)
 """
-Temporary root-level shim for the modular refactor (see approved plan.md).
+Ultra-thin root-level compatibility shim.
 
-All existing `from config import ...` and `import config` continue to work unchanged.
+All legacy `from config import ...` continue to work.
 
-The real SSOT is now at:
-    roster/config/constants.py
-    (re-exported via roster/config/__init__.py and this shim)
+**Strong recommendation (project-structure-advisor):** New code should import directly from `roster.config`.
 
-This file will be cleaned up in the final phase after full verification.
+Real SSOT: roster/config/constants.py (bilingual PROJECT_FULL_NAME / PROJECT_FULL_NAME_EN for UI Chinese vs Export English).
 """
 from roster.config import *  # noqa: F401,F403
 
-print("✅ [shim] root config.py forwarding to roster.config (SSOT)")
+print("✅ [shim] root config.py → roster.config (SSOT, thin compat only)")
