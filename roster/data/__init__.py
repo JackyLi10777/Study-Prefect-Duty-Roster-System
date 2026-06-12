@@ -16,6 +16,8 @@ from .models import (
     get_roster_index,
     get_days,
     STUDENT_COLUMNS,
+    get_ui_report_df,
+    get_export_report_df,
 )
 
 # For backward compatibility with code that did "from data import ROWS_ROSTER" etc.
