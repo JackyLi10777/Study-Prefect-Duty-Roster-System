@@ -21,7 +21,7 @@ from typing import Optional
 # Note: All UI text in Chinese; exports forced to professional English with Chinese student names preserved.
 # Theme and language toggles in sidebar.
 from roster.config import (
-    DAYS, ROWS_ROSTER, VERSION, APP_TITLE, PROJECT_FULL_NAME,
+    DAYS, ROWS_ROSTER, VERSION, APP_TITLE, PROJECT_FULL_NAME, PROJECT_FULL_NAME_EN,
     NASA_COLORS, get_role_style, DEFAULT_GLOBAL_LOAD_MULTIPLIER, get_weight
 )
 from roster.data import (
