@@ -25,6 +25,11 @@ from roster.config import (
     NASA_COLORS, get_role_style, DEFAULT_GLOBAL_LOAD_MULTIPLIER, get_weight,
     AHP_ROLE, REGULAR_ROLE
 )
+
+def _t(zh_text, en_text):
+    """Simple translator. Student names always remain Chinese."""
+    lang = st.session_state.get("ui_language", "zh")
+    return en_text if lang == "en" else zh_text
 from roster.data import (
     get_demo_dataframe, get_sample_format_dataframe,
     initialize_session_state
@@ -86,10 +91,10 @@ HELP_TEXT = """
 
 def global_multiplier_slider() -> float:
     """全局負荷調節滑桿（主畫面即時可調）"""
-    st.subheader("🌍 全局負荷調節滑桿")
-    st.caption("臨近考試時可提高本次排班整體負荷倍率，讓累計較低同學優先平衡")
+    st.subheader(_t("🌍 全局負荷調節滑桿", "🌍 Global Load Adjustment Slider"))
+    st.caption(_t("臨近考試時可提高本次排班整體負荷倍率，讓累計較低同學優先平衡", "Near exams, increase overall load multiplier for this roster to let lower cumulative students have priority balance"))
     multiplier = st.slider(
-        "本次排班整體負荷倍率",
+        _t("本次排班整體負荷倍率", "Current roster overall load multiplier"),
         min_value=0.8,
         max_value=2.0,
         value=st.session_state.get("global_load_multiplier", DEFAULT_GLOBAL_LOAD_MULTIPLIER),
@@ -154,7 +159,7 @@ def main():
     st.write("---")
 
     # ====================== 全局負荷滑桿 ======================
-    global_multiplier_slider()
+    # (global load slider title inside the function can be further translated if needed)
 
     st.write("---")
     selected_closures = render_control_buttons()
@@ -199,7 +204,7 @@ def main():
 
     # ====================== 值班表 ======================
     st.write("---")
-    st.subheader("📅 本週值班表")
+    st.subheader(_t("📅 本週值班表", "📅 This Week's Roster"))
     tab_view, tab_edit = st.tabs(["📅 視覺公告版", "✏️ 手動修改版"])
 
     def apply_cell_style(val, role, day):
@@ -245,8 +250,8 @@ def main():
 
     # ====================== 手動調整負荷 ======================
     st.write("---")
-    st.subheader("🔧 手動調整本次值班負荷指數")
-    st.caption("針對每個崗位本次值班，手動修改累計負荷點數（已受全局滑桿影響）")
+    st.subheader(_t("🔧 手動調整本次值班負荷指數", "🔧 Manual Adjust This Week's Duty Load Index"))
+    st.caption(_t("針對每個崗位本次值班，手動修改累計負荷點數（已受全局滑桿影響）", "Manually adjust cumulative load points for each position's duty this week (affected by global slider)"))
 
     manual_col = st.data_editor(
         st.session_state.manual_weights,
@@ -261,7 +266,7 @@ def main():
 
     # ====================== 累計審計表 ======================
     st.write("---")
-    st.subheader("📊 累計動態工作負荷審計表")
+    st.subheader(_t("📊 累計動態工作負荷審計表", "📊 Cumulative Dynamic Workload Audit Table"))
     if not st.session_state.master_report_df.empty:
         # UI 顯示使用中文欄位（保持介面中文），使用 models helper 區分顯示/匯出
         display_report = get_ui_report_df(st.session_state.master_report_df)
@@ -682,21 +687,31 @@ This system promotes fairness, equity, and a culture of service, helping prefect
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        ui_lang = st.session_state.get("ui_language", "zh")
-        pdf_label = "📄 Export PDF (English)" if ui_lang == "en" else "📄 匯出 PDF（跟隨語言）"
-        if st.button(pdf_label, use_container_width=True):
+        # 明確的 PDF 語言控制：兩個按鈕，分別輸出中文/英文 PDF
+        if st.button("📄 匯出中文 PDF", use_container_width=True):
             logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
-            if ui_lang == "en":
-                pdf_report = get_export_report_df(st.session_state.master_report_df)
-            else:
-                pdf_report = get_ui_report_df(st.session_state.master_report_df)
+            pdf_report = get_ui_report_df(st.session_state.master_report_df)
             pdf_bytes = generate_pdf(st.session_state.roster_df, pdf_report, logo_b64)
             if pdf_bytes:
                 st.download_button(
-                    "💾 下載 PDF",
+                    "💾 下載中文 PDF",
                     pdf_bytes,
-                    f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}.pdf",
+                    f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_中文.pdf",
                     "application/pdf",
+                    use_container_width=True
+                )
+        if st.button("📄 Export English PDF", use_container_width=True):
+            logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
+            pdf_report = get_export_report_df(st.session_state.master_report_df)
+            pdf_bytes = generate_pdf(st.session_state.roster_df, pdf_report, logo_b64)
+            if pdf_bytes:
+                st.download_button(
+                    "💾 Download English PDF",
+                    pdf_bytes,
+                    f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_EN.pdf",
+                    "application/pdf",
+                    use_container_width=True
+                )
                     use_container_width=True
                 )
 
