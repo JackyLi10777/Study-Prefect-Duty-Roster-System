@@ -54,9 +54,9 @@ def get_base_css() -> str:
         --dark-surface-2: #1f2937;
         --dark-surface-3: #262730;
         --dark-text: #fafafa;
-        --dark-text-secondary: #f3f4f6;
+        --dark-text-secondary: #f8fafc;
         --dark-text-tertiary: #ffeb3b;
-        /* Improved dark contrast vars for verse/reflection (brighter for readability on dark bg while preserving enclosure) */
+        /* Improved dark contrast vars for verse/reflection (brighter for readability on dark bg while preserving enclosure; balanced not excessive) */
         --dark-verse-text: #fafafa;
         --dark-reflection-text: #f1f5f9;
 
@@ -223,6 +223,8 @@ def get_dark_css() -> str:
     .stCaption, .stHelp, small, [data-testid="stCaptionContainer"], .stMultiselect [data-baseweb] + div { color: var(--dark-text-secondary) !important; }
     .stMarkdown small, .stMarkdown p[style*="color"], .stAlert small { color: var(--dark-text-secondary) !important; }
     .stMultiSelect label + div, .stMultiSelect .stHelp { color: var(--dark-text-secondary) !important; }
+    /* Targeted stronger contrast for special labels/captions like "🛠️ 本週特殊不開放時段" and similar in dark (uses improved secondary) */
+    .stMultiSelect label, .stMultiSelect > label, div[data-baseweb="select"] > label { color: var(--dark-text) !important; }
 
     /* Ensure verse/reflection remain high contrast and enclosed (vars + explicit for robustness) */
     .verse-card .verse-text { color: var(--dark-verse-text) !important; }
