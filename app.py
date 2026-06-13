@@ -482,7 +482,8 @@ This system promotes fairness, equity, and a culture of service, helping prefect
                         st.write(f"- {_t('總欄位數', 'Total Columns')}: {len(current_roster.columns)}")
                         st.write(f"- {_t('總學生/角色', 'Total Students/Roles')}: {len(current_roster)}")
                     with col2:
-                        st.write(f"**" + _t("選定版本 (Version {ver['version']})", "Selected Version (Version {ver['version']})").format(ver['version']=ver['version']) + "**")
+                        version_label = _t("選定版本 (Version {})", "Selected Version (Version {})").format(ver['version'])
+                        st.write(f"**{version_label}**")
                         st.write(f"- {_t('總欄位數', 'Total Columns')}: {len(ver_roster.columns) if not ver_roster.empty else 0}")
                         st.write(f"- {_t('總學生/角色', 'Total Students/Roles')}: {len(ver_roster) if not ver_roster.empty else 0}")
 
