@@ -309,10 +309,11 @@ def main():
             ahp_loads = loads[report["Student Name"].isin(ahp_names)] if "Student Name" in report.columns else pd.Series()
             ahp_avg = ahp_loads.mean() if len(ahp_loads) > 0 else 0
             ahp_count = len(ahp_loads)
-            st.info(
+            msg = (
                 f"👑 {_t('AHP 專屬洞察', 'AHP Dedicated Insight')}：{ahp_count} {_t('位 AHP 平均負荷', 'AHPs avg load')} {ahp_avg:.1f} {_t('點', 'pts')}。"
-                _t("建議：確保「Assist. in charge」職責公平分配，體現僕人領袖榜樣與責任。", "Suggestion: Ensure fair distribution of 'Assist. in charge' duties, embodying servant leadership example and responsibility.")
+                + _t("建議：確保「Assist. in charge」職責公平分配，體現僕人領袖榜樣與責任。", "Suggestion: Ensure fair distribution of 'Assist. in charge' duties, embodying servant leadership example and responsibility.")
             )
+            st.info(msg)
 
         # Simple fairness note
         if fairness_gap > 5:
