@@ -232,3 +232,116 @@ The generator (`core.py`) **must** follow this order and logic on every run:
 ---
 
 *End of AGENTS.md*
+
+---
+
+## Architecture & Verification Culture (Added 2026-06)
+
+### Centralized Display Layer (Messages / i18n / Theme)
+- All user-facing text lives under `roster/ui/messages.py` (MESSAGES registry + safe `get_text(key, **kwargs)`).
+- Language handling is in `roster/ui/i18n.py` (canonical `_t` + helpers). Import only from here in UI code.
+- Theme/CSS generation will migrate to `roster/ui/theme.py`.
+- **Rule**: Language and text changes are **display layer only**. Core, data, and utils/backup must never depend on `_t` or messages for logic or data keys.
+- Student names and role values ("首席導學風紀" etc.) are data and **always remain Chinese** — never translated.
+
+### Safe String Patterns (Mandatory)
+- Prefer: `get_text("some_key")` or `get_text("key_with_template", var=val)`
+- For legacy/dynamic during migration: assemble first.
+  ```python
+  prefix = _t("中文前綴", "English prefix")   # or get_text(...)
+  result = f"{prefix} {variable}"
+  # or
+  template = get_text("template_key")
+  result = template.format(var=variable)
+  ```
+- **Never** put complex `.format(var=...)` with assignment expressions inside an f-string literal at the call site. This has caused repeated SyntaxError in the past.
+- Use the `get_text` path for all new UI strings.
+
+### Mandatory Verification After Changes
+**Especially after any modification to `app.py`** (non-negotiable):
+
+1. Write a small `_verify_*.py` (or reuse pattern):
+   ```python
+   import ast
+   with open("app.py", encoding="utf-8") as f:
+       ast.parse(f.read())
+   import app
+   print("✅ Import 成功")
+   ```
+2. Run via `cmd /c "python _verify_xxx.py > result.txt 2>&1"` (or equivalent) and inspect the output file. This bypasses Windows/PS quoting + python stub (9009) issues.
+3. Additionally run a static pattern check for risky f-string constructs:
+   - Look for f-strings containing both `{...=...}` and later `.format(`.
+4. For language/text changes:
+   - Grep the affected phrases.
+   - Manually toggle language/theme and spot-check the affected UI + a few dynamic messages.
+   - Confirm no bare Chinese display text leaks in English mode (student names/roles and technical keys exempted).
+
+The `scripts/verify_display.py` script is now implemented and available for daily use (run `python scripts/verify_display.py` from the repo root). It provides repeatable checks for the centralized display layer.
+
+**Explicit requirement for display-layer changes**: After modifying any display-related code — including `app.py` (orchestration, early `apply_theme` call, render flow), `roster/ui/components.py` (sidebar toggles, verse rendering, `apply_theme` calls), `roster/ui/theme.py` (CSS generators, `apply_theme` logic, HC rules), or `roster/ui/messages.py` (new keys, `get_text` call sites) — developers **must** run `python scripts/verify_display.py` (on Windows/PowerShell use the safe capture pattern: `cmd /c "python scripts/verify_display.py > _verify_display_result.txt 2>&1"` followed by `type _verify_display_result.txt` or `Get-Content`). Review all ✅ results (message key bilingual completeness, 5 theme functions, critical CSS vars/selectors, verse enclosure rules, gold accent selectors `#D4AF37` / `--hc-gold`). Fix any ❌ before committing or deploying.
+
+These steps protect against the exact classes of bugs (SyntaxError from f+_t, missing translations, theme drift) seen during rapid UI work.
+
+### Recommended Development Workflow for the Display Layer
+1. **Modify display layer only** (text via `roster/ui/messages.py` + `get_text`; styling/logic via `roster/ui/theme.py`; UI wiring/toggles/verse via `roster/ui/components.py` or thin calls in `app.py`).
+2. **Run verification**: `python scripts/verify_display.py` (capture output to .txt on Windows/PS as described above).
+3. **If any ❌ or visual issue**: fix immediately. Re-run the script.
+4. **Manual spot-check** (in running app): toggle language (zh/en), Dark/Light, enable/disable High Contrast (confirm auto-dark pairing + indicator appears/disappears), inspect verse box (enclosure + gold #D4AF37 visible and crisp in normal modes), check placeholders/captions contrast, confirm no bare Chinese leaks (except data names/roles).
+5. **Only then**: commit, push, and deploy to Streamlit Cloud.
+
+This "Modify display layer → Run verify_display.py → (spot-check) → Deploy" loop ensures the centralized display systems stay healthy and prevents regressions in the verse enclosure, gold accents, bilingual completeness, or contrast behavior.
+
+### Backup & Invariant Protection
+Any architecture change (messages, i18n, theme, structure) **must** leave `roster/utils/backup.py`, `roster/data/state.py` initialization contract, reindex logic, and core generation untouched.
+
+See the dedicated "Risk Control" section in the Architecture Refactoring Plan (plan.md) for the full zero-impact guarantees.
+
+---
+
+**Last architecture note update**: 2026-06 (after completion of Message Centralization + Theme Centralization Increments 1-3, Consolidation phase, and Final Production Readiness workflow integration + High Contrast polish)
+
+### Completed UI Architecture Optimizations (2026-06)
+This round of work completed two major centralizations in the display layer (`roster/ui/`):
+
+**Message Centralization**:
+- All user-facing text (dynamic and high-frequency static) migrated to `roster/ui/messages.py` (MESSAGES registry with zh/en pairs + `get_text(key, **kwargs)` for safe templated lookup).
+- Legacy `_t` (from `roster/ui/i18n.py`) retained only for compatibility during transition; new code prefers `get_text`.
+- Mandatory safe patterns (per AGENTS and plan): "assemble first" (e.g. `prefix = get_text("key"); result = f"{prefix} {var}"` or `template = get_text("key"); result = template.format(var=var)`). Never complex inline f-string + `.format(...)` or assignment expressions (caused SyntaxErrors in prior work).
+- Display-layer only rule strictly enforced: `roster/ui/messages.py`, `get_text`, and `_t` are **never** used in core logic, data handling, backup, engine, config, or permissions. Student names/roles ("首席導學風紀" etc.) remain Chinese data values (never translated).
+- Bilingual: Chinese primary for school context; English for exports/PDF/help where useful. Keys stable; Chinese data names preserved.
+
+**Theme Centralization (3 Increments)**:
+- All custom CSS/logic centralized as sole source in `roster/ui/theme.py`:
+  - `get_base_css()`: shared rules (titles, alerts, kpi, **verse enclosure** with gold #D4AF37 borders/padding/.verse-inner, responsive).
+  - `get_dark_css()` / `get_light_css()`: mode overrides (strong contrast for placeholders `#f0f0f0`, captions/labels `#f0f0f0`, verse-text `#ffffff`/reflection `#f0f0f0`, sidebar/main).
+  - `get_high_contrast_css()`: extreme readability (pure black/white + high-vis gold; covers placeholders, captions, labels, inputs, dataframes, tabs, expanders, verse with preserved enclosure).
+  - `apply_theme()`: **single public injection point** (always base first for enclosure, then conditional HC or dark/light).
+- CSS Custom Properties (Increment 2): `:root` with `--accent-gold: #D4AF37`, `--primary-blue`, full palettes, `--verse-card-padding` etc., `--hc-*` for future HC. Eliminated hard-coded repetition; 1:1 mapping for zero visual change.
+- Expanded coverage: tabs (gold active underline), expanders, enhanced dataframes (headers/hover), etc. in both modes.
+- HC Mode (Increment 3): `session_state.high_contrast` (default False, init in state.py) + toggle in sidebar (components.py, bilingual, next to dark toggle). Conditional in `apply_theme()`. When on: strong contrast; when off: exact prior behavior.
+- Key invariants (enforced in code + comments + verification): verse-card > .verse-inner enclosure (3px gold border, 16px/4px padding, overflow hidden, shadows) + gold #D4AF37 accents/glows **always preserved in normal modes** (via vars + base). HC reinforces structure with high-vis variant. Base always injected first. !important only for Streamlit overrides.
+- Injection: early call in app.py main() (post set_page_config, pre-render) + re-apply in components sidebar (post-toggle) for reactivity. No scattered <style> blocks or duplicate base left.
+- .streamlit/config.toml light base + blue primary untouched (runtime toggle via our CSS).
+
+**Key Decisions & Design Principles** (applied across both centralizations):
+- **Display layer only**: All text/theme in `roster/ui/` (messages.py + theme.py + i18n.py). Core/engine/config/data/backup/utils/pdf **never** depend on them for logic/keys/data.
+- **Centralize for maintainability**: One module per concern (messages for text, theme.py for CSS). Use stable keys/vars.
+- **Safe patterns & verification culture**: Assemble first for dynamics. Mandatory `_verify_*.py` (ast.parse + "import app") + capture via cmd/c after any app.py edit (bypasses Windows/PS issues). Grep for patterns, manual toggle checks (lang/theme/HC), confirm no leaks or regressions.
+- **Preserve critical visuals/invariants**: Verse enclosure (HTML structure in components + CSS in theme) and gold #D4AF37 (in normal modes) are non-negotiable. Zero visual regression in dark/light when HC off. Chinese data names/roles always preserved.
+- **Incremental, minimal-risk, zero-impact**: Small groups, 1:1 mappings first (vars), additive features (new state keys, toggles). Any arch change **must** leave backup.py, state.py init contract, reindex, core generation, permissions, AHP rules, student data untouched.
+- **Bilingual + servant-leadership aesthetic**: Chinese primary for UI/school context; English for exports. Gold/blue (#D4AF37 / #0B1E3D) + verse/reflection box as signature elements.
+- **Future-friendly**: CSS vars for theming; get_text for text; HC foundation ready for extension.
+
+These changes eliminated scattering/duplication, improved dark/HC readability (placeholders, captions, verse/reflection, sidebar/main), made switching clean (single apply_theme), and followed safe refactoring with full verification.
+
+### Strengthened Verification Practices
+In addition to the existing mandatory steps (especially post-app.py edit):
+- **Theme-specific**: After `roster/ui/theme.py` changes, grep for verse enclosure (`.verse-card`, `.verse-inner`, padding vars like `--verse-card-padding`, `overflow: hidden`, gold vars `--accent-gold`/`--hc-gold`), and enclosure comments. Confirm base still defines structure; HC reinforces without loss.
+- **Message-specific**: After `messages.py` or call-site changes, verify new keys have complete zh/en pairs; grep usages prefer `get_text` (or documented safe assemble); no new direct _t or risky f+format in UI.
+- **Display layer spot-checks**: After theme/message edits, manually toggle lang/theme/HC (in both zh/en) and spot-check affected UI (verse box readability/enclosure/gold visible, placeholders/captions contrast, no leaks of bare Chinese in English mode except data names).
+- **Implemented**: `scripts/verify_display.py` (lightweight daily tool at repo root). Run with `python scripts/verify_display.py`.
+  It runs the standard ast+import on app.py, checks that critical MESSAGES keys have complete zh/en pairs (in roster/ui/messages.py), confirms the exact 5 theme functions (get_base_css, get_dark_css, get_light_css, apply_theme, get_high_contrast_css) and critical CSS variables, performs verification that verse enclosure rules and gold accent selectors (#D4AF37) remain present (to prevent future regression), and prints a clear ✅/❌ summary with helpful per-check messages.
+  **Always run after modifying any display-related code in `app.py`, `roster/ui/components.py`, `roster/ui/theme.py`, or `roster/ui/messages.py`** — before committing or deploying. See "Recommended Development Workflow for the Display Layer" and the explicit requirement in "Mandatory Verification After Changes" above.
+- These protect against drift, missing keys, contrast regressions, and SyntaxErrors seen in rapid UI work.
+
+See "Mandatory Verification After Changes" above for full checklist. Update this section when new practices are added.

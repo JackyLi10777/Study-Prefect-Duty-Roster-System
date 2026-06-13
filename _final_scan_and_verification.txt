@@ -1,0 +1,46 @@
+=== FINAL FULL SCAN + VERIFICATION (app.py + roster/ui/components.py only) ===
+
+Date: 2026-06-13 (post all edits)
+
+**Grep for old strong branded / exclusive labels (target phrases):**
+- app.py: only 1 hit for "Head Study Prefect / AHP 專用" — inside internal comment at line 309 (dashboard section header comment). NOT a runtime UI label.
+- app.py: "AHP 平均負荷顯示領導責任分擔良好。" (line ~442 in zh preview) — intentionally kept as descriptive/data sentence (per distinction: retains role context for AHP stats explanation; not "exclusive" branding).
+- No hits anywhere for:
+  - "AHP 專屬洞察"
+  - "AHP Dedicated Insight"
+  - "方便 Head / AHP 操作"
+  - Old cert "Head Study Prefect" literal in cert_lines (now get_text)
+- components.py: ZERO matches for any of the branded phrases.
+
+**Grep for new centralized keys in messages.py:** All present (batch_manage_caption updated to neutral; 6+ new strong-neutral + descriptive-AHP-context keys added and referenced).
+
+**Changes summary by distinction (executed exactly as approved):**
+- Strong role-branded (removed/neutralized):
+  - Dashboard title (app.py:313): now get_text("management_dashboard_title") → "📈 管理視角儀表板" / "📈 Management Dashboard"
+  - Insight heading (app.py:345): "👑 特別洞察" / "👑 Special Insight" (via insight_title key + safe assembly)
+  - Batch caption (components.py:402 + messages): neutral "一次選擇多名學生，批量設定請假或固定值班" (no Head/AHP)
+  - Cert signer (app.py:582): get_text("certificate_signer") → "團隊負責人" / "Team Leader"
+
+- Descriptive/data AHP (kept with role context, neutral tone, no 專屬):
+  - Captions and report preview lines use AHP 貢獻 / AHP 平均負荷 / AHP 洞察 via keys or retained sentences.
+  - Templates provide "AHP 平均負荷：{avg:.1f} 點 (共 {count} 位)" etc. in both languages.
+  - The explanation sentence "AHP 平均負荷顯示領導責任分擔良好。" kept verbatim.
+
+**Verify files created/updated after each app.py edit:**
+- _verify_dashboard_labels_result.txt (step 3)
+- _verify_report_labels_result.txt (step 4)
+- _verify_cert_labels_result.txt (step 5)
+- _final_scan_and_verification.txt (this file)
+
+**Language / generate / backup notes (code-level confirmation since no streamlit run in harness):**
+- All UI label paths now go through messages.py get_text (or the updated batch key).
+- zh/en pairs defined for every changed label.
+- No new session_state, no role checks added to display.
+- Backup: untouched (no code path to roster/utils/backup.py; no new keys in state).
+- Role logic (role_map, ahp_names, select options): untouched (confirmed in greps).
+- When user runs "streamlit run app.py", switching language and clicking generate summary / cert will show the distinction: strong titles neutral, AHP stats clearly labeled with role.
+
+**Risk / invariants:** All per plan — zero impact demonstrated by greps (logic strings remain only where required for function).
+
+✅ Final scan complete. All strong branding removed from UI labels; descriptive AHP context preserved. Ready for post-execution report.
+=== End final scan ===

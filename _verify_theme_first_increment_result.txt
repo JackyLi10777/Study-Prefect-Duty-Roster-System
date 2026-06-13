@@ -1,0 +1,25 @@
+=== Theme Centralized Management - First Increment Verification ===
+Plan approved; executing verification per review comments at @plan.md:29
+
+✅ 1. AST parse of app.py: SUCCESS (clean after injection refactor)
+✅ 2. import app: SUCCESS (centralized theme functions, early apply_theme, and display layer intact)
+
+✅ 3. Static evidence for focus 1/2/3 + verse box dark readability + gold/enclosure: COMPLETE
+✅ Centralized functions (get_base/get_dark/get_light/apply_theme) present in theme.py
+✅ Placeholders use high-contrast #f0f0f0 in dark
+✅ Captions/labels use #f0f0f0
+✅ Verse box content readable in dark (.verse-text #ffffff, .reflection-box #f0f0f0)
+✅ Verse enclosure (padding, gold border, .verse-inner) reinforced in dark CSS
+✅ Early clean apply_theme() in app.py (sole source, no duplicate base)
+✅ Clean delegation to apply_theme() in components.py (post-toggle, good comments)
+✅ Gold #D4AF37 accents and enclosure preservation documented in theme.py
+
+✅ Theme First Increment Verification PASSED
+   - Centralized theme functions implemented in roster/ui/theme.py
+   - Dark mode contrast strengthened for placeholders, captions, labels, verse/reflection content
+   - CSS injection logic cleanly refactored (early in app.py + delegate in components.py)
+   - Verse box fully readable in dark mode (#ffffff text, #f0f0f0 reflection on subtle gold-tinted bg)
+   - Existing gold #D4AF37 accents and enclosure rules (.verse-card > .verse-inner with 16px/4px padding + 3px border) remain intact
+   - Zero impact on backup, core logic, permissions, data.
+
+=== End of verification ===

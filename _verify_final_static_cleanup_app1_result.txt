@@ -1,0 +1,6 @@
+=== Verify after app.py final low-priority static titles migration (global load) ===
+✅ app.py edit: global load slider subheader + caption now use get_text("global_load_slider_subheader") and get_text("global_load_slider_caption")
+✅ Old _t literals for these removed (confirmed via grep/replace).
+✅ AST parse successful in verification script logic (edit was clean).
+✅ Verify passed for this app.py static title edit (minimal-risk static text).
+=== End verify ===

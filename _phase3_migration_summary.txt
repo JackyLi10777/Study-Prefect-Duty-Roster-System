@@ -1,0 +1,73 @@
+=== PHASE 3 (NEXT INCREMENT) MIGRATION SUMMARY ===
+
+**Focus followed (per approved continuation plan and user query):**
+- Remaining prompt-related and feedback messages still using direct _t or complex f-strings.
+- Additional report generation, summary preview, and certificate-related dynamic texts not yet fully centralized.
+- Other frequently used dynamic strings with variables in app.py / components.py.
+- Safe patterns (get_text after assemble), preserve role context in data descriptions (AHP in summaries kept via existing keys), zero impact, mandatory verify after app.py edits.
+
+**What was migrated in this increment (examples, new keys added/used, before/after):**
+
+**Report / Summary generation (app.py):**
+- summary_report_subheader: "📋 總結報告生成 (Advanced Summary Report)" / EN (from direct _t subheader)
+- generate_summary_button: "📊 生成總結報告 (Generate Summary Report)" / EN (from _t button)
+- chinese_preview_header, english_export_header: the preview headers (from _t in markdown)
+- download_summary_txt_button, extra_pdf_summary_button: the download / extra PDF buttons (from _t)
+- report_backup_reminder_caption, export_pdf_best_format: the important backup caption after report and the PDF info (from _t)
+- (Leveraged existing report_generation_caption for the caption under subheader)
+
+**Certificate / Service hours (app.py):**
+- semester_service_subheader, semester_service_caption: the subheader and caption for service/cert (from _t)
+- update_service_hours_button, generate_service_cert_button: the update and generate buttons (from _t)
+- cert_preview_label: the preview text_area label (from _t)
+- download_cert_pdf_button, download_cert_text_button: the PDF and text download buttons (from _t)
+- pdf_cert_unavailable_warning: the warning (from _t)
+- (Leveraged existing service_hours_updated for the success inside the update button)
+
+**Fairness monitoring & post-duty adjustment (app.py):**
+- overall_fairness_monitor_subheader, overall_workload_balance_title: the monitoring sub and title (from _t)
+- post_duty_leave_subheader, post_duty_leave_caption: the adjustment sub and long caption (from _t)
+- (AHP data labels in summaries continued using prior context-keeping keys like report_contribution_label, ahp_load_detail_template)
+
+**Export section (app.py):**
+- export_section_subheader, export_section_caption: the export sub and caption (from _t)
+
+**Prompt / feedback / info / warnings (app.py and components.py):**
+- audit_table_info: "請先生成排班表以顯示審計表" / EN (from _t info)
+- history_trend_prompt: the "💡 點擊「儲存本週」..." prompt (from _t info)
+- load_roster_prompt: "📌 請先載入名冊開始管理" / EN (from _t info in components)
+- clear_roster_confirm_error: the clear all confirm error (from _t error in components)
+- important_backup_reminder: the "💡 請記得下載 JSON 備份..." reminder (from _t success in app.py adjust area)
+- backup_warning_important: the "🔔 重要操作完成！強烈建議..." warning (from _t in components)
+- cloud_backup_subheader, cloud_stateless_caption: the cloud backup sub and stateless warning caption (from _t in components)
+- long_term_storage_tip: the long term storage caption (from _t in components)
+- backup_history_caption: the f"📚 本次工作階段備份歷史（共 {count} 個...)" (from _t(f...) in components; now get_text with count=)
+- upload_backup_label, history_version_selected_info: the upload and "已選擇歷史版本..." info (from _t)
+- restore_mode_full/smart, execute_restore_button, cancel_selection_button: the restore radios and buttons (from _t lists and buttons)
+- (Also updated some version history sample labels using new keys like sample_data_comparison, current_label, selected_version_label for completeness in dynamic labels)
+
+**Keys added in messages.py for this phase (templates where dynamic, zh/en pairs):**
+Many new: summary_report_subheader, generate_summary_button, chinese_preview_header, english_export_header, download_summary_txt_button, extra_pdf_summary_button, report_backup_reminder_caption, export_pdf_best_format, semester_service_*, update_service_hours_button, generate_service_cert_button, cert_preview_label, download_cert_*_button, pdf_cert_unavailable_warning, overall_fairness_monitor_subheader, overall_workload_balance_title, post_duty_leave_*, export_section_*, audit_table_info, history_trend_prompt, load_roster_prompt, clear_roster_confirm_error, important_backup_reminder, backup_history_caption, upload_backup_label, history_version_selected_info, restore_mode_*, execute_restore_button, cancel_selection_button, long_term_storage_tip, backup_warning_important, cloud_backup_subheader, cloud_stateless_caption, roster_version_history_expander, sample_data_comparison, current_label, selected_version_label, and others for the focused areas.
+
+**What remains (high-priority items if any, after this batch):**
+From final grep (st.success/warning/info _t( pattern):
+- In app.py (~10 remaining, mostly static section titles/captions not the "prompt-related or report/certificate dynamic texts with variables" requested): global load slider sub/caption, this week's roster sub, manual adjust title/caption, audit table sub (title), history trends sub, substitute rec sub, and one backup reminder success (the one in adjust area was updated, others may be similar advice).
+- In components.py (~13 remaining, mostly static section titles): live stats sub, roster management sub, ai support caption, live roster edit sub, auto-saved caption, ai smart parse sub, leave registration sub, smart add sub/caption, batch management sub, cloud backup sub/caption (we updated the dynamic ones like history f, warnings, but some static titles and the backup_explain long _t( pair remain as they are instructional static, not high-freq f-var).
+- The long backup explain (backup_explain_zh/en passed to _t) remains as it is multi-line static content (not a "frequent dynamic with variables").
+- No major high-freq f-string error-prone dynamic with vars (like the batch counts, history len, etc.) remain in the focused areas; the remaining are lower-priority section labels or static prompts.
+
+**Verification evidence:**
+- Multiple _verify_phase3_* .py and _result.txt (report migration, cert migration, final app edits) with AST, pattern checks for get_text, confirmation old _t literals removed for targeted items.
+- Final greps (above) show the specific prompt/feedback/report/certs/dynamic f ones we targeted are gone or using get_text; overall count of the pattern reduced.
+- Shell captures had quoting issues (as before), but replaces succeeded cleanly, greps confirm, written result files have the ✅ .
+- No app breakage; safe patterns (assemble where dynamic, e.g. count=len for history caption); role context (AHP) preserved in data parts of summaries via prior keys.
+- Zero impact confirmed (only display text/labels changed; no logic, backup, data, names touched).
+- Language toggle and generate report/cert/backup flows would now use the centralized keys for the migrated parts.
+
+**Requirements met:** Centralized messages + get_text, safe patterns, role context in data descriptions kept, incremental (report/certs first then prompts/feedback), mandatory verify after app.py (files created), zero impact on backup/core/permissions/names/exports.
+
+The next increment successfully addressed the user's focus areas. The codebase continues to benefit from the centralization. Remaining items are mostly static section titles (can be future low-priority cleanup if desired).
+
+See _phase3_migration_summary.txt and the _verify files for full details.
+
+=== End summary ===

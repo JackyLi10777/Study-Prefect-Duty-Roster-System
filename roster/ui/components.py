@@ -28,6 +28,11 @@ from roster.utils import (
 )
 from roster.ai import ai_parse_remarks  # use package path (root ai_parser shim still works for legacy)
 
+# Centralized display-layer language, messages & theme (new architecture)
+from roster.ui.i18n import _t, get_text
+from roster.ui import messages, theme
+from roster.ui.theme import apply_theme  # future central injection point
+
 # ====================== 合併所有金句供隨機刷新使用 ======================
 # 使用新 daily_verses.py 的結構 (verse_001 等 key)
 ALL_VERSES = list(DAILY_VERSES.keys())
@@ -35,21 +40,14 @@ ALL_VERSES = list(DAILY_VERSES.keys())
 # Note: UI layer calls into business logic (generate_roster) per AGENTS.md guidelines.
 # Direct calls are kept for now to preserve exact original behavior during migration.
 
-def _t(zh_text, en_text):
-    """Simple translator based on ui_language. UI follows language, student names always Chinese."""
-    lang = st.session_state.get("ui_language", "zh")
-    return en_text if lang == "en" else zh_text
-
-
 def show_daily_verse():
     """
     神聖莊重每日聖經金句區塊。
-    - 使用原生 Streamlit 元件 + CSS class 包裝，避免 raw HTML 標籤顯示。
-    - 文字內容乾淨渲染。
-    - 經文章節 + 經文內容清楚換行顯示。
-    - 簡短靈修反思放在清晰的背景框內（.reflection-box）。
-    - 深色模式有良好對比度（CSS 已強化）。
-    - 完全支援語言切換（中文界面優先中文經文+反思，英文界面優先英文經文+反思）。
+    - 經文（標題 + 章節 + 內容）和靈修反思明確放在金邊背景框（.verse-card）內。
+    - 反思使用嵌套 .reflection-box 確保在框內不跑出。
+    - 使用單一 unsafe HTML 塊確保視覺容器正確包含所有內容。
+    - 完全支援語言切換，內容跟隨 ui_language。
+    - 深色/淺色模式都有良好視覺層次與對比度（CSS 強化）。
     """
     if ("current_verse" not in st.session_state or 
         st.session_state.current_verse is None or
@@ -66,37 +64,37 @@ def show_daily_verse():
         text = verse.get('en', '')
         refl_title = "English Reflection"
         refl = verse.get('reflection_en', '')
+        verse_title = "Daily Bible Verse"
         footer = "— Sing Yin Study Prefect Team Spiritual Reminder | Servant Leadership, Service First"
     else:
         ref = verse.get('reference_zh', '')
         text = verse.get('zh', '')
         refl_title = "靈修反思"
         refl = verse.get('reflection_zh', '')
+        verse_title = "今日聖經金句"
         footer = "—— 聖言中學導學風紀團隊靈修提醒 | 僕人領袖，以服事為本"
 
-    # 使用 verse-card 包裝整個金句區塊（經文 + 反思都在框內）
-    st.markdown('<div class="verse-card">', unsafe_allow_html=True)
+    # Strict enclosure via .verse-inner (nested inside .verse-card golden border):
+    # Guarantees verse (title + reference + content) + Spiritual Reflection (title + text)
+    # are strictly inside the single golden border box with consistent >=16px padding
+    # and no overflow in both light and dark modes. Reflection is internal framed section
+    # (not independent). Footer moved inside .verse-inner for unified content block.
+    card_html = f"""
+    <div class="verse-card">
+        <div class="verse-inner">
+            <h3 class="verse-title">📖 {verse_title}</h3>
+            <p class="verse-ref"><strong>{ref}</strong></p>
+            <p class="verse-text">{text}</p>
+            <div class="reflection-box">
+                <strong>{refl_title}</strong><br>{refl}
+            </div>
+            <div class="verse-footer">{footer}</div>
+        </div>
+    </div>
+    """
+    st.markdown(card_html, unsafe_allow_html=True)
 
-    # 標題
-    st.markdown(f"**📖 {_t('今日聖經金句', 'Daily Bible Verse')}**")
-
-    # 經文章節
-    if ref:
-        st.markdown(f"**{ref}**")
-
-    # 經文內容（支援長文自然換行）
-    if text:
-        st.markdown(text)
-
-    # 靈修反思放在清晰框內（現在無條件顯示，並跟隨主語言）
-    if refl:
-        st.markdown(f'<div class="reflection-box"><strong>{refl_title}</strong><br>{refl}</div>', unsafe_allow_html=True)
-
-    st.caption(footer)
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # 只保留刷新按鈕（移除獨立的「顯示英文反思」checkbox）
+    # 刷新按鈕（置於框外，但功能完整）
     if st.button(_t("🔄 刷新金句", "🔄 Refresh Verse"), use_container_width=True, type="secondary", help=_t("獲得新的靈修鼓勵", "Get new spiritual encouragement")):
         st.session_state.current_verse = random.choice(ALL_VERSES)
         st.rerun()
@@ -106,13 +104,46 @@ def render_sidebar():
     """側邊欄 - 極簡專業、清晰流程、即時統計與信任感設計"""
     with st.sidebar:
         st.header(_t("🏫 Sing Yin Secondary School", "🏫 Sing Yin Secondary School"))
-        st.caption(_t("導學風紀當值排班平台", "Study Prefect Duty Roster Platform"))
+        st.caption(get_text("platform_caption"))
 
         # Light / Dark Mode and Language (per requirements)
+        # High Contrast auto-pairs with Dark for best visual result (enforced here in controller).
+        # When HC is turned on, force Dark and remember prior theme (if not already Dark).
+        # When HC is turned off, restore the saved previous theme (Dark or Light) when available.
+        # A render-time consistency guard ensures persisted state (HC=true + old theme=light) is normalized on load.
+        # Visual indicator (caption) appears only when HC active; it receives extreme contrast treatment automatically.
+        # All logic is display-layer only; verse enclosure, gold #D4AF37 (in normal modes), and hierarchy untouched.
         col_theme, col_lang = st.columns(2)
         with col_theme:
+            # Consistency guard for persisted HC state (handles Cloud restore / old sessions)
+            if st.session_state.get("high_contrast", False) and st.session_state.get("theme", "light") != "dark":
+                st.session_state["hc_previous_theme"] = st.session_state.get("theme", "light")
+                st.session_state["theme"] = "dark"
+
             is_dark = st.toggle(_t("🌙 深色模式", "🌙 Dark Mode"), value=st.session_state.get("theme", "light") == "dark", key="theme_toggle")
             st.session_state.theme = "dark" if is_dark else "light"
+
+            prev_hc = st.session_state.get("high_contrast", False)
+            hc = st.toggle(_t("🔳 高對比模式", "🔳 High Contrast"), value=prev_hc, key="hc_toggle")
+
+            if hc and not prev_hc:
+                # Enabling HC → force (or keep) Dark and remember the prior non-Dark theme
+                current = st.session_state.get("theme", "light")
+                if current != "dark":
+                    st.session_state.hc_previous_theme = current
+                    st.session_state.theme = "dark"
+            elif not hc and prev_hc:
+                # Disabling HC → restore previous theme if we saved one
+                prev = st.session_state.get("hc_previous_theme")
+                if prev:
+                    st.session_state.theme = prev
+                    st.session_state.hc_previous_theme = None
+
+            st.session_state.high_contrast = hc
+
+            # Clear visual indicator when High Contrast is active (appears in sidebar, styled by HC CSS)
+            if st.session_state.get("high_contrast", False):
+                st.caption(_t("🔳 高對比模式已啟用（自動套用深色模式以獲得最佳對比）", "🔳 High Contrast active (Dark mode enforced for best result)"))
         with col_lang:
             # 更完整的語言模式：中文介面 / 英文介面
             # UI 主要保持中文（學校情境），匯出與部分標題可同步英文
@@ -132,75 +163,16 @@ def render_sidebar():
             # 反查 lang key
             st.session_state.ui_language = "zh" if "中文" in selected_display else "en"
             if st.session_state.ui_language == "en":
-                st.caption(_t("英文介面 + 專業英文匯出", "English Interface + Professional English Exports"))
+                st.caption(get_text("english_exports_caption"))
             else:
-                st.caption(_t("中文介面（匯出支援英文）", "Chinese Interface (Exports support English)"))
+                st.caption(get_text("chinese_exports_caption"))
 
-        # Apply theme CSS (graphic-design + streamlit-best-practices) - improved for full coverage and smoothness
-        # Enhanced to make sidebar + main area fully consistent for Light/Dark
-        if st.session_state.theme == "dark":
-            st.markdown("""
-            <style>
-            .stApp { background-color: #0e1117; color: #fafafa; }
-            .stSidebar { background-color: #161b22 !important; color: #f0f0f0 !important; }
-            .stSidebar * { color: #f0f0f0 !important; }  /* 側邊欄所有文字高對比 */
-            .stSidebar .stCaption, .stSidebar label, .stSidebar .stMarkdown { color: #e0e0e0 !important; }
-            .stButton > button { background-color: #262730; color: #fafafa; border: 1px solid #4b5563; }
-            .stButton > button:hover { background-color: #374151; }
-            .kpi-card { background-color: #1f2937 !important; border-left-color: #D4AF37 !important; color: #fafafa; }
-            .verse-card { 
-                background: linear-gradient(180deg, #1a1f2e 0%, #0e1117 100%) !important; 
-                border: 2px solid #D4AF37; padding: 14px 12px; border-radius: 10px; 
-                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                color: #ffeb3b !important;  /* 高對比亮黃 */
-            }
-            .verse-card * { color: #ffeb3b !important; }  /* 強制所有子元素高對比 */
-            .verse-card p, .verse-card .stMarkdown { color: #ffffff !important; font-weight: 500; } /* 內文用亮白 */
-            .reflection-box {
-                background-color: #1f2937;
-                border-left: 5px solid #D4AF37;
-                padding: 10px 12px;
-                margin-top: 10px;
-                border-radius: 6px;
-                font-size: 12px;
-                color: #ffeb3b !important;
-                box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
-            }
-            .stDataFrame, [data-testid="stDataEditor"] { background-color: #1f2937; color: #fafafa; }
-            .stAlert { background-color: #1f2937; color: #fafafa; }
-            .stTextInput > div > div > input, .stSelectbox > div > div { background-color: #262730; color: #fafafa; }
-            .stCaption { color: #c0c0c0 !important; }  /* 說明文字對比 */
-            .stMarkdown { color: #fafafa !important; }
-            </style>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown("""
-            <style>
-            .stApp { background-color: #ffffff; color: #1a1a2e; }
-            .stSidebar { background-color: #f8f9fa !important; color: #1a1a2e !important; }
-            .stSidebar * { color: #1a1a2e !important; }
-            .stSidebar .stCaption, .stSidebar label, .stSidebar .stMarkdown { color: #333333 !important; }
-            .stButton > button { background-color: #f0f0f0; color: #1a1a2e; }
-            .kpi-card { background-color: #f8f9fa !important; border-left-color: #0B1E3D !important; }
-            .verse-card { 
-                background: linear-gradient(180deg, #f8f9fa 0%, #e8eef5 100%) !important; 
-                border: 2px solid #D4AF37; padding: 14px 12px; border-radius: 10px; 
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            }
-            .verse-card * { color: #1a1a2e !important; }
-            .verse-card p, .verse-card .stMarkdown { color: #0B1E3D !important; font-weight: 500; }
-            .reflection-box {
-                background-color: #e8eef5;
-                border-left: 5px solid #D4AF37;
-                padding: 10px 12px;
-                margin-top: 8px;
-                border-radius: 4px;
-                font-size: 12px;
-                color: #1a1a2e !important;
-            }
-            .stTextInput > div > div > input, .stSelectbox > div > div { background-color: #ffffff; color: #1a1a2e; }
-            </style>
-            """, unsafe_allow_html=True)
+        # Apply theme CSS via centralized module (sole source of truth after de-dupe).
+        # Base + dark/light overrides (strengthened contrast for placeholders, captions, labels, verse/reflection)
+        # live in roster/ui/theme.py (get_base_css / get_dark_css / get_light_css / apply_theme).
+        # Early apply in app.py main() + re-apply here after toggle ensures coverage + reactivity.
+        # Toggle logic and verse HTML enclosure remain unchanged.
+        theme.apply_theme()
 
         # ==================== 校徽（心理信任錨點） ====================
         show_logo = st.checkbox(_t("🖼️ 顯示校徽（畫面與 PDF）", "🖼️ Show School Badge (UI & PDF)"), value=True, key="show_logo_toggle")
@@ -208,7 +180,7 @@ def render_sidebar():
         uploaded_logo = st.file_uploader(_t("上傳自訂校徽 (PNG)", "Upload Custom Badge (PNG)"), type=["png"], key="logo_uploader")
         if uploaded_logo:
             st.session_state.logo_data = uploaded_logo.getvalue()
-            st.success(_t("✅ 校徽已更新", "✅ Badge updated"))
+            st.success(get_text("badge_updated"))
         elif show_logo and "logo_data" not in st.session_state:
             try:
                 with open("logo.png", "rb") as f:
@@ -219,7 +191,7 @@ def render_sidebar():
         st.divider()
 
         # ==================== 即時統計（公平感與成就感） ====================
-        st.subheader(_t("📊 即時累計統計", "📊 Live Statistics"))
+        st.subheader(get_text("live_statistics_subheader"))
         if not st.session_state.students_df.empty:
             total = len(st.session_state.students_df)
             total_points = st.session_state.students_df["history_weight"].sum()
@@ -228,17 +200,17 @@ def render_sidebar():
             st.metric(_t("累計總點數", "Total Points"), f"{total_points:.1f}")
             st.metric(_t("平均負荷", "Average Load"), f"{avg:.1f} {_t('點', 'pts')}")
         else:
-            st.info(_t("📌 請先載入名冊開始管理", "📌 Please load roster first to start management"))
+            st.info(get_text("load_roster_prompt"))
 
         st.divider()
 
         # ==================== 名冊管理（清晰 CTA） ====================
-        st.subheader(_t("🗄️ 名冊管理", "🗄️ Roster Management"))
+        st.subheader(get_text("roster_management_subheader"))
         col_demo, col_sample = st.columns(2)
         with col_demo:
             if st.button(_t("💡 一鍵載入官方示範名冊", "💡 One-Click Load Official Demo Roster")):
                 st.session_state.students_df = get_demo_dataframe()
-                st.success(_t("✅ 示範名冊載入完成", "✅ Demo roster loaded successfully"))
+                st.success(get_text("demo_roster_loaded"))
                 st.rerun()
         with col_sample:
             if st.button(_t("📥 下載格式範例", "📥 Download Format Example")):
@@ -257,16 +229,16 @@ def render_sidebar():
             if uploaded_roster and st.button(_t("🤖 AI 智能匹配", "🤖 AI Smart Match"), type="primary"):
                 smart_process_roster_import(uploaded_roster)
 
-        st.caption(_t("💡 AI 支援任意欄位順序，節省您的時間", "💡 AI supports any column order, saving your time"))
+        st.caption(get_text("ai_support_caption"))
 
         st.divider()
 
         # ==================== 名冊即時修改 ====================
-        st.subheader(_t("👥 名冊即時修改", "👥 Live Roster Edit"))
-        st.caption(_t("修改後自動儲存", "Auto-saved after modification"))
+        st.subheader(get_text("live_roster_edit_subheader"))
+        st.caption(get_text("auto_saved_caption"))
 
         # Quick Search & Filter (by name, form, role)
-        search_term = st.text_input(_t("🔍 快速搜尋學生 (Quick Search by name, form, role)", "🔍 Quick Search Student (by name, form, role)"), value=st.session_state.get("student_search", ""), key="student_search_input")
+        search_term = st.text_input(_t("🔍 快速搜尋學生 (Quick Search by name, form, role)", "🔍 Quick Search Student (Quick Search by name, form, role)"), value=st.session_state.get("student_search", ""), key="student_search_input", placeholder=_t("輸入姓名、年級或職級關鍵字", "Enter name, form or role keyword"))
         st.session_state.student_search = search_term
 
         # Always edit the full df for persistence; show filtered view below if searching
@@ -298,19 +270,19 @@ def render_sidebar():
         st.divider()
 
         # ==================== AI 解析 ====================
-        st.subheader(_t("🤖 AI 智能解析", "🤖 AI Smart Parse"))
+        st.subheader(get_text("ai_smart_parse_subheader"))
         if st.button(_t("🚀 執行 AI 解析 Remarks", "🚀 Run AI Parse Remarks"), type="secondary"):
             with st.spinner(_t("AI 正在智能分析...", "AI is intelligently analyzing...")):
                 updated_df = ai_parse_remarks(st.session_state.students_df)
                 st.session_state.students_df = updated_df
-                st.success(_t("✅ AI 已自動更新固定值班、可值班日與職級", "✅ AI has auto-updated fixed duties, available days, and roles"))
+                st.success(get_text("ai_parse_success"))
                 trigger_backup_reminder()  # 重要操作提醒
                 st.rerun()
 
         st.divider()
 
         # ==================== 請假登記 ====================
-        st.subheader(_t("🛑 請假登記", "🛑 Leave Registration"))
+        st.subheader(get_text("leave_registration_subheader"))
         valid_names = [str(name).strip() for name in st.session_state.students_df["name"].dropna() if str(name).strip()]
         st.session_state.leave_tracker_input = st.multiselect(
             _t("今日請假人員（可多選）", "Today's Leave Personnel (multi-select)"),
@@ -321,9 +293,9 @@ def render_sidebar():
         st.divider()
 
         # ==================== 智慧自動完成輸入 (Smart Autocomplete for Adding Students) ====================
-        st.subheader(_t("➕ 智慧新增學生 (Smart Autocomplete)", "➕ Smart Add Student (Autocomplete)"))
-        st.caption(_t("輸入姓名，選擇職級 (僅三種選項)，快速新增", "Enter name, select role (only 3 options), quick add"))
-        new_name = st.text_input(_t("姓名 (Name)", "Name (Name)"), key="new_name_input")
+        st.subheader(get_text("smart_add_student_subheader"))
+        st.caption(get_text("smart_add_student_caption"))
+        new_name = st.text_input(_t("姓名 (Name)", "Name (Name)"), key="new_name_input", placeholder=_t("輸入學生姓名", "Enter student name"))
         new_role = st.selectbox(_t("職級 (Role)", "Role (Role)"), ["首席導學風紀", "助理首席導學風紀", "導學風紀"], key="new_role_select")
         if st.button(_t("新增學生 (Add Student)", "Add Student (Add Student)"), key="add_student_btn") and new_name.strip():
             new_row = pd.DataFrame([{
@@ -338,17 +310,17 @@ def render_sidebar():
                 "remarks": ""
             }])
             st.session_state.students_df = pd.concat([st.session_state.students_df, new_row], ignore_index=True)
-            st.success(_t(f"已新增 {new_name.strip()} ({new_role})", f"Added {new_name.strip()} ({new_role})"))
+            st.success(get_text("student_added", name=new_name.strip(), role=new_role))
             st.rerun()
 
         st.divider()
 
         # ==================== 批量管理 (Batch Leave & Fixed Duty - High Priority) ====================
-        st.subheader(_t("📋 批量管理", "📋 Batch Management"))
-        st.caption(_t("一次選擇多名學生，批量設定請假或固定值班（方便 Head / AHP 操作）", "Select multiple students for batch leave or fixed duty (convenient for Head / AHP)"))
+        st.subheader(get_text("batch_management_subheader"))
+        st.caption(get_text("batch_manage_caption"))
         valid_names = [str(name).strip() for name in st.session_state.students_df["name"].dropna() if str(name).strip()]
         bulk_selected = st.multiselect(
-            "選擇學生（可多選）",
+            _t("選擇學生（可多選）", "Select Students (multi-select)"),
             options=valid_names,
             default=st.session_state.get("selected_students_for_bulk", []),
             key="bulk_students"
@@ -362,7 +334,9 @@ def render_sidebar():
                     current_leave = set(st.session_state.get("leave_tracker_input", []))
                     current_leave.update(bulk_selected)
                     st.session_state.leave_tracker_input = list(current_leave)
-                    st.success(_t(f"✅ 已為 {len(bulk_selected)} 位學生批量設定請假。請記得在生成排班時套用，並下載 JSON 備份（建議 commit 到 GitHub backups/ 資料夾）。", f"✅ Batch leave set for {len(bulk_selected)} students. Remember to apply when generating roster and download JSON backup (recommend commit to GitHub backups/ folder)."))
+                    # Safe pattern: assemble first, then get_text (no f-string inside _t)
+                    count = len(bulk_selected)
+                    st.success(get_text("batch_leave_success", count=count))
                     st.session_state.selected_students_for_bulk = []
                     trigger_backup_reminder()
                     st.rerun()
@@ -375,7 +349,8 @@ def render_sidebar():
                         if mask.any():
                             st.session_state.students_df.loc[mask, "fixed_general_duty"] = bulk_day
                             updated += 1
-                    st.success(_t(f"✅ 已為 {updated} 位學生設定固定 {bulk_day}。請下載 JSON 備份以保存變更，並建議上傳到 GitHub backups/ 資料夾。", f"✅ Fixed {bulk_day} set for {updated} students. Please download JSON backup to save changes and recommend upload to GitHub backups/ folder."))
+                    # Safe pattern: assemble first, then get_text
+                    st.success(get_text("batch_fixed_success", count=updated, day=bulk_day))
                     st.session_state.selected_students_for_bulk = []
                     trigger_backup_reminder()
                     st.rerun()
@@ -386,8 +361,8 @@ def render_sidebar():
         st.divider()
 
         # ==================== Cloud 備份與還原 ====================
-        st.subheader(_t("💾 Cloud 備份與還原", "💾 Cloud Backup & Restore"))
-        st.caption(_t("⚠️ Streamlit Cloud 為無狀態環境，資料可能因休眠或重啟而遺失，請務必做好備份！", "⚠️ Streamlit Cloud is stateless. Data may be lost on sleep or restart. Always backup!"))
+        st.subheader(get_text("cloud_backup_subheader"))
+        st.caption(get_text("cloud_stateless_caption"))
 
         # 備份說明（清楚解釋靜態/動態、JSON 與 PDF 的角色） - 內容固定英文 key 概念，但顯示跟語言
         backup_explain_zh = """
@@ -410,7 +385,7 @@ def render_sidebar():
 
         # 自動備份提醒
         if st.session_state.get("backup_reminder", False):
-            st.warning(_t("🔔 重要操作完成！強烈建議立即下載 JSON 備份（動態數據），並將重要版本上傳到 GitHub 的 backups/ 資料夾長期保存，以避免資料遺失。", "🔔 Important operation completed! Strongly recommend downloading JSON backup (dynamic data) immediately and uploading important versions to GitHub backups/ folder for long-term storage to avoid data loss."))
+            st.warning(get_text("backup_warning_important"))
             if st.button(_t("立即備份", "Backup Now"), key="reminder_backup", type="primary"):
                 backup_json = export_system_backup(st.session_state.get("master_report_df", pd.DataFrame()))
                 st.download_button(_t("📥 下載備份 JSON", "📥 Download Backup JSON"), backup_json, f"SYSS_Backup_{datetime.date.today().strftime('%Y%m%d_%H%M')}.json")
@@ -431,14 +406,14 @@ def render_sidebar():
         # 多版本備份管理（從 session history）
         history = get_backup_history()
         if history:
-            st.caption(_t(f"📚 本次工作階段備份歷史（共 {len(history)} 個，最新在前）", f"📚 Backup history this session ({len(history)} total, newest first)"))
+            st.caption(get_text("backup_history_caption", count=len(history)))
             for i, entry in enumerate(reversed(history[-5:])):  # 顯示最近 5 個
                 label = f"v{entry.get('version', i+1)} - {entry['timestamp'][:16]}"
                 col1, col2 = st.columns([3, 1])
                 with col1:
                     st.caption(label)
                 with col2:
-                    if st.button(_t("下載", "Download"), key=f"dl_hist_{i}", help=f"下載 {label}"):
+                    if st.button(_t("下載", "Download"), key=f"dl_hist_{i}", help=_t(f"下載 {label}", f"Download {label}")):
                         st.download_button(
                             f"📥 {label}.json",
                             entry["json"],
@@ -451,7 +426,7 @@ def render_sidebar():
                         st.rerun()
 
         # 還原區塊（含驗證 + 模式選擇）
-        st.caption(_t("上傳備份 JSON 進行還原", "Upload backup JSON to restore"))
+        st.caption(get_text("upload_backup_label"))
         uploaded_backup = st.file_uploader(
             _t("選擇備份檔案 (.json)", "Select backup file (.json)"),
             type=["json"],
@@ -462,15 +437,15 @@ def render_sidebar():
         # 如果有 pending 歷史版本，顯示提示
         pending_json = st.session_state.get("pending_restore_json")
         if pending_json:
-            st.info(_t("已選擇歷史版本。請選擇還原模式後點擊還原。", "History version selected. Please choose restore mode then click restore."))
+            st.info(get_text("history_version_selected_info"))
             restore_mode = st.radio(
                 _t("還原模式", "Restore Mode"),
-                [_t("Full Replace（完全取代）", "Full Replace（Complete Replace）"), _t("Smart Merge（智慧合併）", "Smart Merge（Smart Merge）")],
+                [get_text("restore_mode_full"), get_text("restore_mode_smart")],
                 index=0,
                 key="restore_mode_hist",
                 horizontal=True
             )
-            if st.button(_t("🔄 執行還原此版本", "🔄 Execute Restore this version"), type="primary", use_container_width=True, key="restore_hist_btn"):
+            if st.button(get_text("execute_restore_button"), type="primary", use_container_width=True, key="restore_hist_btn"):
                 # 模擬檔案上傳
                 import io
                 fake_file = io.BytesIO(pending_json.encode('utf-8'))
@@ -478,7 +453,7 @@ def render_sidebar():
                 import_system_backup(fake_file, replace_mode=mode)
                 st.session_state.pop("pending_restore_json", None)
                 st.rerun()
-            if st.button(_t("取消選擇", "Cancel Selection"), key="cancel_hist"):
+            if st.button(get_text("cancel_selection_button"), key="cancel_hist"):
                 st.session_state.pop("pending_restore_json", None)
                 st.rerun()
 
@@ -501,14 +476,19 @@ def render_sidebar():
             st.caption(f"{_t('上次成功備份時間', 'Last successful backup time')}: {last_backup[:16]}")
 
         # 長期保存引導（溫和建議）
-        st.caption(_t("💡 長期保存建議：重要的 JSON 備份，請手動上傳至 GitHub 倉庫的 `backups/` 資料夾（例如命名為 backup_2026-06-13_週三.json），以進行版本控制與災難恢復。即使本地遺失，也能從 GitHub 還原。", "💡 Long-term storage tip: Please manually upload important JSON backups to the GitHub repo's `backups/` folder (e.g. named backup_2026-06-13_Wed.json) for version control and disaster recovery. Even if local data is lost, it can be restored from GitHub."))
+        st.caption(get_text("long_term_storage_tip"))
 
 
 def render_control_buttons():
     """主畫面控制按鈕 - 清晰、突出主要行動"""
     closure_options = [f"{d} - {room}" for d in DAYS for room in ["Room302", "Room303", "Room202"]
                        if not (room == "Room202" and d in ["TUESDAY", "FRIDAY"])]
-    selected_closures = st.multiselect(_t("🛠️ 本週特殊不開放時段", "🛠️ This week's special closed periods"), options=closure_options, key="special_closures")
+    selected_closures = st.multiselect(
+        get_text("special_unavailable_label"),
+        options=closure_options,
+        key="special_closures",
+        help=get_text("special_unavailable_help")
+    )
 
     col1, col2 = st.columns([3, 1])
     with col1:
@@ -534,7 +514,8 @@ def render_control_buttons():
                     "report_df": st.session_state.get("master_report_df", pd.DataFrame()).to_dict() if not st.session_state.get("master_report_df", pd.DataFrame()).empty else {}
                 })
                 st.session_state.roster_versions = versions
-                st.success(_t(f"✅ 排班完成！（全局負荷倍率：{global_multiplier:.1f}） 已儲存版本 #{version_num}。請記得下載 JSON 備份，並建議將重要版本上傳到 GitHub backups/ 資料夾長期保存。", f"✅ Roster complete! (Global load multiplier: {global_multiplier:.1f}) Version #{version_num} saved. Remember to download JSON backup and recommend uploading important versions to GitHub backups/ folder for long-term storage."))
+                # Safe pattern: assemble first then get_text (key handles the full text + advice)
+                st.success(get_text("roster_complete_success", multiplier=global_multiplier, version=version_num))
 
                 # Auto update semester hours (1 hour per duty slot)
                 for name in st.session_state.students_df["name"].dropna().astype(str).str.strip():
@@ -551,7 +532,7 @@ def render_control_buttons():
             st.session_state.show_clear_confirm = True
 
     if st.session_state.get("show_clear_confirm", False):
-        st.error(_t("⚠️ 確定要清除全部排班？此操作無法復原！", "⚠️ Confirm to clear all roster? This cannot be undone!"))
+        st.error(get_text("clear_roster_confirm_error"))
         c1, c2 = st.columns(2)
         if c1.button(_t("💥 確定清空", "💥 Confirm Clear")):
             st.session_state.roster_df = pd.DataFrame(index=get_roster_rows(), columns=DAYS).fillna("")

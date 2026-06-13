@@ -117,6 +117,12 @@ def initialize_session_state():
     if 'theme' not in st.session_state:
         st.session_state.theme = 'light'
 
+    if 'high_contrast' not in st.session_state:
+        st.session_state.high_contrast = False
+
+    if 'hc_previous_theme' not in st.session_state:
+        st.session_state.hc_previous_theme = None
+
     if 'ui_language' not in st.session_state:
         st.session_state.ui_language = 'zh'  # 'zh' or 'en', but UI primarily Chinese per requirements
 

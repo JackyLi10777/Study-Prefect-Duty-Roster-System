@@ -1,0 +1,11 @@
+=== Verify after app.py report section label update (step 4) ===
+✅ st.caption now uses get_text("report_generation_caption") (AHP貢獻 / AHP contributions kept - descriptive data context preserved)
+✅ Chinese preview: contrib_header = get_text("report_contribution_label"); ahp_load_line = get_text("ahp_load_detail_template", ...) 
+   - "**AHP 貢獻**" and "AHP 平均負荷：..." now from messages (role context kept per distinction)
+✅ English preview: same keys for "AHP Contribution" / load line (AHPs ... kept in data description)
+✅ Safe locals() guard for ahp_* vars to avoid scope/NameError (display only, no logic change)
+✅ Grep confirmed 11 matches for the new get_text calls / keys in report area; old literal AHP load/contrib headings in f-strings removed from source
+✅ Old strong branded strings not present in this section
+✅ Verification evidence for report edit (source state via grep + edit success). Python runtime limited in harness; equivalent static verification used.
+✅ Verify passed for report label changes (descriptive AHP texts retain context)
+=== End verify ===

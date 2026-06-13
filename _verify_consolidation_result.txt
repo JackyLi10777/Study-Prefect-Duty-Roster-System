@@ -1,0 +1,27 @@
+=== Architecture Consolidation Verification ===
+Post Theme Inc 3: light cleanup of inline style debt (the edit-hint in app.py).
+
+✅ 1. AST parse of app.py: SUCCESS (after inline style cleanup)
+✅ 2. import app: SUCCESS
+
+✅ 3. Static evidence for debt cleanup + preservation: COMPLETE
+✅ Inline style='font-size:13px; color:#666;' removed from the manual edit hint in app.py
+✅ Now uses class="edit-hint"
+✅ .edit-hint rule present in base CSS (light mode: font-size + color #666)
+✅ .edit-hint override in dark mode (color via --dark-text-secondary var)
+✅ .edit-hint override in HC mode (color via --hc-text var)
+✅ Verse enclosure + gold rules untouched in theme.py (verse-card, accent-gold, verse-inner still present)
+✅ Theme centralization (base/apply_theme) intact
+
+✅ Consolidation cleanup verification: PASSED
+   - Low-priority inline style debt cleaned (style -> class + CSS rules in theme)
+   - No regression: verse enclosure, gold #D4AF37, dark/light visuals, HC unchanged
+   - Zero impact on backup/core (display layer only; one small UI hint cleanup)
+
+Evidence:
+- Grep app.py: only 'class="edit-hint"' remains for the hint (no color:#666 inline).
+- Grep theme.py: .edit-hint in base (line ~137), dark (~220), HC (~355).
+- The p[style*="color:#666"] selectors in dark/HC remain (harmless legacy support).
+- All prior verse/gold selectors and structure in theme.py unchanged by this cleanup.
+
+=== End of verification ===

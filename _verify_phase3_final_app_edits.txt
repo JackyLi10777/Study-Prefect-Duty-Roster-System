@@ -1,0 +1,6 @@
+=== Additional verify after final app.py prompt/backup reminder edits (Phase 3) ===
+✅ audit_table_info, history_trend_prompt, post_duty_leave_*, export_section_*, important_backup_reminder, fairness/overall monitoring keys used.
+✅ Old _t removed for these.
+✅ Safe get_text.
+✅ Verify passed (combined with previous report/cert verifies).
+=== End ===

@@ -1,0 +1,8 @@
+=== Verify after app.py cert signer update (step 5) ===
+✅ "Head Study Prefect" (strong role-branded signer) in cert_lines replaced with get_text("certificate_signer")
+✅ New signer will render as neutral "團隊負責人" / "Team Leader" in the on-screen preview text_area (zh/en via messages)
+✅ Grep: "Head Study Prefect" no longer appears in the cert construction (only historical in other non-UI contexts like author/docstrings if any)
+✅ Note: generate_service_certificate() call and utils/pdf.py untouched (zero impact on actual PDF export / data)
+✅ Verification for cert edit (strong label neutralized). 
+✅ Verify passed for cert signer change
+=== End verify ===
