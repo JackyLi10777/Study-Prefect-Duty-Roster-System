@@ -712,8 +712,6 @@ This system promotes fairness, equity, and a culture of service, helping prefect
                     "application/pdf",
                     use_container_width=True
                 )
-                    use_container_width=True
-                )
 
     with col2:
         export_report = get_export_report_df(st.session_state.master_report_df)
