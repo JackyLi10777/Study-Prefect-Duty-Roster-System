@@ -54,8 +54,11 @@ def get_base_css() -> str:
         --dark-surface-2: #1f2937;
         --dark-surface-3: #262730;
         --dark-text: #fafafa;
-        --dark-text-secondary: #f0f0f0;
+        --dark-text-secondary: #f3f4f6;
         --dark-text-tertiary: #ffeb3b;
+        /* Improved dark contrast vars for verse/reflection (brighter for readability on dark bg while preserving enclosure) */
+        --dark-verse-text: #fafafa;
+        --dark-reflection-text: #f1f5f9;
 
         /* Light theme palette */
         --light-bg: #ffffff;
@@ -135,6 +138,16 @@ def get_base_css() -> str:
     }
     footer {visibility: hidden;}
     .edit-hint { font-size:13px; color:#666; }
+
+    /* Smooth Dark/Light mode transitions (targeted, low-risk; makes toggle feel fluid without flicker on key surfaces like verse box, sidebar, text).
+       Transitions on color/bg/border/shadow only. Does not affect layout, HC, or enclosure structure. */
+    .stApp, .stSidebar, .verse-card, .kpi-card, .stButton > button,
+    input, textarea, .stTextInput input, .stSelectbox > div > div,
+    .stMarkdown, .stCaption, label, small, .stExpander, .stTabs,
+    .stMetric, .stDataFrame, .stAlert {
+        transition: background-color 0.18s ease-out, color 0.18s ease-out, border-color 0.18s ease-out, box-shadow 0.18s ease-out;
+    }
+
     @media (max-width: 768px) {
         .main-title { font-size: 26px; }
         .kpi-card .value { font-size: 16px; }
@@ -181,7 +194,7 @@ def get_dark_css() -> str:
     }
     .verse-card .verse-title { color: var(--verse-title-accent) !important; font-size: 17px !important; margin: 0 0 4px 0 !important; }
     .verse-card .verse-ref { color: var(--verse-title-accent) !important; font-weight: 600 !important; margin: 2px 0 !important; }
-    .verse-card .verse-text { color: #ffffff !important; font-size: 14px !important; line-height: 1.55 !important; margin: 2px 0 8px 0 !important; }
+    .verse-card .verse-text { color: var(--dark-verse-text) !important; font-size: 14px !important; line-height: 1.55 !important; margin: 2px 0 8px 0 !important; }
     .verse-card .verse-footer { color: var(--dark-text-secondary) !important; font-size: 10px !important; margin-top: 6px !important; opacity: 0.9 !important; }
     .verse-card .reflection-box {
         background-color: var(--verse-reflection-bg-dark) !important;
@@ -190,11 +203,13 @@ def get_dark_css() -> str:
         margin: 6px 0 2px 0 !important;
         border-radius: 4px !important;
         font-size: 12.5px !important;
-        color: var(--dark-text-secondary) !important;
+        color: var(--dark-reflection-text) !important;
         box-shadow: none !important;
         box-sizing: border-box !important;
         max-width: 100% !important;
     }
+    .verse-card .reflection-box,
+    .verse-card .reflection-box * { color: var(--dark-reflection-text) !important; }
     .verse-card .reflection-box strong { color: var(--verse-title-accent) !important; }
     .stDataFrame, [data-testid="stDataEditor"] { background-color: var(--dark-surface-2); color: var(--dark-text); }
     .stAlert { background-color: var(--dark-surface-2); color: var(--dark-text); }
@@ -210,8 +225,9 @@ def get_dark_css() -> str:
     .stMultiSelect label + div, .stMultiSelect .stHelp { color: var(--dark-text-secondary) !important; }
 
     /* Ensure verse/reflection remain high contrast and enclosed (vars + explicit for robustness) */
-    .verse-card .verse-text { color: #ffffff !important; }
-    .verse-card .reflection-box { color: var(--dark-text-secondary) !important; }
+    .verse-card .verse-text { color: var(--dark-verse-text) !important; }
+    .verse-card .reflection-box,
+    .verse-card .reflection-box * { color: var(--dark-reflection-text) !important; }
 
     /* Hardened dark contrast for secondary labels (metrics, kpi .label), inline hints, expanders/tabs */
     .stMetric label, .stMetric [data-testid="stMetricLabel"], .stMetric .stMarkdown { color: var(--dark-text-secondary) !important; }

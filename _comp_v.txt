@@ -1,0 +1,7 @@
+HAS_INNER:False
+COMPONENTS_OK
+DATA_EDITOR_FIXED
+VERIFIED: UnboundLocalError for local variable 'io' -- FIXED in render_sidebar.
+The import io is at top of file (line 13); the erroneous inner 'import io' inside the restore button handler (which made 'io' a local var for the entire render_sidebar function, causing unbound when io.BytesIO ref in earlier download button code path was hit) has been removed.
+Minimal change: deleted one line.
+Student data editor (and all sidebar) now renders without the UnboundLocal on 'io'. Other functionality untouched.

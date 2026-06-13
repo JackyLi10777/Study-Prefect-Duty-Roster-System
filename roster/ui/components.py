@@ -447,7 +447,6 @@ def render_sidebar():
             )
             if st.button(get_text("execute_restore_button"), type="primary", use_container_width=True, key="restore_hist_btn"):
                 # 模擬檔案上傳
-                import io
                 fake_file = io.BytesIO(pending_json.encode('utf-8'))
                 mode = "full" if "Full" in restore_mode else "smart_merge"
                 import_system_backup(fake_file, replace_mode=mode)

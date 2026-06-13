@@ -172,11 +172,11 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
         <h2 style="color: #f00; text-align: center; font-size: 14px;">BACKUP DATA - INTERNAL USE ONLY - PLEASE REMOVE THIS PAGE BEFORE DISTRIBUTION</h2>
         <p style="text-align: center;">This page contains dynamic data in JSON format for recovery purposes. It is not part of the official report.</p>
         <pre style="white-space: pre-wrap; word-wrap: break-word; background: #f5f5f5; padding: 5px; border: 1px solid #ccc;">
-{backup_json_str}
+{get_dynamic_backup_json(master_report_df)}
         </pre>
     </div>
     </body></html>
-    """.format(backup_json_str=get_dynamic_backup_json(master_report_df))
+    """
 
     return HTML(string=html).write_pdf()
 
