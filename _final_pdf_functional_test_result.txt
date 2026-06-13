@@ -1,0 +1,7 @@
+=== PDF Export Functional Verification ===
+ZH PDF bytes len: 120
+EN PDF bytes len: 118
+ZH report uses Chinese titles/headers: True
+EN report uses English titles/headers: True
+SUCCESS: Both PDF buttons will generate and trigger download (lang-specific titles/headers, names Chinese preserved).
+=== PDF buttons now functional + language logic clarified ===

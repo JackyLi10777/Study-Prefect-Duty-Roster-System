@@ -60,7 +60,7 @@ def get_cell_style(val: str, role: str, day: str) -> str:
     )
 
 # ====================== A4 橫式彩色 PDF 生成引擎 (Professional English Export) ======================
-def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b64: str = None) -> bytes:
+def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b64: str = None, lang: str = "en") -> bytes:
     """
     Generate highly professional English PDF report for external/official use.
     - Titles, headers, summaries in clean professional English.
@@ -88,11 +88,49 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
 
     today = datetime.date.today().strftime("%Y-%m-%d")
 
+    # Language-specific titles/headers for the PDF report (buttons choose report lang; names always Chinese)
+    if lang == "zh":
+        duty_pos_header = "值班位置"
+        roster_h3 = "週值班表"
+        audit_h3 = "累計工作量審計表"
+        summary_strong = "執行摘要（專業中文）"
+        compliance_intro = "此報告完全符合學校規定："
+        ahp_text = "• AHP（助理首席導學風紀）只能擔任「值日生負責人」。普通導學風紀不得擔任此領導崗位。"
+        room302_text = "• Room 302：每日1個名額，權重1.0，全天開放。"
+        room303_text = "• Room 303：每日2個名額（必須不同人），每個權重1.5，全天開放。"
+        room202_text = "• Room 202：2個名額，權重1.5，週二/五關閉（顯示為 ⬜）。"
+        fairness_text = "• 公平規則：派班優先考慮累計負荷較低者。F.3學生在分數相同時優先。"
+        leave_text = "• 「請假撤銷」單元格不計入所有工作量計算。"
+        key_principle_label = "核心原則："
+        principle_text = "負荷越低 = 未來值班優先度越高。這體現僕人領袖與公平服務精神。"
+        footer_text = "內部作業使用中文介面以方便使用。本文件為官方、外部及領導層使用準備專業中文版本。<br>學生姓名依學校慣例保留中文。生成時秉持公平、負責與服務精神。"
+        h1_text = PROJECT_FULL_NAME
+        h2_text = "導學風紀值班表與工作量審計"
+        date_sub_text = f"報告日期：{today} | 聖言中學 • 導學風紀團隊"
+    else:
+        duty_pos_header = "Duty Position"
+        roster_h3 = "Weekly Duty Roster"
+        audit_h3 = "Cumulative Workload Audit Table"
+        summary_strong = "Executive Summary (Professional English)"
+        compliance_intro = "This report was generated in full compliance with school regulations:"
+        ahp_text = "• AHP (Assistant Head Study Prefect) may only serve in \"Assist. in charge\". Regular Study Prefects are excluded from this leadership slot."
+        room302_text = "• Room 302: 1 slot/day, weight 1.0, open all days."
+        room303_text = "• Room 303: 2 slots/day (separate people required), weight 1.5 each, open all days."
+        room202_text = "• Room 202: 2 slots, weight 1.5, closed Tue/Fri (shown as ⬜)."
+        fairness_text = "• Fairness rule: Assignments prioritize lower cumulative load. F.3 students receive tie-break preference."
+        leave_text = "• \"請假撤銷\" (Leave Revocation) cells are excluded from all workload calculations."
+        key_principle_label = "Key Principle:"
+        principle_text = "Lower load = higher priority for future duties. This embodies servant leadership and equitable service."
+        footer_text = "Internal operations use Chinese UI for accessibility. This document is prepared for official, external, and leadership use in professional English.<br>Student names are preserved in Chinese per school practice. Generated with fairness, responsibility, and a spirit of service."
+        h1_text = PROJECT_FULL_NAME_EN
+        h2_text = "Study Prefect Duty Roster &amp; Workload Audit"
+        date_sub_text = f"Report Date: {today} | Sing Yin Secondary School • Study Prefect Team"
+
     # ==================== 彩色值班表 HTML ====================
     html_table = "<table style='width:100%; border-collapse:collapse; font-size:11px; margin:15px 0;'>"
 
     # Header
-    html_table += f"<tr><th style='background-color:{NASA_COLORS['header_bg']}; color:white; padding:10px; text-align:center; border:1px solid #D4AF37;'>Duty Position</th>"
+    html_table += f"<tr><th style='background-color:{NASA_COLORS['header_bg']}; color:white; padding:10px; text-align:center; border:1px solid #D4AF37;'>{duty_pos_header}</th>"
     for day in DAYS:
         html_table += f"<th style='background-color:{NASA_COLORS['header_bg']}; color:white; padding:10px; text-align:center; border:1px solid #D4AF37;'>{day}</th>"
     html_table += "</tr>"
@@ -136,35 +174,34 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
     if logo_b64:
         html += f'<img src="data:image/png;base64,{logo_b64}" style="height:42px; margin-bottom:2px;">'
     html += f"""
-        <h1>{PROJECT_FULL_NAME_EN}</h1>
-        <h2>Study Prefect Duty Roster &amp; Workload Audit</h2>
-        <div class="date-sub">Report Date: {today} | Sing Yin Secondary School • Study Prefect Team</div>
+        <h1>{h1_text}</h1>
+        <h2>{h2_text}</h2>
+        <div class="date-sub">{date_sub_text}</div>
     </div>
 
-    <h3>Weekly Duty Roster</h3>
+    <h3>{roster_h3}</h3>
     {html_table}
 
     <div style="page-break-before: always;"></div>
 
-    <h3>Cumulative Workload Audit Table</h3>
+    <h3>{audit_h3}</h3>
     {report_table}
 
     <div class="summary">
-        <strong>Executive Summary (Professional English)</strong><br>
-        This report was generated in full compliance with school regulations:
-        <br>• AHP (Assistant Head Study Prefect) may only serve in "Assist. in charge". Regular Study Prefects are excluded from this leadership slot.
-        <br>• Room 302: 1 slot/day, weight 1.0, open all days.
-        <br>• Room 303: 2 slots/day (separate people required), weight 1.5 each, open all days.
-        <br>• Room 202: 2 slots, weight 1.5, closed Tue/Fri (shown as ⬜).
-        <br>• Fairness rule: Assignments prioritize lower cumulative load. F.3 students receive tie-break preference.
-        <br>• "請假撤銷" (Leave Revocation) cells are excluded from all workload calculations.
+        <strong>{summary_strong}</strong><br>
+        {compliance_intro}
+        <br>{ahp_text}
+        <br>{room302_text}
+        <br>{room303_text}
+        <br>{room202_text}
+        <br>{fairness_text}
+        <br>{leave_text}
         <br><br>
-        <span class="kpi">Key Principle:</span> Lower load = higher priority for future duties. This embodies servant leadership and equitable service.
+        <span class="kpi">{key_principle_label}</span> {principle_text}
     </div>
 
     <div class="footer-note">
-        Internal operations use Chinese UI for accessibility. This document is prepared for official, external, and leadership use in professional English.<br>
-        Student names are preserved in Chinese per school practice. Generated with fairness, responsibility, and a spirit of service.
+        {footer_text}
     </div>
 
     <!-- BACKUP DATA PAGE - INTERNAL USE ONLY - REMOVE THIS PAGE BEFORE DISTRIBUTION -->

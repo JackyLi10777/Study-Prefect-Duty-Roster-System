@@ -226,6 +226,9 @@ def get_dark_css() -> str:
     /* Targeted stronger contrast for special labels/captions like "🛠️ 本週特殊不開放時段" and similar in dark (uses improved secondary) */
     .stMultiSelect label, .stMultiSelect > label, div[data-baseweb="select"] > label { color: var(--dark-text) !important; }
 
+    /* Improve contrast for subheaders and titles (e.g. fairness "全體領袖生加權工作量天平..." and leave adjustment subheaders/captions) in Dark Mode */
+    .stSubheader, h2, h3 { color: var(--dark-text) !important; }
+
     /* Ensure verse/reflection remain high contrast and enclosed (vars + explicit for robustness) */
     .verse-card .verse-text { color: var(--dark-verse-text) !important; }
     .verse-card .reflection-box,
@@ -371,6 +374,9 @@ def get_high_contrast_css() -> str:
     .kpi-card .label { color: var(--hc-text) !important; }
     p[style*="color:#666"], p[style*="color: #666"] { color: var(--hc-text) !important; }
     .edit-hint { color: var(--hc-text) !important; }
+
+    /* Improve contrast for subheaders/titles and captions (e.g. the mentioned fairness and leave adjustment texts) in High Contrast mode */
+    .stSubheader, h2, h3, .stCaption { color: var(--hc-text) !important; }
 
     /* Inputs, buttons, dataframes etc. with high contrast borders/states */
     .stButton > button { background-color: var(--hc-surface); color: var(--hc-text); border: 2px solid var(--hc-border); }

@@ -1,0 +1,8 @@
+Theme loaded
+dark secondary brighter: True
+dark subheader rule: True
+hc subheader/caption rule: True
+verse gold preserved in dark: True
+HC untouched gold structure: True
+Contrast fixes + enclosure ok
+The mentioned texts (fairness title and leave adjustment) will now have high contrast in dark/HC via subheader + caption rules + brighter secondary. No change to gold/verse paddings.
