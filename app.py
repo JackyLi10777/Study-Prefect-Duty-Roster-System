@@ -153,7 +153,7 @@ def main():
     # Enhanced Daily Verse with optional bilingual (evangelical-theology + streamlit-best-practices)
     show_daily_verse()
 
-    with st.expander("📖 點此展開完整使用說明書（v2.3 Final）", expanded=False):
+    with st.expander(_t("📖 點此展開完整使用說明書（v2.3 Final）", "📖 Click to expand full user manual (v2.3 Final)"), expanded=False):
         st.markdown(HELP_TEXT)
 
     st.write("---")
@@ -187,25 +187,25 @@ def main():
 
     # ====================== 警告顯示 ======================
     if audit_results["typo"][0]:
-        st.markdown('<div class="danger-alert"><b>⚠️ 數據不符警告：</b><br>' + '<br>'.join(audit_results["typo"][1]) + '</div>', unsafe_allow_html=True)
+        st.markdown('<div class="danger-alert"><b>' + _t("⚠️ 數據不符警告：", "⚠️ Data Mismatch Warning:") + '</b><br>' + '<br>'.join(audit_results["typo"][1]) + '</div>', unsafe_allow_html=True)
     if audit_results["duplicate"][0]:
-        st.markdown('<div class="danger-alert"><b>⚠️ 重複排班警告：</b><br>' + '<br>'.join(audit_results["duplicate"][1]) + '</div>', unsafe_allow_html=True)
+        st.markdown('<div class="danger-alert"><b>' + _t("⚠️ 重複排班警告：", "⚠️ Duplicate Duty Warning:") + '</b><br>' + '<br>'.join(audit_results["duplicate"][1]) + '</div>', unsafe_allow_html=True)
     if audit_results["leave_conflict"][0]:
-        st.markdown('<div class="danger-alert"><b>🛑 請假衝突：</b><br>' + '<br>'.join(audit_results["leave_conflict"][1]) + '</div>', unsafe_allow_html=True)
-        if st.button("🩹 一鍵清除請假同學", type="primary"):
+        st.markdown('<div class="danger-alert"><b>' + _t("🛑 請假衝突：", "🛑 Leave Conflict:") + '</b><br>' + '<br>'.join(audit_results["leave_conflict"][1]) + '</div>', unsafe_allow_html=True)
+        if st.button(_t("🩹 一鍵清除請假同學", "🩹 One-Click Clear Leave Students"), type="primary"):
             for d in DAYS:
                 for r in ROWS_ROSTER:
                     if str(st.session_state.roster_df.at[r, d]).strip() in st.session_state.leave_tracker_input:
                         st.session_state.roster_df.at[r, d] = ""
-            st.success("✅ 已清除請假同學")
+            st.success(_t("✅ 已清除請假同學", "✅ Leave students cleared"))
             st.rerun()
     elif audit_results["vacuum"][0]:
-        st.markdown('<div class="warning-alert"><b>💡 空缺提示：</b><br>' + '<br>'.join(audit_results["vacuum"][1]) + '</div>', unsafe_allow_html=True)
+        st.markdown('<div class="warning-alert"><b>' + _t("💡 空缺提示：", "💡 Vacancy Notice:") + '</b><br>' + '<br>'.join(audit_results["vacuum"][1]) + '</div>', unsafe_allow_html=True)
 
     # ====================== 值班表 ======================
     st.write("---")
     st.subheader(_t("📅 本週值班表", "📅 This Week's Roster"))
-    tab_view, tab_edit = st.tabs(["📅 視覺公告版", "✏️ 手動修改版"])
+    tab_view, tab_edit = st.tabs([_t("📅 視覺公告版", "📅 Visual Board"), _t("✏️ 手動修改版", "✏️ Manual Edit Mode")])
 
     def apply_cell_style(val, role, day):
         val = str(val).strip()
@@ -223,13 +223,13 @@ def main():
 
     with tab_view:
         # Quick Search & Filter for roster
-        roster_search = st.text_input("🔍 快速搜尋值班表 (Quick Search by role)", value=st.session_state.get("roster_search", ""), key="roster_search_input")
+        roster_search = st.text_input(_t("🔍 快速搜尋值班表 (Quick Search by role)", "🔍 Quick Search Roster (Quick Search by role)"), value=st.session_state.get("roster_search", ""), key="roster_search_input")
         st.session_state.roster_search = roster_search
         roster_display = st.session_state.roster_df
         if roster_search:
             mask = roster_display.index.astype(str).str.contains(roster_search, case=False, na=False)
             roster_display = roster_display[mask]
-            st.caption(f"顯示 {len(roster_display)} 列")
+            st.caption(f"{_t('顯示', 'Showing')} {len(roster_display)} {_t('列', 'rows')}")
 
         styled = roster_display.style.apply(
             lambda row: [apply_cell_style(val, row.name, col) for col, val in row.items()], axis=1
@@ -237,7 +237,7 @@ def main():
         st.dataframe(styled, height=380)
 
     with tab_edit:
-        st.markdown("<p style='font-size:13px; color:#666;'>💡 直接修改人名或打 X 鎖定</p>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size:13px; color:#666;'>" + _t("💡 直接修改人名或打 X 鎖定", "💡 Directly edit name or type X to lock") + "</p>", unsafe_allow_html=True)
         edited_roster = st.data_editor(
             st.session_state.roster_df,
             use_container_width=True,
@@ -261,7 +261,7 @@ def main():
     if not manual_col.equals(st.session_state.manual_weights):
         st.session_state.manual_weights = manual_col.astype(float).fillna(0.0)
         trigger_backup_reminder()  # 自動備份提醒
-        st.success("✅ 手動調整已儲存。建議立即下載 JSON 備份，並將重要版本 commit 到 GitHub backups/ 資料夾。")
+        st.success(_t("✅ 手動調整已儲存。建議立即下載 JSON 備份，並將重要版本 commit 到 GitHub backups/ 資料夾。", "✅ Manual adjustment saved. Recommend downloading JSON backup immediately and committing important versions to GitHub backups/ folder."))
         st.rerun()
 
     # ====================== 累計審計表 ======================
@@ -272,14 +272,14 @@ def main():
         display_report = get_ui_report_df(st.session_state.master_report_df)
         st.dataframe(display_report, use_container_width=True, hide_index=True)
     else:
-        st.info("請先生成排班表以顯示審計表")
+        st.info(_t("請先生成排班表以顯示審計表", "Please generate the roster first to display the audit table"))
 
     # ====================== 管理視角 Dashboard (Head Study Prefect / AHP 專用 - educational leadership features) ======================
     # Enhanced with more KPIs, AHP insights, and servant-leadership framing (evangelical-theology + sing-yin-study-prefect-duty-roster)
     if not st.session_state.master_report_df.empty:
         st.write("---")
-        st.subheader("📈 管理視角儀表板（Head Study Prefect / AHP 專用）")
-        st.caption("公平性 KPI、AHP 洞察、快速統計，體現僕人領袖精神、公平與責任")
+        st.subheader(_t("📈 管理視角儀表板（Head Study Prefect / AHP 專用）", "📈 Management Dashboard (Head Study Prefect / AHP Dedicated)"))
+        st.caption(_t("公平性 KPI、AHP 洞察、快速統計，體現僕人領袖精神、公平與責任", "Fairness KPIs, AHP insights, quick stats, embodying servant leadership spirit, fairness and responsibility"))
 
         report = st.session_state.master_report_df
         loads = report["Cumulative Weighted Load (points)"] if "Cumulative Weighted Load (points)" in report.columns else pd.Series([0])
@@ -293,15 +293,15 @@ def main():
         # KPI Cards (graphic-design: modern cards, clear hierarchy)
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            st.markdown(f'<div class="kpi-card"><div class="label">總領袖生數</div><div class="value">{total_students}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="kpi-card"><div class="label">{_t("總領袖生數", "Total Prefects")}</div><div class="value">{total_students}</div></div>', unsafe_allow_html=True)
         with col2:
-            st.markdown(f'<div class="kpi-card"><div class="label">平均累計負荷</div><div class="value">{avg_load:.1f} 點</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="kpi-card"><div class="label">{_t("平均累計負荷", "Average Cumulative Load")}</div><div class="value">{avg_load:.1f} {_t("點", "pts")}</div></div>', unsafe_allow_html=True)
         with col3:
-            st.markdown(f'<div class="kpi-card"><div class="label">公平差距 (Max-Min)</div><div class="value">{fairness_gap:.1f} 點</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="kpi-card"><div class="label">{_t("公平差距 (Max-Min)", "Fairness Gap (Max-Min)")}</div><div class="value">{fairness_gap:.1f} {_t("點", "pts")}</div></div>', unsafe_allow_html=True)
         with col4:
-            st.markdown(f'<div class="kpi-card"><div class="label">負荷標準差</div><div class="value">{load_std:.1f}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="kpi-card"><div class="label">{_t("負荷標準差", "Load Std Dev")}</div><div class="value">{load_std:.1f}</div></div>', unsafe_allow_html=True)
         with col5:
-            st.markdown(f'<div class="kpi-card"><div class="label">最低 / 最高</div><div class="value">{min_load:.1f} / {max_load:.1f}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="kpi-card"><div class="label">{_t("最低 / 最高", "Min / Max")}</div><div class="value">{min_load:.1f} / {max_load:.1f}</div></div>', unsafe_allow_html=True)
 
         # AHP Insights & Leadership Summary
         ahp_names = set(st.session_state.students_df[st.session_state.students_df["role"].isin(["Assistant Head Study Prefect", "助理首席導學風紀", "AHP"])]["name"].astype(str).str.strip())
@@ -310,20 +310,20 @@ def main():
             ahp_avg = ahp_loads.mean() if len(ahp_loads) > 0 else 0
             ahp_count = len(ahp_loads)
             st.info(
-                f"👑 AHP 專屬洞察：{ahp_count} 位 AHP 平均負荷 {ahp_avg:.1f} 點。"
-                "建議：確保「Assist. in charge」職責公平分配，體現僕人領袖榜樣與責任。"
+                f"👑 {_t('AHP 專屬洞察', 'AHP Dedicated Insight')}：{ahp_count} {_t('位 AHP 平均負荷', 'AHPs avg load')} {ahp_avg:.1f} {_t('點', 'pts')}。"
+                _t("建議：確保「Assist. in charge」職責公平分配，體現僕人領袖榜樣與責任。", "Suggestion: Ensure fair distribution of 'Assist. in charge' duties, embodying servant leadership example and responsibility.")
             )
 
         # Simple fairness note
         if fairness_gap > 5:
-            st.warning("⚠️ 公平差距較大，建議檢視固定值班與請假調整機制。")
+            st.warning(_t("⚠️ 公平差距較大，建議檢視固定值班與請假調整機制。", "⚠️ Fairness gap is large, suggest reviewing fixed duty and leave adjustment mechanisms."))
         else:
-            st.success("✅ 整體公平性良好，符合學校僕人領袖與公平原則。")
+            st.success(_t("✅ 整體公平性良好，符合學校僕人領袖與公平原則。", "✅ Overall fairness is good, in line with school servant leadership and fairness principles."))
 
         # Historical Trends & Fairness (High Priority)
         st.write("---")
-        st.subheader("📊 歷史趨勢與公平性分析")
-        if st.button("💾 儲存本週負荷數據 (Save Current Week for Trends)"):
+        st.subheader(_t("📊 歷史趨勢與公平性分析", "📊 Historical Trends & Fairness Analysis"))
+        if st.button(_t("💾 儲存本週負荷數據 (Save Current Week for Trends)", "💾 Save This Week's Load Data (Save Current Week for Trends)")):
             current_loads = {}
             for _, row in report.iterrows():
                 name = str(row.get("Student Name", row.get("學生姓名", ""))).strip()
@@ -332,7 +332,7 @@ def main():
                     current_loads[name] = load
             week_num = len(st.session_state.history_loads) + 1
             st.session_state.history_loads.append({"week": week_num, "loads": current_loads})
-            st.success(f"已儲存第 {week_num} 週數據。用於趨勢分析。")
+            st.success(_t(f"已儲存第 {week_num} 週數據。用於趨勢分析。", f"Saved week {week_num} data for trend analysis."))
 
         if st.session_state.history_loads:
             # Build df for trends
@@ -359,28 +359,28 @@ def main():
             latest = st.session_state.history_loads[-1]["loads"]
             latest_loads = list(latest.values())
             fairness_index = float(pd.Series(latest_loads).std()) if len(latest_loads) > 1 else 0.0
-            st.metric("公平指數 (Fairness Index = 標準差)", f"{fairness_index:.2f} 點", help="越低越公平。0 = 完美平均。")
+            st.metric(_t("公平指數 (Fairness Index = 標準差)", "Fairness Index (Fairness Index = Std Dev)"), f"{fairness_index:.2f} {_t('點', 'pts')}", help=_t("越低越公平。0 = 完美平均。", "Lower is fairer. 0 = perfect average."))
 
             # Most Neglected Students (lowest load)
             if latest:
                 sorted_neg = sorted(latest.items(), key=lambda x: x[1])[:3]
                 neglected_names = [n for n, l in sorted_neg]
-                st.warning(f"⚠️ 最需關注學生 (Most Neglected - 最低負荷): {', '.join(neglected_names)}。建議優先給予機會以促進公平。")
+                st.warning(_t(f"⚠️ 最需關注學生 (Most Neglected - 最低負荷): {', '.join(neglected_names)}。建議優先給予機會以促進公平。", f"⚠️ Most Neglected Students (Lowest Load): {', '.join(neglected_names)}. Suggest prioritizing opportunities to promote fairness."))
         else:
-            st.info("💡 點擊「儲存本週」按鈕開始記錄歷史趨勢。")
+            st.info(_t("💡 點擊「儲存本週」按鈕開始記錄歷史趨勢。", "💡 Click the 'Save This Week' button to start recording historical trends."))
 
         # Advanced Summary Report Generation (High Priority)
         st.write("---")
-        st.subheader("📋 總結報告生成 (Advanced Summary Report)")
-        st.caption("一鍵生成報告，包含公平性、表現者、AHP貢獻、僕人領袖註記。支援中文預覽與專業英文匯出。")
+        st.subheader(_t("📋 總結報告生成 (Advanced Summary Report)", "📋 Summary Report Generation (Advanced Summary Report)"))
+        st.caption(_t("一鍵生成報告，包含公平性、表現者、AHP貢獻、僕人領袖註記。支援中文預覽與專業英文匯出。", "One-click report generation, including fairness, top performers, AHP contributions, servant leadership notes. Supports Chinese preview and professional English export."))
 
-        if st.button("📊 生成總結報告 (Generate Summary Report)", type="primary"):
+        if st.button(_t("📊 生成總結報告 (Generate Summary Report)", "📊 Generate Summary Report"), type="primary"):
             # Use export report for consistent English data
             export_report = get_export_report_df(st.session_state.master_report_df)
             display_report = get_ui_report_df(st.session_state.master_report_df)
 
             # Chinese preview (UI) - using display data
-            st.markdown("### 📝 中文預覽 (Chinese UI Preview)")
+            st.markdown("### " + _t("📝 中文預覽 (Chinese UI Preview)", "📝 Chinese Preview (Chinese UI Preview)"))
             neg_str = ', '.join(neglected_names) if 'neglected_names' in locals() and neglected_names else '無'
             summary_zh = f"""
 **本週總結報告**
@@ -404,7 +404,7 @@ AHP 平均負荷顯示領導責任分擔良好。
             st.markdown(summary_zh)
 
             # Professional English export version - using export data
-            st.markdown("### 📤 專業英文匯出版 (Professional English Export)")
+            st.markdown("### " + _t("📤 專業英文匯出版 (Professional English Export)", "📤 Professional English Export Version"))
             export_neg = neg_str
             summary_en = f"""
 # Sing Yin Secondary School Study Prefect Duty Roster - Summary Report
@@ -436,31 +436,31 @@ This system promotes fairness, equity, and a culture of service, helping prefect
                 f"SYSS_Summary_Report_{datetime.date.today().strftime('%Y%m%d')}.txt",
                 use_container_width=True
             )
-            st.caption("💡 重要：下載英文報告後，請務必同時下載對應的 JSON 備份，並手動上傳到 GitHub 的 `backups/` 資料夾進行長期保存。")
+            st.caption(_t("💡 重要：下載英文報告後，請務必同時下載對應的 JSON 備份，並手動上傳到 GitHub 的 `backups/` 資料夾進行長期保存。", "💡 Important: After downloading the English report, please also download the corresponding JSON backup and manually upload it to the GitHub `backups/` folder for long-term storage."))
             # Optional: Quick English PDF summary using existing PDF engine (reusing for professionalism)
-            if st.button("📄 額外下載英文PDF摘要 (Extra English PDF Summary)", key="summary_pdf"):
+            if st.button(_t("📄 額外下載英文PDF摘要 (Extra English PDF Summary)", "📄 Extra Download English PDF Summary"), key="summary_pdf"):
                 # Reuse PDF but with summary content - simplified for now
-                st.info("使用匯出功能下載完整英文PDF以獲得最佳格式。")
+                st.info(_t("使用匯出功能下載完整英文PDF以獲得最佳格式。", "Use the export function to download the full English PDF for best format."))
 
     # Roster Version History - Improved (better comparison, clearer display, easier loading)
-    with st.expander("📜 值班表版本歷史 (Roster Version History) - 自動儲存每次生成"):
+    with st.expander(_t("📜 值班表版本歷史 (Roster Version History) - 自動儲存每次生成", "📜 Roster Version History (Roster Version History) - Auto-saved after each generation")):
         versions = st.session_state.get("roster_versions", [])
         if versions:
             version_labels = [f"v{v['version']} - {v['timestamp']}" for v in versions]
-            selected_label = st.selectbox("選擇版本 (Select Version)", version_labels, key="version_select")
+            selected_label = st.selectbox(_t("選擇版本 (Select Version)", "Select Version"), version_labels, key="version_select")
             if selected_label:
                 idx = version_labels.index(selected_label)
                 ver = versions[idx]
-                st.write(f"**版本 {ver['version']}** @ {ver['timestamp']}")
+                st.write(f"**{_t('版本', 'Version')} {ver['version']}** @ {ver['timestamp']}")
 
                 col_load, col_view = st.columns([1, 3])
                 with col_load:
-                    if st.button("載入此版本 (Load This Version)", key=f"load_{idx}"):
+                    if st.button(_t("載入此版本 (Load This Version)", "Load This Version"), key=f"load_{idx}"):
                         if ver.get("roster_df"):
                             st.session_state.roster_df = pd.DataFrame.from_dict(ver["roster_df"])
                         if ver.get("report_df"):
                             st.session_state.master_report_df = pd.DataFrame.from_dict(ver["report_df"])
-                        st.success(f"✅ 版本 {ver['version']} 已載入當前")
+                        st.success(_t(f"✅ 版本 {ver['version']} 已載入當前", f"✅ Version {ver['version']} loaded to current"))
                         st.rerun()
 
                 with col_view:
@@ -469,51 +469,51 @@ This system promotes fairness, equity, and a culture of service, helping prefect
                         st.dataframe(ver_roster, use_container_width=True, height=200)
 
                 # Improved comparison: side-by-side key stats + sample
-                if st.button("比較此版本與當前 (Compare Version with Current)", key=f"compare_{idx}"):
-                    st.write("### 比較 (Comparison)")
+                if st.button(_t("比較此版本與當前 (Compare Version with Current)", "Compare Version with Current"), key=f"compare_{idx}"):
+                    st.write("### " + _t("比較 (Comparison)", "Comparison"))
                     current_roster = st.session_state.roster_df
                     ver_roster = pd.DataFrame.from_dict(ver.get("roster_df", {})) if ver.get("roster_df") else pd.DataFrame()
 
                     # Simple stats comparison
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.write("**當前版本 (Current)**")
-                        st.write(f"- 總欄位數: {len(current_roster.columns)}")
-                        st.write(f"- 總學生/角色: {len(current_roster)}")
+                        st.write("**" + _t("當前版本 (Current)", "Current Version") + "**")
+                        st.write(f"- {_t('總欄位數', 'Total Columns')}: {len(current_roster.columns)}")
+                        st.write(f"- {_t('總學生/角色', 'Total Students/Roles')}: {len(current_roster)}")
                     with col2:
-                        st.write(f"**選定版本 (Version {ver['version']})**")
-                        st.write(f"- 總欄位數: {len(ver_roster.columns) if not ver_roster.empty else 0}")
-                        st.write(f"- 總學生/角色: {len(ver_roster) if not ver_roster.empty else 0}")
+                        st.write(f"**" + _t("選定版本 (Version {ver['version']})", "Selected Version (Version {ver['version']})").format(ver['version']=ver['version']) + "**")
+                        st.write(f"- {_t('總欄位數', 'Total Columns')}: {len(ver_roster.columns) if not ver_roster.empty else 0}")
+                        st.write(f"- {_t('總學生/角色', 'Total Students/Roles')}: {len(ver_roster) if not ver_roster.empty else 0}")
 
                     # Sample data
-                    st.write("**樣本資料比較 (Sample - first 5 rows)**")
-                    st.write("當前:")
+                    st.write("**" + _t("樣本資料比較 (Sample - first 5 rows)", "Sample Data Comparison (Sample - first 5 rows)") + "**")
+                    st.write(_t("當前:", "Current:"))
                     st.dataframe(current_roster.head(5), use_container_width=True)
-                    st.write("選定版本:")
+                    st.write(_t("選定版本:", "Selected Version:"))
                     if not ver_roster.empty:
                         st.dataframe(ver_roster.head(5), use_container_width=True)
                     else:
-                        st.info("選定版本無資料")
+                        st.info(_t("選定版本無資料", "No data for selected version"))
         else:
-            st.info("生成值班表後版本會自動儲存。")
+            st.info(_t("生成值班表後版本會自動儲存。", "Versions will be automatically saved after generating the roster."))
 
     # Semester Service Hours Auto-Statistics + Certificate Generation
     st.write("---")
-    st.subheader("⏱️ 學期服務時數統計與證書生成 (Semester Service Hours & Certificate)")
-    st.caption("自動計算服務時數 (每值班1小時)，一鍵生成專業英文證書 (姓名保留中文)")
+    st.subheader(_t("⏱️ 學期服務時數統計與證書生成 (Semester Service Hours & Certificate)", "⏱️ Semester Service Hours Statistics & Certificate Generation"))
+    st.caption(_t("自動計算服務時數 (每值班1小時)，一鍵生成專業英文證書 (姓名保留中文)", "Automatically calculate service hours (1 hour per duty), one-click generate professional English certificate (names remain in Chinese)"))
 
-    if st.button("🔄 更新/重新計算服務時數 (Update from Current Roster)", use_container_width=True):
+    if st.button(_t("🔄 更新/重新計算服務時數 (Update from Current Roster)", "🔄 Update/Recalculate Service Hours (Update from Current Roster)"), use_container_width=True):
         for name in st.session_state.students_df["name"].dropna().astype(str).str.strip():
             count = (st.session_state.roster_df == name).sum().sum()
             hours = count * 1.0
             st.session_state.semester_hours[name] = st.session_state.semester_hours.get(name, 0) + hours
-        st.success("服務時數已更新")
+        st.success(_t("服務時數已更新", "Service hours updated"))
 
     if st.session_state.get("semester_hours"):
         hours_df = pd.DataFrame(list(st.session_state.semester_hours.items()), columns=["姓名 (Chinese Name)", "總服務時數 (小時)"])
         st.dataframe(hours_df, use_container_width=True)
 
-        if st.button("📜 生成服務證書 (Generate Professional English Certificate)", use_container_width=True, type="primary"):
+        if st.button(_t("📜 生成服務證書 (Generate Professional English Certificate)", "📜 Generate Service Certificate (Generate Professional English Certificate)"), use_container_width=True, type="primary"):
             cert_lines = [
                 "Sing Yin Secondary School",
                 "Study Prefect Service Certificate",
@@ -545,7 +545,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
                     use_container_width=True
                 )
             else:
-                st.warning("無法生成PDF證書，請確認WeasyPrint可用。")
+                st.warning(_t("無法生成PDF證書，請確認WeasyPrint可用。", "Unable to generate PDF certificate, please confirm WeasyPrint is available."))
             # Fallback text for compatibility
             st.download_button(
                 "⬇️ 下載英文證書文字版 (Download English Certificate Text)",
@@ -557,7 +557,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
     # ====================== 公平性圖表 ======================
     if not st.session_state.master_report_df.empty:
         st.write("---")
-        st.subheader("🦅 全體累積工作點數公平性監控")
+        st.subheader(_t("🦅 全體累積工作點數公平性監控", "🦅 Overall Cumulative Work Points Fairness Monitoring"))
         fig = px.bar(
             st.session_state.master_report_df,
             x='Student Name',
@@ -573,20 +573,20 @@ This system promotes fairness, equity, and a culture of service, helping prefect
 
     # ====================== 智慧替補 ======================
     st.write("---")
-    st.subheader("🔍 智慧替補推薦")
+    st.subheader(_t("🔍 智慧替補推薦", "🔍 Smart Substitute Recommendation"))
     c1, c2 = st.columns(2)
     with c1:
-        chosen_day = st.selectbox("請假或替換日期", DAYS, index=0, key="sub_day_selector")
+        chosen_day = st.selectbox(_t("請假或替換日期", "Leave or Replacement Date"), DAYS, index=0, key="sub_day_selector")
     with c2:
-        chosen_role = st.selectbox("請假或替換職位/房間", ROWS_ROSTER, index=0, key="sub_role_selector")
+        chosen_role = st.selectbox(_t("請假或替換職位/房間", "Leave or Replacement Position/Room"), ROWS_ROSTER, index=0, key="sub_role_selector")
 
     current_person = str(st.session_state.roster_df.at[chosen_role, chosen_day]).strip()
-    st.text_input("📍 目前該時段排定之人員", value=current_person if current_person not in ["", "X", "⬜"] else "（當前為空白或特殊不開放時段）", disabled=True)
+    st.text_input(_t("📍 目前該時段排定之人員", "📍 Currently Scheduled Person for This Slot"), value=current_person if current_person not in ["", "X", "⬜"] else _t("（當前為空白或特殊不開放時段）", "(Currently blank or special closed period)"), disabled=True)
 
-    if st.button("🔮 執行篩選並推薦最優替補人員", type="secondary", use_container_width=True):
+    if st.button(_t("🔮 執行篩選並推薦最優替補人員", "🔮 Execute Filter and Recommend Optimal Substitutes"), type="secondary", use_container_width=True):
         sub_df, error_msg = recommend_substitutes(st.session_state.roster_df, st.session_state.students_df, chosen_day, chosen_role)
         if sub_df is not None:
-            st.success("📋 媒合成功！已依據「最終總計加權負荷」由低到高為您排序推薦合格替補人員：")
+            st.success(_t("📋 媒合成功！已依據「最終總計加權負荷」由低到高為您排序推薦合格替補人員：", "📋 Matching successful! Sorted recommended qualified substitutes from lowest to highest based on 'Final Total Weighted Load':"))
             # UI 顯示用中文欄位
             display_sub = sub_df.copy()
             display_sub.columns = ["姓名", "年級", "當前總點數"]
@@ -596,36 +596,36 @@ This system promotes fairness, equity, and a culture of service, helping prefect
 
     # ====================== 值班後請假調整（新增公平性核心功能） ======================
     st.write("---")
-    st.subheader("⚖️ 值班後請假調整（確保公平性）")
-    st.caption("值班表發布後若有人臨時請假，可在此撤銷其已計算的負荷點數，並選擇替補人員（或留空）。調整後立即更新累計與報表，保證公平。")
+    st.subheader(_t("⚖️ 值班後請假調整（確保公平性）", "⚖️ Post-Duty Leave Adjustment (Ensure Fairness)"))
+    st.caption(_t("值班表發布後若有人臨時請假，可在此撤銷其已計算的負荷點數，並選擇替補人員（或留空）。調整後立即更新累計與報表，保證公平。", "If someone requests leave after the roster is published, you can revoke their calculated load points here and select a substitute (or leave blank). The cumulative and report will be updated immediately after adjustment to ensure fairness."))
 
     with st.form("leave_adjust_form", clear_on_submit=True):
         col_d, col_r = st.columns(2)
         with col_d:
-            adj_day = st.selectbox("選擇日期", DAYS, key="adj_day")
+            adj_day = st.selectbox(_t("選擇日期", "Select Date"), DAYS, key="adj_day")
         with col_r:
             assigned_roles = [
                 r for r in ROWS_ROSTER
                 if str(st.session_state.roster_df.at[r, adj_day]).strip() not in ["", "X", "⬜", "請假撤銷"]
             ]
-            adj_role = st.selectbox("選擇崗位", assigned_roles if assigned_roles else [""], key="adj_role")
+            adj_role = st.selectbox(_t("選擇崗位", "Select Position"), assigned_roles if assigned_roles else [""], key="adj_role")
 
         current_person = ""
         if adj_role and adj_role in st.session_state.roster_df.index:
             current_person = str(st.session_state.roster_df.at[adj_role, adj_day]).strip()
             if current_person and current_person not in ["X", "⬜", "請假撤銷"]:
-                st.info(f"目前值班人員：**{current_person}**（將被撤銷點數）")
+                st.info(f"{_t('目前值班人員：**{current_person}**（將被撤銷點數）', 'Currently scheduled person: **{current_person}** (points will be revoked)').format(current_person=current_person)}")
 
-        has_replacement = st.checkbox("有替補人員（推薦）", value=False)
+        has_replacement = st.checkbox(_t("有替補人員（推薦）", "Has substitute (recommended)"), value=False)
         replacement = None
         if has_replacement and current_person:
             valid_names = [
                 str(n).strip() for n in st.session_state.students_df["name"].dropna()
                 if str(n).strip() and str(n).strip() != current_person
             ]
-            replacement = st.selectbox("選擇替補人員", valid_names, key="replacement_select")
+            replacement = st.selectbox(_t("選擇替補人員", "Select Substitute"), valid_names, key="replacement_select")
 
-        submitted = st.form_submit_button("🚀 執行請假調整 / 撤銷點數", type="primary", use_container_width=True)
+        submitted = st.form_submit_button(_t("🚀 執行請假調整 / 撤銷點數", "🚀 Execute Leave Adjustment / Revoke Points"), type="primary", use_container_width=True)
 
         if submitted and adj_role and current_person:
             weight = get_weight(adj_role)
@@ -649,13 +649,13 @@ This system promotes fairness, equity, and a culture of service, helping prefect
             )
             st.session_state.master_report_df = audit_results["report_df"]
 
-            action_msg = f"已從 **{current_person}** 撤銷 {weight:.1f} 點"
+            action_msg = _t(f"已從 **{current_person}** 撤銷 {weight:.1f} 點", f"Revoked {weight:.1f} pts from **{current_person}**")
             if has_replacement and replacement:
-                action_msg += f"，並轉由 **{replacement}** 接手。"
+                action_msg += _t(f"，並轉由 **{replacement}** 接手。", f", and handed over to **{replacement}**.")
             else:
-                action_msg += "，該崗位暫無人值班。"
+                action_msg += _t("，該崗位暫無人值班。", ", no one scheduled for that slot.")
 
-            st.success(f"✅ 調整完成！{action_msg} 累計點數與公平性圖表已即時更新。")
+            st.success(_t(f"✅ 調整完成！{action_msg} 累計點數與公平性圖表已即時更新。", f"✅ Adjustment complete! {action_msg} Cumulative points and fairness chart updated in real time."))
 
             # 記錄調整歷史
             if "adjustment_log" not in st.session_state:
@@ -670,7 +670,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
             })
 
             trigger_backup_reminder()  # 自動備份提醒（leave adjustment 重要操作）
-            st.success("💡 請記得下載 JSON 備份，並建議將此重要調整的備份上傳到 GitHub 的 backups/ 資料夾以長期保存。")
+            st.success(_t("💡 請記得下載 JSON 備份，並建議將此重要調整的備份上傳到 GitHub 的 backups/ 資料夾以長期保存。", "💡 Remember to download the JSON backup and recommend uploading this important adjustment's backup to the GitHub backups/ folder for long-term storage."))
             st.rerun()
 
     # ====================== 快速導出 (語言跟隨) ======================
@@ -688,7 +688,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
 
     with col1:
         # 明確的 PDF 語言控制：兩個按鈕，分別輸出中文/英文 PDF
-        if st.button("📄 匯出中文 PDF", use_container_width=True):
+        if st.button(_t("📄 匯出中文 PDF", "📄 Export Chinese PDF"), use_container_width=True):
             logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
             pdf_report = get_ui_report_df(st.session_state.master_report_df)
             pdf_bytes = generate_pdf(st.session_state.roster_df, pdf_report, logo_b64)
@@ -700,7 +700,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
                     "application/pdf",
                     use_container_width=True
                 )
-        if st.button("📄 Export English PDF", use_container_width=True):
+        if st.button(_t("📄 Export English PDF", "📄 Export English PDF"), use_container_width=True):
             logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
             pdf_report = get_export_report_df(st.session_state.master_report_df)
             pdf_bytes = generate_pdf(st.session_state.roster_df, pdf_report, logo_b64)
@@ -817,7 +817,7 @@ Student names are preserved in Chinese per school practice.
         )
 
     ui_lang = st.session_state.get("ui_language", "zh")
-    cap = "Sing Yin Secondary School Study Prefect Platform | " + VERSION + " | UI: English | Exports: Professional" if ui_lang == "en" else f"聖言中學導學風紀當值排班平台 | {VERSION} | 介面中文 | 匯出專業"
+    cap = _t(f"聖言中學導學風紀當值排班平台 | {VERSION} | 介面中文 | 匯出專業", f"Sing Yin Secondary School Study Prefect Platform | {VERSION} | UI: English | Exports: Professional")
     st.caption(cap)
 
 

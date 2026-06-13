@@ -59,7 +59,6 @@ def show_daily_verse():
 
     verse_key = st.session_state.current_verse
     verse = DAILY_VERSES.get(verse_key, {})
-    show_reflection = st.session_state.get("verse_bilingual", False)
     lang = st.session_state.get("ui_language", "zh")
 
     if lang == "en":
@@ -75,7 +74,7 @@ def show_daily_verse():
         refl = verse.get('reflection_zh', '')
         footer = "—— 聖言中學導學風紀團隊靈修提醒 | 僕人領袖，以服事為本"
 
-    # 使用 verse-card 包裝整個金句區塊
+    # 使用 verse-card 包裝整個金句區塊（經文 + 反思都在框內）
     st.markdown('<div class="verse-card">', unsafe_allow_html=True)
 
     # 標題
@@ -89,26 +88,18 @@ def show_daily_verse():
     if text:
         st.markdown(text)
 
-    # 靈修反思放在清晰框內
-    if show_reflection and refl:
+    # 靈修反思放在清晰框內（現在無條件顯示，並跟隨主語言）
+    if refl:
         st.markdown(f'<div class="reflection-box"><strong>{refl_title}</strong><br>{refl}</div>', unsafe_allow_html=True)
 
     st.caption(footer)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    col1, col2 = st.columns([3, 2])
-    with col1:
-        if st.button(_t("🔄 刷新金句", "🔄 Refresh Verse"), use_container_width=True, type="secondary", help=_t("獲得新的靈修鼓勵", "Get new spiritual encouragement")):
-            st.session_state.current_verse = random.choice(ALL_VERSES)
-            st.rerun()
-    with col2:
-        st.session_state.verse_bilingual = st.checkbox(
-            _t("顯示靈修反思", "Show Devotional Reflection"), 
-            value=st.session_state.get("verse_bilingual", False), 
-            key="verse_bilingual_toggle",
-            help=_t("顯示簡短靈修反思", "Show short devotional reflection")
-        )
+    # 只保留刷新按鈕（移除獨立的「顯示英文反思」checkbox）
+    if st.button(_t("🔄 刷新金句", "🔄 Refresh Verse"), use_container_width=True, type="secondary", help=_t("獲得新的靈修鼓勵", "Get new spiritual encouragement")):
+        st.session_state.current_verse = random.choice(ALL_VERSES)
+        st.rerun()
 
 
 def render_sidebar():
@@ -120,21 +111,26 @@ def render_sidebar():
         # Light / Dark Mode and Language (per requirements)
         col_theme, col_lang = st.columns(2)
         with col_theme:
-            is_dark = st.toggle("🌙 深色模式", value=st.session_state.get("theme", "light") == "dark", key="theme_toggle")
+            is_dark = st.toggle(_t("🌙 深色模式", "🌙 Dark Mode"), value=st.session_state.get("theme", "light") == "dark", key="theme_toggle")
             st.session_state.theme = "dark" if is_dark else "light"
         with col_lang:
             # 更完整的語言模式：中文介面 / 英文介面
             # UI 主要保持中文（學校情境），匯出與部分標題可同步英文
-            lang_options = [_t("中文介面", "中文介面 / Chinese Interface"), _t("英文介面", "英文介面 / English Interface")]
-            current = st.session_state.get("ui_language", "zh")
-            default_idx = 0 if current == "zh" else 1
-            selected_lang = st.selectbox(
+            # 按鈕標籤使用中英對照
+            lang_map = {
+                "zh": _t("中文介面", "中文介面 / Chinese Interface"),
+                "en": _t("英文介面", "英文介面 / English Interface")
+            }
+            current_lang = st.session_state.get("ui_language", "zh")
+            default_idx = 0 if current_lang == "zh" else 1
+            selected_display = st.selectbox(
                 "中文 / English", 
-                lang_options, 
+                list(lang_map.values()), 
                 index=default_idx, 
                 key="lang_select"
             )
-            st.session_state.ui_language = "zh" if selected_lang == "中文介面" else "en"
+            # 反查 lang key
+            st.session_state.ui_language = "zh" if "中文" in selected_display else "en"
             if st.session_state.ui_language == "en":
                 st.caption(_t("英文介面 + 專業英文匯出", "English Interface + Professional English Exports"))
             else:
@@ -146,47 +142,57 @@ def render_sidebar():
             st.markdown("""
             <style>
             .stApp { background-color: #0e1117; color: #fafafa; }
-            .stSidebar { background-color: #161b22 !important; }
+            .stSidebar { background-color: #161b22 !important; color: #f0f0f0 !important; }
+            .stSidebar * { color: #f0f0f0 !important; }  /* 側邊欄所有文字高對比 */
+            .stSidebar .stCaption, .stSidebar label, .stSidebar .stMarkdown { color: #e0e0e0 !important; }
             .stButton > button { background-color: #262730; color: #fafafa; border: 1px solid #4b5563; }
             .stButton > button:hover { background-color: #374151; }
             .kpi-card { background-color: #1f2937 !important; border-left-color: #D4AF37 !important; color: #fafafa; }
             .verse-card { 
                 background: linear-gradient(180deg, #1a1f2e 0%, #0e1117 100%) !important; 
-                border: 1px solid #4b5563; padding: 12px; border-radius: 8px; 
+                border: 2px solid #D4AF37; padding: 14px 12px; border-radius: 10px; 
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
                 color: #ffeb3b !important;  /* 高對比亮黃 */
             }
             .verse-card * { color: #ffeb3b !important; }  /* 強制所有子元素高對比 */
             .verse-card p, .verse-card .stMarkdown { color: #ffffff !important; font-weight: 500; } /* 內文用亮白 */
             .reflection-box {
                 background-color: #1f2937;
-                border-left: 4px solid #D4AF37;
-                padding: 8px 12px;
-                margin-top: 8px;
-                border-radius: 4px;
+                border-left: 5px solid #D4AF37;
+                padding: 10px 12px;
+                margin-top: 10px;
+                border-radius: 6px;
                 font-size: 12px;
                 color: #ffeb3b !important;
+                box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
             }
             .stDataFrame, [data-testid="stDataEditor"] { background-color: #1f2937; color: #fafafa; }
             .stAlert { background-color: #1f2937; color: #fafafa; }
             .stTextInput > div > div > input, .stSelectbox > div > div { background-color: #262730; color: #fafafa; }
+            .stCaption { color: #c0c0c0 !important; }  /* 說明文字對比 */
+            .stMarkdown { color: #fafafa !important; }
             </style>
             """, unsafe_allow_html=True)
         else:
             st.markdown("""
             <style>
             .stApp { background-color: #ffffff; color: #1a1a2e; }
-            .stSidebar { background-color: #f8f9fa !important; }
+            .stSidebar { background-color: #f8f9fa !important; color: #1a1a2e !important; }
+            .stSidebar * { color: #1a1a2e !important; }
+            .stSidebar .stCaption, .stSidebar label, .stSidebar .stMarkdown { color: #333333 !important; }
             .stButton > button { background-color: #f0f0f0; color: #1a1a2e; }
             .kpi-card { background-color: #f8f9fa !important; border-left-color: #0B1E3D !important; }
             .verse-card { 
-                background: linear-gradient(180deg, #1A1A2E 0%, #0B1E3D 100%) !important; 
-                border: 1px solid #D4AF37; padding: 12px; border-radius: 8px; 
+                background: linear-gradient(180deg, #f8f9fa 0%, #e8eef5 100%) !important; 
+                border: 2px solid #D4AF37; padding: 14px 12px; border-radius: 10px; 
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             }
-            .verse-card * { color: #F5E8C7 !important; }
+            .verse-card * { color: #1a1a2e !important; }
+            .verse-card p, .verse-card .stMarkdown { color: #0B1E3D !important; font-weight: 500; }
             .reflection-box {
-                background-color: #f0f4f8;
-                border-left: 4px solid #0B1E3D;
-                padding: 8px 12px;
+                background-color: #e8eef5;
+                border-left: 5px solid #D4AF37;
+                padding: 10px 12px;
                 margin-top: 8px;
                 border-radius: 4px;
                 font-size: 12px;
@@ -483,19 +489,19 @@ def render_sidebar():
                 index=0,
                 key="restore_mode_upload",
                 horizontal=True,
-                help="Full Replace: 完全覆蓋目前所有資料。Smart Merge: 智慧合併學生資料，當週排班傾向使用備份。"
+                help=_t("Full Replace: 完全覆蓋目前所有資料。Smart Merge: 智慧合併學生資料，當週排班傾向使用備份。", "Full Replace: Completely overwrite all current data. Smart Merge: Smart merge student data, current week's roster tends to use the backup.")
             )
-            if st.button("🔄 執行還原", type="primary", use_container_width=True):
+            if st.button(_t("🔄 執行還原", "🔄 Execute Restore"), type="primary", use_container_width=True):
                 mode = "full" if "Full" in restore_mode else "smart_merge"
                 import_system_backup(uploaded_backup, replace_mode=mode)
 
         # 顯示上次備份時間（如果有）
         last_backup = st.session_state.get("last_backup_time")
         if last_backup:
-            st.caption(f"上次成功備份時間: {last_backup[:16]}")
+            st.caption(f"{_t('上次成功備份時間', 'Last successful backup time')}: {last_backup[:16]}")
 
         # 長期保存引導（溫和建議）
-        st.caption("💡 長期保存建議：重要的 JSON 備份，請手動上傳至 GitHub 倉庫的 `backups/` 資料夾（例如命名為 backup_2026-06-13_週三.json），以進行版本控制與災難恢復。即使本地遺失，也能從 GitHub 還原。")
+        st.caption(_t("💡 長期保存建議：重要的 JSON 備份，請手動上傳至 GitHub 倉庫的 `backups/` 資料夾（例如命名為 backup_2026-06-13_週三.json），以進行版本控制與災難恢復。即使本地遺失，也能從 GitHub 還原。", "💡 Long-term storage tip: Please manually upload important JSON backups to the GitHub repo's `backups/` folder (e.g. named backup_2026-06-13_Wed.json) for version control and disaster recovery. Even if local data is lost, it can be restored from GitHub."))
 
 
 def render_control_buttons():
