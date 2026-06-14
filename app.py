@@ -36,7 +36,8 @@ from roster.data.models import get_ui_report_df, get_export_report_df, reindex_r
 from roster.ai import ai_parse_remarks
 from roster.core import (
     generate_roster, validate_and_compute, recommend_substitutes,
-    apply_post_publication_leave_adjustment
+    apply_post_publication_leave_adjustment,
+    annotate_mentoring_pairs
 )
 from roster.utils import (
     generate_pdf, generate_service_certificate, export_system_backup, import_system_backup,
@@ -208,33 +209,34 @@ def main():
         return f"font-weight:bold; text-align:center; padding:8px 6px; background-color:{style['bg']}; color:{style['text']}; border:{style['border']};"
 
     with tab_view:
-    # Quick Search & Filter for roster
-        roster_search = st.text_input(_t("🔍 快速搜尋值班表 (Quick Search by role)", "🔍 Quick Search Roster (Quick Search by role)"), value=st.session_state.get("roster_search", ""), key="roster_search_input", placeholder=_t("輸入職位或房間關鍵字", "Enter position or room keyword"))
-        st.session_state.roster_search = roster_search
-        roster_display = st.session_state.roster_df.copy()
-        if roster_search:
-            mask = roster_display.index.astype(str).str.contains(roster_search, case=False, na=False)
-            roster_display = roster_display[mask]
-            # Safe: use get_text for dynamic count (assemble not needed here)
-            st.caption(f"{get_text('showing_prefix')} {len(roster_display)} {get_text('rows_label')}")
+        # Quick Search & Filter for roster
+            roster_search = st.text_input(_t("🔍 快速搜尋值班表 (Quick Search by role)", "🔍 Quick Search Roster (Quick Search by role)"), value=st.session_state.get("roster_search", ""), key="roster_search_input", placeholder=_t("輸入職位或房間關鍵字", "Enter position or room keyword"))
+            st.session_state.roster_search = roster_search
+            roster_display = st.session_state.roster_df.copy()
+            if roster_search:
+                mask = roster_display.index.astype(str).str.contains(roster_search, case=False, na=False)
+                roster_display = roster_display[mask]
+                # Safe: use get_text for dynamic count (assemble not needed here)
+                st.caption(f"{get_text('showing_prefix')} {len(roster_display)} {get_text('rows_label')}")
 
-        def _cell_style(val, role, day):
-            base = apply_cell_style(val, role, day)
-            _parent = role.rsplit(" - ", 1)[0] if " - " in role else role
-            _pk = _parent + "_" + day
-            if _pk in _mentoring_pairs and str(val).strip():
-                base += " border-left:4px solid #059669; background-color:rgba(5,150,105,0.06) !important;"
-            return base
-        styled = roster_display.style.apply(
-            lambda row: [_cell_style(val, row.name, col) for col, val in row.items()], axis=1
-        )
-        st.dataframe(styled, height=380)
-        st.markdown('<div style="display:flex; gap:8px; flex-wrap:wrap; font-size:12px; margin:4px 0;">' + 
-            '<span style="background:#059669; color:white; padding:2px 10px; border-radius:10px;">🤝 師徒配對</span>' + 
-            '<span style="background:#2196F3; color:white; padding:2px 10px; border-radius:10px;">🆕 新加入</span>' + 
-            '<span style="background:#F59E0B; color:white; padding:2px 10px; border-radius:10px;">👤 需要老帶新</span>' + 
-            '<span style="background:#6B7280; color:white; padding:2px 10px; border-radius:10px;">一般</span>' + 
-            '</div>', unsafe_allow_html=True)
+            def _cell_style(val, role, day):
+                base = apply_cell_style(val, role, day)
+                _parent = role.rsplit(" - ", 1)[0] if " - " in role else role
+                _pk = _parent + "_" + day
+                if _pk in _mentoring_pairs and str(val).strip():
+                    base += " border-left:4px solid #059669; background-color:rgba(5,150,105,0.06) !important;"
+
+                return base
+            styled = roster_display.style.apply(
+                lambda row: [_cell_style(val, row.name, col) for col, val in row.items()], axis=1
+            )
+            st.dataframe(styled, height=380)
+            st.markdown('<div style="display:flex; gap:8px; flex-wrap:wrap; font-size:12px; margin:4px 0;">' + 
+                '<span style="background:#059669; color:white; padding:2px 10px; border-radius:10px;">🤝 師徒配對</span>' + 
+                '<span style="background:#2196F3; color:white; padding:2px 10px; border-radius:10px;">🆕 新加入</span>' + 
+                '<span style="background:#F59E0B; color:white; padding:2px 10px; border-radius:10px;">👤 需要老帶新</span>' + 
+                '<span style="background:#6B7280; color:white; padding:2px 10px; border-radius:10px;">一般</span>' + 
+                '</div>', unsafe_allow_html=True)
 
     with tab_edit:
         st.markdown('<p class="edit-hint">' + _t("💡 直接修改人名或打 X 鎖定", "💡 Directly edit name or type X to lock") + "</p>", unsafe_allow_html=True)
