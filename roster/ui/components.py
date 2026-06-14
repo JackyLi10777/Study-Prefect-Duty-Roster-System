@@ -112,7 +112,7 @@ def render_sidebar():
         # Any old high_contrast session_state values are silently ignored by theme.py.
         col_theme, col_lang = st.columns(2)
         with col_theme:
-            is_dark = st.toggle(_t("🌓 ????", "🌓 Dark Mode"), value=st.session_state.get("theme", "light") == "dark", key="theme_toggle")
+            is_dark = st.toggle(_t("深色模式", "Dark Mode"), value=st.session_state.get("theme", "light") == "dark", key="theme_toggle")
             st.session_state.theme = "dark" if is_dark else "light"
         with col_lang:
             # 更完整的語言模式：中文介面 / 英文介面
