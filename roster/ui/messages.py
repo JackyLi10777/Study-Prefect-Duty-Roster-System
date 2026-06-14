@@ -662,5 +662,3 @@ def _t(zh_text: str, en_text: str) -> str:
 
 # Convenience re-export for very common simple cases if desired
 # (callers can still do from roster.ui.messages import _t, get_text)
-
-print("✅ roster/ui/messages.py loaded - centralized display text system (display layer only)")

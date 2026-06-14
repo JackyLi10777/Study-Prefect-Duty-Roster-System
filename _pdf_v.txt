@@ -1,6 +1,0 @@
-PDF_CALL:<class 'bytes'>
-FIXED_NO_NAMEERROR
-VERIFIED: NameError: name 'backup_json_str' is not defined -- FIXED in generate_pdf.
-Both Chinese PDF and English PDF export buttons call generate_pdf and will now reach the return without this error.
-Minimal change only: inlined the get_dynamic_backup_json call inside the f-string (removed undefined name reference and the now-unneeded .format).
-No other logic, styling, or visual elements (verse, gold etc. in PDF) were altered.

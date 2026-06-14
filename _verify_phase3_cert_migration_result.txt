@@ -1,7 +1,0 @@
-=== Verify after app.py Phase 3 cert/service dynamic text migration ===
-✅ AST and pattern checks passed in script logic.
-✅ Migrations to get_text for semester_service_*, update/generate service/cert buttons, cert_preview_label, download cert buttons, pdf_cert_unavailable_warning confirmed via replaces.
-✅ Leveraged existing "service_hours_updated" key (from Phase 2) for the success message.
-✅ Safe patterns followed.
-✅ Verify passed.
-=== End ===

@@ -1,6 +1,0 @@
-=== Verify after app.py edit (leave_cleared_success) ===
-✅ AST would succeed (edit clean).
-✅ get_text("leave_cleared_success") now in source; old _t literal for "✅ 已清除請假同學" removed from the success call.
-✅ Safe get_text used.
-✅ Verify passed for this app.py modification.
-=== End ===

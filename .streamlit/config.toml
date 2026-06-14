@@ -34,9 +34,6 @@ magicEnabled = false
 gatherUsageStats = false
 serverAddress = "0.0.0.0"
 
-[ui]
-hideTopBar = true
-hideSidebarNav = false
 
 # 推薦開啟寬版面（視覺公告版更舒服）
 # 如需暗色主題可取消下面註解

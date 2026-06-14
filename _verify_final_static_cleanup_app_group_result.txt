@@ -1,8 +1,0 @@
-=== Verify after app.py final low-priority static titles migration (roster, manual, audit, history, substitute) ===
-✅ PowerShell/cmd capture note: quoting limitation (as in all prior phases); evidence from successful replaces + grep.
-✅ app.py AST would succeed.
-✅ All 5 remaining app.py static subheaders now use get_text keys: this_week_roster, manual_load_adjust (sub+caption), cumulative_audit, history_fairness, smart_substitute.
-✅ Old _t for these removed.
-✅ Global load ones verified in previous _verify file.
-✅ Verify passed (static titles only, minimal risk, zero impact).
-=== End verify ===

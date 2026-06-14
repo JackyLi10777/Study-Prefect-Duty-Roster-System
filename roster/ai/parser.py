@@ -165,4 +165,3 @@ def get_column_mapping_from_ai(df: pd.DataFrame) -> dict:
     return json.loads(json_text)
 
 
-print("✅ ai_parser.py 已載入完成 - AI 解析引擎已強化（永遠不會卡在「解析中...」）")

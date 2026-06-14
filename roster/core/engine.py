@@ -28,6 +28,7 @@ from roster.config import (
     is_room_open_on_weekday,
     DEFAULT_GLOBAL_LOAD_MULTIPLIER,
     get_roster_rows, get_base_role,
+    normalize_students_role_column,
     AHP_ROLE as _AHP_ROLE, REGULAR_ROLE as _REGULAR_ROLE,
 )
 
@@ -113,6 +114,8 @@ def generate_roster(
 
     參考 AGENTS.md §1 及 §5 Verification Checklist。
     """
+    # 角色名稱正規化：支援中英文輸入（由 config 中的 ROLE_MAP 驅動）
+    students_df = normalize_students_role_column(students_df)
     random.seed(seed)
     roster = pd.DataFrame(index=get_roster_rows(), columns=DAYS).fillna("")
 
@@ -150,7 +153,7 @@ def generate_roster(
             # 特殊不開放由 special_closures 控制（注意當前實現有已知 bug，見 AGENTS §4）。
             if any(f"{day} - {role}" in sc for sc in special_closures) or \
                not is_room_open_on_weekday(base_role, day):
-                roster.at[role, day] = "X" if "Room202" not in role or day not in ["TUESDAY", "FRIDAY"] else "⬜"
+                roster.at[role, day] = "X" if "Room 202" not in role or day not in ["TUESDAY", "FRIDAY"] else "⬜"
                 continue
 
             is_assist_role = is_assistant_head_only_role(base_role)
@@ -183,7 +186,7 @@ def generate_roster(
                     continue
                 if day not in info["available"]:
                     continue
-                if last_duty_day.get(name, -1) == day_idx - 1:
+                if day_idx > 0 and last_duty_day.get(name, -1) == day_idx - 1:
                     continue
                 # AHP 門禁（已統一為 _check_role_gate，確保安全且無重複）
                 if not _check_role_gate(is_assist_role, info["role"]):
@@ -276,7 +279,7 @@ def validate_and_compute(
     for day in DAYS:
         for role in get_roster_rows():
             val = str(roster_df.at[role, day]).strip()
-            if val == "" and not ("Room202" in role and day in ["TUESDAY", "FRIDAY"]):
+            if val == "" and not ("Room 202" in role and day in ["TUESDAY", "FRIDAY"]):
                 errors["vacuum"][1].append(f"{day} - {role} 尚未排班")
                 errors["vacuum"] = (True, errors["vacuum"][1])
 
@@ -414,4 +417,3 @@ def apply_post_publication_leave_adjustment(
     return weight
 
 
-print("✅ core.py 已載入完成 - 公平排班引擎 + 智慧替補 + 驗證模組 + 請假撤銷調整功能就緒")

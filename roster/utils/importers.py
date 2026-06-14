@@ -23,13 +23,16 @@ from roster.config import (
 )
 from roster.data import get_demo_dataframe, get_sample_format_dataframe
 
-# ====================== Gemini 配置（AI 導入後備使用） ======================
-if "GEMINI_API_KEY" in st.secrets and st.secrets["GEMINI_API_KEY"]:
-    import google.generativeai as genai
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    model = genai.GenerativeModel(GEMINI_MODEL)
-else:
-    model = None
+# ====================== Gemini 配置（AI 導入後備使用 - defensive init） ======================
+model = None
+_gemini_init_error = None
+try:
+    if "GEMINI_API_KEY" in st.secrets and st.secrets["GEMINI_API_KEY"]:
+        import google.generativeai as genai
+        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+        model = genai.GenerativeModel(GEMINI_MODEL)
+except Exception as e:
+    _gemini_init_error = str(e)
 
 # ====================== 名冊導入引擎（傳統格式） ======================
 def process_roster_import(uploaded_file):

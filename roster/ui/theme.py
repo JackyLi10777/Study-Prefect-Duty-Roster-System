@@ -429,5 +429,3 @@ def get_high_contrast_css() -> str:
     .verse-card .reflection-box { color: var(--hc-text) !important; }
 </style>
 """
-
-print("✅ roster/ui/theme.py loaded (centralized dark/light CSS + strengthened contrast + CSS vars in Increment 2 + functional High Contrast in Increment 3)")

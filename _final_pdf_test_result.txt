@@ -1,4 +1,0 @@
-=== Final PDF Export Verification ===
-generate_pdf returned: <class 'bytes'> len= 80
-SUCCESS: PDF generation works (bytes returned, backup page included in HTML construction)
-=== PDF FIX VERIFIED (both CN/EN buttons will now reliably generate + offer download via state) ===

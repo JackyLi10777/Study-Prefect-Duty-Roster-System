@@ -544,4 +544,3 @@ def render_control_buttons():
     return selected_closures
 
 
-print("✅ ui_components.py 已載入完成 - 人性化重新設計前端（心理學優化版）")

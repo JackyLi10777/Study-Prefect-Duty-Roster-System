@@ -1,4 +1,4 @@
-# roster/config/constants.py
+﻿# roster/config/constants.py
 """
 roster.config.constants - Single Source of Truth (SSOT) for all scheduling rules
 
@@ -19,6 +19,7 @@ Slot 展開（ROWS_ROSTER）現在完全由 ROOMS_CONFIG + ROOM_ORDER 透過 get
 
 import datetime
 import random
+import pandas as pd
 
 # ====================== 應用程式基本設定 ======================
 APP_TITLE = "Sing Yin Study Prefect Duty Roster System"
@@ -120,7 +121,7 @@ def get_role_style(role: str, day: str = "") -> dict:
     elif color_key == "room202":
         style.update({"bg": NASA_COLORS["room202_bg"], "border": f"2px solid {NASA_COLORS['room202_border']}", "text": NASA_COLORS["room202_text"]})
 
-    if "Room202" in role and day in ["TUESDAY", "FRIDAY"]:
+    if "Room 202" in role and day in ["TUESDAY", "FRIDAY"]:
         style.update({"bg": NASA_COLORS["closed_bg"], "text": "#546E7A", "font_style": "italic"})
     return style
 
@@ -212,6 +213,26 @@ def get_base_role(row: str) -> str:
     if " - " in row:
         return row.split(" - ")[0].strip()
     return row
+
+# ====================== 角色名稱正規化（支援中英文） ======================
+ROLE_MAP = {
+    "Assistant Head Study Prefect": AHP_ROLE,
+    "Head Study Prefect": AHP_ROLE,
+    "Study Prefect": REGULAR_ROLE,
+    "助理首席導學風紀": AHP_ROLE,
+    "首席導學風紀": AHP_ROLE,
+    "導學風紀": REGULAR_ROLE,
+}
+
+def normalize_role(role: str) -> str:
+    """Map various role name formats to the canonical Chinese name."""
+    return ROLE_MAP.get(role.strip(), role.strip())
+
+def normalize_students_role_column(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize the 'role' column of a students DataFrame in place."""
+    if "role" in df.columns:
+        df["role"] = df["role"].apply(lambda x: normalize_role(str(x).strip()))
+    return df
 
 # ====================== 每日聖經金句（完整版 - 已替換用戶最新提供內容） ======================
 DAILY_VERSES = {
@@ -308,14 +329,6 @@ DAILY_VERSES = {
 
 GEMINI_MODEL = "gemini-3.5-flash"
 
-def validate_config():
-    print("✅ config.py 配置驗證通過 - 所有學校業務規則已正確載入")
-    print("✅ 完整 DAILY_VERSES 已載入（超過200句，UI 顯示中文，匯出時可選）")
-    print("✅ 全局負荷滑桿已啟用（範圍 0.8\~2.0）")
-
-validate_config()
-print("✅ config.py 已載入完成 - Single Source of Truth 就緒")
-
 # --- Declarative ROWS_ROSTER computation (Phase 2 Step 1) ---
 # Must be after all function definitions so get_roster_rows and get_base_role are defined.
 ROWS_ROSTER = get_roster_rows()
@@ -328,4 +341,3 @@ assert ROWS_ROSTER == _LEGACY_ROWS_ROSTER, (
     "get_roster_rows() must exactly reproduce the legacy ROWS_ROSTER list. "
     "Check ROOM_ORDER order and display_name values in ROOMS_CONFIG."
 )
-

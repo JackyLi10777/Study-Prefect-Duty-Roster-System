@@ -62,5 +62,3 @@ def set_language(lang: str):
 
 # Future extension point: register additional languages, load from JSON, etc.
 # For now the MESSAGES in messages.py is the source of truth.
-
-print("✅ roster/ui/i18n.py loaded - canonical language management (display layer only)")

@@ -10,11 +10,9 @@ Depends on roster.config for styles and constants.
 
 import streamlit as st
 import pandas as pd
-import io
 import json
 import datetime
 import base64
-import random
 
 # ====================== PDF 支援強固檢查 ======================
 try:
@@ -22,12 +20,12 @@ try:
     PDF_AVAILABLE = True
 except (ImportError, OSError, Exception) as e:
     PDF_AVAILABLE = False
-    st.warning("⚠️ WeasyPrint 未就緒（PDF 功能暫時無法使用）。請確認 GitHub 已加入 packages.txt 並重新部署。")
+    _pdf_init_error = str(e)
 
 # ====================== 模組導入 ======================
 from roster.config import (
     DAYS, NASA_COLORS, get_role_style,
-    PROJECT_FULL_NAME_EN, VERSION
+    PROJECT_FULL_NAME, PROJECT_FULL_NAME_EN, VERSION
 )
 from roster.utils.backup import get_dynamic_backup_json
 
@@ -44,7 +42,7 @@ def get_cell_style(val: str, role: str, day: str) -> str:
     if val == "X":
         return f"color:{NASA_COLORS['x_text']}; font-weight:bold; background-color:{NASA_COLORS['x_bg']}; text-align:center; border:2px solid {NASA_COLORS['x_border']};"
 
-    if "Room202" in role and day in ["TUESDAY", "FRIDAY"]:
+    if "Room 202" in role and day in ["TUESDAY", "FRIDAY"]:
         return f"background-color:{NASA_COLORS['closed_bg']}; color:#546E7A; font-style:italic; text-align:center; border:1px solid #90A4AE;"
 
     if val == "":
@@ -60,29 +58,31 @@ def get_cell_style(val: str, role: str, day: str) -> str:
     )
 
 # ====================== A4 橫式彩色 PDF 生成引擎 (Professional English Export) ======================
-def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b64: str = None, lang: str = "en") -> bytes:
+def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b64: str = None, lang: str = "en", include_backup_page: bool = False) -> bytes:
     """
     Generate highly professional English PDF report for external/official use.
     - Titles, headers, summaries in clean professional English.
     - Student names preserved in original Chinese (per strict requirements).
     - Strong visual hierarchy, clean typography (graphic-design).
     - Includes servant leadership and fairness principles (evangelical-theology).
+    - If include_backup_page is True, appends an internal JSON backup page (default: False).
     UI remains fully Chinese; this is export-only.
     """
     if not PDF_AVAILABLE:
-        # Error is in Chinese for UI context, but this function is for English exports
-        st.error("PDF 引擎未就緒，請確認 packages.txt 已加入 weasyprint 並重新部署")
+        err_info = getattr(st.session_state, "_pdf_init_error", None) or "unknown error"
+        st.error(f"PDF 引擎未就緒，請確認 packages.txt 已加入 weasyprint 並重新部署 ({err_info})")
         return None
 
     if logo_b64 is None:
-        if st.session_state.get("logo_data"):
-            logo_b64 = base64.b64encode(st.session_state.logo_data).decode()
+        cached_logo = st.session_state.get("logo_data")
+        if cached_logo:
+            logo_b64 = base64.b64encode(cached_logo).decode()
         else:
             try:
                 with open("logo.png", "rb") as f:
-                    logo_data = f.read()
-                    logo_b64 = base64.b64encode(logo_data).decode()
-                    st.session_state.logo_data = logo_data
+                    file_data = f.read()
+                    logo_b64 = base64.b64encode(file_data).decode()
+                    st.session_state["logo_data"] = file_data
             except FileNotFoundError:
                 logo_b64 = None
 
@@ -204,16 +204,21 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
         {footer_text}
     </div>
 
-    <!-- BACKUP DATA PAGE - INTERNAL USE ONLY - REMOVE THIS PAGE BEFORE DISTRIBUTION -->
-    <div style="page-break-before: always; font-family: monospace; font-size: 8px; color: #000; background: #fff; padding: 10px; border: 2px solid #f00;">
-        <h2 style="color: #f00; text-align: center; font-size: 14px;">BACKUP DATA - INTERNAL USE ONLY - PLEASE REMOVE THIS PAGE BEFORE DISTRIBUTION</h2>
-        <p style="text-align: center;">This page contains dynamic data in JSON format for recovery purposes. It is not part of the official report.</p>
-        <pre style="white-space: pre-wrap; word-wrap: break-word; background: #f5f5f5; padding: 5px; border: 1px solid #ccc;">
-{get_dynamic_backup_json(master_report_df)}
-        </pre>
-    </div>
     </body></html>
     """
+
+    if include_backup_page:
+        bk_data = get_dynamic_backup_json(master_report_df)
+        bk_html = f"""
+    <div style="page-break-before: always; font-family: monospace; font-size: 8px; color: #000; background: #fff; padding: 10px; border: 2px solid #f00;">
+        <h2 style="color: #f00; text-align: center; font-size: 14px;">BACKUP DATA - INTERNAL USE ONLY</h2>
+        <p style="text-align: center;">This page contains dynamic data in JSON format for recovery purposes.</p>
+        <pre style="white-space: pre-wrap; word-wrap: break-word; background: #f5f5f5; padding: 5px; border: 1px solid #ccc;">
+{bk_data}
+        </pre>
+    </div>
+    """
+        html += bk_html
 
     return HTML(string=html).write_pdf()
 
@@ -227,18 +232,20 @@ def generate_service_certificate(semester_hours: dict, logo_b64: str = None) -> 
     - Clean, leadership-ready format.
     """
     if not PDF_AVAILABLE:
-        st.error("PDF 引擎未就緒，請確認 packages.txt 已加入 weasyprint 並重新部署")
+        err_info = getattr(st.session_state, "_pdf_init_error", None) or "unknown error"
+        st.error(f"PDF 引擎未就緒，請確認 packages.txt 已加入 weasyprint 並重新部署 ({err_info})")
         return None
 
     if logo_b64 is None:
-        if st.session_state.get("logo_data"):
-            logo_b64 = base64.b64encode(st.session_state.logo_data).decode()
+        cached_logo = st.session_state.get("logo_data")
+        if cached_logo:
+            logo_b64 = base64.b64encode(cached_logo).decode()
         else:
             try:
                 with open("logo.png", "rb") as f:
-                    logo_data = f.read()
-                    logo_b64 = base64.b64encode(logo_data).decode()
-                    st.session_state.logo_data = logo_data
+                    file_data = f.read()
+                    logo_b64 = base64.b64encode(file_data).decode()
+                    st.session_state["logo_data"] = file_data
             except FileNotFoundError:
                 logo_b64 = None
 

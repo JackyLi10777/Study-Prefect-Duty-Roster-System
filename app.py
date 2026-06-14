@@ -23,7 +23,6 @@ from typing import Optional
 from roster.config import (
     DAYS, ROWS_ROSTER, VERSION, APP_TITLE, PROJECT_FULL_NAME, PROJECT_FULL_NAME_EN,
     NASA_COLORS, get_role_style, DEFAULT_GLOBAL_LOAD_MULTIPLIER, get_weight,
-    AHP_ROLE, REGULAR_ROLE
 )
 
 # Centralized display-layer language & messages (new architecture - single source of _t)
@@ -153,17 +152,9 @@ def main():
     st.write("---")
     selected_closures = render_control_buttons()
 
-    # 角色名稱統一正規化（支援 legacy 英文 + 中文，確保 AHP/生成邏輯正確）
-    role_map = {
-        "Assistant Head Study Prefect": AHP_ROLE,
-        "Head Study Prefect": AHP_ROLE,
-        "Study Prefect": REGULAR_ROLE,
-        "助理首席導學風紀": AHP_ROLE,
-        "首席導學風紀": AHP_ROLE,
-        "導學風紀": REGULAR_ROLE,
-    }
-    if not st.session_state.students_df.empty and "role" in st.session_state.students_df.columns:
-        st.session_state.students_df["role"] = st.session_state.students_df["role"].map(lambda x: role_map.get(str(x).strip(), str(x).strip()))
+    # 角色名稱統一正規化（支援中英文，由 config 中的 ROLE_MAP 集中處理）
+    from roster.config import normalize_students_role_column
+    normalize_students_role_column(st.session_state.students_df)
 
     # ====================== 驗證與計算 ======================
     audit_results = validate_and_compute(
