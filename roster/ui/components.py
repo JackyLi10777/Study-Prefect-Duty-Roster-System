@@ -107,43 +107,13 @@ def render_sidebar():
         st.caption(get_text("platform_caption"))
 
         # Light / Dark Mode and Language (per requirements)
-        # High Contrast auto-pairs with Dark for best visual result (enforced here in controller).
-        # When HC is turned on, force Dark and remember prior theme (if not already Dark).
-        # When HC is turned off, restore the saved previous theme (Dark or Light) when available.
-        # A render-time consistency guard ensures persisted state (HC=true + old theme=light) is normalized on load.
-        # Visual indicator (caption) appears only when HC active; it receives extreme contrast treatment automatically.
-        # All logic is display-layer only; verse enclosure, gold #D4AF37 (in normal modes), and hierarchy untouched.
+                # High Contrast mode was merged into Dark Mode for simplicity.
+        # Now there is only one themed toggle: Dark Mode (boosted for maximum readability).
+        # Any old high_contrast session_state values are silently ignored by theme.py.
         col_theme, col_lang = st.columns(2)
         with col_theme:
-            # Consistency guard for persisted HC state (handles Cloud restore / old sessions)
-            if st.session_state.get("high_contrast", False) and st.session_state.get("theme", "light") != "dark":
-                st.session_state["hc_previous_theme"] = st.session_state.get("theme", "light")
-                st.session_state["theme"] = "dark"
-
-            is_dark = st.toggle(_t("🌙 深色模式", "🌙 Dark Mode"), value=st.session_state.get("theme", "light") == "dark", key="theme_toggle")
+            is_dark = st.toggle(_t("🌓 ????", "🌓 Dark Mode"), value=st.session_state.get("theme", "light") == "dark", key="theme_toggle")
             st.session_state.theme = "dark" if is_dark else "light"
-
-            prev_hc = st.session_state.get("high_contrast", False)
-            hc = st.toggle(_t("🔳 高對比模式", "🔳 High Contrast"), value=prev_hc, key="hc_toggle")
-
-            if hc and not prev_hc:
-                # Enabling HC → force (or keep) Dark and remember the prior non-Dark theme
-                current = st.session_state.get("theme", "light")
-                if current != "dark":
-                    st.session_state.hc_previous_theme = current
-                    st.session_state.theme = "dark"
-            elif not hc and prev_hc:
-                # Disabling HC → restore previous theme if we saved one
-                prev = st.session_state.get("hc_previous_theme")
-                if prev:
-                    st.session_state.theme = prev
-                    st.session_state.hc_previous_theme = None
-
-            st.session_state.high_contrast = hc
-
-            # Clear visual indicator when High Contrast is active (appears in sidebar, styled by HC CSS)
-            if st.session_state.get("high_contrast", False):
-                st.caption(_t("🔳 高對比模式已啟用（自動套用深色模式以獲得最佳對比）", "🔳 High Contrast active (Dark mode enforced for best result)"))
         with col_lang:
             # 更完整的語言模式：中文介面 / 英文介面
             # UI 主要保持中文（學校情境），匯出與部分標題可同步英文

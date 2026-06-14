@@ -33,3 +33,4 @@ libxrender1
 libxml2
 shared-mime-info
 xdg-user-dirs
+libffi-dev
