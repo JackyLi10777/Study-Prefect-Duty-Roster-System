@@ -13,4 +13,5 @@ from .engine import (
     validate_and_compute,
     recommend_substitutes,
     apply_post_publication_leave_adjustment,
+    annotate_mentoring_pairs,
 )

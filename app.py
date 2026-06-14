@@ -16,6 +16,7 @@ import json
 import base64
 import random
 from typing import Optional
+import re as _re
 
 # ====================== 模組導入 (direct roster/ per project-structure-advisor, thin shims for compat only) ======================
 # Note: All UI text in Chinese; exports forced to professional English with Chinese student names preserved.
@@ -69,9 +70,11 @@ HELP_TEXT = """
 #### 5. 值班表操作
 - **視覺公告版**：專業彩色顯示，不同崗位不同顏色（Assist 金米、Room302 綠、Room303 黃、Room202 紅）。
 - **手動修改版**：可直接在表格上修改人名或打「X」鎖定。
+- **師徒配對標記**：若兩個風紀被安排在同一間房形成師徒配對，該儲存格左側會顯示 🟢 綠色邊框標記。
 
 #### 6. 智慧替補推薦
 - 選擇日期與崗位後，點擊「🔍 尋找最優替補」，系統會依據目前總點數由低到高推薦。
+- 替補推薦結果會顯示「配對合適度」欄位，🤝 Mentor 表示推薦人選適合指導現有值班者，👤 Mentee 則表示適合接受指導。
 
 #### 7. 匯出功能
 - **📄 匯出 PDF**：專業彩色班表（含校徽），適合公告列印。
@@ -187,6 +190,9 @@ def main():
     st.subheader(get_text("this_week_roster_subheader"))
     tab_view, tab_edit = st.tabs([_t("📅 視覺公告版", "📅 Visual Board"), _t("✏️ 手動修改版", "✏️ Manual Edit Mode")])
 
+    # Compute mentoring pairs for visual indicators
+    _mentoring_pairs = annotate_mentoring_pairs(st.session_state.roster_df, st.session_state.students_df)
+
     def apply_cell_style(val, role, day):
         val = str(val).strip()
         if val == "X":
@@ -202,20 +208,33 @@ def main():
         return f"font-weight:bold; text-align:center; padding:8px 6px; background-color:{style['bg']}; color:{style['text']}; border:{style['border']};"
 
     with tab_view:
-        # Quick Search & Filter for roster
-        roster_search = st.text_input(_t("🔍 快速搜尋值班表 (Quick Search by role)", "🔍 Quick Search Roster (Quick Search by role)"), value=st.session_state.get("roster_search", ""), key="roster_search_input", placeholder=_t("輸入職位或房間關鍵字", "Enter position or room keyword"))
-        st.session_state.roster_search = roster_search
-        roster_display = st.session_state.roster_df
-        if roster_search:
-            mask = roster_display.index.astype(str).str.contains(roster_search, case=False, na=False)
-            roster_display = roster_display[mask]
-            # Safe: use get_text for dynamic count (assemble not needed here)
-            st.caption(f"{get_text('showing_prefix')} {len(roster_display)} {get_text('rows_label')}")
+    # Quick Search & Filter for roster
+    roster_search = st.text_input(_t("🔍 快速搜尋值班表 (Quick Search by role)", "🔍 Quick Search Roster (Quick Search by role)"), value=st.session_state.get("roster_search", ""), key="roster_search_input", placeholder=_t("輸入職位或房間關鍵字", "Enter position or room keyword"))
+    st.session_state.roster_search = roster_search
+    roster_display = st.session_state.roster_df.copy()
+    if roster_search:
+        mask = roster_display.index.astype(str).str.contains(roster_search, case=False, na=False)
+        roster_display = roster_display[mask]
+        # Safe: use get_text for dynamic count (assemble not needed here)
+        st.caption(f"{get_text('showing_prefix')} {len(roster_display)} {get_text('rows_label')}")
 
-        styled = roster_display.style.apply(
-            lambda row: [apply_cell_style(val, row.name, col) for col, val in row.items()], axis=1
-        )
-        st.dataframe(styled, height=380)
+    def _cell_style(val, role, day):
+        base = apply_cell_style(val, role, day)
+        _parent = role.rsplit(" - ", 1)[0] if " - " in role else role
+        _pk = _parent + "_" + day
+        if _pk in _mentoring_pairs and str(val).strip():
+            base += " border-left:4px solid #059669; background-color:rgba(5,150,105,0.06) !important;"
+        return base
+    styled = roster_display.style.apply(
+        lambda row: [_cell_style(val, row.name, col) for col, val in row.items()], axis=1
+    )
+    st.dataframe(styled, height=380)
+    st.markdown('<div style="display:flex; gap:8px; flex-wrap:wrap; font-size:12px; margin:4px 0;">' + 
+        '<span style="background:#059669; color:white; padding:2px 10px; border-radius:10px;">🤝 師徒配對</span>' + 
+        '<span style="background:#2196F3; color:white; padding:2px 10px; border-radius:10px;">🆕 新加入</span>' + 
+        '<span style="background:#F59E0B; color:white; padding:2px 10px; border-radius:10px;">👤 需要老帶新</span>' + 
+        '<span style="background:#6B7280; color:white; padding:2px 10px; border-radius:10px;">一般</span>' + 
+        '</div>', unsafe_allow_html=True)
 
     with tab_edit:
         st.markdown('<p class="edit-hint">' + _t("💡 直接修改人名或打 X 鎖定", "💡 Directly edit name or type X to lock") + "</p>", unsafe_allow_html=True)
@@ -301,6 +320,9 @@ def main():
             st.info(msg)
 
         # Simple fairness note
+        # Mentoring pair count
+        mentoring_pairs = annotate_mentoring_pairs(st.session_state.roster_df, st.session_state.students_df)
+        pair_count = len(mentoring_pairs)
         if fairness_gap > 5:
             st.warning(get_text("fairness_gap_warning"))
         else:
@@ -588,9 +610,32 @@ This system promotes fairness, equity, and a culture of service, helping prefect
         sub_df, error_msg = recommend_substitutes(st.session_state.roster_df, st.session_state.students_df, chosen_day, chosen_role)
         if sub_df is not None:
             st.success(get_text("substitute_matching_success"))
-            # UI 顯示用中文欄位
+            # Add mentoring fit column
             display_sub = sub_df.copy()
-            display_sub.columns = ["姓名", "年級", "當前總點數"]
+            names_lookup = {}
+            for _, r in st.session_state.students_df.iterrows():
+                n = str(r["name"]).strip()
+                if n:
+                    names_lookup[n] = r
+            def _fit_label(row):
+                rep_name = str(row["Name"]).strip()
+                rep_info = names_lookup.get(rep_name)
+                cur_info = names_lookup.get(current_person)
+                if rep_info is not None and cur_info is not None:
+                    rep_hw = float(rep_info.get("history_weight", 0))
+                    cur_hw = float(cur_info.get("history_weight", 0))
+                    rep_mentee = bool(rep_info.get("needs_mentoring", False)) or rep_hw <= 2
+                    cur_mentee = bool(cur_info.get("needs_mentoring", False)) or cur_hw <= 2
+                    rep_mentor = rep_hw > 5 and not bool(rep_info.get("needs_mentoring", False))
+                    cur_mentor = cur_hw > 5 and not bool(cur_info.get("needs_mentoring", False))
+                    if rep_mentor and cur_mentee:
+                        return "🤝 Mentor"
+                    if rep_mentee and cur_mentor:
+                        return "👤 Mentee"
+                return "－"
+            display_sub = sub_df.copy()
+            display_sub["Mentoring Fit"] = display_sub.apply(_fit_label, axis=1)
+            display_sub.columns = [_t("姓名", "Name"), _t("年級", "Form"), _t("當前總點數", "Load"), _t("配對合適度", "Mentoring Fit")]
             st.dataframe(display_sub, use_container_width=True, hide_index=True)
         else:
             st.warning(error_msg)

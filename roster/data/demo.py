@@ -28,7 +28,8 @@ def get_demo_dataframe() -> pd.DataFrame:
             "available": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "history_duties": 12,
             "history_weight": 18.5,
-            "remarks": "老帶新，F.3 優先，領導核心"
+            "remarks": "老帶新，F.3 優先，領導核心",
+        "needs_mentoring": False
         },
         {
             "name": "陳子軒",
@@ -39,7 +40,8 @@ def get_demo_dataframe() -> pd.DataFrame:
             "available": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "history_duties": 9,
             "history_weight": 13.5,
-            "remarks": ""
+            "remarks": "",
+        "needs_mentoring": False
         },
         {
             "name": "黃家樂",
@@ -50,7 +52,8 @@ def get_demo_dataframe() -> pd.DataFrame:
             "available": "MONDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "history_duties": 7,
             "history_weight": 10.0,
-            "remarks": "Room302 經驗豐富"
+            "remarks": "Room302 經驗豐富",
+        "needs_mentoring": False
         },
         {
             "name": "張凱傑",
@@ -61,7 +64,8 @@ def get_demo_dataframe() -> pd.DataFrame:
             "available": "MONDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "history_duties": 9,
             "history_weight": 13.5,
-            "remarks": ""
+            "remarks": "",
+        "needs_mentoring": False
         },
         {
             "name": "林俊賢",
@@ -72,7 +76,8 @@ def get_demo_dataframe() -> pd.DataFrame:
             "available": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "history_duties": 4,
             "history_weight": 5.5,
-            "remarks": "新任，老帶新"
+            "remarks": "新任，老帶新",
+        "needs_mentoring": False
         },
         {
             "name": "吳柏樂",
@@ -83,7 +88,8 @@ def get_demo_dataframe() -> pd.DataFrame:
             "available": "MONDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "history_duties": 3,
             "history_weight": 4.0,
-            "remarks": ""
+            "remarks": "",
+        "needs_mentoring": False
         },
         {
             "name": "劉子浩",
@@ -94,7 +100,8 @@ def get_demo_dataframe() -> pd.DataFrame:
             "available": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "history_duties": 15,
             "history_weight": 22.0,
-            "remarks": "固定星期三值班，領導經驗豐富"
+            "remarks": "固定星期三值班，領導經驗豐富",
+        "needs_mentoring": False
         },
         {
             "name": "歐陽浚鋒",
@@ -105,7 +112,8 @@ def get_demo_dataframe() -> pd.DataFrame:
             "available": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "history_duties": 8,
             "history_weight": 12.0,
-            "remarks": ""
+            "remarks": "",
+        "needs_mentoring": False
         },
         {
             "name": "許舜喬",
@@ -116,7 +124,8 @@ def get_demo_dataframe() -> pd.DataFrame:
             "available": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "history_duties": 5,
             "history_weight": 7.5,
-            "remarks": "新任 Assistant Head"
+            "remarks": "新任 Assistant Head",
+        "needs_mentoring": False
         },
         {
             "name": "何梓皓",
@@ -127,7 +136,8 @@ def get_demo_dataframe() -> pd.DataFrame:
             "available": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "history_duties": 4,
             "history_weight": 6.0,
-            "remarks": ""
+            "remarks": "",
+        "needs_mentoring": False
         },
         {
             "name": "何俊霆",
@@ -138,7 +148,8 @@ def get_demo_dataframe() -> pd.DataFrame:
             "available": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "history_duties": 3,
             "history_weight": 4.5,
-            "remarks": ""
+            "remarks": "",
+        "needs_mentoring": False
         },
     ]
     df = pd.DataFrame(demo_data)
@@ -161,7 +172,8 @@ def get_sample_format_dataframe() -> pd.DataFrame:
             "可用日子": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "歷史累計(次)": 12,
             "歷史動態(點)": 18.5,
-            "備註": "老帶新，F.3 優先，領導核心"
+            "需要老帶新(Needs Mentoring)": False,
+        "備註": "老帶新，F.3 優先，領導核心"
         },
         {
             "姓名": "陳子軒",
@@ -172,7 +184,8 @@ def get_sample_format_dataframe() -> pd.DataFrame:
             "可用日子": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "歷史累計(次)": 9,
             "歷史動態(點)": 13.5,
-            "備註": ""
+            "需要老帶新(Needs Mentoring)": False,
+        "備註": ""
         },
         {
             "姓名": "黃家樂",
@@ -183,7 +196,8 @@ def get_sample_format_dataframe() -> pd.DataFrame:
             "可用日子": "MONDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "歷史累計(次)": 7,
             "歷史動態(點)": 10.0,
-            "備註": "Room302 經驗豐富"
+            "需要老帶新(Needs Mentoring)": False,
+        "備註": "Room302 經驗豐富"
         },
         {
             "姓名": "張凱傑",
@@ -194,7 +208,8 @@ def get_sample_format_dataframe() -> pd.DataFrame:
             "可用日子": "MONDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "歷史累計(次)": 9,
             "歷史動態(點)": 13.5,
-            "備註": ""
+            "需要老帶新(Needs Mentoring)": False,
+        "備註": ""
         },
         {
             "姓名": "林俊賢",
@@ -205,7 +220,8 @@ def get_sample_format_dataframe() -> pd.DataFrame:
             "可用日子": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
             "歷史累計(次)": 4,
             "歷史動態(點)": 5.5,
-            "備註": "新任，老帶新"
+            "需要老帶新(Needs Mentoring)": False,
+        "備註": "新任，老帶新"
         },
     ]
     return pd.DataFrame(sample_data)

@@ -35,6 +35,7 @@ def _create_backup_data(master_report_df: pd.DataFrame) -> dict:
             "name": str(row.get("name", "")).strip(),
             "history_duties": int(row.get("history_duties", 0)),
             "history_weight": float(row.get("history_weight", 0.0)),
+            "needs_mentoring": bool(row.get("needs_mentoring", False)),
             "remarks": str(row.get("remarks", ""))
         })
 
@@ -164,6 +165,7 @@ def _apply_full_replace(data: dict):
                 st.session_state.students_df.at[idx, "history_duties"] = dyn.get("history_duties", 0)
                 st.session_state.students_df.at[idx, "history_weight"] = dyn.get("history_weight", 0.0)
                 st.session_state.students_df.at[idx, "remarks"] = dyn.get("remarks", "")
+                st.session_state.students_df.at[idx, "needs_mentoring"] = dyn.get("needs_mentoring", False)
 
     if "roster_df" in data:
         restored_roster = pd.DataFrame.from_dict(data["roster_df"], orient="index")
@@ -204,6 +206,7 @@ def _apply_smart_merge(data: dict):
                 st.session_state.students_df.at[idx, "history_duties"] = dyn.get("history_duties", row.get("history_duties", 0))
                 st.session_state.students_df.at[idx, "history_weight"] = dyn.get("history_weight", row.get("history_weight", 0.0))
                 st.session_state.students_df.at[idx, "remarks"] = dyn.get("remarks", row.get("remarks", ""))
+                st.session_state.students_df.at[idx, "needs_mentoring"] = dyn.get("needs_mentoring", row.get("needs_mentoring", False))
 
     # 當週特定資料傾向替換
     if "roster_df" in data:

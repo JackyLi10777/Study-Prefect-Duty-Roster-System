@@ -25,7 +25,7 @@ def get_empty_students_df() -> pd.DataFrame:
     return pd.DataFrame(columns=[
         "name", "form", "class", "role",
         "fixed_general_duty", "available",
-        "history_duties", "history_weight", "remarks"
+        "history_duties", "history_weight", "needs_mentoring", "remarks"
     ])
 
 
@@ -50,6 +50,7 @@ def load_static_students() -> pd.DataFrame:
                 # Initialize dynamic to 0
                 df["history_duties"] = 0
                 df["history_weight"] = 0.0
+                df["needs_mentoring"] = False
                 df["remarks"] = ""
                 return df
             except Exception:

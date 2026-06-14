@@ -222,6 +222,7 @@ def render_sidebar():
                 "available": st.column_config.TextColumn(_t("可用日子", "Available Days")),
                 "history_duties": st.column_config.NumberColumn(_t("歷史次數", "History Count"), min_value=0),
                 "history_weight": st.column_config.NumberColumn(_t("歷史點數", "History Points"), min_value=0.0),
+                "needs_mentoring": st.column_config.CheckboxColumn(_t("需要老帶新", "Needs Mentoring"), help=_t("累計點數過低時建議勾選，方便安排老帶新", "Check when points are low to arrange mentoring")),
                 "remarks": st.column_config.TextColumn(_t("備註", "Remarks"))
             },
             num_rows="dynamic",
@@ -229,13 +230,34 @@ def render_sidebar():
             key="student_editor_widget"
         )
 
+        # Auto-tag legend
+        st.caption(_t("自動標註說明：", "Auto-tagging:"))
+        st.markdown('<div style="display:flex; gap:10px; flex-wrap:wrap; font-size:12px;">', unsafe_allow_html=True)
+        st.markdown('<span style="background:#2196F3; color:white; padding:2px 8px; border-radius:10px;">🆕 新加入</span>', unsafe_allow_html=True)
+        st.markdown('<span style="background:#F59E0B; color:white; padding:2px 8px; border-radius:10px;">👤 需要老帶新</span>', unsafe_allow_html=True)
+        st.markdown('<span style="background:#10B981; color:white; padding:2px 8px; border-radius:10px;">✅ 指定老帶新</span>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
         if search_term:
             mask = (st.session_state.students_df["name"].astype(str).str.contains(search_term, case=False, na=False) |
                     st.session_state.students_df["form"].astype(str).str.contains(search_term, case=False, na=False) |
                     st.session_state.students_df["role"].astype(str).str.contains(search_term, case=False, na=False))
             filtered = st.session_state.students_df[mask]
             st.caption(f"{_t('顯示', 'Showing')} {len(filtered)} / {len(st.session_state.students_df)} {_t('位學生 (搜尋結果)', 'students (search results)')}")
-            st.dataframe(filtered, hide_index=True)
+            # Add mentoring status column
+            search_display = filtered.copy()
+            def _mentor_tag(row):
+                hw = float(row.get("history_weight", 0))
+                manual = bool(row.get("needs_mentoring", False))
+                if manual:
+                    return "✅ 指定老帶新"
+                if hw == 0:
+                    return "🆕 新加入"
+                if hw <= 2:
+                    return "👤 需要老帶新"
+                return ""
+            search_display["狀態"] = search_display.apply(_mentor_tag, axis=1)
+            st.dataframe(search_display[[_t("姓名", "Name"), "狀態", "form", "role", "history_weight"]], hide_index=True, use_container_width=True)
 
         st.divider()
 
@@ -277,7 +299,8 @@ def render_sidebar():
                 "available": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
                 "history_duties": 0,
                 "history_weight": 0.0,
-                "remarks": ""
+                "needs_mentoring": False,
+                "remarks": new_remark if new_remark.strip() else ""
             }])
             st.session_state.students_df = pd.concat([st.session_state.students_df, new_row], ignore_index=True)
             st.success(get_text("student_added", name=new_name.strip(), role=new_role))
@@ -298,7 +321,7 @@ def render_sidebar():
         st.session_state.selected_students_for_bulk = bulk_selected
 
         if bulk_selected:
-            bulk_type = st.radio(_t("批量類型", "Batch Type"), [_t("設定請假", "Set Leave"), _t("設定固定值班", "Set Fixed Duty")], horizontal=True, key="bulk_type")
+            bulk_type = st.radio(_t("批量類型", "Batch Type"), [_t("設定請假", "Set Leave"), _t("設定固定值班", "Set Fixed Duty"), _t("批量刪除", "Batch Delete")], horizontal=True, key="bulk_type")
             if bulk_type == _t("設定請假", "Set Leave"):
                 if st.button(_t("✅ 批量請假", "✅ Batch Leave"), use_container_width=True, type="primary"):
                     current_leave = set(st.session_state.get("leave_tracker_input", []))
@@ -310,7 +333,7 @@ def render_sidebar():
                     st.session_state.selected_students_for_bulk = []
                     trigger_backup_reminder()
                     st.rerun()
-            else:
+            elif bulk_type == _t("設定固定值班", "Set Fixed Duty"):
                 bulk_day = st.selectbox(_t("選擇固定日子", "Select Fixed Day"), ["NONE"] + DAYS, key="bulk_fixed_day")
                 if st.button(_t("✅ 批量設定固定值班", "✅ Batch Set Fixed Duty"), use_container_width=True, type="primary"):
                     updated = 0
@@ -321,6 +344,26 @@ def render_sidebar():
                             updated += 1
                     # Safe pattern: assemble first, then get_text
                     st.success(get_text("batch_fixed_success", count=updated, day=bulk_day))
+            elif bulk_type == _t("批量刪除", "Batch Delete"):
+                if st.button("🗑 " + _t("批量刪除選取學生", "Batch Delete Selected"), use_container_width=True, type="secondary"):
+                    st.session_state.show_batch_delete_confirm = True
+                if st.session_state.get("show_batch_delete_confirm", False):
+                    st.error(_t("警告：刪除後，該學生的歷史排班紀錄與累計點數將無法復原，確定要刪除嗎？", "WARNING: After deletion, the student's historical duty records and cumulative points CANNOT be recovered. Are you sure?"))
+                    col_confirm, col_cancel = st.columns(2)
+                    with col_confirm:
+                        if st.button(_t("✔ 確定刪除", "Confirm Delete"), type="primary", use_container_width=True, key="batch_delete_confirm"):
+                            df = st.session_state.students_df
+                            before = len(df)
+                            df = df[~df["name"].astype(str).str.strip().isin(st.session_state.selected_students_for_bulk)]
+                            st.session_state.students_df = df.reset_index(drop=True)
+                            st.session_state.show_batch_delete_confirm = False
+                            st.session_state.selected_students_for_bulk = []
+                            st.success(get_text("batch_delete_success", count=before - len(df)))
+                            st.rerun()
+                    with col_cancel:
+                        if st.button(_t("✖ 取消", "Cancel"), use_container_width=True, key="batch_delete_cancel"):
+                            st.session_state.show_batch_delete_confirm = False
+                            st.rerun()
                     st.session_state.selected_students_for_bulk = []
                     trigger_backup_reminder()
                     st.rerun()

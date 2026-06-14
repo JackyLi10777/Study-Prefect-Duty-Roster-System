@@ -35,6 +35,9 @@ from roster.config import (
 # Phase 1: Extracted constants for magic strings and role names (reduces duplication and magic values)
 _UNASSIGNED_MARKERS = {"", "X", "⬜", "請假撤銷"}
 _ASSIST_ROLE = "Assist. in charge"
+_MENTEE_THRESHOLD = 2.0  # history_weight <= 2 auto-tags as mentee
+_MENTOR_THRESHOLD = 5.0  # history_weight > 5 qualifies as mentor
+_MENTORING_PAIR_BONUS = -2.0  # score bonus for pairing complementary types
 # 使用統一中文職位（從 config 匯入，支援 legacy 英文）
 # _AHP_ROLE and _REGULAR_ROLE 已從 config import 覆蓋
 
@@ -57,6 +60,18 @@ def _check_role_gate(is_assist_role: bool, person_role: str) -> bool:
     if is_assist_role:
         return person_role == _AHP_ROLE
     return person_role == _REGULAR_ROLE
+
+
+def _is_mentee(info: dict) -> bool:
+    """Return True if student needs mentoring based on flag or low history_weight."""
+    hw = float(info.get("history_weight", 0))
+    return bool(info.get("needs_mentoring", False)) or hw <= _MENTEE_THRESHOLD
+
+
+def _is_mentor(info: dict) -> bool:
+    """Return True if student qualifies as a mentor (experienced, not needing mentoring)."""
+    hw = float(info.get("history_weight", 0))
+    return hw > _MENTOR_THRESHOLD and not bool(info.get("needs_mentoring", False))
 
 
 def _compute_fair_score(
@@ -135,7 +150,10 @@ def generate_roster(
             "role": str(row.get("role", "Study Prefect")),
             "fixed": str(row.get("fixed_general_duty", "NONE")).upper(),
             "available": [d.strip().upper() for d in str(row.get("available", "")).split(",") if d.strip()],
-            "history_weight": float(row.get("history_weight", 0.0))
+            "history_weight": float(row.get("history_weight", 0.0)),
+            "needs_mentoring": bool(row.get("needs_mentoring", False)),
+            "is_mentee": _is_mentee(row),
+            "is_mentor": _is_mentor(row)
         }
 
     last_duty_day = {name: -1 for name in student_info.keys()}
@@ -155,6 +173,16 @@ def generate_roster(
                not is_room_open_on_weekday(base_role, day):
                 roster.at[role, day] = "X" if "Room 202" not in role or day not in ["TUESDAY", "FRIDAY"] else "⬜"
                 continue
+
+
+            # Track first slot occupant for mentoring pairing in 2-slot rooms
+            first_slot_occupant = None
+            base_role_name = get_base_role(role)
+            if base_role_name in ["Room 303", "Room 202"] and " - 2" in role:
+                first_role = role.replace(" - 2", " - 1")
+                first_p = str(roster.at[first_role, day]).strip()
+                if first_p and first_p in student_info:
+                    first_slot_occupant = first_p
 
             is_assist_role = is_assistant_head_only_role(base_role)
 
@@ -197,6 +225,14 @@ def generate_roster(
                 score = _compute_fair_score(
                     info["history_weight"], global_load_multiplier, is_assist_and_ahp
                 )
+
+                # Mentoring pairing bonus for 2-slot rooms (Room 303, Room 202)
+                if first_slot_occupant and name != first_slot_occupant:
+                    occ_info = student_info.get(first_slot_occupant, {})
+                    if occ_info.get("is_mentee") and info.get("is_mentor"):
+                        score += _MENTORING_PAIR_BONUS
+                    elif occ_info.get("is_mentor") and info.get("is_mentee"):
+                        score += _MENTORING_PAIR_BONUS
 
                 candidates.append((score, name, is_junior))
 
@@ -417,3 +453,39 @@ def apply_post_publication_leave_adjustment(
     return weight
 
 
+
+
+def annotate_mentoring_pairs(roster_df: pd.DataFrame, students_df: pd.DataFrame) -> dict:
+    """
+    Analyze the roster and return metadata about mentoring pairs for UI display.
+
+    Returns a dict mapping "(role)_(day)" -> "paired" for slots where a mentee
+    and mentor are assigned to the same 2-slot room (Room 303 or Room 202).
+    """
+    look = {}
+    for _, row in students_df.iterrows():
+        name = str(row["name"]).strip()
+        if name:
+            look[name] = {
+                "history_weight": float(row.get("history_weight", 0)),
+                "needs_mentoring": bool(row.get("needs_mentoring", False)),
+            }
+
+    pairs = {}
+    for role in ["Room 303 (HW Completion)", "Room 202 (F1 Study Group)"]:
+        for day in ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]:
+            if "Room 202" in role and day in ["TUESDAY", "FRIDAY"]:
+                continue
+            r1 = role + " - 1"
+            r2 = role + " - 2"
+            p1 = str(roster_df.at[r1, day]).strip() if r1 in roster_df.index else ""
+            p2 = str(roster_df.at[r2, day]).strip() if r2 in roster_df.index else ""
+            if p1 and p2 and p1 in look and p2 in look:
+                mentee1 = look[p1]["needs_mentoring"] or look[p1]["history_weight"] <= _MENTEE_THRESHOLD
+                mentee2 = look[p2]["needs_mentoring"] or look[p2]["history_weight"] <= _MENTEE_THRESHOLD
+                mentor1 = look[p1]["history_weight"] > _MENTOR_THRESHOLD and not look[p1]["needs_mentoring"]
+                mentor2 = look[p2]["history_weight"] > _MENTOR_THRESHOLD and not look[p2]["needs_mentoring"]
+                if (mentee1 and mentor2) or (mentee2 and mentor1):
+                    pair_key = role + "_" + day
+                    pairs[pair_key] = "paired"
+    return pairs

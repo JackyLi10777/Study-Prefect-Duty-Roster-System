@@ -53,12 +53,13 @@ def process_roster_import(uploaded_file):
             '可用日子': 'available', 'available': 'available',
             '歷史累計(次)': 'history_duties', 'history_duties': 'history_duties',
             '歷史動態(點)': 'history_weight', 'history_weight': 'history_weight',
-            '備註': 'remarks', 'remarks': 'remarks'
+            '備註': 'remarks', 'remarks': 'remarks',
+            'needs_mentoring': 'needs_mentoring', 'Needs Mentoring': 'needs_mentoring'
         }
 
         df = df.rename(columns=lambda x: mapping.get(str(x).strip(), str(x).strip()))
 
-        required_cols = ["name", "form", "class", "role", "fixed_general_duty", "available", "history_duties", "history_weight", "remarks"]
+        required_cols = ["name", "form", "class", "role", "fixed_general_duty", "available", "history_duties", "history_weight", "needs_mentoring", "remarks"]
         for col in required_cols:
             if col not in df.columns:
                 if col == "fixed_general_duty":
@@ -69,6 +70,8 @@ def process_roster_import(uploaded_file):
                     df[col] = 0
                 elif col == "history_weight":
                     df[col] = 0.0
+                elif col == "needs_mentoring":
+                    df[col] = False
                 else:
                     df[col] = ""
 
@@ -104,7 +107,7 @@ def smart_process_roster_import(uploaded_file):
         rename_dict = {v: k for k, v in mapping.items() if v in df.columns}
         df = df.rename(columns=rename_dict)
 
-        required_cols = ["name", "form", "class", "role", "fixed_general_duty", "available", "history_duties", "history_weight", "remarks"]
+        required_cols = ["name", "form", "class", "role", "fixed_general_duty", "available", "history_duties", "history_weight", "needs_mentoring", "remarks"]
         for col in required_cols:
             if col not in df.columns:
                 if col == "fixed_general_duty":
@@ -115,6 +118,8 @@ def smart_process_roster_import(uploaded_file):
                     df[col] = 0
                 elif col == "history_weight":
                     df[col] = 0.0
+                elif col == "needs_mentoring":
+                    df[col] = False
                 else:
                     df[col] = ""
 

@@ -8,7 +8,7 @@ replacing the separate High Contrast mode for a simpler, more readable experienc
 CSS for base (shared verse/alert/kpi structure) and per-mode (dark/light overrides)
 is now generated here for maintainability.
 
-Dark Mode now uses pure white (#ffffff) primary text, bright secondary text (#cccccc),
+Dark Mode now uses pure white (#ffffff) primary text, bright secondary text (#e5e7eb),
 and stronger borders for maximum readability. High Contrast mode has been merged into
 Dark Mode —— the toggle is now a single "Dark Mode" button.
 """
@@ -76,6 +76,7 @@ def get_base_css() -> str:
     .kpi-card { background: var(--light-surface); border-radius: 8px; padding: 10px 14px; margin: 4px 0; border-left: 4px solid var(--primary-blue); box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
     .kpi-card .label { font-size: 12px; color: var(--kpi-label); }
     .kpi-card .value { font-size: 18px; font-weight: 700; color: var(--primary-blue); }
+    .kpi-card.mentoring-pair-badge { border-left-color: #10B981 !important; }
 
     .verse-card {
         border: 3px solid var(--accent-gold);
@@ -123,9 +124,9 @@ def get_base_css() -> str:
 def get_dark_css() -> str:
     """Dark mode overrides with maximum contrast.
     After merging High Contrast into Dark Mode, all text uses pure white (#ffffff)
-    or bright gray (#cccccc) for superb readability on dark backgrounds.
+    or bright gray (#e5e7eb) for superb readability on dark backgrounds.
     Button borders, input borders, and surface edges are strengthened.
-    Gold accents are made slightly brighter (#e6c200).
+    Gold accents are kept subdued warm gold (#C9A227).
     """
     return """
 <style>
@@ -140,17 +141,17 @@ def get_dark_css() -> str:
     .stButton > button { background-color: var(--dark-surface-3); color: #ffffff; border: 2px solid #6b7280; }
     .stButton > button:hover { background-color: #374151; border-color: #9ca3af; }
 
-    .kpi-card { background-color: var(--dark-surface-2) !important; border-left-color: #e6c200 !important; color: #ffffff; }
-    .kpi-card .label { color: #e0e0e0 !important; }
+    .kpi-card { background-color: var(--dark-surface-2) !important; border-left-color: #C9A227 !important; color: #ffffff; }
+    .kpi-card .label { color: #f0f0f0 !important; }
     .kpi-card .value { color: #ffffff !important; }
 
     .verse-card {
         background: linear-gradient(180deg, #1a1f2e 0%, #0a0c10 100%) !important;
-        border: 3px solid #e6c200 !important;
+        border: 3px solid #C9A227 !important;
         padding: var(--verse-card-padding) !important;
         border-radius: 12px !important;
         box-shadow:
-            0 0 0 3px #e6c200,
+            0 0 0 3px #C9A227,
             0 12px 35px -8px rgba(0, 0, 0, 0.45),
             0 6px 10px -4px rgba(0, 0, 0, 0.3),
             0 0 18px rgba(230, 194, 0, 0.25),
@@ -167,10 +168,10 @@ def get_dark_css() -> str:
     .verse-card .verse-title { color: #ffeb3b !important; font-size: 17px !important; margin: 0 0 4px 0 !important; }
     .verse-card .verse-ref { color: #ffeb3b !important; font-weight: 600 !important; margin: 2px 0 !important; }
     .verse-card .verse-text { color: #ffffff !important; font-size: 14px !important; line-height: 1.55 !important; margin: 2px 0 8px 0 !important; }
-    .verse-card .verse-footer { color: #cccccc !important; font-size: 10px !important; margin-top: 6px !important; opacity: 1 !important; }
+    .verse-card .verse-footer { color: #e5e7eb !important; font-size: 10px !important; margin-top: 6px !important; opacity: 1 !important; }
     .verse-card .reflection-box {
         background-color: rgba(230, 194, 0, 0.06) !important;
-        border-left: 4px solid #e6c200 !important;
+        border-left: 4px solid #C9A227 !important;
         padding: var(--verse-reflection-padding) !important;
         margin: 6px 0 2px 0 !important;
         border-radius: 4px !important;
@@ -185,7 +186,7 @@ def get_dark_css() -> str:
     .verse-card .reflection-box strong { color: #ffeb3b !important; }
 
     .stDataFrame, [data-testid="stDataEditor"] { background-color: #12161e; color: #ffffff !important; }
-    .stDataFrame thead tr th { background-color: #1a202c !important; color: #ffffff !important; border-bottom: 2px solid #e6c200 !important; }
+    .stDataFrame thead tr th { background-color: #1a202c !important; color: #ffffff !important; border-bottom: 2px solid #C9A227 !important; }
     .stDataFrame tbody tr:hover { background-color: #1f2937 !important; }
 
     .stAlert { background-color: #1e1e1e; color: #ffffff; border: 1px solid #444; }
@@ -193,32 +194,32 @@ def get_dark_css() -> str:
     .stTextInput > div > div > input, .stSelectbox > div > div, .stTextArea textarea { background-color: #1a1a1a; color: #ffffff; border: 1px solid #555; }
 
     /* === HIGH-CONTRAST TEXT (merged from former High Contrast mode) === */
-    .stCaption { color: #e0e0e0 !important; }
+    .stCaption { color: #f0f0f0 !important; }
     .stMarkdown { color: #ffffff !important; }
     input::placeholder, textarea::placeholder, .stTextInput input::placeholder, .stTextArea textarea::placeholder { color: #aaaaaa !important; opacity: 1 !important; }
     .stSelectbox label, .stTextInput label, .stMultiselect label, .stRadio label, .stCheckbox label { color: #ffffff !important; }
-    .stCaption, .stHelp, small, [data-testid="stCaptionContainer"], .stMultiselect [data-baseweb] + div { color: #e0e0e0 !important; }
-    .stMarkdown small, .stMarkdown p[style*="color"], .stAlert small { color: #cccccc !important; }
-    .stMultiSelect label + div, .stMultiSelect .stHelp { color: #e0e0e0 !important; }
+    .stCaption, .stHelp, small, [data-testid="stCaptionContainer"], .stMultiselect [data-baseweb] + div { color: #f0f0f0 !important; }
+    .stMarkdown small, .stMarkdown p[style*="color"], .stAlert small { color: #e5e7eb !important; }
+    .stMultiSelect label + div, .stMultiSelect .stHelp { color: #f0f0f0 !important; }
     .stMultiSelect label, .stMultiSelect > label, div[data-baseweb="select"] > label { color: #ffffff !important; }
 
     .stSubheader, h2, h3 { color: #ffffff !important; }
 
     .stTabs [data-baseweb="tab-list"] { background-color: #161b22; border-bottom: 1px solid #333; }
-    .stTabs [data-baseweb="tab"] { color: #cccccc; }
+    .stTabs [data-baseweb="tab"] { color: #e5e7eb; }
     .stTabs [data-baseweb="tab"][aria-selected="true"] { color: #ffffff; border-bottom-color: #ffeb3b; }
 
     .stExpander { background-color: #161b22; border: 1px solid #333; border-radius: 8px; }
-    .stExpander .stMarkdown { color: #e0e0e0; }
+    .stExpander .stMarkdown { color: #f0f0f0; }
 
     .stMetric label, .stMetric [data-testid="stMetricLabel"], .stMetric .stMarkdown { color: #ffffff !important; }
     .stMetric [data-testid="stMetricValue"] { color: #ffffff !important; }
 
-    p[style*="color:#666"], p[style*="color: #666"] { color: #cccccc !important; }
-    .edit-hint { color: #cccccc !important; }
-    .stCheckbox > label, .stRadio > label { color: #e0e0e0; }
-    .stFileUploader { color: #e0e0e0; }
-    .stSlider .stMarkdown { color: #e0e0e0; }
+    p[style*="color:#666"], p[style*="color: #666"] { color: #e5e7eb !important; }
+    .edit-hint { color: #e5e7eb !important; }
+    .stCheckbox > label, .stRadio > label { color: #f0f0f0; }
+    .stFileUploader { color: #f0f0f0; }
+    .stSlider .stMarkdown { color: #f0f0f0; }
     .stSelectbox > div > div { background-color: #1a1a1a; color: #ffffff; }
     .stMultiselect > div > div { background-color: #1a1a1a; color: #ffffff; }
 
@@ -227,8 +228,23 @@ def get_dark_css() -> str:
     .stSidebar .stSelectbox label, .stSidebar .stTextInput label { color: #ffffff !important; }
     .stSidebar .stCaption, .stSidebar .stMetric { color: #ffffff !important; }
 
+    .stDataFrame td[style*="border-left: 4px solid #059669"] {
+        background-color: rgba(5, 150, 105, 0.15) !important;
+        box-shadow: inset 0 0 0 1px #059669 !important;
+    }
+
     .main-title { color: #ffffff !important; }
-    .main-subtitle { color: #e6c200 !important; }
+    .main-subtitle { color: #C9A227 !important; }
+
+    /* === EXTRA CONTRAST FOR FORM HELP, EXPANDERS, SECTION DESCRIPTIONS === */
+    .stForm, .stForm label, .stForm .stMarkdown, .stForm .stCaption { color: #ffffff !important; }
+    .st-bq, .st-bw, .st-bx { color: #ffffff !important; }
+    .stAlert p { color: #ffffff !important; }
+    .st-expander .stCaption { color: #f0f0f0 !important; }
+    [data-testid="stForm"] label, [data-testid="stForm"] .stMarkdown { color: #ffffff !important; }
+    .row-widget.stSelectbox label p { color: #ffffff !important; }
+    .st-dg, .st-dh, .st-di, .st-dj { color: #ffffff !important; }
+    .stTextInput label p, .stTextArea label p { color: #f0f0f0 !important; }
 </style>
 """
 
@@ -287,10 +303,10 @@ def get_light_css() -> str:
     .stCaption { color: var(--light-text-tertiary) !important; }
     .stMarkdown { color: var(--light-text) !important; }
 
-    .stTabs [data-baseweb="tab-list"] { background-color: var(--light-surface); border-bottom: 1px solid #e0e0e0; }
+    .stTabs [data-baseweb="tab-list"] { background-color: var(--light-surface); border-bottom: 1px solid #f0f0f0; }
     .stTabs [data-baseweb="tab"] { color: var(--light-text-secondary); }
     .stTabs [data-baseweb="tab"][aria-selected="true"] { color: var(--light-text); border-bottom-color: var(--accent-gold); }
-    .stExpander { background-color: var(--light-surface); border: 1px solid #e0e0e0; border-radius: 8px; }
+    .stExpander { background-color: var(--light-surface); border: 1px solid #f0f0f0; border-radius: 8px; }
     .stExpander .stMarkdown { color: var(--light-text-secondary); }
     .stCheckbox > label, .stRadio > label { color: var(--light-text-secondary); }
     .stFileUploader { color: var(--light-text-secondary); }
