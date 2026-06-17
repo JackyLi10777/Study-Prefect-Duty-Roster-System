@@ -173,7 +173,7 @@ def main():
     # ====================== PDF 自動預生成 ======================
     if st.session_state.roster_df is not None and not st.session_state.roster_df.empty:
         if not st.session_state.get("pdf_cache_zh"):
-            with st.spinner(_t("正在準備 PDF...", "Preparing PDF...")):
+            with st.spinner(_t("正在準備專業 PDF 報告，請稍候...", "Preparing professional PDF report... This may take a few seconds.")):
                 try:
                     _logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
                     st.session_state.pdf_cache_zh = generate_pdf(

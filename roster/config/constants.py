@@ -103,6 +103,19 @@ NASA_COLORS = {
     "x_text": "#C62828",
     "empty_bg": "#FAFAFA",
     "closed_bg": "#ECEFF1",
+    # PDF-specific cell colors (distinct from web room colors for export clarity)
+    "pdf_303_bg": "#FEF2F2",
+    "pdf_303_text": "#7F1D1D",
+    "pdf_303_border": "#FCA5A5",
+    "pdf_202_bg": "#FFF7ED",
+    "pdf_202_text": "#78350F",
+    "pdf_202_border": "#FDBA74",
+    "pdf_assist_bg": "#F0F4F8",
+    "pdf_assist_text": "#1E293B",
+    "pdf_assist_border": "#94A3B8",
+    "pdf_302_bg": "#F0FDF4",
+    "pdf_302_text": "#14532D",
+    "pdf_302_border": "#86EFAC",
 }
 
 def get_role_style(role: str, day: str = "") -> dict:

@@ -100,17 +100,17 @@ def get_cell_style(val: str, role: str, day: str) -> str:
 
     # Room-specific cell colors for PDF
     if "Room 303" in role:
-        bg = "#FEF2F2"
-        txt = "#7F1D1D"
+        bg = NASA_COLORS["pdf_303_bg"]
+        txt = NASA_COLORS["pdf_303_text"]
     elif "Room 202" in role:
-        bg = "#FFF7ED"
-        txt = "#78350F"
+        bg = NASA_COLORS["pdf_202_bg"]
+        txt = NASA_COLORS["pdf_202_text"]
     elif "Assist. in charge" in role:
-        bg = "#F0F4F8"
-        txt = "#1E293B"
+        bg = NASA_COLORS["pdf_assist_bg"]
+        txt = NASA_COLORS["pdf_assist_text"]
     elif "Room 302" in role:
-        bg = "#F0FDF4"
-        txt = "#14532D"
+        bg = NASA_COLORS["pdf_302_bg"]
+        txt = NASA_COLORS["pdf_302_text"]
     else:
         bg = "#F8FAFC"
         txt = "#1E293B"
@@ -328,23 +328,23 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
 
         .header-container {{ text-align: center; margin-bottom: 8px; }}
 
-        h1 {{ color:#0B1E3D; font-size: 20px; margin: 2px 0; font-weight: 700; letter-spacing: 0.8px; }}
+        h1 {{ color:{NASA_COLORS['header_bg']}; font-size: 20px; margin: 2px 0; font-weight: 700; letter-spacing: 0.8px; }}
 
         h2 {{ color:#D4AF37; font-size: 13px; margin: 0 0 3px 0; font-weight: 600; }}
 
         .date-sub {{ font-size: 9px; color: #555; margin-bottom: 6px; }}
 
-        h3 {{ color:#0B1E3D; border-left: 3px solid #D4AF37; padding-left: 6px; margin: 10px 0 4px; font-size: 11px; font-weight: 600; }}
+        h3 {{ color:{NASA_COLORS['header_bg']}; border-left: 3px solid #D4AF37; padding-left: 6px; margin: 10px 0 4px; font-size: 11px; font-weight: 600; }}
 
         table {{ width: 100%; border-collapse: collapse; margin: 4px 0; font-size: 8.5px; }}
 
         th, td {{ border: 0.5px solid #BDC3C7; padding: 4px 5px; text-align: center; }}
 
-        th {{ background-color: #0B1E3D; color: white; font-weight: 600; }}
+        th {{ background-color: {NASA_COLORS['header_bg']}; color: white; font-weight: 600; }}
 
         .summary {{ background: #f8f9fa; padding: 6px 8px; border-radius: 3px; margin: 4px 0; font-size: 8.5px; border: 0.5px solid #e0e0e0; }}
 
-        .kpi {{ font-weight: 600; color: #0B1E3D; }}
+        .kpi {{ font-weight: 600; color: {NASA_COLORS['header_bg']}; }}
 
         .footer-note {{ font-size: 7.5px; color: #666; text-align: center; margin-top: 6px; font-style: italic; }}
 
@@ -548,7 +548,7 @@ def generate_service_certificate(semester_hours: dict, logo_b64: str = None) -> 
 
         .header {{ text-align: center; margin-bottom: 15px; }}
 
-        h1 {{ color:#0B1E3D; font-size: 22px; margin: 5px 0; font-weight: 700; }}
+        h1 {{ color:{NASA_COLORS['header_bg']}; font-size: 22px; margin: 5px 0; font-weight: 700; }}
 
         h2 {{ color:#D4AF37; font-size: 14px; margin: 0 0 5px 0; font-weight: 600; }}
 
@@ -558,7 +558,7 @@ def generate_service_certificate(semester_hours: dict, logo_b64: str = None) -> 
 
         th, td {{ border: 1px solid #BDC3C7; padding: 6px 8px; }}
 
-        th {{ background-color: #0B1E3D; color: white; font-weight: 600; }}
+        th {{ background-color: {NASA_COLORS['header_bg']}; color: white; font-weight: 600; }}
 
         .notes {{ margin: 15px auto; width: 80%; background: #f8fafc; padding: 10px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 9.5px; }}
 
