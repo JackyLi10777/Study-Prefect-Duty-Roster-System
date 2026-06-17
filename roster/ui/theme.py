@@ -105,6 +105,13 @@ def get_base_css() -> str:
         box-sizing: border-box;
         max-width: 100%;
     }
+    
+    /* Workflow section labels */
+    .workflow-label {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
     footer { visibility: hidden; }
     .edit-hint { font-size: 13px; color: #666; }
 
