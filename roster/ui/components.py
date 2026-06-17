@@ -127,7 +127,7 @@ def render_sidebar():
             current_lang = st.session_state.get("ui_language", "zh")
             default_idx = 0 if current_lang == "zh" else 1
             selected_display = st.selectbox(
-                "中文 / English", 
+                "🌐 中文 / English", 
                 list(lang_map.values()), 
                 index=default_idx, 
                 key="lang_select"
@@ -185,7 +185,8 @@ def render_sidebar():
         col_demo, col_sample = st.columns(2)
         with col_demo:
             if st.button(_t("💡 一鍵載入官方示範名冊", "💡 One-Click Load Official Demo Roster")):
-                st.session_state.students_df = get_demo_dataframe()
+                with st.spinner(_t("正在載入示範名冊...", "Loading demo roster...")):
+                    st.session_state.students_df = get_demo_dataframe()
                 st.success(get_text("demo_roster_loaded"))
                 st.rerun()
         with col_sample:
