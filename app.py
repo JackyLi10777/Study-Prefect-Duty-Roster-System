@@ -153,6 +153,7 @@ def main():
     # ====================== 全局負荷滑桿 ======================
     # (global load slider title inside the function can be further translated if needed)
 
+    st.markdown(f'<p style="font-size:13px; font-weight:600; color:#0F766E; margin:8px 0 0 0;">{_t("每日工作流程", "Daily Workflow")}</p>', unsafe_allow_html=True)
     st.write("---")
     selected_closures = render_control_buttons()
 
@@ -812,7 +813,8 @@ This system promotes fairness, equity, and a culture of service, helping prefect
         st.plotly_chart(fig, use_container_width=True)
 
     # ====================== 智慧替補 ======================
-    st.write("---")
+    st.markdown(f'<p style="font-size:13px; font-weight:600; color:#6B7280; margin:16px 0 0 0;">{_t("其他功能", "Other Features")}</p>', unsafe_allow_html=True)
+st.write("---")
     st.subheader(get_text("smart_substitute_subheader"))
     c1, c2 = st.columns(2)
     with c1:

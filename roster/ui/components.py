@@ -135,6 +135,10 @@ def render_sidebar():
             st.session_state.ui_language = "zh" if "中文" in selected_display else "en"
             if st.session_state.ui_language == "en":
                 st.caption(get_text("english_exports_caption"))
+        # Show toast on language switch
+        if st.session_state.get("ui_language") != st.session_state.get("_prev_lang_"):
+            st.toast(_t("\u8a9e\u8a00\u5df2\u5207\u63db \u2713", "Language switched \u2713"))
+        st.session_state._prev_lang_ = st.session_state.ui_language
             else:
                 st.caption(get_text("chinese_exports_caption"))
 
