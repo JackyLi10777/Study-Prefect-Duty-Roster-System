@@ -272,11 +272,11 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
 
     # Header
 
-    html_table += f"<tr><th style='background-color:{NASA_COLORS['header_bg']}; color:white; padding:10px; text-align:center; border:1px solid #D4AF37;'>{duty_pos_header}</th>"
+    html_table += f"<tr><th style='background-color:{NASA_COLORS['header_bg']}; color:white; padding:10px; text-align:center; border:1px solid {NASA_COLORS['accent_gold']};'>{duty_pos_header}</th>"
 
     for day in DAYS:
 
-        html_table += f"<th style='background-color:{NASA_COLORS['header_bg']}; color:white; padding:10px; text-align:center; border:1px solid #D4AF37;'>{day}</th>"
+        html_table += f"<th style='background-color:{NASA_COLORS['header_bg']}; color:white; padding:10px; text-align:center; border:1px solid {NASA_COLORS['accent_gold']};'>{day}</th>"
 
     html_table += "</tr>"
 
@@ -330,11 +330,11 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
 
         h1 {{ color:{NASA_COLORS['header_bg']}; font-size: 20px; margin: 2px 0; font-weight: 700; letter-spacing: 0.8px; }}
 
-        h2 {{ color:#D4AF37; font-size: 13px; margin: 0 0 3px 0; font-weight: 600; }}
+        h2 {{ color:{NASA_COLORS['accent_gold']}; font-size: 13px; margin: 0 0 3px 0; font-weight: 600; }}
 
         .date-sub {{ font-size: 9px; color: #555; margin-bottom: 6px; }}
 
-        h3 {{ color:{NASA_COLORS['header_bg']}; border-left: 3px solid #D4AF37; padding-left: 6px; margin: 10px 0 4px; font-size: 11px; font-weight: 600; }}
+        h3 {{ color:{NASA_COLORS['header_bg']}; border-left: 3px solid {NASA_COLORS['accent_gold']}; padding-left: 6px; margin: 10px 0 4px; font-size: 11px; font-weight: 600; }}
 
         table {{ width: 100%; border-collapse: collapse; margin: 4px 0; font-size: 8.5px; }}
 
@@ -550,7 +550,7 @@ def generate_service_certificate(semester_hours: dict, logo_b64: str = None) -> 
 
         h1 {{ color:{NASA_COLORS['header_bg']}; font-size: 22px; margin: 5px 0; font-weight: 700; }}
 
-        h2 {{ color:#D4AF37; font-size: 14px; margin: 0 0 5px 0; font-weight: 600; }}
+        h2 {{ color:{NASA_COLORS['accent_gold']}; font-size: 14px; margin: 0 0 5px 0; font-weight: 600; }}
 
         .logo {{ height: 50px; margin-bottom: 5px; }}
 
