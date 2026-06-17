@@ -83,7 +83,7 @@ GLOBAL_LOAD_RANGE = (0.8, 2.0)
 DEFAULT_GLOBAL_LOAD_MULTIPLIER = 1.0
 
 NASA_COLORS = {
-    "header_bg": "#1E293B",
+    "header_bg": "#0F766E",
     "accent_gold": "#D4AF37",
     "text_dark": "#1A1A2E",
     "assist_bg": "#FFF8E1",

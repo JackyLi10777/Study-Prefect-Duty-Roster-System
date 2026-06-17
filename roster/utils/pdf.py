@@ -149,7 +149,7 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
     """
 
     # === Color System ===
-    # Dark/header backgrounds: NASA_COLORS['header_bg']
+    # Primary dark/header backgrounds: NASA_COLORS['header_bg']  (#0F766E teal)
     # Gold accents:           NASA_COLORS['accent_gold']
     # Room cell colors:       NASA_COLORS['pdf_*'] keys
     # To change colors, update roster/config/constants.py
