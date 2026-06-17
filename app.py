@@ -1,4 +1,4 @@
-# app.py
+﻿# app.py
 """
 聖言中學導學風紀當值排班平台 (Sing Yin Secondary School Study Prefect Duty Roster Platform)
 主應用程式入口 - Streamlit Cloud 最終部署版
@@ -134,7 +134,7 @@ def main():
     # 語言模式同步：中文介面優先，英文介面時使用 EN 標題（主畫面仍以中文為主，匯出專業英文）
     ui_lang = st.session_state.get("ui_language", "zh")
     main_title = PROJECT_FULL_NAME_EN if ui_lang == "en" else PROJECT_FULL_NAME
-    main_sub = "Study Prefect Duty Platform | " + VERSION if ui_lang == "en" else f"導學風紀當值平台 | {VERSION}"
+    main_sub = "Study Prefect (導學風紀) Duty Platform | " + VERSION if ui_lang == "en" else f"導學風紀當值平台 | {VERSION}"
     st.markdown(f'<p class="main-title">{main_title}</p>', unsafe_allow_html=True)
     st.markdown(f'<p class="main-subtitle">{main_sub}</p>', unsafe_allow_html=True)
 
@@ -541,7 +541,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
         if st.button(get_text("generate_service_cert_button"), use_container_width=True, type="primary"):
             cert_lines = [
                 "Sing Yin Secondary School",
-                "Study Prefect Service Certificate",
+                "Study Prefect (導學風紀) Service Certificate",
                 "",
                 "This certifies that the following prefects have completed their service hours this semester in accordance with the principles of fairness and servant leadership:",
                 ""
@@ -793,7 +793,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
 
             # Professional English summary sheet
             summary_data = {
-                "Report Type": ["Professional English Export - Sing Yin Study Prefect"],
+                "Report Type": ["Professional English Export - Sing Yin Study Prefect (導學風紀)"],
                 "Generated": [datetime.date.today().strftime('%Y-%m-%d')],
                 "Core Principle": ["Lower load = Higher priority (Fairness & Servant Leadership)"],
                 "Compliance": ["AGENTS.md §1 rules fully applied (AHP, Room 302/303, fairness)"]

@@ -1,4 +1,4 @@
-# backups/ 資料夾使用說明
+﻿# backups/ 資料夾使用說明
 
 此資料夾用於長期保存系統的**動態數據備份**（JSON 格式），提供版本控制與災難恢復能力。
 
@@ -48,4 +48,4 @@
 本系統涉及三種職位：
 - **首席導學風紀**（Head Study Prefect (首席導學風紀)）
 - **助理首席導學風紀**（Assistant Head Study Prefect (首席導學風紀)）
-- **導學風紀**（Study Prefect）
+- **導學風紀**（Study Prefect (導學風紀)）

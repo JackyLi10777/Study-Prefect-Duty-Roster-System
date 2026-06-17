@@ -1,7 +1,7 @@
-# AGENTS.md — Sing Yin Study Prefect Duty Roster System
+﻿# AGENTS.md — Sing Yin Study Prefect (導學風紀) Duty Roster System
 
 **聖言中學導學風紀當值排班平台**  
-Sing Yin Secondary School Study Prefect Duty Roster Platform
+Sing Yin Secondary School Study Prefect (導學風紀) Duty Roster Platform
 
 **Purpose for AI Agents & Developers**  
 This file defines the **authoritative project rules**, business constraints, coding standards, and architectural invariants. All changes to duty assignment logic, student data handling, or roster generation **MUST** respect these rules.
@@ -18,8 +18,8 @@ These rules come directly from school policy and are hardcoded in the system (pr
 
 - **Forms**: Only F.3, F.4, F.5, F.6 are valid prefects.
 - **Roles** (strictly two values):
-  - `"Study Prefect"` — regular prefect. Can only be assigned to room duties (302, 303, 202).
-  - `"Assistant Head Study Prefect (首席導學風紀)"` (AHP) — leadership role. Has **exclusive** access to the "Assist. in charge" position.
+  - `"Study Prefect (導學風紀)"` — regular prefect. Can only be assigned to room duties (302, 303, 202).
+  - `"Assistant Head Study Prefect (助理首席導學風紀)"` (AHP) — leadership role. Has **exclusive** access to the "Assist. in charge" position.
 - **Required data fields per student** (in `students_df`):
   - `name` (string, non-empty, unique for practical purposes)
   - `form` (F.3–F.6)
@@ -67,7 +67,7 @@ These rules come directly from school policy and are hardcoded in the system (pr
 **Weights impact**:
 - Used in audit calculations, manual weight overrides, PDF, and (most importantly) `apply_post_publication_leave_adjustment` (which always uses the base `get_weight`, not the manual value).
 
-### 1.3 AHP (Assistant Head Study Prefect (首席導學風紀)) Privileges & Restrictions
+### 1.3 AHP (Assistant Head Study Prefect (助理首席導學風紀)) Privileges & Restrictions
 
 This is the **strictest and most important policy** in the entire system.
 
@@ -78,12 +78,12 @@ This is the **strictest and most important policy** in the entire system.
 
 **Hard Restrictions**:
 - AHPs are **completely barred** from all room duties (Room 302, 303-1/2, 202-1/2).
-- Regular "Study Prefect" students are **completely barred** from the "Assist. in charge" slot.
+- Regular "Study Prefect (導學風紀)" students are **completely barred** from the "Assist. in charge" slot.
 - The role-type gate is enforced in **three independent places** for safety:
   1. Fixed-duty priority phase in `generate_roster`.
   2. Fair candidate collection phase in `generate_roster`.
   3. `recommend_substitutes()` (smart replacement finder).
-- In `student_info` and filtering code the exact strings `"Assistant Head Study Prefect (首席導學風紀)"` and `"Study Prefect"` are used for comparison.
+- In `student_info` and filtering code the exact strings `"Assistant Head Study Prefect (助理首席導學風紀)"` and `"Study Prefect (導學風紀)"` are used for comparison.
 
 **Implications**:
 - The number of AHPs in the roster should roughly match the number of Assist slots (demo data is balanced with 5 AHPs).
@@ -205,7 +205,7 @@ The generator (`core.py`) **must** follow this order and logic on every run:
 
 **Last updated**: June 2026 (ai branch) — after deep analysis of duty logic, AHP gates, room handling, and the removal of the unused `current_roster_df` parameter.
 
-**For AI agents**: Read this entire file + the docstrings at the top of `core.py` and `config.py` **before** suggesting or implementing any change to student filtering, room assignment, AHP logic, or the fairness model. The rules above are not suggestions — they reflect real school policy and the fairness expectations of the Study Prefect Team.
+**For AI agents**: Read this entire file + the docstrings at the top of `core.py` and `config.py` **before** suggesting or implementing any change to student filtering, room assignment, AHP logic, or the fairness model. The rules above are not suggestions — they reflect real school policy and the fairness expectations of the Study Prefect (導學風紀) Team.
 
 ---
 

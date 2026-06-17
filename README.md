@@ -1,11 +1,11 @@
-# Sing Yin Study Prefect Duty Roster System
+﻿# Sing Yin Study Prefect (導學風紀) Duty Roster System
 
 **聖言中學導學風紀當值排班平台**  
-Sing Yin Secondary School Study Prefect Duty Roster System
+Sing Yin Secondary School Study Prefect (導學風紀) Duty Roster System
 
 > **v2.4**（已完成 `roster/` 套件重構 + 完整文件完善）
 
-為聖言中學（純男校）Study Prefect Team 量身打造的專業、公平、穩定且易用的數位排班管理系統。  
+為聖言中學（純男校）Study Prefect (導學風紀) Team 量身打造的專業、公平、穩定且易用的數位排班管理系統。  
 專為 Streamlit Cloud 部署設計，解決休眠資料遺失問題，並提供即時公平調整機制。
 
 ## 專案結構（重構後）
@@ -115,7 +115,7 @@ F.5E
 textMIT License
 
 Copyright (c) 2026 LI Chuangjie Jacky（李創杰）
-26-27 Head Study Prefect (首席導學風紀), Sing Yin Secondary School Study Prefect Team
+26-27 Head Study Prefect (首席導學風紀), Sing Yin Secondary School Study Prefect (導學風紀) Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
