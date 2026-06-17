@@ -814,7 +814,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
 
     # ====================== 智慧替補 ======================
     st.markdown(f'<p style="font-size:13px; font-weight:600; color:#6B7280; margin:16px 0 0 0;">{_t("其他功能", "Other Features")}</p>', unsafe_allow_html=True)
-st.write("---")
+    st.write("---")
     st.subheader(get_text("smart_substitute_subheader"))
     c1, c2 = st.columns(2)
     with c1:
