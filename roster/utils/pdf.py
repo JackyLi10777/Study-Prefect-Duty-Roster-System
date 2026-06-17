@@ -115,11 +115,13 @@ def get_cell_style(val: str, role: str, day: str) -> str:
         bg = "#F8FAFC"
         txt = "#1E293B"
 
+    # Use dedicated border color for Assist. in charge
+    _bdr = NASA_COLORS["pdf_assist_border"] if "Assist. in charge" in role else "#CBD5E1"
     return (
         f"font-weight:bold; text-align:center; padding:6px 5px; "
         f"background-color:{bg}; "
         f"color:{txt}; "
-        f"border:1px solid #CBD5E1;"
+        f"border:1px solid {_bdr};"
     )
 
 
