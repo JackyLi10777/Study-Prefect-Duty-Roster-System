@@ -616,7 +616,7 @@ def generate_service_certificate(semester_hours: dict, logo_b64: str = None) -> 
 
         <p>Issued with appreciation for dedicated service.</p>
 
-        <p><strong>首席導學風紀</strong><br>Sing Yin Secondary School</p>
+        <p><strong>Head Study Prefect (首席導學風紀)</strong><br>Sing Yin Secondary School</p>
 
     </div>
 
