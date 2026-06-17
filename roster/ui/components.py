@@ -234,9 +234,9 @@ def render_sidebar():
         # Auto-tag legend
         st.caption(_t("自動標註說明：", "Auto-tagging:"))
         st.markdown('<div style="display:flex; gap:10px; flex-wrap:wrap; font-size:12px;">', unsafe_allow_html=True)
-        st.markdown('<span style="background:#2196F3; color:white; padding:2px 8px; border-radius:10px;">🆕 新加入</span>', unsafe_allow_html=True)
+        st.markdown('<span style="background:#0F766E; color:white; padding:2px 8px; border-radius:10px;">🆕 新加入</span>', unsafe_allow_html=True)
         st.markdown('<span style="background:#F59E0B; color:white; padding:2px 8px; border-radius:10px;">👤 需要老帶新</span>', unsafe_allow_html=True)
-        st.markdown('<span style="background:#10B981; color:white; padding:2px 8px; border-radius:10px;">✅ 指定老帶新</span>', unsafe_allow_html=True)
+        st.markdown('<span style="background:#0F766E; color:white; padding:2px 8px; border-radius:10px;">✅ 指定老帶新</span>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         if search_term:

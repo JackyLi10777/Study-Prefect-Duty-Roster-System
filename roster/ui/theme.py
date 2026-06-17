@@ -34,20 +34,21 @@ def get_base_css() -> str:
 <style>
     :root {
         --primary-blue: #0B1E3D;
-        --accent-gold: #D4AF37;
+        --verse-gold-light: #A68B3D;
+        --verse-gold-dark: #B8972E;
         --verse-title-accent: #ffeb3b;
 
-        --dark-bg: #0e1117;
-        --dark-surface: #161b22;
-        --dark-surface-2: #1f2937;
-        --dark-surface-3: #262730;
+        --dark-bg: #1F2526;
+        --dark-surface: #2A3033;
+        --dark-surface-2: #343B3F;
+        --dark-surface-3: #3D4549;
 
-        --light-bg: #ffffff;
-        --light-surface: #f8f9fa;
-        --light-surface-2: #e8eef5;
-        --light-text: #1a1a2e;
-        --light-text-secondary: #333333;
-        --light-text-tertiary: #555555;
+        --light-bg: #F7F6F3;
+        --light-surface: #EFEEEB;
+        --light-surface-2: #E6E5E1;
+        --light-text: #1C1C26;
+        --light-text-secondary: #4A4A5A;
+        --light-text-tertiary: #6B6B7B;
 
         --danger-bg: #FEF2F2;
         --danger-border: #EF4444;
@@ -67,7 +68,7 @@ def get_base_css() -> str:
     }
 
     .main-title { color: var(--primary-blue); font-size: 34px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 2px; }
-    .main-subtitle { color: var(--accent-gold); font-size: 14px; font-weight: 600; margin-bottom: 18px; }
+    .main-subtitle { color: #0F766E; font-size: 14px; font-weight: 600; margin-bottom: 18px; }
     .stDataFrame, [data-testid="stDataEditor"] { border-radius: 10px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
     .stButton > button { height: 3.0rem; font-weight: 600; border-radius: 8px; transition: all 0.25s ease; }
     .stButton > button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
@@ -76,10 +77,10 @@ def get_base_css() -> str:
     .kpi-card { background: var(--light-surface); border-radius: 8px; padding: 10px 14px; margin: 4px 0; border-left: 4px solid var(--primary-blue); box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
     .kpi-card .label { font-size: 12px; color: var(--kpi-label); }
     .kpi-card .value { font-size: 18px; font-weight: 700; color: var(--primary-blue); }
-    .kpi-card.mentoring-pair-badge { border-left-color: #10B981 !important; }
+    .kpi-card.mentoring-pair-badge { border-left-color: #0F766E !important; }
 
     .verse-card {
-        border: 3px solid var(--accent-gold);
+        border: 2px solid var(--verse-gold-light);
         border-radius: 12px;
         padding: var(--verse-card-padding);
         box-sizing: border-box;
@@ -87,7 +88,7 @@ def get_base_css() -> str:
         box-shadow:
             0 10px 25px -6px rgba(0, 0, 0, 0.15),
             0 4px 8px -2px rgba(0, 0, 0, 0.1),
-            0 0 0 2px var(--accent-gold),
+            0 0 0 2px var(--verse-gold-light),
             0 0 12px rgba(212, 175, 55, 0.12),
             inset 0 2px 4px rgba(255, 255, 255, 0.5);
     }
@@ -97,7 +98,7 @@ def get_base_css() -> str:
         box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     .verse-card .reflection-box {
-        border-left: 4px solid var(--accent-gold);
+        border-left: 4px solid var(--verse-gold-light);
         padding: var(--verse-reflection-padding);
         margin: 6px 0 2px 0;
         border-radius: 4px;
@@ -126,7 +127,7 @@ def get_dark_css() -> str:
     After merging High Contrast into Dark Mode, all text uses pure white (#ffffff)
     or bright gray (#e5e7eb) for superb readability on dark backgrounds.
     Button borders, input borders, and surface edges are strengthened.
-    Gold accents are kept subdued warm gold (#C9A227).
+    Gold accents are kept subdued warm gold (#B8972E).
     """
     return """
 <style>
@@ -141,17 +142,17 @@ def get_dark_css() -> str:
     .stButton > button { background-color: var(--dark-surface-3); color: #ffffff; border: 2px solid #6b7280; }
     .stButton > button:hover { background-color: #374151; border-color: #9ca3af; }
 
-    .kpi-card { background-color: var(--dark-surface-2) !important; border-left-color: #C9A227 !important; color: #ffffff; }
+    .kpi-card { background-color: var(--dark-surface-2) !important; border-left-color: #0F766E !important; color: #ffffff; }
     .kpi-card .label { color: #f0f0f0 !important; }
     .kpi-card .value { color: #ffffff !important; }
 
     .verse-card {
         background: linear-gradient(180deg, #1a1f2e 0%, #0a0c10 100%) !important;
-        border: 3px solid #C9A227 !important;
+        border: 2px solid #B8972E !important;
         padding: var(--verse-card-padding) !important;
         border-radius: 12px !important;
         box-shadow:
-            0 0 0 3px #C9A227,
+            0 0 0 2px solid #B8972E,
             0 12px 35px -8px rgba(0, 0, 0, 0.45),
             0 6px 10px -4px rgba(0, 0, 0, 0.3),
             0 0 18px rgba(230, 194, 0, 0.25),
@@ -171,7 +172,7 @@ def get_dark_css() -> str:
     .verse-card .verse-footer { color: #e5e7eb !important; font-size: 10px !important; margin-top: 6px !important; opacity: 1 !important; }
     .verse-card .reflection-box {
         background-color: rgba(230, 194, 0, 0.06) !important;
-        border-left: 4px solid #C9A227 !important;
+        border-left: 4px solid #B8972E !important;
         padding: var(--verse-reflection-padding) !important;
         margin: 6px 0 2px 0 !important;
         border-radius: 4px !important;
@@ -186,7 +187,7 @@ def get_dark_css() -> str:
     .verse-card .reflection-box strong { color: #ffeb3b !important; }
 
     .stDataFrame, [data-testid="stDataEditor"] { background-color: #12161e; color: #ffffff !important; }
-    .stDataFrame thead tr th { background-color: #1a202c !important; color: #ffffff !important; border-bottom: 2px solid #C9A227 !important; }
+    .stDataFrame thead tr th { background-color: #1a202c !important; color: #ffffff !important; border-bottom: 2px solid #B8972E !important; }
     .stDataFrame tbody tr:hover { background-color: #1f2937 !important; }
 
     .stAlert { background-color: #1e1e1e; color: #ffffff; border: 1px solid #444; }
@@ -228,13 +229,13 @@ def get_dark_css() -> str:
     .stSidebar .stSelectbox label, .stSidebar .stTextInput label { color: #ffffff !important; }
     .stSidebar .stCaption, .stSidebar .stMetric { color: #ffffff !important; }
 
-    .stDataFrame td[style*="border-left: 4px solid #059669"] {
+    .stDataFrame td[style*="border-left: 4px solid #0F766E"] {
         background-color: rgba(5, 150, 105, 0.15) !important;
-        box-shadow: inset 0 0 0 1px #059669 !important;
+        box-shadow: inset 0 0 0 1px #0F766E !important;
     }
 
     .main-title { color: #ffffff !important; }
-    .main-subtitle { color: #C9A227 !important; }
+    .main-subtitle { color: #14B8A6 !important; }
 
     /* === EXTRA CONTRAST FOR FORM HELP, EXPANDERS, SECTION DESCRIPTIONS === */
     .stForm, .stForm label, .stForm .stMarkdown, .stForm .stCaption { color: #ffffff !important; }
@@ -262,13 +263,13 @@ def get_light_css() -> str:
     .kpi-card { background-color: var(--light-surface) !important; border-left-color: var(--primary-blue) !important; }
     .verse-card {
         background: linear-gradient(180deg, var(--light-surface) 0%, var(--light-surface-2) 100%) !important;
-        border: 3px solid var(--accent-gold) !important;
+        border: 2px solid var(--verse-gold-light) !important;
         padding: var(--verse-card-padding) !important;
         border-radius: 12px !important;
         box-shadow:
             0 10px 25px -6px rgba(0, 0, 0, 0.18),
             0 4px 8px -2px rgba(0, 0, 0, 0.12),
-            0 0 0 2px var(--accent-gold),
+            0 0 0 2px var(--verse-gold-light),
             0 0 12px rgba(212, 175, 55, 0.18),
             inset 0 2px 4px rgba(255, 255, 255, 0.75) !important;
         margin-bottom: 12px !important;
@@ -286,7 +287,7 @@ def get_light_css() -> str:
     .verse-card .verse-footer { color: var(--light-text-secondary) !important; font-size: 10px !important; margin-top: 6px !important; opacity: 0.9 !important; }
     .verse-card .reflection-box {
         background-color: var(--verse-reflection-bg-light) !important;
-        border-left: 4px solid var(--accent-gold) !important;
+        border-left: 4px solid var(--verse-gold-light) !important;
         padding: var(--verse-reflection-padding) !important;
         margin: 6px 0 2px 0 !important;
         border-radius: 4px !important;
@@ -305,7 +306,7 @@ def get_light_css() -> str:
 
     .stTabs [data-baseweb="tab-list"] { background-color: var(--light-surface); border-bottom: 1px solid #f0f0f0; }
     .stTabs [data-baseweb="tab"] { color: var(--light-text-secondary); }
-    .stTabs [data-baseweb="tab"][aria-selected="true"] { color: var(--light-text); border-bottom-color: var(--accent-gold); }
+    .stTabs [data-baseweb="tab"][aria-selected="true"] { color: var(--light-text); border-bottom-color: var(--verse-gold-light); }
     .stExpander { background-color: var(--light-surface); border: 1px solid #f0f0f0; border-radius: 8px; }
     .stExpander .stMarkdown { color: var(--light-text-secondary); }
     .stCheckbox > label, .stRadio > label { color: var(--light-text-secondary); }

@@ -224,7 +224,7 @@ def main():
                 _parent = role.rsplit(" - ", 1)[0] if " - " in role else role
                 _pk = _parent + "_" + day
                 if _pk in _mentoring_pairs and str(val).strip():
-                    base += " border-left:4px solid #059669; background-color:rgba(5,150,105,0.06) !important;"
+                    base += " border-left:4px solid #0F766E; background-color:rgba(15,118,110,0.08) !important;"
 
                 return base
             styled = roster_display.style.apply(
@@ -232,7 +232,7 @@ def main():
             )
             st.dataframe(styled, height=380)
             st.markdown('<div style="display:flex; gap:8px; flex-wrap:wrap; font-size:12px; margin:4px 0;">' + 
-                '<span style="background:#059669; color:white; padding:2px 10px; border-radius:10px;">🤝 師徒配對</span>' + 
+                '<span style="background:#0F766E; color:white; padding:2px 10px; border-radius:10px;">🤝 師徒配對</span>' + 
                 '<span style="background:#2196F3; color:white; padding:2px 10px; border-radius:10px;">🆕 新加入</span>' + 
                 '<span style="background:#F59E0B; color:white; padding:2px 10px; border-radius:10px;">👤 需要老帶新</span>' + 
                 '<span style="background:#6B7280; color:white; padding:2px 10px; border-radius:10px;">一般</span>' + 
