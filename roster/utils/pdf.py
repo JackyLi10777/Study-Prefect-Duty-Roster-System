@@ -128,7 +128,7 @@ def get_cell_style(val: str, role: str, day: str) -> str:
 
 # ====================== A4 橫式彩色 PDF 生成引擎 (Professional English Export) ======================
 
-def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b64: str = None, lang: str = "en", include_backup_page: bool = False) -> bytes:
+def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b64: str = None, lang: str = "en", include_backup_page: bool = True, students_df: pd.DataFrame = None) -> bytes:
 
     """
 
@@ -142,7 +142,7 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
 
     - Includes servant leadership and fairness principles (evangelical-theology).
 
-    - If include_backup_page is True, appends an internal JSON backup page (default: False).
+    - If include_backup_page is True, appends a complete internal JSON backup page (default: True — always included for primary backup).
 
     UI remains fully Chinese; this is export-only.
 
@@ -438,19 +438,32 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
 
     if include_backup_page:
 
-        bk_data = get_dynamic_backup_json(master_report_df)
+        # Build complete backup dataset including students_df if available
+        _bk_dict = {
+            "version": "v2.4",
+            "generated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "roster_df": roster_df.to_dict() if roster_df is not None and not roster_df.empty else {},
+            "report_df": master_report_df.to_dict() if master_report_df is not None and not master_report_df.empty else {},
+            "students_df": students_df.to_dict() if students_df is not None and not students_df.empty else {},
+        }
+        import json as _json
+        bk_data = _json.dumps(_bk_dict, ensure_ascii=False, indent=2, default=str)
 
         bk_html = f"""
 
     <div style="page-break-before: always; font-family: monospace; font-size: 8px; color: #000; background: #fff; padding: 10px; border: 2px solid #f00;">
 
-        <h2 style="color: #f00; text-align: center; font-size: 14px;">BACKUP DATA - INTERNAL USE ONLY</h2>
+        <h2 style="color: #f00; text-align: center; font-size: 14px;">INTERNAL BACKUP DATA — DO NOT DISTRIBUTE</h2>
 
-        <p style="text-align: center;">This page contains dynamic data in JSON format for recovery purposes.</p>
+        <p style="text-align: center; font-size: 10px;">Copy the JSON block between the markers to restore the system.</p>
 
         <pre style="white-space: pre-wrap; word-wrap: break-word; background: #f5f5f5; padding: 5px; border: 1px solid #ccc;">
 
+___SYSS_BACKUP_START___
+
 {bk_data}
+
+___SYSS_BACKUP_END___
 
         </pre>
 

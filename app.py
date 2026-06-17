@@ -179,12 +179,12 @@ def main():
                     st.session_state.pdf_cache_zh = generate_pdf(
                         st.session_state.roster_df,
                         get_ui_report_df(st.session_state.master_report_df),
-                        _logo_b64, lang="zh"
+                        _logo_b64, lang="zh", students_df=st.session_state.students_df
                     )
                     st.session_state.pdf_cache_en = generate_pdf(
                         st.session_state.roster_df,
                         get_export_report_df(st.session_state.master_report_df),
-                        _logo_b64, lang="en"
+                        _logo_b64, lang="en", students_df=st.session_state.students_df
                     )
                 except Exception as _e:
                     st.warning(f"PDF pre-generation failed: {_e}")
@@ -371,7 +371,7 @@ def main():
         logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
         st.download_button(
             _t("📄 匯出中文 PDF", "📄 Export Chinese PDF (report titles/headers in Chinese)"),
-            data=st.session_state.get("pdf_cache_zh") or generate_pdf(st.session_state.roster_df, get_ui_report_df(st.session_state.master_report_df), logo_b64, lang="zh"),
+            data=st.session_state.get("pdf_cache_zh") or generate_pdf(st.session_state.roster_df, get_ui_report_df(st.session_state.master_report_df), logo_b64, lang="zh", students_df=st.session_state.students_df),
             file_name=f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_中文.pdf",
             mime="application/pdf",
             use_container_width=True,
@@ -379,7 +379,7 @@ def main():
         )
         st.download_button(
             _t("📄 Export English PDF", "📄 Export English PDF (report titles/headers in English)"),
-            data=st.session_state.get("pdf_cache_en") or generate_pdf(st.session_state.roster_df, get_export_report_df(st.session_state.master_report_df), logo_b64, lang="en"),
+            data=st.session_state.get("pdf_cache_en") or generate_pdf(st.session_state.roster_df, get_export_report_df(st.session_state.master_report_df), logo_b64, lang="en", students_df=st.session_state.students_df),
             file_name=f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_EN.pdf",
             mime="application/pdf",
             use_container_width=True,

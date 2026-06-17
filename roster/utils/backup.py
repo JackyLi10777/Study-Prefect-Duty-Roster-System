@@ -258,6 +258,53 @@ def trigger_backup_reminder():
     """在重要操作後呼叫，觸發側邊欄提醒。"""
     st.session_state.backup_reminder = True
 
+
+def parse_backup_from_pdf(pdf_bytes: bytes) -> dict:
+    """
+    Extract and restore system state from a PDF backup page.
+
+    Searches for markers ___SYSS_BACKUP_START___ and ___SYSS_BACKUP_END___
+    in the PDF text, parses the JSON block between them, and returns
+    the decoded data dictionary (students_df, roster_df, report_df).
+
+    Returns None if no valid backup data is found.
+    """
+    try:
+        from pypdf import PdfReader
+        from io import BytesIO
+        reader = PdfReader(BytesIO(pdf_bytes))
+        full_text = ""
+        for page in reader.pages:
+            full_text += (page.extract_text() or "") + "\n"
+
+        # Find backup JSON between markers
+        start = full_text.find("___SYSS_BACKUP_START___")
+        end = full_text.find("___SYSS_BACKUP_END___")
+        if start == -1 or end == -1:
+            return None
+
+        json_str = full_text[start + len("___SYSS_BACKUP_START___"):end].strip()
+        if not json_str:
+            return None
+
+        import json as _json
+        data = _json.loads(json_str)
+
+        # Reconstruct DataFrames
+        import pandas as pd
+        result = {}
+        for key in ["students_df", "roster_df", "report_df"]:
+            if key in data and data[key]:
+                result[key] = pd.DataFrame.from_dict(data[key])
+            else:
+                result[key] = pd.DataFrame()
+
+        return result
+    except Exception as e:
+        import streamlit as st
+        st.error(f"Failed to parse backup from PDF: {e}")
+        return None
+
 def clear_backup_reminder():
     """在執行備份後清除提醒。"""
     st.session_state.backup_reminder = False

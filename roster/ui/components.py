@@ -445,6 +445,32 @@ def render_sidebar():
                         st.session_state["pending_restore_json"] = entry["json"]
                         st.rerun()
 
+        # ==================== 還原系統狀態（從 PDF 備份 — 主要方式 + 圖形化提示） ====================
+        st.subheader(get_text("pdf_restore_subheader"))
+        st.caption(get_text("pdf_restore_caption"))
+        uploaded_pdf = st.file_uploader(
+            _t("選擇包含備份數據的 PDF 檔案 (.pdf)", "Select PDF with backup data (.pdf)"),
+            type=["pdf"],
+            key="pdf_restore_uploader",
+            help=_t("系統導出的 PDF 中已自動包含完整備份。可直接用來還原系統。", "The system's exported PDFs automatically include a complete backup. Use it to restore.")
+        )
+        if uploaded_pdf:
+            from roster.utils.backup import parse_backup_from_pdf
+            with st.spinner(_t("正在從 PDF 解析備份數據...", "Parsing backup data from PDF...")):
+                result = parse_backup_from_pdf(uploaded_pdf.getvalue())
+            if result:
+                if not result.get("students_df", pd.DataFrame()).empty:
+                    st.session_state.students_df = result["students_df"]
+                if not result.get("roster_df", pd.DataFrame()).empty:
+                    st.session_state.roster_df = result["roster_df"]
+                if not result.get("report_df", pd.DataFrame()).empty:
+                    st.session_state.master_report_df = result["report_df"]
+                st.success(_t("PDF 備份已成功還原！系統狀態已恢復。", "PDF backup restored successfully! System state recovered."))
+                st.rerun()
+            else:
+                st.warning(_t("PDF 中未找到有效的備份數據。請確保使用的是本系統導出的 PDF 檔案。", "No valid backup data found in the PDF. Please make sure the PDF was exported by this system first."))
+
+        
         # 還原區塊（含驗證 + 模式選擇）
         st.caption(get_text("upload_backup_label"))
         uploaded_backup = st.file_uploader(
