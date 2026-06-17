@@ -329,7 +329,7 @@ This round of work completed two major centralizations in the display layer (`ro
 - **Safe patterns & verification culture**: Assemble first for dynamics. Mandatory `_verify_*.py` (ast.parse + "import app") + capture via cmd/c after any app.py edit (bypasses Windows/PS issues). Grep for patterns, manual toggle checks (lang/theme/HC), confirm no leaks or regressions.
 - **Preserve critical visuals/invariants**: Verse enclosure (HTML structure in components + CSS in theme) and gold #D4AF37 (in normal modes) are non-negotiable. Zero visual regression in dark/light when HC off. Chinese data names/roles always preserved.
 - **Incremental, minimal-risk, zero-impact**: Small groups, 1:1 mappings first (vars), additive features (new state keys, toggles). Any arch change **must** leave backup.py, state.py init contract, reindex, core generation, permissions, AHP rules, student data untouched.
-- **Bilingual + servant-leadership aesthetic**: Chinese primary for UI/school context; English for exports. Gold/blue (#D4AF37 / #0B1E3D) + verse/reflection box as signature elements.
+- **Bilingual + servant-leadership aesthetic**: Chinese primary for UI/school context; English for exports. Gold/blue (#D4AF37 / #1E293B) + verse/reflection box as signature elements.
 - **Future-friendly**: CSS vars for theming; get_text for text; HC foundation ready for extension.
 
 These changes eliminated scattering/duplication, improved dark/HC readability (placeholders, captions, verse/reflection, sidebar/main), made switching clean (single apply_theme), and followed safe refactoring with full verification.

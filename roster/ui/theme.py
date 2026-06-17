@@ -33,7 +33,7 @@ def get_base_css() -> str:
     return """
 <style>
     :root {
-        --primary-blue: #0B1E3D;
+        --primary-blue: #1E293B;
         --verse-gold-light: #A68B3D;
         --verse-gold-dark: #B8972E;
         --verse-title-accent: #ffeb3b;
