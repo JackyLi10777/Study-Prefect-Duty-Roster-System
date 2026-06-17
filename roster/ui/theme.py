@@ -36,7 +36,8 @@ def get_base_css() -> str:
         --primary-blue: #0F766E;
         --verse-gold-light: #A68B3D;
         --verse-gold-dark: #B8972E;
-        --verse-title-accent: #ffeb3b;
+                --verse-title-accent: #ffeb3b;
+        --verse-title-light: #7B6914;  /* warm dark gold — reverent, distinct from functional teal */
 
         --dark-bg: #1F2526;
         --dark-surface: #2A3033;
@@ -288,7 +289,7 @@ def get_light_css() -> str:
         margin: 0 !important;
         box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12) !important;
     }
-    .verse-card .verse-title { color: var(--primary-blue) !important; font-size: 17px !important; margin: 0 0 4px 0 !important; font-weight: 700 !important; }
+    .verse-card .verse-title { color: var(--verse-title-light) !important; font-size: 17px !important; margin: 0 0 4px 0 !important; font-weight: 700 !important; }
     .verse-card .verse-ref { color: var(--light-text) !important; font-weight: 600 !important; margin: 2px 0 !important; }
     .verse-card .verse-text { color: var(--light-text) !important; font-size: 14px !important; line-height: 1.55 !important; margin: 2px 0 8px 0 !important; }
     .verse-card .verse-footer { color: var(--light-text-secondary) !important; font-size: 10px !important; margin-top: 6px !important; opacity: 0.9 !important; }
@@ -304,7 +305,7 @@ def get_light_css() -> str:
         box-sizing: border-box !important;
         max-width: 100% !important;
     }
-    .verse-card .reflection-box strong { color: var(--primary-blue) !important; }
+    .verse-card .reflection-box strong { color: var(--verse-title-light) !important; }
     .stTextInput > div > div > input, .stSelectbox > div > div { background-color: var(--light-bg); color: var(--light-text); }
     input::placeholder, textarea::placeholder { color: var(--placeholder-light) !important; opacity: 0.85 !important; }
     .stSelectbox label, .stTextInput label, .stMultiselect label, .stRadio label, .stCheckbox label { color: var(--light-text-secondary) !important; }
