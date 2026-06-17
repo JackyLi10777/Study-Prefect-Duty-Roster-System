@@ -17,7 +17,8 @@ import textwrap
 # ====================== 模組導入 ======================
 from roster.config import (
     DAYS, get_roster_rows, VERSION, PROJECT_FULL_NAME,
-    NASA_COLORS, get_role_style
+    NASA_COLORS, get_role_style,
+    HEAD_ROLE, AHP_ROLE, REGULAR_ROLE
 )
 from roster.data import get_demo_dataframe, get_sample_format_dataframe, DAILY_VERSES
 from roster.core import generate_roster
@@ -217,7 +218,7 @@ def render_sidebar():
             column_config={
                 "name": st.column_config.TextColumn(_t("姓名 *", "Name *"), required=True),
                 "form": st.column_config.SelectboxColumn(_t("年級", "Form"), options=["F.3", "F.4", "F.5", "F.6"]),
-                "role": st.column_config.SelectboxColumn(_t("職級", "Role"), options=["首席導學風紀", "助理首席導學風紀", "導學風紀"]),
+                "role": st.column_config.SelectboxColumn(_t("職級", "Role"), options=[HEAD_ROLE, AHP_ROLE, REGULAR_ROLE]),
                 "fixed_general_duty": st.column_config.SelectboxColumn(_t("固定值班", "Fixed Duty"), options=["NONE", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]),
                 "available": st.column_config.TextColumn(_t("可用日子", "Available Days")),
                 "history_duties": st.column_config.NumberColumn(_t("歷史次數", "History Count"), min_value=0),

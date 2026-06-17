@@ -32,6 +32,10 @@ VERSION = "v2.3 Final"
 HEAD_ROLE = "首席導學風紀"
 AHP_ROLE = "助理首席導學風紀"
 REGULAR_ROLE = "導學風紀"
+
+# Centralized role names for consistency across modules
+HEAD_ROLE = "首席導學風紀"  # 首席導學風紀 (Head Study Prefect, Chinese form)
+ASSIST_ROLE = "Assist. in charge"  # Slot name for AHP-only assignment
 PAGE_ICON = "🛡️"
 SCHOOL_NAME = "Sing Yin Secondary School"
 SCHOOL_EMAIL = "s10777@syss.edu.hk"

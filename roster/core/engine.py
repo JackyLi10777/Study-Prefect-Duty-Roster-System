@@ -29,12 +29,11 @@ from roster.config import (
     DEFAULT_GLOBAL_LOAD_MULTIPLIER,
     get_roster_rows, get_base_role,
     normalize_students_role_column,
-    AHP_ROLE as _AHP_ROLE, REGULAR_ROLE as _REGULAR_ROLE,
+    ASSIST_ROLE, AHP_ROLE as _AHP_ROLE, REGULAR_ROLE as _REGULAR_ROLE,
 )
 
 # Phase 1: Extracted constants for magic strings and role names (reduces duplication and magic values)
 _UNASSIGNED_MARKERS = {"", "X", "⬜", "請假撤銷"}
-_ASSIST_ROLE = "Assist. in charge"
 _MENTEE_THRESHOLD = 2.0  # history_weight <= 2 auto-tags as mentee
 _MENTOR_THRESHOLD = 5.0  # history_weight > 5 qualifies as mentor
 _MENTORING_PAIR_BONUS = -2.0  # score bonus for pairing complementary types
