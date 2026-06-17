@@ -98,20 +98,28 @@ def get_cell_style(val: str, role: str, day: str) -> str:
 
 
 
-    style = get_role_style(role, day)
-
-
+    # Room-specific cell colors for PDF
+    if "Room 303" in role:
+        bg = "#FEF2F2"
+        txt = "#7F1D1D"
+    elif "Room 202" in role:
+        bg = "#FFF7ED"
+        txt = "#78350F"
+    elif "Assist. in charge" in role:
+        bg = "#F0F4F8"
+        txt = "#1E293B"
+    elif "Room 302" in role:
+        bg = "#F0FDF4"
+        txt = "#14532D"
+    else:
+        bg = "#F8FAFC"
+        txt = "#1E293B"
 
     return (
-
         f"font-weight:bold; text-align:center; padding:6px 5px; "
-
-        f"background-color:{style['bg']}; "
-
-        f"color:{style['text']}; "
-
-        f"border:{style['border']};"
-
+        f"background-color:{bg}; "
+        f"color:{txt}; "
+        f"border:1px solid #CBD5E1;"
     )
 
 

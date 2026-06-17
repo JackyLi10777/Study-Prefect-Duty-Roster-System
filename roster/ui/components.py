@@ -25,8 +25,9 @@ from roster.core import generate_roster
 from roster.utils import (
     process_roster_import, smart_process_roster_import,
     export_system_backup, import_system_backup,
-    trigger_backup_reminder, clear_backup_reminder, get_backup_history
+    trigger_backup_reminder, clear_backup_reminder, get_backup_history, generate_pdf
 )
+from roster.data.models import get_ui_report_df
 from roster.ai import ai_parse_remarks  # use package path (root ai_parser shim still works for legacy)
 
 # Centralized display-layer language, messages & theme (new architecture)
@@ -520,6 +521,16 @@ def render_control_buttons():
                     seed,
                     global_load_multiplier=global_multiplier
                 )
+                # Pre-generate PDF for instant export
+                try:
+                    import base64
+                    logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
+                    report_df = get_ui_report_df(st.session_state.master_report_df) if not st.session_state.master_report_df.empty else __import__("pandas").DataFrame()
+                    st.session_state.pdf_cache_zh = generate_pdf(st.session_state.roster_df, report_df, logo_b64, lang="zh")
+                    st.session_state.pdf_cache_en = generate_pdf(st.session_state.roster_df, report_df, logo_b64, lang="en")
+                except Exception:
+                    pass
+
                 # Save roster version for history (roster version history feature)
                 versions = st.session_state.get("roster_versions", [])
                 version_num = len(versions) + 1
