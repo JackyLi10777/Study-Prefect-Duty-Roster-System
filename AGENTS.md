@@ -19,7 +19,7 @@ These rules come directly from school policy and are hardcoded in the system (pr
 - **Forms**: Only F.3, F.4, F.5, F.6 are valid prefects.
 - **Roles** (strictly two values):
   - `"Study Prefect"` — regular prefect. Can only be assigned to room duties (302, 303, 202).
-  - `"Assistant Head Study Prefect"` (AHP) — leadership role. Has **exclusive** access to the "Assist. in charge" position.
+  - `"Assistant Head Study Prefect (首席導學風紀)"` (AHP) — leadership role. Has **exclusive** access to the "Assist. in charge" position.
 - **Required data fields per student** (in `students_df`):
   - `name` (string, non-empty, unique for practical purposes)
   - `form` (F.3–F.6)
@@ -67,7 +67,7 @@ These rules come directly from school policy and are hardcoded in the system (pr
 **Weights impact**:
 - Used in audit calculations, manual weight overrides, PDF, and (most importantly) `apply_post_publication_leave_adjustment` (which always uses the base `get_weight`, not the manual value).
 
-### 1.3 AHP (Assistant Head Study Prefect) Privileges & Restrictions
+### 1.3 AHP (Assistant Head Study Prefect (首席導學風紀)) Privileges & Restrictions
 
 This is the **strictest and most important policy** in the entire system.
 
@@ -83,7 +83,7 @@ This is the **strictest and most important policy** in the entire system.
   1. Fixed-duty priority phase in `generate_roster`.
   2. Fair candidate collection phase in `generate_roster`.
   3. `recommend_substitutes()` (smart replacement finder).
-- In `student_info` and filtering code the exact strings `"Assistant Head Study Prefect"` and `"Study Prefect"` are used for comparison.
+- In `student_info` and filtering code the exact strings `"Assistant Head Study Prefect (首席導學風紀)"` and `"Study Prefect"` are used for comparison.
 
 **Implications**:
 - The number of AHPs in the roster should roughly match the number of Assist slots (demo data is balanced with 5 AHPs).

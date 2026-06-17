@@ -3,7 +3,7 @@
 聖言中學導學風紀當值排班平台 (Sing Yin Secondary School Study Prefect Duty Roster Platform)
 主應用程式入口 - Streamlit Cloud 最終部署版
 
-作者：Head Study Prefect 26-27 LI Chuangjie Jacky
+作者：首席導學風紀 26-27 LI Chuangjie Jacky
 版本：v2.3 Final（完整整合全局負荷滑桿、多槽位排班、神聖金句、人性化UI、請假撤銷公平調整、JSON備份）
 """
 
@@ -277,7 +277,7 @@ def main():
     else:
         st.info(get_text("audit_table_info"))
 
-    # ====================== 管理視角 Dashboard (Head Study Prefect / AHP 專用 - educational leadership features) ======================
+    # ====================== 管理視角 Dashboard (首席導學風紀 / AHP 專用 - educational leadership features) ======================
     # Enhanced with more KPIs, AHP insights, and servant-leadership framing (evangelical-theology + sing-yin-study-prefect-duty-roster)
     if not st.session_state.master_report_df.empty:
         st.write("---")
@@ -307,7 +307,7 @@ def main():
             st.markdown(f'<div class="kpi-card"><div class="label">{_t("最低 / 最高", "Min / Max")}</div><div class="value">{min_load:.1f} / {max_load:.1f}</div></div>', unsafe_allow_html=True)
 
         # AHP Insights & Leadership Summary
-        ahp_names = set(st.session_state.students_df[st.session_state.students_df["role"].isin(["Assistant Head Study Prefect", "助理首席導學風紀", "AHP"])]["name"].astype(str).str.strip())
+        ahp_names = set(st.session_state.students_df[st.session_state.students_df["role"].isin(["Assistant 首席導學風紀", "助理首席導學風紀", "AHP"])]["name"].astype(str).str.strip())
         if ahp_names and total_students > 0:
             ahp_loads = loads[report["Student Name"].isin(ahp_names)] if "Student Name" in report.columns else pd.Series()
             ahp_avg = ahp_loads.mean() if len(ahp_loads) > 0 else 0

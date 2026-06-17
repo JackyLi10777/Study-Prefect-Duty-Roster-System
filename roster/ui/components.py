@@ -3,7 +3,7 @@
 聖言中學導學風紀當值排班平台 (Sing Yin Secondary School Study Prefect Duty Roster Platform)
 UI 元件模組 - 側邊欄、神聖每日聖經金句、控制按鈕（人性化重新設計版）
 
-作者：Head Study Prefect 26-27 LI Chuangjie Jacky
+作者：首席導學風紀 26-27 LI Chuangjie Jacky
 版本：v2.3 Final（人性化優化版 - 降低認知負荷、強化公平感與信任、專業視覺層級）
 """
 

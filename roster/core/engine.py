@@ -5,7 +5,7 @@ roster.core.engine - 核心排班演算法模組
 聖言中學導學風紀當值排班平台 (Sing Yin Secondary School Study Prefect Duty Roster Platform)
 公平性計算、驗證、智慧替補推薦 + 請假後撤銷調整
 
-作者：Head Study Prefect 26-27 LI Chuangjie Jacky
+作者：首席導學風紀 26-27 LI Chuangjie Jacky
 版本：v2.4 (post-refactor, roster/ package structure)
 
 本模組嚴格實現 AGENTS.md §1 Core Project Rules 中的所有學校業務規則：
@@ -47,7 +47,7 @@ def _check_role_gate(is_assist_role: bool, person_role: str) -> bool:
     Return True if the person_role is allowed for this role type.
 
     Strictly implements AGENTS.md §1.3 AHP privileges & restrictions (sing-yin-study-prefect-duty-roster):
-    - If is_assist_role=True: only "Assistant Head Study Prefect" allowed.
+    - If is_assist_role=True: only "Assistant 首席導學風紀" allowed.
     - Else: only regular "Study Prefect" allowed.
 
     This unifies the previously duplicated role gates in:
@@ -192,7 +192,7 @@ def generate_roster(
             for name, info in student_info.items():
                 if info["fixed"] == day and name not in assigned_today:
                     # 【AHP 特權與限制 - AGENTS.md §1.3】
-                    # Assistant Head Study Prefect 僅能擔任 "Assist. in charge"（領導職位）；
+                    # Assistant 首席導學風紀 僅能擔任 "Assist. in charge"（領導職位）；
                     # 普通 Study Prefect 完全禁止進入 Assist 槽；
                     # AHP 完全禁止值守一般房間（302/303/202）。
                     # 門禁在 fixed 與 fair 兩階段各實作一次，recommend 也重複檢查。

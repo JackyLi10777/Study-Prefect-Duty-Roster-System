@@ -46,6 +46,6 @@
 ## 職位說明
 
 本系統涉及三種職位：
-- **首席導學風紀**（Head Study Prefect）
-- **助理首席導學風紀**（Assistant Head Study Prefect）
+- **首席導學風紀**（Head Study Prefect (首席導學風紀)）
+- **助理首席導學風紀**（Assistant Head Study Prefect (首席導學風紀)）
 - **導學風紀**（Study Prefect）

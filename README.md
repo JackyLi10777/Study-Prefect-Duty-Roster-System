@@ -100,7 +100,7 @@ streamlit run app.py
 
 ## 👤 作者
 
-**26-27 Head Study Prefect（領袖生會長）**  
+**26-27 Head Study Prefect (首席導學風紀)（領袖生會長）**  
 **LI Chuangjie Jacky（李創杰）**  
 Sing Yin Secondary School（聖言中學）  
 F.5E
@@ -115,7 +115,7 @@ F.5E
 textMIT License
 
 Copyright (c) 2026 LI Chuangjie Jacky（李創杰）
-26-27 Head Study Prefect, Sing Yin Secondary School Study Prefect Team
+26-27 Head Study Prefect (首席導學風紀), Sing Yin Secondary School Study Prefect Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

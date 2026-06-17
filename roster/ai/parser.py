@@ -3,7 +3,7 @@
 聖言中學導學風紀當值排班平台 (Sing Yin Secondary School Study Prefect Duty Roster Platform)
 AI 解析模組 - Gemini 智能解析 Remarks + 欄位映射
 
-作者：Head Study Prefect 26-27 LI Chuangjie Jacky
+作者：首席導學風紀 26-27 LI Chuangjie Jacky
 版本：v2.3 Final（已徹底解決「一直解析中...」卡住問題）
 """
 
@@ -32,7 +32,7 @@ REMARKS_SYSTEM_PROMPT = """
 可解析的欄位規則：
 - "fixed_general_duty": 學年固定總值班 → MONDAY / TUESDAY / WEDNESDAY / THURSDAY / FRIDAY / NONE
 - "available": 可用日子 → 用逗號分隔，例如 "MONDAY,WEDNESDAY,FRIDAY"
-- "role": 職級 → "Study Prefect" 或 "Assistant Head Study Prefect"
+- "role": 職級 → "Study Prefect" 或 "Assistant 首席導學風紀"
 
 如果備註中提到「老帶新」「新任」「F.3」「Assistant Head」「固定值班」「Room302 優先」等關鍵字，請合理判斷並更新。
 
@@ -127,7 +127,7 @@ IMPORT_MAPPING_PROMPT = """
 - "name": 姓名
 - "form": 年級 (F.3、F.4、F.5、F.6)
 - "class": 班別
-- "role": 職級 (Study Prefect 或 Assistant Head Study Prefect)
+- "role": 職級 (Study Prefect 或 Assistant 首席導學風紀)
 - "fixed_general_duty": 學年固定總值班
 - "available": 可用日子
 - "history_duties": 歷史累計次數

@@ -192,7 +192,7 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
 
         compliance_intro = "此報告完全符合學校規定："
 
-        ahp_text = "• AHP（Assistant Head Study Prefect）只能擔任「Assist. in charge」崗位，絕對不能排到任何 Room。"
+        ahp_text = "• AHP（Assistant 首席導學風紀）只能擔任「Assist. in charge」崗位，絕對不能排到任何 Room。"
 
         room302_text = "• Room 302：每天1人，放學後15:45至18:00，全週開放。"
 
@@ -229,7 +229,7 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
 
         compliance_intro = "This report was generated in full compliance with school regulations:"
 
-        ahp_text = "• AHP (Assistant Head Study Prefect) may only serve in \"Assist. in charge\". Regular Study Prefects are excluded from this leadership slot."
+        ahp_text = "• AHP (Assistant 首席導學風紀) may only serve in \"Assist. in charge\". Regular Study Prefects are excluded from this leadership slot."
 
         room302_text = "• Room 302: 1 slot/day, 15:45-18:00 after school, open all week."
 
@@ -616,7 +616,7 @@ def generate_service_certificate(semester_hours: dict, logo_b64: str = None) -> 
 
         <p>Issued with appreciation for dedicated service.</p>
 
-        <p><strong>Head Study Prefect</strong><br>Sing Yin Secondary School</p>
+        <p><strong>首席導學風紀</strong><br>Sing Yin Secondary School</p>
 
     </div>
 

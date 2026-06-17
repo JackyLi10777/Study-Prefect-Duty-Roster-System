@@ -5,7 +5,7 @@ roster.config.constants - Single Source of Truth (SSOT) for all scheduling rules
 聖言中學導學風紀當值排班平台 (Sing Yin Secondary School Study Prefect Duty Roster Platform)
 核心配置模組
 
-作者：Head Study Prefect 26-27 LI Chuangjie Jacky
+作者：首席導學風紀 26-27 LI Chuangjie Jacky
 版本：v2.4 (roster/ package)
 
 本檔案是 AGENTS.md §1 Core Project Rules 與 §3 Important Files 中「config.py」角色的實現：
@@ -139,7 +139,7 @@ def get_weight(role: str) -> float:
 def is_assistant_head_only_role(role: str) -> bool:
     """
     判斷該崗位是否為 AHP 專屬（Assist. in charge）。
-    回傳 True 時，僅 "Assistant Head Study Prefect" 可擔任；
+    回傳 True 時，僅 "Assistant 首席導學風紀" 可擔任；
     其餘崗位則僅 "Study Prefect" 可擔任（硬限制）。
     """
     for key, cfg in ROOMS_CONFIG.items():
@@ -216,8 +216,8 @@ def get_base_role(row: str) -> str:
 
 # ====================== 角色名稱正規化（支援中英文） ======================
 ROLE_MAP = {
-    "Assistant Head Study Prefect": AHP_ROLE,
-    "Head Study Prefect": AHP_ROLE,
+    "Assistant 首席導學風紀": AHP_ROLE,
+    "首席導學風紀": AHP_ROLE,
     "Study Prefect": REGULAR_ROLE,
     "助理首席導學風紀": AHP_ROLE,
     "首席導學風紀": AHP_ROLE,
