@@ -170,9 +170,9 @@ def main():
     )
     st.session_state.master_report_df = audit_results["report_df"]
 
-    # ====================== PDF 自動預生成 ======================
-    if st.session_state.roster_df is not None and not st.session_state.roster_df.empty:
-        if not st.session_state.get("pdf_cache_zh"):
+    # ====================== PDF 自動預生成 (only after Smart Compute) ======================
+    if st.session_state.pop("_pdf_needs_generation", False):
+        if st.session_state.roster_df is not None and not st.session_state.roster_df.empty:
             with st.spinner(_t("正在準備專業 PDF 報告，請稍候...", "Preparing professional PDF report... This may take a few seconds.")):
                 try:
                     _logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
@@ -488,12 +488,12 @@ Student names are preserved in Chinese per school practice.
 *Internal daily operations use Chinese UI for student accessibility.*
 *Generated in full compliance with school regulations and biblical principles of fairness and service.*
 """
-        st.download_button(
-            dl_label,
-            md_data.encode('utf-8'),
-            f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}.md",
-            use_container_width=True
-        )
+            st.download_button(
+                dl_label,
+                md_data.encode('utf-8'),
+                f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}.md",
+                use_container_width=True
+            )
 
     ui_lang = st.session_state.get("ui_language", "zh")
     st.subheader(get_text("manual_load_adjust_subheader"))

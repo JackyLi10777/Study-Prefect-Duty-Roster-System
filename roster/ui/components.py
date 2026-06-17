@@ -545,6 +545,8 @@ def render_control_buttons():
 
                 # 自動備份提醒
                 trigger_backup_reminder()
+                # Signal app.py to pre-generate PDFs
+                st.session_state._pdf_needs_generation = True
 
     with col2:
         if st.button(_t("🗑️ 清空", "🗑️ Clear"), type="secondary", use_container_width=True):
