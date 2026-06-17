@@ -365,80 +365,86 @@ def main():
         )
 
     with col2:
-        export_report = get_export_report_df(st.session_state.master_report_df)
-        output_excel = io.BytesIO()
-        with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
-            # Roster sheet
-            roster_sheet = st.session_state.roster_df
-            roster_sheet.to_excel(writer, sheet_name='Weekly Duty Roster')
+        if not st.session_state.get("excel_md_ready"):
+            if st.button(_t("生成 Excel / Markdown", "Generate Excel / Markdown"), use_container_width=True):
+                st.session_state.excel_md_ready = True
+                st.rerun()
+        else:
+            export_report = get_export_report_df(st.session_state.master_report_df)
+            output_excel = io.BytesIO()
+            with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
+                # Roster sheet
+                roster_sheet = st.session_state.roster_df
+                roster_sheet.to_excel(writer, sheet_name='Weekly Duty Roster')
 
-            if not export_report.empty:
-                # Workload Audit with conditional formatting and chart
-                audit_sheet = writer.book.create_sheet('Workload Audit')
-                # Write header and data
-                for r_idx, row in enumerate([export_report.columns.tolist()] + export_report.values.tolist(), 1):
-                    for c_idx, value in enumerate(row, 1):
-                        audit_sheet.cell(row=r_idx, column=c_idx, value=value)
+                if not export_report.empty:
+                    # Workload Audit with conditional formatting and chart
+                    audit_sheet = writer.book.create_sheet('Workload Audit')
+                    # Write header and data
+                    for r_idx, row in enumerate([export_report.columns.tolist()] + export_report.values.tolist(), 1):
+                        for c_idx, value in enumerate(row, 1):
+                            audit_sheet.cell(row=r_idx, column=c_idx, value=value)
 
-                # Conditional formatting color scale for load column (last column, assume "Cumulative Weighted Load (points)")
-                from openpyxl.formatting.rule import ColorScaleRule
-                load_col = len(export_report.columns)
-                color_scale = ColorScaleRule(start_type='min', start_color='63BE7B',
-                                             mid_type='percentile', mid_value=50, mid_color='FFEB84',
-                                             end_type='max', end_color='F8696B')
-                audit_sheet.conditional_formatting.add(f'A2:{chr(64+load_col)}{len(export_report)+1}', color_scale)
+                    # Conditional formatting color scale for load column (last column, assume "Cumulative Weighted Load (points)")
+                    from openpyxl.formatting.rule import ColorScaleRule
+                    load_col = len(export_report.columns)
+                    color_scale = ColorScaleRule(start_type='min', start_color='63BE7B',
+                                                 mid_type='percentile', mid_value=50, mid_color='FFEB84',
+                                                 end_type='max', end_color='F8696B')
+                    audit_sheet.conditional_formatting.add(f'A2:{chr(64+load_col)}{len(export_report)+1}', color_scale)
 
-                # Add bar chart for loads
-                from openpyxl.chart import BarChart, Reference
-                chart = BarChart()
-                chart.type = "col"
-                chart.title = "Cumulative Workload by Student"
-                chart.y_axis.title = "Points"
-                data = Reference(audit_sheet, min_col=load_col, min_row=1, max_row=len(export_report)+1)
-                cats = Reference(audit_sheet, min_col=1, min_row=2, max_row=len(export_report)+1)
-                chart.add_data(data, titles_from_data=True)
-                chart.set_categories(cats)
-                chart.shape = 4
-                audit_sheet.add_chart(chart, "H2")
+                    # Add bar chart for loads
+                    from openpyxl.chart import BarChart, Reference
+                    chart = BarChart()
+                    chart.type = "col"
+                    chart.title = "Cumulative Workload by Student"
+                    chart.y_axis.title = "Points"
+                    data = Reference(audit_sheet, min_col=load_col, min_row=1, max_row=len(export_report)+1)
+                    cats = Reference(audit_sheet, min_col=1, min_row=2, max_row=len(export_report)+1)
+                    chart.add_data(data, titles_from_data=True)
+                    chart.set_categories(cats)
+                    chart.shape = 4
+                    audit_sheet.add_chart(chart, "H2")
 
-            # Professional English summary sheet
-            summary_data = {
-                "Report Type": ["Professional English Export - Sing Yin Study Prefect (導學風紀)"],
-                "Generated": [datetime.date.today().strftime('%Y-%m-%d')],
-                "Core Principle": ["Lower load = Higher priority (Fairness & Servant Leadership)"],
-                "Compliance": ["AGENTS.md §1 rules fully applied (AHP, Room 302/303, fairness)"]
-            }
-            pd.DataFrame(summary_data).to_excel(writer, sheet_name='Executive Summary (EN)', index=False)
-        excel_label = _t("📊 下載 Excel（跟隨語言 + 圖表 + 條件格式）", "📊 Download Excel (Follow Language + Charts + Formatting)")
-        st.download_button(
-            excel_label,
-            output_excel.getvalue(),
-            f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}.xlsx",
-            use_container_width=True
-        )
+                # Professional English summary sheet
+                summary_data = {
+                    "Report Type": ["Professional English Export - Sing Yin Study Prefect (導學風紀)"],
+                    "Generated": [datetime.date.today().strftime('%Y-%m-%d')],
+                    "Core Principle": ["Lower load = Higher priority (Fairness & Servant Leadership)"],
+                    "Compliance": ["AGENTS.md §1 rules fully applied (AHP, Room 302/303, fairness)"]
+                }
+                pd.DataFrame(summary_data).to_excel(writer, sheet_name='Executive Summary (EN)', index=False)
+            excel_label = _t("📊 下載 Excel（跟隨語言 + 圖表 + 條件格式）", "📊 Download Excel (Follow Language + Charts + Formatting)")
+            st.download_button(
+                excel_label,
+                output_excel.getvalue(),
+                f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}.xlsx",
+                use_container_width=True
+            )
 
     with col3:
-        ui_lang = st.session_state.get("ui_language", "zh")
-        if ui_lang == "en":
-            export_report = get_export_report_df(st.session_state.master_report_df)
-            md_title = PROJECT_FULL_NAME_EN
-            md_sub = "Professional English Export Report"
-            key_principle = "**Key Principle (Servant Leadership):** Lower cumulative load indicates higher priority for future assignments."
-            audit_title = "### Workload Audit (Professional English Columns)"
-            footer = "*This document is formatted for official, external, and leadership use in clean professional English.*"
-            dl_label = "📝 Download Markdown (Professional English)"
-            report_for_md = export_report
-        else:
-            export_report = get_ui_report_df(st.session_state.master_report_df)
-            md_title = PROJECT_FULL_NAME
-            md_sub = "專業中文匯出報告"
-            key_principle = "**核心原則（僕人領袖）：** 累計負荷越低，代表未來值班優先度越高。"
-            audit_title = "### 工作負荷審計（中文欄位）"
-            footer = "*本文件依目前語言設定輸出，官方/外部使用。*"
-            dl_label = _t("📝 下載 Markdown（跟隨語言）", "📝 Download Markdown (Follow Language)")
-            report_for_md = export_report
+        if st.session_state.get("excel_md_ready"):
+            ui_lang = st.session_state.get("ui_language", "zh")
+            if ui_lang == "en":
+                export_report = get_export_report_df(st.session_state.master_report_df)
+                md_title = PROJECT_FULL_NAME_EN
+                md_sub = "Professional English Export Report"
+                key_principle = "**Key Principle (Servant Leadership):** Lower cumulative load indicates higher priority for future assignments."
+                audit_title = "### Workload Audit (Professional English Columns)"
+                footer = "*This document is formatted for official, external, and leadership use in clean professional English.*"
+                dl_label = "📝 Download Markdown (Professional English)"
+                report_for_md = export_report
+            else:
+                export_report = get_ui_report_df(st.session_state.master_report_df)
+                md_title = PROJECT_FULL_NAME
+                md_sub = "專業中文匯出報告"
+                key_principle = "**核心原則（僕人領袖）：** 累計負荷越低，代表未來值班優先度越高。"
+                audit_title = "### 工作負荷審計（中文欄位）"
+                footer = "*本文件依目前語言設定輸出，官方/外部使用。*"
+                dl_label = _t("📝 下載 Markdown（跟隨語言）", "📝 Download Markdown (Follow Language)")
+                report_for_md = export_report
 
-        md_data = f"""# {md_title}
+            md_data = f"""# {md_title}
 ## {md_sub}
 
 **Report Date:** {datetime.date.today().strftime('%Y-%m-%d')}
