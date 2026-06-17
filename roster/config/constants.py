@@ -111,7 +111,7 @@ NASA_COLORS = {
     "pdf_202_text": "#78350F",
     "pdf_202_border": "#FDBA74",
     "pdf_assist_bg": "#FFF8E1",
-    "pdf_assist_text": "#4E342E",
+    "pdf_assist_text": "#1E293B",
     "pdf_assist_border": "#D4AF37",
     "pdf_302_bg": "#F0FDF4",
     "pdf_302_text": "#14532D",
