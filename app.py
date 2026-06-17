@@ -252,6 +252,221 @@ def main():
 
     # ====================== 手動調整負荷 ======================
     st.write("---")
+    st.write("---")
+    st.subheader(get_text("post_duty_leave_subheader"))
+    st.caption(get_text("post_duty_leave_caption"))
+
+    with st.form("leave_adjust_form", clear_on_submit=True):
+        col_d, col_r = st.columns(2)
+        with col_d:
+            adj_day = st.selectbox(_t("選擇日期", "Select Date"), DAYS, key="adj_day")
+        with col_r:
+            assigned_roles = [
+                r for r in ROWS_ROSTER
+                if str(st.session_state.roster_df.at[r, adj_day]).strip() not in ["", "X", "⬜", "請假撤銷"]
+            ]
+            adj_role = st.selectbox(_t("選擇崗位", "Select Position"), assigned_roles if assigned_roles else [""], key="adj_role")
+
+        current_person = ""
+        if adj_role and adj_role in st.session_state.roster_df.index:
+            current_person = str(st.session_state.roster_df.at[adj_role, adj_day]).strip()
+            if current_person and current_person not in ["X", "⬜", "請假撤銷"]:
+                st.info(f"{_t('目前值班人員：**{current_person}**（將被撤銷點數）', 'Currently scheduled person: **{current_person}** (points will be revoked)').format(current_person=current_person)}")
+
+        has_replacement = st.checkbox(_t("有替補人員（推薦）", "Has substitute (recommended)"), value=False)
+        replacement = None
+        if has_replacement and current_person:
+            valid_names = [
+                str(n).strip() for n in st.session_state.students_df["name"].dropna()
+                if str(n).strip() and str(n).strip() != current_person
+            ]
+            replacement = st.selectbox(_t("選擇替補人員", "Select Substitute"), valid_names, key="replacement_select")
+
+        submitted = st.form_submit_button(_t("🚀 執行請假調整 / 撤銷點數", "🚀 Execute Leave Adjustment / Revoke Points"), type="primary", use_container_width=True)
+
+        if submitted and adj_role and current_person:
+            weight = get_weight(adj_role)
+
+            # 呼叫核心調整函數
+            apply_post_publication_leave_adjustment(
+                st.session_state.students_df,
+                st.session_state.roster_df,
+                adj_day,
+                adj_role,
+                current_person,
+                replacement if has_replacement else None
+            )
+
+            # 立即重新計算 audit
+            audit_results = validate_and_compute(
+                st.session_state.roster_df,
+                st.session_state.students_df,
+                st.session_state.leave_tracker_input,
+                st.session_state.manual_weights
+            )
+            st.session_state.master_report_df = audit_results["report_df"]
+
+            # Safe assembly: build parts first using get_text, then combine
+            revoke = get_text("revoke_points", current_person=current_person, weight=weight)
+            if has_replacement and replacement:
+                handover = get_text("handover_to", replacement=replacement)
+                action_msg = revoke + handover
+            else:
+                no_one = get_text("no_one_for_slot")
+                action_msg = revoke + no_one
+
+            st.success(get_text("adjustment_complete", action_msg=action_msg))
+
+            # 記錄調整歷史
+            if "adjustment_log" not in st.session_state:
+                st.session_state.adjustment_log = []
+            st.session_state.adjustment_log.append({
+                "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "day": adj_day,
+                "role": adj_role,
+                "original": current_person,
+                "replacement": replacement if has_replacement else None,
+                "weight_revoked": round(weight, 1)
+            })
+
+            trigger_backup_reminder()  # 自動備份提醒（leave adjustment 重要操作）
+            st.success(get_text("important_backup_reminder"))
+            st.rerun()
+
+    # ====================== 快速導出 (語言跟隨) ======================
+    ui_lang = st.session_state.get("ui_language", "zh")
+    st.write("---")
+    st.subheader(get_text("export_section_subheader"))
+    st.caption("點擊按鈕直接下載PDF報告：按鈕決定報告標題與欄位語言（中文或專業英文），學生姓名永遠保留中文。UI語言切換與此獨立。")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        # 明確的 PDF 語言控制：兩個按鈕，分別輸出中文/英文 PDF
+        # Buttons directly trigger generation + download (using st.download_button for reliable one-click behavior).
+        # lang param selects report titles/headers language; student names/roles always Chinese (unchanged rule).
+        logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
+        st.download_button(
+            _t("📄 匯出中文 PDF", "📄 Export Chinese PDF (report titles/headers in Chinese)"),
+            data=generate_pdf(st.session_state.roster_df, get_ui_report_df(st.session_state.master_report_df), logo_b64, lang="zh"),
+            file_name=f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_中文.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+            key="dl_pdf_cn_direct"
+        )
+        st.download_button(
+            _t("📄 Export English PDF", "📄 Export English PDF (report titles/headers in English)"),
+            data=generate_pdf(st.session_state.roster_df, get_export_report_df(st.session_state.master_report_df), logo_b64, lang="en"),
+            file_name=f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_EN.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+            key="dl_pdf_en_direct"
+        )
+
+    with col2:
+        export_report = get_export_report_df(st.session_state.master_report_df)
+        output_excel = io.BytesIO()
+        with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
+            # Roster sheet
+            roster_sheet = st.session_state.roster_df
+            roster_sheet.to_excel(writer, sheet_name='Weekly Duty Roster')
+
+            if not export_report.empty:
+                # Workload Audit with conditional formatting and chart
+                audit_sheet = writer.book.create_sheet('Workload Audit')
+                # Write header and data
+                for r_idx, row in enumerate([export_report.columns.tolist()] + export_report.values.tolist(), 1):
+                    for c_idx, value in enumerate(row, 1):
+                        audit_sheet.cell(row=r_idx, column=c_idx, value=value)
+
+                # Conditional formatting color scale for load column (last column, assume "Cumulative Weighted Load (points)")
+                from openpyxl.formatting.rule import ColorScaleRule
+                load_col = len(export_report.columns)
+                color_scale = ColorScaleRule(start_type='min', start_color='63BE7B',
+                                             mid_type='percentile', mid_value=50, mid_color='FFEB84',
+                                             end_type='max', end_color='F8696B')
+                audit_sheet.conditional_formatting.add(f'A2:{chr(64+load_col)}{len(export_report)+1}', color_scale)
+
+                # Add bar chart for loads
+                from openpyxl.chart import BarChart, Reference
+                chart = BarChart()
+                chart.type = "col"
+                chart.title = "Cumulative Workload by Student"
+                chart.y_axis.title = "Points"
+                data = Reference(audit_sheet, min_col=load_col, min_row=1, max_row=len(export_report)+1)
+                cats = Reference(audit_sheet, min_col=1, min_row=2, max_row=len(export_report)+1)
+                chart.add_data(data, titles_from_data=True)
+                chart.set_categories(cats)
+                chart.shape = 4
+                audit_sheet.add_chart(chart, "H2")
+
+            # Professional English summary sheet
+            summary_data = {
+                "Report Type": ["Professional English Export - Sing Yin Study Prefect (導學風紀)"],
+                "Generated": [datetime.date.today().strftime('%Y-%m-%d')],
+                "Core Principle": ["Lower load = Higher priority (Fairness & Servant Leadership)"],
+                "Compliance": ["AGENTS.md §1 rules fully applied (AHP, Room 302/303, fairness)"]
+            }
+            pd.DataFrame(summary_data).to_excel(writer, sheet_name='Executive Summary (EN)', index=False)
+        excel_label = _t("📊 下載 Excel（跟隨語言 + 圖表 + 條件格式）", "📊 Download Excel (Follow Language + Charts + Formatting)")
+        st.download_button(
+            excel_label,
+            output_excel.getvalue(),
+            f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}.xlsx",
+            use_container_width=True
+        )
+
+    with col3:
+        ui_lang = st.session_state.get("ui_language", "zh")
+        if ui_lang == "en":
+            export_report = get_export_report_df(st.session_state.master_report_df)
+            md_title = PROJECT_FULL_NAME_EN
+            md_sub = "Professional English Export Report"
+            key_principle = "**Key Principle (Servant Leadership):** Lower cumulative load indicates higher priority for future assignments."
+            audit_title = "### Workload Audit (Professional English Columns)"
+            footer = "*This document is formatted for official, external, and leadership use in clean professional English.*"
+            dl_label = "📝 Download Markdown (Professional English)"
+            report_for_md = export_report
+        else:
+            export_report = get_ui_report_df(st.session_state.master_report_df)
+            md_title = PROJECT_FULL_NAME
+            md_sub = "專業中文匯出報告"
+            key_principle = "**核心原則（僕人領袖）：** 累計負荷越低，代表未來值班優先度越高。"
+            audit_title = "### 工作負荷審計（中文欄位）"
+            footer = "*本文件依目前語言設定輸出，官方/外部使用。*"
+            dl_label = _t("📝 下載 Markdown（跟隨語言）", "📝 Download Markdown (Follow Language)")
+            report_for_md = export_report
+
+        md_data = f"""# {md_title}
+## {md_sub}
+
+**Report Date:** {datetime.date.today().strftime('%Y-%m-%d')}
+**Institution:** Sing Yin Secondary School • Study Prefect Team
+
+{key_principle}
+Student names are preserved in Chinese per school practice.
+
+### Weekly Duty Roster
+
+{st.session_state.roster_df.to_markdown()}
+
+{audit_title}
+
+{report_for_md.to_markdown(index=False) if not report_for_md.empty else "No data"}
+
+---
+{footer}
+*Internal daily operations use Chinese UI for student accessibility.*
+*Generated in full compliance with school regulations and biblical principles of fairness and service.*
+"""
+        st.download_button(
+            dl_label,
+            md_data.encode('utf-8'),
+            f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}.md",
+            use_container_width=True
+        )
+
+    ui_lang = st.session_state.get("ui_language", "zh")
     st.subheader(get_text("manual_load_adjust_subheader"))
     st.caption(get_text("manual_load_adjust_caption"))
 
@@ -643,221 +858,6 @@ This system promotes fairness, equity, and a culture of service, helping prefect
             st.warning(error_msg)
 
     # ====================== 值班後請假調整（新增公平性核心功能） ======================
-    st.write("---")
-    st.subheader(get_text("post_duty_leave_subheader"))
-    st.caption(get_text("post_duty_leave_caption"))
-
-    with st.form("leave_adjust_form", clear_on_submit=True):
-        col_d, col_r = st.columns(2)
-        with col_d:
-            adj_day = st.selectbox(_t("選擇日期", "Select Date"), DAYS, key="adj_day")
-        with col_r:
-            assigned_roles = [
-                r for r in ROWS_ROSTER
-                if str(st.session_state.roster_df.at[r, adj_day]).strip() not in ["", "X", "⬜", "請假撤銷"]
-            ]
-            adj_role = st.selectbox(_t("選擇崗位", "Select Position"), assigned_roles if assigned_roles else [""], key="adj_role")
-
-        current_person = ""
-        if adj_role and adj_role in st.session_state.roster_df.index:
-            current_person = str(st.session_state.roster_df.at[adj_role, adj_day]).strip()
-            if current_person and current_person not in ["X", "⬜", "請假撤銷"]:
-                st.info(f"{_t('目前值班人員：**{current_person}**（將被撤銷點數）', 'Currently scheduled person: **{current_person}** (points will be revoked)').format(current_person=current_person)}")
-
-        has_replacement = st.checkbox(_t("有替補人員（推薦）", "Has substitute (recommended)"), value=False)
-        replacement = None
-        if has_replacement and current_person:
-            valid_names = [
-                str(n).strip() for n in st.session_state.students_df["name"].dropna()
-                if str(n).strip() and str(n).strip() != current_person
-            ]
-            replacement = st.selectbox(_t("選擇替補人員", "Select Substitute"), valid_names, key="replacement_select")
-
-        submitted = st.form_submit_button(_t("🚀 執行請假調整 / 撤銷點數", "🚀 Execute Leave Adjustment / Revoke Points"), type="primary", use_container_width=True)
-
-        if submitted and adj_role and current_person:
-            weight = get_weight(adj_role)
-
-            # 呼叫核心調整函數
-            apply_post_publication_leave_adjustment(
-                st.session_state.students_df,
-                st.session_state.roster_df,
-                adj_day,
-                adj_role,
-                current_person,
-                replacement if has_replacement else None
-            )
-
-            # 立即重新計算 audit
-            audit_results = validate_and_compute(
-                st.session_state.roster_df,
-                st.session_state.students_df,
-                st.session_state.leave_tracker_input,
-                st.session_state.manual_weights
-            )
-            st.session_state.master_report_df = audit_results["report_df"]
-
-            # Safe assembly: build parts first using get_text, then combine
-            revoke = get_text("revoke_points", current_person=current_person, weight=weight)
-            if has_replacement and replacement:
-                handover = get_text("handover_to", replacement=replacement)
-                action_msg = revoke + handover
-            else:
-                no_one = get_text("no_one_for_slot")
-                action_msg = revoke + no_one
-
-            st.success(get_text("adjustment_complete", action_msg=action_msg))
-
-            # 記錄調整歷史
-            if "adjustment_log" not in st.session_state:
-                st.session_state.adjustment_log = []
-            st.session_state.adjustment_log.append({
-                "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "day": adj_day,
-                "role": adj_role,
-                "original": current_person,
-                "replacement": replacement if has_replacement else None,
-                "weight_revoked": round(weight, 1)
-            })
-
-            trigger_backup_reminder()  # 自動備份提醒（leave adjustment 重要操作）
-            st.success(get_text("important_backup_reminder"))
-            st.rerun()
-
-    # ====================== 快速導出 (語言跟隨) ======================
-    ui_lang = st.session_state.get("ui_language", "zh")
-    st.write("---")
-    st.subheader(get_text("export_section_subheader"))
-    st.caption("點擊按鈕直接下載PDF報告：按鈕決定報告標題與欄位語言（中文或專業英文），學生姓名永遠保留中文。UI語言切換與此獨立。")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        # 明確的 PDF 語言控制：兩個按鈕，分別輸出中文/英文 PDF
-        # Buttons directly trigger generation + download (using st.download_button for reliable one-click behavior).
-        # lang param selects report titles/headers language; student names/roles always Chinese (unchanged rule).
-        logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
-        st.download_button(
-            _t("📄 匯出中文 PDF", "📄 Export Chinese PDF (report titles/headers in Chinese)"),
-            data=generate_pdf(st.session_state.roster_df, get_ui_report_df(st.session_state.master_report_df), logo_b64, lang="zh"),
-            file_name=f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_中文.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-            key="dl_pdf_cn_direct"
-        )
-        st.download_button(
-            _t("📄 Export English PDF", "📄 Export English PDF (report titles/headers in English)"),
-            data=generate_pdf(st.session_state.roster_df, get_export_report_df(st.session_state.master_report_df), logo_b64, lang="en"),
-            file_name=f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_EN.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-            key="dl_pdf_en_direct"
-        )
-
-    with col2:
-        export_report = get_export_report_df(st.session_state.master_report_df)
-        output_excel = io.BytesIO()
-        with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
-            # Roster sheet
-            roster_sheet = st.session_state.roster_df
-            roster_sheet.to_excel(writer, sheet_name='Weekly Duty Roster')
-
-            if not export_report.empty:
-                # Workload Audit with conditional formatting and chart
-                audit_sheet = writer.book.create_sheet('Workload Audit')
-                # Write header and data
-                for r_idx, row in enumerate([export_report.columns.tolist()] + export_report.values.tolist(), 1):
-                    for c_idx, value in enumerate(row, 1):
-                        audit_sheet.cell(row=r_idx, column=c_idx, value=value)
-
-                # Conditional formatting color scale for load column (last column, assume "Cumulative Weighted Load (points)")
-                from openpyxl.formatting.rule import ColorScaleRule
-                load_col = len(export_report.columns)
-                color_scale = ColorScaleRule(start_type='min', start_color='63BE7B',
-                                             mid_type='percentile', mid_value=50, mid_color='FFEB84',
-                                             end_type='max', end_color='F8696B')
-                audit_sheet.conditional_formatting.add(f'A2:{chr(64+load_col)}{len(export_report)+1}', color_scale)
-
-                # Add bar chart for loads
-                from openpyxl.chart import BarChart, Reference
-                chart = BarChart()
-                chart.type = "col"
-                chart.title = "Cumulative Workload by Student"
-                chart.y_axis.title = "Points"
-                data = Reference(audit_sheet, min_col=load_col, min_row=1, max_row=len(export_report)+1)
-                cats = Reference(audit_sheet, min_col=1, min_row=2, max_row=len(export_report)+1)
-                chart.add_data(data, titles_from_data=True)
-                chart.set_categories(cats)
-                chart.shape = 4
-                audit_sheet.add_chart(chart, "H2")
-
-            # Professional English summary sheet
-            summary_data = {
-                "Report Type": ["Professional English Export - Sing Yin Study Prefect (導學風紀)"],
-                "Generated": [datetime.date.today().strftime('%Y-%m-%d')],
-                "Core Principle": ["Lower load = Higher priority (Fairness & Servant Leadership)"],
-                "Compliance": ["AGENTS.md §1 rules fully applied (AHP, Room 302/303, fairness)"]
-            }
-            pd.DataFrame(summary_data).to_excel(writer, sheet_name='Executive Summary (EN)', index=False)
-        excel_label = _t("📊 下載 Excel（跟隨語言 + 圖表 + 條件格式）", "📊 Download Excel (Follow Language + Charts + Formatting)")
-        st.download_button(
-            excel_label,
-            output_excel.getvalue(),
-            f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}.xlsx",
-            use_container_width=True
-        )
-
-    with col3:
-        ui_lang = st.session_state.get("ui_language", "zh")
-        if ui_lang == "en":
-            export_report = get_export_report_df(st.session_state.master_report_df)
-            md_title = PROJECT_FULL_NAME_EN
-            md_sub = "Professional English Export Report"
-            key_principle = "**Key Principle (Servant Leadership):** Lower cumulative load indicates higher priority for future assignments."
-            audit_title = "### Workload Audit (Professional English Columns)"
-            footer = "*This document is formatted for official, external, and leadership use in clean professional English.*"
-            dl_label = "📝 Download Markdown (Professional English)"
-            report_for_md = export_report
-        else:
-            export_report = get_ui_report_df(st.session_state.master_report_df)
-            md_title = PROJECT_FULL_NAME
-            md_sub = "專業中文匯出報告"
-            key_principle = "**核心原則（僕人領袖）：** 累計負荷越低，代表未來值班優先度越高。"
-            audit_title = "### 工作負荷審計（中文欄位）"
-            footer = "*本文件依目前語言設定輸出，官方/外部使用。*"
-            dl_label = _t("📝 下載 Markdown（跟隨語言）", "📝 Download Markdown (Follow Language)")
-            report_for_md = export_report
-
-        md_data = f"""# {md_title}
-## {md_sub}
-
-**Report Date:** {datetime.date.today().strftime('%Y-%m-%d')}
-**Institution:** Sing Yin Secondary School • Study Prefect Team
-
-{key_principle}
-Student names are preserved in Chinese per school practice.
-
-### Weekly Duty Roster
-
-{st.session_state.roster_df.to_markdown()}
-
-{audit_title}
-
-{report_for_md.to_markdown(index=False) if not report_for_md.empty else "No data"}
-
----
-{footer}
-*Internal daily operations use Chinese UI for student accessibility.*
-*Generated in full compliance with school regulations and biblical principles of fairness and service.*
-"""
-        st.download_button(
-            dl_label,
-            md_data.encode('utf-8'),
-            f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}.md",
-            use_container_width=True
-        )
-
-    ui_lang = st.session_state.get("ui_language", "zh")
     cap = get_text("footer_caption", version=VERSION)
     st.caption(cap)
 
