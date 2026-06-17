@@ -170,6 +170,25 @@ def main():
     )
     st.session_state.master_report_df = audit_results["report_df"]
 
+    # ====================== PDF 自動預生成 ======================
+    if st.session_state.roster_df is not None and not st.session_state.roster_df.empty:
+        if not st.session_state.get("pdf_cache_zh"):
+            with st.spinner(_t("正在準備 PDF...", "Preparing PDF...")):
+                try:
+                    _logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
+                    st.session_state.pdf_cache_zh = generate_pdf(
+                        st.session_state.roster_df,
+                        get_ui_report_df(st.session_state.master_report_df),
+                        _logo_b64, lang="zh"
+                    )
+                    st.session_state.pdf_cache_en = generate_pdf(
+                        st.session_state.roster_df,
+                        get_export_report_df(st.session_state.master_report_df),
+                        _logo_b64, lang="en"
+                    )
+                except Exception as _e:
+                    st.warning(f"PDF pre-generation failed: {_e}")
+
     # ====================== 警告顯示 ======================
     if audit_results["typo"][0]:
         st.markdown('<div class="danger-alert"><b>' + _t("⚠️ 數據不符警告：", "⚠️ Data Mismatch Warning:") + '</b><br>' + '<br>'.join(audit_results["typo"][1]) + '</div>', unsafe_allow_html=True)
@@ -306,6 +325,9 @@ def main():
                 st.session_state.manual_weights
             )
             st.session_state.master_report_df = audit_results["report_df"]
+            # Invalidate PDF cache so it regenerates on next download
+            st.session_state.pdf_cache_zh = None
+            st.session_state.pdf_cache_en = None
 
             # Safe assembly: build parts first using get_text, then combine
             revoke = get_text("revoke_points", current_person=current_person, weight=weight)
@@ -349,7 +371,7 @@ def main():
         logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
         st.download_button(
             _t("📄 匯出中文 PDF", "📄 Export Chinese PDF (report titles/headers in Chinese)"),
-            data=generate_pdf(st.session_state.roster_df, get_ui_report_df(st.session_state.master_report_df), logo_b64, lang="zh"),
+            data=st.session_state.get("pdf_cache_zh") or generate_pdf(st.session_state.roster_df, get_ui_report_df(st.session_state.master_report_df), logo_b64, lang="zh"),
             file_name=f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_中文.pdf",
             mime="application/pdf",
             use_container_width=True,
@@ -357,7 +379,7 @@ def main():
         )
         st.download_button(
             _t("📄 Export English PDF", "📄 Export English PDF (report titles/headers in English)"),
-            data=generate_pdf(st.session_state.roster_df, get_export_report_df(st.session_state.master_report_df), logo_b64, lang="en"),
+            data=st.session_state.get("pdf_cache_en") or generate_pdf(st.session_state.roster_df, get_export_report_df(st.session_state.master_report_df), logo_b64, lang="en"),
             file_name=f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_EN.pdf",
             mime="application/pdf",
             use_container_width=True,
