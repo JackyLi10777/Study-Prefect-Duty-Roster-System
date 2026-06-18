@@ -80,7 +80,36 @@ def get_base_css() -> str:
     .kpi-card .value { font-size: 18px; font-weight: 700; color: var(--primary-blue); }
     .kpi-card.mentoring-pair-badge { border-left-color: #0F766E !important; }
 
-    .verse-card {
+        /* === SEGMENTED CONTROL (LANGUAGE SWITCH) === */
+    [data-testid="stSegmentedControl"] {
+        border-radius: 8px;
+        background-color: #f1f5f9;
+        padding: 2px;
+        gap: 2px;
+    }
+    [data-testid="stSegmentedControl"] button {
+        border-radius: 6px !important;
+        padding: 4px 12px !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        transition: all 0.15s ease !important;
+        border: none !important;
+        color: #475569 !important;
+        background: transparent !important;
+        min-height: 32px !important;
+    }
+    [data-testid="stSegmentedControl"] button[aria-pressed="true"] {
+        background-color: #ffffff !important;
+        color: #0F172A !important;
+        font-weight: 600 !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04) !important;
+    }
+    [data-testid="stSegmentedControl"] button:hover:not([aria-pressed="true"]) {
+        background-color: rgba(255,255,255,0.5) !important;
+        color: #334155 !important;
+    }
+
+.verse-card {
         border: 1px solid var(--verse-gold-light);
         border-radius: 10px;
         padding: var(--verse-card-padding);
@@ -263,6 +292,24 @@ def get_dark_css() -> str:
     .row-widget.stSelectbox label p { color: #ffffff !important; }
     .st-dg, .st-dh, .st-di, .st-dj { color: #ffffff !important; }
     .stTextInput label p, .stTextArea label p { color: #f0f0f0 !important; }
+
+    /* === SEGMENTED CONTROL  DARK MODE === */
+    [data-testid="stSegmentedControl"] {
+        background-color: #1e293b !important;
+    }
+    [data-testid="stSegmentedControl"] button {
+        color: #94a3b8 !important;
+        background: transparent !important;
+    }
+    [data-testid="stSegmentedControl"] button[aria-pressed="true"] {
+        background-color: #334155 !important;
+        color: #f1f5f9 !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06) !important;
+    }
+    [data-testid="stSegmentedControl"] button:hover:not([aria-pressed="true"]) {
+        background-color: rgba(51,65,85,0.5) !important;
+        color: #cbd5e1 !important;
+    }
 </style>
 """
 
@@ -330,6 +377,25 @@ def get_light_css() -> str:
     .stSlider .stMarkdown { color: var(--light-text-secondary); }
     .stDataFrame thead tr th { background-color: var(--light-surface) !important; color: var(--light-text) !important; }
     .stDataFrame tbody tr:hover { background-color: var(--light-surface-2) !important; }
+
+    /* === SEGMENTED CONTROL  LIGHT MODE === */
+    [data-testid="stSegmentedControl"] {
+        background-color: #f1f5f9 !important;
+    }
+    [data-testid="stSegmentedControl"] button {
+        color: #475569 !important;
+        background: transparent !important;
+    }
+    [data-testid="stSegmentedControl"] button[aria-pressed="true"] {
+        background-color: #ffffff !important;
+        color: #0F172A !important;
+        font-weight: 600 !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04) !important;
+    }
+    [data-testid="stSegmentedControl"] button:hover:not([aria-pressed="true"]) {
+        background-color: rgba(255,255,255,0.5) !important;
+        color: #334155 !important;
+    }
 </style>
 """
 

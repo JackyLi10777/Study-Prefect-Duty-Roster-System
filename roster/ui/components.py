@@ -384,17 +384,21 @@ def render_sidebar():
         backup_explain_zh = """
 **備份說明（請詳讀）：**
 - **靜態資料**（姓名、年級、班別、職級、可用日子、固定值班）：主要從 GitHub 倉庫載入（例如 data/students.csv），作為長期來源。
-- **動態資料**（累計點數、當週排班、手動調整負荷、請假記錄、歷史趨勢等）：請使用下方 JSON 備份保存。
+- **動態資料**（累計點數、當週排班、手動調整負荷、請假記錄、歷史趨勢、師徒配對狀態等）：請使用下方 JSON 備份保存。
 - **JSON 備份**：主要備份方式，只包含動態數據，檔案輕巧。重要操作後請立即下載。
-- **PDF 備份頁**：匯出的 PDF 報告最後一頁會附加動態數據（標註「內部使用，請分享前刪除」）。此頁方便緊急還原，但請務必移除再分享。
+- **PDF 備份頁**：匯出的 PDF 報告最後一頁會自動附加動態數據（標註「內部使用，分享前請刪除此頁」）。上傳 PDF 即可一鍵還原全部數據。
+- **還原模式**：「完全取代」以備份覆蓋所有數據；「智能合併」保留當前學生名單結構，只合併動態欄位，適合不同名單版本的跨週還原。
+- **師徒配對狀態**（「需要老帶新」欄位）：自動包含在 JSON 備份與 PDF 備份頁中，還原時一併恢復。
 - **長期保存建議**：重要的 JSON 備份，請手動上傳至 GitHub 倉庫的 `backups/` 資料夾，進行版本控制與災難恢復。
 """
         backup_explain_en = """
 **Backup Instructions (Please read carefully):**
 - **Static Data** (name, form, class, role, available days, fixed duty): Mainly loaded from GitHub repo (e.g. data/students.csv) as long-term source.
-- **Dynamic Data** (cumulative points, weekly roster, manual adjustments, leave records, history trends, etc.): Use JSON backup below to save.
+- **Dynamic Data** (cumulative points, weekly roster, manual adjustments, leave records, history trends, mentoring status, etc.): Use JSON backup below to save.
 - **JSON Backup**: Primary backup method, contains only dynamic data, lightweight. Download immediately after important operations.
-- **PDF Backup Page**: The last page of exported PDF report will include dynamic data (marked "INTERNAL USE ONLY - PLEASE REMOVE THIS PAGE BEFORE DISTRIBUTION"). Convenient for emergency restore, but must remove before sharing.
+- **PDF Backup Page**: The last page of exported PDF report automatically includes dynamic data (marked "INTERNAL USE — REMOVE BEFORE DISTRIBUTION"). Upload the PDF anytime for one-click full restore.
+- **Restore Modes**: "Full Replace" overwrites all data with backup; "Smart Merge" keeps current student roster structure and only merges dynamic fields — ideal for cross-week restores with different rosters.
+- **Mentoring Status** ("Needs Mentoring" field): Automatically included in JSON backups and PDF backup pages, restored together with other data.
 - **Long-term Storage Recommendation**: Important JSON backups, manually upload to GitHub repo's `backups/` folder for version control and disaster recovery.
 """
         st.markdown(_t(backup_explain_zh, backup_explain_en))
