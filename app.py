@@ -295,6 +295,39 @@ def main():
 
     with tab_edit:
         st.markdown('<p class="edit-hint">' + _t("💡 直接修改人名或打 X 鎖定", "💡 Directly edit name or type X to lock") + "</p>", unsafe_allow_html=True)
+        # Show mentoring pair summary in edit tab when pairs exist
+        if _mentoring_pairs:
+            with st.expander(
+                _t(
+                    f"🤝 師徒配對詳情（{len(_mentoring_pairs)}對）",
+                    f"🤝 Mentoring Pairs ({len(_mentoring_pairs)} pairs)"
+                ),
+                expanded=False
+            ):
+                _pair_rows = []
+                for _pk, _info in sorted(_mentoring_pairs.items()):
+                    _room = _pk.rsplit("_", 1)[0]
+                    _day = _pk.rsplit("_", 1)[1]
+                    _mentor = _info.get("mentor", "")
+                    _mentee = _info.get("mentee", "")
+                    _pair_rows.append({
+                        _t("房間", "Room"): _room,
+                        _t("日期", "Day"): _day,
+                        _t("師傅 (Mentor)", "Mentor"): _mentor,
+                        _t("學徒 (Mentee)", "Mentee"): _mentee,
+                    })
+                if _pair_rows:
+                    st.dataframe(
+                        pd.DataFrame(_pair_rows),
+                        width="stretch",
+                        hide_index=True
+                    )
+                    st.caption(
+                        _t(
+                            "💡 師徒配對加分（-2.0）遠小於 AHP 崗位加成（-8.0），不會影響領導職位優先。手動修改值班表後請留意是否影響配對。",
+                            "💡 Mentoring bonus (-2.0) is much smaller than AHP slot bonus (-8.0), preserving leadership priority. Manual edits may affect pairing status."
+                        )
+                    )
         edited_roster = st.data_editor(
             st.session_state.roster_df,
             width="stretch",
