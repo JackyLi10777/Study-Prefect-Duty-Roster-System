@@ -1,4 +1,4 @@
-﻿# app.py
+# app.py
 """
 聖言中學導學風紀當值排班平台 (Sing Yin Secondary School Study Prefect Duty Roster Platform)
 主應用程式入口 - Streamlit Cloud 最終部署版
@@ -181,7 +181,7 @@ def main():
     # ====================== PDF 自動預生成 (only after Smart Compute) ======================
     if st.session_state.pop("_pdf_needs_generation", False):
         if st.session_state.roster_df is not None and not st.session_state.roster_df.empty:
-            with st.spinner(_t("正在準備專業 PDF 報告，請稍候...", "Preparing professional PDF report... This may take a few seconds.")):
+            with st.spinner(_t("正在準備專業 PDF 報告，請稍候…", "Preparing professional PDF reports, please wait…")):
                 try:
                     _logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
                     st.session_state.pdf_cache_zh = generate_pdf(
@@ -216,7 +216,20 @@ def main():
 
     # ====================== 值班表 ======================
     st.write("---")
-    st.subheader(get_text("this_week_roster_subheader"))
+        # Empty state: show helpful message when no roster has been generated yet
+    if st.session_state.roster_df is None or st.session_state.roster_df.empty:
+        st.info(_t(
+            "📋 尚未生成值班表。請在側邊欄設定請假人員後，點擊「🚀 一鍵生成公平值班表」開始。",
+            "📋 No roster generated yet. Set leave personnel in the sidebar, then click \"🚀 Generate Fair Roster\" to begin."
+        ))
+    else:
+        st.subheader(get_text("this_week_roster_subheader"))
+        if st.session_state.get("roster_versions") and len(st.session_state.roster_versions) > 0:
+            _last_ts = st.session_state.roster_versions[-1].get("timestamp", "")
+            if _last_ts:
+                _zh_ts = f"🕒 上次生成：{_last_ts}"
+                _en_ts = f"🕒 Last generated: {_last_ts}"
+                st.caption(_zh_ts if st.session_state.get("ui_language", "zh") == "zh" else _en_ts)
     tab_view, tab_edit = st.tabs([_t("📅 視覺公告版", "📅 Visual Board"), _t("✏️ 手動修改版", "✏️ Manual Edit Mode")])
 
     # Compute mentoring pairs for visual indicators
@@ -259,13 +272,26 @@ def main():
                 lambda row: [_cell_style(val, row.name, col) for col, val in row.items()], axis=1
             )
             st.dataframe(styled, height=380)
-            st.markdown('<div style="display:flex; gap:8px; flex-wrap:wrap; font-size:12px; margin:4px 0;">' + 
-                '<span style="background:#0F766E; color:white; padding:2px 10px; border-radius:10px;">🤝 師徒配對</span>' + 
-                '<span style="background:#0F766E; color:white; padding:2px 10px; border-radius:10px;">🆕 新加入</span>' + 
-                '<span style="background:#F59E0B; color:white; padding:2px 10px; border-radius:10px;">👤 需要老帶新</span>' + 
-                '<span style="background:#7C3AED; color:white; padding:2px 10px; border-radius:10px;">✅ 指定老帶新</span>' +
-                '<span style="background:#6B7280; color:white; padding:2px 10px; border-radius:10px;">一般</span>' + 
-                '</div>', unsafe_allow_html=True)
+            # Dynamic mentoring pair badge with live count
+            _pair_count = len(_mentoring_pairs)
+            _legend_parts = ['<div style="display:flex; gap:8px; flex-wrap:wrap; font-size:12px; margin:4px 0;">']
+            if _pair_count > 0:
+                _legend_parts.append(
+                    '<span style="background:#0F766E; color:white; padding:2px 10px; border-radius:10px;">'
+                    + chr(0x1f91d) + ' ' + _t('師徒配對', 'Mentoring Pair')
+                    + f'：{_pair_count}對'
+                    + '</span>'
+                )
+            _legend_parts.append('<span style="background:#0F766E; color:white; padding:2px 10px; border-radius:10px;">🆕 新加入</span>')
+            _legend_parts.append('<span style="background:#F59E0B; color:white; padding:2px 10px; border-radius:10px;">👤 需要老帶新</span>')
+            _legend_parts.append('<span style="background:#7C3AED; color:white; padding:2px 10px; border-radius:10px;">✅ 指定老帶新</span>')
+            _legend_parts.append('<span style="background:#6B7280; color:white; padding:2px 10px; border-radius:10px;">一般</span>')
+            _legend_parts.append('</div>')
+            st.markdown(''.join(_legend_parts), unsafe_allow_html=True)
+            if _pair_count > 0:
+                _zh_cap = f'🟦 本週共有 {_pair_count} 對師徒配對（藍綠色左邊框標記）。'
+                _en_cap = f'🟦 {_pair_count} mentoring pair' + ('s' if _pair_count != 1 else '') + ' detected (teal left border).'
+                st.caption(_zh_cap if st.session_state.get('ui_language', 'zh') == 'zh' else _en_cap)
 
     with tab_edit:
         st.markdown('<p class="edit-hint">' + _t("💡 直接修改人名或打 X 鎖定", "💡 Directly edit name or type X to lock") + "</p>", unsafe_allow_html=True)
@@ -370,6 +396,10 @@ def main():
     st.write("---")
     st.subheader(get_text("export_section_subheader"))
     st.caption("點擊按鈕直接下載PDF報告：按鈕決定報告標題與欄位語言（中文或專業英文），學生姓名永遠保留中文。UI語言切換與此獨立。")
+    st.caption(
+        _t("提示：PDF 渲染約需數秒，請稍候。重複下載將使用快取，速度更快。",
+           "Tip: PDF rendering takes a few seconds. Repeat downloads use cache for speed.")
+    )
 
     col1, col2, col3 = st.columns(3)
 
@@ -378,17 +408,27 @@ def main():
         # Buttons directly trigger generation + download (using st.download_button for reliable one-click behavior).
         # lang param selects report titles/headers language; student names/roles always Chinese (unchanged rule).
         logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
+        _pdf_zh_data = st.session_state.get("pdf_cache_zh")
+        if _pdf_zh_data is None:
+            with st.spinner(_t("正在渲染專業中文 PDF 報告，請稍候…", "Rendering professional Chinese PDF report, please wait…")):
+                _pdf_zh_data = generate_pdf(st.session_state.roster_df, get_ui_report_df(st.session_state.master_report_df), logo_b64, lang="zh", students_df=st.session_state.students_df)
+                st.session_state.pdf_cache_zh = _pdf_zh_data
         st.download_button(
             _t("📄 匯出中文 PDF", "📄 Export Chinese PDF (report titles/headers in Chinese)"),
-            data=st.session_state.get("pdf_cache_zh") or generate_pdf(st.session_state.roster_df, get_ui_report_df(st.session_state.master_report_df), logo_b64, lang="zh", students_df=st.session_state.students_df),
+            data=_pdf_zh_data,
             file_name=f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_中文.pdf",
             mime="application/pdf",
             width="stretch",
             key="dl_pdf_cn_direct"
         )
+        _pdf_en_data = st.session_state.get("pdf_cache_en")
+        if _pdf_en_data is None:
+            with st.spinner(_t("正在渲染專業英文 PDF 報告，請稍候…", "Rendering professional English PDF report, please wait…")):
+                _pdf_en_data = generate_pdf(st.session_state.roster_df, get_export_report_df(st.session_state.master_report_df), logo_b64, lang="en", students_df=st.session_state.students_df)
+                st.session_state.pdf_cache_en = _pdf_en_data
         st.download_button(
             _t("📄 Export English PDF", "📄 Export English PDF (report titles/headers in English)"),
-            data=st.session_state.get("pdf_cache_en") or generate_pdf(st.session_state.roster_df, get_export_report_df(st.session_state.master_report_df), logo_b64, lang="en", students_df=st.session_state.students_df),
+            data=_pdf_en_data,
             file_name=f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_EN.pdf",
             mime="application/pdf",
             width="stretch",

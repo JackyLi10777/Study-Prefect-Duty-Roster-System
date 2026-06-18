@@ -204,10 +204,12 @@ def render_sidebar():
         col_trad, col_ai = st.columns(2)
         with col_trad:
             if uploaded_roster and st.button(_t("📋 傳統導入", "📋 Traditional Import")):
-                process_roster_import(uploaded_roster)
+                with st.spinner(_t("正在導入名冊…", "Importing roster…")):
+                    process_roster_import(uploaded_roster)
         with col_ai:
             if uploaded_roster and st.button(_t("🤖 AI 智能匹配", "🤖 AI Smart Match"), type="primary"):
-                smart_process_roster_import(uploaded_roster)
+                with st.spinner(_t("正在使用 AI 智能解析名冊…", "AI is parsing your roster…")):
+                    smart_process_roster_import(uploaded_roster)
 
         st.caption(get_text("ai_support_caption"))
 

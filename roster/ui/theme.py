@@ -150,9 +150,38 @@ def get_base_css() -> str:
         transition: background-color 0.18s ease-out, color 0.18s ease-out, border-color 0.18s ease-out, box-shadow 0.18s ease-out;
     }
 
-    @media (max-width: 768px) {
-        .main-title { font-size: 26px; }
+    /* === RESPONSIVE: Mobile & Tablet === */
+    @media (max-width: 1024px) {
+        /* Tablet: slightly reduce title sizes */
+        .main-title { font-size: 28px; }
+        .main-subtitle { font-size: 13px; }
         .kpi-card .value { font-size: 16px; }
+    }
+
+    @media (max-width: 768px) {
+        /* Mobile: stack elements, increase touch targets */
+        .main-title { font-size: 22px; letter-spacing: 0.5px; }
+        .main-subtitle { font-size: 12px; }
+        .kpi-card { padding: 10px 12px !important; }
+        .kpi-card .value { font-size: 14px; }
+        .verse-card { padding: 10px 8px !important; margin-bottom: 8px !important; }
+        .verse-card .verse-title { font-size: 14px !important; }
+        .verse-card .verse-text { font-size: 12px !important; }
+
+        /* Larger touch targets for buttons */
+        .stButton > button { min-height: 44px; font-size: 14px; padding: 8px 16px !important; }
+        .stDownloadButton > button { min-height: 44px; }
+
+        /* Sidebar toggles stay side-by-side on small screens */
+        [data-testid="stSidebar"] [data-testid="stHorizontalBlock"] {
+            flex-wrap: wrap !important;
+        }
+    }
+
+    @media (max-width: 480px) {
+        /* Very small screens: further reduce sizes */
+        .main-title { font-size: 18px; letter-spacing: 0; }
+        .stButton > button { font-size: 12px; padding: 6px 10px !important; }
     }
 
     /* === Smooth theme transitions (scoped, safe for WeasyPrint/Cairo) === */
@@ -318,6 +347,28 @@ def get_dark_css() -> str:
         background-color: rgba(51,65,85,0.5) !important;
         color: #cbd5e1 !important;
     }
+
+    /* === DARK MODE: SPINNER, ALERTS & MENTORING BADGES === */
+    /* Spinner text in dark mode */
+    .stSpinner { color: #ffffff !important; }
+    .stSpinner > div { border-top-color: #0F766E !important; }
+
+    /* Alert boxes in dark mode - better contrast */
+    .stAlert { color: #ffffff !important; border: 1px solid #4a5568 !important; }
+    .stInfo { background-color: #1a2332 !important; border-left-color: #0F766E !important; }
+    .stWarning { background-color: #2d2416 !important; border-left-color: #F59E0B !important; }
+    .stSuccess { background-color: #162316 !important; border-left-color: #22c55e !important; }
+    .stError { background-color: #2d1616 !important; border-left-color: #EF4444 !important; }
+
+    /* Mentoring badges & batch operation sections */
+    [data-testid="stMetric"] { color: #ffffff !important; }
+    .stMetric [data-testid="stMetricLabel"] { color: #e5e7eb !important; }
+    .stMetric [data-testid="stMetricValue"] { color: #ffffff !important; }
+    .stExpander [data-testid="stExpander"] { color: #ffffff !important; }
+
+    /* Download button and export section consistency */
+    .stDownloadButton > button { background-color: #1e293b !important; color: #e2e8f0 !important; border: 1px solid #475569 !important; }
+    .stDownloadButton > button:hover { background-color: #334155 !important; border-color: #64748b !important; }
 </style>
 """
 
