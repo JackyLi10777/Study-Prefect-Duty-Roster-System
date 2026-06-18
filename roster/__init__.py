@@ -35,8 +35,9 @@ from .data import *  # noqa
 # Utilities (PDF, backup, importers)
 from .utils import *  # noqa
 
-# UI layer (components)
-from .ui import *  # noqa
+# UI layer is imported lazily by app.py and streamlit_app_entrypoint;
+# eager import here risks circular deadlock with roster.core on Cloud.
+# from .ui import *  # noqa
 
 # AI layer
 from .ai import *  # noqa
