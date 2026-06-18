@@ -263,45 +263,151 @@ def parse_backup_from_pdf(pdf_bytes: bytes) -> dict:
     """
     Extract and restore system state from a PDF backup page.
 
-    Searches for markers ___SYSS_BACKUP_START___ and ___SYSS_BACKUP_END___
-    in the PDF text, parses the JSON block between them, and returns
-    the decoded data dictionary (students_df, roster_df, report_df).
+    Scans all pages of the PDF for markers ___SYSS_BACKUP_START___ and
+    ___SYSS_BACKUP_END___, parses the JSON block between them, and returns
+    the decoded data dictionary with reconstructed DataFrames.
 
-    Returns None if no valid backup data is found.
+    The full exported PDF (multi-page, with roster tables and backup page)
+    can be uploaded directly — no page-splitting needed.
+
+    Returns a dict with keys:
+        success (bool), data (dict or None), error (str or None),
+        students_df (DataFrame), roster_df (DataFrame), report_df (DataFrame)
+
+    The caller should check result["success"] before using the DataFrames.
     """
     try:
         from pypdf import PdfReader
         from io import BytesIO
+
         reader = PdfReader(BytesIO(pdf_bytes))
-        full_text = ""
-        for page in reader.pages:
-            full_text += (page.extract_text() or "") + "\n"
+        total_pages = len(reader.pages)
+        if total_pages == 0:
+            return {
+                "success": False,
+                "data": None,
+                "error": "PDF has no pages.",
+                "students_df": pd.DataFrame(),
+                "roster_df": pd.DataFrame(),
+                "report_df": pd.DataFrame(),
+            }
 
-        # Find backup JSON between markers
-        start = full_text.find("___SYSS_BACKUP_START___")
-        end = full_text.find("___SYSS_BACKUP_END___")
-        if start == -1 or end == -1:
-            return None
+        # Search each page individually for markers (more robust than concatenation)
+        start_page = None
+        end_page = None
+        for i, page in enumerate(reader.pages):
+            text = page.extract_text() or ""
+            if "___SYSS_BACKUP_START___" in text and start_page is None:
+                start_page = i
+            if "___SYSS_BACKUP_END___" in text and end_page is None:
+                end_page = i
 
-        json_str = full_text[start + len("___SYSS_BACKUP_START___"):end].strip()
+        # If markers not found in any single page, fall back to full-text search
+        if start_page is None or end_page is None:
+            full_text = ""
+            for page in reader.pages:
+                full_text += (page.extract_text() or "") + "\n"
+            start = full_text.find("___SYSS_BACKUP_START___")
+            end = full_text.find("___SYSS_BACKUP_END___")
+            if start == -1 or end == -1:
+                return {
+                    "success": False,
+                    "data": None,
+                    "error": "No backup data markers found in this PDF. Please use a PDF exported by this system.",
+                    "students_df": pd.DataFrame(),
+                    "roster_df": pd.DataFrame(),
+                    "report_df": pd.DataFrame(),
+                }
+            json_str = full_text[start + len("___SYSS_BACKUP_START___"):end].strip()
+        else:
+            # Extract text from marker pages (plus any pages between them)
+            marker_text = ""
+            for i in range(start_page, end_page + 1):
+                marker_text += (reader.pages[i].extract_text() or "") + "\n"
+            start = marker_text.find("___SYSS_BACKUP_START___")
+            end = marker_text.find("___SYSS_BACKUP_END___")
+            json_str = marker_text[start + len("___SYSS_BACKUP_START___"):end].strip()
+
         if not json_str:
-            return None
+            return {
+                "success": False,
+                "data": None,
+                "error": "Backup markers found but JSON data is empty.",
+                "students_df": pd.DataFrame(),
+                "roster_df": pd.DataFrame(),
+                "report_df": pd.DataFrame(),
+            }
 
-        data = json.loads(json_str)
+        # Parse JSON with defensive handling
+        try:
+            data = json.loads(json_str)
+        except json.JSONDecodeError as je:
+            # Try to salvage: find the outermost { } in case of extra whitespace
+            trimmed = json_str.strip()
+            if trimmed.startswith("{") and trimmed.endswith("}"):
+                try:
+                    data = json.loads(trimmed)
+                except json.JSONDecodeError:
+                    return {
+                        "success": False,
+                        "data": None,
+                        "error": f"Backup data is corrupted (invalid JSON). {str(je)}",
+                        "students_df": pd.DataFrame(),
+                        "roster_df": pd.DataFrame(),
+                        "report_df": pd.DataFrame(),
+                    }
+            else:
+                return {
+                    "success": False,
+                    "data": None,
+                    "error": f"Backup data is corrupted (invalid JSON). {str(je)}",
+                    "students_df": pd.DataFrame(),
+                    "roster_df": pd.DataFrame(),
+                    "report_df": pd.DataFrame(),
+                }
 
         # Reconstruct DataFrames
-        result = {}
-        for key in ["students_df", "roster_df", "report_df"]:
-            if key in data and data[key]:
-                result[key] = pd.DataFrame.from_dict(data[key])
-            else:
-                result[key] = pd.DataFrame()
+        result_data = {}
+        students_df = pd.DataFrame()
+        roster_df = pd.DataFrame()
+        report_df = pd.DataFrame()
 
-        return result
+        # Handle students: check both "students_df" (PDF backup) and "students_dynamic" (JSON export)
+        if "students_df" in data and data["students_df"]:
+            students_df = pd.DataFrame.from_dict(data["students_df"])
+        elif "students_dynamic" in data and data["students_dynamic"]:
+            # Merge dynamic fields into existing static students_df
+            students_df = pd.DataFrame(data["students_dynamic"])
+
+        if "roster_df" in data and data["roster_df"]:
+            roster_df = pd.DataFrame.from_dict(data["roster_df"])
+        if "report_df" in data and data["report_df"]:
+            report_df = pd.DataFrame.from_dict(data["report_df"])
+
+        # Store additional dynamic state for the caller
+        result_data["manual_weights"] = data.get("manual_weights", {})
+        result_data["leave_tracker_input"] = data.get("leave_tracker_input", [])
+        result_data["global_load_multiplier"] = data.get("global_load_multiplier", 1.0)
+
+        return {
+            "success": True,
+            "data": result_data,
+            "error": None,
+            "students_df": students_df,
+            "roster_df": roster_df,
+            "report_df": report_df,
+        }
+
     except Exception as e:
         import streamlit as st
-        st.error(f"Failed to parse backup from PDF: {e}")
-        return None
+        return {
+            "success": False,
+            "data": None,
+            "error": f"Failed to parse backup from PDF: {str(e)}",
+            "students_df": pd.DataFrame(),
+            "roster_df": pd.DataFrame(),
+            "report_df": pd.DataFrame(),
+        }
 
 def clear_backup_reminder():
     """在執行備份後清除提醒。"""

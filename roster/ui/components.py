@@ -1,4 +1,4 @@
-﻿# ui_components.py
+# ui_components.py
 """
 聖言中學導學風紀當值排班平台 (Sing Yin Secondary School Study Prefect Duty Roster Platform)
 UI 元件模組 - 側邊欄、神聖每日聖經金句、控制按鈕（人性化重新設計版）
@@ -476,17 +476,41 @@ def render_sidebar():
             from roster.utils.backup import parse_backup_from_pdf
             with st.spinner(_t("正在從 PDF 解析備份數據...", "Parsing backup data from PDF...")):
                 result = parse_backup_from_pdf(uploaded_pdf.getvalue())
-            if result:
+            if result.get("success"):
+                restored_count = 0
                 if not result.get("students_df", pd.DataFrame()).empty:
                     st.session_state.students_df = result["students_df"]
+                    restored_count += 1
                 if not result.get("roster_df", pd.DataFrame()).empty:
                     st.session_state.roster_df = result["roster_df"]
+                    restored_count += 1
                 if not result.get("report_df", pd.DataFrame()).empty:
                     st.session_state.master_report_df = result["report_df"]
-                st.success(_t("PDF 備份已成功還原！系統狀態已恢復。", "PDF backup restored successfully! System state recovered."))
+                    restored_count += 1
+                # Restore additional dynamic state if available
+                extra = result.get("data", {})
+                if extra:
+                    if extra.get("leave_tracker_input"):
+                        st.session_state.leave_tracker_input = extra["leave_tracker_input"]
+                    if extra.get("global_load_multiplier"):
+                        st.session_state.global_load_multiplier = extra["global_load_multiplier"]
+                    if extra.get("manual_weights") and extra["manual_weights"]:
+                        st.session_state.manual_weights = pd.DataFrame.from_dict(extra["manual_weights"])
+                st.success(
+                    _t(
+                        f"PDF 備份已成功還原！已恢復 {restored_count} 項資料集。",
+                        f"PDF backup restored! {restored_count} dataset(s) recovered."
+                    )
+                )
                 st.rerun()
             else:
-                st.warning(_t("PDF 中未找到有效的備份數據。請確保使用的是本系統導出的 PDF 檔案。", "No valid backup data found in the PDF. Please make sure the PDF was exported by this system first."))
+                error_msg = result.get("error", "Unknown error")
+                st.warning(
+                    _t(
+                        f"PDF 中未找到有效的備份數據。{error_msg}",
+                        f"No valid backup data found. {error_msg}"
+                    )
+                )
 
         
         # 還原區塊（含驗證 + 模式選擇）
