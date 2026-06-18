@@ -1,4 +1,4 @@
-# app.py
+﻿# app.py
 """
 聖言中學導學風紀當值排班平台 (Sing Yin Secondary School Study Prefect Duty Roster Platform)
 主應用程式入口 - Streamlit Cloud 最終部署版
@@ -264,7 +264,7 @@ def main():
         st.markdown('<p class="edit-hint">' + _t("💡 直接修改人名或打 X 鎖定", "💡 Directly edit name or type X to lock") + "</p>", unsafe_allow_html=True)
         edited_roster = st.data_editor(
             st.session_state.roster_df,
-            use_container_width=True,
+            width="stretch",
             key="main_roster_editor_widget"
         )
         if not edited_roster.equals(st.session_state.roster_df):
@@ -503,7 +503,7 @@ Student names are preserved in Chinese per school practice.
 
     manual_col = st.data_editor(
         st.session_state.manual_weights,
-        use_container_width=True,
+            width="stretch",
         key="manual_weight_editor"
     )
     if not manual_col.equals(st.session_state.manual_weights):
@@ -519,7 +519,7 @@ Student names are preserved in Chinese per school practice.
     if not st.session_state.master_report_df.empty:
         # UI 顯示使用中文欄位（保持介面中文），使用 models helper 區分顯示/匯出
         display_report = get_ui_report_df(st.session_state.master_report_df)
-        st.dataframe(display_report, use_container_width=True, hide_index=True)
+        st.dataframe(display_report, width="stretch", hide_index=True)
     else:
         st.info(get_text("audit_table_info"))
 
@@ -610,7 +610,7 @@ Student names are preserved in Chinese per school practice.
             fig_trend = px.line(trend_df, x="週次", y=[col for col in trend_df.columns if col != "週次"],
                                 title=_t("累計負荷歷史趨勢", "Cumulative Load History Trend"),
                                 labels={"value": _t("累計加權負荷 (點)", "Cumulative Weighted Load (pts)"), "variable": _t("學生", "Student")})
-            st.plotly_chart(fig_trend, use_container_width=True)
+            st.plotly_chart(fig_trend, width="stretch")
 
             # Latest fairness index (std dev)
             latest = st.session_state.history_loads[-1]["loads"]
@@ -737,7 +737,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
                 with col_view:
                     if ver.get("roster_df"):
                         ver_roster = pd.DataFrame.from_dict(ver["roster_df"])
-                        st.dataframe(ver_roster, use_container_width=True, height=200)
+                        st.dataframe(ver_roster, width="stretch", height=200)
 
                 # Improved comparison: side-by-side key stats + sample
                 if st.button(_t("比較此版本與當前 (Compare Version with Current)", "Compare Version with Current"), key=f"compare_{idx}"):
@@ -760,10 +760,10 @@ This system promotes fairness, equity, and a culture of service, helping prefect
                     # Sample data
                     st.write("**" + get_text("sample_data_comparison") + "**")
                     st.write(get_text("current_label"))
-                    st.dataframe(current_roster.head(5), use_container_width=True)
+                    st.dataframe(current_roster.head(5), width="stretch")
                     st.write(get_text("selected_version_label"))
                     if not ver_roster.empty:
-                        st.dataframe(ver_roster.head(5), use_container_width=True)
+                        st.dataframe(ver_roster.head(5), width="stretch")
                     else:
                         st.info(get_text("no_data_for_version"))
         else:
@@ -783,7 +783,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
 
     if st.session_state.get("semester_hours"):
         hours_df = pd.DataFrame(list(st.session_state.semester_hours.items()), columns=[_t("姓名 (Chinese Name)", "Name (Chinese Name)"), _t("總服務時數 (小時)", "Total Service Hours (hrs)")])
-        st.dataframe(hours_df, use_container_width=True)
+        st.dataframe(hours_df, width="stretch")
 
         if st.button(get_text("generate_service_cert_button"), use_container_width=True, type="primary"):
             cert_lines = [
@@ -841,7 +841,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
         )
         fig.update_layout(xaxis_title=_t("學生姓名", "Student Name"), yaxis_title=_t("累計加權負荷 (點)", "Cumulative Weighted Load (pts)"))
         fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # ====================== 智慧替補 ======================
     st.markdown(f'<p style="font-size:13px; font-weight:600; color:#6B7280; margin:16px 0 0 0;">{_t("其他功能", "Other Features")}</p>', unsafe_allow_html=True)
@@ -886,7 +886,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
             display_sub = sub_df.copy()
             display_sub["Mentoring Fit"] = display_sub.apply(_fit_label, axis=1)
             display_sub.columns = [_t("姓名", "Name"), _t("年級", "Form"), _t("當前總點數", "Load"), _t("配對合適度", "Mentoring Fit")]
-            st.dataframe(display_sub, use_container_width=True, hide_index=True)
+            st.dataframe(display_sub, width="stretch", hide_index=True)
         else:
             st.warning(error_msg)
 

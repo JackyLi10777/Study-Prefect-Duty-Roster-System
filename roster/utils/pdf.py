@@ -57,6 +57,7 @@ from roster.config import (
 )
 
 from roster.utils.backup import get_dynamic_backup_json
+from roster.core import annotate_mentoring_pairs, compute_possible_mentoring_pairs
 
 
 
@@ -219,8 +220,23 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
         fairness_text = "• 公平規則：派班優先考慮累計負荷較低者。F.3學生在分數相同時優先。"
 
         leave_text = "• 「請假撤銷」單元格不計入所有工作量計算。"
+
+        # Mentoring summary
+        mentoring_pairs_dict = annotate_mentoring_pairs(roster_df, students_df) if students_df is not None else {}
+        mentoring_pair_count = len(mentoring_pairs_dict)
+        mentoring_possible = compute_possible_mentoring_pairs(roster_df)
+        mentoring_rate = (mentoring_pair_count / mentoring_possible * 100) if mentoring_possible > 0 else 0
+        if mentoring_rate >= 50:
+            mentoring_rating = "優秀"
+        elif mentoring_rate >= 25:
+            mentoring_rating = "良好"
+        else:
+            mentoring_rating = "尚可"
+        mentoring_summary_text = f"• 師徒配對摘要：本週形成 {mentoring_pair_count}/{mentoring_possible} 組師徒配對（配對率 {mentoring_rate:.0f}%，{mentoring_rating}）。師徒配對加分（-2.0）遠小於 AHP 崗位加成（-8.0），確保領導職位優先。"
+
         backup_note = "• 備份資料（JSON）現已預設附加於 PDF 最後一頁（內部備份用）。分享 PDF 時請移除最後一頁。"
 
+        mentoring_label = "師徒配對摘要："
         key_principle_label = "核心原則："
 
         principle_text = "負荷越低 = 未來值班優先度越高。這體現僕人領袖與公平服務精神。"
@@ -256,6 +272,20 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
         fairness_text = "• Fairness rule: Assignments prioritize lower cumulative load. F.3 students receive tie-break preference."
 
         leave_text = "• \"請假撤銷\" (Leave Revocation) cells are excluded from all workload calculations."
+
+        # Mentoring summary
+        mentoring_pairs_dict = annotate_mentoring_pairs(roster_df, students_df) if students_df is not None else {}
+        mentoring_pair_count = len(mentoring_pairs_dict)
+        mentoring_possible = compute_possible_mentoring_pairs(roster_df)
+        mentoring_rate = (mentoring_pair_count / mentoring_possible * 100) if mentoring_possible > 0 else 0
+        if mentoring_rate >= 50:
+            mentoring_rating = "Excellent"
+        elif mentoring_rate >= 25:
+            mentoring_rating = "Good"
+        else:
+            mentoring_rating = "Fair"
+        mentoring_summary_text = f"• Mentoring Pairing Summary: {mentoring_pair_count}/{mentoring_possible} pairs formed this week (pairing rate {mentoring_rate:.0f}%, {mentoring_rating}). The mentoring bonus (-2.0) is much smaller than the AHP slot bonus (-8.0), ensuring leadership priority."
+
         backup_note = "• Backup data (JSON) is now automatically included on the final page of exported PDFs (for internal recovery). Remove the last page before sharing."
 
         key_principle_label = "Key Principle:"
@@ -411,6 +441,10 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
         <br>{fairness_text}
 
         <br>{leave_text}
+
+        <br><br>
+
+        <span class="kpi">{mentoring_label}</span> {mentoring_summary_text}
 
         <br>{backup_note}
 
