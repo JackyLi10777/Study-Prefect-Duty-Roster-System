@@ -4,7 +4,7 @@
 UI 元件模組 - 側邊欄、神聖每日聖經金句、控制按鈕（人性化重新設計版）
 
 作者：首席導學風紀 26-27 LI Chuangjie Jacky
-版本：v2.3 Final（人性化優化版 - 降低認知負荷、強化公平感與信任、專業視覺層級）
+版本：v2.4 Final（師徒配對系統完成 + 深色模式 + PDF 師徒摘要 + 學徒進度追蹤 + 專業視覺層級）
 """
 
 import streamlit as st
@@ -97,7 +97,7 @@ def show_daily_verse():
     st.markdown(card_html, unsafe_allow_html=True)
 
     # 刷新按鈕（置於框外，但功能完整）
-    if st.button(_t("🔄 刷新金句", "🔄 Refresh Verse"), use_container_width=True, type="secondary", help=_t("獲得新的靈修鼓勵", "Get new spiritual encouragement")):
+    if st.button(_t("🔄 刷新金句", "🔄 Refresh Verse"), width="stretch", type="secondary", help=_t("獲得新的靈修鼓勵", "Get new spiritual encouragement")):
         st.session_state.current_verse = random.choice(ALL_VERSES)
         st.rerun()
 
@@ -117,27 +117,23 @@ def render_sidebar():
             is_dark = st.toggle(_t("深色模式", "Dark Mode"), value=st.session_state.get("theme", "light") == "dark", key="theme_toggle")
             st.session_state.theme = "dark" if is_dark else "light"
         with col_lang:
-            # 更完整的語言模式：中文介面 / 英文介面
-            # UI 主要保持中文（學校情境），匯出與部分標題可同步英文
-            # 按鈕標籤使用中英對照
-            lang_map = {
-                "zh": _t("中文介面", "中文介面 / Chinese Interface"),
-                "en": _t("英文介面", "英文介面 / English Interface")
-            }
+            # Capsule-style segmented control matching the Dark Mode toggle aesthetic.
+            # Uses st.segmented_control for two connected pills: 中文 | English.
             current_lang = st.session_state.get("ui_language", "zh")
-            default_idx = 0 if current_lang == "zh" else 1
-            selected_display = st.selectbox(
-                "🌐 中文 / English", 
-                list(lang_map.values()), 
-                index=default_idx, 
-                key="lang_select"
+            default_lang = "中文" if current_lang == "zh" else "English"
+            selected_lang = st.segmented_control(
+                _t("介面語言", "Interface Language"),
+                options=["中文", "English"],
+                default=default_lang,
+                key="lang_segmented",
+                label_visibility="collapsed"
             )
-            # 反查 lang key
-            st.session_state.ui_language = "zh" if "中文" in selected_display else "en"
-            # Show toast on language switch
-            if st.session_state.get("ui_language") != st.session_state.get("_prev_lang_"):
-                st.toast(_t("語言已切換 ✓", "Language switched ✓"))
-            st.session_state._prev_lang_ = st.session_state.ui_language
+            if selected_lang:
+                new_lang = "zh" if selected_lang == "中文" else "en"
+                if new_lang != st.session_state.get("_prev_lang_"):
+                    st.toast(_t("語言已切換 ✓", "Language switched ✓"))
+                st.session_state.ui_language = new_lang
+                st.session_state._prev_lang_ = new_lang
             if st.session_state.ui_language == "en":
                 st.caption(get_text("english_exports_caption"))
             else:
@@ -195,7 +191,7 @@ def render_sidebar():
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='openpyxl') as writer:
                     sample_df.to_excel(writer, index=False)
-                st.download_button(_t("✅ 下載", "✅ Download"), output.getvalue(), "Prefect_Roster_Format_Example.xlsx", use_container_width=True)
+                st.download_button(_t("✅ 下載", "✅ Download"), output.getvalue(), "Prefect_Roster_Format_Example.xlsx", width="stretch")
 
         uploaded_roster = st.file_uploader(_t("上傳名冊 (Excel/CSV)", "Upload Roster (Excel/CSV)"), type=["csv", "xlsx", "xls"], key="roster_importer")
         col_trad, col_ai = st.columns(2)
@@ -264,7 +260,7 @@ def render_sidebar():
                     return "👤 需要老帶新"
                 return ""
             search_display["狀態"] = search_display.apply(_mentor_tag, axis=1)
-            st.dataframe(search_display[[_t("姓名", "Name"), "狀態", "form", "role", "history_weight"]], hide_index=True, use_container_width=True)
+            st.dataframe(search_display[[_t("姓名", "Name"), "狀態", "form", "role", "history_weight"]], hide_index=True, width="stretch")
 
         st.divider()
 
@@ -330,7 +326,7 @@ def render_sidebar():
         if bulk_selected:
             bulk_type = st.radio(_t("批量類型", "Batch Type"), [_t("設定請假", "Set Leave"), _t("設定固定值班", "Set Fixed Duty"), _t("批量刪除", "Batch Delete")], horizontal=True, key="bulk_type")
             if bulk_type == _t("設定請假", "Set Leave"):
-                if st.button(_t("✅ 批量請假", "✅ Batch Leave"), use_container_width=True, type="primary"):
+                if st.button(_t("✅ 批量請假", "✅ Batch Leave"), width="stretch", type="primary"):
                     current_leave = set(st.session_state.get("leave_tracker_input", []))
                     current_leave.update(bulk_selected)
                     st.session_state.leave_tracker_input = list(current_leave)
@@ -342,7 +338,7 @@ def render_sidebar():
                     st.rerun()
             elif bulk_type == _t("設定固定值班", "Set Fixed Duty"):
                 bulk_day = st.selectbox(_t("選擇固定日子", "Select Fixed Day"), ["NONE"] + DAYS, key="bulk_fixed_day")
-                if st.button(_t("✅ 批量設定固定值班", "✅ Batch Set Fixed Duty"), use_container_width=True, type="primary"):
+                if st.button(_t("✅ 批量設定固定值班", "✅ Batch Set Fixed Duty"), width="stretch", type="primary"):
                     updated = 0
                     for name in bulk_selected:
                         mask = st.session_state.students_df["name"].str.strip() == name
@@ -352,13 +348,13 @@ def render_sidebar():
                     # Safe pattern: assemble first, then get_text
                     st.success(get_text("batch_fixed_success", count=updated, day=bulk_day))
             elif bulk_type == _t("批量刪除", "Batch Delete"):
-                if st.button("🗑 " + _t("批量刪除選取學生", "Batch Delete Selected"), use_container_width=True, type="secondary"):
+                if st.button("🗑 " + _t("批量刪除選取學生", "Batch Delete Selected"), width="stretch", type="secondary"):
                     st.session_state.show_batch_delete_confirm = True
                 if st.session_state.get("show_batch_delete_confirm", False):
                     st.error(_t("警告：刪除後，該學生的歷史排班紀錄與累計點數將無法復原，確定要刪除嗎？", "WARNING: After deletion, the student's historical duty records and cumulative points CANNOT be recovered. Are you sure?"))
                     col_confirm, col_cancel = st.columns(2)
                     with col_confirm:
-                        if st.button(_t("✔ 確定刪除", "Confirm Delete"), type="primary", use_container_width=True, key="batch_delete_confirm"):
+                        if st.button(_t("✔ 確定刪除", "Confirm Delete"), type="primary", width="stretch", key="batch_delete_confirm"):
                             df = st.session_state.students_df
                             before = len(df)
                             df = df[~df["name"].astype(str).str.strip().isin(st.session_state.selected_students_for_bulk)]
@@ -368,13 +364,13 @@ def render_sidebar():
                             st.success(get_text("batch_delete_success", count=before - len(df)))
                             st.rerun()
                     with col_cancel:
-                        if st.button(_t("✖ 取消", "Cancel"), use_container_width=True, key="batch_delete_cancel"):
+                        if st.button(_t("✖ 取消", "Cancel"), width="stretch", key="batch_delete_cancel"):
                             st.session_state.show_batch_delete_confirm = False
                             st.rerun()
                     st.session_state.selected_students_for_bulk = []
                     trigger_backup_reminder()
                     st.rerun()
-            if st.button(_t("❌ 清除選擇", "❌ Clear Selection"), use_container_width=True):
+            if st.button(_t("❌ 清除選擇", "❌ Clear Selection"), width="stretch"):
                 st.session_state.selected_students_for_bulk = []
                 st.rerun()
 
@@ -419,7 +415,7 @@ def render_sidebar():
                 _t("📥 下載 JSON 備份", "📥 Download JSON Backup"),
                 backup_json,
                 f"SYSS_Backup_{datetime.date.today().strftime('%Y%m%d_%H%M')}.json",
-                use_container_width=True
+                width="stretch"
             )
             clear_backup_reminder()
 
@@ -491,7 +487,7 @@ def render_sidebar():
                 key="restore_mode_hist",
                 horizontal=True
             )
-            if st.button(get_text("execute_restore_button"), type="primary", use_container_width=True, key="restore_hist_btn"):
+            if st.button(get_text("execute_restore_button"), type="primary", width="stretch", key="restore_hist_btn"):
                 # 模擬檔案上傳
                 fake_file = io.BytesIO(pending_json.encode('utf-8'))
                 mode = "full" if "Full" in restore_mode else "smart_merge"
@@ -511,7 +507,7 @@ def render_sidebar():
                 horizontal=True,
                 help=_t("Full Replace: 完全覆蓋目前所有資料。Smart Merge: 智慧合併學生資料，當週排班傾向使用備份。", "Full Replace: Completely overwrite all current data. Smart Merge: Smart merge student data, current week's roster tends to use the backup.")
             )
-            if st.button(_t("🔄 執行還原", "🔄 Execute Restore"), type="primary", use_container_width=True):
+            if st.button(_t("🔄 執行還原", "🔄 Execute Restore"), type="primary", width="stretch"):
                 mode = "full" if "Full" in restore_mode else "smart_merge"
                 import_system_backup(uploaded_backup, replace_mode=mode)
 
@@ -537,7 +533,7 @@ def render_control_buttons():
 
     col1, col2 = st.columns([3, 1])
     with col1:
-        if st.button(_t("🚀 智能計算：生成本週全新公平值班表", "🚀 Smart Compute: Generate this week's new fair roster"), type="primary", use_container_width=True):
+        if st.button(_t("🚀 一鍵生成公平值班表", "🚀 Generate Fair Roster"), type="primary", width="stretch"):
             with st.spinner(_t("正在進行公平排班計算...", "Performing fair roster calculation...")):
                 seed = random.randint(10000, 99999)
                 global_multiplier = st.session_state.get("global_load_multiplier", 1.0)
@@ -576,7 +572,7 @@ def render_control_buttons():
                 st.session_state._pdf_needs_generation = True
 
     with col2:
-        if st.button(_t("🗑️ 清空", "🗑️ Clear"), type="secondary", use_container_width=True):
+        if st.button(_t("🗑️ 清空", "🗑️ Clear"), type="secondary", width="stretch"):
             st.session_state.show_clear_confirm = True
 
     if st.session_state.get("show_clear_confirm", False):
@@ -756,7 +752,7 @@ def render_mentee_progress_tracker():
                 }
             )
         progress_df = pd.DataFrame(rows)
-        st.dataframe(progress_df, use_container_width=True, hide_index=True)
+        st.dataframe(progress_df, width="stretch", hide_index=True)
 
         if baseline_date:
             st.caption(

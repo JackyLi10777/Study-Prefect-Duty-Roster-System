@@ -127,7 +127,7 @@ The generator (`core.py`) **must** follow this order and logic on every run:
 ## 2. Coding Standards & Development Rules
 
 - **Bilingual + Emoji style**: User-facing text (UI strings, PDF, help, warnings) uses Traditional Chinese + English + emojis. Keep the warm, professional, school-spirited tone. Code comments and docstrings may be bilingual.
-- **Module docstrings**: Every `.py` file starts with a detailed header including version notes (e.g. "v2.3 Final"). Update them when making user-visible or logic changes.
+- **Module docstrings**: Every `.py` file starts with a detailed header including version notes (e.g. "v2.4 Final"). Update them when making user-visible or logic changes.
 - **Data handling**: Almost everything is pandas DataFrames. Roster is always indexed by `ROWS_ROSTER` and columns `DAYS`. When restoring from backup or reindexing, always do `.reindex(index=ROWS_ROSTER, columns=DAYS).fillna(...)`.
 - **Session state**: `initialize_session_state()` (data.py) is the single place that guards against Cloud hibernation loss. New persistent state must be added there + to the backup/restore functions in utils.py.
 - **Generation is pure**: `generate_roster` must not mutate student history. Only leave-adjustment and manual history edits are allowed to change `history_weight`.

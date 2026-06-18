@@ -60,32 +60,39 @@ HELP_TEXT = """
 
 #### 2. 名冊即時修改
 - 在側邊欄可以直接編輯所有領袖生資料，修改後即時儲存。
+- **「需要老帶新」欄位**：手動勾選後，該風紀將在排班時優先與經驗風紀配對。
 
 #### 3. 生成值班表
 - 在側邊欄設定請假人員與特殊不開放時段。
-- 點擊主畫面大按鈕「🚀 智能計算：生成本週全新公平值班表」。
+- 點擊主畫面大按鈕「🚀 一鍵生成公平值班表」。
 
-#### 4. 全局負荷調節滑桿（新增重要功能）
-- 主畫面最上方可即時調整本次排班整體負荷倍率（0.8~2.0）。
+#### 4. 全局負荷調節滑桿
+- 主畫面最上方可即時調整本次排班整體負荷倍率（0.8～2.0）。
 - 臨近考試時提高倍率，讓累計負荷較低的學生優先達到公平平衡。
 
 #### 5. 值班表操作
 - **視覺公告版**：專業彩色顯示，不同崗位不同顏色（Assist 金米、Room302 綠、Room303 黃、Room202 紅）。
 - **手動修改版**：可直接在表格上修改人名或打「X」鎖定。
 - **師徒配對標記**：若兩個風紀被安排在同一間房形成師徒配對，該儲存格左側會顯示 🟦 藍綠色邊框標記。
+- **自動標籤**：名冊中自動顯示「🆕 新加入」（history_weight=0）、「👤 需要老帶新」（weight≤2）、「✅ 指定老帶新」（手動勾選）。
 
-#### 6. 智慧替補推薦
+#### 6. 師徒配對儀表板（Phase D 新增）
+- **配對成效卡**：生成值班表後，公平性區域自動顯示本週師徒配對數、配對成功率及評級。
+- **學徒進度追蹤**：可摺疊面板，儲存當前點數為基準，下次生成值班表後回來查看學徒點數變化趨勢（進步中／持平／需關注）。
+
+#### 7. 智慧替補推薦
 - 選擇日期與崗位後，點擊「🔍 尋找最優替補」，系統會依據目前總點數由低到高推薦。
 - 替補推薦結果會顯示「配對合適度」欄位，🤝 Mentor 表示推薦人選適合指導現有值班者，👤 Mentee 則表示適合接受指導。
 
-#### 7. 匯出功能
-- **📄 匯出 PDF**：專業彩色班表（含校徽），適合公告列印。
+#### 8. 匯出功能
+- **📄 匯出 PDF**：專業彩色班表（含校徽），PDF 內含師徒配對摘要與完整備份資料。適合公告列印。
 - **📊 下載 Excel**：完整值班表 + 工作負荷統計表。
 - **📝 下載 Markdown**：方便複製到其他文件。
 
-#### 8. Cloud 備份（強烈建議）
+#### 9. Cloud 備份（強烈建議）
 - 每次生成新班表後，建議在側邊欄點擊「⬇️ 導出完整備份 (JSON)」下載備份。
-- Streamlit Cloud 休眠後可用「上傳備份 JSON 還原」快速恢復。
+- **PDF 備份還原**：上傳之前生成的 PDF，系統自動解析並還原數據。
+- Streamlit Cloud 休眠後可用「上傳備份 JSON 還原」或「PDF 備份還原」快速恢復。
 
 **有問題請 email s10777@syss.edu.hk**
 
@@ -304,7 +311,7 @@ def main():
             ]
             replacement = st.selectbox(_t("選擇替補人員", "Select Substitute"), valid_names, key="replacement_select")
 
-        submitted = st.form_submit_button(_t("🚀 執行請假調整 / 撤銷點數", "🚀 Execute Leave Adjustment / Revoke Points"), type="primary", use_container_width=True)
+        submitted = st.form_submit_button(_t("🚀 執行請假調整 / 撤銷點數", "🚀 Execute Leave Adjustment / Revoke Points"), type="primary", width="stretch")
 
         if submitted and adj_role and current_person:
             weight = get_weight(adj_role)
@@ -376,7 +383,7 @@ def main():
             data=st.session_state.get("pdf_cache_zh") or generate_pdf(st.session_state.roster_df, get_ui_report_df(st.session_state.master_report_df), logo_b64, lang="zh", students_df=st.session_state.students_df),
             file_name=f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_中文.pdf",
             mime="application/pdf",
-            use_container_width=True,
+            width="stretch",
             key="dl_pdf_cn_direct"
         )
         st.download_button(
@@ -384,13 +391,13 @@ def main():
             data=st.session_state.get("pdf_cache_en") or generate_pdf(st.session_state.roster_df, get_export_report_df(st.session_state.master_report_df), logo_b64, lang="en", students_df=st.session_state.students_df),
             file_name=f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}_EN.pdf",
             mime="application/pdf",
-            use_container_width=True,
+            width="stretch",
             key="dl_pdf_en_direct"
         )
 
     with col2:
         if not st.session_state.get("excel_md_ready"):
-            if st.button(_t("生成 Excel / Markdown", "Generate Excel / Markdown"), use_container_width=True):
+            if st.button(_t("生成 Excel / Markdown", "Generate Excel / Markdown"), width="stretch"):
                 st.session_state.excel_md_ready = True
                 st.rerun()
         else:
@@ -443,7 +450,7 @@ def main():
                 excel_label,
                 output_excel.getvalue(),
                 f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}.xlsx",
-                use_container_width=True
+                width="stretch"
             )
 
     with col3:
@@ -494,7 +501,7 @@ Student names are preserved in Chinese per school practice.
                 dl_label,
                 md_data.encode('utf-8'),
                 f"SYSS_Roster_{datetime.date.today().strftime('%Y%m%d')}.md",
-                use_container_width=True
+                width="stretch"
             )
 
     ui_lang = st.session_state.get("ui_language", "zh")
@@ -705,7 +712,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
                 get_text("download_summary_txt_button"),
                 summary_en,
                 f"SYSS_Summary_Report_{datetime.date.today().strftime('%Y%m%d')}.txt",
-                use_container_width=True
+                width="stretch"
             )
             st.caption(get_text("report_backup_reminder_caption"))
             # Optional: Quick English PDF summary using existing PDF engine (reusing for professionalism)
@@ -774,7 +781,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
     st.subheader(get_text("semester_service_subheader"))
     st.caption(get_text("semester_service_caption"))
 
-    if st.button(get_text("update_service_hours_button"), use_container_width=True):
+    if st.button(get_text("update_service_hours_button"), width="stretch"):
         for name in st.session_state.students_df["name"].dropna().astype(str).str.strip():
             count = (st.session_state.roster_df == name).sum().sum()
             hours = count * 1.0
@@ -785,7 +792,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
         hours_df = pd.DataFrame(list(st.session_state.semester_hours.items()), columns=[_t("姓名 (Chinese Name)", "Name (Chinese Name)"), _t("總服務時數 (小時)", "Total Service Hours (hrs)")])
         st.dataframe(hours_df, width="stretch")
 
-        if st.button(get_text("generate_service_cert_button"), use_container_width=True, type="primary"):
+        if st.button(get_text("generate_service_cert_button"), width="stretch", type="primary"):
             cert_lines = [
                 "Sing Yin Secondary School",
                 "Study Prefect (導學風紀) Service Certificate",
@@ -814,7 +821,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
                     cert_pdf,
                     f"SYSS_Service_Certificate_{datetime.date.today().strftime('%Y%m%d')}.pdf",
                     "application/pdf",
-                    use_container_width=True
+                    width="stretch"
                 )
             else:
                 st.warning(get_text("pdf_cert_unavailable_warning"))
@@ -823,7 +830,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
                 get_text("download_cert_text_button"),
                 cert_text,
                 f"SYSS_Service_Certificate_{datetime.date.today().strftime('%Y%m%d')}.txt",
-                use_container_width=True
+                width="stretch"
             )
 
     # ====================== 公平性圖表 ======================
@@ -856,7 +863,7 @@ This system promotes fairness, equity, and a culture of service, helping prefect
     current_person = str(st.session_state.roster_df.at[chosen_role, chosen_day]).strip()
     st.text_input(_t("📍 目前該時段排定之人員", "📍 Currently Scheduled Person for This Slot"), value=current_person if current_person not in ["", "X", "⬜"] else _t("（當前為空白或特殊不開放時段）", "(Currently blank or special closed period)"), disabled=True)
 
-    if st.button(_t("🔮 執行篩選並推薦最優替補人員", "🔮 Execute Filter and Recommend Optimal Substitutes"), type="secondary", use_container_width=True):
+    if st.button(_t("🔮 執行篩選並推薦最優替補人員", "🔮 Execute Filter and Recommend Optimal Substitutes"), type="secondary", width="stretch"):
         sub_df, error_msg = recommend_substitutes(st.session_state.roster_df, st.session_state.students_df, chosen_day, chosen_role)
         if sub_df is not None:
             st.success(get_text("substitute_matching_success"))
