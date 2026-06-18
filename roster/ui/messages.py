@@ -624,8 +624,8 @@ Good luck! 🙏"""
         "📄 Restore Data from PDF Backup"
     ),
     "pdf_restore_caption": (
-        "上傳之前生成的 PDF 值班表，系統將自動解析並還原所有風紀資料與排班記錄。",
-        "Upload a previously generated PDF roster to restore all prefect data and scheduling records."
+        "上傳之前導出的完整 PDF 值班表（無需拆分頁面），系統將自動解析並還原所有風紀資料、排班記錄與師徒配對狀態。",
+        "Upload the complete exported PDF (no need to split pages). The system will automatically restore all prefect data, roster records, and mentoring pair status."
     ),
 }
 

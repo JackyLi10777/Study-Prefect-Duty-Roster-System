@@ -441,11 +441,14 @@ def main():
         # Buttons directly trigger generation + download (using st.download_button for reliable one-click behavior).
         # lang param selects report titles/headers language; student names/roles always Chinese (unchanged rule).
         logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
+        _roster_ok = st.session_state.roster_df is not None and not st.session_state.roster_df.empty
         _pdf_zh_data = st.session_state.get("pdf_cache_zh")
-        if _pdf_zh_data is None:
+        if _pdf_zh_data is None and _roster_ok:
             with st.spinner(_t("正在渲染專業中文 PDF 報告，請稍候…", "Rendering professional Chinese PDF report, please wait…")):
                 _pdf_zh_data = generate_pdf(st.session_state.roster_df, get_ui_report_df(st.session_state.master_report_df), logo_b64, lang="zh", students_df=st.session_state.students_df)
                 st.session_state.pdf_cache_zh = _pdf_zh_data
+        if _pdf_zh_data is None:
+            _pdf_zh_data = b""  # Empty bytes placeholder so download button exists but is harmless
         st.download_button(
             _t("📄 匯出中文 PDF", "📄 Export Chinese PDF (report titles/headers in Chinese)"),
             data=_pdf_zh_data,
@@ -455,10 +458,12 @@ def main():
             key="dl_pdf_cn_direct"
         )
         _pdf_en_data = st.session_state.get("pdf_cache_en")
-        if _pdf_en_data is None:
+        if _pdf_en_data is None and _roster_ok:
             with st.spinner(_t("正在渲染專業英文 PDF 報告，請稍候…", "Rendering professional English PDF report, please wait…")):
                 _pdf_en_data = generate_pdf(st.session_state.roster_df, get_export_report_df(st.session_state.master_report_df), logo_b64, lang="en", students_df=st.session_state.students_df)
                 st.session_state.pdf_cache_en = _pdf_en_data
+        if _pdf_en_data is None:
+            _pdf_en_data = b""  # Empty bytes placeholder
         st.download_button(
             _t("📄 Export English PDF", "📄 Export English PDF (report titles/headers in English)"),
             data=_pdf_en_data,

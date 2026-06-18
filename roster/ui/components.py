@@ -454,6 +454,15 @@ def render_sidebar():
                         st.session_state["pending_restore_json"] = entry["json"]
                         st.rerun()
 
+        # ==================== 備份策略說明 ====================
+        st.caption(
+            _t(
+                "📌 備份策略：PDF 導出時自動內嵌完整備份（動態資料）。靜態資料（姓名、年級、職級）存於 Git 版控，可透過「一鍵載入示範名冊」還原。",
+                "📌 Backup strategy: PDF exports embed full dynamic backup automatically. Static data (names, forms, roles) lives in Git version control — restore via ‘Load Demo Roster’."
+            )
+        )
+        st.divider()
+
         # ==================== 還原系統狀態（從 PDF 備份 — 主要方式 + 圖形化提示） ====================
         st.subheader(get_text("pdf_restore_subheader"))
         st.caption(get_text("pdf_restore_caption"))
@@ -461,7 +470,7 @@ def render_sidebar():
             _t("選擇包含備份數據的 PDF 檔案 (.pdf)", "Select PDF with backup data (.pdf)"),
             type=["pdf"],
             key="pdf_restore_uploader",
-            help=_t("系統導出的 PDF 中已自動包含完整備份。可直接用來還原系統。", "The system's exported PDFs automatically include a complete backup. Use it to restore.")
+            help=_t("系統導出的 PDF 已自動內嵌完整備份（最後一頁）。直接上傳同一個 PDF 檔案即可還原，無需拆分頁面。", "The exported PDF embeds full backup (last page). Upload the same PDF directly to restore — no page-splitting needed.")
         )
         if uploaded_pdf:
             from roster.utils.backup import parse_backup_from_pdf
