@@ -605,6 +605,9 @@ def render_pairing_effectiveness_card():
     Intended for the fairness/dashboard sidebar in app.py.
     Requires st.session_state.roster_df and st.session_state.students_df.
     """
+    st.caption(
+        _t("??????", "Mentoring Pairing Effectiveness")
+    )
     mentoring_pairs = annotate_mentoring_pairs(
         st.session_state.roster_df, st.session_state.students_df
     )

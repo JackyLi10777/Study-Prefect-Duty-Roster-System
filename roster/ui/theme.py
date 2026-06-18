@@ -70,28 +70,26 @@ def get_base_css() -> str:
 
     .main-title { color: var(--primary-blue); font-size: 34px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 2px; }
     .main-subtitle { color: #0F766E; font-size: 14px; font-weight: 600; margin-bottom: 18px; }
-    .stDataFrame, [data-testid="stDataEditor"] { border-radius: 10px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
+    .stDataFrame, [data-testid="stDataEditor"] { border-radius: 8px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 3px 12px rgba(0,0,0,0.05); }
     .stButton > button { height: 3.0rem; font-weight: 600; border-radius: 8px; transition: all 0.25s ease; }
-    .stButton > button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .stButton > button:hover { transform: translateY(-1px); box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 3px 8px rgba(0,0,0,0.08); }
     .danger-alert { background-color: var(--danger-bg); border-left: 5px solid var(--danger-border); color: var(--danger-text); padding: 12px 14px; border-radius: 8px; margin: 8px 0; font-size: 14px; }
     .warning-alert { background-color: var(--warning-bg); border-left: 5px solid var(--warning-border); color: var(--warning-text); padding: 12px 14px; border-radius: 8px; margin: 8px 0; font-size: 14px; }
-    .kpi-card { background: var(--light-surface); border-radius: 8px; padding: 10px 14px; margin: 4px 0; border-left: 4px solid var(--primary-blue); box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+    .kpi-card { background: var(--light-surface); border-radius: 8px; padding: 12px 16px; margin: 6px 0; border-left: 3px solid var(--primary-blue); box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04); }
     .kpi-card .label { font-size: 12px; color: var(--kpi-label); }
     .kpi-card .value { font-size: 18px; font-weight: 700; color: var(--primary-blue); }
     .kpi-card.mentoring-pair-badge { border-left-color: #0F766E !important; }
 
     .verse-card {
-        border: 2px solid var(--verse-gold-light);
-        border-radius: 12px;
+        border: 1.5px solid var(--verse-gold-light);
+        border-radius: 10px;
         padding: var(--verse-card-padding);
         box-sizing: border-box;
         margin-bottom: 12px;
         box-shadow:
-            0 10px 25px -6px rgba(0, 0, 0, 0.15),
-            0 4px 8px -2px rgba(0, 0, 0, 0.1),
-            0 0 0 2px var(--verse-gold-light),
-            0 0 12px rgba(212, 175, 55, 0.12),
-            inset 0 2px 4px rgba(255, 255, 255, 0.5);
+            0 1px 2px rgba(0, 0, 0, 0.06),
+            0 4px 14px rgba(0, 0, 0, 0.08),
+            inset 0 1px 2px rgba(255, 255, 255, 0.6);
     }
     .verse-card .verse-inner {
         padding: var(--verse-inner-padding);
@@ -275,11 +273,9 @@ def get_light_css() -> str:
         padding: var(--verse-card-padding) !important;
         border-radius: 12px !important;
         box-shadow:
-            0 10px 25px -6px rgba(0, 0, 0, 0.18),
-            0 4px 8px -2px rgba(0, 0, 0, 0.12),
-            0 0 0 2px var(--verse-gold-light),
-            0 0 12px rgba(212, 175, 55, 0.18),
-            inset 0 2px 4px rgba(255, 255, 255, 0.75) !important;
+            0 1px 2px rgba(0, 0, 0, 0.08),
+            0 4px 14px rgba(0, 0, 0, 0.10),
+            inset 0 1px 2px rgba(255, 255, 255, 0.75) !important;
         margin-bottom: 12px !important;
         box-sizing: border-box !important;
         overflow: hidden !important;
@@ -315,8 +311,9 @@ def get_light_css() -> str:
     .stTabs [data-baseweb="tab-list"] { background-color: var(--light-surface); border-bottom: 1px solid #f0f0f0; }
     .stTabs [data-baseweb="tab"] { color: var(--light-text-secondary); }
     .stTabs [data-baseweb="tab"][aria-selected="true"] { color: var(--light-text); border-bottom-color: var(--verse-gold-light); }
-    .stExpander { background-color: var(--light-surface); border: 1px solid #f0f0f0; border-radius: 8px; }
+    .stExpander { background-color: var(--light-surface); border: 1px solid #e2e2e3; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
     .stExpander .stMarkdown { color: var(--light-text-secondary); }
+    hr.section-divider { border: none; border-top: 1px solid #e2e2e3; margin: 20px 0 14px 0; opacity: 0.5; }
     .stCheckbox > label, .stRadio > label { color: var(--light-text-secondary); }
     .stFileUploader { color: var(--light-text-secondary); }
     .stSlider .stMarkdown { color: var(--light-text-secondary); }
