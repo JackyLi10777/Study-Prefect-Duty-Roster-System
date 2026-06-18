@@ -81,12 +81,19 @@ def show_daily_verse():
     # are strictly inside the single golden border box with consistent >=16px padding
     # and no overflow in both light and dark modes. Reflection is internal framed section
     # (not independent). Footer moved inside .verse-inner for unified content block.
+        # Determine translation attribution based on language
+    if lang == "en":
+        attr_text = "NKJV (Scripture taken from the New King James Version(R). Copyright (C) 1982 by Thomas Nelson, Inc.)"
+    else:
+        attr_text = "經文取自 和合本修訂版 2010（神版），版權屬香港聖經公會所有"
+
     card_html = f"""
     <div class="verse-card">
         <div class="verse-inner">
             <h3 class="verse-title">📖 {verse_title}</h3>
             <p class="verse-ref"><strong>{ref}</strong></p>
             <p class="verse-text">{text}</p>
+            <p class="verse-attribution">{attr_text}</p>
             <div class="reflection-box">
                 <strong>{refl_title}</strong><br>{refl}
             </div>

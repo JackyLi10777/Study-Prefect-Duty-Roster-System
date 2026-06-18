@@ -215,6 +215,14 @@ def get_dark_css() -> str:
     .verse-card .verse-title { color: #ffeb3b !important; font-size: 17px !important; margin: 0 0 4px 0 !important; }
     .verse-card .verse-ref { color: #ffeb3b !important; font-weight: 600 !important; margin: 2px 0 !important; }
     .verse-card .verse-text { color: #ffffff !important; font-size: 14px !important; line-height: 1.55 !important; margin: 2px 0 8px 0 !important; }
+
+    .verse-attribution {
+        font-size: 9px;
+        color: #94a3b8;
+        font-style: italic;
+        margin: -4px 0 8px 0;
+        text-align: right;
+    }
     .verse-card .verse-footer { color: #e5e7eb !important; font-size: 10px !important; margin-top: 6px !important; opacity: 1 !important; }
     .verse-card .reflection-box {
         background-color: rgba(230, 194, 0, 0.06) !important;
