@@ -14,6 +14,9 @@ initialize_session_state 必須是**唯一中央守護者**，且「必須放在
 import pandas as pd
 import streamlit as st
 import os
+# Data version — bump when static student data changes to force Cloud session reset
+DATA_VERSION = 2  # v2: Li Chuangjie class corrected 5D -> 5E (2026-06-19)
+
 from roster.config import get_roster_rows, DAYS, DEFAULT_GLOBAL_LOAD_MULTIPLIER
 from roster.data.demo import get_demo_dataframe  # for fallback static data
 
@@ -84,6 +87,12 @@ def initialize_session_state():
     新增任何需要持久化的 state 都必須在此處初始化，
     並同步更新 roster/utils/backup.py 的 export/import 邏輯。
     """
+    # Force reload if data version changed (handles Cloud session persistence)
+    _current_data_ver = st.session_state.get('_data_version', 0)
+    if _current_data_ver < DATA_VERSION:
+        st.session_state.pop('students_df', None)
+        st.session_state._data_version = DATA_VERSION
+
     if 'students_df' not in st.session_state:
         st.session_state.students_df = load_static_students()
 
