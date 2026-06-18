@@ -287,11 +287,9 @@ def parse_backup_from_pdf(pdf_bytes: bytes) -> dict:
         if not json_str:
             return None
 
-        import json as _json
-        data = _json.loads(json_str)
+        data = json.loads(json_str)
 
         # Reconstruct DataFrames
-        import pandas as pd
         result = {}
         for key in ["students_df", "roster_df", "report_df"]:
             if key in data and data[key]:

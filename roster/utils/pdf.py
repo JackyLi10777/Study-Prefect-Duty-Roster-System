@@ -219,7 +219,7 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
         fairness_text = "• 公平規則：派班優先考慮累計負荷較低者。F.3學生在分數相同時優先。"
 
         leave_text = "• 「請假撤銷」單元格不計入所有工作量計算。"
-        backup_note = "• 備份資料（JSON）預設不會出現在對外 PDF 中，需手動啟用 include_backup_page=True 才會附加。"
+        backup_note = "• 備份資料（JSON）現已預設附加於 PDF 最後一頁（內部備份用）。分享 PDF 時請移除最後一頁。"
 
         key_principle_label = "核心原則："
 
@@ -256,7 +256,7 @@ def generate_pdf(roster_df: pd.DataFrame, master_report_df: pd.DataFrame, logo_b
         fairness_text = "• Fairness rule: Assignments prioritize lower cumulative load. F.3 students receive tie-break preference."
 
         leave_text = "• \"請假撤銷\" (Leave Revocation) cells are excluded from all workload calculations."
-        backup_note = "• Backup data (JSON) is NOT included in exported PDF by default. Only append when include_backup_page=True is set."
+        backup_note = "• Backup data (JSON) is now automatically included on the final page of exported PDFs (for internal recovery). Remove the last page before sharing."
 
         key_principle_label = "Key Principle:"
 

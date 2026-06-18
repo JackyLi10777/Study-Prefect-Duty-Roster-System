@@ -34,3 +34,5 @@ libxml2
 shared-mime-info
 xdg-user-dirs
 libffi-dev
+
+# pypdf — used by parse_backup_from_pdf() for primary backup restore
