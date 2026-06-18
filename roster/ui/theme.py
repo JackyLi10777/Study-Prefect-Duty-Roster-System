@@ -125,6 +125,14 @@ def get_base_css() -> str:
         .main-title { font-size: 26px; }
         .kpi-card .value { font-size: 16px; }
     }
+
+    /* === Smooth theme transitions (VitePress-inspired) === */
+    .stApp, .stApp * {
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .stApp, .stApp * { transition: none !important; }
+    }
 </style>
 """
 
