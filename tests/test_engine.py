@@ -88,6 +88,98 @@ class TestGenerateRoster:
                 assert p1 != p2, f"Same person in both Room 303 slots on {day}: {p1}"
 
 
+
+
+class TestMentoringPairing:
+    """Tests for mentoring pairing logic (_is_mentee, _is_mentor, bonus, annotate_mentoring_pairs)."""
+
+    def test_is_mentee_by_flag(self):
+        from roster.core.engine import _is_mentee
+        assert _is_mentee({"needs_mentoring": True, "history_weight": 10.0}) is True
+
+    def test_is_mentee_by_low_weight(self):
+        from roster.core.engine import _is_mentee
+        assert _is_mentee({"needs_mentoring": False, "history_weight": 0.0}) is True
+        assert _is_mentee({"needs_mentoring": False, "history_weight": 2.0}) is True
+
+    def test_is_mentee_false_for_normal(self):
+        from roster.core.engine import _is_mentee
+        assert _is_mentee({"needs_mentoring": False, "history_weight": 3.0}) is False
+
+    def test_is_mentor_true(self):
+        from roster.core.engine import _is_mentor
+        assert _is_mentor({"needs_mentoring": False, "history_weight": 6.0}) is True
+
+    def test_is_mentor_false_when_needs_mentoring(self):
+        from roster.core.engine import _is_mentor
+        assert _is_mentor({"needs_mentoring": True, "history_weight": 6.0}) is False
+
+    def test_is_mentor_false_low_weight(self):
+        from roster.core.engine import _is_mentor
+        assert _is_mentor({"needs_mentoring": False, "history_weight": 5.0}) is False
+
+    def test_mentoring_bonus_smoke(self, minimal_students):
+        """Smoke test: mentoring bonus code path runs without error."""
+        from roster.core.engine import generate_roster
+        roster = generate_roster(minimal_students, [], [], seed=42)
+        assert roster is not None
+
+    def test_mentoring_pairing_with_clear_mentees_and_mentors(self):
+        """With explicit mentees (hw=0) and many mentors (hw=10), pairs should form."""
+        from roster.core.engine import generate_roster, annotate_mentoring_pairs
+        import pandas as pd
+        ALL_DAYS = "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY"
+        from roster.config import REGULAR_ROLE, AHP_ROLE
+        data = []
+        # 4 mentees (hw=0, needs_mentoring=True)
+        for i in range(4):
+            data.append({
+                "name": f"Mentee_{i+1}", "form": "F.3", "class": "A",
+                "role": REGULAR_ROLE, "fixed_general_duty": "",
+                "available": ALL_DAYS, "history_duties": 0,
+                "history_weight": 0.0, "remarks": "",
+                "needs_mentoring": True,
+            })
+        # 10 mentors (hw=10, not needing mentoring) — enough to fill all slots
+        for i in range(10):
+            data.append({
+                "name": f"Mentor_{i+1}", "form": "F.5", "class": "B",
+                "role": REGULAR_ROLE, "fixed_general_duty": "",
+                "available": ALL_DAYS, "history_duties": 0,
+                "history_weight": 10.0, "remarks": "",
+                "needs_mentoring": False,
+            })
+        # 3 AHPs
+        for i in range(3):
+            data.append({
+                "name": f"AHP_{i+1}", "form": "F.5", "class": "C",
+                "role": AHP_ROLE, "fixed_general_duty": "",
+                "available": ALL_DAYS, "history_duties": 0,
+                "history_weight": 5.0, "remarks": "",
+                "needs_mentoring": False,
+            })
+        students = pd.DataFrame(data)
+        roster = generate_roster(students, [], [], seed=42)
+        pairs = annotate_mentoring_pairs(roster, students)
+        # With 4 mentees and 10 mentors, 2-slot rooms should form mentor-mentee combos
+        assert len(pairs) > 0, f"Expected mentoring pairs but got none. Roster:`n{roster}"
+
+    def test_annotate_mentoring_pairs_returns_dict(self, minimal_students):
+        from roster.core.engine import generate_roster, annotate_mentoring_pairs
+        roster = generate_roster(minimal_students, [], [], seed=42)
+        pairs = annotate_mentoring_pairs(roster, minimal_students)
+        assert isinstance(pairs, dict)
+
+    def test_room202_tue_fri_not_in_pairs(self, minimal_students):
+        """annotate_mentoring_pairs must skip Room 202 on Tue/Fri."""
+        from roster.core.engine import generate_roster, annotate_mentoring_pairs
+        roster = generate_roster(minimal_students, [], [], seed=42)
+        pairs = annotate_mentoring_pairs(roster, minimal_students)
+        for key in pairs:
+            assert "TUESDAY" not in key.split("_"), f"Room 202 Tue should not appear: {key}"
+            assert "FRIDAY" not in key.split("_"), f"Room 202 Fri should not appear: {key}"
+
+
 class TestValidateAndCompute:
     """Tests for audit/report computation."""
 

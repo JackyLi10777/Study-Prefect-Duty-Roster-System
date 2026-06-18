@@ -1,4 +1,4 @@
-# ui_components.py
+﻿# ui_components.py
 """
 聖言中學導學風紀當值排班平台 (Sing Yin Secondary School Study Prefect Duty Roster Platform)
 UI 元件模組 - 側邊欄、神聖每日聖經金句、控制按鈕（人性化重新設計版）
@@ -242,7 +242,7 @@ def render_sidebar():
         st.markdown('<div style="display:flex; gap:10px; flex-wrap:wrap; font-size:12px;">', unsafe_allow_html=True)
         st.markdown('<span style="background:#0F766E; color:white; padding:2px 8px; border-radius:10px;">🆕 新加入</span>', unsafe_allow_html=True)
         st.markdown('<span style="background:#F59E0B; color:white; padding:2px 8px; border-radius:10px;">👤 需要老帶新</span>', unsafe_allow_html=True)
-        st.markdown('<span style="background:#0F766E; color:white; padding:2px 8px; border-radius:10px;">✅ 指定老帶新</span>', unsafe_allow_html=True)
+        st.markdown('<span style="background:#7C3AED; color:white; padding:2px 8px; border-radius:10px;">✅ 指定老帶新</span>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         if search_term:
