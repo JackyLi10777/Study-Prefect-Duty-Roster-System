@@ -463,7 +463,7 @@ def compute_possible_mentoring_pairs(roster_df: pd.DataFrame) -> int:
     Room 303: 5 days × 1 pair = 5; Room 202: 3 open days (Mon/Wed/Thu) = 3.
 
     Edge cases:
-    - Empty roster (all cells ""): returns 8 (all days structurally open)
+    - Empty roster (all cells ""): returns 10 (no ? markers = all 10 days open)
     - Special closures marked "X": still counted (slots are structurally open)
     - Missing index rows: silently skipped
     """

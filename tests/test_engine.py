@@ -217,6 +217,16 @@ class TestMentoringPairing:
         assert compute_possible_mentoring_pairs(roster) == 8
 
 
+    def test_render_functions_importable(self):
+        """Smoke test: render functions are importable from components."""
+        from roster.ui.components import (
+            render_pairing_effectiveness_card,
+            render_mentee_progress_tracker,
+        )
+        assert callable(render_pairing_effectiveness_card)
+        assert callable(render_mentee_progress_tracker)
+
+
 class TestValidateAndCompute:
     """Tests for audit/report computation."""
 
