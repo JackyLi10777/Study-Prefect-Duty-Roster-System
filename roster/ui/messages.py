@@ -617,6 +617,16 @@ Good luck! 🙏"""
         "📋 批量管理",
         "📋 Batch Management"
     ),
+
+    # PDF Restore
+    "pdf_restore_subheader": (
+        "📄 從 PDF 備份還原數據",
+        "📄 Restore Data from PDF Backup"
+    ),
+    "pdf_restore_caption": (
+        "上傳之前生成的 PDF 值班表，系統將自動解析並還原所有風紀資料與排班記錄。",
+        "Upload a previously generated PDF roster to restore all prefect data and scheduling records."
+    ),
 }
 
 # ====================== SAFE TEXT RETRIEVAL ======================

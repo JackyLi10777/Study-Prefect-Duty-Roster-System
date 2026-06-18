@@ -4,7 +4,7 @@
 主應用程式入口 - Streamlit Cloud 最終部署版
 
 作者：首席導學風紀 26-27 LI Chuangjie Jacky
-版本：v2.3 Final（完整整合全局負荷滑桿、多槽位排班、神聖金句、人性化UI、請假撤銷公平調整、JSON備份）
+版本：v2.4 Final（全局負荷滑桿、師徒配對、智能替補、神聖金句、深色模式、PDF/JSON雙重備份）
 """
 
 import streamlit as st
@@ -52,7 +52,7 @@ from roster.ui.theme import apply_theme  # centralized dark/light + base (sole s
 
 # ====================== 使用說明書 ======================
 HELP_TEXT = """
-### 📖 聖言中學導學風紀當值排班平台 使用說明書（v2.3 Final）
+### 📖 聖言中學導學風紀當值排班平台 使用說明書（v2.4 Final）
 
 #### 1. 名冊導入（最重要）
 - **推薦使用「🤖 AI 智能自動匹配」**：支援任意格式的 Excel / CSV，AI 會自動辨識欄位。
@@ -142,7 +142,7 @@ def main():
     # Enhanced Daily Verse with optional bilingual (evangelical-theology + streamlit-best-practices)
     show_daily_verse()
 
-    with st.expander(_t("📖 點此展開完整使用說明書（v2.3 Final）", "📖 Click to expand full user manual (v2.3 Final)"), expanded=False):
+    with st.expander(_t("📖 點此展開完整使用說明書（v2.4 Final）", "📖 Click to expand full user manual (v2.4 Final)"), expanded=False):
         ui_lang = st.session_state.get("ui_language", "zh")
         if ui_lang == "en":
             st.markdown(get_text("help_text_en_note"))

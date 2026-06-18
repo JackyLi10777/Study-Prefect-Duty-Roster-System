@@ -25,7 +25,7 @@ import pandas as pd
 APP_TITLE = "Sing Yin Study Prefect Duty Roster System"
 PROJECT_FULL_NAME = "聖言中學導學風紀當值排班平台"
 PROJECT_FULL_NAME_EN = "Sing Yin Secondary School Study Prefect Duty Roster Platform"
-VERSION = "v2.3 Final"
+VERSION = "v2.4 Final"
 
 # 統一職位名稱（UI 顯示與文件使用中文，符合「首席導學風紀 / 助理首席導學風紀 / 導學風紀」要求）
 # 內部使用這些值，demo/legacy 資料可能仍為英文別名，check 會容錯
