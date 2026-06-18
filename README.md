@@ -108,7 +108,7 @@ streamlit run app.py
 
 ## 👤 作者
 
-**26-27 Head Study Prefect (首席導學風紀)（領袖生會長）**  
+**26-27 Head Study Prefect (首席導學風紀）**  
 **LI Chuangjie Jacky（李創杰）**  
 Sing Yin Secondary School（聖言中學）  
 F.5E

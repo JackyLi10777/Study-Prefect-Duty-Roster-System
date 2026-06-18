@@ -22,7 +22,7 @@ def get_demo_dataframe() -> pd.DataFrame:
         {
             "name": "李創杰",
             "form": "F.5",
-            "class": "5D",
+            "class": "5E",
             "role": "Assistant 首席導學風紀",
             "fixed_general_duty": "NONE",
             "available": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
@@ -166,7 +166,7 @@ def get_sample_format_dataframe() -> pd.DataFrame:
         {
             "姓名": "李創杰",
             "年級": "F.5",
-            "班別": "5D",
+            "班別": "5E",
             "職級": "Assistant 首席導學風紀",
             "學年固定總值班": "NONE",
             "可用日子": "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY",
