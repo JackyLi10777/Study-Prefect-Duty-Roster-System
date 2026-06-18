@@ -81,7 +81,7 @@ def get_base_css() -> str:
     .kpi-card.mentoring-pair-badge { border-left-color: #0F766E !important; }
 
     .verse-card {
-        border: 1.5px solid var(--verse-gold-light);
+        border: 1px solid var(--verse-gold-light);
         border-radius: 10px;
         padding: var(--verse-card-padding);
         box-sizing: border-box;
@@ -126,12 +126,15 @@ def get_base_css() -> str:
         .kpi-card .value { font-size: 16px; }
     }
 
-    /* === Smooth theme transitions (VitePress-inspired) === */
-    .stApp, .stApp * {
+    /* === Smooth theme transitions (scoped, safe for WeasyPrint/Cairo) === */
+    .stApp, .stSidebar, .stDataFrame, .stExpander, .stButton > button,
+    .kpi-card, .verse-card, .stTextInput > div > div > input,
+    .stSelectbox > div > div, .stTabs [data-baseweb="tab-list"] {
         transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
     }
     @media (prefers-reduced-motion: reduce) {
-        .stApp, .stApp * { transition: none !important; }
+        .stApp, .stSidebar, .stDataFrame, .stExpander, .stButton > button,
+        .kpi-card, .verse-card { transition: none !important; }
     }
 </style>
 """
