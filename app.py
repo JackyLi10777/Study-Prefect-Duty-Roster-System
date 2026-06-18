@@ -45,7 +45,8 @@ from roster.utils import (
     trigger_backup_reminder, clear_backup_reminder
 )
 from roster.ui.components import (
-    render_sidebar, show_daily_verse, render_control_buttons
+    render_sidebar, show_daily_verse, render_control_buttons,
+    render_pairing_effectiveness_card, render_mentee_progress_tracker,
 )
 from roster.ui.theme import apply_theme  # centralized dark/light + base (sole source after de-dupe)
 
@@ -572,95 +573,9 @@ Student names are preserved in Chinese per school practice.
         else:
             st.success(get_text("overall_fairness_success"))
 
-        # ---- Mentoring Pairing Effectiveness Card (Phase D Priority 1) ----
-        mentoring_pairs = annotate_mentoring_pairs(st.session_state.roster_df, st.session_state.students_df)
-        pair_count = len(mentoring_pairs)
-        # 8 possible 2-slot room-pairs per week: Room 303 (5 days) + Room 202 (3 open days)
-        possible_pairs = 8
-        pair_rate = (pair_count / possible_pairs * 100) if possible_pairs > 0 else 0
-        col_a, col_b, col_c = st.columns(3)
-        with col_a:
-            st.metric(
-                _t("🤝 師徒配對", "🤝 Mentoring Pairs"),
-                f"{pair_count} / {possible_pairs}",
-                delta=None,
-                help=_t("本週形成的師徒配對數目（Room 303 及 Room 202 開放日）", "Mentoring pairs formed this week in Room 303 and Room 202 (open days)")
-            )
-        with col_b:
-            st.metric(
-                _t("📊 配對成功率", "📊 Pairing Rate"),
-                f"{pair_rate:.0f}%",
-                delta=None,
-                help=_t("配對數目佔可行雙人房間的比例（共8個可行配對位）", "Pairing count as percentage of possible 2-slot rooms (8 possible)")
-            )
-        with col_c:
-            pair_label = _t("優秀", "Excellent") if pair_rate >= 50 else (_t("良好", "Good") if pair_rate >= 25 else _t("尚可", "Fair"))
-            st.metric(
-                _t("🏷️ 評估", "🏷️ Rating"),
-                pair_label,
-                delta=None,
-                help=_t("配對率 ≥50% 優秀，≥25% 良好，<25% 尚可", "≥50% Excellent, ≥25% Good, <25% Fair")
-            )
-
-        # ---- Mentee Progress Tracker (Phase D Priority 2) ----
-        with st.expander(_t("📈 學徒進度追蹤", "📈 Mentee Progress Tracker"), expanded=False):
-            st.caption(_t("追蹤被標記為「需要老帶新」的風紀之點數變化", "Track weight changes for prefects flagged as needing mentoring"))
-            # Identify current mentees
-            mentee_mask = (
-                (st.session_state.students_df["history_weight"] <= 2.0) |
-                (st.session_state.students_df.get("needs_mentoring", pd.Series([False] * len(st.session_state.students_df))).astype(bool))
-            )
-            mentees = st.session_state.students_df[mentee_mask].copy()
-            if mentees.empty:
-                st.info(_t("目前沒有需要老帶新的風紀。", "No prefects currently need mentoring."))
-            else:
-                # Baseline management
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    if st.button(_t("📸 儲存當前為基準", "📸 Save Current as Baseline"), key="save_mentee_baseline"):
-                        st.session_state.mentee_baseline = dict(zip(
-                            mentees["name"].astype(str).str.strip(),
-                            mentees["history_weight"].astype(float)
-                        ))
-                        st.session_state.mentee_baseline_date = datetime.date.today().isoformat()
-                        st.success(_t("基準已儲存！", "Baseline saved!"))
-                with col_btn2:
-                    if st.button(_t("🗑️ 清除基準", "🗑️ Clear Baseline"), key="clear_mentee_baseline"):
-                        st.session_state.pop("mentee_baseline", None)
-                        st.session_state.pop("mentee_baseline_date", None)
-                        st.info(_t("基準已清除。", "Baseline cleared."))
-
-                # Build display table
-                baseline = st.session_state.get("mentee_baseline", {})
-                baseline_date = st.session_state.get("mentee_baseline_date", None)
-                rows = []
-                for _, row in mentees.iterrows():
-                    name = str(row["name"]).strip()
-                    hw = float(row["history_weight"])
-                    prev = baseline.get(name, None)
-                    if prev is not None and baseline_date:
-                        diff = hw - prev
-                        if diff < 0:
-                            trend = "⬇ " + _t("進步中", "Improving")
-                        elif diff == 0:
-                            trend = "➡ " + _t("持平", "Stable")
-                        else:
-                            trend = "⬆ " + _t("需關注", "Needs attention")
-                    else:
-                        diff = None
-                        trend = "－ " + _t("無基準", "No baseline")
-                    rows.append({
-                        _t("姓名", "Name"): name,
-                        _t("年級", "Form"): row.get("form", ""),
-                        _t("當前點數", "Current Weight"): f"{hw:.1f}",
-                        _t("變化", "Change"): f"{diff:+.1f}" if diff is not None else "－",
-                        _t("趨勢", "Trend"): trend,
-                    })
-                progress_df = pd.DataFrame(rows)
-                st.dataframe(progress_df, use_container_width=True, hide_index=True)
-                if baseline_date:
-                    st.caption(_t(f"基準日期：{baseline_date}", f"Baseline date: {baseline_date}"))
-                st.caption(_t("提示：先按「儲存當前為基準」，生成新值班表後再回來查看點數變化。", "Tip: Save a baseline first, then generate a new roster and return to see weight changes."))
+        # ---- Mentoring Dashboard (Phase D) ----
+        render_pairing_effectiveness_card()
+        render_mentee_progress_tracker()
 
         # Historical Trends & Fairness (High Priority)
         st.write("---")
