@@ -21,7 +21,7 @@ from roster.config import (
     HEAD_ROLE, AHP_ROLE, REGULAR_ROLE
 )
 from roster.data import get_demo_dataframe, get_sample_format_dataframe, DAILY_VERSES
-from roster.core import generate_roster, annotate_mentoring_pairs
+from roster.core import generate_roster, annotate_mentoring_pairs, compute_possible_mentoring_pairs
 from roster.utils import (
     process_roster_import, smart_process_roster_import,
     export_system_backup, import_system_backup,
@@ -609,23 +609,7 @@ def render_pairing_effectiveness_card():
         st.session_state.roster_df, st.session_state.students_df
     )
     pair_count = len(mentoring_pairs)
-    # Dynamic possible-pairs count: derived from roster structure.
-    # Each 2-slot room yields 1 pair per day. Room 303 has 2 slots × 5 days
-    # = 5 pairs. Room 202 has 2 slots × 3 open days (Mon/Wed/Thu) = 3 pairs.
-    # Exclude days marked ⬜ (Room 202 Tue/Fri). Total = 8 in standard config.
-    possible_pairs = 0
-    roster = st.session_state.roster_df
-    for base_role in ["Room 303 (HW Completion)", "Room 202 (F1 Study Group)"]:
-        slot1 = base_role + " - 1"
-        slot2 = base_role + " - 2"
-        if slot1 in roster.index and slot2 in roster.index:
-            for day in roster.columns:
-                v1 = str(roster.at[slot1, day]).strip()
-                v2 = str(roster.at[slot2, day]).strip()
-                # Count days where slots are structurally open (not ⬜).
-                # Room 202 Tue/Fri are ⬜ by design; special closures use "X".
-                if v1 != "⬜" and v2 != "⬜":
-                    possible_pairs += 1
+    possible_pairs = compute_possible_mentoring_pairs(st.session_state.roster_df)
     pair_rate = (pair_count / possible_pairs * 100) if possible_pairs > 0 else 0
 
     col_a, col_b, col_c = st.columns(3)

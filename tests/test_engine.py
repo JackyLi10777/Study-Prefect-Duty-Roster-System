@@ -180,6 +180,43 @@ class TestMentoringPairing:
             assert "FRIDAY" not in key.split("_"), f"Room 202 Fri should not appear: {key}"
 
 
+
+
+    def test_compute_possible_pairs_standard(self):
+        """Standard config returns 8 (5 Room 303 + 3 Room 202 open days)."""
+        import pandas as pd
+        from roster.core.engine import compute_possible_mentoring_pairs
+        from roster.config import get_roster_rows, DAYS
+        roster = pd.DataFrame("", index=get_roster_rows(), columns=DAYS)
+        roster.at["Room 202 (F1 Study Group) - 1", "TUESDAY"] = "⬜"
+        roster.at["Room 202 (F1 Study Group) - 2", "TUESDAY"] = "⬜"
+        roster.at["Room 202 (F1 Study Group) - 1", "FRIDAY"] = "⬜"
+        roster.at["Room 202 (F1 Study Group) - 2", "FRIDAY"] = "⬜"
+        assert compute_possible_mentoring_pairs(roster) == 8
+
+    def test_compute_possible_pairs_empty_roster(self):
+        """Empty roster returns 8 (all days structurally open)."""
+        import pandas as pd
+        from roster.core.engine import compute_possible_mentoring_pairs
+        from roster.config import get_roster_rows, DAYS
+        roster = pd.DataFrame("", index=get_roster_rows(), columns=DAYS)
+        assert compute_possible_mentoring_pairs(roster) == 10  # no ? closures = 5+5 = 10
+
+    def test_compute_possible_pairs_special_closure(self):
+        """Days marked X are still counted as structurally open."""
+        import pandas as pd
+        from roster.core.engine import compute_possible_mentoring_pairs
+        from roster.config import get_roster_rows, DAYS
+        roster = pd.DataFrame("", index=get_roster_rows(), columns=DAYS)
+        roster.at["Room 202 (F1 Study Group) - 1", "TUESDAY"] = "⬜"
+        roster.at["Room 202 (F1 Study Group) - 2", "TUESDAY"] = "⬜"
+        roster.at["Room 202 (F1 Study Group) - 1", "FRIDAY"] = "⬜"
+        roster.at["Room 202 (F1 Study Group) - 2", "FRIDAY"] = "⬜"
+        roster.at["Room 303 (HW Completion) - 1", "MONDAY"] = "X"
+        roster.at["Room 303 (HW Completion) - 2", "MONDAY"] = "X"
+        assert compute_possible_mentoring_pairs(roster) == 8
+
+
 class TestValidateAndCompute:
     """Tests for audit/report computation."""
 

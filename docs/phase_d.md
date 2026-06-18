@@ -27,7 +27,8 @@ A 3-column `st.metric` card displaying:
 
 **How it works:** Calls `annotate_mentoring_pairs()` on the current roster and students DataFrame. The denominator (possible pairs) is dynamically computed from the roster structure — it counts 2-slot rooms (Room 303 + Room 202) on days where both slots are open (not ⬜).
 
-**Code:** `roster/ui/components.py` → `render_pairing_effectiveness_card()`
+**Code:** `roster/ui/components.py` -> `render_pairing_effectiveness_card()`
+**Helper:** `roster/core/engine.py` -> `compute_possible_mentoring_pairs()` (pure function, independently testable) → `render_pairing_effectiveness_card()`
 
 ### 2. Mentee Progress Tracker
 
@@ -51,7 +52,8 @@ A table showing all students currently flagged as needing mentoring (`history_we
 
 **Storage:** Uses `st.session_state.mentee_baseline` (dict of name → weight) and `st.session_state.mentee_baseline_date`. No persistent storage — baseline resets on app restart.
 
-**Code:** `roster/ui/components.py` → `render_mentee_progress_tracker()`
+**Code:** `roster/ui/components.py` -> `render_pairing_effectiveness_card()`
+**Helper:** `roster/core/engine.py` -> `compute_possible_mentoring_pairs()` (pure function, independently testable) → `render_mentee_progress_tracker()`
 
 ### 3. Roster Board Mentoring Indicators
 
@@ -83,6 +85,38 @@ The Mentee Progress Tracker handles these edge cases:
 | Empty mentee list | Shows info message instead of empty table |
 | Students deleted after baseline capture | Silently skipped (no crash) |
 | Baseline cleared mid-session | Resets to "No baseline" display |
+
+
+
+## Deployment Verification Checklist
+
+After each deployment to Streamlit Cloud, verify:
+
+### Pairing Effectiveness Card
+- [ ] Card appears in sidebar after roster generation
+- [ ] 3 columns display: Pairs (X/8), Rate (X%), Rating (Excellent/Good/Fair)
+- [ ] Values update after generating new roster
+- [ ] Readable in both Light and Dark modes
+
+### Mentee Progress Tracker
+- [ ] Expander opens/closes smoothly
+- [ ] Table shows students with history_weight <= 2 or needs_mentoring=True
+- [ ] Save Baseline snapshots weights; Clear Baseline resets
+- [ ] Trend indicators (?/?/?) correct after generating new roster
+- [ ] Empty mentee list shows info message
+- [ ] Missing needs_mentoring column handled gracefully
+
+### Badge System
+- [ ] All 5 badge colors match documented hex values
+- [ ] Badges consistent between auto-tag legend and roster board legend
+
+### Roster Board
+- [ ] Mentoring pair cells: teal left border (#0F766E) + tinted background
+- [ ] Room 202 Tue/Fri shows ?, no pairing highlight
+
+### General
+- [ ] 49/49 tests passing
+- [ ] No browser console errors
 
 ## Future Enhancements (Phase D Priority 3+)
 

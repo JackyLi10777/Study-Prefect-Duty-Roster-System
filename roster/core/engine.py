@@ -1,4 +1,4 @@
-# roster/core/engine.py
+﻿# roster/core/engine.py
 """
 roster.core.engine - 核心排班演算法模組
 
@@ -452,6 +452,35 @@ def apply_post_publication_leave_adjustment(
     return weight
 
 
+
+
+def compute_possible_mentoring_pairs(roster_df: pd.DataFrame) -> int:
+    """Count how many 2-slot room-pairs are structurally open this week.
+
+    Iterates over Room 303 (HW Completion) and Room 202 (F1 Study Group),
+    counting one pair per day where both slots are not marked ⬜.
+    In the standard Sing Yin config this returns 8:
+    Room 303: 5 days × 1 pair = 5; Room 202: 3 open days (Mon/Wed/Thu) = 3.
+
+    Edge cases:
+    - Empty roster (all cells ""): returns 8 (all days structurally open)
+    - Special closures marked "X": still counted (slots are structurally open)
+    - Missing index rows: silently skipped
+    """
+    possible = 0
+    for base_role in ["Room 303 (HW Completion)", "Room 202 (F1 Study Group)"]:
+        slot1 = base_role + " - 1"
+        slot2 = base_role + " - 2"
+        if slot1 not in roster_df.index or slot2 not in roster_df.index:
+            continue
+        for day in roster_df.columns:
+            v1 = str(roster_df.at[slot1, day]).strip()
+            v2 = str(roster_df.at[slot2, day]).strip()
+            # Count days where slots are structurally open (not ⬜).
+            # Room 202 Tue/Fri are ⬜ by design; special closures use "X".
+            if v1 != "⬜" and v2 != "⬜":
+                possible += 1
+    return possible
 
 
 def annotate_mentoring_pairs(roster_df: pd.DataFrame, students_df: pd.DataFrame) -> dict:
