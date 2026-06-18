@@ -1,4 +1,4 @@
-﻿fontconfig
+fontconfig
 fonts-dejavu
 fonts-noto
 fonts-noto-cjk
