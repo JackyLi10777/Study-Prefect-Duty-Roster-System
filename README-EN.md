@@ -609,6 +609,19 @@ The development model embodies the **"AI as accelerator, human as decision-maker
 > Approximately 2 billion tokens of AI investment, ultimately condensed into a **professional-grade system deployed on Streamlit Cloud, guarded by 62 tests, detailed in 10 architecture diagrams, and documented in full bilingual manuals**.
 
 
+### Leadership & Decision-Making
+
+This system was **initiated, designed, and led throughout development** by **LI Chuangjie Jacky**, the 26-27 Head Study Prefect.
+
+- **Architectural Direction**: from a single-file script to a 7-layer modular architecture — every refactoring decision was made by him based on real team needs.
+- **Quality Standards**: 62 automated tests, 10 architecture diagrams, full bilingual documentation — these standards did not emerge from AI automation, but from his insistence on professional-grade quality.
+- **Continuous Iteration**: from the initial scheduling script, to AI parsing, mentoring pairs, PDF backup, DeepSeek migration, documentation restructuring — every major upgrade originated from his ongoing reflection and drive for improvement.
+- **Human-AI Collaboration Leadership**: across approximately 2 billion tokens of AI-assisted development, he remained the decision-maker — AI provided suggestions and acceleration; he made every critical trade-off.
+
+> Without his vision, leadership, and sustained commitment, this professional-grade intelligent scheduling system would not exist.
+
+
+
 ## Project Structure
 
 ```
@@ -714,16 +727,16 @@ This system runs on Streamlit Cloud (stateless environment). Data may be lost af
 
 ---
 
-## Author & License
+## Project Leadership & License
 
-**26-27 Head Study Prefect**
-**LI Chuangjie Jacky (李創杰)**
-Sing Yin Secondary School (聖言中學)
+### Project Initiator & Lead Developer
+
+**LI Chuangjie Jacky（李創杰）**
+26-27 Head Study Prefect, Sing Yin Secondary School
 F.5E
 
-Email: **s10777@syss.edu.hk**
+This system was conceived, architected, AI-development-directed, and continuously refined entirely under the initiative and leadership of LI Chuangjie Jacky.
 
----
 
 ### 📜 License
 
