@@ -48,6 +48,7 @@ from roster.utils import (
 from roster.ui.components import (
     render_sidebar, show_daily_verse, render_control_buttons,
     render_pairing_effectiveness_card, render_mentee_progress_tracker,
+    render_system_architecture_diagram,
 )
 from roster.ui.theme import apply_theme  # centralized dark/light + base (sole source after de-dupe)
 
