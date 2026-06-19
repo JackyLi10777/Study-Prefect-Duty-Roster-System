@@ -572,6 +572,43 @@ flowchart TD
 - GitHub is the **long-term archival solution** — recommended at start/mid/end of term.
 - On restore, the system auto-tries all available backup paths to maximize recovery success.
 
+
+## Development Investment & Technical Depth
+
+> 🔗 This section provides advanced context on the scale of AI-assisted development behind this project.
+
+This is not a simple utility tool — its development process represents a large-scale **AI-assisted software engineering practice**.
+
+### AI Development Investment
+
+| Metric | Data | Notes |
+|--------|------|-------|
+| **AI Platforms** | Codex · Grok · Grok Build | Multi-model collaborative development |
+| **Primary Model** | DeepSeek V4 Pro | Accessed via Codex API for architecture design, code generation, test authoring, and documentation |
+| **Token Consumption** | Over **1.2 billion tokens** (consumed) | Codex + DeepSeek V4 Pro portion only |
+| **Estimated Total** | Approximately **2 billion tokens** | Including Grok and Grok Build contributions |
+
+### From Investment to Quality
+
+This AI investment is directly reflected in every layer of the project:
+
+- **5 Rounds of Architectural Refactoring**: evolved from a single-file script to a 7-layer modular architecture. School Policy SSOT, centralized Session State management, structured exception hierarchy — each refactoring round was AI-assisted in analysis and implementation.
+- **62 Automated Tests**: unit tests, engine logic tests, end-to-end integration tests — AI helped generate test frameworks and edge case coverage.
+- **10 Mermaid Architecture Diagrams**: system architecture, module dependencies, scheduling flow, fairness algorithm, AI import pipeline, error handling, backup decision tree, lifecycle state machine — all AI-assisted in generation and iterative refinement.
+- **DeepSeek AI Smart Parsing**: the built-in AI features (column mapping, remark parsing) also benefited from deep understanding of the DeepSeek API gained through extensive development and debugging.
+- **Bilingual Documentation System**: Chinese and English READMEs with full structural parity, bilingual in-app user manual — AI-assisted translation and polishing ensure professional quality.
+
+### Engineering Philosophy
+
+The development model embodies the **"AI as accelerator, human as decision-maker"** collaboration paradigm:
+
+- AI handles repetitive, large-scale work (code generation, test authoring, documentation drafts).
+- Humans own architecture decisions, school rule validation, and user experience design.
+- Every line of code is human-reviewed to ensure it meets the real needs of Sing Yin Secondary School.
+
+> Approximately 2 billion tokens of AI investment, ultimately condensed into a **professional-grade system deployed on Streamlit Cloud, guarded by 62 tests, detailed in 10 architecture diagrams, and documented in full bilingual manuals**.
+
+
 ## Project Structure
 
 ```

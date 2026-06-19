@@ -193,6 +193,20 @@ WeasyPrint CSS 排版引擎生成中英雙語專業報告。含校徽、彩色�
 **測試體系**
 62 項自動化測試（單元測試 + 引擎邏輯測試 + 端到端集成測試），涵蓋排班規則驗證、備份解析、PDF 生成、狀態管理、導入導出全鏈路。
 
+
+**開發投入說明**
+
+本專案的開發過程本身即為一次大規模 AI 輔助軟件工程實踐。透過 Codex 接入 DeepSeek V4 Pro 主力模型，輔以 Grok 與 Grok Build，總計消耗約 **20 億 tokens** 的 AI 計算資源。
+
+這些投入直接反映在專案的每一個層面：
+- 5 輪架構重構 → 7 層模組化架構
+- 62 項自動化測試覆蓋
+- 10 張 Mermaid 架構圖詳解
+- 雙語完整文檔體系
+- DeepSeek AI 智能解析功能
+
+AI 作為開發加速器，人類主導架構決策與規則驗證——每一行程式碼均經人工審查，確保符合聖言中學的實際需求。
+
 有問題請 email s10777@syss.edu.hk**
 
 祝使用順利！🙏""",
@@ -280,6 +294,20 @@ Three-tier backup strategy: PDF-embedded backup (primary, auto-backed up on ever
 
 **Test Suite**
 62 automated tests (unit + engine logic + end-to-end integration), covering scheduling rule validation, backup parsing, PDF generation, state management, and full import/export pipeline.
+
+
+**Development Investment**
+
+The development of this system represents a large-scale AI-assisted software engineering practice. Using Codex with DeepSeek V4 Pro as the primary model, supplemented by Grok and Grok Build, approximately **2 billion tokens** of AI compute resources were consumed.
+
+This investment is directly reflected in every layer:
+- 5 rounds of architectural refactoring → 7-layer modular architecture
+- 62 automated test coverage
+- 10 Mermaid architecture diagrams
+- Full bilingual documentation system
+- DeepSeek AI smart parsing features
+
+AI serves as the development accelerator, while humans own architecture decisions and rule validation — every line of code is human-reviewed to meet Sing Yin's real needs.
 
 **Questions?** email s10777@syss.edu.hk
 
