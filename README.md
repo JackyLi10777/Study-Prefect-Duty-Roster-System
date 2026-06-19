@@ -152,6 +152,72 @@ flowchart TD
     style STATE fill:#2563EB,stroke:#1D4ED8,color:#fff
 ```
 
+### 模組依賴關係
+
+各模組之間的調用與數據流向：
+
+```mermaid
+flowchart TD
+    subgraph entry["入口層"]
+        APP["app.py<br/>Streamlit 主程序"]
+    end
+
+    subgraph ui_mod["UI 層"]
+        COMP["components.py<br/>介面組件"]
+        MSG["messages.py<br/>雙語訊息"]
+    end
+
+    subgraph core_mod["核心層"]
+        ENGINE["engine.py<br/>排班引擎"]
+        POLICY["school_policy.py<br/>學校規則 SSOT"]
+    end
+
+    subgraph data_mod["數據層"]
+        STATE["state.py<br/>會話狀態"]
+        DEMO["demo.py<br/>示範數據"]
+    end
+
+    subgraph util_mod["工具層"]
+        PDF["pdf.py<br/>PDF 報告"]
+        BACKUP["backup.py<br/>備份還原"]
+        IMP["importers.py<br/>名冊導入"]
+    end
+
+    subgraph ai_mod["AI 層"]
+        AI_P["parser.py<br/>DeepSeek 解析"]
+    end
+
+    subgraph err_mod["異常層"]
+        EXC["exceptions.py<br/>異常定義"]
+    end
+
+    APP -->|"渲染"| COMP
+    APP -->|"初始化"| STATE
+    APP -->|"讀取"| MSG
+    COMP -->|"排班觸發"| ENGINE
+    COMP -->|"備份操作"| BACKUP
+    COMP -->|"導入觸發"| IMP
+    COMP -->|"狀態讀寫"| STATE
+    ENGINE -->|"引用規則"| POLICY
+    ENGINE -->|"讀寫點數"| STATE
+    IMP -->|"AI 調用"| AI_P
+    PDF -->|"嵌入備份"| BACKUP
+    PDF -->|"讀取結果"| ENGINE
+    BACKUP -->|"拋出異常"| EXC
+    STATE -->|"校驗異常"| EXC
+
+    style POLICY fill:#0F766E,stroke:#0D9488,color:#fff
+    style ENGINE fill:#0F766E,stroke:#0D9488,color:#fff
+    style STATE fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style AI_P fill:#7C3AED,stroke:#6D28D9,color:#fff
+```
+
+**說明：**
+- **箭頭方向 = 依賴/調用方向**。例如 `components.py → engine.py` 表示 UI 層調用引擎層。
+- `school_policy.py` **不被任何模組反向依賴**，是真正的 SSOT（Single Source of Truth）。
+- AI 層僅被 `importers.py` 調用，與核心排班邏輯完全解耦。
+- 異常層被 `backup.py` 和 `state.py` 共同依賴，確保備份還原與狀態校驗的錯誤清晰可追蹤。
+
 ### 核心排班規則
 
 本系統完整實現聖言中學導學風紀團隊的所有值班規則，以 `school_policy.py` 作為**唯一事實來源（SSOT）**。
@@ -204,6 +270,94 @@ flowchart TD
     style N fill:#0F766E,stroke:#0D9488,color:#fff
     style O fill:#7C3AED,stroke:#6D28D9,color:#fff
 ```
+
+### 公平性演算法詳解
+
+`history_weight` 是整個排班系統的核心量化指標。以下是每次排班時的完整計算流程：
+
+```mermaid
+flowchart TD
+    START["每次排班開始"] --> LOAD["載入所有風紀的<br/>history_weight"]
+    LOAD --> SORT["按 weight 由低到高<br/>升序排列"]
+    SORT --> PICK["從最低者開始<br/>依次分配崗位"]
+    
+    PICK --> CHECK1{"是否為 AHP?"}
+    CHECK1 -->|"是"| AHP_SLOT["優先分配<br/>Assist. in charge<br/>加權 -8.0"]
+    CHECK1 -->|"否"| CHECK2{"是否 F.3 或以下?"}
+    
+    CHECK2 -->|"是"| F3_BONUS["師徒優先級<br/>加權 -1.5<br/>鼓勵新人參與"]
+    CHECK2 -->|"否"| NORMAL["標準權重排序"]
+    
+    AHP_SLOT --> ASSIGN
+    F3_BONUS --> ASSIGN
+    NORMAL --> ASSIGN
+    
+    ASSIGN["確認崗位分配"] --> UPDATE["更新該風紀 weight<br/>+ 崗位權重 × 全域倍率"]
+    UPDATE --> CHECK3{"還有未分配崗位?"}
+    CHECK3 -->|"是"| PICK
+    CHECK3 -->|"否"| MENTOR["執行師徒配對檢查"]
+    
+    MENTOR --> CHECK4{"是否有<br/>weight ≦ 2.0 的風紀?"}
+    CHECK4 -->|"是"| PAIR["尋找 weight > 5.0<br/>的資深風紀配對"]
+    CHECK4 -->|"否"| DONE["排班完成"]
+    PAIR --> DONE
+    
+    style START fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style AHP_SLOT fill:#0F766E,stroke:#0D9488,color:#fff
+    style F3_BONUS fill:#7C3AED,stroke:#6D28D9,color:#fff
+    style DONE fill:#DC2626,stroke:#B91C1C,color:#fff
+```
+
+**權重計算公式：**
+
+| 崗位 | 基礎權重 | 備註 |
+|------|---------|------|
+| Assist. in charge | 1.4× | AHP 專屬，-8.0 優先加權 |
+| Room 302 | 1.2× | 雙人制，不可重複 |
+| Room 303 | 1.2× | 雙人制，不可重複 |
+| Room 202 | 1.0× | 單人制，週二/五關閉 |
+| F.3 師徒優先 | -1.5 | 平局時新人優先 |
+| 連續值班 | 自動跳過 | 硬約束，不可違反 |
+
+
+### AI 智能導入流程
+
+從上傳原始 Excel 到生成結構化數據的完整管線：
+
+```mermaid
+flowchart TD
+    UPLOAD["📤 用戶上傳<br/>Excel / CSV 檔案"] --> DETECT["🔍 自動偵測欄位<br/>與檔案格式"]
+    DETECT --> CHECK{"欄位是否<br/>完全匹配?"}
+    
+    CHECK -->|"✅ 完全匹配"| MAP["直接映射至<br/>標準欄位"]
+    CHECK -->|"❌ 格式不符"| AI_CALL["🤖 調用 DeepSeek API<br/>智能欄位映射"]
+    
+    AI_CALL --> PARSE["DeepSeek-V4-Flash<br/>解析欄位含義"]
+    PARSE --> SUGGEST["返回建議映射<br/>{原始欄位: 標準欄位}"]
+    SUGGEST --> CONFIRM{"用戶確認<br/>映射結果?"}
+    CONFIRM -->|"✅ 確認"| MAP
+    CONFIRM -->|"❌ 修正"| MANUAL["手動調整映射"]
+    MANUAL --> MAP
+    
+    MAP --> REMARKS{"備註欄是否<br/>包含結構化資訊?"}
+    REMARKS -->|"✅ 是"| AI_REMARKS["🤖 DeepSeek 解析備註<br/>提取可用日子/固定值班"]
+    REMARKS -->|"❌ 否"| BUILD["構建 students_df"]
+    AI_REMARKS --> BUILD
+    
+    BUILD --> VALIDATE["✅ 驗證數據完整性<br/>必填欄位檢查"]
+    VALIDATE --> STORE["💾 存入 session_state<br/>初始化 history_weight"]
+    STORE --> READY["✅ 名冊就緒<br/>可生成值班表"]
+    
+    style UPLOAD fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style AI_CALL fill:#7C3AED,stroke:#6D28D9,color:#fff
+    style PARSE fill:#7C3AED,stroke:#6D28D9,color:#fff
+    style READY fill:#0F766E,stroke:#0D9488,color:#fff
+```
+
+**AI 解析的設計原則：**
+- **非侵入式**：AI 僅在欄位不匹配或備註需解析時介入，正常導入無需 AI 調用。
+- **人機協作**：AI 建議映射結果後由用戶確認，保留最終決定權。
+- **解耦設計**：AI 層（`roster/ai/`）獨立於排班引擎，可隨時替換後端。
 
 ### 關鍵設計決策
 
@@ -270,6 +424,44 @@ flowchart LR
 - 還原時自動執行 `validate_state_integrity()` 校驗數據完整性。
 
 ---
+
+
+### 備份還原決策樹
+
+何時使用何種備份方式？以下是決策指引：
+
+```mermaid
+flowchart TD
+    SITUATION{"需要備份/還原<br/>的情境?"}
+    
+    SITUATION -->|"每次匯出 PDF"| PDF_BACKUP["📄 PDF 嵌入備份<br/>（自動，無需手動操作）"]
+    SITUATION -->|"每次生成排班後"| JSON_DL["💾 下載 JSON 備份<br/>（側邊欄一鍵操作）"]
+    SITUATION -->|"重要版本存檔"| GITHUB["📤 上傳至 GitHub<br/>backups/ 資料夾"]
+    SITUATION -->|"從備份還原"| RESTORE_Q{"備份檔案<br/>類型?"}
+    
+    RESTORE_Q -->|"完整 PDF"| PDF_RESTORE["📥 上傳 PDF<br/>自動解析末頁備份"]
+    RESTORE_Q -->|"JSON 檔案"| JSON_RESTORE["📥 上傳 JSON<br/>直接載入"]
+    
+    PDF_RESTORE --> VALIDATE["✅ validate_state_integrity()<br/>數據完整性校驗"]
+    JSON_RESTORE --> VALIDATE
+    
+    VALIDATE --> CHECK_OK{"校驗通過?"}
+    CHECK_OK -->|"✅ 通過"| RESTORED["✅ 系統狀態已恢復<br/>可繼續操作"]
+    CHECK_OK -->|"❌ 失敗"| WARN["⚠️ 顯示具體錯誤<br/>StateIntegrityError"]
+    WARN --> FALLBACK["🔄 嘗試另一種<br/>備份檔案還原"]
+    FALLBACK --> RESTORE_Q
+    
+    style PDF_BACKUP fill:#7C3AED,stroke:#6D28D9,color:#fff
+    style GITHUB fill:#0F766E,stroke:#0D9488,color:#fff
+    style RESTORED fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style WARN fill:#DC2626,stroke:#B91C1C,color:#fff
+```
+
+**備份策略核心原則：**
+- PDF 備份是**最方便的日常備份方式** — 每次匯出即自動完成。
+- JSON 備份作為**輕量備援** — 適合只想保存動態數據的場景。
+- GitHub 是**長期歸檔方案** — 建議期初/期中/期末各上傳一次。
+- 還原時系統自動嘗試所有可用備份路徑，最大化恢復成功率。
 
 ## 項目結構
 

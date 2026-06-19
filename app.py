@@ -926,6 +926,14 @@ This system promotes fairness, equity, and a culture of service, helping prefect
             st.warning(error_msg)
 
     # ====================== 值班後請假調整（新增公平性核心功能） ======================
+    # System architecture diagram (collapsible)
+    from roster.ui.components import render_system_architecture_diagram
+    render_system_architecture_diagram(
+        expander_label=_t("System Architecture", "System Architecture"),
+        caption_text=_t("以下為本系統的分層模組化架構，箭頭表示模組間的調用關係。完整架構說明請參閱 GitHub README。", "The layered modular architecture of this system. Arrows indicate module call relationships. See GitHub README for full documentation.")
+    )
+    
+    
     cap = get_text("footer_caption", version=VERSION)
     st.caption(cap)
 
