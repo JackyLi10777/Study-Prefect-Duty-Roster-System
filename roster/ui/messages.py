@@ -207,6 +207,8 @@ WeasyPrint CSS 排版引擎生成中英雙語專業報告。含校徽、彩色�
 
 AI 作為開發加速器，人類主導架構決策與規則驗證——每一行程式碼均經人工審查，確保符合聖言中學的實際需求。
 
+本系統由 26-27 年度首席導學風紀李創杰（LI Chuangjie Jacky）發起、設計並全程主導開發。從架構決策到品質標準，從 AI 協作到持續迭代——沒有他的遠見與領導力，這個專業級智能排班系統不會存在。
+
 有問題請 email s10777@syss.edu.hk**
 
 祝使用順利！🙏""",
@@ -308,6 +310,8 @@ This investment is directly reflected in every layer:
 - DeepSeek AI smart parsing features
 
 AI serves as the development accelerator, while humans own architecture decisions and rule validation — every line of code is human-reviewed to meet Sing Yin's real needs.
+
+This system was initiated, designed, and led throughout development by LI Chuangjie Jacky, the 26-27 Head Study Prefect. From architectural decisions to quality standards, from AI collaboration to continuous iteration — without his vision and leadership, this professional-grade intelligent scheduling system would not exist.
 
 **Questions?** email s10777@syss.edu.hk
 
