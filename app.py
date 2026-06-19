@@ -61,7 +61,7 @@ HELP_TEXT = """
 
 #### 2. 名冊即時修改
 - 在側邊欄可以直接編輯所有領袖生資料，修改後即時儲存。
-- **「需要老帶新」欄位**：手動勾選後，該風紀將在排班時優先與經驗風紀配對。
+- **「需要師徒指導」欄位**：手動勾選後，該風紀將在排班時優先與經驗風紀配對。
 
 #### 3. 生成值班表
 - 在側邊欄設定請假人員與特殊不開放時段。
@@ -75,7 +75,7 @@ HELP_TEXT = """
 - **視覺公告版**：專業彩色顯示，不同崗位不同顏色（Assist 金米、Room302 綠、Room303 黃、Room202 紅）。
 - **手動修改版**：可直接在表格上修改人名或打「X」鎖定。
 - **師徒配對標記**：若兩個風紀被安排在同一間房形成師徒配對，該儲存格左側會顯示 🟦 藍綠色邊框標記。
-- **自動標籤**：名冊中自動顯示「🆕 新加入」（history_weight=0）、「👤 需要老帶新」（weight≤2）、「✅ 指定老帶新」（手動勾選）。
+- **自動標籤**：名冊中自動顯示「🆕 新加入」（history_weight=0）、「👤 需要師徒指導」（weight≤2）、「✅ 已指定師徒」（手動勾選）。
 
 #### 6. 師徒配對儀表板（Phase D 新增）
 - **配對成效卡**：生成值班表後，公平性區域自動顯示本週師徒配對數、配對成功率及評級。
@@ -94,6 +94,39 @@ HELP_TEXT = """
 - 每次生成新班表後，建議在側邊欄點擊「⬇️ 導出完整備份 (JSON)」下載備份。
 - **PDF 備份還原**：上傳之前生成的 PDF，系統自動解析並還原數據。
 - Streamlit Cloud 休眠後可用「上傳備份 JSON 還原」或「PDF 備份還原」快速恢復。
+
+#### 10. 進階功能使用說明
+- **批量請假**：在側邊欄「批量操作」區，勾選多名風紀後點「標記為請假」，即可一次性將他們設為本週請假。
+- **批量固定值班**：同上，選擇目標星期後點「設為固定值班」，可同時為多人安排固定崗位（例如某天全校活動）。
+- **歷史趨勢儀表板**：主畫面公平性區域中的「📈 歷史負荷趨勢」圖表，可追蹤過往每週每人累計點數變化，幫助識別長期負荷不均。
+- **學徒進度追蹤**：在公平性區域展開摺疊面板，儲存當前點數基準線，下次生成值班表後回來查看學徒點數變化趨勢，掌握師徒配對成效。
+- **PDF 完整備份還原**：直接上傳之前導出的完整 PDF 檔案（不需要刪除頁面），系統會自動尋找並解讀內嵌的備份數據進行完整還原。
+- **清除數據與重設**：側邊欄底部「🗑️ 完全清除所有數據」按鈕可一鍵重置整個系統至初始狀態（需二次確認，操作無法復原）。
+
+#### 11. 權限與角色說明
+
+| 角色 | 英文名稱 | 可擔任崗位 | 特別權限 |
+|------|----------|-----------|---------|
+| **首席導學風紀** | Head Study Prefect | 所有崗位 | 完整排班管理權限、使用本系統 |
+| **助理首席導學風紀** | Assistant Head Study Prefect (AHP) | **僅限「Assist. in charge」** | 不可擔任 Room 302/303/202 等普通崗位 |
+| **導學風紀** | Study Prefect | Room 302/303/202 等普通崗位 | 不可擔任「Assist. in charge」 |
+
+**關鍵規則說明：**
+- 「Assist. in charge」崗位**僅限助理首席導學風紀（AHP）**擔任，這是學校規定（AHP 在該崗位獲得 -8.0 優先加權）。
+- 普通導學風紀**不能**被安排到「Assist. in charge」崗位。
+- 系統目前主要設計給**首席導學風紀**使用。若將來開放給助理操作，需注意助理無法修改 AHP 相關排班規則。
+- 師徒配對機制自動將需要指導的風紀與有經驗的風紀配對在同一間房，與角色無關，所有崗位皆可受益。
+
+#### 12. 系統技術概要（附錄）
+
+本系統採用 Python + Streamlit 構建，模組化分層架構（`roster/` 套件含 6 個子模組，共 30+ 個 Python 檔案，8,000+ 行程式碼）。
+
+- **排班引擎**：基於 `history_weight` 累計負荷的量化公平演算法，完整實現 AHP 限制、Room 202 週二/五關閉、F.3 師徒優先、不可連續值班等學校規則。
+- **AI 服務**：DeepSeek-V4-Flash，用於學生備註智能解析與 Excel 欄位自動映射。
+- **PDF 報告**：WeasyPrint（CSS 排版引擎）生成中英雙語專業報告，末頁自動嵌入 JSON 備份數據。
+- **備份機制**：PDF 嵌入備份（主通道）+ JSON 下載（備援）+ GitHub `ai` 分支長期保存。
+- **測試保障**：62 項自動化測試（單元 + 引擎 + 整合），覆蓋排班邏輯、備份還原、狀態完整性、學校規則驗證。
+- **部署**：Streamlit Cloud，含休眠後自動恢復機制。
 
 **有問題請 email s10777@syss.edu.hk**
 
@@ -284,8 +317,8 @@ def main():
                     + '</span>'
                 )
             _legend_parts.append('<span style="background:#0F766E; color:white; padding:2px 10px; border-radius:10px;">🆕 新加入</span>')
-            _legend_parts.append('<span style="background:#F59E0B; color:white; padding:2px 10px; border-radius:10px;">👤 需要老帶新</span>')
-            _legend_parts.append('<span style="background:#7C3AED; color:white; padding:2px 10px; border-radius:10px;">✅ 指定老帶新</span>')
+            _legend_parts.append('<span style="background:#F59E0B; color:white; padding:2px 10px; border-radius:10px;">👤 需要師徒指導</span>')
+            _legend_parts.append('<span style="background:#7C3AED; color:white; padding:2px 10px; border-radius:10px;">✅ 已指定師徒</span>')
             _legend_parts.append('<span style="background:#6B7280; color:white; padding:2px 10px; border-radius:10px;">一般</span>')
             _legend_parts.append('</div>')
             st.markdown(''.join(_legend_parts), unsafe_allow_html=True)
