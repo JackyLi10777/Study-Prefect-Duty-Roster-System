@@ -246,6 +246,51 @@ flowchart TD
 - **F.3 師徒優先**：低年級學生在平局時優先獲得值班機會，鼓勵新人參與。
 - **全域負荷調節**：0.8× – 2.0× 動態倍率，考試週可提高倍率以平衡長期負荷。
 
+
+### 角色權限強制執行流程
+
+系統如何在排班過程中確保角色權限不被違反：
+
+```mermaid
+flowchart TD
+    CANDIDATE["候選風紀進入崗位分配隊列"] --> ROLE_CHECK{"檢查角色類型?"}
+    
+    ROLE_CHECK -->|"Head Study Prefect"| ALL_SLOTS["可擔任所有崗位無限制"]
+    ROLE_CHECK -->|"AHP"| AHP_PATH["AHP 專屬路徑"]
+    ROLE_CHECK -->|"Study Prefect"| SP_PATH["普通風紀路徑"]
+    
+    AHP_PATH --> AHP_SLOT_CHECK{"當前崗位是否為 Assist. in charge?"}
+    AHP_SLOT_CHECK -->|"是"| AHP_ASSIGN["分配確認 加權 -8.0"]
+    AHP_SLOT_CHECK -->|"否"| AHP_SKIP["跳過 AHP 不可擔任此崗位"]
+    
+    SP_PATH --> SP_SLOT_CHECK{"當前崗位是否為 Assist. in charge?"}
+    SP_SLOT_CHECK -->|"否"| SP_ASSIGN["分配確認 標準權重"]
+    SP_SLOT_CHECK -->|"是"| SP_SKIP["跳過 普通風紀不可擔任 Assist"]
+    
+    ALL_SLOTS --> CONSECUTIVE{"連續值班檢查"}
+    AHP_ASSIGN --> CONSECUTIVE
+    SP_ASSIGN --> CONSECUTIVE
+    
+    CONSECUTIVE -->|"通過"| FINAL["最終確認分配"]
+    CONSECUTIVE -->|"連續"| SKIP_ALL["跳過該人選 嘗試下一位"]
+    
+    AHP_SKIP --> NEXT["嘗試下一位候選"]
+    SP_SKIP --> NEXT
+    SKIP_ALL --> NEXT
+    NEXT --> CANDIDATE
+
+    style ALL_SLOTS fill:#0F766E,stroke:#0D9488,color:#fff
+    style AHP_ASSIGN fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style SP_ASSIGN fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style FINAL fill:#7C3AED,stroke:#6D28D9,color:#fff
+    style SKIP_ALL fill:#DC2626,stroke:#B91C1C,color:#fff
+```
+
+**關鍵約束：**
+- AHP 僅能擔任 Assist. in charge 崗位。這是硬約束，不可通過任何設定繞過。
+- 普通風紀不可擔任 Assist. in charge。即使無其他人選也會跳過。
+- 連續值班檢查在角色檢查之後執行，兩個約束疊加確保排班合法性。
+
 ### 排班生成流程
 
 ```mermaid
@@ -366,6 +411,57 @@ flowchart TD
 - **結構化異常處理**：`exceptions.py` 提供 `BackupParseError`、`StateIntegrityError` 等自定義異常，確保備份還原與狀態校驗的錯誤清晰可追蹤。
 - **DeepSeek AI 解耦**：AI 解析層獨立於核心排班邏輯，通過標準接口調用，可隨時替換 AI 後端。
 
+
+### 錯誤處理與降級機制
+
+系統如何在不同層級捕獲錯誤並提供降級方案：
+
+```mermaid
+flowchart TD
+    START["系統操作觸發"] --> TRY["try 區塊執行"]
+
+    TRY --> CHECK_TYPE{"錯誤類型?"}
+    
+    CHECK_TYPE -->|"BackupParseError"| BACKUP_ERR["備份解析失敗"]
+    CHECK_TYPE -->|"StateIntegrityError"| STATE_ERR["狀態校驗失敗"]
+    CHECK_TYPE -->|"API Error"| AI_ERR["AI 服務不可用"]
+    CHECK_TYPE -->|"其他 Exception"| GEN_ERR["一般錯誤"]
+
+    BACKUP_ERR --> BACKUP_FALLBACK["嘗試備援 JSON 備份"]
+    BACKUP_FALLBACK --> BACKUP_OK{"備援成功?"}
+    BACKUP_OK -->|"是"| RECOVERED["數據已恢復"]
+    BACKUP_OK -->|"否"| BACKUP_FAIL["提示用戶手動導入或使用 GitHub 備份"]
+
+    STATE_ERR --> STATE_DETAIL["顯示具體缺失欄位與建議修復操作"]
+    STATE_DETAIL --> STATE_USER{"用戶選擇?"}
+    STATE_USER -->|"重試"| TRY
+    STATE_USER -->|"重置"| RESET["清除數據重新開始"]
+
+    AI_ERR --> AI_FALLBACK["降級至手動模式提示用戶手動匹配欄位"]
+    AI_FALLBACK --> MANUAL_OK["手動導入流程"]
+
+    GEN_ERR --> GEN_LOG["記錄錯誤日誌 st.error 顯示摘要"]
+    GEN_LOG --> GEN_USER{"用戶選擇?"}
+    GEN_USER -->|"重試"| TRY
+    GEN_USER -->|"跳過"| SKIP["繼續執行可能功能受限"]
+
+    RECOVERED --> DONE["操作完成"]
+    MANUAL_OK --> DONE
+    RESET --> DONE
+    SKIP --> DONE
+    BACKUP_FAIL --> DONE
+
+    style START fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style RECOVERED fill:#0F766E,stroke:#0D9488,color:#fff
+    style BACKUP_FAIL fill:#DC2626,stroke:#B91C1C,color:#fff
+    style AI_FALLBACK fill:#7C3AED,stroke:#6D28D9,color:#fff
+```
+
+**錯誤處理設計原則：**
+- 分層捕獲：每層（備份、狀態、AI、通用）有獨立的異常類型和降級策略。
+- 用戶知情：所有錯誤通過 st.error / st.warning 清晰告知用戶原因與建議操作。
+- 永不放棄：備份還原失敗會自動嘗試備援路徑；AI 失敗降級至手動模式，不阻塞核心流程。
+
 ### 數據流與備份策略
 
 ```mermaid
@@ -482,6 +578,55 @@ Study-Prefect-Duty-Roster-System/
 ```
 
 ---
+
+
+### 系統生命週期與狀態轉換
+
+從系統啟動到完成一次完整排班週期的狀態變化：
+
+```mermaid
+stateDiagram-v2
+    [*] --> 系統啟動
+    系統啟動 --> 載入靜態數據
+    載入靜態數據 --> 等待用戶操作
+    
+    等待用戶操作 --> 導入學生名冊
+    導入學生名冊 --> 名冊已就緒
+    名冊已就緒 --> 設定排班參數
+    設定排班參數 --> 生成值班表
+    
+    生成值班表 --> 審核調整
+    審核調整 --> 匯出PDF備份
+    匯出PDF備份 --> 等待用戶操作
+    
+    等待用戶操作 --> 上傳備份還原
+    上傳備份還原 --> 狀態校驗
+    狀態校驗 --> 名冊已就緒
+    
+    等待用戶操作 --> 清除所有數據
+    清除所有數據 --> 等待用戶操作
+    
+    等待用戶操作 --> [*]
+
+    note right of 生成值班表
+        核心排班引擎執行：
+        - 角色權限檢查
+        - 連續值班檢查
+        - 公平性排序
+        - 師徒配對
+    end note
+
+    note right of 狀態校驗
+        validate_state_integrity()
+        檢查必填欄位與
+        數據一致性
+    end note
+```
+
+**狀態說明：**
+- 系統啟動時自動從 GitHub ai 分支載入靜態數據（學生名冊）。
+- 生成值班表是整個生命週期的核心狀態，涉及最多的計算與規則檢查。
+- 匯出 PDF 後，系統回到等待用戶操作狀態，支持開始新一輪排班或從備份還原。
 
 ## 技術棧
 

@@ -3,6 +3,9 @@ roster/ui/messages.py
 
 Centralized management of all user-facing display texts for the Sing Yin Study Prefect Duty Roster Platform.
 
+
+> 📋 **Quick Nav:** [1.Import](#1-roster-import) | [2.Edit](#2-live-roster-editing) | [3.Generate](#3-generate-duty-roster) | [4.Load Scale](#4-global-load-scale-slider) | [5.Operations](#5-roster-board-operations) | [6.Mentoring](#6-mentoring-dashboard) | [7.Substitutes](#7-smart-substitute-recommendation) | [8.Export](#8-export-functions) | [9.Backup](#9-cloud-backup) | [10.Advanced](#10-advanced-features) | [11.Roles](#11-roles--permissions) | [12.Tech](#12-technical-overview)
+
 This module provides:
 - A MESSAGES registry (key -> (zh, en) tuples) for static and template strings.
 - get_text(key, **kwargs) for safe lookup + formatting (assemble result first, never complex inline f + .format).
@@ -103,6 +106,9 @@ MESSAGES = {
     # Help / manual (large static content moved here for centralization)
     "help_text_full": (
         """### 📖 聖言中學導學風紀當值排班平台 使用說明書（v2.4 Final）
+
+
+> 📋 **快速導航：** [1.名冊導入](#1-名冊導入) | [2.名冊修改](#2-名冊即時修改) | [3.生成值班表](#3-生成值班表) | [4.負荷調節](#4-全局負荷調節滑桿) | [5.值班表操作](#5-值班表操作) | [6.師徒儀表板](#6-師徒配對儀表板) | [7.智慧替補](#7-智慧替補推薦) | [8.匯出](#8-匯出功能) | [9.備份](#9-cloud-備份) | [10.進階](#10-進階功能使用說明) | [11.權限](#11-權限與角色說明) | [12.技術](#12-系統技術概要)
 
 #### 1. 名冊導入（最重要）
 - **推薦使用「🤖 AI 智能自動匹配」**：支援任意格式的 Excel / CSV，DeepSeek-V4-Flash AI 會自動辨識欄位。
