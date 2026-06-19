@@ -1,4 +1,66 @@
-[中文](README.md) | **English**
+[中文]
+### Module Dependency Graph
+
+Call relationships and data flow between all 7 layers:
+
+```mermaid
+flowchart TD
+    subgraph entry["Entry Layer"]
+        APP["app.py Streamlit Main"]
+    end
+
+    subgraph ui_mod["UI Layer"]
+        COMP["components.py Interface"]
+        MSG["messages.py Bilingual Messages"]
+    end
+
+    subgraph core_mod["Core Layer"]
+        ENGINE["engine.py Scheduling Engine"]
+        POLICY["school_policy.py School Policy SSOT"]
+    end
+
+    subgraph data_mod["Data Layer"]
+        STATE["state.py Session State"]
+        DEMO["demo.py Demo Roster"]
+    end
+
+    subgraph util_mod["Utilities Layer"]
+        PDF["pdf.py PDF Reports"]
+        BACKUP["backup.py Backup/Restore"]
+        IMP["importers.py Roster Import"]
+    end
+
+    subgraph ai_mod["AI Layer"]
+        AI_P["parser.py DeepSeek Parser"]
+    end
+
+    subgraph err_mod["Exception Layer"]
+        EXC["exceptions.py Custom Exceptions"]
+    end
+
+    APP -->|"render"| COMP
+    APP -->|"init"| STATE
+    APP -->|"i18n"| MSG
+    COMP -->|"trigger"| ENGINE
+    COMP -->|"backup"| BACKUP
+    COMP -->|"import"| IMP
+    COMP -->|"read/write"| STATE
+    ENGINE -->|"references"| POLICY
+    ENGINE -->|"read/write"| STATE
+    IMP -->|"AI call"| AI_P
+    PDF -->|"embed backup"| BACKUP
+    PDF -->|"read"| ENGINE
+    BACKUP -->|"throws"| EXC
+    STATE -->|"validation"| EXC
+
+    style POLICY fill:#0F766E,stroke:#0D9488,color:#fff
+    style ENGINE fill:#0F766E,stroke:#0D9488,color:#fff
+    style STATE fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style AI_P fill:#7C3AED,stroke:#6D28D9,color:#fff
+```
+
+**Key insight:** `school_policy.py` has no reverse dependencies — it is the true Single Source of Truth. The AI layer is only called by `importers.py`, fully decoupled from the scheduling engine.
+(README.md) | **English**
 
 <div align="center">
 
@@ -167,6 +229,50 @@ flowchart TD
     style AI_PARSER fill:#7C3AED,stroke:#6D28D9,color:#fff
 ```
 
+
+### Role Permission Enforcement
+
+How the system enforces role constraints during scheduling:
+
+```mermaid
+flowchart TD
+    CANDIDATE["Candidate enters slot queue"] --> ROLE_CHECK{"Check role type?"}
+    
+    ROLE_CHECK -->|"Head Study Prefect"| ALL_SLOTS["All slots available No restrictions"]
+    ROLE_CHECK -->|"AHP"| AHP_PATH["AHP-exclusive path"]
+    ROLE_CHECK -->|"Study Prefect"| SP_PATH["Regular prefect path"]
+    
+    AHP_PATH --> AHP_SLOT_CHECK{"Is this slot Assist. in charge?"}
+    AHP_SLOT_CHECK -->|"Yes"| AHP_ASSIGN["Assign weighting -8.0"]
+    AHP_SLOT_CHECK -->|"No"| AHP_SKIP["Skip AHP cannot serve this slot"]
+    
+    SP_PATH --> SP_SLOT_CHECK{"Is this slot Assist. in charge?"}
+    SP_SLOT_CHECK -->|"No"| SP_ASSIGN["Assign standard weighting"]
+    SP_SLOT_CHECK -->|"Yes"| SP_SKIP["Skip SP cannot serve Assist"]
+    
+    ALL_SLOTS --> CONSECUTIVE{"Consecutive day check"}
+    AHP_ASSIGN --> CONSECUTIVE
+    SP_ASSIGN --> CONSECUTIVE
+    
+    CONSECUTIVE -->|"Pass"| FINAL["Final assignment confirmed"]
+    CONSECUTIVE -->|"Consecutive"| SKIP_ALL["Skip candidate try next"]
+    
+    AHP_SKIP --> NEXT["Try next candidate"]
+    SP_SKIP --> NEXT
+    SKIP_ALL --> NEXT
+    NEXT --> CANDIDATE
+
+    style ALL_SLOTS fill:#0F766E,stroke:#0D9488,color:#fff
+    style AHP_ASSIGN fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style FINAL fill:#7C3AED,stroke:#6D28D9,color:#fff
+    style SKIP_ALL fill:#DC2626,stroke:#B91C1C,color:#fff
+```
+
+**Hard constraints:**
+- AHP can **only** serve "Assist. in charge" — this is non-negotiable.
+- Regular prefects **cannot** serve "Assist. in charge" — skipped even if no alternatives exist.
+- Consecutive-day check runs after role check; both constraints stack for full compliance.
+
 ### Core Scheduling Rules
 
 The system fully implements all duty scheduling rules for Sing Yin's Study Prefect Team, with `school_policy.py` as the **Single Source of Truth (SSOT)**.
@@ -189,11 +295,127 @@ The system fully implements all duty scheduling rules for Sing Yin's Study Prefe
 - Algorithm-level guarantee: the same prefect will never be scheduled on two consecutive days.
 - This rule executes before fairness calculations.
 
+
+### Roster Generation Flow
+
+End-to-end flow from data loading to PDF export:
+
+```mermaid
+flowchart TD
+    A["Load student roster"] --> B["AI smart parse remarks"]
+    B --> C["Tag leave personnel"]
+    C --> D["Read historical load points"]
+    D --> E["Sort by points low to high"]
+    E --> F{"Room open?"}
+    F -->|"Yes"| G["Assign slot"]
+    F -->|"No"| H["Skip room"]
+    G --> I{"Consecutive day trigger?"}
+    I -->|"Yes"| J["Skip candidate"]
+    I -->|"No"| K["Confirm assignment"]
+    J --> E
+    K --> L["Update load points"]
+    L --> M["Run mentoring pair check"]
+    M --> N["Generate final roster"]
+    N --> O["Export PDF + embed backup"]
+
+    style A fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style N fill:#0F766E,stroke:#0D9488,color:#fff
+    style O fill:#7C3AED,stroke:#6D28D9,color:#fff
+```
+
 #### Fairness Mechanism
 - **Cumulative Load Points (`history_weight`)**: updated after each scheduling cycle — the more you serve, the higher your score.
 - **Dynamic Weighted Sorting**: in the next cycle, those with the lowest scores get priority rest.
 - **F.3 Junior Priority**: younger prefects get scheduling preference on ties, encouraging new member participation.
 - **Global Load Scaling**: 0.8× – 2.0× dynamic multiplier; increase during exam weeks to balance long-term load.
+
+### Fairness Algorithm Detail
+
+`history_weight` is the core quantitative metric. Full calculation flow per scheduling cycle:
+
+```mermaid
+flowchart TD
+    START["Each scheduling cycle"] --> LOAD["Load all prefects history_weight"]
+    LOAD --> SORT["Sort ascending by weight"]
+    SORT --> PICK["Start from lowest assign slots"]
+    
+    PICK --> CHECK1{"Is AHP?"}
+    CHECK1 -->|"Yes"| AHP_SLOT["Prioritize Assist. in charge Bonus -8.0"]
+    CHECK1 -->|"No"| CHECK2{"F.3 or below?"}
+    
+    CHECK2 -->|"Yes"| F3_BONUS["Junior priority Bonus -1.5"]
+    CHECK2 -->|"No"| NORMAL["Standard weight sort"]
+    
+    AHP_SLOT --> ASSIGN
+    F3_BONUS --> ASSIGN
+    NORMAL --> ASSIGN
+    
+    ASSIGN["Confirm slot"] --> UPDATE["Update weight + slot_weight x global_multiplier"]
+    UPDATE --> CHECK3{"More slots remaining?"}
+    CHECK3 -->|"Yes"| PICK
+    CHECK3 -->|"No"| MENTOR["Run mentoring check"]
+    
+    MENTOR --> CHECK4{"Any prefect with weight <= 2.0?"}
+    CHECK4 -->|"Yes"| PAIR["Find senior prefect weight > 5.0 to pair"]
+    CHECK4 -->|"No"| DONE["Scheduling complete"]
+    PAIR --> DONE
+    
+    style START fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style AHP_SLOT fill:#0F766E,stroke:#0D9488,color:#fff
+    style F3_BONUS fill:#7C3AED,stroke:#6D28D9,color:#fff
+    style DONE fill:#DC2626,stroke:#B91C1C,color:#fff
+```
+
+**Weight formula:**
+
+| Slot | Base Weight | Notes |
+|------|------------|-------|
+| Assist. in charge | 1.4x | AHP-exclusive, -8.0 priority bonus |
+| Room 302 | 1.2x | Dual-occupancy, no duplicates |
+| Room 303 | 1.2x | Dual-occupancy, no duplicates |
+| Room 202 | 1.0x | Single-occupancy, closed Tue/Fri |
+| F.3 junior priority | -1.5 | Tiebreaker for new members |
+| Consecutive days | Auto-skip | Hard constraint, non-negotiable |
+
+
+
+### AI Import Pipeline
+
+End-to-end flow from raw Excel upload to structured DataFrame:
+
+```mermaid
+flowchart TD
+    UPLOAD["User uploads Excel/CSV"] --> DETECT["Auto-detect columns and format"]
+    DETECT --> CHECK{"Columns match standard?"}
+    
+    CHECK -->|"Yes"| MAP["Direct map to standard columns"]
+    CHECK -->|"No"| AI_CALL["Call DeepSeek API smart column mapping"]
+    
+    AI_CALL --> PARSE["DeepSeek-V4-Flash parses column semantics"]
+    PARSE --> SUGGEST["Returns suggested mapping {original: standard}"]
+    SUGGEST --> CONFIRM{"User confirms mapping?"}
+    CONFIRM -->|"Yes"| MAP
+    CONFIRM -->|"No"| MANUAL["Manual adjustment"]
+    MANUAL --> MAP
+    
+    MAP --> REMARKS{"Remarks column has structured data?"}
+    REMARKS -->|"Yes"| AI_REMARKS["DeepSeek parses availability/fixed duties"]
+    REMARKS -->|"No"| BUILD["Build students_df"]
+    AI_REMARKS --> BUILD
+    
+    BUILD --> VALIDATE["Validate required fields"]
+    VALIDATE --> STORE["Store in session_state init history_weight"]
+    STORE --> READY["Roster ready for scheduling"]
+    
+    style UPLOAD fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style AI_CALL fill:#7C3AED,stroke:#6D28D9,color:#fff
+    style READY fill:#0F766E,stroke:#0D9488,color:#fff
+```
+
+**Design principles:**
+- **Non-intrusive**: AI only activates when columns mismatch or remarks need parsing.
+- **Human-in-the-loop**: AI suggests mappings; user confirms before proceeding.
+- **Decoupled**: AI layer (roster/ai/) is independent of the scheduling engine.
 
 ### Key Design Decisions
 
@@ -201,6 +423,57 @@ The system fully implements all duty scheduling rules for Sing Yin's Study Prefe
 - **Centralized Session State**: `state.py` manages all Streamlit session state with defensive helpers: `get_state`, `set_state`, `validate_state_integrity`.
 - **Structured Exception Handling**: `exceptions.py` provides `BackupParseError`, `StateIntegrityError`, and others for clear, traceable error paths.
 - **Decoupled AI Layer**: the AI parsing layer is independent of the core scheduling engine, callable via standard interfaces, and swappable at any time.
+
+
+### Error Handling & Degradation
+
+Per-layer exception handling with graceful fallback:
+
+```mermaid
+flowchart TD
+    START["Operation triggered"] --> TRY["try block executes"]
+
+    TRY --> CHECK_TYPE{"Error type?"}
+    
+    CHECK_TYPE -->|"BackupParseError"| BACKUP_ERR["Backup parse failure"]
+    CHECK_TYPE -->|"StateIntegrityError"| STATE_ERR["State validation failure"]
+    CHECK_TYPE -->|"API Error"| AI_ERR["AI service unavailable"]
+    CHECK_TYPE -->|"Other Exception"| GEN_ERR["General error"]
+
+    BACKUP_ERR --> BACKUP_FALLBACK["Try secondary JSON backup"]
+    BACKUP_FALLBACK --> BACKUP_OK{"Secondary OK?"}
+    BACKUP_OK -->|"Yes"| RECOVERED["Data restored"]
+    BACKUP_OK -->|"No"| BACKUP_FAIL["Prompt manual import or use GitHub backup"]
+
+    STATE_ERR --> STATE_DETAIL["Show specific missing fields and fix suggestions"]
+    STATE_DETAIL --> STATE_USER{"User action?"}
+    STATE_USER -->|"Retry"| TRY
+    STATE_USER -->|"Reset"| RESET["Clear all data and restart"]
+
+    AI_ERR --> AI_FALLBACK["Degrade to manual mode prompt user to match columns"]
+    AI_FALLBACK --> MANUAL_OK["Manual import flow"]
+
+    GEN_ERR --> GEN_LOG["Log error st.error display summary"]
+    GEN_LOG --> GEN_USER{"User action?"}
+    GEN_USER -->|"Retry"| TRY
+    GEN_USER -->|"Skip"| SKIP["Continue with limited functionality"]
+
+    RECOVERED --> DONE["Operation complete"]
+    MANUAL_OK --> DONE
+    RESET --> DONE
+    SKIP --> DONE
+    BACKUP_FAIL --> DONE
+
+    style START fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style RECOVERED fill:#0F766E,stroke:#0D9488,color:#fff
+    style BACKUP_FAIL fill:#DC2626,stroke:#B91C1C,color:#fff
+    style AI_FALLBACK fill:#7C3AED,stroke:#6D28D9,color:#fff
+```
+
+**Design principles:**
+- **Layered capture**: each layer (backup, state, AI, general) has its own exception type and degradation strategy.
+- **User-informed**: all errors displayed via st.error / st.warning with clear cause and suggested action.
+- **Never give up**: backup restore auto-tries secondary paths; AI failure degrades to manual mode — core flow never blocked.
 
 ### Backup Strategy
 
@@ -261,6 +534,44 @@ flowchart LR
 
 ---
 
+
+### Backup Restore Decision Tree
+
+When to use which backup method:
+
+```mermaid
+flowchart TD
+    SITUATION{"Backup/restore scenario?"}
+    
+    SITUATION -->|"Every PDF export"| PDF_BACKUP["PDF-embedded backup Auto no manual action"]
+    SITUATION -->|"After each roster generation"| JSON_DL["Download JSON backup Sidebar one-click"]
+    SITUATION -->|"Major version archive"| GITHUB["Upload to GitHub backups/ folder"]
+    SITUATION -->|"Restore from backup"| RESTORE_Q{"Backup file type?"}
+    
+    RESTORE_Q -->|"Full PDF"| PDF_RESTORE["Upload PDF Auto-parse final page backup"]
+    RESTORE_Q -->|"JSON file"| JSON_RESTORE["Upload JSON Direct load"]
+    
+    PDF_RESTORE --> VALIDATE["validate_state_integrity() data integrity check"]
+    JSON_RESTORE --> VALIDATE
+    
+    VALIDATE --> CHECK_OK{"Validation passed?"}
+    CHECK_OK -->|"Yes"| RESTORED["System state restored continue operations"]
+    CHECK_OK -->|"No"| WARN["Show specific error StateIntegrityError"]
+    WARN --> FALLBACK["Try alternative backup file"]
+    FALLBACK --> RESTORE_Q
+    
+    style PDF_BACKUP fill:#7C3AED,stroke:#6D28D9,color:#fff
+    style GITHUB fill:#0F766E,stroke:#0D9488,color:#fff
+    style RESTORED fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style WARN fill:#DC2626,stroke:#B91C1C,color:#fff
+```
+
+**Core principles:**
+- PDF backup is the **most convenient daily method** — happens automatically on every export.
+- JSON backup serves as **lightweight secondary** — for dynamic-data-only scenarios.
+- GitHub is the **long-term archival solution** — recommended at start/mid/end of term.
+- On restore, the system auto-tries all available backup paths to maximize recovery success.
+
 ## Project Structure
 
 ```
@@ -280,6 +591,55 @@ Study-Prefect-Duty-Roster-System/
 ```
 
 ---
+
+
+### System Lifecycle State Machine
+
+State transitions from startup through a complete scheduling cycle:
+
+```mermaid
+stateDiagram-v2
+    [*] --> SystemStartup
+    SystemStartup --> LoadStaticData
+    LoadStaticData --> AwaitingUserAction
+    
+    AwaitingUserAction --> ImportRoster
+    ImportRoster --> RosterReady
+    RosterReady --> ConfigureParameters
+    ConfigureParameters --> GenerateRoster
+    
+    GenerateRoster --> ReviewAndAdjust
+    ReviewAndAdjust --> ExportPDFBackup
+    ExportPDFBackup --> AwaitingUserAction
+    
+    AwaitingUserAction --> UploadBackupRestore
+    UploadBackupRestore --> StateValidation
+    StateValidation --> RosterReady
+    
+    AwaitingUserAction --> ClearAllData
+    ClearAllData --> AwaitingUserAction
+    
+    AwaitingUserAction --> [*]
+
+    note right of GenerateRoster
+        Core engine executes:
+        - Role permission check
+        - Consecutive day check
+        - Fairness sorting
+        - Mentoring pairing
+    end note
+
+    note right of StateValidation
+        validate_state_integrity()
+        Checks required fields
+        and data consistency
+    end note
+```
+
+**Key states:**
+- On startup, static data auto-loads from the GitHub ai branch.
+- GenerateRoster is the core state — most computation and rule checking happens here.
+- After PDF export, the system returns to AwaitingUserAction, ready for a new cycle or backup restore.
 
 ## Tech Stack
 
