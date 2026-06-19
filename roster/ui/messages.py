@@ -151,6 +151,22 @@ MESSAGES = {
 - **PDF 備份還原**：上傳之前導出的完整 PDF（無需拆頁），系統自動解析並還原數據。
 - Streamlit Cloud 休眠後可用「上傳備份 JSON 還原」或「PDF 備份還原」快速恢復。
 
+
+#### 9.5 值班後請假調整（重要）
+
+當值班表已發布、PDF 已發送後，若有人臨時請假，你不需要重新生成整張值班表。
+
+**運作方式：**
+- 此功能進行**局部調整**——只替換請假人員，其餘崗位完全保持不變。
+- 系統會從請假者扣除該崗位的負荷點數（永久影響公平性），並為替補者加上相應點數。
+- 若無替補，該崗位標記為「請假撤銷」，不計入任何人。
+- **不會**重新執行排班引擎——不用擔心打亂已安排好的值班。
+
+**操作流程：**
+1. 在「值班後請假調整」區域選擇日期、崗位、原值班人員
+2. 可選填替補人員（或留空）
+3. 點擊確認——系統自動更新點數與值班表
+4. **直接重新匯出 PDF**——系統會以更新後的數據重新渲染報表
 #### 10. 進階功能使用說明
 - **批量請假**：在側邊欄勾選多名風紀後點「標記為請假」，一次性設為本週請假。
 - **批量固定值班**：選擇目標星期後點「設為固定值班」，為多人安排固定崗位。
@@ -266,6 +282,22 @@ AI 是我的開發加速器，但我主導所有架構決策與規則驗證—�
 - **PDF Backup Restore**: Upload a previously exported PDF (no need to split pages). The system auto-parses and restores all data.
 - After Streamlit Cloud hibernation, restore via "Upload JSON Backup" or "PDF Backup Restore".
 
+
+#### 9.5 Post-Duty Leave Adjustment (Important)
+
+After the roster is published and the PDF has been sent, if someone requests leave, you do **not** need to regenerate the entire roster.
+
+**How it works:**
+- This feature performs a **localized adjustment** — only replaces the absent person; all other slots remain completely unchanged.
+- The system deducts the slot weight from the absent person (permanently affecting fairness) and credits the substitute accordingly.
+- If no substitute, the slot is marked "Leave Revoked" and counted for no one.
+- It does **NOT** re-run the scheduling engine — no risk of disrupting the existing arrangement.
+
+**Workflow:**
+1. In the "Post-Duty Leave Adjustment" section, select date, role, and original person
+2. Optionally select a substitute (or leave blank)
+3. Confirm — the system auto-updates points and the roster table
+4. **Directly re-export the PDF** — the system re-renders the report with updated data
 #### 10. Advanced Features
 - **Batch Leave**: Select multiple prefects in the sidebar and mark them as on leave for the week in one click.
 - **Batch Fixed Duty**: Assign the same fixed duty day to multiple prefects (e.g., school-wide event day).
@@ -552,6 +584,12 @@ Good luck! 🙏"""
         "If someone requests leave after the roster is published, you can revoke their calculated load points here and select a substitute (or leave blank). The cumulative and report will be updated immediately after adjustment to ensure fairness."
     ),
 
+    "post_duty_leave_info": (
+        "💡 **運作方式說明：**\n\n此功能採用**局部調整**而非全面重新排班。它只會：\n1. 從原值班人員扣除該崗位的負荷點數（永久影響公平性）\n2. 若有替補，將替補人員填入該崗位，並給予相應點數\n3. 若無替補，標記為「請假撤銷」，該崗位不計入任何人\n\n**不會**重新生成整張值班表——其他崗位完全不變。因此你可以放心地在發布後使用此功能。\n\n調整後，你可以**直接重新匯出 PDF**——系統會使用更新後的數據渲染報表。",
+        "💡 **How this works:**\n\nThis feature performs a **localized adjustment** rather than full roster regeneration. It only:\n1. Deducts the slot weight from the absent person (permanently affecting future fairness)\n2. If a substitute is provided, assigns them to the slot and credits the weight\n3. If no substitute, marks the slot as Leave Revoked and counts it for no one\n\nIt does **NOT** regenerate the entire roster — all other slots remain completely unchanged.\n\nAfter adjustment, you can **directly re-export the PDF** — the system renders the report with updated data."
+    ),
+
+    
     # Export section
     "export_section_subheader": (
         "📤 匯出（跟隨語言設定）",

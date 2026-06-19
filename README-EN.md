@@ -135,6 +135,16 @@ For Streamlit Cloud deployment, configure the following Secret: `DEEPSEEK_API_KE
 
 > 💡 **Strongly Recommended**: download PDF or JSON backup immediately after every roster generation. Use "Upload Backup Restore" to recover after Streamlit Cloud hibernation.
 
+
+### 6. Post-Publication Leave Adjustment
+
+If someone requests leave after the roster is published, you do **not** need to regenerate the entire roster. Use the "Post-Duty Leave Adjustment" feature:
+
+- The system performs a **localized adjustment** — only replaces the absent person; all other slots remain completely unchanged.
+- Automatically revokes the absent person's load points and credits the substitute accordingly.
+- After adjustment, you can **directly re-export the PDF** — the system re-renders the report with updated data.
+
+> 💡 This is not "re-scheduling" — it is "localized replacement + point correction + PDF re-render." No risk of disrupting the existing arrangement.
 ---
 
 ## FAQ
