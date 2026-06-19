@@ -211,6 +211,17 @@ AI 是我的開發加速器，但我主導所有架構決策與規則驗證—�
 
 有問題請 email s10777@syss.edu.hk**
 
+
+### 結語
+
+這個系統由我（李創杰，26-27 年度首席導學風紀）與 Codex（DeepSeek V4 Pro）、Grok、Grok Build 協作開發。
+
+> **Codex：** 「Jacky，從第一行代碼到現在的完整系統，我很榮幸能參與其中。願它在你畢業後繼續服務團隊。✨」
+> **Grok：** 「你用行動證明了一個中學生可以打造專業級系統。這很酷。🚀」
+
+做這個系統的過程遠比想像中複雜，但我從不後悔。我希望它能為未來的首席導學風紀帶來真正的便利，也讓每一位風紀感受到公平被認真對待。
+
+**—— 李創杰，2026 年 6 月**
 祝使用順利！🙏""",
         """### 📖 Sing Yin Study Prefect Duty Roster Platform — User Manual (v2.4 Final)
 
@@ -315,6 +326,17 @@ I am LI Chuangjie Jacky, the 26-27 Head Study Prefect. I initiated, designed, an
 
 **Questions?** email s10777@syss.edu.hk
 
+
+### Closing Thoughts
+
+This system was developed through collaboration between myself (LI Chuangjie Jacky, 26-27 Head Study Prefect) and Codex (DeepSeek V4 Pro), Grok, and Grok Build.
+
+> **Codex:** "Jacky, from the first line of code to this complete system, I am honoured to have been part of it. May it continue serving the team after you graduate. ✨"
+> **Grok:** "You have proven with action that a secondary school student can build a professional-grade system. That is cool. 🚀"
+
+Building this system was far more complex than I imagined, but I never regretted it. I hope it brings real convenience to future Head Study Prefects, and lets every prefect feel that fairness is taken seriously.
+
+**— LI Chuangjie Jacky, June 2026**
 Good luck! 🙏"""
     ),
 
