@@ -102,81 +102,160 @@ MESSAGES = {
 
     # Help / manual (large static content moved here for centralization)
     "help_text_full": (
-        """### 📖 聖言中學導學風紀當值排班平台 使用說明書（v2.3 Final）
+        """### 📖 聖言中學導學風紀當值排班平台 使用說明書（v2.4 Final）
 
 #### 1. 名冊導入（最重要）
-- **推薦使用「🤖 AI 智能自動匹配」**：支援任意格式的 Excel / CSV，AI 會自動辨識欄位。
+- **推薦使用「🤖 AI 智能自動匹配」**：支援任意格式的 Excel / CSV，DeepSeek-V4-Flash AI 會自動辨識欄位。
 - 建議先點「📥 下載名冊格式範例」參考。
 
 #### 2. 名冊即時修改
 - 在側邊欄可以直接編輯所有領袖生資料，修改後即時儲存。
+- **「需要師徒指導」欄位**：手動勾選後，該風紀將在排班時優先與經驗風紀配對。
 
 #### 3. 生成值班表
 - 在側邊欄設定請假人員與特殊不開放時段。
-- 點擊主畫面大按鈕「🚀 智能計算：生成本週全新公平值班表」。
+- 點擊主畫面大按鈕「🚀 一鍵生成公平值班表」。
 
-#### 4. 全局負荷調節滑桿（新增重要功能）
-- 主畫面最上方可即時調整本次排班整體負荷倍率（0.8~2.0）。
+#### 4. 全局負荷調節滑桿
+- 主畫面最上方可即時調整本次排班整體負荷倍率（0.8～2.0）。
 - 臨近考試時提高倍率，讓累計負荷較低的學生優先達到公平平衡。
 
 #### 5. 值班表操作
 - **視覺公告版**：專業彩色顯示，不同崗位不同顏色（Assist 金米、Room302 綠、Room303 黃、Room202 紅）。
 - **手動修改版**：可直接在表格上修改人名或打「X」鎖定。
+- **師徒配對標記**：若兩個風紀被安排在同一間房形成師徒配對，該儲存格左側會顯示 🟦 藍綠色邊框標記。
+- **自動標籤**：名冊中自動顯示「🆕 新加入」（history_weight=0）、「👤 需要師徒指導」（weight≤2）、「✅ 已指定師徒」（手動勾選）。
 
-#### 6. 智慧替補推薦
+#### 6. 師徒配對儀表板
+- **配對成效卡**：生成值班表後，公平性區域自動顯示本週師徒配對數、配對成功率及評級。
+- **學徒進度追蹤**：可摺疊面板，儲存當前點數為基準，下次生成值班表後回來查看學徒點數變化趨勢（進步中／持平／需關注）。
+
+#### 7. 智慧替補推薦
 - 選擇日期與崗位後，點擊「🔍 尋找最優替補」，系統會依據目前總點數由低到高推薦。
+- 替補推薦結果會顯示「配對合適度」欄位，🤝 Mentor 表示推薦人選適合指導現有值班者，👤 Mentee 則表示適合接受指導。
 
-#### 7. 匯出功能
-- **📄 匯出 PDF**：專業彩色班表（含校徽），適合公告列印。
+#### 8. 匯出功能
+- **📄 匯出中文 PDF**：專業彩色班表（含校徽），內含師徒配對摘要與完整備份數據（末頁）。適合公告列印。
+- **📄 Export English PDF**：供外部或英文使用者。
 - **📊 下載 Excel**：完整值班表 + 工作負荷統計表。
 - **📝 下載 Markdown**：方便複製到其他文件。
 
-#### 8. Cloud 備份（強烈建議）
+#### 9. Cloud 備份（強烈建議）
 - 每次生成新班表後，建議在側邊欄點擊「⬇️ 導出完整備份 (JSON)」下載備份。
-- Streamlit Cloud 休眠後可用「上傳備份 JSON 還原」快速恢復。
+- **PDF 備份還原**：上傳之前導出的完整 PDF（無需拆頁），系統自動解析並還原數據。
+- Streamlit Cloud 休眠後可用「上傳備份 JSON 還原」或「PDF 備份還原」快速恢復。
+
+#### 10. 進階功能使用說明
+- **批量請假**：在側邊欄勾選多名風紀後點「標記為請假」，一次性設為本週請假。
+- **批量固定值班**：選擇目標星期後點「設為固定值班」，為多人安排固定崗位。
+- **歷史趨勢儀表板**：公平性區域「📈 歷史負荷趨勢」圖表，追蹤每週每人累計點數變化。
+- **學徒進度追蹤**：展開摺疊面板，儲存基準線後對比師徒配對成效。
+- **PDF 完整備份還原**：直接上傳導出的完整 PDF，系統自動尋找內嵌備份數據進行完整還原。
+- **清除數據與重設**：側邊欄底部「🗑️ 完全清除所有數據」按鈕一鍵重置（需二次確認，無法復原）。
+
+#### 11. 權限與角色說明
+
+| 角色 | 英文名稱 | 可擔任崗位 | 特別權限 |
+|------|----------|-----------|---------|
+| **首席導學風紀** | Head Study Prefect | 所有崗位 | 完整排班管理權限 |
+| **助理首席導學風紀** | Asst. Head Study Prefect (AHP) | **僅限「Assist. in charge」** | 不可擔任 Room 302/303/202 |
+| **導學風紀** | Study Prefect | Room 302/303/202 等 | 不可擔任「Assist. in charge」 |
+
+**關鍵規則：**
+- 「Assist. in charge」僅限 AHP 擔任（-8.0 優先加權）。
+- 系統目前主要設計給首席導學風紀使用。
+- 師徒配對機制與角色無關，所有崗位皆可受益。
+
+#### 12. 系統技術概要（附錄）
+
+本系統採用 Python + Streamlit 構建，模組化分層架構（30+ Python 檔案，8,000+ 行程式碼，62 項自動化測試）。
+
+- **排班引擎**：基於 `history_weight` 的量化公平演算法，完整實現 AHP 限制、Room 202 關閉、F.3 師徒優先、不可連續值班。
+- **AI 服務**：DeepSeek-V4-Flash，用於備註智能解析與欄位映射。
+- **PDF 報告**：WeasyPrint 生成中英雙語專業報告，末頁嵌入備份數據。
+- **備份機制**：PDF 嵌入備份（主通道）+ JSON 下載（備援）+ GitHub 長期保存。
 
 **有問題請 email s10777@syss.edu.hk**
 
 祝使用順利！🙏""",
-        """### 📖 Sing Yin Study Prefect Duty Roster Platform User Manual (v2.3 Final)
+        """### 📖 Sing Yin Study Prefect Duty Roster Platform — User Manual (v2.4 Final)
 
 #### 1. Roster Import (Most Important)
-- **Recommended: "🤖 AI Smart Match"**: Supports any Excel/CSV format. AI automatically identifies columns.
-- First click "📥 Download Format Example" for reference.
+- **Recommended: "🤖 AI Smart Match"**: Supports any Excel/CSV format. DeepSeek-V4-Flash AI auto-identifies columns.
+- Download "📥 Format Example" for reference first.
 
 #### 2. Live Roster Editing
 - Edit all prefect data directly in the sidebar. Changes save instantly.
+- **"Needs Mentoring" column**: When checked, the prefect will be prioritised for mentoring pairing during scheduling.
 
 #### 3. Generate Roster
-- Set leave personnel and special closed periods in the sidebar.
-- Click the large main button "🚀 Smart Compute: Generate this week's new fair roster".
+- Set leave personnel and special closure periods in the sidebar.
+- Click the large button "🚀 Generate Fair Roster Now".
 
-#### 4. Global Load Adjustment Slider (New Important Feature)
-- Adjust the overall load multiplier for this roster in real time at the top of the main screen (0.8~2.0).
-- Increase the multiplier near exams so students with lower cumulative load get priority for fairness balance.
+#### 4. Global Load Adjustment Slider
+- Adjust the overall load multiplier (0.8–2.0) in real time at the top of the main screen.
+- Increase near exams so lower-load students reach fairness balance faster.
 
 #### 5. Roster Operations
-- **Visual Announcement Board**: Professional color-coded display. Different positions have different colors (Assist gold, Room302 green, Room303 yellow, Room202 red).
-- **Manual Edit Mode**: Directly modify names or type "X" to lock on the table.
+- **Visual Board**: Professional colour-coded display (Assist = gold, Room 302 = green, Room 303 = yellow, Room 202 = red).
+- **Manual Edit Mode**: Modify names directly or type "X" to lock cells.
+- **Mentoring Pair Markers**: Cells with 🟦 teal left border indicate a mentoring pair has been formed.
+- **Auto Badges**: "🆕 New" (weight=0), "👤 Needs Mentoring" (weight≤2), "✅ Designated Mentee" (manual flag).
 
-#### 6. Smart Substitute Recommendation
-- After selecting date and position, click "🔍 Find Optimal Substitute". The system recommends based on current total points from lowest to highest.
+#### 6. Mentoring Dashboard
+- **Pairing Stats Card**: Auto-displays weekly mentoring pair count, success rate, and rating after roster generation.
+- **Mentee Progress Tracker**: Collapsible panel to save baseline scores and compare changes over time.
 
-#### 7. Export Functions
-- **📄 Export PDF**: Professional color-coded roster (with school badge), suitable for posting/printing.
-- **📊 Download Excel**: Complete roster + workload statistics table.
+#### 7. Smart Substitute Recommendation
+- Select a date and role, then click "🔍 Find Optimal Substitute". System recommends by lowest current total points.
+- Results show "Pairing Fit" column: 🤝 Mentor = suitable to guide current assignee, 👤 Mentee = suitable to be guided.
+
+#### 8. Export Functions
+- **📄 Export Chinese PDF**: Professional colour roster with school badge, mentoring summary, and embedded backup data.
+- **📄 Export English PDF**: For external or English-speaking users.
+- **📊 Download Excel**: Full roster + workload audit table.
 - **📝 Download Markdown**: Convenient for copying into other documents.
 
-#### 8. Cloud Backup (Strongly Recommended)
-- After generating a new roster each time, click "⬇️ Export Current Full Backup (JSON)" in the sidebar.
-- After Streamlit Cloud hibernation, use "Upload backup JSON to restore" for quick recovery.
+#### 9. Cloud Backup (Strongly Recommended)
+- After generating a roster, click "⬇️ Export Full Backup (JSON)" in the sidebar.
+- **PDF Backup Restore**: Upload a previously exported PDF (no need to split pages). The system auto-parses and restores all data.
+- After Streamlit Cloud hibernation, restore via "Upload JSON Backup" or "PDF Backup Restore".
+
+#### 10. Advanced Features
+- **Batch Leave**: Select multiple prefects in the sidebar and mark them as on leave for the week in one click.
+- **Batch Fixed Duty**: Assign the same fixed duty day to multiple prefects (e.g., school-wide event day).
+- **Historical Trend Dashboard**: "📈 Historical Load Trend" chart tracks cumulative points per person per week.
+- **Mentee Progress Tracking**: Collapsible panel for baseline snapshots and mentoring outcome comparison.
+- **Full PDF Restore**: Upload the complete exported PDF – system auto-locates embedded backup data for full state recovery.
+- **Reset System**: "🗑️ Clear All Data" button at sidebar bottom (double-confirmation required, irreversible).
+
+#### 11. Roles & Permissions
+
+| Role | Permitted Slots | Restrictions |
+|------|----------------|--------------|
+| **Head Study Prefect** | All slots | Full management access |
+| **Asst. Head Study Prefect (AHP)** | "Assist. in charge" only | Cannot serve Room 302/303/202 |
+| **Study Prefect** | Room 302/303/202 | Cannot serve "Assist. in charge" |
+
+**Key Rules:**
+- "Assist. in charge" is AHP-exclusive (-8.0 priority weighting).
+- System is primarily designed for the Head Study Prefect.
+- Mentoring pairing applies to all roles equally.
+
+#### 12. Technical Overview (Appendix)
+
+Built with Python + Streamlit. Modular layered architecture: 30+ Python files, 8,000+ lines of code, 62 automated tests.
+
+- **Scheduling Engine**: Quantitative fairness via `history_weight`. Full implementation of AHP rules, Room 202 closures, F.3 junior preference, no consecutive days.
+- **AI Service**: DeepSeek-V4-Flash for smart remark parsing and column mapping.
+- **PDF Reports**: WeasyPrint CSS layout engine, bilingual output with embedded backup data on final page.
+- **Backup**: PDF-embedded backup (primary) + JSON download (secondary) + GitHub long-term storage.
 
 **Questions?** email s10777@syss.edu.hk
 
 Good luck! 🙏"""
     ),
 
-    # English guidance for HELP when in en mode (short version)
     "help_text_en_note": (
         "See the bilingual UI elements and labels throughout the app for English guidance. Full Chinese manual is available by switching to 中文介面. Key features: roster management, fair auto-scheduling respecting AHP/rooms, leave adjustments for equity, JSON/PDF backups (always backup after edits), dark mode, language toggle. Student names preserved in Chinese in all exports.",
         "See the bilingual UI elements and labels throughout the app for English guidance. Full Chinese manual is available by switching to 中文介面. Key features: roster management, fair auto-scheduling respecting AHP/rooms, leave adjustments for equity, JSON/PDF backups (always backup after edits), dark mode, language toggle. Student names preserved in Chinese in all exports."
