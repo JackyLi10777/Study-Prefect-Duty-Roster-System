@@ -1,4 +1,3 @@
-from roster.exceptions import StateIntegrityError
 # roster/data/state.py
 """
 roster.data.state - 資料層：Session State 初始化與空 DataFrame 輔助
@@ -237,6 +236,7 @@ def validate_state_integrity():
     """
     import streamlit as st
     import pandas as pd
+    from roster.exceptions import StateIntegrityError
 
     issues = []
 
