@@ -168,14 +168,26 @@ MESSAGES = {
 
 #### 12. 系統技術概要（附錄）
 
-本系統採用 Python + Streamlit 構建，模組化分層架構（30+ Python 檔案，8,000+ 行程式碼，62 項自動化測試）。
+> 🔗 本節為進階技術說明。日常操作無需閱讀。
 
-- **排班引擎**：基於 `history_weight` 的量化公平演算法，完整實現 AHP 限制、Room 202 關閉、F.3 師徒優先、不可連續值班。
-- **AI 服務**：DeepSeek-V4-Flash，用於備註智能解析與欄位映射。
-- **PDF 報告**：WeasyPrint 生成中英雙語專業報告，末頁嵌入備份數據。
-- **備份機制**：PDF 嵌入備份（主通道）+ JSON 下載（備援）+ GitHub 長期保存。
+本系統採用 **Python + Streamlit** 構建，實施嚴謹的**分層模組化架構**（7 層級、33 個 Python 模組、62 項自動化測試覆蓋）。
 
-**有問題請 email s10777@syss.edu.hk**
+**排班引擎**
+基於 `history_weight` 的量化公平演算法，完整實現 AHP 角色限制、Room 202 週二/五自動關閉、F.3 師徒優先級、不可連續值班、全域負荷動態調節。
+
+**AI 服務層**
+DeepSeek-V4-Flash 驅動的智能解析層，獨立於核心排班邏輯。支援任意格式的 Excel/CSV 欄位自動映射與學生備註結構化提取。
+
+**PDF 報告引擎**
+WeasyPrint CSS 排版引擎生成中英雙語專業報告。含校徽、彩色崗位標記、工作量審計表、師徒配對摘要，末頁自動嵌入完整 JSON 備份。
+
+**備份與持久化**
+三層備份策略：PDF 嵌入備份（主通道，每次匯出即備份）+ JSON 輕量下載（備援）+ GitHub `ai` 分支長期託管。還原時自動執行 `validate_state_integrity()` 數據完整性校驗。
+
+**測試體系**
+62 項自動化測試（單元測試 + 引擎邏輯測試 + 端到端集成測試），涵蓋排班規則驗證、備份解析、PDF 生成、狀態管理、導入導出全鏈路。
+
+有問題請 email s10777@syss.edu.hk**
 
 祝使用順利！🙏""",
         """### 📖 Sing Yin Study Prefect Duty Roster Platform — User Manual (v2.4 Final)
@@ -244,12 +256,24 @@ MESSAGES = {
 
 #### 12. Technical Overview (Appendix)
 
-Built with Python + Streamlit. Modular layered architecture: 30+ Python files, 8,000+ lines of code, 62 automated tests.
+> 🔗 This section contains advanced technical detail. Not required for daily operations.
 
-- **Scheduling Engine**: Quantitative fairness via `history_weight`. Full implementation of AHP rules, Room 202 closures, F.3 junior preference, no consecutive days.
-- **AI Service**: DeepSeek-V4-Flash for smart remark parsing and column mapping.
-- **PDF Reports**: WeasyPrint CSS layout engine, bilingual output with embedded backup data on final page.
-- **Backup**: PDF-embedded backup (primary) + JSON download (secondary) + GitHub long-term storage.
+Built with **Python + Streamlit** using a rigorous **layered modular architecture** (7 layers, 33 Python modules, 62 automated tests).
+
+**Scheduling Engine**
+Quantitative fairness algorithm based on `history_weight`. Full implementation of AHP role restrictions, Room 202 Tue/Fri auto-closure, F.3 junior priority, no-consecutive-days rule, and global load dynamic scaling.
+
+**AI Service Layer**
+DeepSeek-V4-Flash powered intelligent parsing layer, decoupled from core scheduling logic. Supports automatic column mapping for arbitrary Excel/CSV formats and structured extraction of student remarks.
+
+**PDF Report Engine**
+WeasyPrint CSS layout engine producing bilingual professional reports. Includes school badge, colour-coded role markers, workload audit table, mentoring pair summary, with full JSON backup embedded on the final page.
+
+**Backup & Persistence**
+Three-tier backup strategy: PDF-embedded backup (primary, auto-backed up on every export) + JSON lightweight download (secondary) + GitHub `ai` branch long-term storage. Auto-executes `validate_state_integrity()` on restore for data integrity verification.
+
+**Test Suite**
+62 automated tests (unit + engine logic + end-to-end integration), covering scheduling rule validation, backup parsing, PDF generation, state management, and full import/export pipeline.
 
 **Questions?** email s10777@syss.edu.hk
 
