@@ -117,10 +117,10 @@ F.5E
 
 ---
 
-（其餘內容與之前版本相同，可直接使用我上次提供的完整 README 內容，只需將作者區塊替換為以上版本即可）
 
-2. 最新 LICENSE（已更新作者資訊）
-textMIT License
+## 📜 License
+
+MIT License
 
 Copyright (c) 2026 LI Chuangjie Jacky（李創杰）
 26-27 Head Study Prefect (首席導學風紀), Sing Yin Secondary School Study Prefect (導學風紀) Team

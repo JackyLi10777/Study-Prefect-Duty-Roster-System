@@ -1,4 +1,4 @@
-﻿# roster/config/constants.py
+# roster/config/constants.py
 """
 roster.config.constants - Single Source of Truth (SSOT) for all scheduling rules
 
@@ -21,6 +21,28 @@ import datetime
 import random
 import pandas as pd
 
+# School policy rules now live in school_policy.py (SSOT)
+from roster.config.school_policy import (
+    DAYS,
+    ROOM_202_CLOSED_DAYS,
+    ROOM_202_OPEN_DAYS,
+    ROOMS_CONFIG,
+    ROOM_ORDER,
+    VALID_FORMS,
+    AHP_LOAD_BONUS,
+    MENTEE_THRESHOLD,
+    MENTOR_THRESHOLD,
+    MENTORING_PAIR_BONUS,
+    GLOBAL_LOAD_RANGE,
+    DEFAULT_GLOBAL_LOAD_MULTIPLIER,
+    NO_CONSECUTIVE_DAYS,
+    MENTORING_ROOMS,
+    get_weight,
+    is_assistant_head_only_role,
+    is_room_open_on_weekday,
+    get_daily_slots,
+)
+
 # ====================== 應用程式基本設定 ======================
 APP_TITLE = "Sing Yin Study Prefect Duty Roster System"
 PROJECT_FULL_NAME = "聖言中學導學風紀當值排班平台"
@@ -34,7 +56,6 @@ AHP_ROLE = "助理首席導學風紀"
 REGULAR_ROLE = "導學風紀"
 
 # Centralized role names for consistency across modules
-HEAD_ROLE = "首席導學風紀"  # 首席導學風紀 (Head Study Prefect, Chinese form)
 ASSIST_ROLE = "Assist. in charge"  # Slot name for AHP-only assignment
 PAGE_ICON = "🛡️"
 SCHOOL_NAME = "Sing Yin Secondary School"
@@ -72,12 +93,7 @@ ROOMS_CONFIG = {
 # Declarative room order for get_roster_rows().
 # Changing the order here will change the order of ROWS_ROSTER (and thus the roster table rows).
 # This list must exactly match the previous hardcoded order during the migration phase.
-ROOM_ORDER = [
-    "Assist. in charge",
-    "Room 302 (Study Room)",
-    "Room 303 (HW Completion)",
-    "Room 202 (F1 Study Group)",
-]
+# ROOM_ORDER now imported from school_policy.py
 
 GLOBAL_LOAD_RANGE = (0.8, 2.0)
 DEFAULT_GLOBAL_LOAD_MULTIPLIER = 1.0
@@ -142,49 +158,7 @@ def get_role_style(role: str, day: str = "") -> dict:
         style.update({"bg": NASA_COLORS["closed_bg"], "text": "#546E7A", "font_style": "italic"})
     return style
 
-def get_weight(role: str) -> float:
-    """
-    取得指定崗位的權重（用於公平計算與請假調整）。
-    Room 302 = 1.0；Room 303/202 slots = 1.5；Assist = 1.0。
-    任何權重相關邏輯都必須呼叫此函數（AGENTS.md 要求）。
-    """
-    for key, cfg in ROOMS_CONFIG.items():
-        if key in role:
-            return cfg["weight"]
-    return 1.5
-
-def is_assistant_head_only_role(role: str) -> bool:
-    """
-    判斷該崗位是否為 AHP 專屬（Assist. in charge）。
-    回傳 True 時，僅 "Assistant 首席導學風紀" 可擔任；
-    其餘崗位則僅 "Study Prefect" 可擔任（硬限制）。
-    """
-    for key, cfg in ROOMS_CONFIG.items():
-        if key in role:
-            return cfg.get("allow_assistant_head_only", False)
-    return False
-
-def is_room_open_on_weekday(room: str, day: str) -> bool:
-    """
-    判斷該房間在指定日子是否開放。
-    Room 302/303：全天開放（MON-FRI）。
-    Room 202：僅 MON/WED/THU（Tue/Fri 會在 core 產生 "⬜"）。
-    """
-    for key, cfg in ROOMS_CONFIG.items():
-        if key in room:
-            return day in cfg["available_weekdays"]
-    return True
-
-def get_daily_slots(role: str) -> int:
-    """
-    取得該房間每日應有槽位數。
-    現在由 ROOMS_CONFIG + daily_slots 驅動（已聲明式）。
-    支援傳入具體 row 名稱（如 "Room 303 (HW Completion) - 1"）或 config key。
-    """
-    base = get_base_role(role)
-    cfg = ROOMS_CONFIG.get(base, {})
-    return cfg.get("daily_slots", 1)
-
+# ── Policy helper functions now imported from school_policy.py ──
 def get_roster_rows() -> list[str]:
     """根據 ROOMS_CONFIG + daily_slots 動態展開 roster 行。
 

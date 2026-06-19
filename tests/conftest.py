@@ -1,4 +1,4 @@
-﻿"""
+"""
 Shared test fixtures for the Sing Yin Study Prefect Duty Roster System.
 """
 

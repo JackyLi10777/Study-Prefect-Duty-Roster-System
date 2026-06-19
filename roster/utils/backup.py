@@ -24,6 +24,7 @@ import base64
 from roster.config import get_roster_rows, DAYS, VERSION
 
 # ====================== 備份資料產生（單一來源，確保涵蓋所有關鍵資料） ======================
+from roster.exceptions import BackupParseError, RosterSystemError
 def _create_backup_data(master_report_df: pd.DataFrame) -> dict:
     """建立完整備份資料字典。只包含 dynamic data（頻繁變動的資料），以保持檔案小巧。
     Static data (name, form, class, role, available, fixed_general_duty) 應從 GitHub 載入作為來源。

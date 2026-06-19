@@ -190,6 +190,17 @@ def get_base_css() -> str:
     .stSelectbox > div > div, .stTabs [data-baseweb="tab-list"] {
         transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
     }
+    /* Copyright attribution - minimal, non-intrusive */
+    .verse-attribution {
+        font-size: 7px;
+        color: #94a3b8;
+        font-style: italic;
+        margin: 6px 0 2px 0;
+        text-align: right;
+        opacity: 0.65;
+        letter-spacing: 0.3px;
+    }
+
     @media (prefers-reduced-motion: reduce) {
         .stApp, .stSidebar, .stDataFrame, .stExpander, .stButton > button,
         .kpi-card, .verse-card { transition: none !important; }
@@ -246,11 +257,13 @@ def get_dark_css() -> str:
     .verse-card .verse-text { color: #ffffff !important; font-size: 14px !important; line-height: 1.55 !important; margin: 2px 0 8px 0 !important; }
 
     .verse-attribution {
-        font-size: 9px;
+        font-size: 7px;
         color: #94a3b8;
         font-style: italic;
-        margin: -4px 0 8px 0;
+        margin: 6px 0 2px 0;
         text-align: right;
+        opacity: 0.65;
+        letter-spacing: 0.3px;
     }
     .verse-card .verse-footer { color: #e5e7eb !important; font-size: 10px !important; margin-top: 6px !important; opacity: 1 !important; }
     .verse-card .reflection-box {

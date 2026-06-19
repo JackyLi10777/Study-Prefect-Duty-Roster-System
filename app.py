@@ -33,6 +33,7 @@ from roster.data import (
     initialize_session_state
 )
 from roster.data.models import get_ui_report_df, get_export_report_df, reindex_roster_df, create_empty_roster_df
+from roster.data.state import get_state, set_state, reset_roster_related_state
 from roster.ai import ai_parse_remarks
 from roster.core import (
     generate_roster, validate_and_compute, recommend_substitutes,
@@ -334,7 +335,7 @@ def main():
             key="main_roster_editor_widget"
         )
         if not edited_roster.equals(st.session_state.roster_df):
-            st.session_state.roster_df = edited_roster
+            set_state("roster_df", edited_roster)
             trigger_backup_reminder()  # 手動修改值班表後提醒備份
             st.rerun()
 
@@ -394,8 +395,8 @@ def main():
             )
             st.session_state.master_report_df = audit_results["report_df"]
             # Invalidate PDF cache so it regenerates on next download
-            st.session_state.pdf_cache_zh = None
-            st.session_state.pdf_cache_en = None
+            set_state("pdf_cache_zh", None)
+            set_state("pdf_cache_en", None)
 
             # Safe assembly: build parts first using get_text, then combine
             revoke = get_text("revoke_points", current_person=current_person, weight=weight)
@@ -442,7 +443,7 @@ def main():
         # lang param selects report titles/headers language; student names/roles always Chinese (unchanged rule).
         logo_b64 = base64.b64encode(st.session_state.logo_data).decode() if st.session_state.get("logo_data") else None
         _roster_ok = st.session_state.roster_df is not None and not st.session_state.roster_df.empty
-        _pdf_zh_data = st.session_state.get("pdf_cache_zh")
+        _pdf_zh_data = get_state("pdf_cache_zh")
         if _pdf_zh_data is None and _roster_ok:
             with st.spinner(_t("正在渲染專業中文 PDF 報告，請稍候…", "Rendering professional Chinese PDF report, please wait…")):
                 _pdf_zh_data = generate_pdf(st.session_state.roster_df, get_ui_report_df(st.session_state.master_report_df), logo_b64, lang="zh", students_df=st.session_state.students_df)
@@ -457,7 +458,7 @@ def main():
             width="stretch",
             key="dl_pdf_cn_direct"
         )
-        _pdf_en_data = st.session_state.get("pdf_cache_en")
+        _pdf_en_data = get_state("pdf_cache_en")
         if _pdf_en_data is None and _roster_ok:
             with st.spinner(_t("正在渲染專業英文 PDF 報告，請稍候…", "Rendering professional English PDF report, please wait…")):
                 _pdf_en_data = generate_pdf(st.session_state.roster_df, get_export_report_df(st.session_state.master_report_df), logo_b64, lang="en", students_df=st.session_state.students_df)

@@ -1,4 +1,4 @@
-﻿"""Tests for roster.core.engine - scheduling and fairness logic."""
+"""Tests for roster.core.engine - scheduling and fairness logic."""
 
 import pytest
 import pandas as pd

@@ -1,4 +1,4 @@
-﻿"""Tests for roster.config - SSOT for all scheduling rules."""
+"""Tests for roster.config - SSOT for all scheduling rules."""
 
 import pytest
 from roster.config import (

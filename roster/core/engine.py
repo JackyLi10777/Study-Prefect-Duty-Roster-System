@@ -1,4 +1,4 @@
-﻿# roster/core/engine.py
+# roster/core/engine.py
 """
 roster.core.engine - 核心排班演算法模組
 
@@ -34,9 +34,12 @@ from roster.config import (
 
 # Phase 1: Extracted constants for magic strings and role names (reduces duplication and magic values)
 _UNASSIGNED_MARKERS = {"", "X", "⬜", "請假撤銷"}
-_MENTEE_THRESHOLD = 2.0  # history_weight <= 2 auto-tags as mentee
-_MENTOR_THRESHOLD = 5.0  # history_weight > 5 qualifies as mentor
-_MENTORING_PAIR_BONUS = -2.0  # score bonus for pairing complementary types
+# Mentoring thresholds now from roster.config.school_policy (SSOT)
+from roster.config.school_policy import (
+    MENTEE_THRESHOLD as _MENTEE_THRESHOLD,
+    MENTOR_THRESHOLD as _MENTOR_THRESHOLD,
+    MENTORING_PAIR_BONUS as _MENTORING_PAIR_BONUS,
+)
 # 使用統一中文職位（從 config 匯入，支援 legacy 英文）
 # _AHP_ROLE and _REGULAR_ROLE 已從 config import 覆蓋
 

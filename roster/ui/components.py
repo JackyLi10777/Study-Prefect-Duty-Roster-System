@@ -83,9 +83,9 @@ def show_daily_verse():
     # (not independent). Footer moved inside .verse-inner for unified content block.
         # Determine translation attribution based on language
     if lang == "en":
-        attr_text = "NKJV (Scripture taken from the New King James Version(R). Copyright (C) 1982 by Thomas Nelson, Inc.)"
+        attr_text = "© RCUV 2010 (Shen) · HK Bible Society | NKJV © 1982 Thomas Nelson"
     else:
-        attr_text = "經文取自 和合本修訂版 2010（神版），版權屬香港聖經公會所有"
+        attr_text = "© 和合本修訂版 2010（神版）· 香港聖經公會 | NKJV © 1982 Thomas Nelson"
 
     card_html = f"""
     <div class="verse-card">
@@ -93,10 +93,10 @@ def show_daily_verse():
             <h3 class="verse-title">📖 {verse_title}</h3>
             <p class="verse-ref"><strong>{ref}</strong></p>
             <p class="verse-text">{text}</p>
-            <p class="verse-attribution">{attr_text}</p>
             <div class="reflection-box">
                 <strong>{refl_title}</strong><br>{refl}
             </div>
+            <p class="verse-attribution">{attr_text}</p>
             <div class="verse-footer">{footer}</div>
         </div>
     </div>
@@ -121,8 +121,8 @@ def render_sidebar():
         # Any old high_contrast session_state values are silently ignored by theme.py.
         col_theme, col_lang = st.columns(2)
         with col_theme:
-            is_dark = st.toggle(_t("深色模式", "Dark Mode"), value=st.session_state.get("theme", "light") == "dark", key="theme_toggle")
-            st.session_state.theme = "dark" if is_dark else "light"
+            is_dark = st.toggle(_t("深色模式", "Dark Mode"), value=get_state("theme", "light") == "dark", key="theme_toggle")
+            set_state("theme", "dark" if is_dark else "light")
         with col_lang:
             # Capsule-style segmented control matching the Dark Mode toggle aesthetic.
             # Uses st.segmented_control for two connected pills: 中文 | English.
@@ -188,7 +188,7 @@ def render_sidebar():
         col_demo, col_sample = st.columns(2)
         with col_demo:
             if st.button(_t("💡 一鍵載入官方示範名冊", "💡 One-Click Load Official Demo Roster")):
-                with st.spinner(_t("正在載入示範名冊...", "Loading demo roster...")):
+                with st.spinner(_t("正在載入官方示範名冊，載入後建議立即下載 JSON 備份...", "Loading official demo roster — remember to download a JSON backup afterward...")):
                     st.session_state.students_df = get_demo_dataframe()
                 st.success(get_text("demo_roster_loaded"))
                 st.rerun()
@@ -255,7 +255,13 @@ def render_sidebar():
                     st.session_state.students_df["form"].astype(str).str.contains(search_term, case=False, na=False) |
                     st.session_state.students_df["role"].astype(str).str.contains(search_term, case=False, na=False))
             filtered = st.session_state.students_df[mask]
-            st.caption(f"{_t('顯示', 'Showing')} {len(filtered)} / {len(st.session_state.students_df)} {_t('位學生 (搜尋結果)', 'students (search results)')}")
+            if len(filtered) == 0:
+                st.info(_t(
+                    "🔍 ????????????????????????????",
+                    "🔍 No matching students found. Try a different keyword (name, form, or role)."
+                ))
+            else:
+                st.caption(f"{_t('顯示', 'Showing')} {len(filtered)} / {len(st.session_state.students_df)} {_t('位學生 (搜尋結果)', 'students (search results)')}")
             # Add mentoring status column
             search_display = filtered.copy()
             def _mentor_tag(row):
@@ -502,6 +508,13 @@ def render_sidebar():
                         f"PDF backup restored! {restored_count} dataset(s) recovered."
                     )
                 )
+                # Validate restored state integrity
+                from roster.data.state import validate_state_integrity
+                from roster.exceptions import StateIntegrityError
+                try:
+                    validate_state_integrity()
+                except StateIntegrityError as sie:
+                    st.warning(f"State validation found {len(sie.issues)} issue(s): " + "; ".join(sie.issues[:3]))
                 st.rerun()
             else:
                 error_msg = result.get("error", "Unknown error")
@@ -625,6 +638,8 @@ def render_control_buttons():
         st.error(get_text("clear_roster_confirm_error"))
         c1, c2 = st.columns(2)
         if c1.button(_t("💥 確定清空", "💥 Confirm Clear")):
+            from roster.data.state import reset_roster_related_state
+            reset_roster_related_state()
             st.session_state.roster_df = pd.DataFrame(index=get_roster_rows(), columns=DAYS).fillna("")
             st.session_state.show_clear_confirm = False
             st.rerun()

@@ -1,3 +1,4 @@
+from roster.exceptions import StateIntegrityError
 # roster/data/state.py
 """
 roster.data.state - 資料層：Session State 初始化與空 DataFrame 輔助
@@ -170,3 +171,101 @@ def initialize_session_state():
 
     if 'adjustment_log' not in st.session_state:
         st.session_state.adjustment_log = []
+
+
+# =============================================================================
+# Session State Helpers (Phase 2: Centralized accessors for critical state keys)
+# =============================================================================
+
+def get_state(key, default=None):
+    """Return a session_state value without silently creating new keys.
+
+    Unlike direct st.session_state.X access, this returns default (not KeyError
+    or silent key creation) when the key is missing.
+
+    Args:
+        key: The session_state key name (str).
+        default: Value returned when key is not in session_state.
+
+    Returns:
+        The current value associated with key, or default.
+    """
+    import streamlit as st
+    return st.session_state.get(key, default)
+
+
+def set_state(key, value):
+    """Set a session_state value, with future validation hook point.
+
+    Currently a thin wrapper around st.session_state[key] = value.
+    Future enhancements: type validation, change auditing, mutation logging.
+    """
+    import streamlit as st
+    st.session_state[key] = value
+
+
+def reset_roster_related_state():
+    """Atomically clear all roster-dependent state when roster is regenerated.
+
+    Clears: roster_df, master_report_df, PDF caches, search terms,
+    version history. Does NOT clear: students_df, theme, ui_language,
+    logo_data (persistent settings).
+
+    Safe to call before generating a new roster.
+    """
+    import streamlit as st
+    keys_to_clear = [
+        "roster_df",
+        "master_report_df",
+        "pdf_cache_zh",
+        "pdf_cache_en",
+        "roster_search",
+        "roster_versions",
+        "_pdf_needs_generation",
+    ]
+    for key in keys_to_clear:
+        st.session_state.pop(key, None)
+
+
+def validate_state_integrity():
+    """Check all critical session_state keys exist and have expected types.
+
+    Useful after backup restore operations to detect partial or corrupt state.
+
+    Returns:
+        list[str]: Human-readable issues found, empty if state is healthy.
+    """
+    import streamlit as st
+    import pandas as pd
+
+    issues = []
+
+    required = {
+        "students_df": pd.DataFrame,
+        "roster_df": pd.DataFrame,
+        "master_report_df": pd.DataFrame,
+        "manual_weights": pd.DataFrame,
+        "leave_tracker_input": list,
+        "global_load_multiplier": (int, float),
+        "theme": str,
+        "ui_language": str,
+        "history_loads": list,
+        "roster_versions": list,
+        "semester_hours": dict,
+        "adjustment_log": list,
+    }
+
+    for key, expected_type in required.items():
+        if key not in st.session_state:
+            issues.append(f"Missing required key: {repr(key)}")
+        else:
+            val = st.session_state[key]
+            if not isinstance(val, expected_type):
+                issues.append(
+                    f"Wrong type for {repr(key)}: "
+                    f"expected {expected_type}, got {type(val).__name__}"
+                )
+
+    if issues:
+        raise StateIntegrityError(issues)
+    return []
