@@ -30,7 +30,7 @@ These rules come directly from school policy and are hardcoded in the system (pr
   - `history_weight` (float — cumulative prior workload; **lower value = higher priority** for new assignments)
   - `history_duties` (int, informational)
   - `remarks` (free text; can be AI-parsed for fixed/available/role updates)
-- **F.3 Junior Preference ("老帶新")**: In fair selection, when scores tie, F.3 students are preferred (sort key uses `-is_junior`).
+- **F.3 Junior Preference ("師徒優先")**: In fair selection, when scores tie, F.3 students are preferred (sort key uses `-is_junior`).
 - **Leave handling**: Students in the current leave list are completely excluded from `student_info` and all candidate pools for the week.
 - **One duty per day rule**: No prefect may be assigned more than one slot on the same day (enforced via `assigned_today` set across all roles).
 - **History & Fairness**: `history_weight` is the persistent fairness anchor. New assignments add their weight (or manual override) on top. The audit table and bar chart are **always sorted ascending** by final total load ("點數低者將優先派班").

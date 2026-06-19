@@ -318,7 +318,8 @@ DAILY_VERSES = {
     ]
 }
 
-GEMINI_MODEL = "gemini-3.5-flash"
+# Legacy Gemini constant (kept for backward compat; AI now uses DeepSeek via roster/ai/parser.py)
+GEMINI_MODEL = None
 
 # --- Declarative ROWS_ROSTER computation (Phase 2 Step 1) ---
 # Must be after all function definitions so get_roster_rows and get_base_role are defined.

@@ -7,7 +7,7 @@ roster - Sing Yin Study Prefect Duty Roster System (modular package)
 - 學生資格、角色區分（Study Prefect vs Assistant Head）、固定值班、可用日子、歷史負荷公平
 - Room 302/303 全天開放、無額外限制、權重與槽位規則
 - AHP 專屬 Assist. in charge 職位及硬限制
-- 每人每天一次 + 避免連續兩天 + 固定優先 + F.3 老帶新
+- 每人每天一次 + 避免連續兩天 + 固定優先 + F.3 師徒優先
 - 值班後請假調整的公平性機制
 
 推薦使用方式（新程式碼）：

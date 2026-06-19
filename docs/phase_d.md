@@ -71,8 +71,8 @@ A legend above the board explains all mentoring-related badges.
 |-------|-------|-----|---------|
 | 🤝 師徒配對 | Teal | `#0F766E` | Mentoring pair in this room |
 | 🆕 新加入 | Teal | `#0F766E` | New prefect (history_weight=0) |
-| 👤 需要老帶新 | Amber | `#F59E0B` | Auto-detected mentee (hw ≤ 2) |
-| ✅ 指定老帶新 | Purple | `#7C3AED` | Manually flagged as needing mentoring |
+| 👤 需要師徒指導 | Amber | `#F59E0B` | Auto-detected mentee (hw ≤ 2) |
+| ✅ 已指定師徒 | Purple | `#7C3AED` | Manually flagged as needing mentoring |
 | 一般 | Gray | `#6B7280` | Normal (not mentee or mentor) |
 
 ## Defensive Coding

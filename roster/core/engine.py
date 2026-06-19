@@ -12,7 +12,7 @@ roster.core.engine - 核心排班演算法模組
 - 學生資格與數據規則（F.3-F.6、Study Prefect vs AHP、fixed/available/history_weight）
 - Room 302/303 限制（全天開放、無額外限制、權重1.0/1.5、2 slots 不同人）
 - AHP 特權與硬限制（僅 Assist. in charge，-8.0 加成，三處門禁）
-- 排班約束（固定優先、歷史公平、F.3 老帶新、每人每天一次、避免連續兩天）
+- 排班約束（固定優先、歷史公平、F.3 師徒優先、每人每天一次、避免連續兩天）
 - 值班後請假調整公平性機制
 
 generation 必須保持 pure（不 mutate history_weight），僅 apply_post... 允許調整。
@@ -109,7 +109,7 @@ def generate_roster(
     功能：
     - 固定值班優先（最高優先權）
     - 歷史負荷公平（history_weight * global_load_multiplier，越低越優先）
-    - F.3 老帶新 tie-break
+    - F.3 師徒優先 tie-break
     - AHP 特權加成（Assist 槽位 score -= 8.0）
     - 每人每天只能值班一次 + 避免連續兩天
     - Room 302/303/202 限制與權重
@@ -141,7 +141,7 @@ def generate_roster(
     # 【學生規則 - AGENTS.md §1.1】
     # 僅 F.3-F.6 有效；role 嚴格區分（Study Prefect 只能房間，AHP 僅 Assist）；
     # fixed_general_duty 優先；available 限制日子；history_weight 是公平基準（越低越優先）；
-    # F.3 享有老帶新 tie-break 優勢。
+    # F.3 享有師徒優先 tie-break 優勢。
     student_info: Dict[str, dict] = {}
     for _, row in students_df.iterrows():
         name = str(row["name"]).strip()

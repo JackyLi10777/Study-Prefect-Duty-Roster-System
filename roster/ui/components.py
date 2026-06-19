@@ -235,7 +235,7 @@ def render_sidebar():
                 "available": st.column_config.TextColumn(_t("可用日子", "Available Days")),
                 "history_duties": st.column_config.NumberColumn(_t("歷史次數", "History Count"), min_value=0),
                 "history_weight": st.column_config.NumberColumn(_t("歷史點數", "History Points"), min_value=0.0),
-                "needs_mentoring": st.column_config.CheckboxColumn(_t("需要老帶新", "Needs Mentoring"), help=_t("累計點數過低時建議勾選，方便安排老帶新", "Check when points are low to arrange mentoring")),
+                "needs_mentoring": st.column_config.CheckboxColumn(_t("需要師徒指導", "Needs Mentoring"), help=_t("累計點數過低時建議勾選，方便安排師徒配對", "Check when points are low to arrange mentoring")),
                 "remarks": st.column_config.TextColumn(_t("備註", "Remarks"))
             },
             num_rows="dynamic",
@@ -247,8 +247,8 @@ def render_sidebar():
         st.caption(_t("自動標註說明：", "Auto-tagging:"))
         st.markdown('<div style="display:flex; gap:10px; flex-wrap:wrap; font-size:12px;">', unsafe_allow_html=True)
         st.markdown('<span style="background:#0F766E; color:white; padding:2px 8px; border-radius:10px;">🆕 新加入</span>', unsafe_allow_html=True)
-        st.markdown('<span style="background:#F59E0B; color:white; padding:2px 8px; border-radius:10px;">👤 需要老帶新</span>', unsafe_allow_html=True)
-        st.markdown('<span style="background:#7C3AED; color:white; padding:2px 8px; border-radius:10px;">✅ 指定老帶新</span>', unsafe_allow_html=True)
+        st.markdown('<span style="background:#F59E0B; color:white; padding:2px 8px; border-radius:10px;">👤 需要師徒指導</span>', unsafe_allow_html=True)
+        st.markdown('<span style="background:#7C3AED; color:white; padding:2px 8px; border-radius:10px;">✅ 已指定師徒</span>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         if search_term:
@@ -269,11 +269,11 @@ def render_sidebar():
                 hw = float(row.get("history_weight", 0))
                 manual = bool(row.get("needs_mentoring", False))
                 if manual:
-                    return "✅ 指定老帶新"
+                    return "✅ 已指定師徒"
                 if hw == 0:
                     return "🆕 新加入"
                 if hw <= 2:
-                    return "👤 需要老帶新"
+                    return "👤 需要師徒指導"
                 return ""
             search_display["狀態"] = search_display.apply(_mentor_tag, axis=1)
             st.dataframe(search_display[[_t("姓名", "Name"), "狀態", "form", "role", "history_weight"]], hide_index=True, width="stretch")
@@ -404,7 +404,7 @@ def render_sidebar():
 - **JSON 備份**：主要備份方式，只包含動態數據，檔案輕巧。重要操作後請立即下載。
 - **PDF 備份頁**：匯出的 PDF 報告最後一頁會自動附加動態數據（標註「內部使用，分享前請刪除此頁」）。上傳 PDF 即可一鍵還原全部數據。
 - **還原模式**：「完全取代」以備份覆蓋所有數據；「智能合併」保留當前學生名單結構，只合併動態欄位，適合不同名單版本的跨週還原。
-- **師徒配對狀態**（「需要老帶新」欄位）：自動包含在 JSON 備份與 PDF 備份頁中，還原時一併恢復。
+- **師徒配對狀態**（「需要師徒指導」欄位）：自動包含在 JSON 備份與 PDF 備份頁中，還原時一併恢復。
 - **長期保存建議**：重要的 JSON 備份，請手動上傳至 GitHub 倉庫的 `backups/` 資料夾，進行版本控制與災難恢復。
 """
         backup_explain_en = """
@@ -733,7 +733,7 @@ def render_mentee_progress_tracker():
     ):
         st.caption(
             _t(
-                "追蹤被標記為「需要老帶新」的風紀之點數變化",
+                "追蹤被標記為「需要師徒指導」的風紀之點數變化",
                 "Track weight changes for prefects flagged as needing mentoring",
             )
         )
@@ -753,7 +753,7 @@ def render_mentee_progress_tracker():
 
         if mentees.empty:
             st.info(
-                _t("目前沒有需要老帶新的風紀。", "No prefects currently need mentoring.")
+                _t("目前沒有需要師徒指導的風紀。", "No prefects currently need mentoring.")
             )
             return
 
