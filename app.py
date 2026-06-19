@@ -294,7 +294,7 @@ def main():
     st.write("---")
     st.subheader(get_text("post_duty_leave_subheader"))
     st.caption(get_text("post_duty_leave_caption"))
-
+    st.info(get_text("post_duty_leave_info"))
     with st.form("leave_adjust_form", clear_on_submit=True):
         col_d, col_r = st.columns(2)
         with col_d:
