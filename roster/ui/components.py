@@ -798,7 +798,7 @@ def render_mentee_progress_tracker():
                 elif diff == 0:
                     trend = "➡ " + _t("持平", "Stable")
                 else:
-                    trend = "⬆ " + _t("需關注", "Needs attention")
+                    trend = "⬆ " + _t("需關註", "Needs attention")
             else:
                 diff = None
                 trend = "－ " + _t("無基準", "No baseline")
@@ -826,3 +826,68 @@ def render_mentee_progress_tracker():
                 "Tip: Save a baseline first, then generate a new roster and return to see weight changes.",
             )
         )
+
+def render_system_architecture_diagram(expander_label="System Architecture", caption_text="The layered modular architecture of this system. Arrows indicate module call relationships. See GitHub README for full documentation."):
+    """Render system architecture Mermaid diagram in Streamlit using Mermaid.js CDN."""
+    import streamlit as st
+    
+    mermaid_html = """
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true, theme:'default'});</script>
+    <div class="mermaid">
+flowchart TD
+    APP["Streamlit App<br/>app.py"]
+
+    subgraph core["核心層"]
+        ENGINE["排班引擎<br/>engine.py"]
+        POLICY["學校規則 SSOT<br/>school_policy.py"]
+    end
+
+    subgraph data["數據層"]
+        STATE["狀態管理<br/>state.py"]
+        DEMO["示範名冊<br/>demo.py"]
+    end
+
+    subgraph ui["UI 層"]
+        COMP["介面組件<br/>components.py"]
+        MSG["雙語訊息<br/>messages.py"]
+    end
+
+    subgraph utils["工具層"]
+        PDF["PDF 生成<br/>pdf.py"]
+        BACKUP["備份還原<br/>backup.py"]
+        IMP["名冊導入<br/>importers.py"]
+    end
+
+    subgraph ai["AI 層"]
+        AI_P["DeepSeek 解析<br/>parser.py"]
+    end
+
+    subgraph errors["異常層"]
+        EXC["自定義異常<br/>exceptions.py"]
+    end
+
+    APP --> ENGINE
+    APP --> STATE
+    APP --> COMP
+    COMP --> ENGINE
+    COMP --> BACKUP
+    COMP --> IMP
+    IMP --> AI_P
+    ENGINE --> POLICY
+    ENGINE --> STATE
+    PDF --> BACKUP
+    PDF --> ENGINE
+    BACKUP --> EXC
+    STATE --> EXC
+
+    style POLICY fill:#0F766E,stroke:#0D9488,color:#fff
+    style ENGINE fill:#0F766E,stroke:#0D9488,color:#fff
+    style STATE fill:#2563EB,stroke:#1D4ED8,color:#fff
+    style AI_P fill:#7C3AED,stroke:#6D28D9,color:#fff
+    </div>
+    """
+    
+    with st.expander("🏗️ 系統架構圖（System Architecture）", expanded=False):
+        st.caption("以下為本系統的分層模組化架構，箭頭表示模組間的調用關係。完整架構說明請參閱 GitHub README。")
+        st.components.v1.html(mermaid_html, height=580, scrolling=False)

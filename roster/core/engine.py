@@ -81,12 +81,12 @@ def _compute_fair_score(
     global_mult: float,
     is_assist_and_ahp: bool
 ) -> float:
-    """计算公平排班得分（低者优先）。
+    """計算公平排班得分（低者優先）。
 
-    实现 AGENTS.md §1.4 中的计分规则：
+    實現 AGENTS.md §1.4 中的計分規則：
     - 基础：history_weight * global_load_multiplier
-    - 轻微随机打破平局
-    - AHP 在 Assist 槽位获得 -8.0 强力加成
+    - 輕微隨機打破平局
+    - AHP 在 Assist 槽位獲得 -8.0 强力加成
     """
     score = history_weight * global_mult + random.uniform(0, 0.3)
     if is_assist_and_ahp:
@@ -170,7 +170,7 @@ def generate_roster(
             # Room 302：1 slot/天，weight=1.0，全天開放（MON-FRI），非 AHP-only，無額外經驗限制。
             # Room 303：2 slots/天（-1/-2），weight=1.5/槽，全天開放，非 AHP-only，同一日兩槽必須不同人（由 assigned_today 保證）。
             # 僅 Room 202 有硬限制（Tue/Fri 關閉 → ⬜）。
-            # 特殊不開放由 special_closures 控制（注意當前實現有已知 bug，見 AGENTS §4）。
+            # 特殊不開放由 special_closures 控制（註意當前實現有已知 bug，見 AGENTS §4）。
             if any(f"{day} - {role}" in sc for sc in special_closures) or \
                not is_room_open_on_weekday(base_role, day):
                 roster.at[role, day] = "X" if "Room 202" not in role or day not in ["TUESDAY", "FRIDAY"] else "⬜"

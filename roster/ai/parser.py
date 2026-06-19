@@ -30,7 +30,7 @@ def _call_deepseek(system_prompt: str, user_prompt: str, temperature: float = 0.
     """Call DeepSeek chat API and return the response text. Returns empty string on failure."""
     client = _get_deepseek_client()
     if client is None:
-        st.error("[DeepSeek] API Key 未配置，请在 Streamlit Cloud Secrets 中添加 DEEPSEEK_API_KEY")
+        st.error("[DeepSeek] API Key 未配置，請在 Streamlit Cloud Secrets 中添加 DEEPSEEK_API_KEY")
         return ""
 
     try:
@@ -45,7 +45,7 @@ def _call_deepseek(system_prompt: str, user_prompt: str, temperature: float = 0.
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        st.error(f"[DeepSeek] API 调用失败：{str(e)}")
+        st.error(f"[DeepSeek] API 調用失败：{str(e)}")
         return ""
 
 
@@ -155,27 +155,27 @@ def ai_parse_remarks(students_df: pd.DataFrame) -> pd.DataFrame:
 
 # ====================== AI System Prompt - Column Mapping ======================
 IMPORT_MAPPING_PROMPT = """
-请分析以下 Excel/CSV 表格内容，将栏位自动对应到标准栏位名称。
-只需输出纯 JSON，不要任何额外文字或说明。
+請分析以下 Excel/CSV 表格內容，將欄位自動對應到標準欄位名称。
+只需輸出纯 JSON，不要任何额外文字或說明。
 
-标准栏位定义：
+標準欄位定義：
 - "name": 姓名
 - "form": 年级 (F.3、F.4、F.5、F.6)
 - "class": 班级
-- "role": 职级 (Study Prefect 或 Assistant 首席导学风纪)
-- "fixed_general_duty": 学年固定总值班
+- "role": 职级 (Study Prefect 或 Assistant 首席導學風紀)
+- "fixed_general_duty": 學年固定總值班
 - "available": 可用日子
-- "history_duties": 历史累计次数
-- "history_weight": 历史累计点数
-- "remarks": 备注
+- "history_duties": 歷史累計次數
+- "history_weight": 歷史累計點數
+- "remarks": 備註
 
-表格前几行内容：
+表格前幾行內容：
 {table_sample}
 
-请输出以下格式的 JSON：
+請輸出以下格式的 JSON：
 {{
-  "name": "实际栏位名称",
-  "form": "实际栏位名称",
+  "name": "實際欄位名称",
+  "form": "實際欄位名称",
   ...
 }}
 """
@@ -191,14 +191,14 @@ def get_column_mapping_from_ai(df: pd.DataFrame) -> dict:
     prompt = IMPORT_MAPPING_PROMPT.format(table_sample=sample_text)
 
     response_text = _call_deepseek(
-        system_prompt="你是一个专业的数据映射助手，能准确识别表格栏位。",
+        system_prompt="你是一個專業的數据映射助手，能準确識別表格欄位。",
         user_prompt=prompt,
         temperature=0.0,
         max_tokens=1000,
     )
 
     if not response_text:
-        raise Exception("DeepSeek 返回空响应")
+        raise Exception("DeepSeek 返回空響應")
 
     json_text = response_text
     if json_text.startswith("```json"):

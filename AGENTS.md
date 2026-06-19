@@ -222,7 +222,7 @@ The generator (`core.py`) **must** follow this order and logic on every run:
 - **PDF 最後一頁（備援）**：匯出 PDF 時會在最後一頁附帶動態數據（標註「INTERNAL USE ONLY」），方便忘記下載 JSON 時使用。發群前務必移除此頁。
 - **GitHub 長期保存**：重要備份建議手動上傳至 `backups/` 資料夾並 commit。
 
-### 開發注意事項
+### 開發註意事項
 - 任何涉及動態數據的修改，都應確保備份功能仍能正常運作。
 - 新增功能時，需考慮是否需要將新狀態納入動態備份範圍。
 - 備份提醒與引導文字應保持清楚且不冗長。Streamlit 本身對「強制觸發下載」有限制，體驗不一定好。
