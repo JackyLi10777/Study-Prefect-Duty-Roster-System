@@ -1,4 +1,4 @@
-[中文]
+[中文](README.md) | **English**
 ### Module Dependency Graph
 
 Call relationships and data flow between all 7 layers:
