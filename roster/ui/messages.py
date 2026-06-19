@@ -196,7 +196,7 @@ WeasyPrint CSS 排版引擎生成中英雙語專業報告。含校徽、彩色�
 
 **開發投入說明**
 
-本專案的開發過程本身即為一次大規模 AI 輔助軟件工程實踐。透過 Codex 接入 DeepSeek V4 Pro 主力模型，輔以 Grok 與 Grok Build，總計消耗約 **20 億 tokens** 的 AI 計算資源。
+這個系統的開發，是我個人規模最大的一次 AI 輔助軟件工程實踐。我透過 Codex 接入 DeepSeek V4 Pro 作為主力開發模型，輔以 Grok 與 Grok Build，總計消耗約 **20 億 tokens** 的 AI 計算資源。
 
 這些投入直接反映在專案的每一個層面：
 - 5 輪架構重構 → 7 層模組化架構
@@ -205,9 +205,9 @@ WeasyPrint CSS 排版引擎生成中英雙語專業報告。含校徽、彩色�
 - 雙語完整文檔體系
 - DeepSeek AI 智能解析功能
 
-AI 作為開發加速器，人類主導架構決策與規則驗證——每一行程式碼均經人工審查，確保符合聖言中學的實際需求。
+AI 是我的開發加速器，但我主導所有架構決策與規則驗證——我親自審查了每一行程式碼，確保它符合聖言中學的實際需求。
 
-本系統由 26-27 年度首席導學風紀李創杰（LI Chuangjie Jacky）發起、設計並全程主導開發。從架構決策到品質標準，從 AI 協作到持續迭代——沒有他的遠見與領導力，這個專業級智能排班系統不會存在。
+我是 26-27 年度首席導學風紀李創杰（LI Chuangjie Jacky）。這個系統由我發起、設計並全程主導開發。從架構決策到品質標準，從 AI 協作到持續迭代——我投入了大量時間與精力，因為我相信導學風紀團隊值得一個真正專業的排班工具。
 
 有問題請 email s10777@syss.edu.hk**
 
@@ -300,7 +300,7 @@ Three-tier backup strategy: PDF-embedded backup (primary, auto-backed up on ever
 
 **Development Investment**
 
-The development of this system represents a large-scale AI-assisted software engineering practice. Using Codex with DeepSeek V4 Pro as the primary model, supplemented by Grok and Grok Build, approximately **2 billion tokens** of AI compute resources were consumed.
+Building this system was the largest AI-assisted software engineering practice I have personally undertaken. I used Codex with DeepSeek V4 Pro as my primary development model, supplemented by Grok and Grok Build, consuming approximately **2 billion tokens** of AI compute resources in total.
 
 This investment is directly reflected in every layer:
 - 5 rounds of architectural refactoring → 7-layer modular architecture
@@ -309,9 +309,9 @@ This investment is directly reflected in every layer:
 - Full bilingual documentation system
 - DeepSeek AI smart parsing features
 
-AI serves as the development accelerator, while humans own architecture decisions and rule validation — every line of code is human-reviewed to meet Sing Yin's real needs.
+AI served as my development accelerator, but I owned all architecture decisions and rule validation — I personally reviewed every line of code to ensure it meets Sing Yin's real needs.
 
-This system was initiated, designed, and led throughout development by LI Chuangjie Jacky, the 26-27 Head Study Prefect. From architectural decisions to quality standards, from AI collaboration to continuous iteration — without his vision and leadership, this professional-grade intelligent scheduling system would not exist.
+I am LI Chuangjie Jacky, the 26-27 Head Study Prefect. I initiated, designed, and led this system throughout its development. From architectural decisions to quality standards, from AI collaboration to continuous iteration — I invested significant time and effort because I believe the Study Prefect Team deserves a truly professional scheduling tool.
 
 **Questions?** email s10777@syss.edu.hk
 

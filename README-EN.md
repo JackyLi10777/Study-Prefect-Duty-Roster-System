@@ -79,11 +79,9 @@ flowchart TD
 
 ---
 
-> A **professional-grade intelligent fair-duty scheduling platform** built from the ground up for the Study Prefect Team of Sing Yin Secondary School, Hong Kong.
-> Integrates AI-assisted parsing, fairness algorithms, mentoring pair matching, PDF report generation, and dual-channel backup/restore — all running on **Streamlit Cloud**.
-> Architected through 5 rounds of structural refactoring, guarded by **62 automated tests**.
-
----
+> I built this **professional-grade intelligent fair-duty scheduling platform** from the ground up for the Study Prefect Team of Sing Yin Secondary School, Hong Kong.
+> It integrates AI-assisted parsing, fairness algorithms, mentoring pair matching, PDF report generation, and dual-channel backup/restore — all centred on one goal: making weekly duty scheduling fair, efficient, and traceable.
+> The system is designed for **Streamlit Cloud**'s stateless environment, has gone through 5 rounds of architectural refactoring, and is guarded by **62 automated tests**.---
 
 ## Table of Contents
 
@@ -577,7 +575,7 @@ flowchart TD
 
 > 🔗 This section provides advanced context on the scale of AI-assisted development behind this project.
 
-This is not a simple utility tool — its development process represents a large-scale **AI-assisted software engineering practice**.
+Building this system was the largest **AI-assisted software engineering practice** I have personally undertaken.
 
 ### AI Development Investment
 
@@ -590,13 +588,13 @@ This is not a simple utility tool — its development process represents a large
 
 ### From Investment to Quality
 
-This AI investment is directly reflected in every layer of the project:
+I want to show what this investment produced in concrete terms:
 
-- **5 Rounds of Architectural Refactoring**: evolved from a single-file script to a 7-layer modular architecture. School Policy SSOT, centralized Session State management, structured exception hierarchy — each refactoring round was AI-assisted in analysis and implementation.
+- **5 Rounds of Architectural Refactoring**: starting from a single Python file, I gradually refactored it into a 7-layer modular architecture. School Policy SSOT, centralized Session State management, structured exception hierarchy — I made every refactoring decision; AI assisted with analysis and implementation.
 - **62 Automated Tests**: unit tests, engine logic tests, end-to-end integration tests — AI helped generate test frameworks and edge case coverage.
 - **10 Mermaid Architecture Diagrams**: system architecture, module dependencies, scheduling flow, fairness algorithm, AI import pipeline, error handling, backup decision tree, lifecycle state machine — all AI-assisted in generation and iterative refinement.
 - **DeepSeek AI Smart Parsing**: the built-in AI features (column mapping, remark parsing) also benefited from deep understanding of the DeepSeek API gained through extensive development and debugging.
-- **Bilingual Documentation System**: Chinese and English READMEs with full structural parity, bilingual in-app user manual — AI-assisted translation and polishing ensure professional quality.
+- **Bilingual Documentation System**: I insisted that the Chinese and English READMEs achieve full structural parity, and that the in-app manual support both languages. AI assisted with translation and polishing, but I owned the content direction and quality standards.
 
 ### Engineering Philosophy
 
@@ -606,20 +604,27 @@ The development model embodies the **"AI as accelerator, human as decision-maker
 - Humans own architecture decisions, school rule validation, and user experience design.
 - Every line of code is human-reviewed to ensure it meets the real needs of Sing Yin Secondary School.
 
-> Approximately 2 billion tokens of AI investment, ultimately condensed into a **professional-grade system deployed on Streamlit Cloud, guarded by 62 tests, detailed in 10 architecture diagrams, and documented in full bilingual manuals**.
+> Approximately 2 billion tokens of AI investment, combined with my ongoing planning, decision-making, and course-correction, ultimately produced this **system deployed on Streamlit Cloud, guarded by 62 tests, detailed in 10 architecture diagrams, and documented in full bilingual manuals**.
 
 
-### Leadership & Decision-Making
+### About Me
 
-This system was **initiated, designed, and led throughout development** by **LI Chuangjie Jacky**, the 26-27 Head Study Prefect.
+I am **LI Chuangjie Jacky（李創杰）**, the 26-27 Head Study Prefect at Sing Yin Secondary School, F.5E.
 
-- **Architectural Direction**: from a single-file script to a 7-layer modular architecture — every refactoring decision was made by him based on real team needs.
-- **Quality Standards**: 62 automated tests, 10 architecture diagrams, full bilingual documentation — these standards did not emerge from AI automation, but from his insistence on professional-grade quality.
-- **Continuous Iteration**: from the initial scheduling script, to AI parsing, mentoring pairs, PDF backup, DeepSeek migration, documentation restructuring — every major upgrade originated from his ongoing reflection and drive for improvement.
-- **Human-AI Collaboration Leadership**: across approximately 2 billion tokens of AI-assisted development, he remained the decision-maker — AI provided suggestions and acceleration; he made every critical trade-off.
+This system — from its first line of code to its current complete form — was initiated, designed, and led throughout development entirely by me. There are a few key choices I want to document:
 
-> Without his vision, leadership, and sustained commitment, this professional-grade intelligent scheduling system would not exist.
+**Why did I build this?**
+Before I took on the Head Study Prefect role, the team's duty scheduling was done manually — time-consuming, and difficult to make truly fair. I wanted to solve this systematically, so every prefect's contribution could be objectively recorded and fairly treated.
 
+**What key decisions did I make?**
+- Every round of refactoring — from a single script to a 7-layer modular architecture — was driven by problems I discovered in actual use.
+- 62 automated tests, 10 architecture diagrams, full bilingual documentation — these are not standards that AI generated automatically; they reflect my own expectations for what a professional-grade system should be.
+- From the initial scheduling script to AI parsing, mentoring pairs, PDF backup, DeepSeek migration, and documentation restructuring — every major upgrade came from my ongoing reflection and drive for improvement.
+
+**What role did AI play?**
+I used Codex with DeepSeek V4 Pro as my primary development tool, supplemented by Grok and Grok Build, consuming approximately 2 billion tokens in total. But AI was always my tool, not the decision-maker — it provided suggestions and acceleration; I made every critical trade-off.
+
+> Every detail of this system reflects my sense of responsibility to the Study Prefect Team. I am grateful it exists in its current form, and I hope it brings real convenience to future Head Study Prefects.
 
 
 ## Project Structure
@@ -747,4 +752,4 @@ Copyright (c) 2026 LI Chuangjie Jacky (李創杰)
 
 ---
 
-*This project is primarily for internal use by the Sing Yin Secondary School Study Prefect Team. Please contact the author before commercial use or redistribution.*
+*This system is primarily for internal use by the Sing Yin Secondary School Study Prefect Team. Please contact me before using it for other purposes.*
