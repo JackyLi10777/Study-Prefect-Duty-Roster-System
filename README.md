@@ -1,3 +1,5 @@
+**中文** | [English](README-EN.md)
+
 # Sing Yin Study Prefect Duty Roster System
 
 **聖言中學導學風紀當值排班平台 · v2.4**
