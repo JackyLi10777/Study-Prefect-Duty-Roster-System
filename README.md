@@ -11,6 +11,18 @@
 
 ---
 
+
+<div align="center">
+
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.38+-FF4B4B?style=flat&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Tests](https://img.shields.io/badge/tests-62_passed-0F766E?style=flat)](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System/actions)
+[![License](https://img.shields.io/badge/license-MIT-7C3AED?style=flat)](LICENSE)
+[![DeepSeek](https://img.shields.io/badge/AI-DeepSeek_V4_Flash-4F46E5?style=flat)](https://deepseek.com)
+[![Platform](https://img.shields.io/badge/deploy-Streamlit_Cloud-FF4B4B?style=flat)](https://streamlit.io/cloud)
+
+</div>
+
 ## 目錄
 
 - [快速開始](#快速開始)
