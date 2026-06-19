@@ -258,7 +258,7 @@ def render_sidebar():
             filtered = st.session_state.students_df[mask]
             if len(filtered) == 0:
                 st.info(_t(
-                    "🔍 ????????????????????????????",
+                    "🔍 找不到符合條件的學生。請嘗試其他關鍵字（姓名、年級、或職級）。",
                     "🔍 No matching students found. Try a different keyword (name, form, or role)."
                 ))
             else:
@@ -889,5 +889,5 @@ flowchart TD
     """
     
     with st.expander("🏗️ 系統架構圖（System Architecture）", expanded=False):
-        st.caption("以下為本系統的分層模組化架構，箭頭表示模組間的調用關係。完整架構說明請參閱 GitHub README。")
+        st.caption(caption_text)
         st.components.v1.html(mermaid_html, height=580, scrolling=False)
