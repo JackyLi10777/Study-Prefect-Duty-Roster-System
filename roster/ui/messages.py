@@ -128,7 +128,7 @@ MESSAGES = {
 
 #### 6. 師徒配對儀表板
 - **配對成效卡**：生成值班表後，公平性區域自動顯示本週師徒配對數、配對成功率及評級。
-- **學徒進度追蹤**：可摺疊面板，儲存當前點數為基準，下次生成值班表後回來查看學徒點數變化趨勢（進步中／持平／需關注）。
+- **學徒進度追蹤**：可摺疊面板，儲存當前點數為基準，下次生成值班表後回來查看學徒點數變化趨勢（進步中／持平／需關註）。
 
 #### 7. 智慧替補推薦
 - 選擇日期與崗位後，點擊「🔍 尋找最優替補」，系統會依據目前總點數由低到高推薦。
@@ -327,7 +327,7 @@ Good luck! 🙏"""
         "Saved week {week_num} data for trend analysis."
     ),
     "most_neglected": (
-        "⚠️ 最需關注學生 (Most Neglected - 最低負荷): {names}。建議優先給予機會以促進公平。",
+        "⚠️ 最需關註學生 (Most Neglected - 最低負荷): {names}。建議優先給予機會以促進公平。",
         "⚠️ Most Neglected Students (Lowest Load): {names}. Suggest prioritizing opportunities to promote fairness."
     ),
     "version_loaded_success": (

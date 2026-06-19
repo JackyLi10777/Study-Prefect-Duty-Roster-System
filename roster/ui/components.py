@@ -798,7 +798,7 @@ def render_mentee_progress_tracker():
                 elif diff == 0:
                     trend = "➡ " + _t("持平", "Stable")
                 else:
-                    trend = "⬆ " + _t("需關注", "Needs attention")
+                    trend = "⬆ " + _t("需關註", "Needs attention")
             else:
                 diff = None
                 trend = "－ " + _t("無基準", "No baseline")

@@ -691,7 +691,7 @@ Student names are preserved in Chinese per school practice.
 - {ahp_load_line}
 
 **表現者**
-- 負荷最低 (最需關注)：{neg_str}
+- 負荷最低 (最需關註)：{neg_str}
 - 最高負荷：{max_load:.1f} 點
 
 **{contrib_header}**
