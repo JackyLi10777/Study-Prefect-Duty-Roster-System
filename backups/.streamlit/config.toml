@@ -1,11 +1,11 @@
 # .streamlit/config.toml
 # Sing Yin Secondary School Study Prefect Duty Roster Platform
-# 聖言中學導學風紀當值排班平�?- Streamlit Cloud 專用設定�?
+# 聖言中學導學風紀當值排班平台 - Streamlit Cloud 專用設定檔
 # 作者：Head Study Prefect 26-27 LI Chuangjie Jacky
 # 版本：v2.4 Final
 
 [theme]
-primaryColor = "#0F766E"           # 深藍專業色（聖言風格�?
+primaryColor = "#0B1E3D"           # 深藍專業色（聖言風格）
 backgroundColor = "#F8F9FA"
 secondaryBackgroundColor = "#F1F3F5"
 textColor = "#1A1A2E"
@@ -16,7 +16,7 @@ headless = true
 port = 8501
 enableCORS = false
 enableXsrfProtection = false
-maxUploadSize = 50                 # 提升上傳限制（方便匯�?Excel�?
+maxUploadSize = 50                 # 提升上傳限制（方便匯入 Excel）
 
 [client]
 showSidebarNavigation = true
@@ -34,8 +34,11 @@ magicEnabled = false
 gatherUsageStats = false
 serverAddress = "0.0.0.0"
 
+[ui]
+hideTopBar = true
+hideSidebarNav = false
 
-# 推薦開啟寬版面（視覺公告版更舒服�?
-# 如需暗色主題可取消下面註�?
+# 推薦開啟寬版面（視覺公告版更舒服）
+# 如需暗色主題可取消下面註解
 # [theme]
 # base = "dark"
