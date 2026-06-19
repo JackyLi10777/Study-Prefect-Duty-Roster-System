@@ -668,6 +668,12 @@ Student names are preserved in Chinese per school practice.
         st.subheader(get_text("summary_report_subheader"))
         st.caption(get_text("report_generation_caption"))
 
+        st.info(_t(
+            "💡 **用途說明：** 此報告用於年度審查會議、團隊匯報與存檔記錄。\n\n生成後請立即 **下載 JSON 備份** 並上傳至 GitHub `backups/` 資料夾，以確保數據長期保存。\n\n支援兩種格式：**中文預覽**（團隊內部使用）與 **專業英文匯出**（外部交流）。",
+            "💡 **Purpose:** This report is for annual review meetings, team briefings, and archival records.\n\nAfter generation, please **download the JSON backup** and upload to the GitHub `backups/` folder for long-term preservation.\n\nSupports two formats: **Chinese Preview** (internal team use) and **Professional English Export** (external communication)."
+        ))
+
+
         if st.button(get_text("generate_summary_button"), type="primary"):
             # Use export report for consistent English data
             export_report = get_export_report_df(st.session_state.master_report_df)
