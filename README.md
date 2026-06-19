@@ -129,38 +129,38 @@ Study-Prefect-Duty-Roster-System/
 ```mermaid
 graph TB
     subgraph "使用者介面 (UI Layer)"
-        A["app.py<br/>Streamlit 入口"]
-        B["roster/ui/components.py<br/>侧边栏 / 控制按钮 / 仪表板"]
-        C["roster/ui/theme.py<br/>深色 / 浅色模式 CSS"]
-        D["roster/ui/i18n.py<br/>中英双语切换"]
+        A["app.py | Streamlit 入口"]
+        B["roster/ui/components.py | 侧边栏 / 控制按钮 / 仪表板"]
+        C["roster/ui/theme.py | 深色 / 浅色模式 CSS"]
+        D["roster/ui/i18n.py | 中英双语切换"]
     end
 
     subgraph "核心业务逻辑 (Core Logic)"
-        E["roster/core/engine.py<br/>公平排班演算法<br/>generate_roster() / 师徒配对 / 请假调整"]
-        F["roster/config/school_policy.py<br/>学校规则 SSOT<br/>ROOMS_CONFIG / AHP 限制 / 权重"]
+        E["roster/core/engine.py | 公平排班演算法 | generate_roster() / 师徒配对 / 请假调整"]
+        F["roster/config/school_policy.py | 学校规则 SSOT | ROOMS_CONFIG / AHP 限制 / 权重"]
     end
 
     subgraph "数据层 (Data Layer)"
-        G["roster/data/state.py<br/>Session State 管理<br/>initialize / get_state / validate"]
-        H["roster/data/demo.py<br/>示范学生名册"]
-        I["roster/data/models.py<br/>Domain Model / 验证"]
+        G["roster/data/state.py | Session State 管理 | initialize / get_state / validate"]
+        H["roster/data/demo.py | 示范学生名册"]
+        I["roster/data/models.py | Domain Model / 验证"]
     end
 
     subgraph "工具层 (Utilities)"
-        J["roster/utils/pdf.py<br/>WeasyPrint PDF 生成<br/>嵌入备份数据"]
-        K["roster/utils/backup.py<br/>JSON / PDF 备份<br/>汇出与还原"]
-        L["roster/utils/importers.py<br/>Excel / CSV 名册汇入<br/>传统格式 + AI 智能"]
+        J["roster/utils/pdf.py | WeasyPrint PDF 生成 | 嵌入备份数据"]
+        K["roster/utils/backup.py | JSON / PDF 备份 | 汇出与还原"]
+        L["roster/utils/importers.py | Excel / CSV 名册汇入 | 传统格式 + AI 智能"]
     end
 
     subgraph "AI 辅助 (AI Layer)"
-        M["roster/ai/parser.py<br/>DeepSeek-V4-Flash<br/>备注智能解析 + 栏位映射"]
+        M["roster/ai/parser.py | DeepSeek-V4-Flash | 备注智能解析 + 栏位映射"]
     end
 
     subgraph "外部依赖 (External)"
-        N[("DeepSeek API<br/>AI 智能解析")]
-        O[("WeasyPrint<br/>PDF 渲染引擎")]
-        P[("GitHub<br/>ai 分支静态数据")]
-        Q[("Streamlit Cloud<br/>部署平台")]
+        N[("DeepSeek API | AI 智能解析")]
+        O[("WeasyPrint | PDF 渲染引擎")]
+        P[("GitHub | ai 分支静态数据")]
+        Q[("Streamlit Cloud | 部署平台")]
     end
 
     A --> B
@@ -216,25 +216,25 @@ graph TB
 
 ```mermaid
 flowchart TD
-    A["📋 载入学生名册<br/>students_df"] --> B🔍 AI 智能解析备注<br/>ai_parse_remarks()
-    B --> C["📊 构建候选人池<br/>过滤请假 / 不可用 / 角色限制"]
-    C --> D🏠 遍历每个岗位<br/>Assist → Room 302 → 303 → 202
-    D --> E🔒 是否为 AHP 专属？<br/>is_assistant_head_only_role()
+    A["📋 载入学生名册 | students_df"] --> B["🔍 AI 智能解析备注 | ai_parse_remarks()"]
+    B --> C["📊 构建候选人池 | 过滤请假 / 不可用 / 角色限制"]
+    C --> D["🏠 遍历每个岗位 | Assist → Room 302 → 303 → 202"]
+    D --> E["🔒 是否为 AHP 专属？ | is_assistant_head_only_role()"]
     E -->|是| F["仅选 AHP 候选人"]
     E -->|否| G["仅选普通 Study Prefect"]
-    F --> H📐 房间是否开放？<br/>is_room_open_on_weekday()
+    F --> H["📐 房间是否开放？ | is_room_open_on_weekday()"]
     G --> H
     H -->|否| I["标记为 ⬜ 关闭"]
-    H -->|是| J["⚖️ 计算公平分数<br/>history_weight × multiplier<br/>+ AHP bonus (-8.0)<br/>+ 随机打破平局"]
-    J --> K👥 是否为双人房？<br/>Room 303 / Room 202
-    K -->|是| L["🤝 尝试师徒配对<br/>mentee + mentor bonus (-2.0)"]
+    H -->|是| J["⚖️ 计算公平分数 | history_weight × multiplier | + AHP bonus (-8.0) | + 随机打破平局"]
+    J --> K["👥 是否为双人房？ | Room 303 / Room 202"]
+    K -->|是| L["🤝 尝试师徒配对 | mentee + mentor bonus (-2.0)"]
     K -->|否| M["直接选择最低分候选人"]
     L --> M
-    M --> N📅 是否还有岗位？
+    M --> N["📅 是否还有岗位？"]
     N -->|是| D
-    N -->|否| O["✅ 生成最终值班表<br/>roster_df"]
-    O --> P["📊 计算审计报告<br/>validate_and_compute()"]
-    P --> Q["🤝 标注师徒配对<br/>annotate_mentoring_pairs()"]
+    N -->|否| O["✅ 生成最终值班表 | roster_df"]
+    O --> P["📊 计算审计报告 | validate_and_compute()"]
+    P --> Q["🤝 标注师徒配对 | annotate_mentoring_pairs()"]
     Q --> R["📄 显示值班表 + 公平性图表"]
 ```
 
@@ -256,7 +256,7 @@ graph LR
 
     subgraph "核心层"
         ENGINE["engine.py"]
-        POLICY["school_policy.py<br/>(SSOT)"]
+        POLICY["school_policy.py | (SSOT)"]
     end
 
     subgraph "数据层"
@@ -314,28 +314,28 @@ graph LR
 ```mermaid
 flowchart LR
     subgraph "静态数据 (Static)"
-        S1["📋 students_df<br/>姓名 / 年级 / 班别 / 职级"]
-        S2["📂 GitHub ai 分支<br/>students.csv / Excel"]
-        S3["🔄 Streamlit session_state<br/>首次加载时初始化"]
+        S1["📋 students_df | 姓名 / 年级 / 班别 / 职级"]
+        S2["📂 GitHub ai 分支 | students.csv / Excel"]
+        S3["🔄 Streamlit session_state | 首次加载时初始化"]
     end
 
     subgraph "动态数据 (Dynamic)"
-        D1["⚖️ history_weight<br/>累计负荷点数"]
-        D2["📊 roster_df + report_df<br/>当周排班 + 审计"]
-        D3["📝 leave_tracker / 调整日志<br/>请假记录 / 手动调整"]
-        D4["🤝 mentoring_pairs<br/>师徒配对状态"]
+        D1["⚖️ history_weight | 累计负荷点数"]
+        D2["📊 roster_df + report_df | 当周排班 + 审计"]
+        D3["📝 leave_tracker / 调整日志 | 请假记录 / 手动调整"]
+        D4["🤝 mentoring_pairs | 师徒配对状态"]
     end
 
     subgraph "备份机制 (Backup)"
-        B1["📄 PDF 导出<br/>嵌入 JSON 备份于最后一页"]
-        B2["💾 JSON 备份<br/>侧边栏一键下载"]
-        B3["📤 GitHub 长期保存<br/>backups/ 文件夹"]
+        B1["📄 PDF 导出 | 嵌入 JSON 备份于最后一页"]
+        B2["💾 JSON 备份 | 侧边栏一键下载"]
+        B3["📤 GitHub 长期保存 | backups/ 文件夹"]
     end
 
     subgraph "还原机制 (Restore)"
-        R1["📥 上传 PDF<br/>parse_backup_from_pdf()"]
-        R2["📥 上传 JSON<br/>import_system_backup()"]
-        R3["✅ validate_state_integrity()<br/>还原后状态校验"]
+        R1["📥 上传 PDF | parse_backup_from_pdf()"]
+        R2["📥 上传 JSON | import_system_backup()"]
+        R3["✅ validate_state_integrity() | 还原后状态校验"]
     end
 
     S1 --> S2
