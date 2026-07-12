@@ -33,8 +33,10 @@ logs/
 *.xls
 *.xlsx
 
-# Local operator media and generated evidence
-music/*.m4a
+# Curated built-in .m4a files are versioned so a clean deployment receives the
+# same light/dark listening profiles. Duplicate downloads and operator imports
+# remain local-only.
+music/*(1).m4a
 music/*.mp3
 music/*.ogg
 music/*.wav
