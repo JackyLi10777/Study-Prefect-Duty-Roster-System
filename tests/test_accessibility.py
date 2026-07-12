@@ -103,6 +103,10 @@ def test_core_operator_fields_declare_names_and_disable_credential_autofill() ->
         assert f"name={field_name}" in pages
     assert "autocomplete=off" in pages
     assert "name=music-track" in music
+    assert "name=music-profile" in music
+    assert "name=settings-music-profile" in music
+    assert "name=youtube-local-import-url type=url autocomplete=off inputmode=url" in music
+    assert "name=youtube-local-import-context autocomplete=off" in music
     assert "name=youtube-playlist-url type=url autocomplete=off inputmode=url" in youtube
 
 

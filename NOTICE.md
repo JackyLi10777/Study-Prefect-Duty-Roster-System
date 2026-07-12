@@ -27,3 +27,12 @@ from its own localhost origin and does not depend on a runtime CDN request.
 本機互動層使用 GSAP 3.13.0，並依其公布的 Standard “no charge” license
 使用。版本化程式及 npm 套件資料保存在 `nicegui_app/assets/vendor/`；網站只從
 本機 localhost 載入，不會在運行時依賴 CDN。
+
+The optional local YouTube audio-import adapter uses the hash-locked `yt-dlp`
+2026.7.4 Python wheel distributed under the Unlicense and the hash-locked Deno
+2.9.2 runtime under the MIT License. Its operation remains separate from roster
+data and does not relicense downloaded media.
+
+選用的 YouTube 本機音訊匯入適配層使用已鎖定雜湊的 `yt-dlp` 2026.7.4
+Python wheel（Unlicense）及 Deno 2.9.2 runtime（MIT License）。它與排班資料
+完全分開，也不會改變下載媒體本身的授權。

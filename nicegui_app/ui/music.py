@@ -2,17 +2,24 @@
 
 from __future__ import annotations
 
-from nicegui import app, events, ui
+from nicegui import app, events, run, ui
 
 from nicegui_app.services.music_library import (
     MAX_AUDIO_BYTES,
     MUSIC_CONTEXTS,
+    MUSIC_PROFILE_PREFERENCES,
     MusicLibrary,
     MusicLibraryError,
     MusicTrack,
     next_track_id,
+    resolve_music_profile,
 )
 from nicegui_app.services.online_music import YouTubeSettings
+from nicegui_app.services.youtube_audio_import import (
+    YouTubeAudioImportError,
+    YouTubeAudioImporter,
+    youtube_import_ready,
+)
 from nicegui_app.ui.youtube_music import render_youtube_panel, render_youtube_settings
 from nicegui_app.ui.i18n import t
 from nicegui_app.ui.sound import (
@@ -22,17 +29,27 @@ from nicegui_app.ui.sound import (
     set_music_volume,
     set_sound_volume,
 )
-from nicegui_app.ui.theme import set_sound_feedback, sound_feedback_enabled
+from nicegui_app.ui.theme import current_theme, set_sound_feedback, sound_feedback_enabled
 
 
 def music_context_label(context: str) -> str:
     return t(f"music_context_{context}")
 
 
+def music_track_label(track: MusicTrack) -> str:
+    arrangement = t(f"music_arrangement_{track.arrangement}")
+    timing = f" · {track.duration}" if track.duration else ""
+    return f"{track.title} — {track.artist} · {arrangement}{timing}"
+
+
 def render_page_music_control(context: str) -> None:
     """Render one manual, low-volume playlist control for an approved quiet page."""
     library = MusicLibrary()
-    tracks = library.tracks_for_context(context)
+    profile_preference = str(app.storage.user.get("music_profile", "auto"))
+    if profile_preference not in MUSIC_PROFILE_PREFERENCES:
+        profile_preference = "auto"
+    resolved_profile = resolve_music_profile(profile_preference, current_theme())
+    tracks = library.tracks_for_context(context, profile=resolved_profile)
     online_settings = YouTubeSettings.from_environment()
     if not tracks and not online_settings.enabled:
         return
@@ -49,6 +66,25 @@ def render_page_music_control(context: str) -> None:
 
             with ui.column().classes("w-full gap-4 p-5"):
                 ui.label(t("music_optional_notice")).classes("text-sm leading-6 text-[var(--sy-muted)]")
+                profile_select = ui.select(
+                    label=t("music_profile"),
+                    options={
+                        "auto": t("music_profile_auto"),
+                        "bright": t("music_profile_bright"),
+                        "quiet": t("music_profile_quiet"),
+                    },
+                    value=profile_preference,
+                ).props("name=music-profile autocomplete=off").classes("w-full")
+
+                def choose_profile(event: events.ValueChangeEventArguments) -> None:
+                    preference = str(event.value)
+                    if preference not in MUSIC_PROFILE_PREFERENCES:
+                        return
+                    app.storage.user["music_profile"] = preference
+                    ui.navigate.reload()
+
+                profile_select.on_value_change(choose_profile)
+                ui.label(t("music_profile_auto_hint")).classes("text-xs leading-5 text-[var(--sy-muted)]")
 
                 if not bool(app.storage.user.get("audio_setup_seen", False)):
                     with ui.column().classes("sy-audio-setup w-full gap-3 p-4") as audio_setup:
@@ -80,7 +116,7 @@ def render_page_music_control(context: str) -> None:
 
                     track_select = ui.select(
                         label=t("music_track"),
-                        options={track.id: track.display_label for track in tracks},
+                        options={track.id: music_track_label(track) for track in tracks},
                         value=selected_track_id,
                     ).props("name=music-track autocomplete=off").classes("sy-music-track-select w-full")
                     mode_select = ui.select(
@@ -88,7 +124,7 @@ def render_page_music_control(context: str) -> None:
                         options={"sequential": t("music_mode_sequential"), "shuffle": t("music_mode_shuffle")},
                         value=playback_mode,
                     ).props("name=music-playback-mode autocomplete=off").classes("sy-music-mode-select w-full")
-                    now_playing = ui.label(track_by_id[selected_track_id].display_label).classes("sy-music-now-playing").props("aria-live=polite")
+                    now_playing = ui.label(music_track_label(track_by_id[selected_track_id])).classes("sy-music-now-playing").props("aria-live=polite")
                     audio = ui.audio(track_by_id[selected_track_id].asset_url, controls=True, autoplay=False, muted=False, loop=False)
                     audio.classes("sy-page-music-audio w-full").props(f'preload=metadata aria-label="{t("page_music")}"')
 
@@ -99,7 +135,7 @@ def render_page_music_control(context: str) -> None:
                         app.storage.user[f"music_track_{context}"] = track.id
                         audio.pause()
                         audio.set_source(track.asset_url)
-                        now_playing.set_text(track.display_label)
+                        now_playing.set_text(music_track_label(track))
                         if continue_playback:
                             ui.timer(0.16, audio.play, once=True)
 
@@ -191,6 +227,27 @@ def render_music_library_settings() -> None:
             ui.label(t("music_usage_steps")).classes("text-sm leading-7 text-[var(--sy-muted)]")
             ui.label(t("music_rights_notice")).classes("text-sm leading-7 text-[var(--sy-muted)] mt-2")
 
+        profile_preference = str(app.storage.user.get("music_profile", "auto"))
+        if profile_preference not in MUSIC_PROFILE_PREFERENCES:
+            profile_preference = "auto"
+        profile_select = ui.select(
+            label=t("music_profile"),
+            options={
+                "auto": t("music_profile_auto"),
+                "bright": t("music_profile_bright"),
+                "quiet": t("music_profile_quiet"),
+            },
+            value=profile_preference,
+        ).props("name=settings-music-profile autocomplete=off").classes("w-full max-w-md mt-4")
+
+        def save_profile(event: events.ValueChangeEventArguments) -> None:
+            preference = str(event.value)
+            if preference in MUSIC_PROFILE_PREFERENCES:
+                app.storage.user["music_profile"] = preference
+
+        profile_select.on_value_change(save_profile)
+        ui.label(t("music_profile_auto_hint")).classes("text-xs leading-5 text-[var(--sy-muted)] max-w-2xl")
+
         ui.separator().classes("my-5")
         ui.label(t("import_local_music")).classes("font-semibold")
         ui.label(t("import_local_music_notice")).classes("text-sm leading-6 text-[var(--sy-muted)]")
@@ -221,6 +278,57 @@ def render_music_library_settings() -> None:
             auto_upload=True,
         ).props("accept=.m4a,.mp3,.ogg,.wav").classes("w-full max-w-2xl mt-3")
 
+        ui.separator().classes("my-5")
+        ui.label(t("youtube_local_import_title")).classes("font-semibold")
+        ui.label(t("youtube_local_import_intro")).classes("text-sm leading-6 text-[var(--sy-muted)]")
+        ui.label(t("youtube_local_import_rights")).classes("text-xs leading-5 text-[var(--sy-muted)] mt-1")
+        if youtube_import_ready():
+            import_url = ui.input(label=t("youtube_local_import_url")).props(
+                "name=youtube-local-import-url type=url autocomplete=off inputmode=url"
+            ).classes("w-full max-w-2xl mt-3")
+            import_context = ui.select(
+                label=t("music_page_category"),
+                options=context_options,
+                value="devotional",
+            ).props("name=youtube-local-import-context autocomplete=off").classes("w-full max-w-md")
+            import_status = ui.label(t("youtube_local_import_working")).classes(
+                "sy-inline-progress text-sm leading-6 text-[var(--sy-muted)]"
+            ).props("role=status aria-live=polite")
+            import_status.set_visibility(False)
+
+            async def import_from_youtube() -> None:
+                download_button.disable()
+                import_status.set_visibility(True)
+                try:
+                    result = await run.io_bound(
+                        YouTubeAudioImporter().import_url,
+                        url=str(import_url.value or ""),
+                        context=str(import_context.value),
+                    )
+                except YouTubeAudioImportError as error:
+                    key = (
+                        f"youtube_import_error_{error.code}"
+                        if error.code in {"url", "download", "no_audio", "total_size", "duplicate"}
+                        else f"music_error_{error.code}"
+                    )
+                    ui.notify(t(key), type="negative", timeout=8_000)
+                    return
+                finally:
+                    import_status.set_visibility(False)
+                    download_button.enable()
+                ui.notify(t("youtube_local_import_done").format(count=len(result.tracks)), type="positive")
+                ui.navigate.reload()
+
+            download_button = ui.button(
+                t("youtube_local_import_action"),
+                icon="download_for_offline",
+                on_click=import_from_youtube,
+            ).classes("mt-2")
+        else:
+            with ui.element("aside").classes("sy-inline-empty w-full mt-3").props("role=status"):
+                ui.icon("download_for_offline").classes("sy-inline-empty-icon").props("aria-hidden=true")
+                ui.label(t("youtube_local_import_unavailable")).classes("sy-inline-empty-copy")
+
         custom_tracks = library.all_custom_tracks()
         if custom_tracks:
             ui.separator().classes("my-5")
@@ -228,7 +336,7 @@ def render_music_library_settings() -> None:
             with ui.column().classes("w-full gap-2 mt-2"):
                 for track in custom_tracks:
                     _render_removable_music_item(
-                        title=track.display_label,
+                        title=music_track_label(track),
                         context=track.contexts[0],
                         remove=lambda track_id=track.id: library.remove_local_audio(track_id),
                     )

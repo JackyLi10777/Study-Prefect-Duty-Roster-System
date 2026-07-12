@@ -10,19 +10,24 @@ from tests.ui_source import combined_page_source
 from nicegui_app.services.music_library import (
     BUILTIN_TRACKS,
     MUSIC_CONTEXTS,
+    MUSIC_PROFILES,
     MusicLibrary,
     MusicLibraryError,
     next_track_id,
+    resolve_music_profile,
 )
 
 
 def test_builtin_music_catalog_is_complete_local_and_page_categorised() -> None:
-    assert len(BUILTIN_TRACKS) == 13
-    assert len({track.id for track in BUILTIN_TRACKS}) == 13
-    assert len({track.filename for track in BUILTIN_TRACKS}) == 13
+    assert len(BUILTIN_TRACKS) == 32
+    assert len({track.id for track in BUILTIN_TRACKS}) == 32
+    assert len({track.filename for track in BUILTIN_TRACKS}) == 32
     assert all((MUSIC_DIR / track.filename).is_file() for track in BUILTIN_TRACKS)
     assert all((MUSIC_DIR / track.filename).stat().st_size > 0 for track in BUILTIN_TRACKS)
+    assert all("(1)" not in track.filename for track in BUILTIN_TRACKS)
     assert {context for track in BUILTIN_TRACKS for context in track.contexts} == set(MUSIC_CONTEXTS)
+    assert {profile for track in BUILTIN_TRACKS for profile in track.profiles} == set(MUSIC_PROFILES)
+    assert {track.arrangement for track in BUILTIN_TRACKS} == {"instrumental", "vocal"}
     assert all(sum(context in track.contexts for track in BUILTIN_TRACKS) >= 2 for context in MUSIC_CONTEXTS)
 
 
@@ -77,6 +82,40 @@ def test_playlist_next_track_supports_sequential_loop_and_no_immediate_shuffle_r
     assert next_track_id(tracks, "c", "sequential") == "a"
     assert next_track_id(tracks, "missing", "sequential") == "a"
     assert next_track_id(tracks, "b", "shuffle", rng=random.Random(7)) in {"a", "c"}
+
+
+def test_music_profile_follows_appearance_until_operator_overrides_it() -> None:
+    assert resolve_music_profile("auto", "light") == "bright"
+    assert resolve_music_profile("auto", "dark") == "quiet"
+    assert resolve_music_profile("quiet", "light") == "quiet"
+    assert resolve_music_profile("bright", "dark") == "bright"
+
+
+def test_youtube_downloaded_audio_is_kept_in_dedicated_directory_and_deduplicated(tmp_path: Path) -> None:
+    root = tmp_path / "music"
+    source = tmp_path / "download.m4a"
+    source.write_bytes(b"\x00\x00\x00\x18ftypM4A " + b"\x00" * 12)
+    library = MusicLibrary(root)
+
+    track = library.add_downloaded_audio(
+        source_path=source,
+        context="devotional",
+        title="Quiet hymn",
+        artist="Choir",
+        source_id="video_123",
+    )
+
+    assert track.filename.startswith("youtube-imports/youtube-")
+    assert track.arrangement == "youtube"
+    assert (root / track.filename).is_file()
+    with pytest.raises(MusicLibraryError, match="duplicate"):
+        library.add_downloaded_audio(
+            source_path=source,
+            context="devotional",
+            title="Quiet hymn",
+            artist="Choir",
+            source_id="video_123",
+        )
 
 
 def test_music_ui_is_manual_and_absent_from_sensitive_workflows() -> None:

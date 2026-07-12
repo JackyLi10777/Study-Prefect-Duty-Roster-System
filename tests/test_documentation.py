@@ -120,6 +120,8 @@ def test_windows_dedicated_host_guide_is_complete_and_local_only() -> None:
 
 def test_windows_and_cloudflare_automation_is_fail_closed_and_documented() -> None:
     prepare = (PROJECT_ROOT / "scripts" / "prepare_windows_host.ps1").read_text(encoding="utf-8")
+    assert '--require-hashes -r (Join-Path $ProjectRoot "requirements.lock")' in prepare
+    assert '--require-hashes -r (Join-Path $ProjectRoot "requirements-dev.lock")' in prepare
     task = (PROJECT_ROOT / "scripts" / "register_windows_startup_task.ps1").read_text(encoding="utf-8")
     activate = (PROJECT_ROOT / "scripts" / "activate_cloudflare_remote_access.ps1").read_text(encoding="utf-8")
     verify = (PROJECT_ROOT / "scripts" / "verify_cloudflare_access.ps1").read_text(encoding="utf-8")

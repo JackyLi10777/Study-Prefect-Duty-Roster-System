@@ -82,10 +82,10 @@ if (-not (Test-Path -LiteralPath $venvPython)) {
 Write-Step "Installing application packages"
 & $venvPython -m pip install --upgrade pip
 if ($LASTEXITCODE -ne 0) { throw "pip upgrade failed." }
-& $venvPython -m pip install -r (Join-Path $ProjectRoot "requirements.txt")
+& $venvPython -m pip install --require-hashes -r (Join-Path $ProjectRoot "requirements.lock")
 if ($LASTEXITCODE -ne 0) { throw "Application dependency installation failed." }
 if ($IncludeDevelopmentTools) {
-    & $venvPython -m pip install -r (Join-Path $ProjectRoot "requirements-dev.txt")
+    & $venvPython -m pip install --require-hashes -r (Join-Path $ProjectRoot "requirements-dev.lock")
     if ($LASTEXITCODE -ne 0) { throw "Development dependency installation failed." }
     Write-Step "Installing the isolated Chromium browser used by release verification"
     & $venvPython -m playwright install chromium

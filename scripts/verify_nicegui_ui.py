@@ -39,6 +39,7 @@ MUSIC_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-page-music.png"
 ROSTER_RECOVERY_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-roster-unavailable.png"
 SETTINGS_LIGHT_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-settings-light.png"
 SETTINGS_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-settings-dark.png"
+SETTINGS_MOBILE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-settings-mobile.png"
 
 
 def assert_unexpected_host_rejected() -> None:
@@ -165,6 +166,7 @@ def main() -> None:
         music_button.click()
         music_dialog = page.get_by_test_id("page-music-dialog")
         music_dialog.wait_for(timeout=10_000)
+        music_dialog.get_by_text("明亮專注", exact=False).first.wait_for(timeout=10_000)
         music_audio = music_dialog.locator("audio.sy-page-music-audio")
         assert music_audio.count() == 1
         assert music_audio.get_attribute("autoplay") is None
@@ -337,6 +339,11 @@ def main() -> None:
         page.get_by_test_id("online-music-settings").wait_for(timeout=10_000)
         page.get_by_text("公開歌單播放已就緒", exact=False).wait_for(timeout=10_000)
         page.get_by_test_id("music-library-settings").wait_for(timeout=10_000)
+        settings_profile = page.locator('[name="settings-music-profile"]')
+        assert settings_profile.count() == 1
+        assert page.locator('[name="youtube-local-import-url"]').count() == 1
+        assert page.get_by_role("button", name="下載並加入本機歌庫").count() == 1
+        page.get_by_text("music/youtube-imports", exact=False).wait_for(timeout=10_000)
         settings_sections = page.locator(".sy-settings-section")
         assert settings_sections.count() == 3
         section_border_colours = settings_sections.evaluate_all(
@@ -444,6 +451,8 @@ def main() -> None:
         page.get_by_test_id("page-music-button").click()
         dark_music_dialog = page.get_by_test_id("page-music-dialog")
         dark_music_dialog.wait_for(timeout=10_000)
+        assert dark_music_dialog.locator('[name="music-profile"]').count() == 1
+        dark_music_dialog.get_by_text("Quiet reflection", exact=False).first.wait_for(timeout=10_000)
         assert dark_music_dialog.locator("audio.sy-page-music-audio").evaluate("element => getComputedStyle(element).colorScheme") == "dark"
         close_music_dialog(dark_music_dialog)
         page.screenshot(path=str(DARK_SCREENSHOT), full_page=True)
@@ -508,6 +517,10 @@ def main() -> None:
         page.get_by_text("Operator guide", exact=True).first.wait_for(timeout=10_000)
         assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
         page.screenshot(path=str(GUIDE_MOBILE_SCREENSHOT), full_page=True)
+        page.goto(f"{BASE_URL}/settings", wait_until="domcontentloaded")
+        page.get_by_role("button", name="Download to local library").wait_for(timeout=10_000)
+        assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
+        page.screenshot(path=str(SETTINGS_MOBILE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
         assert page.locator(".sy-architecture-layer").count() == 5
         assert page.locator(".sy-service-stage").count() == 6

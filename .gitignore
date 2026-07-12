@@ -41,6 +41,8 @@ music/*.wav
 music/custom/
 music/custom-library.json
 music/youtube-playlists.json
+music/youtube-imports/
+music/.youtube-import-staging/
 local-imports/
 .codex-remote-attachments/
 .nicegui/

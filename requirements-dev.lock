@@ -312,6 +312,14 @@ defusedxml==0.7.1 \
     --hash=sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69 \
     --hash=sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61
     # via py-serializable
+deno==2.9.2 \
+    --hash=sha256:3b77d7689c15fb2c47d5a3927dc8cf70dbd408bc92e20c70da079c6d78980e34 \
+    --hash=sha256:8b2fd9318d452b7e44c45968916670a0c5452d72796e1af9abfaa7a389e4aa6b \
+    --hash=sha256:8e815d66b3e1314d028b2f0a05c75a331dd7025f4c825e12dd1f057207cee1f6 \
+    --hash=sha256:bf0471db7238e90810bca77a8d2c28646317b5a3fd9e5cdfdf73b251fde11b83 \
+    --hash=sha256:f6f74fd8698a8a9a31af14eed5730f1964ab50eaa0129079d11d91fa92496f60 \
+    --hash=sha256:fb4bb5362d02c193f8086668789076f366416980b79277c06ea6cff73866b668
+    # via -r requirements.txt
 detect-secrets==1.5.0 \
     --hash=sha256:6bb46dcc553c10df51475641bb30fd69d25645cc12339e46c824c1e0c388898a \
     --hash=sha256:e24e7b9b5a35048c313e983f76c4bd09dad89f045ff059e354f9943bf45aa060
@@ -2306,6 +2314,10 @@ yarl==1.24.2 \
     --hash=sha256:f9a1e9b622ca284143aab5d885848686dcd85453bb1ca9abcdb7503e64dc0056 \
     --hash=sha256:fecd17873a096036c1c87ab3486f1aef7f269ada7f23f7f856f93b1cc7744f14
     # via aiohttp
+yt-dlp==2026.7.4 \
+    --hash=sha256:b094813404f87a9dd2186f00815231df32e5fd8a5403be0f807b3bb2d21a4432 \
+    --hash=sha256:f11f2b11d5a8ac4059f9bdf29fa4407dc7c6bb00c5097e95ca22a7a9db518266
+    # via -r requirements.txt
 
 # The following packages are considered to be unsafe in a requirements file:
 pip==26.1.2 \

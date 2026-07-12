@@ -240,10 +240,19 @@ C:\SingYinRoster\.venv\Scripts\python.exe -m pip install --upgrade pip
 ### 步驟 5.3：安裝正式運行需求
 
 ```powershell
-C:\SingYinRoster\.venv\Scripts\python.exe -m pip install -r C:\SingYinRoster\requirements.txt
+C:\SingYinRoster\.venv\Scripts\python.exe -m pip install --require-hashes -r C:\SingYinRoster\requirements.lock
 ```
 
-這一步可能需要數分鐘。完成時不應有紅色 `ERROR`。
+這一步可能需要數分鐘。完成時不應有紅色 `ERROR`。鎖定檔同時安裝網站內的 YouTube 本機音訊匯入元件；無需另行下載另一個圖形介面程式。
+
+完成後核對下載元件版本：
+
+```powershell
+C:\SingYinRoster\.venv\Scripts\python.exe -m yt_dlp --version
+C:\SingYinRoster\.venv\Scripts\deno.exe --version
+```
+
+第一條應顯示 `2026.7.4`，第二條應顯示 Deno `2.9.2`。Deno 是 YouTube 現時影片格式解析所需的本機 JavaScript runtime；鎖定需求會一併安裝，不需要另開網站下載。實際匯入時，網站只接受 HTTPS YouTube／YouTube Music 影片、Shorts 或公開歌單分享連結，並把結果放在 `C:\SingYinRoster\music\youtube-imports\`。此資料夾會在第一次成功匯入時自動建立，不需要手動建立。
 
 ### 步驟 5.4：確認 NiceGUI 可載入
 
@@ -550,7 +559,7 @@ git pull --ff-only origin main
 ### 步驟 12.4：更新 Python 套件
 
 ```powershell
-C:\SingYinRoster\.venv\Scripts\python.exe -m pip install -r C:\SingYinRoster\requirements.txt
+C:\SingYinRoster\.venv\Scripts\python.exe -m pip install --require-hashes -r C:\SingYinRoster\requirements.lock
 ```
 
 ### 步驟 12.5：重新啟動及核對

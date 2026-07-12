@@ -303,12 +303,12 @@ The Daily Verse is a distinct component, not a recoloured dashboard card.
 
 ### 6.1.2 Music atmosphere profiles
 
-Music must remain operator-started and page-context-aware. The intended next extension is one `Follow appearance` preference plus two independently selectable profiles:
+Music remains operator-started and page-context-aware. The implemented system has one `Follow appearance` preference plus two independently selectable profiles:
 
 - **Bright focus:** gentle forward movement, clarity, hope, service, and the beginning of work; suitable for light-mode default recommendation.
 - **Quiet reflection:** slower pacing, reassurance, patience, prayer, and handover; suitable for dark-mode default recommendation without implying sadness.
 
-Appearance selects only the first recommendation when the operator has not chosen a profile. A saved profile overrides appearance until reset. Both profiles may contain several playlists, support sequential/shuffle playback, and remain subordinate to page context and the existing volume/no-autoplay controls. Do not add placeholder tracks: external playlists enter the product only after their exact public YouTube Music URLs and display names have been verified.
+Appearance selects only the recommendation when the operator has not chosen a profile. A saved profile overrides appearance until reset. Both profiles contain several page-specific tracks, support sequential/shuffle playback, and remain subordinate to page context and the existing volume/no-autoplay controls. Vocal and instrumental editions use separate stable arrangement codes and visible bilingual labels; byte-identical duplicate files do not become repeated catalogue entries. A bounded link import may add authorised audio to `music/youtube-imports/`, but it remains an explicit Settings action with an honest waiting state and never runs on page load or appearance change.
 
 ### 6.2 Roster workspace
 
