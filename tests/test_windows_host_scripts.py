@@ -86,7 +86,7 @@ def test_acl_helper_removes_broad_write_access_from_temporary_paths(tmp_path: Pa
     assert payload["Compliant"] is True
 
 
-def test_remote_access_doctor_is_redacted_and_runs_without_explicit_project_root() -> None:
+def test_remote_access_doctor_is_redacted_and_reports_unprepared_host_state() -> None:
     script = PROJECT_ROOT / "scripts" / "doctor_windows_remote_access.ps1"
     if not POWERSHELL:
         pytest.skip("Windows PowerShell is required for the selected host model")
@@ -98,10 +98,14 @@ def test_remote_access_doctor_is_redacted_and_runs_without_explicit_project_root
         encoding="utf-8-sig",
         check=False,
     )
-    assert result.returncode == 0, result.stderr
+    assert result.stderr == ""
     payload = json.loads(result.stdout)
     assert payload["project"] == "sing-yin-study-prefect-duty-roster"
     assert payload["deploymentMode"] == "local"
+    has_failure = any(check["status"] == "fail" for check in payload["checks"])
+    assert result.returncode == (1 if has_failure else 0)
+    access_gate = next(check for check in payload["checks"] if check["code"] == "access_gate")
+    assert access_gate["status"] == "deferred"
     serialized = json.dumps(payload).lower()
     assert "tunnel token" not in serialized
     assert "youtube_api_key" not in serialized
