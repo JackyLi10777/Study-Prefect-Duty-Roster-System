@@ -4,12 +4,20 @@ from collections import Counter, defaultdict
 
 from roster_core.generator import generate_weekly_roster
 from roster_core.loaders import load_prefect_seed
-from roster_policy import DUTY_TIME_WINDOWS, DutyPost, SchoolDay, can_assign_role, duty_weight, required_posts_for_day
+from roster_policy import (
+    DUTY_TIME_WINDOWS,
+    DutyPost,
+    PrefectRole,
+    SchoolDay,
+    can_assign_role,
+    duty_weight,
+    required_posts_for_day,
+)
 
 
 def test_policy_role_gates_are_strict() -> None:
-    ahp = "Assistant Head Study Prefect (助理首席導學風紀)"
-    regular = "Study Prefect (導學風紀)"
+    ahp = PrefectRole.ASSISTANT_HEAD
+    regular = PrefectRole.STUDY_PREFECT
 
     assert can_assign_role(ahp, DutyPost.ASSIST_IN_CHARGE)
     assert not can_assign_role(ahp, DutyPost.ROOM_302)

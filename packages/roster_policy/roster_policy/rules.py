@@ -31,6 +31,17 @@ class DutyPost(str, Enum):
     ROOM_202 = "Room 202"
 
 
+class PrefectRole(str, Enum):
+    """Stable policy identity for roster-eligible prefect roles.
+
+    Human-readable Chinese and English labels belong to presentation adapters;
+    policy decisions must never depend on translated text.
+    """
+
+    ASSISTANT_HEAD = "assistant_head"
+    STUDY_PREFECT = "study_prefect"
+
+
 DUTY_WEIGHTS: dict[DutyPost, float] = {
     DutyPost.ASSIST_IN_CHARGE: 1.0,
     DutyPost.ROOM_302: 1.0,
@@ -68,16 +79,15 @@ ROOM_OPEN_DAYS: dict[DutyPost, set[SchoolDay]] = {
 }
 
 
-def is_ahp_role(role: str) -> bool:
-    normalized = role.casefold()
-    return "assistant head study prefect" in normalized or "助理首席導學風紀" in role
+def is_ahp_role(role: PrefectRole) -> bool:
+    return role is PrefectRole.ASSISTANT_HEAD
 
 
-def is_regular_prefect_role(role: str) -> bool:
-    return not is_ahp_role(role)
+def is_regular_prefect_role(role: PrefectRole) -> bool:
+    return role is PrefectRole.STUDY_PREFECT
 
 
-def can_assign_role(role: str, post: DutyPost) -> bool:
+def can_assign_role(role: PrefectRole, post: DutyPost) -> bool:
     if post is DutyPost.ASSIST_IN_CHARGE:
         return is_ahp_role(role)
     return is_regular_prefect_role(role)

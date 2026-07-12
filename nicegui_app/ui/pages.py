@@ -8,9 +8,11 @@ from datetime import date, timedelta
 from pathlib import Path
 from time import perf_counter
 from typing import TypeVar
+from uuid import uuid4
 
 from nicegui import app, run, ui
 
+from nicegui_app.contact import FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL, GITHUB_REPOSITORY_URL
 from nicegui_app.release_evidence import load_release_evidence
 from nicegui_app.runtime import get_workflow
 from nicegui_app.observability import (
@@ -21,18 +23,27 @@ from nicegui_app.observability import (
 )
 from nicegui_app.services.roster_export import build_fairness_audit_pdf, build_roster_pdf
 from nicegui_app.application_mode import current_application_mode
-from nicegui_app.services.roster_workflow import CommittedWriteBackupError, PrefectInput, WorkflowError
+from nicegui_app.services.roster_workflow import (
+    CommittedWriteBackupError,
+    PrefectInput,
+    WorkflowConflictError,
+    WorkflowError,
+)
 from nicegui_app.ui.i18n import ZH_HK, current_locale, day_label, post_label, role_label, t
 from nicegui_app.ui.music import render_music_library_settings
 from nicegui_app.ui.operation_gate import claim_durable_operation, release_durable_operation
+from nicegui_app.ui.platform_summary import PlatformSummary, load_platform_summary
 from nicegui_app.ui.shell import page_shell
 from nicegui_app.ui.sound import play_interface_sound
+from nicegui_app.ui.theme import current_theme
 from nicegui_app.utils.prefect_import import ImportPreview, parse_prefect_import_text, prefect_import_template_csv
 from roster_core import select_daily_verse
 from roster_policy import DUTY_TIME_WINDOWS, DutyPost, SchoolDay, required_posts_for_day
 
 _OPERATION_FAILED = object()
 _OperationResult = TypeVar("_OperationResult")
+_DEVOTIONAL_GUIDANCE_THEMES = ("servant-leadership", "justice-fairness", "wisdom-discernment", "witness-light")
+_DEVOTIONAL_COMFORT_THEMES = ("prayer-peace", "mercy-care", "perseverance", "faithfulness", "spiritual-formation")
 
 
 def _operation_error_message(reference: str) -> str:
@@ -69,9 +80,25 @@ def _next_monday() -> date:
     return today + timedelta(days=(-today.weekday()) % 7)
 
 
+def _devotional_tone() -> str:
+    preference = str(app.storage.user.get("devotional_tone", "auto"))
+    if preference == "auto":
+        return "comfort" if current_theme() == "dark" else "guidance"
+    return preference if preference in {"guidance", "comfort"} else "guidance"
+
+
+def _set_devotional_tone(value: str) -> None:
+    if value not in {"auto", "guidance", "comfort"}:
+        return
+    app.storage.user["devotional_tone"] = value
+    app.storage.user["dashboard_verse_offset"] = 0
+    ui.navigate.reload()
+
+
 def _dashboard_verse() -> object:
     offset = int(app.storage.user.get("dashboard_verse_offset", 0))
-    return select_daily_verse(date.today() + timedelta(days=offset), special_use="dashboard-hero")
+    themes = _DEVOTIONAL_COMFORT_THEMES if _devotional_tone() == "comfort" else _DEVOTIONAL_GUIDANCE_THEMES
+    return select_daily_verse(date.today() + timedelta(days=offset), themes_any=themes)
 
 
 def _refresh_dashboard_verse() -> None:
@@ -138,6 +165,12 @@ async def _run_with_progress(
         record_operator_partial_failure(error, action=working_key, reference=reference, started_at=started_at)
         _show_committed_without_backup(reference)
         return _OPERATION_FAILED
+    except WorkflowConflictError:
+        if dialog is not None:
+            dialog.close()
+        record_operator_event(action=working_key, outcome="conflict", reference=reference, started_at=started_at)
+        ui.notify(t("roster_write_conflict"), type="warning", timeout=8_000)
+        return _OPERATION_FAILED
     except Exception as error:
         record_operator_failure(error, action=working_key, reference=reference, started_at=started_at)
         ui.notify(_operation_error_message(reference), type="negative", timeout=8_000)
@@ -159,6 +192,27 @@ async def _run_with_progress(
 def _navigate_with_feedback(path: str) -> None:
     play_interface_sound("navigation")
     ui.navigate.to(path)
+
+
+def _render_feedback_channel(*, compact: bool = False) -> None:
+    classes = "sy-feedback-channel sy-feedback-channel--compact" if compact else "sy-feedback-channel"
+    with ui.element("section").classes(classes).props(
+        f'aria-label="{t("feedback_channel_title")}" data-testid=feedback-channel'
+    ):
+        ui.icon("alternate_email").classes("sy-feedback-channel-icon").props("aria-hidden=true")
+        with ui.column().classes("gap-1 min-w-0"):
+            ui.label(t("feedback_channel_title")).classes("sy-feedback-channel-title")
+            ui.label(t("feedback_channel_body")).classes("sy-feedback-channel-copy")
+            with ui.row().classes("sy-feedback-channel-actions gap-4 flex-wrap"):
+                ui.link(t("feedback_email_action"), FEEDBACK_MAILTO_URL).classes("sy-feedback-channel-action").props(
+                    f'aria-label="{t("feedback_email_action")}: {FEEDBACK_EMAIL}"'
+                )
+                ui.link(t("github_repository_action"), GITHUB_REPOSITORY_URL).classes(
+                    "sy-feedback-channel-action"
+                ).props(f'target=_blank rel="noopener noreferrer" aria-label="{t("github_repository_action")}"')
+            ui.label(FEEDBACK_EMAIL).classes("sy-feedback-channel-address")
+            ui.label(GITHUB_REPOSITORY_URL).classes("sy-feedback-channel-address")
+            ui.label(t("feedback_channel_safe_note")).classes("sy-feedback-channel-note")
 
 
 def _roster_display_rows(assignments: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -303,17 +357,25 @@ def _open_roster_export_dialog(roster_week_id: int) -> None:
             ui.label(t("group_schedule_export")).classes("text-lg font-semibold")
             ui.label(t("group_schedule_export_notice")).classes("text-sm text-[var(--sy-muted)] mt-1")
             with ui.row().classes("w-full gap-2 mt-4"):
-                ui.button(t("export_schedule_zh"), icon="picture_as_pdf", on_click=lambda: download("zh")).props("color=teal-8")
-                ui.button(t("export_schedule_en"), icon="picture_as_pdf", on_click=lambda: download("en")).props("outline color=teal-8")
+                ui.button(t("export_schedule_zh"), icon="picture_as_pdf", on_click=lambda: download("zh")).props("color=primary")
+                ui.button(t("export_schedule_en"), icon="picture_as_pdf", on_click=lambda: download("en")).props("outline color=primary")
         with ui.card().classes("sy-export-option sy-export-option--internal w-full mt-3 p-5"):
             ui.label(t("internal_audit_export")).classes("text-lg font-semibold")
             ui.label(t("internal_audit_export_notice")).classes("text-sm text-[var(--sy-muted)] mt-1")
             with ui.row().classes("w-full gap-2 mt-4"):
-                ui.button(t("export_audit_zh"), icon="fact_check", on_click=lambda: download("zh", include_audit=True)).props("outline color=amber-9")
-                ui.button(t("export_audit_en"), icon="fact_check", on_click=lambda: download("en", include_audit=True)).props("outline color=amber-9")
+                ui.button(t("export_audit_zh"), icon="fact_check", on_click=lambda: download("zh", include_audit=True)).props("outline color=primary")
+                ui.button(t("export_audit_en"), icon="fact_check", on_click=lambda: download("en", include_audit=True)).props("outline color=primary")
         with ui.row().classes("w-full justify-end mt-5"):
             ui.button(t("cancel"), icon="close", on_click=dialog.close).props("flat")
     dialog.open()
+
+
+def _tone_badge(text: str, tone: str, *, props: str = ""):
+    """Render one status vocabulary whose colour meaning is stable across pages."""
+    badge = ui.badge(text).classes(f"sy-status-badge sy-tone-{tone}")
+    if props:
+        badge.props(props)
+    return badge
 
 
 def _render_flow_step(
@@ -332,11 +394,11 @@ def _render_flow_step(
         with ui.row().classes("w-full items-start justify-between gap-3"):
             ui.label(f"{number:02d}").classes("sy-flow-index")
             ui.icon(icon).classes("sy-flow-symbol").props("aria-hidden=true")
-            ui.badge(t(state_key), color="teal-8" if state in {"active", "done"} else "grey-6")
+            _tone_badge(t(state_key), {"active": "action", "done": "stable"}.get(state, "neutral"))
         ui.label(t(title_key)).classes("sy-flow-title mt-5")
         ui.label(t(detail_key)).classes("sy-flow-copy mt-2")
         if action_key and action:
-            props = "color=teal-8" if state == "active" else "outline color=teal-8"
+            props = "color=primary" if state == "active" else "outline color=primary"
             ui.button(t(action_key), icon="arrow_forward", on_click=action).props(props).classes("mt-5")
         elif state == "pending":
             ui.label(t("flow_unavailable")).classes("sy-flow-disabled mt-5")
@@ -354,7 +416,7 @@ def _render_storage_lifecycle(workflow) -> None:  # type: ignore[no-untyped-def]
                 with ui.column().classes("gap-0"):
                     ui.label(t("storage_lifecycle_title")).classes("sy-storage-lifecycle-title")
                     ui.label(t("storage_lifecycle_intro")).classes("sy-storage-lifecycle-intro")
-            ui.badge(t("verified") if backup_verified else t("handover_attention"), color="teal-8" if backup_verified else "amber-8")
+            _tone_badge(t("verified") if backup_verified else t("handover_attention"), "stable" if backup_verified else "attention")
         with ui.expansion(t("fairness_explained"), icon="account_balance").classes("sy-storage-lifecycle-expand mt-3"):
             with ui.element("div").classes("sy-storage-lifecycle-grid"):
                 for icon, title_key, detail_key in (
@@ -386,10 +448,12 @@ def _render_empty_state(
     icon: str,
     action_key: str | None = None,
     action=None,  # type: ignore[no-untyped-def]
-    action_props: str = "outline color=teal-8",
+    action_props: str = "outline color=primary",
+    illustrated: bool = False,
 ) -> None:
-    """Turn an empty result into one clear, safe next action."""
-    with ui.element("section").classes("sy-empty-state w-full").props(f'aria-label="{t(title_key)}"'):
+    """Turn an empty result into one clear next action; reserve imagery for orientation moments."""
+    variant = " sy-empty-state--illustrated" if illustrated else ""
+    with ui.element("section").classes(f"sy-empty-state{variant} w-full").props(f'aria-label="{t(title_key)}"'):
         ui.icon(icon).classes("sy-empty-state-icon").props("aria-hidden=true")
         with ui.column().classes("items-center gap-1 max-w-lg"):
             ui.label(t(title_key)).classes("sy-empty-state-title")
@@ -423,12 +487,12 @@ def _render_roster_route_state(
                 t(primary_key),
                 icon="arrow_back",
                 on_click=lambda: ui.navigate.to(primary_path),
-            ).props(f"color=teal-8 data-testid={test_id}-primary")
+            ).props(f"color=primary data-testid={test_id}-primary")
             ui.button(
                 t(secondary_key),
                 icon=secondary_icon,
                 on_click=lambda: ui.navigate.to(secondary_path),
-            ).props(f"outline color=teal-8 data-testid={test_id}-secondary")
+            ).props(f"outline color=primary data-testid={test_id}-secondary")
 
 
 @ui.page("/")
@@ -447,7 +511,19 @@ def dashboard_page() -> None:
                     ui.label(t("daily_verse")).classes("sy-daily-start-kicker")
                     ui.label(scripture).classes("sy-daily-start-verse")
                     ui.label(reference).classes("sy-daily-start-reference")
-                ui.button(t("refresh_verse"), icon="refresh", on_click=_refresh_dashboard_verse).props("flat").classes("sy-daily-start-refresh")
+                with ui.column().classes("sy-devotional-controls gap-2 items-end"):
+                    tone_preference = str(app.storage.user.get("devotional_tone", "auto"))
+                    tone_select = ui.select(
+                        label=t("devotional_tone_label"),
+                        options={
+                            "auto": t("devotional_tone_auto"),
+                            "guidance": t("devotional_tone_guidance"),
+                            "comfort": t("devotional_tone_comfort"),
+                        },
+                        value=tone_preference if tone_preference in {"auto", "guidance", "comfort"} else "auto",
+                    ).props("dense outlined options-dense").classes("sy-devotional-tone-select")
+                    tone_select.on_value_change(lambda event: _set_devotional_tone(str(event.value)))
+                    ui.button(t("refresh_verse"), icon="refresh", on_click=_refresh_dashboard_verse).props("flat").classes("sy-daily-start-refresh")
             with ui.expansion(reflection.get("title", ""), icon="auto_stories").classes("sy-daily-start-reflection mt-3"):
                 ui.label(reflection.get("body", "")).classes("text-sm leading-6 text-[var(--sy-muted)] p-1")
                 if reflection.get("prayer"):
@@ -461,11 +537,11 @@ def dashboard_page() -> None:
                         ui.label(t("workbench_title")).classes("sy-workbench-title")
                         ui.label(t("workbench_intro")).classes("sy-workbench-intro")
                     if latest is None:
-                        ui.badge(t("flow_no_roster"), color="amber-8")
+                        _tone_badge(t("flow_no_roster"), "attention")
                     elif latest["status"] == "draft":
-                        ui.badge(t("flow_draft_ready"), color="teal-8")
+                        _tone_badge(t("flow_draft_ready"), "action")
                     else:
-                        ui.badge(t("flow_published_ready"), color="teal-8")
+                        _tone_badge(t("flow_published_ready"), "stable")
                 with ui.element("ol").classes("sy-flow mt-7").props(f'aria-label="{t("workbench_title")}"'):
                     if latest is None:
                         _render_flow_step(number=1, title_key="flow_generate", detail_key="flow_generate_detail", state="active", state_key="flow_current", icon="edit_calendar", action_key="create_draft", action=lambda: _navigate_with_feedback("/rosters"))
@@ -489,6 +565,7 @@ def dashboard_page() -> None:
                 icon="event_note",
                 action_key="empty_start_action",
                 action=lambda: _navigate_with_feedback("/rosters"),
+                illustrated=True,
             )
         else:
             for week in weeks:
@@ -496,7 +573,7 @@ def dashboard_page() -> None:
                     with ui.column().classes("gap-0"):
                         ui.label(str(week["weekStart"])).classes("font-semibold")
                         ui.label(f"{t('version')} {week['version']}").classes("text-sm text-[var(--sy-muted)]")
-                    ui.badge(t("published") if week["status"] == "published" else t("draft"), color="teal-8")
+                    _tone_badge(t("published") if week["status"] == "published" else t("draft"), "stable" if week["status"] == "published" else "action")
                     ui.button(t("view"), icon="arrow_forward", on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}")).props("flat")
 
 
@@ -525,8 +602,8 @@ def getting_started_page() -> None:
                 if title_key == "new_user_step_start":
                     ui.label(f"{t('local_address_label')}: http://127.0.0.1:8080").classes("font-mono text-sm font-semibold mt-3")
         with ui.row().classes("gap-3 flex-wrap"):
-            ui.button(t("open_prefects"), icon="groups", on_click=lambda: ui.navigate.to("/prefects")).props("outline color=teal-8")
-            ui.button(t("open_rosters"), icon="calendar_month", on_click=lambda: ui.navigate.to("/rosters")).props("color=teal-8")
+            ui.button(t("open_prefects"), icon="groups", on_click=lambda: ui.navigate.to("/prefects")).props("outline color=primary")
+            ui.button(t("open_rosters"), icon="calendar_month", on_click=lambda: ui.navigate.to("/rosters")).props("color=primary")
             ui.button(t("operator_guide"), icon="help", on_click=lambda: ui.navigate.to("/guide")).props("flat")
             ui.button(t("open_handover_guide"), icon="handshake", on_click=lambda: ui.navigate.to("/handover")).props("flat")
 
@@ -548,6 +625,7 @@ def operator_guide_page() -> None:
         for title_key, body_key in sections:
             with ui.expansion(t(title_key), icon="help").classes("sy-surface w-full max-w-4xl"):
                 ui.label(t(body_key)).classes("p-4 text-sm leading-6 text-[var(--sy-muted)]")
+        _render_feedback_channel(compact=True)
         ui.button(t("open_system_architecture"), icon="account_tree", on_click=lambda: ui.navigate.to("/system-architecture")).props("flat").classes("self-start")
 
 
@@ -559,7 +637,7 @@ def rosters_page() -> None:
             ui.label(t("rosters")).classes("text-2xl font-semibold")
             ui.label(t("persistence_notice")).classes("text-sm text-[var(--sy-muted)]")
         _render_storage_lifecycle(workflow)
-        with ui.tabs().classes("w-full text-teal-800 dark:text-teal-200") as tabs:
+        with ui.tabs().classes("w-full sy-fg-action") as tabs:
             generate_tab = ui.tab("generate_view", label=t("generate_view"), icon="calendar_month")
             adjust_tab = ui.tab("adjust_edit", label=t("adjust_edit"), icon="edit_calendar")
         with ui.tab_panels(tabs, value="generate_view", animated=False, keep_alive=False).classes("w-full bg-transparent"):
@@ -716,7 +794,7 @@ def rosters_page() -> None:
                             refresh_leave_list()
                             ui.notify(t("leave_declared"), type="positive")
 
-                    ui.button(t("declare_leave"), icon="event_busy", on_click=declare_leave).props("outline color=teal-8").classes("mt-3")
+                    ui.button(t("declare_leave"), icon="event_busy", on_click=declare_leave).props("outline color=primary").classes("mt-3")
                     week_input.on("change", lambda _event: (refresh_leave_list(), refresh_requirements()))
                     refresh_leave_list()
 
@@ -734,7 +812,7 @@ def rosters_page() -> None:
                             ui.notify(t("draft_saved"), type="positive")
                             ui.navigate.to(f"/rosters/{result.id}")
 
-                    ui.button(t("create_draft"), icon="auto_awesome", on_click=generate).props("color=teal-8").classes("mt-4")
+                    ui.button(t("create_draft"), icon="auto_awesome", on_click=generate).props("color=primary").classes("mt-4")
                 ui.label(t("current_rosters")).classes("text-xl font-semibold mt-6")
                 weeks = workflow.roster_weeks()
                 if not weeks:
@@ -742,13 +820,14 @@ def rosters_page() -> None:
                         title_key="empty_roster_title",
                         body_key="empty_roster_detail",
                         icon="event_note",
+                        illustrated=True,
                     )
                 for week in weeks:
                     with ui.row().classes("sy-surface w-full items-center justify-between px-5 py-4"):
                         with ui.column().classes("gap-0"):
                             ui.label(str(week["weekStart"])).classes("text-lg font-semibold")
                             ui.label(f"{t('version')} {week['version']}  |  {t('generated_at')}: {week['generatedAt']:%Y-%m-%d %H:%M}").classes("text-sm text-[var(--sy-muted)]")
-                        ui.badge(t("published") if week["status"] == "published" else t("draft"), color="teal-8")
+                        _tone_badge(t("published") if week["status"] == "published" else t("draft"), "stable" if week["status"] == "published" else "action")
                         ui.button(t("view"), icon="arrow_forward", on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}")).props("flat")
             with ui.tab_panel("adjust_edit").classes("px-0"):
                 ui.label(t("adjustments")).classes("text-lg font-semibold")
@@ -765,7 +844,7 @@ def rosters_page() -> None:
                         with ui.column().classes("gap-0"):
                             ui.label(str(week["weekStart"])).classes("text-lg font-semibold")
                             ui.label(f"{t('version')} {week['version']}").classes("text-sm text-[var(--sy-muted)]")
-                        ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}/adjustments")).props("outline color=teal-8")
+                        ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}/adjustments")).props("outline color=primary")
 
 
 @ui.page("/rosters/new")
@@ -815,13 +894,13 @@ def roster_detail_page(roster_week_id: int) -> None:
 
                         with ui.row().classes("w-full justify-end gap-3 mt-5"):
                             ui.button(t("cancel"), icon="close", on_click=publish_dialog.close).props("flat")
-                            ui.button(t("confirm_publish_action"), icon="publish", on_click=publish).props("color=teal-8")
-                    ui.button(t("publish"), icon="publish", on_click=publish_dialog.open).props("color=teal-8")
+                            ui.button(t("confirm_publish_action"), icon="publish", on_click=publish).props("color=primary")
+                    ui.button(t("publish"), icon="publish", on_click=publish_dialog.open).props("color=primary")
                 else:
-                    ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda: ui.navigate.to(f"/rosters/{roster_week_id}/adjustments")).props("outline color=teal-8")
-                ui.button(t("export_pdf"), icon="picture_as_pdf", on_click=lambda: _open_roster_export_dialog(roster_week_id)).props("outline color=teal-8")
+                    ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda: ui.navigate.to(f"/rosters/{roster_week_id}/adjustments")).props("outline color=primary")
+                ui.button(t("export_pdf"), icon="picture_as_pdf", on_click=lambda: _open_roster_export_dialog(roster_week_id)).props("outline color=primary")
         if week["status"] == "draft":
-            ui.label(t("draft_export_warning")).classes("text-amber-800 dark:text-amber-200 font-medium")
+            ui.label(t("draft_export_warning")).classes("sy-fg-attention font-medium")
         ui.label(t("export_pdf_notice")).classes("text-sm text-[var(--sy-muted)]")
         if week["status"] == "draft":
             ui.label(t("draft_preview")).classes("text-xl font-semibold mt-2")
@@ -893,13 +972,13 @@ def roster_detail_page(roster_week_id: int) -> None:
                         ui.navigate.reload()
 
                 with ui.row().classes("gap-3 mt-4"):
-                    ui.button(t("load_draft_candidates"), icon="group_add", on_click=load_draft_candidates).props("outline color=teal-8")
-                    ui.button(t("save_draft_change"), icon="save", on_click=save_draft_change).props("color=teal-8")
+                    ui.button(t("load_draft_candidates"), icon="group_add", on_click=load_draft_candidates).props("outline color=primary")
+                    ui.button(t("save_draft_change"), icon="save", on_click=save_draft_change).props("color=primary")
         else:
-            with ui.card().classes("sy-surface w-full max-w-3xl border-l-4 border-amber-500 p-6"):
+            with ui.card().classes("sy-surface sy-border-attention w-full max-w-3xl border-l-4 p-6"):
                 ui.label(t("post_publication_leave")).classes("text-lg font-semibold")
                 ui.label(t("post_publication_leave_notice")).classes("text-sm text-[var(--sy-muted)] mt-1")
-                ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda: ui.navigate.to(f"/rosters/{roster_week_id}/adjustments")).props("color=teal-8").classes("mt-4")
+                ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda: ui.navigate.to(f"/rosters/{roster_week_id}/adjustments")).props("color=primary").classes("mt-4")
         declarations = workflow.pre_generation_leaves(week["weekStart"])
         if declarations:
             with ui.element("section").classes("sy-surface w-full px-5 py-4"):
@@ -949,6 +1028,7 @@ def adjustment_detail_page(roster_week_id: int) -> None:
                 secondary_icon="format_list_bulleted",
             )
             return
+        adjustment_command_id = f"leave-ui:{uuid4().hex}"
         active_assignments = [item for item in workflow.assignments(roster_week_id) if item["status"] == "active"]
         options = {
             str(item["id"]): f"{day_label(item['day'])} | {post_label(item['postCode'])} | {item['prefectName']}"
@@ -1001,6 +1081,8 @@ def adjustment_detail_page(roster_week_id: int) -> None:
                         assignment_id=assignment_id,
                         replacement_prefect_id=replacement_id,
                         reason=reason,
+                        command_id=adjustment_command_id,
+                        expected_week_version=int(week["version"]),
                     ),
                     title_key="progress_adjustment_title",
                     working_key="progress_adjustment_working",
@@ -1016,8 +1098,8 @@ def adjustment_detail_page(roster_week_id: int) -> None:
                     "name=leave-adjustment-reason autocomplete=off"
                 ).classes("w-full")
             with ui.row().classes("sy-adjustment-actions w-full gap-3"):
-                ui.button(t("load_substitutes"), icon="group_add", on_click=load_substitutes).props("outline color=teal-8")
-                ui.button(t("apply_adjustment"), icon="save", on_click=apply_adjustment).props("color=teal-8")
+                ui.button(t("load_substitutes"), icon="group_add", on_click=load_substitutes).props("outline color=primary")
+                ui.button(t("apply_adjustment"), icon="save", on_click=apply_adjustment).props("color=primary")
 
 
 def _show_prefect_dialog(existing: dict[str, object] | None = None) -> None:
@@ -1092,7 +1174,7 @@ def _show_prefect_dialog(existing: dict[str, object] | None = None) -> None:
 
         with ui.row().classes("w-full justify-end gap-3 mt-4"):
             ui.button(t("cancel"), icon="close", on_click=dialog.close).props("flat")
-            ui.button(t("save"), icon="save", on_click=save_prefect).props("color=teal-8")
+            ui.button(t("save"), icon="save", on_click=save_prefect).props("color=primary")
     dialog.open()
 
 
@@ -1119,8 +1201,8 @@ def prefects_page() -> None:
     with page_shell("prefects", "/prefects"):
         with ui.row().classes("w-full items-center justify-between"):
             ui.label(t("prefects")).classes("text-2xl font-semibold")
-            ui.button(t("add_prefect"), icon="person_add", on_click=lambda: _show_prefect_dialog()).props("color=teal-8")
-        with ui.tabs().classes("w-full text-teal-800 dark:text-teal-200") as tabs:
+            ui.button(t("add_prefect"), icon="person_add", on_click=lambda: _show_prefect_dialog()).props("color=primary")
+        with ui.tabs().classes("w-full sy-fg-action") as tabs:
             directory_tab = ui.tab("directory", label=t("directory"), icon="groups")
             import_tab = ui.tab("ai_import", label=t("ai_import"), icon="smart_toy")
             fairness_tab = ui.tab("fairness", label=t("audit"), icon="balance")
@@ -1171,7 +1253,7 @@ def prefects_page() -> None:
                             return
                         archive_dialog.open()
 
-                    ui.button(t("edit_prefect"), icon="edit", on_click=edit_selected).props("outline color=teal-8")
+                    ui.button(t("edit_prefect"), icon="edit", on_click=edit_selected).props("outline color=primary")
                     ui.button(t("archive_prefect"), icon="archive", on_click=archive_selected).props(
                         "flat color=negative data-testid=open-archive-prefect"
                     )
@@ -1195,7 +1277,7 @@ def prefects_page() -> None:
                     t("download_import_template"),
                     icon="download",
                     on_click=lambda: ui.download(prefect_import_template_csv(), "sing-yin-prefect-import-template.csv"),
-                ).props("outline color=teal-8").classes("mt-3")
+                ).props("outline color=primary").classes("mt-3")
                 import_text = ui.textarea(label=t("ai_import_input")).props(
                     "name=prefect-import autocomplete=off"
                 ).classes("w-full max-w-3xl")
@@ -1213,7 +1295,7 @@ def prefects_page() -> None:
                                 ui.label(issue).classes("text-sm text-red-600")
                         if preview.rows:
                             if not preview.issues:
-                                ui.label(t("import_ready")).classes("font-semibold text-teal-700 dark:text-teal-200")
+                                ui.label(t("import_ready")).classes("font-semibold sy-fg-stable")
                             ui.table(
                                 rows=[
                                     {
@@ -1251,8 +1333,8 @@ def prefects_page() -> None:
                         ui.navigate.reload()
 
                 with ui.row().classes("gap-3 mt-4"):
-                    ui.button(t("preview_import"), icon="fact_check", on_click=preview_import).props("outline color=teal-8")
-                    ui.button(t("import_prefects"), icon="upload", on_click=import_preview).props("color=teal-8")
+                    ui.button(t("preview_import"), icon="fact_check", on_click=preview_import).props("outline color=primary")
+                    ui.button(t("import_prefects"), icon="upload", on_click=import_preview).props("color=primary")
             with ui.tab_panel("fairness").classes("px-0"):
                 _render_fairness_panel(workflow)
 
@@ -1288,7 +1370,7 @@ def handover_page() -> None:
                 with ui.element("article").classes("sy-surface sy-handover-readiness-card"):
                     ui.label(t(label_key)).classes("text-sm text-[var(--sy-muted)]")
                     ui.label(value).classes("text-xl font-semibold mt-1")
-                    ui.badge(t("handover_ready") if ready else t("handover_attention"), color="teal-8" if ready else "amber-8").classes("mt-3")
+                    _tone_badge(t("handover_ready") if ready else t("handover_attention"), "stable" if ready else "attention").classes("mt-3")
 
         state_key = {
             "pass": "acceptance_status_pass",
@@ -1307,13 +1389,13 @@ def handover_page() -> None:
             "missing": "pending_actions",
             "unreadable": "report_problem",
         }[release_evidence.state]
-        state_color = {
-            "pass": "teal-8",
-            "running": "blue-7",
-            "stale": "amber-8",
-            "fail": "negative",
-            "missing": "amber-8",
-            "unreadable": "negative",
+        state_tone = {
+            "pass": "stable",
+            "running": "action",
+            "stale": "attention",
+            "fail": "danger",
+            "missing": "attention",
+            "unreadable": "danger",
         }[release_evidence.state]
         with ui.element("section").classes("sy-acceptance-panel w-full").props(
             f'role=status aria-live=polite aria-label="{t("acceptance_title")}" data-testid=acceptance-status'
@@ -1324,10 +1406,10 @@ def handover_page() -> None:
                     with ui.column().classes("gap-1"):
                         ui.label(t("acceptance_title")).classes("sy-acceptance-title")
                         ui.label(t("acceptance_intro")).classes("sy-acceptance-intro")
-                ui.badge(t(state_key), color=state_color).props("data-testid=acceptance-state-badge")
+                _tone_badge(t(state_key), state_tone, props="data-testid=acceptance-state-badge")
             with ui.element("div").classes("sy-acceptance-grid"):
                 with ui.element("article").classes("sy-acceptance-card"):
-                    ui.icon(state_icon).classes("sy-acceptance-card-icon").props("aria-hidden=true")
+                    ui.icon(state_icon).classes(f"sy-acceptance-card-icon sy-fg-{state_tone}").props("aria-hidden=true")
                     ui.label(t("acceptance_machine_title")).classes("sy-acceptance-card-kicker")
                     ui.label(t(state_key)).classes("sy-acceptance-card-title")
                     ui.label(t(state_body_key)).classes("sy-acceptance-card-copy")
@@ -1347,7 +1429,7 @@ def handover_page() -> None:
                             )
                         ).classes("sy-acceptance-meta")
                 with ui.element("article").classes("sy-acceptance-card sy-acceptance-card--human"):
-                    ui.icon("groups").classes("sy-acceptance-card-icon").props("aria-hidden=true")
+                    ui.icon("groups").classes("sy-acceptance-card-icon sy-fg-attention").props("aria-hidden=true")
                     ui.label(t("acceptance_human_title")).classes("sy-acceptance-card-kicker")
                     ui.label(t("acceptance_human_required")).classes("sy-acceptance-card-title")
                     ui.label(t("acceptance_human_body")).classes("sy-acceptance-card-copy")
@@ -1369,13 +1451,338 @@ def handover_page() -> None:
                     t("acceptance_open_guide"),
                     icon="menu_book",
                     on_click=lambda: ui.navigate.to("/guide"),
-                ).props("outline color=teal-8 data-testid=acceptance-open-guide")
+                ).props("outline color=primary data-testid=acceptance-open-guide")
                 ui.button(
                     t("open_backup_settings"),
                     icon="settings_backup_restore",
                     on_click=lambda: ui.navigate.to("/settings"),
                 ).props("flat data-testid=acceptance-open-settings")
         ui.button(t("open_system_architecture"), icon="account_tree", on_click=lambda: ui.navigate.to("/system-architecture")).props("flat").classes("self-start")
+
+
+def _render_co_creation() -> None:
+    with ui.element("section").classes("sy-co-creation w-full").props(f'aria-label="{t("co_creation_title")}"'):
+        ui.image("/assets/brand/sing-yin-crest-display-web.png").classes("sy-co-creation-crest").props(
+            f'alt="{t("school_crest_alt")}" width=640 height=615 loading=lazy decoding=async'
+        )
+        ui.label(t("co_creation_title")).classes("sy-co-creation-title")
+        ui.label(t("co_creation_team")).classes("sy-co-creation-team")
+        ui.label(t("co_creation_body")).classes("sy-co-creation-copy")
+        ui.label(t("co_creation_quote")).classes("sy-co-creation-quote")
+        ui.label(t("co_creation_signature")).classes("sy-co-creation-signature")
+        with ui.element("div").classes("sy-codex-closing"):
+            ui.label(t("co_creation_codex_title")).classes("sy-codex-closing-title")
+            ui.label(t("co_creation_codex_body")).classes("sy-codex-closing-copy")
+
+
+@ui.page("/platform")
+def platform_page() -> None:
+    team_roles = (
+        ("flag", "team_role_head", "team_role_head_function", "team_role_head_body", "lead"),
+        ("hub", "team_role_assistant", "team_role_assistant_function", "team_role_assistant_body", "coordination"),
+        ("meeting_room", "team_role_prefect", "team_role_prefect_function", "team_role_prefect_body", "service"),
+        ("fact_check", "team_role_advisor", "team_role_advisor_function", "team_role_advisor_body", "assurance"),
+    )
+    capability_groups = (
+        ("calendar_month", "capability_operations_title", "capability_operations_body", "capability_operations_output"),
+        ("balance", "capability_fairness_title", "capability_fairness_body", "capability_fairness_output"),
+        ("translate", "capability_experience_title", "capability_experience_body", "capability_experience_output"),
+        ("shield", "capability_continuity_title", "capability_continuity_body", "capability_continuity_output"),
+    )
+    solutions = (
+        ("event_available", "solution_weekly_title", "solution_weekly_body", "solution_weekly_outcome", "/rosters"),
+        ("person_off", "solution_adjustment_title", "solution_adjustment_body", "solution_adjustment_outcome", "/adjustments"),
+        ("query_stats", "solution_fairness_title", "solution_fairness_body", "solution_fairness_outcome", "/audit"),
+        ("inventory_2", "solution_handover_title", "solution_handover_body", "solution_handover_outcome", "/handover"),
+    )
+    culture_values = (
+        ("platform_value_service_title", "platform_value_service_body"),
+        ("platform_value_fairness_title", "platform_value_fairness_body"),
+        ("platform_value_clarity_title", "platform_value_clarity_body"),
+        ("platform_value_responsibility_title", "platform_value_responsibility_body"),
+        ("platform_value_continuity_title", "platform_value_continuity_body"),
+    )
+
+    summary = PlatformSummary.unavailable()
+    summary_reference = ""
+    started_at = perf_counter()
+    try:
+        summary = load_platform_summary(get_workflow())
+    except Exception as error:
+        summary_reference = new_operation_reference()
+        record_operator_failure(
+            error,
+            action="load_platform_summary",
+            reference=summary_reference,
+            started_at=started_at,
+        )
+
+    release_labels = {
+        "pass": "platform_release_pass",
+        "running": "platform_release_running",
+        "stale": "platform_release_stale",
+        "fail": "platform_release_fail",
+        "missing": "platform_release_missing",
+        "unreadable": "platform_release_unreadable",
+    }
+    release_value = t(release_labels.get(summary.release_state, "platform_release_unreadable"))
+    if summary.release_total_checks:
+        release_value = t(
+            "platform_release_checks",
+            passed=summary.release_passed_checks,
+            total=summary.release_total_checks,
+        )
+
+    with page_shell("platform", "/platform", music_context="architecture"):
+        with ui.element("section").classes("sy-platform-hero w-full").props(
+            f'aria-label="{t("platform")}" data-testid=platform-hero'
+        ):
+            with ui.column().classes("sy-platform-hero-copy gap-2"):
+                ui.label(t("platform_kicker")).classes("sy-architecture-kicker")
+                ui.label(t("platform")).classes("sy-architecture-title")
+                ui.label(t("platform_intro")).classes("sy-architecture-copy")
+                ui.label(t("platform_principle")).classes("sy-platform-principle")
+
+        with ui.element("section").classes("sy-architecture-section w-full"):
+            _render_architecture_section_heading(
+                "platform_snapshot_kicker", "platform_snapshot_title", "platform_snapshot_copy"
+            )
+            if summary.available:
+                metrics = (
+                    ("groups", str(summary.active_prefect_count), "platform_metric_prefects", "platform_metric_prefects_note"),
+                    ("calendar_view_week", str(summary.roster_count), "platform_metric_rosters", "platform_metric_rosters_note"),
+                    ("verified_user", t("verified") if summary.verified_backup else t("handover_attention"), "platform_metric_backup", "platform_metric_backup_note"),
+                    ("fact_check", release_value, "platform_metric_release", "platform_metric_release_note"),
+                )
+                with ui.element("div").classes("sy-platform-snapshot").props(
+                    "data-testid=platform-live-summary aria-live=polite"
+                ):
+                    for icon, value, label_key, note_key in metrics:
+                        with ui.element("article").classes("sy-platform-metric"):
+                            ui.icon(icon).classes("sy-platform-metric-icon").props("aria-hidden=true")
+                            ui.label(value).classes("sy-platform-metric-value")
+                            ui.label(t(label_key)).classes("sy-platform-metric-label")
+                            ui.label(t(note_key)).classes("sy-platform-metric-note")
+            else:
+                with ui.element("div").classes("sy-platform-unavailable").props(
+                    "role=status data-testid=platform-summary-unavailable"
+                ):
+                    ui.label(t("platform_snapshot_unavailable_title")).classes("font-semibold")
+                    ui.label(t("platform_snapshot_unavailable_body")).classes("mt-2 text-sm leading-6 text-[var(--sy-muted)]")
+                    if summary_reference:
+                        ui.label(t("error_reference", reference=summary_reference)).classes(
+                            "mt-3 text-xs text-[var(--sy-muted)]"
+                        )
+
+        with ui.element("section").classes("sy-architecture-section w-full").props(
+            f'aria-label="{t("team_operating_model_title")}"'
+        ):
+            _render_architecture_section_heading(
+                "team_operating_model_kicker", "team_operating_model_title", "team_operating_model_copy"
+            )
+            with ui.element("div").classes("sy-team-operating-model").props("data-testid=team-operating-model"):
+                for icon, role_key, function_key, body_key, level in team_roles:
+                    with ui.element("article").classes(f"sy-team-role sy-team-role--{level}"):
+                        with ui.row().classes("items-center gap-3 no-wrap"):
+                            ui.icon(icon).classes("sy-team-role-icon").props("aria-hidden=true")
+                            with ui.column().classes("gap-0 min-w-0"):
+                                ui.label(t(role_key)).classes("sy-team-role-title")
+                                ui.label(t(function_key)).classes("sy-team-role-function")
+                        ui.label(t(body_key)).classes("sy-team-role-copy")
+            ui.label(t("team_operating_model_note")).classes("sy-team-operating-model-note")
+
+        with ui.element("section").classes("sy-architecture-section w-full"):
+            _render_architecture_section_heading("capability_map_kicker", "capability_map_title", "capability_map_copy")
+            with ui.element("div").classes("sy-capability-map").props("data-testid=capability-map"):
+                for icon, title_key, body_key, output_key in capability_groups:
+                    with ui.element("article").classes("sy-capability-card"):
+                        ui.icon(icon).classes("sy-capability-icon").props("aria-hidden=true")
+                        ui.label(t(title_key)).classes("sy-capability-title")
+                        ui.label(t(body_key)).classes("sy-capability-copy")
+                        ui.label(t(output_key)).classes("sy-capability-output")
+
+        with ui.element("section").classes("sy-architecture-section w-full"):
+            _render_architecture_section_heading(
+                "solutions_portfolio_kicker", "solutions_portfolio_title", "solutions_portfolio_copy"
+            )
+            with ui.element("div").classes("sy-solutions-grid").props("data-testid=solutions-portfolio"):
+                for icon, title_key, body_key, outcome_key, route in solutions:
+                    with ui.element("article").classes("sy-solution-card"):
+                        with ui.row().classes("items-center gap-3 no-wrap"):
+                            ui.icon(icon).classes("sy-solution-icon").props("aria-hidden=true")
+                            ui.label(t(title_key)).classes("sy-solution-title")
+                        ui.label(t(body_key)).classes("sy-solution-copy")
+                        ui.label(t(outcome_key)).classes("sy-solution-outcome")
+                        ui.button(
+                            t("solution_open_workspace"),
+                            icon="arrow_forward",
+                            on_click=lambda destination=route: ui.navigate.to(destination),
+                        ).props("flat").classes("sy-solution-action self-start")
+
+        with ui.element("section").classes("sy-architecture-section w-full"):
+            _render_architecture_section_heading(
+                "platform_culture_kicker", "platform_culture_title", "platform_culture_copy"
+            )
+            with ui.element("div").classes("sy-platform-culture").props("data-testid=platform-principles"):
+                for index, (title_key, body_key) in enumerate(culture_values, start=1):
+                    with ui.element("article").classes("sy-platform-value"):
+                        ui.label(f"{index:02d}").classes("sy-platform-value-index").props("aria-hidden=true")
+                        ui.label(t(title_key)).classes("sy-platform-value-title")
+                        ui.label(t(body_key)).classes("sy-platform-value-copy")
+
+        with ui.element("section").classes("sy-architecture-section w-full"):
+            _render_architecture_section_heading(
+                "platform_resources_kicker", "platform_resources_title", "platform_resources_copy"
+            )
+            with ui.element("div").classes("sy-platform-resources").props("data-testid=platform-resources"):
+                for icon, label_key, route in (
+                    ("menu_book", "platform_resource_guide", "/guide"),
+                    ("account_tree", "platform_resource_architecture", "/system-architecture"),
+                    ("handshake", "platform_resource_handover", "/handover"),
+                ):
+                    with ui.element("article").classes("sy-platform-resource"):
+                        ui.button(
+                            t(label_key), icon=icon, on_click=lambda destination=route: ui.navigate.to(destination)
+                        ).props("flat")
+
+        _render_feedback_channel()
+        _render_co_creation()
+
+
+@ui.page("/engineering")
+def engineering_page() -> None:
+    facts = (
+        ("208", "science", "engineering_fact_tests", "engineering_fact_tests_body"),
+        ("08", "verified", "engineering_fact_gates", "engineering_fact_gates_body"),
+        ("05", "layers", "engineering_fact_layers", "engineering_fact_layers_body"),
+        ("02", "translate", "engineering_fact_languages", "engineering_fact_languages_body"),
+    )
+    blueprint = (
+        ("desktop_windows", "engineering_layer_ui", "engineering_layer_ui_body"),
+        ("rule", "engineering_layer_policy", "engineering_layer_policy_body"),
+        ("schema", "engineering_layer_core", "engineering_layer_core_body"),
+        ("receipt_long", "engineering_layer_workflow", "engineering_layer_workflow_body"),
+        ("database", "engineering_layer_evidence", "engineering_layer_evidence_body"),
+    )
+    gates = (
+        ("policy", "engineering_gate_repository"),
+        ("science", "engineering_gate_tests"),
+        ("code", "engineering_gate_compile"),
+        ("inventory_2", "engineering_gate_dependencies"),
+        ("web", "engineering_gate_browser"),
+        ("conversion_path", "engineering_gate_workflow"),
+        ("dns", "engineering_gate_deployment"),
+        ("settings_backup_restore", "engineering_gate_recovery"),
+    )
+    pillars = (
+        ("balance", "engineering_pillar_fairness", "engineering_pillar_fairness_body"),
+        ("restore_page", "engineering_pillar_recovery", "engineering_pillar_recovery_body"),
+        ("manage_search", "engineering_pillar_observability", "engineering_pillar_observability_body"),
+        ("science", "engineering_pillar_practice", "engineering_pillar_practice_body"),
+        ("accessibility_new", "engineering_pillar_experience", "engineering_pillar_experience_body"),
+        ("laptop_windows", "engineering_pillar_delivery", "engineering_pillar_delivery_body"),
+    )
+    evolution = (
+        ("engineering_evolution_domain", "engineering_evolution_domain_body"),
+        ("engineering_evolution_durable", "engineering_evolution_durable_body"),
+        ("engineering_evolution_experience", "engineering_evolution_experience_body"),
+        ("engineering_evolution_release", "engineering_evolution_release_body"),
+    )
+    evidence = load_release_evidence()
+    release_state_keys = {
+        "pass": "platform_release_pass",
+        "running": "platform_release_running",
+        "stale": "platform_release_stale",
+        "fail": "platform_release_fail",
+        "missing": "platform_release_missing",
+        "unreadable": "platform_release_unreadable",
+    }
+    evidence_label = (
+        t("engineering_release_current", passed=evidence.passed_checks, total=evidence.total_checks)
+        if evidence.state == "pass" and evidence.total_checks
+        else t("engineering_release_state", state=t(release_state_keys.get(evidence.state, "platform_release_unreadable")))
+    )
+    evidence_tone = "stable" if evidence.state == "pass" else "attention"
+
+    with page_shell("engineering", "/engineering", music_context="architecture"):
+        with ui.element("section").classes("sy-engineering-hero w-full").props(
+            f'aria-label="{t("engineering")}" data-testid=engineering-hero'
+        ):
+            with ui.column().classes("gap-2"):
+                ui.label(t("engineering_kicker")).classes("sy-architecture-kicker")
+                ui.label(t("engineering")).classes("sy-architecture-title")
+                ui.label(t("engineering_intro")).classes("sy-architecture-copy")
+                _tone_badge(t("engineering_badge"), "stable").classes("mt-3 self-start")
+
+        with ui.element("section").classes("sy-architecture-section w-full"):
+            ui.label(t("engineering_facts_title")).classes("sy-architecture-section-title")
+            with ui.element("div").classes("sy-engineering-facts").props("data-testid=engineering-facts"):
+                for value, icon, title_key, body_key in facts:
+                    with ui.element("article").classes("sy-engineering-fact"):
+                        with ui.row().classes("items-center justify-between no-wrap"):
+                            ui.label(value).classes("sy-engineering-fact-value")
+                            ui.icon(icon).classes("sy-engineering-fact-icon").props("aria-hidden=true")
+                        ui.label(t(title_key)).classes("sy-engineering-fact-title")
+                        ui.label(t(body_key)).classes("sy-engineering-fact-copy")
+
+        with ui.element("section").classes("sy-architecture-section w-full"):
+            _render_architecture_section_heading(
+                "engineering_blueprint_kicker", "engineering_blueprint_title", "engineering_blueprint_copy"
+            )
+            with ui.element("ol").classes("sy-engineering-blueprint").props("data-testid=engineering-blueprint"):
+                for index, (icon, title_key, body_key) in enumerate(blueprint, start=1):
+                    with ui.element("li").classes("sy-engineering-blueprint-layer"):
+                        with ui.row().classes("items-center gap-3 no-wrap"):
+                            ui.label(f"{index:02d}").classes("sy-engineering-blueprint-index").props("aria-hidden=true")
+                            ui.icon(icon).classes("sy-engineering-blueprint-icon").props("aria-hidden=true")
+                        ui.label(t(title_key)).classes("sy-engineering-blueprint-title")
+                        ui.label(t(body_key)).classes("sy-engineering-blueprint-copy")
+
+        with ui.element("section").classes("sy-architecture-section w-full"):
+            _render_architecture_section_heading(
+                "engineering_pipeline_kicker", "engineering_pipeline_title", "engineering_pipeline_copy"
+            )
+            _tone_badge(evidence_label, evidence_tone).classes("self-start")
+            with ui.element("ol").classes("sy-engineering-gates").props("data-testid=engineering-gates"):
+                for index, (icon, title_key) in enumerate(gates, start=1):
+                    with ui.element("li").classes("sy-engineering-gate"):
+                        ui.label(f"{index:02d}").classes("sy-engineering-gate-index")
+                        ui.icon(icon).classes("sy-engineering-gate-icon").props("aria-hidden=true")
+                        ui.label(t(title_key)).classes("sy-engineering-gate-title")
+
+        with ui.element("section").classes("sy-architecture-section w-full"):
+            _render_architecture_section_heading(
+                "engineering_pillars_kicker", "engineering_pillars_title", "engineering_pillars_copy"
+            )
+            with ui.element("div").classes("sy-engineering-pillars").props("data-testid=engineering-pillars"):
+                for icon, title_key, body_key in pillars:
+                    with ui.element("article").classes("sy-engineering-pillar"):
+                        ui.icon(icon).classes("sy-engineering-pillar-icon").props("aria-hidden=true")
+                        ui.label(t(title_key)).classes("sy-engineering-pillar-title")
+                        ui.label(t(body_key)).classes("sy-engineering-pillar-copy")
+
+        with ui.element("section").classes("sy-architecture-section w-full"):
+            _render_architecture_section_heading(
+                "engineering_evolution_kicker", "engineering_evolution_title", "engineering_evolution_copy"
+            )
+            with ui.element("ol").classes("sy-engineering-evolution").props("data-testid=engineering-evolution"):
+                for title_key, body_key in evolution:
+                    with ui.element("li").classes("sy-engineering-evolution-item"):
+                        ui.label(t(title_key)).classes("sy-engineering-evolution-title")
+                        ui.label(t(body_key)).classes("sy-engineering-evolution-copy")
+
+        with ui.element("section").classes("sy-engineering-resources w-full"):
+            ui.label(t("engineering_resources_title")).classes("sy-architecture-section-title")
+            with ui.row().classes("gap-3 flex-wrap mt-4"):
+                ui.link(t("engineering_open_github"), GITHUB_REPOSITORY_URL, new_tab=True).props(
+                    'rel="noopener noreferrer"'
+                ).classes("sy-engineering-resource-link")
+                ui.button(
+                    t("engineering_open_architecture"), icon="account_tree", on_click=lambda: ui.navigate.to("/system-architecture")
+                ).props("outline")
+                ui.button(
+                    t("engineering_open_platform"), icon="domain", on_click=lambda: ui.navigate.to("/platform")
+                ).props("flat")
 
 
 @ui.page("/system-architecture")
@@ -1418,8 +1825,12 @@ def system_architecture_page() -> None:
                 ui.label(t("architecture_kicker")).classes("sy-architecture-kicker")
                 ui.label(t("system_architecture")).classes("sy-architecture-title")
                 ui.label(t("architecture_intro")).classes("sy-architecture-copy")
-                ui.badge(t("architecture_local_badge"), color="teal-8").classes("mt-3 self-start")
+                _tone_badge(t("architecture_local_badge"), "stable").classes("mt-3 self-start")
                 ui.label(t("architecture_reading_note")).classes("sy-architecture-reading-note")
+                ui.label(t("architecture_platform_link_note")).classes("sy-architecture-reading-note")
+                ui.button(t("open_platform"), icon="domain", on_click=lambda: ui.navigate.to("/platform")).props(
+                    "outline data-testid=architecture-open-platform"
+                ).classes("mt-2 self-start")
 
         with ui.element("section").classes("sy-architecture-section w-full").props(f'aria-label="{t("architecture_flow_title")}"'):
             _render_architecture_section_heading("architecture_flow_kicker", "architecture_flow_title", "architecture_flow_copy")
@@ -1459,18 +1870,7 @@ def system_architecture_page() -> None:
                 for question_key, answer_key in faq_items:
                     with ui.expansion(t(question_key), icon="help_outline").classes("sy-architecture-faq-item w-full"):
                         ui.label(t(answer_key)).classes("sy-architecture-faq-answer")
-        with ui.element("section").classes("sy-co-creation w-full").props(f'aria-label="{t("co_creation_title")}"'):
-            ui.image("/assets/brand/sing-yin-crest-display-web.png").classes("sy-co-creation-crest").props(
-                f'alt="{t("school_crest_alt")}" width=640 height=615 loading=lazy decoding=async'
-            )
-            ui.label(t("co_creation_title")).classes("sy-co-creation-title")
-            ui.label(t("co_creation_team")).classes("sy-co-creation-team")
-            ui.label(t("co_creation_body")).classes("sy-co-creation-copy")
-            ui.label(t("co_creation_quote")).classes("sy-co-creation-quote")
-            ui.label(t("co_creation_signature")).classes("sy-co-creation-signature")
-            with ui.element("div").classes("sy-codex-closing"):
-                ui.label(t("co_creation_codex_title")).classes("sy-codex-closing-title")
-                ui.label(t("co_creation_codex_body")).classes("sy-codex-closing-copy")
+        _render_feedback_channel()
 
 
 def _render_architecture_section_heading(kicker_key: str, title_key: str, copy_key: str) -> None:
@@ -1520,7 +1920,7 @@ def settings_page() -> None:
                 with ui.column().classes("gap-1"):
                     ui.label(t("handover")).classes("text-lg font-semibold")
                     ui.label(t("handover_intro")).classes("text-sm text-[var(--sy-muted)]")
-                ui.button(t("open_handover_guide"), icon="handshake", on_click=lambda: ui.navigate.to("/handover")).props("outline color=teal-8")
+                ui.button(t("open_handover_guide"), icon="handshake", on_click=lambda: ui.navigate.to("/handover")).props("outline color=primary")
             with ui.row().classes("w-full gap-3 flex-wrap mt-4"):
                 for label_key, value, ready in (
                     ("handover_prefects_ready", f"{readiness['activePrefectCount']}", readiness["activePrefectCount"] > 0),
@@ -1530,7 +1930,7 @@ def settings_page() -> None:
                     with ui.element("div").classes("sy-status-summary"):
                         ui.label(t(label_key)).classes("text-xs text-[var(--sy-muted)]")
                         ui.label(value).classes("font-semibold")
-                        ui.icon("check_circle" if ready else "priority_high").classes("text-teal-700" if ready else "text-amber-700")
+                        ui.icon("check_circle" if ready else "priority_high").classes("sy-fg-stable" if ready else "sy-fg-attention")
         with ui.card().classes("sy-surface w-full max-w-3xl p-6"):
             ui.label(t("persistence_notice")).classes("text-lg font-semibold")
             ui.label(f"{t('database')}: {status['databasePath']}").classes("text-sm text-[var(--sy-muted)] mt-3")
@@ -1539,7 +1939,7 @@ def settings_page() -> None:
                 ui.label(str(status["latestPath"])).classes("text-xs text-[var(--sy-muted)] mt-2")
             verification = status["latestVerification"]
             if verification and verification.get("valid"):
-                ui.badge(t("verified"), color="teal-8").classes("mt-3")
+                _tone_badge(t("verified"), "stable").classes("mt-3")
             invalid_backup_count = int(backup_inventory["invalidCount"])
             if invalid_backup_count:
                 reason_keys = {
@@ -1568,7 +1968,7 @@ def settings_page() -> None:
                             with ui.row().classes("gap-2 flex-wrap mt-1"):
                                 for reason_code, count in dict(backup_inventory["invalidReasonCounts"]).items():
                                     message_key = reason_keys.get(str(reason_code), "backup_issue_unknown")
-                                    ui.badge(f"{t(message_key)} · {count}", color="amber-8").props("outline")
+                                    _tone_badge(f"{t(message_key)} × {count}", "attention")
 
         async def create_verified_backup() -> None:
             result = await _run_with_progress(
@@ -1603,12 +2003,12 @@ def settings_page() -> None:
 
                     with ui.row().classes("w-full justify-end gap-3 mt-5"):
                         ui.button(t("cancel"), icon="close", on_click=handover_package_dialog.close).props("flat")
-                        ui.button(t("confirm_handover_backup_package"), icon="download", on_click=download_handover_package).props("color=teal-8")
+                        ui.button(t("confirm_handover_backup_package"), icon="download", on_click=download_handover_package).props("color=primary")
                 ui.button(
                     t("handover_backup_package"),
                     icon="archive",
                     on_click=handover_package_dialog.open,
-                ).props("outline color=teal-8 data-testid=handover-package-ready-action").classes("mt-4")
+                ).props("outline color=primary data-testid=handover-package-ready-action").classes("mt-4")
             else:
                 _render_empty_state(
                     title_key="no_verified_backup_title",
@@ -1656,12 +2056,14 @@ def settings_page() -> None:
 
                     with ui.row().classes("w-full justify-end gap-3 mt-5"):
                         ui.button(t("cancel"), icon="close", on_click=restore_dialog.close).props("flat")
-                        ui.button(t("confirm_restore"), icon="restore", on_click=restore_selected_backup).props("color=teal-8")
+                        ui.button(t("confirm_restore"), icon="restore", on_click=restore_selected_backup).props(
+                            "color=negative data-testid=confirm-restore-action"
+                        )
                 ui.button(
                     t("restore_selected_backup"),
                     icon="restore",
                     on_click=restore_dialog.open,
-                ).props("outline color=teal-8 data-testid=restore-ready-action").classes("mt-4")
+                ).props("outline data-testid=restore-ready-action").classes("sy-button-attention mt-4")
             else:
                 _render_empty_state(
                     title_key="no_verified_backup_title",
@@ -1669,7 +2071,7 @@ def settings_page() -> None:
                     icon="settings_backup_restore",
                     action_key="create_verified_backup",
                     action=create_verified_backup,
-                    action_props="outline color=teal-8 data-testid=create-verified-backup-action",
+                    action_props="outline color=primary data-testid=create-verified-backup-action",
                 )
                 ui.button(t("restore_selected_backup"), icon="restore").props(
                     "outline disable aria-disabled=true data-testid=restore-disabled-no-backup"

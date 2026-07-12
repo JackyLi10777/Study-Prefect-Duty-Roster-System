@@ -12,6 +12,17 @@ from nicegui_app.services.roster_export import _school_badge, build_fairness_aud
 from nicegui_app.services.roster_workflow import RosterWorkflow
 
 
+def _embedded_font_names(reader: PdfReader) -> set[str]:
+    names: set[str] = set()
+    for page in reader.pages:
+        resources = page.get("/Resources", {})
+        fonts = resources.get("/Font", {})
+        for font in fonts.values():
+            descriptor = font.get_object()
+            names.add(str(descriptor.get("/BaseFont", "")))
+    return names
+
+
 def test_pdf_badge_uses_the_full_resolution_display_print_crest() -> None:
     badge = _school_badge()
 
@@ -36,6 +47,10 @@ def test_schedule_pdf_uses_single_page_weekly_grid_and_keeps_chinese_names(tmp_p
     assert "MONDAY" in extracted_text
     assert "Room 303 (HW Completion) - 1" in extracted_text
     assert workflow.assignments(draft.id)[0]["prefectName"] in extracted_text
+    font_names = _embedded_font_names(reader)
+    assert not any("Thin" in name for name in font_names)
+    assert any("Medium" in name for name in font_names)
+    assert any("SemiBold" in name for name in font_names)
     assert [item["day"] for item in workflow.assignments(draft.id)] == sorted(
         (item["day"] for item in workflow.assignments(draft.id)),
         key=lambda day: ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY").index(day),

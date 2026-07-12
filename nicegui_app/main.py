@@ -31,6 +31,9 @@ from nicegui_app.ui import pages as _pages  # noqa: F401 - registers @ui.page ro
 def healthz() -> JSONResponse:
     """Return a data-free local health result suitable for future host monitoring."""
     payload = health_snapshot()
+    maintenance = get_workflow().maintenance_status()
+    if maintenance.active:
+        payload = {**payload, "status": "maintenance", "maintenance": True}
     return JSONResponse(payload, status_code=200 if payload["status"] == "ok" else 503)
 
 
@@ -65,6 +68,7 @@ def run() -> None:
     app.add_static_files(url_path="/assets/brand", local_directory=BRAND_ASSET_DIR)
     app.add_static_files(url_path="/assets/workflow", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "workflow")
     app.add_static_files(url_path="/assets/atmosphere", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "atmosphere")
+    app.add_static_files(url_path="/assets/fonts", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "fonts")
     app.add_static_files(url_path="/assets/music", local_directory=MUSIC_DIR)
     ui.run(
         title="Sing Yin Study Prefect Duty Roster",

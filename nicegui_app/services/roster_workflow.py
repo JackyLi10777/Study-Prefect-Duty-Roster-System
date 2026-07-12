@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 import hashlib
@@ -16,6 +17,7 @@ from uuid import uuid4
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from sqlalchemy import delete, func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from nicegui_app.config import DEFAULT_BACKUP_DIR, DEFAULT_DATABASE_PATH, POLICY_VERSION, PREFECT_SEED_PATH
@@ -31,13 +33,26 @@ from nicegui_app.persistence.models import (
     RosterAssignmentRecord,
     RosterWeekRecord,
 )
+from nicegui_app.services.maintenance import (
+    MaintenanceModeError,
+    MaintenanceStatus,
+    maintenance_coordinator,
+)
 from roster_core.generator import RosterGenerationError, generate_weekly_roster, validate_assignments
-from roster_core.models import Assignment, Prefect
-from roster_policy import DutyPost, SchoolDay, can_assign_role, required_posts_for_day
+from roster_core.models import Assignment, Prefect, parse_prefect_role
+from roster_policy import DutyPost, PrefectRole, SchoolDay, can_assign_role, required_posts_for_day
 
 
 class WorkflowError(ValueError):
     """Raised when an operator action conflicts with roster workflow policy."""
+
+
+class WorkflowConflictError(WorkflowError):
+    """Raised when another client committed a newer roster decision first."""
+
+
+class WorkflowMaintenanceError(WorkflowError):
+    """Raised when a workflow request arrives during exclusive maintenance."""
 
 
 class CommittedWriteBackupError(WorkflowError):
@@ -86,6 +101,27 @@ class LeaveAdjustmentResult:
     assignment_id: int
     status: str
     backup_path: Path
+    version: int = 0
+    idempotent: bool = False
+
+
+@dataclass(frozen=True)
+class FairnessDiscrepancy:
+    prefect_id: str
+    expected_weight: float
+    actual_weight: float
+    expected_duties: int
+    actual_duties: int
+
+
+@dataclass(frozen=True)
+class FairnessReconciliationReport:
+    checked_prefects: int
+    discrepancies: tuple[FairnessDiscrepancy, ...]
+
+    @property
+    def balanced(self) -> bool:
+        return not self.discrepancies
 
 
 @dataclass(frozen=True)
@@ -113,10 +149,7 @@ class PrefectInput:
     history_duties: int = 0
 
 
-ROLE_LABELS_FOR_CORE = {
-    "assistant_head": "Assistant Head Study Prefect",
-    "study_prefect": "Study Prefect",
-}
+ROLE_CODES = frozenset(role.value for role in PrefectRole)
 
 
 class RosterWorkflow:
@@ -133,6 +166,10 @@ class RosterWorkflow:
         self.backup_dir = backup_dir
         self.seed_path = seed_path
         self.sessions: sessionmaker[Session] | None = None
+        self.maintenance = maintenance_coordinator(database_path)
+
+    def maintenance_status(self) -> MaintenanceStatus:
+        return self.maintenance.status()
 
     def bootstrap(self) -> None:
         self.sessions = create_session_factory(self.database_path)
@@ -224,6 +261,7 @@ class RosterWorkflow:
             # error rolls this transaction back to the draft state.
             week = self._week_or_error(session, roster_week_id)
             assignment_rows = self._assignment_rows(session, week.id)
+            operation_id = f"roster-publish:{week.id}"
             self._validate_persisted_assignments(session, assignment_rows, week_start=week.week_start)
             for row in assignment_rows:
                 if row.prefect_id is None or row.status != "active":
@@ -240,12 +278,17 @@ class RosterWorkflow:
                         roster_week_id=week.id,
                         assignment_id=row.id,
                         delta=row.weight,
+                        duty_delta=1,
                         event_type="roster_published",
+                        source_type="roster_publish",
+                        source_id=str(week.id),
+                        operation_id=operation_id,
                         reason="Weekly roster published",
                         created_at=now,
                     )
                 )
             self._audit(session, "roster_published", week.id, {"assignmentCount": len(assignment_rows), "version": week.version})
+            self._assert_fairness_reconciled(session)
             session.commit()
             result = RosterWeekResult(
                 id=week.id,
@@ -348,97 +391,157 @@ class RosterWorkflow:
         assignment_id: int,
         replacement_prefect_id: str | None,
         reason: str,
+        command_id: str | None = None,
+        expected_week_version: int | None = None,
     ) -> LeaveAdjustmentResult:
         if not reason.strip():
             raise WorkflowError("A leave adjustment requires a reason.")
+        operation_id = command_id or f"leave-adjustment:{uuid4().hex}"
+        if len(operation_id) > 64 or not operation_id.strip():
+            raise WorkflowError("Leave adjustment command ID is invalid.")
+        duplicate: LeaveAdjustmentRecord | None = None
+        committed_version = 0
         with self._session() as session:
-            week = self._week_or_error(session, roster_week_id)
-            if week.status != "published":
-                raise WorkflowError("Post-publication adjustments require a published roster.")
-            assignment = self._assignment_or_error(session, roster_week_id, assignment_id)
-            if assignment.status != "active" or assignment.prefect_id is None:
-                raise WorkflowError("This assignment is no longer active.")
-            original = session.get(PrefectRecord, assignment.prefect_id)
-            if original is None:
-                raise WorkflowError("The original prefect no longer exists.")
-            candidates = {candidate["id"] for candidate in self._eligible_assignment_candidates(session, week, assignment)}
-            replacement = None
-            if replacement_prefect_id:
-                if replacement_prefect_id not in candidates:
-                    raise WorkflowError("The selected substitute no longer meets roster rules.")
-                replacement = session.get(PrefectRecord, replacement_prefect_id)
-                if replacement is None:
-                    raise WorkflowError("The selected substitute no longer exists.")
-
-            now = self._now()
-            original_name = assignment.prefect_name_snapshot
-            original_id = assignment.prefect_id
-            original.history_weight = round(original.history_weight - assignment.weight, 4)
-            original.history_duties = max(0, original.history_duties - 1)
-            original.updated_at = now
-            session.add(
-                FairnessLedgerRecord(
-                    prefect_id=original.id,
-                    roster_week_id=week.id,
-                    assignment_id=assignment.id,
-                    delta=-assignment.weight,
-                    event_type="leave_adjustment_debit",
-                    reason=reason,
-                    created_at=now,
-                )
+            duplicate = session.scalar(
+                select(LeaveAdjustmentRecord).where(LeaveAdjustmentRecord.command_id == operation_id)
             )
+            if duplicate is not None:
+                committed_version = self._week_or_error(session, roster_week_id).version
+            else:
+                week = self._week_or_error(session, roster_week_id)
+                requested_version = week.version if expected_week_version is None else expected_week_version
+                if week.status != "published":
+                    raise WorkflowError("Post-publication adjustments require a published roster.")
+                assignment = self._assignment_or_error(session, roster_week_id, assignment_id)
+                if assignment.status != "active" or assignment.prefect_id is None:
+                    raise WorkflowError("This assignment is no longer active.")
+                original = session.get(PrefectRecord, assignment.prefect_id)
+                if original is None:
+                    raise WorkflowError("The original prefect no longer exists.")
+                candidates = {candidate["id"] for candidate in self._eligible_assignment_candidates(session, week, assignment)}
+                replacement = None
+                if replacement_prefect_id:
+                    if replacement_prefect_id not in candidates:
+                        raise WorkflowError("The selected substitute no longer meets roster rules.")
+                    replacement = session.get(PrefectRecord, replacement_prefect_id)
+                    if replacement is None:
+                        raise WorkflowError("The selected substitute no longer exists.")
 
-            status = "vacant"
-            replacement_name = None
-            if replacement is not None:
-                replacement.history_weight = round(replacement.history_weight + assignment.weight, 4)
-                replacement.history_duties += 1
-                replacement.updated_at = now
-                assignment.prefect_id = replacement.id
-                assignment.prefect_name_snapshot = replacement.name_zh
-                assignment.prefect_role_snapshot = replacement.role_code
-                replacement_name = replacement.name_zh
-                status = "replaced"
-                session.add(
-                    FairnessLedgerRecord(
-                        prefect_id=replacement.id,
+                now = self._now()
+                claim = session.execute(
+                    update(RosterWeekRecord)
+                    .where(
+                        RosterWeekRecord.id == roster_week_id,
+                        RosterWeekRecord.status == "published",
+                        RosterWeekRecord.version == requested_version,
+                    )
+                    .values(version=RosterWeekRecord.version + 1, updated_at=now)
+                )
+                if claim.rowcount != 1:
+                    session.rollback()
+                    duplicate = session.scalar(
+                        select(LeaveAdjustmentRecord).where(LeaveAdjustmentRecord.command_id == operation_id)
+                    )
+                    if duplicate is None:
+                        raise WorkflowConflictError(
+                            "This roster was updated in another tab. Refresh it and review the adjustment again."
+                        )
+                    committed_version = self._week_or_error(session, roster_week_id).version
+                else:
+                    original_name = assignment.prefect_name_snapshot
+                    original_id = assignment.prefect_id
+                    original.history_weight = round(original.history_weight - assignment.weight, 4)
+                    original.history_duties = max(0, original.history_duties - 1)
+                    original.updated_at = now
+                    session.add(
+                        FairnessLedgerRecord(
+                            prefect_id=original.id,
+                            roster_week_id=week.id,
+                            assignment_id=assignment.id,
+                            delta=-assignment.weight,
+                            duty_delta=-1,
+                            event_type="leave_adjustment_debit",
+                            source_type="leave_adjustment",
+                            source_id=operation_id,
+                            operation_id=operation_id,
+                            reason=reason.strip(),
+                            created_at=now,
+                        )
+                    )
+
+                    status = "vacant"
+                    replacement_name = None
+                    if replacement is not None:
+                        replacement.history_weight = round(replacement.history_weight + assignment.weight, 4)
+                        replacement.history_duties += 1
+                        replacement.updated_at = now
+                        assignment.prefect_id = replacement.id
+                        assignment.prefect_name_snapshot = replacement.name_zh
+                        assignment.prefect_role_snapshot = replacement.role_code
+                        replacement_name = replacement.name_zh
+                        status = "replaced"
+                        session.add(
+                            FairnessLedgerRecord(
+                                prefect_id=replacement.id,
+                                roster_week_id=week.id,
+                                assignment_id=assignment.id,
+                                delta=assignment.weight,
+                                duty_delta=1,
+                                event_type="leave_adjustment_credit",
+                                source_type="leave_adjustment",
+                                source_id=operation_id,
+                                operation_id=operation_id,
+                                reason=reason.strip(),
+                                created_at=now,
+                            )
+                        )
+                    else:
+                        assignment.prefect_id = None
+                        assignment.prefect_name_snapshot = "VACANT"
+                        assignment.prefect_role_snapshot = None
+                        assignment.status = "vacant"
+
+                    adjustment = LeaveAdjustmentRecord(
                         roster_week_id=week.id,
                         assignment_id=assignment.id,
-                        delta=assignment.weight,
-                        event_type="leave_adjustment_credit",
-                        reason=reason,
+                        original_prefect_id=original_id,
+                        original_prefect_name=original_name,
+                        replacement_prefect_id=replacement.id if replacement else None,
+                        replacement_prefect_name=replacement_name,
+                        reason=reason.strip(),
+                        status=status,
+                        command_id=operation_id,
                         created_at=now,
                     )
-                )
-            else:
-                assignment.prefect_id = None
-                assignment.prefect_name_snapshot = "VACANT"
-                assignment.prefect_role_snapshot = None
-                assignment.status = "vacant"
-
-            session.add(
-                LeaveAdjustmentRecord(
-                    roster_week_id=week.id,
-                    assignment_id=assignment.id,
-                    original_prefect_id=original_id,
-                    original_prefect_name=original_name,
-                    replacement_prefect_id=replacement.id if replacement else None,
-                    replacement_prefect_name=replacement_name,
-                    reason=reason.strip(),
-                    status=status,
-                    created_at=now,
-                )
-            )
-            week.version += 1
-            week.updated_at = now
-            self._audit(session, "leave_adjusted", week.id, {"assignmentId": assignment.id, "status": status})
-            session.commit()
+                    session.add(adjustment)
+                    self._audit(
+                        session,
+                        "leave_adjusted",
+                        week.id,
+                        {"assignmentId": assignment.id, "status": status, "commandId": operation_id},
+                    )
+                    self._assert_fairness_reconciled(session)
+                    try:
+                        session.commit()
+                    except IntegrityError:
+                        session.rollback()
+                        duplicate = session.scalar(
+                            select(LeaveAdjustmentRecord).where(LeaveAdjustmentRecord.command_id == operation_id)
+                        )
+                        if duplicate is None:
+                            raise
+                    committed_version = self._week_or_error(session, roster_week_id).version
+        if duplicate is not None:
+            status = duplicate.status
+            assignment_id = duplicate.assignment_id
         backup = self._create_and_record_backup("leave_adjusted", roster_week_id)
         return LeaveAdjustmentResult(
             roster_week_id,
             assignment_id,
             status,
             self._require_backup(backup, committed_event="leave_adjusted"),
+            committed_version,
+            duplicate is not None,
         )
 
     def roster_weeks(self) -> list[dict[str, object]]:
@@ -718,6 +821,12 @@ class RosterWorkflow:
                 for row in rows
             ]
 
+    def reconcile_fairness(self) -> FairnessReconciliationReport:
+        """Compare persistent totals with immutable anchors plus ledger deltas."""
+
+        with self._session() as session:
+            return self._fairness_reconciliation(session)
+
     def generation_requirements(self, week_start: date) -> list[dict[str, object]]:
         """Expose every required weekly slot and its currently eligible pool before generation."""
         self._require_monday(week_start)
@@ -733,9 +842,9 @@ class RosterWorkflow:
                     candidates = [
                         prefect
                         for prefect in prefects
-                        if day in availability.get(prefect.id, set())
-                        and day not in leave_days.get(prefect.id, set())
-                        and can_assign_role(self._core_role(prefect.role_code), post)
+                    if day in availability.get(prefect.id, set())
+                    and day not in leave_days.get(prefect.id, set())
+                    and can_assign_role(PrefectRole(prefect.role_code), post)
                     ]
                     requirements.append(
                         {
@@ -867,58 +976,63 @@ class RosterWorkflow:
 
     def restore_backup(self, backup_path: Path) -> dict[str, object]:
         """Restore a managed, verified snapshot with a safety snapshot of live data first."""
-        managed_directory = self.backup_dir.resolve()
-        requested_path = backup_path.resolve()
         try:
-            requested_path.relative_to(managed_directory)
-        except ValueError as error:
-            raise WorkflowError("Only snapshots in the managed backup directory can be restored.") from error
+            with self.maintenance.maintenance("restore"):
+                managed_directory = self.backup_dir.resolve()
+                requested_path = backup_path.resolve()
+                try:
+                    requested_path.relative_to(managed_directory)
+                except ValueError as error:
+                    raise WorkflowError("Only snapshots in the managed backup directory can be restored.") from error
 
-        verification = self.verify_backup(requested_path)
-        if not verification.get("valid"):
-            raise WorkflowError(f"Backup verification failed: {verification.get('error', 'unknown error')}")
+                verification = self.verify_backup(requested_path)
+                if not verification.get("valid"):
+                    raise WorkflowError(f"Backup verification failed: {verification.get('error', 'unknown error')}")
 
-        pre_restore = self._create_and_record_backup("pre_restore", None)
-        pre_restore_path = self._require_backup(pre_restore)
-        temporary_path = self.database_path.with_name(f"{self.database_path.name}.restore.tmp")
-        try:
-            self._dispose_database_connections()
-            if temporary_path.exists():
-                temporary_path.unlink()
-            source = sqlite3.connect(str(requested_path))
-            destination = sqlite3.connect(str(temporary_path))
-            try:
-                source.backup(destination)
-            finally:
-                destination.close()
-                source.close()
-            for stale_sidecar in (Path(f"{self.database_path}-wal"), Path(f"{self.database_path}-shm")):
-                stale_sidecar.unlink(missing_ok=True)
-            temporary_path.replace(self.database_path)
-            self.sessions = create_session_factory(self.database_path)
-        except Exception as error:
-            temporary_path.unlink(missing_ok=True)
-            self.sessions = create_session_factory(self.database_path)
-            raise WorkflowError(f"Backup restore could not be completed: {error}") from error
+                pre_restore = self._create_and_record_backup("pre_restore", None)
+                pre_restore_path = self._require_backup(pre_restore)
+                temporary_path = self.database_path.with_name(f"{self.database_path.name}.restore.tmp")
+                try:
+                    self._dispose_database_connections()
+                    if temporary_path.exists():
+                        temporary_path.unlink()
+                    source = sqlite3.connect(str(requested_path))
+                    destination = sqlite3.connect(str(temporary_path))
+                    try:
+                        source.backup(destination)
+                    finally:
+                        destination.close()
+                        source.close()
+                    for stale_sidecar in (Path(f"{self.database_path}-wal"), Path(f"{self.database_path}-shm")):
+                        stale_sidecar.unlink(missing_ok=True)
+                    temporary_path.replace(self.database_path)
+                    self.sessions = create_session_factory(self.database_path)
+                except Exception as error:
+                    temporary_path.unlink(missing_ok=True)
+                    self.sessions = create_session_factory(self.database_path)
+                    raise WorkflowError(f"Backup restore could not be completed: {error}") from error
 
-        with self._session() as session:
-            self._audit(
-                session,
-                "backup_restored",
-                None,
-                {
-                    "restoredFrom": str(requested_path),
-                    "preRestoreBackup": str(pre_restore_path),
-                    "sha256": verification["sha256"],
-                },
-            )
-            session.commit()
-        restored_backup = self._create_and_record_backup("backup_restored", None)
-        return {
-            "restoredFrom": backup_path,
-            "preRestoreBackup": pre_restore_path,
-            "restoredBackup": self._require_backup(restored_backup, committed_event="backup_restored"),
-        }
+                with self._session() as session:
+                    self._audit(
+                        session,
+                        "backup_restored",
+                        None,
+                        {
+                            "restoredFrom": str(requested_path),
+                            "preRestoreBackup": str(pre_restore_path),
+                            "sha256": verification["sha256"],
+                        },
+                    )
+                    self._assert_fairness_reconciled(session)
+                    session.commit()
+                restored_backup = self._create_and_record_backup("backup_restored", None)
+                return {
+                    "restoredFrom": backup_path,
+                    "preRestoreBackup": pre_restore_path,
+                    "restoredBackup": self._require_backup(restored_backup, committed_event="backup_restored"),
+                }
+        except MaintenanceModeError as error:
+            raise WorkflowMaintenanceError(str(error)) from error
 
     def backups(self, limit: int = 12) -> list[dict[str, object]]:
         """List recent managed snapshots with current verification evidence."""
@@ -1000,15 +1114,19 @@ class RosterWorkflow:
         raw_data = json.loads(self.seed_path.read_text(encoding="utf-8"))
         now = self._now()
         for raw in raw_data["prefects"]:
-            role_code = "assistant_head" if "Assistant Head Study Prefect" in raw["role"] else "study_prefect"
+            role = parse_prefect_role(raw.get("roleCode", raw.get("role")))
+            history_weight = float(raw.get("historyWeight", 0))
+            history_duties = int(raw.get("historyDuties", 0))
             record = PrefectRecord(
                 id=raw["id"],
                 name_zh=raw["name"],
                 form=raw["form"],
                 class_name=raw["class"],
-                role_code=role_code,
-                history_weight=float(raw.get("historyWeight", 0)),
-                history_duties=int(raw.get("historyDuties", 0)),
+                role_code=role.value,
+                history_weight=history_weight,
+                history_duties=history_duties,
+                history_weight_anchor=history_weight,
+                history_duties_anchor=history_duties,
                 needs_mentoring=bool(raw.get("needsMentoring", False)),
                 fixed_general_duty=raw.get("fixedGeneralDuty", "NONE"),
                 remarks=raw.get("remarks", ""),
@@ -1032,6 +1150,8 @@ class RosterWorkflow:
             role_code=prefect_input.role_code,
             history_weight=prefect_input.history_weight,
             history_duties=prefect_input.history_duties,
+            history_weight_anchor=prefect_input.history_weight,
+            history_duties_anchor=prefect_input.history_duties,
             needs_mentoring=prefect_input.needs_mentoring,
             fixed_general_duty=prefect_input.fixed_general_duty,
             remarks=prefect_input.remarks.strip(),
@@ -1081,7 +1201,7 @@ class RosterWorkflow:
             raise WorkflowError("Form must be F.3, F.4, F.5, or F.6.")
         if not prefect_input.class_name.strip():
             raise WorkflowError("Class is required.")
-        if prefect_input.role_code not in ROLE_LABELS_FOR_CORE:
+        if prefect_input.role_code not in ROLE_CODES:
             raise WorkflowError("Role is not recognized.")
         if not prefect_input.available_days:
             raise WorkflowError("At least one available day is required.")
@@ -1108,7 +1228,7 @@ class RosterWorkflow:
                     slot_index=slot_counts[key],
                     prefect_id=assignment.prefect_id,
                     prefect_name_snapshot=assignment.prefect_name,
-                    prefect_role_snapshot=self._role_code_from_core(role_by_id[assignment.prefect_id]),
+                    prefect_role_snapshot=role_by_id[assignment.prefect_id].value,
                     weight=assignment.weight,
                     status="active",
                 )
@@ -1122,7 +1242,7 @@ class RosterWorkflow:
                 name=record.name_zh,
                 form=record.form,
                 class_name=record.class_name,
-                role=self._core_role(record.role_code),
+                role=PrefectRole(record.role_code),
                 available_days=frozenset(availability.get(record.id, set())),
                 history_weight=record.history_weight,
                 history_duties=record.history_duties,
@@ -1238,7 +1358,7 @@ class RosterWorkflow:
                 continue
             if day in leave_days.get(prefect.id, set()):
                 continue
-            if not can_assign_role(self._core_role(prefect.role_code), post):
+            if not can_assign_role(PrefectRole(prefect.role_code), post):
                 continue
             if any(abs(int(existing_day) - int(day)) == 1 for existing_day in other_days[prefect.id]):
                 continue
@@ -1343,10 +1463,16 @@ class RosterWorkflow:
             )
         )
 
+    @contextmanager
     def _session(self):
         if self.sessions is None:
             raise RuntimeError("Call bootstrap() before using the roster workflow.")
-        return self.sessions()
+        try:
+            with self.maintenance.operation():
+                with self.sessions() as session:
+                    yield session
+        except MaintenanceModeError as error:
+            raise WorkflowMaintenanceError(str(error)) from error
 
     def _dispose_database_connections(self) -> None:
         if self.sessions is None:
@@ -1372,13 +1498,34 @@ class RosterWorkflow:
             f"\nSnapshot included: {snapshot_name}\n"
         )
 
-    @staticmethod
-    def _core_role(role_code: str) -> str:
-        return ROLE_LABELS_FOR_CORE[role_code]
+    def _fairness_reconciliation(self, session: Session) -> FairnessReconciliationReport:
+        session.flush()
+        records = session.scalars(select(PrefectRecord).order_by(PrefectRecord.id)).all()
+        discrepancies: list[FairnessDiscrepancy] = []
+        for record in records:
+            ledger_weight, ledger_duties = session.execute(
+                select(
+                    func.coalesce(func.sum(FairnessLedgerRecord.delta), 0.0),
+                    func.coalesce(func.sum(FairnessLedgerRecord.duty_delta), 0),
+                ).where(FairnessLedgerRecord.prefect_id == record.id)
+            ).one()
+            expected_weight = round(record.history_weight_anchor + float(ledger_weight), 4)
+            expected_duties = record.history_duties_anchor + int(ledger_duties)
+            if abs(expected_weight - record.history_weight) > 0.0001 or expected_duties != record.history_duties:
+                discrepancies.append(
+                    FairnessDiscrepancy(
+                        prefect_id=record.id,
+                        expected_weight=expected_weight,
+                        actual_weight=record.history_weight,
+                        expected_duties=expected_duties,
+                        actual_duties=record.history_duties,
+                    )
+                )
+        return FairnessReconciliationReport(len(records), tuple(discrepancies))
 
-    @staticmethod
-    def _role_code_from_core(role: str) -> str:
-        return "assistant_head" if "Assistant Head Study Prefect" in role else "study_prefect"
+    def _assert_fairness_reconciled(self, session: Session) -> None:
+        if not self._fairness_reconciliation(session).balanced:
+            raise WorkflowError("Fairness ledger reconciliation failed; the write was rolled back.")
 
     @staticmethod
     def _form_rank(form: str) -> int:

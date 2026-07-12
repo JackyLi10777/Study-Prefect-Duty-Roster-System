@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -14,6 +14,9 @@ class Base(DeclarativeBase):
 
 class PrefectRecord(Base):
     __tablename__ = "prefects"
+    __table_args__ = (
+        CheckConstraint("role_code IN ('assistant_head', 'study_prefect')", name="ck_prefect_role_code"),
+    )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     name_zh: Mapped[str] = mapped_column(String(120))
@@ -23,6 +26,8 @@ class PrefectRecord(Base):
     role_code: Mapped[str] = mapped_column(String(32))
     history_weight: Mapped[float] = mapped_column(Float, default=0.0)
     history_duties: Mapped[int] = mapped_column(Integer, default=0)
+    history_weight_anchor: Mapped[float] = mapped_column(Float, default=0.0)
+    history_duties_anchor: Mapped[int] = mapped_column(Integer, default=0)
     needs_mentoring: Mapped[bool] = mapped_column(Boolean, default=False)
     fixed_general_duty: Mapped[str] = mapped_column(String(16), default="NONE")
     remarks: Mapped[str] = mapped_column(Text, default="")
@@ -72,19 +77,33 @@ class RosterAssignmentRecord(Base):
 
 class FairnessLedgerRecord(Base):
     __tablename__ = "fairness_ledger"
+    __table_args__ = (
+        UniqueConstraint(
+            "operation_id",
+            "assignment_id",
+            "prefect_id",
+            "event_type",
+            name="uq_fairness_operation_entry",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     prefect_id: Mapped[str] = mapped_column(ForeignKey("prefects.id"))
     roster_week_id: Mapped[int] = mapped_column(ForeignKey("roster_weeks.id"))
     assignment_id: Mapped[int | None] = mapped_column(ForeignKey("roster_assignments.id"), nullable=True)
     delta: Mapped[float] = mapped_column(Float)
+    duty_delta: Mapped[int] = mapped_column(Integer, default=0)
     event_type: Mapped[str] = mapped_column(String(48))
+    source_type: Mapped[str] = mapped_column(String(32))
+    source_id: Mapped[str] = mapped_column(String(64))
+    operation_id: Mapped[str] = mapped_column(String(64))
     reason: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime)
 
 
 class LeaveAdjustmentRecord(Base):
     __tablename__ = "leave_adjustments"
+    __table_args__ = (UniqueConstraint("command_id", name="uq_leave_adjustment_command"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     roster_week_id: Mapped[int] = mapped_column(ForeignKey("roster_weeks.id"))
@@ -95,6 +114,7 @@ class LeaveAdjustmentRecord(Base):
     replacement_prefect_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     reason: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(16))
+    command_id: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime)
 
 

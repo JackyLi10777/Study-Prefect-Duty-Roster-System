@@ -24,7 +24,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from nicegui_app.config import DISPLAY_PRINT_CREST_PATH
+from nicegui_app.config import DISPLAY_PRINT_CREST_PATH, PROJECT_ROOT
 from roster_policy import DutyPost, SchoolDay
 
 if TYPE_CHECKING:
@@ -90,8 +90,8 @@ def build_roster_pdf(
     remain the stored Traditional-Chinese names in both modes.
     """
     week = workflow.roster_week(roster_week_id)
-    font_name = _register_cjk_font()
-    styles = _styles(font_name)
+    fonts = _register_cjk_fonts()
+    styles = _styles(fonts)
     output = BytesIO()
     document = _document(output, week_start=week["weekStart"], title=_schedule_title(language), orientation="landscape")
 
@@ -102,8 +102,8 @@ def build_roster_pdf(
     story.extend([Spacer(1, 5 * mm), Paragraph(_schedule_footer(language), styles["footer"])])
     document.build(
         story,
-        onFirstPage=lambda canvas, doc: _draw_footer(canvas, doc, font_name, language, practice),
-        onLaterPages=lambda canvas, doc: _draw_footer(canvas, doc, font_name, language, practice),
+        onFirstPage=lambda canvas, doc: _draw_footer(canvas, doc, fonts["medium"], language, practice),
+        onLaterPages=lambda canvas, doc: _draw_footer(canvas, doc, fonts["medium"], language, practice),
     )
     return RosterPdfExport(filename=_schedule_filename(week["weekStart"], language, practice), content=output.getvalue())
 
@@ -113,8 +113,8 @@ def build_fairness_audit_pdf(
 ) -> RosterPdfExport:
     """Render a clearly marked internal-only, named fairness ledger summary."""
     week = workflow.roster_week(roster_week_id)
-    font_name = _register_cjk_font()
-    styles = _styles(font_name)
+    fonts = _register_cjk_fonts()
+    styles = _styles(fonts)
     output = BytesIO()
     document = _document(output, week_start=week["weekStart"], title=_audit_title(language), orientation="portrait")
     fairness_rows = workflow.fairness_rows()
@@ -136,8 +136,8 @@ def build_fairness_audit_pdf(
     ]
     document.build(
         story,
-        onFirstPage=lambda canvas, doc: _draw_footer(canvas, doc, font_name, language, practice),
-        onLaterPages=lambda canvas, doc: _draw_footer(canvas, doc, font_name, language, practice),
+        onFirstPage=lambda canvas, doc: _draw_footer(canvas, doc, fonts["medium"], language, practice),
+        onLaterPages=lambda canvas, doc: _draw_footer(canvas, doc, fonts["medium"], language, practice),
     )
     return RosterPdfExport(filename=_audit_filename(week["weekStart"], language, practice), content=output.getvalue())
 
@@ -213,7 +213,7 @@ def _schedule_grid(
         ("BACKGROUND", (0, 0), (-1, 0), TEAL),
         ("BACKGROUND", (0, 1), (0, -1), TEAL_DEEP),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("TEXTCOLOR", (0, 1), (0, -1), GOLD),
+        ("TEXTCOLOR", (0, 1), (0, -1), colors.white),
         ("GRID", (0, 0), (-1, -1), 0.38, GRID),
         ("LINEBELOW", (0, 0), (-1, 0), 0.9, GOLD),
         ("LINEAFTER", (0, 0), (0, -1), 0.9, GOLD),
@@ -342,60 +342,58 @@ def _audit_filename(week_start: object, language: ExportLanguage, practice: bool
     return f"{prefix}SYSS_Fairness_Audit_{week_start:%Y%m%d}_{suffix}.pdf"
 
 
-def _register_cjk_font() -> str:
-    """Use an installed Traditional-Chinese font, failing safely when none is available."""
-    font_path = _find_cjk_font()
-    font_name = "SingYinNotoSansTC"
-    if font_name not in pdfmetrics.getRegisteredFontNames():
-        try:
-            pdfmetrics.registerFont(TTFont(font_name, str(font_path)))
-        except Exception as error:  # pragma: no cover - depends on local font implementation
-            raise ValueError(f"A Traditional Chinese PDF font could not be loaded from {font_path}.") from error
-    return font_name
+def _register_cjk_fonts() -> dict[str, str]:
+    """Register deterministic static HK fonts so ReportLab never selects Thin."""
+
+    bundled = PROJECT_ROOT / "nicegui_app" / "assets" / "fonts"
+    legacy_override = os.getenv("SING_YIN_PDF_FONT", "")
+    paths = {
+        "regular": Path(os.getenv("SING_YIN_PDF_FONT_REGULAR", legacy_override or bundled / "NotoSansHK-Regular.ttf")),
+        "medium": Path(os.getenv("SING_YIN_PDF_FONT_MEDIUM", bundled / "NotoSansHK-Medium.ttf")),
+        "semibold": Path(os.getenv("SING_YIN_PDF_FONT_SEMIBOLD", bundled / "NotoSansHK-SemiBold.ttf")),
+    }
+    names = {
+        "regular": "SingYinNotoSansHK-Regular",
+        "medium": "SingYinNotoSansHK-Medium",
+        "semibold": "SingYinNotoSansHK-SemiBold",
+    }
+    for weight, path in paths.items():
+        if not path.is_file():
+            raise ValueError(f"Bundled Traditional Chinese PDF font is missing: {path.name}.")
+        if names[weight] not in pdfmetrics.getRegisteredFontNames():
+            try:
+                pdfmetrics.registerFont(TTFont(names[weight], str(path)))
+            except Exception as error:  # pragma: no cover - depends on local font implementation
+                raise ValueError(f"Traditional Chinese PDF font could not be loaded: {path.name}.") from error
+    return names
 
 
-def _find_cjk_font() -> Path:
-    candidates = [
-        os.getenv("SING_YIN_PDF_FONT", ""),
-        r"C:\\Windows\\Fonts\\NotoSansTC-VF.ttf",
-        r"C:\\Windows\\Fonts\\NotoSansHK-VF.ttf",
-        r"C:\\Windows\\Fonts\\msjh.ttc",
-    ]
-    for candidate in candidates:
-        path = Path(candidate)
-        if candidate and path.is_file():
-            return path
-    raise ValueError(
-        "Traditional Chinese PDF export needs a local CJK font. Install Noto Sans TC or set SING_YIN_PDF_FONT to its .ttf path."
-    )
-
-
-def _styles(font_name: str) -> dict[str, ParagraphStyle]:
+def _styles(fonts: dict[str, str]) -> dict[str, ParagraphStyle]:
     base = getSampleStyleSheet()
     return {
-        "title": ParagraphStyle("title", parent=base["Title"], fontName=font_name, fontSize=18, leading=24, alignment=TA_CENTER, textColor=TEAL, spaceBefore=0, spaceAfter=0),
-        "gold_subtitle": ParagraphStyle("gold_subtitle", parent=base["Normal"], fontName=font_name, fontSize=10, leading=14, alignment=TA_CENTER, textColor=colors.HexColor("#B68A35"), spaceBefore=0, spaceAfter=0),
-        "subtitle": ParagraphStyle("subtitle", parent=base["Normal"], fontName=font_name, fontSize=8.6, leading=13, alignment=TA_CENTER, textColor=MUTED, spaceBefore=0, spaceAfter=0),
-        "section": ParagraphStyle("section", parent=base["Heading2"], fontName=font_name, fontSize=10.5, leading=14, textColor=TEAL, spaceBefore=0, spaceAfter=0),
-        "grid_heading": ParagraphStyle("grid_heading", parent=base["Normal"], fontName=font_name, fontSize=8.5, leading=10, alignment=TA_CENTER, textColor=colors.white, spaceBefore=0, spaceAfter=0),
-        "post_cell": ParagraphStyle("post_cell", parent=base["Normal"], fontName=font_name, fontSize=8.5, leading=10.5, alignment=TA_CENTER, textColor=GOLD, spaceBefore=0, spaceAfter=0),
-        "name_cell": ParagraphStyle("name_cell", parent=base["Normal"], fontName=font_name, fontSize=8.8, leading=11, alignment=TA_CENTER, textColor=INK, spaceBefore=0, spaceAfter=0),
-        "vacant_cell": ParagraphStyle("vacant_cell", parent=base["Normal"], fontName=font_name, fontSize=8.4, leading=10, alignment=TA_CENTER, textColor=colors.HexColor("#B42318"), spaceBefore=0, spaceAfter=0),
-        "closed_cell": ParagraphStyle("closed_cell", parent=base["Normal"], fontName=font_name, fontSize=7.8, leading=10, alignment=TA_CENTER, textColor=MUTED, spaceBefore=0, spaceAfter=0),
-        "audit_heading": ParagraphStyle("audit_heading", parent=base["Normal"], fontName=font_name, fontSize=8.2, leading=10, alignment=TA_CENTER, textColor=colors.white, spaceBefore=0, spaceAfter=0),
-        "audit_cell": ParagraphStyle("audit_cell", parent=base["Normal"], fontName=font_name, fontSize=8.4, leading=11, alignment=TA_LEFT, textColor=INK, spaceBefore=0, spaceAfter=0),
-        "audit_cell_right": ParagraphStyle("audit_cell_right", parent=base["Normal"], fontName=font_name, fontSize=8.4, leading=11, alignment=TA_CENTER, textColor=INK, spaceBefore=0, spaceAfter=0),
-        "note": ParagraphStyle("note", parent=base["Normal"], fontName=font_name, fontSize=8.5, leading=14, textColor=INK, spaceBefore=0, spaceAfter=0),
-        "internal_marker": ParagraphStyle("internal_marker", parent=base["Normal"], fontName=font_name, fontSize=8.8, leading=13, textColor=colors.HexColor("#8A5A00"), backColor=colors.HexColor("#FFF6D8"), borderColor=colors.HexColor("#E6C36A"), borderWidth=0.45, borderPadding=7, spaceBefore=0, spaceAfter=0),
-        "practice_marker": ParagraphStyle("practice_marker", parent=base["Normal"], fontName=font_name, fontSize=8.8, leading=13, alignment=TA_CENTER, textColor=colors.HexColor("#7A4300"), backColor=colors.HexColor("#FFF0C2"), borderColor=colors.HexColor("#D6A447"), borderWidth=0.6, borderPadding=5, spaceBefore=0, spaceAfter=0),
-        "footer": ParagraphStyle("footer", parent=base["Normal"], fontName=font_name, fontSize=7.4, leading=10.5, alignment=TA_CENTER, textColor=MUTED, spaceBefore=0, spaceAfter=0),
+        "title": ParagraphStyle("title", parent=base["Title"], fontName=fonts["semibold"], fontSize=18, leading=24, alignment=TA_CENTER, textColor=TEAL_DEEP, spaceBefore=0, spaceAfter=0),
+        "gold_subtitle": ParagraphStyle("gold_subtitle", parent=base["Normal"], fontName=fonts["medium"], fontSize=10, leading=14, alignment=TA_CENTER, textColor=colors.HexColor("#765B20"), spaceBefore=0, spaceAfter=0),
+        "subtitle": ParagraphStyle("subtitle", parent=base["Normal"], fontName=fonts["medium"], fontSize=9, leading=13, alignment=TA_CENTER, textColor=colors.HexColor("#465C61"), spaceBefore=0, spaceAfter=0),
+        "section": ParagraphStyle("section", parent=base["Heading2"], fontName=fonts["semibold"], fontSize=10.5, leading=14, textColor=TEAL_DEEP, spaceBefore=0, spaceAfter=0),
+        "grid_heading": ParagraphStyle("grid_heading", parent=base["Normal"], fontName=fonts["semibold"], fontSize=8.8, leading=10.5, alignment=TA_CENTER, textColor=colors.white, spaceBefore=0, spaceAfter=0),
+        "post_cell": ParagraphStyle("post_cell", parent=base["Normal"], fontName=fonts["medium"], fontSize=8.8, leading=10.8, alignment=TA_CENTER, textColor=colors.white, spaceBefore=0, spaceAfter=0),
+        "name_cell": ParagraphStyle("name_cell", parent=base["Normal"], fontName=fonts["medium"], fontSize=9.4, leading=11.4, alignment=TA_CENTER, textColor=colors.HexColor("#1E3035"), spaceBefore=0, spaceAfter=0),
+        "vacant_cell": ParagraphStyle("vacant_cell", parent=base["Normal"], fontName=fonts["semibold"], fontSize=8.8, leading=10.5, alignment=TA_CENTER, textColor=colors.HexColor("#8F1D14"), spaceBefore=0, spaceAfter=0),
+        "closed_cell": ParagraphStyle("closed_cell", parent=base["Normal"], fontName=fonts["regular"], fontSize=8.2, leading=10.2, alignment=TA_CENTER, textColor=colors.HexColor("#52666B"), spaceBefore=0, spaceAfter=0),
+        "audit_heading": ParagraphStyle("audit_heading", parent=base["Normal"], fontName=fonts["semibold"], fontSize=8.5, leading=10.5, alignment=TA_CENTER, textColor=colors.white, spaceBefore=0, spaceAfter=0),
+        "audit_cell": ParagraphStyle("audit_cell", parent=base["Normal"], fontName=fonts["regular"], fontSize=8.8, leading=11.2, alignment=TA_LEFT, textColor=INK, spaceBefore=0, spaceAfter=0),
+        "audit_cell_right": ParagraphStyle("audit_cell_right", parent=base["Normal"], fontName=fonts["medium"], fontSize=8.8, leading=11.2, alignment=TA_CENTER, textColor=INK, spaceBefore=0, spaceAfter=0),
+        "note": ParagraphStyle("note", parent=base["Normal"], fontName=fonts["regular"], fontSize=8.8, leading=14, textColor=INK, spaceBefore=0, spaceAfter=0),
+        "internal_marker": ParagraphStyle("internal_marker", parent=base["Normal"], fontName=fonts["medium"], fontSize=8.8, leading=13, textColor=colors.HexColor("#6D4700"), backColor=colors.HexColor("#FFF6D8"), borderColor=colors.HexColor("#E6C36A"), borderWidth=0.45, borderPadding=7, spaceBefore=0, spaceAfter=0),
+        "practice_marker": ParagraphStyle("practice_marker", parent=base["Normal"], fontName=fonts["semibold"], fontSize=8.8, leading=13, alignment=TA_CENTER, textColor=colors.HexColor("#6D3C00"), backColor=colors.HexColor("#FFF0C2"), borderColor=colors.HexColor("#D6A447"), borderWidth=0.6, borderPadding=5, spaceBefore=0, spaceAfter=0),
+        "footer": ParagraphStyle("footer", parent=base["Normal"], fontName=fonts["medium"], fontSize=7.6, leading=10.5, alignment=TA_CENTER, textColor=colors.HexColor("#4D6065"), spaceBefore=0, spaceAfter=0),
     }
 
 
 def _draw_footer(canvas, document, font_name: str, language: ExportLanguage, practice: bool = False) -> None:  # type: ignore[no-untyped-def]
     canvas.saveState()
-    canvas.setFont(font_name, 6.8)
-    canvas.setFillColor(MUTED)
+    canvas.setFont(font_name, 7.5)
+    canvas.setFillColor(colors.HexColor("#4D6065"))
     if practice:
         text = (
             f"練習版本・不可正式發布 ｜ 第 {document.page} 頁"

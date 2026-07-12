@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -78,6 +78,7 @@ def select_daily_verse(
     target_date: date | None = None,
     *,
     special_use: str | None = None,
+    themes_any: Iterable[str] | None = None,
     seed_path: Path = DEFAULT_SEED_PATH,
 ) -> DevotionalEntry:
     target = target_date or date.today()
@@ -86,6 +87,10 @@ def select_daily_verse(
         filtered = [entry for entry in entries if special_use in entry.special_use]
         if filtered:
             entries = filtered
+    requested_themes = frozenset(themes_any or ())
+    if requested_themes:
+        themed = [entry for entry in entries if requested_themes.intersection(entry.themes)]
+        if themed:
+            entries = themed
     index = (target - EPOCH).days % len(entries)
     return entries[index]
-

@@ -24,15 +24,15 @@ def test_browser_auto_open_can_be_disabled_for_managed_or_headless_runs(monkeypa
 
 def test_original_atmosphere_assets_are_available_to_the_local_runtime() -> None:
     atmosphere = PROJECT_ROOT / "nicegui_app" / "assets" / "atmosphere"
-    assert len(list(atmosphere.glob("*-light-v1.webp"))) == 7
-    assert len(list(atmosphere.glob("*-dark-v1.webp"))) == 7
+    assert len(list(atmosphere.glob("*-light-v1.webp"))) == 9
+    assert len(list(atmosphere.glob("*-dark-v1.webp"))) == 9
 
 
 def test_every_enabled_atmosphere_uses_one_shared_slot_with_a_light_dark_pair() -> None:
     atmosphere = PROJECT_ROOT / "nicegui_app" / "assets" / "atmosphere"
     theme = (PROJECT_ROOT / "nicegui_app" / "ui" / "theme.py").read_text(encoding="utf-8")
 
-    assert set(ATMOSPHERE_THEME_PAIRS) == {"sidebar", "weekly-pulse", "devotional", "onboarding", "handover", "architecture", "architecture-lifeline"}
+    assert set(ATMOSPHERE_THEME_PAIRS) == {"sidebar", "weekly-pulse", "devotional", "onboarding", "handover", "platform", "architecture", "architecture-lifeline", "empty-ready"}
     for slot, (light_asset, dark_asset) in ATMOSPHERE_THEME_PAIRS.items():
         assert light_asset.endswith("-light-v1.webp")
         assert dark_asset.endswith("-dark-v1.webp")
@@ -50,6 +50,29 @@ def test_every_enabled_atmosphere_uses_one_shared_slot_with_a_light_dark_pair() 
 def test_nicegui_favicon_is_a_real_local_file() -> None:
     assert FAVICON_CREST_PATH.is_file()
     assert FAVICON_CREST_PATH.stat().st_size > 0
+
+
+def test_local_hong_kong_font_system_is_complete_and_offline() -> None:
+    root = PROJECT_ROOT / "nicegui_app" / "assets" / "fonts"
+    required = {
+        "InterVariable.woff2",
+        "NotoSansHK-Regular.woff2",
+        "NotoSansHK-Medium.woff2",
+        "NotoSansHK-SemiBold.woff2",
+        "NotoSerifHK-Regular.woff2",
+        "NotoSerifHK-SemiBold.woff2",
+        "NotoSansHK-Regular.ttf",
+        "NotoSansHK-Medium.ttf",
+        "NotoSansHK-SemiBold.ttf",
+        "OFL-Inter.txt",
+        "OFL-Noto-CJK.txt",
+    }
+    assert required <= {path.name for path in root.iterdir() if path.is_file()}
+    theme = (PROJECT_ROOT / "nicegui_app" / "ui" / "theme.py").read_text(encoding="utf-8")
+    assert 'font-family: "Inter", "Noto Sans HK"' in theme
+    assert 'font-family: "Noto Serif HK"' in theme
+    assert "font-display: swap" in theme
+    assert "fonts.googleapis.com" not in theme
 
 
 def test_school_crest_assets_cover_distinct_delivery_contexts() -> None:

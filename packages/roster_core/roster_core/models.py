@@ -3,7 +3,26 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from roster_policy import DutyPost, SchoolDay
+from roster_policy import DutyPost, PrefectRole, SchoolDay
+
+
+_LEGACY_ROLE_CODES = {
+    "assistant_head": PrefectRole.ASSISTANT_HEAD,
+    "Assistant Head Study Prefect (助理首席導學風紀)": PrefectRole.ASSISTANT_HEAD,
+    "Assistant Head Study Prefect": PrefectRole.ASSISTANT_HEAD,
+    "study_prefect": PrefectRole.STUDY_PREFECT,
+    "Study Prefect (導學風紀)": PrefectRole.STUDY_PREFECT,
+    "Study Prefect": PrefectRole.STUDY_PREFECT,
+}
+
+
+def parse_prefect_role(value: object) -> PrefectRole:
+    """Translate supported import labels once at the adapter boundary."""
+
+    try:
+        return _LEGACY_ROLE_CODES[str(value).strip()]
+    except KeyError as error:
+        raise ValueError(f"Unsupported prefect role code: {value!s}") from error
 
 
 @dataclass(frozen=True)
@@ -12,7 +31,7 @@ class Prefect:
     name: str
     form: str
     class_name: str
-    role: str
+    role: PrefectRole
     available_days: frozenset[SchoolDay]
     history_weight: float
     history_duties: int = 0
@@ -27,7 +46,7 @@ class Prefect:
             name=str(raw["name"]),
             form=str(raw["form"]),
             class_name=str(raw["class"]),
-            role=str(raw["role"]),
+            role=parse_prefect_role(raw.get("roleCode", raw.get("role"))),
             available_days=frozenset(SchoolDay[str(day)] for day in raw.get("availableDays", [])),
             history_weight=float(raw.get("historyWeight", 0)),
             history_duties=int(raw.get("historyDuties", 0)),
@@ -53,4 +72,3 @@ class Assignment:
             "prefectName": self.prefect_name,
             "weight": self.weight,
         }
-

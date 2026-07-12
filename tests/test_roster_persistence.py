@@ -6,7 +6,7 @@ from threading import Barrier
 
 import pytest
 
-from nicegui_app.services.roster_workflow import RosterWorkflow, WorkflowError
+from nicegui_app.services.roster_workflow import RosterWorkflow, WorkflowConflictError, WorkflowError
 
 
 WEEK_START = date(2026, 9, 7)
@@ -106,6 +106,8 @@ def test_published_leave_adjustment_transfers_weight_and_keeps_audit_trail(workf
         assignment_id=assignment["id"],
         replacement_prefect_id=replacement["id"],
         reason="Approved school activity",
+        command_id="test-adjustment-transfer",
+        expected_week_version=int(workflow.roster_week(draft.id)["version"]),
     )
     after = workflow.prefect_loads()
 
@@ -114,6 +116,73 @@ def test_published_leave_adjustment_transfers_weight_and_keeps_audit_trail(workf
     assert after[replacement["id"]] == pytest.approx(before[replacement["id"]] + assignment["weight"])
     assert workflow.leave_adjustment_count(draft.id) == 1
     assert outcome.backup_path.exists()
+    assert workflow.reconcile_fairness().balanced
+
+
+def test_repeated_leave_adjustment_command_is_idempotent(workflow: RosterWorkflow) -> None:
+    draft = workflow.generate_and_save_draft(WEEK_START)
+    workflow.publish(draft.id)
+    assignment = next(item for item in workflow.assignments(draft.id) if item["postCode"] == "ROOM_302")
+    replacement = workflow.recommend_substitutes(draft.id, int(assignment["id"]))[0]
+    before_version = int(workflow.roster_week(draft.id)["version"])
+
+    first = workflow.apply_leave_adjustment(
+        roster_week_id=draft.id,
+        assignment_id=int(assignment["id"]),
+        replacement_prefect_id=str(replacement["id"]),
+        reason="Approved school activity",
+        command_id="same-browser-command",
+        expected_week_version=before_version,
+    )
+    after_first = workflow.prefect_loads()
+    second = workflow.apply_leave_adjustment(
+        roster_week_id=draft.id,
+        assignment_id=int(assignment["id"]),
+        replacement_prefect_id=str(replacement["id"]),
+        reason="Approved school activity",
+        command_id="same-browser-command",
+        expected_week_version=before_version,
+    )
+
+    assert first.idempotent is False
+    assert second.idempotent is True
+    assert workflow.prefect_loads() == after_first
+    assert workflow.leave_adjustment_count(draft.id) == 1
+    assert workflow.reconcile_fairness().balanced
+
+
+def test_concurrent_distinct_adjustments_have_one_version_winner(workflow: RosterWorkflow, tmp_path) -> None:
+    draft = workflow.generate_and_save_draft(WEEK_START)
+    workflow.publish(draft.id)
+    assignment = next(item for item in workflow.assignments(draft.id) if item["postCode"] == "ROOM_302")
+    replacement = workflow.recommend_substitutes(draft.id, int(assignment["id"]))[0]
+    contender = RosterWorkflow(database_path=tmp_path / "sing-yin.sqlite3", backup_dir=tmp_path / "backups")
+    contender.bootstrap()
+    version = int(workflow.roster_week(draft.id)["version"])
+    start = Barrier(2)
+
+    def adjust(service: RosterWorkflow, command_id: str):
+        start.wait(timeout=5)
+        try:
+            return service.apply_leave_adjustment(
+                roster_week_id=draft.id,
+                assignment_id=int(assignment["id"]),
+                replacement_prefect_id=str(replacement["id"]),
+                reason="Approved school activity",
+                command_id=command_id,
+                expected_week_version=version,
+            )
+        except WorkflowError as error:
+            return error
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = list(executor.map(lambda args: adjust(*args), ((workflow, "tab-a"), (contender, "tab-b"))))
+
+    assert len([item for item in outcomes if not isinstance(item, WorkflowError)]) == 1
+    conflicts = [item for item in outcomes if isinstance(item, WorkflowConflictError)]
+    assert len(conflicts) == 1
+    assert workflow.leave_adjustment_count(draft.id) == 1
+    assert workflow.reconcile_fairness().balanced
 
 
 def test_manual_draft_change_stays_policy_valid_auditable_and_does_not_post_fairness(workflow: RosterWorkflow) -> None:
