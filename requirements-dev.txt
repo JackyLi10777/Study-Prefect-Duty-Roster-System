@@ -1,0 +1,9 @@
+-r requirements.txt
+
+# Release verification only. The daily local application does not require
+# these packages, but a replacement computer needs them before running the
+# isolated browser, PDF-inspection, and automated regression evidence.
+pytest>=9.0,<10
+playwright>=1.58,<2
+pypdf>=6.0,<7
+httpx2>=2.5,<3

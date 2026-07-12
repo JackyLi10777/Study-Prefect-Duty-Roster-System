@@ -1,0 +1,408 @@
+"""Local-only, print-ready roster and internal-audit PDF exports.
+
+The weekly schedule deliberately fits on one A4 page so it can be sent to the
+prefect group without exposing the private cumulative fairness ledger.  A
+separate audit export is available for the Head Study Prefect and teacher
+advisor when they need to review the ledger.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from io import BytesIO
+import os
+from pathlib import Path
+from typing import TYPE_CHECKING, Literal
+from xml.sax.saxutils import escape as xml_escape
+
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+from nicegui_app.config import DISPLAY_PRINT_CREST_PATH
+from roster_policy import DutyPost, SchoolDay
+
+if TYPE_CHECKING:
+    from nicegui_app.services.roster_workflow import RosterWorkflow
+
+
+ExportLanguage = Literal["zh", "en"]
+
+DAY_ORDER = (
+    SchoolDay.MONDAY,
+    SchoolDay.TUESDAY,
+    SchoolDay.WEDNESDAY,
+    SchoolDay.THURSDAY,
+    SchoolDay.FRIDAY,
+)
+
+DAY_TEXT: dict[SchoolDay, tuple[str, str]] = {
+    SchoolDay.MONDAY: ("星期一", "MONDAY"),
+    SchoolDay.TUESDAY: ("星期二", "TUESDAY"),
+    SchoolDay.WEDNESDAY: ("星期三", "WEDNESDAY"),
+    SchoolDay.THURSDAY: ("星期四", "THURSDAY"),
+    SchoolDay.FRIDAY: ("星期五", "FRIDAY"),
+}
+
+POST_ROWS: tuple[tuple[DutyPost, int, tuple[str, str]], ...] = (
+    (DutyPost.ASSIST_IN_CHARGE, 1, ("助理首席導學風紀當值", "Assist. in charge")),
+    (DutyPost.ROOM_302, 1, ("302 室（自修室）", "Room 302 (Study Room)")),
+    (DutyPost.ROOM_303, 1, ("303 室（功課完成）－1", "Room 303 (HW Completion) - 1")),
+    (DutyPost.ROOM_303, 2, ("303 室（功課完成）－2", "Room 303 (HW Completion) - 2")),
+    (DutyPost.ROOM_202, 1, ("202 室（中一自修小組）－1", "Room 202 (F1 Study Group) - 1")),
+    (DutyPost.ROOM_202, 2, ("202 室（中一自修小組）－2", "Room 202 (F1 Study Group) - 2")),
+)
+
+ROW_BACKGROUNDS = {
+    DutyPost.ASSIST_IN_CHARGE: colors.HexColor("#FFF9E7"),
+    DutyPost.ROOM_302: colors.HexColor("#EEF9F2"),
+    DutyPost.ROOM_303: colors.HexColor("#FFF3F3"),
+    DutyPost.ROOM_202: colors.HexColor("#FFF8ED"),
+}
+TEAL = colors.HexColor("#147E76")
+TEAL_DEEP = colors.HexColor("#0C625C")
+GOLD = colors.HexColor("#D3A930")
+GRID = colors.HexColor("#B7C9CF")
+INK = colors.HexColor("#17333A")
+MUTED = colors.HexColor("#5E7377")
+CLOSED = colors.HexColor("#EEF3F4")
+
+
+@dataclass(frozen=True)
+class RosterPdfExport:
+    """A PDF payload ready for a browser download; it never leaves the computer."""
+
+    filename: str
+    content: bytes
+
+
+def build_roster_pdf(
+    workflow: "RosterWorkflow", roster_week_id: int, *, language: ExportLanguage = "zh", practice: bool = False
+) -> RosterPdfExport:
+    """Render the group-share weekly grid on a single A4 page.
+
+    Labels follow the selected output language.  Prefect names intentionally
+    remain the stored Traditional-Chinese names in both modes.
+    """
+    week = workflow.roster_week(roster_week_id)
+    font_name = _register_cjk_font()
+    styles = _styles(font_name)
+    output = BytesIO()
+    document = _document(output, week_start=week["weekStart"], title=_schedule_title(language), orientation="landscape")
+
+    story = _schedule_header(week["weekStart"], str(week["status"]), language, styles)
+    if practice:
+        story.extend([Spacer(1, 2 * mm), Paragraph(_practice_marker(language), styles["practice_marker"])])
+    story.extend([Spacer(1, 4 * mm), _schedule_grid(workflow.assignments(roster_week_id), language, styles, landscape_mode=True)])
+    story.extend([Spacer(1, 5 * mm), Paragraph(_schedule_footer(language), styles["footer"])])
+    document.build(
+        story,
+        onFirstPage=lambda canvas, doc: _draw_footer(canvas, doc, font_name, language, practice),
+        onLaterPages=lambda canvas, doc: _draw_footer(canvas, doc, font_name, language, practice),
+    )
+    return RosterPdfExport(filename=_schedule_filename(week["weekStart"], language, practice), content=output.getvalue())
+
+
+def build_fairness_audit_pdf(
+    workflow: "RosterWorkflow", roster_week_id: int, *, language: ExportLanguage = "zh", practice: bool = False
+) -> RosterPdfExport:
+    """Render a clearly marked internal-only, named fairness ledger summary."""
+    week = workflow.roster_week(roster_week_id)
+    font_name = _register_cjk_font()
+    styles = _styles(font_name)
+    output = BytesIO()
+    document = _document(output, week_start=week["weekStart"], title=_audit_title(language), orientation="portrait")
+    fairness_rows = workflow.fairness_rows()
+    active_assignments = [row for row in workflow.assignments(roster_week_id) if row["status"] == "active"]
+    summary = _audit_summary(week["weekStart"], str(week["status"]), len(active_assignments), language)
+    story = [
+        Paragraph(_audit_title(language), styles["title"]),
+        Paragraph(summary, styles["subtitle"]),
+        *([Spacer(1, 2 * mm), Paragraph(_practice_marker(language), styles["practice_marker"])] if practice else []),
+        Spacer(1, 5 * mm),
+        Paragraph(_internal_marker(language), styles["internal_marker"]),
+        Spacer(1, 4 * mm),
+        Paragraph(_audit_section_title(language), styles["section"]),
+        _audit_table(fairness_rows, language, styles),
+        Spacer(1, 5 * mm),
+        Paragraph(_audit_explanation(language), styles["note"]),
+        Spacer(1, 3 * mm),
+        Paragraph(_audit_confidentiality(language), styles["footer"]),
+    ]
+    document.build(
+        story,
+        onFirstPage=lambda canvas, doc: _draw_footer(canvas, doc, font_name, language, practice),
+        onLaterPages=lambda canvas, doc: _draw_footer(canvas, doc, font_name, language, practice),
+    )
+    return RosterPdfExport(filename=_audit_filename(week["weekStart"], language, practice), content=output.getvalue())
+
+
+def _document(
+    output: BytesIO, *, week_start: object, title: str, orientation: Literal["landscape", "portrait"]
+) -> SimpleDocTemplate:
+    page_size = landscape(A4) if orientation == "landscape" else A4
+    horizontal_margin = 10 * mm if orientation == "landscape" else 7 * mm
+    return SimpleDocTemplate(
+        output,
+        pagesize=page_size,
+        leftMargin=horizontal_margin,
+        rightMargin=horizontal_margin,
+        topMargin=9 * mm,
+        bottomMargin=15 * mm,
+        title=f"{title} {week_start}",
+        author="Sing Yin Study Prefect Duty Roster System",
+    )
+
+
+def _schedule_header(week_start: object, status: str, language: ExportLanguage, styles: dict[str, ParagraphStyle]) -> list[object]:
+    story: list[object] = []
+    badge = _school_badge()
+    if badge is not None:
+        story.extend([badge, Spacer(1, 2 * mm)])
+    story.extend([
+        Paragraph(_schedule_title(language), styles["title"]),
+        Paragraph(_schedule_subtitle(language), styles["gold_subtitle"]),
+        Paragraph(_week_line(week_start, status, language), styles["subtitle"]),
+        Spacer(1, 4 * mm),
+        Paragraph(_weekly_label(language), styles["section"]),
+    ])
+    return story
+
+
+def _schedule_grid(
+    assignments: list[dict[str, object]], language: ExportLanguage, styles: dict[str, ParagraphStyle], *, landscape_mode: bool
+) -> Table:
+    by_slot = {
+        (str(item["day"]), str(item["postCode"]), int(item["slotIndex"])): item
+        for item in assignments
+    }
+    heading = "值班位置" if language == "zh" else "Duty Position"
+    rows: list[list[Paragraph]] = [[Paragraph(heading, styles["grid_heading"])] + [
+        Paragraph(DAY_TEXT[day][0 if language == "zh" else 1], styles["grid_heading"])
+        for day in DAY_ORDER
+    ]]
+    cell_backgrounds: list[tuple[int, int, colors.Color]] = []
+    for row_index, (post, slot_index, label) in enumerate(POST_ROWS, start=1):
+        row = [Paragraph(label[0 if language == "zh" else 1], styles["post_cell"])]
+        for column_index, day in enumerate(DAY_ORDER, start=1):
+            item = by_slot.get((day.name, post.name, slot_index))
+            if item is None and post is DutyPost.ROOM_202:
+                row.append(Paragraph("不開放" if language == "zh" else "Closed", styles["closed_cell"]))
+                cell_backgrounds.append((column_index, row_index, CLOSED))
+                continue
+            if item is None or item["status"] != "active":
+                row.append(Paragraph("空缺" if language == "zh" else "Vacant", styles["vacant_cell"]))
+                cell_backgrounds.append((column_index, row_index, ROW_BACKGROUNDS[post]))
+                continue
+            row.append(Paragraph(xml_escape(str(item["prefectName"])), styles["name_cell"]))
+            cell_backgrounds.append((column_index, row_index, ROW_BACKGROUNDS[post]))
+        rows.append(row)
+    if landscape_mode:
+        column_widths = [84 * mm] + [38.6 * mm] * 5
+        row_heights = [14 * mm] + [14 * mm] * 6
+    else:  # pragma: no cover - retained for any future compact export
+        column_widths = [66.7 * mm] + [25.86 * mm] * 5
+        row_heights = [12 * mm] + [11.5 * mm] * 6
+    table = Table(rows, colWidths=column_widths, rowHeights=row_heights)
+    commands: list[tuple[object, ...]] = [
+        ("BACKGROUND", (0, 0), (-1, 0), TEAL),
+        ("BACKGROUND", (0, 1), (0, -1), TEAL_DEEP),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("TEXTCOLOR", (0, 1), (0, -1), GOLD),
+        ("GRID", (0, 0), (-1, -1), 0.38, GRID),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.9, GOLD),
+        ("LINEAFTER", (0, 0), (0, -1), 0.9, GOLD),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("ALIGN", (1, 0), (-1, -1), "CENTER"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]
+    commands.extend(("BACKGROUND", (column, row), (column, row), background) for column, row, background in cell_backgrounds)
+    table.setStyle(TableStyle(commands))
+    return table
+
+
+def _audit_table(rows: list[dict[str, object]], language: ExportLanguage, styles: dict[str, ParagraphStyle]) -> Table:
+    headers = (
+        ("中文姓名", "Form", "Class", "累計點數", "累計次數")
+        if language == "zh"
+        else ("Chinese name", "Form", "Class", "History weight", "History duties")
+    )
+    data: list[list[Paragraph]] = [[Paragraph(header, styles["audit_heading"]) for header in headers]]
+    for row in rows:
+        data.append([
+            Paragraph(xml_escape(str(row["nameZh"])), styles["audit_cell"]),
+            Paragraph(xml_escape(str(row["form"])), styles["audit_cell"]),
+            Paragraph(xml_escape(str(row["className"])), styles["audit_cell"]),
+            Paragraph(f"{float(row['historyWeight']):.1f}", styles["audit_cell_right"]),
+            Paragraph(str(row["historyDuties"]), styles["audit_cell_right"]),
+        ])
+    table = Table(data, colWidths=[51 * mm, 27 * mm, 30 * mm, 38 * mm, 38 * mm], repeatRows=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), TEAL),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.35, GRID),
+        ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#F8FBFB")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    return table
+
+
+def _school_badge() -> Image | None:
+    badge_path = DISPLAY_PRINT_CREST_PATH
+    if not badge_path.is_file():
+        return None
+    return Image(str(badge_path), width=15 * mm, height=15 * mm, hAlign="CENTER")
+
+
+def _schedule_title(language: ExportLanguage) -> str:
+    return "聖言中學導學風紀值周值班表" if language == "zh" else "Sing Yin Secondary School Study Prefect Duty Roster"
+
+
+def _schedule_subtitle(language: ExportLanguage) -> str:
+    return "導學風紀值班表與工作審核" if language == "zh" else "Study Prefect Duty Roster &amp; Workload Audit"
+
+
+def _week_line(week_start: object, status: str, language: ExportLanguage) -> str:
+    is_published = status == "published"
+    if language == "zh":
+        state = "已發布" if is_published else "草稿－只供核對，不可派發"
+        return f"報告日期：{week_start} ｜ {state}"
+    state = "Published" if is_published else "Draft — check only; do not distribute"
+    return f"Week commencing: {week_start} | {state}"
+
+
+def _weekly_label(language: ExportLanguage) -> str:
+    return "值周值班表" if language == "zh" else "Weekly Duty Roster"
+
+
+def _schedule_footer(language: ExportLanguage) -> str:
+    if language == "zh":
+        return "非以役人，乃役於人（馬可福音 10:45）｜ 發送前請核對中文姓名；此頁可供校內受控分享。"
+    return "Not to be served, but to serve (Mark 10:45) | Chinese names are authoritative; share only through approved school channels."
+
+
+def _audit_title(language: ExportLanguage) -> str:
+    return "聖言中學導學風紀公平審計摘要" if language == "zh" else "Sing Yin Study Prefect Fairness Audit Summary"
+
+
+def _audit_summary(week_start: object, status: str, active_count: int, language: ExportLanguage) -> str:
+    state = ("已發布" if status == "published" else "草稿") if language == "zh" else ("Published" if status == "published" else "Draft")
+    if language == "zh":
+        return f"週次：{week_start} ｜ 狀態：{state} ｜ 本週有效崗位：{active_count}"
+    return f"Week commencing: {week_start} | Status: {state} | Active assignments: {active_count}"
+
+
+def _internal_marker(language: ExportLanguage) -> str:
+    return "內部文件：供首席導學風紀及老師顧問核對，不應預設發到風紀群組。" if language == "zh" else "Internal record: for the Head Study Prefect and teacher advisor; do not send to the prefect group by default."
+
+
+def _practice_marker(language: ExportLanguage) -> str:
+    return (
+        "練習版本｜只含虛構資料｜不可作正式發布"
+        if language == "zh"
+        else "PRACTICE VERSION | FICTIONAL DATA | NOT FOR OFFICIAL DISTRIBUTION"
+    )
+
+
+def _audit_section_title(language: ExportLanguage) -> str:
+    return "累計工作量帳本" if language == "zh" else "Persistent workload ledger"
+
+
+def _audit_explanation(language: ExportLanguage) -> str:
+    if language == "zh":
+        return "公平原則：history_weight 跨週保留；系統在符合職務、可值班日、同日不重複及不連續值班規則下，優先安排較低點數的風紀。只有發布週表或已記錄的發布後請假調整會改變帳本。"
+    return "Fairness principle: history_weight persists across weeks. Within role eligibility, availability, no same-day duplicate, and no consecutive-duty rules, the system prioritizes lower-weight prefects. Only publication or an audited post-publication leave adjustment changes the ledger."
+
+
+def _audit_confidentiality(language: ExportLanguage) -> str:
+    return "此摘要含個人累計資料；如需向群組說明公平性，請先由老師顧問同意，並優先分享規則及整體趨勢。" if language == "zh" else "This summary contains individual cumulative data. If fairness needs to be explained to the group, obtain teacher-advisor approval and share the rules and overall trend first."
+
+
+def _schedule_filename(week_start: object, language: ExportLanguage, practice: bool = False) -> str:
+    suffix = "中文" if language == "zh" else "EN"
+    prefix = "PRACTICE_" if practice else ""
+    return f"{prefix}SYSS_Roster_{week_start:%Y%m%d}_{suffix}.pdf"
+
+
+def _audit_filename(week_start: object, language: ExportLanguage, practice: bool = False) -> str:
+    suffix = "中文" if language == "zh" else "EN"
+    prefix = "PRACTICE_" if practice else ""
+    return f"{prefix}SYSS_Fairness_Audit_{week_start:%Y%m%d}_{suffix}.pdf"
+
+
+def _register_cjk_font() -> str:
+    """Use an installed Traditional-Chinese font, failing safely when none is available."""
+    font_path = _find_cjk_font()
+    font_name = "SingYinNotoSansTC"
+    if font_name not in pdfmetrics.getRegisteredFontNames():
+        try:
+            pdfmetrics.registerFont(TTFont(font_name, str(font_path)))
+        except Exception as error:  # pragma: no cover - depends on local font implementation
+            raise ValueError(f"A Traditional Chinese PDF font could not be loaded from {font_path}.") from error
+    return font_name
+
+
+def _find_cjk_font() -> Path:
+    candidates = [
+        os.getenv("SING_YIN_PDF_FONT", ""),
+        r"C:\\Windows\\Fonts\\NotoSansTC-VF.ttf",
+        r"C:\\Windows\\Fonts\\NotoSansHK-VF.ttf",
+        r"C:\\Windows\\Fonts\\msjh.ttc",
+    ]
+    for candidate in candidates:
+        path = Path(candidate)
+        if candidate and path.is_file():
+            return path
+    raise ValueError(
+        "Traditional Chinese PDF export needs a local CJK font. Install Noto Sans TC or set SING_YIN_PDF_FONT to its .ttf path."
+    )
+
+
+def _styles(font_name: str) -> dict[str, ParagraphStyle]:
+    base = getSampleStyleSheet()
+    return {
+        "title": ParagraphStyle("title", parent=base["Title"], fontName=font_name, fontSize=18, leading=24, alignment=TA_CENTER, textColor=TEAL, spaceBefore=0, spaceAfter=0),
+        "gold_subtitle": ParagraphStyle("gold_subtitle", parent=base["Normal"], fontName=font_name, fontSize=10, leading=14, alignment=TA_CENTER, textColor=colors.HexColor("#B68A35"), spaceBefore=0, spaceAfter=0),
+        "subtitle": ParagraphStyle("subtitle", parent=base["Normal"], fontName=font_name, fontSize=8.6, leading=13, alignment=TA_CENTER, textColor=MUTED, spaceBefore=0, spaceAfter=0),
+        "section": ParagraphStyle("section", parent=base["Heading2"], fontName=font_name, fontSize=10.5, leading=14, textColor=TEAL, spaceBefore=0, spaceAfter=0),
+        "grid_heading": ParagraphStyle("grid_heading", parent=base["Normal"], fontName=font_name, fontSize=8.5, leading=10, alignment=TA_CENTER, textColor=colors.white, spaceBefore=0, spaceAfter=0),
+        "post_cell": ParagraphStyle("post_cell", parent=base["Normal"], fontName=font_name, fontSize=8.5, leading=10.5, alignment=TA_CENTER, textColor=GOLD, spaceBefore=0, spaceAfter=0),
+        "name_cell": ParagraphStyle("name_cell", parent=base["Normal"], fontName=font_name, fontSize=8.8, leading=11, alignment=TA_CENTER, textColor=INK, spaceBefore=0, spaceAfter=0),
+        "vacant_cell": ParagraphStyle("vacant_cell", parent=base["Normal"], fontName=font_name, fontSize=8.4, leading=10, alignment=TA_CENTER, textColor=colors.HexColor("#B42318"), spaceBefore=0, spaceAfter=0),
+        "closed_cell": ParagraphStyle("closed_cell", parent=base["Normal"], fontName=font_name, fontSize=7.8, leading=10, alignment=TA_CENTER, textColor=MUTED, spaceBefore=0, spaceAfter=0),
+        "audit_heading": ParagraphStyle("audit_heading", parent=base["Normal"], fontName=font_name, fontSize=8.2, leading=10, alignment=TA_CENTER, textColor=colors.white, spaceBefore=0, spaceAfter=0),
+        "audit_cell": ParagraphStyle("audit_cell", parent=base["Normal"], fontName=font_name, fontSize=8.4, leading=11, alignment=TA_LEFT, textColor=INK, spaceBefore=0, spaceAfter=0),
+        "audit_cell_right": ParagraphStyle("audit_cell_right", parent=base["Normal"], fontName=font_name, fontSize=8.4, leading=11, alignment=TA_CENTER, textColor=INK, spaceBefore=0, spaceAfter=0),
+        "note": ParagraphStyle("note", parent=base["Normal"], fontName=font_name, fontSize=8.5, leading=14, textColor=INK, spaceBefore=0, spaceAfter=0),
+        "internal_marker": ParagraphStyle("internal_marker", parent=base["Normal"], fontName=font_name, fontSize=8.8, leading=13, textColor=colors.HexColor("#8A5A00"), backColor=colors.HexColor("#FFF6D8"), borderColor=colors.HexColor("#E6C36A"), borderWidth=0.45, borderPadding=7, spaceBefore=0, spaceAfter=0),
+        "practice_marker": ParagraphStyle("practice_marker", parent=base["Normal"], fontName=font_name, fontSize=8.8, leading=13, alignment=TA_CENTER, textColor=colors.HexColor("#7A4300"), backColor=colors.HexColor("#FFF0C2"), borderColor=colors.HexColor("#D6A447"), borderWidth=0.6, borderPadding=5, spaceBefore=0, spaceAfter=0),
+        "footer": ParagraphStyle("footer", parent=base["Normal"], fontName=font_name, fontSize=7.4, leading=10.5, alignment=TA_CENTER, textColor=MUTED, spaceBefore=0, spaceAfter=0),
+    }
+
+
+def _draw_footer(canvas, document, font_name: str, language: ExportLanguage, practice: bool = False) -> None:  # type: ignore[no-untyped-def]
+    canvas.saveState()
+    canvas.setFont(font_name, 6.8)
+    canvas.setFillColor(MUTED)
+    if practice:
+        text = (
+            f"練習版本・不可正式發布 ｜ 第 {document.page} 頁"
+            if language == "zh"
+            else f"PRACTICE · NOT OFFICIAL | Page {document.page}"
+        )
+    else:
+        text = f"校內文件 ｜ 第 {document.page} 頁" if language == "zh" else f"Internal school document | Page {document.page}"
+    canvas.drawCentredString(canvas._pagesize[0] / 2, 7 * mm, text)
+    canvas.restoreState()

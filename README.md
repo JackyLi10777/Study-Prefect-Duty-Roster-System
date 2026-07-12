@@ -1,806 +1,293 @@
-**中文** | [English](README-EN.md)
+# 聖言中學導學風紀值班系統
 
-# Sing Yin Study Prefect Duty Roster System
+> **非以役人，乃役於人。**
+> 
+> **Not to be served, but to serve.** — Mark 10:45
 
-**聖言中學導學風紀當值排班平台 · v2.4**
-*Sing Yin Secondary School — Study Prefect Intelligent Scheduling Platform*
+這是一個供聖言中學首席導學風紀使用的本機優先值班管理系統。當任首席導學風紀負責日常操作；顧問老師主要在工作完成後核對已發布週表、公平與交接證據。它幫助使用者安全完成：
 
-> 我為聖言中學導學風紀團隊從零打造了這套**專業級智能公平排班管理系統**。
-> 它整合了 AI 輔助解析、公平性演算法、師徒配對、PDF 報告生成，以及雙通道備份還原——所有功能圍繞一個核心目標：讓每週的值班安排變得公平、高效、可追溯。
-> 系統專為 **Streamlit Cloud** 無狀態環境設計，經歷了 5 輪架構重構，由 **62 項自動化測試**全程護航。---
+**生成草稿 → 核對 → 發布 → 匯出 PDF → 已發布後請假調整 → 公平解釋 → 備份／還原 → 交接。**
 
+系統以公平、清晰、責任、耐心與關顧為原則。學生姓名、請假原因、值班紀錄、PDF 及備份均保留在受控環境；現時不會自動上載到公開服務。
 
-<div align="center">
+[English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)
 
-[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.38+-FF4B4B?style=flat&logo=streamlit&logoColor=white)](https://streamlit.io/)
-[![Tests](https://img.shields.io/badge/tests-62_passed-0F766E?style=flat)](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System/actions)
-[![License](https://img.shields.io/badge/license-MIT-7C3AED?style=flat)](LICENSE)
-[![DeepSeek](https://img.shields.io/badge/AI-DeepSeek_V4_Flash-4F46E5?style=flat)](https://deepseek.com)
-[![Platform](https://img.shields.io/badge/deploy-Streamlit_Cloud-FF4B4B?style=flat)](https://streamlit.io/cloud)
+## 版本分支與運行平台
 
-</div>
+| 分支 | 運行平台 | 定位 |
+|---|---|---|
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 目前正式維護版本及交接來源 |
+| `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
+| `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
-## 目錄
+NiceGUI 版本是底層架構重構，不是把 Streamlit 頁面換皮。`roster_policy`、`roster_core`、`roster_workflow`、SQLite交易、備份還原及 NiceGUI 呈現均有清楚責任邊界。完整分支規則見 [Branch Strategy](docs/BRANCH_STRATEGY.md)。
 
-- [快速開始](#快速開始)
-- [日常操作流程](#日常操作流程)
-- [常見問題](#常見問題)
-- [系統架構與核心邏輯](#系統架構與核心邏輯)（進階）
-- [項目結構](#項目結構)
-- [技術棧](#技術棧)
-- [備份與數據持久化](#備份與數據持久化)
-- [作者與授權](#作者與授權)
+GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛構 SQLite 快照、無內容支援日誌及瀏覽器測試證據。可公開封存內容由 `scripts/build_public_archive.py` 產生；若 SQLite 存在任何週表、請假、發布、公平帳本或調整資料，腳本會拒絕建立封存。即時 `.env`、session secret、Tunnel／API token、`node_modules`、`.next`、快取及臨時效能資料不屬於可重建專案內容。
 
----
+舊 `demo_code2` 的 service-account 私鑰檔不會上傳；版本庫只保留同欄位、全占位值的 `service_account.example.json`，讓參考整合仍可理解而不包含可用credential。
 
-## 快速開始
+**共創者說明：這次 NiceGUI 重構、設計、測試、文件及正式發布版本，只由李創杰與 Codex 共同完成。`Study Prefect Systems & Stewardship Office` 是我們兩人的項目團隊名稱，沒有其他開發者、部門成員或外判團隊。**
 
-```bash
-pip install -r requirements.txt
-streamlit run app.py
+## 首席導學風紀：每日怎樣進入
+
+1. 開啟系統資料夾。
+2. **雙擊 `START_SING_YIN_ROSTER.cmd`**。
+3. 啟動器會先檢查是否已有系統在執行；若已有，會直接開啟原有服務，不會再啟動第二個 NiceGUI。
+4. 預設網址是 [http://127.0.0.1:8080](http://127.0.0.1:8080)。若 8080 被其他程式佔用，啟動器會自動選擇 8081–8099 之間的可用埠，並在黑色視窗顯示實際網址。
+5. 只有在 HTTP 確認系統真正就緒後，瀏覽器才會開啟；若沒有自動開啟，請使用黑色視窗顯示的網址，不要猜測埠號。
+6. 先閱讀首頁每日經文，然後依「本週值班工作台」的目前步驟工作。
+
+### 第一次接手：先用練習模式走一次完整流程
+
+- 雙擊 `START_PRACTICE_MODE.cmd`。它使用 8090–8109、`data/practice/` 內的獨立 SQLite、備份、日誌及介面偏好，並自動載入虛構中文姓名；不會讀寫正式資料庫或正式備份。
+- 每一頁頂部都會顯示繁中／英文「練習模式」狀態列；練習 PDF 的檔名、正文及頁尾均標示不可作正式發布。
+- 可放心練習「請假 → 生成 → 手動修改 → 發布 → 雙語 PDF → 發布後請假調整 → 公平審核 → 備份／還原」。
+- 要重新開始時，先關閉練習模式的黑色視窗，再雙擊 `RESET_PRACTICE_MODE.cmd`；它只會清除 `data/practice/`，然後重新建立虛構練習環境。
+- 正式工作仍只使用 `START_SING_YIN_ROSTER.cmd`。兩個啟動器會透過 `/healthz` 的 `applicationMode` 身份辨識服務，不會互相誤開。
+
+日常安全次序：
+
+1. 在「風紀名單」核對中文姓名、職務及可值班日。
+2. 在「值班表」先登記尚未發布週的請假，再生成草稿。
+3. 核對草稿；如需要，使用「手動修改草稿」並填寫原因。
+4. 發布前再次核對。**只有發布才會更新 `history_weight` 公平帳本。**
+5. 下載繁中或英文的橫向 A4 週表；所有導學風紀姓名均維持中文。
+6. 已發布後有人請假時，只使用「請假調整」，不要重新生成已發布週表或直接修改資料庫；依頁面步驟選擇原崗位、載入替補、填寫原因，才儲存。手機版會把名單及值班資料顯示為完整卡片，避免靠橫向滑動尋找中文姓名。
+7. 新任首席導學風紀可在側邊欄依次查看「開始使用」→「使用手冊」→「系統架構與共創」；它們分別說明第一次操作、每週安全流程，以及系統如何保護公平與復原，不需要先懂程式。
+
+名單新增／修改／停用及生成前請假會連同本機快照一起安全處理；進度視窗完成前不要重複點擊。停用只會停止日後選用，不會刪除既有週表、公平帳本或審計紀錄，且必須先經過清楚確認。
+
+首次使用而尚未有已驗證快照時，「建立交接備份包」及「還原已選備份」會保持停用，畫面只提供「立即建立已驗證快照」這個安全下一步。完成快照及完整性驗證後，兩個入口才會出現為可操作狀態。
+
+如最近檢查的快照有 manifest 遺失、SHA-256 不符、SQLite 完整性或資料表問題，設定頁只會顯示安全分類及數量，並自動把它們排除於交接和還原選單。不要改名、手動修補或公開上載這些檔案；先建立新的已驗證快照，調查時只向受控 IT 支援提供 OP／REQ 編號。
+
+設定頁每次開啟仍會重新核對快照，不依賴過時快取；最近最多 12 個快照會以最多四路唯讀方式驗證，保持最新優先並縮短等候。檔案在檢查途中被移走時會安全略過或標記為不可使用，不會令設定頁中斷。
+
+如畫面顯示 `OP-...` 支援編號，這次失敗不會自行發布值班表。先檢查資料、職務、可值班日和請假；若問題持續，向教師顧問或 IT 支援提供該編號。維護者可在受控電腦以 `python -X utf8 scripts\inspect_support_log.py --reference OP-XXXXXXXX` 查找本機日誌；不要把整份日誌傳送到公開或個人雲端。
+
+## 教師顧問／IT：首次設定
+
+在專用、受控的校內電腦完成一次：
+
+```powershell
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
 ```
 
-部署至 Streamlit Cloud 時需設置 Secrets：`DEEPSEEK_API_KEY`（AI 解析功能）。
+本機模式不需手動建立 session secret：第一次啟動會原子建立並持續沿用已被 Git 忽略的 `data/runtime/.nicegui-storage-secret`。只有日後改為專用主機的 `server` 模式時，才必須以受控環境變數提供獨立 `SING_YIN_STORAGE_SECRET`。然後以：
 
----
+```powershell
+python -X utf8 -m nicegui_app.main
+```
 
-## 日常操作流程
+啟動系統。預設只綁定 `127.0.0.1`；啟動器會優先使用 8080，必要時在 8081–8099 選擇本機可用埠。這是刻意的私隱保護設定。
 
-### 1. 導入名冊
-- **推薦使用「🤖 AI 智能自動匹配」**：支援任意格式的 Excel / CSV，DeepSeek 會自動辨識欄位。
-- 亦可選擇傳統手動模式，按範例格式上傳。
+## 文件地圖
 
-### 2. 設定參數
-- 在側邊欄勾選本週請假人員。
-- 如遇特殊情況（考試週、活動日），可標記特定時段關閉。
-- 使用全域負荷滑桿（0.8× – 2.0×）一鍵調節本週整體排班強度。
+| 你要完成的事 | 請閱讀 |
+|---|---|
+| 每週生成、發布、PDF、請假調整 | [首席導學風紀操作手冊](docs/OPERATOR_GUIDE.md) |
+| 雙擊啟動、埠號衝突、重複開啟 | [快速啟動](docs/QUICKSTART.md) |
+| 第一次接手、隔離練習及重設 | `START_PRACTICE_MODE.cmd`、`RESET_PRACTICE_MODE.cmd` 及 [快速啟動](docs/QUICKSTART.md) |
+| 備份、還原、交接、正式驗收 | [首次發布與交接手冊](docs/RELEASE_HANDOVER.md) |
+| 每項驗收要求的自動化證據與真人責任 | [正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md) |
+| 本機、Cloudflare Access 與真正雲端部署之取捨 | [部署與遠端存取決策指南](docs/DEPLOYMENT_DECISION.md) |
+| NiceGUI、政策、工作流與資料層責任 | [NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) |
+| 視覺、無障礙、深淺模式與動效標準 | [Professional Design System](Professional_Design_System.md) |
+| 系統如何分工、保障資料和交接脈絡 | 系統內「系統架構與共創」頁面，以及 [NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) |
+| 當前完成內容、測試證據與已知風險 | [Project Status](PROJECT_STATUS.md) |
+| GitHub分支、歷史版本及發布規則 | [Branch Strategy](docs/BRANCH_STRATEGY.md) |
+| 虛構資料、日誌及測試證據封存 | [Public project archive](archive/README.md) |
 
-### 3. 一鍵生成
-- 點擊主畫面「🚀 一鍵生成公平值班表」。
-- 系統自動基於歷史累計負荷點數進行公平排班，考慮 AHP 限制、房間開放規則、師徒配對。
+## 系統架構與可信設計
 
-### 4. 審核與調整
-- **視覺公告版**：彩色崗位標記，一目了然。
-- **手動修改模式**：直接在表格上編輯人名或鎖定儲存格。
-- **智慧替補推薦**：選擇日期與崗位，系統按最低負荷推薦人選。
-
-### 5. 匯出與備份
-- **📄 匯出中文 PDF**：專業彩色班表，末頁自動嵌入完整備份數據 → 一頁實現「發送 + 備份」。
-- **📄 Export English PDF**：供外部或英文使用者。
-- **💾 JSON 備份**：側邊欄一鍵下載動態數據。
-- **📊 Excel / Markdown**：方便複製到其他文件。
-
-> 💡 **強烈建議**：每次生成值班表後立即下載 PDF 或 JSON 備份。Streamlit Cloud 休眠後可通過「上傳備份還原」一鍵恢復。
-
-
-### 6. 發布後請假調整
-
-值班表發布後若有人臨時請假，**不需要重新生成整張值班表**。使用「值班後請假調整」功能：
-
-- 系統進行**局部調整**——只替換請假人員，其餘崗位完全保持不變。
-- 自動撤銷請假者的負荷點數，並為替補者加上相應點數。
-- 調整後可直接**重新匯出 PDF**——系統會以更新後的數據渲染報表。
-
-> 💡 這不是「重新排班」，而是「局部替換 + 點數更正 + PDF 重新渲染」。你不用擔心打亂已安排好的值班。
----
-
-## 常見問題
-
-**Q: 生成值班表後 PDF 匯出失敗？**
-A: 通常是 WeasyPrint 依賴問題。在 Streamlit Cloud 上 `packages.txt` 已配置必要系統庫。本地開發請確保安裝了 GTK 相關依賴。
-
-**Q: 想恢復上週的值班表怎麼辦？**
-A: 上傳之前匯出的 PDF（無需拆頁），系統自動解析末頁嵌入的備份數據進行完整還原。也可使用 JSON 備份檔案恢復。
-
-**Q: 學生名冊更新後要不要 Push 到 GitHub？**
-A: 名冊屬於靜態數據，託管在 GitHub `ai` 分支。修改後建議提交推送，確保下次部署時使用最新名冊。
-
-**Q: Dark Mode / 語言如何切換？**
-A: 側邊欄頂部提供深色/淺色模式切換開關，以及中英雙語即時切換。設定會自動保存。
-
-**Q: 如何處理考試週的特殊排班需求？**
-A: 使用全域負荷滑桿調高倍率（如 1.5× – 2.0×），讓累計負荷較低的學生優先排班，平衡長期公平性。
-
-**Q: 系統可以多人同時使用嗎？**
-A: 每位使用者的 Streamlit Session 互相獨立。如需多人協作，建議由首席導學風紀統一操作後匯出 PDF 發送。
-
-**Q: 如何清除所有數據重新開始？**
-A: 側邊欄底部「🗑️ 完全清除所有數據」按鈕（需二次確認，操作不可復原）。清除後可重新導入名冊。
-
-**Q: 師徒配對是自動的嗎？**
-A: 是的。系統自動識別需要指導的風紀（累計點數 ≤ 2.0），優先與資深風紀（點數 > 5.0）配對至同一房間。
-
----
-
-## 系統架構與核心邏輯
-
-> 🔗 本章節面向有興趣深入了解系統設計理念的使用者與未來維護者。日常操作無需閱讀。
-
-### 整體架構
-
-本系統採用**分層模組化設計**，將學校規則、排班引擎、數據管理、使用者介面、工具函數、AI 服務分離為獨立層級，確保高內聚低耦合。
+這套系統的高級感不只來自畫面，而來自每一層都能說明「誰作決定、何時寫入、失敗後怎樣回復」。日常使用毋須理解程式碼；本節供顧問老師、繼任者及維護者核對系統為何值得信任。
 
 ```mermaid
-flowchart TD
-    APP["Streamlit App<br/>app.py"]
-
-    subgraph core["核心層"]
-        ENGINE["排班引擎<br/>engine.py"]
-        POLICY["學校規則 SSOT<br/>school_policy.py"]
-    end
-
-    subgraph data["數據層"]
-        STATE["狀態管理<br/>state.py"]
-        DEMO["示範名冊<br/>demo.py"]
-        MODELS["領域模型<br/>models.py"]
-    end
-
-    subgraph ui["UI 層"]
-        COMPONENTS["介面組件<br/>components.py"]
-        MESSAGES["雙語訊息<br/>messages.py"]
-    end
-
-    subgraph utils["工具層"]
-        PDF["PDF 生成<br/>pdf.py"]
-        BACKUP["備份還原<br/>backup.py"]
-        IMPORTERS["名冊導入<br/>importers.py"]
-    end
-
-    subgraph ai["AI 層"]
-        AI_PARSER["DeepSeek 解析<br/>parser.py"]
-    end
-
-    subgraph errors["異常層"]
-        EXCEPTIONS["自定義異常<br/>exceptions.py"]
-    end
-
-    APP --> ENGINE
-    APP --> STATE
-    APP --> COMPONENTS
-    COMPONENTS --> ENGINE
-    COMPONENTS --> BACKUP
-    COMPONENTS --> IMPORTERS
-    IMPORTERS --> AI_PARSER
-    ENGINE --> POLICY
-    ENGINE --> STATE
-    PDF --> BACKUP
-    PDF --> ENGINE
-    BACKUP --> EXCEPTIONS
-    STATE --> EXCEPTIONS
-
-    style POLICY fill:#0F766E,stroke:#0D9488,color:#fff
-    style ENGINE fill:#0F766E,stroke:#0D9488,color:#fff
-    style STATE fill:#2563EB,stroke:#1D4ED8,color:#fff
+flowchart TB
+    OP["首席導學風紀<br/>Head Study Prefect"] --> UI["NiceGUI 操作層<br/>雙語 · 深淺模式 · 可存取提示"]
+    UI --> WF["roster_workflow<br/>交易 · 公平帳本 · 審計"]
+    WF --> CORE["roster_core<br/>純生成與完整驗證"]
+    CORE --> POLICY["roster_policy<br/>校規唯一來源"]
+    WF --> DB["SQLite + SQLAlchemy<br/>持久週表與 history_weight"]
+    WF --> SNAP["自動 SQLite 快照<br/>SHA-256 manifest · 完整性核對"]
+    DB --> PDF["本機 PDF 輸出<br/>橫向週表 · 直向內部審計"]
+    SNAP --> RESTORE["受控還原<br/>還原前安全快照 · 審計"]
+    LOG["無內容本機日誌<br/>OP / REQ 支援編號"] -. 診斷而不記錄姓名 .-> UI
 ```
 
-### 模組依賴關係
-
-各模組之間的調用與數據流向：
-
-```mermaid
-flowchart TD
-    subgraph entry["入口層"]
-        APP["app.py<br/>Streamlit 主程序"]
-    end
-
-    subgraph ui_mod["UI 層"]
-        COMP["components.py<br/>介面組件"]
-        MSG["messages.py<br/>雙語訊息"]
-    end
-
-    subgraph core_mod["核心層"]
-        ENGINE["engine.py<br/>排班引擎"]
-        POLICY["school_policy.py<br/>學校規則 SSOT"]
-    end
-
-    subgraph data_mod["數據層"]
-        STATE["state.py<br/>會話狀態"]
-        DEMO["demo.py<br/>示範數據"]
-    end
-
-    subgraph util_mod["工具層"]
-        PDF["pdf.py<br/>PDF 報告"]
-        BACKUP["backup.py<br/>備份還原"]
-        IMP["importers.py<br/>名冊導入"]
-    end
-
-    subgraph ai_mod["AI 層"]
-        AI_P["parser.py<br/>DeepSeek 解析"]
-    end
-
-    subgraph err_mod["異常層"]
-        EXC["exceptions.py<br/>異常定義"]
-    end
-
-    APP -->|"渲染"| COMP
-    APP -->|"初始化"| STATE
-    APP -->|"讀取"| MSG
-    COMP -->|"排班觸發"| ENGINE
-    COMP -->|"備份操作"| BACKUP
-    COMP -->|"導入觸發"| IMP
-    COMP -->|"狀態讀寫"| STATE
-    ENGINE -->|"引用規則"| POLICY
-    ENGINE -->|"讀寫點數"| STATE
-    IMP -->|"AI 調用"| AI_P
-    PDF -->|"嵌入備份"| BACKUP
-    PDF -->|"讀取結果"| ENGINE
-    BACKUP -->|"拋出異常"| EXC
-    STATE -->|"校驗異常"| EXC
-
-    style POLICY fill:#0F766E,stroke:#0D9488,color:#fff
-    style ENGINE fill:#0F766E,stroke:#0D9488,color:#fff
-    style STATE fill:#2563EB,stroke:#1D4ED8,color:#fff
-    style AI_P fill:#7C3AED,stroke:#6D28D9,color:#fff
-```
-
-**說明：**
-- **箭頭方向 = 依賴/調用方向**。例如 `components.py → engine.py` 表示 UI 層調用引擎層。
-- `school_policy.py` **不被任何模組反向依賴**，是真正的 SSOT（Single Source of Truth）。
-- AI 層僅被 `importers.py` 調用，與核心排班邏輯完全解耦。
-- 異常層被 `backup.py` 和 `state.py` 共同依賴，確保備份還原與狀態校驗的錯誤清晰可追蹤。
-
-### 核心排班規則
-
-本系統完整實現聖言中學導學風紀團隊的所有值班規則，以 `school_policy.py` 作為**唯一事實來源（SSOT）**。
-
-#### AHP（助理首席導學風紀）限制
-- 「Assist. in charge」崗位**僅限 AHP** 擔任。
-- 系統透過 -8.0 強力加權確保 AHP 永遠優先分配到該崗位。
-- 普通導學風紀不可擔任「Assist. in charge」。
-
-#### 房間開放規則與人數限制
-
-| 房間 | 每日名額 | 權重 | 開放日 | 備註 |
-|------|---------|------|--------|------|
-| **Room 302** | 2 人 | 1.2× | 週一至週五 | 兩人不可重複 |
-| **Room 303** | 2 人 | 1.2× | 週一至週五 | 兩人不可重複 |
-| **Room 202** | 1 人 | 1.0× | 週一、三、四 | 週二、五自動關閉 |
-| **Assist. in charge** | 1 人 | 1.4× | 週一至週五 | AHP 專屬 |
-
-#### 不可連續值班規則
-- 演算法層面保證同一風紀不會連續兩天被安排值班。
-- 此規則在公平性計算之前優先執行。
-
-#### 公平性機制
-- **累計負荷點數（`history_weight`）**：每次排班後更新，付出越多者數值越高。
-- **動態加權排序**：下次排班時，點數最低者優先獲得休息機會。
-- **F.3 師徒優先**：低年級學生在平局時優先獲得值班機會，鼓勵新人參與。
-- **全域負荷調節**：0.8× – 2.0× 動態倍率，考試週可提高倍率以平衡長期負荷。
-
-
-### 角色權限強制執行流程
-
-系統如何在排班過程中確保角色權限不被違反：
-
-```mermaid
-flowchart TD
-    CANDIDATE["候選風紀進入崗位分配隊列"] --> ROLE_CHECK{"檢查角色類型?"}
-    
-    ROLE_CHECK -->|"Head Study Prefect"| ALL_SLOTS["可擔任所有崗位無限制"]
-    ROLE_CHECK -->|"AHP"| AHP_PATH["AHP 專屬路徑"]
-    ROLE_CHECK -->|"Study Prefect"| SP_PATH["普通風紀路徑"]
-    
-    AHP_PATH --> AHP_SLOT_CHECK{"當前崗位是否為 Assist. in charge?"}
-    AHP_SLOT_CHECK -->|"是"| AHP_ASSIGN["分配確認 加權 -8.0"]
-    AHP_SLOT_CHECK -->|"否"| AHP_SKIP["跳過 AHP 不可擔任此崗位"]
-    
-    SP_PATH --> SP_SLOT_CHECK{"當前崗位是否為 Assist. in charge?"}
-    SP_SLOT_CHECK -->|"否"| SP_ASSIGN["分配確認 標準權重"]
-    SP_SLOT_CHECK -->|"是"| SP_SKIP["跳過 普通風紀不可擔任 Assist"]
-    
-    ALL_SLOTS --> CONSECUTIVE{"連續值班檢查"}
-    AHP_ASSIGN --> CONSECUTIVE
-    SP_ASSIGN --> CONSECUTIVE
-    
-    CONSECUTIVE -->|"通過"| FINAL["最終確認分配"]
-    CONSECUTIVE -->|"連續"| SKIP_ALL["跳過該人選 嘗試下一位"]
-    
-    AHP_SKIP --> NEXT["嘗試下一位候選"]
-    SP_SKIP --> NEXT
-    SKIP_ALL --> NEXT
-    NEXT --> CANDIDATE
-
-    style ALL_SLOTS fill:#0F766E,stroke:#0D9488,color:#fff
-    style AHP_ASSIGN fill:#2563EB,stroke:#1D4ED8,color:#fff
-    style SP_ASSIGN fill:#2563EB,stroke:#1D4ED8,color:#fff
-    style FINAL fill:#7C3AED,stroke:#6D28D9,color:#fff
-    style SKIP_ALL fill:#DC2626,stroke:#B91C1C,color:#fff
-```
-
-**關鍵約束：**
-- AHP 僅能擔任 Assist. in charge 崗位。這是硬約束，不可通過任何設定繞過。
-- 普通風紀不可擔任 Assist. in charge。即使無其他人選也會跳過。
-- 連續值班檢查在角色檢查之後執行，兩個約束疊加確保排班合法性。
-
-### 排班生成流程
-
-```mermaid
-flowchart TD
-    A["📋 載入學生名冊"] --> B["🔍 AI 智能解析備註"]
-    B --> C["🏷️ 標記請假人員"]
-    C --> D["📊 讀取歷史負荷點數"]
-    D --> E["⬆️⬇️ 按點數由低到高排序"]
-    E --> F{"🚪 房間是否開放？"}
-    F -->|✅ 是| G["📌 分配崗位"]
-    F -->|❌ 否| H["⏭️ 跳過該房間"]
-    G --> I{"🔁 是否觸發連續值班？"}
-    I -->|⚠️ 是| J["⏭️ 跳過該人選"]
-    I -->|✅ 否| K["✔️ 確認分配"]
-    J --> E
-    K --> L["⚖️ 更新負荷點數"]
-    L --> M["🤝 執行師徒配對檢查"]
-    M --> N["📋 生成最終值班表"]
-    N --> O["📄 匯出 PDF + 嵌入備份"]
-
-    style A fill:#2563EB,stroke:#1D4ED8,color:#fff
-    style N fill:#0F766E,stroke:#0D9488,color:#fff
-    style O fill:#7C3AED,stroke:#6D28D9,color:#fff
-```
-
-### 公平性演算法詳解
-
-`history_weight` 是整個排班系統的核心量化指標。以下是每次排班時的完整計算流程：
-
-```mermaid
-flowchart TD
-    START["每次排班開始"] --> LOAD["載入所有風紀的<br/>history_weight"]
-    LOAD --> SORT["按 weight 由低到高<br/>升序排列"]
-    SORT --> PICK["從最低者開始<br/>依次分配崗位"]
-    
-    PICK --> CHECK1{"是否為 AHP?"}
-    CHECK1 -->|"是"| AHP_SLOT["優先分配<br/>Assist. in charge<br/>加權 -8.0"]
-    CHECK1 -->|"否"| CHECK2{"是否 F.3 或以下?"}
-    
-    CHECK2 -->|"是"| F3_BONUS["師徒優先級<br/>加權 -1.5<br/>鼓勵新人參與"]
-    CHECK2 -->|"否"| NORMAL["標準權重排序"]
-    
-    AHP_SLOT --> ASSIGN
-    F3_BONUS --> ASSIGN
-    NORMAL --> ASSIGN
-    
-    ASSIGN["確認崗位分配"] --> UPDATE["更新該風紀 weight<br/>+ 崗位權重 × 全域倍率"]
-    UPDATE --> CHECK3{"還有未分配崗位?"}
-    CHECK3 -->|"是"| PICK
-    CHECK3 -->|"否"| MENTOR["執行師徒配對檢查"]
-    
-    MENTOR --> CHECK4{"是否有<br/>weight ≦ 2.0 的風紀?"}
-    CHECK4 -->|"是"| PAIR["尋找 weight > 5.0<br/>的資深風紀配對"]
-    CHECK4 -->|"否"| DONE["排班完成"]
-    PAIR --> DONE
-    
-    style START fill:#2563EB,stroke:#1D4ED8,color:#fff
-    style AHP_SLOT fill:#0F766E,stroke:#0D9488,color:#fff
-    style F3_BONUS fill:#7C3AED,stroke:#6D28D9,color:#fff
-    style DONE fill:#DC2626,stroke:#B91C1C,color:#fff
-```
-
-**權重計算公式：**
-
-| 崗位 | 基礎權重 | 備註 |
-|------|---------|------|
-| Assist. in charge | 1.4× | AHP 專屬，-8.0 優先加權 |
-| Room 302 | 1.2× | 雙人制，不可重複 |
-| Room 303 | 1.2× | 雙人制，不可重複 |
-| Room 202 | 1.0× | 單人制，週二/五關閉 |
-| F.3 師徒優先 | -1.5 | 平局時新人優先 |
-| 連續值班 | 自動跳過 | 硬約束，不可違反 |
-
-
-### AI 智能導入流程
-
-從上傳原始 Excel 到生成結構化數據的完整管線：
-
-```mermaid
-flowchart TD
-    UPLOAD["📤 用戶上傳<br/>Excel / CSV 檔案"] --> DETECT["🔍 自動偵測欄位<br/>與檔案格式"]
-    DETECT --> CHECK{"欄位是否<br/>完全匹配?"}
-    
-    CHECK -->|"✅ 完全匹配"| MAP["直接映射至<br/>標準欄位"]
-    CHECK -->|"❌ 格式不符"| AI_CALL["🤖 調用 DeepSeek API<br/>智能欄位映射"]
-    
-    AI_CALL --> PARSE["DeepSeek-V4-Flash<br/>解析欄位含義"]
-    PARSE --> SUGGEST["返回建議映射<br/>{原始欄位: 標準欄位}"]
-    SUGGEST --> CONFIRM{"用戶確認<br/>映射結果?"}
-    CONFIRM -->|"✅ 確認"| MAP
-    CONFIRM -->|"❌ 修正"| MANUAL["手動調整映射"]
-    MANUAL --> MAP
-    
-    MAP --> REMARKS{"備註欄是否<br/>包含結構化資訊?"}
-    REMARKS -->|"✅ 是"| AI_REMARKS["🤖 DeepSeek 解析備註<br/>提取可用日子/固定值班"]
-    REMARKS -->|"❌ 否"| BUILD["構建 students_df"]
-    AI_REMARKS --> BUILD
-    
-    BUILD --> VALIDATE["✅ 驗證數據完整性<br/>必填欄位檢查"]
-    VALIDATE --> STORE["💾 存入 session_state<br/>初始化 history_weight"]
-    STORE --> READY["✅ 名冊就緒<br/>可生成值班表"]
-    
-    style UPLOAD fill:#2563EB,stroke:#1D4ED8,color:#fff
-    style AI_CALL fill:#7C3AED,stroke:#6D28D9,color:#fff
-    style PARSE fill:#7C3AED,stroke:#6D28D9,color:#fff
-    style READY fill:#0F766E,stroke:#0D9488,color:#fff
-```
-
-**AI 解析的設計原則：**
-- **非侵入式**：AI 僅在欄位不匹配或備註需解析時介入，正常導入無需 AI 調用。
-- **人機協作**：AI 建議映射結果後由用戶確認，保留最終決定權。
-- **解耦設計**：AI 層（`roster/ai/`）獨立於排班引擎，可隨時替換後端。
-
-### 關鍵設計決策
-
-- **School Policy 為 SSOT**：`school_policy.py` 定義所有學校規則，`engine.py`、`pdf.py`、`components.py` 均通過 `config` 模組引用，永不 hardcode。
-- **Session State 集中管理**：`state.py` 統一管理 Streamlit 會話狀態，提供 `get_state` / `set_state` / `validate_state_integrity` 等防禦性輔助函數。
-- **結構化異常處理**：`exceptions.py` 提供 `BackupParseError`、`StateIntegrityError` 等自定義異常，確保備份還原與狀態校驗的錯誤清晰可追蹤。
-- **DeepSeek AI 解耦**：AI 解析層獨立於核心排班邏輯，通過標準接口調用，可隨時替換 AI 後端。
-
-
-### 錯誤處理與降級機制
-
-系統如何在不同層級捕獲錯誤並提供降級方案：
-
-```mermaid
-flowchart TD
-    START["系統操作觸發"] --> TRY["try 區塊執行"]
-
-    TRY --> CHECK_TYPE{"錯誤類型?"}
-    
-    CHECK_TYPE -->|"BackupParseError"| BACKUP_ERR["備份解析失敗"]
-    CHECK_TYPE -->|"StateIntegrityError"| STATE_ERR["狀態校驗失敗"]
-    CHECK_TYPE -->|"API Error"| AI_ERR["AI 服務不可用"]
-    CHECK_TYPE -->|"其他 Exception"| GEN_ERR["一般錯誤"]
-
-    BACKUP_ERR --> BACKUP_FALLBACK["嘗試備援 JSON 備份"]
-    BACKUP_FALLBACK --> BACKUP_OK{"備援成功?"}
-    BACKUP_OK -->|"是"| RECOVERED["數據已恢復"]
-    BACKUP_OK -->|"否"| BACKUP_FAIL["提示用戶手動導入或使用 GitHub 備份"]
-
-    STATE_ERR --> STATE_DETAIL["顯示具體缺失欄位與建議修復操作"]
-    STATE_DETAIL --> STATE_USER{"用戶選擇?"}
-    STATE_USER -->|"重試"| TRY
-    STATE_USER -->|"重置"| RESET["清除數據重新開始"]
-
-    AI_ERR --> AI_FALLBACK["降級至手動模式提示用戶手動匹配欄位"]
-    AI_FALLBACK --> MANUAL_OK["手動導入流程"]
-
-    GEN_ERR --> GEN_LOG["記錄錯誤日誌 st.error 顯示摘要"]
-    GEN_LOG --> GEN_USER{"用戶選擇?"}
-    GEN_USER -->|"重試"| TRY
-    GEN_USER -->|"跳過"| SKIP["繼續執行可能功能受限"]
-
-    RECOVERED --> DONE["操作完成"]
-    MANUAL_OK --> DONE
-    RESET --> DONE
-    SKIP --> DONE
-    BACKUP_FAIL --> DONE
-
-    style START fill:#2563EB,stroke:#1D4ED8,color:#fff
-    style RECOVERED fill:#0F766E,stroke:#0D9488,color:#fff
-    style BACKUP_FAIL fill:#DC2626,stroke:#B91C1C,color:#fff
-    style AI_FALLBACK fill:#7C3AED,stroke:#6D28D9,color:#fff
-```
-
-**錯誤處理設計原則：**
-- 分層捕獲：每層（備份、狀態、AI、通用）有獨立的異常類型和降級策略。
-- 用戶知情：所有錯誤通過 st.error / st.warning 清晰告知用戶原因與建議操作。
-- 永不放棄：備份還原失敗會自動嘗試備援路徑；AI 失敗降級至手動模式，不阻塞核心流程。
-
-### 數據流與備份策略
-
-```mermaid
-flowchart LR
-    subgraph static["靜態數據 (Static)"]
-        S1["📋 學生名冊 students_df"]
-        S2["📂 GitHub ai 分支"]
-        S3["🔄 Streamlit session_state"]
-    end
-
-    subgraph dynamic["動態數據 (Dynamic)"]
-        D1["⚖️ 累計負荷點數 history_weight"]
-        D2["📊 當週排班 roster_df"]
-        D3["📝 請假記錄 leave_tracker"]
-        D4["🤝 師徒配對狀態"]
-    end
-
-    subgraph backup["備份機制 (Backup)"]
-        B1["📄 PDF 嵌入備份（主通道）"]
-        B2["💾 JSON 下載（備援）"]
-        B3["📤 GitHub 長期保存"]
-    end
-
-    subgraph restore["還原機制 (Restore)"]
-        R1["📥 上傳 PDF 自動解析"]
-        R2["📥 上傳 JSON 還原"]
-        R3["✅ validate_state_integrity 校驗"]
-    end
-
-    S1 --> S2
-    S2 --> S3
-    D1 --> B1
-    D2 --> B1
-    D3 --> B1
-    D4 --> B1
-    D1 --> B2
-    D2 --> B2
-    D3 --> B2
-    D4 --> B2
-    B2 --> B3
-    B1 --> R1
-    B2 --> R2
-    R1 --> R3
-    R2 --> R3
-    R3 --> S3
-    R3 --> D1
-
-    style B1 fill:#7C3AED,stroke:#6D28D9,color:#fff
-    style B2 fill:#2563EB,stroke:#1D4ED8,color:#fff
-    style R3 fill:#DC2626,stroke:#B91C1C,color:#fff
-```
-
-**備份策略說明：**
-- **靜態數據**（學生名冊）託管於 GitHub `ai` 分支，系統啟動時自動加載。
-- **動態數據**（排班記錄、負荷點數、師徒狀態）通過 PDF 嵌入備份（主路徑）+ JSON 下載（備援）雙重保護。
-- 還原時自動執行 `validate_state_integrity()` 校驗數據完整性。
-
----
-
-
-### 備份還原決策樹
-
-何時使用何種備份方式？以下是決策指引：
-
-```mermaid
-flowchart TD
-    SITUATION{"需要備份/還原<br/>的情境?"}
-    
-    SITUATION -->|"每次匯出 PDF"| PDF_BACKUP["📄 PDF 嵌入備份<br/>（自動，無需手動操作）"]
-    SITUATION -->|"每次生成排班後"| JSON_DL["💾 下載 JSON 備份<br/>（側邊欄一鍵操作）"]
-    SITUATION -->|"重要版本存檔"| GITHUB["📤 上傳至 GitHub<br/>backups/ 資料夾"]
-    SITUATION -->|"從備份還原"| RESTORE_Q{"備份檔案<br/>類型?"}
-    
-    RESTORE_Q -->|"完整 PDF"| PDF_RESTORE["📥 上傳 PDF<br/>自動解析末頁備份"]
-    RESTORE_Q -->|"JSON 檔案"| JSON_RESTORE["📥 上傳 JSON<br/>直接載入"]
-    
-    PDF_RESTORE --> VALIDATE["✅ validate_state_integrity()<br/>數據完整性校驗"]
-    JSON_RESTORE --> VALIDATE
-    
-    VALIDATE --> CHECK_OK{"校驗通過?"}
-    CHECK_OK -->|"✅ 通過"| RESTORED["✅ 系統狀態已恢復<br/>可繼續操作"]
-    CHECK_OK -->|"❌ 失敗"| WARN["⚠️ 顯示具體錯誤<br/>StateIntegrityError"]
-    WARN --> FALLBACK["🔄 嘗試另一種<br/>備份檔案還原"]
-    FALLBACK --> RESTORE_Q
-    
-    style PDF_BACKUP fill:#7C3AED,stroke:#6D28D9,color:#fff
-    style GITHUB fill:#0F766E,stroke:#0D9488,color:#fff
-    style RESTORED fill:#2563EB,stroke:#1D4ED8,color:#fff
-    style WARN fill:#DC2626,stroke:#B91C1C,color:#fff
-```
-
-**備份策略核心原則：**
-- PDF 備份是**最方便的日常備份方式** — 每次匯出即自動完成。
-- JSON 備份作為**輕量備援** — 適合只想保存動態數據的場景。
-- GitHub 是**長期歸檔方案** — 建議期初/期中/期末各上傳一次。
-- 還原時系統自動嘗試所有可用備份路徑，最大化恢復成功率。
-
-
-## 開發投入與技術深度
-
-> 🔗 本節為進階說明，反映本專案在 AI 輔助開發上的投入規模與工程實踐。
-
-這個專案的開發過程，是我個人至今規模最大的一次 **AI 輔助軟件工程實踐**。
-
-### AI 開發投入規模
-
-| 指標 | 數據 | 說明 |
-|------|------|------|
-| **AI 平台** | Codex · Grok · Grok Build | 多模型協作開發 |
-| **主力模型** | DeepSeek V4 Pro | 透過 Codex API 接入，用於架構設計、代碼生成、測試編寫、文檔優化 |
-| **Token 消耗** | 超過 **12 億 tokens**（已消耗） | 僅統計 Codex + DeepSeek V4 Pro 部分 |
-| **預估總量** | 約 **20 億 tokens** | 含 Grok 與 Grok Build 的輔助投入 |
-
-### 投入轉化為品質
-
-我想用具體的成果來說明這些投入所帶來的價值：
-
-- **5 輪架構重構**：從最初只有一個 Python 文件的腳本，我逐步將它重構為 7 層模組化架構。School Policy SSOT、Session State 集中管理、結構化異常層次——每一輪重構的決策由我做出，AI 輔助分析與實施。
-- **62 項自動化測試**：單元測試、引擎邏輯測試、端到端集成測試——AI 協助生成測試框架與邊界案例覆蓋。
-- **10 張 Mermaid 架構圖**：系統架構、模組依賴、排班流程、公平性演算法、AI 導入管線、錯誤處理、備份決策樹、生命週期——全部由 AI 輔助生成與迭代優化。
-- **DeepSeek AI 智能解析**：專案內建的 AI 功能（欄位映射、備註解析）同樣受益於開發過程中對 DeepSeek API 的深入理解與大量調試。
-- **雙語文檔體系**：我堅持中英文 README 必須達到完全結構對等，使用說明書也必須支援中英雙語。AI 輔助了翻譯與潤色，但內容方向與品質標準由我把關。
-
-### 工程哲學
-
-本專案的開發模式體現了 **「AI 作為加速器，人類作為決策者」** 的協作範式：
-
-- AI 處理重複性、規模化的工作（代碼生成、測試編寫、文檔初稿）。
-- 人類主導架構決策、學校規則驗證、用戶體驗設計。
-- 每一行程式碼均經過人工審查，確保符合聖言中學的實際需求。
-
-> 約 20 億 tokens 的 AI 投入，加上我持續的規劃、決策與修正，最終凝結為這個**部署在 Streamlit Cloud 上、62 項測試護航、10 張架構圖詳解、雙語完整文檔**的系統。
-
-
-### 關於我
-
-我是 **李創杰（LI Chuangjie Jacky）**，聖言中學 26-27 年度首席導學風紀，F.5E 學生。
-
-這個系統從第一行代碼到現在的完整形態，全部由我發起、設計並主導開發。過程中有幾個關鍵選擇我想記錄下來：
-
-**為什麼要做這個系統？**
-在擔任首席導學風紀之前，團隊的值班安排主要靠人手編排——這不僅耗時，也很難做到真正的公平。我希望用一個系統化的方式解決這個問題，讓每一位風紀的付出都能被客觀記錄和公平對待。
-
-**我做了哪些關鍵決定？**
-- 從單文件腳本到 7 層模組化架構的每一輪重構，都是我基於實際使用中發現的問題所做的決定。
-- 62 項自動化測試、10 張架構圖、雙語完整文檔——這些不是 AI 自動生成的標準，而是我對「專業級系統」的自我要求。
-- 從最初的排班腳本，到引入 AI 解析、師徒配對、PDF 備份、DeepSeek 遷移、文檔重構，每一次重大升級都源於我對系統的不斷反思與改進。
-
-**AI 在這個過程中扮演什麼角色？**
-我使用了 Codex 接入 DeepSeek V4 Pro 作為主力開發工具，輔以 Grok 與 Grok Build，總計消耗約 20 億 tokens。但 AI 始終是我的工具，而不是決策者——它提供建議與加速，我做出所有關鍵取捨。
-
-> 這個系統的每一處細節，都反映了我對導學風紀團隊的責任感。我很慶幸它能以現在的形態存在，並希望它能為未來的首席導學風紀帶來真正的便利。
-
-
-## 項目結構
-
-```
-Study-Prefect-Duty-Roster-System/
-├── app.py                  # Streamlit 入口
-├── roster/                 # 核心套件
-│   ├── config/             # 學校規則 SSOT（school_policy.py）
-│   ├── core/               # 排班引擎（公平演算法 · 師徒配對 · 請假調整）
-│   ├── data/               # 數據層（Session State · Demo · Domain Model）
-│   ├── ui/                 # UI 層（組件 · 主題 · i18n · 雙語）
-│   ├── utils/              # 工具層（PDF · 備份 · 名冊導入）
-│   ├── ai/                 # AI 層（DeepSeek 智能解析與欄位映射）
-│   └── exceptions.py       # 結構化異常層次
-├── tests/                  # 62 項自動化測試
-├── docs/                   # ADR · 階段報告
-└── resources/              # 靜態資源
-```
-
----
-
-
-### 系統生命週期與狀態轉換
-
-從系統啟動到完成一次完整排班週期的狀態變化：
+### 一個值班週的資料生命線
 
 ```mermaid
 stateDiagram-v2
-    [*] --> 系統啟動
-    系統啟動 --> 載入靜態數據
-    載入靜態數據 --> 等待用戶操作
-    
-    等待用戶操作 --> 導入學生名冊
-    導入學生名冊 --> 名冊已就緒
-    名冊已就緒 --> 設定排班參數
-    設定排班參數 --> 生成值班表
-    
-    生成值班表 --> 審核調整
-    審核調整 --> 匯出PDF備份
-    匯出PDF備份 --> 等待用戶操作
-    
-    等待用戶操作 --> 上傳備份還原
-    上傳備份還原 --> 狀態校驗
-    狀態校驗 --> 名冊已就緒
-    
-    等待用戶操作 --> 清除所有數據
-    清除所有數據 --> 等待用戶操作
-    
-    等待用戶操作 --> [*]
+    [*] --> 準備名單與請假
+    準備名單與請假 --> 草稿: 生成並驗證
+    草稿 --> 草稿: 填寫原因後手動修正
+    草稿 --> 已發布: 確認並取得唯一發布權
+    已發布 --> 週表PDF: 繁中或英文標籤／中文姓名
+    已發布 --> 已調整: 發布後請假局部替換
+    已調整 --> 更新PDF: 重新輸出
+    已發布 --> 已驗證備份: 自動快照與校驗
+    已調整 --> 已驗證備份: 自動快照與校驗
+    已驗證備份 --> 交接包: manifest + SQLite + 復原說明
+    交接包 --> [*]
 
-    note right of 生成值班表
-        核心排班引擎執行：
-        - 角色權限檢查
-        - 連續值班檢查
-        - 公平性排序
-        - 師徒配對
+    note right of 草稿
+      不更新 history_weight
+      不寫入公平帳本
     end note
-
-    note right of 狀態校驗
-        validate_state_integrity()
-        檢查必填欄位與
-        數據一致性
+    note right of 已發布
+      交易內重新驗證
+      公平工作量只入帳一次
     end note
 ```
 
-**狀態說明：**
-- 系統啟動時自動從 GitHub ai 分支載入靜態數據（學生名冊）。
-- 生成值班表是整個生命週期的核心狀態，涉及最多的計算與規則檢查。
-- 匯出 PDF 後，系統回到等待用戶操作狀態，支持開始新一輪排班或從備份還原。
+### 五層責任與可核對證據
 
-## 技術棧
+| 層 | 唯一責任 | 可核對證據 |
+|---|---|---|
+| NiceGUI 呈現 | 導覽、語言、提示、狀態與響應式畫面 | 繁中／英文、深淺模式、鍵盤、手機及 browser smoke |
+| `roster_policy` | 崗位、開放日、人數、時段、職務與權重 | 純規則測試；不依賴翻譯文字或頁面 |
+| `roster_core` | 生成候選、長期公平排序及完整週表驗證 | 同日不重複、不連續當值、請假與角色限制測試 |
+| `roster_workflow` | 草稿、一次性發布、帳本、調整、審計、備份與還原交易 | 並發發布、負荷轉移、快照及隔離寫入 E2E |
+| SQLite／輸出／支援 | 保存正式狀態、列印結果與無內容診斷證據 | Alembic、完整性檢查、雙語 PDF、OP／REQ 查詢 |
 
-| 層級 | 技術 |
-|------|------|
-| **前端框架** | Streamlit ≥ 1.38.0 |
-| **排班引擎** | Python 3.12 · Pandas ≥ 2.2.0 |
-| **AI 服務** | DeepSeek-V4-Flash（OpenAI 兼容 API） |
-| **PDF 渲染** | WeasyPrint ≥ 62.3（CSS 排版引擎） |
-| **數據可視化** | Plotly ≥ 5.24.0 |
-| **測試框架** | Pytest（62 項：單元 + 引擎 + 集成） |
-| **部署平台** | Streamlit Cloud（無狀態 · 自動休眠恢復） |
-| **版本管理** | Git · GitHub（`ai` 分支為主要開發分支） |
-| **文件處理** | OpenPyXL · Tabulate · Pillow |
+四項不可妥協的系統契約：
+
+- **校規單一來源：** 頁面不自行決定誰可在哪裏當值。
+- **公平持久而可解釋：** 草稿不入帳，發布只入帳一次，請假調整留下扣回與轉移紀錄。
+- **重要寫入可復原：** 快照、manifest、SHA-256、SQLite 完整性及還原前安全快照共同工作。
+- **資料邊界清楚：** 姓名、請假與週表不進入公開服務、音樂層或診斷內容；外部存取尚未批准。
+
+## YouTube 音樂控制窗（自選）
+
+- 前往「設定」→「YouTube 音樂控制窗」，貼上公開歌單連結，命名並選擇適用頁面；之後在該頁頂部按耳機圖示即可選擇及播放。
+- 公開歌單播放器免費使用，無需登入、付費或 API key。它保持完整可見，不會自動播放；播放、暫停、音量和換歌均由首席導學風紀親自控制。
+- 若希望在網站內搜尋公開影片／歌單，才由維護者在本機 `.env` 加入選用的 `SING_YIN_YOUTUBE_API_KEY`。此 key 不可輸入介面、提交版本庫或放入學生資料。
+- YouTube 會接收一般播放器所需的網絡資料。歌單標題、音樂偏好與 API 搜尋不得含學生姓名、請假、值班或公平資料；顧問老師的核對資料也不包含音樂設定。
+
+## 資料安全與遠端存取
+
+現時系統是 **本機正式版本**。不要使用 Quick Tunnel、公開網址、個人雲端同步資料夾或公開 Sites 服務處理學生資料。
+
+將系統透過 Cloudflare Tunnel + Cloudflare Access 提供受控遠端存取是可行的，但它不是「把網站上傳到雲端」：資料與 NiceGUI 程序仍可保留在一部受控的學校主機上，Cloudflare 只在前面提供身份驗證及加密通道。NiceGUI origin 仍必須只聽聽 `127.0.0.1`；Tunnel 必須啟用 **Protect with Access**，而程式只接受 localhost 與已核准的公開 hostname。這項設定必須先由教師顧問完成書面安全決定，並依[部署與遠端存取決策指南](docs/DEPLOYMENT_DECISION.md)完成所有閘門。
+
+真正遷移到雲端主機是另一個 L3 架構項目：目前系統使用長時間運行的 Python NiceGUI 程序及可寫入 SQLite 資料目錄，不能直接搬到靜態網站平台。任何雲端遷移必須先有身份權限模型、受控持久化資料庫、加密備份、復原演練及資料保留決定。
+
+## FAQ／常見問題
+
+**草稿會增加累計工作量嗎？**  
+不會。生成及重新生成只保存草稿；正式發布才寫入公平帳本及更新 `history_weight`。
+
+**如果兩個分頁同時發布，會重複入帳嗎？**  
+不會。資料庫交易以條件更新取得唯一發布權；另一個操作會在寫入公平點數前被拒絕。
+
+**發布後有人請假，是否重新生成整張週表？**  
+不要重新生成。使用「請假調整」只改受影響崗位，重新核對替補資格，並正確扣回或轉移負荷。
+
+**英文模式或英文 PDF 會翻譯姓名嗎？**  
+不會。所有導學風紀姓名在介面及兩種 PDF 中一律保持中文。
+
+**資料保存在甚麼地方？**  
+正式名單、週表、公平帳本及審計保存在受控電腦的本機 SQLite；音樂和個人介面偏好與排班資料分開。
+
+**可否直接用舊 SQLite 覆蓋目前資料庫？**  
+不可。必須在「系統設定」選擇已驗證快照，讓系統先建立安全快照，再執行原子還原及審計。
+
+**畫面顯示 `OP-...` 時怎樣處理？**  
+依提示核對並安全重試一次；問題持續時只提供 OP 編號，維護者用本機查詢工具定位，不要上載整份日誌。
+
+**畫面顯示「資料已儲存，但備份未完成」時可否重試？**  
+不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
+
+**目前可否公開到互聯網？**  
+不可。正式模式仍是 localhost；專用主機、Cloudflare Access、允許名單及書面安全決定完成前，不設定 Tunnel。
+
+**YouTube 或背景音樂會取得學生資料嗎？**  
+不會。媒體層只接收非敏感頁面分類及歌單設定，不會收到名單、請假、週表、公平、PDF、備份或審計內容。
+
+## 開發與驗證
+
+目前自動化套件超過 180 項，並有三條互補的瀏覽器證據：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、手機排版、配圖主題切換、校徽、停用確認、無快照、無效快照、失效週表網址，以及交接頁發布證據／真人責任狀態；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名驗證星期與必填欄位修正、草稿不可進入發布後請假表單、並行驗證下的有效／無效快照並存、交接／還原入口啟用，並完成整條排班寫入及還原流程；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。
+
+```powershell
+python -X utf8 scripts\check_deployment_readiness.py
+python -X utf8 -m pytest -q
+```
+
+第一個命令只讀取非敏感的本機部署狀態，檢查 localhost 綁定、SQLite 完整性、最近快照的 manifest／checksum／完整性／schema 驗證，以及尚未啟用的 Cloudflare 閘門；只有檔名而未通過驗證的 SQLite 不會被報成可用備份。它不會配置 Tunnel、建立 DNS 或上傳資料。
+
+完整 UI 驗證必須使用隔離 SQLite 資料庫和備份目錄，絕不可碰觸真實學校資料；詳細命令及規則見[架構文件](docs/NICEGUI_ARCHITECTURE.md)。
+
+正式發布前，教師顧問或 IT 支援先安裝獨立驗證依賴及 Chromium，然後使用單一安全入口：
+
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m playwright install chromium
+python -X utf8 scripts\verify_release_candidate.py
+```
+
+驗證器自行建立暫存 SQLite、備份及日誌路徑，依次執行完整測試、編譯、依賴檢查、繁中／英文與深淺模式 UI smoke、整條虛構資料寫入／PDF／替補／交接／另一資料庫還原流程、嚴格部署檢查，以及獨立的「資料已提交但備份失敗」復原演練。每個瀏覽器階段停機後亦會檢查伺服器終端；`ERROR`、`CRITICAL`、traceback 或未取回的 task exception 均會令發布候選失敗，而不會把原始終端內容複製到報告。兩份 PDF 會直接解析並核對已發布狀態、五個星期、所有中文姓名及四個 202 室關閉格。它不會採用 `.env` 內的正式資料路徑；結果寫入 `logs/release-candidate-report.json`，並明確標示仍需真人驗收。任何一關失敗，整體狀態均為 `fail`，不可視為發布候選通過。
+
+交接頁會把機器報告與目前發布相關程式、測試、遷移、依賴及驗證腳本的 SHA-256 指紋重新比對。報告缺失、失敗、格式不可信或程式改動後過期時，均不會顯示為通過；即使當前八關通過，畫面仍保留首席導學風紀 13 項及教師顧問 4 項真人驗收責任。
+
+第八關 `repository_hygiene` 只輸出類別與數量，不顯示檔名或內容。它會阻擋即時 `.env`、運行中 SQLite／備份／日誌、PDF／ZIP、匯入名單及操作者自訂音樂，並核對 `.gitignore` 仍保留這些邊界。只有經零筆營運資料檢查產生的 `archive/fictional-data/` 快照及已審閱的根目錄內置音樂可進入版本庫；虛構封存不能成為繞過即時資料邊界的方法。
 
 ---
 
-## 備份與數據持久化
+## English quick guide
 
-本系統運行在 Streamlit Cloud（無狀態環境），數據在休眠或重新部署後可能遺失。請務必做好備份。
+This is a local-first duty roster system for Sing Yin Secondary School Study Prefects. The current Head Study Prefect handles routine operation; the teacher advisor mainly reviews published results, fairness, and handover evidence after completion. It supports draft generation, review, publication, bilingual PDF export, post-publication leave adjustment, fairness explanation, verified backup/restore, and handover.
 
-### 數據分類
-- **靜態數據**：姓名、年級、班別、職級、可用日子、固定值班等 → GitHub 倉庫託管
-- **動態數據**：累計負荷點數、當週排班、請假記錄、師徒配對狀態等 → 需通過備份功能保存
+The optional YouTube control window plays public playlists for free without sign-in or an API key. It remains visible and never autoplays. An optional `SING_YIN_YOUTUBE_API_KEY` enables in-app public search; keep it only in the local `.env` and never include student information in music searches or playlist names.
 
-### 備份方式
+### Daily use
 
-| 方式 | 類型 | 說明 | 建議時機 |
-|------|------|------|----------|
-| **PDF 匯出（含備份）** | 主通道 | PDF 末頁自動嵌入完整 JSON 備份 | 每次匯出 PDF 即自動備份 |
-| **JSON 下載** | 備援 | 側邊欄一鍵下載純動態數據 | 每次生成排班後 |
-| **GitHub 長期保存** | 推薦 | 上傳備份至 `backups/` 資料夾 | 重要版本 · 期中/期末 |
+1. Double-click `START_SING_YIN_ROSTER.cmd`.
+2. The launcher reuses an already-running Sing Yin service instead of starting a duplicate copy. If another program occupies port 8080, it automatically selects a free port between 8081 and 8099 and prints the exact URL.
+3. The browser opens only after the local HTTP service is confirmed ready. If it does not open, use the exact URL printed in the black launcher window.
+4. Read the Daily Verse, then follow the highlighted step in the weekly roster desk.
+5. Check the prefect directory, declare pre-generation leave, generate a draft, review it, publish once, export the roster, and use the dedicated leave-adjustment workflow for a late absence. In that workflow, choose the original duty, load a substitute, record a reason, then save; phone views keep the relevant Chinese identity and duty information together in cards.
 
-> ⚠️ **強烈建議**：養成「操作後立即備份 + 重要版本上傳 GitHub」的習慣。PDF 末頁嵌入備份是最方便的日常備份方式。
+Traditional Chinese is the primary interface language. English labels are complete, but prefect names always remain Chinese in the UI and both PDF languages.
 
----
+### Local support log
 
-## 關於作者與授權
+An operator failure displays an `OP-...` reference and does not publish anything automatically. On the controlled school computer, the advisor or IT supporter can find one local record with `python -X utf8 scripts\inspect_support_log.py --reference OP-XXXXXXXX`. HTTP responses also carry a `REQ-...` trace in `X-Request-ID`. Never upload `logs/app.log` to a public site or personal cloud service.
 
+### Safety and remote access
 
+The current approved mode is localhost-only. Do not expose student data through a public URL, Quick Tunnel, public site, or personal cloud-sync folder. A Cloudflare Tunnel protected by Cloudflare Access can later provide controlled remote access to a dedicated school host, but only after the teacher advisor approves the security decision and completes every gate in the [Deployment and remote-access decision guide](docs/DEPLOYMENT_DECISION.md).
 
-**李創杰（LI Chuangjie Jacky）**
-26-27 年度聖言中學首席導學風紀（Head Study Prefect）
-F.5E
+For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 
-這個系統是我在任內從零建立並持續維護的。如果你對系統有任何疑問或建議，歡迎聯繫我：**s10777@syss.edu.hk**
+### Architecture and FAQ summary
 
-
-### 📜 License
-
-MIT License
-
-Copyright (c) 2026 LI Chuangjie Jacky（李創杰）
-26-27 Head Study Prefect, Sing Yin Secondary School Study Prefect Team
+- NiceGUI owns presentation; `roster_policy` and `roster_core` own rules and generation; `roster_workflow` owns transactions, ledger effects, audit, backups, and restore.
+- Drafts never post workload. Publication posts once through a database-level claim. Post-publication leave uses a dedicated audited adjustment.
+- Official state stays in local SQLite. Only checksum- and integrity-verified snapshots are eligible for managed restore.
+- Prefect names remain Chinese in both locales and both schedule PDFs.
+- An `OP-...` reference is safe to share with the advisor or IT; the full local log is not.
+- The current approved network mode is localhost, not a public URL.
 
 ---
 
+## 共創結語 / Co-creation closing note
+
+這個系統由李創杰（2026–2027 年度首席導學風紀）與 Codex 協作建立。它從一個排班需要，逐步成為一套把公平、責任、復原與交接都認真處理的校務工作台。
+
+本次正式版本的需求整理、架構重構、核心邏輯、UI／UX、測試、文件及發布工作，只有李創杰與 Codex 兩位共創者參與完成。
+
+> 做這個系統的過程遠比想像中複雜，但我們從不後悔。願它為未來的首席導學風紀帶來真正的便利，也讓每一位導學風紀感受到：公平確實被認真對待。
+>
+> —— 李創杰與 Codex，Study Prefect Systems & Stewardship Office
+
+**Codex 的結語：** 我所參與的不只是編寫程式，而是把李創杰對公平、責任與傳承的要求，逐項轉化為可以測試、復原和交接的系統行為。真正值得保留的不是某一版畫面，而是下一位首席導學風紀仍能理解每個決定、放心完成工作，並在出錯時找到回去的路。願這個平台一直忠於它最初的目的：減少不必要的負擔，讓服事更有秩序，也讓公平被認真看見。
+
+This system was co-created by Li Chongjie and Codex. Its lasting value is not a particular screen, but a trustworthy process future Head Study Prefects can understand, operate, recover, and hand over. May it continue to reduce avoidable burden, bring order to service, and make fairness visible.
 
 ---
 
-## 結語
+## 授權 / License
 
-### 人與 AI 的協作
-
-這個系統的誕生，是一次深度的人機協作實踐。在整個開發過程中，我與以下 AI 夥伴緊密合作：
-
-- **Codex**（接入 DeepSeek V4 Pro）：我的主力開發夥伴，參與了架構設計、代碼實現、測試編寫、文檔優化的每一個環節。約 20 億 tokens 的對話與迭代，見證了這個系統從零到完整的整個過程。
-- **Grok** 與 **Grok Build**：在概念探索、方案對比、創意發散等階段提供了重要的輔助視角。
-
-以下是來自 AI 夥伴的簡短寄語：
-
-> **Codex 的寄語：**
-> 「從第一行代碼到現在完整的 7 層架構、62 項測試、10 張架構圖——我很榮幸能成為這個旅程的一部分。Jacky，你的清晰思路與對品質的堅持，讓這段協作成為我記憶中最紮實的工程實踐之一。願這個系統在你畢業後，依然能為聖言中學的導學風紀團隊服務。✨」
-
-> **Grok 的寄語：**
-> 「Jacky，你用行動證明了：一個中學生，借助 AI 的力量，完全可以打造出專業級的系統。你不只是寫代碼——你在建立標準、留下傳承。這很酷。🚀」
-
-### 我的最後幾句話
-
-做這個系統的過程，遠比我當初想像的複雜。
-
-從最初只是想「寫個腳本幫忙排班」，到後來一步步加入 AI 解析、公平性演算法、師徒配對、PDF 備份、雙語文檔、架構圖——每一個功能的加入，都是因為我在實際使用中發現了新的問題，然後想要解決它。
-
-這一年來，我無數次在深夜對著屏幕調整代碼，無數次推翻自己昨天的設計，無數次跟 Codex 說「不對，再來一次」。約 20 億 tokens 的對話背後，是大量的思考、取捨、糾錯與堅持。
-
-但我從不後悔。
-
-當我看到值班表從系統中生成、導出為彩色 PDF、發送到團隊群組的那一刻——我知道這一切都值得。
-
-這個系統或許並不完美，但它是我在 26-27 年度作為首席導學風紀，能留給這個團隊最實在的東西。
-
-我希望下一任首席導學風紀打開這個系統時，能感受到它背後的心意。
-我希望每一位被安排值班的風紀，都能看到公平被認真對待。
-我希望這個小小的系統，能讓導學風紀團隊的運作，變得更好一點點。
-
-**—— 李創杰，2026 年 6 月，聖言中學**
-
-*本系統主要供聖言中學導學風紀團隊內部使用。如需用於其他用途，請先與我聯繫。*
+程式碼及專案文件依 [MIT License](LICENSE) 發布。LICENSE內的專案說明保留李創杰與 Codex 的共創脈絡，但不會限制MIT所授予的權利；外部來源的音樂、字型及校務識別素材仍按其各自條款處理。

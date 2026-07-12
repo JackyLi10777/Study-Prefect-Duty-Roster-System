@@ -1,0 +1,12 @@
+2026-07-12T00:14:35+0800 INFO sing_yin_roster local_logging_ready path=D:\code_v3\logs\app.log
+2026-07-12T00:14:35+0800 INFO sing_yin_roster application_starting host=127.0.0.1 port=8080
+2026-07-12T00:14:41+0800 INFO sing_yin_roster local_logging_ready path=D:\code_v3\logs\app.log
+2026-07-12T00:14:41+0800 INFO sing_yin_roster application_starting host=127.0.0.1 port=8080
+2026-07-12T00:25:40+0800 INFO sing_yin_roster local_logging_ready path=D:\code_v3\logs\app.log
+2026-07-12T00:25:40+0800 INFO sing_yin_roster application_starting host=127.0.0.1 port=8301
+2026-07-12T00:28:27+0800 INFO sing_yin_roster local_logging_ready path=D:\code_v3\logs\app.log
+2026-07-12T00:28:27+0800 INFO sing_yin_roster application_starting host=127.0.0.1 port=8400
+2026-07-12T00:29:25+0800 INFO sing_yin_roster local_logging_ready path=D:\code_v3\logs\app.log
+2026-07-12T00:29:25+0800 INFO sing_yin_roster application_starting host=127.0.0.1 port=8080
+2026-07-12T00:30:43+0800 INFO sing_yin_roster local_logging_ready path=D:\code_v3\logs\app.log
+2026-07-12T00:30:43+0800 INFO sing_yin_roster application_starting host=127.0.0.1 port=8500

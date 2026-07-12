@@ -1,0 +1,1 @@
+SyntaxError: Non-UTF-8 code starting with '\xe2' in file D:\code\Study-Prefect-Duty-Roster-System\scripts\verify_display.py on line 20, but no encoding declared; see https://peps.python.org/pep-0263/ for details

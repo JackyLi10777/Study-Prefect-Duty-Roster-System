@@ -1,0 +1,87 @@
+"""Shared navigation shell with persistent theme and language preferences."""
+
+from __future__ import annotations
+
+from contextlib import contextmanager
+from collections.abc import Iterator
+
+from nicegui import ui
+
+from nicegui_app.application_mode import current_application_mode
+from nicegui_app.ui.i18n import current_locale, t, toggle_locale
+from nicegui_app.ui.music import render_page_music_control
+from nicegui_app.ui.theme import apply_theme, current_theme, sound_feedback_enabled, toggle_sound_feedback, toggle_theme
+
+
+NAVIGATION_GROUPS = (
+    ("nav_weekly_work", (("/", "dashboard", "space_dashboard"), ("/rosters", "rosters", "calendar_month"))),
+    ("nav_people_fairness", (("/prefects", "prefects", "groups"),)),
+    ("nav_support_system", (("/handover", "handover", "handshake"), ("/settings", "settings", "settings"))),
+    ("nav_reference", (("/getting-started", "getting_started", "play_circle"), ("/guide", "operator_guide", "help"), ("/system-architecture", "system_architecture", "account_tree"), ("/devotional", "devotional", "menu_book"))),
+)
+
+
+def _reload_after_preference_change(change) -> None:
+    change()
+    ui.navigate.reload()
+
+
+@contextmanager
+def page_shell(title_key: str, active_path: str, *, music_context: str | None = None) -> Iterator[None]:
+    apply_theme()
+    application_mode = current_application_mode()
+    drawer = ui.left_drawer(value=False, bordered=False).props(
+        f'show-if-above role=navigation aria-label="{t("main_navigation")}"'
+    ).classes("sy-sidebar bg-[var(--sy-surface)]")
+    with drawer:
+        with ui.column().classes("w-full gap-1 p-4"):
+            with ui.row().classes("items-center gap-3 mb-2"):
+                ui.image("/assets/brand/sing-yin-crest-navigation.png").classes("sy-brand-mark").props(
+                    f'alt="{t("school_crest_alt")}" width=545 height=524 fetchpriority=high'
+                )
+                ui.label(t("app_name")).classes("text-base font-bold leading-tight text-teal-700 dark:text-teal-200")
+            ui.label(t("service_principle")).classes("text-xs italic text-[var(--sy-muted)] mb-5")
+            for group_key, items in NAVIGATION_GROUPS:
+                ui.label(t(group_key)).classes("sy-nav-section")
+                for path, key, icon in items:
+                    button = ui.button(t(key), icon=icon, on_click=lambda target=path: ui.navigate.to(target)).props("flat align=left").classes("w-full justify-start")
+                    if path == active_path:
+                        button.classes("sy-nav-active").props("aria-current=page")
+    with ui.header(elevated=False).classes("bg-[var(--sy-surface)] border-b border-[var(--sy-line)] px-4"):
+        skip_link = ui.link(t("skip_to_content"), "#main-content").classes("sy-skip-link")
+        skip_link.on(
+            "click",
+            lambda: ui.run_javascript(
+                "const main=document.getElementById('main-content'); if(main){main.focus({preventScroll:true}); main.scrollIntoView();}"
+            ),
+        )
+        with ui.row().classes("w-full items-center justify-between"):
+            with ui.row().classes("items-center gap-2"):
+                ui.button(icon="menu", on_click=drawer.toggle).props(
+                    f'flat round aria-label="{t("open_navigation")}"'
+                ).tooltip(t("open_navigation"))
+                ui.label(t(title_key)).classes("text-lg font-semibold").props("role=heading aria-level=1")
+            with ui.row().classes("items-center gap-1"):
+                if music_context:
+                    render_page_music_control(music_context)
+                ui.button("EN" if current_locale() != "en" else "中", on_click=lambda: _reload_after_preference_change(toggle_locale)).props("flat dense")
+                sound_icon = "volume_up" if sound_feedback_enabled() else "volume_off"
+                sound_tooltip = t("sound_feedback_on") if sound_feedback_enabled() else t("sound_feedback_off")
+                ui.button(icon=sound_icon, on_click=lambda: _reload_after_preference_change(toggle_sound_feedback)).props(
+                    f'flat round aria-label="{sound_tooltip}"'
+                ).tooltip(sound_tooltip)
+                theme_icon = "dark_mode" if current_theme() == "light" else "light_mode"
+                tooltip = t("dark_mode") if current_theme() == "light" else t("light_mode")
+                ui.button(icon=theme_icon, on_click=lambda: _reload_after_preference_change(toggle_theme)).props(
+                    f'flat round aria-label="{tooltip}"'
+                ).tooltip(tooltip)
+    if application_mode.is_practice:
+        with ui.element("section").props(
+            "data-testid=practice-mode-banner role=status aria-live=polite"
+        ).classes("sy-practice-banner"):
+            ui.icon("science").classes("sy-practice-banner-icon").props("aria-hidden=true")
+            with ui.column().classes("gap-0 min-w-0"):
+                ui.label(t("practice_mode_title")).classes("sy-practice-banner-title")
+                ui.label(t("practice_mode_body")).classes("sy-practice-banner-copy")
+    with ui.element("main").props("id=main-content tabindex=-1").classes("sy-main w-full gap-6"):
+        yield

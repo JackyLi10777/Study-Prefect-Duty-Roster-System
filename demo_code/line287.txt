@@ -1,0 +1,1 @@
+﻿        if not edited_roster.equals(st.session_state.roster_df):

@@ -1,0 +1,259 @@
+"""Run the complete release-candidate evidence suite in disposable local data.
+
+This script never points browser writes at the configured school database. It
+creates its own SQLite, backup, and log paths, launches two isolated NiceGUI
+servers, and records a non-sensitive result in ``logs/release-candidate-report.json``.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+from typing import IO
+from urllib.error import URLError
+from urllib.request import urlopen
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from nicegui_app.config import POLICY_VERSION
+from nicegui_app.release_evidence import PROJECT_ID, release_source_fingerprint
+
+
+REPORT_PATH = PROJECT_ROOT / "logs" / "release-candidate-report.json"
+CANONICAL_DATABASE = (PROJECT_ROOT / "data" / "runtime" / "sing-yin-roster.sqlite3").resolve()
+CANONICAL_BACKUPS = (PROJECT_ROOT / "data" / "backups").resolve()
+_SERVER_FAILURE_MARKERS = (
+    re.compile(r"(?:^|\s)(?:ERROR|CRITICAL)(?:\s|\[)", re.MULTILINE),
+    re.compile(r"Traceback \(most recent call last\):"),
+    re.compile(r"Task exception was never retrieved", re.IGNORECASE),
+)
+
+
+class ReleaseVerificationError(RuntimeError):
+    """Raised when one release gate fails; later gates must not imply success."""
+
+
+def _free_loopback_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as candidate:
+        candidate.bind(("127.0.0.1", 0))
+        return int(candidate.getsockname()[1])
+
+
+def isolated_environment(root: Path, port: int, *, blocked_backup: bool = False) -> dict[str, str]:
+    """Build an explicit write-safe environment for one disposable server."""
+    database_path = (root / "runtime.sqlite3").resolve()
+    backup_path = (root / ("blocked-backup-path" if blocked_backup else "backups")).resolve()
+    log_dir = (root / "logs").resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    if blocked_backup:
+        backup_path.write_text("deliberately blocks directory creation", encoding="utf-8")
+    else:
+        backup_path.mkdir(parents=True, exist_ok=True)
+    if database_path == CANONICAL_DATABASE or backup_path == CANONICAL_BACKUPS:
+        raise ReleaseVerificationError("Release verification refused a canonical school-data path.")
+    return {
+        **os.environ,
+        "PYTHONUTF8": "1",
+        "SING_YIN_E2E_ISOLATED": "1",
+        "SING_YIN_DATABASE_PATH": str(database_path),
+        "SING_YIN_BACKUP_DIR": str(backup_path),
+        "SING_YIN_LOG_DIR": str(log_dir),
+        "SING_YIN_DEPLOYMENT_MODE": "local",
+        "SING_YIN_HOST": "127.0.0.1",
+        "SING_YIN_PORT": str(port),
+        "SING_YIN_TEST_URL": f"http://127.0.0.1:{port}",
+        "SING_YIN_OPEN_BROWSER": "false",
+        "SING_YIN_STORAGE_SECRET": "release-verification-only-secret-0000000000000000",
+    }
+
+
+def _write_report(report: dict[str, object]) -> None:
+    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    temporary = REPORT_PATH.with_suffix(".tmp")
+    temporary.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.replace(REPORT_PATH)
+
+
+def _run_check(name: str, command: list[str], environment: dict[str, str], report: dict[str, object]) -> None:
+    print(f"\n=== {name} ===", flush=True)
+    started = time.monotonic()
+    result = subprocess.run(command, cwd=PROJECT_ROOT, env=environment, check=False)
+    duration_ms = round((time.monotonic() - started) * 1000)
+    checks = report.setdefault("checks", [])
+    assert isinstance(checks, list)
+    checks.append({"name": name, "status": "pass" if result.returncode == 0 else "fail", "durationMs": duration_ms})
+    _write_report(report)
+    if result.returncode != 0:
+        raise ReleaseVerificationError(f"{name} failed with exit code {result.returncode}.")
+
+
+def _start_server(environment: dict[str, str], log_path: Path) -> tuple[subprocess.Popen[str], IO[str]]:
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    output = log_path.open("w", encoding="utf-8")
+    process = subprocess.Popen(
+        [sys.executable, "-X", "utf8", "-m", "nicegui_app.main"],
+        cwd=PROJECT_ROOT,
+        env=environment,
+        stdout=output,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    return process, output
+
+
+def _wait_until_ready(process: subprocess.Popen[str], base_url: str, log_path: Path, timeout: float = 30.0) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            break
+        try:
+            with urlopen(f"{base_url}/healthz", timeout=1.0) as response:  # noqa: S310 - fixed localhost URL
+                if response.status == 200:
+                    return
+        except (URLError, TimeoutError):
+            pass
+        time.sleep(0.25)
+    tail = ""
+    if log_path.is_file():
+        tail = "\n".join(log_path.read_text(encoding="utf-8", errors="replace").splitlines()[-30:])
+    raise ReleaseVerificationError(f"Isolated NiceGUI did not become ready.\n{tail}")
+
+
+def _stop_server(process: subprocess.Popen[str], output: IO[str]) -> None:
+    try:
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=8)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5)
+    finally:
+        output.close()
+
+
+def _assert_server_console_clean(log_path: Path) -> None:
+    """Fail closed on server-side exceptions without copying console payload into the report."""
+    try:
+        output = log_path.read_text(encoding="utf-8", errors="replace")
+    except OSError as error:
+        raise ReleaseVerificationError("Unable to inspect the isolated NiceGUI server console.") from error
+    if any(pattern.search(output) for pattern in _SERVER_FAILURE_MARKERS):
+        raise ReleaseVerificationError("The isolated NiceGUI server console contains an unexpected failure marker.")
+
+
+def _run_browser_phase(
+    *,
+    root: Path,
+    blocked_backup: bool,
+    scripts: tuple[str, ...],
+    report: dict[str, object],
+) -> None:
+    port = _free_loopback_port()
+    environment = isolated_environment(root, port, blocked_backup=blocked_backup)
+    server_log = root / "server-console.log"
+    process, output = _start_server(environment, server_log)
+    try:
+        _wait_until_ready(process, environment["SING_YIN_TEST_URL"], server_log)
+        for script in scripts:
+            _run_check(
+                Path(script).stem,
+                [sys.executable, "-X", "utf8", script],
+                environment,
+                report,
+            )
+        if not blocked_backup:
+            _run_check(
+                "strict_deployment_readiness",
+                [sys.executable, "-X", "utf8", "scripts/check_deployment_readiness.py", "--strict"],
+                environment,
+                report,
+            )
+    finally:
+        _stop_server(process, output)
+    _assert_server_console_clean(server_log)
+
+
+def main() -> int:
+    workspace = Path(tempfile.mkdtemp(prefix="sing-yin-release-candidate-"))
+    source_fingerprint, source_file_count = release_source_fingerprint()
+    report: dict[str, object] = {
+        "schemaVersion": 1,
+        "project": PROJECT_ID,
+        "policyVersion": POLICY_VERSION,
+        "sourceFingerprint": source_fingerprint,
+        "sourceFileCount": source_file_count,
+        "status": "running",
+        "startedAt": datetime.now(timezone.utc).isoformat(),
+        "humanAcceptanceRequired": True,
+        "humanAcceptanceGuide": "docs/ACCEPTANCE_EVIDENCE.md",
+        "checks": [],
+    }
+    _write_report(report)
+    base_environment = {**os.environ, "PYTHONUTF8": "1"}
+    succeeded = False
+    try:
+        _run_check(
+            "repository_hygiene",
+            [sys.executable, "-X", "utf8", "scripts/check_repository_hygiene.py"],
+            base_environment,
+            report,
+        )
+        _run_check(
+            "automated_test_suite",
+            [sys.executable, "-X", "utf8", "-m", "pytest", "-q"],
+            base_environment,
+            report,
+        )
+        _run_check(
+            "python_compile",
+            [sys.executable, "-X", "utf8", "-m", "compileall", "-q", "nicegui_app", "packages", "tests", "scripts"],
+            base_environment,
+            report,
+        )
+        _run_check("dependency_integrity", [sys.executable, "-m", "pip", "check"], base_environment, report)
+        _run_browser_phase(
+            root=workspace / "normal",
+            blocked_backup=False,
+            scripts=("scripts/verify_nicegui_ui.py", "scripts/verify_nicegui_write_pipeline.py"),
+            report=report,
+        )
+        _run_browser_phase(
+            root=workspace / "partial-backup",
+            blocked_backup=True,
+            scripts=("scripts/verify_nicegui_partial_backup.py",),
+            report=report,
+        )
+        report["status"] = "pass"
+        report["finishedAt"] = datetime.now(timezone.utc).isoformat()
+        _write_report(report)
+        succeeded = True
+        print(f"\nRelease-candidate verification passed. Report: {REPORT_PATH}", flush=True)
+        return 0
+    except Exception as error:  # noqa: BLE001 - CLI boundary must leave a failed evidence report
+        report["status"] = "fail"
+        report["finishedAt"] = datetime.now(timezone.utc).isoformat()
+        report["failure"] = str(error)
+        _write_report(report)
+        print(f"\nRELEASE VERIFICATION FAILED: {error}", file=sys.stderr, flush=True)
+        print(f"Isolated evidence retained at: {workspace}", file=sys.stderr, flush=True)
+        return 1
+    finally:
+        if succeeded:
+            shutil.rmtree(workspace, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

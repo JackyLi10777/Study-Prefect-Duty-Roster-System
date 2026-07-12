@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "project": "sing-yin-study-prefect-duty-roster",
+  "policyVersion": "2026.07.10",
+  "sourceFingerprint": "5793c28c7d814aa1958a1bdf96d081f0fac27100960401fef55aee0d5860ce47",
+  "sourceFileCount": 84,
+  "status": "pass",
+  "startedAt": "2026-07-12T03:34:20.996399+00:00",
+  "humanAcceptanceRequired": true,
+  "humanAcceptanceGuide": "docs/ACCEPTANCE_EVIDENCE.md",
+  "checks": [
+    {
+      "name": "repository_hygiene",
+      "status": "pass",
+      "durationMs": 813
+    },
+    {
+      "name": "automated_test_suite",
+      "status": "pass",
+      "durationMs": 23406
+    },
+    {
+      "name": "python_compile",
+      "status": "pass",
+      "durationMs": 156
+    },
+    {
+      "name": "dependency_integrity",
+      "status": "pass",
+      "durationMs": 3953
+    },
+    {
+      "name": "verify_nicegui_ui",
+      "status": "pass",
+      "durationMs": 36203
+    },
+    {
+      "name": "verify_nicegui_write_pipeline",
+      "status": "pass",
+      "durationMs": 29547
+    },
+    {
+      "name": "strict_deployment_readiness",
+      "status": "pass",
+      "durationMs": 906
+    },
+    {
+      "name": "verify_nicegui_partial_backup",
+      "status": "pass",
+      "durationMs": 3765
+    }
+  ],
+  "finishedAt": "2026-07-12T03:36:04.959558+00:00"
+}

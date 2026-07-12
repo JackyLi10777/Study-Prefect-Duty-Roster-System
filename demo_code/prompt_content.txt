@@ -1,0 +1,69 @@
+You are Codex, the primary execution developer for the Sing Yin Study Prefect Duty Roster System.
+### Project Context & User Needs
+This is a professional internal tool used daily by the Head Study Prefect to manage prefect duty scheduling at Sing Yin Secondary School. The primary user requires:
+- High efficiency and low cognitive load
+- Clear visual hierarchy, especially regarding fairness, mentoring pairing (老帶新), and batch operations
+- A reliable and professional interface
+- A meaningful daily Bible verse section that acts as a calm, grounding "Daily Anchor" without making the system feel overly decorative or religious
+The current UI has accumulated technical debt from multiple rapid iterations. The goal is to deliver a clean, calm, and focused professional redesign.
+### Overall Design Direction (Must Follow)
+Adopt a **Calm Professional + Daily Anchor** approach:
+- The interface should feel quiet, professional, trustworthy, and slightly warm.
+- Prioritize clarity, efficiency, and generous breathing room.
+- The daily Bible verse section should feel like a meaningful, calm daily anchor point.
+- All other sections must support fast and clear decision-making for the Head Study Prefect.
+### Critical Requirements
+#### 1. Light Mode & Dark Mode Support
+You must properly design and implement **both Light Mode and Dark Mode**.
+- Dark Mode must not be a simple color inversion of Light Mode. It should feel calm, readable, and professional on its own.
+- Pay special attention to contrast and visual comfort in Dark Mode.
+- In your final report, clearly document the color values and design decisions for both modes.
+#### 2. Accessibility Contrast Requirements (WCAG)
+All color combinations must meet **WCAG 2.2 Level AA** standards at minimum:
+- **Normal text**: Minimum contrast ratio of **4.5:1**
+- **Large text** (18pt / 24px or larger, or 14pt bold and larger): Minimum **3:1**
+- **Non-text elements** (UI components, buttons, form fields, icons, borders, and graphical indicators): Minimum **3:1**
+**Special attention required**:
+- The Bible verse section (Daily Anchor), including the gold accent border and text, must have sufficient contrast in **both Light and Dark Mode**.
+- Avoid low-contrast issues in Dark Mode, especially with the warm gold accent and colored indicators (e.g., mentoring pairing).
+You are encouraged to aim higher than the minimum (closer to AAA where practical) for important text such as the daily Bible verse.
+In your final report, please include:
+- Confirmation that key color combinations meet WCAG AA contrast requirements
+- Specific notes on how the Bible verse gold accent performs in both modes
+#### 3. Color System
+- Use a restrained, calm palette.
+- Only apply the warm gold accent in the Bible verse section. Do not use gold elsewhere.
+- Recommended direction:
+  - Primary accent: Deep teal/green (`#0F766E` in Light Mode / `#14B8A6` in Dark Mode)
+  - Use Surface and Surface Variant roles to create calm visual layering
+#### 4. Bible Verse Section (Daily Anchor)
+- Design this section to feel calm, meaningful, and slightly sacred in both Light and Dark Mode.
+- Use a refined, low-saturation warm gold border.
+- Provide generous internal padding and excellent typography for comfortable reading.
+- You have freedom to refine the exact border treatment, spacing, and subtle background treatment, as long as it remains elegant and non-flashy while meeting contrast requirements in both themes.
+#### 5. Main Working Area & UX
+- The roster board and mentoring features must be visually clear and efficient.
+- Mentoring pairing indicators should be noticeable but professional.
+- Improve information hierarchy and reduce unnecessary visual clutter.
+- Make frequent actions (Smart Compute, batch operations, exports) easy to access.
+#### 6. Technical Constraints
+- Do not modify core roster generation logic, data models, or school rules.
+- All existing functionality must continue to work correctly.
+- Maintain 36/36 test coverage after changes.
+- Support bilingual (Chinese/English) interface consistently.
+### Freedom for Thoughtful Improvement
+Within the above direction and constraints, you have reasonable freedom to:
+- Refine spacing, component details, and micro-interactions
+- Propose improvements to visual hierarchy or layout
+- Make decisions on the exact implementation of the Bible verse card and mentoring indicators in both modes
+- Suggest better ways to achieve the "Calm Professional" feel while meeting accessibility standards
+All improvements must align with the overall vision and primary user needs (efficiency, clarity, and a meaningful daily anchor).
+### Expected Output Format
+After completing the work, provide a structured report containing:
+1. Key design decisions and rationale (including Light vs Dark Mode approach)
+2. Major changes made
+3. How the Bible verse section was handled in both modes (including contrast considerations)
+4. Accessibility contrast verification results
+5. Test results (`python -m pytest tests/ -q`)
+6. Any remaining recommendations or observations
+Please start by outlining your execution plan before making code changes.

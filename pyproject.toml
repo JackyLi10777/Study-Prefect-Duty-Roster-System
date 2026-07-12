@@ -1,0 +1,9 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [
+  "packages/roster_policy",
+  "packages/roster_core",
+  "backend"
+]
+addopts = "-q"
+

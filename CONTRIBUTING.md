@@ -1,54 +1,53 @@
-﻿# Contributing to Sing Yin Study Prefect Duty Roster System
+# Contributing / 協作與交接
 
-## Safe Editing Practices
+Thank you for helping maintain the Sing Yin Study Prefect Duty Roster System.
+Changes should make the weekly operator workflow safer, clearer, or easier to
+hand over—not merely add visible complexity.
 
-To avoid encoding and indentation issues that have historically caused regressions, please follow these guidelines:
+## Before editing
 
-### File Encoding
+Read:
 
-- **Always save files as UTF-8 without BOM.** This project uses UTF-8 encoding throughout.
-- **Use Python or Node.js for editing files containing Chinese characters.** PowerShell Set-Content and Get-Content can silently corrupt UTF-8 files. Prefer:
-  - [System.IO.File]::ReadAllText(path, [System.Text.Encoding]::UTF8) for reading
-  - [System.IO.File]::WriteAllText(path, content, [System.Text.Encoding]::UTF8) for writing
-- **Never use PowerShell heredocs (@''@) to pass Python code containing Chinese characters.** The terminal encoding (GBK on Chinese Windows) will corrupt non-ASCII bytes.
+- `PROJECT_STATUS.md`
+- `Professional_Design_System.md`
+- `docs/NICEGUI_ARCHITECTURE.md`
+- `docs/RELEASE_HANDOVER.md`
+- `docs/BRANCH_STRATEGY.md`
 
-### Line Endings
+The active runtime is NiceGUI. `demo_code/`, `demo_code2/`, and the
+`streamlit-cloud` branch are reference material only.
 
-- The project uses **CRLF (\r\n)** line endings on Windows. When using Node.js or Python to edit files, be aware that \n-only patterns will not match \r\n content.
-- Use content.split('\n') and lines.join('\n') rather than binary string replacement when working with line-based structures.
-- When using str.replace(), match the actual line endings: use \r\n for CRLF files.
+## Ownership boundaries
 
-### Safe String Replacement (Chinese Characters)
+- `roster_policy`: duty posts, opening days, capacities, role gates, weights.
+- `roster_core`: pure generation and validation.
+- `roster_workflow`: transactions, fairness ledger, audit, backup, restore.
+- `nicegui_app/ui`: bilingual presentation, navigation, guidance and feedback.
 
-When replacing strings containing Chinese characters:
+Do not derive rules from translated labels or place fairness decisions in page
+handlers.
 
-1. **Python (recommended):** Use Unicode escape sequences:
-   `python
-   zh_var = '\u9996\u5e2d\u5c0e\u5b78\u98a8\u7d00'  # 首席導學風紀
-   text = text.replace(zh_var, 'New Value')
-   `
+## Required checks
 
-2. **PowerShell:** Use Unicode code points:
-   `powershell
-    = [char]0x9996 + [char]0x5E2D + [char]0x5C0E  # partial
-    = .Replace(, 'New Value')
-   `
+```powershell
+python -X utf8 -m pytest -q
+python -X utf8 scripts\verify_release_candidate.py
+```
 
-3. **Node.js:** Use s.readFileSync(path, 'utf8') and s.writeFileSync(path, content, 'utf8'). This handles UTF-8 reliably.
+UI changes also require browser evidence for Traditional Chinese/English,
+light/dark mode, phone width, keyboard focus, console output, and paired theme
+imagery. Browser writes must use isolated SQLite, backup, and log directories.
 
-### Indentation
+## Commit style
 
-- The project uses **4 spaces** for Python indentation (no tabs).
-- When editing pp.py, be especially careful with with tab_view: and similar context manager blocks. The indentation of these blocks relative to function definitions is critical.
-- After editing, always run python -m py_compile app.py to check for syntax errors before running tests.
+Use focused Conventional Commit messages such as:
 
-### Test Before Push
+- `feat: add isolated practice mode`
+- `fix: prevent duplicate fairness posting`
+- `docs: align self-hosted deployment guide`
+- `test: cover published leave adjustment recovery`
 
-Always run the full test suite before committing:
-
-`ash
-python -m pytest tests/ -q
-python -m py_compile app.py
-`
-
-The expected result is **36 passed**.
+Do not commit credentials, session secrets, `node_modules`, `.next`, Python
+caches, or temporary performance fixtures. The repository may include the
+explicitly generated fictional-data and release-evidence archive described in
+`archive/README.md`; it must never be replaced with operational school data.

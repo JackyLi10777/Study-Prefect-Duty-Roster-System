@@ -1,0 +1,158 @@
+[
+  {
+    "week_start": "2026-06-15",
+    "day": "MONDAY",
+    "ahp": "LI Kin Fung",
+    "room_302": [
+      "CHAN Tsz Hin"
+    ],
+    "room_303": [
+      "WONG Ka Chun",
+      "CHEUNG Fung Yee"
+    ],
+    "room_202": [
+      "LAM Chun Hei",
+      "NG Pak Chun"
+    ]
+  },
+  {
+    "week_start": "2026-06-15",
+    "day": "TUESDAY",
+    "ahp": "LAU Tsz Ching",
+    "room_302": [
+      "LI Kin Fung"
+    ],
+    "room_303": [
+      "CHAN Tsz Hin",
+      "HO Chun Hei"
+    ],
+    "room_202": [
+      "closed"
+    ]
+  },
+  {
+    "week_start": "2026-06-15",
+    "day": "WEDNESDAY",
+    "ahp": "AU YEUNG Ho Ming",
+    "room_302": [
+      "WONG Ka Chun"
+    ],
+    "room_303": [
+      "CHEUNG Fung Yee",
+      "HO Tung Yee"
+    ],
+    "room_202": [
+      "LAM Chun Hei",
+      "HUI Yue Hei"
+    ]
+  },
+  {
+    "week_start": "2026-06-15",
+    "day": "THURSDAY",
+    "ahp": "HUI Yue Hei",
+    "room_302": [
+      "LAU Tsz Ching"
+    ],
+    "room_303": [
+      "CHAN Tsz Hin",
+      "LAM Chun Hei"
+    ],
+    "room_202": [
+      "NG Pak Chun",
+      "HO Chun Hei"
+    ]
+  },
+  {
+    "week_start": "2026-06-15",
+    "day": "FRIDAY",
+    "ahp": "HO Tung Yee",
+    "room_302": [
+      "CHEUNG Fung Yee"
+    ],
+    "room_303": [
+      "WONG Ka Chun",
+      "HO Chun Hei"
+    ],
+    "room_202": [
+      "closed"
+    ]
+  },
+  {
+    "week_start": "2026-06-22",
+    "day": "MONDAY",
+    "ahp": "LAU Tsz Ching",
+    "room_302": [
+      "CHAN Tsz Hin"
+    ],
+    "room_303": [
+      "CHEUNG Fung Yee",
+      "LAM Chun Hei"
+    ],
+    "room_202": [
+      "HUI Yue Hei",
+      "HO Tung Yee"
+    ]
+  },
+  {
+    "week_start": "2026-06-22",
+    "day": "TUESDAY",
+    "ahp": "AU YEUNG Ho Ming",
+    "room_302": [
+      "LI Kin Fung"
+    ],
+    "room_303": [
+      "CHAN Tsz Hin",
+      "HO Chun Hei"
+    ],
+    "room_202": [
+      "closed"
+    ]
+  },
+  {
+    "week_start": "2026-06-22",
+    "day": "WEDNESDAY",
+    "ahp": "LI Kin Fung",
+    "room_302": [
+      "WONG Ka Chun"
+    ],
+    "room_303": [
+      "CHEUNG Fung Yee",
+      "NG Pak Chun"
+    ],
+    "room_202": [
+      "LAM Chun Hei",
+      "HUI Yue Hei"
+    ]
+  },
+  {
+    "week_start": "2026-06-22",
+    "day": "THURSDAY",
+    "ahp": "HUI Yue Hei",
+    "room_302": [
+      "LAU Tsz Ching"
+    ],
+    "room_303": [
+      "CHAN Tsz Hin",
+      "NG Pak Chun"
+    ],
+    "room_202": [
+      "HO Chun Hei",
+      "CHEUNG Fung Yee"
+    ]
+  },
+  {
+    "week_start": "2026-06-22",
+    "day": "FRIDAY",
+    "ahp": "HO Tung Yee",
+    "room_302": [
+      "LI Kin Fung"
+    ],
+    "room_303": [
+      "WONG Ka Chun",
+      "HO Chun Hei"
+    ],
+    "room_202": [
+      "closed"
+    ]
+  }
+]

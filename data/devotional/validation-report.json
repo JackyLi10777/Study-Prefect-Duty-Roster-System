@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "seedPath": "D:\\code_v3\\data\\devotional\\daily-verses.seed.json",
+  "legacyPath": "D:\\code_v3\\data\\devotional\\daily-verses.legacy.json",
+  "summary": {
+    "seedEntryCount": 121,
+    "legacyEntryCount": 500,
+    "coveredLegacyEntryCount": 500,
+    "expandedEntryCount": 500,
+    "statusCounts": {
+      "polished": 121
+    },
+    "themeCounts": {
+      "servant-leadership": 27,
+      "sacrificial-service": 3,
+      "humility": 14,
+      "mercy-care": 20,
+      "spiritual-formation": 27,
+      "witness-light": 18,
+      "justice-fairness": 14,
+      "wisdom-discernment": 7,
+      "prayer-peace": 9,
+      "faithfulness": 17,
+      "perseverance": 10
+    },
+    "translationVerificationCounts": {
+      "zh:verified-exact": 121,
+      "en:verified-exact": 121
+    },
+    "issueCounts": {}
+  },
+  "issues": []
+}

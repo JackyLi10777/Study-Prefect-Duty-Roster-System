@@ -1,114 +1,53 @@
-# ==========================================
-# .gitignore
-# Sing Yin Study Prefect Duty Roster Generator
-# 最終優化版 - v1.4 (2026.05.25)
-# 專門保護 AI API Key、敏感資訊與開發環境
-# ==========================================
-
-# ==================== 敏感資訊（最高優先保護） ====================
-.streamlit/secrets.toml
-.env
-.env.example
-*.env
-secrets.json
-config.local.json
-*.key
-*.pem
-
-# ==================== Python 相關 ====================
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# ==================== 虛擬環境 ====================
+.pytest_cache/
 .venv/
 venv/
-ENV/
-env/
-env.bak/
-venv.bak/
 
-# ==================== Streamlit 專屬 ====================
-.streamlit/*.log
-.streamlit/debug.log
-.streamlit/secrets.toml.bak
-.streamlit/config.toml.bak
+# Node / Next.js
+node_modules/
+.next/
+out/
+frontend/node_modules/
+frontend/.next/
 
-# ==================== 資料與暫存檔案 ====================
-*.xlsx
-*.xls
-*.csv
-*.pdf
-*.json
-*.md.bak
-*.log
+# Local environment
+.env
+.env.*
+!.env.example
+**/service_account.json
+**/JSON 金钥.json
+**/JSON 金鑰.json
+
+# Local application data
+data/runtime/
+data/backups/
+data/practice/
+logs/
 *.sqlite3
-*.db
-*.tmp
-*.temp
+*.sqlite3-*
+*.pdf
+*.zip
+*.csv
+*.xls
+*.xlsx
+
+# Local operator media and generated evidence
+music/*.m4a
+music/*.mp3
+music/*.ogg
+music/*.wav
+music/custom/
+music/custom-library.json
+music/youtube-playlists.json
+local-imports/
+.codex-remote-attachments/
+.nicegui/
+tmp/
+
+# OS / editor
 .DS_Store
 Thumbs.db
-
-# ==================== IDE / 編輯器 ====================
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
-.project
-.pydevproject
-.settings/
-.ropeproject/
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.cache
-.mypy_cache/
-.ruff_cache/
-.hypothesis/
-
-# ==================== Node.js / 前端（如果未來會用到） ====================
-node_modules/
-*.min.js
-*.map
-
-# ==================== 其他不需要上傳的 ====================
-*.pyc
-*.pyd
-*.pyo
-*.DS_Store
-*.bak
-*.backup
-
-# ==========================================
-# 使用說明
-# ==========================================
-# 1. 這個 .gitignore 已完整保護您的 DeepSeek API Key
-# 2. 請確保 .streamlit/secrets.toml 絕對不會出現在 GitHub 上
-# 3. 未來新增任何敏感檔案，都請加到「敏感資訊」區塊
-# 4. 執行以下指令讓 Git 立即生效：
-#    git rm -r --cached .streamlit/secrets.toml 2>/dev/null || true
-#    git add .gitignore
-#    git commit -m "更新 .gitignore 強化 API Key 保護"
-#    git push
-# ==========================================
