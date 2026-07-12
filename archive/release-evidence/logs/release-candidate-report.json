@@ -2,27 +2,27 @@
   "schemaVersion": 1,
   "project": "sing-yin-study-prefect-duty-roster",
   "policyVersion": "2026.07.10",
-  "sourceFingerprint": "5b19d9aacbe42e0bdb45d89ba95ee615d1d1d59294c8fa9e6bf902a17e8d77c8",
+  "sourceFingerprint": "bff1f642e6656f8efb88625edffedd04d72a81c7dd9ee297b1736921befe4fe9",
   "sourceFileCount": 186,
   "status": "pass",
-  "startedAt": "2026-07-12T15:09:17.468099+00:00",
+  "startedAt": "2026-07-12T15:17:22.491154+00:00",
   "humanAcceptanceRequired": true,
   "humanAcceptanceGuide": "docs/ACCEPTANCE_EVIDENCE.md",
   "checks": [
     {
       "name": "repository_hygiene",
       "status": "pass",
-      "durationMs": 703
+      "durationMs": 781
     },
     {
       "name": "security_gates",
       "status": "pass",
-      "durationMs": 8656
+      "durationMs": 4641
     },
     {
       "name": "automated_test_suite",
       "status": "pass",
-      "durationMs": 26344
+      "durationMs": 27672
     },
     {
       "name": "python_compile",
@@ -32,28 +32,28 @@
     {
       "name": "dependency_integrity",
       "status": "pass",
-      "durationMs": 797
+      "durationMs": 828
     },
     {
       "name": "verify_nicegui_ui",
       "status": "pass",
-      "durationMs": 28500
+      "durationMs": 29719
     },
     {
       "name": "verify_nicegui_write_pipeline",
       "status": "pass",
-      "durationMs": 29875
+      "durationMs": 30812
     },
     {
       "name": "strict_deployment_readiness",
       "status": "pass",
-      "durationMs": 812
+      "durationMs": 953
     },
     {
       "name": "verify_nicegui_partial_backup",
       "status": "pass",
-      "durationMs": 4391
+      "durationMs": 4593
     }
   ],
-  "finishedAt": "2026-07-12T15:11:02.137633+00:00"
+  "finishedAt": "2026-07-12T15:19:07.874524+00:00"
 }
