@@ -1,7 +1,6 @@
 MIT License
 
-Copyright (c) 2026 LI Chuangjie Jacky（李創杰）
-Sing Yin Secondary School Study Prefect Systems & Stewardship Office
+Copyright (c) 2026 LI Chuangjie Jacky (李創杰)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -20,23 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
--------------------------------------------------------------------------------
-
-Project note / 專案說明
-
-This NiceGUI rebuild and formal release was created only by two co-creators:
-LI Chuangjie Jacky and Codex. "Study Prefect Systems & Stewardship Office" is
-their two-member project identity and does not indicate additional developers
-or contractors. Attribution is appreciated when the project is reused or
-adapted. This note is informational and does not modify or restrict the MIT
-License above.
-
-本次 NiceGUI 重構及正式發布版本只由李創杰與 Codex 兩位共創者完成。「Study Prefect
-Systems & Stewardship Office」只是兩人的項目團隊名稱，不代表另有開發者或外判團隊。
-若重用或改編本專案，歡迎保留作者及共創來源。此說明只供識別專案脈絡，不會修改或限制
-以上 MIT License 所授予的權利。
-
-Third-party music, fonts, school identity materials, and other externally
-originating media are not relicensed by this MIT License; their own terms
-continue to apply.

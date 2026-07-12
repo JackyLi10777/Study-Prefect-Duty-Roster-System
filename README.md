@@ -290,4 +290,4 @@ This system was co-created by Li Chongjie and Codex. Its lasting value is not a 
 
 ## 授權 / License
 
-程式碼及專案文件依 [MIT License](LICENSE) 發布。LICENSE內的專案說明保留李創杰與 Codex 的共創脈絡，但不會限制MIT所授予的權利；外部來源的音樂、字型及校務識別素材仍按其各自條款處理。
+程式碼及專案文件依 [MIT License](LICENSE) 發布。[專案聲明](NOTICE.md)明確記錄本次正式版本只由李創杰與 Codex 兩位共同完成，並且不會限制 MIT 所授予的權利；外部來源的音樂、字型及校務識別素材仍按其各自條款處理。

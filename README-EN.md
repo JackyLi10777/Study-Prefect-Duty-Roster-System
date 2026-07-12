@@ -138,5 +138,6 @@ making fairness visible and reducing avoidable burden.
 
 ## License
 
-The software is available under the [MIT License](LICENSE). The project note in
-that file records its co-creation context without restricting the MIT grant.
+The software is available under the [MIT License](LICENSE). The separate
+[project notice](NOTICE.md) records that this formal release was completed only
+by LI Chuangjie Jacky and Codex without restricting the MIT grant.

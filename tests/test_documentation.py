@@ -28,6 +28,7 @@ def test_readme_explains_safe_start_and_links_to_operator_documents() -> None:
         "PROJECT_STATUS.md",
         "README-EN.md",
         "LICENSE",
+        "NOTICE.md",
         "CONTRIBUTING.md",
         "docs/BRANCH_STRATEGY.md",
         "archive/README.md",
@@ -40,13 +41,15 @@ def test_github_handover_documents_current_runtime_and_public_archive_boundary()
     branch_strategy = (PROJECT_ROOT / "docs" / "BRANCH_STRATEGY.md").read_text(encoding="utf-8")
     archive = (PROJECT_ROOT / "archive" / "README.md").read_text(encoding="utf-8")
     license_text = (PROJECT_ROOT / "LICENSE").read_text(encoding="utf-8")
+    notice_text = (PROJECT_ROOT / "NOTICE.md").read_text(encoding="utf-8")
 
     assert "NiceGUI + SQLite" in readme_en
     assert "streamlit-cloud" in branch_strategy and "nicegui-self-hosted" in branch_strategy
     assert "fictional" in archive.lower() and "no roster" in archive.lower()
     assert "MIT License" in license_text
-    assert "does not modify or restrict" in license_text
-    assert "only by two co-creators" in license_text
+    assert "does not modify" in notice_text and "restrict the MIT License" in notice_text
+    assert "only by two" in notice_text
+    assert "只由李創杰與 Codex 兩位共創者" in notice_text
     assert "李創杰與 Codex 兩位共創者" in (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
 
 
