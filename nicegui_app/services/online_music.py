@@ -135,8 +135,12 @@ def search_youtube(term: str, settings: YouTubeSettings) -> list[dict[str, str]]
         "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video%2Cplaylist&maxResults=8&safeSearch=strict"
         f"&q={quote_plus(clean_term)}&key={quote_plus(settings.api_key)}"
     )
+    parsed_url = urlparse(url)
+    if parsed_url.scheme != "https" or parsed_url.hostname != "www.googleapis.com":
+        raise MusicLibraryError("youtube_url")
     request = Request(url, headers={"Accept": "application/json", "User-Agent": "Sing-Yin-Roster/1.0"})
-    with urlopen(request, timeout=10) as response:  # noqa: S310 - fixed official HTTPS endpoint
+    # The scheme and host are fixed and checked immediately above.
+    with urlopen(request, timeout=10) as response:  # nosec B310
         payload = json.loads(response.read().decode("utf-8"))
     return parse_youtube_search(payload)
 

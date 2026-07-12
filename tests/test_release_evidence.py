@@ -5,7 +5,13 @@ import json
 from pathlib import Path
 
 from nicegui_app.config import POLICY_VERSION
-from nicegui_app.release_evidence import PROJECT_ID, load_release_evidence, release_source_fingerprint
+from nicegui_app.release_evidence import (
+    PROJECT_ID,
+    RELEASE_SOURCE_ROOTS,
+    RELEASE_SUFFIXES,
+    load_release_evidence,
+    release_source_fingerprint,
+)
 
 
 def _report(*, fingerprint: str, status: str = "pass") -> dict[str, object]:
@@ -39,6 +45,12 @@ def test_release_source_fingerprint_changes_with_release_input_content(tmp_path:
 
     assert count == changed_count == 2
     assert original != changed
+
+
+def test_release_fingerprint_tracks_ui_image_assets() -> None:
+    assert {".md", ".png", ".svg", ".webp", ".woff2", ".ttf", ".yml"} <= RELEASE_SUFFIXES
+    assert any(path.name == "docs" for path in RELEASE_SOURCE_ROOTS)
+    assert any(path.name == ".github" for path in RELEASE_SOURCE_ROOTS)
 
 
 def test_current_release_report_is_displayed_as_machine_pass_but_still_requires_people(tmp_path: Path) -> None:

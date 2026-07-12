@@ -6,6 +6,25 @@
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 
+## Product, Organisation, and Solution Architecture
+
+The presentation is deliberately split across three routes. `/platform` owns the non-sensitive product, organisation, solution, culture, resources, and co-creation story. `/engineering` turns documented release quality into a five-layer blueprint, eight verification gates, reliability capabilities, and a build narrative. `/system-architecture` owns the service lifecycle, technical ownership, trust evidence, recovery boundaries, and operator FAQ. This is information architecture, not a second business-logic layer, and the ordinary dashboard remains the first route for weekly work.
+
+The Study Prefect Team model preserves official roles while adding explanatory functional titles:
+
+- Head Study Prefect — `Service Governance Lead`;
+- Assistant Head Study Prefect — `Duty Coordination Lead`;
+- Study Prefect — `Room Service Steward`;
+- Teacher Advisor — `Oversight & Assurance Advisor`.
+
+These labels never become database values, roster-policy inputs, or replacement school titles. The page also groups platform work into four capability lanes—Weekly Operations, Fairness Assurance, Service Experience, and Systems Continuity—and four outcome-led solutions linked to the real workspaces. The groups do not imply additional staff. Their purpose is to make ownership and handover easier to understand.
+
+The Platform & Team page uses `nicegui_app.ui.platform_summary.load_platform_summary` to combine only the existing `handover_readiness()` counts and display-safe release evidence. Its public interface contains active-prefect count, roster-week count, a verified-backup boolean, and release state/check totals. It deliberately omits names, class, leave, roster content, audit payload, database paths, and backup paths. A read failure is logged through the existing payload-free support reference and produces a neutral bilingual fallback while the rest of the page remains available.
+
+NiceGUI owns the rendering and navigation. The read model introduces no schema, policy, write, backup, or restore change. `/system-architecture` links back to `/platform` rather than duplicating its organisation chart, capability map, solution portfolio, and co-creation close.
+
+`/engineering` reads only `load_release_evidence()` and static, version-controlled structural facts. It never opens `RosterWorkflow`, a database session, a backup path, or an audit payload. The report badge may show passed, running, stale, failed, missing, or unreadable evidence; the page does not reinterpret a non-passing state as success. Its nine gate labels mirror `scripts/verify_release_candidate.py`: repository hygiene, supply-chain security, automated tests, compilation, dependency integrity, browser verification, isolated write pipeline, strict deployment readiness, and committed-without-backup recovery.
+
 ## Start Locally
 
 ```powershell
@@ -37,7 +56,7 @@ The workflow service is the only supported write path for roster operations:
 4. Prefect management: creates, updates, or archives active roster members without erasing historical fairness records.
 5. Pre-generation leave: records an auditable absence constraint for a Monday-based week; generation and validation exclude that prefect on the declared day. Publish validates the current declarations again, so a draft made before a new leave declaration must be regenerated. Published weeks must use post-publication adjustment instead.
 6. AI-prepared import: accepts pasted JSON/CSV, validates it locally, previews it, and imports only after an explicit action.
-7. PDF export: builds a bilingual A4 PDF in memory from durable roster reads; it is a local download and never a public upload. It requires an installed Traditional-Chinese CJK font (Noto Sans TC by default, or `SING_YIN_PDF_FONT`).
+7. PDF export: builds a bilingual A4 PDF in memory from durable roster reads; it is a local download and never a public upload. Versioned Noto Sans HK Regular/Medium/SemiBold files make output deterministic on a replacement host. The schedule export accepts presentation-only crest and supplementary-footer switches; clean group-sharing output is the default.
 
 Published-duty substitute recommendations and the final leave-adjustment save share the same role, availability, declared-leave, same-day uniqueness, and no-consecutive-duty gates. A previously recorded absence cannot become eligible merely because the adjustment happens after publication.
 
@@ -98,8 +117,8 @@ The UI does not append `WorkflowError` text to notifications. It displays the bi
 | Policy | `packages/roster_policy/` | AHP gates, room capacity, closures, weights, opening times |
 | Core | `packages/roster_core/` | Pure daily devotional selection and weekly roster generation/validation |
 | Persistence | `nicegui_app/persistence/` | SQLite engine, Alembic schema, durable records |
-| Workflow | `nicegui_app/services/roster_workflow.py` | Transactions, fairness ledger, backups, adjustments |
-| Presentation | `nicegui_app/ui/` | NiceGUI routes, Traditional-Chinese-first i18n, theme, page shell, and non-sensitive system-architecture explanation |
+| Workflow | `nicegui_app/services/roster_workflow.py`, `nicegui_app/services/workflow_parts/` | Stable facade plus separated transactions, fairness ledger, people, backups, adjustments, and recovery |
+| Presentation | `nicegui_app/ui/page_routes/`, `page_shared.py`, `i18n_catalog/`, `theme_markup.py` | NiceGUI routes, shared components, domain-grouped bilingual copy, design-system markup, page shell, anonymous platform summary, and non-sensitive architecture explanation |
 | Export | `nicegui_app/services/roster_export.py` | Local-only bilingual PDF composition; no persistence or network writes |
 | Observability | `nicegui_app/observability.py` | Payload-free local operation evidence and rotating support logs |
 | Optional media | `nicegui_app/services/online_music.py`, `nicegui_app/ui/music.py` | Public YouTube playlist validation/search and visible presentation; strictly separate from roster persistence |
@@ -114,11 +133,13 @@ The embed does not enable the unused JavaScript control API, sends no referrer, 
 
 The media layer may receive page context (`dashboard`, `devotional`, `getting_started`, `guide`, `architecture`, or `handover`) but never a prefect, roster, leave, fairness, audit, backup, or PDF payload. No music control appears on sensitive roster tables or settings recovery actions. With no saved playlist, the UI renders guidance but creates no iframe, avoiding an unnecessary third-party connection.
 
+Dashboard devotion uses the polished seed themes owned by `roster_core`. The UI persists only `auto`, `guidance`, or `comfort`; `auto` resolves from the current appearance while an explicit choice overrides it. `roster_core.select_daily_verse(..., themes_any=...)` performs the deterministic theme filtering, so translation labels and CSS never become devotional-selection inputs.
+
 Official crest files are local presentation assets under `nicegui_app/assets/brand/`. Their semantic paths are centralized in `nicegui_app/config.py`: a 512-pixel derivative owns favicon delivery, the compact source owns navigation, a 640-pixel derivative owns architecture display, and the full source is reserved for PDF export. The user-supplied masters remain at project root; the old ambiguous `logo.png` is intentionally removed.
 
 ### Responsive roster presentation
 
-`nicegui_app/ui/pages.py` creates one localized roster display model from the workflow's durable assignments. Wide screens render that model as the inspection table; screens at phone width render the same model as day-grouped duty cards. Each card retains post, time, Chinese prefect name, status, and workload, so mobile review never depends on horizontal table scrolling. This is a presentation-only adaptation: it does not change policy inputs, workflow writes, PDF layout, or fairness calculations.
+`nicegui_app/ui/page_shared.py` creates one localized roster display model from the workflow's durable assignments; `nicegui_app/ui/pages.py` is now only the stable route-registration facade. Wide screens render that model as the inspection table; screens at phone width render the same model as day-grouped duty cards. Each card retains post, time, Chinese prefect name, status, and workload, so mobile review never depends on horizontal table scrolling. This is a presentation-only adaptation: it does not change policy inputs, workflow writes, PDF layout, or fairness calculations.
 
 The same presentation boundary applies to the prefect directory: one localized display model drives the desktop table and phone identity cards. The leave-adjustment page remains a workflow client, but its responsive form groups the original assignment, eligible-substitute decision, and required reason into visible UI steps. A missing reason is rejected in the UI before the workflow call; the workflow remains the final validator for every write.
 
@@ -145,7 +166,7 @@ The browser check covers Dashboard, Roster, Prefects, Adjustments, Audit, langua
 
 For release evidence, run the smoke check and the full write-pipeline script independently. The latter is broader but intentionally remains separate so a normal visual smoke run does not write data.
 
-For a final release candidate, install `requirements-dev.txt` plus Playwright Chromium and run `python -X utf8 scripts/verify_release_candidate.py`. The first gate, `repository_hygiene`, checks the Git index and ignore behavior before any browser starts. It fails if secrets, runtime databases, backups, logs, generated PDF/ZIP files, operator imports, or operator music are tracked, and reports only categories/counts rather than filenames or content. A missing HEAD is reported honestly as `history: missing` but does not authorize Codex to create a commit. The orchestrator then creates two disposable environments rather than accepting school-data paths: one runs normal UI/write/strict-readiness evidence, and the other deliberately blocks backup creation to prove the committed-without-backup recovery contract. After each server stops, its captured console is checked for error/critical levels, Python tracebacks, and uncollected task exceptions; any marker fails the candidate, while the report receives only a non-sensitive summary rather than raw console content. It writes only non-sensitive check names, status, timing, and timestamps to `logs/release-candidate-report.json`; any failed command leaves the overall report failed and retains its isolated diagnostic directory.
+For a final release candidate, install `requirements-dev.lock` with `--require-hashes`, install Playwright Chromium, and run `python -X utf8 scripts/verify_release_candidate.py`. The first gate, `repository_hygiene`, checks the Git index, true commit history, and ignore behavior before any browser starts. It fails if HEAD is missing or if secrets, runtime databases, backups, logs, generated PDF/ZIP files, operator imports, or operator music are tracked, and reports only categories/counts rather than file content. `scripts/run_security_checks.py` separately gates dependency vulnerabilities, medium/high Python static findings, and secret candidates without printing candidate values. The orchestrator then creates two disposable environments rather than accepting school-data paths: one runs normal UI/write/strict-readiness evidence, and the other deliberately blocks backup creation to prove the committed-without-backup recovery contract. After each server stops, its captured console is checked for error/critical levels, Python tracebacks, and uncollected task exceptions; any marker fails the candidate, while the report receives only a non-sensitive summary rather than raw console content. It writes only non-sensitive check names, status, timing, and timestamps to `logs/release-candidate-report.json`; any failed command leaves the overall report failed and retains its isolated diagnostic directory.
 
 The verification dependency set includes Starlette's current `httpx2` TestClient backend, so a clean replacement-computer run does not normalize a deprecation warning as success. PDF evidence parses both downloaded schedule documents and checks their published state, five weekdays, authoritative Chinese names, landscape single-page geometry, and the four Room 202 closed cells. `docs/ACCEPTANCE_EVIDENCE.md` maps every formal checklist item to its direct automated proof and the remaining human decision; machine `pass` never sets human acceptance to complete.
 

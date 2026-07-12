@@ -1,0 +1,7 @@
+# Non-secret values copied from Cloudflare Zero Trust after the Access
+# application and named Tunnel have been created. Do not place a tunnel token,
+# API token, password, cookie, or credentials JSON in this file.
+
+PUBLIC_HOSTNAME=roster.example.org
+TEAM_DOMAIN=your-team.cloudflareaccess.com
+ACCESS_AUDIENCE=copy-the-access-application-aud-tag-here

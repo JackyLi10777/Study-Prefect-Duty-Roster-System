@@ -25,3 +25,7 @@ def test_dashboard_hero_selection_uses_special_pool() -> None:
     selected = select_daily_verse(date(1970, 1, 1), special_use="dashboard-hero")
     assert "dashboard-hero" in selected.special_use
 
+
+def test_daily_selection_can_filter_by_any_requested_theme() -> None:
+    selected = select_daily_verse(date(1970, 1, 1), themes_any=("prayer-peace", "perseverance"))
+    assert {"prayer-peace", "perseverance"}.intersection(selected.themes)

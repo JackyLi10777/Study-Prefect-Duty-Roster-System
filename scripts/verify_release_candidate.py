@@ -75,7 +75,7 @@ def isolated_environment(root: Path, port: int, *, blocked_backup: bool = False)
         "SING_YIN_PORT": str(port),
         "SING_YIN_TEST_URL": f"http://127.0.0.1:{port}",
         "SING_YIN_OPEN_BROWSER": "false",
-        "SING_YIN_STORAGE_SECRET": "release-verification-only-secret-0000000000000000",
+        "SING_YIN_STORAGE_SECRET": "release-verification-only-secret-0000000000000000",  # pragma: allowlist secret
     }
 
 
@@ -208,6 +208,12 @@ def main() -> int:
         _run_check(
             "repository_hygiene",
             [sys.executable, "-X", "utf8", "scripts/check_repository_hygiene.py"],
+            base_environment,
+            report,
+        )
+        _run_check(
+            "security_gates",
+            [sys.executable, "-X", "utf8", "scripts/run_security_checks.py"],
             base_environment,
             report,
         )

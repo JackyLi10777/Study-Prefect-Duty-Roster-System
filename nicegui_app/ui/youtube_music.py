@@ -20,12 +20,12 @@ def render_youtube_settings() -> None:
     settings = YouTubeSettings.from_environment()
     library = YouTubePlaylistLibrary()
     context_options = {context: t(f"music_context_{context}") for context in MUSIC_CONTEXTS}
-    with ui.card().classes("sy-surface sy-online-music-settings w-full max-w-3xl p-6").props("data-testid=online-music-settings"):
+    with ui.card().classes("sy-surface sy-settings-section sy-online-music-settings w-full max-w-3xl p-6").props("data-testid=online-music-settings"):
         with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
             with ui.column().classes("gap-1 max-w-2xl"):
                 ui.label(t("youtube_player_title")).classes("text-lg font-semibold")
                 ui.label(t("youtube_player_intro")).classes("text-sm leading-6 text-[var(--sy-muted)]")
-            ui.icon("smart_display").classes("text-2xl text-[var(--sy-teal)]").props("aria-hidden=true")
+            ui.icon("smart_display").classes("sy-settings-section-icon").props("aria-hidden=true")
         if not settings.enabled:
             ui.label(t("youtube_disabled")).classes("sy-online-music-status mt-4")
             return
@@ -63,6 +63,14 @@ def render_youtube_settings() -> None:
                             icon="delete_outline",
                             on_click=lambda playlist_id=playlist.id: _remove_playlist(library, playlist_id),
                         ).props(f'flat round color=negative aria-label="{t("remove_music_item")}"')
+        else:
+            with ui.element("aside").classes("sy-inline-empty w-full mt-5").props(
+                f'role=status aria-label="{t("youtube_library_empty_title")}"'
+            ):
+                ui.icon("playlist_add").classes("sy-inline-empty-icon").props("aria-hidden=true")
+                with ui.column().classes("gap-0 min-w-0"):
+                    ui.label(t("youtube_library_empty_title")).classes("sy-inline-empty-title")
+                    ui.label(t("youtube_library_empty_body")).classes("sy-inline-empty-copy")
 
 
 def render_youtube_panel(context: str, settings: YouTubeSettings) -> None:
@@ -102,7 +110,9 @@ def render_youtube_panel(context: str, settings: YouTubeSettings) -> None:
             select.on_value_change(choose)
             show(playlist_id=playlists[0].playlist_id)
         else:
-            ui.label(t("youtube_no_playlist")).classes("text-sm text-[var(--sy-muted)]")
+            with ui.element("aside").classes("sy-inline-empty w-full").props("role=status"):
+                ui.icon("queue_music").classes("sy-inline-empty-icon").props("aria-hidden=true")
+                ui.label(t("youtube_no_playlist")).classes("sy-inline-empty-copy")
 
         if settings.search_enabled:
             search_input = ui.input(label=t("youtube_search"), placeholder=t("youtube_search_example")).props(

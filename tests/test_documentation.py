@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from nicegui_app.ui.i18n import MESSAGES
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+from tests.ui_source import combined_i18n_source, combined_page_source
 
 
 def test_readme_explains_safe_start_and_links_to_operator_documents() -> None:
@@ -13,6 +17,8 @@ def test_readme_explains_safe_start_and_links_to_operator_documents() -> None:
     assert "docs/OPERATOR_GUIDE.md" in readme
     assert "docs/RELEASE_HANDOVER.md" in readme
     assert "docs/DEPLOYMENT_DECISION.md" in readme
+    assert "docs/WINDOWS_DEDICATED_HOST_SETUP.md" in readme
+    assert "docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md" in readme
     assert "START_PRACTICE_MODE.cmd" in readme
     assert "RESET_PRACTICE_MODE.cmd" in readme
     assert "nicegui-self-hosted" in readme
@@ -48,9 +54,28 @@ def test_github_handover_documents_current_runtime_and_public_archive_boundary()
     assert "fictional" in archive.lower() and "no roster" in archive.lower()
     assert "MIT License" in license_text
     assert "does not modify" in notice_text and "restrict the MIT License" in notice_text
-    assert "only by two" in notice_text
-    assert "只由李創杰與 Codex 兩位共創者" in notice_text
+    assert "I am **LI Chuangjie Jacky (李創杰)**" in notice_text
+    assert "only two co-creators" in notice_text
+    assert "我是 **李創杰**" in notice_text
+    assert "只由我與 Codex 兩位共創者" in notice_text
     assert "李創杰與 Codex 兩位共創者" in (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+
+
+def test_author_facing_documents_use_li_chuangjie_first_person_voice() -> None:
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    readme_en = (PROJECT_ROOT / "README-EN.md").read_text(encoding="utf-8")
+    operator_guide = (PROJECT_ROOT / "docs" / "OPERATOR_GUIDE.md").read_text(encoding="utf-8")
+    handover = (PROJECT_ROOT / "docs" / "RELEASE_HANDOVER.md").read_text(encoding="utf-8")
+    music_brief = (PROJECT_ROOT / "docs" / "MUSIC_PLAYLIST_CANDIDATES.md").read_text(encoding="utf-8")
+    design_system = (PROJECT_ROOT / "Professional_Design_System.md").read_text(encoding="utf-8")
+
+    assert "我是李創杰" in readme
+    assert "I am LI Chuangjie Jacky" in readme_en
+    assert "我把這份手冊留給下一任首席導學風紀" in operator_guide
+    assert "我是李創杰" in handover and "我把這份手冊與系統一起留給下一任" in handover
+    assert "這是我（李創杰）" in music_brief
+    assert "Author voice and handover narrative" in design_system
+    assert "`我與 Codex` / `Codex and I`" in design_system
 
 
 def test_double_click_launcher_handles_existing_and_conflicting_ports() -> None:
@@ -69,6 +94,56 @@ def test_double_click_launcher_handles_existing_and_conflicting_ports() -> None:
     assert 'applicationMode -eq $ExpectedApplicationMode' in launcher
     assert 'catch [System.Net.WebException]' in launcher
     assert '$readyResponse.StatusCode -lt 300' in launcher
+    assert r'.venv\Scripts\python.exe' in launcher
+
+
+def test_windows_dedicated_host_guide_is_complete_and_local_only() -> None:
+    guide = (PROJECT_ROOT / "docs" / "WINDOWS_DEDICATED_HOST_SETUP.md").read_text(encoding="utf-8")
+
+    for required_text in (
+        "Windows 11",
+        r"C:\SingYinRoster",
+        "py install 3.12",
+        "py -V:3.12 -m venv .venv",
+        "SING_YIN_DEPLOYMENT_MODE=local",
+        "SING_YIN_HOST=127.0.0.1",
+        "Sing Yin Roster Host",
+        "Invoke-RestMethod http://127.0.0.1:8080/healthz",
+        "git pull --ff-only origin main",
+        "建立交接備份包",
+    ):
+        assert required_text in guide
+
+    assert "不要自行把主機改成 `0.0.0.0`" in guide
+    assert "Cloudflare 遠端存取完整設定手冊" in guide
+
+
+def test_windows_and_cloudflare_automation_is_fail_closed_and_documented() -> None:
+    prepare = (PROJECT_ROOT / "scripts" / "prepare_windows_host.ps1").read_text(encoding="utf-8")
+    task = (PROJECT_ROOT / "scripts" / "register_windows_startup_task.ps1").read_text(encoding="utf-8")
+    activate = (PROJECT_ROOT / "scripts" / "activate_cloudflare_remote_access.ps1").read_text(encoding="utf-8")
+    verify = (PROJECT_ROOT / "scripts" / "verify_cloudflare_access.ps1").read_text(encoding="utf-8")
+    guide = (PROJECT_ROOT / "docs" / "CLOUDFLARE_REMOTE_ACCESS_SETUP.md").read_text(encoding="utf-8")
+
+    assert "Python 3.12" in prepare and "-m venv" in prepare and "check_deployment_readiness.py" in prepare
+    assert "Get-Command py.exe" in prepare and "Get-Command python.exe" in prepare
+    assert "-m playwright install chromium" in prepare
+    assert "New-ScheduledTaskAction" in task and "127.0.0.1:8080/healthz" in task
+    for required_text in (
+        'SING_YIN_HOST" "127.0.0.1',
+        "ACCESS READY",
+        "Read-Host",
+        "-AsSecureString",
+        "verify_cloudflare_access.ps1",
+        "Stop-Service cloudflared",
+        "before-remote",
+    ):
+        assert required_text in activate
+    assert "MaximumRedirection 0" in verify
+    assert "cloudflareaccess\\.com" in verify
+    assert "ProgramFiles(x86)" in activate
+    assert "不要在家中路由器開放 3389、8080" in guide
+    assert "未登入／獲准／未獲准" in guide
 
 
 def test_practice_mode_is_a_complete_handover_and_architecture_contract() -> None:
@@ -127,7 +202,8 @@ def test_deployment_guide_preserves_local_first_and_access_gates() -> None:
     assert "Quick Tunnel" in guide
     assert "應用內權限" in guide
     assert "127.0.0.1:8080" in guide
-    assert "未批准" in guide
+    assert "待帳戶設定及真人驗收後啟用" in guide
+    assert "CLOUDFLARE_REMOTE_ACCESS_SETUP.md" in guide
 
 
 def test_architecture_documents_the_isolated_full_write_pipeline() -> None:
@@ -151,7 +227,8 @@ def test_operator_guidance_documents_architecture_and_co_creation_boundaries() -
     guide = (PROJECT_ROOT / "docs" / "OPERATOR_GUIDE.md").read_text(encoding="utf-8")
     design_system = (PROJECT_ROOT / "Professional_Design_System.md").read_text(encoding="utf-8")
 
-    assert "系統架構與共創" in guide
+    assert "平台與團隊" in guide
+    assert "系統架構與可信設計" in guide
     assert "START_SING_YIN_ROSTER.cmd" in guide
     assert "sidebar-stewardship-light-v1.webp" in design_system
     assert "architecture-stewardship-dark-v1.webp" in design_system
@@ -160,6 +237,70 @@ def test_operator_guidance_documents_architecture_and_co_creation_boundaries() -
     assert "sing-yin-crest-navigation.png" in design_system
     assert "sing-yin-crest-display-print.png" in design_system
     assert "Partial success" in design_system
+
+
+def test_platform_showcase_exposes_enterprise_style_operating_model_without_fake_staff() -> None:
+    pages = combined_page_source()
+    messages = combined_i18n_source()
+    shared = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_shared.py").read_text(encoding="utf-8")
+
+    assert '@ui.page("/platform")' in pages
+    assert "def _render_co_creation" in shared
+    assert 'data-testid=platform-live-summary' in pages
+    for test_id in ("team-operating-model", "capability-map", "solutions-portfolio", "platform-principles"):
+        assert f"data-testid={test_id}" in pages
+    architecture_page = pages.split('@ui.page("/system-architecture")', 1)[1]
+    assert "data-testid=team-operating-model" not in architecture_page
+    assert "Study Prefect Team" in messages
+    assert "Service Governance Lead" in messages
+    assert "Duty Coordination Lead" in messages
+    assert "Room Service Steward" in messages
+    assert "capability groups" in messages
+    assert "not four additional departments or staff" in MESSAGES["capability_map_copy"]["en"]
+
+
+def test_engineering_showcase_turns_documented_quality_into_verifiable_ui_evidence() -> None:
+    pages = combined_page_source()
+    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+    messages = combined_i18n_source()
+
+    assert '@ui.page("/engineering")' in pages
+    assert '("/engineering", "engineering", "precision_manufacturing")' in shell
+    for test_id in (
+        "engineering-facts",
+        "engineering-blueprint",
+        "engineering-gates",
+        "engineering-pillars",
+        "engineering-evolution",
+    ):
+        assert f"data-testid={test_id}" in pages
+    engineering_page = pages.split('@ui.page("/engineering")', 1)[1].split('@ui.page("/system-architecture")', 1)[0]
+    assert "load_release_evidence()" in engineering_page
+    assert "get_workflow()" not in engineering_page
+    assert "208" in engineering_page and "08" in engineering_page
+    assert "student" not in engineering_page.lower()
+    assert "Nine gates" in messages
+    assert "engineering_gate_security" in messages
+
+
+def test_feedback_channel_is_consistent_bilingual_and_does_not_invite_data_attachments() -> None:
+    contact = (PROJECT_ROOT / "nicegui_app" / "contact.py").read_text(encoding="utf-8")
+    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+    pages = combined_page_source()
+    messages = combined_i18n_source()
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    readme_en = (PROJECT_ROOT / "README-EN.md").read_text(encoding="utf-8")
+
+    assert 'FEEDBACK_EMAIL = "s10777@syss.edu.hk"' in contact
+    assert 'GITHUB_REPOSITORY_URL = "https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System"' in contact
+    assert "mailto:" in contact and "urlencode" in contact
+    assert "data-testid=sidebar-feedback" in shell
+    assert "data-testid=feedback-channel" in pages
+    assert "feedback_channel_safe_note" in messages
+    assert "github_repository_action" in messages
+    assert "不要附上姓名" in messages
+    assert "do not attach names" in messages
+    assert "s10777@syss.edu.hk" in readme and "s10777@syss.edu.hk" in readme_en
 
 
 def test_partial_backup_recovery_is_documented_for_operator_and_maintainer() -> None:

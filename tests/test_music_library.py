@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from nicegui_app.config import MUSIC_DIR, PROJECT_ROOT
+from tests.ui_source import combined_page_source
 from nicegui_app.services.music_library import (
     BUILTIN_TRACKS,
     MUSIC_CONTEXTS,
@@ -80,7 +81,7 @@ def test_playlist_next_track_supports_sequential_loop_and_no_immediate_shuffle_r
 
 def test_music_ui_is_manual_and_absent_from_sensitive_workflows() -> None:
     music_ui = (PROJECT_ROOT / "nicegui_app" / "ui" / "music.py").read_text(encoding="utf-8")
-    pages = (PROJECT_ROOT / "nicegui_app" / "ui" / "pages.py").read_text(encoding="utf-8")
+    pages = combined_page_source()
     main = (PROJECT_ROOT / "nicegui_app" / "main.py").read_text(encoding="utf-8")
 
     assert "autoplay=False" in music_ui

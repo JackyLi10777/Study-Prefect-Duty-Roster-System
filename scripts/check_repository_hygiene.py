@@ -135,7 +135,12 @@ def audit_repository(root: Path = PROJECT_ROOT) -> RepositoryHygieneReport:
     history = "present" if _git(root, ("rev-parse", "--verify", "HEAD")).returncode == 0 else "missing"
     status = (
         "pass"
-        if tracked_sensitive_count == 0 and not missing_ignore_categories and env_example_trackable
+        if (
+            history == "present"
+            and tracked_sensitive_count == 0
+            and not missing_ignore_categories
+            and env_example_trackable
+        )
         else "fail"
     )
     return RepositoryHygieneReport(

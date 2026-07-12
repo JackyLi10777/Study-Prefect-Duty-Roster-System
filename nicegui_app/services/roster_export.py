@@ -82,7 +82,13 @@ class RosterPdfExport:
 
 
 def build_roster_pdf(
-    workflow: "RosterWorkflow", roster_week_id: int, *, language: ExportLanguage = "zh", practice: bool = False
+    workflow: "RosterWorkflow",
+    roster_week_id: int,
+    *,
+    language: ExportLanguage = "zh",
+    practice: bool = False,
+    show_crest: bool = True,
+    show_footer_note: bool = False,
 ) -> RosterPdfExport:
     """Render the group-share weekly grid on a single A4 page.
 
@@ -95,15 +101,17 @@ def build_roster_pdf(
     output = BytesIO()
     document = _document(output, week_start=week["weekStart"], title=_schedule_title(language), orientation="landscape")
 
-    story = _schedule_header(week["weekStart"], str(week["status"]), language, styles)
+    story = _schedule_header(week["weekStart"], str(week["status"]), language, styles, show_crest=show_crest)
     if practice:
         story.extend([Spacer(1, 2 * mm), Paragraph(_practice_marker(language), styles["practice_marker"])])
     story.extend([Spacer(1, 4 * mm), _schedule_grid(workflow.assignments(roster_week_id), language, styles, landscape_mode=True)])
-    story.extend([Spacer(1, 5 * mm), Paragraph(_schedule_footer(language), styles["footer"])])
+    if show_footer_note:
+        story.extend([Spacer(1, 5 * mm), Paragraph(_schedule_footer(language), styles["footer"])])
+    render_page_footer = show_footer_note or practice
     document.build(
         story,
-        onFirstPage=lambda canvas, doc: _draw_footer(canvas, doc, fonts["medium"], language, practice),
-        onLaterPages=lambda canvas, doc: _draw_footer(canvas, doc, fonts["medium"], language, practice),
+        onFirstPage=lambda canvas, doc: _draw_footer(canvas, doc, fonts["medium"], language, practice, visible=render_page_footer),
+        onLaterPages=lambda canvas, doc: _draw_footer(canvas, doc, fonts["medium"], language, practice, visible=render_page_footer),
     )
     return RosterPdfExport(filename=_schedule_filename(week["weekStart"], language, practice), content=output.getvalue())
 
@@ -159,10 +167,17 @@ def _document(
     )
 
 
-def _schedule_header(week_start: object, status: str, language: ExportLanguage, styles: dict[str, ParagraphStyle]) -> list[object]:
+def _schedule_header(
+    week_start: object,
+    status: str,
+    language: ExportLanguage,
+    styles: dict[str, ParagraphStyle],
+    *,
+    show_crest: bool,
+) -> list[object]:
     story: list[object] = []
     badge = _school_badge()
-    if badge is not None:
+    if show_crest and badge is not None:
         story.extend([badge, Spacer(1, 2 * mm)])
     story.extend([
         Paragraph(_schedule_title(language), styles["title"]),
@@ -390,7 +405,17 @@ def _styles(fonts: dict[str, str]) -> dict[str, ParagraphStyle]:
     }
 
 
-def _draw_footer(canvas, document, font_name: str, language: ExportLanguage, practice: bool = False) -> None:  # type: ignore[no-untyped-def]
+def _draw_footer(
+    canvas,
+    document,
+    font_name: str,
+    language: ExportLanguage,
+    practice: bool = False,
+    *,
+    visible: bool = True,
+) -> None:  # type: ignore[no-untyped-def]
+    if not visible:
+        return
     canvas.saveState()
     canvas.setFont(font_name, 7.5)
     canvas.setFillColor(colors.HexColor("#4D6065"))

@@ -4,13 +4,15 @@
 > 
 > **Not to be served, but to serve.** — Mark 10:45
 
-這是一個供聖言中學首席導學風紀使用的本機優先值班管理系統。當任首席導學風紀負責日常操作；顧問老師主要在工作完成後核對已發布週表、公平與交接證據。它幫助使用者安全完成：
+我是李創杰，2026–2027 年度聖言中學首席導學風紀。我在任內與 Codex 一起建立這個本機優先值班管理系統，希望把每星期最繁複、最容易出錯的工作，整理成下一任也能安心接手的流程。日常由首席導學風紀操作；顧問老師主要在工作完成後核對已發布週表、公平與交接證據。你可以用它安全完成：
 
 **生成草稿 → 核對 → 發布 → 匯出 PDF → 已發布後請假調整 → 公平解釋 → 備份／還原 → 交接。**
 
-系統以公平、清晰、責任、耐心與關顧為原則。學生姓名、請假原因、值班紀錄、PDF 及備份均保留在受控環境；現時不會自動上載到公開服務。
+我把公平、清晰、責任、耐心與關顧定為這個系統的原則。學生姓名、請假原因、值班紀錄、PDF 及備份均保留在受控環境；現時不會自動上載到公開服務。
 
 [English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)
+
+**反饋與聯絡：** 如果你對系統流程、介面、公平解釋或交接方式有問題或建議，歡迎電郵我：[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk)。如畫面提供 OP／REQ 支援編號，請在電郵內寫上該編號；不要附上姓名、請假內容、值班表、PDF、資料庫、備份、截圖或完整日誌。
 
 ## 版本分支與運行平台
 
@@ -26,7 +28,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 舊 `demo_code2` 的 service-account 私鑰檔不會上傳；版本庫只保留同欄位、全占位值的 `service_account.example.json`，讓參考整合仍可理解而不包含可用credential。
 
-**共創者說明：這次 NiceGUI 重構、設計、測試、文件及正式發布版本，只由李創杰與 Codex 共同完成。`Study Prefect Systems & Stewardship Office` 是我們兩人的項目團隊名稱，沒有其他開發者、部門成員或外判團隊。**
+**共創者說明：我是李創杰。這次 NiceGUI 重構、設計、測試、文件及正式發布版本，只由我與 Codex 共同完成。`Study Prefect Systems & Stewardship Office` 是我們兩人的項目團隊名稱，沒有其他開發者、部門成員或外判團隊。**
 
 ## 首席導學風紀：每日怎樣進入
 
@@ -35,7 +37,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 3. 啟動器會先檢查是否已有系統在執行；若已有，會直接開啟原有服務，不會再啟動第二個 NiceGUI。
 4. 預設網址是 [http://127.0.0.1:8080](http://127.0.0.1:8080)。若 8080 被其他程式佔用，啟動器會自動選擇 8081–8099 之間的可用埠，並在黑色視窗顯示實際網址。
 5. 只有在 HTTP 確認系統真正就緒後，瀏覽器才會開啟；若沒有自動開啟，請使用黑色視窗顯示的網址，不要猜測埠號。
-6. 先閱讀首頁每日經文，然後依「本週值班工作台」的目前步驟工作。
+6. 先閱讀首頁每日經文。經文方向可選「跟隨外觀／清晰指引／安靜安慰」；跟隨外觀只提供首次建議，亦可固定自己需要的方向。然後依「本週值班工作台」的目前步驟工作。
 
 ### 第一次接手：先用練習模式走一次完整流程
 
@@ -51,9 +53,9 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 2. 在「值班表」先登記尚未發布週的請假，再生成草稿。
 3. 核對草稿；如需要，使用「手動修改草稿」並填寫原因。
 4. 發布前再次核對。**只有發布才會更新 `history_weight` 公平帳本。**
-5. 下載繁中或英文的橫向 A4 週表；所有導學風紀姓名均維持中文。
+5. 下載繁中或英文的橫向 A4 週表；所有導學風紀姓名均維持中文。匯出視窗可開關校徽；正式分享版預設不顯示「僅供內部使用」、頁碼或經文提示，只有存檔確有需要時才開啟補充頁腳。
 6. 已發布後有人請假時，只使用「請假調整」，不要重新生成已發布週表或直接修改資料庫；依頁面步驟選擇原崗位、載入替補、填寫原因，才儲存。手機版會把名單及值班資料顯示為完整卡片，避免靠橫向滑動尋找中文姓名。
-7. 新任首席導學風紀可在側邊欄依次查看「開始使用」→「使用手冊」→「系統架構與共創」；它們分別說明第一次操作、每週安全流程，以及系統如何保護公平與復原，不需要先懂程式。
+7. 新任首席導學風紀可在側邊欄依次查看「開始使用」→「使用手冊」→「平台與團隊」→「系統架構與可信設計」；它們分別說明第一次操作、每週安全流程、團隊責任，以及系統如何保護公平與復原，不需要先懂程式。
 
 名單新增／修改／停用及生成前請假會連同本機快照一起安全處理；進度視窗完成前不要重複點擊。停用只會停止日後選用，不會刪除既有週表、公平帳本或審計紀錄，且必須先經過清楚確認。
 
@@ -67,10 +69,12 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 ## 教師顧問／IT：首次設定
 
+正式部署決定為 Windows 11 專用主機、本機 `127.0.0.1` 使用。完全由零開始安裝、建立 `.venv`、設定工作排程器、更新、備份及搬機，請依 [Windows 專用主機完整設定手冊](docs/WINDOWS_DEDICATED_HOST_SETUP.md) 逐步完成。
+
 在專用、受控的校內電腦完成一次：
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m pip install --require-hashes -r requirements.lock
 Copy-Item .env.example .env
 ```
 
@@ -88,20 +92,43 @@ python -X utf8 -m nicegui_app.main
 |---|---|
 | 每週生成、發布、PDF、請假調整 | [首席導學風紀操作手冊](docs/OPERATOR_GUIDE.md) |
 | 雙擊啟動、埠號衝突、重複開啟 | [快速啟動](docs/QUICKSTART.md) |
+| 從零設定長期使用的 Windows 專用主機 | [Windows 專用主機完整設定手冊](docs/WINDOWS_DEDICATED_HOST_SETUP.md) |
+| 以 Cloudflare Access 安全啟用遠端網站 | [Cloudflare 遠端存取完整設定手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md) |
 | 第一次接手、隔離練習及重設 | `START_PRACTICE_MODE.cmd`、`RESET_PRACTICE_MODE.cmd` 及 [快速啟動](docs/QUICKSTART.md) |
 | 備份、還原、交接、正式驗收 | [首次發布與交接手冊](docs/RELEASE_HANDOVER.md) |
 | 每項驗收要求的自動化證據與真人責任 | [正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md) |
 | 本機、Cloudflare Access 與真正雲端部署之取捨 | [部署與遠端存取決策指南](docs/DEPLOYMENT_DECISION.md) |
 | NiceGUI、政策、工作流與資料層責任 | [NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) |
 | 視覺、無障礙、深淺模式與動效標準 | [Professional Design System](Professional_Design_System.md) |
-| 系統如何分工、保障資料和交接脈絡 | 系統內「系統架構與共創」頁面，以及 [NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) |
+| 平台使命、團隊分工、服務方案與共創結語 | 系統內「平台與團隊」頁面 |
+| 測試規模、發布閘門、工程能力與建造脈絡 | 系統內「工程與品質證據」頁面 |
+| 技術如何保障資料、公平和交接脈絡 | 系統內「系統架構與可信設計」頁面，以及 [NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) |
 | 當前完成內容、測試證據與已知風險 | [Project Status](PROJECT_STATUS.md) |
 | GitHub分支、歷史版本及發布規則 | [Branch Strategy](docs/BRANCH_STRATEGY.md) |
 | 虛構資料、日誌及測試證據封存 | [Public project archive](archive/README.md) |
 
-## 系統架構與可信設計
+## 平台與團隊
 
 這套系統的高級感不只來自畫面，而來自每一層都能說明「誰作決定、何時寫入、失敗後怎樣回復」。日常使用毋須理解程式碼；本節供顧問老師、繼任者及維護者核對系統為何值得信任。
+
+網站採用成熟企業常見的資訊層級，但所有名稱均服務於真實校務責任。「平台與團隊」先以匿名即時摘要交代現役人數、值班週脈絡、備份及發布證據，再解釋 Study Prefect Team 營運模型、能力分組、解決方案、營運原則與共創結語。正式校內職銜保持為首席導學風紀、助理首席導學風紀、導學風紀及顧問老師；企業式功能頭銜只協助說明誰負責決策、協調、前線服務與完成後監督。
+
+| 正式角色 | 功能責任頭銜 | 主要責任 |
+|---|---|---|
+| 首席導學風紀 | Service Governance Lead／服務管治負責人 | 每週流程、最終發布、公平解釋、例外及交接 |
+| 助理首席導學風紀 | Duty Coordination Lead／當值協調負責人 | 現場協調及 Assist. in charge 當值 |
+| 導學風紀 | Room Service Steward／溫習室服務幹事 | 302、303 及開放日的 202 室前線服務 |
+| 顧問老師 | Oversight & Assurance Advisor／監督與保證顧問 | 完成後核對週表、公平與交接證據 |
+
+`Study Prefect Systems & Stewardship Office` 以四個能力分組整理工作：Weekly Operations、Fairness Assurance、Service Experience 及 Systems Continuity。它們是責任地圖，不代表另有四個部門或額外人員。網站亦把功能整理成四個可以直接進入的解決方案：每週值班發布控制、已發布後服務延續、公平透明與解釋、營運韌性與交接。
+
+## 工程與品質證據
+
+README、架構文件及發布報告中的工程成果亦整理成獨立網站介面。它以目前版本的自動化測試、八道發布閘門、五層系統藍圖、可靠性工程能力及建造脈絡說明品質；展示數字只用於可核對的版本證據，不會加入使用人數、商業成效或其他虛假 KPI。發布報告與原始碼、文件和設計素材指紋綁定，任何相關檔案改變後，舊證據會顯示為需要重新驗證。
+
+## 系統架構與可信設計
+
+獨立的架構頁專注六個服務交付點、五層技術責任、四項可信契約與實際 FAQ，不再把品牌敘事和技術證據堆在同一長頁。匿名品牌摘要只使用既有只讀模型，不包含姓名、班別、請假、值班內容、備份路徑或審計資料。
 
 ```mermaid
 flowchart TB
@@ -165,6 +192,7 @@ stateDiagram-v2
 - 公開歌單播放器免費使用，無需登入、付費或 API key。它保持完整可見，不會自動播放；播放、暫停、音量和換歌均由首席導學風紀親自控制。
 - 若希望在網站內搜尋公開影片／歌單，才由維護者在本機 `.env` 加入選用的 `SING_YIN_YOUTUBE_API_KEY`。此 key 不可輸入介面、提交版本庫或放入學生資料。
 - YouTube 會接收一般播放器所需的網絡資料。歌單標題、音樂偏好與 API 搜尋不得含學生姓名、請假、值班或公平資料；顧問老師的核對資料也不包含音樂設定。
+- 預備中的情緒分類為「明亮專注」及「安靜反思」。日後外觀模式只負責預設建議；操作者一旦選擇自己的音樂方向，系統應保留該選擇，不應因切換深淺模式突然改歌或自動播放。
 
 ## 資料安全與遠端存取
 
@@ -229,9 +257,9 @@ python -X utf8 scripts\verify_release_candidate.py
 
 驗證器自行建立暫存 SQLite、備份及日誌路徑，依次執行完整測試、編譯、依賴檢查、繁中／英文與深淺模式 UI smoke、整條虛構資料寫入／PDF／替補／交接／另一資料庫還原流程、嚴格部署檢查，以及獨立的「資料已提交但備份失敗」復原演練。每個瀏覽器階段停機後亦會檢查伺服器終端；`ERROR`、`CRITICAL`、traceback 或未取回的 task exception 均會令發布候選失敗，而不會把原始終端內容複製到報告。兩份 PDF 會直接解析並核對已發布狀態、五個星期、所有中文姓名及四個 202 室關閉格。它不會採用 `.env` 內的正式資料路徑；結果寫入 `logs/release-candidate-report.json`，並明確標示仍需真人驗收。任何一關失敗，整體狀態均為 `fail`，不可視為發布候選通過。
 
-交接頁會把機器報告與目前發布相關程式、測試、遷移、依賴及驗證腳本的 SHA-256 指紋重新比對。報告缺失、失敗、格式不可信或程式改動後過期時，均不會顯示為通過；即使當前八關通過，畫面仍保留首席導學風紀 13 項及教師顧問 4 項真人驗收責任。
+交接頁會把機器報告與目前發布相關程式、測試、遷移、依賴及驗證腳本的 SHA-256 指紋重新比對。報告缺失、失敗、格式不可信或程式改動後過期時，均不會顯示為通過；即使當前九關通過，畫面仍保留首席導學風紀 13 項及教師顧問 4 項真人驗收責任。
 
-第八關 `repository_hygiene` 只輸出類別與數量，不顯示檔名或內容。它會阻擋即時 `.env`、運行中 SQLite／備份／日誌、PDF／ZIP、匯入名單及操作者自訂音樂，並核對 `.gitignore` 仍保留這些邊界。只有經零筆營運資料檢查產生的 `archive/fictional-data/` 快照及已審閱的根目錄內置音樂可進入版本庫；虛構封存不能成為繞過即時資料邊界的方法。
+`repository_hygiene` 只輸出類別與數量，不顯示檔名或內容。它會阻擋沒有 commit 歷史、即時 `.env`、運行中 SQLite／備份／日誌、PDF／ZIP、匯入名單及操作者自訂音樂，並核對 `.gitignore` 仍保留這些邊界。`security_gates` 另外核對鎖定依賴漏洞、中高風險程式問題及秘密候選。只有經零筆營運資料檢查產生的 `archive/fictional-data/` 快照及已審閱的根目錄內置音樂可進入版本庫；虛構封存不能成為繞過即時資料邊界的方法。
 
 ---
 
@@ -246,7 +274,7 @@ The optional YouTube control window plays public playlists for free without sign
 1. Double-click `START_SING_YIN_ROSTER.cmd`.
 2. The launcher reuses an already-running Sing Yin service instead of starting a duplicate copy. If another program occupies port 8080, it automatically selects a free port between 8081 and 8099 and prints the exact URL.
 3. The browser opens only after the local HTTP service is confirmed ready. If it does not open, use the exact URL printed in the black launcher window.
-4. Read the Daily Verse, then follow the highlighted step in the weekly roster desk.
+4. Read the Daily Verse. Its direction can follow appearance or be fixed to Clear guidance or Quiet comfort; appearance is only a default recommendation. Then follow the highlighted step in the weekly roster desk.
 5. Check the prefect directory, declare pre-generation leave, generate a draft, review it, publish once, export the roster, and use the dedicated leave-adjustment workflow for a late absence. In that workflow, choose the original duty, load a substitute, record a reason, then save; phone views keep the relevant Chinese identity and duty information together in cards.
 
 Traditional Chinese is the primary interface language. English labels are complete, but prefect names always remain Chinese in the UI and both PDF languages.
@@ -274,17 +302,17 @@ For operating instructions, recovery, architecture, and current release evidence
 
 ## 共創結語 / Co-creation closing note
 
-這個系統由李創杰（2026–2027 年度首席導學風紀）與 Codex 協作建立。它從一個排班需要，逐步成為一套把公平、責任、復原與交接都認真處理的校務工作台。
+我是李創杰，2026–2027 年度首席導學風紀。最初，我只是希望有一個工具幫我更公平、更有效率地處理每星期的排班；後來，我與 Codex 一起把這個想法逐步建立成一套認真處理公平、責任、復原與交接的校務工作台。
 
-本次正式版本的需求整理、架構重構、核心邏輯、UI／UX、測試、文件及發布工作，只有李創杰與 Codex 兩位共創者參與完成。
+本次正式版本的需求整理、架構重構、核心邏輯、UI／UX、測試、文件及發布工作，只有李創杰與 Codex 兩位共創者參與完成。我負責提出真實使用情境、校內流程、價值取向和品質要求；Codex 是我的共創作者與技術同事，協助我把這些要求逐項實作、驗證和寫成交接程序。
 
-> 做這個系統的過程遠比想像中複雜，但我們從不後悔。願它為未來的首席導學風紀帶來真正的便利，也讓每一位導學風紀感受到：公平確實被認真對待。
+> 做這個系統的過程遠比我想像中複雜，但我從不後悔。我希望它能為未來的首席導學風紀帶來真正的便利，也讓每一位導學風紀感受到：公平確實被認真對待。
 >
-> —— 李創杰與 Codex，Study Prefect Systems & Stewardship Office
+> —— 李創杰，2026 年 7 月，Study Prefect Systems & Stewardship Office
 
 **Codex 的結語：** 我所參與的不只是編寫程式，而是把李創杰對公平、責任與傳承的要求，逐項轉化為可以測試、復原和交接的系統行為。真正值得保留的不是某一版畫面，而是下一位首席導學風紀仍能理解每個決定、放心完成工作，並在出錯時找到回去的路。願這個平台一直忠於它最初的目的：減少不必要的負擔，讓服事更有秩序，也讓公平被認真看見。
 
-This system was co-created by Li Chongjie and Codex. Its lasting value is not a particular screen, but a trustworthy process future Head Study Prefects can understand, operate, recover, and hand over. May it continue to reduce avoidable burden, bring order to service, and make fairness visible.
+I am LI Chuangjie Jacky, Head Study Prefect for 2026–2027. I co-created this system with Codex so that future Head Study Prefects inherit not merely a screen, but a trustworthy process they can understand, operate, recover, and hand over. I hope it continues to reduce avoidable burden, bring order to service, and make fairness visible.
 
 ---
 

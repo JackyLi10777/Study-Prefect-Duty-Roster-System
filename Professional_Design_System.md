@@ -19,6 +19,35 @@ The visual direction is inspired by the discipline behind contemporary iOS and A
 
 The signature interaction is **值週節奏 / Weekly Pulse**: the interface makes the current stage, the safe next action, and the durable result visible. It is not an animation for decoration; it is a consistent operational landmark across the dashboard, roster workspace, publication, adjustment, and handover.
 
+### Author voice and handover narrative
+
+The system has one human authorial voice: **李創杰，2026–2027 年度首席導學風紀**. Author introductions, motivation, design values, handover letters, project history, and co-creation conclusions must be written in his first person (`我` / `I`). They must not describe him at a distance as though an unrelated corporate narrator owns the project.
+
+Codex is named as 李創杰's co-creator and technical colleague. A separately labelled “Codex 的結語” may use Codex's own first person, but it must not replace, merge with, or impersonate 李創杰's voice. Statements about the two-person team use `我與 Codex` / `Codex and I` when spoken by 李創杰.
+
+Operational instructions, safety rules, current machine evidence, architecture contracts, and acceptance checklists remain direct, objective, or imperative. First-person authorship must make the handover more human without turning verifiable technical state into personal opinion. Traditional Chinese uses natural Hong Kong written language; the complete English version preserves the same speaker and meaning rather than reverting to third person.
+
+### Feedback channel
+
+The public project feedback address is `s10777@syss.edu.hk`, and the canonical source/documentation destination is `https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System`. They appear together as a restrained persistent sidebar resource group and as a fully explained panel in the Operator Guide and architecture/co-creation page. Both actions must be available in both languages and keyboard reachable; main-content actions remain at least 44px high. GitHub opens in a new tab with `noopener noreferrer`, while email uses the local mail client.
+
+Feedback is distinct from technical evidence. Ordinary suggestions may use email directly; a failure should first preserve its OP/REQ reference. Copy asks for the reference and a short description only, never names, leave details, rosters, PDFs, databases, backups, screenshots, or complete logs.
+
+### 2026.07 adaptive direction — Quiet Precision / 安靜精準
+
+The next design level is not “more Apple-like” or “more decorated”. It is a synthesis of the most durable ideas in Apple HIG, Material Design 3, Nordic editorial interfaces, Japanese restraint, and mature independent productivity software:
+
+1. **Recognition before style:** the operator must recognise the current stage, primary action, and consequence before noticing the visual treatment.
+2. **One geometry grammar:** navigation, controls, cards, sheets, and status markers share a small radius, spacing, icon, and border vocabulary. Similar meaning produces similar shape.
+3. **Quiet action colour:** primary actions use a desaturated slate-blue that remains distinct from teal identity and verified states. Bright electric blue is removed because it dominates warm materials and creates a plastic visual break.
+4. **Solid material hierarchy:** background, quiet group, working surface, and raised decision layer are separated by contrast, border, and restrained shadow. Blur and transparency are unnecessary.
+5. **Motion has three speeds:** 90 ms press acknowledgement, 180 ms state change, and 260 ms layer/entry transition. Exit is faster than entry; motion uses transform/opacity and remains interruptible.
+6. **Controls form a dock:** page utilities are visually grouped as one compact, solid tool cluster. The current navigation item uses text weight plus a slim position rail, not colour alone.
+7. **Density follows consequence:** routine scanning stays compact; publication, restore, archive, and fairness consequences receive more space and plain-language explanation.
+8. **Calm is not emptiness:** blank space is retained where it separates decisions. Contextual imagery may enrich approved non-sensitive scenes, but it never fills space that should communicate order.
+
+This direction deliberately moves beyond brand imitation. It treats HIG and Material guidance as behavioural evidence, then expresses it through an original Sing Yin operational language.
+
 ### Current design mandate
 
 This is the complete standing direction for future iterations. It replaces any tendency to make a generic dashboard, a literal Apple imitation, a HyperOS imitation, or a decoration-heavy template.
@@ -37,7 +66,7 @@ This is the complete standing direction for future iterations. It replaces any t
 
 | Context | Design language | Must feel like | Must not become |
 |---|---|---|---|
-| Weekly roster work | Quiet operations desk: neutral surfaces, blue action, teal verified state, compact factual type | Calm, dependable, easy to scan | A KPI dashboard, a dense admin console, or a decorative template |
+| Weekly roster work | Quiet operations desk: neutral surfaces, slate action, teal verified state, compact factual type | Calm, dependable, easy to scan | A KPI dashboard, a dense admin console, or a decorative template |
 | Daily Verse | Sacred reading chamber: deep indigo, warm parchment/gold, serif reading type, measured space, low movement | A moment of reflection before service | A generic hero banner, a sermon slide, or a dark-themed work card |
 | Onboarding and handover | Gentle study archive: warm paper material, clear numbered action, reassuring recovery copy | A successor being calmly guided | A marketing landing page or tutorial carousel |
 | Error, risk, and recovery | Plain spoken safety sheet: high contrast, direct action, visible consequence | Clear and accountable | An alarmist or vague system message |
@@ -52,6 +81,8 @@ Original raster atmosphere artwork may be used only as a low-opacity contextual 
 - `nicegui_app/assets/atmosphere/devotional-sacred-dark-v1.webp` — Daily Verse dark-mode evening-window context.
 - `nicegui_app/assets/atmosphere/handover-archive-light-v1.webp` — Handover light-mode quiet archive context.
 - `nicegui_app/assets/atmosphere/handover-archive-dark-v1.webp` — Handover dark-mode evening archive context.
+- `nicegui_app/assets/atmosphere/platform-stewardship-light-v1.webp` — Platform & Team light-mode coordinated stewardship studio.
+- `nicegui_app/assets/atmosphere/platform-stewardship-dark-v1.webp` — Same-composition evening companion for the Platform & Team hero.
 - `nicegui_app/assets/atmosphere/onboarding-desk-light-v1.webp` — First-use light-mode prepared study desk context.
 - `nicegui_app/assets/atmosphere/onboarding-desk-dark-v1.webp` — First-use dark-mode prepared study desk context.
 - `nicegui_app/assets/atmosphere/sidebar-stewardship-light-v1.webp` — Light-mode, low-opacity local navigation material; the solid reading veil remains the contrast owner.
@@ -63,13 +94,13 @@ Original raster atmosphere artwork may be used only as a low-opacity contextual 
 
 They contain no people, student data, text, logo, or school crest. They must never replace a button icon, appear inside a roster table/PDF, or sit behind a form field. A solid or gradient readability layer, paired light/dark assets, matching pair dimensions, one shared crop/mask rule, and separately tuned theme opacity/readability veils are mandatory. An enabled contextual background may not use a single shared raster in both themes.
 
-Enabled background art now follows a stricter pair contract. `ATMOSPHERE_THEME_PAIRS` in `nicegui_app/ui/theme.py` is the registry: sidebar, Weekly Pulse, Daily Verse, onboarding, handover, architecture hero, and architecture lifeline each own exactly one semantic image slot and exactly two performance-sized files named `*-light-v1.webp` and `*-dark-v1.webp`. The component selector refers only to `--sy-image-<slot>`; `:root` supplies its light image and `.body--dark` supplies the corresponding dark image. This guarantees the same DOM position, crop rule, mask, and purpose in both themes. A dark image must be a theme companion, not an unrelated scene placed elsewhere.
+Enabled background art now follows a stricter pair contract. `ATMOSPHERE_THEME_PAIRS` in `nicegui_app/ui/theme.py` is the registry: sidebar, Weekly Pulse, Daily Verse, onboarding, handover, Platform & Team, architecture hero, architecture lifeline, and the shared empty-ready state each own exactly one semantic image slot and exactly two performance-sized files named `*-light-v1.webp` and `*-dark-v1.webp`. The component selector refers only to `--sy-image-<slot>`; `:root` supplies its light image and `.body--dark` supplies the corresponding dark image. This guarantees the same DOM position, crop rule, mask, and purpose in both themes. A dark image must be a theme companion, not an unrelated scene placed elsewhere.
 
-Active atmosphere artwork is delivered as WebP and each file must remain below 250 KB unless a browser trace proves a justified exception. The current 14-file paired set totals about 1.13 MB. Browser identity marks also use purpose-sized derivatives: a 512×512 favicon and 640-pixel web crest prevent print masters from being decoded for small-screen presentation.
+Active atmosphere artwork is delivered as WebP and each file must remain below 250 KB unless a browser trace proves a justified exception. The current 18-file paired set totals about 1.29 MB. Browser identity marks also use purpose-sized derivatives: a 512×512 favicon and 640-pixel web crest prevent print masters from being decoded for small-screen presentation.
 
 Legacy one-off atmosphere files are not retained as active or fallback backgrounds. If a new contextual background is approved, both theme files, the registry entry, the CSS variable, asset-existence test, and light/dark browser assertion must arrive in the same change.
 
-The sidebar and architecture page are the only additional approved placement contexts in this phase. Their images sit behind a solid readability veil and never carry required information. They are **not** a reason to fill every blank area: useful breathing room remains part of a calm operating desk. Generated imagery is prohibited behind data tables, forms, warnings, names, fairness records, interactive controls, and PDFs（不可放在資料表、表單、警告或 PDF 後方）.
+The sidebar, Platform & Team hero, and architecture page are the only additional approved placement contexts in this phase. Their images sit behind a solid readability veil and never carry required information. They are **not** a reason to fill every blank area: useful breathing room remains part of a calm operating desk. Generated imagery is prohibited behind data tables, forms, warnings, names, fairness records, interactive controls, and PDFs（不可放在資料表、表單、警告或 PDF 後方）.
 
 All future generated assets must be reviewed against this checklist before use: appropriate context; no implied real student; no readable text; no trademark or logo; local project copy exists; dark-mode opacity is specified; small-screen crop is safe; no required information depends on the image.
 
@@ -90,7 +121,7 @@ The original alpha transparency is preserved; no JPEG conversion or automated ba
 
 ### Current state
 
-The active NiceGUI application already has correct policy safeguards, bilingual support, light/dark mode, verified backups, print-ready PDFs, contextual hints, and a three-stage weekly workflow. The existing theme has a sound foundation—neutral surfaces, teal identity, blue primary actions, rounded controls, and good contrast—but its presentation can still feel like a collection of useful cards rather than one composed product.
+The active NiceGUI application already has correct policy safeguards, bilingual support, light/dark mode, verified backups, print-ready PDFs, contextual hints, and a three-stage weekly workflow. The existing theme has a sound foundation—neutral surfaces, teal identity, restrained slate primary actions, rounded controls, and good contrast—but its presentation must continue converging on one composed product rather than a collection of useful cards.
 
 ### Head Study Prefect moment
 
@@ -102,7 +133,7 @@ This is an **L2 workflow and visual-system improvement**. It should improve conf
 
 ### Strategy and evidence
 
-The owner is `nicegui_app/ui/theme.py` for tokens and component language, `nicegui_app/ui/pages.py` for page hierarchy, and `nicegui_app/ui/i18n.py` for bilingual copy. Every implementation phase must preserve policy boundaries, keyboard access, light/dark contrast, and the existing browser smoke coverage. Screenshots in both modes and at mobile width are required before a phase is accepted.
+The owner is `nicegui_app/ui/theme.py` plus `theme_markup.py` for tokens and component language, `nicegui_app/ui/page_routes/` plus `page_shared.py` for page hierarchy, and `nicegui_app/ui/i18n_catalog/` behind the stable `i18n.py` facade for bilingual copy. Every implementation phase must preserve policy boundaries, keyboard access, light/dark contrast, and the existing browser smoke coverage. Screenshots in both modes and at mobile width are required before a phase is accepted.
 
 ---
 
@@ -144,7 +175,7 @@ The owner is `nicegui_app/ui/theme.py` for tokens and component language, `niceg
 ### Deliberately changed from that reference
 
 - The direction is no longer HyperOS. It is a more structured, Apple-inspired original system language.
-- Primary action colour is system blue; teal is deliberately restrained.
+- Primary action colour is a muted slate-blue; teal is deliberately restrained.
 - No blanket card nesting, generic KPI tiles, or decorative depth.
 
 ---
@@ -155,15 +186,18 @@ The owner is `nicegui_app/ui/theme.py` for tokens and component language, `niceg
 
 | Token | Light | Dark | Purpose |
 |---|---:|---:|---|
-| `brand-teal` | `#0F766E` | `#2DD4BF` | School identity, verified/settled states, devotional accents |
-| `action-blue` | `#0A84FF` | `#64D2FF` | Primary action, focus, selected current step |
+| `stable-teal` | `#0F766E` | `#72D6C7` | School identity and verified, published, completed, or settled states only |
+| `action-slate` | `#35647C` | `#9BC2D2` | Links, outlined actions, current step, guidance and interactive icons |
+| `button-action` | `#35647C` | `#47758B` | Filled primary button with white text; never used merely for decoration |
+| `action-slate-soft` | `#E8F0F3` | `#1A2B34` | Current-step grouping and quiet action context; never a text-only state |
+| `attention-amber` | `#8A5A00` | `#F0C96A` | Draft, missing prerequisite, practice mode, partial success or review needed |
+| `danger-red` | `#B42318` | `#FF8A80` | Destructive, blocked or failed state only |
+| `neutral-control` | `#5F6368` | `#C5C7CA` | Pending, inactive, ordinary navigation and non-status icons |
 | `ink` | `#1C1C1E` | `#F5F5F7` | Important text |
 | `secondary-ink` | `#6E6E73` | `#AEAEB2` | Supporting copy and metadata |
 | `ground` | `#F2F2F7` | `#000000` | Page background |
 | `surface` | `#FFFFFF` | `#1C1C1E` | Cards, sheets, dialogs, navigation |
 | `surface-subtle` | `#E5E5EA` | `#2C2C2E` | Tables, quiet grouping, disabled treatment |
-| `warning` | `#FF9F0A` | `#FFD60A` | Attention that requires review |
-| `danger` | `#D70015` | `#FF6961` | Destructive or blocked action |
 | `devotional-gold` | `#D3A930` | `#FFD60A` | Scripture only; never a general call to action |
 
 Rules:
@@ -172,6 +206,24 @@ Rules:
 2. Teal may identify the application, a completed or verified state, and devotional anchors. It must not colour all buttons.
 3. Warning and danger are semantic only. Never use them for visual variety.
 4. Text meets WCAG AA contrast: 4.5:1 for normal text and 3:1 for large text or UI boundaries.
+
+#### Component colour grammar
+
+The interface never assigns colours icon by icon. A component first declares its semantic tone, and its icon inherits that tone:
+
+| Semantic tone | Components | Examples |
+|---|---|---|
+| `action` | Filled/outlined CTA, current workflow step, progress, operation hint | Generate, save, export, open current draft |
+| `stable` | Status badge or evidence only | Published, verified backup, completed step |
+| `attention` | Status badge or recovery surface only | Draft ready, missing backup, practice, partial success |
+| `danger` | Destructive action or failed status | Archive, remove, invalid/unreadable evidence |
+| `neutral` | Pending state and ordinary utility | Waiting step, empty-state symbol, secondary navigation |
+
+Equivalent actions keep one tone even when their content differs: the share-safe roster PDF and internal audit PDF are both export actions, so both use action slate. Status and action are not conflated: a draft badge is attention/action-context, while “open draft” remains an action control. Colour is always accompanied by text, icon, border, position or state wording.
+
+Settings follows the same rule at section level. Interface audio, local music, and YouTube are peer configuration sections, so their top rule and heading icon all use action slate; YouTube becomes teal only where a badge explicitly says the connection is ready. Backup warnings and the entry into restore use attention amber. The final restore confirmation uses danger red because it replaces the active database, even though the workflow first creates a safety snapshot.
+
+Full illustrated empty states are reserved for orientation moments where a new operator must understand how to begin, currently the dashboard and roster workspace before the first week exists. Music libraries, unavailable backups, recovery routes, and repeated empty panels use compact neutral guidance without imagery. This prevents one paired scene from repeating down a settings page and keeps warnings, forms, and recovery decisions visually unambiguous.
 
 ### 5.2 Typography
 
@@ -243,6 +295,16 @@ The Daily Verse is a distinct component, not a recoloured dashboard card.
 - **Reading protection:** a solid left-to-right veil protects text; the image is never the sole contrast mechanism. Scripture may never sit on a busy crop, an animated layer, or a translucent glass panel.
 - **Motion:** no automatic movement. Hover may deepen elevation only; verse refresh is an explicit action and changes content without an ornamental page transition.
 - **Separation:** blue remains a work-action colour below. The Daily Verse uses gold and parchment only within its own surface, so it is recognisably sacred without turning the application into a themed template.
+- **Direction:** the operator may choose `Follow appearance`, `Clear guidance`, or `Quiet comfort`. Follow appearance initially maps light mode to service, justice, wisdom, and witness; dark mode maps to prayer, care, perseverance, faithfulness, and spiritual formation. This is a recommendation rather than an emotional stereotype: the explicit operator choice persists, refresh remains manual, and the selected direction filters only already-polished bilingual entries.
+
+### 6.1.2 Music atmosphere profiles
+
+Music must remain operator-started and page-context-aware. The intended next extension is one `Follow appearance` preference plus two independently selectable profiles:
+
+- **Bright focus:** gentle forward movement, clarity, hope, service, and the beginning of work; suitable for light-mode default recommendation.
+- **Quiet reflection:** slower pacing, reassurance, patience, prayer, and handover; suitable for dark-mode default recommendation without implying sadness.
+
+Appearance selects only the first recommendation when the operator has not chosen a profile. A saved profile overrides appearance until reset. Both profiles may contain several playlists, support sequential/shuffle playback, and remain subordinate to page context and the existing volume/no-autoplay controls. Do not add placeholder tracks: external playlists enter the product only after their exact public YouTube Music URLs and display names have been verified.
 
 ### 6.2 Roster workspace
 
@@ -269,17 +331,37 @@ The roster grid is an operational document, not a dashboard chart. Preserve the 
 - Tablet: two-column regions collapse only when each column would become too narrow to read.
 - Mobile: primary action remains before secondary information; grids become ordered vertical lists. The roster uses day-grouped cards, not a horizontally clipped table, so every Chinese name, duty time, status, and workload is readable in one card.
 
-### 6.5 Architecture showcase and FAQ
+### 6.5 Platform story and architecture evidence
 
-The system-architecture page is the non-sensitive product showcase. Its quality comes from truthful information design, not inflated metrics or copied technical diagrams.
+Brand context and technical evidence use two connected pages instead of one oversized showcase.
 
-1. **Hero thesis:** state local-first, verifiable, handover-ready operation and explain that no code knowledge is required.
-2. **Service lifeline:** show the real six-stage week—prepare, draft, publish, export, adjust, hand over—as an ordered semantic list. Desktop uses a connected horizontal rail; tablet uses a readable three-column map; mobile uses one vertical line without horizontal scrolling.
-3. **Paired visual:** the architecture-lifeline light/dark images use the same six archival stations, camera, crop, and DOM position. The image is decorative and never replaces the HTML explanation.
-4. **Ownership map:** five layer cards explain interface, policy/core, workflow, persistence/recovery, and handover responsibility without importing legacy Streamlit concepts.
-5. **Trust evidence:** four evidence cards name the durable proof for policy isolation, publish-once fairness, verified recovery, and privacy boundaries. Do not use vanity counts or unsupported security claims.
-6. **FAQ:** questions are real operator decisions. Answers identify the safe next action and remain complete in Traditional Chinese and English.
-7. **Co-creation close:** preserve the human purpose, team attribution, and Codex closing note without personal contact details, age claims, token totals, or exaggerated technology claims.
+**Platform & Team (`/platform`)**
+
+1. Begin with the human service thesis and a same-composition light/dark stewardship image; the image remains decorative behind a solid readability veil.
+2. Show only anonymous live evidence: active-prefect count, roster-week count, verified-backup state, and display-safe release checks. Never show names, classes, leave, roster content, audit payload, database paths, or backup paths.
+3. Preserve official school roles and pair them with explanatory responsibility titles. Weekly Operations, Fairness Assurance, Service Experience, and Systems Continuity are capability lanes, not claims of extra departments or headcount.
+4. Organise features around four operator outcomes with direct routes into the real workspaces. Copy begins with the job and expected result, not technology.
+5. Connect service, fairness, clarity, responsibility, and continuity to concrete system behaviour. End with resources, feedback, and the two-person co-creation narrative.
+6. If the read-only snapshot fails, keep the complete static story visible and show a neutral bilingual support reference; never render the exception.
+
+**System Architecture & Trust (`/system-architecture`)**
+
+1. State local-first, verifiable, handover-ready operation and link to Platform & Team for organisation context.
+2. Show the real six-stage week—prepare, draft, publish, export, adjust, hand over—as an ordered semantic list. Desktop uses a connected horizontal rail; tablet uses a readable three-column map; mobile uses one vertical line without horizontal scrolling.
+3. Keep the paired architecture-lifeline image decorative; five ownership cards explain interface, policy/core, workflow, persistence/recovery, and handover.
+4. Four evidence cards name durable proof for policy isolation, publish-once fairness, verified recovery, and privacy boundaries. FAQ answers identify a safe next action.
+5. Do not duplicate the organisation chart, capability map, solution portfolio, or co-creation close on this page.
+
+**Engineering & Quality (`/engineering`)**
+
+1. Treat the page as an engineering evidence centre, not a KPI dashboard or technology-logo wall.
+2. Numbers must be release-controlled structural evidence: automated tests, verification gates, owning layers, and complete locales. Usage, adoption, uptime, security grades, or business outcomes may not be invented.
+3. Present the five-layer blueprint and eight release gates as semantic ordered lists. Connectors are CSS decoration only; reading order remains complete without them.
+4. Use neutral surfaces, monospaced evidence numbers, slate action colour, and teal only for verified or durable outcomes. Dark mode receives separately checked text, border, and state contrast.
+5. Keep the page read-only. It may consume display-safe release evidence but never workflow, roster, leave, fairness, backup path, or audit payloads.
+6. On mobile, facts, blueprint layers, gates, capabilities, and evolution stages become one ordered vertical sequence without horizontal scrolling.
+
+Enterprise references inform information order, not visual imitation. Platform, solutions, trust, resources, and company/team narratives must be translated into the Sing Yin context with original geometry and copy. A generated narrative image may support the non-sensitive operating-model story only when a same-composition light/dark pair is present; organisational meaning must remain in semantic HTML, never inside image text or a fake diagram.
 
 ---
 

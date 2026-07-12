@@ -46,7 +46,7 @@ def test_sensitive_repository_paths_are_classified_without_reading_content(path:
     assert sensitive_category(path) == expected
 
 
-def test_current_repository_hygiene_passes_without_claiming_history_exists() -> None:
+def test_current_repository_hygiene_requires_real_history() -> None:
     report = audit_repository(PROJECT_ROOT)
 
     assert report.status == "pass"
@@ -54,7 +54,19 @@ def test_current_repository_hygiene_passes_without_claiming_history_exists() -> 
     assert report.tracked_sensitive_count == 0
     assert report.missing_ignore_count == 0
     assert report.env_example_trackable is True
-    assert report.history in {"present", "missing"}
+    assert report.history == "present"
+
+
+def test_hygiene_audit_fails_when_repository_has_no_commit_history(tmp_path: Path) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    shutil.copy2(PROJECT_ROOT / ".gitignore", repository / ".gitignore")
+    _git(repository, "init", "--quiet")
+
+    report = audit_repository(repository)
+
+    assert report.status == "fail"
+    assert report.history == "missing"
 
 
 def test_hygiene_audit_fails_closed_for_a_force_tracked_sensitive_file(tmp_path: Path) -> None:

@@ -13,6 +13,7 @@ from nicegui_app.services.online_music import (
     parse_youtube_search,
     youtube_embed_url,
 )
+from tests.ui_source import combined_theme_source
 
 
 def test_youtube_public_player_is_enabled_without_paid_account(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -60,7 +61,7 @@ def test_youtube_search_parser_keeps_only_safe_video_and_playlist_ids() -> None:
 
 def test_youtube_ui_is_visible_controlled_and_never_autoplays() -> None:
     source = (PROJECT_ROOT / "nicegui_app" / "ui" / "youtube_music.py").read_text(encoding="utf-8")
-    theme = (PROJECT_ROOT / "nicegui_app" / "ui" / "theme.py").read_text(encoding="utf-8")
+    theme = combined_theme_source()
     assert "www.youtube-nocookie.com" not in source  # URLs are produced only by the validated service.
     assert 'class="sy-youtube-player"' in source
     assert 'allow="encrypted-media; picture-in-picture"' in source

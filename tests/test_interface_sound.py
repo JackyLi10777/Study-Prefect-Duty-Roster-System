@@ -6,6 +6,7 @@ import pytest
 
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.ui.sound import _bounded_float
+from tests.ui_source import combined_page_source
 
 
 @pytest.mark.parametrize(
@@ -18,7 +19,7 @@ def test_audio_preferences_are_bounded(value: object, default: float, maximum: f
 
 def test_interface_sound_is_semantic_opt_in_and_ducks_music() -> None:
     sound = (PROJECT_ROOT / "nicegui_app" / "ui" / "sound.py").read_text(encoding="utf-8")
-    pages = (PROJECT_ROOT / "nicegui_app" / "ui" / "pages.py").read_text(encoding="utf-8")
+    pages = combined_page_source()
     music = (PROJECT_ROOT / "nicegui_app" / "ui" / "music.py").read_text(encoding="utf-8")
 
     assert 'SOUND_KINDS = {"navigation", "success", "attention"}' in sound

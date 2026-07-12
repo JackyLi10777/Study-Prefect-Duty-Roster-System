@@ -1,0 +1,220 @@
+"""Bilingual stewardship messages."""
+
+MESSAGES = {'backup_restore': {'zh-HK': '備份還原', 'en': 'Backup restore'},
+ 'create_verified_backup': {'zh-HK': '立即建立已驗證快照', 'en': 'Create verified snapshot now'},
+ 'create_verified_backup_notice': {'zh-HK': '如剛才的儲存操作未能完成自動備份，請先核對資料已正確，再在此建立新的復原點。',
+                                   'en': 'If a saved action could not finish its automatic backup, first confirm the data is correct, then '
+                                         'create a new recovery point here.'},
+ 'verified_backup_created': {'zh-HK': '已建立並驗證新的復原快照。', 'en': 'A new recovery snapshot was created and verified.'},
+ 'select_backup': {'zh-HK': '選擇備份快照', 'en': 'Select backup snapshot'},
+ 'restore_selected_backup': {'zh-HK': '還原已選備份', 'en': 'Restore selected backup'},
+ 'no_verified_backup_title': {'zh-HK': '尚未有可使用的已驗證快照', 'en': 'No verified snapshot is available yet'},
+ 'no_verified_backup_restore_body': {'zh-HK': '先建立一個已驗證快照，系統才會提供安全還原選項。',
+                                     'en': 'Create a verified snapshot first; safe restore options will then become available.'},
+ 'no_verified_backup_handover_body': {'zh-HK': '交接備份包只可取用已驗證快照。請先建立復原點，再下載交接包。',
+                                      'en': 'A handover package can use only a verified snapshot. Create a recovery point before '
+                                            'downloading the package.'},
+ 'invalid_backup_summary_title': {'zh-HK': '最近檢查的快照中，有 {count} 個未通過驗證',
+                                  'en': '{count} recently checked snapshot(s) did not pass verification'},
+ 'invalid_backup_summary_body': {'zh-HK': '系統已自動排除這些檔案，不會用作還原或交接。請勿改名或手動修補；先建立新的已驗證快照。如需調查，只向受控 IT 支援提供 OP／REQ 編號，不要公開上載備份。',
+                                 'en': 'These files were excluded automatically and cannot be used for restore or handover. Do not rename '
+                                       'or repair them manually; create a new verified snapshot first. For investigation, give only an '
+                                       'OP/REQ reference to controlled IT support and never upload the backup publicly.'},
+ 'backup_issue_file': {'zh-HK': '檔案不可使用', 'en': 'File unavailable'},
+ 'backup_issue_manifest': {'zh-HK': '校驗清單遺失或不可讀', 'en': 'Manifest missing or unreadable'},
+ 'backup_issue_checksum': {'zh-HK': 'SHA-256 不相符', 'en': 'SHA-256 mismatch'},
+ 'backup_issue_database': {'zh-HK': 'SQLite 完整性未通過', 'en': 'SQLite integrity failed'},
+ 'backup_issue_schema': {'zh-HK': '必要資料表不完整', 'en': 'Required schema incomplete'},
+ 'backup_issue_unknown': {'zh-HK': '未能分類的驗證問題', 'en': 'Unclassified verification issue'},
+ 'restore_warning': {'zh-HK': '系統會先自動備份目前資料，然後以所選快照取代現況。',
+                     'en': 'The system first snapshots current data, then replaces it with the selected snapshot.'},
+ 'confirm_restore': {'zh-HK': '確認還原', 'en': 'Confirm restore'},
+ 'backup_restored': {'zh-HK': '備份已還原，還原前的資料亦已自動備份。', 'en': 'Backup restored. The pre-restore state was saved automatically.'},
+ 'verified': {'zh-HK': '已驗證', 'en': 'Verified'},
+ 'export_pdf': {'zh-HK': '下載列印版 PDF', 'en': 'Download print-ready PDF'},
+ 'export_pdf_notice': {'zh-HK': 'PDF 只在本機生成，請以中文姓名核對後在校內列印或受控分享。',
+                       'en': 'The PDF is generated locally. Verify Chinese names, then print or share only through approved school '
+                             'channels.'},
+ 'choose_pdf_export': {'zh-HK': '選擇 PDF 匯出', 'en': 'Choose PDF export'},
+ 'group_schedule_export': {'zh-HK': '群組週表（第一頁）', 'en': 'Group schedule (page one)'},
+ 'group_schedule_export_notice': {'zh-HK': '此單頁週表可供核對後在校內受控分享；不含個人累計工作量。',
+                                  'en': 'This one-page roster may be shared through approved school channels after checking; it excludes '
+                                        'individual cumulative workload.'},
+ 'pdf_show_crest': {'zh-HK': '顯示校徽', 'en': 'Show school crest'},
+ 'pdf_show_footer_note': {'zh-HK': '顯示頁尾補充說明', 'en': 'Show supplementary footer note'},
+ 'pdf_clean_export_hint': {'zh-HK': '群組發布建議：保留校徽、關閉頁尾說明，輸出最精簡的一頁值班表。',
+                           'en': 'Recommended for group sharing: keep the crest and leave the footer note off for a clean one-page '
+                                 'roster.'},
+ 'export_schedule_zh': {'zh-HK': '下載中文週表 PDF', 'en': 'Download Chinese schedule PDF'},
+ 'export_schedule_en': {'zh-HK': '下載英文週表 PDF', 'en': 'Download English schedule PDF'},
+ 'internal_audit_export': {'zh-HK': '內部公平審計（不建議發群組）', 'en': 'Internal fairness audit (do not send to group by default)'},
+ 'internal_audit_export_notice': {'zh-HK': '含個人累計點數及次數，只供首席導學風紀及老師顧問核對。',
+                                  'en': 'Contains individual history weights and duty counts; for the Head Study Prefect and teacher '
+                                        'advisor only.'},
+ 'export_audit_zh': {'zh-HK': '下載中文內部審計 PDF', 'en': 'Download Chinese internal audit PDF'},
+ 'export_audit_en': {'zh-HK': '下載英文內部審計 PDF', 'en': 'Download English internal audit PDF'},
+ 'draft_export_warning': {'zh-HK': '此為草稿，只可核對，不可張貼或派發。', 'en': 'This is a draft for checking only. Do not post or distribute it.'},
+ 'pdf_ready': {'zh-HK': '列印版 PDF 已準備好下載。', 'en': 'The print-ready PDF is ready to download.'},
+ 'confirm_publish': {'zh-HK': '確認發布週表', 'en': 'Confirm roster publication'},
+ 'publish_warning': {'zh-HK': '發布後會記入公平帳本。請先核對請假、姓名及每一個崗位。',
+                     'en': 'Publishing posts duties to the fairness ledger. Check leave, names, and every post first.'},
+ 'confirm_publish_action': {'zh-HK': '確認發布並入帳', 'en': 'Publish and post to ledger'},
+ 'fairness_explained': {'zh-HK': '公平帳本說明', 'en': 'How fairness is calculated'},
+ 'fairness_explanation': {'zh-HK': '累計點數會跨週保留；系統優先安排較低點數的合資格風紀。只有發布或已記錄的請假調整會改變點數。',
+                          'en': 'History weight persists across weeks. The system prioritizes eligible prefects with lower weight. Only '
+                                'publication or an audited leave adjustment changes it.'},
+ 'handover_intro': {'zh-HK': '交接不是交出密碼或資料庫，而是讓下一位首席導學風紀能安全地理解、核對和承擔。',
+                    'en': 'Handover is not passing on passwords or a database; it enables the next Head Study Prefect to understand, '
+                          'verify, and serve safely.'},
+ 'handover_step_one': {'zh-HK': '1. 在「風紀名單」核對本學年名單、職務與可值班日。', 'en': "1. In Prefects, verify this year's names, roles, and available days."},
+ 'handover_step_two': {'zh-HK': '2. 用草稿週表演練生成、請假登記、發布及請假調整；不要直接以真實資料試錯。',
+                       'en': '2. Rehearse drafting, leave recording, publishing, and adjustment with a test week; do not learn through '
+                             'real-data mistakes.'},
+ 'handover_step_three': {'zh-HK': '3. 在「公平審核」向繼任者解釋累計點數，並保留已發布與調整紀錄。',
+                         'en': '3. In Fairness audit, explain persistent history weights and retain published and adjustment records.'},
+ 'handover_step_four': {'zh-HK': '4. 在「系統設定」確認最新備份已驗證；另依學校政策保存加密、離機副本。',
+                        'en': '4. In Settings, confirm the latest backup is verified; keep an encrypted off-device copy under school '
+                              'policy.'},
+ 'handover_prefects_ready': {'zh-HK': '現有風紀名單', 'en': 'Active prefect directory'},
+ 'handover_rosters_ready': {'zh-HK': '現有週表', 'en': 'Existing roster history'},
+ 'handover_backup_ready': {'zh-HK': '最近備份', 'en': 'Latest backup'},
+ 'handover_ready': {'zh-HK': '已準備', 'en': 'Ready'},
+ 'handover_attention': {'zh-HK': '需要處理', 'en': 'Needs attention'},
+ 'acceptance_title': {'zh-HK': '正式驗收與交接證據', 'en': 'Release acceptance & handover evidence'},
+ 'acceptance_intro': {'zh-HK': '機器驗證說明系統是否通過隔離測試；真實名單、實際列印、公平做法及保管責任仍必須由人核對。',
+                      'en': 'Machine verification shows whether the isolated checks passed; real names, actual printing, fairness '
+                            'practice, and custody still require people to review them.'},
+ 'acceptance_machine_title': {'zh-HK': '機器證據', 'en': 'Machine evidence'},
+ 'acceptance_human_title': {'zh-HK': '真人驗收', 'en': 'Human acceptance'},
+ 'acceptance_human_required': {'zh-HK': '仍需首席導學風紀及教師顧問確認', 'en': 'Head Study Prefect and teacher-advisor sign-off still required'},
+ 'acceptance_human_body': {'zh-HK': '即使所有機器檢查全部通過，系統也不會代替你核對真實資料、學校做法、加密離機備份及交接責任。',
+                           'en': 'Even when every machine check passes, the system cannot approve real data, school practice, encrypted '
+                                 'off-device backup, or handover responsibility for you.'},
+ 'practice_mode_title': {'zh-HK': '練習模式', 'en': 'Practice Mode'},
+ 'practice_mode_body': {'zh-HK': '這裡只使用虛構名單及獨立練習資料；匯出的 PDF 均不可作正式發布。',
+                        'en': 'This workspace uses fictional names and isolated practice data; exported PDFs are not for official '
+                              'distribution.'},
+ 'acceptance_role_summary': {'zh-HK': '首席導學風紀 13 項實務核對｜教師顧問 4 項治理確認', 'en': '13 operator checks | 4 teacher-advisor governance checks'},
+ 'acceptance_status_pass': {'zh-HK': '當前機器驗證已通過', 'en': 'Current machine verification passed'},
+ 'acceptance_status_running': {'zh-HK': '機器驗證正在進行', 'en': 'Machine verification is running'},
+ 'acceptance_status_stale': {'zh-HK': '報告已過期，需要重新驗證', 'en': 'Report is stale; verification must be rerun'},
+ 'acceptance_status_fail': {'zh-HK': '機器驗證未通過', 'en': 'Machine verification failed'},
+ 'acceptance_status_missing': {'zh-HK': '尚未有發布候選報告', 'en': 'No release-candidate report yet'},
+ 'acceptance_status_unreadable': {'zh-HK': '報告格式不可信', 'en': 'Release report is not trustworthy'},
+ 'acceptance_body_pass': {'zh-HK': '報告與目前程式指紋一致，而且所有檢查均通過。這只完成機器部分。',
+                          'en': 'The report matches the current source fingerprint and every check passed. This completes only the machine '
+                                'portion.'},
+ 'acceptance_body_running': {'zh-HK': 'IT 支援正在以隔離資料執行完整驗證；完成前不要把此版本視為發布候選。',
+                             'en': 'IT support is running the complete suite in isolated data. Do not treat this build as a release '
+                                   'candidate until it finishes.'},
+ 'acceptance_body_stale': {'zh-HK': '程式或驗證規則在報告完成後已有改動。請由 IT 支援重新執行完整發布候選驗證。',
+                           'en': 'Source or verification rules changed after the report. Ask IT support to rerun the complete '
+                                 'release-candidate verification.'},
+ 'acceptance_body_fail': {'zh-HK': '至少一項檢查失敗。先由 IT 支援查看本機報告及隔離證據，不要以真實資料測試。',
+                          'en': 'At least one check failed. IT support should inspect the local report and isolated evidence; do not '
+                                'troubleshoot with real data.'},
+ 'acceptance_body_missing': {'zh-HK': '這台電腦尚未建立機器驗證報告。請由 IT 支援依發布手冊執行，不要由日常操作員自行輸入技術命令。',
+                             'en': 'This computer has no machine-verification report yet. Ask IT support to follow the release guide; the '
+                                   'daily operator should not improvise technical commands.'},
+ 'acceptance_body_unreadable': {'zh-HK': '報告缺少必要欄位或格式不正確，因此不會顯示為通過。請由 IT 支援重新驗證。',
+                                'en': 'The report is missing required fields or has an invalid format, so it cannot be shown as passed. '
+                                      'Ask IT support to rerun verification.'},
+ 'acceptance_checks_summary': {'zh-HK': '已通過檢查：{passed}/{total}', 'en': 'Checks passed: {passed}/{total}'},
+ 'acceptance_report_time': {'zh-HK': '報告完成時間：{time}', 'en': 'Report completed: {time}'},
+ 'acceptance_steps_title': {'zh-HK': '展開真人驗收四個重點', 'en': 'Open the four human-acceptance priorities'},
+ 'acceptance_task_directory': {'zh-HK': '逐人核對正式中文姓名、職務及可值班日。', 'en': 'Check every official Chinese name, role, and available duty day.'},
+ 'acceptance_task_pdf': {'zh-HK': '在實際手機群組預覽及列印環境核對 PDF 字體、裁切與可讀性。',
+                         'en': 'Review PDF type, cropping, and readability in the real phone-group preview and print environment.'},
+ 'acceptance_task_successor': {'zh-HK': '由一位未參與開發的繼任者獨立完成交接演練。',
+                               'en': 'Have a successor who did not build the system complete the handover rehearsal independently.'},
+ 'acceptance_task_advisor': {'zh-HK': '由教師顧問確認公平做法、還原演練、專用電腦、秘密及加密離機保管。',
+                             'en': 'Ask the teacher advisor to approve fairness practice, the restore drill, dedicated host, secrets, and '
+                                   'encrypted off-device custody.'},
+ 'acceptance_open_guide': {'zh-HK': '查看完整驗收與操作指引', 'en': 'Open the complete acceptance and operating guide'},
+ 'new_user_title': {'zh-HK': '第一次使用？請由這裏開始', 'en': 'First time here? Start here'},
+ 'new_user_intro': {'zh-HK': '不需要懂資料庫或程式。按以下三步，便可安全開始。',
+                    'en': 'You do not need database or programming knowledge. Follow these three safe steps.'},
+ 'new_user_step_start': {'zh-HK': '1. 開啟系統', 'en': '1. Open the system'},
+ 'new_user_step_start_detail': {'zh-HK': '在系統資料夾雙擊 START_SING_YIN_ROSTER.cmd；瀏覽器會自動開啟。',
+                                'en': 'Double-click START_SING_YIN_ROSTER.cmd in the system folder; your browser opens automatically.'},
+ 'new_user_step_address': {'zh-HK': '若瀏覽器沒有自動開啟，請輸入：', 'en': 'If your browser does not open automatically, enter:'},
+ 'new_user_step_prepare': {'zh-HK': '2. 先核對名單', 'en': '2. Check the directory first'},
+ 'new_user_step_prepare_detail': {'zh-HK': '進入「風紀名單」，核對中文姓名、職務及可值班日；未核對前不要發布週表。',
+                                  'en': 'Open Prefects and check Chinese names, roles, and available days; do not publish before this '
+                                        'check.'},
+ 'new_user_step_week': {'zh-HK': '3. 生成本週草稿', 'en': "3. Generate this week's draft"},
+ 'new_user_step_week_detail': {'zh-HK': '進入「值班表」，先登記請假，再生成草稿；核對後才發布。',
+                               'en': 'Open Rosters, record leave first, then generate a draft; publish only after checking it.'},
+ 'open_prefects': {'zh-HK': '前往核對風紀名單', 'en': 'Go to Prefects'},
+ 'open_rosters': {'zh-HK': '開始生成週表', 'en': 'Start a weekly roster'},
+ 'open_handover_guide': {'zh-HK': '查看完整交接與復原指引', 'en': 'View handover and recovery guide'},
+ 'local_address_label': {'zh-HK': '本機網址', 'en': 'Local address'},
+ 'refresh_verse': {'zh-HK': '換一篇經文', 'en': 'Show another verse'},
+ 'verse_refreshed': {'zh-HK': '已換上一段經文與反思。', 'en': 'A different verse and reflection are now shown.'},
+ 'draft_preview': {'zh-HK': '草稿預覽', 'en': 'Draft preview'},
+ 'draft_preview_notice': {'zh-HK': '先逐項核對本週安排；草稿可安全修改，未會影響公平帳本。',
+                          'en': 'Check every assignment. A draft can be changed safely and does not affect the fairness ledger.'},
+ 'manual_draft_change': {'zh-HK': '手動修改草稿', 'en': 'Manually adjust draft'},
+ 'manual_draft_change_notice': {'zh-HK': '系統只會列出仍符合職務、可值班日、請假、同日不重複及不連續規則的人選。每次修改都會記錄原因及建立備份。',
+                                'en': 'Only candidates meeting role, availability, leave, same-day uniqueness, and no-consecutive-duty '
+                                      'rules are offered. Every change records a reason and creates a backup.'},
+ 'select_draft_assignment': {'zh-HK': '選擇要修改的崗位', 'en': 'Select an assignment to change'},
+ 'load_draft_candidates': {'zh-HK': '載入合資格人選', 'en': 'Load eligible candidates'},
+ 'save_draft_change': {'zh-HK': '儲存草稿修改', 'en': 'Save draft change'},
+ 'draft_change_reason': {'zh-HK': '修改原因（必填）', 'en': 'Reason for change (required)'},
+ 'draft_changed': {'zh-HK': '草稿已修改、重新核對校規並完成備份；公平帳本未受影響。',
+                   'en': 'Draft changed, revalidated, and backed up; the fairness ledger is unchanged.'},
+ 'post_publication_leave': {'zh-HK': '已發布後有人請假？', 'en': 'A published-duty absence?'},
+ 'post_publication_leave_notice': {'zh-HK': '不要重新生成或直接改表。進入「請假調整」，選擇原崗位與合資格替補；系統會保留原因並正確轉移公平點數。',
+                                   'en': 'Do not regenerate or edit the roster directly. Use Leave adjustments to select the original post '
+                                         'and an eligible substitute; the reason and fairness weights are handled safely.'},
+ 'generation_requirements': {'zh-HK': '本週崗位與空缺預覽', 'en': "This week's posts and vacancy preview"},
+ 'generation_requirements_notice': {'zh-HK': '以下是生成前必須填滿的崗位。可安排人數為零代表此崗位目前無法生成；先核對名單、可值班日與請假。',
+                                    'en': 'These posts must be filled before generation. Zero eligible candidates means that post cannot '
+                                          'currently be generated; check the directory, availability, and leave first.'},
+ 'eligible_count': {'zh-HK': '可安排人數', 'en': 'Eligible candidates'},
+ 'awaiting_generation': {'zh-HK': '尚待生成', 'en': 'Awaiting generation'},
+ 'vacancy_risk': {'zh-HK': '目前無合資格人選', 'en': 'No eligible candidate now'},
+ 'download_import_template': {'zh-HK': '下載名單 CSV 格式範例', 'en': 'Download CSV import template'},
+ 'import_template_notice': {'zh-HK': '範例只含虛構資料。請以本校資料取代示例，然後貼上 CSV 並先驗證預覽。',
+                            'en': 'The template contains fictional data only. Replace it with school data, paste the CSV, then validate '
+                                  'the preview first.'},
+ 'guide_intro': {'zh-HK': '這是給首席導學風紀的完整日常操作手冊。每個步驟均會保護校規、公平帳本及可復原性。',
+                 'en': 'This is the complete day-to-day guide for a Head Study Prefect. Every step protects policy, the fairness ledger, '
+                       'and recoverability.'},
+ 'guide_open_title': {'zh-HK': '1. 每次開啟：先安靜開始，再處理本週工作', 'en': '1. Each opening: begin calmly, then work on the week'},
+ 'guide_open_body': {'zh-HK': '在系統資料夾雙擊 '
+                              'START_SING_YIN_ROSTER.cmd。啟動器會重用已在執行的系統，並在真正準備好後才開啟瀏覽器；若沒有自動開啟，請使用黑色視窗顯示的完整本機網址。首頁先閱讀每日經文，然後按「本週值班工作台」最突出的下一步前往處理。',
+                     'en': 'Double-click START_SING_YIN_ROSTER.cmd in the system folder. The launcher reuses an already running system and '
+                           'opens the browser only after it is ready; if it does not open, use the full local address shown in the black '
+                           "window. Read the Daily Verse first, then follow the most prominent next step in This week's roster desk."},
+ 'guide_directory_title': {'zh-HK': '2. 名單與格式範例', 'en': '2. Directory and import template'},
+ 'guide_directory_body': {'zh-HK': '先在「風紀名單」核對中文姓名、職務和可值班日。需要大量更新時，下載 CSV 格式範例、填入資料、貼上並驗證預覽；不要直接匯入未核對的資料。',
+                          'en': 'First check Chinese names, roles, and available days in Prefects. For bulk updates, download the CSV '
+                                'template, fill it in, paste it, and validate the preview; never import unchecked data.'},
+ 'guide_draft_title': {'zh-HK': '3. 請假、生成與草稿預覽', 'en': '3. Leave, generation, and draft preview'},
+ 'guide_draft_body': {'zh-HK': '在生成前登記請假，再查看本週崗位與空缺預覽，然後生成草稿。若有新的請假，請重新生成草稿；舊草稿不可發布。',
+                      'en': "Record leave before generation, review this week's posts and vacancy preview, then generate a draft. If new "
+                            'leave is recorded, regenerate the draft; the old draft cannot be published.'},
+ 'guide_manual_title': {'zh-HK': '4. 草稿手動修改', 'en': '4. Manual draft changes'},
+ 'guide_manual_body': {'zh-HK': '在草稿預覽內選擇崗位、載入合資格人選並填寫原因。系統會再次核對校規，記錄修改並備份；草稿階段不改變公平點數。',
+                       'en': 'In Draft preview, select a post, load eligible candidates, and state the reason. The system rechecks policy, '
+                             'records the change, and backs up; draft changes do not alter fairness weight.'},
+ 'guide_publish_title': {'zh-HK': '5. 發布、PDF 與已發布後請假', 'en': '5. Publish, PDF, and post-publication leave'},
+ 'guide_publish_body': {'zh-HK': '核對草稿後才發布，因發布會寫入公平帳本。下載 PDF 前再次核對中文姓名。發布後有人請假時，只能用「請假調整」選擇替補或保留空缺；不可重新生成整週。',
+                        'en': 'Publish only after checking the draft because publication posts to the fairness ledger. Check Chinese names '
+                              'again before PDF download. For a published-duty absence, use Leave adjustments to choose a substitute or '
+                              'keep a vacancy; do not regenerate the week.'},
+ 'guide_recovery_title': {'zh-HK': '6. 公平、備份與交接', 'en': '6. Fairness, backups, and handover'},
+ 'guide_recovery_body': {'zh-HK': '「公平審核」解釋持續累計的 history weight；「系統設定」只可還原已驗證快照。交接前以「交接指引」完成名單、週表及備份核對。',
+                         'en': 'Fairness audit explains persistent history weight; Settings restores verified snapshots only. Before '
+                               'handover, use Handover guide to check the directory, roster history, and backups.'},
+ 'guide_support_title': {'zh-HK': '7. 找到空缺、失敗或疑問時', 'en': '7. When you see a vacancy, failure, or question'},
+ 'guide_support_body': {'zh-HK': '空缺不是要跳過的警告：先回到名單，檢查職務、可值班日和請假；只有有合資格人選時才生成。若畫面顯示 OP- 支援編號，這次資料不會自動發布。先安全重試一次；問題持續時，只把編號交給教師顧問或 IT '
+                                 '支援，由他們在受控電腦查閱本機日誌。',
+                        'en': 'A vacancy is not a warning to skip: return to Prefects and check role, availability, and leave; generate '
+                              'only when an eligible candidate exists. If the screen shows an OP support reference, nothing was published '
+                              'automatically. Retry safely once; if it continues, give only the reference to the teacher advisor or IT '
+                              'support so they can inspect the local log on the controlled computer.'},
+ 'open_system_architecture': {'zh-HK': '查看系統架構與可信設計', 'en': 'View system architecture and trust design'},
+ 'open_platform': {'zh-HK': '認識平台與團隊', 'en': 'Explore platform and team'}}

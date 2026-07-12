@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.verify_nicegui_write_pipeline import isolated_paths
+from scripts.verify_nicegui_write_pipeline import _fixture_leave_prefect, isolated_paths
 from scripts.verify_nicegui_ui import prepare_invalid_backup_fixture
 
 
@@ -45,3 +45,10 @@ def test_invalid_backup_ui_fixture_requires_explicit_isolation(monkeypatch) -> N
 
     with pytest.raises(RuntimeError, match="explicitly isolated"):
         prepare_invalid_backup_fixture()
+
+
+def test_write_pipeline_fixture_uses_stable_role_codes() -> None:
+    prefect_id, prefect_name = _fixture_leave_prefect()
+
+    assert prefect_id
+    assert prefect_name

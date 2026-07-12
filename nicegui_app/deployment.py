@@ -297,7 +297,7 @@ def build_readiness_report(
     checks.append(
         ReadinessCheck(
             "storage_secret",
-            "pass" if secret_state in {"configured", "managed"} else "fail" if secret_state == "invalid" else "warning",
+            "pass" if secret_state in {"configured", "managed"} else "fail" if secret_state == "invalid" else "warning",  # pragma: allowlist secret
             secret_message,
         )
     )
@@ -339,7 +339,7 @@ def build_readiness_report(
         ReadinessCheck(
             "cloudflare_access",
             "deferred" if settings.mode == "local" else "warning",
-            "Cloudflare remains deliberately unconfigured until a dedicated host is ready."
+            "Cloudflare remote access is inactive; complete the documented account, Access, and live identity checks before activation."
             if settings.mode == "local"
             else "Protect with Access, audience, team domain, and public hostname are declared; live identity and bypass verification is still required.",
         )

@@ -141,7 +141,12 @@ try {
         throw "SING_YIN_PORT must be between 1024 and 65500."
     }
 
-    $python = Get-Command python.exe -ErrorAction SilentlyContinue
+    $virtualPython = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+    $python = if (Test-Path -LiteralPath $virtualPython) {
+        Get-Item -LiteralPath $virtualPython
+    } else {
+        Get-Command python.exe -ErrorAction SilentlyContinue
+    }
     if ($null -eq $python) {
         throw "Python is not installed or is not available in PATH. Install Python 3.12, then run the setup in README.md."
     }

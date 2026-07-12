@@ -51,10 +51,40 @@ def test_schedule_pdf_uses_single_page_weekly_grid_and_keeps_chinese_names(tmp_p
     assert not any("Thin" in name for name in font_names)
     assert any("Medium" in name for name in font_names)
     assert any("SemiBold" in name for name in font_names)
+    assert "Not to be served" not in extracted_text
+    assert "Internal school document" not in extracted_text
     assert [item["day"] for item in workflow.assignments(draft.id)] == sorted(
         (item["day"] for item in workflow.assignments(draft.id)),
         key=lambda day: ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY").index(day),
     )
+
+
+def test_group_schedule_crest_and_footer_are_explicit_export_options(tmp_path) -> None:
+    workflow = RosterWorkflow(database_path=tmp_path / "live.sqlite3", backup_dir=tmp_path / "backups")
+    workflow.bootstrap()
+    draft = workflow.generate_and_save_draft(date(2026, 9, 7))
+
+    clean = PdfReader(BytesIO(build_roster_pdf(workflow, draft.id, language="en", show_crest=False).content))
+    annotated = PdfReader(
+        BytesIO(
+            build_roster_pdf(
+                workflow,
+                draft.id,
+                language="en",
+                show_crest=True,
+                show_footer_note=True,
+            ).content
+        )
+    )
+    clean_text = "\n".join(page.extract_text() for page in clean.pages)
+    annotated_text = "\n".join(page.extract_text() for page in annotated.pages)
+
+    assert not clean.pages[0].get("/Resources", {}).get("/XObject")
+    assert annotated.pages[0].get("/Resources", {}).get("/XObject")
+    assert "Not to be served" not in clean_text
+    assert "Internal school document" not in clean_text
+    assert "Not to be served" in annotated_text
+    assert "Internal school document" in annotated_text
 
 
 def test_bilingual_published_schedule_pdfs_expose_every_operator_check(tmp_path) -> None:

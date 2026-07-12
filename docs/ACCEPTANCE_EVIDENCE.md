@@ -4,7 +4,7 @@
 
 ## 使用方法
 
-1. 維護者先執行 `python -X utf8 scripts\verify_release_candidate.py`，確認 JSON 報告八項檢查均為 `pass`；其中 `repository_hygiene` 必須證明無已追蹤敏感檔及 ignore 契約完整。
+1. 維護者先執行 `python -X utf8 scripts\verify_release_candidate.py`，確認 JSON 報告九項檢查均為 `pass`；其中 `repository_hygiene` 必須證明有真正 commit 歷史、無已追蹤敏感檔及 ignore 契約完整，而 `security_gates` 必須通過依賴、靜態程式及秘密掃描。
    網站「交接指引」亦會核對報告的程式指紋；若顯示過期、失敗或格式不可信，先停止驗收並由 IT 支援重跑。
 2. 首席導學風紀依下表只執行「仍需真人確認」欄，不需要重做已由自動化精確覆蓋的故障注入。
 3. 教師顧問完成 A-01 至 A-04，並在 `docs/RELEASE_HANDOVER.md` 的正式驗收清單簽核。

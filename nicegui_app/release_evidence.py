@@ -20,17 +20,40 @@ RELEASE_SOURCE_ROOTS = (
     PROJECT_ROOT / "migrations",
     PROJECT_ROOT / "scripts",
     PROJECT_ROOT / "tests",
+    PROJECT_ROOT / "docs",
+    PROJECT_ROOT / ".github",
 )
 RELEASE_SOURCE_FILES = (
+    PROJECT_ROOT / "README.md",
+    PROJECT_ROOT / "README-EN.md",
+    PROJECT_ROOT / "Professional_Design_System.md",
+    PROJECT_ROOT / "PROJECT_STATUS.md",
     PROJECT_ROOT / "requirements.txt",
     PROJECT_ROOT / "requirements-dev.txt",
+    PROJECT_ROOT / "requirements.lock",
+    PROJECT_ROOT / "requirements-dev.lock",
     PROJECT_ROOT / "pyproject.toml",
     PROJECT_ROOT / "alembic.ini",
     PROJECT_ROOT / "START_SING_YIN_ROSTER.cmd",
     PROJECT_ROOT / "START_PRACTICE_MODE.cmd",
     PROJECT_ROOT / "RESET_PRACTICE_MODE.cmd",
 )
-RELEASE_SUFFIXES = {".py", ".ini", ".toml", ".txt", ".ps1", ".cmd"}
+RELEASE_SUFFIXES = {
+    ".py",
+    ".ini",
+    ".toml",
+    ".txt",
+    ".ps1",
+    ".cmd",
+    ".md",
+    ".png",
+    ".svg",
+    ".webp",
+    ".woff2",
+    ".ttf",
+    ".yml",
+    ".yaml",
+}
 EvidenceState = Literal["pass", "running", "stale", "fail", "missing", "unreadable"]
 
 

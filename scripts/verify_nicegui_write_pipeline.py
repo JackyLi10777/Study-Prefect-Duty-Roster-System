@@ -21,7 +21,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from nicegui_app.config import PREFECT_SEED_PATH
 from nicegui_app.services.roster_workflow import RosterWorkflow
 from roster_core import Prefect, generate_weekly_roster
-from roster_policy import SchoolDay
+from roster_policy import PrefectRole, SchoolDay
 
 
 BASE_URL = os.getenv("SING_YIN_TEST_URL", "http://127.0.0.1:8080")
@@ -76,7 +76,11 @@ def _fixture_leave_prefect() -> tuple[str, str]:
             name=str(item["name"]),
             form=str(item["form"]),
             class_name=str(item["class"]),
-            role="Assistant Head Study Prefect" if "Assistant Head Study Prefect" in str(item["role"]) else "Study Prefect",
+            role=(
+                PrefectRole.ASSISTANT_HEAD
+                if "Assistant Head Study Prefect" in str(item["role"])
+                else PrefectRole.STUDY_PREFECT
+            ),
             available_days=frozenset(SchoolDay[str(day)] for day in item["availableDays"]),
             history_weight=float(item.get("historyWeight", 0)),
             history_duties=int(item.get("historyDuties", 0)),

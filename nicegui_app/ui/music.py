@@ -136,7 +136,7 @@ def render_page_music_control(context: str) -> None:
             once=True,
         )
 
-    ui.button(icon="headphones", on_click=open_dialog).props(f'flat round aria-label="{t("page_music")}" data-testid=page-music-button').classes("sy-music-trigger").tooltip(t("page_music"))
+    ui.button(icon="headphones", on_click=open_dialog).props(f'flat round aria-label="{t("page_music")}" data-testid=page-music-button').classes("sy-music-trigger").style("color: var(--sy-nav-ink) !important").tooltip(t("page_music"))
 
 
 def render_music_library_settings() -> None:
@@ -145,12 +145,12 @@ def render_music_library_settings() -> None:
     context_options = {context: music_context_label(context) for context in MUSIC_CONTEXTS}
     render_youtube_settings()
 
-    with ui.card().classes("sy-surface sy-audio-settings w-full max-w-3xl p-6").props("data-testid=audio-settings"):
+    with ui.card().classes("sy-surface sy-settings-section sy-audio-settings w-full max-w-3xl p-6").props("data-testid=audio-settings"):
         with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
             with ui.column().classes("gap-1 max-w-2xl"):
                 ui.label(t("audio_preferences")).classes("text-lg font-semibold")
                 ui.label(t("audio_preferences_intro")).classes("text-sm leading-6 text-[var(--sy-muted)]")
-            ui.icon("graphic_eq").classes("text-2xl text-[var(--sy-teal)]").props("aria-hidden=true")
+            ui.icon("graphic_eq").classes("sy-settings-section-icon").props("aria-hidden=true")
 
         sound_switch = ui.switch(t("interface_sounds"), value=sound_feedback_enabled()).props("name=interface-sounds").classes("mt-4")
         sound_slider = ui.slider(min=0, max=100, value=round(preferred_sound_volume() * 100)).props(
@@ -180,12 +180,12 @@ def render_music_library_settings() -> None:
         music_slider.on_value_change(change_music_volume)
         ui.button(t("test_interface_sound"), icon="volume_up", on_click=lambda: play_interface_sound("success", force=True)).props("outline").classes("mt-3")
 
-    with ui.card().classes("sy-surface sy-music-settings w-full max-w-3xl p-6").props("data-testid=music-library-settings"):
+    with ui.card().classes("sy-surface sy-settings-section sy-music-settings w-full max-w-3xl p-6").props("data-testid=music-library-settings"):
         with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
             with ui.column().classes("gap-1 max-w-2xl"):
                 ui.label(t("music_library")).classes("text-lg font-semibold")
                 ui.label(t("music_library_intro")).classes("text-sm leading-6 text-[var(--sy-muted)]")
-            ui.icon("library_music").classes("text-2xl text-[var(--sy-teal)]").props("aria-hidden=true")
+            ui.icon("library_music").classes("sy-settings-section-icon").props("aria-hidden=true")
 
         with ui.expansion(t("music_usage_guide"), icon="help_outline").classes("w-full mt-4"):
             ui.label(t("music_usage_steps")).classes("text-sm leading-7 text-[var(--sy-muted)]")
@@ -232,6 +232,14 @@ def render_music_library_settings() -> None:
                         context=track.contexts[0],
                         remove=lambda track_id=track.id: library.remove_local_audio(track_id),
                     )
+        else:
+            with ui.element("aside").classes("sy-inline-empty w-full mt-5").props(
+                f'role=status aria-label="{t("music_no_custom_tracks_title")}"'
+            ):
+                ui.icon("queue_music").classes("sy-inline-empty-icon").props("aria-hidden=true")
+                with ui.column().classes("gap-0 min-w-0"):
+                    ui.label(t("music_no_custom_tracks_title")).classes("sy-inline-empty-title")
+                    ui.label(t("music_no_custom_tracks_body")).classes("sy-inline-empty-copy")
 
 
 def _render_removable_music_item(*, title: str, context: str, remove) -> None:  # type: ignore[no-untyped-def]

@@ -5,6 +5,7 @@ from PIL import Image
 from nicegui_app.main import open_browser_on_startup
 from nicegui_app.config import DISPLAY_PRINT_CREST_PATH, DISPLAY_WEB_CREST_PATH, FAVICON_CREST_PATH, NAVIGATION_CREST_PATH, PROJECT_ROOT
 from nicegui_app.ui.theme import ATMOSPHERE_THEME_PAIRS
+from tests.ui_source import combined_theme_source
 
 
 def _image_dimensions(path) -> tuple[int, int]:  # type: ignore[no-untyped-def]
@@ -30,7 +31,7 @@ def test_original_atmosphere_assets_are_available_to_the_local_runtime() -> None
 
 def test_every_enabled_atmosphere_uses_one_shared_slot_with_a_light_dark_pair() -> None:
     atmosphere = PROJECT_ROOT / "nicegui_app" / "assets" / "atmosphere"
-    theme = (PROJECT_ROOT / "nicegui_app" / "ui" / "theme.py").read_text(encoding="utf-8")
+    theme = combined_theme_source()
 
     assert set(ATMOSPHERE_THEME_PAIRS) == {"sidebar", "weekly-pulse", "devotional", "onboarding", "handover", "platform", "architecture", "architecture-lifeline", "empty-ready"}
     for slot, (light_asset, dark_asset) in ATMOSPHERE_THEME_PAIRS.items():
@@ -68,7 +69,7 @@ def test_local_hong_kong_font_system_is_complete_and_offline() -> None:
         "OFL-Noto-CJK.txt",
     }
     assert required <= {path.name for path in root.iterdir() if path.is_file()}
-    theme = (PROJECT_ROOT / "nicegui_app" / "ui" / "theme.py").read_text(encoding="utf-8")
+    theme = combined_theme_source()
     assert 'font-family: "Inter", "Noto Sans HK"' in theme
     assert 'font-family: "Noto Serif HK"' in theme
     assert "font-display: swap" in theme
@@ -87,7 +88,7 @@ def test_school_crest_assets_cover_distinct_delivery_contexts() -> None:
 
 
 def test_pointer_hover_motion_is_scoped_and_reduced_motion_safe() -> None:
-    theme = (PROJECT_ROOT / "nicegui_app" / "ui" / "theme.py").read_text(encoding="utf-8")
+    theme = combined_theme_source()
 
     assert "@media (hover: hover) and (pointer: fine)" in theme
     assert ".sy-pointer-reactive" in theme

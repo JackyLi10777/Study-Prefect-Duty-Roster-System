@@ -1,9 +1,17 @@
 from __future__ import annotations
 
-from nicegui_app.ui import pages
+from nicegui_app.ui import page_shared as pages
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.ui.i18n import EN, MESSAGES, OFFICIAL_ROLE_TERMS, POST_LABELS, ROLE_LABELS, ZH_HK
 from roster_policy import DutyPost
+from tests.ui_source import combined_theme_source
+
+
+def test_domain_catalog_merge_has_no_duplicate_message_keys() -> None:
+    from nicegui_app.ui.i18n_catalog import foundation, media, people, platform, stewardship, weekly
+
+    domains = (foundation.MESSAGES, weekly.MESSAGES, people.MESSAGES, stewardship.MESSAGES, platform.MESSAGES, media.MESSAGES)
+    assert len(MESSAGES) == sum(len(domain) for domain in domains)
 
 
 def test_every_interface_message_has_nonempty_traditional_chinese_and_english_text() -> None:
@@ -47,6 +55,21 @@ def test_detailed_operator_guidance_and_architecture_copy_remain_bilingual() -> 
         "guide_support_title",
         "guide_support_body",
         "system_architecture",
+        "platform",
+        "platform_intro",
+        "platform_snapshot_title",
+        "platform_snapshot_unavailable_body",
+        "platform_metric_release",
+        "platform_culture_title",
+        "platform_resources_title",
+        "engineering",
+        "engineering_intro",
+        "engineering_facts_title",
+        "engineering_blueprint_title",
+        "engineering_pipeline_title",
+        "engineering_pillars_title",
+        "engineering_evolution_title",
+        "engineering_resources_title",
         "architecture_intro",
         "architecture_ui_body",
         "architecture_policy_body",
@@ -79,10 +102,49 @@ def test_detailed_operator_guidance_and_architecture_copy_remain_bilingual() -> 
     assert "OP" in MESSAGES["guide_support_body"][EN]
     assert "李創杰" in MESSAGES["co_creation_body"][ZH_HK]
     assert "Codex" in MESSAGES["co_creation_body"][EN]
-    assert "只由兩位共創者" in MESSAGES["co_creation_body"][ZH_HK]
+    assert "我是李創杰" in MESSAGES["co_creation_body"][ZH_HK]
+    assert "只由我與 Codex 兩位共創者" in MESSAGES["co_creation_body"][ZH_HK]
+    assert "I am LI Chuangjie Jacky" in MESSAGES["co_creation_body"][EN]
     assert "only two co-creators" in MESSAGES["co_creation_body"][EN]
+    assert "我想像" in MESSAGES["co_creation_quote"][ZH_HK]
+    assert MESSAGES["co_creation_signature"][ZH_HK].startswith("— 李創杰，")
     assert "公平" in MESSAGES["co_creation_codex_body"][ZH_HK]
     assert "fairness" in MESSAGES["co_creation_codex_body"][EN]
+
+
+def test_enterprise_operating_model_keeps_official_roles_and_capabilities_bilingual() -> None:
+    required_keys = {
+        "platform_facts_title",
+        "team_operating_model_title",
+        "team_operating_model_note",
+        "team_role_head",
+        "team_role_head_function",
+        "team_role_assistant",
+        "team_role_assistant_function",
+        "team_role_prefect",
+        "team_role_prefect_function",
+        "team_role_advisor",
+        "team_role_advisor_function",
+        "capability_map_title",
+        "capability_operations_title",
+        "capability_fairness_title",
+        "capability_experience_title",
+        "capability_continuity_title",
+        "solutions_portfolio_title",
+        "solution_weekly_title",
+        "solution_adjustment_title",
+        "solution_fairness_title",
+        "solution_handover_title",
+        "solution_open_workspace",
+    }
+
+    assert required_keys <= MESSAGES.keys()
+    assert all(MESSAGES[key][ZH_HK].strip() and MESSAGES[key][EN].strip() for key in required_keys)
+    assert MESSAGES["team_role_head"][ZH_HK] == "首席導學風紀"
+    assert MESSAGES["team_role_assistant"][ZH_HK] == "助理首席導學風紀"
+    assert MESSAGES["team_role_prefect"][ZH_HK] == "導學風紀"
+    assert "不會取代" in MESSAGES["team_operating_model_note"][ZH_HK]
+    assert "do not replace" in MESSAGES["team_operating_model_note"][EN]
 
 
 def test_release_acceptance_states_and_human_responsibilities_remain_bilingual() -> None:
@@ -112,7 +174,7 @@ def test_release_acceptance_states_and_human_responsibilities_remain_bilingual()
 
 def test_practice_mode_identity_is_complete_and_not_colour_only() -> None:
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
-    theme = (PROJECT_ROOT / "nicegui_app" / "ui" / "theme.py").read_text(encoding="utf-8")
+    theme = combined_theme_source()
 
     for key in ("practice_mode_title", "practice_mode_body"):
         assert MESSAGES[key][ZH_HK].strip() and MESSAGES[key][EN].strip()

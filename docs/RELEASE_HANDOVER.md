@@ -1,10 +1,12 @@
 # 首次發布與交接手冊 / First-release and handover guide
 
+我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
+
 ## 運作原則
 
-本系統是校內、本機優先工具。學生姓名、請假原因、值班紀錄、備份及 PDF 不可上載到公開服務。每一項操作均應服務於清楚、公平、責任與關顧，而非把管理負擔交給下一位風紀。
+我把本系統設計成校內、本機優先工具。學生姓名、請假原因、值班紀錄、備份及 PDF 不可上載到公開服務。我希望每一項操作都服務於清楚、公平、責任與關顧，而不是把管理負擔交給下一位風紀。
 
-當任首席導學風紀負責日常操作。顧問老師主要在週表完成後檢視已發布結果、公平審計、備份和交接證據；本發布不要求老師日常生成、編輯或處理請假。
+我在任內由首席導學風紀負責日常操作；交接後亦應由下一任首席導學風紀承接。顧問老師主要在週表完成後檢視已發布結果、公平審計、備份和交接證據；本發布不要求老師日常生成、編輯或處理請假。
 
 ## 每週操作
 
@@ -41,6 +43,10 @@
 
 ## 本機設定
 
+正式長期主機採用 Windows 11，並維持 NiceGUI 只監聽 `127.0.0.1`。第一次由空白電腦安裝、設定開機自動啟動、更新、保養或搬機時，先依 [Windows 專用主機完整設定手冊](WINDOWS_DEDICATED_HOST_SETUP.md) 完成，不要從本節零散拼湊指令。
+
+需要從其他裝置使用網站時，依 [Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 完成 Access app、逐人 Allow policy、Tunnel service 及未登入／獲准／未獲准三種測試。遠端功能失敗時先停止 `cloudflared`；本機 `127.0.0.1` 工作流及資料仍可獨立使用。
+
 ### 交接前練習模式
 
 - 新任首席導學風紀先雙擊 `START_PRACTICE_MODE.cmd`，完成一次生成至還原的完整流程，再進入正式模式。
@@ -64,14 +70,14 @@
 2. 安裝需求並在專用、受控的校內電腦啟動：
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m pip install --require-hashes -r requirements.lock
 python -X utf8 -m nicegui_app.main
 ```
 
 3. `SING_YIN_OPEN_BROWSER` 預設為 `true`，令首次開啟更直接；受控或無介面運行可設為 `false`。
 4. 只使用 `http://127.0.0.1:8080`；現時程式刻意只綁定 localhost。
-5. 正式版本更新前，教師顧問或 IT 支援應先執行 `python -m pip install -r requirements-dev.txt` 及 `python -m playwright install chromium`，再執行 `python -X utf8 scripts\verify_release_candidate.py`。此入口會先執行 Git 隱私檢查，再自行建立臨時資料庫、備份及日誌，完成正常流程與備份失敗復原演練，絕不採用正式學校資料路徑。只有 `logs/release-candidate-report.json` 八關均為 `pass` 才算機器驗證完成；這不能取代下方的人手驗收。
-6. 在首次 commit 前可單獨執行 `python -X utf8 scripts\check_repository_hygiene.py`。`status: pass` 只表示目前可安全開始人工選擇源碼；`history: missing` 仍表示沒有版本歷史。不要因此直接執行 `git add .`，先由教師顧問／IT 確認學校批准的私有或離線儲存位置。
+5. 正式版本更新前，教師顧問或 IT 支援應先執行 `python -m pip install --require-hashes -r requirements-dev.lock` 及 `python -m playwright install chromium`，再執行 `python -X utf8 scripts\verify_release_candidate.py`。此入口會先執行 Git 邊界及安全掃描，再自行建立臨時資料庫、備份及日誌，完成正常流程與備份失敗復原演練，絕不採用正式學校資料路徑。只有 `logs/release-candidate-report.json` 九關均為 `pass` 才算機器驗證完成；這不能取代下方的人手驗收。
+6. 發布前單獨執行 `python -X utf8 scripts\check_repository_hygiene.py`。只有 `status: pass` 且 `history: present` 才可繼續；沒有真正 commit 歷史會直接阻擋發布。再執行 `python -X utf8 scripts\run_security_checks.py`，確認依賴漏洞、程式靜態分析及秘密掃描全部通過。
 
 ### 操作失敗與本機支援記錄
 
@@ -81,6 +87,7 @@ python -X utf8 -m nicegui_app.main
 - 如問題持續，把 OP 或 REQ 編號交給教師顧問或 IT 支援。他們可在系統資料夾執行：`python -X utf8 scripts\inspect_support_log.py --reference OP-XXXXXXXX`；這個工具只讀取最近的匹配本機記錄。不要把整份日誌上載至公開網站或個人雲端。
 - `logs/app.log` 會以 UTF-8 輪替，並在受控終端即時顯示相同的安全記錄。每行只記錄事件、受控操作／路由分類、狀態、耗時、例外類型、程式位置及 OP／REQ 追蹤編號；系統不會寫入姓名、請假原因、表單內容、查詢字串、值班表內容或 PDF 內容。瀏覽器關閉 localhost 連線所產生的 Windows 64／10054 重設只會記為資訊事件；其他未捕捉的異步錯誤仍會保留為嚴重事件並交回系統處理，不能因為「消除紅字」而被隱藏。
 - `.env` 可用 `SING_YIN_LOG_DIR` 指定另一個受控本機資料夾；`SING_YIN_LOG_LEVEL`、`SING_YIN_LOG_CONSOLE`、`SING_YIN_LOG_MAX_BYTES` 及 `SING_YIN_LOG_BACKUP_COUNT` 可調整受控本機診斷行為。不可設定為 OneDrive、Google Drive 或其他未經學校批准的同步位置。
+- 一般使用意見、流程疑問及交接建議可電郵 `s10777@syss.edu.hk`。技術問題請附畫面上的 OP／REQ 編號及簡短描述，不要附上姓名、請假內容、值班表、PDF、資料庫、備份、截圖或完整日誌。
 
 ### YouTube 音樂（首席導學風紀自選）
 
@@ -90,6 +97,7 @@ python -X utf8 -m nicegui_app.main
 4. 音樂與提示音是個人操作偏好，不進入排班資料庫、公平帳本、PDF、審計或交接包。顧問老師核對時不需要設定或操作音樂。
 5. 歌單名稱與搜尋字不得含學生姓名、班別、請假或值班內容。日後啟用遠端存取前，重新確認校方網絡、YouTube 使用及音樂播放安排。
 6. 播放窗採用 YouTube privacy-enhanced 網域、無 referrer、無自動播放及無未使用的 JavaScript 控制 API；搜尋縮圖只接受官方 YouTube 圖片主機。這些保護不代表可把學生資料輸入搜尋框。
+7. 首頁經文的「跟隨外觀」會在淺色模式優先清晰指引、深色模式優先安靜安慰；首席導學風紀可改為固定方向。音樂的「明亮專注／安靜反思」分類仍待歌單網址核對後啟用，切勿建立空白或虛構歌單。
 
 ## Cloudflare Access：尚未授權的外部設定
 
@@ -120,6 +128,7 @@ python -X utf8 -m nicegui_app.main
 - [ ] 發布前確認視窗有被閱讀；發布後公平帳本只增加一次。
 - [ ] 發布後請假調整只提供合資格替補，並在帳本和審計中保留理由。
 - [ ] 下載中文及英文週表 PDF 均為清晰單頁，顯示正確崗位、星期、草稿/發布狀態及中文姓名；202 室星期二、五清楚標記為不開放。
+- [ ] 核對週表匯出視窗的校徽開關；乾淨發布版不含「僅供內部使用」、頁碼或經文提示，只有刻意開啟補充頁腳時才出現附註。
 - [ ] 內部公平審計 PDF 與群組週表分開；審計檔清楚標示為內部資料，且具名資料沒有被預設發群組。
 - [ ] 「交接指引」三項狀態合理，並能由下一任按步驟獨立完成演練。
 - [ ] 在測試資料上建立一次「交接備份包」，確認 ZIP 同時含 SQLite 快照、manifest 和還原說明，並把它移至受控加密位置。

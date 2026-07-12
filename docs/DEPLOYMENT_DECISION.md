@@ -2,6 +2,10 @@
 
 ## 結論 / Recommendation
 
+**已選定的正式運行方案：Windows 11 專用主機；先以本機 `127.0.0.1` 驗收，再按需要啟用受 Cloudflare Access 保護的遠端網站。**
+
+完整的硬件、Windows、Git、Python 3.12、`.venv`、`.env`、工作排程器、健康檢查、更新、備份及搬機步驟，見 [Windows 專用主機完整設定手冊](WINDOWS_DEDICATED_HOST_SETUP.md)。受控遠端存取的 Dashboard 與自動化步驟見 [Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)。目前不採用 Linux、Raspberry Pi、Docker 或真正雲端主機作正式來源。
+
 **現時不要把系統直接「上傳到雲端」。**
 
 第一個受控遠端版本應採用：**專用學校主機 + Cloudflare Tunnel + Cloudflare Access**。NiceGUI 程序、SQLite 資料庫、PDF、備份及本機日誌仍留在受控主機；Cloudflare 提供身份驗證、TLS 和到該主機的受控通道，但不會成為此系統的應用資料庫。這是由本機走向遠端存取，而不是將學生資料搬到公開雲端。
@@ -13,7 +17,7 @@
 | 模式 | 資料位置 | 誰可進入 | 適合情況 | 目前狀態 |
 |---|---|---|---|---|
 | A. 本機正式使用 / Local-only | 專用校內電腦 | 在該電腦操作的人 | 首次發布、最小風險、單一負責人 | **現時批准** |
-| B. 受控遠端存取 / Controlled remote access | 專用校內主機為系統資料來源；Cloudflare 處理受保護流量與身份驗證 | 當任首席導學風紀；顧問老師只在需要核對時進入 | 首席導學風紀需在校外受控操作，顧問老師完成後檢視 | **可行，但未批准** |
+| B. 受控遠端存取 / Controlled remote access | Windows 專用主機為系統資料來源；Cloudflare 處理受保護流量與身份驗證 | Access Allow policy 內逐一列明的使用者 | 需要在主機以外的瀏覽器操作 | **已批准準備；待帳戶設定及真人驗收後啟用** |
 | C. 真正雲端部署 / Cloud-hosted application | 學校批准的雲端主機及受控持久化儲存 | 應用程式身份權限 + 網絡存取規則 | 多校區、高可用、IT 集中維護 | **未設計，不可直接遷移** |
 
 ## 為甚麼不直接用 Cloudflare Pages 或 Quick Tunnel？
