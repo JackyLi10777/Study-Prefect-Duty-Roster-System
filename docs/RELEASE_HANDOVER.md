@@ -76,7 +76,7 @@ python -X utf8 -m nicegui_app.main
 
 3. `SING_YIN_OPEN_BROWSER` 預設為 `true`，令首次開啟更直接；受控或無介面運行可設為 `false`。
 4. 只使用 `http://127.0.0.1:8080`；現時程式刻意只綁定 localhost。
-5. 正式版本更新前，教師顧問或 IT 支援應先執行 `python -m pip install --require-hashes -r requirements-dev.lock` 及 `python -m playwright install chromium`，再執行 `python -X utf8 scripts\verify_release_candidate.py`。此入口會先執行 Git 邊界及安全掃描，再自行建立臨時資料庫、備份及日誌，完成正常流程與備份失敗復原演練，絕不採用正式學校資料路徑。只有 `logs/release-candidate-report.json` 九關均為 `pass` 才算機器驗證完成；這不能取代下方的人手驗收。
+5. 正式版本更新前，教師顧問或 IT 支援應先執行 `python -m pip install --require-hashes -r requirements-dev.lock` 及 `python -m playwright install chromium`，再執行 `python -X utf8 scripts\verify_release_candidate.py`。此入口會先執行 Git 邊界及安全掃描，再自行建立臨時資料庫、備份及日誌，完成 UI、效能／記憶體、正常寫入流程與備份失敗復原演練，絕不採用正式學校資料路徑。只有 `logs/release-candidate-report.json` 目前列出的全部閘門均為 `pass` 才算機器驗證完成；這不能取代下方的人手驗收。
 6. 發布前單獨執行 `python -X utf8 scripts\check_repository_hygiene.py`。只有 `status: pass` 且 `history: present` 才可繼續；沒有真正 commit 歷史會直接阻擋發布。再執行 `python -X utf8 scripts\run_security_checks.py`，確認依賴漏洞、程式靜態分析及秘密掃描全部通過。
 
 ### 操作失敗與本機支援記錄

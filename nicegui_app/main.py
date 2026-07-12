@@ -69,6 +69,7 @@ def run() -> None:
     app.add_static_files(url_path="/assets/workflow", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "workflow")
     app.add_static_files(url_path="/assets/atmosphere", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "atmosphere")
     app.add_static_files(url_path="/assets/fonts", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "fonts")
+    app.add_static_files(url_path="/assets/css", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "css")
     app.add_static_files(url_path="/assets/motion", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "motion")
     app.add_static_files(url_path="/assets/vendor", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "vendor")
     app.add_static_files(url_path="/assets/music", local_directory=MUSIC_DIR)

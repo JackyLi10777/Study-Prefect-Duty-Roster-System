@@ -14,6 +14,7 @@ MESSAGES = {'workbench_title': {'zh-HK': '本週值班工作台', 'en': "This we
  'flow_leave_detail': {'zh-HK': '有人臨時請假時，只在這一步選替補或保留空缺。',
                        'en': 'For a late absence, choose a substitute or keep a vacancy only at this step.'},
  'flow_current': {'zh-HK': '現在進行', 'en': 'Do this now'},
+ 'mobile_next_action_label': {'zh-HK': '下一個安全步驟', 'en': 'NEXT SAFE STEP'},
  'flow_ready': {'zh-HK': '已準備', 'en': 'Ready'},
  'flow_waiting': {'zh-HK': '稍後進行', 'en': 'Later'},
  'flow_done': {'zh-HK': '已完成', 'en': 'Completed'},

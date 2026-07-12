@@ -12,6 +12,20 @@ def dashboard_page() -> None:
     reference = verse.reference_zh if locale_is_zh else verse.reference_en
     scripture = verse.scripture_zh if locale_is_zh else verse.scripture_en
     reflection = verse.reflection_zh if locale_is_zh else verse.reflection_en
+    weeks = workflow.roster_weeks()
+    latest = weeks[0] if weeks else None
+    if latest is None:
+        next_title_key = "flow_generate"
+        next_action_key = "create_draft"
+        next_action = lambda: _navigate_with_feedback("/rosters")
+    elif latest["status"] == "draft":
+        next_title_key = "flow_review"
+        next_action_key = "flow_open_draft"
+        next_action = lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}")
+    else:
+        next_title_key = "flow_leave"
+        next_action_key = "flow_open_adjustment"
+        next_action = lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}/adjustments")
     with page_shell("dashboard", "/", music_context="dashboard"):
         with ui.element("section").classes("sy-daily-start w-full").props(f'aria-label="{t("daily_verse")}"'):
             with ui.row().classes("w-full items-start gap-4 flex-wrap"):
@@ -22,23 +36,28 @@ def dashboard_page() -> None:
                     ui.label(reference).classes("sy-daily-start-reference")
                 with ui.column().classes("sy-devotional-controls gap-2 items-end"):
                     tone_preference = str(app.storage.user.get("devotional_tone", "auto"))
-                    tone_select = ui.select(
-                        label=t("devotional_tone_label"),
-                        options={
-                            "auto": t("devotional_tone_auto"),
-                            "guidance": t("devotional_tone_guidance"),
-                            "comfort": t("devotional_tone_comfort"),
-                        },
-                        value=tone_preference if tone_preference in {"auto", "guidance", "comfort"} else "auto",
-                    ).props("dense outlined options-dense").classes("sy-devotional-tone-select")
-                    tone_select.on_value_change(lambda event: _set_devotional_tone(str(event.value)))
                     ui.button(t("refresh_verse"), icon="refresh", on_click=_refresh_dashboard_verse).props("flat").classes("sy-daily-start-refresh")
             with ui.expansion(reflection.get("title", ""), icon="auto_stories").classes("sy-daily-start-reflection mt-3"):
+                tone_select = ui.select(
+                    label=t("devotional_tone_label"),
+                    options={
+                        "auto": t("devotional_tone_auto"),
+                        "guidance": t("devotional_tone_guidance"),
+                        "comfort": t("devotional_tone_comfort"),
+                    },
+                    value=tone_preference if tone_preference in {"auto", "guidance", "comfort"} else "auto",
+                ).props("dense outlined options-dense").classes("sy-devotional-tone-select mb-3")
+                tone_select.on_value_change(lambda event: _set_devotional_tone(str(event.value)))
                 ui.label(reflection.get("body", "")).classes("text-sm leading-6 text-[var(--sy-muted)] p-1")
                 if reflection.get("prayer"):
                     ui.label(f"{t('prayer')}: {reflection['prayer']}").classes("mt-3 text-sm italic text-[var(--sy-muted)]")
-        weeks = workflow.roster_weeks()
-        latest = weeks[0] if weeks else None
+        with ui.element("section").classes("sy-mobile-next-action w-full").props(
+            f'aria-label="{t("mobile_next_action_label")}"'
+        ):
+            with ui.column().classes("gap-0 min-w-0"):
+                ui.label(t("mobile_next_action_label")).classes("sy-mobile-next-action-kicker")
+                ui.label(t(next_title_key)).classes("sy-mobile-next-action-title")
+            ui.button(t(next_action_key), icon="arrow_forward", on_click=next_action).props("color=primary")
         with ui.row().classes("sy-dashboard-grid sy-dashboard-grid--single w-full items-stretch"):
             with ui.element("section").classes("sy-workbench grow min-w-[620px]"):
                 with ui.row().classes("w-full items-start justify-between gap-5 flex-wrap"):
@@ -72,8 +91,6 @@ def dashboard_page() -> None:
                 title_key="empty_roster_title",
                 body_key="empty_roster_detail",
                 icon="event_note",
-                action_key="empty_start_action",
-                action=lambda: _navigate_with_feedback("/rosters"),
                 illustrated=True,
             )
         else:

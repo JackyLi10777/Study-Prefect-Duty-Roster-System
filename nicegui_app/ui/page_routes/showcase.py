@@ -180,12 +180,6 @@ def platform_page() -> None:
 
 @ui.page("/engineering")
 def engineering_page() -> None:
-    facts = (
-        ("208", "science", "engineering_fact_tests", "engineering_fact_tests_body"),
-        ("08", "verified", "engineering_fact_gates", "engineering_fact_gates_body"),
-        ("05", "layers", "engineering_fact_layers", "engineering_fact_layers_body"),
-        ("02", "translate", "engineering_fact_languages", "engineering_fact_languages_body"),
-    )
     blueprint = (
         ("desktop_windows", "engineering_layer_ui", "engineering_layer_ui_body"),
         ("rule", "engineering_layer_policy", "engineering_layer_policy_body"),
@@ -200,6 +194,7 @@ def engineering_page() -> None:
         ("code", "engineering_gate_compile"),
         ("inventory_2", "engineering_gate_dependencies"),
         ("web", "engineering_gate_browser"),
+        ("speed", "engineering_gate_runtime"),
         ("conversion_path", "engineering_gate_workflow"),
         ("dns", "engineering_gate_deployment"),
         ("settings_backup_restore", "engineering_gate_recovery"),
@@ -233,6 +228,17 @@ def engineering_page() -> None:
         else t("engineering_release_state", state=t(release_state_keys.get(evidence.state, "platform_release_unreadable")))
     )
     evidence_tone = "stable" if evidence.state == "pass" else "attention"
+    gate_value = (
+        f"{evidence.passed_checks:02d}/{evidence.total_checks:02d}"
+        if evidence.total_checks
+        else t("engineering_fact_unavailable")
+    )
+    facts = (
+        (t("engineering_fact_full_suite"), "science", "engineering_fact_tests", "engineering_fact_tests_body"),
+        (gate_value, "verified", "engineering_fact_gates", "engineering_fact_gates_body"),
+        ("05", "layers", "engineering_fact_layers", "engineering_fact_layers_body"),
+        ("02", "translate", "engineering_fact_languages", "engineering_fact_languages_body"),
+    )
 
     with page_shell("engineering", "/engineering", music_context="architecture"):
         with ui.element("section").classes("sy-engineering-hero w-full").props(
@@ -245,7 +251,7 @@ def engineering_page() -> None:
                 _tone_badge(t("engineering_badge"), "stable").classes("mt-3 self-start")
 
         with ui.element("section").classes("sy-architecture-section w-full"):
-            ui.label(t("engineering_facts_title")).classes("sy-architecture-section-title")
+            ui.html(t("engineering_facts_title"), tag="h2").classes("sy-architecture-section-title")
             with ui.element("div").classes("sy-engineering-facts").props("data-testid=engineering-facts"):
                 for value, icon, title_key, body_key in facts:
                     with ui.element("article").classes("sy-engineering-fact"):
@@ -302,7 +308,7 @@ def engineering_page() -> None:
                         ui.label(t(body_key)).classes("sy-engineering-evolution-copy")
 
         with ui.element("section").classes("sy-engineering-resources w-full"):
-            ui.label(t("engineering_resources_title")).classes("sy-architecture-section-title")
+            ui.html(t("engineering_resources_title"), tag="h2").classes("sy-architecture-section-title")
             with ui.row().classes("gap-3 flex-wrap mt-4"):
                 ui.link(t("engineering_open_github"), GITHUB_REPOSITORY_URL, new_tab=True).props(
                     'rel="noopener noreferrer"'
@@ -406,5 +412,7 @@ def system_architecture_page() -> None:
 def _render_architecture_section_heading(kicker_key: str, title_key: str, copy_key: str) -> None:
     with ui.column().classes("sy-architecture-section-heading gap-1"):
         ui.label(t(kicker_key)).classes("sy-architecture-section-kicker")
-        ui.label(t(title_key)).classes("sy-architecture-section-title")
+        ui.html(t(title_key), tag="h2").classes("sy-architecture-section-title").props(
+            f"id={title_key}-heading"
+        )
         ui.label(t(copy_key)).classes("sy-architecture-section-copy")

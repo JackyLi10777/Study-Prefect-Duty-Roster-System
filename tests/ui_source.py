@@ -15,10 +15,14 @@ def combined_theme_source() -> str:
     """Return theme behavior and extracted markup as one static contract."""
 
     ui_root = PROJECT_ROOT / "nicegui_app" / "ui"
-    return "\n".join(
+    sources = [
         (ui_root / filename).read_text(encoding="utf-8")
         for filename in ("theme.py", "theme_markup.py")
+    ]
+    sources.append(
+        (PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-theme-v1.css").read_text(encoding="utf-8")
     )
+    return "\n".join(sources)
 
 
 def combined_i18n_source() -> str:

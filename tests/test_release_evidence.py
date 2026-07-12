@@ -12,6 +12,7 @@ from nicegui_app.release_evidence import (
     load_release_evidence,
     release_source_fingerprint,
 )
+from nicegui_app import release_evidence
 
 
 def _report(*, fingerprint: str, status: str = "pass") -> dict[str, object]:
@@ -47,8 +48,25 @@ def test_release_source_fingerprint_changes_with_release_input_content(tmp_path:
     assert original != changed
 
 
+def test_runtime_source_fingerprint_is_cached_for_repeated_showcase_reads(monkeypatch) -> None:
+    release_evidence._cached_release_source_fingerprint.cache_clear()
+    calls = 0
+
+    def calculate(_paths=None):  # type: ignore[no-untyped-def]
+        nonlocal calls
+        calls += 1
+        return ("a" * 64, 12)
+
+    monkeypatch.setattr(release_evidence, "_calculate_release_source_fingerprint", calculate)
+
+    assert release_source_fingerprint() == ("a" * 64, 12)
+    assert release_source_fingerprint() == ("a" * 64, 12)
+    assert calls == 1
+    release_evidence._cached_release_source_fingerprint.cache_clear()
+
+
 def test_release_fingerprint_tracks_ui_image_assets() -> None:
-    assert {".md", ".png", ".svg", ".webp", ".woff2", ".ttf", ".yml"} <= RELEASE_SUFFIXES
+    assert {".md", ".css", ".png", ".svg", ".webp", ".woff2", ".ttf", ".yml"} <= RELEASE_SUFFIXES
     assert any(path.name == "docs" for path in RELEASE_SOURCE_ROOTS)
     assert any(path.name == ".github" for path in RELEASE_SOURCE_ROOTS)
 

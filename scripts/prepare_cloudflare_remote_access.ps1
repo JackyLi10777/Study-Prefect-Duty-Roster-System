@@ -5,23 +5,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot "windows_host_common.ps1")
 
 if ($env:OS -ne "Windows_NT") { throw "This preparation script is for Windows only." }
 
-function Find-Cloudflared {
-    $command = Get-Command cloudflared.exe -ErrorAction SilentlyContinue
-    if ($command) { return $command.Source }
-    foreach ($path in @(
-        "$env:ProgramFiles\cloudflared\cloudflared.exe",
-        "${env:ProgramFiles(x86)}\cloudflared\cloudflared.exe",
-        "$env:LOCALAPPDATA\Microsoft\WinGet\Links\cloudflared.exe"
-    )) {
-        if ($path -and (Test-Path -LiteralPath $path)) { return (Resolve-Path -LiteralPath $path).Path }
-    }
-    return $null
-}
-
-$cloudflared = Find-Cloudflared
+$cloudflared = Find-SingYinCloudflared
 if (-not $cloudflared -and $InstallCloudflared) {
     if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
         throw "winget is unavailable. Install App Installer from Microsoft Store first."
@@ -32,7 +20,7 @@ if (-not $cloudflared -and $InstallCloudflared) {
     $machine = [Environment]::GetEnvironmentVariable("Path", "Machine")
     $user = [Environment]::GetEnvironmentVariable("Path", "User")
     $env:Path = "$machine;$user"
-    $cloudflared = Find-Cloudflared
+    $cloudflared = Find-SingYinCloudflared
 }
 if (-not $cloudflared) {
     throw "cloudflared is not installed. Re-run with -InstallCloudflared."

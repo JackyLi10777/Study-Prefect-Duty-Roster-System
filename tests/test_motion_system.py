@@ -42,3 +42,4 @@ def test_motion_assets_are_loaded_from_same_origin_only() -> None:
     assert "http://" not in motion_module and "https://" not in motion_module
     assert 'url_path="/assets/motion"' in main
     assert 'url_path="/assets/vendor"' in main
+    assert 'url_path="/assets/css"' in main

@@ -264,7 +264,8 @@ def main() -> None:
         )
         assert page.get_by_test_id("engineering-facts").locator(".sy-engineering-fact").count() == 4
         assert page.get_by_test_id("engineering-blueprint").locator(".sy-engineering-blueprint-layer").count() == 5
-        assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 9
+        assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 10
+        assert page.get_by_role("heading", level=2).count() >= 5
         assert page.get_by_test_id("engineering-pillars").locator(".sy-engineering-pillar").count() == 6
         assert page.get_by_test_id("engineering-evolution").locator(".sy-engineering-evolution-item").count() == 4
         engineering_links = page.locator(".sy-engineering-resources a, .sy-engineering-resources .q-btn")
@@ -474,7 +475,7 @@ def main() -> None:
         assert "engineering-workbench-dark-v1.webp" in page.locator(".sy-engineering-hero").evaluate(
             "element => getComputedStyle(element, '::after').backgroundImage"
         )
-        assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 9
+        assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 10
         page.screenshot(path=str(ENGINEERING_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
         assert "architecture-stewardship-dark-v1.webp" in page.locator(".sy-architecture-hero").evaluate("element => getComputedStyle(element, '::before').backgroundImage")
@@ -549,6 +550,12 @@ def main() -> None:
         page.screenshot(path=str(HANDOVER_MOBILE_SCREENSHOT), full_page=True)
         page.goto(BASE_URL, wait_until="domcontentloaded")
         page.get_by_text("This week's roster desk", exact=True).wait_for(timeout=10_000)
+        mobile_primary_actions = page.locator(".sy-mobile-next-action .q-btn.bg-primary")
+        assert mobile_primary_actions.count() == 1
+        mobile_primary_box = mobile_primary_actions.bounding_box()
+        assert mobile_primary_box is not None and mobile_primary_box["y"] + mobile_primary_box["height"] <= 844, mobile_primary_box
+        assert page.locator(".sy-flow-step--active .sy-flow-action").is_hidden()
+        assert page.locator(".sy-empty-state--illustrated .q-btn").count() == 0
         mobile_music_button = page.get_by_test_id("page-music-button")
         mobile_music_box = mobile_music_button.bounding_box()
         assert mobile_music_box is not None and mobile_music_box["width"] >= 44 and mobile_music_box["height"] >= 44
@@ -568,15 +575,15 @@ def main() -> None:
         reduced_page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
         reduced_page.wait_for_function("document.documentElement.dataset.syMotion === 'reduced'")
         reduced_layer = reduced_page.locator(".sy-architecture-layer").first
-        reduced_layer.locator(".sy-pointer-light").wait_for(timeout=10_000, state="attached")
+        assert reduced_layer.locator(".sy-pointer-light").count() == 0
         reduced_layer.hover()
         assert reduced_layer.evaluate("element => getComputedStyle(element).transform") == "none"
-        assert reduced_layer.locator(".sy-pointer-light").evaluate("element => getComputedStyle(element).display") == "none"
         reduced_context.close()
         touch_context = browser.new_context(viewport={"width": 390, "height": 844}, has_touch=True, is_mobile=True)
         touch_page = touch_context.new_page()
         touch_page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
         assert touch_page.evaluate("matchMedia('(hover: hover) and (pointer: fine)').matches") is False
+        assert touch_page.locator(".sy-pointer-light").count() == 0
         touch_context.close()
         assert not console_errors, console_errors
         browser.close()

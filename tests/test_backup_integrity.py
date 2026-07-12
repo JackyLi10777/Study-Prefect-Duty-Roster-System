@@ -237,6 +237,35 @@ def test_verified_handover_package_contains_only_a_verified_snapshot_and_manifes
     assert manifest["sha256"] == workflow.verify_backup(draft.backup_path)["sha256"]
 
 
+def test_handover_package_stops_verifying_after_the_latest_valid_snapshot(monkeypatch, tmp_path) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+    )
+    workflow.backup_dir.mkdir(parents=True)
+    oldest = workflow.backup_dir / "oldest.sqlite3"
+    selected = workflow.backup_dir / "selected.sqlite3"
+    newest = workflow.backup_dir / "newest.sqlite3"
+    for index, snapshot in enumerate((oldest, selected, newest)):
+        snapshot.write_bytes(b"fixture")
+        snapshot.with_suffix(".manifest.json").write_text("{}", encoding="utf-8")
+        os.utime(snapshot, (1_700_000_000 + index, 1_700_000_000 + index))
+
+    verified_paths: list[Path] = []
+
+    def verify(path: Path) -> dict[str, object]:
+        verified_paths.append(path)
+        return {"valid": path != newest, "reasonCode": "verified" if path != newest else "checksum_mismatch"}
+
+    monkeypatch.setattr(workflow, "verify_backup", verify)
+
+    package = workflow.build_verified_handover_package()
+
+    assert package.source_backup_path == selected
+    assert verified_paths == [newest, selected, selected]
+    assert oldest not in verified_paths
+
+
 def test_handover_package_requires_a_verified_snapshot(tmp_path) -> None:
     workflow = RosterWorkflow(
         database_path=tmp_path / "live.sqlite3",

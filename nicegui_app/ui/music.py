@@ -54,7 +54,13 @@ def render_page_music_control(context: str) -> None:
     if not tracks and not online_settings.enabled:
         return
 
-    with ui.dialog() as dialog, ui.card().classes("sy-music-dialog w-full max-w-lg p-0").props("data-testid=page-music-dialog"):
+    def close_panel() -> None:
+        panel.set_visibility(False)
+        ui.run_javascript("document.querySelector('[data-testid=page-music-button]')?.focus()")
+
+    with ui.card().classes("sy-music-dialog w-full max-w-lg p-0").props(
+        f'role=region aria-label="{t("page_music")}" tabindex=-1 data-testid=page-music-dialog'
+    ) as panel:
         with ui.column().classes("w-full gap-0"):
             with ui.row().classes("sy-music-dialog-header w-full items-start justify-between gap-4"):
                 with ui.row().classes("items-center gap-3 no-wrap"):
@@ -62,7 +68,7 @@ def render_page_music_control(context: str) -> None:
                     with ui.column().classes("gap-0 min-w-0"):
                         ui.label(t("page_music")).classes("sy-music-dialog-title")
                         ui.label(music_context_label(context)).classes("sy-music-dialog-context")
-                ui.button(icon="close", on_click=dialog.close).props(f'flat round aria-label="{t("close")}"')
+                ui.button(icon="close", on_click=close_panel).props(f'flat round aria-label="{t("close")}"')
 
             with ui.column().classes("w-full gap-4 p-5"):
                 ui.label(t("music_optional_notice")).classes("text-sm leading-6 text-[var(--sy-muted)]")
@@ -160,11 +166,15 @@ def render_page_music_control(context: str) -> None:
                     audio.on("ended", advance_playlist)
                     ui.label(t("music_loop_notice")).classes("text-xs leading-5 text-[var(--sy-muted)]")
                 render_youtube_panel(context, online_settings)
+    panel.set_visibility(False)
+    panel.on("keydown.escape", close_panel)
+
     def open_dialog() -> None:
-        dialog.open()
+        panel.set_visibility(True)
         ui.timer(
             0.12,
             lambda: ui.run_javascript(
+                "document.querySelector('[data-testid=page-music-dialog]')?.focus();"
                 "document.querySelectorAll('audio.sy-page-music-audio').forEach(a => {"
                 f"a.volume = {preferred_music_volume()!r}; a.dataset.syBaseVolume = String(a.volume);"
                 "});"

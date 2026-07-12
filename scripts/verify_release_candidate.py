@@ -233,7 +233,11 @@ def main() -> int:
         _run_browser_phase(
             root=workspace / "normal",
             blocked_backup=False,
-            scripts=("scripts/verify_nicegui_ui.py", "scripts/verify_nicegui_write_pipeline.py"),
+            scripts=(
+                "scripts/verify_nicegui_ui.py",
+                "scripts/verify_runtime_performance.py",
+                "scripts/verify_nicegui_write_pipeline.py",
+            ),
             report=report,
         )
         _run_browser_phase(

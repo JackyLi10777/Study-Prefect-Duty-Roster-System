@@ -4,6 +4,7 @@
   window.__singYinMotionBootstrapped = true;
 
   const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
+  const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
   const narrativeSelectors = [
     '.sy-daily-start',
     '.sy-workbench',
@@ -26,8 +27,34 @@
     '.sy-architecture-grid',
     '.sy-trust-evidence-grid'
   ].join(',');
+  const pointerSurfaceSelector = [
+    '.sy-flow-step:not(.sy-flow-step--pending)',
+    '.sy-architecture-layer',
+    '.sy-export-option',
+    '.sy-onboarding-intro',
+    '.sy-guide-hero',
+    '.sy-handover-hero',
+    '.sy-engineering-hero',
+    '.sy-co-creation',
+    '.sy-trust-evidence-card',
+    '.sy-platform-value',
+    '.sy-platform-resource',
+    '.sy-engineering-fact',
+    '.sy-engineering-blueprint-layer',
+    '.sy-engineering-pillar',
+    '.sy-team-role',
+    '.sy-capability-card',
+    '.sy-solution-card',
+    '.sy-storage-lifecycle'
+  ].join(',');
 
   const reducedMotion = () => window.matchMedia(REDUCED_QUERY).matches;
+  const queryWithin = (root, selector) => {
+    const matches = [];
+    if (root instanceof Element && root.matches(selector)) matches.push(root);
+    root.querySelectorAll?.(selector).forEach((element) => matches.push(element));
+    return matches;
+  };
   const animateOnce = (element, children = false) => {
     if (element.dataset.syMotionReady === 'true') return;
     element.dataset.syMotionReady = 'true';
@@ -61,9 +88,68 @@
     observer.observe(element);
   };
 
-  const hydrate = () => {
-    document.querySelectorAll(narrativeSelectors).forEach((element) => observe(element, false));
-    document.querySelectorAll(groupSelectors).forEach((element) => observe(element, true));
+  const enhancePointerSurface = (surface) => {
+    if (surface.dataset.syPointerReady === 'true') return;
+    surface.dataset.syPointerReady = 'true';
+    if (reducedMotion() || !window.matchMedia(FINE_POINTER_QUERY).matches) return;
+    surface.classList.add('sy-pointer-reactive');
+    const light = document.createElement('span');
+    light.className = 'sy-pointer-light';
+    light.setAttribute('aria-hidden', 'true');
+    surface.appendChild(light);
+
+    const pointer = { x: surface.clientWidth / 2, y: surface.clientHeight / 2 };
+    let bounds = null;
+    let xTo = null;
+    let yTo = null;
+    const renderPointer = () => {
+      surface.style.setProperty('--sy-pointer-x', `${pointer.x}px`);
+      surface.style.setProperty('--sy-pointer-y', `${pointer.y}px`);
+    };
+    const prepareQuickSetters = () => {
+      if (xTo || !window.gsap) return;
+      xTo = window.gsap.quickTo(pointer, 'x', { duration: 0.22, ease: 'power2.out', onUpdate: renderPointer });
+      yTo = window.gsap.quickTo(pointer, 'y', { duration: 0.22, ease: 'power2.out', onUpdate: renderPointer });
+    };
+    const centre = () => {
+      const x = surface.clientWidth / 2;
+      const y = surface.clientHeight / 2;
+      if (xTo && yTo) {
+        xTo(x);
+        yTo(y);
+      } else {
+        pointer.x = x;
+        pointer.y = y;
+        renderPointer();
+      }
+    };
+    surface.addEventListener('pointerenter', () => {
+      bounds = surface.getBoundingClientRect();
+      prepareQuickSetters();
+    }, { passive: true });
+    surface.addEventListener('pointermove', (event) => {
+      if (!bounds) bounds = surface.getBoundingClientRect();
+      const x = event.clientX - bounds.left;
+      const y = event.clientY - bounds.top;
+      if (xTo && yTo) {
+        xTo(x);
+        yTo(y);
+      } else {
+        pointer.x = x;
+        pointer.y = y;
+        renderPointer();
+      }
+    }, { passive: true });
+    surface.addEventListener('pointerleave', () => {
+      bounds = null;
+      centre();
+    }, { passive: true });
+  };
+
+  const hydrate = (root = document) => {
+    queryWithin(root, narrativeSelectors).forEach((element) => observe(element, false));
+    queryWithin(root, groupSelectors).forEach((element) => observe(element, true));
+    queryWithin(root, pointerSurfaceSelector).forEach(enhancePointerSurface);
   };
 
   const feedbackPulse = (kind) => {
@@ -102,8 +188,12 @@
       { rootMargin: '0px 0px -7% 0px', threshold: 0.12 }
     );
     hydrate();
-    new MutationObserver(hydrate).observe(document.body, { childList: true, subtree: true });
-    document.fonts?.ready.then(hydrate);
+    new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
+        if (node instanceof Element) hydrate(node);
+      }));
+    }).observe(document.body, { childList: true, subtree: true });
+    document.fonts?.ready.then(() => hydrate());
     window.addEventListener('sy:feedback', (event) => feedbackPulse(event.detail?.kind || 'success'));
   };
 

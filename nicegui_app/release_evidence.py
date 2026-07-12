@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from functools import lru_cache
 import hashlib
 import json
 from pathlib import Path
@@ -45,6 +46,7 @@ RELEASE_SUFFIXES = {
     ".txt",
     ".ps1",
     ".cmd",
+    ".css",
     ".md",
     ".png",
     ".svg",
@@ -66,19 +68,16 @@ class ReleaseEvidence:
     human_acceptance_required: bool = True
 
 
-def release_source_fingerprint(paths: Iterable[Path] | None = None) -> tuple[str, int]:
-    """Hash release-sensitive source and verification inputs in stable order."""
+def _calculate_release_source_fingerprint(paths: Iterable[Path] | None = None) -> tuple[str, int]:
+    candidates = [
+        path
+        for root in RELEASE_SOURCE_ROOTS
+        if root.is_dir()
+        for path in root.rglob("*")
+        if path.is_file() and path.suffix.lower() in RELEASE_SUFFIXES and "__pycache__" not in path.parts
+    ] if paths is None else [Path(path) for path in paths if Path(path).is_file()]
     if paths is None:
-        candidates = [
-            path
-            for root in RELEASE_SOURCE_ROOTS
-            if root.is_dir()
-            for path in root.rglob("*")
-            if path.is_file() and path.suffix.lower() in RELEASE_SUFFIXES and "__pycache__" not in path.parts
-        ]
         candidates.extend(path for path in RELEASE_SOURCE_FILES if path.is_file())
-    else:
-        candidates = [Path(path) for path in paths if Path(path).is_file()]
     unique_paths = sorted({path.resolve() for path in candidates}, key=lambda path: path.as_posix().lower())
     digest = hashlib.sha256()
     for path in unique_paths:
@@ -91,6 +90,19 @@ def release_source_fingerprint(paths: Iterable[Path] | None = None) -> tuple[str
         digest.update(path.read_bytes())
         digest.update(b"\0")
     return digest.hexdigest(), len(unique_paths)
+
+
+@lru_cache(maxsize=1)
+def _cached_release_source_fingerprint() -> tuple[str, int]:
+    """Hash once per process; production runs with reload disabled and immutable source."""
+    return _calculate_release_source_fingerprint()
+
+
+def release_source_fingerprint(paths: Iterable[Path] | None = None) -> tuple[str, int]:
+    """Hash release-sensitive inputs; cache only the immutable runtime source set."""
+    if paths is not None:
+        return _calculate_release_source_fingerprint(paths)
+    return _cached_release_source_fingerprint()
 
 
 def load_release_evidence(

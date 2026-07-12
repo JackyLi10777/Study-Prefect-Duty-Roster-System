@@ -1,12 +1,15 @@
 [CmdletBinding()]
 param(
-    [string]$ProjectRoot = (Split-Path -Parent $PSScriptRoot),
+    [string]$ProjectRoot = "",
     [switch]$InstallPrerequisites,
     [switch]$IncludeDevelopmentTools
 )
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot "windows_host_common.ps1")
+
+if ([string]::IsNullOrWhiteSpace($ProjectRoot)) { $ProjectRoot = Split-Path -Parent $PSScriptRoot }
 
 function Write-Step([string]$Message) {
     Write-Host "`n==> $Message" -ForegroundColor Cyan
@@ -109,6 +112,19 @@ SING_YIN_LOG_DIR=$ProjectRoot\logs
 } else {
     Write-Host "Existing .env was preserved." -ForegroundColor Yellow
 }
+
+Write-Step "Restricting local application data to the dedicated host account"
+$sensitivePaths = @(
+    $envPath,
+    (Join-Path $ProjectRoot "data\runtime"),
+    (Join-Path $ProjectRoot "data\backups"),
+    (Join-Path $ProjectRoot "logs")
+)
+foreach ($sensitivePath in $sensitivePaths) {
+    Protect-SingYinSensitivePath -Path $sensitivePath
+}
+$aclState = Get-SingYinAclStatus -Paths $sensitivePaths
+if (-not $aclState.Compliant) { throw "Local data permissions could not be restricted safely." }
 
 Write-Step "Running safe import and deployment checks"
 Push-Location $ProjectRoot

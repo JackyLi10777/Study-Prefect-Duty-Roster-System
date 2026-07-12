@@ -137,7 +137,7 @@ This is an **L2 workflow and visual-system improvement**. It should improve conf
 
 ### Strategy and evidence
 
-The owner is `nicegui_app/ui/theme.py` plus `theme_markup.py` for tokens and component language, `nicegui_app/ui/page_routes/` plus `page_shared.py` for page hierarchy, and `nicegui_app/ui/i18n_catalog/` behind the stable `i18n.py` facade for bilingual copy. Every implementation phase must preserve policy boundaries, keyboard access, light/dark contrast, and the existing browser smoke coverage. Screenshots in both modes and at mobile width are required before a phase is accepted.
+The owner is `nicegui_app/ui/theme.py` plus the versioned `nicegui_app/assets/css/sing-yin-theme-v1.css` for tokens and component language; `theme_markup.py` contains only same-origin preload／stylesheet links. `nicegui_app/ui/page_routes/` plus `page_shared.py` own page hierarchy, while `nicegui_app/ui/i18n_catalog/` behind the stable `i18n.py` facade owns bilingual copy. Every implementation phase must preserve policy boundaries, keyboard access, light/dark contrast, and browser evidence in both modes and at mobile width.
 
 ---
 
@@ -360,7 +360,7 @@ Brand context and technical evidence use two connected pages instead of one over
 
 1. Treat the page as an engineering evidence centre, not a KPI dashboard or technology-logo wall.
 2. Numbers must be release-controlled structural evidence: automated tests, verification gates, owning layers, and complete locales. Usage, adoption, uptime, security grades, or business outcomes may not be invented.
-3. Present the five-layer blueprint and eight release gates as semantic ordered lists. Connectors are CSS decoration only; reading order remains complete without them.
+3. Present the five-layer blueprint and the current report-backed release gates as semantic ordered lists. Gate totals and passed counts must come from non-stale release evidence; connectors are CSS decoration only and reading order remains complete without them.
 4. Use neutral surfaces, monospaced evidence numbers, slate action colour, and teal only for verified or durable outcomes. Dark mode receives separately checked text, border, and state contrast.
 5. Keep the page read-only. It may consume display-safe release evidence but never workflow, roster, leave, fairness, backup path, or audit payloads.
 6. On mobile, facts, blueprint layers, gates, capabilities, and evolution stages become one ordered vertical sequence without horizontal scrolling.
@@ -528,6 +528,14 @@ Design quality includes the behaviour underneath the surface.
 3. Conduct the Head Study Prefect and teacher advisor acceptance checklist.
 
 No phase may weaken roster policy, persistent fairness, backup verification, privacy, bilingual parity, or the print layout.
+
+### Phase E — measured performance and lifecycle quality
+
+1. Web UI uses Inter plus platform-native Hong Kong／Traditional Chinese fallbacks; the large Noto TTF files remain for deterministic PDF embedding, not cold browser download.
+2. Shared theme CSS is one versioned same-origin asset so navigation can reuse the browser cache instead of repeating the full design system in every HTML response.
+3. The optional music controller is a single persistent non-modal panel. Opening and closing it must not mount another dialog tree; Escape and the close control return focus to the trigger.
+4. Phone layout places one responsive “next safe step” immediately after Daily Verse and hides the duplicate active-step button inside the longer workflow explanation. The verse remains first and complete; the action remains inside the first viewport.
+5. `verify_runtime_performance.py` is a release gate for cold transfer, largest resource, resource count, forced-GC heap growth, DOM nodes, JavaScript listeners, console errors, representative routes, and mobile overflow. Motion on reduced-motion or touch input adds no pointer-light node.
 
 ---
 

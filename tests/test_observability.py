@@ -108,6 +108,101 @@ def test_request_trace_header_and_log_are_payload_free(tmp_path) -> None:
     assert current_request_reference() == "-"
 
 
+def test_fast_successful_framework_asset_and_health_requests_are_debug_only(tmp_path) -> None:
+    log_path = configure_local_logging(tmp_path / "request-noise" / "app.log")
+    application = FastAPI()
+    install_request_tracing(application)
+
+    @application.get("/assets/example.css")
+    def static_asset() -> dict[str, bool]:
+        return {"ok": True}
+
+    @application.get("/_nicegui/runtime.js")
+    def nicegui_runtime() -> dict[str, bool]:
+        return {"ok": True}
+
+    @application.get("/healthz")
+    def health_check() -> dict[str, bool]:
+        return {"ok": True}
+
+    client = TestClient(application)
+    responses = [
+        client.get("/assets/example.css"),
+        client.get("/_nicegui/runtime.js"),
+        client.get("/healthz"),
+    ]
+    for handler in logging.getLogger(LOGGER_NAME).handlers:
+        handler.flush()
+    content = log_path.read_text(encoding="utf-8")
+
+    assert all(response.status_code == 200 for response in responses)
+    assert all(response.headers["X-Request-ID"].startswith("REQ-") for response in responses)
+    assert "target=asset status=200" not in content
+    assert "target=nicegui_internal status=200" not in content
+    assert "target=health status=200" not in content
+
+
+def test_slow_successful_asset_request_remains_visible(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("SING_YIN_SLOW_REQUEST_MS", "1")
+    log_path = configure_local_logging(tmp_path / "slow-asset" / "app.log")
+    application = FastAPI()
+    install_request_tracing(application)
+
+    @application.get("/assets/slow.css")
+    async def slow_asset() -> dict[str, bool]:
+        await asyncio.sleep(0.01)
+        return {"ok": True}
+
+    response = TestClient(application).get("/assets/slow.css")
+    for handler in logging.getLogger(LOGGER_NAME).handlers:
+        handler.flush()
+    content = log_path.read_text(encoding="utf-8")
+
+    assert response.status_code == 200
+    assert response.headers["X-Request-ID"].startswith("REQ-")
+    assert "WARNING" in content
+    assert "event=http_request method=GET target=asset status=200" in content
+    assert "slow=true" in content
+
+
+def test_failed_internal_request_is_never_hidden_as_framework_noise(tmp_path) -> None:
+    log_path = configure_local_logging(tmp_path / "failed-internal" / "app.log")
+    application = FastAPI()
+    install_request_tracing(application)
+
+    response = TestClient(application).get("/_nicegui/missing-resource.js")
+    for handler in logging.getLogger(LOGGER_NAME).handlers:
+        handler.flush()
+    content = log_path.read_text(encoding="utf-8")
+
+    assert response.status_code == 404
+    assert response.headers["X-Request-ID"].startswith("REQ-")
+    assert "WARNING" in content
+    assert "event=http_request method=GET target=nicegui_internal status=404" in content
+    assert "slow=false" in content
+
+
+def test_debug_mode_can_restore_fast_asset_request_detail(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("SING_YIN_LOG_LEVEL", "DEBUG")
+    log_path = configure_local_logging(tmp_path / "debug-assets" / "app.log")
+    application = FastAPI()
+    install_request_tracing(application)
+
+    @application.get("/assets/example.css")
+    def static_asset() -> dict[str, bool]:
+        return {"ok": True}
+
+    response = TestClient(application).get("/assets/example.css")
+    for handler in logging.getLogger(LOGGER_NAME).handlers:
+        handler.flush()
+    content = log_path.read_text(encoding="utf-8")
+
+    assert response.status_code == 200
+    assert "DEBUG" in content
+    assert "event=http_request method=GET target=asset status=200" in content
+    assert "slow=false" in content
+
+
 def test_request_exception_logs_type_without_the_exception_message(tmp_path) -> None:
     log_path = configure_local_logging(tmp_path / "request-failure" / "app.log")
     application = FastAPI()

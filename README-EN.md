@@ -97,11 +97,11 @@ staff or headcount.
 
 The in-app engineering page turns the strongest evidence from this README,
 the architecture guide, and the release report into a readable quality centre.
-It presents the current automated-test scale, eight fail-closed release gates,
-a five-layer system blueprint, six reliability capabilities, and the four-stage
-build story. These are release facts, not usage, commercial, or vanity KPIs.
-The release report is fingerprinted against code, documentation, and design
-assets, so relevant changes make previous evidence visibly stale.
+It presents the complete automated suite, the current report's real passed/total
+gate ratio, a five-layer system blueprint, six reliability capabilities, and the
+four-stage build story. The gate chain includes browser performance, bounded
+memory growth, and phone-width overflow checks. These are release facts, not
+usage, commercial, or vanity KPIs; source changes make previous evidence stale.
 
 ## Architecture
 
@@ -164,11 +164,12 @@ python -m playwright install chromium
 python -X utf8 scripts\verify_release_candidate.py
 ```
 
-The release candidate runs repository hygiene, the complete Python suite,
-compilation, dependency integrity, browser smoke, the fictional-data write/PDF
-and restore pipeline, strict deployment readiness, and committed-without-backup
-recovery. Machine evidence remains separate from the final operator/advisor
-acceptance checklist.
+The release candidate runs ten fail-closed checks: repository hygiene, supply-chain
+security, the complete Python suite, compilation, dependency integrity, browser
+smoke, measured runtime performance and memory stability, the fictional-data
+write/PDF and restore pipeline, strict deployment readiness, and
+committed-without-backup recovery. Machine evidence remains separate from the
+final operator/advisor acceptance checklist.
 
 ## Co-creation
 

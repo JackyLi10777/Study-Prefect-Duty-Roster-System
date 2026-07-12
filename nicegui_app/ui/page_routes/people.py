@@ -77,6 +77,7 @@ def _show_prefect_dialog(existing: dict[str, object] | None = None) -> None:
         with ui.row().classes("w-full justify-end gap-3 mt-4"):
             ui.button(t("cancel"), icon="close", on_click=dialog.close).props("flat")
             ui.button(t("save"), icon="save", on_click=save_prefect).props("color=primary")
+    _delete_dialog_after_close(dialog)
     dialog.open()
 
 

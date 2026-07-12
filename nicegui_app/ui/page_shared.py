@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import weakref
 from collections.abc import Callable
 from datetime import date, timedelta
 from pathlib import Path
@@ -44,10 +45,39 @@ _OPERATION_FAILED = object()
 _OperationResult = TypeVar("_OperationResult")
 _DEVOTIONAL_GUIDANCE_THEMES = ("servant-leadership", "justice-fairness", "wisdom-discernment", "witness-light")
 _DEVOTIONAL_COMFORT_THEMES = ("prayer-peace", "mercy-care", "perseverance", "faithfulness", "spiritual-formation")
+_DIALOG_DISMISSAL_SECONDS = 0.35
 
 
 def _operation_error_message(reference: str) -> str:
     return f"{t('operation_error')} {t('error_reference', reference=reference)}"
+
+
+def _delete_dialog_after_close(dialog, *, delay_seconds: float = _DIALOG_DISMISSAL_SECONDS) -> None:  # type: ignore[no-untyped-def]
+    """Remove a one-shot dialog after its close transition has finished.
+
+    NiceGUI dialogs stay in the client element registry when ``close()`` only
+    hides them. Runtime-created forms therefore need explicit deletion, while
+    page-level dialogs which are intentionally reopened must not use this
+    helper. A weak reference avoids making the change callback itself keep the
+    dialog alive, and the short delay preserves Quasar's focus-return and close
+    transition behaviour.
+    """
+    dialog_reference = weakref.ref(dialog)
+    cleanup_scheduled = False
+
+    def delete_dialog() -> None:
+        target = dialog_reference()
+        if target is not None and not target.is_deleted:
+            target.delete()
+
+    def handle_value_change(event) -> None:  # type: ignore[no-untyped-def]
+        nonlocal cleanup_scheduled
+        if bool(event.value) or cleanup_scheduled:
+            return
+        cleanup_scheduled = True
+        asyncio.get_running_loop().call_later(max(0.0, delay_seconds), delete_dialog)
+
+    dialog.on_value_change(handle_value_change)
 
 
 def _show_committed_without_backup(reference: str) -> None:
@@ -72,6 +102,7 @@ def _show_committed_without_backup(reference: str) -> None:
                 icon="settings_backup_restore",
                 on_click=lambda: (dialog.close(), ui.navigate.to("/settings")),
             ).props("data-testid=partial-backup-settings-action")
+    _delete_dialog_after_close(dialog)
     dialog.open()
 
 
@@ -153,6 +184,7 @@ async def _run_with_progress(
             progress = ui.linear_progress(value=0.14, show_value=False, color="primary").classes("w-full mt-6")
             ui.label(t("progress_keep_open")).classes("sy-progress-dialog-note mt-3")
 
+        _delete_dialog_after_close(dialog)
         dialog.open()
         play_interface_sound("working")
         await asyncio.sleep(0.08)  # Allow the dialog to paint before work begins.
@@ -390,6 +422,7 @@ def _open_roster_export_dialog(roster_week_id: int) -> None:
                 ui.button(t("export_audit_en"), icon="fact_check", on_click=lambda: download("en", include_audit=True)).props("outline color=primary")
         with ui.row().classes("w-full justify-end mt-5"):
             ui.button(t("cancel"), icon="close", on_click=dialog.close).props("flat")
+    _delete_dialog_after_close(dialog)
     dialog.open()
 
 
@@ -422,7 +455,7 @@ def _render_flow_step(
         ui.label(t(detail_key)).classes("sy-flow-copy mt-2")
         if action_key and action:
             props = "color=primary" if state == "active" else "outline color=primary"
-            ui.button(t(action_key), icon="arrow_forward", on_click=action).props(props).classes("mt-5")
+            ui.button(t(action_key), icon="arrow_forward", on_click=action).props(props).classes("sy-flow-action mt-5")
         elif state == "pending":
             ui.label(t("flow_unavailable")).classes("sy-flow-disabled mt-5")
 

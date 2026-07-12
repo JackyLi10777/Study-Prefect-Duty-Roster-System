@@ -143,7 +143,8 @@ def test_windows_and_cloudflare_automation_is_fail_closed_and_documented() -> No
         assert required_text in activate
     assert "MaximumRedirection 0" in verify
     assert "cloudflareaccess\\.com" in verify
-    assert "ProgramFiles(x86)" in activate
+    common = (PROJECT_ROOT / "scripts" / "windows_host_common.ps1").read_text(encoding="utf-8")
+    assert "ProgramFiles(x86)" in common
     assert "不要在家中路由器開放 3389、8080" in guide
     assert "未登入／獲准／未獲准" in guide
 
@@ -181,6 +182,7 @@ def test_release_verification_dependencies_and_safe_orchestrator_are_shipped() -
         assert variable in verifier
     assert "CANONICAL_DATABASE" in verifier and "CANONICAL_BACKUPS" in verifier
     assert "verify_nicegui_ui.py" in verifier
+    assert "verify_runtime_performance.py" in verifier
     assert "verify_nicegui_write_pipeline.py" in verifier
     assert "verify_nicegui_partial_backup.py" in verifier
     assert "check_deployment_readiness.py" in verifier
@@ -279,10 +281,12 @@ def test_engineering_showcase_turns_documented_quality_into_verifiable_ui_eviden
     engineering_page = pages.split('@ui.page("/engineering")', 1)[1].split('@ui.page("/system-architecture")', 1)[0]
     assert "load_release_evidence()" in engineering_page
     assert "get_workflow()" not in engineering_page
-    assert "208" in engineering_page and "08" in engineering_page
+    assert "evidence.passed_checks" in engineering_page and "evidence.total_checks" in engineering_page
+    assert "engineering_fact_full_suite" in engineering_page
     assert "student" not in engineering_page.lower()
-    assert "Nine gates" in messages
+    assert "The full gate chain" in messages
     assert "engineering_gate_security" in messages
+    assert "engineering_gate_runtime" in messages
 
 
 def test_feedback_channel_is_consistent_bilingual_and_does_not_invite_data_attachments() -> None:

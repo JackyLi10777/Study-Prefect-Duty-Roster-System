@@ -153,10 +153,10 @@ def settings_page() -> None:
                         ui.icon("check_circle" if ready else "priority_high").classes("sy-fg-stable" if ready else "sy-fg-attention")
         with ui.card().classes("sy-surface w-full max-w-3xl p-6"):
             ui.label(t("persistence_notice")).classes("text-lg font-semibold")
-            ui.label(f"{t('database')}: {status['databasePath']}").classes("text-sm text-[var(--sy-muted)] mt-3")
-            ui.label(f"{t('backup_directory')}: {status['backupDirectory']}").classes("text-sm text-[var(--sy-muted)]")
+            ui.label(f"{t('database')}: {status['databasePath']}").classes("sy-path-value text-sm text-[var(--sy-muted)] mt-3")
+            ui.label(f"{t('backup_directory')}: {status['backupDirectory']}").classes("sy-path-value text-sm text-[var(--sy-muted)]")
             if status["latestPath"]:
-                ui.label(str(status["latestPath"])).classes("text-xs text-[var(--sy-muted)] mt-2")
+                ui.label(str(status["latestPath"])).classes("sy-path-value text-xs text-[var(--sy-muted)] mt-2")
             verification = status["latestVerification"]
             if verification and verification.get("valid"):
                 _tone_badge(t("verified"), "stable").classes("mt-3")

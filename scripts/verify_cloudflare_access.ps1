@@ -1,11 +1,13 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$PublicHostname,
-    [Parameter(Mandatory = $true)][string]$TeamDomain
+    [Parameter(Mandatory = $true)][string]$TeamDomain,
+    [ValidateRange(1024, 65535)][int]$Port = 8080
 )
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot "windows_host_common.ps1")
 
 $PublicHostname = $PublicHostname.Trim().ToLowerInvariant().TrimEnd('.')
 $TeamDomain = $TeamDomain.Trim().ToLowerInvariant().TrimEnd('.')
@@ -13,7 +15,7 @@ if ($PublicHostname -notmatch '^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])$') { throw "Inva
 if ($TeamDomain -notmatch '^[a-z0-9.-]+\.cloudflareaccess\.com$') { throw "Invalid Cloudflare Access team domain." }
 
 try {
-    $local = Invoke-RestMethod -Uri "http://127.0.0.1:8080/healthz" -TimeoutSec 10
+    $local = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/healthz" -TimeoutSec 10
 } catch {
     throw "Local health check failed. Remote access cannot be trusted until the local application is healthy."
 }
@@ -37,7 +39,7 @@ try {
 }
 
 $accessRedirect = $statusCode -in @(301, 302, 303, 307, 308) -and (
-    $location -match [regex]::Escape($TeamDomain) -or $location -match '\.cloudflareaccess\.com'
+    Test-SingYinAccessRedirect -Location $location -TeamDomain $TeamDomain
 )
 if (-not $accessRedirect) {
     throw "FAIL CLOSED: unauthenticated traffic was not redirected to Cloudflare Access (HTTP $statusCode). Stop the cloudflared service."

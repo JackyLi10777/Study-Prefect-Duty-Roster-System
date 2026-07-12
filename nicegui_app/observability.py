@@ -29,6 +29,8 @@ _request_reference: ContextVar[str] = ContextVar("sing_yin_request_reference", d
 _hooks_installed = False
 _ASYNCIO_HOOK_MARKER = "_sing_yin_asyncio_exception_handler_installed"
 _WINDOWS_CLIENT_DISCONNECT_CODES = frozenset({64, 10054})
+_HIGH_VOLUME_SUCCESS_CATEGORIES = frozenset({"asset", "health", "nicegui_internal"})
+_DEFAULT_SLOW_REQUEST_MS = 1_000
 
 
 def _positive_int_from_environment(name: str, default: int) -> int:
@@ -176,6 +178,29 @@ def _request_target_category(path: str) -> str:
     return "other"
 
 
+def _slow_request_threshold_ms() -> int:
+    return _positive_int_from_environment("SING_YIN_SLOW_REQUEST_MS", _DEFAULT_SLOW_REQUEST_MS)
+
+
+def _request_log_level(*, category: str, status_code: int, is_slow: bool) -> int:
+    """Choose signal-preserving severity for one payload-free request summary.
+
+    Successful, fast framework/static/health traffic is intentionally DEBUG-only:
+    it is available during a focused diagnosis without filling normal support logs.
+    Slow traffic and all HTTP failures stay visible at the default INFO level or
+    above, regardless of route category.
+    """
+    if status_code >= 500:
+        return logging.ERROR
+    if status_code >= 400:
+        return logging.WARNING
+    if is_slow:
+        return logging.WARNING
+    if category in _HIGH_VOLUME_SUCCESS_CATEGORIES:
+        return logging.DEBUG
+    return logging.INFO
+
+
 class RequestTracingMiddleware(BaseHTTPMiddleware):
     """Give each HTTP response and safe local log lines one non-identifying trace."""
 
@@ -203,12 +228,21 @@ class RequestTracingMiddleware(BaseHTTPMiddleware):
             response.headers["X-Frame-Options"] = "SAMEORIGIN"
             if category not in {"asset", "nicegui_internal"}:
                 response.headers["Cache-Control"] = "no-store"
-            logger().info(
-                "event=http_request method=%s target=%s status=%s duration_ms=%s",
+            duration_ms = round((perf_counter() - started_at) * 1000)
+            is_slow = duration_ms >= _slow_request_threshold_ms()
+            request_logger = logger()
+            request_logger.log(
+                _request_log_level(
+                    category=category,
+                    status_code=response.status_code,
+                    is_slow=is_slow,
+                ),
+                "event=http_request method=%s target=%s status=%s duration_ms=%s slow=%s",
                 request.method,
                 category,
                 response.status_code,
-                round((perf_counter() - started_at) * 1000),
+                duration_ms,
+                str(is_slow).lower(),
             )
             return response
         finally:

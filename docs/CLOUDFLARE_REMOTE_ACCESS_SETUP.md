@@ -155,6 +155,19 @@ powershell -ExecutionPolicy Bypass -File scripts\verify_cloudflare_access.ps1 `
   -TeamDomain "your-team.cloudflareaccess.com"
 ```
 
+### 6.5 一鍵診斷主機、工作排程與 Access
+
+完成設定後，或任何人報告「網站打不開」時，先執行：
+
+```powershell
+Set-Location C:\SingYinRoster
+powershell -ExecutionPolicy Bypass -File scripts\doctor_windows_remote_access.ps1
+```
+
+診斷只輸出安全的 `pass`／`warning`／`fail` 摘要，不會列出 Tunnel token、Cookie、API key、storage secret 或 `.env` 內容。它會核對：NiceGUI 是否仍只綁 loopback、實際埠、工作排程是否真正屬於這個專案、`cloudflared` 版本與服務歸屬、本機資料夾權限、磁碟空間、應用程式健康、備份就緒及精確 Access tenant 重新導向。
+
+本機模式下尚未建立工作排程或 Tunnel 會顯示 `warning`／`deferred`，不代表資料已公開；server mode 下同樣缺口會直接 `fail`。正式主機驗收可加上 `-Strict`，讓任何 warning 以非零狀態結束。不要以同名工作排程或同名 `cloudflared` service 推斷歸屬；腳本會核對 executable、working directory 及專案 marker，拒絕停止另一個程式的服務。
+
 ---
 
 ## 7. 日常運作
@@ -164,6 +177,7 @@ powershell -ExecutionPolicy Bypass -File scripts\verify_cloudflare_access.ps1 `
 - 每月及 Cloudflare policy 修改後重做第 6 節。
 - 新增或移除使用者只在 Access Allow policy 逐一調整完整電郵地址。
 - `.env`、Tunnel token、credentials、Cookie、資料庫及備份不要貼到 issue、README 或公開截圖。
+- 每月、更新後或 Access policy 改變後，先執行 `doctor_windows_remote_access.ps1 -Strict`，再重做未登入／獲准／未獲准三種測試。
 
 檢查兩項服務：
 
@@ -213,7 +227,7 @@ SING_YIN_CLOUDFLARE_PROTECT_WITH_ACCESS=false
 
 ## 10. 官方參考
 
-- [Cloudflare：Windows 上把 cloudflared 作為服務運行](https://developers.cloudflare.com/tunnel/advanced/local-management/as-a-service/windows/)
-- [Cloudflare：建立 Tunnel](https://developers.cloudflare.com/learning-paths/clientless-access/connect-private-applications/create-tunnel/)
+- [Cloudflare：Windows 上把 cloudflared 作為服務運行](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/local-management/as-a-service/windows/)
+- [Cloudflare Tunnel：連線模型與 outbound-only 架構](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/)
 - [Cloudflare：Access policies](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/)
-- [Cloudflare：保護 private apps](https://developers.cloudflare.com/cloudflare-one/setup/secure-private-apps/)
+- [Cloudflare：Tunnel route 的 Protect with Access](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/origin-parameters/)

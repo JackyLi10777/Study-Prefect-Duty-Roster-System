@@ -70,9 +70,11 @@ def test_local_hong_kong_font_system_is_complete_and_offline() -> None:
     }
     assert required <= {path.name for path in root.iterdir() if path.is_file()}
     theme = combined_theme_source()
-    assert 'font-family: "Inter", "Noto Sans HK"' in theme
-    assert 'font-family: "Noto Serif HK"' in theme
+    assert 'font-family: "Inter", "PingFang HK", "Microsoft JhengHei", "Noto Sans TC"' in theme
+    assert 'font-family: "Noto Serif TC", "Songti TC", "PMingLiU"' in theme
     assert "font-display: swap" in theme
+    assert "/assets/fonts/NotoSansHK" not in theme
+    assert "/assets/fonts/NotoSerifHK" not in theme
     assert "fonts.googleapis.com" not in theme
 
 
@@ -89,6 +91,7 @@ def test_school_crest_assets_cover_distinct_delivery_contexts() -> None:
 
 def test_pointer_hover_motion_is_scoped_and_reduced_motion_safe() -> None:
     theme = combined_theme_source()
+    motion = (PROJECT_ROOT / "nicegui_app" / "assets" / "motion" / "sing-yin-motion.js").read_text(encoding="utf-8")
 
     assert "@media (hover: hover) and (pointer: fine)" in theme
     assert ".sy-pointer-reactive" in theme
@@ -98,4 +101,8 @@ def test_pointer_hover_motion_is_scoped_and_reduced_motion_safe() -> None:
     assert "prefers-reduced-motion: reduce" in theme
     assert ".sy-pointer-reactive:hover { transform: none !important; }" in theme
     assert ".sy-pointer-light, .sy-feedback-pulse { display: none !important; }" in theme
-    assert ".sy-table" not in theme.split("const pointerSurfaceSelector", 1)[1].split("].join", 1)[0]
+    assert ".sy-table" not in motion.split("const pointerSurfaceSelector", 1)[1].split("].join", 1)[0]
+    assert "pointerenter" in motion
+    assert motion.count("getBoundingClientRect()") == 3  # enter, rare fallback, and one feedback pulse
+    assert "const bounds = surface.getBoundingClientRect();" not in motion
+    assert "mutation.addedNodes" in motion

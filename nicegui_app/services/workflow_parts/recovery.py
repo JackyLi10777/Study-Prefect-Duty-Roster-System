@@ -186,15 +186,7 @@ class RecoveryWorkflowMixin:
         """List recent managed snapshots with current verification evidence."""
         if limit < 1:
             return []
-        candidates: list[tuple[Path, float]] = []
-        for path in self.backup_dir.glob("*.sqlite3"):
-            try:
-                modified_at = path.stat().st_mtime
-            except OSError:
-                continue
-            candidates.append((path, modified_at))
-        candidates.sort(key=lambda item: item[1], reverse=True)
-        selected = candidates[:limit]
+        selected = self._managed_backup_candidates(limit=limit)
         if not selected:
             return []
         with ThreadPoolExecutor(max_workers=min(4, len(selected)), thread_name_prefix="backup-verify") as executor:
@@ -207,6 +199,18 @@ class RecoveryWorkflowMixin:
             }
             for (path, modified_at), verification in zip(selected, verifications, strict=True)
         ]
+
+    def _managed_backup_candidates(self, *, limit: int | None = None) -> list[tuple[Path, float]]:
+        """Return managed snapshots newest-first without performing expensive verification."""
+        candidates: list[tuple[Path, float]] = []
+        for path in self.backup_dir.glob("*.sqlite3"):
+            try:
+                modified_at = path.stat().st_mtime
+            except OSError:
+                continue
+            candidates.append((path, modified_at))
+        candidates.sort(key=lambda item: item[1], reverse=True)
+        return candidates if limit is None else candidates[:limit]
 
     def backup_inventory(self, limit: int = 12) -> dict[str, object]:
         """Summarize recent snapshot trust without exposing raw verification errors."""
@@ -238,10 +242,13 @@ class RecoveryWorkflowMixin:
 
     def build_verified_handover_package(self) -> HandoverBackupPackage:
         """Package the latest verified managed snapshot for an operator-controlled handover copy."""
-        latest = next((item for item in self.backups(limit=10_000) if item["verification"].get("valid")), None)
-        if latest is None:
+        source_backup_path: Path | None = None
+        for candidate_path, _modified_at in self._managed_backup_candidates():
+            if self.verify_backup(candidate_path).get("valid"):
+                source_backup_path = candidate_path
+                break
+        if source_backup_path is None:
             raise WorkflowError("No verified backup is available for a handover package.")
-        source_backup_path = Path(latest["path"])
         verification = self.verify_backup(source_backup_path)
         if not verification.get("valid"):
             raise WorkflowError(f"Backup verification failed: {verification.get('error', 'unknown error')}")

@@ -474,6 +474,17 @@ C:\SingYinRoster
 
 只有這一步成功，才算完成自動啟動。
 
+### 步驟 9.9：執行主機診斷
+
+在普通 PowerShell 執行：
+
+```powershell
+Set-Location C:\SingYinRoster
+powershell -ExecutionPolicy Bypass -File scripts\doctor_windows_remote_access.ps1
+```
+
+本機模式第一次運行時，未設定 Tunnel 會顯示 `deferred`，這是正常狀態。`loopback_origin`、`python_runtime`、`disk_space` 及 `application_readiness` 應為 `pass`；完成工作排程後，`startup_task` 亦應為 `pass`。正式專用主機若 `local_permissions` 顯示 warning，請以管理員身份重新執行 `prepare_windows_host.ps1`，讓 `.env`、runtime SQLite、備份及日誌只保留主機帳戶、SYSTEM 與 Administrators 的寫入權限。
+
 ---
 
 ## 10. 日常使用方法
@@ -653,6 +664,7 @@ C:\SingYinRoster\.venv\Scripts\python.exe -X utf8 scripts\inspect_support_log.py
 - [ ] 工作排程器只存在一個 `Sing Yin Roster Host`。
 - [ ] 重新啟動後網站會自動恢復。
 - [ ] `/healthz` 顯示 official 及 database ok。
+- [ ] `doctor_windows_remote_access.ps1` 沒有 `fail`；正式啟用遠端前以 `-Strict` 通過。
 - [ ] 已建立並移走一個已驗證交接備份包。
 
 ### 首席導學風紀
