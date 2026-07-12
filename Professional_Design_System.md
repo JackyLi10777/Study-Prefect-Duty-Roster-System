@@ -91,16 +91,20 @@ Original raster atmosphere artwork may be used only as a low-opacity contextual 
 - `nicegui_app/assets/atmosphere/architecture-stewardship-dark-v1.webp` — Dark-mode companion for the system-architecture page.
 - `nicegui_app/assets/atmosphere/architecture-lifeline-light-v1.webp` — Light-mode six-station archival service-lifeline still life for the architecture showcase.
 - `nicegui_app/assets/atmosphere/architecture-lifeline-dark-v1.webp` — Same-composition, same-crop evening companion for the service-lifeline still life.
+- `nicegui_app/assets/atmosphere/guide-handbook-light-v1.webp` — Operator Guide light-mode handbook-and-desk context.
+- `nicegui_app/assets/atmosphere/guide-handbook-dark-v1.webp` — Same-composition evening companion for the Operator Guide.
+- `nicegui_app/assets/atmosphere/engineering-workbench-light-v1.webp` — Engineering & Quality light-mode verification workbench context.
+- `nicegui_app/assets/atmosphere/engineering-workbench-dark-v1.webp` — Same-composition dark-mode verification workbench context.
 
 They contain no people, student data, text, logo, or school crest. They must never replace a button icon, appear inside a roster table/PDF, or sit behind a form field. A solid or gradient readability layer, paired light/dark assets, matching pair dimensions, one shared crop/mask rule, and separately tuned theme opacity/readability veils are mandatory. An enabled contextual background may not use a single shared raster in both themes.
 
-Enabled background art now follows a stricter pair contract. `ATMOSPHERE_THEME_PAIRS` in `nicegui_app/ui/theme.py` is the registry: sidebar, Weekly Pulse, Daily Verse, onboarding, handover, Platform & Team, architecture hero, architecture lifeline, and the shared empty-ready state each own exactly one semantic image slot and exactly two performance-sized files named `*-light-v1.webp` and `*-dark-v1.webp`. The component selector refers only to `--sy-image-<slot>`; `:root` supplies its light image and `.body--dark` supplies the corresponding dark image. This guarantees the same DOM position, crop rule, mask, and purpose in both themes. A dark image must be a theme companion, not an unrelated scene placed elsewhere.
+Enabled background art now follows a stricter pair contract. `ATMOSPHERE_THEME_PAIRS` in `nicegui_app/ui/theme.py` is the registry: sidebar, Weekly Pulse, Daily Verse, onboarding, handover, Operator Guide, Platform & Team, Engineering & Quality, architecture hero, architecture lifeline, and the shared empty-ready state each own exactly one semantic image slot and exactly two performance-sized files named `*-light-v1.webp` and `*-dark-v1.webp`. The component selector refers only to `--sy-image-<slot>`; `:root` supplies its light image and `.body--dark` supplies the corresponding dark image. This guarantees the same DOM position, crop rule, mask, and purpose in both themes. A dark image must be a theme companion, not an unrelated scene placed elsewhere.
 
-Active atmosphere artwork is delivered as WebP and each file must remain below 250 KB unless a browser trace proves a justified exception. The current 18-file paired set totals about 1.29 MB. Browser identity marks also use purpose-sized derivatives: a 512×512 favicon and 640-pixel web crest prevent print masters from being decoded for small-screen presentation.
+Active atmosphere artwork is delivered as WebP and each file must remain below 250 KB unless a browser trace proves a justified exception. The current 22-file paired set totals about 1.83 MB. Browser identity marks also use purpose-sized derivatives: a 512×512 favicon and 640-pixel web crest prevent print masters from being decoded for small-screen presentation.
 
 Legacy one-off atmosphere files are not retained as active or fallback backgrounds. If a new contextual background is approved, both theme files, the registry entry, the CSS variable, asset-existence test, and light/dark browser assertion must arrive in the same change.
 
-The sidebar, Platform & Team hero, and architecture page are the only additional approved placement contexts in this phase. Their images sit behind a solid readability veil and never carry required information. They are **not** a reason to fill every blank area: useful breathing room remains part of a calm operating desk. Generated imagery is prohibited behind data tables, forms, warnings, names, fairness records, interactive controls, and PDFs（不可放在資料表、表單、警告或 PDF 後方）.
+The sidebar, Operator Guide, Platform & Team hero, Engineering & Quality hero, and architecture page are the only additional approved placement contexts in this phase. Their images sit behind a solid readability veil and never carry required information. They are **not** a reason to fill every blank area: useful breathing room remains part of a calm operating desk. Generated imagery is prohibited behind data tables, forms, warnings, names, fairness records, interactive controls, and PDFs（不可放在資料表、表單、警告或 PDF 後方）.
 
 All future generated assets must be reviewed against this checklist before use: appropriate context; no implied real student; no readable text; no trademark or logo; local project copy exists; dark-mode opacity is specified; small-screen crop is safe; no required information depends on the image.
 
@@ -440,14 +444,18 @@ Motion is feedback, not decoration. The visual style remains calm when motion is
 | Current Weekly Pulse step | One-time subtle emphasis on state change | 180–220ms |
 | Dialog / confirmation | Fade and small vertical settle | 220ms |
 | Pointer-reactive contextual surface | Up to 2px lift + local cursor light | 180–220ms |
+| Non-sensitive narrative surface | One-time opacity/12px settle when it first enters view | 360–440ms |
+| Grouped evidence cards | One-time 45ms stagger, capped at eight children | 360ms per item |
+| Semantic operation feedback | Short action/stable/attention pulse at the active control | 500ms total |
 | Consequential local operation | Preparing → safely processing → finalising progress state | No invented duration |
 | Page navigation | No theatrical transition; preserve orientation | 0–180ms |
 
-- Use one standard easing: `cubic-bezier(.2, .8, .2, 1)`.
-- Respect `prefers-reduced-motion`: remove transforms and nonessential transitions.
-- Sound remains opt-in and quiet. It may confirm a successful publish, adjustment, or backup package only; it must never play automatically on page load or error.
+- CSS uses the standard easing `cubic-bezier(.2, .8, .2, 1)`. The local GSAP runtime uses matching `power2.out`/`power1.out` curves for one-shot narrative entry, capped group stagger, cursor smoothing, and semantic feedback pulse.
+- GSAP is locally vendored and same-origin; it has no data, navigation, policy, persistence, or network responsibility. `IntersectionObserver` starts a surface only once, while `MutationObserver` discovers NiceGUI-rendered content without polling the application state.
+- Respect `prefers-reduced-motion`: skip GSAP entry/stagger/pulse motion, remove hover transforms and nonessential transitions, and keep the final content immediately visible. If GSAP cannot load, the runtime fails open to a static interface after a bounded retry rather than blocking the page.
+- Sound remains opt-in and quiet. Navigation, accepted long-operation start, and successful completion may use short semantic cues; no hover, page-load, error, or background sound may play automatically. Visual feedback remains available when sound is off.
 - Music is a separate, operator-started comfort layer. A YouTube player must remain fully visible with native controls, never autoplay, and never sit behind a form, name, table, warning, roster, fairness record, or PDF. Public playlist playback does not require sign-in; optional API search and saved playlist names must never carry student data.
-- No looping animation, parallax, bouncing icons, or ambient video.
+- No GSAP ScrollTrigger, pinning, looping animation, parallax, bouncing icons, or ambient video.
 
 ### Hover and press response
 

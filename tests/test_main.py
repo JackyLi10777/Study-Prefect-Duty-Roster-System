@@ -25,15 +25,15 @@ def test_browser_auto_open_can_be_disabled_for_managed_or_headless_runs(monkeypa
 
 def test_original_atmosphere_assets_are_available_to_the_local_runtime() -> None:
     atmosphere = PROJECT_ROOT / "nicegui_app" / "assets" / "atmosphere"
-    assert len(list(atmosphere.glob("*-light-v1.webp"))) == 9
-    assert len(list(atmosphere.glob("*-dark-v1.webp"))) == 9
+    assert len(list(atmosphere.glob("*-light-v1.webp"))) == 11
+    assert len(list(atmosphere.glob("*-dark-v1.webp"))) == 11
 
 
 def test_every_enabled_atmosphere_uses_one_shared_slot_with_a_light_dark_pair() -> None:
     atmosphere = PROJECT_ROOT / "nicegui_app" / "assets" / "atmosphere"
     theme = combined_theme_source()
 
-    assert set(ATMOSPHERE_THEME_PAIRS) == {"sidebar", "weekly-pulse", "devotional", "onboarding", "handover", "platform", "architecture", "architecture-lifeline", "empty-ready"}
+    assert set(ATMOSPHERE_THEME_PAIRS) == {"sidebar", "weekly-pulse", "devotional", "onboarding", "handover", "platform", "guide", "engineering", "architecture", "architecture-lifeline", "empty-ready"}
     for slot, (light_asset, dark_asset) in ATMOSPHERE_THEME_PAIRS.items():
         assert light_asset.endswith("-light-v1.webp")
         assert dark_asset.endswith("-dark-v1.webp")
@@ -97,5 +97,5 @@ def test_pointer_hover_motion_is_scoped_and_reduced_motion_safe() -> None:
     assert ".q-expansion-item .q-item { cursor: pointer; }" in theme
     assert "prefers-reduced-motion: reduce" in theme
     assert ".sy-pointer-reactive:hover { transform: none !important; }" in theme
-    assert ".sy-pointer-light { display: none !important; }" in theme
+    assert ".sy-pointer-light, .sy-feedback-pulse { display: none !important; }" in theme
     assert ".sy-table" not in theme.split("const pointerSurfaceSelector", 1)[1].split("].join", 1)[0]

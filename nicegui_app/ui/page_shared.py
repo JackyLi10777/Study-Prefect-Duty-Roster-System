@@ -154,6 +154,7 @@ async def _run_with_progress(
             ui.label(t("progress_keep_open")).classes("sy-progress-dialog-note mt-3")
 
         dialog.open()
+        play_interface_sound("working")
         await asyncio.sleep(0.08)  # Allow the dialog to paint before work begins.
         status.set_text(t(working_key))
         progress.value = 0.56

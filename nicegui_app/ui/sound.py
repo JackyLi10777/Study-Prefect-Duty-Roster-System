@@ -7,7 +7,7 @@ from nicegui import app, ui
 from nicegui_app.ui.theme import sound_feedback_enabled
 
 
-SOUND_KINDS = {"navigation", "success", "attention"}
+SOUND_KINDS = {"navigation", "working", "success", "attention"}
 
 
 def preferred_music_volume() -> float:
@@ -30,23 +30,26 @@ def play_interface_sound(kind: str, *, force: bool = False) -> None:
     """Play one short confirmation; never use this for hover, page load, or errors."""
     if kind not in SOUND_KINDS:
         raise ValueError(f"Unknown interface sound: {kind}")
-    if not force and not sound_feedback_enabled():
-        return
+    sound_enabled = force or sound_feedback_enabled()
     volume = preferred_sound_volume()
     ui.run_javascript(
         f"""
         (() => {{
           const kind = {kind!r};
           const level = {volume!r};
+          const soundEnabled = {str(sound_enabled).lower()};
+          window.dispatchEvent(new CustomEvent('sy:feedback', {{detail: {{kind}}}}));
+          if (!soundEnabled) return;
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
           if (!AudioContextClass) return;
           const context = window.__singYinAudioContext || new AudioContextClass();
           window.__singYinAudioContext = context;
           context.resume();
           const sequences = {{
-            navigation: [[440, 0.00, 0.11, 0.020]],
-            success: [[523.25, 0.00, 0.16, 0.030], [659.25, 0.10, 0.20, 0.038]],
-            attention: [[392.00, 0.00, 0.15, 0.024], [493.88, 0.11, 0.18, 0.028]],
+            navigation: [[440, 0.00, 0.10, 0.016, 'sine']],
+            working: [[349.23, 0.00, 0.13, 0.016, 'triangle'], [440.00, 0.07, 0.15, 0.014, 'sine']],
+            success: [[523.25, 0.00, 0.15, 0.026, 'sine'], [659.25, 0.09, 0.19, 0.032, 'triangle']],
+            attention: [[392.00, 0.00, 0.14, 0.020, 'triangle'], [493.88, 0.10, 0.17, 0.022, 'sine']],
           }};
           const music = document.querySelector('audio.sy-page-music-audio');
           if (music && !music.paused) {{
@@ -56,11 +59,11 @@ def play_interface_sound(kind: str, *, force: bool = False) -> None:
             clearTimeout(window.__singYinMusicRestoreTimer);
             window.__singYinMusicRestoreTimer = setTimeout(() => {{ music.volume = base; }}, 430);
           }}
-          for (const [frequency, offset, duration, peak] of sequences[kind]) {{
+          for (const [frequency, offset, duration, peak, waveform] of sequences[kind]) {{
             const oscillator = context.createOscillator();
             const gain = context.createGain();
             const start = context.currentTime + offset;
-            oscillator.type = 'sine';
+            oscillator.type = waveform;
             oscillator.frequency.setValueAtTime(frequency, start);
             gain.gain.setValueAtTime(0.0001, start);
             gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak * level), start + 0.025);

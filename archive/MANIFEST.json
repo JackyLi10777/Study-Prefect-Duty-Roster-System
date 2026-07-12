@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-12T14:39:36.788369+00:00",
+  "generatedAt": "2026-07-12T15:12:03.690571+00:00",
   "databaseClassification": "fictional-seed-only",
   "protectedRowCounts": {
     "roster_weeks": 0,
@@ -62,18 +62,18 @@
     },
     {
       "path": "archive/release-evidence/logs/nicegui-committed-without-backup.png",
-      "size": 318652,
-      "sha256": "a3f759bf52048d4b6256e12b05a00f30ddeb1ebe090de9ab84698b14076e2d24"
+      "size": 323004,
+      "sha256": "f1581c1356c02a7b5b12d9a1289d4c1a7060c2e97a239328cf2f3a8be41125c2"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-dashboard-dark.png",
-      "size": 1112835,
-      "sha256": "a688680c328ee899501dda7ab34b1476d099fadba49366a5155a91ff069e28ff"
+      "size": 1112876,
+      "sha256": "4a2865c45f1111e0fe7e14d7a4bca4178326c5efd51b976e5bcdcf10a7e49cf5"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-dashboard-light.png",
-      "size": 851764,
-      "sha256": "98fb9754cc6b854fa6325ab3160c571a351fa8cf635d7605f2ac4c7d52a85c61"
+      "size": 874488,
+      "sha256": "86834aa9fa9e86e46ee3442871f95b3d601088bbaeefb5acdd1e56d1e51a36dc"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-dashboard-mobile.png",
@@ -87,63 +87,78 @@
     },
     {
       "path": "archive/release-evidence/logs/nicegui-engineering-quality-dark.png",
-      "size": 677020,
-      "sha256": "2b410f3e503f4e939f9760449d4f55ecfb0434ffe45c12d13fe0245ac82fd333"
+      "size": 868240,
+      "sha256": "32b88e23297e91777b4daee47d36119a812e0d1c4e33195a93501a5b793084d9"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-engineering-quality-light.png",
-      "size": 794005,
-      "sha256": "ea81cf500a54a1066cfa14d192b27047ab8c2d1e84e7d31cf4a38b303498aea6"
+      "size": 895629,
+      "sha256": "80382bfc36543833f2a1ae49ba51ac0b2f74586653f87f1ca91ff2a5165e450c"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-engineering-quality-mobile.png",
-      "size": 406438,
-      "sha256": "beef54f0d90105b80c046da1bd4e917e61a327e519fe2564102e934031fbcc0e"
+      "size": 491616,
+      "sha256": "7d03fb2b6be4b4f0258ca186547d252173bcd222a3eb97440f838cb56c11dfac"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-getting-started.png",
-      "size": 391841,
-      "sha256": "4d897b9e6b8e9b590a65d025d99a7b74f11a042c8ca27d616f51c304a4081bc8"
+      "size": 379984,
+      "sha256": "5803580d630baf277e2fc09a4223cbd026473cbf1dcc235a58c2016a984c1da6"
+    },
+    {
+      "path": "archive/release-evidence/logs/nicegui-guide-dark.png",
+      "size": 559426,
+      "sha256": "e0c335af438d26004e5b8779e1e79b934894e451d888d0c3e65552efe51b5332"
+    },
+    {
+      "path": "archive/release-evidence/logs/nicegui-guide-light.png",
+      "size": 562811,
+      "sha256": "045beb1ce0c52a8fdf0df52f777783a1d40a9c305d07b832a0b07975ad57f318"
+    },
+    {
+      "path": "archive/release-evidence/logs/nicegui-guide-mobile.png",
+      "size": 196881,
+      "sha256": "b869ecb3808dbd58e0defbd6bfe1fa6a62304e309319d3067a421993f5bc937c"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-handover-light.png",
-      "size": 545944,
-      "sha256": "ec3506c36ed2051032fd5f52e4d76ea25e223572524ea9cee3eed3a33e9e790a"
+      "size": 525126,
+      "sha256": "14c452f91dd24caa9ce0cb915f58d3023a89f634f58f927f7fd5b8783e8ad8c8"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-handover-mobile.png",
-      "size": 220988,
-      "sha256": "755b50dd53531f504a6ff5a636b9a9d529fd3dc1fa5981efd37379e7f9339174"
+      "size": 219561,
+      "sha256": "bc2eec180c1b250b9cb3dbc37abd4324751b2505c05411802abdf6c383ffff24"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-page-music.png",
-      "size": 584510,
-      "sha256": "4a0030dbc5f486be8098e95456b8dc6d83dff0cdaa4079b3010c355539463862"
+      "size": 595672,
+      "sha256": "872b541f8cd72f92926d4dbadafc3b2ace1cc584b7243fabbb1acefaa88c6de0"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-platform-team-dark.png",
-      "size": 1448048,
-      "sha256": "1cd2b559d64a01e51a8812e3c05270d642f1f31e3fcb5425413974d28db3c109"
+      "size": 1446939,
+      "sha256": "481c56519b50be22e86206a4c6bcc1a2270656c4fd7ccd2f96e9994e448d7036"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-platform-team-light.png",
-      "size": 1370916,
-      "sha256": "65dcc3e38a77f837c17878621e222eb4d10b640ac991a872e2bcfd0a14e55272"
+      "size": 1372160,
+      "sha256": "ba6375043c36396807a94349089f88253031ea820daa3a705f17d5b6bf077ad8"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-platform-team-mobile.png",
-      "size": 943901,
-      "sha256": "7887ca4dbed8de50f254d321e8f5933e6162cbf0b8cab453ae08325ff0cb5b7c"
+      "size": 956682,
+      "sha256": "2d9221265d9924cea14fa810f44cff4818765b530f364c992fbf5a30398295ae"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-pointer-hover.png",
-      "size": 1841817,
-      "sha256": "81fdb9f03cb0e49098206041d7ca16bdf7691aa60537184b63698c8e04635cce"
+      "size": 1869139,
+      "sha256": "de2037005e23614f0bad5f77b99be97db4309fb0c4fdde8d2e01712a2f11caf1"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-prefect-archive-confirmation.png",
-      "size": 339840,
-      "sha256": "bb0e40f928d7206a1295ba1f9abfff22ad5fc6a34cecb74e23faded60381bfc3"
+      "size": 338461,
+      "sha256": "71f1eec96a39c06d6c36cb3c8c6ca8c3ca78b7fc5b6a29030ddb1e3bf7e9c5c2"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-prefect-import.png",
@@ -157,43 +172,43 @@
     },
     {
       "path": "archive/release-evidence/logs/nicegui-roster-unavailable.png",
-      "size": 273205,
-      "sha256": "5508eee611c7d7c71eede2f0851866160109a00f72cfa21405d881efae593fdb"
+      "size": 273381,
+      "sha256": "b28b06c3e2a0f1c97e55c9ddb16cc1bc8e6a40cc454c842380697a19b0e2069a"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-roster-workspace.png",
-      "size": 417682,
-      "sha256": "dbbb699046bedb26588c80f42836088d9f45704a1a68b1157db76b3adf909472"
+      "size": 405834,
+      "sha256": "db96f7384dd144c4e363e42204e68cf81018765a54c6db913cf6ed1c2e11099e"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-settings-dark.png",
-      "size": 529639,
-      "sha256": "4b9460ae54abc4a4567498124dfe7cb2c5dfc7c25dacddd5612941b0d6182eec"
+      "size": 529868,
+      "sha256": "6cb1dad2ef4acbcd5a4462efc4d80fe638c5423423c23a0e3e6cab8fa02b2761"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-settings-light.png",
-      "size": 570494,
-      "sha256": "e9db5f350e55e22a57a124246f3185c531a074726f4dde12c2ce202ea2c91acd"
+      "size": 571379,
+      "sha256": "68050393dfeca1226d3db17919cc8f04a1c48c1b308d343aaff72de4a2c8f8c2"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-system-architecture-dark.png",
-      "size": 1614886,
-      "sha256": "7e36951939f5a199501251ecfdbd8bc27e760e15f7bc3983e1a2e03d1c5e2bdf"
+      "size": 1576297,
+      "sha256": "b50680d06a05464e6f577ab85359fd045a27ae2a300e341c3ceaee3a791d66aa"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-system-architecture-mobile.png",
-      "size": 863663,
-      "sha256": "5dbe733c1440e085238589737f3b56f6ba57721b3967540bea355ddfdac47c5c"
+      "size": 862650,
+      "sha256": "b95678fa03e441df64f3bbd7685f3fae63a6fdf2351aaa1f80b9766af54f809c"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-system-architecture.png",
-      "size": 1841826,
-      "sha256": "6faec8ce0ab4757daed499f5876e38814b907e7f35996886748a041e856ad153"
+      "size": 1852062,
+      "sha256": "4b53aacfa2f942530dc2b09cda11964b61a7c334a1b00f1d319a59b2ff5046a8"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-write-pipeline-dark.png",
-      "size": 401186,
-      "sha256": "a5a348e1344879ddca770fb560af4ada4ae1379603ca554fc709d81ff08018f2"
+      "size": 401414,
+      "sha256": "c904bb8a1312b54cc7d0e2c7829a25f353a4a6dc09f0bfa027206b633ea6ba2f"
     },
     {
       "path": "archive/release-evidence/logs/nicegui-write-pipeline-light.png",
@@ -223,7 +238,7 @@
     {
       "path": "archive/release-evidence/logs/release-candidate-report.json",
       "size": 1423,
-      "sha256": "106b10e98acab6a63c59aed24bbfdaacfdef6dea2b75b7a6bd2803042fccc61a"
+      "sha256": "020623a262f33f5d9756d48e0f4c1744b19bcff6b552984a21ee3efbd1e0f034"
     },
     {
       "path": "archive/release-evidence/output/playwright/practice-mode/desktop-dark.png",

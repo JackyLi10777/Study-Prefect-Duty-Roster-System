@@ -18,3 +18,12 @@ terms and are not relicensed by the project’s MIT License.
 此聲明只記錄專案的共創來源與脈絡，不會修改或限制 `LICENSE` 內的 MIT License。第三方
 音樂、字體、學校識別素材及其他外來媒體仍適用其各自條款，不會因本專案採用 MIT License
 而被重新授權。
+
+The local interaction layer includes GSAP 3.13.0 under its published Standard
+“no charge” license. The versioned distribution file and npm package metadata
+are retained in `nicegui_app/assets/vendor/`; the application loads that file
+from its own localhost origin and does not depend on a runtime CDN request.
+
+本機互動層使用 GSAP 3.13.0，並依其公布的 Standard “no charge” license
+使用。版本化程式及 npm 套件資料保存在 `nicegui_app/assets/vendor/`；網站只從
+本機 localhost 載入，不會在運行時依賴 CDN。

@@ -12,6 +12,7 @@ from nicegui_app.contact import FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL, GITHUB_REPO
 from nicegui_app.runtime import get_workflow
 from nicegui_app.ui.i18n import current_locale, t, toggle_locale
 from nicegui_app.ui.music import render_page_music_control
+from nicegui_app.ui.sound import play_interface_sound
 from nicegui_app.ui.theme import apply_theme, current_theme, sound_feedback_enabled, toggle_sound_feedback, toggle_theme
 
 
@@ -26,6 +27,11 @@ NAVIGATION_GROUPS = (
 def _reload_after_preference_change(change) -> None:
     change()
     ui.navigate.reload()
+
+
+def _navigate_with_sound(path: str) -> None:
+    play_interface_sound("navigation")
+    ui.navigate.to(path)
 
 
 @contextmanager
@@ -46,7 +52,7 @@ def page_shell(title_key: str, active_path: str, *, music_context: str | None = 
             for group_key, items in NAVIGATION_GROUPS:
                 ui.label(t(group_key)).classes("sy-nav-section")
                 for path, key, icon in items:
-                    button = ui.button(t(key), icon=icon, on_click=lambda target=path: ui.navigate.to(target)).props("flat align=left").classes("w-full justify-start").style("color: var(--sy-nav-ink) !important")
+                    button = ui.button(t(key), icon=icon, on_click=lambda target=path: _navigate_with_sound(target)).props("flat align=left").classes("w-full justify-start").style("color: var(--sy-nav-ink) !important")
                     if path == active_path:
                         button.classes("sy-nav-active").props("aria-current=page")
             with ui.element("aside").classes("sy-sidebar-feedback").props(

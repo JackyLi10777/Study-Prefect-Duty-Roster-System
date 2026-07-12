@@ -28,6 +28,9 @@ PLATFORM_MOBILE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-platform-team-mobi
 ENGINEERING_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-engineering-quality-light.png"
 ENGINEERING_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-engineering-quality-dark.png"
 ENGINEERING_MOBILE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-engineering-quality-mobile.png"
+GUIDE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-guide-light.png"
+GUIDE_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-guide-dark.png"
+GUIDE_MOBILE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-guide-mobile.png"
 ARCHITECTURE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-system-architecture.png"
 ARCHITECTURE_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-system-architecture-dark.png"
 ARCHITECTURE_MOBILE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-system-architecture-mobile.png"
@@ -128,6 +131,11 @@ def main() -> None:
         assert page.get_by_role("button", name="開啟操作提示音").count() == 1
         assert page.get_by_role("button", name="切換深色模式").count() == 1
         assert page.get_by_role("link", name="跳至主要內容").count() == 1
+        page.wait_for_function("document.documentElement.dataset.syMotion === 'ready'")
+        assert page.evaluate("window.gsap?.version") == "3.13.0"
+        page.evaluate("window.dispatchEvent(new CustomEvent('sy:feedback', {detail: {kind: 'success'}}))")
+        page.locator(".sy-feedback-pulse--success").wait_for(timeout=2_000, state="attached")
+        page.locator(".sy-feedback-pulse--success").wait_for(timeout=2_000, state="detached")
         images_without_alt = page.locator("img:not([alt])").count()
         assert images_without_alt == 0
         navigation_crest = page.locator(".sy-brand-mark")
@@ -249,6 +257,9 @@ def main() -> None:
         page.screenshot(path=str(PLATFORM_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/engineering", wait_until="domcontentloaded")
         page.get_by_text("工程與品質證據", exact=True).first.wait_for(timeout=10_000)
+        assert "engineering-workbench-light-v1.webp" in page.locator(".sy-engineering-hero").evaluate(
+            "element => getComputedStyle(element, '::after').backgroundImage"
+        )
         assert page.get_by_test_id("engineering-facts").locator(".sy-engineering-fact").count() == 4
         assert page.get_by_test_id("engineering-blueprint").locator(".sy-engineering-blueprint-layer").count() == 5
         assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 9
@@ -288,6 +299,10 @@ def main() -> None:
         assert "sidebar-stewardship-light-v1.webp" in page.locator(".sy-sidebar").evaluate("element => getComputedStyle(element, '::before').backgroundImage")
         page.screenshot(path=str(ARCHITECTURE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/guide", wait_until="domcontentloaded")
+        assert "guide-handbook-light-v1.webp" in page.locator(".sy-guide-hero").evaluate(
+            "element => getComputedStyle(element, '::after').backgroundImage"
+        )
+        page.screenshot(path=str(GUIDE_SCREENSHOT), full_page=True)
         expansion_header = page.locator(".q-expansion-item .q-item").first
         assert expansion_header.evaluate("element => getComputedStyle(element).cursor") == "pointer"
         expansion_header.hover()
@@ -447,6 +462,9 @@ def main() -> None:
         page.screenshot(path=str(PLATFORM_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/engineering", wait_until="domcontentloaded")
         assert page.locator("body.body--dark").count() == 1
+        assert "engineering-workbench-dark-v1.webp" in page.locator(".sy-engineering-hero").evaluate(
+            "element => getComputedStyle(element, '::after').backgroundImage"
+        )
         assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 9
         page.screenshot(path=str(ENGINEERING_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
@@ -456,6 +474,11 @@ def main() -> None:
         )
         assert "sidebar-stewardship-dark-v1.webp" in page.locator(".sy-sidebar").evaluate("element => getComputedStyle(element, '::before').backgroundImage")
         page.screenshot(path=str(ARCHITECTURE_DARK_SCREENSHOT), full_page=True)
+        page.goto(f"{BASE_URL}/guide", wait_until="domcontentloaded")
+        assert "guide-handbook-dark-v1.webp" in page.locator(".sy-guide-hero").evaluate(
+            "element => getComputedStyle(element, '::after').backgroundImage"
+        )
+        page.screenshot(path=str(GUIDE_DARK_SCREENSHOT), full_page=True)
         page.set_viewport_size({"width": 390, "height": 844})
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
         page.get_by_text("A co-creation note", exact=True).wait_for(timeout=10_000)
@@ -481,6 +504,10 @@ def main() -> None:
         assert first_blueprint_layer["y"] < second_blueprint_layer["y"]
         assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
         page.screenshot(path=str(ENGINEERING_MOBILE_SCREENSHOT), full_page=True)
+        page.goto(f"{BASE_URL}/guide", wait_until="domcontentloaded")
+        page.get_by_text("Operator guide", exact=True).first.wait_for(timeout=10_000)
+        assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
+        page.screenshot(path=str(GUIDE_MOBILE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
         assert page.locator(".sy-architecture-layer").count() == 5
         assert page.locator(".sy-service-stage").count() == 6
@@ -526,6 +553,7 @@ def main() -> None:
         reduced_page = reduced_context.new_page()
         reduced_page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
         reduced_page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
+        reduced_page.wait_for_function("document.documentElement.dataset.syMotion === 'reduced'")
         reduced_layer = reduced_page.locator(".sy-architecture-layer").first
         reduced_layer.locator(".sy-pointer-light").wait_for(timeout=10_000, state="attached")
         reduced_layer.hover()

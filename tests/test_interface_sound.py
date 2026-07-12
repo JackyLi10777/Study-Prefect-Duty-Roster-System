@@ -22,11 +22,13 @@ def test_interface_sound_is_semantic_opt_in_and_ducks_music() -> None:
     pages = combined_page_source()
     music = (PROJECT_ROOT / "nicegui_app" / "ui" / "music.py").read_text(encoding="utf-8")
 
-    assert 'SOUND_KINDS = {"navigation", "success", "attention"}' in sound
-    assert "if not force and not sound_feedback_enabled()" in sound
+    assert 'SOUND_KINDS = {"navigation", "working", "success", "attention"}' in sound
+    assert "sound_enabled = force or sound_feedback_enabled()" in sound
+    assert "new CustomEvent('sy:feedback'" in sound
     assert "music.volume = Math.max(0.02, base * 0.80)" in sound
     assert "setVolume" not in sound, "Visible YouTube volume remains under the operator's native controls"
     assert 'play_interface_sound("success")' in pages
+    assert 'play_interface_sound("working")' in pages
     assert 'play_interface_sound("navigation")' in pages
     assert "mouseover" not in sound.lower()
     assert "pointerover" not in sound.lower()

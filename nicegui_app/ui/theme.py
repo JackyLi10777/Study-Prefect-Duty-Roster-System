@@ -5,6 +5,7 @@ from __future__ import annotations
 from nicegui import app, ui
 
 from nicegui_app.ui.theme_markup import THEME_HEAD_HTML
+from nicegui_app.ui.motion import MOTION_HEAD_HTML
 
 
 ATMOSPHERE_THEME_PAIRS = {
@@ -14,6 +15,8 @@ ATMOSPHERE_THEME_PAIRS = {
     "onboarding": ("onboarding-desk-light-v1.webp", "onboarding-desk-dark-v1.webp"),
     "handover": ("handover-archive-light-v1.webp", "handover-archive-dark-v1.webp"),
     "platform": ("platform-stewardship-light-v1.webp", "platform-stewardship-dark-v1.webp"),
+    "guide": ("guide-handbook-light-v1.webp", "guide-handbook-dark-v1.webp"),
+    "engineering": ("engineering-workbench-light-v1.webp", "engineering-workbench-dark-v1.webp"),
     "architecture": ("architecture-stewardship-light-v1.webp", "architecture-stewardship-dark-v1.webp"),
     "architecture-lifeline": ("architecture-lifeline-light-v1.webp", "architecture-lifeline-dark-v1.webp"),
     "empty-ready": ("empty-ready-light-v1.webp", "empty-ready-dark-v1.webp"),
@@ -49,3 +52,4 @@ def apply_theme() -> None:
     # Named teal palette classes remain available for verified/stable badges.
     ui.colors(primary="#47758B" if is_dark else "#35647C")
     ui.add_head_html(THEME_HEAD_HTML)
+    ui.add_head_html(MOTION_HEAD_HTML)

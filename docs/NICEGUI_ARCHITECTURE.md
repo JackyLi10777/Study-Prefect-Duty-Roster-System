@@ -118,12 +118,20 @@ The UI does not append `WorkflowError` text to notifications. It displays the bi
 | Core | `packages/roster_core/` | Pure daily devotional selection and weekly roster generation/validation |
 | Persistence | `nicegui_app/persistence/` | SQLite engine, Alembic schema, durable records |
 | Workflow | `nicegui_app/services/roster_workflow.py`, `nicegui_app/services/workflow_parts/` | Stable facade plus separated transactions, fairness ledger, people, backups, adjustments, and recovery |
-| Presentation | `nicegui_app/ui/page_routes/`, `page_shared.py`, `i18n_catalog/`, `theme_markup.py` | NiceGUI routes, shared components, domain-grouped bilingual copy, design-system markup, page shell, anonymous platform summary, and non-sensitive architecture explanation |
+| Presentation | `nicegui_app/ui/page_routes/`, `page_shared.py`, `i18n_catalog/`, `theme_markup.py`, `motion.py` | NiceGUI routes, shared components, domain-grouped bilingual copy, design-system markup, local motion bootstrap, page shell, anonymous platform summary, and non-sensitive architecture explanation |
 | Export | `nicegui_app/services/roster_export.py` | Local-only bilingual PDF composition; no persistence or network writes |
 | Observability | `nicegui_app/observability.py` | Payload-free local operation evidence and rotating support logs |
 | Optional media | `nicegui_app/services/online_music.py`, `nicegui_app/ui/music.py` | Public YouTube playlist validation/search and visible presentation; strictly separate from roster persistence |
 
 Business rules must never be implemented in UI event handlers. UI translation keys must never be used as database values or policy inputs.
+
+### Local motion and interaction-sound boundary
+
+The motion layer is presentation-only. `nicegui_app/ui/motion.py` loads the versioned, same-origin GSAP core at `nicegui_app/assets/vendor/gsap-3.13.0.min.js`, then `nicegui_app/assets/motion/sing-yin-motion.js` discovers approved non-sensitive narrative surfaces. It performs one-shot transform/opacity entry, capped evidence-card stagger, pointer-light smoothing, and a short semantic feedback pulse. It does not read or receive prefect, roster, leave, fairness, audit, backup, PDF, database, or translated policy values; it does not own navigation or transaction timing.
+
+The runtime uses `IntersectionObserver` instead of scroll handlers and fails open to a fully visible static page if GSAP is unavailable. `prefers-reduced-motion: reduce` bypasses entry, stagger, pulse, hover translation, and cursor-light rendering. ScrollTrigger, pinned sections, parallax, repeating timelines, and decorative loops are not part of the application.
+
+`nicegui_app/ui/sound.py` owns the separate opt-in Web Audio cues. Navigation, an accepted long operation, and successful completion have distinct short tones; page load, hover, form error, and background ambience remain silent. Every cue also dispatches a non-audio `sy:feedback` event, so sound-off operation retains visual acknowledgement. Music remains a separate operator-started media layer and is never synchronized to UI sound.
 
 ### Optional YouTube boundary
 

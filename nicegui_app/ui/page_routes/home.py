@@ -129,8 +129,10 @@ def operator_guide_page() -> None:
         ("guide_support_title", "guide_support_body"),
     )
     with page_shell("operator_guide", "/guide", music_context="guide"):
-        ui.label(t("operator_guide")).classes("text-2xl font-semibold")
-        ui.label(t("guide_intro")).classes("text-[var(--sy-muted)] max-w-3xl")
+        with ui.element("section").classes("sy-guide-hero w-full").props(f'aria-label="{t("operator_guide")}"'):
+            with ui.column().classes("gap-2 max-w-3xl"):
+                ui.label(t("operator_guide")).classes("sy-page-title")
+                ui.label(t("guide_intro")).classes("text-[var(--sy-muted)] leading-7")
         for title_key, body_key in sections:
             with ui.expansion(t(title_key), icon="help").classes("sy-surface w-full max-w-4xl"):
                 ui.label(t(body_key)).classes("p-4 text-sm leading-6 text-[var(--sy-muted)]")
