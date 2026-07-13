@@ -4,6 +4,18 @@ from __future__ import annotations
 
 from nicegui_app.ui.page_shared import *  # noqa: F403
 
+
+def _release_evidence_tone(state: str) -> str:
+    """Map release evidence to the same operator meaning used across the app."""
+    return {
+        "pass": "stable",
+        "running": "action",
+        "stale": "attention",
+        "missing": "attention",
+        "unreadable": "attention",
+        "fail": "danger",
+    }.get(state, "attention")
+
 @ui.page("/platform")
 def platform_page() -> None:
     team_roles = (
@@ -68,13 +80,13 @@ def platform_page() -> None:
         ):
             with ui.column().classes("sy-platform-hero-copy gap-2"):
                 ui.label(t("platform_kicker")).classes("sy-architecture-kicker")
-                ui.label(t("platform")).classes("sy-architecture-title")
+                ui.html(t("platform"), tag="h2").classes("sy-architecture-title")
                 ui.label(t("platform_intro")).classes("sy-architecture-copy")
                 ui.label(t("platform_principle")).classes("sy-platform-principle")
 
         with ui.element("section").classes("sy-architecture-section w-full"):
             _render_architecture_section_heading(
-                "platform_snapshot_kicker", "platform_snapshot_title", "platform_snapshot_copy"
+                "platform_snapshot_kicker", "platform_snapshot_title", "platform_snapshot_copy", show_kicker=True
             )
             if summary.available:
                 metrics = (
@@ -227,7 +239,7 @@ def engineering_page() -> None:
         if evidence.state == "pass" and evidence.total_checks
         else t("engineering_release_state", state=t(release_state_keys.get(evidence.state, "platform_release_unreadable")))
     )
-    evidence_tone = "stable" if evidence.state == "pass" else "attention"
+    evidence_tone = _release_evidence_tone(evidence.state)
     gate_value = (
         f"{evidence.passed_checks:02d}/{evidence.total_checks:02d}"
         if evidence.total_checks
@@ -246,7 +258,7 @@ def engineering_page() -> None:
         ):
             with ui.column().classes("gap-2"):
                 ui.label(t("engineering_kicker")).classes("sy-architecture-kicker")
-                ui.label(t("engineering")).classes("sy-architecture-title")
+                ui.html(t("engineering"), tag="h2").classes("sy-architecture-title")
                 ui.label(t("engineering_intro")).classes("sy-architecture-copy")
                 _tone_badge(t("engineering_badge"), "stable").classes("mt-3 self-start")
 
@@ -276,14 +288,14 @@ def engineering_page() -> None:
 
         with ui.element("section").classes("sy-architecture-section w-full"):
             _render_architecture_section_heading(
-                "engineering_pipeline_kicker", "engineering_pipeline_title", "engineering_pipeline_copy"
+                "engineering_pipeline_kicker", "engineering_pipeline_title", "engineering_pipeline_copy", show_kicker=True
             )
             _tone_badge(evidence_label, evidence_tone).classes("self-start")
             with ui.element("ol").classes("sy-engineering-gates").props("data-testid=engineering-gates"):
                 for index, (icon, title_key) in enumerate(gates, start=1):
                     with ui.element("li").classes("sy-engineering-gate"):
                         ui.label(f"{index:02d}").classes("sy-engineering-gate-index")
-                        ui.icon(icon).classes("sy-engineering-gate-icon").props("aria-hidden=true")
+                        ui.icon(icon).classes(f"sy-engineering-gate-icon sy-fg-{evidence_tone}").props("aria-hidden=true")
                         ui.label(t(title_key)).classes("sy-engineering-gate-title")
 
         with ui.element("section").classes("sy-architecture-section w-full"):
@@ -359,7 +371,7 @@ def system_architecture_page() -> None:
         with ui.element("section").classes("sy-architecture-hero w-full").props(f'aria-label="{t("system_architecture")}"'):
             with ui.column().classes("gap-2"):
                 ui.label(t("architecture_kicker")).classes("sy-architecture-kicker")
-                ui.label(t("system_architecture")).classes("sy-architecture-title")
+                ui.html(t("system_architecture"), tag="h2").classes("sy-architecture-title")
                 ui.label(t("architecture_intro")).classes("sy-architecture-copy")
                 _tone_badge(t("architecture_local_badge"), "stable").classes("mt-3 self-start")
                 ui.label(t("architecture_reading_note")).classes("sy-architecture-reading-note")
@@ -369,7 +381,9 @@ def system_architecture_page() -> None:
                 ).classes("mt-2 self-start")
 
         with ui.element("section").classes("sy-architecture-section w-full").props(f'aria-label="{t("architecture_flow_title")}"'):
-            _render_architecture_section_heading("architecture_flow_kicker", "architecture_flow_title", "architecture_flow_copy")
+            _render_architecture_section_heading(
+                "architecture_flow_kicker", "architecture_flow_title", "architecture_flow_copy", show_kicker=True
+            )
             ui.element("div").classes("sy-architecture-lifeline-visual w-full").props("aria-hidden=true data-testid=architecture-lifeline-visual")
             with ui.element("ol").classes("sy-service-lifeline").props("data-testid=service-lifeline"):
                 for index, (icon, title_key, body_key, result_key) in enumerate(service_flow, start=1):
@@ -409,9 +423,16 @@ def system_architecture_page() -> None:
         _render_feedback_channel()
 
 
-def _render_architecture_section_heading(kicker_key: str, title_key: str, copy_key: str) -> None:
+def _render_architecture_section_heading(
+    kicker_key: str,
+    title_key: str,
+    copy_key: str,
+    *,
+    show_kicker: bool = False,
+) -> None:
     with ui.column().classes("sy-architecture-section-heading gap-1"):
-        ui.label(t(kicker_key)).classes("sy-architecture-section-kicker")
+        if show_kicker:
+            ui.label(t(kicker_key)).classes("sy-architecture-section-kicker")
         ui.html(t(title_key), tag="h2").classes("sy-architecture-section-title").props(
             f"id={title_key}-heading"
         )

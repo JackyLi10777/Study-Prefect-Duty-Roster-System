@@ -150,7 +150,9 @@ def settings_page() -> None:
                     with ui.element("div").classes("sy-status-summary"):
                         ui.label(t(label_key)).classes("text-xs text-[var(--sy-muted)]")
                         ui.label(value).classes("font-semibold")
-                        ui.icon("check_circle" if ready else "priority_high").classes("sy-fg-stable" if ready else "sy-fg-attention")
+                        ui.icon("check_circle" if ready else "priority_high").classes(
+                            "sy-fg-stable" if ready else "sy-fg-attention"
+                        ).props("aria-hidden=true")
         with ui.card().classes("sy-surface w-full max-w-3xl p-6"):
             ui.label(t("persistence_notice")).classes("text-lg font-semibold")
             ui.label(f"{t('database')}: {status['databasePath']}").classes("sy-path-value text-sm text-[var(--sy-muted)] mt-3")

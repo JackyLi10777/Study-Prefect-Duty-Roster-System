@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from nicegui_app.services.roster_workflow import PrefectInput, RosterWorkflow
+import pytest
+
+from nicegui_app.services.roster_workflow import PrefectInput, RosterWorkflow, WorkflowError
 from nicegui_app.utils.prefect_import import parse_prefect_import_text, prefect_import_template_csv
 
 
@@ -68,3 +70,23 @@ def test_downloadable_import_template_contains_only_fictional_rows_that_pass_pre
     assert "姓名,級別,班別,職務,可值班日,備註" in template
     assert preview.issues == ()
     assert [row.name_zh for row in preview.rows] == ["範例風紀甲", "範例風紀乙"]
+
+
+def test_english_only_name_is_rejected_by_preview_and_workflow_boundary(tmp_path) -> None:
+    preview = parse_prefect_import_text(
+        "姓名,級別,班別,職務,可值班日\nTest Prefect,F.3,3H,導學風紀,星期一\n"
+    )
+    assert preview.rows == ()
+    assert "display name must be Chinese" in preview.issues[0]
+
+    workflow = _workflow(tmp_path)
+    with pytest.raises(WorkflowError, match="display name must be Chinese"):
+        workflow.create_prefect(
+            PrefectInput(
+                name_zh="Test Prefect",
+                form="F.3",
+                class_name="3H",
+                role_code="study_prefect",
+                available_days=("MONDAY",),
+            )
+        )

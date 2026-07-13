@@ -33,7 +33,7 @@ def main() -> None:
         page = browser.new_page(viewport={"width": 1280, "height": 900})
         page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
         page.goto(f"{BASE_URL}/rosters", wait_until="networkidle")
-        page.locator("button").filter(has=page.locator("i.q-icon", has_text="auto_awesome")).click()
+        page.get_by_role("button", name="生成並儲存草稿").click()
 
         partial_dialog = page.get_by_test_id("committed-without-backup-dialog")
         partial_dialog.wait_for(timeout=15_000)

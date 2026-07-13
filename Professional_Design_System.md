@@ -117,7 +117,7 @@ The school crest is an official identity asset, not generated atmosphere artwork
 - `sing-yin-crest-display-web.png` — a 640-pixel delivery copy for the architecture/co-creation seal.
 - `sing-yin-crest-display-print.png` — the full 5983×5751 source reserved for PDF output.
 
-The original alpha transparency is preserved; no JPEG conversion or automated background removal is allowed. Display the crest on a solid white identity surface in both themes so its white shield and dark-blue outline remain stable. Keep the favicon, navigation, display, and print paths centralized in `nicegui_app/config.py`; future replacements must update these semantic files, retain Chinese characters and English school name, and pass browser and PDF verification at their actual rendered sizes.
+The original alpha transparency is preserved; no JPEG conversion or automated background removal is allowed. In light mode, the navigation and display crest may use a restrained white identity surface. In dark mode, preserve the PNG alpha and remove the white container: use a transparent surface with shape-aware drop shadows so the shield, ribbon, red cross, and dark-blue outline remain legible without creating a bright square. Keep the favicon, navigation, display, and print paths centralized in `nicegui_app/config.py`; future replacements must update these semantic files, retain Chinese characters and English school name, and pass browser and PDF verification at their actual rendered sizes.
 
 ---
 
@@ -199,7 +199,7 @@ The owner is `nicegui_app/ui/theme.py` plus the versioned `nicegui_app/assets/cs
 | `neutral-control` | `#5F6368` | `#C5C7CA` | Pending, inactive, ordinary navigation and non-status icons |
 | `ink` | `#1C1C1E` | `#F5F5F7` | Important text |
 | `secondary-ink` | `#6E6E73` | `#AEAEB2` | Supporting copy and metadata |
-| `ground` | `#F2F2F7` | `#000000` | Page background |
+| `ground` | `#F2F2F7` | `#0D1117` | Page background; dark mode uses near-black mineral ink rather than pure black |
 | `surface` | `#FFFFFF` | `#1C1C1E` | Cards, sheets, dialogs, navigation |
 | `surface-subtle` | `#E5E5EA` | `#2C2C2E` | Tables, quiet grouping, disabled treatment |
 | `devotional-gold` | `#D3A930` | `#FFD60A` | Scripture only; never a general call to action |
@@ -210,6 +210,7 @@ Rules:
 2. Teal may identify the application, a completed or verified state, and devotional anchors. It must not colour all buttons.
 3. Warning and danger are semantic only. Never use them for visual variety.
 4. Text meets WCAG AA contrast: 4.5:1 for normal text and 3:1 for large text or UI boundaries.
+5. A light dark-mode accent must carry dark foreground text when used as a filled step marker. Destructive dark-mode fills follow the same `on-danger` rule; white is not assumed to contrast with every semantic colour.
 
 #### Component colour grammar
 
@@ -325,9 +326,12 @@ The roster grid is an operational document, not a dashboard chart. Preserve the 
 ### 6.3 Directory, fairness, and settings
 
 - **Directory:** show the active people list first; editing and archive actions are clearly secondary to identity accuracy. On a phone, render the same localized directory data as individual identity cards—Chinese name, form/class, role, availability, workload, and duty count—rather than clipping a seven-column table.
-- **Import:** use a staged form—template, paste, validate, preview, import—rather than one large ambiguous text area.
-- **Fairness:** position the explanation before the numbers. Data should answer “why”, not merely display totals.
+- **Import:** use a staged form—template or file, worksheet, field mapping, local validation, data preview, explicit import—rather than one large ambiguous text area. Keep the optional heading-suggestion service inside a quiet secondary card; manual mapping remains the complete path, and a suggestion may populate controls but never skip human review or become a write action.
+- **Fairness:** position the explanation before the numbers. Data should answer “why”, not merely display totals. The period report stays in this same tab because the operator uses it to explain the ledger, avoiding an unnecessary page change.
+- **Period report:** start with whole-week range controls and a read-only state marker; then show coverage／ledger metrics, a plain-language executive summary, the historical distribution, and named participation. Downloads come only after the on-screen preview. “Scheduled hours” always carries the visible qualifier “not attendance evidence”, and JSON always carries “report evidence, not a restore backup”.
 - **Settings:** separate routine status from high-consequence recovery. Restore and export backup packages must remain confirmation-gated.
+
+Import forms, report metrics, contribution tables, trend data and download notices are sensitive operational surfaces. They remain image-free in both themes. Hierarchy comes from spacing, type, neutral surfaces and semantic status tone—not illustration, background texture, pointer light or decorative motion.
 
 ### 6.4 Responsive rule
 
@@ -401,6 +405,8 @@ Archive confirmation must name both sides of the consequence: the active person 
 - Snapshot identifiers and operator-entered reasons before the first asynchronous yield. A progress overlay must process exactly the choice that was visible when the operator pressed the action button.
 - For actions longer than a brief interaction, show a calm blocking progress dialog connected to the action; prevent duplicate clicks. Use an honest phase message rather than a fictional percentage when the workflow cannot report one.
 - A published-duty leave adjustment follows visible steps: choose the original duty, load and choose a qualified substitute (or deliberately retain a vacancy), then record the reason. Each phone field and action is full-width and touch-safe; the reason field keeps the unique accessible label and receives focus when it is missing.
+- A file import separates **parsing**, **mapping**, **preview**, and **write**. The file name, row／column count, selected worksheet and every target mapping remain visible before preview. Optional DeepSeek assistance is labelled as a suggestion, states exactly which anonymous column metadata leaves the computer, and never visually outranks the manual selectors or preview action.
+- A period-report preview is a read action, so its progress language says “checking” or “building”, never “saving”. Download actions use the already reviewed immutable model and do not imply that JSON created a backup or that scheduled allocation became verified service.
 
 ### Tables and roster matrix
 
@@ -410,6 +416,7 @@ Archive confirmation must name both sides of the consequence: the active person 
 - Use a compact legend only when it changes a decision.
 - On a published roster, the adjustment route is present but never visually equal to the normal weekly workflow.
 - Desktop table and mobile cards must be generated from the same localized display model; changing one must not silently omit a duty in the other.
+- Report charts always have an accessible table alternative. Fairness trend colour identifies series only; labels, values and source roster versions remain sufficient without colour. Chinese names remain authoritative in both interface languages and both report-PDF languages.
 
 ### Empty, error, success, and recovery states
 
@@ -451,7 +458,7 @@ Motion is feedback, not decoration. The visual style remains calm when motion is
 | Page navigation | No theatrical transition; preserve orientation | 0–180ms |
 
 - CSS uses the standard easing `cubic-bezier(.2, .8, .2, 1)`. The local GSAP runtime uses matching `power2.out`/`power1.out` curves for one-shot narrative entry, capped group stagger, cursor smoothing, and semantic feedback pulse.
-- GSAP is locally vendored and same-origin; it has no data, navigation, policy, persistence, or network responsibility. `IntersectionObserver` starts a surface only once, while `MutationObserver` discovers NiceGUI-rendered content without polling the application state.
+- GSAP is locally vendored and same-origin; it has no data, navigation, policy, persistence, or network responsibility. `IntersectionObserver` starts a surface only once, while `MutationObserver` discovers NiceGUI-rendered content without polling the application state. The runtime owns an idempotent disposer, disconnects both observers, aborts pointer listeners, removes generated nodes, and uses `gsap.matchMedia()` so a live reduced-motion or pointer-capability change can revert enhancements safely.
 - Respect `prefers-reduced-motion`: skip GSAP entry/stagger/pulse motion, remove hover transforms and nonessential transitions, and keep the final content immediately visible. If GSAP cannot load, the runtime fails open to a static interface after a bounded retry rather than blocking the page.
 - Sound remains opt-in and quiet. Navigation, accepted long-operation start, and successful completion may use short semantic cues; no hover, page-load, error, or background sound may play automatically. Visual feedback remains available when sound is off.
 - Music is a separate, operator-started comfort layer. A YouTube player must remain fully visible with native controls, never autoplay, and never sit behind a form, name, table, warning, roster, fairness record, or PDF. Public playlist playback does not require sign-in; optional API search and saved playlist names must never carry student data.
@@ -463,10 +470,11 @@ Motion is feedback, not decoration. The visual style remains calm when motion is
 - Active Weekly Pulse cards may rise by at most 2px on hover; pending cards remain still.
 - Daily verse and workbench surfaces may gain a slightly deeper shadow on hover, but must never shift surrounding layout.
 - Background artwork is static. Its purpose is atmosphere, not animation.
-- Fine-pointer devices may show a restrained radial light that follows the pointer within Weekly Pulse, architecture, onboarding, handover, export, co-creation, and storage-explanation surfaces. The light is limited to the hovered surface and carries no information.
+- Fine-pointer devices may show a restrained radial light only on a real link/action container or a deliberately editorial co-creation surface. Static workflow steps, architecture layers, onboarding, handover, storage explanations, tables, warnings and evidence cards must not glow or lift, because that creates a false click affordance.
 - Buttons and expansion headers use a pointer cursor. Disabled actions use `not-allowed`; static tables, roster cells, names, warnings, and fairness data never gain a pointer cursor or floating transform.
 - Sidebar items may move horizontally by at most 3px so navigation feels responsive without changing layout. Expansion headers use the same 3px maximum and retain a visible keyboard focus ring.
 - Touch devices do not run hover transforms. Under `prefers-reduced-motion: reduce`, hover translation is removed and the cursor light is not rendered.
+- Hover tooltips are suppressed on coarse pointers; the same controls retain their explicit accessible names.
 
 ---
 
@@ -534,8 +542,16 @@ No phase may weaken roster policy, persistent fairness, backup verification, pri
 1. Web UI uses Inter plus platform-native Hong Kong／Traditional Chinese fallbacks; the large Noto TTF files remain for deterministic PDF embedding, not cold browser download.
 2. Shared theme CSS is one versioned same-origin asset so navigation can reuse the browser cache instead of repeating the full design system in every HTML response.
 3. The optional music controller is a single persistent non-modal panel. Opening and closing it must not mount another dialog tree; Escape and the close control return focus to the trigger.
-4. Phone layout places one responsive “next safe step” immediately after Daily Verse and hides the duplicate active-step button inside the longer workflow explanation. The verse remains first and complete; the action remains inside the first viewport.
+4. Phone layout places one responsive “next safe step” immediately after Daily Verse and hides the repeated three-card flow inside the workbench at 600 px or below. The compact workbench summary and start guide remain available; the verse stays first and the only current action remains inside the first viewport.
 5. `verify_runtime_performance.py` is a release gate for cold transfer, largest resource, resource count, forced-GC heap growth, DOM nodes, JavaScript listeners, console errors, representative routes, and mobile overflow. Motion on reduced-motion or touch input adds no pointer-light node.
+
+### Phase F — evidence-led visual refinement
+
+1. The interface follows the **Service Weave／服事經緯** direction: slate blue means action, teal means identity or verified stability, gold belongs to devotional reading, and ordinary explanatory icons remain neutral.
+2. Platform and Engineering keep at most one evidence kicker each; repeated all-caps eyebrow labels are not a substitute for hierarchy. Capability names describe work directly and do not invent offices or departments.
+3. The sidebar remains one shared structural slot with paired light/dark artwork. Dark mode must reference `sidebar-stewardship-dark-v1.webp` and use a translucent near-black veil that preserves visible material texture without reducing navigation contrast.
+4. New artwork is added only when it explains an otherwise unclear orientation or empty state. A future seeded static Service Weave light/dark pair may replace generic showcase still life, but no runtime canvas, looping background, extra corporate title or decorative illustration button is approved.
+5. Release evidence maps `pass → stable`, `running → action`, `stale/missing/unreadable → attention`, and `fail → danger`; engineering gates inherit that real evidence tone rather than appearing teal by default.
 
 ---
 

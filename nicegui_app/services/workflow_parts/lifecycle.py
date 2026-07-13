@@ -9,15 +9,25 @@ class RosterLifecycleMixin:
         """Expose the Monday-based workflow boundary without duplicating it in the UI."""
         self._require_monday(week_start)
 
-    def generate_and_save_draft(self, week_start: date) -> RosterWeekResult:
+    def generate_and_save_draft(
+        self,
+        week_start: date,
+        *,
+        history_priority_multiplier: float = 1.0,
+    ) -> RosterWeekResult:
         self._require_monday(week_start)
         with self._session() as session:
             prefects = self._active_prefects(session)
             leave_days = self._leave_days_for_week(session, week_start)
             try:
-                assignments = generate_weekly_roster(prefects, leave_days=leave_days)
+                assignments = generate_weekly_roster(
+                    prefects,
+                    leave_days=leave_days,
+                    history_priority_multiplier=history_priority_multiplier,
+                )
             except RosterGenerationError as error:
                 raise WorkflowError(f"Draft generation needs attention: {error}") from error
+            normalized_multiplier = float(history_priority_multiplier)
             week = session.scalar(select(RosterWeekRecord).where(RosterWeekRecord.week_start == week_start))
             now = self._now()
             if week is None:
@@ -26,6 +36,7 @@ class RosterLifecycleMixin:
                     status="draft",
                     version=1,
                     policy_version=POLICY_VERSION,
+                    history_priority_multiplier=normalized_multiplier,
                     generated_at=now,
                     created_at=now,
                     updated_at=now,
@@ -36,6 +47,7 @@ class RosterLifecycleMixin:
                 raise WorkflowError("This roster is already published; use a post-publication adjustment instead.")
             else:
                 week.version += 1
+                week.history_priority_multiplier = normalized_multiplier
                 week.generated_at = now
                 week.updated_at = now
                 session.execute(delete(RosterAssignmentRecord).where(RosterAssignmentRecord.roster_week_id == week.id))
@@ -49,6 +61,7 @@ class RosterLifecycleMixin:
                 {
                     "assignmentCount": len(assignments),
                     "leaveDeclarationCount": sum(len(days) for days in leave_days.values()),
+                    "historyPriorityMultiplier": normalized_multiplier,
                     "version": week.version,
                 },
             )
@@ -60,13 +73,24 @@ class RosterLifecycleMixin:
                 version=week.version,
                 assignment_count=len(assignments),
                 backup_path=Path(),
+                history_priority_multiplier=week.history_priority_multiplier,
             )
         backup = self._create_and_record_backup("draft_generated", result.id)
         return RosterWeekResult(
             **{**result.__dict__, "backup_path": self._require_backup(backup, committed_event="draft_generated")}
         )
 
-    def publish(self, roster_week_id: int) -> RosterWeekResult:
+    def publish(self, roster_week_id: int, *, expected_week_version: int) -> RosterWeekResult:
+        """Publish exactly the draft version the operator reviewed.
+
+        ``expected_week_version`` is a compare-and-set token carried from the
+        read model shown in the confirmation UI.  The database update remains
+        the single-winner publication claim, while the version predicate also
+        prevents an older browser tab from publishing assignments which were
+        regenerated or edited after that tab completed its review.
+        """
+        if expected_week_version < 1:
+            raise WorkflowError("The reviewed roster version is invalid. Refresh and review the draft again.")
         with self._session() as session:
             now = self._now()
             claim = session.execute(
@@ -74,13 +98,19 @@ class RosterLifecycleMixin:
                 .where(
                     RosterWeekRecord.id == roster_week_id,
                     RosterWeekRecord.status == "draft",
+                    RosterWeekRecord.version == expected_week_version,
                 )
                 .values(status="published", published_at=now, updated_at=now)
             )
             if claim.rowcount != 1:
-                if session.get(RosterWeekRecord, roster_week_id) is None:
+                current_week = session.get(RosterWeekRecord, roster_week_id)
+                if current_week is None:
                     raise WorkflowError("Roster week was not found.")
-                raise WorkflowError("This roster is already published.")
+                if current_week.status != "draft":
+                    raise WorkflowError("This roster is already published.")
+                raise WorkflowConflictError(
+                    "This draft changed after it was reviewed. Refresh it and review the latest version before publishing."
+                )
 
             # Claiming the draft before reading assignments makes publication a
             # database-level single-winner operation. Any later validation
@@ -113,7 +143,16 @@ class RosterLifecycleMixin:
                         created_at=now,
                     )
                 )
-            self._audit(session, "roster_published", week.id, {"assignmentCount": len(assignment_rows), "version": week.version})
+            self._audit(
+                session,
+                "roster_published",
+                week.id,
+                {
+                    "assignmentCount": len(assignment_rows),
+                    "historyPriorityMultiplier": week.history_priority_multiplier,
+                    "version": week.version,
+                },
+            )
             self._assert_fairness_reconciled(session)
             session.commit()
             result = RosterWeekResult(
@@ -123,6 +162,7 @@ class RosterLifecycleMixin:
                 version=week.version,
                 assignment_count=len(assignment_rows),
                 backup_path=Path(),
+                history_priority_multiplier=week.history_priority_multiplier,
             )
         backup = self._create_and_record_backup("roster_published", result.id)
         return RosterWeekResult(
@@ -220,146 +260,174 @@ class RosterLifecycleMixin:
         command_id: str | None = None,
         expected_week_version: int | None = None,
     ) -> LeaveAdjustmentResult:
-        if not reason.strip():
+        normalized_reason = reason.strip()
+        if not normalized_reason:
             raise WorkflowError("A leave adjustment requires a reason.")
         operation_id = command_id or f"leave-adjustment:{uuid4().hex}"
         if len(operation_id) > 64 or not operation_id.strip():
             raise WorkflowError("Leave adjustment command ID is invalid.")
-        duplicate: LeaveAdjustmentRecord | None = None
+        request_fingerprint = self._leave_adjustment_request_fingerprint(
+            roster_week_id=roster_week_id,
+            assignment_id=assignment_id,
+            replacement_prefect_id=replacement_prefect_id,
+            reason=normalized_reason,
+        )
         committed_version = 0
         with self._session() as session:
             duplicate = session.scalar(
                 select(LeaveAdjustmentRecord).where(LeaveAdjustmentRecord.command_id == operation_id)
             )
             if duplicate is not None:
-                committed_version = self._week_or_error(session, roster_week_id).version
-            else:
-                week = self._week_or_error(session, roster_week_id)
-                requested_version = week.version if expected_week_version is None else expected_week_version
-                if week.status != "published":
-                    raise WorkflowError("Post-publication adjustments require a published roster.")
-                assignment = self._assignment_or_error(session, roster_week_id, assignment_id)
-                if assignment.status != "active" or assignment.prefect_id is None:
-                    raise WorkflowError("This assignment is no longer active.")
-                original = session.get(PrefectRecord, assignment.prefect_id)
-                if original is None:
-                    raise WorkflowError("The original prefect no longer exists.")
-                candidates = {candidate["id"] for candidate in self._eligible_assignment_candidates(session, week, assignment)}
-                replacement = None
-                if replacement_prefect_id:
-                    if replacement_prefect_id not in candidates:
-                        raise WorkflowError("The selected substitute no longer meets roster rules.")
-                    replacement = session.get(PrefectRecord, replacement_prefect_id)
-                    if replacement is None:
-                        raise WorkflowError("The selected substitute no longer exists.")
-
-                now = self._now()
-                claim = session.execute(
-                    update(RosterWeekRecord)
-                    .where(
-                        RosterWeekRecord.id == roster_week_id,
-                        RosterWeekRecord.status == "published",
-                        RosterWeekRecord.version == requested_version,
-                    )
-                    .values(version=RosterWeekRecord.version + 1, updated_at=now)
+                return self._leave_adjustment_replay_result(
+                    duplicate,
+                    roster_week_id=roster_week_id,
+                    assignment_id=assignment_id,
+                    replacement_prefect_id=replacement_prefect_id,
+                    reason=normalized_reason,
+                    request_fingerprint=request_fingerprint,
                 )
-                if claim.rowcount != 1:
-                    session.rollback()
-                    duplicate = session.scalar(
-                        select(LeaveAdjustmentRecord).where(LeaveAdjustmentRecord.command_id == operation_id)
-                    )
-                    if duplicate is None:
-                        raise WorkflowConflictError(
-                            "This roster was updated in another tab. Refresh it and review the adjustment again."
-                        )
-                    committed_version = self._week_or_error(session, roster_week_id).version
-                else:
-                    original_name = assignment.prefect_name_snapshot
-                    original_id = assignment.prefect_id
-                    original.history_weight = round(original.history_weight - assignment.weight, 4)
-                    original.history_duties = max(0, original.history_duties - 1)
-                    original.updated_at = now
-                    session.add(
-                        FairnessLedgerRecord(
-                            prefect_id=original.id,
-                            roster_week_id=week.id,
-                            assignment_id=assignment.id,
-                            delta=-assignment.weight,
-                            duty_delta=-1,
-                            event_type="leave_adjustment_debit",
-                            source_type="leave_adjustment",
-                            source_id=operation_id,
-                            operation_id=operation_id,
-                            reason=reason.strip(),
-                            created_at=now,
-                        )
-                    )
 
-                    status = "vacant"
-                    replacement_name = None
-                    if replacement is not None:
-                        replacement.history_weight = round(replacement.history_weight + assignment.weight, 4)
-                        replacement.history_duties += 1
-                        replacement.updated_at = now
-                        assignment.prefect_id = replacement.id
-                        assignment.prefect_name_snapshot = replacement.name_zh
-                        assignment.prefect_role_snapshot = replacement.role_code
-                        replacement_name = replacement.name_zh
-                        status = "replaced"
-                        session.add(
-                            FairnessLedgerRecord(
-                                prefect_id=replacement.id,
-                                roster_week_id=week.id,
-                                assignment_id=assignment.id,
-                                delta=assignment.weight,
-                                duty_delta=1,
-                                event_type="leave_adjustment_credit",
-                                source_type="leave_adjustment",
-                                source_id=operation_id,
-                                operation_id=operation_id,
-                                reason=reason.strip(),
-                                created_at=now,
-                            )
-                        )
-                    else:
-                        assignment.prefect_id = None
-                        assignment.prefect_name_snapshot = "VACANT"
-                        assignment.prefect_role_snapshot = None
-                        assignment.status = "vacant"
+            week = self._week_or_error(session, roster_week_id)
+            requested_version = week.version if expected_week_version is None else expected_week_version
+            if week.status != "published":
+                raise WorkflowError("Post-publication adjustments require a published roster.")
+            assignment = self._assignment_or_error(session, roster_week_id, assignment_id)
+            if assignment.status != "active" or assignment.prefect_id is None:
+                raise WorkflowError("This assignment is no longer active.")
+            original = session.get(PrefectRecord, assignment.prefect_id)
+            if original is None:
+                raise WorkflowError("The original prefect no longer exists.")
+            candidates = {candidate["id"] for candidate in self._eligible_assignment_candidates(session, week, assignment)}
+            replacement = None
+            if replacement_prefect_id:
+                if replacement_prefect_id not in candidates:
+                    raise WorkflowError("The selected substitute no longer meets roster rules.")
+                replacement = session.get(PrefectRecord, replacement_prefect_id)
+                if replacement is None:
+                    raise WorkflowError("The selected substitute no longer exists.")
 
-                    adjustment = LeaveAdjustmentRecord(
+            now = self._now()
+            claim = session.execute(
+                update(RosterWeekRecord)
+                .where(
+                    RosterWeekRecord.id == roster_week_id,
+                    RosterWeekRecord.status == "published",
+                    RosterWeekRecord.version == requested_version,
+                )
+                .values(version=RosterWeekRecord.version + 1, updated_at=now)
+            )
+            if claim.rowcount != 1:
+                session.rollback()
+                duplicate = session.scalar(
+                    select(LeaveAdjustmentRecord).where(LeaveAdjustmentRecord.command_id == operation_id)
+                )
+                if duplicate is None:
+                    raise WorkflowConflictError(
+                        "This roster was updated in another tab. Refresh it and review the adjustment again."
+                    )
+                return self._leave_adjustment_replay_result(
+                    duplicate,
+                    roster_week_id=roster_week_id,
+                    assignment_id=assignment_id,
+                    replacement_prefect_id=replacement_prefect_id,
+                    reason=normalized_reason,
+                    request_fingerprint=request_fingerprint,
+                )
+
+            original_name = assignment.prefect_name_snapshot
+            original_id = assignment.prefect_id
+            original.history_weight = round(original.history_weight - assignment.weight, 4)
+            original.history_duties = max(0, original.history_duties - 1)
+            original.updated_at = now
+            session.add(
+                FairnessLedgerRecord(
+                    prefect_id=original.id,
+                    roster_week_id=week.id,
+                    assignment_id=assignment.id,
+                    delta=-assignment.weight,
+                    duty_delta=-1,
+                    event_type="leave_adjustment_debit",
+                    source_type="leave_adjustment",
+                    source_id=operation_id,
+                    operation_id=operation_id,
+                    reason=normalized_reason,
+                    created_at=now,
+                )
+            )
+
+            status = "vacant"
+            replacement_name = None
+            if replacement is not None:
+                replacement.history_weight = round(replacement.history_weight + assignment.weight, 4)
+                replacement.history_duties += 1
+                replacement.updated_at = now
+                assignment.prefect_id = replacement.id
+                assignment.prefect_name_snapshot = replacement.name_zh
+                assignment.prefect_role_snapshot = replacement.role_code
+                replacement_name = replacement.name_zh
+                status = "replaced"
+                session.add(
+                    FairnessLedgerRecord(
+                        prefect_id=replacement.id,
                         roster_week_id=week.id,
                         assignment_id=assignment.id,
-                        original_prefect_id=original_id,
-                        original_prefect_name=original_name,
-                        replacement_prefect_id=replacement.id if replacement else None,
-                        replacement_prefect_name=replacement_name,
-                        reason=reason.strip(),
-                        status=status,
-                        command_id=operation_id,
+                        delta=assignment.weight,
+                        duty_delta=1,
+                        event_type="leave_adjustment_credit",
+                        source_type="leave_adjustment",
+                        source_id=operation_id,
+                        operation_id=operation_id,
+                        reason=normalized_reason,
                         created_at=now,
                     )
-                    session.add(adjustment)
-                    self._audit(
-                        session,
-                        "leave_adjusted",
-                        week.id,
-                        {"assignmentId": assignment.id, "status": status, "commandId": operation_id},
-                    )
-                    self._assert_fairness_reconciled(session)
-                    try:
-                        session.commit()
-                    except IntegrityError:
-                        session.rollback()
-                        duplicate = session.scalar(
-                            select(LeaveAdjustmentRecord).where(LeaveAdjustmentRecord.command_id == operation_id)
-                        )
-                        if duplicate is None:
-                            raise
-                    committed_version = self._week_or_error(session, roster_week_id).version
-        if duplicate is not None:
-            status = duplicate.status
-            assignment_id = duplicate.assignment_id
+                )
+            else:
+                assignment.prefect_id = None
+                assignment.prefect_name_snapshot = "VACANT"
+                assignment.prefect_role_snapshot = None
+                assignment.status = "vacant"
+
+            adjustment = LeaveAdjustmentRecord(
+                roster_week_id=week.id,
+                assignment_id=assignment.id,
+                original_prefect_id=original_id,
+                original_prefect_name=original_name,
+                replacement_prefect_id=replacement.id if replacement else None,
+                replacement_prefect_name=replacement_name,
+                reason=normalized_reason,
+                status=status,
+                command_id=operation_id,
+                request_fingerprint=request_fingerprint,
+                committed_version=requested_version + 1,
+                created_at=now,
+            )
+            session.add(adjustment)
+            self._audit(
+                session,
+                "leave_adjusted",
+                week.id,
+                {"assignmentId": assignment.id, "status": status, "commandId": operation_id},
+            )
+            self._assert_fairness_reconciled(session)
+            try:
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                duplicate = session.scalar(
+                    select(LeaveAdjustmentRecord).where(LeaveAdjustmentRecord.command_id == operation_id)
+                )
+                if duplicate is None:
+                    raise
+                return self._leave_adjustment_replay_result(
+                    duplicate,
+                    roster_week_id=roster_week_id,
+                    assignment_id=assignment_id,
+                    replacement_prefect_id=replacement_prefect_id,
+                    reason=normalized_reason,
+                    request_fingerprint=request_fingerprint,
+                )
+            committed_version = requested_version + 1
+
         backup = self._create_and_record_backup("leave_adjusted", roster_week_id)
         return LeaveAdjustmentResult(
             roster_week_id,
@@ -367,7 +435,61 @@ class RosterLifecycleMixin:
             status,
             self._require_backup(backup, committed_event="leave_adjusted"),
             committed_version,
-            duplicate is not None,
+            False,
+        )
+
+    @staticmethod
+    def _leave_adjustment_request_fingerprint(
+        *,
+        roster_week_id: int,
+        assignment_id: int,
+        replacement_prefect_id: str | None,
+        reason: str,
+    ) -> str:
+        """Return the durable identity of one leave-adjustment intent.
+
+        The optimistic version is not part of the identity: after an unknown
+        response, an exact retry must recover the original receipt even if the
+        aggregate version has since advanced.
+        """
+        payload = {
+            "assignmentId": assignment_id,
+            "reason": reason,
+            "replacementPrefectId": replacement_prefect_id,
+            "rosterWeekId": roster_week_id,
+            "schemaVersion": 1,
+        }
+        canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _leave_adjustment_replay_result(
+        duplicate: LeaveAdjustmentRecord,
+        *,
+        roster_week_id: int,
+        assignment_id: int,
+        replacement_prefect_id: str | None,
+        reason: str,
+        request_fingerprint: str,
+    ) -> LeaveAdjustmentResult:
+        same_request = (
+            duplicate.roster_week_id == roster_week_id
+            and duplicate.assignment_id == assignment_id
+            and duplicate.replacement_prefect_id == replacement_prefect_id
+            and duplicate.reason == reason
+            and duplicate.request_fingerprint == request_fingerprint
+        )
+        if not same_request:
+            raise WorkflowConflictError(
+                "This leave-adjustment command ID was already used for a different request."
+            )
+        return LeaveAdjustmentResult(
+            duplicate.roster_week_id,
+            duplicate.assignment_id,
+            duplicate.status,
+            None,
+            duplicate.committed_version,
+            True,
         )
 
     def roster_weeks(self) -> list[dict[str, object]]:
@@ -379,6 +501,7 @@ class RosterLifecycleMixin:
                     "weekStart": row.week_start,
                     "status": row.status,
                     "version": row.version,
+                    "historyPriorityMultiplier": row.history_priority_multiplier,
                     "generatedAt": row.generated_at,
                     "publishedAt": row.published_at,
                 }
@@ -393,6 +516,7 @@ class RosterLifecycleMixin:
                 "weekStart": row.week_start,
                 "status": row.status,
                 "version": row.version,
+                "historyPriorityMultiplier": row.history_priority_multiplier,
                 "generatedAt": row.generated_at,
                 "publishedAt": row.published_at,
             }

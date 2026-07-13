@@ -19,6 +19,8 @@ def test_release_verifier_builds_only_explicit_disposable_write_paths(tmp_path: 
     environment = isolated_environment(tmp_path / "normal", 18765)
 
     assert environment["SING_YIN_E2E_ISOLATED"] == "1"
+    assert environment["SING_YIN_E2E_RUN_ID"].startswith("E2E-")
+    assert len(environment["SING_YIN_E2E_RUN_ID"]) == 16
     assert Path(environment["SING_YIN_DATABASE_PATH"]).resolve() != CANONICAL_DATABASE
     assert Path(environment["SING_YIN_BACKUP_DIR"]).resolve() != CANONICAL_BACKUPS
     assert Path(environment["SING_YIN_LOG_DIR"]).is_dir()

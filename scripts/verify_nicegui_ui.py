@@ -5,9 +5,11 @@ from __future__ import annotations
 import os
 import sqlite3
 from http.client import HTTPConnection
+from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from openpyxl import Workbook
 from playwright.sync_api import sync_playwright
 
 BASE_URL = os.getenv("SING_YIN_TEST_URL", "http://127.0.0.1:8080")
@@ -17,6 +19,10 @@ LIGHT_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-dashboard-light.png"
 DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-dashboard-dark.png"
 ROSTER_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-roster-workspace.png"
 PREFECT_IMPORT_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-prefect-import.png"
+FAIRNESS_REPORT_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-fairness-report.png"
+PREFECT_IMPORT_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-prefect-import-dark.png"
+FAIRNESS_REPORT_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-fairness-report-dark.png"
+PREFECT_REPORT_MOBILE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-prefect-report-mobile.png"
 MOBILE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-dashboard-mobile.png"
 ONBOARDING_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-getting-started.png"
 PROGRESS_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-progress-dialog.png"
@@ -83,6 +89,19 @@ def close_music_dialog(dialog) -> None:  # type: ignore[no-untyped-def]
     close_button = dialog.locator(".sy-music-dialog-header button").first
     close_button.click()
     dialog.wait_for(state="hidden", timeout=10_000)
+
+
+def invalid_formula_workbook_bytes() -> bytes:
+    """Build an in-memory workbook that the local import safety policy must reject."""
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Prefects"
+    worksheet.append(["姓名", "級別", "班別", "職務", "可值班日"])
+    worksheet.append(["=1+1", "F.3", "3H", "導學風紀", "星期一、星期三"])
+    output = BytesIO()
+    workbook.save(output)
+    workbook.close()
+    return output.getvalue()
 
 
 def main() -> None:
@@ -152,9 +171,9 @@ def main() -> None:
         assert page.locator(".sy-flow-step--pending .sy-tone-neutral").first.evaluate(
             "element => getComputedStyle(element).color"
         ) == "rgb(95, 99, 104)"
-        assert page.locator(".sy-workbench .sy-tone-attention").evaluate(
+        assert page.locator(".sy-workbench .sy-tone-action").first.evaluate(
             "element => getComputedStyle(element).color"
-        ) == "rgb(138, 90, 0)"
+        ) == "rgb(53, 100, 124)"
         assert "devotional-sacred-light-v1.webp" in page.locator(".sy-daily-start").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "weekly-pulse-light-v1.webp" in page.locator(".sy-workbench").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "empty-ready-light-v1.webp" in page.locator(".sy-empty-state--illustrated").first.evaluate(
@@ -177,7 +196,11 @@ def main() -> None:
         youtube_panel.wait_for(timeout=10_000)
         assert youtube_panel.locator("iframe.sy-youtube-player").count() == 0, "Empty YouTube setup must not contact the platform"
         page.get_by_text("此頁暫未設定 YouTube 歌單", exact=False).wait_for(timeout=10_000)
-        assert 0.15 <= float(music_audio.evaluate("element => element.volume")) <= 0.2
+        page.wait_for_function(
+            "element => element.volume >= 0.15 && element.volume <= 0.2",
+            arg=music_audio.element_handle(),
+            timeout=10_000,
+        )
         music_src = music_audio.get_attribute("src") or ""
         music_response = page.request.get(f"{BASE_URL}{music_src}" if music_src.startswith("/") else music_src)
         assert music_response.status == 200
@@ -256,6 +279,17 @@ def main() -> None:
         display_crest.scroll_into_view_if_needed()
         page.wait_for_function("element => element.complete && element.naturalWidth > 0", arg=display_crest_image.element_handle())
         assert display_crest_image.evaluate("element => element.naturalWidth") == 640
+        pointer_surface = page.locator(".sy-co-creation")
+        pointer_surface.locator(".sy-pointer-light").wait_for(timeout=10_000, state="attached")
+        page.wait_for_timeout(520)
+        pointer_surface.hover(position={"x": 86, "y": 74})
+        page.wait_for_timeout(240)
+        assert float(pointer_surface.locator(".sy-pointer-light").evaluate("element => getComputedStyle(element).opacity")) > 0.8
+        pointer_coordinates = pointer_surface.evaluate(
+            "element => [element.style.getPropertyValue('--sy-pointer-x'), element.style.getPropertyValue('--sy-pointer-y')]"
+        )
+        assert all(value.endswith("px") for value in pointer_coordinates), pointer_coordinates
+        page.screenshot(path=str(HOVER_SCREENSHOT), full_page=True)
         page.screenshot(path=str(PLATFORM_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/engineering", wait_until="domcontentloaded")
         page.get_by_text("工程與品質證據", exact=True).first.wait_for(timeout=10_000)
@@ -288,16 +322,9 @@ def main() -> None:
         )
         page.get_by_text("草稿會增加累計工作量嗎？", exact=True).click()
         page.get_by_text("生成或重新生成草稿只保存待核對安排", exact=False).wait_for(timeout=10_000)
-        pointer_layer = page.locator(".sy-architecture-layer").first
-        pointer_layer.locator(".sy-pointer-light").wait_for(timeout=10_000, state="attached")
-        assert pointer_layer.evaluate("element => getComputedStyle(element).transform") == "none"
-        pointer_layer.hover(position={"x": 86, "y": 74})
-        page.wait_for_timeout(240)
-        assert pointer_layer.evaluate("element => getComputedStyle(element).transform") != "none"
-        assert float(pointer_layer.locator(".sy-pointer-light").evaluate("element => getComputedStyle(element).opacity")) > 0.8
-        pointer_coordinates = pointer_layer.evaluate("element => [element.style.getPropertyValue('--sy-pointer-x'), element.style.getPropertyValue('--sy-pointer-y')]")
-        assert all(value.endswith("px") for value in pointer_coordinates), pointer_coordinates
-        page.screenshot(path=str(HOVER_SCREENSHOT), full_page=True)
+        static_layer = page.locator(".sy-architecture-layer").first
+        assert static_layer.locator(".sy-pointer-light").count() == 0
+        static_layer.hover(position={"x": 86, "y": 74})
         assert "architecture-stewardship-light-v1.webp" in page.locator(".sy-architecture-hero").evaluate("element => getComputedStyle(element, '::before').backgroundImage")
         assert "sidebar-stewardship-light-v1.webp" in page.locator(".sy-sidebar").evaluate("element => getComputedStyle(element, '::before').backgroundImage")
         page.screenshot(path=str(ARCHITECTURE_SCREENSHOT), full_page=True)
@@ -403,13 +430,50 @@ def main() -> None:
         page.get_by_text("此介面沒有即時復原按鈕", exact=False).wait_for(timeout=10_000)
         page.get_by_role("button", name="取消", exact=True).last.click()
         page.get_by_text("確認停用這位風紀？", exact=True).wait_for(state="hidden", timeout=10_000)
-        page.get_by_text("AI 匯入", exact=True).click()
+        page.get_by_text("資料匯入", exact=True).click()
         page.get_by_role("button", name="下載名單 CSV 格式範例").wait_for(timeout=10_000)
-        page.get_by_text("貼上由 AI 整理或匯出的 JSON／CSV", exact=False).wait_for(timeout=10_000)
+        page.get_by_text("上載 CSV／XLSX 或貼上 JSON／CSV", exact=False).wait_for(timeout=10_000)
+        assert page.get_by_test_id("prefect-file-upload").count() == 1
+        page.get_by_test_id("prefect-file-upload").locator('input[type="file"]').set_input_files(
+            {
+                "name": "fictional-prefects.csv",
+                "mimeType": "text/csv",
+                "buffer": "姓名,級別,班別,職務,可值班日\n測試檔案風紀,F.3,3H,導學風紀,星期一、星期三".encode("utf-8"),
+            }
+        )
+        page.get_by_text("已讀取 1 筆資料、5 個欄位。", exact=True).wait_for(timeout=10_000)
+        assert page.get_by_test_id("deepseek-column-mapping").is_disabled()
+        assert page.get_by_test_id("import-prefect-file").is_disabled()
+        page.get_by_test_id("preview-prefect-file").click()
+        page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).first.wait_for(timeout=10_000)
+        assert page.get_by_test_id("import-prefect-file").is_enabled()
+        page.get_by_test_id("prefect-file-upload").locator('input[type="file"]').set_input_files(
+            {
+                "name": "invalid-formula-prefects.xlsx",
+                "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "buffer": invalid_formula_workbook_bytes(),
+            }
+        )
+        page.get_by_test_id("import-prefect-file").wait_for(state="detached", timeout=10_000)
+        page.locator(".q-notification").last.wait_for(timeout=10_000)
+        assert page.get_by_test_id("prefect-file-mapping").locator(".q-select").count() == 0
+        assert page.get_by_test_id("prefect-file-preview").get_by_text(
+            "資料已通過驗證，可安全匯入。",
+            exact=True,
+        ).count() == 0
         page.locator("textarea").fill("姓名,級別,班別,職務,可值班日\n測試風紀,F.3,3H,導學風紀,星期一、星期三")
         page.get_by_role("button", name="驗證與預覽").click()
-        page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).wait_for(timeout=10_000)
+        page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).first.wait_for(timeout=10_000)
         page.screenshot(path=str(PREFECT_IMPORT_SCREENSHOT), full_page=True)
+        page.get_by_text("公平審核", exact=True).click()
+        page.get_by_text("服務與公平總結報告", exact=True).wait_for(timeout=10_000)
+        page.get_by_text("唯讀・不會重複入帳", exact=True).wait_for(timeout=10_000)
+        assert page.get_by_test_id("summary-report-metrics").count() == 1
+        assert page.get_by_test_id("summary-contribution-table").count() == 1
+        assert page.get_by_test_id("download-summary-zh").count() == 1
+        assert page.get_by_test_id("download-summary-en").count() == 1
+        assert page.get_by_test_id("download-summary-json").count() == 1
+        page.screenshot(path=str(FAIRNESS_REPORT_SCREENSHOT), full_page=True)
         page.goto(BASE_URL, wait_until="domcontentloaded")
         page.screenshot(path=str(LIGHT_SCREENSHOT), full_page=True)
         language_button = page.get_by_role("button", name="EN")
@@ -445,9 +509,9 @@ def main() -> None:
         assert page.locator(".sy-flow-step--active .sy-tone-action").evaluate(
             "element => getComputedStyle(element).color"
         ) == "rgb(155, 194, 210)"
-        assert page.locator(".sy-workbench .sy-tone-attention").evaluate(
+        assert page.locator(".sy-workbench .sy-tone-action").first.evaluate(
             "element => getComputedStyle(element).color"
-        ) == "rgb(240, 201, 106)"
+        ) == "rgb(155, 194, 210)"
         assert float(page.locator(".sy-workbench").evaluate("element => getComputedStyle(element, '::after').opacity")) >= 0.7
         page.get_by_test_id("page-music-button").click()
         dark_music_dialog = page.get_by_test_id("page-music-dialog")
@@ -458,6 +522,17 @@ def main() -> None:
         close_music_dialog(dark_music_dialog)
         page.screenshot(path=str(DARK_SCREENSHOT), full_page=True)
         assert page.locator(".sy-daily-start-verse").evaluate("element => getComputedStyle(element).color") != "rgb(0, 0, 0)"
+        page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
+        page.get_by_text("Data import", exact=True).click()
+        page.get_by_text("Upload CSV/XLSX or paste JSON/CSV", exact=False).wait_for(timeout=10_000)
+        assert page.locator("body.body--dark").count() == 1
+        assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
+        page.screenshot(path=str(PREFECT_IMPORT_DARK_SCREENSHOT), full_page=True)
+        page.get_by_text("Fairness audit", exact=True).click()
+        page.get_by_text("Service & fairness summary report", exact=True).wait_for(timeout=10_000)
+        assert page.get_by_test_id("summary-report-metrics").count() == 1
+        assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
+        page.screenshot(path=str(FAIRNESS_REPORT_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/settings", wait_until="domcontentloaded")
         page.get_by_test_id("online-music-settings").wait_for(timeout=10_000)
         page.screenshot(path=str(SETTINGS_DARK_SCREENSHOT), full_page=True)
@@ -518,6 +593,14 @@ def main() -> None:
         page.get_by_text("Operator guide", exact=True).first.wait_for(timeout=10_000)
         assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
         page.screenshot(path=str(GUIDE_MOBILE_SCREENSHOT), full_page=True)
+        page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
+        page.get_by_text("Data import", exact=True).click()
+        page.get_by_text("Upload CSV/XLSX or paste JSON/CSV", exact=False).wait_for(timeout=10_000)
+        assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
+        page.get_by_text("Fairness audit", exact=True).click()
+        page.get_by_text("Service & fairness summary report", exact=True).wait_for(timeout=10_000)
+        assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
+        page.screenshot(path=str(PREFECT_REPORT_MOBILE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/settings", wait_until="domcontentloaded")
         page.get_by_role("button", name="Download to local library").wait_for(timeout=10_000)
         assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
@@ -568,7 +651,16 @@ def main() -> None:
         workbench_box = page.locator(".sy-workbench").bounding_box()
         assert verse_box is not None and workbench_box is not None
         assert verse_box["y"] < workbench_box["y"], "Daily Verse must remain before the weekly workflow on mobile"
+        assert page.locator(".sy-workbench .sy-flow").is_hidden(), "The compact next action should replace duplicate mobile flow cards"
         page.screenshot(path=str(MOBILE_SCREENSHOT), full_page=True)
+        for narrow_width in (360, 320):
+            page.set_viewport_size({"width": narrow_width, "height": 780})
+            page.goto(BASE_URL, wait_until="domcontentloaded")
+            assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
+            assert page.locator(".sy-mobile-next-action .q-btn.bg-primary").count() == 1
+            header_tools_box = page.locator(".sy-header-tools").bounding_box()
+            assert header_tools_box is not None
+            assert header_tools_box["x"] + header_tools_box["width"] <= narrow_width, header_tools_box
         reduced_context = browser.new_context(viewport={"width": 1280, "height": 900}, reduced_motion="reduce")
         reduced_page = reduced_context.new_page()
         reduced_page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
@@ -578,12 +670,25 @@ def main() -> None:
         assert reduced_layer.locator(".sy-pointer-light").count() == 0
         reduced_layer.hover()
         assert reduced_layer.evaluate("element => getComputedStyle(element).transform") == "none"
+        assert reduced_page.evaluate("typeof window.__disposeSingYinMotion") == "function"
+        reduced_page.evaluate("window.__disposeSingYinMotion()")
+        assert reduced_page.evaluate("document.documentElement.dataset.syMotion || null") is None
         reduced_context.close()
         touch_context = browser.new_context(viewport={"width": 390, "height": 844}, has_touch=True, is_mobile=True)
         touch_page = touch_context.new_page()
         touch_page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
         assert touch_page.evaluate("matchMedia('(hover: hover) and (pointer: fine)').matches") is False
         assert touch_page.locator(".sy-pointer-light").count() == 0
+        assert touch_page.evaluate(
+            """() => {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'q-tooltip';
+                document.body.appendChild(tooltip);
+                const display = getComputedStyle(tooltip).display;
+                tooltip.remove();
+                return display;
+            }"""
+        ) == "none"
         touch_context.close()
         assert not console_errors, console_errors
         browser.close()

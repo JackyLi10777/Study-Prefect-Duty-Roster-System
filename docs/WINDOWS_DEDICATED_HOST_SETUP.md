@@ -27,8 +27,8 @@
 
 ```powershell
 Set-Location C:\SingYinRoster
-powershell -ExecutionPolicy Bypass -File scripts\prepare_windows_host.ps1 -InstallPrerequisites
-powershell -ExecutionPolicy Bypass -File scripts\register_windows_startup_task.ps1 -AtStartup
+powershell -ExecutionPolicy Bypass -File scripts\prepare_windows_host.ps1 -InstallPrerequisites -RuntimeUser "SingYinRosterSvc"
+powershell -ExecutionPolicy Bypass -File scripts\register_windows_startup_task.ps1 -AtStartup -RuntimeUser "SingYinRosterSvc"
 ```
 
 第一條會自動檢查或安裝 Git、Python 3.12，建立 `.venv`、安裝套件、建立本機環境與執行預檢；第二條只在 Windows 必須保存開機工作時要求你輸入一次主機帳戶密碼。以下各節仍保留完整手動步驟，方便查錯及交接。
@@ -58,9 +58,9 @@ powershell -ExecutionPolicy Bypass -File scripts\register_windows_startup_task.p
 準備兩個 Windows 帳戶最清楚：
 
 - **管理員帳戶：** 只用於安裝程式、Windows Update 和修理主機。
-- **日常帳戶：** 建議命名為 `SingYinRoster`，只用來運行值班表系統。
+- **網站執行帳戶：** 固定命名為 `SingYinRosterSvc`，只讓工作排程在背景運行網站；它必須是標準使用者，不可加入 Administrators。
 
-日常帳戶應設定一個不容易猜到的密碼。不要把管理員帳戶長期登入在桌面。
+首席導學風紀仍使用自己的日常 Windows 帳戶開啟瀏覽器，不需要登入 `SingYinRosterSvc`。執行帳戶應設定一個不容易猜到的獨立密碼；工作排程登記後妥善保管，不要把管理員帳戶長期登入在桌面。
 
 ### 1.3 建議的安裝位置
 
@@ -177,20 +177,29 @@ git --version
 New-Item -ItemType Directory -Path C:\SingYinRoster -Force
 ```
 
-### 步驟 4.2：讓日常帳戶可使用資料夾
+### 步驟 4.2：建立非管理員網站執行帳戶
 
-如果目前登入的就是日常 `SingYinRoster` 帳戶，可以跳到步驟 4.3。否則由管理員在檔案總管：
+在管理員 PowerShell 執行：
 
-1. 在 `C:\SingYinRoster` 按右鍵→「內容」。
-2. 選「安全性」→「編輯」→「新增」。
-3. 輸入日常帳戶名稱 `SingYinRoster`。
-4. 按「檢查名稱」→「確定」。
-5. 允許「修改」、「讀取及執行」、「列出資料夾內容」、「讀取」和「寫入」。
-6. 不需要給予「完全控制」。
+```powershell
+New-LocalUser -Name "SingYinRosterSvc" `
+  -Password (Read-Host "請設定網站執行帳戶密碼" -AsSecureString) `
+  -FullName "Sing Yin Roster Service" `
+  -Description "Runs Sing Yin Roster" `
+  -AccountNeverExpires -PasswordNeverExpires -UserMayNotChangePassword
+```
+
+如果帳戶已存在，不要重新建立或改成管理員；先用下列命令核對：
+
+```powershell
+Get-LocalUser -Name "SingYinRosterSvc" | Select-Object Name,Enabled,PasswordExpires,UserMayChangePassword
+```
+
+不要在檔案總管手動為整個專案開放寫入。稍後的 `prepare_windows_host.ps1` 會只為程式碼加入讀取／執行權限，並只讓這個帳戶寫入 runtime SQLite、備份及日誌。
 
 ### 步驟 4.3：下載 `main` 正式分支
 
-改用日常帳戶登入 Windows，開啟普通 PowerShell，貼上：
+留在管理員 PowerShell，貼上：
 
 ```powershell
 git clone --branch main --single-branch https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System.git C:\SingYinRoster
@@ -395,12 +404,12 @@ C:\SingYinRoster\logs
 
 - 名稱：`Sing Yin Roster Host`
 - 描述：`Starts the local Sing Yin NiceGUI roster system on this dedicated Windows host.`
-- 選擇日常運行帳戶 `SingYinRoster`。
+- 選擇網站執行帳戶 `SingYinRosterSvc`。
 - 選擇「不論使用者登入與否均執行」。
 - **不要**勾選「以最高權限執行」；網站不需要管理員權限。
 - 設定適用於 Windows 11。
 
-儲存時 Windows 可能要求輸入日常帳戶密碼。日後如更改該密碼，要回到工作排程器重新儲存密碼。
+儲存時 Windows 會要求輸入 `SingYinRosterSvc` 密碼。日後如更改該密碼，要回到工作排程器重新儲存密碼。
 
 ### 步驟 9.3：「觸發程序」分頁
 
@@ -483,7 +492,7 @@ Set-Location C:\SingYinRoster
 powershell -ExecutionPolicy Bypass -File scripts\doctor_windows_remote_access.ps1
 ```
 
-本機模式第一次運行時，未設定 Tunnel 會顯示 `deferred`，這是正常狀態。`loopback_origin`、`python_runtime`、`disk_space` 及 `application_readiness` 應為 `pass`；完成工作排程後，`startup_task` 亦應為 `pass`。正式專用主機若 `local_permissions` 顯示 warning，請以管理員身份重新執行 `prepare_windows_host.ps1`，讓 `.env`、runtime SQLite、備份及日誌只保留主機帳戶、SYSTEM 與 Administrators 的寫入權限。
+本機模式第一次運行時，未設定 Tunnel 會顯示 `deferred`，這是正常狀態。`runtime_account`、`loopback_origin`、`python_runtime`、`disk_space` 及 `application_readiness` 應為 `pass`；完成工作排程後，`startup_task` 亦應為 `pass`。正式專用主機若 `local_permissions` 顯示 warning，請以管理員身份重新執行 `prepare_windows_host.ps1 -RuntimeUser "SingYinRosterSvc"`，讓 `.env`、runtime SQLite、備份及日誌只保留網站執行帳戶、SYSTEM 與 Administrators 的存取權限。
 
 ---
 
@@ -609,7 +618,7 @@ C:\SingYinRoster\.venv\Scripts\python.exe -m pip install --require-hashes -r C:\
 | 畫面顯示 `OP-...` | 記下完整編號，先核對輸入；需要時查本機日誌 | 不要公開整份日誌 |
 | 顯示「資料已儲存，但備份未完成」 | 重新載入核對結果，再到設定建立已驗證快照 | 絕對不要重複剛才操作 |
 | 中文 PDF 變成方格 | 安裝 Noto Sans TC，或設定 `SING_YIN_PDF_FONT` | 不要改學生姓名為英文 |
-| 排程在改密碼後失敗 | 重新開啟工作內容並儲存新密碼 | 不要改成管理員帳戶長期運行 |
+| 排程在改密碼後失敗 | 以 `SingYinRosterSvc` 新密碼重新登記工作 | 不要改成管理員帳戶長期運行 |
 | 更新時 `git pull` 失敗 | 保留完整訊息，停止更新並聯絡維護者 | 不要執行 `git reset --hard` |
 | 電腦重新啟動後網站沒有出現 | 等候一分鐘，檢查工作排程器「歷程記錄」 | 不要重複建立多個工作 |
 

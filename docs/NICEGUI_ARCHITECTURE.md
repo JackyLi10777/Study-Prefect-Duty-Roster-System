@@ -55,8 +55,9 @@ The workflow service is the only supported write path for roster operations:
 3. Leave adjustment: reverses the original weight, credits an eligible substitute when supplied, updates the published roster, and records an audit event.
 4. Prefect management: creates, updates, or archives active roster members without erasing historical fairness records.
 5. Pre-generation leave: records an auditable absence constraint for a Monday-based week; generation and validation exclude that prefect on the declared day. Publish validates the current declarations again, so a draft made before a new leave declaration must be regenerated. Published weeks must use post-publication adjustment instead.
-6. AI-prepared import: accepts pasted JSON/CSV, validates it locally, previews it, and imports only after an explicit action.
+6. Prefect data import: accepts bounded `.csv`／`.xlsx` files or pasted JSON／CSV, normalizes them locally, requires an operator-reviewed field mapping and data preview, then imports only after an explicit action through the ordinary workflow transaction.
 7. PDF export: builds a bilingual A4 PDF in memory from durable roster reads; it is a local download and never a public upload. Versioned Noto Sans HK Regular/Medium/SemiBold files make output deterministic on a replacement host. The schedule export accepts presentation-only crest and supplementary-footer switches; clean group-sharing output is the default.
+8. Period reporting: reads published roster weeks, final active assignment state, leave adjustments and the fairness ledger to build one immutable report model. Chinese preview, bilingual PDF and checksummed JSON are presentations of that same model; report generation performs no roster, ledger, backup or audit write.
 
 Published-duty substitute recommendations and the final leave-adjustment save share the same role, availability, declared-leave, same-day uniqueness, and no-consecutive-duty gates. A previously recorded absence cannot become eligible merely because the adjustment happens after publication.
 
@@ -65,6 +66,16 @@ Every successful generate, publish, adjustment, leave declaration, and prefect-m
 Publication has a database-level single-winner claim: the `roster_weeks` row changes from `draft` to `published` only through a conditional update inside the same transaction that writes fairness-ledger entries. A second tab or concurrent local client is rejected before it can post duplicate workload points.
 
 Prefect creation, update, archive, and bulk import follow the same backup rule. Archive is a soft delete because published rosters and fairness-ledger records must remain historically truthful. The page therefore requires a destructive-action confirmation which explicitly says that historical rosters, fairness records, and audit evidence are retained and that there is no immediate undo.
+
+### Read-only reporting and reviewed import boundaries
+
+`ReportingWorkflowMixin.build_period_report()` is the only owner of period-report facts. It accepts whole roster-week boundaries represented by Monday dates and includes published weeks only. It resolves the final active assignments after published-duty adjustments, reconstructs the historical fairness distribution from persistent anchors plus immutable ledger entries, and records each source roster version and policy version. Drafts never enter the model, and asking for a preview cannot post or repeat workload.
+
+The report deliberately calls service time **scheduled allocation**. `DUTY_TIME_WINDOWS` supplies the current duration for each recorded post, but the application has no attendance or completion register. The resulting hours therefore cannot be interpreted as attendance, performance, completed service or a certificate. Likewise, `summary_report_export.py` produces a checksummed JSON evidence envelope for review and archiving, not a restorable database. Full recovery remains exclusively owned by a verified SQLite handover package. Neither exporter uploads a named report to GitHub or another service.
+
+`prefect_file_import.py` is a bounded local parser. It accepts only `.csv` and plain `.xlsx`, limits size, rows and columns, rejects formulas and unsupported legacy／macro-enabled workbooks, and exposes a stable target schema. The NiceGUI page lets the operator select a worksheet, map each required target, validate a normalized preview and explicitly confirm the final import. Only that last action enters `RosterWorkflow.import_prefects()` and its normal transaction／backup boundary.
+
+`prefect_import_assistant.py` is a replaceable, optional schema-assistance adapter, not a data-import owner. It is disabled by default and reads `SING_YIN_DEEPSEEK_ENABLED`, `SING_YIN_DEEPSEEK_MODEL` and `SING_YIN_DEEPSEEK_API_KEY` from the local environment at call time. After an explicit operator click, its request contains only exact column headings, anonymous value-kind labels and coarse non-empty-count buckets. It never receives raw rows, Chinese names, the workbook or the final import result. Returned mappings are restricted to the visible source headings and approved target codes, then remain untrusted suggestions until the operator reviews the selectors, builds the local preview and confirms import. Manual mapping is always available. A fresh API key belongs only in the ignored local `.env`; it must not enter source, documentation, logs, backups or Git history.
 
 ## Recovery and Handover
 
@@ -117,9 +128,10 @@ The UI does not append `WorkflowError` text to notifications. It displays the bi
 | Policy | `packages/roster_policy/` | AHP gates, room capacity, closures, weights, opening times |
 | Core | `packages/roster_core/` | Pure daily devotional selection and weekly roster generation/validation |
 | Persistence | `nicegui_app/persistence/` | SQLite engine, Alembic schema, durable records |
-| Workflow | `nicegui_app/services/roster_workflow.py`, `nicegui_app/services/workflow_parts/` | Stable facade plus separated transactions, fairness ledger, people, backups, adjustments, and recovery |
+| Workflow | `nicegui_app/services/roster_workflow.py`, `nicegui_app/services/workflow_parts/` | Stable facade plus separated transactions, fairness ledger, people, backups, adjustments, recovery, and read-only period-report composition |
 | Presentation | `nicegui_app/ui/page_routes/`, `page_shared.py`, `i18n_catalog/`, `theme_markup.py`, `assets/css/sing-yin-theme-v1.css`, `motion.py` | NiceGUI routes, shared components, domain-grouped bilingual copy, versioned cacheable design-system CSS, local motion bootstrap, page shell, anonymous platform summary, and non-sensitive architecture explanation |
-| Export | `nicegui_app/services/roster_export.py` | Local-only bilingual PDF composition; no persistence or network writes |
+| Import adapters | `nicegui_app/utils/prefect_import.py`, `prefect_file_import.py`, `nicegui_app/services/prefect_import_assistant.py` | Bounded local normalization and optional heading-only mapping suggestions; no policy or direct persistence writes |
+| Export | `nicegui_app/services/roster_export.py`, `summary_report_export.py` | Local-only bilingual roster／report PDF and report-JSON composition; no persistence or upload writes |
 | Observability | `nicegui_app/observability.py` | Payload-free local operation evidence and rotating support logs |
 | Optional media | `nicegui_app/services/online_music.py`, `music_library.py`, `youtube_audio_import.py`, `nicegui_app/ui/music.py` | Public YouTube playlist validation/search, visible playback, appearance-recommended local playlists, and bounded local audio import; strictly separate from roster persistence |
 
@@ -129,7 +141,9 @@ Business rules must never be implemented in UI event handlers. UI translation ke
 
 The motion layer is presentation-only. `nicegui_app/ui/motion.py` loads the versioned, same-origin GSAP core at `nicegui_app/assets/vendor/gsap-3.13.0.min.js`, then `nicegui_app/assets/motion/sing-yin-motion.js` discovers approved non-sensitive narrative surfaces. It performs one-shot transform/opacity entry, capped evidence-card stagger, pointer-light smoothing, and a short semantic feedback pulse. It does not read or receive prefect, roster, leave, fairness, audit, backup, PDF, database, or translated policy values; it does not own navigation or transaction timing.
 
-The runtime uses `IntersectionObserver` instead of scroll handlers and fails open to a fully visible static page if GSAP is unavailable. `prefers-reduced-motion: reduce` bypasses entry, stagger, pulse, hover translation, and cursor-light rendering. ScrollTrigger, pinned sections, parallax, repeating timelines, and decorative loops are not part of the application.
+The runtime uses `IntersectionObserver` instead of scroll handlers and fails open to a fully visible static page if GSAP is unavailable. `gsap.matchMedia()` owns fine-pointer and reduced-motion branches, while an idempotent disposer disconnects the intersection/mutation observers, aborts pointer listeners, removes generated pointer lights, and detaches global feedback handling. `prefers-reduced-motion: reduce` bypasses entry, stagger, pulse, hover translation, and cursor-light rendering. ScrollTrigger, pinned sections, parallax, repeating timelines, and decorative loops are not part of the application.
+
+Pointer light is deliberately narrower than narrative entry. Only real link/action containers and the non-sensitive co-creation surface may receive it. Static workflow steps, architecture layers, onboarding, handover, storage explanations, tables, forms, warnings and evidence cards remain visually static so a hover treatment cannot imply an unavailable action.
 
 `nicegui_app/ui/sound.py` owns the separate opt-in Web Audio cues. Navigation, an accepted long operation, and successful completion have distinct short tones; page load, hover, form error, and background ambience remain silent. Every cue also dispatches a non-audio `sy:feedback` event, so sound-off operation retains visual acknowledgement. Music remains a separate operator-started media layer and is never synchronized to UI sound.
 

@@ -47,12 +47,19 @@ class PrefectAvailabilityRecord(Base):
 
 class RosterWeekRecord(Base):
     __tablename__ = "roster_weeks"
+    __table_args__ = (
+        CheckConstraint(
+            "history_priority_multiplier >= 0.8 AND history_priority_multiplier <= 2.0",
+            name="ck_roster_week_history_priority_multiplier",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     week_start: Mapped[date] = mapped_column(Date, unique=True)
     status: Mapped[str] = mapped_column(String(16), default="draft")
     version: Mapped[int] = mapped_column(Integer, default=1)
     policy_version: Mapped[str] = mapped_column(String(32))
+    history_priority_multiplier: Mapped[float] = mapped_column(Float, default=1.0, server_default="1.0")
     generated_at: Mapped[datetime] = mapped_column(DateTime)
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime)
@@ -115,6 +122,8 @@ class LeaveAdjustmentRecord(Base):
     reason: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(16))
     command_id: Mapped[str] = mapped_column(String(64))
+    request_fingerprint: Mapped[str] = mapped_column(String(64))
+    committed_version: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime)
 
 

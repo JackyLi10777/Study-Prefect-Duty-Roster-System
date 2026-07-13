@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from scripts.verify_nicegui_write_pipeline import _fixture_leave_prefect, isolated_paths
@@ -7,7 +9,13 @@ from scripts.verify_nicegui_ui import prepare_invalid_backup_fixture
 
 
 def test_write_pipeline_requires_explicit_isolation(monkeypatch) -> None:
-    for name in ("SING_YIN_E2E_ISOLATED", "SING_YIN_DATABASE_PATH", "SING_YIN_BACKUP_DIR", "SING_YIN_LOG_DIR"):
+    for name in (
+        "SING_YIN_E2E_ISOLATED",
+        "SING_YIN_E2E_RUN_ID",
+        "SING_YIN_DATABASE_PATH",
+        "SING_YIN_BACKUP_DIR",
+        "SING_YIN_LOG_DIR",
+    ):
         monkeypatch.delenv(name, raising=False)
 
     with pytest.raises(RuntimeError, match="SING_YIN_E2E_ISOLATED"):
@@ -16,6 +24,7 @@ def test_write_pipeline_requires_explicit_isolation(monkeypatch) -> None:
 
 def test_write_pipeline_accepts_distinct_temporary_paths(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("SING_YIN_E2E_ISOLATED", "1")
+    monkeypatch.setenv("SING_YIN_E2E_RUN_ID", "E2E-ABCDEF123456")
     monkeypatch.setenv("SING_YIN_DATABASE_PATH", str(tmp_path / "live.sqlite3"))
     monkeypatch.setenv("SING_YIN_BACKUP_DIR", str(tmp_path / "backups"))
     monkeypatch.setenv("SING_YIN_LOG_DIR", str(tmp_path / "logs"))
@@ -31,6 +40,7 @@ def test_write_pipeline_rejects_the_canonical_school_storage(monkeypatch) -> Non
     from scripts.verify_nicegui_write_pipeline import CANONICAL_BACKUP_DIRECTORY, CANONICAL_LIVE_DATABASE
 
     monkeypatch.setenv("SING_YIN_E2E_ISOLATED", "1")
+    monkeypatch.setenv("SING_YIN_E2E_RUN_ID", "E2E-123456ABCDEF")
     monkeypatch.setenv("SING_YIN_DATABASE_PATH", str(CANONICAL_LIVE_DATABASE))
     monkeypatch.setenv("SING_YIN_BACKUP_DIR", str(CANONICAL_BACKUP_DIRECTORY))
     monkeypatch.setenv("SING_YIN_LOG_DIR", "D:\\temporary-test-logs")
@@ -47,8 +57,33 @@ def test_invalid_backup_ui_fixture_requires_explicit_isolation(monkeypatch) -> N
         prepare_invalid_backup_fixture()
 
 
+def test_write_pipeline_rejects_missing_or_malformed_server_identity(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("SING_YIN_E2E_ISOLATED", "1")
+    monkeypatch.setenv("SING_YIN_DATABASE_PATH", str(tmp_path / "live.sqlite3"))
+    monkeypatch.setenv("SING_YIN_BACKUP_DIR", str(tmp_path / "backups"))
+    monkeypatch.setenv("SING_YIN_LOG_DIR", str(tmp_path / "logs"))
+    monkeypatch.setenv("SING_YIN_E2E_RUN_ID", "not-a-valid-run")
+
+    with pytest.raises(RuntimeError, match="SING_YIN_E2E_RUN_ID"):
+        isolated_paths()
+
+
 def test_write_pipeline_fixture_uses_stable_role_codes() -> None:
     prefect_id, prefect_name = _fixture_leave_prefect()
 
     assert prefect_id
     assert prefect_name
+
+
+def test_write_pipeline_uses_current_reviewed_import_label() -> None:
+    script = (Path(__file__).parents[1] / "scripts" / "verify_nicegui_write_pipeline.py").read_text(encoding="utf-8")
+
+    assert 'get_by_text("資料匯入", exact=True)' in script
+    assert 'get_by_text("AI 匯入", exact=True)' not in script
+
+
+def test_partial_backup_drill_uses_the_stable_action_name_instead_of_an_icon() -> None:
+    script = (Path(__file__).parents[1] / "scripts" / "verify_nicegui_partial_backup.py").read_text(encoding="utf-8")
+
+    assert 'get_by_role("button", name="生成並儲存草稿")' in script
+    assert 'has_text="auto_awesome"' not in script

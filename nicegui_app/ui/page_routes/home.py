@@ -62,10 +62,10 @@ def dashboard_page() -> None:
             with ui.element("section").classes("sy-workbench grow min-w-[620px]"):
                 with ui.row().classes("w-full items-start justify-between gap-5 flex-wrap"):
                     with ui.column().classes("gap-1"):
-                        ui.label(t("workbench_title")).classes("sy-workbench-title")
+                        ui.html(t("workbench_title"), tag="h2").classes("sy-workbench-title")
                         ui.label(t("workbench_intro")).classes("sy-workbench-intro")
                     if latest is None:
-                        _tone_badge(t("flow_no_roster"), "attention")
+                        _tone_badge(t("flow_no_roster"), "action")
                     elif latest["status"] == "draft":
                         _tone_badge(t("flow_draft_ready"), "action")
                     else:
@@ -84,7 +84,7 @@ def dashboard_page() -> None:
                         _render_flow_step(number=2, title_key="flow_review", detail_key="flow_review_detail", state="done", state_key="flow_done", icon="fact_check", action_key="flow_open_published", action=lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}"))
                         _render_flow_step(number=3, title_key="flow_leave", detail_key="flow_leave_detail", state="active", state_key="flow_current", icon="event_busy", action_key="flow_open_adjustment", action=lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}/adjustments"))
                 ui.button(t("first_time_link"), icon="play_circle", on_click=lambda: ui.navigate.to("/getting-started")).props("flat").classes("mt-5")
-        ui.label(t("current_rosters")).classes("text-xl font-semibold mt-3")
+        ui.html(t("current_rosters"), tag="h2").classes("text-xl font-semibold mt-3")
         weeks = weeks[:3]
         if not weeks:
             _render_empty_state(
@@ -115,7 +115,7 @@ def getting_started_page() -> None:
             with ui.column().classes("gap-2"):
                 ui.label(t("getting_started")).classes("sy-page-title")
                 ui.label(t("new_user_intro")).classes("text-[var(--sy-muted)] max-w-2xl")
-            ui.icon("calendar_month").classes("sy-onboarding-symbol")
+            ui.icon("calendar_month").classes("sy-onboarding-symbol").props("aria-hidden=true")
         steps = (
             ("new_user_step_start", "new_user_step_start_detail"),
             ("new_user_step_prepare", "new_user_step_prepare_detail"),

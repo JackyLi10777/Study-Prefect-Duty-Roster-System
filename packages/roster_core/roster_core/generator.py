@@ -21,6 +21,20 @@ class RosterGenerationError(RuntimeError):
     """Raised when no valid roster can be generated under school policy."""
 
 
+HISTORY_PRIORITY_MULTIPLIER_MIN = 0.8
+HISTORY_PRIORITY_MULTIPLIER_MAX = 2.0
+
+
+def _normalized_history_priority_multiplier(value: float) -> float:
+    try:
+        multiplier = float(value)
+    except (TypeError, ValueError) as error:
+        raise RosterGenerationError("History priority multiplier must be a number from 0.8 to 2.0.") from error
+    if not HISTORY_PRIORITY_MULTIPLIER_MIN <= multiplier <= HISTORY_PRIORITY_MULTIPLIER_MAX:
+        raise RosterGenerationError("History priority multiplier must be from 0.8 to 2.0.")
+    return multiplier
+
+
 def _form_rank(form: str) -> int:
     try:
         return int(form.replace("F.", "").replace("F", ""))
@@ -35,8 +49,9 @@ def _has_consecutive_assignment(assigned_days: set[SchoolDay], day: SchoolDay) -
 def _candidate_score(
     prefect: Prefect,
     generated_load: dict[str, float],
+    history_priority_multiplier: float,
 ) -> tuple[float, int, int, str]:
-    cumulative_load = prefect.history_weight + generated_load[prefect.id]
+    cumulative_load = history_priority_multiplier * prefect.history_weight + generated_load[prefect.id]
     return (
         cumulative_load,
         _form_rank(prefect.form),
@@ -54,6 +69,7 @@ def _choose_candidate(
     assigned_days: dict[str, set[SchoolDay]],
     generated_load: dict[str, float],
     leave_days: Mapping[str, set[SchoolDay]],
+    history_priority_multiplier: float,
 ) -> Prefect:
     candidates = [
         prefect
@@ -66,16 +82,22 @@ def _choose_candidate(
     ]
     if not candidates:
         raise RosterGenerationError(f"No eligible candidate for {post.value} on {day.name}.")
-    return min(candidates, key=lambda prefect: _candidate_score(prefect, generated_load))
+    return min(
+        candidates,
+        key=lambda prefect: _candidate_score(prefect, generated_load, history_priority_multiplier),
+    )
 
 
 def generate_weekly_roster(
     prefects: list[Prefect],
     *,
     leave_days: Mapping[str, set[SchoolDay]] | None = None,
+    history_priority_multiplier: float = 1.0,
 ) -> list[Assignment]:
     if not prefects:
         raise RosterGenerationError("Cannot generate roster without prefects.")
+
+    normalized_multiplier = _normalized_history_priority_multiplier(history_priority_multiplier)
 
     assignments: list[Assignment] = []
     generated_load: dict[str, float] = defaultdict(float)
@@ -93,6 +115,7 @@ def generate_weekly_roster(
                 assigned_days=assigned_days,
                 generated_load=generated_load,
                 leave_days=excluded_days,
+                history_priority_multiplier=normalized_multiplier,
             )
             weight = duty_weight(post)
             assignments.append(

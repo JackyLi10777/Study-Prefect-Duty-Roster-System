@@ -36,7 +36,14 @@ from nicegui_app.services.maintenance import MaintenanceModeError, MaintenanceSt
 from nicegui_app.services.workflow_types import *
 from roster_core.generator import RosterGenerationError, generate_weekly_roster, validate_assignments
 from roster_core.models import Assignment, Prefect, parse_prefect_role
-from roster_policy import DutyPost, PrefectRole, SchoolDay, can_assign_role, required_posts_for_day
+from roster_policy import (
+    DutyPost,
+    PrefectRole,
+    SchoolDay,
+    can_assign_role,
+    is_chinese_display_name,
+    required_posts_for_day,
+)
 
 
 __all__ = [name for name in globals() if not name.startswith("_")]

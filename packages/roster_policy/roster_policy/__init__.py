@@ -8,6 +8,7 @@ from .rules import (
     SchoolDay,
     can_assign_role,
     duty_weight,
+    is_chinese_display_name,
     is_room_open,
     required_posts_for_day,
 )
@@ -22,6 +23,7 @@ __all__ = [
     "SchoolDay",
     "can_assign_role",
     "duty_weight",
+    "is_chinese_display_name",
     "is_room_open",
     "required_posts_for_day",
 ]

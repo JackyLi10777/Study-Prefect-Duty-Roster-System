@@ -11,7 +11,7 @@ from time import perf_counter
 from typing import TypeVar
 from uuid import uuid4
 
-from nicegui import app, run, ui
+from nicegui import app, events, run, ui
 
 from nicegui_app.contact import FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL, GITHUB_REPOSITORY_URL
 from nicegui_app.release_evidence import load_release_evidence
@@ -23,10 +23,21 @@ from nicegui_app.observability import (
     record_operator_partial_failure,
 )
 from nicegui_app.services.roster_export import build_fairness_audit_pdf, build_roster_pdf
+from nicegui_app.services.summary_report_export import (
+    build_duty_allocation_statement_pdf,
+    build_summary_report_json,
+    build_summary_report_pdf,
+)
+from nicegui_app.services.prefect_import_assistant import (
+    ImportAssistantError,
+    import_assistant_status,
+    suggest_deepseek_column_mapping,
+)
 from nicegui_app.application_mode import current_application_mode
 from nicegui_app.services.roster_workflow import (
     CommittedWriteBackupError,
     PrefectInput,
+    PeriodSummaryReport,
     WorkflowConflictError,
     WorkflowError,
 )
@@ -37,8 +48,26 @@ from nicegui_app.ui.platform_summary import PlatformSummary, load_platform_summa
 from nicegui_app.ui.shell import page_shell
 from nicegui_app.ui.sound import play_interface_sound
 from nicegui_app.ui.theme import current_theme
-from nicegui_app.utils.prefect_import import ImportPreview, parse_prefect_import_text, prefect_import_template_csv
-from roster_core import select_daily_verse
+from nicegui_app.utils.prefect_file_import import (
+    MAX_IMPORT_BYTES,
+    ParsedImportFile,
+    PrefectFileImportError,
+    TARGET_FIELDS,
+    parse_prefect_file,
+    suggest_local_column_mapping,
+    validate_target_mapping,
+)
+from nicegui_app.utils.prefect_import import (
+    ImportPreview,
+    parse_prefect_import_rows,
+    parse_prefect_import_text,
+    prefect_import_template_csv,
+)
+from roster_core import (
+    HISTORY_PRIORITY_MULTIPLIER_MAX,
+    HISTORY_PRIORITY_MULTIPLIER_MIN,
+    select_daily_verse,
+)
 from roster_policy import DUTY_TIME_WINDOWS, DutyPost, SchoolDay, required_posts_for_day
 
 _OPERATION_FAILED = object()
@@ -157,6 +186,7 @@ async def _run_with_progress(
     title_key: str,
     working_key: str,
     icon: str,
+    on_conflict: Callable[[WorkflowConflictError], None] | None = None,
 ) -> _OperationResult | object:
     """Run a durable local operation without leaving the operator guessing.
 
@@ -198,11 +228,14 @@ async def _run_with_progress(
         record_operator_partial_failure(error, action=working_key, reference=reference, started_at=started_at)
         _show_committed_without_backup(reference)
         return _OPERATION_FAILED
-    except WorkflowConflictError:
+    except WorkflowConflictError as error:
         if dialog is not None:
             dialog.close()
         record_operator_event(action=working_key, outcome="conflict", reference=reference, started_at=started_at)
-        ui.notify(t("roster_write_conflict"), type="warning", timeout=8_000)
+        if on_conflict is None:
+            ui.notify(t("roster_write_conflict"), type="warning", timeout=8_000)
+        else:
+            on_conflict(error)
         return _OPERATION_FAILED
     except Exception as error:
         record_operator_failure(error, action=working_key, reference=reference, started_at=started_at)
@@ -311,9 +344,19 @@ def _prefect_directory_rows(prefects: list[dict[str, object]]) -> list[dict[str,
             "availability": " / ".join(day_label(day) for day in item["availableDays"]),
             "weight": item["historyWeight"],
             "duties": item["historyDuties"],
+            "supportCodes": _prefect_support_codes(item),
         }
         for item in prefects
     ]
+
+
+def _prefect_support_codes(item: dict[str, object]) -> tuple[str, ...]:
+    codes: list[str] = []
+    if float(item["historyWeight"]) == 0 and int(item["historyDuties"]) == 0:
+        codes.append("new_prefect")
+    if bool(item["needsMentoring"]):
+        codes.append("needs_mentoring")
+    return tuple(codes)
 
 
 def _render_mobile_prefect_cards(rows: list[dict[str, object]]) -> None:
@@ -331,6 +374,7 @@ def _render_mobile_prefect_cards(rows: list[dict[str, object]]) -> None:
                         ui.label(f"{row['form']} {row['class']}").classes("sy-prefect-mobile-class")
                     ui.label(str(row["role"])).classes("sy-prefect-mobile-role")
                 ui.label(f"{t('availability')} · {row['availability']}").classes("sy-prefect-mobile-availability")
+                ui.label(f"{t('support_status')} · {row['supportStatus']}").classes("sy-prefect-mobile-availability")
                 with ui.row().classes("w-full items-center justify-between gap-3"):
                     ui.label(f"{t('history_weight')} · {row['weight']}").classes("sy-prefect-mobile-metric")
                     ui.label(f"{t('history_duties')} · {row['duties']}").classes("sy-prefect-mobile-metric")
@@ -390,7 +434,7 @@ def _open_roster_export_dialog(roster_week_id: int) -> None:
     """Keep the share-safe one-page roster distinct from named internal audit data."""
     with ui.dialog() as dialog, ui.card().classes("sy-surface w-full max-w-2xl p-6"):
         with ui.row().classes("w-full items-center gap-4"):
-            ui.icon("picture_as_pdf").classes("sy-export-symbol")
+            ui.icon("picture_as_pdf").classes("sy-export-symbol").props("aria-hidden=true")
             with ui.column().classes("gap-1"):
                 ui.label(t("choose_pdf_export")).classes("text-xl font-semibold")
                 ui.label(t("export_pdf_notice")).classes("text-sm text-[var(--sy-muted)]")

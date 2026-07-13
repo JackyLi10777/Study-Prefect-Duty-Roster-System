@@ -76,13 +76,16 @@ def test_acl_helper_removes_broad_write_access_from_temporary_paths(tmp_path: Pa
     protected_file.write_text("non-secret-test-value", encoding="utf-8")
     result = _powershell(
         f". '{_quoted(COMMON)}'; "
+        "$runtimeSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value; "
         f"Protect-SingYinSensitivePath -Path '{_quoted(protected_dir)}'; "
         f"Protect-SingYinSensitivePath -Path '{_quoted(protected_file)}'; "
-        f"Get-SingYinAclStatus -Paths @('{_quoted(protected_dir)}','{_quoted(protected_file)}') | ConvertTo-Json"
+        f"Get-SingYinAclStatus -Paths @('{_quoted(protected_dir)}','{_quoted(protected_file)}') "
+        "-RequiredIdentitySid $runtimeSid | ConvertTo-Json"
     )
     payload = json.loads(result.stdout)
     assert payload["Checked"] == 2
     assert payload["Weak"] == 0
+    assert payload["RequiredIdentityMissing"] == 0
     assert payload["Compliant"] is True
 
 
@@ -129,6 +132,24 @@ def test_activation_owns_service_rollback_and_uses_configured_port() -> None:
     assert "Test-SingYinAccessRedirect" in verification
     assert "owner=sing-yin-roster-v1" not in startup  # supplied centrally by the common script
     assert "$script:SingYinTaskOwnerMarker" in startup
+
+
+def test_windows_host_scripts_bind_permissions_and_task_to_dedicated_runtime_user() -> None:
+    common = COMMON.read_text(encoding="utf-8")
+    preparation = (PROJECT_ROOT / "scripts" / "prepare_windows_host.ps1").read_text(encoding="utf-8")
+    startup = (PROJECT_ROOT / "scripts" / "register_windows_startup_task.ps1").read_text(encoding="utf-8")
+    doctor = (PROJECT_ROOT / "scripts" / "doctor_windows_remote_access.ps1").read_text(encoding="utf-8")
+
+    assert "Get-SingYinRuntimeAccount" in common
+    assert "must remain a standard user" in common
+    assert 'RuntimeUser = "SingYinRosterSvc"' in preparation
+    assert "Grant-SingYinRuntimeReadAccess" in preparation
+    assert "-RequiredIdentitySid $runtimeAccount.Sid.Value" in preparation
+    assert 'RuntimeUser = "SingYinRosterSvc"' in startup
+    assert "not owned by this project and runtime account" in startup
+    assert "if ($inspection.Exists) { $register.Force = $true }" in startup
+    assert 'RuntimeUser = "SingYinRosterSvc"' in doctor
+    assert 'Add-DoctorCheck "runtime_account" "pass"' in doctor
 
 
 def test_windows_scripts_do_not_resolve_psscriptroot_inside_parameter_defaults() -> None:

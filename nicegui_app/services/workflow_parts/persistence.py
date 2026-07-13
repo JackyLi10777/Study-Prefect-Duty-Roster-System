@@ -92,6 +92,8 @@ class PersistenceWorkflowMixin:
     def _validate_prefect_input(prefect_input: PrefectInput) -> None:
         if not prefect_input.name_zh.strip():
             raise WorkflowError("Chinese name is required.")
+        if not is_chinese_display_name(prefect_input.name_zh):
+            raise WorkflowError("The authoritative prefect display name must be Chinese.")
         if prefect_input.form not in {"F.3", "F.4", "F.5", "F.6"}:
             raise WorkflowError("Form must be F.3, F.4, F.5, or F.6.")
         if not prefect_input.class_name.strip():

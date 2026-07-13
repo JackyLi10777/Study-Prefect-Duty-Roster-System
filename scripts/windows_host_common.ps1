@@ -73,7 +73,8 @@ function Test-SingYinAccessRedirect {
 function Get-SingYinTaskInspection {
     param(
         [Parameter(Mandatory = $true)][string]$TaskName,
-        [Parameter(Mandatory = $true)][string]$ProjectRoot
+        [Parameter(Mandatory = $true)][string]$ProjectRoot,
+        [string]$RuntimeUser = ""
     )
 
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
@@ -89,13 +90,97 @@ function Get-SingYinTaskInspection {
             ([string]$_.Arguments).Trim() -ceq "-X utf8 -m nicegui_app.main"
         } catch { $false }
     } | Select-Object -First 1
+    $principalOwned = $true
+    if (-not [string]::IsNullOrWhiteSpace($RuntimeUser)) {
+        try {
+            $runtimeAccount = Get-SingYinRuntimeAccount -UserName $RuntimeUser
+            $taskSid = Resolve-SingYinIdentitySid -Identity ([string]$task.Principal.UserId)
+            $principalOwned = $taskSid.Value -ceq $runtimeAccount.Sid.Value
+        } catch {
+            $principalOwned = $false
+        }
+    }
     $description = [string]$task.Description
-    $owned = [bool]$matchingAction -and $description.Contains($script:SingYinTaskOwnerMarker)
-    return [pscustomobject]@{ Exists = $true; Owned = $owned; State = [string]$task.State }
+    $owned = [bool]$matchingAction -and $principalOwned -and $description.Contains($script:SingYinTaskOwnerMarker)
+    return [pscustomobject]@{
+        Exists = $true
+        Owned = $owned
+        State = [string]$task.State
+        Principal = [string]$task.Principal.UserId
+    }
+}
+
+function Resolve-SingYinIdentitySid {
+    param([Parameter(Mandatory = $true)][string]$Identity)
+
+    if ($Identity -match '^S-1-') {
+        return [Security.Principal.SecurityIdentifier]::new($Identity)
+    }
+    try {
+        return [Security.Principal.NTAccount]::new($Identity).Translate(
+            [Security.Principal.SecurityIdentifier]
+        )
+    } catch {
+        throw "Windows could not resolve the configured runtime identity."
+    }
+}
+
+function Get-SingYinRuntimeAccount {
+    param([Parameter(Mandatory = $true)][string]$UserName)
+
+    $trimmed = $UserName.Trim()
+    if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed -match '[\\/@]') {
+        throw "RuntimeUser must be the name of one local Windows account."
+    }
+    $user = Get-LocalUser -Name $trimmed -ErrorAction SilentlyContinue
+    if (-not $user) { throw "The configured Sing Yin runtime account does not exist." }
+    if (-not $user.Enabled) { throw "The configured Sing Yin runtime account is disabled." }
+
+    $qualifiedName = "$env:COMPUTERNAME\$($user.Name)"
+    $sid = Resolve-SingYinIdentitySid -Identity $qualifiedName
+    $administrators = Get-LocalGroup -SID "S-1-5-32-544"
+    $administratorSids = @(
+        Get-LocalGroupMember -Group $administrators.Name -ErrorAction SilentlyContinue |
+            ForEach-Object { $_.SID.Value }
+    )
+    if ($sid.Value -in $administratorSids) {
+        throw "The Sing Yin runtime account must remain a standard user, not an administrator."
+    }
+    return [pscustomobject]@{
+        Name = [string]$user.Name
+        QualifiedName = $qualifiedName
+        Sid = $sid
+    }
+}
+
+function Grant-SingYinRuntimeReadAccess {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$RuntimeUser
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+        throw "The project root is unavailable for runtime access."
+    }
+    $runtimeAccount = Get-SingYinRuntimeAccount -UserName $RuntimeUser
+    $acl = Get-Acl -LiteralPath $Path
+    $rule = [Security.AccessControl.FileSystemAccessRule]::new(
+        $runtimeAccount.Sid,
+        [Security.AccessControl.FileSystemRights]::ReadAndExecute,
+        [Security.AccessControl.InheritanceFlags]::ContainerInherit -bor
+            [Security.AccessControl.InheritanceFlags]::ObjectInherit,
+        [Security.AccessControl.PropagationFlags]::None,
+        [Security.AccessControl.AccessControlType]::Allow
+    )
+    $acl.SetAccessRule($rule)
+    Set-Acl -LiteralPath $Path -AclObject $acl
 }
 
 function Protect-SingYinSensitivePath {
-    param([Parameter(Mandatory = $true)][string]$Path)
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [string]$RuntimeUser = ""
+    )
 
     if (-not (Test-Path -LiteralPath $Path)) { return }
     $item = Get-Item -LiteralPath $Path -Force
@@ -111,15 +196,20 @@ function Protect-SingYinSensitivePath {
     }
     $propagation = [Security.AccessControl.PropagationFlags]::None
     $allow = [Security.AccessControl.AccessControlType]::Allow
-    $identities = @(
-        [Security.Principal.WindowsIdentity]::GetCurrent().User,
-        [Security.Principal.SecurityIdentifier]::new("S-1-5-18"),
-        [Security.Principal.SecurityIdentifier]::new("S-1-5-32-544")
+    $runtimeSid = if ([string]::IsNullOrWhiteSpace($RuntimeUser)) {
+        [Security.Principal.WindowsIdentity]::GetCurrent().User
+    } else {
+        (Get-SingYinRuntimeAccount -UserName $RuntimeUser).Sid
+    }
+    $identityRights = @(
+        @($runtimeSid, [Security.AccessControl.FileSystemRights]::Modify),
+        @([Security.Principal.SecurityIdentifier]::new("S-1-5-18"), [Security.AccessControl.FileSystemRights]::FullControl),
+        @([Security.Principal.SecurityIdentifier]::new("S-1-5-32-544"), [Security.AccessControl.FileSystemRights]::FullControl)
     )
-    foreach ($identity in $identities) {
+    foreach ($identityAndRights in $identityRights) {
         $rule = [Security.AccessControl.FileSystemAccessRule]::new(
-            $identity,
-            [Security.AccessControl.FileSystemRights]::FullControl,
+            $identityAndRights[0],
+            $identityAndRights[1],
             $inheritance,
             $propagation,
             $allow
@@ -130,7 +220,10 @@ function Protect-SingYinSensitivePath {
 }
 
 function Get-SingYinAclStatus {
-    param([Parameter(Mandatory = $true)][string[]]$Paths)
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Paths,
+        [string]$RequiredIdentitySid = ""
+    )
 
     $broadSids = @("S-1-1-0", "S-1-5-11", "S-1-5-32-545")
     $writeMask =
@@ -141,18 +234,27 @@ function Get-SingYinAclStatus {
         [Security.AccessControl.FileSystemRights]::WriteData
     $checked = 0
     $weak = 0
+    $requiredIdentityMissing = 0
     foreach ($path in $Paths) {
         if (-not (Test-Path -LiteralPath $path)) { continue }
         $checked += 1
         $acl = Get-Acl -LiteralPath $path
+        $identityPresent = [string]::IsNullOrWhiteSpace($RequiredIdentitySid)
         foreach ($rule in @($acl.Access)) {
             if ($rule.AccessControlType -ne [Security.AccessControl.AccessControlType]::Allow) { continue }
             try { $sid = $rule.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value } catch { continue }
+            if ($sid -ceq $RequiredIdentitySid) { $identityPresent = $true }
             if ($sid -in $broadSids -and (([int64]$rule.FileSystemRights -band [int64]$writeMask) -ne 0)) {
                 $weak += 1
                 break
             }
         }
+        if (-not $identityPresent) { $requiredIdentityMissing += 1 }
     }
-    return [pscustomobject]@{ Checked = $checked; Weak = $weak; Compliant = ($checked -gt 0 -and $weak -eq 0) }
+    return [pscustomobject]@{
+        Checked = $checked
+        Weak = $weak
+        RequiredIdentityMissing = $requiredIdentityMissing
+        Compliant = ($checked -gt 0 -and $weak -eq 0 -and $requiredIdentityMissing -eq 0)
+    }
 }

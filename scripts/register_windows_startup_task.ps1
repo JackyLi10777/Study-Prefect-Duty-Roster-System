@@ -2,6 +2,7 @@
 param(
     [string]$ProjectRoot = "",
     [string]$TaskName = "Sing Yin Roster Host",
+    [string]$RuntimeUser = "SingYinRosterSvc",
     [switch]$AtStartup
 )
 
@@ -12,6 +13,7 @@ Set-StrictMode -Version Latest
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) { $ProjectRoot = Split-Path -Parent $PSScriptRoot }
 
 $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+$runtimeAccount = Get-SingYinRuntimeAccount -UserName $RuntimeUser
 $python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 if (-not (Test-Path -LiteralPath $python)) {
     throw ".venv is missing. Run scripts\prepare_windows_host.ps1 first."
@@ -29,24 +31,50 @@ $settings = New-ScheduledTaskSettingsSet `
 
 if (-not $PSCmdlet.ShouldProcess($TaskName, "Register and start Windows scheduled task")) { return }
 
+$inspection = Get-SingYinTaskInspection -TaskName $TaskName -ProjectRoot $ProjectRoot -RuntimeUser $runtimeAccount.Name
+if ($inspection.Exists -and -not $inspection.Owned) {
+    throw "A same-named Windows task already exists but is not owned by this project and runtime account."
+}
+
 if ($AtStartup) {
     $trigger = New-ScheduledTaskTrigger -AtStartup
     $trigger.Delay = "PT30S"
     Write-Host "Windows needs the dedicated-host account password once to store this startup task securely." -ForegroundColor Yellow
-    $credential = Get-Credential -UserName "$env:USERDOMAIN\$env:USERNAME" -Message "Dedicated Windows host account"
+    $credential = Get-Credential -UserName $runtimeAccount.QualifiedName -Message "Sing Yin roster runtime account"
+    $credentialSid = Resolve-SingYinIdentitySid -Identity $credential.UserName
+    if ($credentialSid.Value -cne $runtimeAccount.Sid.Value) {
+        throw "The credential must belong to the configured Sing Yin runtime account."
+    }
     $plainPassword = $credential.GetNetworkCredential().Password
     try {
-        Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings `
-            -User $credential.UserName -Password $plainPassword -Description $taskDescription -Force | Out-Null
+        $register = @{
+            TaskName = $TaskName
+            Action = $action
+            Trigger = $trigger
+            Settings = $settings
+            User = $runtimeAccount.QualifiedName
+            Password = $plainPassword
+            Description = $taskDescription
+        }
+        if ($inspection.Exists) { $register.Force = $true }
+        Register-ScheduledTask @register | Out-Null
     } finally {
         $plainPassword = $null
         $credential = $null
     }
 } else {
-    $trigger = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
-    $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
-    Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings `
-        -Principal $principal -Description $taskDescription -Force | Out-Null
+    $trigger = New-ScheduledTaskTrigger -AtLogOn -User $runtimeAccount.QualifiedName
+    $principal = New-ScheduledTaskPrincipal -UserId $runtimeAccount.QualifiedName -LogonType Interactive -RunLevel Limited
+    $register = @{
+        TaskName = $TaskName
+        Action = $action
+        Trigger = $trigger
+        Settings = $settings
+        Principal = $principal
+        Description = $taskDescription
+    }
+    if ($inspection.Exists) { $register.Force = $true }
+    Register-ScheduledTask @register | Out-Null
 }
 
 Start-ScheduledTask -TaskName $TaskName

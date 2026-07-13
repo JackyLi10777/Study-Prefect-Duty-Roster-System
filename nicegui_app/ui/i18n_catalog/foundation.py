@@ -28,7 +28,7 @@ MESSAGES = {'app_name': {'zh-HK': '聖言中學導學風紀值班系統', 'en': 
  'dark_mode': {'zh-HK': '切換深色模式', 'en': 'Switch to dark mode'},
  'daily_verse': {'zh-HK': '今日經文', 'en': 'Daily verse'},
  'devotional_tone_label': {'zh-HK': '經文方向', 'en': 'Devotional direction'},
- 'devotional_tone_auto': {'zh-HK': '跟隨外觀', 'en': 'Follow appearance'},
+ 'devotional_tone_auto': {'zh-HK': '按外觀建議', 'en': 'Appearance-based suggestion'},
  'devotional_tone_guidance': {'zh-HK': '清晰指引', 'en': 'Clear guidance'},
  'devotional_tone_comfort': {'zh-HK': '安靜安慰', 'en': 'Quiet comfort'},
  'reflection': {'zh-HK': '靈修反思', 'en': 'Devotional reflection'},

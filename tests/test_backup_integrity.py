@@ -31,14 +31,14 @@ def test_publish_backup_failure_is_reported_as_committed_and_cannot_post_fairnes
     workflow.backup_dir = blocked_backup_path
 
     with pytest.raises(CommittedWriteBackupError) as captured:
-        workflow.publish(draft.id)
+        workflow.publish(draft.id, expected_week_version=draft.version)
 
     after = workflow.prefect_loads()
     assert captured.value.event_type == "roster_published"
     assert workflow.roster_week(draft.id)["status"] == "published"
     assert sum(after.values()) - sum(before.values()) == pytest.approx(34.0)
     with pytest.raises(WorkflowError, match="already published"):
-        workflow.publish(draft.id)
+        workflow.publish(draft.id, expected_week_version=draft.version)
     assert workflow.prefect_loads() == after
 
     workflow.backup_dir = tmp_path / "recovered-backups"
@@ -64,7 +64,7 @@ def test_backup_evidence_failure_cannot_hide_a_committed_publish(monkeypatch, tm
 
     monkeypatch.setattr(workflow, "_record_backup_result", fail_to_record_backup)
     with pytest.raises(CommittedWriteBackupError) as captured:
-        workflow.publish(draft.id)
+        workflow.publish(draft.id, expected_week_version=draft.version)
 
     after = workflow.prefect_loads()
     assert captured.value.event_type == "roster_published"

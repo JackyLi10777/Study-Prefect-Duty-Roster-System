@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$ProjectRoot = "",
+    [string]$RuntimeUser = "SingYinRosterSvc",
     [switch]$InstallPrerequisites,
     [switch]$IncludeDevelopmentTools
 )
@@ -44,6 +45,7 @@ $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
 if ($ProjectRoot -match '(?i)\\(OneDrive|Dropbox|Google Drive)(\\|$)') {
     throw "Move the project out of a cloud-sync folder before installation. Recommended: C:\SingYinRoster."
 }
+$runtimeAccount = Get-SingYinRuntimeAccount -UserName $RuntimeUser
 
 Write-Step "Checking Git and Python 3.12"
 $null = Require-Command "git.exe" "Git.Git"
@@ -114,6 +116,7 @@ SING_YIN_LOG_DIR=$ProjectRoot\logs
 }
 
 Write-Step "Restricting local application data to the dedicated host account"
+Grant-SingYinRuntimeReadAccess -Path $ProjectRoot -RuntimeUser $runtimeAccount.Name
 $sensitivePaths = @(
     $envPath,
     (Join-Path $ProjectRoot "data\runtime"),
@@ -121,9 +124,9 @@ $sensitivePaths = @(
     (Join-Path $ProjectRoot "logs")
 )
 foreach ($sensitivePath in $sensitivePaths) {
-    Protect-SingYinSensitivePath -Path $sensitivePath
+    Protect-SingYinSensitivePath -Path $sensitivePath -RuntimeUser $runtimeAccount.Name
 }
-$aclState = Get-SingYinAclStatus -Paths $sensitivePaths
+$aclState = Get-SingYinAclStatus -Paths $sensitivePaths -RequiredIdentitySid $runtimeAccount.Sid.Value
 if (-not $aclState.Compliant) { throw "Local data permissions could not be restricted safely." }
 
 Write-Step "Running safe import and deployment checks"

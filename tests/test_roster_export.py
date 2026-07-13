@@ -45,7 +45,11 @@ def test_schedule_pdf_uses_single_page_weekly_grid_and_keeps_chinese_names(tmp_p
     extracted_text = "\n".join(page.extract_text() for page in reader.pages)
     assert "Sing Yin Secondary School Study Prefect Duty Roster" in extracted_text
     assert "MONDAY" in extracted_text
+    assert "07 SEP" in extracted_text
+    assert "11 SEP" in extracted_text
     assert "Room 303 (HW Completion) - 1" in extracted_text
+    assert "15:40–18:30" in extracted_text
+    assert "15:40–17:00" in extracted_text
     assert workflow.assignments(draft.id)[0]["prefectName"] in extracted_text
     font_names = _embedded_font_names(reader)
     assert not any("Thin" in name for name in font_names)
@@ -91,7 +95,7 @@ def test_bilingual_published_schedule_pdfs_expose_every_operator_check(tmp_path)
     workflow = RosterWorkflow(database_path=tmp_path / "live.sqlite3", backup_dir=tmp_path / "backups")
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(date(2026, 9, 7))
-    workflow.publish(draft.id)
+    workflow.publish(draft.id, expected_week_version=draft.version)
     authoritative_names = {str(item["prefectName"]) for item in workflow.assignments(draft.id)}
 
     chinese_text = "\n".join(
@@ -108,6 +112,14 @@ def test_bilingual_published_schedule_pdfs_expose_every_operator_check(tmp_path)
         assert label in chinese_text
     for label in ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "Published", "Room 302", "Room 303", "Room 202"):
         assert label in english_text
+    for date_label in ("07 SEP", "08 SEP", "09 SEP", "10 SEP", "11 SEP"):
+        assert date_label in english_text
+    for date_label in ("9月7日", "9月8日", "9月9日", "9月10日", "9月11日"):
+        assert date_label in chinese_text
+    assert chinese_text.count("15:40–18:30") == 2
+    assert chinese_text.count("15:40–17:00") == 4
+    assert english_text.count("15:40–18:30") == 2
+    assert english_text.count("15:40–17:00") == 4
     # Two Room 202 rows are closed on both Tuesday and Friday.
     assert chinese_text.count("不開放") == 4
     assert english_text.count("Closed") == 4

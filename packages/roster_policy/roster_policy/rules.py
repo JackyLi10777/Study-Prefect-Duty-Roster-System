@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum
+import re
 
 
 class RosterPolicyError(ValueError):
@@ -42,6 +43,27 @@ class PrefectRole(str, Enum):
     STUDY_PREFECT = "study_prefect"
 
 
+_CHINESE_NAME_PATTERN = re.compile(
+    r"^[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\U00020000-\U0002FA1F·・．\- ]+$"
+)
+_CHINESE_IDEOGRAPH_PATTERN = re.compile(
+    r"[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\U00020000-\U0002FA1F]"
+)
+
+
+def is_chinese_display_name(value: str) -> bool:
+    """Return whether a prefect's authoritative display name is Chinese.
+
+    Presentation language never changes this value. Restrained separators are
+    accepted for legitimate Chinese names, while Latin-only aliases and labels
+    are rejected before they can enter a roster or PDF.
+    """
+
+    candidate = value.strip()
+    ideograph_count = len(_CHINESE_IDEOGRAPH_PATTERN.findall(candidate))
+    return 2 <= ideograph_count <= 8 and _CHINESE_NAME_PATTERN.fullmatch(candidate) is not None
+
+
 DUTY_WEIGHTS: dict[DutyPost, float] = {
     DutyPost.ASSIST_IN_CHARGE: 1.0,
     DutyPost.ROOM_302: 1.0,
@@ -52,10 +74,10 @@ DUTY_WEIGHTS: dict[DutyPost, float] = {
 
 # Displayed by every interface from the same policy source; not a UI-only copy.
 DUTY_TIME_WINDOWS: dict[DutyPost, tuple[str, str]] = {
-    DutyPost.ASSIST_IN_CHARGE: ("15:45", "18:00"),
-    DutyPost.ROOM_302: ("15:45", "18:00"),
-    DutyPost.ROOM_303: ("15:45", "17:00"),
-    DutyPost.ROOM_202: ("15:45", "17:00"),
+    DutyPost.ASSIST_IN_CHARGE: ("15:40", "18:30"),
+    DutyPost.ROOM_302: ("15:40", "18:30"),
+    DutyPost.ROOM_303: ("15:40", "17:00"),
+    DutyPost.ROOM_202: ("15:40", "17:00"),
 }
 
 

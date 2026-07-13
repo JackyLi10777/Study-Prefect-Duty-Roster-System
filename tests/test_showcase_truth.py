@@ -21,3 +21,30 @@ def test_dashboard_keeps_one_primary_generation_action_and_progressively_disclos
     assert dashboard.count('action_key="create_draft"') == 1
     assert 'action_key="empty_start_action"' not in dashboard
     assert dashboard.index('ui.expansion(reflection.get("title"') < dashboard.index("tone_select = ui.select")
+
+
+def test_release_evidence_tone_preserves_operator_meaning() -> None:
+    source = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_routes" / "showcase.py").read_text(encoding="utf-8")
+
+    assert '"pass": "stable"' in source
+    assert '"running": "action"' in source
+    assert '"fail": "danger"' in source
+    assert '"stale": "attention"' in source
+    assert 'classes(f"sy-engineering-gate-icon sy-fg-{evidence_tone}")' in source
+    assert 'evidence_tone = _release_evidence_tone(evidence.state)' in source
+
+
+def test_showcase_limits_template_kickers_and_avoids_fictional_offices() -> None:
+    source = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_routes" / "showcase.py").read_text(encoding="utf-8")
+    messages = (PROJECT_ROOT / "nicegui_app" / "ui" / "i18n_catalog" / "platform.py").read_text(encoding="utf-8")
+
+    assert "show_kicker: bool = False" in source
+    assert source.count("show_kicker=True") == 3
+    for inflated_label in (
+        "Weekly Operations Office",
+        "Fairness Assurance Office",
+        "Service Experience Office",
+        "Systems Continuity Office",
+        "enterprise-style capabilities",
+    ):
+        assert inflated_label not in messages

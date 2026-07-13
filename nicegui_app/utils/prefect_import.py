@@ -10,6 +10,7 @@ import re
 from typing import Any
 
 from nicegui_app.services.roster_workflow import PrefectInput
+from roster_policy import is_chinese_display_name
 
 
 @dataclass(frozen=True)
@@ -64,11 +65,25 @@ def parse_prefect_import_text(raw_text: str) -> ImportPreview:
         raw_rows = _load_json_rows(source) if source.startswith(("[", "{")) else list(csv.DictReader(io.StringIO(source)))
     except (json.JSONDecodeError, csv.Error, ValueError) as error:
         return ImportPreview((), (f"Import format could not be read: {error}",))
+    return parse_prefect_import_rows(raw_rows)
+
+
+def parse_prefect_import_rows(
+    raw_rows: list[dict[str, Any]],
+    *,
+    target_to_source: dict[str, str] | None = None,
+) -> ImportPreview:
+    """Normalize locally parsed rows after an operator-reviewed column mapping."""
     rows: list[PrefectInput] = []
     issues: list[str] = []
     for index, raw_row in enumerate(raw_rows, start=1):
         try:
-            rows.append(_normalize_row(raw_row))
+            normalized_input = (
+                {target: raw_row.get(source) for target, source in target_to_source.items()}
+                if target_to_source is not None
+                else raw_row
+            )
+            rows.append(_normalize_row(normalized_input))
         except ValueError as error:
             issues.append(f"Row {index}: {error}")
     return ImportPreview(tuple(rows), tuple(issues))
@@ -91,6 +106,8 @@ def _normalize_row(row: dict[str, Any]) -> PrefectInput:
     available_days = _normalize_days(_value(row, "available_days"))
     if not name_zh:
         raise ValueError("Chinese name is required.")
+    if not is_chinese_display_name(name_zh):
+        raise ValueError("The authoritative prefect display name must be Chinese.")
     if not form:
         raise ValueError("Form is required.")
     if not class_name:

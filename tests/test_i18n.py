@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from nicegui_app.ui import page_shared as pages
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.ui.i18n import EN, MESSAGES, OFFICIAL_ROLE_TERMS, POST_LABELS, ROLE_LABELS, ZH_HK
@@ -8,9 +10,18 @@ from tests.ui_source import combined_theme_source
 
 
 def test_domain_catalog_merge_has_no_duplicate_message_keys() -> None:
-    from nicegui_app.ui.i18n_catalog import foundation, media, people, platform, stewardship, weekly
+    from nicegui_app.ui.i18n_catalog import foundation, importing, media, people, platform, reporting, stewardship, weekly
 
-    domains = (foundation.MESSAGES, weekly.MESSAGES, people.MESSAGES, stewardship.MESSAGES, platform.MESSAGES, media.MESSAGES)
+    domains = (
+        foundation.MESSAGES,
+        weekly.MESSAGES,
+        people.MESSAGES,
+        stewardship.MESSAGES,
+        platform.MESSAGES,
+        media.MESSAGES,
+        reporting.MESSAGES,
+        importing.MESSAGES,
+    )
     assert len(MESSAGES) == sum(len(domain) for domain in domains)
 
 
@@ -22,6 +33,16 @@ def test_every_interface_message_has_nonempty_traditional_chinese_and_english_te
     }
 
     assert missing == {}
+
+
+def test_every_literal_ui_translation_lookup_exists_in_the_catalogue() -> None:
+    ui_root = PROJECT_ROOT / "nicegui_app" / "ui"
+    referenced: set[str] = set()
+    pattern = re.compile(r"\bt\(\s*['\"]([^'\"]+)['\"]")
+    for source_path in ui_root.rglob("*.py"):
+        referenced.update(pattern.findall(source_path.read_text(encoding="utf-8")))
+
+    assert referenced - MESSAGES.keys() == set()
 
 
 def test_official_hong_kong_role_terms_are_consistent_in_the_interface() -> None:

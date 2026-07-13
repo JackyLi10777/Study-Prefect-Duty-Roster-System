@@ -103,6 +103,7 @@ def test_pointer_hover_motion_is_scoped_and_reduced_motion_safe() -> None:
     assert ".sy-pointer-light, .sy-feedback-pulse { display: none !important; }" in theme
     assert ".sy-table" not in motion.split("const pointerSurfaceSelector", 1)[1].split("].join", 1)[0]
     assert "pointerenter" in motion
-    assert motion.count("getBoundingClientRect()") == 3  # enter, rare fallback, and one feedback pulse
-    assert "const bounds = surface.getBoundingClientRect();" not in motion
+    assert "const bounds = surface.getBoundingClientRect();" in motion
+    assert "let bounds = null" not in motion
     assert "mutation.addedNodes" in motion
+    assert "mutation.removedNodes" in motion

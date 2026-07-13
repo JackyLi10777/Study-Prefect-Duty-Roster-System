@@ -259,8 +259,8 @@ def test_platform_showcase_exposes_enterprise_style_operating_model_without_fake
     assert "Service Governance Lead" in messages
     assert "Duty Coordination Lead" in messages
     assert "Room Service Steward" in messages
-    assert "capability groups" in messages
-    assert "not four additional departments or staff" in MESSAGES["capability_map_copy"]["en"]
+    assert "four capabilities" in messages
+    assert "not additional departments or staff" in MESSAGES["capability_map_copy"]["en"]
 
 
 def test_engineering_showcase_turns_documented_quality_into_verifiable_ui_evidence() -> None:
@@ -269,7 +269,7 @@ def test_engineering_showcase_turns_documented_quality_into_verifiable_ui_eviden
     messages = combined_i18n_source()
 
     assert '@ui.page("/engineering")' in pages
-    assert '("/engineering", "engineering", "precision_manufacturing")' in shell
+    assert '("/engineering", "engineering", "build_circle")' in shell
     for test_id in (
         "engineering-facts",
         "engineering-blueprint",

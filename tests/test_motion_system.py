@@ -26,11 +26,20 @@ def test_motion_runtime_is_purposeful_interruptible_and_reduced_motion_safe() ->
     assert "IntersectionObserver" in motion
     assert "MutationObserver" in motion
     assert "prefers-reduced-motion: reduce" in motion
+    assert "window.gsap.matchMedia()" in motion
+    assert "window.__disposeSingYinMotion = dispose" in motion
+    assert "mutationObserver?.disconnect()" in motion
+    assert "intersectionObserver?.disconnect()" in motion
+    assert "new AbortController()" in motion
     assert "clearProps: 'transform,opacity,visibility'" in motion
     assert "bootAttempts < 120" in motion
     assert "syMotion = 'unavailable'" in motion
     assert "repeat: -1" not in motion
     assert "ScrollTrigger" not in motion
+
+    pointer_scope = motion.split("const pointerSurfaceSelector", 1)[1].split("].join", 1)[0]
+    for static_surface in (".sy-flow-step", ".sy-architecture-layer", ".sy-storage-lifecycle"):
+        assert static_surface not in pointer_scope
 
 
 def test_motion_assets_are_loaded_from_same_origin_only() -> None:

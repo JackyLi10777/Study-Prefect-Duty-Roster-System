@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from uuid import uuid4
 from typing import IO
 from urllib.error import URLError
 from urllib.request import urlopen
@@ -67,6 +68,7 @@ def isolated_environment(root: Path, port: int, *, blocked_backup: bool = False)
         **os.environ,
         "PYTHONUTF8": "1",
         "SING_YIN_E2E_ISOLATED": "1",
+        "SING_YIN_E2E_RUN_ID": f"E2E-{uuid4().hex[:12].upper()}",
         "SING_YIN_DATABASE_PATH": str(database_path),
         "SING_YIN_BACKUP_DIR": str(backup_path),
         "SING_YIN_LOG_DIR": str(log_dir),

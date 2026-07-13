@@ -2,6 +2,7 @@
 param(
     [string]$ProjectRoot = "",
     [string]$ApplicationTaskName = "Sing Yin Roster Host",
+    [string]$RuntimeUser = "SingYinRosterSvc",
     [switch]$Strict
 )
 
@@ -28,6 +29,13 @@ try { $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path } catch {
     exit 1
 }
 $envPath = Join-Path $ProjectRoot ".env"
+$runtimeAccount = $null
+try {
+    $runtimeAccount = Get-SingYinRuntimeAccount -UserName $RuntimeUser
+    Add-DoctorCheck "runtime_account" "pass" "The dedicated runtime account exists, is enabled, and is not an administrator."
+} catch {
+    Add-DoctorCheck "runtime_account" "fail" "The dedicated non-administrator runtime account is unavailable or unsafe."
+}
 try {
     $endpoint = Get-SingYinConfiguredEndpoint -EnvironmentPath $envPath
     Add-DoctorCheck "loopback_origin" "pass" "NiceGUI is configured for a loopback-only origin."
@@ -44,7 +52,7 @@ if (Test-Path -LiteralPath $venvPython -PathType Leaf) {
     Add-DoctorCheck "python_runtime" "fail" "The project Python virtual environment is missing."
 }
 
-$taskInspection = Get-SingYinTaskInspection -TaskName $ApplicationTaskName -ProjectRoot $ProjectRoot
+$taskInspection = Get-SingYinTaskInspection -TaskName $ApplicationTaskName -ProjectRoot $ProjectRoot -RuntimeUser $RuntimeUser
 if ($taskInspection.Owned) {
     Add-DoctorCheck "startup_task" "pass" "The Windows startup task belongs to this project root."
 } elseif ($taskInspection.Exists) {
@@ -127,7 +135,8 @@ $sensitivePaths = @(
     (Join-Path $ProjectRoot "data\backups"),
     (Join-Path $ProjectRoot "logs")
 )
-$aclState = Get-SingYinAclStatus -Paths $sensitivePaths
+$requiredSid = if ($runtimeAccount) { $runtimeAccount.Sid.Value } else { "" }
+$aclState = Get-SingYinAclStatus -Paths $sensitivePaths -RequiredIdentitySid $requiredSid
 if ($aclState.Compliant) {
     Add-DoctorCheck "local_permissions" "pass" "Sensitive local paths are restricted to privileged host identities."
 } else {

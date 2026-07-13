@@ -9,6 +9,7 @@ advisor when they need to review the ledger.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta
 from io import BytesIO
 import os
 from pathlib import Path
@@ -25,7 +26,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from nicegui_app.config import DISPLAY_PRINT_CREST_PATH, PROJECT_ROOT
-from roster_policy import DutyPost, SchoolDay
+from roster_policy import DUTY_TIME_WINDOWS, DutyPost, SchoolDay
 
 if TYPE_CHECKING:
     from nicegui_app.services.roster_workflow import RosterWorkflow
@@ -48,6 +49,21 @@ DAY_TEXT: dict[SchoolDay, tuple[str, str]] = {
     SchoolDay.THURSDAY: ("星期四", "THURSDAY"),
     SchoolDay.FRIDAY: ("星期五", "FRIDAY"),
 }
+
+ENGLISH_MONTH_ABBREVIATIONS = (
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
+)
 
 POST_ROWS: tuple[tuple[DutyPost, int, tuple[str, str]], ...] = (
     (DutyPost.ASSIST_IN_CHARGE, 1, ("助理首席導學風紀當值", "Assist. in charge")),
@@ -104,7 +120,16 @@ def build_roster_pdf(
     story = _schedule_header(week["weekStart"], str(week["status"]), language, styles, show_crest=show_crest)
     if practice:
         story.extend([Spacer(1, 2 * mm), Paragraph(_practice_marker(language), styles["practice_marker"])])
-    story.extend([Spacer(1, 4 * mm), _schedule_grid(workflow.assignments(roster_week_id), language, styles, landscape_mode=True)])
+    story.extend([
+        Spacer(1, 4 * mm),
+        _schedule_grid(
+            workflow.assignments(roster_week_id),
+            week_start=week["weekStart"],
+            language=language,
+            styles=styles,
+            landscape_mode=True,
+        ),
+    ])
     if show_footer_note:
         story.extend([Spacer(1, 5 * mm), Paragraph(_schedule_footer(language), styles["footer"])])
     render_page_footer = show_footer_note or practice
@@ -190,7 +215,12 @@ def _schedule_header(
 
 
 def _schedule_grid(
-    assignments: list[dict[str, object]], language: ExportLanguage, styles: dict[str, ParagraphStyle], *, landscape_mode: bool
+    assignments: list[dict[str, object]],
+    week_start: object,
+    language: ExportLanguage,
+    styles: dict[str, ParagraphStyle],
+    *,
+    landscape_mode: bool,
 ) -> Table:
     by_slot = {
         (str(item["day"]), str(item["postCode"]), int(item["slotIndex"])): item
@@ -198,12 +228,19 @@ def _schedule_grid(
     }
     heading = "值班位置" if language == "zh" else "Duty Position"
     rows: list[list[Paragraph]] = [[Paragraph(heading, styles["grid_heading"])] + [
-        Paragraph(DAY_TEXT[day][0 if language == "zh" else 1], styles["grid_heading"])
+        Paragraph(_dated_day_heading(week_start, day, language), styles["grid_heading"])
         for day in DAY_ORDER
     ]]
     cell_backgrounds: list[tuple[int, int, colors.Color]] = []
     for row_index, (post, slot_index, label) in enumerate(POST_ROWS, start=1):
-        row = [Paragraph(label[0 if language == "zh" else 1], styles["post_cell"])]
+        start_time, end_time = DUTY_TIME_WINDOWS[post]
+        post_label = xml_escape(label[0 if language == "zh" else 1])
+        row = [
+            Paragraph(
+                f'{post_label}<br/><font size="8.1">{start_time}–{end_time}</font>',
+                styles["post_cell"],
+            )
+        ]
         for column_index, day in enumerate(DAY_ORDER, start=1):
             item = by_slot.get((day.name, post.name, slot_index))
             if item is None and post is DutyPost.ROOM_202:
@@ -242,6 +279,32 @@ def _schedule_grid(
     commands.extend(("BACKGROUND", (column, row), (column, row), background) for column, row, background in cell_backgrounds)
     table.setStyle(TableStyle(commands))
     return table
+
+
+def _dated_day_heading(week_start: object, day: SchoolDay, language: ExportLanguage) -> str:
+    """Return a locale-stable weekday and calendar date for a PDF column."""
+
+    start = _coerce_week_start(week_start)
+    duty_date = start + timedelta(days=int(day))
+    weekday = DAY_TEXT[day][0 if language == "zh" else 1]
+    if language == "zh":
+        date_text = f"{duty_date.month}月{duty_date.day}日"
+    else:
+        date_text = f"{duty_date.day:02d} {ENGLISH_MONTH_ABBREVIATIONS[duty_date.month - 1]}"
+    return f'{weekday}<br/><font size="7.8">{date_text}</font>'
+
+
+def _coerce_week_start(value: object) -> date:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        try:
+            return date.fromisoformat(value)
+        except ValueError as error:
+            raise ValueError("Roster week start must be an ISO calendar date.") from error
+    raise TypeError("Roster week start must be a date or ISO date string.")
 
 
 def _audit_table(rows: list[dict[str, object]], language: ExportLanguage, styles: dict[str, ParagraphStyle]) -> Table:

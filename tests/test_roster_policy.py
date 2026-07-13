@@ -11,6 +11,7 @@ from roster_policy import (
     SchoolDay,
     can_assign_role,
     duty_weight,
+    is_chinese_display_name,
     required_posts_for_day,
 )
 
@@ -23,6 +24,13 @@ def test_policy_role_gates_are_strict() -> None:
     assert not can_assign_role(ahp, DutyPost.ROOM_302)
     assert not can_assign_role(regular, DutyPost.ASSIST_IN_CHARGE)
     assert can_assign_role(regular, DutyPost.ROOM_303)
+
+
+def test_authoritative_prefect_names_remain_chinese() -> None:
+    assert is_chinese_display_name("歐陽子晴")
+    assert is_chinese_display_name("陳·嘉言")
+    assert not is_chinese_display_name("Test Prefect")
+    assert not is_chinese_display_name("陳 Test")
 
 
 def test_room_202_is_closed_on_tuesday_and_friday() -> None:
@@ -39,9 +47,10 @@ def test_duty_weights_match_school_policy() -> None:
 
 
 def test_room_time_windows_match_school_policy() -> None:
-    assert DUTY_TIME_WINDOWS[DutyPost.ROOM_302] == ("15:45", "18:00")
-    assert DUTY_TIME_WINDOWS[DutyPost.ROOM_303] == ("15:45", "17:00")
-    assert DUTY_TIME_WINDOWS[DutyPost.ROOM_202] == ("15:45", "17:00")
+    assert DUTY_TIME_WINDOWS[DutyPost.ASSIST_IN_CHARGE] == ("15:40", "18:30")
+    assert DUTY_TIME_WINDOWS[DutyPost.ROOM_302] == ("15:40", "18:30")
+    assert DUTY_TIME_WINDOWS[DutyPost.ROOM_303] == ("15:40", "17:00")
+    assert DUTY_TIME_WINDOWS[DutyPost.ROOM_202] == ("15:40", "17:00")
 
 
 def test_generated_roster_preserves_non_negotiable_rules() -> None:

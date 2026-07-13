@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import sqlite3
 import sys
+import time
 from zipfile import ZipFile
 
 from playwright.sync_api import Page, sync_playwright
@@ -41,6 +42,9 @@ def isolated_paths() -> tuple[Path, Path, Path]:
     """Refuse to run unless all persistent locations were explicitly isolated."""
     if os.getenv("SING_YIN_E2E_ISOLATED") != "1":
         raise RuntimeError("Set SING_YIN_E2E_ISOLATED=1 before running a write-pipeline browser test.")
+    e2e_run_id = os.getenv("SING_YIN_E2E_RUN_ID", "").strip()
+    if not re.fullmatch(r"E2E-[A-F0-9]{12}", e2e_run_id):
+        raise RuntimeError("Set a unique SING_YIN_E2E_RUN_ID before running a write-pipeline browser test.")
     required = ("SING_YIN_DATABASE_PATH", "SING_YIN_BACKUP_DIR", "SING_YIN_LOG_DIR")
     missing = [name for name in required if not os.getenv(name)]
     if missing:
@@ -63,6 +67,14 @@ def _select_option(page: Page, label: str, option_text: str) -> None:
     field = page.locator(".q-field").filter(has_text=label).first
     field.click()
     page.get_by_text(option_text, exact=True).last.click()
+
+
+def _wait_for_progress_cycle(page: Page) -> None:
+    """Wait for one new operation dialog and its one-shot cleanup."""
+    dialog = page.locator(".sy-progress-dialog")
+    dialog.wait_for(state="visible", timeout=10_000)
+    dialog.wait_for(state="hidden", timeout=20_000)
+    dialog.wait_for(state="detached", timeout=10_000)
 
 
 def _fixture_leave_prefect() -> tuple[str, str]:
@@ -142,6 +154,7 @@ def _assert_schedule_pdf(content: bytes, *, english: bool, expected_name: str) -
 
 def main() -> None:
     database_path, backup_dir, log_dir = isolated_paths()
+    e2e_run_id = os.environ["SING_YIN_E2E_RUN_ID"].strip()
     print("[1/7] Starting isolated browser write-pipeline verification", flush=True)
     artifacts_dir = database_path.parent / "write-pipeline-artifacts"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
@@ -153,11 +166,16 @@ def main() -> None:
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1440, "height": 1024}, accept_downloads=True)
         page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
+        health_response = page.request.get(f"{BASE_URL}/healthz")
+        assert health_response.status == 200
+        assert health_response.json().get("e2eRunId") == e2e_run_id, (
+            "Write verification connected to a different server; no browser write was attempted."
+        )
         first_response = page.goto(f"{BASE_URL}/prefects", wait_until="networkidle")
         assert first_response is not None
         request_reference = first_response.headers.get("x-request-id", "")
         assert re.fullmatch(r"REQ-[A-F0-9]{8}", request_reference)
-        page.get_by_text("AI 匯入", exact=True).click()
+        page.get_by_text("資料匯入", exact=True).click()
         page.locator("textarea").fill(
             "姓名,級別,班別,職務,可值班日\n"
             "虛構驗證風紀,F.3,3T,導學風紀,星期五"
@@ -165,8 +183,13 @@ def main() -> None:
         page.get_by_role("button", name="驗證與預覽").click()
         page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).wait_for(timeout=10_000)
         page.get_by_role("button", name="匯入風紀").click()
+        page.locator(".sy-progress-dialog").wait_for(state="visible", timeout=10_000)
         page.get_by_text("名單管理", exact=True).wait_for(timeout=10_000)
         page.get_by_text("虛構驗證風紀", exact=True).wait_for(timeout=10_000)
+        page.locator(".sy-progress-dialog").wait_for(state="hidden", timeout=20_000)
+        page.locator(".sy-progress-dialog").wait_for(state="detached", timeout=10_000)
+        workflow = _workflow(database_path, backup_dir)
+        assert any(item["nameZh"] == "虛構驗證風紀" for item in workflow.prefects())
 
         page.get_by_role("button", name="新增風紀").click()
         page.get_by_role("button", name="儲存", exact=True).click()
@@ -177,8 +200,7 @@ def main() -> None:
         _select_option(page, "可值班日", "星期一")
         _select_option(page, "可值班日", "星期三")
         page.get_by_role("button", name="儲存", exact=True).click()
-        page.locator(".sy-progress-dialog").wait_for(timeout=10_000)
-        page.locator(".sy-progress-dialog").wait_for(state="hidden", timeout=20_000)
+        _wait_for_progress_cycle(page)
         page.get_by_text("虛構非阻塞風紀", exact=True).first.wait_for(timeout=15_000)
 
         workflow = _workflow(database_path, backup_dir)
@@ -187,8 +209,7 @@ def main() -> None:
         page.get_by_role("button", name="編輯風紀").click()
         page.get_by_label("備註").fill("虛構非阻塞修改")
         page.get_by_role("button", name="儲存", exact=True).click()
-        page.locator(".sy-progress-dialog").wait_for(timeout=10_000)
-        page.locator(".sy-progress-dialog").wait_for(state="hidden", timeout=20_000)
+        _wait_for_progress_cycle(page)
         page.get_by_text("名單管理", exact=True).wait_for(timeout=15_000)
         workflow = _workflow(database_path, backup_dir)
         assert workflow.prefect(str(created_prefect["id"]))["remarks"] == "虛構非阻塞修改"
@@ -199,8 +220,7 @@ def main() -> None:
         page.get_by_text("歷史週表、公平帳本及審計紀錄會完整保留", exact=False).wait_for(timeout=10_000)
         page.screenshot(path=str(PREFECT_ARCHIVE_SCREENSHOT), full_page=False)
         page.get_by_test_id("confirm-archive-prefect").click()
-        page.locator(".sy-progress-dialog").wait_for(timeout=10_000)
-        page.locator(".sy-progress-dialog").wait_for(state="hidden", timeout=20_000)
+        _wait_for_progress_cycle(page)
         page.get_by_text("名單管理", exact=True).wait_for(timeout=15_000)
         workflow = _workflow(database_path, backup_dir)
         assert created_prefect["id"] not in {item["id"] for item in workflow.prefects()}
@@ -211,7 +231,8 @@ def main() -> None:
         leave_prefect = workflow.prefect(leave_prefect_id)
         leave_prefect_option = f"{leave_prefect_name} ({leave_prefect['form']} {leave_prefect['className']})"
 
-        page.goto(f"{BASE_URL}/rosters", wait_until="networkidle")
+        page.goto(f"{BASE_URL}/rosters", wait_until="commit", timeout=10_000)
+        page.get_by_role("button", name="生成並儲存草稿").wait_for(timeout=10_000)
         page.locator('input[type="date"]').fill("2026-09-08")
         page.get_by_role("button", name="生成並儲存草稿").click()
         page.get_by_text("週開始日期必須是星期一。", exact=True).wait_for(timeout=10_000)
@@ -224,26 +245,37 @@ def main() -> None:
         assert page.locator(".sy-progress-dialog").count() == 0
         page.get_by_label("請假原因").fill("虛構校內活動")
         page.get_by_role("button", name="登記請假").click()
-        page.locator(".sy-progress-dialog").wait_for(timeout=10_000)
-        page.locator(".sy-progress-dialog").wait_for(state="hidden", timeout=20_000)
-        page.get_by_text("已登記請假", exact=False).wait_for(timeout=10_000)
-        page.get_by_role("button", name="取消請假").click()
-        page.locator(".sy-progress-dialog").wait_for(timeout=10_000)
-        page.locator(".sy-progress-dialog").wait_for(state="hidden", timeout=20_000)
-        page.get_by_label("請假原因").fill("虛構校內活動")
-        page.get_by_role("button", name="登記請假").click()
-        page.locator(".sy-progress-dialog").wait_for(timeout=10_000)
-        page.locator(".sy-progress-dialog").wait_for(state="hidden", timeout=20_000)
+        _wait_for_progress_cycle(page)
         page.get_by_text("已登記請假", exact=False).wait_for(timeout=10_000)
         page.get_by_role("button", name="生成並儲存草稿").click()
-        page.locator(".sy-progress-dialog").wait_for(timeout=10_000)
-        page.wait_for_url("**/rosters/*", timeout=20_000)
+        page.locator(".sy-progress-dialog").wait_for(state="visible", timeout=10_000)
+        deadline = time.monotonic() + 20
+        generated_weeks: list[dict[str, object]] = []
+        while time.monotonic() < deadline:
+            generated_weeks = _workflow(database_path, backup_dir).roster_weeks()
+            if generated_weeks:
+                break
+            time.sleep(0.1)
+        assert generated_weeks, "The browser generation action did not persist a draft."
+        roster_week_id = int(generated_weeks[0]["id"])
+        backup_deadline = time.monotonic() + 20
+        while time.monotonic() < backup_deadline and not any(backup_dir.glob("*-draft_generated.manifest.json")):
+            time.sleep(0.1)
+        assert any(backup_dir.glob("*-draft_generated.manifest.json")), "Draft generation did not finish its verified backup."
+        page.evaluate("window.stop()")
+        browser.close()
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1440, "height": 1024}, accept_downloads=True)
+        page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
+        health_response = page.request.get(f"{BASE_URL}/healthz")
+        assert health_response.status == 200 and health_response.json().get("e2eRunId") == e2e_run_id
+        page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="domcontentloaded")
         page.get_by_text("草稿預覽", exact=True).wait_for(timeout=10_000)
         print("[3/7] Recorded leave and generated a draft through the UI", flush=True)
 
         workflow = _workflow(database_path, backup_dir)
         week = workflow.roster_weeks()[0]
-        roster_week_id = int(week["id"])
+        assert int(week["id"]) == roster_week_id
         declared = workflow.pre_generation_leaves(WEEK_START)
         assert {item["prefectId"] for item in declared} == {leave_prefect_id}
         assert all(

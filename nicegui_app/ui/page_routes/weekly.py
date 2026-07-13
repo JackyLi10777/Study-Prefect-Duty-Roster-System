@@ -7,9 +7,10 @@ from nicegui_app.ui.page_shared import *  # noqa: F403
 @ui.page("/rosters")
 def rosters_page() -> None:
     workflow = get_workflow()
+    weeks = workflow.roster_weeks()
     with page_shell("rosters", "/rosters"):
         with ui.row().classes("w-full items-center justify-between"):
-            ui.label(t("rosters")).classes("text-2xl font-semibold")
+            ui.html(t("rosters"), tag="h2").classes("text-2xl font-semibold")
             ui.label(t("persistence_notice")).classes("text-sm text-[var(--sy-muted)]")
         _render_storage_lifecycle(workflow)
         with ui.tabs().classes("w-full sy-fg-action") as tabs:
@@ -18,11 +19,42 @@ def rosters_page() -> None:
         with ui.tab_panels(tabs, value="generate_view", animated=False, keep_alive=False).classes("w-full bg-transparent"):
             with ui.tab_panel("generate_view").classes("px-0"):
                 with ui.card().classes("sy-surface w-full max-w-2xl p-6"):
-                    ui.label(t("generate_roster")).classes("text-lg font-semibold")
+                    ui.html(t("generate_roster"), tag="h2").classes("text-lg font-semibold")
                     _render_operation_hint("hint_generate_roster", icon="calendar_month")
                     week_input = ui.input(label=t("week_start"), value=_next_monday().isoformat()).props(
                         "type=date name=week-start autocomplete=off"
                     )
+                    multiplier_by_week = {
+                        week["weekStart"]: float(week.get("historyPriorityMultiplier", 1.0))
+                        for week in weeks
+                    }
+                    try:
+                        initial_week = date.fromisoformat(str(week_input.value))
+                    except ValueError:
+                        initial_week = _next_monday()
+                    with ui.element("section").classes("sy-surface-subtle w-full p-4 mt-4"):
+                        ui.label(t("history_priority_title")).classes("font-semibold")
+                        ui.label(t("history_priority_detail")).classes(
+                            "text-sm leading-6 text-[var(--sy-muted)] mt-1"
+                        )
+                        history_priority = ui.slider(
+                            min=HISTORY_PRIORITY_MULTIPLIER_MIN,
+                            max=HISTORY_PRIORITY_MULTIPLIER_MAX,
+                            step=0.1,
+                            value=multiplier_by_week.get(initial_week, 1.0),
+                        ).props(
+                            f'label label-always snap data-testid=history-priority-multiplier '
+                            f'aria-label="{t("history_priority_label")}"'
+                        ).classes("w-full mt-3")
+                        with ui.row().classes("w-full justify-between gap-2 text-xs text-[var(--sy-muted)]"):
+                            ui.label(t("history_priority_lower"))
+                            ui.label(t("history_priority_standard"))
+                            ui.label(t("history_priority_higher"))
+
+                    def refresh_history_priority() -> None:
+                        selected = selected_week_start()
+                        history_priority.value = multiplier_by_week.get(selected, 1.0) if selected else 1.0
+                        history_priority.update()
 
                     def selected_week_start(*, announce_error: bool = False) -> date | None:
                         try:
@@ -170,7 +202,14 @@ def rosters_page() -> None:
                             ui.notify(t("leave_declared"), type="positive")
 
                     ui.button(t("declare_leave"), icon="event_busy", on_click=declare_leave).props("outline color=primary").classes("mt-3")
-                    week_input.on("change", lambda _event: (refresh_leave_list(), refresh_requirements()))
+                    week_input.on(
+                        "change",
+                        lambda _event: (
+                            refresh_leave_list(),
+                            refresh_requirements(),
+                            refresh_history_priority(),
+                        ),
+                    )
                     refresh_leave_list()
 
                     async def generate() -> None:
@@ -178,18 +217,20 @@ def rosters_page() -> None:
                         if week_start is None:
                             return
                         result = await _run_with_progress(
-                            lambda: workflow.generate_and_save_draft(week_start),
+                            lambda: workflow.generate_and_save_draft(
+                                week_start,
+                                history_priority_multiplier=float(history_priority.value or 1.0),
+                            ),
                             title_key="progress_generate_title",
                             working_key="progress_generate_working",
-                            icon="auto_awesome",
+                            icon="edit_calendar",
                         )
                         if result is not _OPERATION_FAILED:
                             ui.notify(t("draft_saved"), type="positive")
                             ui.navigate.to(f"/rosters/{result.id}")
 
-                    ui.button(t("create_draft"), icon="auto_awesome", on_click=generate).props("color=primary").classes("mt-4")
-                ui.label(t("current_rosters")).classes("text-xl font-semibold mt-6")
-                weeks = workflow.roster_weeks()
+                    ui.button(t("create_draft"), icon="edit_calendar", on_click=generate).props("color=primary").classes("mt-4")
+                ui.html(t("current_rosters"), tag="h2").classes("text-xl font-semibold mt-6")
                 if not weeks:
                     _render_empty_state(
                         title_key="empty_roster_title",
@@ -198,10 +239,14 @@ def rosters_page() -> None:
                         illustrated=True,
                     )
                 for week in weeks:
+                    history_priority_value = f"{float(week.get('historyPriorityMultiplier', 1.0)):.1f}"
                     with ui.row().classes("sy-surface w-full items-center justify-between px-5 py-4"):
                         with ui.column().classes("gap-0"):
                             ui.label(str(week["weekStart"])).classes("text-lg font-semibold")
-                            ui.label(f"{t('version')} {week['version']}  |  {t('generated_at')}: {week['generatedAt']:%Y-%m-%d %H:%M}").classes("text-sm text-[var(--sy-muted)]")
+                            ui.label(
+                                f"{t('version')} {week['version']}  |  {t('generated_at')}: {week['generatedAt']:%Y-%m-%d %H:%M}  |  "
+                                f"{t('history_priority_used', value=history_priority_value)}"
+                            ).classes("text-sm text-[var(--sy-muted)]")
                         _tone_badge(t("published") if week["status"] == "published" else t("draft"), "stable" if week["status"] == "published" else "action")
                         ui.button(t("view"), icon="arrow_forward", on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}")).props("flat")
             with ui.tab_panel("adjust_edit").classes("px-0"):
@@ -249,19 +294,50 @@ def roster_detail_page(roster_week_id: int) -> None:
             with ui.column().classes("gap-1"):
                 ui.label(str(week["weekStart"])).classes("text-2xl font-semibold")
                 ui.label(f"{t('version')} {week['version']}").classes("text-[var(--sy-muted)]")
+                ui.label(
+                    t(
+                        "history_priority_used",
+                        value=f"{float(week.get('historyPriorityMultiplier', 1.0)):.1f}",
+                    )
+                ).classes("text-sm text-[var(--sy-muted)]")
             with ui.row().classes("gap-2"):
                 if week["status"] == "draft":
+                    reviewed_version = int(week["version"])
+                    with ui.dialog() as publish_conflict_dialog, ui.card().classes("sy-surface w-full max-w-md p-6"):
+                        ui.label(t("publish_conflict_title")).classes("text-lg font-semibold")
+                        ui.label(t("publish_conflict_body", version=reviewed_version)).classes(
+                            "text-sm text-[var(--sy-muted)] mt-2"
+                        )
+
+                        def reload_after_publish_conflict() -> None:
+                            publish_conflict_dialog.close()
+                            ui.navigate.reload()
+
+                        with ui.row().classes("w-full justify-end mt-5"):
+                            ui.button(
+                                t("publish_conflict_review_action"),
+                                icon="refresh",
+                                on_click=reload_after_publish_conflict,
+                            ).props("color=primary")
+
                     with ui.dialog() as publish_dialog, ui.card().classes("sy-surface w-full max-w-md p-6"):
                         ui.label(t("confirm_publish")).classes("text-lg font-semibold")
                         ui.label(t("publish_warning")).classes("text-sm text-[var(--sy-muted)] mt-2")
+                        ui.label(t("publish_reviewed_version", version=reviewed_version)).classes(
+                            "text-sm font-medium mt-3"
+                        )
 
                         async def publish() -> None:
                             publish_dialog.close()
                             result = await _run_with_progress(
-                                lambda: workflow.publish(roster_week_id),
+                                lambda: workflow.publish(
+                                    roster_week_id,
+                                    expected_week_version=reviewed_version,
+                                ),
                                 title_key="progress_publish_title",
                                 working_key="progress_publish_working",
                                 icon="publish",
+                                on_conflict=lambda _error: publish_conflict_dialog.open(),
                             )
                             if result is not _OPERATION_FAILED:
                                 ui.notify(t("published_success"), type="positive")

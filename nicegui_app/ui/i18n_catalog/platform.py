@@ -218,10 +218,9 @@ MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服
  'team_operating_model_kicker': {'zh-HK': 'OPERATING MODEL／營運模型', 'en': 'OPERATING MODEL'},
  'team_operating_model_title': {'zh-HK': 'Study Prefect Team：由服事責任建立的團隊架構',
                                 'en': 'Study Prefect Team: an organisation built around service'},
- 'team_operating_model_copy': {'zh-HK': '企業式架構的價值不在增加層級，而在讓決策、協調、前線服務與監督各有清楚位置。正式校內職銜保持不變；英文功能頭銜只用來解釋責任。',
-                               'en': 'An enterprise-style model is useful when it clarifies decisions, coordination, frontline service, '
-                                     'and oversight—not when it adds hierarchy. Official school roles stay unchanged; functional titles '
-                                     'only explain responsibility.'},
+ 'team_operating_model_copy': {'zh-HK': '清楚架構的價值，在於讓決策、協調、前線服務與監督各有明確位置。正式校內職銜保持不變；英文功能稱呼只用來解釋責任。',
+                               'en': 'A clear operating model gives decisions, coordination, frontline service, and oversight a defined '
+                                     'place. Official school roles stay unchanged; functional labels only explain responsibility.'},
  'team_role_head': {'zh-HK': '首席導學風紀', 'en': 'Head Study Prefect'},
  'team_role_head_function': {'zh-HK': 'Service Governance Lead／服務管治負責人', 'en': 'Service Governance Lead'},
  'team_role_head_body': {'zh-HK': '擁有每週流程、最終發布決定、公平解釋、例外處理與交接責任。',
@@ -245,34 +244,34 @@ MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服
                                'en': 'Functional titles explain accountability; they do not replace the official Head Study Prefect, '
                                      'Assistant Head Study Prefect, Study Prefect, or Teacher Advisor roles.'},
  'capability_map_kicker': {'zh-HK': 'CAPABILITY MAP／能力地圖', 'en': 'CAPABILITY MAP'},
- 'capability_map_title': {'zh-HK': '四個企業級工作範疇，組成一套完整服務', 'en': 'Four enterprise-style capabilities, one complete service'},
- 'capability_map_copy': {'zh-HK': '這些是 Study Prefect Systems & Stewardship Office 的能力分組，不代表另有四個部門或額外人員；它們讓下一任知道每種工作應由哪一種能力承擔。',
-                         'en': 'These are capability groups within the Study Prefect Systems & Stewardship Office, not four additional '
-                               'departments or staff. They show the successor what kind of capability owns each job.'},
- 'capability_operations_title': {'zh-HK': 'Weekly Operations Office／值週營運組', 'en': 'Weekly Operations Office'},
+ 'capability_map_title': {'zh-HK': '四個工作範疇，組成一套完整服務', 'en': 'Four capabilities, one complete service'},
+ 'capability_map_copy': {'zh-HK': '這四項能力涵蓋整個平台，不代表另設部門或額外人員；它們讓下一任知道每種工作由哪一類能力承擔。',
+                         'en': 'These four capabilities cover the platform; they are not additional departments or staff. They show '
+                               'the successor what kind of capability owns each job.'},
+ 'capability_operations_title': {'zh-HK': 'Weekly Operations／值週運作', 'en': 'Weekly Operations'},
  'capability_operations_body': {'zh-HK': '管理名單、請假、草稿、核對、發布及中英文週表輸出。',
                                 'en': 'Manages the directory, leave, drafts, review, publication, and bilingual roster output.'},
  'capability_operations_output': {'zh-HK': '核心交付：準確而可執行的每週值班表', 'en': 'Core delivery: an accurate, actionable weekly roster'},
- 'capability_fairness_title': {'zh-HK': 'Fairness Assurance Office／公平保證組', 'en': 'Fairness Assurance Office'},
+ 'capability_fairness_title': {'zh-HK': 'Fairness Assurance／公平保障', 'en': 'Fairness Assurance'},
  'capability_fairness_body': {'zh-HK': '集中校規、長期負荷、公平帳本、發布一次性及請假調整驗證。',
                               'en': 'Centralizes policy, long-term load, the fairness ledger, publish-once control, and adjustment '
                                     'validation.'},
  'capability_fairness_output': {'zh-HK': '核心交付：可以說明及追溯的公平決定', 'en': 'Core delivery: explainable and traceable fairness decisions'},
- 'capability_experience_title': {'zh-HK': 'Service Experience Office／服務體驗組', 'en': 'Service Experience Office'},
+ 'capability_experience_title': {'zh-HK': 'Service Experience／使用體驗', 'en': 'Service Experience'},
  'capability_experience_body': {'zh-HK': '負責繁中／英文、操作指引、PDF、可存取性、等待狀態及復原文案。',
                                 'en': 'Owns Traditional Chinese/English, guidance, PDFs, accessibility, waiting states, and recovery '
                                       'copy.'},
  'capability_experience_output': {'zh-HK': '核心交付：下一任無需技術支援也能完成工作',
                                   'en': 'Core delivery: a successor can operate without technical dependence'},
- 'capability_continuity_title': {'zh-HK': 'Systems Continuity Office／系統傳承組', 'en': 'Systems Continuity Office'},
+ 'capability_continuity_title': {'zh-HK': 'Systems Continuity／系統延續', 'en': 'Systems Continuity'},
  'capability_continuity_body': {'zh-HK': '負責 SQLite 交易、日誌、校驗備份、受控還原、測試及交接證據。',
                                 'en': 'Owns SQLite transactions, logs, verified backups, managed restore, tests, and handover evidence.'},
  'capability_continuity_output': {'zh-HK': '核心交付：可復原、可驗證、可延續的平台', 'en': 'Core delivery: a recoverable, verifiable, durable platform'},
  'solutions_portfolio_kicker': {'zh-HK': 'SOLUTION PORTFOLIO／解決方案組合', 'en': 'SOLUTION PORTFOLIO'},
  'solutions_portfolio_title': {'zh-HK': '以真實工作成果，而不是功能清單來理解系統', 'en': 'Understand the platform by outcomes, not a feature list'},
- 'solutions_portfolio_copy': {'zh-HK': '成熟企業以使用情境組織產品。我們亦把功能整理成四個可直接進入的校務解決方案，讓操作者由問題出發。',
-                              'en': 'Mature organisations group products around real use cases. Here, features become four '
-                                    "school-operation solutions that begin with the operator's problem."},
+ 'solutions_portfolio_copy': {'zh-HK': '平台按真實使用情境整理成四個可直接進入的校務方案，讓操作者由眼前工作出發，而不是先理解功能清單。',
+                              'en': 'The platform groups features into four school-operation solutions, so operators can begin with the '
+                                    'work in front of them instead of learning a feature list.'},
  'solution_weekly_title': {'zh-HK': '每週值班發布控制', 'en': 'Weekly roster control'},
  'solution_weekly_body': {'zh-HK': '由請假與空缺預覽開始，生成可修改草稿，核對後只發布一次，再匯出群組週表。',
                           'en': 'Start with leave and vacancy preview, generate an editable draft, publish once after review, then export '

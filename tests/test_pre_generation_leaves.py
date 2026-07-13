@@ -40,7 +40,7 @@ def test_pre_generation_leave_excludes_a_prefect_from_the_declared_day(workflow:
 
 def test_pre_generation_leave_is_rejected_after_the_week_is_published(workflow: RosterWorkflow) -> None:
     draft = workflow.generate_and_save_draft(WEEK_START)
-    workflow.publish(draft.id)
+    workflow.publish(draft.id, expected_week_version=draft.version)
     prefect_id = str(workflow.prefects()[0]["id"])
 
     with pytest.raises(WorkflowError, match="published roster"):
@@ -63,7 +63,7 @@ def test_publishing_requires_regeneration_when_a_new_leave_affects_an_existing_d
     )
 
     with pytest.raises(ValueError, match="on leave"):
-        workflow.publish(draft.id)
+        workflow.publish(draft.id, expected_week_version=draft.version)
 
 
 def test_published_leave_adjustment_never_recommends_or_accepts_a_prefect_with_declared_leave(workflow: RosterWorkflow) -> None:
@@ -77,7 +77,7 @@ def test_published_leave_adjustment_never_recommends_or_accepts_a_prefect_with_d
         day=str(assignment["day"]),
         reason="Approved school activity",
     )
-    workflow.publish(draft.id)
+    workflow.publish(draft.id, expected_week_version=draft.version)
 
     recommended_ids = {item["id"] for item in workflow.recommend_substitutes(draft.id, int(assignment["id"]))}
     assert candidate["id"] not in recommended_ids

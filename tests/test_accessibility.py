@@ -25,6 +25,7 @@ def test_shared_shell_provides_landmarks_skip_link_and_accessible_icon_controls(
     assert 'aria-label="{sound_tooltip}"' in shell
     assert 'aria-label="{tooltip}"' in shell
     assert ".sy-skip-link:focus-visible" in theme
+    assert "#main-content:focus-visible" in theme
     assert "overscroll-behavior: contain" in theme
     assert "touch-action: manipulation" in theme
     assert "user-scalable=no" not in theme
@@ -52,6 +53,16 @@ def test_quiet_precision_shell_uses_semantic_action_and_motion_tokens() -> None:
     assert "applySystemBlue" not in theme
     assert "#0A84FF" not in theme
     assert "prefers-reduced-motion: reduce" in theme
+    assert "--sy-on-accent:" in theme
+    assert "--sy-on-danger:" in theme
+    assert "var(--sy-on-accent)" in theme
+    assert "var(--sy-on-danger)" in theme
+    assert "100dvh" in theme
+    assert "(pointer: coarse)" in theme
+    assert "sidebar-stewardship-dark-v1.webp" in theme
+    assert "rgba(13,17,23,.66)" in theme
+    assert ".body--dark .sy-brand-mark { border-color: transparent; background: transparent;" in theme
+    assert ".body--dark .sy-co-creation-crest { border-color: transparent; background: transparent;" in theme
 
 
 def test_component_colour_roles_are_semantic_and_consistent() -> None:
@@ -211,6 +222,16 @@ def test_secondary_pages_share_semantic_colour_and_empty_state_grammar() -> None
     assert "sy-button-attention" in page_source
     assert "color=negative data-testid=confirm-restore-action" in page_source
     assert 'classes(f"sy-acceptance-card-icon sy-fg-{state_tone}")' in page_source
+
+
+def test_decorative_icons_and_core_sections_have_explicit_semantics() -> None:
+    page_source = combined_page_source()
+
+    assert 'ui.icon("picture_as_pdf").classes("sy-export-symbol").props("aria-hidden=true")' in page_source
+    assert 'ui.icon("calendar_month").classes("sy-onboarding-symbol").props("aria-hidden=true")' in page_source
+    assert 'tag="h2"' in page_source
+    assert 'icon="auto_awesome"' not in page_source
+    assert 'icon="smart_toy"' not in page_source
 
 
 def test_dashboard_devotional_direction_is_theme_aware_but_operator_overridable() -> None:

@@ -4,10 +4,20 @@ from __future__ import annotations
 
 from nicegui_app.services.workflow_dependencies import *
 from nicegui_app.services.workflow_parts import (
-    PeopleWorkflowMixin, PersistenceWorkflowMixin, RecoveryWorkflowMixin, RosterLifecycleMixin,
+    PeopleWorkflowMixin,
+    PersistenceWorkflowMixin,
+    RecoveryWorkflowMixin,
+    ReportingWorkflowMixin,
+    RosterLifecycleMixin,
 )
 
-class RosterWorkflow(RosterLifecycleMixin, PeopleWorkflowMixin, RecoveryWorkflowMixin, PersistenceWorkflowMixin):
+class RosterWorkflow(
+    RosterLifecycleMixin,
+    PeopleWorkflowMixin,
+    ReportingWorkflowMixin,
+    RecoveryWorkflowMixin,
+    PersistenceWorkflowMixin,
+):
     def __init__(
         self,
         *,

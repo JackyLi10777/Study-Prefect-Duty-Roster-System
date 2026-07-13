@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 
 from nicegui import app, ui
 from dotenv import load_dotenv
@@ -31,6 +32,9 @@ from nicegui_app.ui import pages as _pages  # noqa: F401 - registers @ui.page ro
 def healthz() -> JSONResponse:
     """Return a data-free local health result suitable for future host monitoring."""
     payload = health_snapshot()
+    e2e_run_id = os.getenv("SING_YIN_E2E_RUN_ID", "").strip()
+    if os.getenv("SING_YIN_E2E_ISOLATED") == "1" and re.fullmatch(r"E2E-[A-F0-9]{12}", e2e_run_id):
+        payload = {**payload, "e2eRunId": e2e_run_id}
     maintenance = get_workflow().maintenance_status()
     if maintenance.active:
         payload = {**payload, "status": "maintenance", "maintenance": True}

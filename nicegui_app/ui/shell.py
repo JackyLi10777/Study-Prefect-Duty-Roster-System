@@ -20,7 +20,7 @@ NAVIGATION_GROUPS = (
     ("nav_weekly_work", (("/", "dashboard", "space_dashboard"), ("/rosters", "rosters", "calendar_month"))),
     ("nav_people_fairness", (("/prefects", "prefects", "groups"),)),
     ("nav_support_system", (("/handover", "handover", "handshake"), ("/settings", "settings", "settings"))),
-    ("nav_reference", (("/platform", "platform", "domain"), ("/engineering", "engineering", "precision_manufacturing"), ("/system-architecture", "system_architecture", "account_tree"), ("/getting-started", "getting_started", "play_circle"), ("/guide", "operator_guide", "help"), ("/devotional", "devotional", "menu_book"))),
+    ("nav_reference", (("/platform", "platform", "domain"), ("/engineering", "engineering", "build_circle"), ("/system-architecture", "system_architecture", "account_tree"), ("/getting-started", "getting_started", "play_circle"), ("/guide", "operator_guide", "help_outline"), ("/devotional", "devotional", "menu_book"))),
 )
 
 
