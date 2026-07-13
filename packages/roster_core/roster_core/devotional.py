@@ -17,6 +17,8 @@ class DevotionalEntry:
     id: str
     reference_zh: str
     reference_en: str
+    translation_zh: str
+    translation_en: str
     scripture_zh: str
     scripture_en: str
     reflection_zh: dict[str, str]
@@ -31,6 +33,8 @@ class DevotionalEntry:
             id=raw["id"],
             reference_zh=raw["source"]["reference"]["zh"],
             reference_en=raw["source"]["reference"]["en"],
+            translation_zh=raw["source"]["translation"]["zh"],
+            translation_en=raw["source"]["translation"]["en"],
             scripture_zh=raw["scripture"]["zh"],
             scripture_en=raw["scripture"]["en"],
             reflection_zh=dict(raw["reflection"]["zh"]),
@@ -45,6 +49,8 @@ class DevotionalEntry:
             "id": self.id,
             "referenceZh": self.reference_zh,
             "referenceEn": self.reference_en,
+            "translationZh": self.translation_zh,
+            "translationEn": self.translation_en,
             "scriptureZh": self.scripture_zh,
             "scriptureEn": self.scripture_en,
             "reflectionZh": self.reflection_zh,

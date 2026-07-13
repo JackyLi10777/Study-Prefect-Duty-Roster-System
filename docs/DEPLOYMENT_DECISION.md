@@ -21,7 +21,8 @@ NiceGUI、SQLite、PDF、備份及日誌仍在 Windows 主機，origin 只監聽
 
 ## 身份及 session 決定
 
-- Access policy 只接受精確列明的管理員電郵；目前交接身份為 `s10777@syss.edu.hk`。
+- Access policy、Worker 有限管理員名單及 WARP 維護後備 policy 目前共同接受三個精確身份：`s10777@syss.edu.hk`、`lichuangjie0208@gmail.com`、`lichuangjie0208@outlook.com`。只在其中一層出現並不足以取得編輯權。
+- Cloudflare IdP 的 **Restrict to account members** 已停用，讓上述個人電郵可用自己的 Cloudflare 帳戶完成身份驗證；真正授權邊界仍是 Access exact-email policy。個人電郵不需加入 Cloudflare Dashboard 成員名單，也不因此取得 DNS、Worker、Access 或帳單管理權。
 - 密碼、MFA、帳戶復原及身份生命週期由 Cloudflare Identity Provider／Cloudflare Access 管理。
 - 系統不建立密碼資料表、Argon2／bcrypt hash、共用 OP 密碼或忘記密碼頁；SQLite、KV、備份及 Git 均不保存管理員密碼。
 - Access session 為 **8 小時**。完成工作必須按「登出」；離任交接以更新 exact-email policy 完成，不交接前任密碼。

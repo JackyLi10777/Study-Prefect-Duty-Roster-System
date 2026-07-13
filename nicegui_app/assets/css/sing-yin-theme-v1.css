@@ -254,6 +254,8 @@ body .q-btn.sy-button-attention { color: var(--sy-role-attention) !important; }
 .sy-daily-start-kicker { color: #755A2B; font-size: 12px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
 .sy-daily-start-verse { max-width: 1050px; font-family: "Noto Serif TC", "Songti TC", "PMingLiU", serif; font-size: clamp(20px, 2.2vw, 27px); line-height: 1.5; letter-spacing: .012em; color: #213047; }
 .sy-daily-start-reference { color: #685735; font-size: 13px; font-weight: 650; }
+.sy-verse-translation { margin-top: 2px; color: rgba(79,68,47,.76); font-size: 11px; font-weight: 560; line-height: 1.45; letter-spacing: .01em; }
+.sy-verse-translation--chapel { color: rgba(242,211,147,.78); }
 .sy-daily-start-refresh { color: #755A2B !important; }
 .sy-devotional-controls { flex: 0 0 auto; }
 .sy-devotional-tone-select { width: min(100%, 240px); }
@@ -268,6 +270,7 @@ body .q-btn.sy-button-attention { color: var(--sy-role-attention) !important; }
 .body--dark .sy-daily-start-icon, .body--dark .sy-daily-start-kicker, .body--dark .sy-daily-start-refresh { color: #F2D393 !important; }
 .body--dark .sy-daily-start-verse, .body--dark .sy-daily-start-reflection .q-item { color: #FFF9EB; }
 .body--dark .sy-daily-start-reference { color: rgba(255,242,207,.82); }
+.body--dark .sy-verse-translation { color: rgba(255,242,207,.68); }
 .body--dark .sy-devotional-tone-select .q-field__control { background: rgba(10,22,38,.42); }
 .body--dark .sy-devotional-tone-select .q-field__native, .body--dark .sy-devotional-tone-select .q-field__label, .body--dark .sy-devotional-tone-select .q-field__append { color: #F2D393 !important; }
 .body--dark .sy-daily-start-reflection { border-top-color: rgba(242,211,147,.34); }

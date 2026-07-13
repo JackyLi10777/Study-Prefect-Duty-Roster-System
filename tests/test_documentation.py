@@ -143,7 +143,8 @@ def test_windows_and_cloudflare_automation_is_fail_closed_and_documented() -> No
         "before-remote",
     ):
         assert required_text in activate
-    assert "MaximumRedirection 0" in verify
+    assert "$request.AllowAutoRedirect = $false" in verify
+    assert '"https://$PublicHostname/auth/login"' in verify
     assert "cloudflareaccess\\.com" in verify
     common = (PROJECT_ROOT / "scripts" / "windows_host_common.ps1").read_text(encoding="utf-8")
     assert "ProgramFiles(x86)" in common

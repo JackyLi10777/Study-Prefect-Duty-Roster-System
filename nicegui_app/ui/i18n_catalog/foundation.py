@@ -27,6 +27,8 @@ MESSAGES = {'app_name': {'zh-HK': '聖言中學導學風紀值班系統', 'en': 
  'light_mode': {'zh-HK': '切換淺色模式', 'en': 'Switch to light mode'},
  'dark_mode': {'zh-HK': '切換深色模式', 'en': 'Switch to dark mode'},
  'daily_verse': {'zh-HK': '今日經文', 'en': 'Daily verse'},
+ 'verse_translation_label': {'zh-HK': '繁中：和合本修訂版 2010（神版） · 英文：New King James Version（NKJV）',
+                             'en': 'Chinese: Revised Chinese Union Version 2010 (Shen Edition) · English: New King James Version (NKJV)'},
  'devotional_tone_label': {'zh-HK': '經文方向', 'en': 'Devotional direction'},
  'devotional_tone_auto': {'zh-HK': '按外觀建議', 'en': 'Appearance-based suggestion'},
  'devotional_tone_guidance': {'zh-HK': '清晰指引', 'en': 'Clear guidance'},

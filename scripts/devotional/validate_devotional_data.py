@@ -103,35 +103,34 @@ def validate(seed_path: Path, legacy_path: Path, expanded_path: Path | None = DE
         if has_placeholder_corruption(reflection):
             issue("error", "placeholder-corruption", entry_id, "Reflection contains literal placeholder question marks.")
 
+        scripture = entry.get("scripture", {})
+        for lang in ("zh", "en"):
+            if not str(scripture.get(lang, "")).strip():
+                issue("error", "missing-scripture", f"{entry_id}.scripture.{lang}", "Scripture text is blank.")
+
         if quality.get("status") != "polished":
             issue("warning", "not-polished", entry_id, "Entry is not yet marked polished.")
 
         translation = source.get("translation", {})
         if translation.get("en") != "NKJV":
-            issue("warning", "unexpected-en-translation", entry_id, "English translation metadata is not NKJV.")
+            issue("error", "unexpected-en-translation", entry_id, "English translation metadata must be NKJV.")
         if translation.get("zh") != "RCUV 2010":
-            issue("warning", "unexpected-zh-translation", entry_id, "Chinese translation metadata is not RCUV 2010.")
+            issue("error", "unexpected-zh-translation", entry_id, "Chinese translation metadata must be RCUV 2010.")
 
         verification = entry.get("translationVerification", {})
         for lang in ("zh", "en"):
             status = verification.get(lang, {}).get("status")
-            if status not in {
-                "pending-authorized-source",
-                "verified-exact",
-                "verified-minor-punctuation-difference",
-                "needs-correction",
-                "source-unavailable",
-            }:
+            if status != "verified-exact":
                 issue(
-                    "warning",
-                    "missing-translation-verification-status",
+                    "error",
+                    "translation-not-verified-exact",
                     f"{entry_id}.translationVerification.{lang}",
-                    "Translation verification status is missing or not recognized.",
+                    "Release scripture must be verified-exact for the configured translation.",
                 )
 
         scripture_en = str(entry.get("scripture", {}).get("en", ""))
         if "(NKJV)" not in scripture_en:
-            issue("warning", "missing-nkjv-marker", entry_id, "English scripture text does not include the local NKJV marker.")
+            issue("error", "missing-nkjv-marker", entry_id, "English scripture text must include the local NKJV marker.")
 
     uncovered_legacy = sorted(legacy_ids - covered_legacy_ids)
     if uncovered_legacy:

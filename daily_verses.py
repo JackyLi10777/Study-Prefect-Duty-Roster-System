@@ -1,3 +1,8 @@
+# LEGACY SOURCE TRACE — NOT USED BY THE APPLICATION.
+# 正式執行及發布唯一來源：data/devotional/daily-verses.seed.json
+# Runtime code must load the canonical 121-entry seed through roster_core.
+# This historical 500-entry file is retained only for provenance and must not
+# be imported, edited as production data, or treated as the current audit result.
 # =============================================================================
 # 聖言中學 首席導學風紀 每日靈修經文庫 (Sing Yin Study Prefect Daily Verse Bank)
 # =============================================================================

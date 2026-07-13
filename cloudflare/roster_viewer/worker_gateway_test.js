@@ -1,10 +1,13 @@
 import worker, {
+  LANDING_DEVOTIONALS,
   accessTokenFromRequest,
   authenticatedProxyRequestAllowed,
+  normalizeAccessConfiguration,
   proxyToRosterOrigin,
   stripAccessCredentials,
   validateAccessJwt,
 } from './worker.js';
+import devotionalSeed from '../../data/devotional/daily-verses.seed.json' with { type: 'json' };
 
 function assert(condition, message = 'assertion failed') {
   if (!condition) throw new Error(message);
@@ -65,15 +68,21 @@ function accessEnvironment(teamName) {
   return {
     ACCESS_TEAM_DOMAIN: `https://${teamName}.cloudflareaccess.com`,
     ACCESS_AUD: 'expected-access-audience',
-    ADMIN_EMAIL: 'admin@syss.edu.hk',
+    ADMIN_IDENTITY_ALLOWLIST: {
+      emails: [
+        'admin@syss.edu.hk',
+        'operator.backup@gmail.com',
+        'operator.backup@outlook.com',
+      ],
+    },
   };
 }
 
-function validClaims(env, nowSeconds) {
+function validClaims(env, nowSeconds, email = env.ADMIN_IDENTITY_ALLOWLIST.emails[0]) {
   return {
     iss: env.ACCESS_TEAM_DOMAIN,
     aud: [env.ACCESS_AUD],
-    email: env.ADMIN_EMAIL,
+    email,
     nbf: nowSeconds - 30,
     exp: nowSeconds + 300,
   };
@@ -90,22 +99,76 @@ function jwksFetcher(jwk, captured = {}) {
   };
 }
 
-Deno.test('validates a Cloudflare Access RS256 JWT against the trusted team JWK', async () => {
+Deno.test('landing devotionals stay exact to the canonical RCUV 2010 and NKJV seed', () => {
+  const canonicalById = new Map(devotionalSeed.entries.map(entry => [entry.id, entry]));
+  assertEquals(LANDING_DEVOTIONALS.length, 5);
+  for (const landing of LANDING_DEVOTIONALS) {
+    const canonical = canonicalById.get(landing.id);
+    assert(canonical, `missing canonical devotional ${landing.id}`);
+    assertEquals(canonical.source.translation.zh, 'RCUV 2010');
+    assertEquals(canonical.source.translation.en, 'NKJV');
+    assertEquals(canonical.translationVerification.zh.status, 'verified-exact');
+    assertEquals(canonical.translationVerification.en.status, 'verified-exact');
+    assertEquals(landing.referenceZh, canonical.source.reference.zh);
+    assertEquals(landing.referenceEn, canonical.source.reference.en);
+    assertEquals(landing.scriptureZh, canonical.scripture.zh);
+    assertEquals(landing.scriptureEn, canonical.scripture.en.replace(/ \(NKJV\)$/, ''));
+    assertEquals(landing.reflectionZh, canonical.reflection.zh.title);
+    assertEquals(landing.reflectionEn, canonical.reflection.en.title);
+    assertEquals(landing.prayerZh, canonical.reflection.zh.prayer);
+    assertEquals(landing.prayerEn, canonical.reflection.en.prayer);
+  }
+});
+
+Deno.test('validates every exact administrator email against the trusted team JWK', async () => {
   const env = accessEnvironment('sing-yin-runtime-valid');
   const nowSeconds = 2_000_000_000;
   const fixture = await signingFixture();
-  const token = await signedJwt(validClaims(env, nowSeconds));
   const captured = {};
 
-  const result = await validateAccessJwt(token, env, {
-    nowMillis: nowSeconds * 1_000,
-    fetcher: jwksFetcher(fixture.jwk, captured),
-  });
+  for (const email of env.ADMIN_IDENTITY_ALLOWLIST.emails) {
+    const token = await signedJwt(validClaims(env, nowSeconds, email));
+    const result = await validateAccessJwt(token, env, {
+      nowMillis: nowSeconds * 1_000,
+      fetcher: jwksFetcher(fixture.jwk, captured),
+    });
+    assertEquals(result.payload.email, email);
+  }
 
-  assertEquals(result.payload.email, env.ADMIN_EMAIL);
   assertEquals(captured.url, `${env.ACCESS_TEAM_DOMAIN}/cdn-cgi/access/certs`);
   assertEquals(captured.init.cache, 'no-store');
   assertEquals(captured.init.redirect, 'error');
+});
+
+Deno.test('normalizes a bounded exact-email allowlist and rejects malformed configuration', async () => {
+  const env = accessEnvironment('sing-yin-runtime-config');
+  const configuration = normalizeAccessConfiguration(env);
+  assertEquals(configuration.adminEmails.join(','), env.ADMIN_IDENTITY_ALLOWLIST.emails.join(','));
+
+  for (const invalidAdminEmails of [
+    [],
+    ['admin@syss.edu.hk', 'admin@syss.edu.hk'],
+    [' Admin@syss.edu.hk'],
+    ['Admin@syss.edu.hk'],
+    ['not-an-email'],
+    'admin@syss.edu.hk',
+  ]) {
+    await expectRejected(() => Promise.resolve(normalizeAccessConfiguration({
+      ...env,
+      ADMIN_IDENTITY_ALLOWLIST: { emails: invalidAdminEmails },
+    })));
+  }
+  for (const invalidAllowlist of [
+    null,
+    [],
+    {},
+    { emails: env.ADMIN_IDENTITY_ALLOWLIST.emails, extra: true },
+  ]) {
+    await expectRejected(() => Promise.resolve(normalizeAccessConfiguration({
+      ...env,
+      ADMIN_IDENTITY_ALLOWLIST: invalidAllowlist,
+    })));
+  }
 });
 
 Deno.test('fails closed for wrong algorithm, issuer, audience, time window, email, kid, or signature', async () => {
@@ -265,8 +328,75 @@ Deno.test('serves guest landing, redirects guest app paths, and exposes capabili
   assertEquals(health.status, 200);
   assert(body.includes('private-origin-proxy'));
   assert(!body.includes(env.ACCESS_TEAM_DOMAIN));
-  assert(!body.includes(env.ADMIN_EMAIL));
+  for (const email of env.ADMIN_IDENTITY_ALLOWLIST.emails) assert(!body.includes(email));
   assert(!body.includes(env.ACCESS_AUD));
+});
+
+Deno.test('serves the guest tour at the edge without Access, KV, VPC, or write methods', async () => {
+  const env = accessEnvironment('sing-yin-runtime-guest-tour');
+  const context = { waitUntil() { throw new Error('guest tour must not schedule storage work'); } };
+  let originCalls = 0;
+  let certificateCalls = 0;
+  env.ROSTER_ORIGIN = {
+    fetch() {
+      originCalls += 1;
+      throw new Error('guest tour reached the private origin');
+    },
+  };
+  env.ROSTER_SHARES = {
+    get() { throw new Error('guest tour read KV'); },
+    put() { throw new Error('guest tour wrote KV'); },
+    delete() { throw new Error('guest tour deleted KV'); },
+    list() { throw new Error('guest tour listed KV'); },
+  };
+
+  const fixture = await signingFixture();
+  const nowSeconds = Math.floor(Date.now() / 1_000);
+  const token = await signedJwt(validClaims(env, nowSeconds));
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = () => {
+    certificateCalls += 1;
+    return new Response(JSON.stringify({ keys: [fixture.jwk] }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+  try {
+    for (const headers of [
+      {},
+      { 'X-Sing-Yin-Access-Email': 'spoofed@syss.edu.hk', 'X-Sing-Yin-Access-Role': 'admin' },
+      { 'Cf-Access-Jwt-Assertion': token, Cookie: `CF_Authorization=${token}` },
+    ]) {
+      const guest = await worker.fetch(new Request('https://gateway.example/guest', { headers }), env, context);
+      assertEquals(guest.status, 200);
+      const html = await guest.text();
+      assert(html.includes('訪客瀏覽模式'));
+      assert(html.includes('The guest tour contains no roster data.'));
+      for (const forbidden of ['<form', '<input', '<textarea', '<select', 'contenteditable']) {
+        assert(!html.toLowerCase().includes(forbidden));
+      }
+    }
+
+    const head = await worker.fetch(new Request('https://gateway.example/guest', { method: 'HEAD' }), env, context);
+    assertEquals(head.status, 200);
+    assertEquals(await head.text(), '');
+
+    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']) {
+      const denied = await worker.fetch(new Request('https://gateway.example/guest', { method }), env, context);
+      assertEquals(denied.status, 405, `${method} must be rejected at the public boundary`);
+      assertEquals(denied.headers.get('Allow'), 'GET, HEAD');
+    }
+
+    for (const path of ['/_nicegui_ws', '/rosters', '/adjustments', '/settings', '/access-control']) {
+      const denied = await worker.fetch(new Request(`https://gateway.example${path}`), env, context);
+      assertEquals(denied.status, 302, `${path} must not reach the private origin without Access`);
+      assertEquals(denied.headers.get('Location'), 'https://gateway.example/');
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assertEquals(originCalls, 0, 'guest requests must never reach the private NiceGUI origin');
+  assertEquals(certificateCalls, 0, 'guest requests must not invoke Access validation or external fetch');
 });
 
 Deno.test('cancels an oversized chunked public viewer request before buffering the full body', async () => {
@@ -329,7 +459,7 @@ Deno.test('authenticated app routes return the VPC response directly without clo
     assertEquals(result, sentinel, 'the 101/WebSocket carrier must not pass through secured()');
     assertEquals(originRequest.url, 'http://127.0.0.1:8080/op');
     assertEquals(originRequest.headers.get('Cookie'), 'session=nicegui-session');
-    assertEquals(originRequest.headers.get('X-Sing-Yin-Access-Email'), env.ADMIN_EMAIL);
+    assertEquals(originRequest.headers.get('X-Sing-Yin-Access-Email'), env.ADMIN_IDENTITY_ALLOWLIST.emails[0]);
 
     const websocketResult = await worker.fetch(new Request('https://gateway.example/_nicegui_ws', {
       headers: {

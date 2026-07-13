@@ -8,7 +8,16 @@
   "vars": {
     "ACCESS_TEAM_DOMAIN": "https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
     "ACCESS_AUD": "REPLACE_WITH_ACCESS_APPLICATION_AUD",
-    "ADMIN_EMAIL": "REPLACE_WITH_EXACT_ADMIN_EMAIL"
+    "ADMIN_IDENTITY_ALLOWLIST": {
+      "emails": [
+        "REPLACE_WITH_EXACT_ADMIN_EMAIL"
+      ]
+    }
+  },
+  "secrets": {
+    "required": [
+      "ADMIN_BEARER_TOKEN"
+    ]
   },
   "kv_namespaces": [
     {

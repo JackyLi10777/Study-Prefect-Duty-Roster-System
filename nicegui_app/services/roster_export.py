@@ -367,8 +367,8 @@ def _weekly_label(language: ExportLanguage) -> str:
 
 def _schedule_footer(language: ExportLanguage) -> str:
     if language == "zh":
-        return "非以役人，乃役於人（馬可福音 10:45）｜ 發送前請核對中文姓名；此頁可供校內受控分享。"
-    return "Not to be served, but to serve (Mark 10:45) | Chinese names are authoritative; share only through approved school channels."
+        return "服務精神：非以役人，乃役於人｜發送前請核對中文姓名；此頁可供校內受控分享。"
+    return "Service principle: Not to be served, but to serve | Chinese names are authoritative; share only through approved school channels."
 
 
 def _audit_title(language: ExportLanguage) -> str:

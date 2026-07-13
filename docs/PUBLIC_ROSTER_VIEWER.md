@@ -4,23 +4,48 @@
 
 **`https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`**
 
-這個網址同時服務兩種使用情境：
+這個網址提供四種清楚分開、權限不互相提升的狀態：
 
-- **訪客／Guest：** 不登入，只能查看我明確發布的唯讀值班表。
-- **管理員／Administrator：** 在同一網站按「管理員登入」，經 Cloudflare Access 驗證後，原網站會解鎖完整 NiceGUI 編輯工作台。
+- **`/` 入口／Entrance：** 未有有效 Access session 時，Worker 原生首頁說明系統用途、訪客導覽、分享連結與管理員登入；它本身不是值班表或 NiceGUI。管理員驗證成功後會返回同一個 `/`，由 Worker 代理 NiceGUI。
+- **`/guest` 訪客導覽／Guest tour：** Worker 原生靜態唯讀導覽，只接受 `GET`／`HEAD`。它不連接 VPC、NiceGUI、SQLite 或 KV，也不包含任何值班表資料。
+- **`/view#…` 已發布週表／Published roster：** 只有取得完整分享連結的人才可在瀏覽器取得 KV 中的加密快照，並用只留在 `#fragment` 的鑰匙於裝置內解密；它永遠唯讀。
+- **管理員工作台／Administrator workbench：** 在同一入口按「管理員登入」，通過 Cloudflare Access 及 Worker JWT 驗證後，請求才會沿 VPC 到達 Windows 主機的 NiceGUI 與 SQLite。
 
 我不會另外派發「管理員網站」。`/auth/*`、VPC Service、私人 WARP 地址及 localhost 都是系統內部或維護路徑，不是給一般使用者記住的第二個網站。
 
-## 一個網址，兩種權限
+## 一個網域，四種安全狀態
 
-| 狀態 | 畫面 | 可以做甚麼 | 不可以做甚麼 |
+| 狀態／State | 所屬層／Owner | 資料與方法／Data and methods | 權限結果／Permission result |
 |---|---|---|---|
-| 未登入訪客 | 同一 workers.dev 網站的唯讀頁面 | 查看指定的已發布週表、日期、崗位、當值時間及中文姓名 | 生成、修改、發布、請假調整、公平、審計、備份、還原或設定 |
-| 已驗證管理員 | 同一 workers.dev 網站內的完整 NiceGUI 工作台 | 完整 OP 工作流，包括生成、發布、PDF、請假調整、公平、備份及還原 | 不能繞過排班政策、交易、確認或審計 |
+| 公開 `/` 入口／Public entrance | Cloudflare Worker | 沒有有效 Access session 時的靜態入口；不讀取值班資料／Static entrance without a valid Access session; no roster read | 只提供安全下一步，不提供編輯／Guidance only; no editing |
+| `/guest` 訪客導覽／Guest tour | Cloudflare Worker | 只限 `GET`／`HEAD`；無 VPC、NiceGUI、SQLite、KV／`GET`／`HEAD` only; no VPC, NiceGUI, SQLite or KV | 只看系統流程及保障說明；沒有值班表／Read-only system tour; no roster data |
+| `/view#…` 已發布週表／Published roster | Worker + KV + browser Web Crypto | KV 只保存密文及最少 metadata；鑰匙留在 fragment／KV holds ciphertext and minimum metadata; key stays in the fragment | 只看獲分享的週表；不能編輯或升級權限／View the shared roster only; cannot edit or elevate |
+| 已驗證管理員／Verified administrator | Access + Worker + VPC + NiceGUI | JWT 逐請求驗證後，才在同一 `/` 代理至 NiceGUI／JWT is verified before NiceGUI is proxied at the same `/` | 完整 OP 工作流，仍受政策、交易、確認及審計限制／Full OP workflow under policy, transaction, confirmation and audit controls |
 
-一般人只會接觸主網址或同一 host 下的完整週表連結，例如 `/view#…`。管理員按頁面的登入按鈕即可；不需要抄寫內部路徑。
+**English contract:** without a valid Access session, `/` is the public Worker entrance. `/guest` is a Worker-native, data-free tour that accepts only `GET` and `HEAD`. `/view#…` is an encrypted, expiring and revocable published-roster snapshot backed by KV and decrypted in the browser. Only a verified administrator reaches NiceGUI through Access, Worker JWT validation and VPC, after which the same `/` serves the proxied workbench. NiceGUI has no guest account, guest role or guest RBAC.
 
-## 訪客怎樣查看
+一般人只需接觸主網址、同站 `/guest` 導覽，或首席導學風紀發出的完整 `/view#…` 週表連結。管理員按頁面的登入按鈕即可；不需要抄寫內部路徑。這些是同一網域下的不同安全狀態，不是不同網站。
+
+## 入口頁怎樣使用
+
+入口頁把「這個系統為何存在」與「我現在可以做甚麼」分開：寬螢幕以約 58/42 的敘事／登入面板排列，窄螢幕則依同一閱讀次序直向排列。訪客可選擇 **以訪客身份瀏覽／Continue as guest** 前往 `/guest`，獲准管理員則使用唯一清楚的 **管理員登入／Admin login** 按鈕。入口不是值班表本身，也不會把訪客誤導到編輯畫面。
+
+- `/guest` 只展示每週流程、可公開說明的公平與可靠性原則，以及哪些操作受保護。它不顯示姓名、崗位、請假、公平帳本、備份、日誌或設定。
+- `/guest` 的 HTML、CSS 及 JavaScript 由 Worker 直接提供；路由只接受 `GET` 及 `HEAD`，其他方法回傳 `405 Method Not Allowed`。
+- 顯示 `/guest` 不會建立 VPC 連線，不會啟動或查詢 NiceGUI，不會讀寫 SQLite，也不會讀、寫、列出或刪除 KV。
+
+- 外觀可以選擇跟隨系統、淺色或深色；選擇只保存在該瀏覽器，不影響身份或資料。
+- **分享網站入口 / Share this site** 只分享 canonical 首頁網址，方便別人認識系統或前往管理員登入；它不會包含任何值班表、查看密鑰或編輯權限。要讓別人看某一週值班表，仍須在發布後另行發出該週的完整 `/view#…` 連結。
+- 頁面在 320 px 寬度、鍵盤操作及 Windows 高對比／forced-colours 模式仍保留完整閱讀與焦點次序。
+- 入場及按鈕回應都是一次性的短動效；系統要求 reduced motion 時會直接呈現完成狀態，沒有循環、背景漂浮或自動輪播。
+
+入口也設有一段簡短的「今日經文與靈修提醒」，讓我在開始每週工作前先停下來反思。繁體中文固定使用 **和合本修訂版 2010（神版）**，英文固定使用 **New King James Version（NKJV）**。初次顯示會按日期穩定選取本機精選內容；只有我或訪客按「換一節經文 / Show another verse」才會更換，不會自動播放，也不會向外部經文服務傳送請求。精選池逐項與正式 `data/devotional/daily-verses.seed.json` 核對，錯誤譯本標籤、缺漏經文或未完成精確核實會阻擋發布。
+
+以上只是呈現與閱讀改良：訪客唯讀、管理員登入、JWT 驗證、VPC 代理及 `/view#…` 加密快照的安全邊界完全不變。
+
+## 訪客怎樣查看指定週表
+
+`/guest` 是不含資料的系統導覽；它不能代替某一週的分享連結。要查看指定週表，必須依以下流程使用完整 `/view#…` 連結：
 
 1. 我在管理員工作台完成「生成草稿 → 核對 → 發布」。草稿不能公開查看。
 2. 如需要指定週表連結，我在已發布週表建立 Viewer 連結，並把完整 `https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/view#…` 發給收件者。
@@ -36,9 +61,17 @@
 1. 開啟同一個主網址。
 2. 按 **管理員登入 / Admin login**。
 3. 網站會在內部進入 `/auth/login`，Cloudflare Access 隨即接管驗證；使用者毋須自行輸入或收藏這條路徑。
-4. 以 Access policy 內精確列明的管理員電郵 `s10777@syss.edu.hk` 完成 Cloudflare 帳戶登入及 MFA。
+4. 以 Access policy 與 Worker 有限管理員名單內共同精確列明的其中一個管理員電郵完成 Cloudflare 帳戶登入及 MFA；只在其中一邊出現並不足以取得編輯權。
 5. 驗證成功後回到同一網站；Worker 核對 Access JWT，然後透過 Workers VPC 連到 Windows 主機的 NiceGUI。
 6. 完成工作後按 **登出 / Log out**。網站會前往 Cloudflare Access logout，清除 Access session，再返回訪客唯讀狀態。
+
+目前獲准的精確電郵是：
+
+- `s10777@syss.edu.hk`
+- `lichuangjie0208@gmail.com`
+- `lichuangjie0208@outlook.com`
+
+Cloudflare IdP 已容許非 Dashboard member 的 Cloudflare 帳戶完成身份驗證，因此兩個個人電郵不需加入本專案的 Cloudflare Dashboard。是否可進入管理工作台，仍只由 Access exact-email policy 與 Worker 有限名單共同決定；這不會授予 Cloudflare 設定或帳單權限。
 
 Cloudflare Access session 設為 **8 小時**。這是最長的登入時段，不代表瀏覽器可以無限期保持編輯權。離開共用裝置前必須主動登出；管理員電郵或 Cloudflare 帳戶被撤銷後，不能再登入。
 
@@ -48,7 +81,7 @@ Cloudflare Access session 設為 **8 小時**。這是最長的登入時段，�
 
 - 管理員身份、密碼、MFA、登入復原及 Access session 由 Cloudflare Identity Provider／Cloudflare Access 管理。
 - NiceGUI、SQLite、KV、備份及 Git 都不保存管理員密碼。
-- 下一任交接時，更新 Access exact-email policy；不要把前任密碼交給下一任，也不要在 `.env` 建立人手密碼。
+- 下一任交接時，同步更新 Access exact-email policy 與 Worker 的 bounded exact-email allowlist；不要把前任密碼交給下一任，也不要在 `.env` 建立人手密碼。
 
 ## Worker 為何仍要驗證 JWT
 
@@ -58,7 +91,7 @@ Access 已是第一道身份閘門，但 Worker 仍作第二層防護。每次�
 - JWT 是否由 `https://restless-hall-73b2.cloudflareaccess.com` 的有效簽署金鑰簽發；
 - `aud` 是否等於本系統 Access application 的 audience；
 - `iss`、`exp` 及管理員電郵是否符合設定；
-- 身份是否仍是 Access exact-email policy 允許的管理員。
+- 身份是否同時仍在 Access exact-email policy 及 Worker 的有限精確電郵 allowlist 內。
 
 Worker 不相信瀏覽器自行送來的 `role=admin`、email 或自訂 header。驗證完成後，它才建立受控的內部身份資訊；送往 NiceGUI 前會移除 Access JWT 及 `CF_Authorization` cookie。Access application ID 可記錄為非秘密部署識別值 `25072aab-0e60-4787-8ec7-48029e448e8e`，但 audience、session cookie、JWT、token 及 secret 不可寫入公開文件或截圖。
 
@@ -72,19 +105,20 @@ Worker 不相信瀏覽器自行送來的 `role=admin`、email 或自訂 header�
 ## 管理員流量怎樣到達 NiceGUI
 
 ```text
-同一 workers.dev 網站
-    ├─ 未登入 → Worker 訪客唯讀頁
-    └─ 已登入 → Worker 驗證 Access JWT
-                       ↓
-              ROSTER_ORIGIN VPC binding
-                       ↓
-        VPC Service：sing-yin-roster-nicegui
-        Service ID：019f5b30-d07c-7a63-a273-6b2ccb7318f8
-                       ↓
-        Tunnel：ba6b6426-d012-4ecb-bafa-cbdbf2659731
-                       ↓
-        Windows 主機 localhost:8080 NiceGUI
+同一 workers.dev 網域
+    ├─ /                  → Worker 原生入口（無值班資料）
+    ├─ /guest             → Worker 靜態導覽（只限 GET／HEAD；無 KV／VPC）
+    ├─ /view#…            → Worker + KV 密文 → 瀏覽器本機解密（永遠唯讀）
+    └─ 管理員登入         → Cloudflare Access → Worker 驗證 JWT
+                                                   ↓
+                                          ROSTER_ORIGIN VPC binding
+                                                   ↓
+                                VPC Service：sing-yin-roster-nicegui
+                                                   ↓
+                                Tunnel → Windows localhost:8080 NiceGUI／SQLite
 ```
+
+NiceGUI 只存在於最後一條管理員路徑。系統沒有 NiceGUI 訪客帳戶、訪客角色或訪客 RBAC；未登入訪客不能到達 NiceGUI origin。`/view#…` 使用 KV 並不會開啟 VPC，而 `/guest` 連 KV 也不會接觸。
 
 Workers VPC 代理必須原樣返回 VPC `fetch()` 的 Response，保留 HTTP Upgrade／WebSocket 物件；不能只複製 status、headers 及 body 後重建 Response。這讓 NiceGUI 的即時 Socket.IO 連線可穿過同一網站，而不需要開放家中路由器連接埠或把 origin 綁到 `0.0.0.0`。
 
@@ -127,7 +161,7 @@ KV 不保存解密 key、完整查看連結、請假、班別、角色、公平�
 | 情況 | 安全處理 |
 |---|---|
 | 訪客連結不完整、到期或撤銷 | 向首席導學風紀索取同一主網站的新完整連結 |
-| 管理員登入不斷返回訪客頁 | 核對 Access exact-email policy、Cloudflare 帳戶及 8h session；不要建立本機共用密碼 |
+| 管理員登入不斷返回訪客頁 | 核對 Access exact-email policy、Worker bounded allowlist、Cloudflare 帳戶及 8h session；不要建立本機共用密碼 |
 | 已登入但編輯工作台未載入 | 核對 Worker JWT、VPC binding、Tunnel、主機 `/healthz` 及 WebSocket；必要時用維護後備入口 |
 | 登出後仍見管理控制 | 關閉頁面並核對 Access logout/session；在修正前停止遠端編輯 |
 | 誤發 Viewer 連結 | 撤銷該 KV 記錄，約一分鐘後核對，再建立新連結 |
@@ -137,7 +171,9 @@ KV 不保存解密 key、完整查看連結、請假、班別、角色、公平�
 
 - [ ] 下一任只需記住及分享 canonical workers.dev 主網址。
 - [ ] 未登入訪客可查看指定已發布週表，但沒有任何編輯入口。
-- [ ] 「管理員登入」由 Cloudflare Access 接管，只有 exact-email 管理員通過；系統沒有自製密碼。
+- [ ] 入口的系統／淺色／深色、320 px、鍵盤、forced-colours 及 reduced-motion 狀態都可閱讀；經文只在使用者要求時刷新。
+- [ ] 全站直接經文已核對為繁中 RCUV 2010（神版）與英文 NKJV；服務精神文字沒有冒充逐字經文。
+- [ ] 「管理員登入」由 Cloudflare Access 接管，只有同時在 Access policy 與 Worker bounded exact-email allowlist 的管理員通過；系統沒有自製密碼。
 - [ ] 登入後同一網站顯示完整 NiceGUI；8 小時到期或主動登出後回復訪客權限。
 - [ ] Worker 拒絕缺少、過期、錯誤 audience／issuer 或非管理員 email 的 JWT。
 - [ ] `/auth/*` 只供內部流程，不在群組、README 快速入口或書籤中派發。

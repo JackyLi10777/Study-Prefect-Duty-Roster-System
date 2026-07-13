@@ -13,6 +13,18 @@ def test_foundational_entry_is_mark_10_and_special_use() -> None:
     assert "dashboard-hero" in verse.special_use
     assert "roster-generation" in verse.special_use
     assert "非以役人，乃役於人" in verse.reflection_zh["title"]
+    assert verse.translation_zh == "RCUV 2010"
+    assert verse.translation_en == "NKJV"
+
+
+def test_every_release_devotional_uses_the_verified_required_translations() -> None:
+    entries = load_devotional_seed()
+
+    assert len(entries) == 121
+    assert all(entry.translation_zh == "RCUV 2010" for entry in entries)
+    assert all(entry.translation_en == "NKJV" for entry in entries)
+    assert all(entry.scripture_zh.strip() for entry in entries)
+    assert all(entry.scripture_en.strip().endswith("(NKJV)") for entry in entries)
 
 
 def test_daily_selection_is_stable_epoch_modulo() -> None:

@@ -61,3 +61,30 @@ def test_live_viewer_verifier_uses_only_a_temporary_fictional_workflow() -> None
     assert "CANONICAL_DATABASE_PATH" not in source
     assert "receipt.share_url" in source
     assert "service.revoke_share" in source
+
+
+def test_live_viewer_verifier_covers_the_release_entry_contract() -> None:
+    source = (PROJECT_ROOT / "scripts" / "verify_public_roster_viewer.py").read_text(encoding="utf-8")
+
+    for helper in (
+        "_assert_page_identity",
+        "_assert_guest_landing",
+        "_assert_theme_cycle",
+        "_assert_manual_verse_refresh",
+        "_assert_reduced_motion",
+        "_assert_read_only_roster",
+        "_assert_document_fits_viewport",
+    ):
+        assert helper in source
+    assert 'THEME_STATES: Final = ("system", "light", "dark")' in source
+    assert 'viewport={"width": 1440, "height": 1000}' in source
+    assert 'viewport={"width": 390, "height": 844}' in source
+    assert 'viewport={"width": 320, "height": 760}' in source
+    assert 'reduced_motion="reduce"' in source
+    assert 'page.locator("#refreshLandingVerse").click()' in source
+    assert 'page.locator("#shareSite")' in source
+    assert '"不包含任何值班表"' in source
+    assert 'login_box["height"] < 48' in source
+    assert "document.documentElement.scrollWidth" in source
+    assert "editable_controls.count() != 0" in source
+    assert "console_errors or page_errors" in source

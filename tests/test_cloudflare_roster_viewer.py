@@ -12,19 +12,28 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 VIEWER_ROOT = PROJECT_ROOT / "cloudflare" / "roster_viewer"
 WORKER_SOURCE = VIEWER_ROOT / "worker.js"
+EXPECTED_ADMIN_EMAILS = [
+    "s10777@syss.edu.hk",
+    "lichuangjie0208@gmail.com",
+    "lichuangjie0208@outlook.com",
+]
 
 
 def _source() -> str:
     return WORKER_SOURCE.read_text(encoding="utf-8")
 
 
-def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
-    configuration = json.loads(
+def _jsonc(path: Path) -> dict[str, object]:
+    return json.loads(
         "\n".join(
-            line for line in (VIEWER_ROOT / "wrangler.template.jsonc").read_text(encoding="utf-8").splitlines()
+            line for line in path.read_text(encoding="utf-8").splitlines()
             if not line.lstrip().startswith("//")
         )
     )
+
+
+def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
+    configuration = _jsonc(VIEWER_ROOT / "wrangler.template.jsonc")
 
     assert configuration["workers_dev"] is True
     assert configuration["preview_urls"] is False
@@ -32,8 +41,9 @@ def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
     assert configuration["vars"] == {
         "ACCESS_TEAM_DOMAIN": "https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
         "ACCESS_AUD": "REPLACE_WITH_ACCESS_APPLICATION_AUD",
-        "ADMIN_EMAIL": "REPLACE_WITH_EXACT_ADMIN_EMAIL",
+        "ADMIN_IDENTITY_ALLOWLIST": {"emails": ["REPLACE_WITH_EXACT_ADMIN_EMAIL"]},
     }
+    assert configuration["secrets"] == {"required": ["ADMIN_BEARER_TOKEN"]}
     assert configuration["kv_namespaces"] == [
         {
             "binding": "ROSTER_SHARES",
@@ -46,6 +56,17 @@ def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
             "service_id": "REPLACE_WITH_VPC_SERVICE_ID",
         }
     ]
+
+
+def test_production_gateway_uses_a_bounded_exact_admin_email_allowlist() -> None:
+    configuration = _jsonc(VIEWER_ROOT / "wrangler.jsonc")
+    variables = configuration["vars"]
+
+    assert variables["ADMIN_IDENTITY_ALLOWLIST"] == {"emails": EXPECTED_ADMIN_EMAILS}
+    assert "ADMIN_EMAIL" not in variables
+    assert "ADMIN_EMAILS" not in variables
+    assert len(set(variables["ADMIN_IDENTITY_ALLOWLIST"]["emails"])) == len(EXPECTED_ADMIN_EMAILS)
+    assert configuration["secrets"] == {"required": ["ADMIN_BEARER_TOKEN"]}
 
 
 def test_viewer_requires_fragment_key_and_client_side_aes_gcm() -> None:
@@ -136,6 +157,7 @@ def test_viewer_has_minimal_public_routes_and_bearer_admin_routes() -> None:
     source = _source()
 
     assert "path === '/healthz'" in source
+    assert "path === '/guest'" in source
     assert "path === '/api/view'" in source
     assert "path === '/api/admin/shares'" in source
     assert "request.method === 'POST'" in source
@@ -156,11 +178,87 @@ def test_viewer_is_bilingual_responsive_theme_aware_printable_and_reduced_motion
     assert "休室 · Closed" in source
     assert "待補 · Vacancy" in source
     assert "@media (prefers-color-scheme: dark)" in source
+    assert ':root[data-theme="dark"]' in source
+    assert "THEME_STATES = ['system', 'light', 'dark']" in source
+    assert "timeZone: 'Asia/Hong_Kong'" in source
+    assert "--focus-ring:" in source
+    assert "outline: 3px solid var(--focus-ring)" in source
+    assert ".translation-label { color: var(--portal-story-muted); font-size: 0.72rem" in source
+    assert ".theme-toggle span { white-space: nowrap; }" in source
     assert "@media (prefers-reduced-motion: reduce)" in source
     assert "@media (max-width: 700px)" in source
     assert "@media print" in source
     assert "@page { size: A4 landscape" in source
     assert "textContent" in source
+
+
+def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contract() -> None:
+    source = _source()
+
+    for required in (
+        'href="#mainContent"',
+        'id="adminLogin"',
+        'id="guestEnter"',
+        'href="/guest"',
+        'id="shareSite"',
+        'href="/auth/login"',
+        "一個入口，清晰完成每週值班工作",
+        "收到值班表分享連結？",
+        "分享網站入口",
+        "只會分享首頁，不包含任何值班表或查看密鑰",
+        "分享連結只供查看",
+        "今日經文與靈修提醒",
+        "和合本修訂版 2010（神版） · NKJV",
+        "LANDING_DEVOTIONALS",
+        "refreshLandingVerse?.addEventListener",
+        "@media (forced-colors: active)",
+    ):
+        assert required in source
+
+    assert "setInterval(" not in source
+    assert "requestAnimationFrame(" not in source
+    assert "https://fonts." not in source
+    assert "new URL('/', window.location.origin).toString()" in source
+    assert "navigator.share" in source
+    assert "navigator.clipboard?.writeText" in source
+
+
+def test_guest_tour_is_edge_only_read_only_and_fail_closed() -> None:
+    source = _source()
+    guest_section = re.search(
+        r'<section id="guestPortalState".*?</section>',
+        source,
+        flags=re.DOTALL,
+    )
+    assert guest_section is not None
+    guest_html = guest_section.group(0)
+
+    for forbidden in (
+        "<form",
+        "<input",
+        "<textarea",
+        "<select",
+        "contenteditable",
+        "ROSTER_ORIGIN",
+        "ROSTER_SHARES",
+    ):
+        assert forbidden not in guest_html
+
+    assert "訪客瀏覽模式" in guest_html
+    assert "目前權限：只供查看" in guest_html
+    assert "The guest tour contains no roster data." in guest_html
+    assert "if (!['GET', 'HEAD'].includes(request.method))" in source
+    assert "window.location.pathname === '/guest'" in source
+
+    guest_boot = re.search(
+        r"if \(window\.location\.pathname === '/guest'\) \{(?P<body>.*?)\n\s*\}",
+        source,
+        flags=re.DOTALL,
+    )
+    assert guest_boot is not None
+    assert "showOnly(guestPortalState)" in guest_boot.group("body")
+    assert "return;" in guest_boot.group("body")
+    assert "fetch(" not in guest_boot.group("body")
 
 
 def test_viewer_rejects_oversized_or_long_lived_share_payloads() -> None:
@@ -187,7 +285,7 @@ def test_unified_gateway_validates_access_and_keeps_public_viewer_routes_separat
         "audiences.includes(configuration.audience)",
         "nowSeconds >= payload.exp",
         "nowSeconds < payload.nbf",
-        "payload.email !== configuration.adminEmail",
+        "configuration.adminEmails.includes(payload.email.toLowerCase())",
         "/cdn-cgi/access/certs",
         "/cdn-cgi/access/logout",
         "path === '/auth/login'",
@@ -198,7 +296,7 @@ def test_unified_gateway_validates_access_and_keeps_public_viewer_routes_separat
         assert required in source
 
     assert "管理員登入" in source
-    assert "Admin login" in source
+    assert "Administrator sign in" in source
     assert "Access-Control-Allow-Origin" not in source
 
 

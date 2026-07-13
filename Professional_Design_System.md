@@ -60,7 +60,7 @@ This is the complete standing direction for future iterations. It replaces any t
 6. **Calm feedback, not theatre:** hover, press, one-time state changes, a short dialog settle, optional quiet success sound, honest progress phases, and operator-started quiet music are allowed. No looping animation, parallax, autoplay audio/video, fake loading percentage, forced ambient sound, bouncing icon, or motion that impedes reading.
 7. **Accessibility and language are non-negotiable:** Traditional Chinese is primary, English is complete, names stay Chinese in every locale, keyboard focus is clear, touch targets are practical, reduced motion is honoured, and light/dark themes meet contrast requirements for text, icons, charts, tables, and system states.
 8. **Reliability is part of the experience:** a polished surface cannot disguise a failed save. UI changes must preserve policy ownership, persistent `history_weight`, publish-once ledger posting, leave-adjustment auditability, checksum-verified snapshots, managed restore, local-first privacy, and clear error/empty/confirmation states.
-9. **Privacy before distribution:** no roster data is sent to generated imagery, media tools, analytics or a public NiceGUI origin. The only distributed surface is one canonical workers.dev site. Guests remain read-only; after explicit confirmation, same-host share links receive AES-GCM ciphertext for a minimum-field published-roster snapshot, keep no decryption key, expire or can be revoked. The editor appears on the same host only after Cloudflare Access and Worker-side JWT verification.
+9. **Privacy before distribution:** no roster data is sent to generated imagery, media tools, analytics or a public NiceGUI origin. The only distributed surface is one canonical workers.dev hostname. Its unauthenticated `/` entrance and `/guest` tour are Worker-native and data-free; `/guest` accepts only `GET`／`HEAD` and touches neither VPC, NiceGUI, SQLite nor KV. After explicit confirmation, same-host `/view#…` links receive AES-GCM ciphertext for a minimum-field published-roster snapshot, keep no decryption key, expire or can be revoked. The editor appears on the same `/` only after Cloudflare Access and Worker-side JWT verification. NiceGUI never presents an anonymous guest role.
 
 ### Design languages that intentionally differ
 
@@ -296,6 +296,7 @@ Recent roster history (quiet, secondary)
 The Daily Verse is a distinct component, not a recoloured dashboard card.
 
 - **Structure:** small book mark; bilingual devotional label; Scripture in serif reading type; reference; quiet refresh control; one progressively disclosed reflection. The main dashboard version remains compact; the `/devotional` page may use the fuller reading chamber.
+- **Canonical translations:** every maintained direct Scripture quotation uses Traditional Chinese RCUV 2010（神版）and English NKJV, with the versions named explicitly near the reading. Content comes from `data/devotional/daily-verses.seed.json`; release validation fails when either translation metadata, Scripture text, or exact-verification state is absent or wrong. A service-principle paraphrase must be labelled as a principle and must not masquerade as a verbatim verse.
 - **Materials:** deep indigo surface, warm parchment text, restrained gold rule, and a local right-weighted contextual image. In light mode it uses `devotional-sacred-light-v1.webp`; dark mode uses `devotional-sacred-dark-v1.webp`.
 - **Reading protection:** a solid left-to-right veil protects text; the image is never the sole contrast mechanism. Scripture may never sit on a busy crop, an animated layer, or a translucent glass panel.
 - **Motion:** no automatic movement. Hover may deepen elevation only; verse refresh is an explicit action and changes content without an ornamental page transition.
@@ -333,18 +334,30 @@ The roster grid is an operational document, not a dashboard chart. Preserve the 
 
 Import forms, report metrics, contribution tables, trend data and download notices are sensitive operational surfaces. They remain image-free in both themes. Hierarchy comes from spacing, type, neutral surfaces and semantic status tone—not illustration, background texture, pointer light or decorative motion.
 
-### 6.3.1 Canonical-site access control and guest viewer
+### 6.3.1 Canonical-site access control and four security states
 
-The canonical workers.dev root is one branded access surface with two clearly explained states, not two websites or an account dashboard:
+The canonical workers.dev hostname is one branded system with four clearly distinguished states, not four websites or an account dashboard:
 
-- **Guest · View only** is the default. It uses a quiet neutral document surface, states that no installation or sign-in is needed, and visibly names the operations the guest cannot reach.
-- **Administrator · Can edit** is reached through one unmistakable **Admin login** action on the same page. Cloudflare Access owns account sign-in and MFA; successful verification returns to the same host and reveals the full NiceGUI workbench. A persistent **Log out** action explains that it returns the browser to guest mode.
+- **Public entrance `/` · Choose the safe next step:** without a valid Access session, this is a Worker-native editorial landing page with no roster data. It distinguishes system introduction, the data-free guest tour, the separate published-roster link and the one administrator action.
+- **Guest tour `/guest` · Understand, do not operate:** a Worker-native static guide which accepts only `GET`／`HEAD`. It may explain the weekly sequence, fairness principles and protected operations, but cannot show roster records or contact VPC, NiceGUI, SQLite or KV.
+- **Published roster `/view#…` · View one issued snapshot:** a calm, factual roster surface for locally decrypted ciphertext. It must look read-only, show expiry／latest-link guidance and never imply that the Viewer token opens editing.
+- **Administrator · Operate after verification:** reached through one unmistakable solid **Admin login** action on the entrance. Cloudflare Access owns account sign-in and MFA; successful verification returns to the same `/` and only then reveals the NiceGUI workbench through VPC. A persistent **Log out** action explains that it returns the browser to the public entrance.
 
-The interface must not ask the operator to remember `/auth/*`, localhost, WARP, VPC, or a second administrator URL. The Access session consequence—eight hours maximum, log out on a shared device—uses plain bilingual copy. Password reset, password strength, hash, and local account controls do not appear because the application has no custom password database.
+NiceGUI has no guest account, guest navigation shell or guest RBAC. The public entrance and tour must never imitate disabled NiceGUI controls; their visual language explains the boundary instead of suggesting that editing is present but greyed out.
+
+On a wide screen, the root uses a 58/42 editorial composition: the larger story column explains purpose, the three-stage weekly sequence and a compact sacred reading; the smaller access column explains the current permission state, the one next action and three bounded trust facts. It is not a marketing carousel. Below 700 px the same semantic blocks stack in reading order, and 320 px remains the minimum browser evidence width without horizontal overflow. The root offers **system / light / dark** appearance states; forced-colour mode retains native borders and text, and keyboard users receive a skip link plus visible focus.
+
+The root devotional is a compact invitation to pause before work, not an advertisement or an auto-rotating banner. It uses a small local selection contract-tested against the canonical devotional corpus, displays RCUV 2010（神版）and NKJV together with a short reflection, chooses a Hong Kong date-stable initial item, and changes only when the visitor activates **Show another verse**. It does not autoplay, fetch Scripture from an external API, infer a different translation from browser language, or create a dependency on NiceGUI／SQLite／KV.
+
+The access panel may include one quiet **Share this site** secondary action. It always shares the canonical root URL and must state that no roster, fragment key or edit permission is included. It is visually and semantically separate from the post-publication `/view#…` roster-link workflow, so the operator cannot mistake “share the product entrance” for “share this week’s duty roster”.
+
+The interface must not ask the operator to remember `/auth/*`, localhost, WARP, VPC, or a second administrator URL. The Access session consequence—eight hours maximum, log out on a shared device—uses plain bilingual copy. Password reset, password strength, hash, and local account controls do not appear because the application has no custom password database. The Access policy and Worker configuration share a bounded exact-email administrator allowlist; the UI never turns an unverified email, query string, cookie flag or Viewer token into edit permission.
 
 Active viewing links remain text-first, image-free records. Week, expiry, and a short link identifier form the scan order; revoke is a danger action with an explicit consequence and the approximate one-minute edge-propagation note. A link receipt is persistent until the operator closes it, uses a readonly text field, and places **Copy link** above secondary dismissal. It must say that the key is displayed once and that the complete link grants viewing until expiry or revocation.
 
-The guest Worker viewer is a quiet document surface, not a miniature dashboard. It uses Traditional Chinese first, complete English context, Chinese names, system fonts, a restrained teal published marker, and a high-contrast roster matrix. It supports light/dark preference, phone horizontal table access with a visible focus boundary, A4-landscape print, reduced motion, and honest loading/error states. It contains no atmosphere image, school-data background, animation showcase, music, third-party font, analytics, advertising, or edit affordance. Admin login is an identity transition, not a suggestion that the visible roster itself is editable.
+The `/view#…` Worker viewer remains a quiet document surface, not a miniature dashboard or a continuation of the editorial root. It uses Traditional Chinese first, complete English context, Chinese names, system fonts, a restrained teal published marker, and a high-contrast roster matrix. It supports light/dark preference, phone horizontal table access with a visible focus boundary, A4-landscape print, reduced motion, and honest loading/error states. It contains no atmosphere image, school-data background, animation showcase, music, third-party font, analytics, advertising, or edit affordance. Admin login is an identity transition, not a suggestion that the visible roster itself is editable.
+
+Root presentation motion is restricted to one initial 380–440 ms transform/opacity settle, a small press/arrow response on the real login action, and a brief manual verse replacement. Nothing loops, floats continuously, parallax-scrolls or auto-advances. Under `prefers-reduced-motion`, all content is immediately visible and state changes remain understandable without movement. These visual rules do not alter Access destinations, JWT verification, the VPC proxy, Viewer encryption, or the no-guest-editor boundary.
 
 Viewer success is measured by one question: can a recipient open the complete link and understand the current published duty in one scan? Decorative richness must never compete with names, dates, posts, duty times, expiry, or the read-only consequence.
 
@@ -499,6 +512,7 @@ Motion is feedback, not decoration. The visual style remains calm when motion is
 Every visual refinement must meet all gates:
 
 - Traditional Chinese and English labels are complete; Chinese prefect names remain Chinese.
+- Direct Scripture quotations identify and use Traditional Chinese RCUV 2010（神版）and English NKJV; the canonical validator must block a release on wrong metadata or unverified/missing text.
 - Light and dark mode preserve text, border, chart, and status contrast.
 - Keyboard focus is visible on buttons, fields, tabs, and links.
 - Critical actions have 44px or larger practical targets on touch devices.
@@ -581,6 +595,7 @@ This file is the design source of truth for the active NiceGUI application. When
 - introduces a visual treatment that could be mistaken for liquid glass or an Apple asset;
 - changes a print/PDF hierarchy.
 - changes guest versus authenticated-administrator meaning, Access login/logout, Worker JWT trust, the public-share data whitelist, link lifecycle, or the no-guest-editor rule.
+- changes the canonical Scripture source, RCUV 2010（神版）／NKJV contract, verification status, or the distinction between a direct quotation and a labelled service principle.
 
 Before implementation, the maintainer should record: the operator moment, the affected component, the intended evidence, and the screenshots/tests required. This keeps visual quality maintainable for future 首席導學風紀 instead of relying on personal taste.
 

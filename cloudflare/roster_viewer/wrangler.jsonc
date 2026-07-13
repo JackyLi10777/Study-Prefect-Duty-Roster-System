@@ -8,7 +8,18 @@
   "vars": {
     "ACCESS_TEAM_DOMAIN": "https://restless-hall-73b2.cloudflareaccess.com",
     "ACCESS_AUD": "18a2123a23669de9c23ef344b45dfd87c6323e610e77376b5e21f75edb1bed7b",
-    "ADMIN_EMAIL": "s10777@syss.edu.hk"
+    "ADMIN_IDENTITY_ALLOWLIST": {
+      "emails": [
+        "s10777@syss.edu.hk",
+        "lichuangjie0208@gmail.com",
+        "lichuangjie0208@outlook.com"
+      ]
+    }
+  },
+  "secrets": {
+    "required": [
+      "ADMIN_BEARER_TOKEN"
+    ]
   },
   "kv_namespaces": [
     {

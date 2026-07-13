@@ -28,12 +28,21 @@ NiceGUI owns the rendering and navigation. The read model introduces no schema, 
 ## Canonical entry and local maintenance start
 
 The only URL distributed to users is
-`https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`. An
-unauthenticated request stays in the Worker guest surface. **Admin login** enters
-the internal Access flow; after Cloudflare Access authentication, the Worker
-verifies the Access JWT and proxies the same-host administrator session through
-Workers VPC and the named Tunnel to NiceGUI. Localhost and enrolled private WARP
-are maintenance fallbacks, not additional normal entry points.
+`https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`. The same
+hostname has four security states with different owning layers:
+
+| State | Owning layer | Backend contact |
+|---|---|---|
+| Public `/` entrance without a valid Access session | Worker-native static landing | No roster data, VPC, NiceGUI, SQLite or KV |
+| `/guest` tour | Worker-native static read-only guide; route allows only `GET`／`HEAD` | No VPC, NiceGUI, SQLite or KV |
+| `/view#…` published roster | Worker viewer shell + KV ciphertext + browser Web Crypto | KV only; no VPC, NiceGUI or SQLite, and the fragment key never reaches the Worker |
+| Verified administrator workbench at the same `/` | Cloudflare Access → Worker JWT verification → Workers VPC → named Tunnel → NiceGUI | Full NiceGUI and local workflow／SQLite access under existing application controls |
+
+NiceGUI does not own or implement a guest account, guest role or guest RBAC. An
+unauthenticated request remains in Worker-owned surfaces, while **Admin login**
+enters the internal Access flow and only a verified administrator reaches the
+loopback origin. Localhost and enrolled private WARP are maintenance fallbacks,
+not additional normal entry points.
 
 For host maintenance:
 
@@ -94,9 +103,11 @@ The report deliberately calls service time **scheduled allocation**. `DUTY_SERVI
 
 Each share receives a random identifier, independent 256-bit AES-GCM key and 96-bit nonce. The service encrypts the JSON snapshot locally with authenticated additional data bound to that identifier. `CloudflarePublicRosterShareGateway` sends only schema version, share identifier, week, created/expiry times, nonce and ciphertext to the authenticated Worker admin endpoint. The resulting URL places the key after `#`, so it is absent from the initial HTTP request and Worker/KV record. The complete link is displayed once and is not persisted in SQLite, backups, audit, or logs.
 
-`cloudflare/roster_viewer/worker.js` is the canonical outer front door. `ROSTER_SHARES` KV owns `share:<id>` ciphertext records with absolute expiration and minimum metadata. Anonymous `/api/view` accepts only one validated share identifier; browser Web Crypto decrypts locally, and DOM rendering uses `textContent`. The guest branch has no route to SQLite, PDF, directory, leave, fairness, audit, backup, restore, settings, or music. Its HTML/CSS/JS are same-origin and dependency-free, with no-store, CSP, no-referrer, noindex, frame denial and permissions restrictions.
+`cloudflare/roster_viewer/worker.js` is the canonical outer front door. Its public `/` route serves the entrance shell without roster data. Its `/guest` route serves the static system tour for `GET` and `HEAD` only; the client returns before any share request, and contract tests fail if that route schedules storage work, touches `ROSTER_SHARES`, reaches `ROSTER_ORIGIN`, or accepts a write／preflight method. This tour therefore has no route to VPC, NiceGUI, SQLite, PDF, directory, leave, fairness, audit, backup, restore, settings, music or KV.
 
-The same Worker also owns the administrator transition. **Admin login** uses internal `/auth` and `/auth/*` destinations protected by Cloudflare Access; the cookie is hostname-wide, so the user returns to the same root URL rather than a separate management prefix. For every proxied NiceGUI request, the Worker independently verifies JWT signature, `aud`, `iss`, `exp`, and the exact administrator email, strips all browser-supplied `Cf-Access-*`/identity headers and the Access cookie, then injects only an identity derived from the verified claim before proxying through `ROSTER_ORIGIN`. Passwords, MFA, and account recovery remain with the Cloudflare identity provider; there is no application password table or hash.
+`/view#…` is a separate public capability path, not the `/guest` tour. `ROSTER_SHARES` KV owns `share:<id>` ciphertext records with absolute expiration and minimum metadata. Anonymous `/api/view` accepts only one validated share identifier; browser Web Crypto decrypts locally, and DOM rendering uses `textContent`. This path uses KV but still has no VPC, NiceGUI or SQLite access. The public HTML/CSS/JS are same-origin and dependency-free, with no-store, CSP, no-referrer, noindex, frame denial and permissions restrictions.
+
+The same Worker also owns the administrator transition. **Admin login** uses internal `/auth` and `/auth/*` destinations protected by Cloudflare Access; the cookie is hostname-wide, so the user returns to the same root URL rather than a separate management prefix. For every proxied NiceGUI request, the Worker independently verifies JWT signature, `aud`, `iss`, `exp`, and the exact administrator email, strips all browser-supplied `Cf-Access-*`／identity headers and the Access cookie, then injects only an identity derived from the verified claim before proxying through `ROSTER_ORIGIN`. NiceGUI is therefore an authenticated administrator origin, not the component that downgrades anonymous users into a guest role. Passwords, MFA, and account recovery remain with the Cloudflare identity provider; there is no application password table or hash.
 
 The in-app access-control surface creates same-host links for published rosters and lists/revokes active KV records. Revocation deletes ciphertext; KV propagation may take about one minute. A share token never promotes a guest to OP. The canonical root remains public; only `/auth` and `/auth/*` invoke Access, so a guest is not forced to authenticate merely to view. After login, the Worker verifies the hostname-wide cookie before every NiceGUI proxy request.
 
@@ -155,7 +166,7 @@ The UI does not append `WorkflowError` text to notifications. It displays the bi
 | Presentation | `nicegui_app/ui/page_routes/`, `page_shared.py`, `i18n_catalog/`, `theme_markup.py`, `assets/css/sing-yin-theme-v1.css`, `motion.py` | NiceGUI routes, shared components, domain-grouped bilingual copy, versioned cacheable design-system CSS, local motion bootstrap, page shell, anonymous platform summary, and non-sensitive architecture explanation |
 | Import adapters | `nicegui_app/utils/prefect_import.py`, `prefect_file_import.py`, `nicegui_app/services/prefect_import_assistant.py` | Bounded local normalization and optional heading-only mapping suggestions; no policy or direct persistence writes |
 | Export | `nicegui_app/services/roster_export.py`, `summary_report_export.py` | Local-only bilingual roster／report PDF and report-JSON composition; no persistence or upload writes |
-| Public share adapter | `nicegui_app/services/public_roster_share.py`, `nicegui_app/ui/access_control.py` | Explicit minimum-data snapshot, local AES-GCM encryption, one-time same-host link receipt, active-link listing and revocation; guest mode never edits |
+| Public share adapter | `nicegui_app/services/public_roster_share.py`, `nicegui_app/ui/access_control.py` | Explicit minimum-data snapshot, local AES-GCM encryption, one-time same-host link receipt, active-link listing and revocation; Worker-owned public paths never become NiceGUI editing sessions |
 | Canonical edge runtime | `cloudflare/roster_viewer/worker.js`, Cloudflare Access, Workers VPC, KV `ROSTER_SHARES` | Serve guest read-only assets and ciphertext; verify administrator Access JWT; proxy only verified management sessions through VPC／Tunnel to loopback NiceGUI |
 | Observability | `nicegui_app/observability.py` | Payload-free local operation evidence and rotating support logs |
 | Optional media | `nicegui_app/services/online_music.py`, `music_library.py`, `youtube_audio_import.py`, `nicegui_app/ui/music.py` | Public YouTube playlist validation/search, visible playback, appearance-recommended local playlists, and bounded local audio import; strictly separate from roster persistence |
@@ -204,7 +215,7 @@ Roster identity is also a workflow read contract, not an empty-table convention.
 
 Network exposure is fail-closed. NiceGUI always binds to loopback; neither the canonical Worker nor `server` mode means the app listens on `0.0.0.0`. The canonical edge topology is Worker → remote VPC Service `sing-yin-roster-nicegui` (`localhost:8080`) → named Tunnel `sing-yin-roster-windows-private` → Windows loopback origin. The Worker binding is `ROSTER_ORIGIN`; proxy code must return the VPC `fetch()` Response directly so the WebSocket handle survives.
 
-The Access application destinations are exactly `/auth` and `/auth/*`, not the entire Worker or a management prefix. It disables the path-only cookie, uses an exact-email allow policy, an eight-hour session, and Cloudflare IdP/MFA. Worker-side JWT validation uses the Cloudflare team JWK and checks signature, audience, issuer, expiry, and administrator email before every NiceGUI VPC request. Access audience, JWT, cookies, Tunnel token, and management secrets never enter source, logs, backups, screenshots, or documentation. Local/private-WARP mode remains available as a maintenance fallback and must continue to fail for WARP-off or unapproved devices.
+The Access application destinations are exactly `/auth` and `/auth/*`, not the entire Worker or a management prefix; the public root therefore remains a guest-readable HTTP 200 surface until the user deliberately starts `/auth/login`. It disables the path-only cookie and uses an eight-hour session. The Access policy, Worker bounded allowlist, and WARP maintenance policy currently share exactly `s10777@syss.edu.hk`, `lichuangjie0208@gmail.com`, and `lichuangjie0208@outlook.com`. Cloudflare IdP is not restricted to account members, so the two personal addresses can authenticate through their own Cloudflare accounts without Cloudflare Dashboard membership; the exact-email Access policy remains the authorization boundary and grants no Cloudflare control-plane permission. Worker-side JWT validation then uses the Cloudflare team JWK and checks signature, audience, issuer, expiry, and allowlist membership before every NiceGUI VPC request. Access audience, JWT, cookies, Tunnel token, and management secrets never enter source, logs, backups, screenshots, or documentation. Local/private-WARP mode remains available as a maintenance fallback and must continue to fail for WARP-off or unapproved devices.
 
 Live transport evidence is recorded separately from final acceptance: a temporary Worker bound to VPC Service `019f5b30-d07c-7a63-a273-6b2ccb7318f8` received `/healthz` HTTP 200 and an Engine.IO open packet from `/_nicegui_ws/socket.io/?EIO=4&transport=websocket`. The probe script and workers.dev subdomain were deleted. This proves HTTP Upgrade/WebSocket transport, not the complete Access login/logout, long reconnect, upload, PDF, or fictional write workflow; those remain browser acceptance gates.
 

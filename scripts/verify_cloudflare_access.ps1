@@ -14,6 +14,30 @@ $TeamDomain = $TeamDomain.Trim().ToLowerInvariant().TrimEnd('.')
 if ($PublicHostname -notmatch '^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])$') { throw "Invalid public hostname." }
 if ($TeamDomain -notmatch '^[a-z0-9.-]+\.cloudflareaccess\.com$') { throw "Invalid Cloudflare Access team domain." }
 
+function Invoke-SingYinNoRedirectRequest {
+    param([Parameter(Mandatory = $true)][string]$Uri)
+
+    $request = [System.Net.HttpWebRequest]::Create($Uri)
+    $request.Method = "GET"
+    $request.AllowAutoRedirect = $false
+    $request.Timeout = 20000
+    $response = $null
+    try {
+        $response = [System.Net.HttpWebResponse]$request.GetResponse()
+    } catch [System.Net.WebException] {
+        $response = [System.Net.HttpWebResponse]$_.Exception.Response
+        if (-not $response) { throw }
+    }
+    try {
+        return [pscustomobject]@{
+            StatusCode = [int]$response.StatusCode
+            Location = [string]$response.Headers["Location"]
+        }
+    } finally {
+        if ($response) { $response.Dispose() }
+    }
+}
+
 try {
     $local = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/healthz" -TimeoutSec 10
 } catch {
@@ -23,27 +47,29 @@ if ($local.status -ne "ok" -or $local.database -ne "ok") {
     throw "Local health is degraded (status=$($local.status), database=$($local.database))."
 }
 
-$location = ""
-$statusCode = 0
 try {
-    $response = Invoke-WebRequest -Uri "https://$PublicHostname/" -MaximumRedirection 0 -TimeoutSec 20 -UseBasicParsing
-    $statusCode = [int]$response.StatusCode
-    $location = [string]$response.Headers.Location
+    $publicProbe = Invoke-SingYinNoRedirectRequest -Uri "https://$PublicHostname/"
 } catch {
-    if ($_.Exception.Response) {
-        $statusCode = [int]$_.Exception.Response.StatusCode
-        $location = [string]$_.Exception.Response.Headers.Location
-    } else {
-        throw "Public hostname could not be reached: $($_.Exception.Message)"
-    }
+    throw "Public hostname could not be reached: $($_.Exception.Message)"
 }
 
-$accessRedirect = $statusCode -in @(301, 302, 303, 307, 308) -and (
-    Test-SingYinAccessRedirect -Location $location -TeamDomain $TeamDomain
+if ($publicProbe.StatusCode -ne 200) {
+    throw "Public guest page is unavailable (HTTP $($publicProbe.StatusCode))."
+}
+
+try {
+    $authProbe = Invoke-SingYinNoRedirectRequest -Uri "https://$PublicHostname/auth/login"
+} catch {
+    throw "Administrator login route could not be reached: $($_.Exception.Message)"
+}
+
+$accessRedirect = $authProbe.StatusCode -in @(301, 302, 303, 307, 308) -and (
+    Test-SingYinAccessRedirect -Location $authProbe.Location -TeamDomain $TeamDomain
 )
 if (-not $accessRedirect) {
-    throw "FAIL CLOSED: unauthenticated traffic was not redirected to Cloudflare Access (HTTP $statusCode). Stop the cloudflared service."
+    throw "FAIL CLOSED: the administrator login route was not redirected to Cloudflare Access (HTTP $($authProbe.StatusCode)). Stop the cloudflared service."
 }
 
-Write-Host "Cloudflare Access gate verified: unauthenticated traffic is redirected before it reaches NiceGUI." -ForegroundColor Green
-Write-Host "Redirect host: $(([Uri]$location).Host)"
+Write-Host "Public guest page verified: HTTP 200." -ForegroundColor Green
+Write-Host "Cloudflare Access gate verified: the administrator login route redirects before it reaches NiceGUI." -ForegroundColor Green
+Write-Host "Redirect host: $(([Uri]$authProbe.Location).Host)"

@@ -34,6 +34,7 @@ def dashboard_page() -> None:
                     ui.label(t("daily_verse")).classes("sy-daily-start-kicker")
                     ui.label(scripture).classes("sy-daily-start-verse")
                     ui.label(reference).classes("sy-daily-start-reference")
+                    ui.label(t("verse_translation_label")).classes("sy-verse-translation")
                 with ui.column().classes("sy-devotional-controls gap-2 items-end"):
                     tone_preference = str(app.storage.user.get("devotional_tone", "auto"))
                     ui.button(t("refresh_verse"), icon="refresh", on_click=_refresh_dashboard_verse).props("flat").classes("sy-daily-start-refresh")
@@ -170,6 +171,7 @@ def devotional_page() -> None:
             ui.label(t("daily_verse")).classes("sy-kicker")
             ui.label(scripture).classes("sy-verse")
             ui.label(reference).classes("text-base font-medium text-[#F2D393]")
+            ui.label(t("verse_translation_label")).classes("sy-verse-translation sy-verse-translation--chapel")
             ui.separator().classes("my-7 bg-[#F2D393]/50")
             ui.label(reflection.get("title", "")).classes("text-xl font-semibold")
             ui.label(reflection.get("body", "")).classes("sy-reflection")

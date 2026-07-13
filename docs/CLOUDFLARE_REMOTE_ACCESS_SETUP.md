@@ -26,6 +26,14 @@
 4. 成功後回到原網站，完整 NiceGUI 工作台才會解鎖。
 5. Access session 最長 **8 小時**。完成工作後按 **「登出 / Log out」**；共用裝置不可只關閉分頁。
 
+目前獲准使用管理工作台的精確電郵是：
+
+- `s10777@syss.edu.hk`
+- `lichuangjie0208@gmail.com`
+- `lichuangjie0208@outlook.com`
+
+每個地址必須以相同拼寫出現在 Access Allow policy 及 Worker 有限名單；只在其中一邊出現並不足以取得編輯權。三個身份只獲本系統的管理存取權，並不因此成為 Cloudflare Dashboard 成員。
+
 系統沒有自製密碼資料表、密碼 hash、共用 OP 密碼或忘記密碼頁。密碼、MFA 及帳戶復原由 Cloudflare Identity Provider／Cloudflare Access 管理。`/auth/*` 是按鈕背後的內部登入路徑，不應派發或另作書籤。
 
 ---
@@ -57,7 +65,8 @@
 | Canonical Worker | `sing-yin-roster-viewer.singyin-study-prefect.workers.dev` | 根路徑未登入回傳 200 |
 | Cloudflare team domain | `restless-hall-73b2.cloudflareaccess.com` | 已建立 |
 | Self-hosted Access app ID | `25072aab-0e60-4787-8ec7-48029e448e8e` | 已建立；只保護管理流程 |
-| Access identity | exact email `s10777@syss.edu.hk` | 目前管理員交接身份 |
+| Access identities | exact email：`s10777@syss.edu.hk`、`lichuangjie0208@gmail.com`、`lichuangjie0208@outlook.com` | Access policy、Worker 名單及 WARP 後備 policy 已同步 |
+| Cloudflare IdP `Restrict to account members` | 已停用 | 允許上述個人電郵以自己的 Cloudflare 帳戶驗證；授權邊界仍是 exact-email policy |
 | Access session | 8 小時 | 已選定 |
 | `/auth/*` 未登入測試 | HTTP 302 至 Access | 已確認 |
 | Named Tunnel | `sing-yin-roster-windows-private` | 已建立 |
@@ -70,6 +79,8 @@
 
 Access audience、JWT、cookie、Tunnel token、Worker admin token、API token 及其他 secret 不列在本表，也不可寫入 Git、文件、截圖、電郵、PDF、備份或日誌。
 
+正式及範本 Wrangler 設定只宣告 `ADMIN_BEARER_TOKEN` 是必需 secret，絕不保存其值；新環境若未先在 Cloudflare secret store 設定，`wrangler deploy`／`wrangler versions upload` 會在部署前停止。
+
 ---
 
 ## 4. Cloudflare Dashboard：核對 Access，而不是另建密碼
@@ -79,11 +90,13 @@ Access audience、JWT、cookie、Tunnel token、Worker admin token、API token �
 1. 登入 Cloudflare Dashboard，進入 **Zero Trust → Access → Applications**。
 2. 開啟現有 self-hosted 應用，核對 App ID 與上表相符。
 3. 核對應用的 destinations 只有 `/auth` 及 `/auth/*`，**不可保護整個 Worker root**；否則訪客一開主網址也會被迫登入。登入後，hostname-wide Access cookie 讓 Worker 在同一網址的每一個 NiceGUI 請求再次驗證身份。
-4. 核對 Allow policy 使用精確管理員電郵，而不是 `Everyone`、任何 email domain 或公開一次性 PIN。
-5. 核對 session duration 是 **8 hours**。
-6. 核對 cookie／導向設定：HTTP-only、停用 path-only cookie、auto redirect to identity；不要把應用放進公開 launcher。Worker 對所有寫入及 WebSocket 另作同源檢查。
-7. 以未登入 InPrivate 視窗測試：主網址應回到訪客頁；按「管理員登入」才出現 Access 驗證。
-8. 交接時先加入下一任 exact email，以虛構資料完成驗收，再移除前任 exact email；不要交換前任帳戶密碼。
+4. 核對 Allow policy 只列出本手冊第 3 節的三個精確管理員電郵，而不是 `Everyone`、任何 email domain 或公開一次性 PIN。
+5. 在 **Zero Trust → Settings → Authentication → Login methods** 核對 Cloudflare IdP 的 **Restrict to account members** 已停用。這只讓外部 Cloudflare 帳戶有機會完成身份驗證；真正授權仍由第 4 步的 exact-email policy 決定。
+6. `lichuangjie0208@gmail.com` 及 `lichuangjie0208@outlook.com` 只需使用各自精確電郵的 Cloudflare 帳戶，不需加入本專案的 Cloudflare Dashboard 成員名單，也不會取得 DNS、Worker、Access 或帳單管理權。
+7. 核對 session duration 是 **8 hours**。
+8. 核對 cookie／導向設定：HTTP-only、停用 path-only cookie、auto redirect to identity；不要把應用放進公開 launcher。Worker 對所有寫入及 WebSocket 另作同源檢查。
+9. 以未登入 InPrivate 視窗測試：主網址應回到訪客頁；按「管理員登入」才出現 Access 驗證。
+10. 交接時先在 Access、Worker 及 WARP 後備 policy 加入下一任 exact email，以虛構資料完成驗收，再移除前任 exact email；不要交換前任帳戶密碼。
 
 若管理員忘記密碼或 MFA 失效，使用 Cloudflare 帳戶／身份提供者的正式復原流程。不要在 `.env`、SQLite 或網頁加入臨時共用密碼。
 
@@ -158,7 +171,7 @@ return env.ROSTER_ORIGIN.fetch(request);
 
 ### B. 管理員登入及登出
 
-- [ ] 按「管理員登入」才進入 Access；exact-email 管理員完成帳戶登入及 MFA 後返回原 host。
+- [ ] 按「管理員登入」才進入 Access；三個已列明 exact-email 身份分別完成帳戶登入及 MFA 後返回原 host。
 - [ ] 非 policy 電郵不能登入。
 - [ ] 登入後完整 NiceGUI 可載入，繁中／英文及深淺模式正常。
 - [ ] 主動「登出」後回到訪客權限；舊管理分頁重新整理亦不能繼續編輯。
@@ -231,15 +244,15 @@ powershell -ExecutionPolicy Bypass -File scripts\verify_cloudflare_private_warp.
 powershell -ExecutionPolicy Bypass -File scripts\doctor_windows_remote_access.ps1
 ```
 
-腳本取得 Tunnel token 時，token 只可保存在主機受控 runtime 位置。WARP device enrollment 只保留維護所需的 exact accounts；WARP-off、未獲准帳戶及家庭網絡其他裝置應不能直連 origin。
+腳本取得 Tunnel token 時，token 只可保存在主機受控 runtime 位置。WARP device enrollment 的 reusable policy 目前只列出第 3 節相同的三個 exact emails；WARP-off、未獲准帳戶及家庭網絡其他裝置應不能直連 origin。WARP 登記只是維護後備，不會取代 canonical 網站的 Access 登入。
 
 ---
 
 ## 11. 交接下一任
 
 1. 現任首席導學風紀與教師顧問確認交接日期及下一任正式電郵。
-2. 在 Access Allow policy 加入下一任 **exact email**，不要建立共用密碼。
-3. 讓下一任在普通瀏覽器由 canonical site 按「管理員登入」，完成 Cloudflare 帳戶登入及 MFA。
+2. 在 Access Allow policy、Worker 有限管理員名單及 WARP 維護後備 policy 同步加入下一任 **exact email**，不要建立共用密碼。
+3. 下一任可使用自己的 Cloudflare 帳戶完成驗證，不需獲授 Cloudflare Dashboard membership；讓下一任在普通瀏覽器由 canonical site 按「管理員登入」，完成帳戶登入及 MFA。
 4. 只用虛構資料完成第 8 節全部驗收。
 5. 核對下一任可主動登出，並明白 8 小時 session、Viewer 撤銷及本機/WARP 後備。
 6. 驗收通過後移除前任 exact email，撤銷不再需要的 Access session 及 WARP 維護裝置。

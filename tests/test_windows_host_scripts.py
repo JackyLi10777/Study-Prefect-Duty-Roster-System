@@ -129,6 +129,11 @@ def test_activation_owns_service_rollback_and_uses_configured_port() -> None:
     assert "$endpoint.Port" in activation
     assert "-Port $endpoint.Port" in activation
     assert "-match '\\.cloudflareaccess\\.com'" not in verification
+    assert '"https://$PublicHostname/"' in verification
+    assert "$publicProbe.StatusCode -ne 200" in verification
+    assert '"https://$PublicHostname/auth/login"' in verification
+    assert "the administrator login route was not redirected" in verification
+    assert "$request.AllowAutoRedirect = $false" in verification
     assert "Test-SingYinAccessRedirect" in verification
     assert "owner=sing-yin-roster-v1" not in startup  # supplied centrally by the common script
     assert "$script:SingYinTaskOwnerMarker" in startup
