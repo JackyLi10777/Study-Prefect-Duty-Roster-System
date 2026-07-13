@@ -60,7 +60,7 @@ This is the complete standing direction for future iterations. It replaces any t
 6. **Calm feedback, not theatre:** hover, press, one-time state changes, a short dialog settle, optional quiet success sound, honest progress phases, and operator-started quiet music are allowed. No looping animation, parallax, autoplay audio/video, fake loading percentage, forced ambient sound, bouncing icon, or motion that impedes reading.
 7. **Accessibility and language are non-negotiable:** Traditional Chinese is primary, English is complete, names stay Chinese in every locale, keyboard focus is clear, touch targets are practical, reduced motion is honoured, and light/dark themes meet contrast requirements for text, icons, charts, tables, and system states.
 8. **Reliability is part of the experience:** a polished surface cannot disguise a failed save. UI changes must preserve policy ownership, persistent `history_weight`, publish-once ledger posting, leave-adjustment auditability, checksum-verified snapshots, managed restore, local-first privacy, and clear error/empty/confirmation states.
-9. **Privacy before distribution:** no student data is sent to generated imagery, third-party tools, or public URLs. Cloudflare exposure remains prohibited until Cloudflare Access and a teacher-approved security decision exist.
+9. **Privacy before distribution:** no roster data is sent to generated imagery, media tools, analytics or a public NiceGUI origin. The only distributed surface is one canonical workers.dev site. Guests remain read-only; after explicit confirmation, same-host share links receive AES-GCM ciphertext for a minimum-field published-roster snapshot, keep no decryption key, expire or can be revoked. The editor appears on the same host only after Cloudflare Access and Worker-side JWT verification.
 
 ### Design languages that intentionally differ
 
@@ -333,6 +333,21 @@ The roster grid is an operational document, not a dashboard chart. Preserve the 
 
 Import forms, report metrics, contribution tables, trend data and download notices are sensitive operational surfaces. They remain image-free in both themes. Hierarchy comes from spacing, type, neutral surfaces and semantic status tone—not illustration, background texture, pointer light or decorative motion.
 
+### 6.3.1 Canonical-site access control and guest viewer
+
+The canonical workers.dev root is one branded access surface with two clearly explained states, not two websites or an account dashboard:
+
+- **Guest · View only** is the default. It uses a quiet neutral document surface, states that no installation or sign-in is needed, and visibly names the operations the guest cannot reach.
+- **Administrator · Can edit** is reached through one unmistakable **Admin login** action on the same page. Cloudflare Access owns account sign-in and MFA; successful verification returns to the same host and reveals the full NiceGUI workbench. A persistent **Log out** action explains that it returns the browser to guest mode.
+
+The interface must not ask the operator to remember `/auth/*`, `/op/*`, localhost, WARP, VPC, or a second administrator URL. The Access session consequence—eight hours maximum, log out on a shared device—uses plain bilingual copy. Password reset, password strength, hash, and local account controls do not appear because the application has no custom password database.
+
+Active viewing links remain text-first, image-free records. Week, expiry, and a short link identifier form the scan order; revoke is a danger action with an explicit consequence and the approximate one-minute edge-propagation note. A link receipt is persistent until the operator closes it, uses a readonly text field, and places **Copy link** above secondary dismissal. It must say that the key is displayed once and that the complete link grants viewing until expiry or revocation.
+
+The guest Worker viewer is a quiet document surface, not a miniature dashboard. It uses Traditional Chinese first, complete English context, Chinese names, system fonts, a restrained teal published marker, and a high-contrast roster matrix. It supports light/dark preference, phone horizontal table access with a visible focus boundary, A4-landscape print, reduced motion, and honest loading/error states. It contains no atmosphere image, school-data background, animation showcase, music, third-party font, analytics, advertising, or edit affordance. Admin login is an identity transition, not a suggestion that the visible roster itself is editable.
+
+Viewer success is measured by one question: can a recipient open the complete link and understand the current published duty in one scan? Decorative richness must never compete with names, dates, posts, duty times, expiry, or the read-only consequence.
+
 ### 6.4 Responsive rule
 
 - Desktop: content has a readable max width, not a full-width administrative spreadsheet.
@@ -430,6 +445,7 @@ Archive confirmation must name both sides of the consequence: the active person 
 - Partial success: if SQLite committed but the required snapshot failed, never use the ordinary error colour/copy or invite a retry. Use a persistent warm-amber recovery surface, state that the data took effect, say “do not repeat”, retain one OP reference, and offer exactly two actions: reload to review or open backup settings. The underlying roster page remains inert behind the modal.
 - Success: name the saved result and what has changed—for example, “週表已發布，公平帳本已入帳並完成備份。”
 - Recovery: state what will be restored, what safety snapshot is created first, and that the selection must be verified.
+- Sharing: the confirmation must enumerate the exact outgoing whitelist and the excluded operational categories. The created-link dialog says the decryption key is shown once; revoked/expired/incomplete links collapse to one non-diagnostic bilingual recovery state.
 
 ### Practice-mode identity
 
@@ -564,6 +580,7 @@ This file is the design source of truth for the active NiceGUI application. When
 - changes an accessibility, dark-mode, or motion rule;
 - introduces a visual treatment that could be mistaken for liquid glass or an Apple asset;
 - changes a print/PDF hierarchy.
+- changes guest versus authenticated-administrator meaning, Access login/logout, Worker JWT trust, the public-share data whitelist, link lifecycle, or the no-guest-editor rule.
 
 Before implementation, the maintainer should record: the operator moment, the affected component, the intended evidence, and the screenshots/tests required. This keeps visual quality maintainable for future 首席導學風紀 instead of relying on personal taste.
 
@@ -576,3 +593,4 @@ Before implementation, the maintainer should record: the operator moment, the af
 3. Can a student use every important form, table, and confirmation in light mode, dark mode, and at mobile width?
 4. Does the product feel calm and precise without blur, excessive teal, or decorative animation?
 5. Can the teacher advisor recognise the same system purpose in the UI, PDF, audit, backup, and handover path?
+6. Does one canonical URL make guest read-only state, Admin login, authenticated editor state, and Log out consequence unambiguous without relying on colour alone?

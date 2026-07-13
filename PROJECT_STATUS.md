@@ -12,7 +12,7 @@
 
 ## Project Overview
 
-This is a fresh, local-first rebuild of the Sing Yin Study Prefect Duty Roster System. It runs on a dedicated Windows computer through NiceGUI. Optional remote browser access now uses a same-host, domain-free private Cloudflare Tunnel reached only by an enrolled Cloudflare One Client (WARP) device; the host connector is healthy and the remaining release gate is one real remote-device acceptance run. It is not a migration of the Streamlit, `demo_code`, or `demo_code2` applications.
+This is a fresh, local-first rebuild of the Sing Yin Study Prefect Duty Roster System. It runs on a dedicated Windows computer through NiceGUI, while one canonical `workers.dev` website is the only URL distributed to users. Unauthenticated guests remain read-only; an approved administrator selects **Admin login**, passes Cloudflare Access, and returns to the same host with the full NiceGUI editor proxied through Workers VPC and the existing Tunnel. Localhost and private WARP remain maintenance fallbacks. It is not a migration of the Streamlit, `demo_code`, or `demo_code2` applications.
 
 The current Head Study Prefect is the normal daily operator. The teacher advisor mainly reviews published results, fairness, recovery, and handover evidence after completion rather than operating the weekly workflow day to day.
 
@@ -26,11 +26,15 @@ The principle shapes the Dashboard devotional space, fairness ledger, leave-adju
 
 ## Current Status
 
-The NiceGUI application now has a durable roster workflow and a unified multi-page operating structure. The latest refinement curates all 32 unique supplied music files into appearance-recommended Bright focus and Quiet reflection profiles, distinguishes vocal and instrumental editions, and adds a bounded YouTube/YouTube Music link-to-local-library workflow without changing roster policy or persistence.
+The NiceGUI application now has a durable roster workflow and a unified multi-page operating structure. The latest access refinement replaces the normal two-entry mental model with one canonical site: guests can open the root or an explicitly issued same-host `/view#…` roster link without gaining operational access; the Head Study Prefect uses the visible Admin login transition and receives OP editing only after Cloudflare Access plus Worker-side JWT verification.
 
-The deployment decision is now a dedicated Windows 11 host whose NiceGUI origin always stays on `127.0.0.1`. `docs/WINDOWS_DEDICATED_HOST_SETUP.md` provides a zero-knowledge installation and operating procedure. The PowerShell toolchain prepares the host, restricts local-data ACLs, registers an ownership-marked startup task, installs cloudflared, refuses to take over an unknown same-named service, activates a token-file private connector, reloads the Host allow-list, and rolls back the environment, hosts file, and newly installed service on failure. `doctor_windows_remote_access.ps1` gives one redacted local/server diagnosis. Cloudflare now owns the private route and exact enrollment policy; no public hostname, public DNS record, Access AUD, router port-forward, or purchased domain is used.
+The deployment decision is a dedicated Windows 11 host whose NiceGUI origin always stays on `127.0.0.1`. `docs/WINDOWS_DEDICATED_HOST_SETUP.md` provides a zero-knowledge installation and operating procedure. The PowerShell toolchain prepares the host, restricts local-data ACLs, registers an ownership-marked startup task, installs cloudflared, refuses to take over an unknown same-named service, and preserves a WARP maintenance route. The canonical Worker uses its standard `workers.dev` address: guest requests stay at the edge, while an authenticated management request is verified and sent through remote VPC Service `sing-yin-roster-nicegui`, named Tunnel `sing-yin-roster-windows-private`, and the loopback origin. No router port-forward, purchased domain, or public NiceGUI listen address is used.
 
-The selected Lenovo Windows 11 host is now running the official application through the ownership-marked startup task: `/healthz` reports application and SQLite `ok`, HTTP `/` returns 200, and port 8080 listens only on `127.0.0.1`. The standard `SingYinRosterSvc` account remains non-administrative. The protected `cloudflared` Windows service is running against the named private Tunnel; local verification passes service, loopback DNS, private Host header, and ownership checks. Cloudflare reports the Tunnel `healthy` with one connector and four active edge connections on cloudflared 2026.7.1. The remaining external evidence is WARP-on success plus WARP-off and unapproved-enrollment rejection from a separate device.
+The selected Lenovo Windows 11 host is running the official application through the ownership-marked startup task: `/healthz` reports application and SQLite `ok`, HTTP `/` returns 200, and port 8080 listens only on `127.0.0.1`. The standard `SingYinRosterSvc` account remains non-administrative. The protected `cloudflared` Windows service is running against the named Tunnel. A temporary Worker bound to the production VPC Service reached `/healthz` with HTTP 200 and received a NiceGUI Engine.IO open packet over WebSocket; the probe script and subdomain were then deleted. This proves the HTTP Upgrade transport but not the final Access login/logout, long reconnect, upload, PDF, or fictional write workflow.
+
+The access model uses `https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/` as one user-facing site. Root guest mode is public and read-only; management paths are protected by a path-specific Access app with an eight-hour session and exact-email policy. Passwords, MFA and account recovery remain with the Cloudflare identity provider—there is no custom password database. The Worker verifies RS256/JWK signature, issuer, audience, expiry and exact email before VPC proxying. Same-host Viewer links still use AES-GCM ciphertext in KV with the key only in the URL fragment; a share token cannot become an administrator token.
+
+The canonical gateway was deployed on 2026-07-13 with its existing KV secret inherited rather than copied into source, the production VPC Service binding, and the path-specific Access application. Live checks return HTTP 200 for the guest root, health endpoint and public Viewer, redirect `/auth/login` to Access, and return unknown unauthenticated workbench paths to guest mode. A Playwright run created only a temporary fictional roster, verified the unified landing and encrypted roster in desktop light, desktop dark and 390 px mobile layouts, found no console/page errors, and revoked the temporary share. Exact-email interactive login/logout, long reconnection, upload and PDF download remain the final supervised browser acceptance items.
 
 ## Completed Work
 
@@ -54,6 +58,7 @@ The selected Lenovo Windows 11 host is now running the official application thro
 - Replaced display-string language detection with explicit locale state and added a registry test requiring every interface key to provide Traditional Chinese and English text.
 - Added a dignified teal-and-gold Daily Verse hero using the canonical `dashboard-hero` daily rotation.
 - Added a persistent bilingual Practice Mode identity in both themes and at phone width. The state is textual and semantic rather than colour-only, and remains visible across every page.
+- Added a bilingual access-control surface for deliberate Viewer link creation, one-time link receipt, active metadata and confirmation-gated revocation. The canonical edge now presents guest read-only state and a same-site Admin login transition rather than teaching users separate OP and Viewer websites.
 
 ### Prompt and Skill Governance
 
@@ -105,6 +110,7 @@ The selected Lenovo Windows 11 host is now running the official application thro
 - Replaced the old “AI-prepared import” wording with a reviewed data-import workflow. Operators may upload bounded CSV／plain XLSX files, select a worksheet, map stable target fields, validate a local preview, and only then confirm the ordinary workflow write. Legacy／macro formats and formulas are rejected. Paste-based JSON／CSV remains available for short, already-formatted lists.
 - Added optional DeepSeek heading assistance behind an explicit, default-off local environment gate. Its request contains column headings, anonymous value-kind labels and coarse non-empty-count buckets only—never Chinese names, raw rows, the workbook or the final import—and every returned mapping remains subject to operator review, local preview and explicit import confirmation. Manual mapping remains fully usable without an API key.
 - Added a read-only service-and-fairness period report beside the existing fairness explanation. Whole-week ranges include published rosters only, resolve final published-duty adjustments, reconstruct the fairness distribution from persistent anchors plus immutable ledger entries, and expose source roster／policy versions. The same immutable model drives the Traditional Chinese preview, Chinese-name-preserving bilingual PDFs and checksummed JSON evidence. Report generation never changes workload; scheduled hours are allocation estimates rather than attendance, completion, performance or certificate evidence; JSON is not a restore backup and named reports are never uploaded to GitHub automatically.
+- Added the `public_roster_share` outer adapter and Cloudflare Worker/KV guest viewer. Only published rosters can cross the share boundary; the service whitelists week/date, duty post, duty time, Chinese name and closed/vacant state, encrypts locally with an independent AES-256-GCM key, and sends ciphertext plus minimum metadata to the authenticated Worker API. Keys and complete links are not persisted in SQLite, backup, audit or logs. The Worker gateway now also has a same-host Access/JWT/VPC administrator branch; guest `/view#…` remains read-only even when an Access cookie exists.
 - Reworked local PDF export around the approved group-sharing layout: one horizontal A4 weekly matrix with duty positions at left, weekdays above, and Chinese prefect names in the cells. Separate Chinese and English schedule downloads change labels only; prefect names remain Chinese in both. Versioned Noto Sans HK Regular/Medium/SemiBold assets make headings, duty labels and names darker and clearer on replacement computers. The export dialog can switch the crest on or off; the share-ready schedule defaults to no internal-use line, page number, or Scripture hint, while an optional supplementary footer remains available for deliberate archival use. The named fairness ledger is a separate, clearly marked portrait A4 internal-audit PDF rather than a second page sent by default.
 - Split the high-density implementation without changing routes or behavior: `pages.py` is a route facade over domain route modules and shared UI, `RosterWorkflow` is a facade over lifecycle/people/recovery/persistence mixins, i18n is grouped by domain behind one registry, and static theme markup is separated from theme state functions.
 - Added hash-locked runtime and verification dependencies, a release security gate for dependency vulnerabilities/static findings/secret candidates, Windows GitHub Actions quality checks, CodeQL, Dependabot, and a repository hygiene rule that fails closed when real commit history is missing.
@@ -144,17 +150,18 @@ The selected Lenovo Windows 11 host is now running the official application thro
 ### Policy Coverage
 
 - AHPs can only be assigned to `Assist. in charge`.
-- Room 302: one prefect, Monday-Friday, 15:45-18:00.
-- Room 303: two prefects, Monday-Friday, 15:45-17:00.
-- Room 202: two prefects, Monday/Wednesday/Thursday only, 15:45-17:00.
+- Room 302: one prefect, Monday-Friday; room opening display is 15:40-18:30, while actual duty/service credit is 15:40-17:00.
+- Room 303: two prefects, Monday-Friday, 15:40-17:00.
+- Room 202: two prefects, Monday/Wednesday/Thursday only, 15:40-17:00.
+- Assist. in charge follows the same 15:40-17:00 actual duty/service window even where the related room-opening display extends to 18:30.
 - No duplicate same-day duty and no consecutive-day duty.
 - Weights: Assist. in charge and Room 302 = 1.0; Room 303 and Room 202 = 1.5.
 - Lower persistent `history_weight` receives higher priority.
 
 ### Verification
 
-- `pytest`: 305 collected tests, including PDF clean-export/crest controls, concurrent adjustment idempotency, fairness reconciliation, maintenance locking, stable-role browser fixtures, supply-chain gates, the anonymous Platform & Team summary boundary, read-only Engineering & Quality evidence centre, runtime-performance and dialog-lifecycle contracts, Windows host hardening, safe read-failure propagation, paired platform imagery, single-source bilingual feedback, enterprise-style Study Prefect Team operating model, official-role preservation, first-person authorial voice, and the established policy, workflow, persistence, backup, i18n, responsive, logging, deployment, repository-hygiene, music, architecture, and accessibility coverage.
-- The 2026-07-13 dedicated-account preparation and release rerun passed all 305 tests. It exposed and repaired a workflow-split import omission for `is_chinese_display_name`, a missing period-report translation key, and stale browser locators for the reviewed import and backup-failure drills; prefect creation/import, verified restore, summary trend reconstruction, and Windows runtime-account checks now pass together.
+- `pytest`: 336 collected tests, including the established policy, workflow, persistence, backup, bilingual PDF, i18n, responsive, logging, deployment, repository-hygiene, music, architecture and accessibility coverage, plus encrypted public-share boundaries and the unified Access/JWT/VPC gateway contract.
+- The 2026-07-13 unified-access rerun passed all 336 Python tests. Deno additionally passed eight gateway cases covering RS256/JWK verification, invalid issuer/audience/time/email/signature rejection, Access cookie stripping, NiceGUI session preservation, same-origin unsafe requests, VPC proxy fidelity and unmodified WebSocket response passthrough.
 - Replacement-host preparation was exercised on Windows with Python 3.12.10: the script recovered from a missing `py.exe` launcher by using `python.exe`, created the project `.venv`, installed production/development requirements and Playwright Chromium, preserved loopback local mode, and installed `cloudflared` 2026.7.1 without activating a Tunnel. The complete 8/8 release candidate then passed from the new `.venv`.
 - Practice Mode browser verification passed against `data/practice/e2e/` only. It verified `applicationMode=practice`, a persistent bilingual text banner, distinct readable light/dark treatments, 390px normal-flow layout, clean console, and refreshed screenshots under `output/playwright/practice-mode/`; the isolated database, backups, logs, and storage secret were then removed after a resolved-path boundary check.
 - Release candidate is rerun after every release-sensitive UI or documentation change across ten gates: repository hygiene, supply-chain security, the complete 305-test Python suite, Python compilation, dependency integrity, full NiceGUI browser smoke, measured runtime performance and leak checks, fictional-data write/PDF/restore pipeline, strict deployment readiness, and partial-backup recovery. The last complete fingerprint and file count remain recorded in `logs/release-candidate-report.json`; any later release-sensitive working-tree change makes that report stale until all ten gates are rerun. Practice Mode launch wrappers, Windows deployment scripts, semantic colour system, Markdown handover documents, CSS, and PNG/SVG/WebP interface assets are included in that staleness boundary.
@@ -219,9 +226,10 @@ The selected Lenovo Windows 11 host is now running the official application thro
 
 1. Ask the next Head Study Prefect to complete the documented Practice Mode rehearsal, including reset, before formal acceptance.
 2. Define encrypted, off-device backup retention before using real data beyond the local computer.
-3. Enroll one remote device in `restless-hall-73b2`, then verify that WARP-on opens `http://roster.singyin.internal:8080` while WARP-off and unapproved enrollment fail.
-4. Perform the documented release-readiness audit, then review responsive controls with operators during acceptance testing and make only evidence-backed refinements.
-5. During formal human acceptance, rehearse the reviewed CSV／XLSX import and period-report download with fictional Chinese names; explicitly confirm that manual mapping works with DeepSeek disabled, scheduled hours are not treated as attendance, and JSON is not mistaken for the verified handover backup.
+3. Complete the final supervised exact-email Access login/MFA/logout run on the deployed canonical gateway, including long WebSocket reconnect, isolated upload and PDF download; JWT rejection cases already have deterministic automated proof.
+4. During acceptance, repeat the already automated fictional same-host Viewer creation, complete-link browser access, expiry/revocation and absence-of-OP-control checks. Separately retain WARP-on／WARP-off／unapproved tests for the maintenance fallback.
+5. Perform the documented release-readiness audit, then review responsive controls with operators during acceptance testing and make only evidence-backed refinements.
+6. During formal human acceptance, rehearse the reviewed CSV／XLSX import and period-report download with fictional Chinese names; explicitly confirm that manual mapping works with DeepSeek disabled, scheduled hours are not treated as attendance, and JSON is not mistaken for the verified handover backup.
 
 ## Key Decisions and Architecture
 
@@ -234,7 +242,7 @@ The selected Lenovo Windows 11 host is now running the official application thro
 | Core generation | `packages/roster_core/` remains UI-independent |
 | Localization | Traditional Chinese default; English is a full UI counterpart |
 | Theme | Professional Teal `#0F766E`, restrained gold, light/dark support |
-| External access | Domain-free private WARP: named Tunnel, exact-account enrollment policy, private hostname route, and protected Windows connector are live; origin remains loopback; remote-device acceptance remains |
+| External access | One canonical workers.dev URL: guest read-only by default; Admin login through path-specific Cloudflare Access, Worker JWT verification, VPC and the existing Tunnel. NiceGUI remains loopback; localhost/private WARP are maintenance fallbacks. Formal end-to-end browser acceptance remains |
 | Optional online music | Visible YouTube public-playlist player; no sign-in/payment/API key for playback, optional local-environment API key for search |
 | PDF export | Local-memory ReportLab generation with a Traditional Chinese CJK font; no public upload |
 
@@ -249,7 +257,7 @@ Important boundaries:
 
 | Risk | Status | Mitigation |
 |---|---|---|
-| One real remote WARP device is not yet acceptance-tested | External setup | Keep localhost available, then verify enrolled WARP-on, WARP-off and rejected enrollment paths on a separate device |
+| Canonical Access/VPC gateway is live but not yet fully human-accepted | Managed acceptance | Guest/viewer desktop, dark and mobile evidence plus JWT/VPC/WebSocket automation pass; keep localhost/WARP as maintenance fallback until the exact-email login/logout, reconnect, upload, PDF and isolated full write flow are signed off |
 | NiceGUI session-signing secret | Managed | Localhost creates and reuses an ignored managed secret; future server mode requires an explicit independent environment secret |
 | Backups are local only | Open | Restore is safe and guided; define encrypted off-device retention before real deployment |
 | PDF CJK font is unavailable on a replacement PC | Managed | Install Noto Sans TC or set `SING_YIN_PDF_FONT`; procedure is in `docs/RELEASE_HANDOVER.md` |
@@ -258,6 +266,9 @@ Important boundaries:
 | Local support logs may be needed for troubleshooting | Managed | `logs/app.log` rotates locally; quote only the `OP-...` reference and never upload the log to a public service |
 | Effective Git history | Resolved | The active repository has origin-backed history and the repository gate blocks release if history disappears |
 | Optional DeepSeek import assistance | Default off | Manual mapping remains complete; use only a fresh key in ignored local `.env`, send headings／anonymous column profiles only, and require operator preview before import |
+| Complete Viewer link is a bearer capability | Managed | Link expires and can be revoked; distribute only to intended recipients, issue a new link after an adjustment, and revoke immediately after a mistaken send |
+| Worker administrator token drift or disclosure | Managed | Keep matching values only in the Worker secret store and protected host `.env`; never print or document them, and rotate both sides together |
+| Access session or identity lifecycle drift | Managed | Exact-email policy, Cloudflare IdP/MFA, eight-hour session, active logout and Worker-side JWT verification; no application password database |
 
 ## Resources and References
 
@@ -270,6 +281,9 @@ Important boundaries:
 | `nicegui_app/services/prefect_import_assistant.py` | Optional, default-off heading-only DeepSeek mapping suggestions; no raw roster rows |
 | `nicegui_app/services/workflow_parts/reporting.py` | Read-only published-period, final-adjustment and fairness-ledger report model |
 | `nicegui_app/services/summary_report_export.py` | Chinese-name-preserving bilingual report PDFs and checksummed JSON evidence; no upload or restore behavior |
+| `nicegui_app/services/public_roster_share.py` | Published-only minimum-data snapshot, local AES-GCM encryption, authenticated Worker gateway, expiry and revocation metadata |
+| `nicegui_app/ui/access_control.py`, `/access-control` | Deliberate same-host Viewer link lifecycle and revocation controls |
+| `cloudflare/roster_viewer/worker.js` | Canonical guest landing／Viewer, Access JWT verification, VPC NiceGUI proxy, logout and KV ciphertext lifecycle |
 | `migrations/` | Alembic SQLite schema history |
 | `data/runtime/sing-yin-roster.sqlite3` | Local live database, generated at startup and ignored by Git |
 | `data/backups/` | Automatic SQLite snapshots and manifests |
@@ -284,6 +298,7 @@ Important boundaries:
 | `docs/DEPLOYMENT_DECISION.md` | Approved local mode, Cloudflare Access decision gates, and true-cloud architecture boundary |
 | `docs/WINDOWS_DEDICATED_HOST_SETUP.md` | Zero-knowledge Windows 11 installation, startup, operation, update, backup, and host replacement |
 | `docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md` | Protected remote-browser setup, activation, verification, shutdown, and operator-only inputs |
+| `docs/PUBLIC_ROSTER_VIEWER.md` | First-person one-URL guide for guest viewing, administrator login/logout and Viewer-link handover |
 | `docs/MUSIC_IMPORT_DECISION.md` | YouTube local-audio candidate comparison, adopted adapter, limits, proof, and replacement path |
 | `START_SING_YIN_ROSTER.cmd` | Windows double-click launcher for a non-technical operator |
 | `START_PRACTICE_MODE.cmd` / `RESET_PRACTICE_MODE.cmd` | Isolated fictional rehearsal and safe clean restart |

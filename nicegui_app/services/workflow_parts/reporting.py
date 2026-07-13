@@ -14,7 +14,7 @@ from statistics import median, pstdev
 from sqlalchemy import select
 
 from nicegui_app.services.workflow_dependencies import *
-from roster_policy import DUTY_TIME_WINDOWS
+from roster_policy import DUTY_SERVICE_TIME_WINDOWS
 
 
 def _distribution(values: list[float]) -> tuple[float, float, float, float, float]:
@@ -33,7 +33,7 @@ def _distribution(values: list[float]) -> tuple[float, float, float, float, floa
 
 def _duty_minutes(post_code: str) -> int:
     post = DutyPost[post_code]
-    start_text, end_text = DUTY_TIME_WINDOWS[post]
+    start_text, end_text = DUTY_SERVICE_TIME_WINDOWS[post]
     start = datetime.strptime(start_text, "%H:%M")
     end = datetime.strptime(end_text, "%H:%M")
     return int((end - start).total_seconds() // 60)
@@ -117,7 +117,7 @@ class ReportingWorkflowMixin:
                 if assignment.post_code == DutyPost.ASSIST_IN_CHARGE.name:
                     values["assist_count"] = int(values["assist_count"]) + 1
                 source_week = week_by_id[assignment.roster_week_id]
-                start_time, end_time = DUTY_TIME_WINDOWS[DutyPost[assignment.post_code]]
+                start_time, end_time = DUTY_SERVICE_TIME_WINDOWS[DutyPost[assignment.post_code]]
                 allocation_rows = values["allocations"]
                 assert isinstance(allocation_rows, list)
                 allocation_rows.append(

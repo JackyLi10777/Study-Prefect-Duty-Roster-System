@@ -17,6 +17,7 @@ adjust published leave → explain fairness → back up, restore, and hand over.
 
 [Traditional Chinese README](README.md) · [Operator guide](docs/OPERATOR_GUIDE.md)
 · [Architecture](docs/NICEGUI_ARCHITECTURE.md) · [Release status](PROJECT_STATUS.md)
+· [Canonical-site access guide](docs/PUBLIC_ROSTER_VIEWER.md)
 
 ## Repository editions
 
@@ -30,16 +31,27 @@ The NiceGUI edition is a substantial architectural rebuild. It does not copy
 the Streamlit page handlers: policy remains in `roster_policy`, generation in
 `roster_core`, and durable work in `roster_workflow`.
 
-## Quick start on Windows
+## Canonical daily entry and Windows maintenance start
+
+The only URL distributed to users is
+<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>. Guests stay
+in read-only mode. An approved operator selects **Admin login**, completes the
+Cloudflare Access account sign-in and MFA, and returns to the same site with the
+NiceGUI editor unlocked. The Access session lasts at most eight hours; select
+**Log out** when finished. The application has no custom password database.
+
+The commands below prepare a host or maintenance workstation; they are not a
+second normal entry point.
 
 ```powershell
 python -m pip install --require-hashes -r requirements.lock
 Copy-Item .env.example .env
 ```
 
-Then double-click `START_SING_YIN_ROSTER.cmd`. The launcher reuses an existing
-service, resolves local port conflicts, waits for a real HTTP response, and
-opens the exact local URL.
+During maintenance or a Cloudflare outage, double-click
+`START_SING_YIN_ROSTER.cmd`. The launcher reuses an existing service, resolves
+local port conflicts, waits for a real HTTP response, and opens the exact local
+URL. Localhost and the enrolled private-WARP address remain recovery paths only.
 
 For a new dedicated Windows 11 host, follow the zero-knowledge
 [`WINDOWS_DEDICATED_HOST_SETUP.md`](docs/WINDOWS_DEDICATED_HOST_SETUP.md).
@@ -65,6 +77,9 @@ marking. Close it and use `RESET_PRACTICE_MODE.cmd` for a clean rehearsal.
 7. For a late absence, use the published-duty adjustment workflow rather than
    regenerating the week.
 8. Review fairness, verified backups, handover readiness, and recovery evidence.
+9. When recipients need browser-direct viewing, explicitly create an expiring,
+   revocable same-host `/view#…` link for the published roster. After a
+   published-duty adjustment, issue a fresh link and revoke the old one.
 
 ## Policy invariants
 
@@ -107,12 +122,19 @@ usage, commercial, or vanity KPIs; source changes make previous evidence stale.
 
 ```mermaid
 flowchart LR
-    UI["NiceGUI bilingual UI"] --> WF["roster_workflow transactions"]
+    GUEST["Guest"] --> EDGE["One workers.dev site\nCloudflare Worker"]
+    ADMIN["Administrator\nAccess + MFA"] --> EDGE
+    EDGE -->|read only| VIEW["Encrypted published roster"]
+    EDGE -->|verified Access JWT| VPC["Workers VPC + Tunnel"]
+    VPC --> UI["NiceGUI bilingual UI"]
+    UI --> WF["roster_workflow transactions"]
     WF --> CORE["roster_core generation"]
     CORE --> POLICY["roster_policy rules"]
     WF --> DB["SQLite + Alembic"]
     WF --> BACKUP["Verified snapshot + manifest"]
     DB --> PDF["Chinese / English PDF\nChinese names in both"]
+    WF --> ENC["Explicit minimum-data\nAES-GCM share"]
+    ENC --> VIEW
 ```
 
 SQLite writes use WAL, foreign keys, busy timeouts, transactions, online
@@ -137,12 +159,24 @@ context discoverable without making a daily operator scan one oversized page.
 
 ## Deployment
 
-The maintained edition is a long-running Python application, not a static site.
-The selected production host is a dedicated Windows 11 PC. Remote browser
-access may use a same-host Cloudflare Tunnel protected by Cloudflare Access;
-NiceGUI remains bound to `127.0.0.1`. Linux, Raspberry Pi, Docker, and a true
-cloud migration are not the selected release path. See
-`docs/DEPLOYMENT_DECISION.md` before changing network mode.
+The maintained OP application remains a long-running Python service on a
+dedicated Windows 11 PC, with NiceGUI bound to `127.0.0.1`. One canonical
+`workers.dev` site is the public front door: unauthenticated guests stay
+read-only, while **Admin login** invokes a path-specific Cloudflare Access
+policy. After Access authentication, the Worker independently verifies the JWT
+signature, audience, issuer, expiry, and exact administrator email before
+proxying the request through Workers VPC and the existing Tunnel. Passwords and
+MFA remain with the Cloudflare identity provider; no password hash is stored by
+NiceGUI, SQLite, KV, backups, or Git.
+
+Same-host `/view#…` links are explicitly created, expiring and revocable. The
+Windows host encrypts the minimum published-roster snapshot with AES-256-GCM;
+Cloudflare KV stores ciphertext, nonce, and minimum week/creation/expiry
+metadata, while the key stays in the URL fragment. Localhost and private WARP
+are maintenance fallbacks, not additional URLs to distribute. See
+[`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and
+[`DEPLOYMENT_DECISION.md`](docs/DEPLOYMENT_DECISION.md) before changing the
+access boundary.
 
 ## Repository archive
 

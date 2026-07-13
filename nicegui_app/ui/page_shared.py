@@ -68,7 +68,7 @@ from roster_core import (
     HISTORY_PRIORITY_MULTIPLIER_MIN,
     select_daily_verse,
 )
-from roster_policy import DUTY_TIME_WINDOWS, DutyPost, SchoolDay, required_posts_for_day
+from roster_policy import ROOM_OPENING_TIME_WINDOWS, DutyPost, SchoolDay, required_posts_for_day
 
 _OPERATION_FAILED = object()
 _OperationResult = TypeVar("_OperationResult")
@@ -291,7 +291,7 @@ def _roster_display_rows(assignments: list[dict[str, object]]) -> list[dict[str,
     rows: list[dict[str, object]] = []
     for assignment in assignments:
         post = DutyPost[assignment["postCode"]]
-        start, end = DUTY_TIME_WINDOWS[post]
+        start, end = ROOM_OPENING_TIME_WINDOWS[post]
         rows.append(
             {
                 "dayCode": assignment["day"],

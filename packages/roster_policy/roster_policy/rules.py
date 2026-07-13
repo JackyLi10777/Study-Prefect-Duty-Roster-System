@@ -72,13 +72,25 @@ DUTY_WEIGHTS: dict[DutyPost, float] = {
 }
 
 
-# Displayed by every interface from the same policy source; not a UI-only copy.
-DUTY_TIME_WINDOWS: dict[DutyPost, tuple[str, str]] = {
+# A room can remain open after the prefect's scheduled service has ended.  Keep
+# these two concepts separate so certificates never turn a room-closing time
+# into service credit.
+ROOM_OPENING_TIME_WINDOWS: dict[DutyPost, tuple[str, str]] = {
     DutyPost.ASSIST_IN_CHARGE: ("15:40", "18:30"),
     DutyPost.ROOM_302: ("15:40", "18:30"),
     DutyPost.ROOM_303: ("15:40", "17:00"),
     DutyPost.ROOM_202: ("15:40", "17:00"),
 }
+
+
+DUTY_SERVICE_TIME_WINDOWS: dict[DutyPost, tuple[str, str]] = {
+    post: ("15:40", "17:00") for post in DutyPost
+}
+
+
+# Backwards-compatible display alias.  New code must select the explicit room
+# opening or duty-service mapping above instead of depending on this name.
+DUTY_TIME_WINDOWS = ROOM_OPENING_TIME_WINDOWS
 
 
 ROOM_CAPACITY: dict[DutyPost, int] = {

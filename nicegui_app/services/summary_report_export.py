@@ -228,9 +228,9 @@ def _allocation_table(
     styles: dict[str, ParagraphStyle],
 ) -> Table:
     headers = (
-        ("日期", "星期", "值班位置", "開放時間", "編配時長", "來源")
+        ("日期", "星期", "值班位置", "當值時間", "編配時長", "來源")
         if language == "zh"
-        else ("Date", "Day", "Duty position", "Opening time", "Scheduled duration", "Source")
+        else ("Date", "Day", "Duty position", "Duty time", "Scheduled duration", "Source")
     )
     data: list[list[Paragraph]] = [[Paragraph(item, styles["table_heading"]) for item in headers]]
     day_names = {

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from collections.abc import Iterator
+import re
 
 from nicegui import ui
 
@@ -19,9 +20,21 @@ from nicegui_app.ui.theme import apply_theme, current_theme, sound_feedback_enab
 NAVIGATION_GROUPS = (
     ("nav_weekly_work", (("/", "dashboard", "space_dashboard"), ("/rosters", "rosters", "calendar_month"))),
     ("nav_people_fairness", (("/prefects", "prefects", "groups"),)),
-    ("nav_support_system", (("/handover", "handover", "handshake"), ("/settings", "settings", "settings"))),
+    ("nav_support_system", (("/handover", "handover", "handshake"), ("/access-control", "access_control", "admin_panel_settings"), ("/settings", "settings", "settings"))),
     ("nav_reference", (("/platform", "platform", "domain"), ("/engineering", "engineering", "build_circle"), ("/system-architecture", "system_architecture", "account_tree"), ("/getting-started", "getting_started", "play_circle"), ("/guide", "operator_guide", "help_outline"), ("/devotional", "devotional", "menu_book"))),
 )
+
+_ACCESS_EMAIL = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+
+def _verified_gateway_identity() -> str:
+    """Read only the trusted identity header injected by the loopback-only gateway."""
+    try:
+        request = ui.context.client.request
+        value = request.headers.get("x-sing-yin-access-email", "").strip().lower()
+    except (AttributeError, RuntimeError):
+        return ""
+    return value if _ACCESS_EMAIL.fullmatch(value) else ""
 
 
 def _reload_after_preference_change(change) -> None:
@@ -68,6 +81,7 @@ def page_shell(title_key: str, active_path: str, *, music_context: str | None = 
                 ui.link(t("github_repository_short"), GITHUB_REPOSITORY_URL).classes("sy-sidebar-feedback-link").props(
                     f'target=_blank rel="noopener noreferrer" aria-label="{t("github_repository_action")}"'
                 )
+    gateway_identity = _verified_gateway_identity()
     with ui.header(elevated=False).classes("sy-app-header bg-[var(--sy-surface)] border-b border-[var(--sy-line)] px-4"):
         skip_link = ui.link(t("skip_to_content"), "#main-content").classes("sy-skip-link")
         skip_link.on(
@@ -83,6 +97,16 @@ def page_shell(title_key: str, active_path: str, *, music_context: str | None = 
                 ).classes("sy-icon-control").style("color: var(--sy-nav-ink) !important").tooltip(t("open_navigation"))
                 ui.label(t(title_key)).classes("sy-header-title text-lg font-semibold").props("role=heading aria-level=1")
             with ui.row().classes("sy-header-tools items-center gap-1"):
+                if gateway_identity:
+                    ui.badge(t("access_admin_signed_in"), color="positive").props(
+                        f'outline aria-label="{t("access_admin_mode")}" data-testid=administrator-mode'
+                    ).classes("sy-status-badge")
+                    ui.button(
+                        icon="logout",
+                        on_click=lambda: ui.navigate.to("/logout"),
+                    ).props(
+                        f'flat round aria-label="{t("access_admin_logout")}" data-testid=administrator-logout'
+                    ).classes("sy-admin-logout").tooltip(t("access_admin_logout"))
                 if music_context:
                     render_page_music_control(music_context)
                 ui.button("EN" if current_locale() != "en" else "中", on_click=lambda: _reload_after_preference_change(toggle_locale)).props("flat dense").classes("sy-language-control").style("color: var(--sy-nav-ink) !important")

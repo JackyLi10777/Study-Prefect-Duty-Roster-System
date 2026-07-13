@@ -1,7 +1,9 @@
 from .rules import (
     DAYS,
+    DUTY_SERVICE_TIME_WINDOWS,
     DUTY_TIME_WINDOWS,
     DUTY_WEIGHTS,
+    ROOM_OPENING_TIME_WINDOWS,
     DutyPost,
     PrefectRole,
     RosterPolicyError,
@@ -15,8 +17,10 @@ from .rules import (
 
 __all__ = [
     "DAYS",
+    "DUTY_SERVICE_TIME_WINDOWS",
     "DUTY_TIME_WINDOWS",
     "DUTY_WEIGHTS",
+    "ROOM_OPENING_TIME_WINDOWS",
     "DutyPost",
     "PrefectRole",
     "RosterPolicyError",

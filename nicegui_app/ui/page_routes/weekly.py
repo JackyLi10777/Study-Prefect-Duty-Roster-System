@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from nicegui_app.ui.page_shared import *  # noqa: F403
+from nicegui_app.ui.access_control import render_roster_share_action
 
 @ui.page("/rosters")
 def rosters_page() -> None:
@@ -430,6 +431,7 @@ def roster_detail_page(roster_week_id: int) -> None:
                 ui.label(t("post_publication_leave")).classes("text-lg font-semibold")
                 ui.label(t("post_publication_leave_notice")).classes("text-sm text-[var(--sy-muted)] mt-1")
                 ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda: ui.navigate.to(f"/rosters/{roster_week_id}/adjustments")).props("color=primary").classes("mt-4")
+            render_roster_share_action(workflow, roster_week_id)
         declarations = workflow.pre_generation_leaves(week["weekStart"])
         if declarations:
             with ui.element("section").classes("sy-surface w-full px-5 py-4"):

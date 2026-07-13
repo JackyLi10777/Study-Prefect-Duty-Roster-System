@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "sing-yin-roster-viewer",
+  "main": "worker.js",
+  "compatibility_date": "2026-07-13",
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "https://restless-hall-73b2.cloudflareaccess.com",
+    "ACCESS_AUD": "18a2123a23669de9c23ef344b45dfd87c6323e610e77376b5e21f75edb1bed7b",
+    "ADMIN_EMAIL": "s10777@syss.edu.hk"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "ROSTER_SHARES",
+      "id": "5f0fb9a974f84bd3bc630873d1cd78e4"
+    }
+  ],
+  "vpc_services": [
+    {
+      "binding": "ROSTER_ORIGIN",
+      "service_id": "019f5b30-d07c-7a63-a273-6b2ccb7318f8"
+    }
+  ]
+}

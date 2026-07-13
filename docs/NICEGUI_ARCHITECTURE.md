@@ -25,14 +25,25 @@ NiceGUI owns the rendering and navigation. The read model introduces no schema, 
 
 `/engineering` reads only `load_release_evidence()` and static, version-controlled structural facts. It never opens `RosterWorkflow`, a database session, a backup path, or an audit payload. The report badge may show passed, running, stale, failed, missing, or unreadable evidence; the page does not reinterpret a non-passing state as success. Its current ten gate labels mirror `scripts/verify_release_candidate.py`: repository hygiene, supply-chain security, automated tests, compilation, dependency integrity, browser verification, runtime performance／memory stability, isolated write pipeline, strict deployment readiness, and committed-without-backup recovery. The visible passed/total ratio comes from the fingerprint-matched report rather than a hard-coded test count.
 
-## Start Locally
+## Canonical entry and local maintenance start
+
+The only URL distributed to users is
+`https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`. An
+unauthenticated request stays in the Worker guest surface. **Admin login** enters
+the internal Access flow; after Cloudflare Access authentication, the Worker
+verifies the Access JWT and proxies the same-host administrator session through
+Workers VPC and the named Tunnel to NiceGUI. Localhost and enrolled private WARP
+are maintenance fallbacks, not additional normal entry points.
+
+For host maintenance:
 
 ```powershell
 python -m pip install -r requirements.txt
 python -X utf8 -m nicegui_app.main
 ```
 
-Open `http://127.0.0.1:8080` locally. Domain-free remote use resolves `roster.singyin.internal` through an enrolled WARP device and the same-host Tunnel while the origin remains loopback.
+Open `http://127.0.0.1:8080` locally only while diagnosing, recovering, or
+maintaining the host. The origin remains loopback in every deployment state.
 
 ## Durable Data Contract
 
@@ -71,11 +82,23 @@ Prefect creation, update, archive, and bulk import follow the same backup rule. 
 
 `ReportingWorkflowMixin.build_period_report()` is the only owner of period-report facts. It accepts whole roster-week boundaries represented by Monday dates and includes published weeks only. It resolves the final active assignments after published-duty adjustments, reconstructs the historical fairness distribution from persistent anchors plus immutable ledger entries, and records each source roster version and policy version. Drafts never enter the model, and asking for a preview cannot post or repeat workload.
 
-The report deliberately calls service time **scheduled allocation**. `DUTY_TIME_WINDOWS` supplies the current duration for each recorded post, but the application has no attendance or completion register. The resulting hours therefore cannot be interpreted as attendance, performance, completed service or a certificate. Likewise, `summary_report_export.py` produces a checksummed JSON evidence envelope for review and archiving, not a restorable database. Full recovery remains exclusively owned by a verified SQLite handover package. Neither exporter uploads a named report to GitHub or another service.
+The report deliberately calls service time **scheduled allocation**. `DUTY_SERVICE_TIME_WINDOWS` supplies the actual 15:40–17:00 duty duration for every post, while `ROOM_OPENING_TIME_WINDOWS` separately retains the longer 302／Assist. room-opening display. The application has no attendance or completion register, so the resulting hours cannot be interpreted as attendance, performance, completed service or a certificate. Likewise, `summary_report_export.py` produces a checksummed JSON evidence envelope for review and archiving, not a restorable database. Full recovery remains exclusively owned by a verified SQLite handover package. Neither exporter uploads a named report to GitHub or another service.
 
 `prefect_file_import.py` is a bounded local parser. It accepts only `.csv` and plain `.xlsx`, limits size, rows and columns, rejects formulas and unsupported legacy／macro-enabled workbooks, and exposes a stable target schema. The NiceGUI page lets the operator select a worksheet, map each required target, validate a normalized preview and explicitly confirm the final import. Only that last action enters `RosterWorkflow.import_prefects()` and its normal transaction／backup boundary.
 
 `prefect_import_assistant.py` is a replaceable, optional schema-assistance adapter, not a data-import owner. It is disabled by default and reads `SING_YIN_DEEPSEEK_ENABLED`, `SING_YIN_DEEPSEEK_MODEL` and `SING_YIN_DEEPSEEK_API_KEY` from the local environment at call time. After an explicit operator click, its request contains only exact column headings, anonymous value-kind labels and coarse non-empty-count buckets. It never receives raw rows, Chinese names, the workbook or the final import result. Returned mappings are restricted to the visible source headings and approved target codes, then remain untrusted suggestions until the operator reviews the selectors, builds the local preview and confirms import. Manual mapping is always available. A fresh API key belongs only in the ignored local `.env`; it must not enter source, documentation, logs, backups or Git history.
+
+### Public roster share boundary
+
+`nicegui_app.services.public_roster_share.PublicRosterShareService` is an outer application adapter, not a new policy or persistence owner. It can read only an existing `published` roster through the stable workflow facade. It composes a presentation-ready whitelist containing week/date, duty post, duty-service time, Chinese display name, and closed/vacant state. It rejects drafts, missing required slots, duplicate slots, unexpected assignment status, and any non-Chinese display name before an external request.
+
+Each share receives a random identifier, independent 256-bit AES-GCM key and 96-bit nonce. The service encrypts the JSON snapshot locally with authenticated additional data bound to that identifier. `CloudflarePublicRosterShareGateway` sends only schema version, share identifier, week, created/expiry times, nonce and ciphertext to the authenticated Worker admin endpoint. The resulting URL places the key after `#`, so it is absent from the initial HTTP request and Worker/KV record. The complete link is displayed once and is not persisted in SQLite, backups, audit, or logs.
+
+`cloudflare/roster_viewer/worker.js` is the canonical outer front door. `ROSTER_SHARES` KV owns `share:<id>` ciphertext records with absolute expiration and minimum metadata. Anonymous `/api/view` accepts only one validated share identifier; browser Web Crypto decrypts locally, and DOM rendering uses `textContent`. The guest branch has no route to SQLite, PDF, directory, leave, fairness, audit, backup, restore, settings, or music. Its HTML/CSS/JS are same-origin and dependency-free, with no-store, CSP, no-referrer, noindex, frame denial and permissions restrictions.
+
+The same Worker also owns the administrator transition. **Admin login** uses an internal `/auth/*` path protected by Cloudflare Access; management paths remain under the Access-protected `/op/*` boundary. After Access authentication, the Worker independently verifies JWT signature, `aud`, `iss`, `exp`, and the exact administrator email, strips browser-supplied identity headers and the Access cookie, then injects only an identity derived from the verified claim before proxying through `ROSTER_ORIGIN`. Passwords, MFA, and account recovery remain with the Cloudflare identity provider; there is no application password table or hash.
+
+The in-app access-control surface creates same-host links for published rosters and lists/revokes active KV records. Revocation deletes ciphertext; KV propagation may take about one minute. A share token never promotes a guest to OP. The canonical root remains public; Access is path-specific so a guest is not forced to authenticate merely to view.
 
 ## Recovery and Handover
 
@@ -132,6 +155,8 @@ The UI does not append `WorkflowError` text to notifications. It displays the bi
 | Presentation | `nicegui_app/ui/page_routes/`, `page_shared.py`, `i18n_catalog/`, `theme_markup.py`, `assets/css/sing-yin-theme-v1.css`, `motion.py` | NiceGUI routes, shared components, domain-grouped bilingual copy, versioned cacheable design-system CSS, local motion bootstrap, page shell, anonymous platform summary, and non-sensitive architecture explanation |
 | Import adapters | `nicegui_app/utils/prefect_import.py`, `prefect_file_import.py`, `nicegui_app/services/prefect_import_assistant.py` | Bounded local normalization and optional heading-only mapping suggestions; no policy or direct persistence writes |
 | Export | `nicegui_app/services/roster_export.py`, `summary_report_export.py` | Local-only bilingual roster／report PDF and report-JSON composition; no persistence or upload writes |
+| Public share adapter | `nicegui_app/services/public_roster_share.py`, `nicegui_app/ui/access_control.py` | Explicit minimum-data snapshot, local AES-GCM encryption, one-time same-host link receipt, active-link listing and revocation; guest mode never edits |
+| Canonical edge runtime | `cloudflare/roster_viewer/worker.js`, Cloudflare Access, Workers VPC, KV `ROSTER_SHARES` | Serve guest read-only assets and ciphertext; verify administrator Access JWT; proxy only verified management sessions through VPC／Tunnel to loopback NiceGUI |
 | Observability | `nicegui_app/observability.py` | Payload-free local operation evidence and rotating support logs |
 | Optional media | `nicegui_app/services/online_music.py`, `music_library.py`, `youtube_audio_import.py`, `nicegui_app/ui/music.py` | Public YouTube playlist validation/search, visible playback, appearance-recommended local playlists, and bounded local audio import; strictly separate from roster persistence |
 
@@ -177,7 +202,13 @@ Roster identity is also a workflow read contract, not an empty-table convention.
 
 `nicegui_app/deployment.py` also owns the NiceGUI session-signing secret. A valid explicit `SING_YIN_STORAGE_SECRET` always wins. In localhost mode only, an absent or known placeholder value causes one 64-character random secret to be created with exclusive file creation at `data/runtime/.nicegui-storage-secret`; restarts reuse it, and concurrent starters cannot overwrite the winner. A present but malformed file stops startup rather than silently invalidating sessions. Readiness inspects this state without creating data. Future `server` mode never accepts the managed-local file and requires a separate environment secret of at least 32 characters. The secret is ignored by Git, excluded from roster backups/PDFs/reports, and must never be logged.
 
-Network exposure is fail-closed in both deployment modes. NiceGUI always binds to loopback; `server` means a same-host `cloudflared` process may connect to that private origin, never that the app listens on `0.0.0.0`. Server mode has two mutually exclusive configurations: `private_warp` requires an enabled WARP declaration, valid team domain and one private hostname; `public_access` retains the explicit Protect with Access, audience, team-domain and public-hostname requirements. `TrustedHostMiddleware` accepts only localhost plus the hostname declared by the selected mode. Declarations alone are not live acceptance: private WARP remains a warning until an enrolled device succeeds and WARP-off／unapproved enrollment fail; public Access retains its unauthenticated-denial and authorized-login checks. The application itself never creates a Tunnel, route, token or external request.
+Network exposure is fail-closed. NiceGUI always binds to loopback; neither the canonical Worker nor `server` mode means the app listens on `0.0.0.0`. The canonical edge topology is Worker → remote VPC Service `sing-yin-roster-nicegui` (`localhost:8080`) → named Tunnel `sing-yin-roster-windows-private` → Windows loopback origin. The Worker binding is `ROSTER_ORIGIN`; proxy code must return the VPC `fetch()` Response directly so the WebSocket handle survives.
+
+The Access application protects management paths rather than the entire Worker. It uses an exact-email allow policy, an eight-hour session, and Cloudflare IdP/MFA. Worker-side JWT validation uses the Cloudflare team JWK and checks signature, audience, issuer, expiry, and administrator email before any VPC request. Access audience, JWT, cookies, Tunnel token, and management secrets never enter source, logs, backups, screenshots, or documentation. Local/private-WARP mode remains available as a maintenance fallback and must continue to fail for WARP-off or unapproved devices.
+
+Live transport evidence is recorded separately from final acceptance: a temporary Worker bound to VPC Service `019f5b30-d07c-7a63-a273-6b2ccb7318f8` received `/healthz` HTTP 200 and an Engine.IO open packet from `/_nicegui_ws/socket.io/?EIO=4&transport=websocket`. The probe script and workers.dev subdomain were deleted. This proves HTTP Upgrade/WebSocket transport, not the complete Access login/logout, long reconnect, upload, PDF, or fictional write workflow; those remain browser acceptance gates.
+
+The only deliberate application-originated external request carrying roster-derived content is the explicitly enabled public-share adapter. It sends authenticated ciphertext and minimum metadata—not plaintext or OP state—to the fixed canonical Worker after confirmation.
 
 ## Verification
 

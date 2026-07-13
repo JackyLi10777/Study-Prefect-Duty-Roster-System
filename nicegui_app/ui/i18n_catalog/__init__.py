@@ -8,6 +8,7 @@ from nicegui_app.ui.i18n_catalog.platform import MESSAGES as PLATFORM_MESSAGES
 from nicegui_app.ui.i18n_catalog.media import MESSAGES as MEDIA_MESSAGES
 from nicegui_app.ui.i18n_catalog.reporting import MESSAGES as REPORTING_MESSAGES
 from nicegui_app.ui.i18n_catalog.importing import MESSAGES as IMPORTING_MESSAGES
+from nicegui_app.ui.i18n_catalog.sharing import MESSAGES as SHARING_MESSAGES
 
 MESSAGES: dict[str, dict[str, str]] = {
     **FOUNDATION_MESSAGES,
@@ -18,4 +19,5 @@ MESSAGES: dict[str, dict[str, str]] = {
     **MEDIA_MESSAGES,
     **REPORTING_MESSAGES,
     **IMPORTING_MESSAGES,
+    **SHARING_MESSAGES,
 }

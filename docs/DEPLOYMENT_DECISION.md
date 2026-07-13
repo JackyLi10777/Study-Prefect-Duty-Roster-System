@@ -2,74 +2,113 @@
 
 ## 結論 / Recommendation
 
-**已選定的正式運行方案：Windows 11 專用主機；NiceGUI 保持 `127.0.0.1`，以免費、無網域的 Cloudflare 私有 WARP 提供受控遠端存取。**
+**正式方案是一部 Windows 11 專用主機，加上一個不需購買網域的 canonical workers.dev 網站。所有人開啟同一 URL：訪客未登入時只能查看；管理員在同站按「管理員登入」，通過 Cloudflare Access 後才進入完整 NiceGUI 工作台。**
 
-完整的硬件、Windows、Git、Python 3.12、`.venv`、`.env`、工作排程器、健康檢查、更新、備份及搬機步驟，見 [Windows 專用主機完整設定手冊](WINDOWS_DEDICATED_HOST_SETUP.md)。受控遠端存取的 Dashboard 與自動化步驟見 [Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)。目前不採用 Linux、Raspberry Pi、Docker 或真正雲端主機作正式來源。
+正式網址：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>
 
-**現時不要把系統直接「上傳到雲端」。**
+NiceGUI、SQLite、PDF、備份及日誌仍在 Windows 主機，origin 只監聽 `127.0.0.1:8080`。Cloudflare Worker 是唯一前門；管理員請求經 Access、Worker JWT 驗證、Workers VPC、既有具名 Tunnel 才抵達 NiceGUI。這不是把資料庫搬進 Worker，也不是公開 Windows 連接埠。
 
-第一個受控遠端版本採用：**專用 Windows 主機 + 私有 Cloudflare Tunnel + Cloudflare One Client（WARP）**。NiceGUI 程序、SQLite 資料庫、PDF、備份及本機日誌仍留在受控主機；Cloudflare 只為已登記裝置提供身份驗證及私有通道，不會成為此系統的應用資料庫，也不需要公開 DNS 或購買網域。
+完整 Windows 安裝、工作排程器、健康檢查、更新、備份及搬機步驟見 [Windows 專用主機完整設定手冊](WINDOWS_DEDICATED_HOST_SETUP.md)；Access、VPC、Tunnel、驗收及後備程序見 [Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)；使用者入口、登入及分享見 [單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。目前不採用 Linux、Raspberry Pi、Docker 或真正雲端主機作正式資料來源。
 
-真正雲端部署只在學校確認有跨校區、長期高可用或集中 IT 維護需要後才考慮。它需要獨立架構項目，不可視為 Tunnel 的下一個按鈕。
+## 一個網址，兩種權限 / One URL, two permission states
 
-## 三種模式 / Three operating models
+| 狀態 | 同一網站顯示 | 權限 |
+|---|---|---|
+| 未登入訪客 | 唯讀首頁及獲明確分享的 `/view#…` 已發布週表 | 不可生成、修改、發布、調整、公平審核、備份、還原或設定 |
+| 已驗證管理員 | 經 VPC 代理的完整 NiceGUI 工作台 | 可依既有政策、交易、確認及審計完成 OP 工作流 |
 
-| 模式 | 資料位置 | 誰可進入 | 適合情況 | 目前狀態 |
-|---|---|---|---|---|
-| A. 本機正式使用 / Local-only | 專用校內電腦 | 在該電腦操作的人 | 首次發布、最小風險、單一負責人 | **現時批准** |
-| B. 受控遠端存取 / Controlled remote access | Windows 專用主機為系統資料來源；Cloudflare 處理私有路由與裝置登記 | WARP device-enrollment policy 內逐一列明的使用者 | 需要在主機以外的瀏覽器操作 | **主機連接器健康；待真人遠端裝置驗收** |
-| C. 真正雲端部署 / Cloud-hosted application | 學校批准的雲端主機及受控持久化儲存 | 應用程式身份權限 + 網絡存取規則 | 多校區、高可用、IT 集中維護 | **未設計，不可直接遷移** |
+不另派發「管理員網址」。`/auth/*` 是內部登入流程，`/op/*` 是 Access 保護範圍；VPC Service、Tunnel、localhost 及私人 WARP 地址只給維護者。一般訪客不需 WARP、帳戶或密碼。
 
-## 為甚麼不直接用 Cloudflare Pages 或 Quick Tunnel？
+## 身份及 session 決定
 
-目前系統需要長時間運行的 Python NiceGUI 程序、即時瀏覽器連線及可寫入的 SQLite、備份和日誌目錄。靜態網站平台不提供這些持久狀態；把現有資料夾同步到公開平台也不符合私隱要求。
+- Access policy 只接受精確列明的管理員電郵；目前交接身份為 `s10777@syss.edu.hk`。
+- 密碼、MFA、帳戶復原及身份生命週期由 Cloudflare Identity Provider／Cloudflare Access 管理。
+- 系統不建立密碼資料表、Argon2／bcrypt hash、共用 OP 密碼或忘記密碼頁；SQLite、KV、備份及 Git 均不保存管理員密碼。
+- Access session 為 **8 小時**。完成工作必須按「登出」；離任交接以更新 exact-email policy 完成，不交接前任密碼。
+- Access 應用只保護管理路徑，不可為整個 Worker 啟用強制登入，否則訪客也會被迫登入。
 
-Cloudflare 的 Quick Tunnel 只適合短暫開發展示，不適合正式使用，且官方文件指出它不支援 Server-Sent Events。任何含真實學生資料的公開或隨機網址都是禁止的。
+目前 self-hosted Access app 的非敏感識別碼是 `25072aab-0e60-4787-8ec7-48029e448e8e`。Access audience、JWT、cookie、client secret 及管理 token 是秘密，不寫入公開文件、Git、截圖或日誌。
 
-## B 模式：私有 Cloudflare Tunnel + WARP 的批准閘門
+## Worker 的第二道身份驗證
 
-在任何人安裝 `cloudflared`、建立 Tunnel 或增加 DNS 記錄前，教師顧問必須以書面完成以下決定：
+Cloudflare Access 的路徑政策是第一道閘門；Worker 在轉送 NiceGUI 前仍必須：
 
-1. **資料責任人：** 指定教師顧問、首席導學風紀、IT 支援及緊急聯絡人。
-2. **身份來源：** 只使用獲學校批准的身份提供者及帳戶；不可用公開「任何有電郵即可登入」規則。
-3. **名單與權限：** 列明可進入的群組、撤銷離任幹事的程序，以及最短合理 session duration。
-4. **應用內權限：** 現時程式尚未把 Cloudflare 身份轉換為應用內角色。因此第一個遠端版本只可 allow 當任首席導學風紀及顧問老師；首席是唯一日常寫入者，顧問只作完成後核對。若要讓一般導學風紀登入，必須先實作及測試應用內讀寫權限。
-5. **主機與資料：** 使用專用、受密碼保護、全磁碟加密及自動更新的學校主機；資料庫、備份、`.env`、PDF 和日誌不可放入個人雲端同步位置。
-6. **復原：** 定義加密離機備份位置、保留期、還原演練頻率及遺失裝置處理程序。
-7. **監察與事故：** 設定 Tunnel 健康通知、保留適量裝置登記及 Gateway 稽核紀錄，並定義帳戶停用、誤發表及遺失資料的處理人。
-8. **驗收：** 只以虛構資料完成完整遠端流程，確認 WARP 拒絕未獲准帳戶、裝置可以撤銷、PDF 不會公開，才可考慮真實資料。
+1. 從 Cloudflare Access JWK 驗證 `Cf-Access-Jwt-Assertion` 簽章。
+2. 核對 `aud`、`iss`、`exp` 及 exact-email 管理員身份。
+3. 不相信瀏覽器提供的角色、電郵或自訂身份標頭。
+4. 驗證後移除外來 Access JWT、`CF_Authorization` cookie 及身份標頭，只注入由已驗證 claim 產生的內部身份。
+5. 缺少、過期、錯誤 audience／issuer 或不符管理員電郵的請求一律拒絕或回到訪客頁。
 
-Cloudflare WARP device-enrollment policy 決定哪些帳戶可把裝置加入組織；私有 hostname route 只在該組織的 WARP 連線內解析。具名 Tunnel 由主機向外連接 Cloudflare，不開放入站防火牆連接埠。NiceGUI 仍只綁定 loopback，並以 Host allow-list 只接受 localhost 與 `roster.singyin.internal`。若日後另購網域，才重新評估 public hostname + Protect with Access；兩種模式不可混合。[Connect a private hostname](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/private-net/cloudflared/connect-private-hostname/) [Device enrollment permissions](https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/deployment/device-enrollment/)
+Cloudflare team JWK endpoint 是 `https://restless-hall-73b2.cloudflareaccess.com/cdn-cgi/access/certs`。這是公開驗簽資料位置，不是登入網址；不要在使用者文件派發 `/auth/*` 或 JWK URL。
 
-## B 模式：受控實作順序（批准後才可執行）
+## VPC 與 Tunnel 邊界
 
-1. 將系統移至專用學校主機，先完成本機正式驗收、`SING_YIN_STORAGE_SECRET` 更換、中文字型確認及還原演練。
-2. 在 Cloudflare 建立受管 Tunnel；主機只需對外建立連線，NiceGUI 仍只聆聽 `127.0.0.1:8080`。
-3. 建立單一私有 hostname `roster.singyin.internal`，由 WARP 私有路由送往 Tunnel；主機在本機把該名稱解析到 `127.0.0.1`，不建立公開 DNS，也不公開資料庫、備份、日誌或資料夾路徑。
-4. 建立 WARP device-enrollment policy，只列出獲准帳戶；確認未獲准帳戶不能登記新裝置。
-5. 僅以虛構資料，用「允許帳戶、拒絕帳戶、已撤銷帳戶」各測一次登入；並測試 NiceGUI 長時間頁面、PDF 下載、登出與 session 到期行為。
-6. 以隔離資料庫做兩個瀏覽器的發布競爭與請假調整測試；確認 SQLite 交易仍是最終的公平帳本保護。
-7. 由教師顧問簽署驗收後，才轉用真實資料。每學期重審 allow-list、離任帳戶、備份還原及 Tunnel 健康。
+| 元件 | 已選設定 |
+|---|---|
+| Named Tunnel | `sing-yin-roster-windows-private` |
+| Tunnel ID | `ba6b6426-d012-4ecb-bafa-cbdbf2659731` |
+| VPC Service | `sing-yin-roster-nicegui` |
+| VPC Service ID | `019f5b30-d07c-7a63-a273-6b2ccb7318f8` |
+| VPC target | `localhost:8080` |
+| Worker binding | `ROSTER_ORIGIN`（remote VPC Service） |
+| NiceGUI listen address | `127.0.0.1:8080` |
 
-Tunnel 狀態只說明 `cloudflared` 可連到 Cloudflare，不代表應用程式本身健康；要同時監察主機、SQLite 備份及實際登入流程。Tunnel 副本可提高連線可用性，但不會替 SQLite 或應用程式提供跨主機資料庫容錯；不要把同一 SQLite 檔案放到多台主機上同時寫入。[Cloudflare Tunnel monitoring](https://developers.cloudflare.com/tunnel/monitoring/) [Tunnel configuration](https://developers.cloudflare.com/tunnel/configuration/)
+Worker 代理必須直接回傳 VPC `fetch()` 的原始 `Response`，不可重建 status／headers／body 後另造一份 Response；否則 `response.webSocket` 會遺失，NiceGUI 的即時連線會失效。
 
-## C 模式：真正雲端部署需要甚麼？
+## 已完成的傳輸證據
 
-這是 L3 架構改動，最低限度需要：
+臨時 `sing-yin-roster-vpc-probe` Worker 曾綁定上述 VPC Service，經 Tunnel 連到 Windows 的 `localhost:8080`：
 
-- 一部長時間運行、受更新管理的雲端 VM 或容器主機，而不是靜態網站主機。
-- 加密的持久化磁碟與受控備份；或在完成遷移、測試及還原演練後，改用受管理的 PostgreSQL。
-- 不再依賴單一 SQLite 檔案作多主機寫入；任何資料庫遷移都必須保留 `history_weight`、審計、備份及還原語義。
-- 應用內使用者與角色模型、Access 身份整合、session／登出策略，以及教師顧問可撤銷的權限管理。
-- 私隱影響評估、資料所在區域、保留期、事故處理、成本上限及校方 IT 維護責任。
-- 完整災難復原演練：主機遺失、資料庫還原、Access／IdP 故障、帳戶撤銷及 PDF 外發錯誤。
+- `/healthz` 回傳 HTTP 200。
+- WebSocket client 連到 `/_nicegui_ws/socket.io/?EIO=4&transport=websocket`，收到 Engine.IO open packet。
+- 這證明 VPC HTTP Upgrade 及 NiceGUI WebSocket 路徑在實際環境可通過。
+- probe script 及 workers.dev 子網域已刪除；它不是第二個入口，也不應留下書籤。
 
-在上述條件未完成前，C 模式不是較「高級」的版本；對目前值班工作來說，它反而會增加資料風險及交接成本。
+這項證據只確認 transport。正式發布前仍須以虛構資料完成 Access 登入／登出、8 小時 session／撤銷、長時間重新連線、檔案上載、PDF 下載及完整寫入流程的瀏覽器驗收。
+
+## 同站唯讀分享邊界
+
+1. 只有 `published` 週表可建立 `/view#…` 連結；草稿及完整資料庫不送到 Worker。
+2. 分享白名單只有週次／日期、崗位、當值時間、中文姓名及休室／待補顯示狀態。
+3. Windows 主機為每條連結產生獨立 AES-256-GCM key 及 nonce；KV 沒有 key，不能獨立解讀密文。
+4. key 留在完整 URL fragment，不會隨初始 HTTP request 傳給 Worker；同源 JavaScript 在收件者瀏覽器解密。
+5. KV 記錄會到期，也可由管理員撤銷；邊緣同步最多可能約一分鐘。
+6. 持有完整連結的人在到期或撤銷前都可查看。誤發時立即撤銷；週表經請假調整後建立新連結並撤銷舊連結。
+
+同一 host 同時提供訪客與管理員模式，但兩者資料權限完全不同；分享連結本身永遠不能把訪客升級為管理員。
+
+## 本機及 WARP 的定位
+
+`http://127.0.0.1:8080` 與 `http://roster.singyin.internal:8080` 保留作：
+
+- Cloudflare／Access／Worker 故障時的健康檢查與緊急維護；
+- 主機、Tunnel、VPC 或 WebSocket 診斷；
+- 正式入口未通過完整真人驗收前的安全後備；
+- 還原或搬機時的受控現場操作。
+
+它們不是正常分享地址，不放入群組、首頁快速入口或一般使用者書籤。WARP device enrollment 仍只列出維護所需的獲准帳戶；WARP-off 及未獲准裝置應不能使用後備地址。
+
+### 維護後備的既有驗收契約
+
+原有「**私有 Cloudflare Tunnel + WARP**」路徑不再是日常入口，但仍是可復原的維護資產。其 **WARP device-enrollment policy**、WARP-on／WARP-off／未獲准裝置拒絕測試及「**主機連接器健康；待真人遠端裝置驗收**」狀態仍須保留至後備驗收完成。這個 **應用內權限** 契約只容許維護帳戶，不得升級訪客或取代 canonical Admin login。過往另購網域時才會採用的 **public hostname + Protect with Access** 方案並非目前路線；現在由 path-specific Access 保護既有 workers.dev 管理流程。
+
+## 為甚麼不用 Quick Tunnel、Pages 或直接公開 origin？
+
+完整系統需要長時間運行的 Python NiceGUI、WebSocket、可寫入 SQLite、備份及日誌。靜態網站平台不能取代這些狀態；Quick Tunnel 是短暫開發工具，也不提供這套固定身份、VPC、驗收及復原邊界。Windows 防火牆不應為 NiceGUI、SQLite、備份或檔案分享開放公網入站連接埠。
+
+## 真正雲端主機是另一個 L3 決定
+
+如日後確有多主機高可用或集中 IT 維護需要，才另行設計：
+
+- 長時間運行的受管 VM／容器，而不是靜態網站主機；
+- 加密持久化儲存，以及經測試的 PostgreSQL 遷移或單主機資料策略；
+- 保留 `history_weight`、一次性發布、審計、備份及還原語義；
+- 身份與角色生命週期、資料保留、事故處理、成本上限及災難復原演練。
+
+目前 Worker + Access + VPC + Tunnel 只是安全地把同一 Windows origin 帶到一個正式網址，Windows 主機仍是唯一 system of record。
 
 ## English summary
 
-The selected remote-access model is a dedicated Windows host running the existing NiceGUI and SQLite system on loopback, connected through a private Cloudflare Tunnel and reached only by enrolled Cloudflare One Client (WARP) devices. No purchased domain or public DNS hostname is required. The Windows host remains the system of record; Cloudflare provides the authenticated private route rather than the application's database.
+The selected design uses one canonical `workers.dev` URL. Guests see read-only content; an approved administrator selects **Admin login**, completes Cloudflare Access sign-in and MFA, and returns to the same host with the full NiceGUI editor. The Worker independently verifies the Access JWT before proxying through Workers VPC and the existing named Tunnel to a Windows loopback origin.
 
-Do not use Quick Tunnels, a public URL, or a static hosting platform for operational roster data. WARP enrollment and the private route are the network boundary; remote access remains limited to the teacher advisor and current Head Study Prefect.
-
-True cloud hosting is a separate L3 project requiring a long-running Python host, durable encrypted storage or a tested database migration, application-level roles, backup and restore exercises, retention decisions, and formal school approval.
+Passwords, MFA, and account recovery remain with the Cloudflare identity provider. The application has no custom password database. Same-host `/view#…` links remain encrypted, expiring, and revocable. Localhost and private WARP are maintenance fallbacks only, not additional URLs to distribute. The Windows host remains the system of record; a true cloud-host migration is a separate L3 project.

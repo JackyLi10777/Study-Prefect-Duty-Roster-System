@@ -5,7 +5,9 @@ from collections import Counter, defaultdict
 from roster_core.generator import generate_weekly_roster
 from roster_core.loaders import load_prefect_seed
 from roster_policy import (
+    DUTY_SERVICE_TIME_WINDOWS,
     DUTY_TIME_WINDOWS,
+    ROOM_OPENING_TIME_WINDOWS,
     DutyPost,
     PrefectRole,
     SchoolDay,
@@ -47,10 +49,20 @@ def test_duty_weights_match_school_policy() -> None:
 
 
 def test_room_time_windows_match_school_policy() -> None:
-    assert DUTY_TIME_WINDOWS[DutyPost.ASSIST_IN_CHARGE] == ("15:40", "18:30")
-    assert DUTY_TIME_WINDOWS[DutyPost.ROOM_302] == ("15:40", "18:30")
-    assert DUTY_TIME_WINDOWS[DutyPost.ROOM_303] == ("15:40", "17:00")
-    assert DUTY_TIME_WINDOWS[DutyPost.ROOM_202] == ("15:40", "17:00")
+    assert ROOM_OPENING_TIME_WINDOWS[DutyPost.ASSIST_IN_CHARGE] == ("15:40", "18:30")
+    assert ROOM_OPENING_TIME_WINDOWS[DutyPost.ROOM_302] == ("15:40", "18:30")
+    assert ROOM_OPENING_TIME_WINDOWS[DutyPost.ROOM_303] == ("15:40", "17:00")
+    assert ROOM_OPENING_TIME_WINDOWS[DutyPost.ROOM_202] == ("15:40", "17:00")
+    assert DUTY_TIME_WINDOWS is ROOM_OPENING_TIME_WINDOWS
+
+
+def test_service_time_is_distinct_from_room_opening_time() -> None:
+    assert set(DUTY_SERVICE_TIME_WINDOWS) == set(DutyPost)
+    assert set(DUTY_SERVICE_TIME_WINDOWS.values()) == {("15:40", "17:00")}
+    assert (
+        DUTY_SERVICE_TIME_WINDOWS[DutyPost.ROOM_302]
+        != ROOM_OPENING_TIME_WINDOWS[DutyPost.ROOM_302]
+    )
 
 
 def test_generated_roster_preserves_non_negotiable_rules() -> None:

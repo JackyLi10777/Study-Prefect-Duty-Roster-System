@@ -87,8 +87,8 @@ MESSAGES = {
     },
     "allocation_statement_title": {"zh-HK": "值班編配時數證明", "en": "Duty allocation hours statement"},
     "allocation_statement_detail": {
-        "zh-HK": "按最終已發布週表、實際日期及各房間開放時間逐項計算。系統不會假設已出席；核對實際服務並完成文件上的首席導學風紀及顧問老師簽署後，才可作已完成服務證明。",
-        "en": "Calculated item by item from final published rosters, calendar dates, and room opening times. The system does not assume attendance; it becomes evidence of completed service only after actual service is checked and the Head Study Prefect and teacher advisor sign the document.",
+        "zh-HK": "按最終已發布週表、實際日期及統一當值時段（15:40–17:00）逐項計算；房間較遲關閉不會增加服務時數。系統不會假設已出席；核對實際服務並完成文件上的首席導學風紀及顧問老師簽署後，才可作已完成服務證明。",
+        "en": "Calculated item by item from final published rosters, calendar dates, and the standard duty window (15:40–17:00); a later room-closing time does not add service credit. The system does not assume attendance; it becomes evidence of completed service only after actual service is checked and the Head Study Prefect and teacher advisor sign the document.",
     },
     "allocation_statement_option": {
         "zh-HK": "{name}・{duties} 次・{hours} 小時",
@@ -99,8 +99,8 @@ MESSAGES = {
     "download_allocation_statement_en": {"zh-HK": "下載英文時數證明", "en": "Download English hours statement"},
     "progress_allocation_statement_title": {"zh-HK": "正在製作時數證明", "en": "Preparing hours statement"},
     "progress_allocation_statement_working": {
-        "zh-HK": "正在核對最終編配、日期、房間時段及總時數…",
-        "en": "Checking final allocations, dates, room times, and total hours…",
+        "zh-HK": "正在核對最終編配、日期、當值時段及總時數…",
+        "en": "Checking final allocations, dates, duty times, and total hours…",
     },
     "allocation_statement_ready": {"zh-HK": "時數證明已準備；請先核對內容，再完成所需簽署。", "en": "The hours statement is ready. Review it before completing the required sign-off."},
     "fairness_trend": {"zh-HK": "歷史公平分布趨勢", "en": "Historical fairness distribution"},
@@ -120,8 +120,8 @@ MESSAGES = {
         "en": "Recorded service participation",
     },
     "recorded_service_participation_detail": {
-        "zh-HK": "中文姓名在所有模式保持不變；時數按目前政策時段推算，只代表編排。",
-        "en": "Chinese names remain authoritative in every mode. Hours use current policy windows and represent scheduling only.",
+        "zh-HK": "中文姓名在所有模式保持不變；時數按統一當值時段推算，只代表編排。",
+        "en": "Chinese names remain authoritative in every mode. Hours use the standard duty window and represent scheduling only.",
     },
     "report_assist_duties": {"zh-HK": "領導崗位", "en": "Assist duties"},
 }

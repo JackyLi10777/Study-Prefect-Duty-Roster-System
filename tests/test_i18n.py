@@ -10,7 +10,7 @@ from tests.ui_source import combined_theme_source
 
 
 def test_domain_catalog_merge_has_no_duplicate_message_keys() -> None:
-    from nicegui_app.ui.i18n_catalog import foundation, importing, media, people, platform, reporting, stewardship, weekly
+    from nicegui_app.ui.i18n_catalog import foundation, importing, media, people, platform, reporting, sharing, stewardship, weekly
 
     domains = (
         foundation.MESSAGES,
@@ -21,6 +21,7 @@ def test_domain_catalog_merge_has_no_duplicate_message_keys() -> None:
         media.MESSAGES,
         reporting.MESSAGES,
         importing.MESSAGES,
+        sharing.MESSAGES,
     )
     assert len(MESSAGES) == sum(len(domain) for domain in domains)
 
@@ -33,6 +34,22 @@ def test_every_interface_message_has_nonempty_traditional_chinese_and_english_te
     }
 
     assert missing == {}
+
+
+def test_public_roster_sharing_copy_explains_scope_and_link_authority() -> None:
+    required = {
+        "public_share_title",
+        "public_share_intro",
+        "public_share_confirm_body",
+        "public_share_created_body",
+        "public_share_revoke_confirm_body",
+    }
+
+    assert required <= MESSAGES.keys()
+    assert "中文姓名" in MESSAGES["public_share_confirm_body"][ZH_HK]
+    assert "公平點數" in MESSAGES["public_share_confirm_body"][ZH_HK]
+    assert "Anyone with the complete link" in MESSAGES["public_share_confirm_body"][EN]
+    assert "not stored" in MESSAGES["public_share_created_body"][EN]
 
 
 def test_every_literal_ui_translation_lookup_exists_in_the_catalogue() -> None:

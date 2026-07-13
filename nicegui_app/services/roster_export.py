@@ -26,7 +26,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from nicegui_app.config import DISPLAY_PRINT_CREST_PATH, PROJECT_ROOT
-from roster_policy import DUTY_TIME_WINDOWS, DutyPost, SchoolDay
+from roster_policy import ROOM_OPENING_TIME_WINDOWS, DutyPost, SchoolDay
 
 if TYPE_CHECKING:
     from nicegui_app.services.roster_workflow import RosterWorkflow
@@ -233,7 +233,7 @@ def _schedule_grid(
     ]]
     cell_backgrounds: list[tuple[int, int, colors.Color]] = []
     for row_index, (post, slot_index, label) in enumerate(POST_ROWS, start=1):
-        start_time, end_time = DUTY_TIME_WINDOWS[post]
+        start_time, end_time = ROOM_OPENING_TIME_WINDOWS[post]
         post_label = xml_escape(label[0 if language == "zh" else 1])
         row = [
             Paragraph(

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "sing-yin-roster-viewer",
+  "main": "worker.js",
+  "compatibility_date": "2026-07-13",
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
+    "ACCESS_AUD": "REPLACE_WITH_ACCESS_APPLICATION_AUD",
+    "ADMIN_EMAIL": "REPLACE_WITH_EXACT_ADMIN_EMAIL"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "ROSTER_SHARES",
+      "id": "REPLACE_WITH_CLOUDFLARE_KV_NAMESPACE_ID"
+    }
+  ],
+  "vpc_services": [
+    {
+      "binding": "ROSTER_ORIGIN",
+      "service_id": "REPLACE_WITH_VPC_SERVICE_ID"
+    }
+  ]
+}

@@ -8,7 +8,7 @@
 
 **生成草稿 → 核對 → 發布 → 匯出 PDF → 已發布後請假調整 → 公平解釋 → 備份／還原 → 交接。**
 
-我把公平、清晰、責任、耐心與關顧定為這個系統的原則。學生姓名、請假原因、值班紀錄、PDF 及備份均保留在受控環境；現時不會自動上載到公開服務。
+我把公平、清晰、責任、耐心與關顧定為這個系統的原則。所有人只需記住同一個正式網站：訪客在未登入狀態只能查看我明確分享的已發布週表；獲准管理員在同一網站按「管理員登入」，經 Cloudflare Access 驗證後才可使用完整工作台。正式名單、請假原因、公平帳本、PDF、備份及完整操作資料仍留在受控 Windows 主機；唯讀分享只把最少欄位的加密密文送到 Cloudflare KV。
 
 [English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)
 
@@ -32,12 +32,13 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 ## 首席導學風紀：每日怎樣進入
 
-1. 開啟系統資料夾。
-2. **雙擊 `START_SING_YIN_ROSTER.cmd`**。
-3. 啟動器會先檢查是否已有系統在執行；若已有，會直接開啟原有服務，不會再啟動第二個 NiceGUI。
-4. 預設網址是 [http://127.0.0.1:8080](http://127.0.0.1:8080)。若 8080 被其他程式佔用，啟動器會自動選擇 8081–8099 之間的可用埠，並在黑色視窗顯示實際網址。
-5. 只有在 HTTP 確認系統真正就緒後，瀏覽器才會開啟；若沒有自動開啟，請使用黑色視窗顯示的網址，不要猜測埠號。
-6. 先閱讀首頁每日經文。經文方向可選「跟隨外觀／清晰指引／安靜安慰」；跟隨外觀只提供首次建議，亦可固定自己需要的方向。然後依「本週值班工作台」的目前步驟工作。
+1. 在任何普通瀏覽器開啟唯一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。
+2. 按 **「管理員登入 / Admin login」**；網站會在內部交由 Cloudflare Access 驗證，不需要抄寫或收藏 `/auth/*` 路徑。
+3. 以 Access policy 精確列明的管理員電郵完成 Cloudflare 帳戶登入及 MFA。系統沒有自製密碼資料表，也不會要求在 NiceGUI 另設共用密碼。
+4. 驗證後仍留在同一網站，完整工作台才會解鎖。Access session 最長 8 小時；完成工作後按 **「登出 / Log out」**，共用裝置不可只關閉分頁。
+5. 先閱讀首頁每日經文。經文方向可選「跟隨外觀／清晰指引／安靜安慰」；跟隨外觀只提供首次建議，亦可固定自己需要的方向。然後依「本週值班工作台」的目前步驟工作。
+
+若 Cloudflare 暫時不可用，維護者才在 Windows 主機雙擊 `START_SING_YIN_ROSTER.cmd`，使用啟動器顯示的 localhost（通常是 `http://127.0.0.1:8080`），或以已登記 WARP 裝置進入後備地址。這些都是故障診斷與復原路徑，不是派發給日常使用者的第二個網站。
 
 ### 第一次接手：先用練習模式走一次完整流程
 
@@ -45,7 +46,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 - 每一頁頂部都會顯示繁中／英文「練習模式」狀態列；練習 PDF 的檔名、正文及頁尾均標示不可作正式發布。
 - 可放心練習「請假 → 生成 → 手動修改 → 發布 → 雙語 PDF → 發布後請假調整 → 公平審核 → 備份／還原」。
 - 要重新開始時，先關閉練習模式的黑色視窗，再雙擊 `RESET_PRACTICE_MODE.cmd`；它只會清除 `data/practice/`，然後重新建立虛構練習環境。
-- 正式工作仍只使用 `START_SING_YIN_ROSTER.cmd`。兩個啟動器會透過 `/healthz` 的 `applicationMode` 身份辨識服務，不會互相誤開。
+- 正式日常工作使用上述唯一網站。`START_SING_YIN_ROSTER.cmd` 保留給主機維護及 Cloudflare 故障後備；兩個本機啟動器會透過 `/healthz` 的 `applicationMode` 身份辨識服務，不會互相誤開。
 
 日常安全次序：
 
@@ -54,8 +55,9 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 3. 核對草稿；如需要，使用「手動修改草稿」並填寫原因。
 4. 發布前再次核對。**只有發布才會更新 `history_weight` 公平帳本。**
 5. 下載繁中或英文的橫向 A4 週表；所有導學風紀姓名均維持中文。匯出視窗可開關校徽；正式分享版預設不顯示「僅供內部使用」、頁碼或經文提示，只有存檔確有需要時才開啟補充頁腳。
-6. 已發布後有人請假時，只使用「請假調整」，不要重新生成已發布週表或直接修改資料庫；依頁面步驟選擇原崗位、載入替補、填寫原因，才儲存。手機版會把名單及值班資料顯示為完整卡片，避免靠橫向滑動尋找中文姓名。
-7. 新任首席導學風紀可在側邊欄依次查看「開始使用」→「使用手冊」→「平台與團隊」→「系統架構與可信設計」；它們分別說明第一次操作、每週安全流程、團隊責任，以及系統如何保護公平與復原，不需要先懂程式。
+6. 如要讓其他人直接在瀏覽器查看，從已發布週表或「存取控制台」明確建立唯讀連結；任何取得完整連結的人都可在到期或撤銷前查看該週表，因此只發給需要的人。
+7. 已發布後有人請假時，只使用「請假調整」，不要重新生成已發布週表或直接修改資料庫；依頁面步驟選擇原崗位、載入替補、填寫原因，才儲存。完成調整後重新匯出 PDF 或建立新 Viewer 連結，並撤銷舊連結。手機版會把名單及值班資料顯示為完整卡片，避免靠橫向滑動尋找中文姓名。
+8. 新任首席導學風紀可在側邊欄依次查看「開始使用」→「使用手冊」→「平台與團隊」→「系統架構與可信設計」；它們分別說明第一次操作、每週安全流程、團隊責任，以及系統如何保護公平與復原，不需要先懂程式。
 
 名單新增／修改／停用及生成前請假會連同本機快照一起安全處理；進度視窗完成前不要重複點擊。停用只會停止日後選用，不會刪除既有週表、公平帳本或審計紀錄，且必須先經過清楚確認。
 
@@ -101,7 +103,8 @@ python -X utf8 -m nicegui_app.main
 | 每週生成、發布、PDF、請假調整 | [首席導學風紀操作手冊](docs/OPERATOR_GUIDE.md) |
 | 雙擊啟動、埠號衝突、重複開啟 | [快速啟動](docs/QUICKSTART.md) |
 | 從零設定長期使用的 Windows 專用主機 | [Windows 專用主機完整設定手冊](docs/WINDOWS_DEDICATED_HOST_SETUP.md) |
-| 不購買網域，以 Cloudflare 私有 WARP 安全遠端使用 | [Cloudflare 免費無網域遠端存取手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md) |
+| 不購買網域，以同一 workers.dev 網站提供訪客唯讀及管理員登入 | [Cloudflare 免費無網域遠端存取手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md) |
+| 登入、登出、建立、發送、到期及撤銷唯讀週表 | [單一網站存取手冊](docs/PUBLIC_ROSTER_VIEWER.md) |
 | 第一次接手、隔離練習及重設 | `START_PRACTICE_MODE.cmd`、`RESET_PRACTICE_MODE.cmd` 及 [快速啟動](docs/QUICKSTART.md) |
 | 備份、還原、交接、正式驗收 | [首次發布與交接手冊](docs/RELEASE_HANDOVER.md) |
 | 每項驗收要求的自動化證據與真人責任 | [正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md) |
@@ -140,13 +143,19 @@ README、架構文件及發布報告中的工程成果亦整理成獨立網站�
 
 ```mermaid
 flowchart TB
-    OP["首席導學風紀<br/>Head Study Prefect"] --> UI["NiceGUI 操作層<br/>雙語 · 深淺模式 · 可存取提示"]
+    GUEST["訪客<br/>同一 workers.dev 網站"] --> EDGE["Cloudflare Worker<br/>單一正式入口"]
+    OP["首席導學風紀<br/>管理員登入 + MFA"] --> EDGE
+    EDGE -->|未登入| VIEWER["唯讀訪客頁<br/>加密已發布週表"]
+    EDGE -->|Access JWT 驗證通過| VPC["Workers VPC + Tunnel<br/>HTTP · WebSocket"]
+    VPC --> UI["NiceGUI 操作層<br/>雙語 · 深淺模式 · 可存取提示"]
     UI --> WF["roster_workflow<br/>交易 · 公平帳本 · 審計"]
     WF --> CORE["roster_core<br/>純生成與完整驗證"]
     CORE --> POLICY["roster_policy<br/>校規唯一來源"]
     WF --> DB["SQLite + SQLAlchemy<br/>持久週表與 history_weight"]
     WF --> SNAP["自動 SQLite 快照<br/>SHA-256 manifest · 完整性核對"]
     DB --> PDF["本機 PDF 輸出<br/>橫向週表 · 直向內部審計"]
+    UI --> SHARE["顯式建立唯讀連結<br/>本機 AES-GCM 加密"]
+    SHARE --> VIEWER
     SNAP --> RESTORE["受控還原<br/>還原前安全快照 · 審計"]
     LOG["無內容本機日誌<br/>OP / REQ 支援編號"] -. 診斷而不記錄姓名 .-> UI
 ```
@@ -192,7 +201,7 @@ stateDiagram-v2
 - **校規單一來源：** 頁面不自行決定誰可在哪裏當值。
 - **公平持久而可解釋：** 草稿不入帳，發布只入帳一次，請假調整留下扣回與轉移紀錄。
 - **重要寫入可復原：** 快照、manifest、SHA-256、SQLite 完整性及還原前安全快照共同工作。
-- **資料邊界清楚：** 姓名、請假與週表不進入公開服務、音樂層或診斷內容；外部存取尚未批准。
+- **資料邊界清楚：** 同一網站不等於相同權限。未登入訪客只可讀取我明確確認後保存的最少週表密文；完整名單、請假、公平、審計、備份及 OP 工作台只會在 Worker 驗證 Access JWT 後經 VPC 連到受控主機。解密鑰匙只在完整分享連結的 URL fragment。
 
 ## YouTube 音樂控制窗（自選）
 
@@ -207,9 +216,11 @@ stateDiagram-v2
 
 ## 資料安全與遠端存取
 
-現時系統以 **Windows 本機正式版本 + 無網域 Cloudflare 私有 WARP** 為部署方向。不要使用 Quick Tunnel、公開網址、個人雲端同步資料夾或公開 Sites 服務處理值班資料。
+現時只派發一個正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。未登入訪客留在同站唯讀模式；管理員按「管理員登入」後，由 Cloudflare Access 以精確電郵、帳戶登入及 MFA 驗證，Worker 再核對 JWT 簽章、`aud`、`iss`、`exp` 及管理員電郵，才把請求透過 Workers VPC、具名 Tunnel 送到只監聽 `127.0.0.1` 的 NiceGUI。8 小時 session 到期或主動登出後，使用者回復訪客權限。
 
-系統不需要購買網域：具名 Cloudflare Tunnel、指定帳戶的 WARP 裝置登記政策、`roster.singyin.internal` 私有 hostname route 及主機連接器均已啟用。資料與 NiceGUI 程序仍留在 Windows 主機；Cloudflare 只提供已登記裝置的私有路由。NiceGUI origin 仍只監聽 `127.0.0.1`，程式亦把 private-WARP mode 與有網域的 public-Access mode 分開驗證，禁止把兩組設定混合。遠端裝置的最後真人驗收依[Cloudflare 免費無網域遠端存取手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md)完成。
+同一 host 下的 `/view#…` 分享連結仍是唯讀：Windows 主機以 AES-256-GCM 加密週次、日期、崗位、當值時間及中文姓名，Cloudflare KV 只保存密文、nonce 和最少的週次／建立／到期 metadata；解密鑰匙留在 URL fragment，不會隨初始 HTTP request 傳給 Worker。連結會到期，也可由管理員撤銷。`/auth/*`、`/op/*`、VPC Service、localhost 及私人 WARP 地址都是內部或維護路徑，不另行派發。
+
+本機與已登記 WARP 地址保留作 Cloudflare 故障時的診斷、復原及緊急維護，不是第二個日常入口。不要使用 Quick Tunnel、公開 origin、個人雲端同步資料夾或公開 Sites 服務處理完整操作資料。完整設定、驗收及後備程序見[Cloudflare 免費無網域遠端存取手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md)及[單一網站存取手冊](docs/PUBLIC_ROSTER_VIEWER.md)。
 
 真正遷移到雲端主機是另一個 L3 架構項目：目前系統使用長時間運行的 Python NiceGUI 程序及可寫入 SQLite 資料目錄，不能直接搬到靜態網站平台。任何雲端遷移必須先有身份權限模型、受控持久化資料庫、加密備份、復原演練及資料保留決定。
 
@@ -240,7 +251,13 @@ stateDiagram-v2
 不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
 
 **目前可否在校外使用？**
-免費、無網域的私有 WARP 主機連接器已啟用，而且不會建立公開網址。完成一部遠端裝置的 WARP 登記與三路驗收（已獲准、WARP 關閉、未獲准）後，才把它視為正式校外入口；主機本身仍可一直使用 localhost。
+可以。所有人都開啟同一個 workers.dev 網站：未登入訪客只能查看指定已發布週表；獲准管理員按「管理員登入」，通過 Cloudflare Access 後才在同站解鎖 NiceGUI。一般使用者不用安裝 WARP；WARP 只保留作維護後備。
+
+**別人可否用 Viewer 連結編輯週表？**
+不可。分享連結永遠唯讀；網址參數、瀏覽器標頭或畫面操作都不能把訪客升級為管理員。只有 Access policy 內的管理員身份通過驗證後，Worker 才轉送完整工作台。
+
+**Viewer 連結失效或週表更新後怎樣處理？**
+到「存取控制台」載入有效連結並撤銷舊連結；如週表已調整，先完成正式請假調整，再建立及發送新連結。系統不保存舊連結的解密鑰匙，因此遺失完整連結時應撤銷並重建。
 
 **YouTube 或背景音樂會取得學生資料嗎？**  
 不會。媒體層只接收非敏感頁面分類及歌單設定，不會收到名單、請假、週表、公平、PDF、備份或審計內容。
@@ -285,17 +302,19 @@ python -X utf8 scripts\verify_release_candidate.py
 
 ## English quick guide
 
-This is a local-first duty roster system for Sing Yin Secondary School Study Prefects. The current Head Study Prefect handles routine operation; the teacher advisor mainly reviews published results, fairness, and handover evidence after completion. It supports draft generation, review, publication, bilingual PDF export, post-publication leave adjustment, fairness explanation, reviewed CSV/XLSX directory import, read-only period reporting, verified backup/restore, and handover.
+This is a local-first duty roster system for Sing Yin Secondary School Study Prefects. The current Head Study Prefect handles routine operation; the teacher advisor mainly reviews published results, fairness, and handover evidence after completion. It supports draft generation, review, publication, bilingual PDF export, post-publication leave adjustment, fairness explanation, reviewed CSV/XLSX directory import, read-only period reporting, verified backup/restore, handover, and an explicitly created encrypted browser-direct viewer for one published roster.
 
 The optional YouTube control window plays public playlists for free without sign-in or an API key. It remains visible and never autoplays. The local library now offers appearance-recommended Bright focus and Quiet reflection profiles, keeps vocal and instrumental versions distinct, and can save authorised public YouTube/YouTube Music links into `music/youtube-imports/` through the locked local importer. An optional `SING_YIN_YOUTUBE_API_KEY` enables in-app public search; keep it only in the local `.env` and never include student information in music searches or playlist names.
 
 ### Daily use
 
-1. Double-click `START_SING_YIN_ROSTER.cmd`.
-2. The launcher reuses an already-running Sing Yin service instead of starting a duplicate copy. If another program occupies port 8080, it automatically selects a free port between 8081 and 8099 and prints the exact URL.
-3. The browser opens only after the local HTTP service is confirmed ready. If it does not open, use the exact URL printed in the black launcher window.
+1. Open the one canonical site: <https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>.
+2. Select **Admin login**. Cloudflare Access handles the account sign-in and MFA; the application has no custom password database.
+3. After successful verification, the same site unlocks the NiceGUI workbench. The Access session lasts at most eight hours; select **Log out** when finished.
 4. Read the Daily Verse. Its direction can follow appearance or be fixed to Clear guidance or Quiet comfort; appearance is only a default recommendation. Then follow the highlighted step in the weekly roster desk.
-5. Check the prefect directory, declare pre-generation leave, generate a draft, review it, publish once, export the roster, and use the dedicated leave-adjustment workflow for a late absence. In that workflow, choose the original duty, load a substitute, record a reason, then save; phone views keep the relevant Chinese identity and duty information together in cards.
+5. Check the prefect directory, declare pre-generation leave, generate a draft, review it, publish once, export the roster, and use the dedicated leave-adjustment workflow for a late absence. If browser-direct viewing is needed, explicitly create a same-host read-only `/view#…` link; after a late adjustment, create a fresh link and revoke the old one.
+
+`START_SING_YIN_ROSTER.cmd`, localhost, and the enrolled private-WARP address remain maintenance and outage fallbacks, not additional URLs to distribute.
 
 Traditional Chinese is the primary interface language. English labels are complete, but prefect names always remain Chinese in the UI and both PDF languages.
 
@@ -309,7 +328,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The deployment path is a dedicated Windows localhost origin with domain-free Cloudflare private WARP access. The named Tunnel, exact-account device-enrollment policy, `roster.singyin.internal` route, and protected Windows connector are active without a public DNS hostname; one enrolled-device acceptance run must still pass before routine remote use. Quick Tunnels and public origin ports are not part of the design. Follow the [domain-free remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md).
+One canonical `workers.dev` site serves both modes. Guests remain read-only; an approved administrator selects **Admin login**, passes the path-specific Cloudflare Access policy, and is returned to the same site with the NiceGUI workbench proxied through Workers VPC and the existing Tunnel. The Worker independently verifies the Access JWT before forwarding. Same-host `/view#…` links remain expiring, revocable encrypted snapshots; KV stores ciphertext and minimum metadata while the AES-GCM key stays in the fragment. Localhost and private WARP are maintenance fallbacks. Quick Tunnels and public origin ports are not part of the design. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md) and [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 
@@ -320,7 +339,7 @@ For operating instructions, recovery, architecture, and current release evidence
 - Official state stays in local SQLite. Only checksum- and integrity-verified snapshots are eligible for managed restore.
 - Prefect names remain Chinese in both locales and both schedule PDFs.
 - An `OP-...` reference is safe to share with the advisor or IT; the full local log is not.
-- The current approved network mode is localhost, not a public URL.
+- One canonical site presents guest read-only access by default and unlocks the editor only after Cloudflare Access plus Worker-side JWT verification; local/private WARP remains a maintenance fallback.
 
 ---
 

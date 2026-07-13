@@ -92,6 +92,7 @@ def test_period_summary_uses_only_published_final_assignment_state(workflow: Ros
     assert report.assist_required_count == 10
     assert report.assist_filled_count == 10
     assert report.scheduled_minutes > 0
+    assert report.scheduled_minutes == report.active_assignment_count * 80
     assert report.fairness_ledger_balanced
     assert len(report.trend) == 2
     assert all(row.name_zh and row.name_zh.isascii() is False for row in report.contributions)
@@ -185,6 +186,8 @@ def test_bilingual_allocation_statement_lists_dates_room_times_and_calculated_ho
     assert sum(item.scheduled_minutes for item in contribution.allocations) == contribution.scheduled_minutes
     assert all(item.duty_date >= FIRST_WEEK for item in contribution.allocations)
     assert {item.start_time for item in contribution.allocations} == {"15:40"}
+    assert {item.end_time for item in contribution.allocations} == {"17:00"}
+    assert {item.scheduled_minutes for item in contribution.allocations} == {80}
     chinese = build_duty_allocation_statement_pdf(report, contribution.prefect_id, language="zh")
     english = build_duty_allocation_statement_pdf(report, contribution.prefect_id, language="en")
     chinese_text = "\n".join(page.extract_text() for page in PdfReader(BytesIO(chinese.content)).pages)
@@ -196,5 +199,9 @@ def test_bilingual_allocation_statement_lists_dates_room_times_and_calculated_ho
     assert contribution.name_zh in english_text
     assert contribution.allocations[0].duty_date.isoformat() in chinese_text
     assert contribution.allocations[0].start_time in english_text
+    assert "當值時間" in chinese_text
+    assert "Duty time" in english_text
+    assert "18:30" not in chinese_text
+    assert "18:30" not in english_text
     assert "核對實際出席" in chinese_text
     assert "attendance is checked" in english_text
