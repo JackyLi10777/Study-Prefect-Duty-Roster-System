@@ -39,6 +39,8 @@ if ($inspection.Exists -and -not $inspection.Owned) {
 if ($AtStartup) {
     $trigger = New-ScheduledTaskTrigger -AtStartup
     $trigger.Delay = "PT30S"
+    Grant-SingYinBatchLogonRight -RuntimeUser $runtimeAccount.Name
+    Grant-SingYinVenvBasePythonReadAccess -ProjectRoot $ProjectRoot -RuntimeUser $runtimeAccount.Name
     Write-Host "Windows needs the dedicated-host account password once to store this startup task securely." -ForegroundColor Yellow
     $credential = Get-Credential -UserName $runtimeAccount.QualifiedName -Message "Sing Yin roster runtime account"
     $credentialSid = Resolve-SingYinIdentitySid -Identity $credential.UserName

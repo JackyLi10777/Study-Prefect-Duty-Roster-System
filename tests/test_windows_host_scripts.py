@@ -144,6 +144,11 @@ def test_windows_host_scripts_bind_permissions_and_task_to_dedicated_runtime_use
     assert "must remain a standard user" in common
     assert 'RuntimeUser = "SingYinRosterSvc"' in preparation
     assert "Grant-SingYinRuntimeReadAccess" in preparation
+    assert "Grant-SingYinVenvBasePythonReadAccess" in preparation
+    assert "Grant-SingYinBatchLogonRight" in preparation
+    assert "Grant-SingYinVenvBasePythonReadAccess" in startup
+    assert "Grant-SingYinBatchLogonRight" in startup
+    assert "SeBatchLogonRight" in common
     assert "-RequiredIdentitySid $runtimeAccount.Sid.Value" in preparation
     assert 'RuntimeUser = "SingYinRosterSvc"' in startup
     assert "not owned by this project and runtime account" in startup

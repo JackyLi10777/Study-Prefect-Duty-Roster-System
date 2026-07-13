@@ -117,6 +117,8 @@ SING_YIN_LOG_DIR=$ProjectRoot\logs
 
 Write-Step "Restricting local application data to the dedicated host account"
 Grant-SingYinRuntimeReadAccess -Path $ProjectRoot -RuntimeUser $runtimeAccount.Name
+Grant-SingYinVenvBasePythonReadAccess -ProjectRoot $ProjectRoot -RuntimeUser $runtimeAccount.Name
+Grant-SingYinBatchLogonRight -RuntimeUser $runtimeAccount.Name
 $sensitivePaths = @(
     $envPath,
     (Join-Path $ProjectRoot "data\runtime"),

@@ -31,7 +31,7 @@ powershell -ExecutionPolicy Bypass -File scripts\prepare_windows_host.ps1 -Insta
 powershell -ExecutionPolicy Bypass -File scripts\register_windows_startup_task.ps1 -AtStartup -RuntimeUser "SingYinRosterSvc"
 ```
 
-第一條會自動檢查或安裝 Git、Python 3.12，建立 `.venv`、安裝套件、建立本機環境與執行預檢；第二條只在 Windows 必須保存開機工作時要求你輸入一次主機帳戶密碼。以下各節仍保留完整手動步驟，方便查錯及交接。
+第一條會自動檢查或安裝 Git、Python 3.12，建立 `.venv`、安裝套件、建立本機環境與執行預檢；它亦會為標準執行帳戶加入 Windows 背景工作所需的「以批次工作登入」權限，並在 Python 由安裝者個人帳戶提供時，只開放該 Python runtime 的讀取／執行權限。第二條只在 Windows 必須保存開機工作時要求你輸入一次主機帳戶密碼。以下各節仍保留完整手動步驟，方便查錯及交接。
 
 如果這部主機也要執行完整發布／瀏覽器驗證，在第一條命令末尾加上 `-IncludeDevelopmentTools`；它會一併安裝測試套件及隔離的 Playwright Chromium。日常只運行網站的主機不需要此額外下載。
 
@@ -195,7 +195,7 @@ New-LocalUser -Name "SingYinRosterSvc" `
 Get-LocalUser -Name "SingYinRosterSvc" | Select-Object Name,Enabled,PasswordExpires,UserMayChangePassword
 ```
 
-不要在檔案總管手動為整個專案開放寫入。稍後的 `prepare_windows_host.ps1` 會只為程式碼加入讀取／執行權限，並只讓這個帳戶寫入 runtime SQLite、備份及日誌。
+不要在檔案總管手動為整個專案開放寫入。稍後的 `prepare_windows_host.ps1` 會只為程式碼及 `.venv` 所引用的 Python runtime 加入讀取／執行權限，只讓這個帳戶寫入 runtime SQLite、備份及日誌，並加入背景排程必需的批次登入權限。
 
 ### 步驟 4.3：下載 `main` 正式分支
 
@@ -619,6 +619,8 @@ C:\SingYinRoster\.venv\Scripts\python.exe -m pip install --require-hashes -r C:\
 | 顯示「資料已儲存，但備份未完成」 | 重新載入核對結果，再到設定建立已驗證快照 | 絕對不要重複剛才操作 |
 | 中文 PDF 變成方格 | 安裝 Noto Sans TC，或設定 `SING_YIN_PDF_FONT` | 不要改學生姓名為英文 |
 | 排程在改密碼後失敗 | 以 `SingYinRosterSvc` 新密碼重新登記工作 | 不要改成管理員帳戶長期運行 |
+| 排程顯示登入類型未獲授權 | 以管理員身份重新執行 `prepare_windows_host.ps1 -RuntimeUser "SingYinRosterSvc"`，再重新登記工作 | 不要把執行帳戶加入 Administrators |
+| 排程能啟動 Python 但立即結束 | 重新執行主機準備腳本；它會核對 `.venv\pyvenv.cfg` 並只為底層 Python runtime 補上讀取／執行權限 | 不要為整個使用者資料夾開放權限 |
 | 更新時 `git pull` 失敗 | 保留完整訊息，停止更新並聯絡維護者 | 不要執行 `git reset --hard` |
 | 電腦重新啟動後網站沒有出現 | 等候一分鐘，檢查工作排程器「歷程記錄」 | 不要重複建立多個工作 |
 
