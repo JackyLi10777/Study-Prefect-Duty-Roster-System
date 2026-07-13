@@ -209,7 +209,7 @@ stateDiagram-v2
 
 現時系統以 **Windows 本機正式版本 + 無網域 Cloudflare 私有 WARP** 為部署方向。不要使用 Quick Tunnel、公開網址、個人雲端同步資料夾或公開 Sites 服務處理值班資料。
 
-系統不需要購買網域：已建立具名 Cloudflare Tunnel、指定帳戶的 WARP 裝置登記政策及 `roster.singyin.internal` 私有 hostname route。資料與 NiceGUI 程序仍留在 Windows 主機；Cloudflare 只提供已登記裝置的私有路由。NiceGUI origin 仍只監聽 `127.0.0.1`，程式亦把 private-WARP mode 與有網域的 public-Access mode 分開驗證，禁止把兩組設定混合。主機連接器及遠端裝置的最後真人驗收依[Cloudflare 免費無網域遠端存取手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md)完成。
+系統不需要購買網域：具名 Cloudflare Tunnel、指定帳戶的 WARP 裝置登記政策、`roster.singyin.internal` 私有 hostname route 及主機連接器均已啟用。資料與 NiceGUI 程序仍留在 Windows 主機；Cloudflare 只提供已登記裝置的私有路由。NiceGUI origin 仍只監聽 `127.0.0.1`，程式亦把 private-WARP mode 與有網域的 public-Access mode 分開驗證，禁止把兩組設定混合。遠端裝置的最後真人驗收依[Cloudflare 免費無網域遠端存取手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md)完成。
 
 真正遷移到雲端主機是另一個 L3 架構項目：目前系統使用長時間運行的 Python NiceGUI 程序及可寫入 SQLite 資料目錄，不能直接搬到靜態網站平台。任何雲端遷移必須先有身份權限模型、受控持久化資料庫、加密備份、復原演練及資料保留決定。
 
@@ -240,7 +240,7 @@ stateDiagram-v2
 不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
 
 **目前可否在校外使用？**
-可以採用免費的私有 WARP 路線，但不會建立公開網址。主機連接器啟用、遠端裝置完成 WARP 登記及正式驗收前，日常使用仍以 localhost 為準。
+免費、無網域的私有 WARP 主機連接器已啟用，而且不會建立公開網址。完成一部遠端裝置的 WARP 登記與三路驗收（已獲准、WARP 關閉、未獲准）後，才把它視為正式校外入口；主機本身仍可一直使用 localhost。
 
 **YouTube 或背景音樂會取得學生資料嗎？**  
 不會。媒體層只接收非敏感頁面分類及歌單設定，不會收到名單、請假、週表、公平、PDF、備份或審計內容。
@@ -309,7 +309,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The deployment path is a dedicated Windows localhost origin with domain-free Cloudflare private WARP access. The named Tunnel, exact-account device-enrollment policy, and `roster.singyin.internal` route exist without a public DNS hostname; the host connector and enrolled-device acceptance checks must still pass before routine remote use. Quick Tunnels and public origin ports are not part of the design. Follow the [domain-free remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md).
+The deployment path is a dedicated Windows localhost origin with domain-free Cloudflare private WARP access. The named Tunnel, exact-account device-enrollment policy, `roster.singyin.internal` route, and protected Windows connector are active without a public DNS hostname; one enrolled-device acceptance run must still pass before routine remote use. Quick Tunnels and public origin ports are not part of the design. Follow the [domain-free remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 

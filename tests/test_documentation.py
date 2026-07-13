@@ -207,7 +207,7 @@ def test_deployment_guide_preserves_local_first_and_access_gates() -> None:
     assert "Quick Tunnel" in guide
     assert "應用內權限" in guide
     assert "127.0.0.1:8080" in guide
-    assert "待主機連接器及真人裝置驗收" in guide
+    assert "主機連接器健康；待真人遠端裝置驗收" in guide
     assert "public hostname + Protect with Access" in guide
     assert "CLOUDFLARE_REMOTE_ACCESS_SETUP.md" in guide
 

@@ -17,7 +17,7 @@
 | 模式 | 資料位置 | 誰可進入 | 適合情況 | 目前狀態 |
 |---|---|---|---|---|
 | A. 本機正式使用 / Local-only | 專用校內電腦 | 在該電腦操作的人 | 首次發布、最小風險、單一負責人 | **現時批准** |
-| B. 受控遠端存取 / Controlled remote access | Windows 專用主機為系統資料來源；Cloudflare 處理私有路由與裝置登記 | WARP device-enrollment policy 內逐一列明的使用者 | 需要在主機以外的瀏覽器操作 | **Cloudflare 帳戶設定已完成；待主機連接器及真人裝置驗收** |
+| B. 受控遠端存取 / Controlled remote access | Windows 專用主機為系統資料來源；Cloudflare 處理私有路由與裝置登記 | WARP device-enrollment policy 內逐一列明的使用者 | 需要在主機以外的瀏覽器操作 | **主機連接器健康；待真人遠端裝置驗收** |
 | C. 真正雲端部署 / Cloud-hosted application | 學校批准的雲端主機及受控持久化儲存 | 應用程式身份權限 + 網絡存取規則 | 多校區、高可用、IT 集中維護 | **未設計，不可直接遷移** |
 
 ## 為甚麼不直接用 Cloudflare Pages 或 Quick Tunnel？

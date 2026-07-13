@@ -12,7 +12,7 @@
 
 ## Project Overview
 
-This is a fresh, local-first rebuild of the Sing Yin Study Prefect Duty Roster System. It runs on a dedicated Windows computer through NiceGUI. Optional remote browser access is now approved for preparation through a same-host Cloudflare Tunnel protected by Cloudflare Access; the external account, hostname, allow-list, and live acceptance checks are not yet configured. It is not a migration of the Streamlit, `demo_code`, or `demo_code2` applications.
+This is a fresh, local-first rebuild of the Sing Yin Study Prefect Duty Roster System. It runs on a dedicated Windows computer through NiceGUI. Optional remote browser access now uses a same-host, domain-free private Cloudflare Tunnel reached only by an enrolled Cloudflare One Client (WARP) device; the host connector is healthy and the remaining release gate is one real remote-device acceptance run. It is not a migration of the Streamlit, `demo_code`, or `demo_code2` applications.
 
 The current Head Study Prefect is the normal daily operator. The teacher advisor mainly reviews published results, fairness, recovery, and handover evidence after completion rather than operating the weekly workflow day to day.
 
@@ -28,9 +28,9 @@ The principle shapes the Dashboard devotional space, fairness ledger, leave-adju
 
 The NiceGUI application now has a durable roster workflow and a unified multi-page operating structure. The latest refinement curates all 32 unique supplied music files into appearance-recommended Bright focus and Quiet reflection profiles, distinguishes vocal and instrumental editions, and adds a bounded YouTube/YouTube Music link-to-local-library workflow without changing roster policy or persistence.
 
-The deployment decision is now a dedicated Windows 11 host whose NiceGUI origin always stays on `127.0.0.1`. `docs/WINDOWS_DEDICATED_HOST_SETUP.md` provides a zero-knowledge installation and operating procedure. The PowerShell toolchain prepares the host, restricts local-data ACLs, registers an ownership-marked startup task, installs cloudflared, refuses to take over an unknown same-named service, activates only after explicit Access confirmation, verifies an exact HTTPS Access-tenant redirect, and rolls back both environment and newly installed service on failure. `doctor_windows_remote_access.ps1` gives one redacted local/server diagnosis. The Cloudflare account, hostname, exact allow-list, AUD, token and live identity tests remain external operator decisions; this development computer remains in local mode.
+The deployment decision is now a dedicated Windows 11 host whose NiceGUI origin always stays on `127.0.0.1`. `docs/WINDOWS_DEDICATED_HOST_SETUP.md` provides a zero-knowledge installation and operating procedure. The PowerShell toolchain prepares the host, restricts local-data ACLs, registers an ownership-marked startup task, installs cloudflared, refuses to take over an unknown same-named service, activates a token-file private connector, reloads the Host allow-list, and rolls back the environment, hosts file, and newly installed service on failure. `doctor_windows_remote_access.ps1` gives one redacted local/server diagnosis. Cloudflare now owns the private route and exact enrollment policy; no public hostname, public DNS record, Access AUD, router port-forward, or purchased domain is used.
 
-The selected Lenovo Windows 11 host is now running the official application through the ownership-marked startup task: `/healthz` reports application and SQLite `ok`, HTTP `/` returns 200, and port 8080 listens only on `127.0.0.1`. The standard `SingYinRosterSvc` account remains non-administrative. Host preparation now idempotently grants its required batch-logon right and read/execute access to the exact base Python referenced by `.venv`, preventing the two Windows Home failures found during live setup without opening the operator's remaining profile or mutable school data. The account password remains a Windows-only input and is never accepted by project files or diagnostics. Cloudflare remains inactive pending the Access application, exact allow-list, hostname and live identity checks.
+The selected Lenovo Windows 11 host is now running the official application through the ownership-marked startup task: `/healthz` reports application and SQLite `ok`, HTTP `/` returns 200, and port 8080 listens only on `127.0.0.1`. The standard `SingYinRosterSvc` account remains non-administrative. The protected `cloudflared` Windows service is running against the named private Tunnel; local verification passes service, loopback DNS, private Host header, and ownership checks. Cloudflare reports the Tunnel `healthy` with one connector and four active edge connections on cloudflared 2026.7.1. The remaining external evidence is WARP-on success plus WARP-off and unapproved-enrollment rejection from a separate device.
 
 ## Completed Work
 
@@ -176,7 +176,7 @@ The selected Lenovo Windows 11 host is now running the official application thro
 
 ## In Progress
 
-- Remote-access preparation Round 1 completed: the no-domain deployment is now a first-class private-WARP path rather than a public-hostname workaround. Cloudflare contains the named `sing-yin-roster-windows-private` Tunnel, one exact-account WARP enrollment policy, and the `roster.singyin.internal` hostname route; Gateway proxy, Split Tunnel and Local Domain Fallback are configured only for private-hostname routing. NiceGUI still binds exclusively to `127.0.0.1`, while deployment validation now separates `private_warp` from public Access settings and allow-lists only the declared private Host header. Guarded Windows activation, rollback, local verification and redacted doctor integration are implemented; focused deployment/host tests pass. The remaining live step is to install the connector as a Windows service and complete one enrolled-device acceptance run.
+- Remote-access preparation Round 2 completed: the no-domain deployment is now live as a first-class private-WARP path rather than a public-hostname workaround. Cloudflare contains the named `sing-yin-roster-windows-private` Tunnel, one exact-account WARP enrollment policy, and the `roster.singyin.internal` hostname route; Gateway proxy, Split Tunnel and Local Domain Fallback are configured only for private-hostname routing. NiceGUI still binds exclusively to `127.0.0.1`. The protected token-file Windows service and ownership marker are active, four local checks pass, Cloudflare reports one healthy connector with four edge connections, and the full Python suite passes. The remaining live step is one enrolled remote-device acceptance run.
 
 - Continuous refinement Round 13 completed: the operator guidance, non-sensitive contextual imagery, readable school mark, and architecture/co-creation explanation now make the system easier to approach and hand over without turning the roster workspace into a decorated dashboard. The next highest-value internal task is a release-readiness audit of documentation consistency, startup/recovery evidence, and accessibility acceptance criteria before formal supervised acceptance testing.
 - Continuous refinement Round 14 completed: official school identity assets now have explicit favicon, navigation, display, and print ownership, and the obsolete universal root logo has been removed. The next highest-value internal task remains the release-readiness audit of documentation consistency, startup/recovery evidence, and accessibility acceptance criteria before formal supervised acceptance testing.
@@ -219,7 +219,7 @@ The selected Lenovo Windows 11 host is now running the official application thro
 
 1. Ask the next Head Study Prefect to complete the documented Practice Mode rehearsal, including reset, before formal acceptance.
 2. Define encrypted, off-device backup retention before using real data beyond the local computer.
-3. On the dedicated Windows host, run the private-WARP activation script, enroll one remote device in `restless-hall-73b2`, and verify that WARP-on succeeds while WARP-off and unapproved enrollment fail.
+3. Enroll one remote device in `restless-hall-73b2`, then verify that WARP-on opens `http://roster.singyin.internal:8080` while WARP-off and unapproved enrollment fail.
 4. Perform the documented release-readiness audit, then review responsive controls with operators during acceptance testing and make only evidence-backed refinements.
 5. During formal human acceptance, rehearse the reviewed CSV／XLSX import and period-report download with fictional Chinese names; explicitly confirm that manual mapping works with DeepSeek disabled, scheduled hours are not treated as attendance, and JSON is not mistaken for the verified handover backup.
 
@@ -234,7 +234,7 @@ The selected Lenovo Windows 11 host is now running the official application thro
 | Core generation | `packages/roster_core/` remains UI-independent |
 | Localization | Traditional Chinese default; English is a full UI counterpart |
 | Theme | Professional Teal `#0F766E`, restrained gold, light/dark support |
-| External access | Domain-free private WARP: named Tunnel, exact-account enrollment policy and private hostname route created; origin remains loopback; Windows connector and remote-device acceptance remain |
+| External access | Domain-free private WARP: named Tunnel, exact-account enrollment policy, private hostname route, and protected Windows connector are live; origin remains loopback; remote-device acceptance remains |
 | Optional online music | Visible YouTube public-playlist player; no sign-in/payment/API key for playback, optional local-environment API key for search |
 | PDF export | Local-memory ReportLab generation with a Traditional Chinese CJK font; no public upload |
 
@@ -249,7 +249,7 @@ Important boundaries:
 
 | Risk | Status | Mitigation |
 |---|---|---|
-| Private WARP connector and one real remote device are not yet live-verified | External setup | Keep localhost available, activate the token-file Windows service, then verify enrolled WARP-on, WARP-off and rejected enrollment paths |
+| One real remote WARP device is not yet acceptance-tested | External setup | Keep localhost available, then verify enrolled WARP-on, WARP-off and rejected enrollment paths on a separate device |
 | NiceGUI session-signing secret | Managed | Localhost creates and reuses an ignored managed secret; future server mode requires an explicit independent environment secret |
 | Backups are local only | Open | Restore is safe and guided; define encrypted off-device retention before real deployment |
 | PDF CJK font is unavailable on a replacement PC | Managed | Install Noto Sans TC or set `SING_YIN_PDF_FONT`; procedure is in `docs/RELEASE_HANDOVER.md` |

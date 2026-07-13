@@ -46,7 +46,7 @@ Windows 主機 cloudflared 服務
 | 項目 | 目前值 | 狀態 |
 |---|---|---|
 | Zero Trust team domain | `restless-hall-73b2.cloudflareaccess.com` | 已建立 |
-| Tunnel | `sing-yin-roster-windows-private` | 已建立 |
+| Tunnel | `sing-yin-roster-windows-private` | `healthy`；1 個連接器／4 條 edge connections |
 | Tunnel ID | `ba6b6426-d012-4ecb-bafa-cbdbf2659731` | 非秘密識別值 |
 | 私有主機路由 | `roster.singyin.internal` | 已指向上述 Tunnel |
 | WARP 裝置登記政策 | 只允許指定的導學風紀操作帳戶 | 已建立 |
@@ -54,6 +54,8 @@ Windows 主機 cloudflared 服務
 | Split Tunnel | Cloudflare 私有 hostname 合成位址經 WARP | 已設定 |
 | Local Domain Fallback | `.internal` 交由 Cloudflare Gateway | 已設定 |
 | 公開 DNS／Public Hostname | 無 | 維持關閉 |
+
+Windows 主機端亦已於 2026-07-13 完成啟用：`cloudflared` 2026.7.1 服務正在運行，本機健康、私有 DNS、Host header 及 ownership marker 四項檢查均為 `pass`。以下第 3 節保留作搬機、重建及交接程序；目前只需完成第 4 至第 6 節的遠端裝置驗收。
 
 Tunnel token 是秘密，只可存放於主機受保護的 `data\runtime`；不得貼進 README、Git、截圖、電郵或支援紀錄。
 
