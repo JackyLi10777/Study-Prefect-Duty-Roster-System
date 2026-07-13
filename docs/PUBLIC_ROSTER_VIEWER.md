@@ -9,7 +9,7 @@
 - **訪客／Guest：** 不登入，只能查看我明確發布的唯讀值班表。
 - **管理員／Administrator：** 在同一網站按「管理員登入」，經 Cloudflare Access 驗證後，原網站會解鎖完整 NiceGUI 編輯工作台。
 
-我不會另外派發「管理員網站」。`/auth/*`、`/op/*`、VPC Service、私人 WARP 地址及 localhost 都是系統內部或維護路徑，不是給一般使用者記住的第二個網站。
+我不會另外派發「管理員網站」。`/auth/*`、VPC Service、私人 WARP 地址及 localhost 都是系統內部或維護路徑，不是給一般使用者記住的第二個網站。
 
 ## 一個網址，兩種權限
 
@@ -62,12 +62,12 @@ Access 已是第一道身份閘門，但 Worker 仍作第二層防護。每次�
 
 Worker 不相信瀏覽器自行送來的 `role=admin`、email 或自訂 header。驗證完成後，它才建立受控的內部身份資訊；送往 NiceGUI 前會移除 Access JWT 及 `CF_Authorization` cookie。Access application ID 可記錄為非秘密部署識別值 `25072aab-0e60-4787-8ec7-48029e448e8e`，但 audience、session cookie、JWT、token 及 secret 不可寫入公開文件或截圖。
 
-## `/auth/*` 和 `/op/*` 是甚麼
+## `/auth/*` 和登入後的頁面是甚麼
 
 - `/auth/*` 只供 Worker、Access 登入流程及回程使用；它不是公開 API、第二個網站或書籤。
-- `/op/*` 是受 Access 保護的內部管理路徑前綴；未驗證訪客不能直接使用。
+- 系統沒有另一個 `/op` 網站或管理員前綴。登入後仍在同一個 root／NiceGUI 路由；Worker 會先驗證 hostname-wide Access cookie，才代理任何工作台頁面。
 - 對外文件、群組訊息和書籤只公布主網址；介面按鈕自行處理登入與登出路徑。
-- 路徑級 Access 只保護管理功能，不可把整個 Worker 設為必須登入，否則訪客唯讀頁也會被攔截。
+- Access app destinations 只有 `/auth` 及 `/auth/*`，不可把整個 Worker 設為必須登入，否則訪客唯讀頁也會被攔截；登入後由 Worker 使用 hostname-wide cookie 逐一驗證 NiceGUI 請求。
 
 ## 管理員流量怎樣到達 NiceGUI
 

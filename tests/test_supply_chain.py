@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +17,15 @@ def test_runtime_and_verification_dependencies_are_hash_locked() -> None:
         assert tool in development.lower()
     assert "--hash=sha256:" in runtime
     assert "--hash=sha256:" in development
+
+
+def test_hong_kong_timezone_data_is_available_and_locked_for_windows() -> None:
+    runtime_requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8").lower()
+    runtime_lock = (ROOT / "requirements.lock").read_text(encoding="utf-8").lower()
+
+    assert ZoneInfo("Asia/Hong_Kong").key == "Asia/Hong_Kong"
+    assert any(line.startswith("tzdata") for line in runtime_requirements.splitlines())
+    assert "tzdata==" in runtime_lock
 
 
 def test_github_quality_gates_use_full_history_and_locked_dependencies() -> None:

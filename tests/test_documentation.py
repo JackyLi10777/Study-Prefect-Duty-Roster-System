@@ -91,6 +91,8 @@ def test_double_click_launcher_handles_existing_and_conflicting_ports() -> None:
     assert '$env:SING_YIN_OPEN_BROWSER = "false"' in launcher
     assert "The system is ready" in launcher
     assert "WinError 10048" in quickstart
+    assert "https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/" in quickstart
+    assert "本機維護" in quickstart
     assert 'applicationMode -eq $ExpectedApplicationMode' in launcher
     assert 'catch [System.Net.WebException]' in launcher
     assert '$readyResponse.StatusCode -lt 300' in launcher
@@ -208,7 +210,8 @@ def test_deployment_guide_preserves_local_first_and_access_gates() -> None:
     assert "應用內權限" in guide
     assert "127.0.0.1:8080" in guide
     assert "主機連接器健康；待真人遠端裝置驗收" in guide
-    assert "public hostname + Protect with Access" in guide
+    assert "Access app destinations 只有 `/auth` 及 `/auth/*`" in guide
+    assert "沒有管理員前綴或第二網站" in guide
     assert "CLOUDFLARE_REMOTE_ACCESS_SETUP.md" in guide
 
 

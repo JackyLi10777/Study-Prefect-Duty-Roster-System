@@ -17,7 +17,7 @@ NiceGUI、SQLite、PDF、備份及日誌仍在 Windows 主機，origin 只監聽
 | 未登入訪客 | 唯讀首頁及獲明確分享的 `/view#…` 已發布週表 | 不可生成、修改、發布、調整、公平審核、備份、還原或設定 |
 | 已驗證管理員 | 經 VPC 代理的完整 NiceGUI 工作台 | 可依既有政策、交易、確認及審計完成 OP 工作流 |
 
-不另派發「管理員網址」。`/auth/*` 是內部登入流程，`/op/*` 是 Access 保護範圍；VPC Service、Tunnel、localhost 及私人 WARP 地址只給維護者。一般訪客不需 WARP、帳戶或密碼。
+不另派發「管理員網址」。`/auth/*` 只供同站登入流程；登入後由 Worker 在每個 NiceGUI 請求驗證 hostname-wide Access cookie。VPC Service、Tunnel、localhost 及私人 WARP 地址只給維護者。一般訪客不需 WARP、帳戶或密碼。
 
 ## 身份及 session 決定
 
@@ -90,7 +90,7 @@ Worker 代理必須直接回傳 VPC `fetch()` 的原始 `Response`，不可重�
 
 ### 維護後備的既有驗收契約
 
-原有「**私有 Cloudflare Tunnel + WARP**」路徑不再是日常入口，但仍是可復原的維護資產。其 **WARP device-enrollment policy**、WARP-on／WARP-off／未獲准裝置拒絕測試及「**主機連接器健康；待真人遠端裝置驗收**」狀態仍須保留至後備驗收完成。這個 **應用內權限** 契約只容許維護帳戶，不得升級訪客或取代 canonical Admin login。過往另購網域時才會採用的 **public hostname + Protect with Access** 方案並非目前路線；現在由 path-specific Access 保護既有 workers.dev 管理流程。
+原有「**私有 Cloudflare Tunnel + WARP**」路徑不再是日常入口，但仍是可復原的維護資產。其 **WARP device-enrollment policy**、WARP-on／WARP-off／未獲准裝置拒絕測試及「**主機連接器健康；待真人遠端裝置驗收**」狀態仍須保留至後備驗收完成。這個 **應用內權限** 契約只容許維護帳戶，不得升級訪客或取代 canonical Admin login。Access app destinations 只有 `/auth` 及 `/auth/*`；停用 path-only cookie 後，Worker 會在同一 hostname 的每個 NiceGUI 代理請求驗證身份，沒有管理員前綴或第二網站。
 
 ## 為甚麼不用 Quick Tunnel、Pages 或直接公開 origin？
 

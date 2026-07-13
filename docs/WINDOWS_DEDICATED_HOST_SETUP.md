@@ -2,8 +2,9 @@
 
 **適用系統：** Sing Yin Study Prefect Duty Roster System（NiceGUI + SQLite）
 **讀者：** 完全不懂程式、第一次設定電腦的人
-**正式方案：** 一部長期放置的 Windows 11 專用電腦；先完成本機模式，再啟用免費、無網域的 Cloudflare 私有 WARP 存取
-**預設網址：** `http://127.0.0.1:8080`
+**正式方案：** 一部長期放置的 Windows 11 專用電腦保存資料並在背景運行；使用者只開啟唯一正式 `workers.dev` 網站
+**日常網址：** `https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`
+**本機維護網址：** `http://127.0.0.1:8080`
 
 ---
 
@@ -12,14 +13,14 @@
 完成本手冊後，運作方式如下：
 
 1. 一部 Windows 電腦長期保存程式、SQLite 資料庫、備份、日誌、PDF 及音樂。
-2. 網站只在這部電腦上開放；使用者坐在該電腦前，以瀏覽器進入 `http://127.0.0.1:8080`。
+2. NiceGUI origin 只在這部電腦的 `127.0.0.1:8080` 開放；日常使用者從唯一正式 `workers.dev` 網站進入，未登入是訪客唯讀，管理員登入後仍留在同一網址。
 3. 電腦開機後，可由 Windows 工作排程器在背景自動啟動系統。
-4. 初次安裝不設定 Cloudflare Tunnel、公開網址、路由器轉發或對外連接埠。
+4. 初次安裝先驗證 loopback origin，再依 Cloudflare 手冊連接既有 Tunnel、VPC Service、Access 及 Worker；始終不設定路由器轉發或公開 NiceGUI 連接埠。
 5. 即使電腦沒有互聯網，名單、排班、PDF、備份及還原仍可使用；YouTube 音樂除外。
 
-### 很重要：專用主機不等於已經可以遙距進入
+### 很重要：`127.0.0.1` 只供維護，不是第二個日常網站
 
-`127.0.0.1` 只代表「這部電腦自己」。手機、家中另一部電腦或校外裝置不能用這個網址進入。這是初次安裝刻意採用的安全邊界。需要遙距存取時，完成本手冊後再依 [Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 啟用；不要自行把主機改成 `0.0.0.0`，也不要在路由器開啟 8080 埠。
+`127.0.0.1` 只代表「這部電腦自己」，用於安裝驗證、Cloudflare 故障診斷及緊急復原。手機、家中另一部電腦或校外裝置只應使用唯一正式網站。Cloudflare 環境已配置，仍須依 [Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 完成真人 Access 登入驗收；不要自行把主機改成 `0.0.0.0`，也不要在路由器開啟 8080 埠。
 
 ### 最省手動操作的安裝方法
 
@@ -504,17 +505,17 @@ powershell -ExecutionPolicy Bypass -File scripts\doctor_windows_remote_access.ps
 
 1. 確認主機已開機。
 2. 開啟 Edge 或 Chrome。
-3. 輸入 `http://127.0.0.1:8080`。
-4. 先閱讀每日經文。
-5. 依「本週值班工作台」目前步驟操作。
-6. 使用完畢只需關閉瀏覽器分頁；不要每天停止背景工作。
+3. 輸入唯一正式網址：`https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`。
+4. 按「管理員登入」，完成 Cloudflare 帳戶及 MFA 驗證；登入後仍在同一個網站。
+5. 先閱讀每日經文，再依「本週值班工作台」目前步驟操作。
+6. 使用完畢按「登出」；不要每天停止背景工作。
 
 如網站打不開：
 
 1. 等候 30 秒再重新整理。
 2. 到工作排程器查看 `Sing Yin Roster Host` 是否「執行中」。
 3. 如沒有執行，按右鍵→「執行」。
-4. 做健康檢查。
+4. 在主機做 `http://127.0.0.1:8080/healthz` 健康檢查；這只是診斷，不是派發給使用者的入口。
 5. 仍然失敗才查看第 14 節。
 
 ---
@@ -677,13 +678,13 @@ C:\SingYinRoster\.venv\Scripts\python.exe -X utf8 scripts\inspect_support_log.py
 - [ ] 工作排程器只存在一個 `Sing Yin Roster Host`。
 - [ ] 重新啟動後網站會自動恢復。
 - [ ] `/healthz` 顯示 official 及 database ok。
-- [ ] `doctor_windows_remote_access.ps1` 沒有 `fail`；正式啟用遠端前以 `-Strict` 通過。
+- [ ] `doctor_windows_remote_access.ps1` 沒有 `fail`；正式使用前以 `-Strict` 通過。
 - [ ] 已建立並移走一個已驗證交接備份包。
 
 ### 首席導學風紀
 
 - [ ] 已完成一次完整練習模式。
-- [ ] 知道每日只需開啟瀏覽器進入 `127.0.0.1:8080`。
+- [ ] 知道每日只開啟唯一正式 `workers.dev` 網站，localhost／WARP 只供維護後備。
 - [ ] 知道只有發布才會更新公平帳本。
 - [ ] 知道發布後請假必須使用「請假調整」。
 - [ ] 知道看到 `OP-...` 時要保留編號。
@@ -698,4 +699,4 @@ C:\SingYinRoster\.venv\Scripts\python.exe -X utf8 scripts\inspect_support_log.py
 - [Python：在 Windows 安裝及使用 Python](https://docs.python.org/3/using/windows.html)
 - [Git：Git for Windows](https://git-scm.com/download/win)
 
-本文件先配置本機 Windows 專用主機。需要遠端使用時，必須接續 [Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)；該流程仍不會開放路由器連接埠或把 NiceGUI 改綁 `0.0.0.0`。
+本文件配置作為正式資料源的 Windows 專用主機。Cloudflare 遠端環境已配置；請接續 [Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 完成登入、登出及長連線真人驗收。整個流程不會開放路由器連接埠，也不會把 NiceGUI 改綁 `0.0.0.0`。

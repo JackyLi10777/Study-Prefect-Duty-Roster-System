@@ -79,7 +79,7 @@ DeepSeek 欄位建議預設關閉，而且不是匯入的必要條件。啟用�
 
 ## 教師顧問／IT：首次設定
 
-正式部署決定為 Windows 11 專用主機、本機 `127.0.0.1` 使用。完全由零開始安裝、建立 `.venv`、設定工作排程器、更新、備份及搬機，請依 [Windows 專用主機完整設定手冊](docs/WINDOWS_DEDICATED_HOST_SETUP.md) 逐步完成。
+正式資料源設於 Windows 11 專用主機，NiceGUI origin 只監聽本機 `127.0.0.1`；日常使用只需開啟唯一正式 `workers.dev` 網站，再按「管理員登入」。完全由零開始安裝、建立 `.venv`、設定工作排程器、更新、備份及搬機，請依 [Windows 專用主機完整設定手冊](docs/WINDOWS_DEDICATED_HOST_SETUP.md) 逐步完成。
 
 在專用、受控的校內電腦完成一次：
 
@@ -218,7 +218,7 @@ stateDiagram-v2
 
 現時只派發一個正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。未登入訪客留在同站唯讀模式；管理員按「管理員登入」後，由 Cloudflare Access 以精確電郵、帳戶登入及 MFA 驗證，Worker 再核對 JWT 簽章、`aud`、`iss`、`exp` 及管理員電郵，才把請求透過 Workers VPC、具名 Tunnel 送到只監聽 `127.0.0.1` 的 NiceGUI。8 小時 session 到期或主動登出後，使用者回復訪客權限。
 
-同一 host 下的 `/view#…` 分享連結仍是唯讀：Windows 主機以 AES-256-GCM 加密週次、日期、崗位、當值時間及中文姓名，Cloudflare KV 只保存密文、nonce 和最少的週次／建立／到期 metadata；解密鑰匙留在 URL fragment，不會隨初始 HTTP request 傳給 Worker。連結會到期，也可由管理員撤銷。`/auth/*`、`/op/*`、VPC Service、localhost 及私人 WARP 地址都是內部或維護路徑，不另行派發。
+同一 host 下的 `/view#…` 分享連結仍是唯讀：Windows 主機以 AES-256-GCM 加密週次、日期、崗位、當值時間及中文姓名，Cloudflare KV 只保存密文、nonce 和最少的週次／建立／到期 metadata；解密鑰匙留在 URL fragment，不會隨初始 HTTP request 傳給 Worker。連結會到期，也可由管理員撤銷。`/auth/*`、VPC Service、localhost 及私人 WARP 地址都是內部或維護路徑，不另行派發。
 
 本機與已登記 WARP 地址保留作 Cloudflare 故障時的診斷、復原及緊急維護，不是第二個日常入口。不要使用 Quick Tunnel、公開 origin、個人雲端同步資料夾或公開 Sites 服務處理完整操作資料。完整設定、驗收及後備程序見[Cloudflare 免費無網域遠端存取手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md)及[單一網站存取手冊](docs/PUBLIC_ROSTER_VIEWER.md)。
 

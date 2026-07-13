@@ -26,7 +26,7 @@
 4. 成功後回到原網站，完整 NiceGUI 工作台才會解鎖。
 5. Access session 最長 **8 小時**。完成工作後按 **「登出 / Log out」**；共用裝置不可只關閉分頁。
 
-系統沒有自製密碼資料表、密碼 hash、共用 OP 密碼或忘記密碼頁。密碼、MFA 及帳戶復原由 Cloudflare Identity Provider／Cloudflare Access 管理。`/auth/*` 和 `/op/*` 是內部路徑，不應派發或另作書籤。
+系統沒有自製密碼資料表、密碼 hash、共用 OP 密碼或忘記密碼頁。密碼、MFA 及帳戶復原由 Cloudflare Identity Provider／Cloudflare Access 管理。`/auth/*` 是按鈕背後的內部登入路徑，不應派發或另作書籤。
 
 ---
 
@@ -78,10 +78,10 @@ Access audience、JWT、cookie、Tunnel token、Worker admin token、API token �
 
 1. 登入 Cloudflare Dashboard，進入 **Zero Trust → Access → Applications**。
 2. 開啟現有 self-hosted 應用，核對 App ID 與上表相符。
-3. 核對應用只涵蓋管理流程（`/auth/*`、`/op/*`），**不可保護整個 Worker root**；否則訪客一開主網址也會被迫登入。
+3. 核對應用的 destinations 只有 `/auth` 及 `/auth/*`，**不可保護整個 Worker root**；否則訪客一開主網址也會被迫登入。登入後，hostname-wide Access cookie 讓 Worker 在同一網址的每一個 NiceGUI 請求再次驗證身份。
 4. 核對 Allow policy 使用精確管理員電郵，而不是 `Everyone`、任何 email domain 或公開一次性 PIN。
 5. 核對 session duration 是 **8 hours**。
-6. 核對 cookie／導向設定：HTTP-only、SameSite strict、auto redirect to identity；不要把應用放進公開 launcher。
+6. 核對 cookie／導向設定：HTTP-only、停用 path-only cookie、auto redirect to identity；不要把應用放進公開 launcher。Worker 對所有寫入及 WebSocket 另作同源檢查。
 7. 以未登入 InPrivate 視窗測試：主網址應回到訪客頁；按「管理員登入」才出現 Access 驗證。
 8. 交接時先加入下一任 exact email，以虛構資料完成驗收，再移除前任 exact email；不要交換前任帳戶密碼。
 
@@ -153,7 +153,7 @@ return env.ROSTER_ORIGIN.fetch(request);
 
 - [ ] InPrivate／無 Access cookie 開啟 canonical root，HTTP 200 並顯示訪客唯讀頁，不自動要求登入。
 - [ ] 訪客看不到生成、發布、請假調整、公平、備份、還原或設定。
-- [ ] 訪客直接輸入 `/op`、`/op/*` 或內部管理路徑不能取得 NiceGUI 編輯權。
+- [ ] 訪客直接輸入 `/prefects`、`/rosters` 或其他 NiceGUI 路徑只會返回訪客首頁，不能取得編輯權。
 - [ ] 訪客修改 query、header、local storage 或畫面 JavaScript 不能升級身份。
 
 ### B. 管理員登入及登出

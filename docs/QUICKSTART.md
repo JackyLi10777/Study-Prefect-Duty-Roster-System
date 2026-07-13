@@ -2,9 +2,14 @@
 
 ## 每日使用
 
-1. 在系統資料夾雙擊 `START_SING_YIN_ROSTER.cmd`。
-2. 等待黑色視窗顯示「The system is ready」。瀏覽器只會在服務真正可以回應 HTTP 後才自動開啟。
-3. 如瀏覽器沒有自動開啟，使用黑色視窗最後顯示的完整網址。
+1. 確認 Windows 專用主機已開機；背景工作會自動啟動，毋須每日雙擊程式。
+2. 在任何獲准裝置開啟唯一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。
+3. 未登入時是訪客唯讀模式；首席導學風紀按「管理員登入」，完成 Cloudflare 帳戶及 MFA 驗證後，同一網址會解鎖工作台。
+4. 完成工作後按「登出」，特別是共用裝置；只關閉分頁並不等於結束 Access session。
+
+## 本機維護或 Cloudflare 故障復原
+
+只有在專用主機背景工作失效、Cloudflare 故障或 IT 診斷時，才在主機的系統資料夾雙擊 `START_SING_YIN_ROSTER.cmd`。等待黑色視窗顯示「The system is ready」；瀏覽器只會在服務真正可以回應 HTTP 後才自動開啟。如瀏覽器沒有自動開啟，使用黑色視窗最後顯示的完整本機網址。
 
 啟動器會先快速掃描 8080–8099：
 
@@ -26,9 +31,9 @@
 
 練習模式使用 8090–8109 及獨立資料庫、備份、日誌、NiceGUI 偏好。正式啟動器和練習啟動器會核對 `/healthz` 的模式身份，因此不會把另一種模式誤認為自己的既有服務。
 
-## 關閉系統
+## 關閉本機維護啟動器
 
-使用完畢後回到啟動器黑色視窗，按 `Ctrl+C`，或關閉該視窗。下次雙擊啟動檔時，啟動器會重新檢查服務狀態。
+如果是為診斷而手動開啟啟動器，完成後可回到黑色視窗按 `Ctrl+C`，或關閉該視窗。日常使用只需在正式網站登出；不要每天停止專用主機的背景工作。
 
 ## 遇到錯誤
 
@@ -39,4 +44,4 @@
 
 ## English
 
-Double-click `START_SING_YIN_ROSTER.cmd` for official work. It reuses an existing official Sing Yin service, chooses a free port from 8080–8099 when necessary, waits for a real HTTP readiness response, and only then opens the browser. For a fictional, isolated rehearsal, use `START_PRACTICE_MODE.cmd`; close it and use `RESET_PRACTICE_MODE.cmd` for a clean practice workspace. The persistent banner and `PRACTICE_` PDF marks make the mode explicit.
+For daily work, open the single canonical website, select **Admin login**, and complete Cloudflare account/MFA verification; the same URL then unlocks the workbench. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for a real HTTP readiness response, and only then opens the browser. For a fictional, isolated rehearsal, use `START_PRACTICE_MODE.cmd`; close it and use `RESET_PRACTICE_MODE.cmd` for a clean practice workspace. The persistent banner and `PRACTICE_` PDF marks make the mode explicit.
