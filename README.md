@@ -101,7 +101,7 @@ python -X utf8 -m nicegui_app.main
 | 每週生成、發布、PDF、請假調整 | [首席導學風紀操作手冊](docs/OPERATOR_GUIDE.md) |
 | 雙擊啟動、埠號衝突、重複開啟 | [快速啟動](docs/QUICKSTART.md) |
 | 從零設定長期使用的 Windows 專用主機 | [Windows 專用主機完整設定手冊](docs/WINDOWS_DEDICATED_HOST_SETUP.md) |
-| 以 Cloudflare Access 安全啟用遠端網站 | [Cloudflare 遠端存取完整設定手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md) |
+| 不購買網域，以 Cloudflare 私有 WARP 安全遠端使用 | [Cloudflare 免費無網域遠端存取手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md) |
 | 第一次接手、隔離練習及重設 | `START_PRACTICE_MODE.cmd`、`RESET_PRACTICE_MODE.cmd` 及 [快速啟動](docs/QUICKSTART.md) |
 | 備份、還原、交接、正式驗收 | [首次發布與交接手冊](docs/RELEASE_HANDOVER.md) |
 | 每項驗收要求的自動化證據與真人責任 | [正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md) |
@@ -207,9 +207,9 @@ stateDiagram-v2
 
 ## 資料安全與遠端存取
 
-現時系統是 **本機正式版本**。不要使用 Quick Tunnel、公開網址、個人雲端同步資料夾或公開 Sites 服務處理學生資料。
+現時系統以 **Windows 本機正式版本 + 無網域 Cloudflare 私有 WARP** 為部署方向。不要使用 Quick Tunnel、公開網址、個人雲端同步資料夾或公開 Sites 服務處理值班資料。
 
-將系統透過 Cloudflare Tunnel + Cloudflare Access 提供受控遠端存取是可行的，但它不是「把網站上傳到雲端」：資料與 NiceGUI 程序仍可保留在一部受控的學校主機上，Cloudflare 只在前面提供身份驗證及加密通道。NiceGUI origin 仍必須只聽聽 `127.0.0.1`；Tunnel 必須啟用 **Protect with Access**，而程式只接受 localhost 與已核准的公開 hostname。這項設定必須先由教師顧問完成書面安全決定，並依[部署與遠端存取決策指南](docs/DEPLOYMENT_DECISION.md)完成所有閘門。
+系統不需要購買網域：已建立具名 Cloudflare Tunnel、指定帳戶的 WARP 裝置登記政策及 `roster.singyin.internal` 私有 hostname route。資料與 NiceGUI 程序仍留在 Windows 主機；Cloudflare 只提供已登記裝置的私有路由。NiceGUI origin 仍只監聽 `127.0.0.1`，程式亦把 private-WARP mode 與有網域的 public-Access mode 分開驗證，禁止把兩組設定混合。主機連接器及遠端裝置的最後真人驗收依[Cloudflare 免費無網域遠端存取手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md)完成。
 
 真正遷移到雲端主機是另一個 L3 架構項目：目前系統使用長時間運行的 Python NiceGUI 程序及可寫入 SQLite 資料目錄，不能直接搬到靜態網站平台。任何雲端遷移必須先有身份權限模型、受控持久化資料庫、加密備份、復原演練及資料保留決定。
 
@@ -239,8 +239,8 @@ stateDiagram-v2
 **畫面顯示「資料已儲存，但備份未完成」時可否重試？**  
 不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
 
-**目前可否公開到互聯網？**  
-不可。正式模式仍是 localhost；專用主機、Cloudflare Access、允許名單及書面安全決定完成前，不設定 Tunnel。
+**目前可否在校外使用？**
+可以採用免費的私有 WARP 路線，但不會建立公開網址。主機連接器啟用、遠端裝置完成 WARP 登記及正式驗收前，日常使用仍以 localhost 為準。
 
 **YouTube 或背景音樂會取得學生資料嗎？**  
 不會。媒體層只接收非敏感頁面分類及歌單設定，不會收到名單、請假、週表、公平、PDF、備份或審計內容。
@@ -309,7 +309,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The current approved mode is localhost-only. Do not expose student data through a public URL, Quick Tunnel, public site, or personal cloud-sync folder. A Cloudflare Tunnel protected by Cloudflare Access can later provide controlled remote access to a dedicated school host, but only after the teacher advisor approves the security decision and completes every gate in the [Deployment and remote-access decision guide](docs/DEPLOYMENT_DECISION.md).
+The deployment path is a dedicated Windows localhost origin with domain-free Cloudflare private WARP access. The named Tunnel, exact-account device-enrollment policy, and `roster.singyin.internal` route exist without a public DNS hostname; the host connector and enrolled-device acceptance checks must still pass before routine remote use. Quick Tunnels and public origin ports are not part of the design. Follow the [domain-free remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 

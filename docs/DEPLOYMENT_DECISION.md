@@ -2,13 +2,13 @@
 
 ## 結論 / Recommendation
 
-**已選定的正式運行方案：Windows 11 專用主機；先以本機 `127.0.0.1` 驗收，再按需要啟用受 Cloudflare Access 保護的遠端網站。**
+**已選定的正式運行方案：Windows 11 專用主機；NiceGUI 保持 `127.0.0.1`，以免費、無網域的 Cloudflare 私有 WARP 提供受控遠端存取。**
 
 完整的硬件、Windows、Git、Python 3.12、`.venv`、`.env`、工作排程器、健康檢查、更新、備份及搬機步驟，見 [Windows 專用主機完整設定手冊](WINDOWS_DEDICATED_HOST_SETUP.md)。受控遠端存取的 Dashboard 與自動化步驟見 [Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)。目前不採用 Linux、Raspberry Pi、Docker 或真正雲端主機作正式來源。
 
 **現時不要把系統直接「上傳到雲端」。**
 
-第一個受控遠端版本應採用：**專用學校主機 + Cloudflare Tunnel + Cloudflare Access**。NiceGUI 程序、SQLite 資料庫、PDF、備份及本機日誌仍留在受控主機；Cloudflare 提供身份驗證、TLS 和到該主機的受控通道，但不會成為此系統的應用資料庫。這是由本機走向遠端存取，而不是將學生資料搬到公開雲端。
+第一個受控遠端版本採用：**專用 Windows 主機 + 私有 Cloudflare Tunnel + Cloudflare One Client（WARP）**。NiceGUI 程序、SQLite 資料庫、PDF、備份及本機日誌仍留在受控主機；Cloudflare 只為已登記裝置提供身份驗證及私有通道，不會成為此系統的應用資料庫，也不需要公開 DNS 或購買網域。
 
 真正雲端部署只在學校確認有跨校區、長期高可用或集中 IT 維護需要後才考慮。它需要獨立架構項目，不可視為 Tunnel 的下一個按鈕。
 
@@ -17,7 +17,7 @@
 | 模式 | 資料位置 | 誰可進入 | 適合情況 | 目前狀態 |
 |---|---|---|---|---|
 | A. 本機正式使用 / Local-only | 專用校內電腦 | 在該電腦操作的人 | 首次發布、最小風險、單一負責人 | **現時批准** |
-| B. 受控遠端存取 / Controlled remote access | Windows 專用主機為系統資料來源；Cloudflare 處理受保護流量與身份驗證 | Access Allow policy 內逐一列明的使用者 | 需要在主機以外的瀏覽器操作 | **已批准準備；待帳戶設定及真人驗收後啟用** |
+| B. 受控遠端存取 / Controlled remote access | Windows 專用主機為系統資料來源；Cloudflare 處理私有路由與裝置登記 | WARP device-enrollment policy 內逐一列明的使用者 | 需要在主機以外的瀏覽器操作 | **Cloudflare 帳戶設定已完成；待主機連接器及真人裝置驗收** |
 | C. 真正雲端部署 / Cloud-hosted application | 學校批准的雲端主機及受控持久化儲存 | 應用程式身份權限 + 網絡存取規則 | 多校區、高可用、IT 集中維護 | **未設計，不可直接遷移** |
 
 ## 為甚麼不直接用 Cloudflare Pages 或 Quick Tunnel？
@@ -26,7 +26,7 @@
 
 Cloudflare 的 Quick Tunnel 只適合短暫開發展示，不適合正式使用，且官方文件指出它不支援 Server-Sent Events。任何含真實學生資料的公開或隨機網址都是禁止的。
 
-## B 模式：Cloudflare Tunnel + Access 的批准閘門
+## B 模式：私有 Cloudflare Tunnel + WARP 的批准閘門
 
 在任何人安裝 `cloudflared`、建立 Tunnel 或增加 DNS 記錄前，教師顧問必須以書面完成以下決定：
 
@@ -36,17 +36,17 @@ Cloudflare 的 Quick Tunnel 只適合短暫開發展示，不適合正式使用�
 4. **應用內權限：** 現時程式尚未把 Cloudflare 身份轉換為應用內角色。因此第一個遠端版本只可 allow 當任首席導學風紀及顧問老師；首席是唯一日常寫入者，顧問只作完成後核對。若要讓一般導學風紀登入，必須先實作及測試應用內讀寫權限。
 5. **主機與資料：** 使用專用、受密碼保護、全磁碟加密及自動更新的學校主機；資料庫、備份、`.env`、PDF 和日誌不可放入個人雲端同步位置。
 6. **復原：** 定義加密離機備份位置、保留期、還原演練頻率及遺失裝置處理程序。
-7. **監察與事故：** 設定 Tunnel 健康通知、保留適量 Access 稽核紀錄，並定義帳戶停用、誤發表及遺失資料的處理人。
-8. **驗收：** 只以虛構資料完成完整遠端流程，確認 Access 拒絕未授權帳戶、系統可以登出／撤銷、PDF 不會公開，才可考慮真實資料。
+7. **監察與事故：** 設定 Tunnel 健康通知、保留適量裝置登記及 Gateway 稽核紀錄，並定義帳戶停用、誤發表及遺失資料的處理人。
+8. **驗收：** 只以虛構資料完成完整遠端流程，確認 WARP 拒絕未獲准帳戶、裝置可以撤銷、PDF 不會公開，才可考慮真實資料。
 
-Cloudflare Access 的 self-hosted application 預設拒絕存取，使用者必須符合 Allow policy 才可進入；不要使用 Bypass 作為長期登入方法。Cloudflare Tunnel 以由內向外的連線將公開 hostname 映射到主機上的 `http://127.0.0.1:8080`，不需要開啟入站防火牆連接埠。Tunnel route 必須啟用 **Protect with Access**，讓 `cloudflared` 驗證 Access token；NiceGUI 仍只綁定 loopback，並以 Host allow-list 只接受 localhost 與已批准的公開 hostname。[Cloudflare Tunnel setup](https://developers.cloudflare.com/tunnel/setup/) [Cloudflare self-hosted application protection](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/self-hosted-public-app/) [Access policies](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/)
+Cloudflare WARP device-enrollment policy 決定哪些帳戶可把裝置加入組織；私有 hostname route 只在該組織的 WARP 連線內解析。具名 Tunnel 由主機向外連接 Cloudflare，不開放入站防火牆連接埠。NiceGUI 仍只綁定 loopback，並以 Host allow-list 只接受 localhost 與 `roster.singyin.internal`。若日後另購網域，才重新評估 public hostname + Protect with Access；兩種模式不可混合。[Connect a private hostname](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/private-net/cloudflared/connect-private-hostname/) [Device enrollment permissions](https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/deployment/device-enrollment/)
 
 ## B 模式：受控實作順序（批准後才可執行）
 
 1. 將系統移至專用學校主機，先完成本機正式驗收、`SING_YIN_STORAGE_SECRET` 更換、中文字型確認及還原演練。
 2. 在 Cloudflare 建立受管 Tunnel；主機只需對外建立連線，NiceGUI 仍只聆聽 `127.0.0.1:8080`。
-3. 建立單一專用 hostname，例如 `roster.school.example`，映射到 `http://127.0.0.1:8080`；不公開資料庫、備份、日誌或資料夾路徑。
-4. 先建立 Cloudflare Access self-hosted application，設定學校 IdP、Allow policy、MFA／device posture（如學校具備）及適當 session duration；確認不存在 Bypass 規則。
+3. 建立單一私有 hostname `roster.singyin.internal`，由 WARP 私有路由送往 Tunnel；主機在本機把該名稱解析到 `127.0.0.1`，不建立公開 DNS，也不公開資料庫、備份、日誌或資料夾路徑。
+4. 建立 WARP device-enrollment policy，只列出獲准帳戶；確認未獲准帳戶不能登記新裝置。
 5. 僅以虛構資料，用「允許帳戶、拒絕帳戶、已撤銷帳戶」各測一次登入；並測試 NiceGUI 長時間頁面、PDF 下載、登出與 session 到期行為。
 6. 以隔離資料庫做兩個瀏覽器的發布競爭與請假調整測試；確認 SQLite 交易仍是最終的公平帳本保護。
 7. 由教師顧問簽署驗收後，才轉用真實資料。每學期重審 allow-list、離任帳戶、備份還原及 Tunnel 健康。
@@ -68,8 +68,8 @@ Tunnel 狀態只說明 `cloudflared` 可連到 Cloudflare，不代表應用程�
 
 ## English summary
 
-The current approved deployment is localhost-only. The recommended future remote-access model is a dedicated school host running the existing NiceGUI and SQLite system, connected through Cloudflare Tunnel and protected by Cloudflare Access. The school host remains the system of record; Cloudflare provides the authenticated route rather than the application's database.
+The selected remote-access model is a dedicated Windows host running the existing NiceGUI and SQLite system on loopback, connected through a private Cloudflare Tunnel and reached only by enrolled Cloudflare One Client (WARP) devices. No purchased domain or public DNS hostname is required. The Windows host remains the system of record; Cloudflare provides the authenticated private route rather than the application's database.
 
-Do not use Quick Tunnels, a public URL, or a static hosting platform for real student data. Cloudflare Access is only the front door: the current application does not yet translate Access identity into in-app roles. Until that capability exists, remote access must be limited to the teacher advisor and current Head Study Prefect.
+Do not use Quick Tunnels, a public URL, or a static hosting platform for operational roster data. WARP enrollment and the private route are the network boundary; remote access remains limited to the teacher advisor and current Head Study Prefect.
 
 True cloud hosting is a separate L3 project requiring a long-running Python host, durable encrypted storage or a tested database migration, application-level roles, backup and restore exercises, retention decisions, and formal school approval.

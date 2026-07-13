@@ -32,7 +32,7 @@ python -m pip install -r requirements.txt
 python -X utf8 -m nicegui_app.main
 ```
 
-Open `http://127.0.0.1:8080`. Cloudflare Tunnel should point to this local address after Cloudflare Access is configured.
+Open `http://127.0.0.1:8080` locally. Domain-free remote use resolves `roster.singyin.internal` through an enrolled WARP device and the same-host Tunnel while the origin remains loopback.
 
 ## Durable Data Contract
 
@@ -177,7 +177,7 @@ Roster identity is also a workflow read contract, not an empty-table convention.
 
 `nicegui_app/deployment.py` also owns the NiceGUI session-signing secret. A valid explicit `SING_YIN_STORAGE_SECRET` always wins. In localhost mode only, an absent or known placeholder value causes one 64-character random secret to be created with exclusive file creation at `data/runtime/.nicegui-storage-secret`; restarts reuse it, and concurrent starters cannot overwrite the winner. A present but malformed file stops startup rather than silently invalidating sessions. Readiness inspects this state without creating data. Future `server` mode never accepts the managed-local file and requires a separate environment secret of at least 32 characters. The secret is ignored by Git, excluded from roster backups/PDFs/reports, and must never be logged.
 
-Network exposure is fail-closed in both deployment modes. NiceGUI always binds to loopback; `server` means a same-host `cloudflared` process may connect to that private origin, never that the app listens on `0.0.0.0`. Server startup additionally requires explicit remote approval, a declared **Protect with Access** route, Access audience/team-domain values, and one syntactically valid public hostname. `TrustedHostMiddleware` accepts only localhost addresses plus that approved hostname, which limits DNS-rebinding and unexpected proxy Host headers. These declarations do not prove the external policy works: server readiness therefore remains a warning until the teacher advisor performs unauthenticated-denial, authorized-login, direct-origin, and account-removal tests. No Tunnel, DNS record, token, or external request is created by the application.
+Network exposure is fail-closed in both deployment modes. NiceGUI always binds to loopback; `server` means a same-host `cloudflared` process may connect to that private origin, never that the app listens on `0.0.0.0`. Server mode has two mutually exclusive configurations: `private_warp` requires an enabled WARP declaration, valid team domain and one private hostname; `public_access` retains the explicit Protect with Access, audience, team-domain and public-hostname requirements. `TrustedHostMiddleware` accepts only localhost plus the hostname declared by the selected mode. Declarations alone are not live acceptance: private WARP remains a warning until an enrolled device succeeds and WARP-off／unapproved enrollment fail; public Access retains its unauthenticated-denial and authorized-login checks. The application itself never creates a Tunnel, route, token or external request.
 
 ## Verification
 

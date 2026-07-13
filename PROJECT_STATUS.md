@@ -176,6 +176,8 @@ The selected Lenovo Windows 11 host is now running the official application thro
 
 ## In Progress
 
+- Remote-access preparation Round 1 completed: the no-domain deployment is now a first-class private-WARP path rather than a public-hostname workaround. Cloudflare contains the named `sing-yin-roster-windows-private` Tunnel, one exact-account WARP enrollment policy, and the `roster.singyin.internal` hostname route; Gateway proxy, Split Tunnel and Local Domain Fallback are configured only for private-hostname routing. NiceGUI still binds exclusively to `127.0.0.1`, while deployment validation now separates `private_warp` from public Access settings and allow-lists only the declared private Host header. Guarded Windows activation, rollback, local verification and redacted doctor integration are implemented; focused deployment/host tests pass. The remaining live step is to install the connector as a Windows service and complete one enrolled-device acceptance run.
+
 - Continuous refinement Round 13 completed: the operator guidance, non-sensitive contextual imagery, readable school mark, and architecture/co-creation explanation now make the system easier to approach and hand over without turning the roster workspace into a decorated dashboard. The next highest-value internal task is a release-readiness audit of documentation consistency, startup/recovery evidence, and accessibility acceptance criteria before formal supervised acceptance testing.
 - Continuous refinement Round 14 completed: official school identity assets now have explicit favicon, navigation, display, and print ownership, and the obsolete universal root logo has been removed. The next highest-value internal task remains the release-readiness audit of documentation consistency, startup/recovery evidence, and accessibility acceptance criteria before formal supervised acceptance testing.
 - Continuous refinement Round 15 completed: mouse hover, pointer glow, navigation response, disabled cursor, keyboard focus, touch behavior, and reduced-motion fallback now form one restrained interaction language. The next highest-value internal task remains the release-readiness audit of documentation consistency, startup/recovery evidence, and accessibility acceptance criteria before formal supervised acceptance testing.
@@ -217,7 +219,7 @@ The selected Lenovo Windows 11 host is now running the official application thro
 
 1. Ask the next Head Study Prefect to complete the documented Practice Mode rehearsal, including reset, before formal acceptance.
 2. Define encrypted, off-device backup retention before using real data beyond the local computer.
-3. On the dedicated Windows host, create the Cloudflare Access app, exact-email allow-list, and Tunnel, then run the protected activation script and complete all three live identity checks.
+3. On the dedicated Windows host, run the private-WARP activation script, enroll one remote device in `restless-hall-73b2`, and verify that WARP-on succeeds while WARP-off and unapproved enrollment fail.
 4. Perform the documented release-readiness audit, then review responsive controls with operators during acceptance testing and make only evidence-backed refinements.
 5. During formal human acceptance, rehearse the reviewed CSV／XLSX import and period-report download with fictional Chinese names; explicitly confirm that manual mapping works with DeepSeek disabled, scheduled hours are not treated as attendance, and JSON is not mistaken for the verified handover backup.
 
@@ -232,7 +234,7 @@ The selected Lenovo Windows 11 host is now running the official application thro
 | Core generation | `packages/roster_core/` remains UI-independent |
 | Localization | Traditional Chinese default; English is a full UI counterpart |
 | Theme | Professional Teal `#0F766E`, restrained gold, light/dark support |
-| External access | Same-host loopback Cloudflare Tunnel prepared; activation requires Access values and live unauthenticated/allowed/denied tests |
+| External access | Domain-free private WARP: named Tunnel, exact-account enrollment policy and private hostname route created; origin remains loopback; Windows connector and remote-device acceptance remain |
 | Optional online music | Visible YouTube public-playlist player; no sign-in/payment/API key for playback, optional local-environment API key for search |
 | PDF export | Local-memory ReportLab generation with a Traditional Chinese CJK font; no public upload |
 
@@ -247,7 +249,7 @@ Important boundaries:
 
 | Risk | Status | Mitigation |
 |---|---|---|
-| Cloudflare account, hostname, allow-list, AUD, and Tunnel token are not configured | External setup | Keep localhost-only until the activation script verifies the Access redirect; then complete allowed and denied account tests |
+| Private WARP connector and one real remote device are not yet live-verified | External setup | Keep localhost available, activate the token-file Windows service, then verify enrolled WARP-on, WARP-off and rejected enrollment paths |
 | NiceGUI session-signing secret | Managed | Localhost creates and reuses an ignored managed secret; future server mode requires an explicit independent environment secret |
 | Backups are local only | Open | Restore is safe and guided; define encrypted off-device retention before real deployment |
 | PDF CJK font is unavailable on a replacement PC | Managed | Install Noto Sans TC or set `SING_YIN_PDF_FONT`; procedure is in `docs/RELEASE_HANDOVER.md` |
@@ -290,6 +292,8 @@ Important boundaries:
 | `scripts/register_windows_startup_task.ps1` | Password-safe Windows Task Scheduler registration |
 | `scripts/prepare_cloudflare_remote_access.ps1` | cloudflared installation without activating public access |
 | `scripts/activate_cloudflare_remote_access.ps1` | Guarded Tunnel service activation, server-mode configuration, verification, and rollback |
+| `scripts/activate_cloudflare_private_warp.ps1` | Guarded no-domain private-WARP service activation, loopback hostname mapping, server-mode configuration, and rollback |
+| `scripts/verify_cloudflare_private_warp.ps1` | Redacted local connector, origin DNS, Host-header and ownership verification |
 | `scripts/verify_cloudflare_access.ps1` | Repeatable unauthenticated Access redirect gate |
 | `scripts/doctor_windows_remote_access.ps1` | Redacted Windows host, task, service, ACL, health and exact Access diagnosis |
 | `scripts/verify_runtime_performance.py` | Isolated cold-load, heap, DOM/listener and mobile-overflow release gate |

@@ -2,7 +2,7 @@
 
 **適用系統：** Sing Yin Study Prefect Duty Roster System（NiceGUI + SQLite）
 **讀者：** 完全不懂程式、第一次設定電腦的人
-**正式方案：** 一部長期放置的 Windows 11 專用電腦；先完成本機模式，再按需要啟用受 Cloudflare Access 保護的遠端網站
+**正式方案：** 一部長期放置的 Windows 11 專用電腦；先完成本機模式，再啟用免費、無網域的 Cloudflare 私有 WARP 存取
 **預設網址：** `http://127.0.0.1:8080`
 
 ---
@@ -317,6 +317,8 @@ SING_YIN_LOG_BACKUP_COUNT=5
 - `SING_YIN_CLOUDFLARE_ACCESS_AUD`
 - `SING_YIN_CLOUDFLARE_TEAM_DOMAIN`
 - `SING_YIN_PUBLIC_HOSTNAME`
+- `SING_YIN_CLOUDFLARE_PRIVATE_WARP`
+- `SING_YIN_CLOUDFLARE_PRIVATE_HOSTNAME`
 
 本機模式第一次啟動會自動建立 `data\runtime\.nicegui-storage-secret`，不需要手動輸入 secret，也不要打開、分享或修改該檔案。
 

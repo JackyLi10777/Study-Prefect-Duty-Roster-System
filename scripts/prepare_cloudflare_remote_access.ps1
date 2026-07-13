@@ -31,4 +31,5 @@ if ($LASTEXITCODE -ne 0) { throw "cloudflared could not run." }
 
 Write-Host "`nRemote-access software is prepared, but no public connection has been activated." -ForegroundColor Green
 Write-Host "Complete the Cloudflare dashboard steps in docs\CLOUDFLARE_REMOTE_ACCESS_SETUP.md."
-Write-Host "Then run scripts\activate_cloudflare_remote_access.ps1 with the three non-secret Access values."
+Write-Host "Use activate_cloudflare_private_warp.ps1 for the domain-free private route."
+Write-Host "Use activate_cloudflare_remote_access.ps1 only if a public domain is added later."

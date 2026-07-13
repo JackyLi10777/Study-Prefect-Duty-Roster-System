@@ -134,6 +134,22 @@ def test_activation_owns_service_rollback_and_uses_configured_port() -> None:
     assert "$script:SingYinTaskOwnerMarker" in startup
 
 
+def test_domain_free_private_warp_activation_stays_loopback_only() -> None:
+    activation = (PROJECT_ROOT / "scripts" / "activate_cloudflare_private_warp.ps1").read_text(encoding="utf-8")
+    verification = (PROJECT_ROOT / "scripts" / "verify_cloudflare_private_warp.ps1").read_text(encoding="utf-8")
+    doctor = (PROJECT_ROOT / "scripts" / "doctor_windows_remote_access.ps1").read_text(encoding="utf-8")
+
+    assert 'Set-EnvValue $envPath "SING_YIN_HOST" "127.0.0.1"' in activation
+    assert 'Set-EnvValue $envPath "SING_YIN_CLOUDFLARE_PRIVATE_WARP" "true"' in activation
+    assert "--token-file" in activation
+    assert "Protect-SingYinSensitivePath -Path $TokenFile" in activation
+    assert "Stop-ScheduledTask -TaskName $ApplicationTaskName" in activation
+    assert "An unowned cloudflared Windows service already exists" in activation
+    assert "127.0.0.1" in verification
+    assert "private_host_header" in verification
+    assert "verify_cloudflare_private_warp.ps1" in doctor
+
+
 def test_windows_host_scripts_bind_permissions_and_task_to_dedicated_runtime_user() -> None:
     common = COMMON.read_text(encoding="utf-8")
     preparation = (PROJECT_ROOT / "scripts" / "prepare_windows_host.ps1").read_text(encoding="utf-8")
@@ -160,6 +176,7 @@ def test_windows_host_scripts_bind_permissions_and_task_to_dedicated_runtime_use
 def test_windows_scripts_do_not_resolve_psscriptroot_inside_parameter_defaults() -> None:
     for name in (
         "activate_cloudflare_remote_access.ps1",
+        "activate_cloudflare_private_warp.ps1",
         "doctor_windows_remote_access.ps1",
         "prepare_windows_host.ps1",
         "register_windows_startup_task.ps1",

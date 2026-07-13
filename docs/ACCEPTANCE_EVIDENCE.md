@@ -35,7 +35,7 @@
 | A-01 | 公平帳本符合學校做法 | 角色、點數、一次性發布及請假轉移均有單元／整合測試 | 審閱一份發布表和一次調整；確認 `history_weight` 解釋符合學校政策 |
 | A-02 | 最近備份可驗證及還原 | strict readiness、`test_backup_restore.py`、write pipeline 第二隔離資料庫 | 在非正式副本完成一次受監督演練並記錄日期 |
 | A-03 | 專用電腦、秘密、加密離機位置及責任人 | readiness 只會指出缺口，不會替學校作決定 | 指定電腦、保管人、輪替方式及事故聯絡人 |
-| A-04 | 外部存取保持關閉或完成 Cloudflare Access 決定 | deployment fail-closed tests 證明兩種模式均只綁定 loopback，server 仍需 Protect with Access、Access 識別值、公開 Host 及獨立 secret；UI smoke 亦直接證明執行中 NiceGUI 拒絕未批准 Host。目前報告為 `deferred` | 未有書面批准便維持 localhost；批准後以未登入、獲批准帳戶、被撤銷帳戶及繞過 Access 的路徑各驗收一次 |
+| A-04 | 外部存取保持私有或完成 Cloudflare 遠端驗收 | deployment fail-closed tests 證明兩種 server 路線均只綁定 loopback；private WARP 必須有有效 team domain、私有 hostname 且不可混入 public Access 設定，public Access 仍需 Protect with Access、AUD 及公開 Host。UI middleware 拒絕未聲明 Host | 啟用連接器後，以已登記 WARP 裝置、WARP-off、未獲准登記及直接 LAN origin 四條路徑驗收一次 |
 
 ## 證據失效規則
 

@@ -164,7 +164,21 @@ if ((Test-Path -LiteralPath $venvPython) -and (Test-Path -LiteralPath (Join-Path
     }
 }
 
-if ($endpoint.Mode -eq "server" -and $endpoint.Values.ContainsKey("SING_YIN_PUBLIC_HOSTNAME") -and
+$privateWarpActive = $endpoint.Mode -eq "server" -and
+    $endpoint.Values.ContainsKey("SING_YIN_CLOUDFLARE_PRIVATE_WARP") -and
+    ([string]$endpoint.Values["SING_YIN_CLOUDFLARE_PRIVATE_WARP"]).ToLowerInvariant() -in @("1", "true", "yes", "on")
+if ($privateWarpActive -and $endpoint.Values.ContainsKey("SING_YIN_CLOUDFLARE_PRIVATE_HOSTNAME")) {
+    try {
+        & (Join-Path $PSScriptRoot "verify_cloudflare_private_warp.ps1") `
+            -ProjectRoot $ProjectRoot `
+            -PrivateHostname ([string]$endpoint.Values["SING_YIN_CLOUDFLARE_PRIVATE_HOSTNAME"]) | Out-Null
+        Add-DoctorCheck "access_gate" "pass" "The domain-free private WARP origin and connector checks passed."
+    } catch {
+        Add-DoctorCheck "access_gate" "fail" "The private WARP origin or connector verification failed."
+    }
+} elseif ($endpoint.Mode -eq "server" -and
+    $endpoint.Values.ContainsKey("SING_YIN_PUBLIC_HOSTNAME") -and
+    -not [string]::IsNullOrWhiteSpace([string]$endpoint.Values["SING_YIN_PUBLIC_HOSTNAME"]) -and
     $endpoint.Values.ContainsKey("SING_YIN_CLOUDFLARE_TEAM_DOMAIN")) {
     try {
         & (Join-Path $PSScriptRoot "verify_cloudflare_access.ps1") `

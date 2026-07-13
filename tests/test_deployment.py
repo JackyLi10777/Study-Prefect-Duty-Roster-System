@@ -35,6 +35,8 @@ def test_local_deployment_defaults_to_loopback(monkeypatch: pytest.MonkeyPatch) 
         "SING_YIN_CLOUDFLARE_TEAM_DOMAIN",
         "SING_YIN_PUBLIC_HOSTNAME",
         "SING_YIN_CLOUDFLARE_PROTECT_WITH_ACCESS",
+        "SING_YIN_CLOUDFLARE_PRIVATE_WARP",
+        "SING_YIN_CLOUDFLARE_PRIVATE_HOSTNAME",
     ):
         monkeypatch.delenv(name, raising=False)
     settings = DeploymentSettings.from_environment()
@@ -130,6 +132,65 @@ def test_future_server_mode_is_loopback_only_and_host_allowlisted(monkeypatch: p
     assert settings.is_loopback is True
     assert settings.public_hostname == "roster.example.edu.hk"
     assert "roster.example.edu.hk" in settings.allowed_hosts
+
+
+def test_private_warp_server_mode_is_loopback_only_and_host_allowlisted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SING_YIN_DEPLOYMENT_MODE", "server")
+    monkeypatch.setenv("SING_YIN_HOST", "127.0.0.1")
+    monkeypatch.setenv("SING_YIN_REMOTE_ACCESS_ENABLED", "true")
+    monkeypatch.setenv("SING_YIN_CLOUDFLARE_PRIVATE_WARP", "true")
+    monkeypatch.setenv("SING_YIN_CLOUDFLARE_PRIVATE_HOSTNAME", "roster.singyin.internal")
+    monkeypatch.setenv("SING_YIN_CLOUDFLARE_TEAM_DOMAIN", "school.cloudflareaccess.com")
+    monkeypatch.delenv("SING_YIN_CLOUDFLARE_PROTECT_WITH_ACCESS", raising=False)
+    monkeypatch.delenv("SING_YIN_CLOUDFLARE_ACCESS_AUD", raising=False)
+    monkeypatch.delenv("SING_YIN_PUBLIC_HOSTNAME", raising=False)
+
+    settings = DeploymentSettings.from_environment()
+
+    assert settings.is_loopback is True
+    assert settings.remote_access_method == "private_warp"
+    assert settings.private_hostname == "roster.singyin.internal"
+    assert "roster.singyin.internal" in settings.allowed_hosts
+
+
+def test_private_warp_mode_refuses_public_access_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SING_YIN_DEPLOYMENT_MODE", "server")
+    monkeypatch.setenv("SING_YIN_HOST", "127.0.0.1")
+    monkeypatch.setenv("SING_YIN_REMOTE_ACCESS_ENABLED", "true")
+    monkeypatch.setenv("SING_YIN_CLOUDFLARE_PRIVATE_WARP", "true")
+    monkeypatch.setenv("SING_YIN_CLOUDFLARE_PRIVATE_HOSTNAME", "roster.singyin.internal")
+    monkeypatch.setenv("SING_YIN_CLOUDFLARE_TEAM_DOMAIN", "school.cloudflareaccess.com")
+    monkeypatch.setenv("SING_YIN_CLOUDFLARE_PROTECT_WITH_ACCESS", "true")
+    monkeypatch.setenv("SING_YIN_PUBLIC_HOSTNAME", "roster.example.edu.hk")
+
+    with pytest.raises(RuntimeError, match="cannot be combined"):
+        DeploymentSettings.from_environment()
+
+
+def test_private_warp_readiness_requires_live_device_verification(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("SING_YIN_DEPLOYMENT_MODE", "server")
+    monkeypatch.setenv("SING_YIN_HOST", "127.0.0.1")
+    monkeypatch.setenv("SING_YIN_REMOTE_ACCESS_ENABLED", "true")
+    monkeypatch.setenv("SING_YIN_CLOUDFLARE_PRIVATE_WARP", "true")
+    monkeypatch.setenv("SING_YIN_CLOUDFLARE_PRIVATE_HOSTNAME", "roster.singyin.internal")
+    monkeypatch.setenv("SING_YIN_CLOUDFLARE_TEAM_DOMAIN", "school.cloudflareaccess.com")
+    monkeypatch.setenv("SING_YIN_STORAGE_SECRET", "server-secret-longer-than-thirty-two-characters")
+    settings = DeploymentSettings.from_environment()
+
+    checks = build_readiness_report(
+        settings,
+        database_path=tmp_path / "missing.sqlite3",
+        backup_dir=tmp_path / "backups",
+    )
+
+    access_check = next(check for check in checks if check.code == "cloudflare_access")
+    assert access_check.status == "warning"
+    assert "live enrolled-device verification" in access_check.message
 
 
 def test_future_server_readiness_cannot_impersonate_live_access_acceptance(

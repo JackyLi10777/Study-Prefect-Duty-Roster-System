@@ -52,6 +52,8 @@ class DeploymentSettings:
     cloudflare_team_domain: str
     public_hostname: str = ""
     protect_with_access: bool = False
+    private_warp_enabled: bool = False
+    private_hostname: str = ""
 
     def __post_init__(self) -> None:
         self.validate()
@@ -75,6 +77,8 @@ class DeploymentSettings:
             cloudflare_team_domain=os.getenv("SING_YIN_CLOUDFLARE_TEAM_DOMAIN", "").strip(),
             public_hostname=os.getenv("SING_YIN_PUBLIC_HOSTNAME", "").strip().lower().rstrip("."),
             protect_with_access=_enabled("SING_YIN_CLOUDFLARE_PROTECT_WITH_ACCESS"),
+            private_warp_enabled=_enabled("SING_YIN_CLOUDFLARE_PRIVATE_WARP"),
+            private_hostname=os.getenv("SING_YIN_CLOUDFLARE_PRIVATE_HOSTNAME", "").strip().lower().rstrip("."),
         )
         return settings
 
@@ -87,7 +91,15 @@ class DeploymentSettings:
         hosts = {"127.0.0.1", "localhost", "::1", "[::1]"}
         if self.mode == "server" and self.public_hostname:
             hosts.add(self.public_hostname)
+        if self.mode == "server" and self.private_warp_enabled and self.private_hostname:
+            hosts.add(self.private_hostname)
         return tuple(sorted(hosts))
+
+    @property
+    def remote_access_method(self) -> Literal["disabled", "public_access", "private_warp"]:
+        if self.mode == "local" or not self.remote_access_enabled:
+            return "disabled"
+        return "private_warp" if self.private_warp_enabled else "public_access"
 
     def validate(self) -> None:
         if not 1024 <= self.port <= 65535:
@@ -102,6 +114,19 @@ class DeploymentSettings:
             return
         if not self.remote_access_enabled:
             raise RuntimeError("Server mode requires SING_YIN_REMOTE_ACCESS_ENABLED=true.")
+        if self.private_warp_enabled:
+            if self.protect_with_access or self.public_hostname or self.cloudflare_access_audience:
+                raise RuntimeError(
+                    "Private WARP mode cannot be combined with public-hostname Cloudflare Access settings."
+                )
+            team_domain = self.cloudflare_team_domain.lower().rstrip(".")
+            if not _PUBLIC_HOSTNAME_PATTERN.fullmatch(team_domain) or not team_domain.endswith(".cloudflareaccess.com"):
+                raise RuntimeError("Private WARP mode requires a valid Cloudflare Access team domain.")
+            if not _PUBLIC_HOSTNAME_PATTERN.fullmatch(self.private_hostname):
+                raise RuntimeError(
+                    "Private WARP mode requires one valid SING_YIN_CLOUDFLARE_PRIVATE_HOSTNAME."
+                )
+            return
         if not self.protect_with_access:
             raise RuntimeError("Server mode requires Cloudflare Tunnel Protect with Access to be explicitly enabled.")
         if not self.cloudflare_access_audience or not self.cloudflare_team_domain:
@@ -341,7 +366,11 @@ def build_readiness_report(
             "deferred" if settings.mode == "local" else "warning",
             "Cloudflare remote access is inactive; complete the documented account, Access, and live identity checks before activation."
             if settings.mode == "local"
-            else "Protect with Access, audience, team domain, and public hostname are declared; live identity and bypass verification is still required.",
+            else (
+                "Private WARP, team domain, and private hostname are declared; live enrolled-device verification is still required."
+                if settings.private_warp_enabled
+                else "Protect with Access, audience, team domain, and public hostname are declared; live identity and bypass verification is still required."
+            ),
         )
     )
     try:

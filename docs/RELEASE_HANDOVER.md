@@ -127,13 +127,13 @@ python -X utf8 -m nicegui_app.main
 7. 首頁經文的「跟隨外觀」會在淺色模式優先清晰指引、深色模式優先安靜安慰；首席導學風紀可改為固定方向。音樂已採相同語法：淺色建議「明亮專注」、深色建議「安靜反思」，也可固定選擇。切換外觀不會自動開始歌曲。
 8. 可把獲准使用的 HTTPS YouTube／YouTube Music 影片、Shorts 或公開歌單分享連結保存到 `music/youtube-imports/`。每次最多 25 首、每首 25 MB、合計 150 MB；匯入器不登入、不讀 cookies，並與排班 SQLite、備份及交接包分開。完整技術決定見 `docs/MUSIC_IMPORT_DECISION.md`。
 
-## Cloudflare Access：尚未授權的外部設定
+## Cloudflare 私有 WARP：無網域遠端交接
 
 不要把 Cloudflare Tunnel 指向此程式，也不要把名單、備份或 PDF 放入任何公開 Sites 服務。若學校日後決定提供外部受控存取，教師顧問須先作出書面安全決定，至少包括：
 
 開始任何設定前，先閱讀[部署與遠端存取決策指南](DEPLOYMENT_DECISION.md)。Cloudflare Tunnel 是受控遠端存取方案，不等於將資料上載至雲端；現時程式也尚未把 Cloudflare 身份轉換為應用內讀寫角色。
 
-1. Cloudflare Access 已啟用，僅以獲核准的學校帳戶/群組 allow-list 登入；禁止公開網址。Tunnel route 必須啟用 **Protect with Access**，並以未登入瀏覽器實測會被 Access 擋下。
+1. WARP device enrollment 只列出獲核准的完整帳戶；不存在公開 hostname。以已登記裝置實測可進入 `roster.singyin.internal`，並證明 WARP-off 及未獲准登記均不能進入。
 2. Tunnel 僅連至本機 `127.0.0.1:8080`，NiceGUI 不可改綁 `0.0.0.0`，也不開放資料庫、備份目錄或檔案分享埠。公開 hostname 必須與 `SING_YIN_PUBLIC_HOSTNAME` 一致，其他 Host 應返回 400。
 3. 本機模式的受管 secret 可讀且 readiness 顯示通過；若改為 `server` 模式，已另行設定獨立 `SING_YIN_STORAGE_SECRET`。Cloudflare 管理憑證不寫入版本庫或 `.env.example`。
 4. 已同意資料保留、離機加密備份、撤銷舊幹事存取權及事故聯絡程序。
@@ -172,4 +172,4 @@ python -X utf8 -m nicegui_app.main
 - [ ] 審閱一次已發布表和一次請假調整的公平帳本，確認 `history_weight` 的解釋與學校做法一致。
 - [ ] 驗證最近備份；在非正式資料副本完成一次受監督還原演練。
 - [ ] 確認專用電腦、`.env` 秘密、加密離機備份位置及交接責任人。
-- [ ] 若考慮外部存取，先完成上述 Cloudflare Access 安全決定；否則保持本機 localhost 模式。
+- [ ] 遠端使用前完成上述私有 WARP 驗收；若未完成，保持本機 localhost 操作。
