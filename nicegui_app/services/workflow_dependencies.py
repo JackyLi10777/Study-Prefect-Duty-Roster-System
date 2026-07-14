@@ -20,10 +20,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from nicegui_app.config import DEFAULT_BACKUP_DIR, DEFAULT_DATABASE_PATH, POLICY_VERSION, PREFECT_SEED_PATH
-from nicegui_app.persistence.database import create_session_factory
+from nicegui_app.persistence.database import create_session_factory, required_database_tables
 from nicegui_app.persistence.models import (
     AuditEventRecord,
     BackupRunRecord,
+    Base,
     FairnessLedgerRecord,
     LeaveAdjustmentRecord,
     LeaveDeclarationRecord,

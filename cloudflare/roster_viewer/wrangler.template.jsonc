@@ -1,10 +1,20 @@
 {
-  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "sing-yin-roster-viewer",
   "main": "worker.js",
   "compatibility_date": "2026-07-13",
   "workers_dev": true,
   "preview_urls": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    }
+  },
   "vars": {
     "ACCESS_TEAM_DOMAIN": "https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
     "ACCESS_AUD": "REPLACE_WITH_ACCESS_APPLICATION_AUD",
@@ -16,7 +26,8 @@
   },
   "secrets": {
     "required": [
-      "ADMIN_BEARER_TOKEN"
+      "ADMIN_BEARER_TOKEN",
+      "ADMIN_SESSION_SECRET"
     ]
   },
   "kv_namespaces": [

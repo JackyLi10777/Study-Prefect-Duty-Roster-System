@@ -235,8 +235,7 @@ def test_trusted_host_protection_rejects_unexpected_hosts() -> None:
 
 def test_health_and_readiness_use_read_only_database_evidence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     database = tmp_path / "runtime.sqlite3"
-    with sqlite3.connect(database) as connection:
-        connection.execute("CREATE TABLE evidence (id INTEGER PRIMARY KEY)")
+    RosterWorkflow(database_path=database, backup_dir=tmp_path / "backups").bootstrap()
     monkeypatch.setenv("SING_YIN_STORAGE_SECRET", "a-local-secret-longer-than-thirty-two-characters")
     settings = DeploymentSettings("local", "127.0.0.1", 8080, False, "", "")
 
@@ -252,6 +251,22 @@ def test_health_and_readiness_use_read_only_database_evidence(tmp_path: Path, mo
     }
     assert next(check for check in checks if check.code == "database_integrity").status == "pass"
     assert next(check for check in checks if check.code == "cloudflare_access").status == "deferred"
+
+
+def test_health_and_readiness_reject_schema_incomplete_sqlite(tmp_path: Path) -> None:
+    database = tmp_path / "incomplete.sqlite3"
+    with sqlite3.connect(database) as connection:
+        connection.execute("CREATE TABLE evidence (id INTEGER PRIMARY KEY)")
+    settings = DeploymentSettings("local", "127.0.0.1", 8080, False, "", "")
+
+    health = health_snapshot(database)
+    checks = build_readiness_report(settings, database_path=database, backup_dir=tmp_path / "backups")
+
+    assert health["status"] == "degraded"
+    assert health["database"] == "schema_incomplete"
+    database_check = next(check for check in checks if check.code == "database_integrity")
+    assert database_check.status == "fail"
+    assert "schema_incomplete" in database_check.message
 
 
 def test_readiness_rejects_a_sqlite_filename_without_managed_verification(tmp_path: Path) -> None:

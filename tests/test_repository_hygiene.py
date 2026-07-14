@@ -7,7 +7,7 @@ import subprocess
 
 import pytest
 
-from scripts.check_repository_hygiene import PROJECT_ROOT, audit_repository, sensitive_category
+from scripts.check_repository_hygiene import PROJECT_ROOT, audit_repository, is_release_source, sensitive_category
 
 
 def _git(root: Path, *arguments: str) -> None:
@@ -19,6 +19,15 @@ def _git(root: Path, *arguments: str) -> None:
         check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+def _initialize_committed_repository(root: Path) -> None:
+    root.mkdir()
+    shutil.copy2(PROJECT_ROOT / ".gitignore", root / ".gitignore")
+    (root / "README.md").write_text("release fixture\n", encoding="utf-8")
+    _git(root, "init", "--quiet")
+    _git(root, "add", ".gitignore", "README.md")
+    _git(root, "-c", "user.name=Release Test", "-c", "user.email=release@example.invalid", "commit", "-m", "fixture")
 
 
 @pytest.mark.parametrize(
@@ -49,12 +58,56 @@ def test_sensitive_repository_paths_are_classified_without_reading_content(path:
 def test_current_repository_hygiene_requires_real_history() -> None:
     report = audit_repository(PROJECT_ROOT)
 
-    assert report.status == "pass"
+    assert report.status == ("fail" if report.untracked_release_source_count else "pass")
     assert report.git_repository is True
     assert report.tracked_sensitive_count == 0
     assert report.missing_ignore_count == 0
     assert report.env_example_trackable is True
     assert report.history == "present"
+
+
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    (
+        ("nicegui_app/new_module.py", True),
+        ("migrations/versions/9999_release.py", True),
+        ("cloudflare/roster_viewer/new_worker.js", True),
+        ("cloudflare/roster_viewer/package.json", True),
+        ("cloudflare/roster_viewer/wrangler.jsonc", True),
+        (".env.example", True),
+        ("daily_verses.py", True),
+        ("notes/diagnostic.tmp", False),
+        ("nicegui_app/local-scratch.tmp", False),
+    ),
+)
+def test_release_source_classifier_ignores_unrelated_temporary_files(path: str, expected: bool) -> None:
+    assert is_release_source(path) is expected
+
+
+def test_hygiene_audit_blocks_an_untracked_release_source_without_naming_it(tmp_path: Path) -> None:
+    repository = tmp_path / "repository"
+    _initialize_committed_repository(repository)
+    release_source = repository / "cloudflare" / "roster_viewer" / "new_worker.js"
+    release_source.parent.mkdir(parents=True)
+    release_source.write_text("export default {};\n", encoding="utf-8")
+
+    report = audit_repository(repository)
+
+    assert report.status == "fail"
+    assert report.untracked_release_source_count == 1
+
+
+def test_hygiene_audit_allows_an_untracked_non_release_temporary_file(tmp_path: Path) -> None:
+    repository = tmp_path / "repository"
+    _initialize_committed_repository(repository)
+    scratch = repository / "notes" / "diagnostic.tmp"
+    scratch.parent.mkdir()
+    scratch.write_text("temporary local note\n", encoding="utf-8")
+
+    report = audit_repository(repository)
+
+    assert report.status == "pass"
+    assert report.untracked_release_source_count == 0
 
 
 def test_hygiene_audit_fails_when_repository_has_no_commit_history(tmp_path: Path) -> None:

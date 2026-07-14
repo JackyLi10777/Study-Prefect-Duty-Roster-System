@@ -8,7 +8,6 @@ from pathlib import Path
 import re
 import secrets
 import socket
-import sqlite3
 import time
 from typing import Literal
 
@@ -16,6 +15,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from nicegui_app.config import DEFAULT_BACKUP_DIR, DEFAULT_DATABASE_PATH, POLICY_VERSION, PROJECT_ROOT
 from nicegui_app.application_mode import current_application_mode
+from nicegui_app.persistence.database import database_readiness
 
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
@@ -250,18 +250,8 @@ def storage_secret_readiness(
 
 
 def database_integrity(database_path: Path = DEFAULT_DATABASE_PATH) -> str:
-    """Return a payload-free SQLite status without creating a missing database."""
-    if not database_path.is_file():
-        return "missing"
-    try:
-        connection = sqlite3.connect(f"file:{database_path.as_posix()}?mode=ro", uri=True, timeout=2)
-        try:
-            result = connection.execute("PRAGMA quick_check").fetchone()
-        finally:
-            connection.close()
-    except sqlite3.Error:
-        return "unavailable"
-    return "ok" if result and result[0] == "ok" else "failed"
+    """Return payload-free readiness for SQLite bytes, schema, and migrations."""
+    return database_readiness(database_path)
 
 
 def health_snapshot(database_path: Path = DEFAULT_DATABASE_PATH) -> dict[str, str]:
@@ -327,11 +317,16 @@ def build_readiness_report(
         )
     )
     integrity = database_integrity(database_path)
+    integrity_status = "pass" if integrity == "ok" else ("warning" if integrity == "missing" else "fail")
     checks.append(
         ReadinessCheck(
             "database_integrity",
-            "pass" if integrity == "ok" else "warning",
-            "SQLite quick-check passed." if integrity == "ok" else "SQLite is not present or did not pass a read-only quick-check.",
+            integrity_status,
+            (
+                "SQLite integrity, schema contract, and migration head passed."
+                if integrity == "ok"
+                else f"SQLite readiness is {integrity}; repair or migrate it before service."
+            ),
         )
     )
     backup_state, checked_backups, verified_backups = verified_backup_evidence(database_path, backup_dir)

@@ -120,7 +120,7 @@ def _show_committed_without_backup(reference: str) -> None:
                 ui.label(t("committed_without_backup_title")).classes("text-lg font-semibold")
                 ui.label(t("committed_without_backup_body")).classes("text-sm leading-6 text-[var(--sy-muted)]")
                 ui.label(t("support_reference_only", reference=reference)).classes("text-xs text-[var(--sy-muted)] mt-2")
-        with ui.row().classes("w-full justify-end gap-3 mt-5 flex-wrap"):
+        with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5 flex-wrap"):
             ui.button(
                 t("reload_and_review"),
                 icon="refresh",
@@ -455,16 +455,16 @@ def _open_roster_export_dialog(roster_week_id: int) -> None:
                 show_crest = ui.switch(t("pdf_show_crest"), value=True).props("color=primary")
                 show_footer_note = ui.switch(t("pdf_show_footer_note"), value=False).props("color=primary")
             ui.label(t("pdf_clean_export_hint")).classes("text-xs text-[var(--sy-muted)] mt-2")
-            with ui.row().classes("w-full gap-2 mt-4"):
+            with ui.row().classes("sy-mobile-actions w-full gap-2 mt-4"):
                 ui.button(t("export_schedule_zh"), icon="picture_as_pdf", on_click=lambda: download("zh")).props("color=primary")
                 ui.button(t("export_schedule_en"), icon="picture_as_pdf", on_click=lambda: download("en")).props("outline color=primary")
         with ui.card().classes("sy-export-option sy-export-option--internal w-full mt-3 p-5"):
             ui.label(t("internal_audit_export")).classes("text-lg font-semibold")
             ui.label(t("internal_audit_export_notice")).classes("text-sm text-[var(--sy-muted)] mt-1")
-            with ui.row().classes("w-full gap-2 mt-4"):
+            with ui.row().classes("sy-mobile-actions w-full gap-2 mt-4"):
                 ui.button(t("export_audit_zh"), icon="fact_check", on_click=lambda: download("zh", include_audit=True)).props("outline color=primary")
                 ui.button(t("export_audit_en"), icon="fact_check", on_click=lambda: download("en", include_audit=True)).props("outline color=primary")
-        with ui.row().classes("w-full justify-end mt-5"):
+        with ui.row().classes("sy-mobile-actions w-full justify-end mt-5"):
             ui.button(t("cancel"), icon="close", on_click=dialog.close).props("flat")
     _delete_dialog_after_close(dialog)
     dialog.open()
@@ -472,10 +472,37 @@ def _open_roster_export_dialog(roster_week_id: int) -> None:
 
 def _tone_badge(text: str, tone: str, *, props: str = ""):
     """Render one status vocabulary whose colour meaning is stable across pages."""
-    badge = ui.badge(text).classes(f"sy-status-badge sy-tone-{tone}")
+    # NiceGUI otherwise adds Quasar's ``bg-primary`` class.  Leaving that
+    # default in place makes its ``background`` shorthand win over the
+    # semantic tone token in some browsers, producing amber-on-blue pills.
+    badge = ui.badge(text, color=None).classes(f"sy-status-badge sy-tone-{tone}")
     if props:
         badge.props(props)
     return badge
+
+
+def _render_responsive_table(
+    *,
+    rows: list[dict[str, object]],
+    columns: list[dict[str, object]],
+    row_key: str,
+    classes: str = "",
+    test_id: str | None = None,
+) -> None:
+    """Render one data model as a desktop table and a labelled phone card grid.
+
+    Quasar's ``$q.screen`` binding is not available while NiceGUI converts
+    dynamic props.  Two presentation-only QTables avoid console errors without
+    branching routes, persistence, policy, or localized display data.
+    """
+    props = f"data-testid={test_id}" if test_id else ""
+    with ui.element("div").classes(f"sy-responsive-table w-full {classes}".strip()).props(props):
+        ui.table(rows=rows, columns=columns, row_key=row_key).classes(
+            "sy-table sy-responsive-table-desktop w-full"
+        )
+        ui.table(rows=rows, columns=columns, row_key=row_key).props("grid hide-header").classes(
+            "sy-table sy-responsive-table-mobile w-full"
+        )
 
 
 def _render_flow_step(

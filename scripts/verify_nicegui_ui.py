@@ -13,6 +13,7 @@ from openpyxl import Workbook
 from playwright.sync_api import sync_playwright
 
 BASE_URL = os.getenv("SING_YIN_TEST_URL", "http://127.0.0.1:8080")
+YOUTUBE_ENABLED = os.getenv("SING_YIN_YOUTUBE_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FAVICON_CREST_PATH = PROJECT_ROOT / "nicegui_app" / "assets" / "brand" / "sing-yin-crest-favicon.png"
 LIGHT_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-dashboard-light.png"
@@ -27,6 +28,7 @@ MOBILE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-dashboard-mobile.png"
 ONBOARDING_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-getting-started.png"
 PROGRESS_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-progress-dialog.png"
 HANDOVER_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-handover-light.png"
+HANDOVER_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-handover-dark.png"
 HANDOVER_MOBILE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-handover-mobile.png"
 PLATFORM_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-platform-team-light.png"
 PLATFORM_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-platform-team-dark.png"
@@ -104,15 +106,91 @@ def invalid_formula_workbook_bytes() -> bytes:
     return output.getvalue()
 
 
+def element_contrast_ratio(locator) -> float:  # type: ignore[no-untyped-def]
+    """Measure the rendered foreground against composited ancestor backgrounds."""
+    return float(
+        locator.evaluate(
+            """
+            element => {
+              const parse = value => {
+                const numbers = (value.match(/[0-9.]+/g) || []).map(Number);
+                return {r: numbers[0] || 0, g: numbers[1] || 0, b: numbers[2] || 0,
+                        a: numbers.length > 3 ? numbers[3] : 1};
+              };
+              const over = (top, bottom) => {
+                const a = top.a + bottom.a * (1 - top.a);
+                if (a === 0) return {r: 0, g: 0, b: 0, a: 0};
+                return {
+                  r: (top.r * top.a + bottom.r * bottom.a * (1 - top.a)) / a,
+                  g: (top.g * top.a + bottom.g * bottom.a * (1 - top.a)) / a,
+                  b: (top.b * top.a + bottom.b * bottom.a * (1 - top.a)) / a,
+                  a,
+                };
+              };
+              const layers = [];
+              for (let node = element; node; node = node.parentElement) {
+                layers.push(parse(getComputedStyle(node).backgroundColor));
+              }
+              let background = {r: 255, g: 255, b: 255, a: 1};
+              for (let index = layers.length - 1; index >= 0; index -= 1) {
+                background = over(layers[index], background);
+              }
+              const foreground = over(parse(getComputedStyle(element).color), background);
+              const luminance = color => {
+                const channels = [color.r, color.g, color.b].map(channel => {
+                  const value = channel / 255;
+                  return value <= 0.04045 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+                });
+                return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+              };
+              const light = Math.max(luminance(foreground), luminance(background));
+              const dark = Math.min(luminance(foreground), luminance(background));
+              return (light + 0.05) / (dark + 0.05);
+            }
+            """
+        )
+    )
+
+
+def assert_status_tone_contrast(page) -> None:  # type: ignore[no-untyped-def]
+    """Guard every semantic pill tone in the browser's real cascade."""
+    page.evaluate(
+        """
+        () => {
+          document.querySelector('[data-testid="tone-contrast-fixture"]')?.remove();
+          const surface = document.createElement('div');
+          surface.className = 'sy-surface';
+          surface.dataset.testid = 'tone-contrast-fixture';
+          for (const tone of ['action', 'stable', 'attention', 'danger', 'neutral']) {
+            const badge = document.createElement('span');
+            badge.className = `q-badge sy-status-badge sy-tone-${tone}`;
+            badge.dataset.tone = tone;
+            badge.textContent = tone;
+            surface.appendChild(badge);
+          }
+          document.body.appendChild(surface);
+        }
+        """
+    )
+    fixture = page.get_by_test_id("tone-contrast-fixture")
+    for tone in ("action", "stable", "attention", "danger", "neutral"):
+        badge = fixture.locator(f'[data-tone="{tone}"]')
+        ratio = element_contrast_ratio(badge)
+        assert ratio >= 4.5, f"{tone} status contrast was only {ratio:.2f}:1"
+    fixture.evaluate("element => element.remove()")
+
+
 def main() -> None:
     LIGHT_SCREENSHOT.parent.mkdir(parents=True, exist_ok=True)
     expected_invalid_backups = prepare_invalid_backup_fixture()
     assert_unexpected_host_rejected()
     console_errors: list[str] = []
+    page_errors: list[str] = []
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1440, "height": 1024})
         page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
+        page.on("pageerror", lambda error: page_errors.append(str(error)))
         favicon_response = page.request.get(f"{BASE_URL}/favicon.ico")
         assert favicon_response.status == 200
         assert favicon_response.body() == FAVICON_CREST_PATH.read_bytes(), "favicon did not use the dedicated square crest"
@@ -130,14 +208,15 @@ def main() -> None:
         page.get_by_text("第一次使用", exact=False).or_(
             page.get_by_text("First time here", exact=False)
         ).first.wait_for(timeout=10_000)
-        if page.locator("i.q-icon", has_text="light_mode").count():
-            page.locator("i.q-icon", has_text="light_mode").click()
+        desktop_theme_controls = page.locator(".sy-desktop-header-controls")
+        if desktop_theme_controls.locator("i.q-icon", has_text="light_mode").count():
+            desktop_theme_controls.locator("i.q-icon", has_text="light_mode").click()
             page.wait_for_load_state("domcontentloaded")
         page.get_by_text("本週值班工作台", exact=True).wait_for(timeout=10_000)
         assert page.locator(".sy-flow-step--active .q-btn.bg-primary").evaluate(
             "element => getComputedStyle(element).backgroundColor"
         ) == "rgb(53, 100, 124)"
-        assert page.locator(".sy-sidebar .q-btn").nth(1).evaluate(
+        assert page.locator(".sy-sidebar .sy-nav-active").evaluate(
             "element => getComputedStyle(element).color"
         ) == "rgb(48, 50, 49)"
         assert page.get_by_test_id("page-music-button").evaluate(
@@ -146,13 +225,34 @@ def main() -> None:
         assert page.locator("main#main-content").count() == 1
         assert page.locator('[role="navigation"][aria-label="主要導覽"]').count() == 1
         assert page.locator('[role="heading"][aria-level="1"]').count() == 1
-        assert page.locator('[aria-current="page"]').count() == 1
+        assert page.locator('[aria-current="page"]:visible').count() == 1
         assert page.get_by_role("button", name="開啟主要導覽").count() == 1
-        assert page.get_by_role("button", name="開啟操作提示音").count() == 1
+        sound_toggle = page.get_by_role("button", name="開啟提示音")
+        assert sound_toggle.count() == 1
         assert page.get_by_role("button", name="切換深色模式").count() == 1
         assert page.get_by_role("link", name="跳至主要內容").count() == 1
         page.wait_for_function("document.documentElement.dataset.syMotion === 'ready'")
         assert page.evaluate("window.gsap?.version") == "3.13.0"
+        page.evaluate(
+            """() => {
+              window.__syVerifiedSoundKinds = [];
+              window.addEventListener('sy:feedback', event => {
+                window.__syVerifiedSoundKinds.push(event.detail?.kind || 'unknown');
+              });
+            }"""
+        )
+        sound_toggle.click()
+        enabled_sound_toggle = page.get_by_role("button", name="關閉提示音")
+        enabled_sound_toggle.wait_for(timeout=5_000)
+        assert enabled_sound_toggle.evaluate(
+            "element => element.querySelector('.q-btn__content > span.block') === null"
+        )
+        page.wait_for_function("window.__syVerifiedSoundKinds.includes('success')", timeout=5_000)
+        page.wait_for_function("window.__singYinAudioContext !== undefined", timeout=5_000)
+        page.reload(wait_until="domcontentloaded")
+        page.get_by_role("button", name="關閉提示音").wait_for(timeout=5_000)
+        page.get_by_role("button", name="關閉提示音").click()
+        page.get_by_role("button", name="開啟提示音").wait_for(timeout=5_000)
         page.evaluate("window.dispatchEvent(new CustomEvent('sy:feedback', {detail: {kind: 'success'}}))")
         page.locator(".sy-feedback-pulse--success").wait_for(timeout=2_000, state="attached")
         page.locator(".sy-feedback-pulse--success").wait_for(timeout=2_000, state="detached")
@@ -167,13 +267,15 @@ def main() -> None:
         assert page.locator(".sy-flow-symbol").count() == 3
         assert page.locator(".sy-flow-step--active .sy-tone-action").evaluate(
             "element => getComputedStyle(element).color"
-        ) == "rgb(53, 100, 124)"
+        ) == "rgb(24, 63, 85)"
         assert page.locator(".sy-flow-step--pending .sy-tone-neutral").first.evaluate(
             "element => getComputedStyle(element).color"
-        ) == "rgb(95, 99, 104)"
+        ) == "rgb(52, 54, 58)"
         assert page.locator(".sy-workbench .sy-tone-action").first.evaluate(
             "element => getComputedStyle(element).color"
-        ) == "rgb(53, 100, 124)"
+        ) == "rgb(24, 63, 85)"
+        assert "bg-primary" not in (page.locator(".sy-workbench .sy-tone-action").first.get_attribute("class") or "")
+        assert_status_tone_contrast(page)
         assert "devotional-sacred-light-v1.webp" in page.locator(".sy-daily-start").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "weekly-pulse-light-v1.webp" in page.locator(".sy-workbench").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "empty-ready-light-v1.webp" in page.locator(".sy-empty-state--illustrated").first.evaluate(
@@ -195,7 +297,10 @@ def main() -> None:
         youtube_panel = music_dialog.get_by_test_id("youtube-player-panel")
         youtube_panel.wait_for(timeout=10_000)
         assert youtube_panel.locator("iframe.sy-youtube-player").count() == 0, "Empty YouTube setup must not contact the platform"
-        page.get_by_text("此頁暫未設定 YouTube 歌單", exact=False).wait_for(timeout=10_000)
+        if YOUTUBE_ENABLED:
+            page.get_by_text("此頁暫未設定 YouTube 歌單", exact=False).wait_for(timeout=10_000)
+        else:
+            page.get_by_text("YouTube 播放器已由環境設定停用", exact=False).wait_for(timeout=10_000)
         page.wait_for_function(
             "element => element.volume >= 0.15 && element.volume <= 0.2",
             arg=music_audio.element_handle(),
@@ -231,6 +336,23 @@ def main() -> None:
             response = page.goto(f"{BASE_URL}{path}", wait_until="domcontentloaded")
             assert response is not None and response.status == 200, path
             page.get_by_text(expected_text, exact=False).first.wait_for(timeout=10_000)
+        page.goto(f"{BASE_URL}/rosters", wait_until="domcontentloaded")
+        slider = page.get_by_test_id("history-priority-multiplier")
+        slider.wait_for(timeout=10_000)
+        track_box = slider.locator(".q-slider__track").bounding_box()
+        assert track_box is not None
+        for value in (0.8, 1.0, 2.0):
+            tick = page.locator(f'.sy-history-scale-mark[data-value="{value:.1f}"] .sy-history-scale-tick')
+            tick_box = tick.bounding_box()
+            assert tick_box is not None
+            expected_x = track_box["x"] + track_box["width"] * ((value - 0.8) / (2.0 - 0.8))
+            actual_x = tick_box["x"] + tick_box["width"] / 2
+            assert abs(actual_x - expected_x) <= 1.0, (value, actual_x, expected_x)
+        assert "1.0 為標準" in page.locator(".sy-history-scale-help").inner_text()
+        leave_reason_label = page.locator(
+            '.q-field:has([name="pre-generation-leave-reason"]) .q-field__label'
+        )
+        assert "選填" in leave_reason_label.inner_text()
         page.goto(f"{BASE_URL}/handover", wait_until="domcontentloaded")
         assert "handover-archive-light-v1.webp" in page.locator(".sy-handover-hero").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         readiness_cards = page.locator(".sy-handover-readiness-card")
@@ -239,6 +361,11 @@ def main() -> None:
         assert " " in readiness_grid.evaluate("element => getComputedStyle(element).gridTemplateColumns")
         acceptance_status = page.get_by_test_id("acceptance-status")
         acceptance_status.wait_for(timeout=10_000)
+        attention_badge = page.locator(".sy-tone-attention").first
+        assert "bg-primary" not in (attention_badge.get_attribute("class") or "")
+        assert element_contrast_ratio(attention_badge) >= 4.5
+        hero_copy = page.locator(".sy-handover-hero-copy")
+        assert element_contrast_ratio(hero_copy) >= 4.5
         page.get_by_text("仍需首席導學風紀及教師顧問確認", exact=True).wait_for(timeout=10_000)
         acceptance_steps = page.get_by_test_id("acceptance-human-steps")
         acceptance_steps.locator(".q-item").click()
@@ -298,7 +425,7 @@ def main() -> None:
         )
         assert page.get_by_test_id("engineering-facts").locator(".sy-engineering-fact").count() == 4
         assert page.get_by_test_id("engineering-blueprint").locator(".sy-engineering-blueprint-layer").count() == 5
-        assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 10
+        assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 12
         assert page.get_by_role("heading", level=2).count() >= 5
         assert page.get_by_test_id("engineering-pillars").locator(".sy-engineering-pillar").count() == 6
         assert page.get_by_test_id("engineering-evolution").locator(".sy-engineering-evolution-item").count() == 4
@@ -344,6 +471,7 @@ def main() -> None:
         page.screenshot(path=str(ONBOARDING_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/rosters", wait_until="domcontentloaded")
         page.get_by_text("生成前請假", exact=True).wait_for(timeout=10_000)
+        page.get_by_text("請假原因（選填）", exact=True).wait_for(timeout=10_000)
         assert page.locator(".sy-operation-hint").count() >= 1
         page.get_by_text("用途：生成尚未發布的本週草稿。", exact=False).wait_for(timeout=10_000)
         page.locator(".sy-storage-lifecycle").wait_for(timeout=10_000)
@@ -365,7 +493,10 @@ def main() -> None:
         page.goto(f"{BASE_URL}/settings", wait_until="domcontentloaded")
         assert page.get_by_test_id("page-music-button").count() == 0
         page.get_by_test_id("online-music-settings").wait_for(timeout=10_000)
-        page.get_by_text("公開歌單播放已就緒", exact=False).wait_for(timeout=10_000)
+        if YOUTUBE_ENABLED:
+            page.get_by_text("公開歌單播放已就緒", exact=False).wait_for(timeout=10_000)
+        else:
+            page.get_by_text("YouTube 播放器已由環境設定停用", exact=False).wait_for(timeout=10_000)
         page.get_by_test_id("music-library-settings").wait_for(timeout=10_000)
         settings_profile = page.locator('[name="settings-music-profile"]')
         assert settings_profile.count() == 1
@@ -382,7 +513,7 @@ def main() -> None:
             "elements => elements.map(element => getComputedStyle(element).color)"
         )
         assert len(section_icon_colours) == 3 and len(set(section_icon_colours)) == 1
-        assert page.locator(".sy-inline-empty").count() >= 2
+        assert page.locator(".sy-inline-empty").count() >= (2 if YOUTUBE_ENABLED else 1)
         page.get_by_text("備份還原", exact=True).wait_for(timeout=10_000)
         page.get_by_test_id("create-verified-backup-action").wait_for(timeout=10_000)
         assert page.get_by_text("尚未有可使用的已驗證快照", exact=True).count() == 2
@@ -419,6 +550,10 @@ def main() -> None:
         page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
         page.get_by_text("助理首席導學風紀", exact=True).first.wait_for(timeout=10_000)
         page.get_by_text("導學風紀", exact=True).first.wait_for(timeout=10_000)
+        page.get_by_role("button", name="新增風紀", exact=True).click()
+        page.get_by_text("備註（選填）", exact=True).last.wait_for(timeout=10_000)
+        page.get_by_role("button", name="取消", exact=True).last.click()
+        page.get_by_text("備註（選填）", exact=True).last.wait_for(state="hidden", timeout=10_000)
         static_table = page.locator(".sy-table").first
         assert static_table.evaluate("element => getComputedStyle(element).cursor") != "pointer"
         assert static_table.evaluate("element => getComputedStyle(element).transform") == "none"
@@ -488,19 +623,30 @@ def main() -> None:
         page.get_by_text("Handover guide", exact=True).first.wait_for(timeout=10_000)
         page.get_by_text("Head Study Prefect and teacher-advisor sign-off still required", exact=True).wait_for(timeout=10_000)
         page.goto(BASE_URL, wait_until="domcontentloaded")
-        if page.locator("i.q-icon", has_text="light_mode").count():
-            page.locator("i.q-icon", has_text="light_mode").click()
+        desktop_theme_controls = page.locator(".sy-desktop-header-controls")
+        if desktop_theme_controls.locator("i.q-icon", has_text="light_mode").count():
+            desktop_theme_controls.locator("i.q-icon", has_text="light_mode").click()
             page.wait_for_load_state("domcontentloaded")
-        page.locator("i.q-icon", has_text="dark_mode").click()
+        page.locator(".sy-desktop-header-controls").locator("i.q-icon", has_text="dark_mode").click()
         page.wait_for_function("document.body.classList.contains('body--dark')")
+        # Theme variables update immediately while the restrained state/layer
+        # transitions can still be settling. Measure the stable rendered state,
+        # not an arbitrary frame inside the 260 ms design-system transition.
+        page.wait_for_timeout(320)
         assert "body--dark" in (page.locator("body").get_attribute("class") or "")
         assert page.locator(".sy-flow-step--active .q-btn.bg-primary").evaluate(
             "element => getComputedStyle(element).backgroundColor"
         ) == "rgb(71, 117, 139)"
-        dark_nav_rgb = page.locator(".sy-sidebar .q-btn").nth(1).evaluate(
-            "element => (getComputedStyle(element).color.match(/\\d+/g) || []).slice(0, 3).map(Number)"
+        dark_active_navigation = page.locator(".sy-sidebar .sy-nav-active")
+        dark_active_navigation_contrast = element_contrast_ratio(dark_active_navigation)
+        dark_active_navigation_colours = dark_active_navigation.evaluate(
+            "element => ({foreground: getComputedStyle(element).color, "
+            "background: getComputedStyle(element).backgroundColor})"
         )
-        assert len(dark_nav_rgb) == 3 and min(dark_nav_rgb) >= 180 and max(dark_nav_rgb) - min(dark_nav_rgb) <= 20
+        assert dark_active_navigation_contrast >= 4.5, (
+            f"dark active navigation contrast was {dark_active_navigation_contrast:.2f}:1 "
+            f"for {dark_active_navigation_colours}"
+        )
         assert "devotional-sacred-dark-v1.webp" in page.locator(".sy-daily-start").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "weekly-pulse-dark-v1.webp" in page.locator(".sy-workbench").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "empty-ready-dark-v1.webp" in page.locator(".sy-empty-state--illustrated").first.evaluate(
@@ -512,6 +658,7 @@ def main() -> None:
         assert page.locator(".sy-workbench .sy-tone-action").first.evaluate(
             "element => getComputedStyle(element).color"
         ) == "rgb(155, 194, 210)"
+        assert_status_tone_contrast(page)
         assert float(page.locator(".sy-workbench").evaluate("element => getComputedStyle(element, '::after').opacity")) >= 0.7
         page.get_by_test_id("page-music-button").click()
         dark_music_dialog = page.get_by_test_id("page-music-dialog")
@@ -538,6 +685,7 @@ def main() -> None:
         page.screenshot(path=str(SETTINGS_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/handover", wait_until="domcontentloaded")
         assert "handover-archive-dark-v1.webp" in page.locator(".sy-handover-hero").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
+        page.screenshot(path=str(HANDOVER_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/getting-started", wait_until="domcontentloaded")
         assert "onboarding-desk-dark-v1.webp" in page.locator(".sy-onboarding-intro").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
@@ -550,7 +698,7 @@ def main() -> None:
         assert "engineering-workbench-dark-v1.webp" in page.locator(".sy-engineering-hero").evaluate(
             "element => getComputedStyle(element, '::after').backgroundImage"
         )
-        assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 10
+        assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 12
         page.screenshot(path=str(ENGINEERING_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
         assert "architecture-stewardship-dark-v1.webp" in page.locator(".sy-architecture-hero").evaluate("element => getComputedStyle(element, '::before').backgroundImage")
@@ -664,6 +812,7 @@ def main() -> None:
         reduced_context = browser.new_context(viewport={"width": 1280, "height": 900}, reduced_motion="reduce")
         reduced_page = reduced_context.new_page()
         reduced_page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
+        reduced_page.on("pageerror", lambda error: page_errors.append(str(error)))
         reduced_page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
         reduced_page.wait_for_function("document.documentElement.dataset.syMotion === 'reduced'")
         reduced_layer = reduced_page.locator(".sy-architecture-layer").first
@@ -676,6 +825,7 @@ def main() -> None:
         reduced_context.close()
         touch_context = browser.new_context(viewport={"width": 390, "height": 844}, has_touch=True, is_mobile=True)
         touch_page = touch_context.new_page()
+        touch_page.on("pageerror", lambda error: page_errors.append(str(error)))
         touch_page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
         assert touch_page.evaluate("matchMedia('(hover: hover) and (pointer: fine)').matches") is False
         assert touch_page.locator(".sy-pointer-light").count() == 0
@@ -691,6 +841,7 @@ def main() -> None:
         ) == "none"
         touch_context.close()
         assert not console_errors, console_errors
+        assert not page_errors, page_errors
         browser.close()
     print(f"UI smoke checks passed; screenshots: {LIGHT_SCREENSHOT}, {DARK_SCREENSHOT}")
 

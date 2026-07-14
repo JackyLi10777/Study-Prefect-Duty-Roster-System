@@ -11,11 +11,19 @@ from scripts.verify_release_candidate import (
     CANONICAL_DATABASE,
     ReleaseVerificationError,
     _assert_server_console_clean,
+    _deno_gateway_command,
     isolated_environment,
 )
 
 
-def test_release_verifier_builds_only_explicit_disposable_write_paths(tmp_path: Path) -> None:
+def test_release_verifier_builds_only_explicit_disposable_write_paths(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("SING_YIN_PUBLIC_ROSTER_VIEWER_ENABLED", "true")
+    monkeypatch.setenv("SING_YIN_PUBLIC_ROSTER_VIEWER_BASE_URL", "https://example.invalid")
+    monkeypatch.setenv("SING_YIN_PUBLIC_ROSTER_VIEWER_ADMIN_TOKEN", "must-be-cleared")
+    monkeypatch.setenv("SING_YIN_YOUTUBE_ENABLED", "true")
+    monkeypatch.setenv("SING_YIN_YOUTUBE_API_KEY", "must-be-cleared")
+    monkeypatch.setenv("SING_YIN_DEEPSEEK_ENABLED", "true")
+    monkeypatch.setenv("SING_YIN_DEEPSEEK_API_KEY", "must-be-cleared")
     environment = isolated_environment(tmp_path / "normal", 18765)
 
     assert environment["SING_YIN_E2E_ISOLATED"] == "1"
@@ -26,6 +34,14 @@ def test_release_verifier_builds_only_explicit_disposable_write_paths(tmp_path: 
     assert Path(environment["SING_YIN_LOG_DIR"]).is_dir()
     assert environment["SING_YIN_HOST"] == "127.0.0.1"
     assert environment["SING_YIN_TEST_URL"] == "http://127.0.0.1:18765"
+    assert environment["SING_YIN_APP_MODE"] == "official"
+    assert environment["SING_YIN_PUBLIC_ROSTER_VIEWER_ENABLED"] == "false"
+    assert environment["SING_YIN_PUBLIC_ROSTER_VIEWER_BASE_URL"] == ""
+    assert environment["SING_YIN_PUBLIC_ROSTER_VIEWER_ADMIN_TOKEN"] == ""
+    assert environment["SING_YIN_YOUTUBE_ENABLED"] == "false"
+    assert environment["SING_YIN_YOUTUBE_API_KEY"] == ""
+    assert environment["SING_YIN_DEEPSEEK_ENABLED"] == "false"
+    assert environment["SING_YIN_DEEPSEEK_API_KEY"] == ""
 
 
 def test_release_verifier_can_create_the_deliberately_blocked_backup_fixture(tmp_path: Path) -> None:
@@ -73,6 +89,28 @@ def test_release_verifier_imports_directly_outside_the_project_working_directory
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_release_verifier_requires_deno_for_cloudflare_gateway_tests(monkeypatch) -> None:
+    monkeypatch.setattr(verify_release_candidate.shutil, "which", lambda _name: None)
+
+    try:
+        _deno_gateway_command()
+    except ReleaseVerificationError as error:
+        assert "Deno is required" in str(error)
+        assert "PATH" in str(error)
+    else:
+        raise AssertionError("missing Deno should fail the release verifier")
+
+
+def test_release_verifier_builds_the_real_deno_gateway_test_command(monkeypatch) -> None:
+    monkeypatch.setattr(verify_release_candidate.shutil, "which", lambda _name: "deno-test-runtime")
+
+    assert _deno_gateway_command() == [
+        "deno-test-runtime",
+        "test",
+        "cloudflare/roster_viewer/worker_gateway_test.js",
+    ]
 
 
 def test_release_verifier_accepts_normal_and_classified_disconnect_console_lines(tmp_path: Path) -> None:

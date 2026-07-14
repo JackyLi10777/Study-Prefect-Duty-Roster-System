@@ -125,7 +125,7 @@ The original alpha transparency is preserved; no JPEG conversion or automated ba
 
 ### Current state
 
-The active NiceGUI application already has correct policy safeguards, bilingual support, light/dark mode, verified backups, print-ready PDFs, contextual hints, and a three-stage weekly workflow. The existing theme has a sound foundation—neutral surfaces, teal identity, restrained slate primary actions, rounded controls, and good contrast—but its presentation must continue converging on one composed product rather than a collection of useful cards.
+The active NiceGUI application already has correct policy safeguards, bilingual support, light/dark mode, verified backups, print-ready PDFs, contextual hints, and a three-stage weekly workflow. The adaptive shell now shares one 900px navigation breakpoint, renders repeated mobile navigation after the page content in DOM order, stacks simultaneous global status banners, and applies one dialog-action grammar. Appearance and interface sound update in place; a dirty-form guard protects the only preference which still requires a page reload—language. The theme has a sound foundation—neutral surfaces, teal identity, restrained slate primary actions, rounded controls, and good contrast—but its presentation must continue converging on one composed product rather than a collection of useful cards.
 
 ### Head Study Prefect moment
 
@@ -222,6 +222,8 @@ The interface never assigns colours icon by icon. A component first declares its
 | `stable` | Status badge or evidence only | Published, verified backup, completed step |
 | `attention` | Status badge or recovery surface only | Draft ready, missing backup, practice, partial success |
 | `danger` | Destructive action or failed status | Archive, remove, invalid/unreadable evidence |
+
+Status capsules are semantic evidence, not tinted decoration. In light mode they use dedicated high-contrast foreground tokens (`status-action`, `status-stable`, `status-attention`, `status-danger`, `status-neutral`) rather than inheriting the softer icon colour; dark mode uses the corresponding luminous role token. Every capsule keeps a border, readable label and at least 28px visual height, and colour is never its only status signal. NiceGUI badges must opt out of the framework's default colour class (`color=None`); otherwise `bg-primary` can override the semantic background even when the token declaration appears correct. Browser verification measures the real computed foreground and composited background for all five tones in both themes, with 4.5:1 as the release floor. Slider landmarks must be placed by their numeric position rather than equally spaced labels: the history-priority scale therefore places 0.8 at 0%, 1.0 at one sixth, and 2.0 at 100%.
 | `neutral` | Pending state and ordinary utility | Waiting step, empty-state symbol, secondary navigation |
 
 Equivalent actions keep one tone even when their content differs: the share-safe roster PDF and internal audit PDF are both export actions, so both use action slate. Status and action are not conflated: a draft badge is attention/action-context, while “open draft” remains an action control. Colour is always accompanied by text, icon, border, position or state wording.
@@ -355,7 +357,7 @@ The interface must not ask the operator to remember `/auth/*`, localhost, WARP, 
 
 Active viewing links remain text-first, image-free records. Week, expiry, and a short link identifier form the scan order; revoke is a danger action with an explicit consequence and the approximate one-minute edge-propagation note. A link receipt is persistent until the operator closes it, uses a readonly text field, and places **Copy link** above secondary dismissal. It must say that the key is displayed once and that the complete link grants viewing until expiry or revocation.
 
-The `/view#…` Worker viewer remains a quiet document surface, not a miniature dashboard or a continuation of the editorial root. It uses Traditional Chinese first, complete English context, Chinese names, system fonts, a restrained teal published marker, and a high-contrast roster matrix. It supports light/dark preference, phone horizontal table access with a visible focus boundary, A4-landscape print, reduced motion, and honest loading/error states. It contains no atmosphere image, school-data background, animation showcase, music, third-party font, analytics, advertising, or edit affordance. Admin login is an identity transition, not a suggestion that the visible roster itself is editable.
+The `/view#…` Worker viewer remains a quiet document surface, not a miniature dashboard or a continuation of the editorial root. It uses Traditional Chinese first, complete English context, Chinese names, system fonts, a restrained teal published marker, and a high-contrast roster matrix. It supports light/dark preference, phone horizontal table access with a visible bilingual swipe instruction associated through `aria-describedby`, A4-landscape print, reduced motion, and honest loading/error states. It contains no atmosphere image, school-data background, animation showcase, music, third-party font, analytics, advertising, or edit affordance. Admin login is an identity transition, not a suggestion that the visible roster itself is editable. Protected-operation explanations use neutral trust surfaces; gold remains reserved for devotional reading.
 
 Root presentation motion is restricted to one initial 380–440 ms transform/opacity settle, a small press/arrow response on the real login action, and a brief manual verse replacement. Nothing loops, floats continuously, parallax-scrolls or auto-advances. Under `prefers-reduced-motion`, all content is immediately visible and state changes remain understandable without movement. These visual rules do not alter Access destinations, JWT verification, the VPC proxy, Viewer encryption, or the no-guest-editor boundary.
 
@@ -366,6 +368,15 @@ Viewer success is measured by one question: can a recipient open the complete li
 - Desktop: content has a readable max width, not a full-width administrative spreadsheet.
 - Tablet: two-column regions collapse only when each column would become too narrow to read.
 - Mobile: primary action remains before secondary information; grids become ordered vertical lists. The roster uses day-grouped cards, not a horizontally clipped table, so every Chinese name, duty time, status, and workload is readable in one card.
+
+Phone layout is a deliberate arrangement of the same product, not a compressed desktop canvas and not a second website. Desktop and phone share one canonical URL, login/session, NiceGUI routes, localized view models, SQLite data, workflow and policy engine. Never branch policy, permissions, persistence, audit or PDF behaviour by user agent.
+
+- `<= 900px` is the adaptive navigation shell; `> 900px` keeps the desktop drawer and utility row. Tighter content rules may still activate at 600px, but Quasar's drawer breakpoint, CSS navigation swap and bottom-nav visibility must never disagree.
+- The phone top bar stays on one line and contains only page identity plus the optional page-music control. Appearance, language, sound, logout and secondary destinations move to the **More** navigation drawer instead of wrapping the header.
+- A persistent four-item bottom navigation exposes **Dashboard / Rosters / Prefects / More**. It respects `env(safe-area-inset-bottom)`, keeps practical targets at least 44px, identifies the current destination without colour alone, and adds enough content padding that the final control is never hidden underneath it.
+- **More** opens the same semantic navigation drawer used by the shared shell. It must remain vertically scrollable at 320px, support keyboard and screen-reader navigation, dismiss through the platform-standard drawer interaction, and keep destructive or identity-changing actions clearly labelled.
+- Dense tables use cards, row detail or another scan-safe phone representation generated from the same localized display model. A mobile card may reorder information, but it may not omit names, status, workload, reasons or actions needed for the same decision.
+- Landscape phone layout is a compact phone composition, not an automatic return to the desktop sidebar. Hover is never required; form actions stack in consequence order and touch targets remain separated.
 
 ### 6.5 Platform story and architecture evidence
 
@@ -409,6 +420,11 @@ Enterprise references inform information order, not visual imitation. Platform, 
 - Active navigation has a blue selection field and remains visible in both themes.
 - Icons are one consistent Material outline family, supporting—not replacing—text.
 - Limit primary navigation to the current operating map; archive old routes only as redirects for bookmarks.
+- Desktop keeps the grouped sidebar and full utility controls. Phone replaces that shell with the one-line top bar and four-item bottom navigation; this is an alternate presentation of the same routes, never a parallel `/mobile` tree.
+- **Dashboard**, **Rosters** and **Prefects** are the three routine phone destinations. **More** owns Handover, Settings, Platform & Team, Engineering & Quality, System Architecture & Trust, Getting Started, Operator Guide, Daily Verse and utility controls in a calm grouped bottom sheet.
+- A route opened from **More** remains visibly identified and keeps **More** as its navigation context. Browser back, deep links and refreshed pages must preserve the same canonical route rather than redirect through a mobile home page.
+- The fixed bottom navigation is visually persistent but appears after `<main>` in DOM order. Keyboard and assistive-technology reading order therefore encounters the unique page content before repeated navigation.
+- Appearance and interface-sound controls update every desktop／mobile instance in place without reloading or discarding form state; enabling sound gives one brief preview. Language remains a full translated-page reload, so trusted edits inside `<main>` must trigger a bilingual leave confirmation before that reload.
 
 ### Buttons
 
@@ -421,6 +437,8 @@ Enterprise references inform information order, not visual imitation. Platform, 
 
 Buttons must say what happens: “生成並儲存草稿”, “確認發布並入帳”, “建立交接備份包”. Avoid “提交”, “確定”, or icon-only critical actions.
 
+Dialog actions use one responsive grammar. Desktop presents a short, right-aligned action row; at `<= 900px`, the same semantic order becomes `sy-mobile-actions` with full-width controls of at least 48px. The safest exit or review action remains distinguishable from the consequential action, and source order follows consequence rather than visual convenience.
+
 ### Forms
 
 Archive confirmation must name both sides of the consequence: the active person is removed from future selection, while historical rosters, fairness entries, and audit evidence remain. It must also state when the interface has no immediate undo; a generic “Are you sure?” is insufficient.
@@ -429,9 +447,10 @@ Archive confirmation must name both sides of the consequence: the active person 
 - Label every field; placeholder text is supplementary only.
 - Show the smallest helpful instruction immediately before the first field.
 - Validate at submit and state what to repair in user language.
-- Repair predictable omissions before opening a progress state: focus the missing Chinese name, class, availability, leave reason, substitute, draft-change reason, or week-start field and keep the current context visible. The workflow still owns Monday validation and repeats all domain validation as the final safety boundary.
+- Repair predictable omissions before opening a progress state: focus the missing Chinese name, class, availability, published-duty adjustment reason, substitute, draft-change reason, or week-start field and keep the current context visible. A pre-generation leave reason is intentionally optional and is stored as absent rather than treated as an error. The workflow still owns Monday validation and repeats all domain validation as the final safety boundary.
 - Snapshot identifiers and operator-entered reasons before the first asynchronous yield. A progress overlay must process exactly the choice that was visible when the operator pressed the action button.
 - For actions longer than a brief interaction, show a calm blocking progress dialog connected to the action; prevent duplicate clicks. Use an honest phase message rather than a fictional percentage when the workflow cannot report one.
+- An optimistic conflict is not a generic failure and never offers “save again”. When a prefect or reviewed draft changed in another browser, keep the operator's intent visible, explain that newer data won, and offer reload／review as the safe next action.
 - A published-duty leave adjustment follows visible steps: choose the original duty, load and choose a qualified substitute (or deliberately retain a vacancy), then record the reason. Each phone field and action is full-width and touch-safe; the reason field keeps the unique accessible label and receives focus when it is missing.
 - A file import separates **parsing**, **mapping**, **preview**, and **write**. The file name, row／column count, selected worksheet and every target mapping remain visible before preview. Optional DeepSeek assistance is labelled as a suggestion, states exactly which anonymous column metadata leaves the computer, and never visually outranks the manual selectors or preview action.
 - A period-report preview is a read action, so its progress language says “checking” or “building”, never “saving”. Download actions use the already reviewed immutable model and do not imply that JSON created a backup or that scheduled allocation became verified service.
@@ -465,6 +484,7 @@ Archive confirmation must name both sides of the consequence: the active person 
 - Practice mode is a persistent operational state, never a toast or colour-only hint. A compact amber status band appears in the same location on every page with an icon, explicit heading, and one-sentence consequence.
 - Light mode uses warm paper amber with dark brown text; dark mode uses matte umber with pale gold text. Both remain solid, image-free, and visually separate from teal success and blue primary actions.
 - At phone width the band becomes part of normal document flow so it cannot cover navigation or the current action.
+- Practice and maintenance may both be true during a transition. They share one ordered `sy-status-stack`; neither banner may cover, replace, or visually merge with the other.
 - Practice PDF identity repeats in filename, document body, and footer. The marker does not rely on colour and stays independent from the selected output language.
 
 ---
@@ -472,6 +492,8 @@ Archive confirmation must name both sides of the consequence: the active person 
 ## 8. Motion and sound
 
 Motion is feedback, not decoration. The visual style remains calm when motion is disabled.
+
+Shared CSS motion tokens are the only default timing vocabulary: `--sy-motion-press: 90ms`, `--sy-motion-state: 180ms`, and `--sy-motion-layer: 260ms`. Components may use the longer documented narrative／feedback timings below only for their named purpose; scattered `.16s`／`.22s`／`.32s` literals are not a local design language.
 
 | Moment | Motion | Duration |
 |---|---|---:|
@@ -519,6 +541,8 @@ Every visual refinement must meet all gates:
 - Icons have adjacent text or an accessible label; decorative icons are hidden from assistive technology.
 - Colour is never the only carrier of status.
 - Browser smoke captures desktop light, desktop dark, and mobile views after a component-class change.
+- Adaptive-shell automation captures 320px and 390px portrait plus one phone landscape viewport. It verifies the one-line top bar, `Dashboard / Rosters / Prefects / More` bottom navigation, scrollable More drawer, safe-area clearance, card/table information parity, both languages/themes, reduced motion and no unintended horizontal overflow. Formal acceptance repeats keyboard, rotation and safe-area behaviour on physical iPhone Safari and Android Chrome.
+- Browser evidence fails on either a console error or an uncaught `pageerror`; a visually correct screenshot cannot conceal a broken event handler.
 - PDF remains print-first and is not redesigned by web-only decoration.
 
 ### 9.1 Reliability and fluidity gate
@@ -529,10 +553,15 @@ Design quality includes the behaviour underneath the surface.
 - Consequential local work runs outside the UI event loop with a persistent, bilingual progress dialog. It must prevent repeated submission and describe real phases rather than claim a precise duration.
 - Candidate lists and final save validation use the same availability, leave, role, same-day uniqueness, and no-consecutive-duty constraints. A recommendation is never treated as sufficient proof at save time.
 - Publication claims a draft with a conditional database update before it writes ledger rows. UI-level duplicate-click prevention is helpful, but the persistent transaction remains the final single-winner protection across browser tabs or concurrent local clients.
+- Prefect writes, pre-generation leave changes, draft generation and manual draft correction begin with SQLite `BEGIN IMMEDIATE`. Prefect update／archive and manual draft correction also compare the reviewed version, so stale forms reload and review rather than overwrite newer state.
+- Restore uses a host-wide exclusive maintenance marker plus payload-free operation leases. It waits for active operations in every application process to drain, rejects new writes, preflights the complete SQLAlchemy／Alembic schema and fairness state on a clone, and preserves a recovery marker only when automatic rollback cannot be proven safe.
+- `/healthz` and deployment readiness require SQLite quick-check, the complete current table contract and the current Alembic head. A readable partial database is degraded, not “healthy”.
+- Mutable music／playlist catalogues use a path-scoped read／modify／write lock and atomic, fsynced replacement. JSON preferences are not roster state, but they must still resist truncation under concurrent UI clients.
 - A failed backup, checksum mismatch, or unverified restore is visible as an operation failure. The interface must not present a success state for a partially protected write.
 - Browser mutation checks use an explicitly isolated SQLite database and backup directory; no visual test may create a roster or package from a real school database.
 - Before a release candidate is accepted, one browser-driven isolated write pipeline must prove the real sequence: fictional import, declared leave, draft generation, manual correction, single publication, bilingual PDF downloads, published-duty adjustment, ledger/audit/backup evidence, handover package, and restore into a second isolated database.
-- Final machine evidence is orchestrated by `scripts/verify_release_candidate.py`, which must create its own disposable paths, include the independent committed-without-backup drill, run strict snapshot trust checks, and leave a failed—not partial-pass—report if any gate fails. This machine report complements rather than replaces Head Study Prefect and teacher-advisor acceptance.
+- Final machine evidence is orchestrated by `scripts/verify_release_candidate.py`, which must create its own disposable paths, include Cloudflare Worker Deno contracts, desktop and independent mobile browser gates, the committed-without-backup drill, strict snapshot trust checks, and leave a failed—not partial-pass—report if any gate fails. Release fingerprinting includes `cloudflare/` JavaScript／JSONC, and repository hygiene blocks untracked release-sensitive source from being omitted. This machine report complements rather than replaces Head Study Prefect and teacher-advisor acceptance.
+- Runtime performance evidence measures both repeated component use and representative route navigation followed by return to the Dashboard. Heap, DOM-node and listener growth must stay bounded after garbage collection; a single fast first render is insufficient evidence of lifecycle quality.
 - Acceptance evidence must remain legible as responsibility, not vanity metrics: map each requirement to a direct test/browser artifact and a named human decision. A test count, architecture diagram, or `pass` badge must never imply that real names, print legibility, school fairness practice, encrypted custody, or external-access approval were checked by software.
 - Handover readiness uses a compact three-column desktop grid and one-column phone sequence; never render each small status as an oversized full-width card. Machine evidence and human acceptance are visually paired but semantically separate. Pass, running, stale, failed, missing, and unreadable states require icon, heading, explanatory copy, and a safe next action rather than colour alone.
 - Every change to policy-facing UI, long-operation flow, theme-specific imagery, or recovery must add/adjust focused tests, run the full suite, and capture the relevant desktop light/dark and mobile evidence.

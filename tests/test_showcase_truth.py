@@ -11,6 +11,9 @@ def test_engineering_showcase_uses_current_release_evidence_instead_of_stale_cou
     assert "evidence.passed_checks" in source and "evidence.total_checks" in source
     assert "engineering_fact_full_suite" in source
     assert "engineering_gate_runtime" in source
+    assert "engineering_gate_cloudflare" in source
+    assert "engineering_gate_mobile" in source
+    assert source.count('"engineering_gate_') == 12
     assert 'tag="h2"' in source
 
 

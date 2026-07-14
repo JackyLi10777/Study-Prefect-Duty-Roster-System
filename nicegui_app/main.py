@@ -79,6 +79,7 @@ def run() -> None:
     app.add_static_files(url_path="/assets/music", local_directory=MUSIC_DIR)
     ui.run(
         title="Sing Yin Study Prefect Duty Roster",
+        viewport="width=device-width, initial-scale=1, viewport-fit=cover",
         favicon=str(FAVICON_CREST_PATH),
         host=deployment.host,
         port=deployment.port,

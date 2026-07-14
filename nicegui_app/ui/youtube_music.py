@@ -75,6 +75,10 @@ def render_youtube_settings() -> None:
 
 def render_youtube_panel(context: str, settings: YouTubeSettings) -> None:
     if not settings.enabled:
+        with ui.column().classes("sy-youtube-panel w-full gap-4").props("data-testid=youtube-player-panel"):
+            ui.separator()
+            ui.label(t("youtube_player_title")).classes("font-semibold")
+            ui.label(t("youtube_disabled")).classes("sy-online-music-status")
         return
     library = YouTubePlaylistLibrary()
     playlists = library.for_context(context)

@@ -135,6 +135,9 @@ def test_activation_owns_service_rollback_and_uses_configured_port() -> None:
     assert "the administrator login route was not redirected" in verification
     assert "$request.AllowAutoRedirect = $false" in verification
     assert "Test-SingYinAccessRedirect" in verification
+    assert "Cloudflare One-time PIN verified" in verification
+    assert "Invoke-SingYinAccessLoginPageRequest" in verification
+    assert "totp-form" in verification and "verify-code" in verification
     assert "owner=sing-yin-roster-v1" not in startup  # supplied centrally by the common script
     assert "$script:SingYinTaskOwnerMarker" in startup
 

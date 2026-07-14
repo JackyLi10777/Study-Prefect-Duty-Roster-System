@@ -43,6 +43,8 @@ music/*.wav
 music/custom/
 music/custom-library.json
 music/youtube-playlists.json
+music/.custom-library.json.lock
+music/.youtube-playlists.json.lock
 music/youtube-imports/
 music/.youtube-import-staging/
 local-imports/

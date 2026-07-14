@@ -23,10 +23,19 @@ RELEASE_SOURCE_ROOTS = (
     PROJECT_ROOT / "tests",
     PROJECT_ROOT / "docs",
     PROJECT_ROOT / ".github",
+    PROJECT_ROOT / "cloudflare",
 )
 RELEASE_SOURCE_FILES = (
+    PROJECT_ROOT / ".env.example",
+    PROJECT_ROOT / ".gitattributes",
+    PROJECT_ROOT / ".gitignore",
     PROJECT_ROOT / "README.md",
     PROJECT_ROOT / "README-EN.md",
+    PROJECT_ROOT / "CODEX_PROMPTS.md",
+    PROJECT_ROOT / "CONTRIBUTING.md",
+    PROJECT_ROOT / "daily_verses.py",
+    PROJECT_ROOT / "LICENSE",
+    PROJECT_ROOT / "NOTICE.md",
     PROJECT_ROOT / "Professional_Design_System.md",
     PROJECT_ROOT / "PROJECT_STATUS.md",
     PROJECT_ROOT / "requirements.txt",
@@ -38,7 +47,13 @@ RELEASE_SOURCE_FILES = (
     PROJECT_ROOT / "START_SING_YIN_ROSTER.cmd",
     PROJECT_ROOT / "START_PRACTICE_MODE.cmd",
     PROJECT_ROOT / "RESET_PRACTICE_MODE.cmd",
+    PROJECT_ROOT / "school badge.png",
+    PROJECT_ROOT / "school badge (small).png",
+    PROJECT_ROOT / "school badge (square).png",
+    PROJECT_ROOT / "data" / "demo" / "prefects.zh-HK.seed.json",
+    PROJECT_ROOT / "data" / "devotional" / "daily-verses.seed.json",
 )
+RELEASE_EXCLUDED_DIRECTORY_NAMES = {"__pycache__", "node_modules", ".wrangler"}
 RELEASE_SUFFIXES = {
     ".py",
     ".ini",
@@ -47,6 +62,9 @@ RELEASE_SUFFIXES = {
     ".ps1",
     ".cmd",
     ".css",
+    ".js",
+    ".json",
+    ".jsonc",
     ".md",
     ".png",
     ".svg",
@@ -74,7 +92,11 @@ def _calculate_release_source_fingerprint(paths: Iterable[Path] | None = None) -
         for root in RELEASE_SOURCE_ROOTS
         if root.is_dir()
         for path in root.rglob("*")
-        if path.is_file() and path.suffix.lower() in RELEASE_SUFFIXES and "__pycache__" not in path.parts
+        if (
+            path.is_file()
+            and path.suffix.lower() in RELEASE_SUFFIXES
+            and not RELEASE_EXCLUDED_DIRECTORY_NAMES.intersection(path.parts)
+        )
     ] if paths is None else [Path(path) for path in paths if Path(path).is_file()]
     if paths is None:
         candidates.extend(path for path in RELEASE_SOURCE_FILES if path.is_file())

@@ -4,11 +4,29 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+_PNPM_LOCK_RELATIVE_PATH = "cloudflare/roster_viewer/pnpm-lock.yaml"
+_PNPM_PUBLIC_INTEGRITY = re.compile(
+    r"^\s*resolution:\s*\{integrity:\s*sha512-[A-Za-z0-9+/]+={0,2}\}\s*$"
+)
+
+
+def _is_public_pnpm_integrity(path: str, line_number: object) -> bool:
+    """Recognize only standard public SHA-512 package checksums in the pinned lockfile."""
+    normalized = path.replace("\\", "/").lstrip("./")
+    if normalized != _PNPM_LOCK_RELATIVE_PATH:
+        return False
+    try:
+        index = int(line_number) - 1
+        line = (PROJECT_ROOT / _PNPM_LOCK_RELATIVE_PATH).read_text(encoding="utf-8").splitlines()[index]
+    except (TypeError, ValueError, IndexError, OSError):
+        return False
+    return _PNPM_PUBLIC_INTEGRITY.fullmatch(line) is not None
 
 
 def _run(name: str, arguments: list[str]) -> tuple[bool, str]:
@@ -58,6 +76,7 @@ def main() -> int:
             "migrations",
             "scripts",
             ".github",
+            "cloudflare",
             ".env.example",
             "--exclude-files",
             r"requirements.*\.lock$|\.(woff2?|ttf|webp|png|jpg|jpeg|m4a|mp3|sqlite3|pdf|zip)$",
@@ -69,7 +88,16 @@ def main() -> int:
     secret_locations: list[str] = []
     try:
         payload = json.loads(secrets_output)
-        result_groups = payload.get("results", {})
+        raw_groups = payload.get("results", {})
+        result_groups = {
+            path: [
+                item
+                for item in items
+                if not _is_public_pnpm_integrity(path, item.get("line_number"))
+            ]
+            for path, items in raw_groups.items()
+        }
+        result_groups = {path: items for path, items in result_groups.items() if items}
         secret_files = len(result_groups)
         secret_findings = sum(len(items) for items in result_groups.values())
         secret_types = sorted({str(item.get("type", "unknown")) for items in result_groups.values() for item in items})

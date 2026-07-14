@@ -17,6 +17,7 @@ class RosterLifecycleMixin:
     ) -> RosterWeekResult:
         self._require_monday(week_start)
         with self._session() as session:
+            self._begin_serialized_write(session)
             prefects = self._active_prefects(session)
             leave_days = self._leave_days_for_week(session, week_start)
             try:
@@ -200,14 +201,21 @@ class RosterLifecycleMixin:
         assignment_id: int,
         replacement_prefect_id: str,
         reason: str,
+        expected_week_version: int | None = None,
     ) -> DraftAssignmentUpdateResult:
         """Apply an auditable, policy-validated manual draft change without posting fairness weight."""
         if not reason.strip():
             raise WorkflowError("A manual draft change requires a reason.")
         with self._session() as session:
+            self._begin_serialized_write(session)
             week = self._week_or_error(session, roster_week_id)
             if week.status != "draft":
                 raise WorkflowError("Only a draft roster can be changed manually.")
+            reviewed_version = week.version if expected_week_version is None else expected_week_version
+            if week.version != reviewed_version:
+                raise WorkflowConflictError(
+                    "This draft changed in another browser. Refresh and review the latest version before saving."
+                )
             assignment = self._assignment_or_error(session, roster_week_id, assignment_id)
             candidates = {candidate["id"] for candidate in self._eligible_assignment_candidates(session, week, assignment)}
             if replacement_prefect_id not in candidates:
@@ -217,6 +225,20 @@ class RosterLifecycleMixin:
             replacement = session.get(PrefectRecord, replacement_prefect_id)
             if replacement is None:
                 raise WorkflowError("The selected prefect no longer exists.")
+            claim = session.execute(
+                update(RosterWeekRecord)
+                .where(
+                    RosterWeekRecord.id == roster_week_id,
+                    RosterWeekRecord.status == "draft",
+                    RosterWeekRecord.version == reviewed_version,
+                )
+                .values(version=reviewed_version + 1, updated_at=self._now())
+            )
+            if claim.rowcount != 1:
+                raise WorkflowConflictError(
+                    "This draft changed in another browser. Refresh and review the latest version before saving."
+                )
+            session.refresh(week)
             original_prefect_id = assignment.prefect_id
             original_name = assignment.prefect_name_snapshot
             assignment.prefect_id = replacement.id
@@ -224,8 +246,6 @@ class RosterLifecycleMixin:
             assignment.prefect_role_snapshot = replacement.role_code
             assignment.status = "active"
             self._validate_persisted_assignments(session, self._assignment_rows(session, week.id), week_start=week.week_start)
-            week.version += 1
-            week.updated_at = self._now()
             self._audit(
                 session,
                 "draft_assignment_changed",

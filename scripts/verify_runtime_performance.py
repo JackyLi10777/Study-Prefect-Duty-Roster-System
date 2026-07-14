@@ -47,6 +47,9 @@ def evaluate_budget(metrics: dict[str, int]) -> list[str]:
         "heap_growth_bytes": HEAP_GROWTH_BUDGET_BYTES,
         "node_growth": NODE_GROWTH_BUDGET,
         "listener_growth": LISTENER_GROWTH_BUDGET,
+        "navigation_heap_growth_bytes": HEAP_GROWTH_BUDGET_BYTES,
+        "navigation_node_growth": NODE_GROWTH_BUDGET,
+        "navigation_listener_growth": LISTENER_GROWTH_BUDGET,
         "mobile_overflow_pixels": MOBILE_OVERFLOW_BUDGET_PX,
     }
     return [f"{name}_over_budget" for name, limit in limits.items() if metrics[name] > limit]
@@ -126,6 +129,7 @@ def _exercise_repeated_interactions(page: Page, cycles: int = 10) -> None:
 def main() -> int:
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     console_errors: list[str] = []
+    page_errors: list[str] = []
     report: dict[str, Any] = {
         "schemaVersion": 1,
         "status": "running",
@@ -139,6 +143,7 @@ def main() -> int:
             context = browser.new_context(viewport={"width": 1440, "height": 1024})
             page = context.new_page()
             page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
+            page.on("pageerror", lambda error: page_errors.append(str(error)))
             cdp = context.new_cdp_session(page)
             cdp.send("Performance.enable")
             cdp.send("HeapProfiler.enable")
@@ -207,6 +212,9 @@ def main() -> int:
             "heap_growth_bytes": max(0, after_interactions["heapBytes"] - baseline["heapBytes"]),
             "node_growth": max(0, after_interactions["nodes"] - baseline["nodes"]),
             "listener_growth": max(0, after_interactions["listeners"] - baseline["listeners"]),
+            "navigation_heap_growth_bytes": max(0, final_home["heapBytes"] - baseline["heapBytes"]),
+            "navigation_node_growth": max(0, final_home["nodes"] - baseline["nodes"]),
+            "navigation_listener_growth": max(0, final_home["listeners"] - baseline["listeners"]),
             "mobile_overflow_pixels": max(
                 (int(sample["overflowPixels"]) for sample in mobile_overflow),
                 default=0,
@@ -215,7 +223,7 @@ def main() -> int:
         failures = evaluate_budget(metrics)
         report.update(
             {
-                "status": "fail" if failures or console_errors else "pass",
+                "status": "fail" if failures or console_errors or page_errors else "pass",
                 "finishedAt": datetime.now(timezone.utc).isoformat(),
                 "metrics": metrics,
                 "baseline": baseline,
@@ -227,7 +235,10 @@ def main() -> int:
                 "mobileOverflow": mobile_overflow,
                 "largestResources": resources["largest"],
                 "consoleErrorCount": len(console_errors),
-                "failures": failures + (["browser_console_errors"] if console_errors else []),
+                "pageErrorCount": len(page_errors),
+                "failures": failures
+                + (["browser_console_errors"] if console_errors else [])
+                + (["browser_page_errors"] if page_errors else []),
             }
         )
     except Exception as error:  # noqa: BLE001 - verifier boundary writes a failed aggregate report

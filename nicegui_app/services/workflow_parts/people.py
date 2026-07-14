@@ -23,6 +23,7 @@ class PeopleWorkflowMixin:
                     "roleCode": row.role_code,
                     "historyWeight": row.history_weight,
                     "historyDuties": row.history_duties,
+                    "version": row.version,
                     "availableDays": [day.name for day in sorted(availability.get(row.id, set()))],
                     "needsMentoring": row.needs_mentoring,
                 }
@@ -39,6 +40,7 @@ class PeopleWorkflowMixin:
     def create_prefect(self, prefect_input: PrefectInput) -> dict[str, object]:
         self._validate_prefect_input(prefect_input)
         with self._session() as session:
+            self._begin_serialized_write(session)
             self._assert_name_available(session, prefect_input.name_zh)
             record = self._new_prefect_record(prefect_input)
             session.add(record)
@@ -51,40 +53,95 @@ class PeopleWorkflowMixin:
         self._require_backup(backup, committed_event="prefect_created")
         return output
 
-    def update_prefect(self, prefect_id: str, prefect_input: PrefectInput) -> dict[str, object]:
+    def update_prefect(
+        self,
+        prefect_id: str,
+        prefect_input: PrefectInput,
+        *,
+        expected_version: int | None = None,
+    ) -> dict[str, object]:
         self._validate_prefect_input(prefect_input)
         with self._session() as session:
+            self._begin_serialized_write(session)
             record = session.get(PrefectRecord, prefect_id)
             if record is None:
                 raise WorkflowError("Prefect was not found.")
+            if not record.active:
+                raise WorkflowConflictError(
+                    "This prefect record was archived in another browser. Refresh before making further changes."
+                )
+            reviewed_version = record.version if expected_version is None else expected_version
+            if record.version != reviewed_version:
+                raise WorkflowConflictError(
+                    "This prefect record changed in another browser. Refresh and review the latest details before saving."
+                )
             self._assert_name_available(session, prefect_input.name_zh, exclude_prefect_id=prefect_id)
-            record.name_zh = prefect_input.name_zh.strip()
-            record.name_en = prefect_input.name_en.strip() if prefect_input.name_en else None
-            record.form = prefect_input.form
-            record.class_name = prefect_input.class_name.strip()
-            record.role_code = prefect_input.role_code
-            record.needs_mentoring = prefect_input.needs_mentoring
-            record.fixed_general_duty = prefect_input.fixed_general_duty
-            record.remarks = prefect_input.remarks.strip()
-            record.updated_at = self._now()
+            claim = session.execute(
+                update(PrefectRecord)
+                .where(
+                    PrefectRecord.id == prefect_id,
+                    PrefectRecord.active.is_(True),
+                    PrefectRecord.version == reviewed_version,
+                )
+                .values(
+                    name_zh=prefect_input.name_zh.strip(),
+                    name_en=prefect_input.name_en.strip() if prefect_input.name_en else None,
+                    form=prefect_input.form,
+                    class_name=prefect_input.class_name.strip(),
+                    role_code=prefect_input.role_code,
+                    needs_mentoring=prefect_input.needs_mentoring,
+                    fixed_general_duty=prefect_input.fixed_general_duty,
+                    remarks=prefect_input.remarks.strip(),
+                    version=reviewed_version + 1,
+                    updated_at=self._now(),
+                )
+            )
+            if claim.rowcount != 1:
+                raise WorkflowConflictError(
+                    "This prefect record changed in another browser. Refresh and review the latest details before saving."
+                )
             self._replace_availability(session, record.id, prefect_input.available_days)
-            self._audit(session, "prefect_updated", None, {"prefectId": record.id})
+            session.refresh(record)
+            self._audit(session, "prefect_updated", None, {"prefectId": record.id, "version": record.version})
             output = self._prefect_output(session, record)
             session.commit()
         backup = self._create_and_record_backup("prefect_updated", None)
         self._require_backup(backup, committed_event="prefect_updated")
         return output
 
-    def archive_prefect(self, prefect_id: str) -> None:
+    def archive_prefect(self, prefect_id: str, *, expected_version: int | None = None) -> None:
         with self._session() as session:
+            self._begin_serialized_write(session)
             record = session.get(PrefectRecord, prefect_id)
             if record is None:
                 raise WorkflowError("Prefect was not found.")
             if not record.active:
                 raise WorkflowError("Prefect is already archived.")
-            record.active = False
-            record.updated_at = self._now()
-            self._audit(session, "prefect_archived", None, {"prefectId": record.id})
+            reviewed_version = record.version if expected_version is None else expected_version
+            if record.version != reviewed_version:
+                raise WorkflowConflictError(
+                    "This prefect record changed in another browser. Refresh and review the latest details before archiving."
+                )
+            claim = session.execute(
+                update(PrefectRecord)
+                .where(
+                    PrefectRecord.id == prefect_id,
+                    PrefectRecord.active.is_(True),
+                    PrefectRecord.version == reviewed_version,
+                )
+                .values(active=False, version=reviewed_version + 1, updated_at=self._now())
+            )
+            if claim.rowcount != 1:
+                raise WorkflowConflictError(
+                    "This prefect record changed in another browser. Refresh and review the latest details before archiving."
+                )
+            session.refresh(record)
+            self._audit(
+                session,
+                "prefect_archived",
+                None,
+                {"prefectId": record.id, "version": record.version},
+            )
             session.commit()
         backup = self._create_and_record_backup("prefect_archived", None)
         self._require_backup(backup, committed_event="prefect_archived")
@@ -99,6 +156,7 @@ class PeopleWorkflowMixin:
         if len(normalized_names) != len(set(normalized_names)):
             raise WorkflowError("Import contains duplicate Chinese names.")
         with self._session() as session:
+            self._begin_serialized_write(session)
             for name in normalized_names:
                 self._assert_name_available(session, name)
             records: list[PrefectRecord] = []
@@ -130,18 +188,18 @@ class PeopleWorkflowMixin:
         week_start: date,
         prefect_id: str,
         day: str,
-        reason: str,
+        reason: str | None = None,
     ) -> dict[str, object]:
         """Record a pre-generation absence without changing published fairness history."""
         self._require_monday(week_start)
-        if not reason.strip():
-            raise WorkflowError("A leave declaration requires a reason.")
+        normalized_reason = reason.strip() if reason else None
         try:
             school_day = SchoolDay[day]
         except KeyError as error:
             raise WorkflowError("Leave declaration contains an invalid weekday.") from error
 
         with self._session() as session:
+            self._begin_serialized_write(session)
             prefect = session.get(PrefectRecord, prefect_id)
             if prefect is None or not prefect.active:
                 raise WorkflowError("The selected prefect is not active.")
@@ -162,14 +220,14 @@ class PeopleWorkflowMixin:
                     week_start=week_start,
                     prefect_id=prefect_id,
                     day=school_day.name,
-                    reason=reason.strip(),
+                    reason=normalized_reason,
                     active=True,
                     created_at=now,
                     updated_at=now,
                 )
                 session.add(declaration)
             else:
-                declaration.reason = reason.strip()
+                declaration.reason = normalized_reason
                 declaration.active = True
                 declaration.updated_at = now
             session.flush()
@@ -187,6 +245,7 @@ class PeopleWorkflowMixin:
 
     def cancel_pre_generation_leave(self, leave_declaration_id: int) -> None:
         with self._session() as session:
+            self._begin_serialized_write(session)
             declaration = session.get(LeaveDeclarationRecord, leave_declaration_id)
             if declaration is None or not declaration.active:
                 raise WorkflowError("The leave declaration was not found.")

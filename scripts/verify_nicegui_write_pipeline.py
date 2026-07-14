@@ -77,6 +77,23 @@ def _wait_for_progress_cycle(page: Page) -> None:
     dialog.wait_for(state="detached", timeout=10_000)
 
 
+def _click_mobile_drawer_tool(page: Page, index: int, *, expects_navigation: bool = True) -> None:
+    """Use the real phone preference path instead of hidden desktop controls."""
+    navigation = page.get_by_test_id("mobile-bottom-navigation")
+    navigation.locator(".sy-mobile-tab").last.click()
+    drawer = page.locator("#main-navigation-drawer")
+    drawer.wait_for(state="visible", timeout=10_000)
+    tools = drawer.get_by_test_id("mobile-drawer-tools").locator(".sy-mobile-drawer-tool")
+    if tools.count() <= index:
+        raise AssertionError(f"Mobile drawer preference {index} is unavailable.")
+    if expects_navigation:
+        with page.expect_navigation(wait_until="domcontentloaded", timeout=15_000):
+            tools.nth(index).click()
+    else:
+        tools.nth(index).click()
+    page.wait_for_load_state("networkidle")
+
+
 def _fixture_leave_prefect() -> tuple[str, str]:
     """Pick a seeded Monday assignment without writing a preliminary draft."""
     import json
@@ -160,12 +177,14 @@ def main() -> None:
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     LIGHT_SCREENSHOT.parent.mkdir(parents=True, exist_ok=True)
     console_errors: list[str] = []
+    page_errors: list[str] = []
     leave_prefect_id, leave_prefect_name = _fixture_leave_prefect()
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1440, "height": 1024}, accept_downloads=True)
         page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
+        page.on("pageerror", lambda error: page_errors.append(str(error)))
         health_response = page.request.get(f"{BASE_URL}/healthz")
         assert health_response.status == 200
         assert health_response.json().get("e2eRunId") == e2e_run_id, (
@@ -185,7 +204,9 @@ def main() -> None:
         page.get_by_role("button", name="匯入風紀").click()
         page.locator(".sy-progress-dialog").wait_for(state="visible", timeout=10_000)
         page.get_by_text("名單管理", exact=True).wait_for(timeout=10_000)
-        page.get_by_text("虛構驗證風紀", exact=True).wait_for(timeout=10_000)
+        page.locator(".sy-responsive-table-desktop:visible td", has_text="虛構驗證風紀").wait_for(
+            timeout=10_000
+        )
         page.locator(".sy-progress-dialog").wait_for(state="hidden", timeout=20_000)
         page.locator(".sy-progress-dialog").wait_for(state="detached", timeout=10_000)
         workflow = _workflow(database_path, backup_dir)
@@ -240,10 +261,7 @@ def main() -> None:
         page.locator('input[type="date"]').fill(WEEK_START.isoformat())
         _select_option(page, "選擇風紀", leave_prefect_option)
         _select_option(page, "請假日", "星期一")
-        page.get_by_role("button", name="登記請假").click()
-        page.get_by_text("請先填寫請假原因。", exact=True).wait_for(timeout=10_000)
-        assert page.locator(".sy-progress-dialog").count() == 0
-        page.get_by_label("請假原因").fill("虛構校內活動")
+        assert page.get_by_label("請假原因（選填）").count() == 1
         page.get_by_role("button", name="登記請假").click()
         _wait_for_progress_cycle(page)
         page.get_by_text("已登記請假", exact=False).wait_for(timeout=10_000)
@@ -267,6 +285,7 @@ def main() -> None:
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1440, "height": 1024}, accept_downloads=True)
         page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
+        page.on("pageerror", lambda error: page_errors.append(str(error)))
         health_response = page.request.get(f"{BASE_URL}/healthz")
         assert health_response.status == 200 and health_response.json().get("e2eRunId") == e2e_run_id
         page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="domcontentloaded")
@@ -278,6 +297,7 @@ def main() -> None:
         assert int(week["id"]) == roster_week_id
         declared = workflow.pre_generation_leaves(WEEK_START)
         assert {item["prefectId"] for item in declared} == {leave_prefect_id}
+        assert declared[0]["reason"] is None
         assert all(
             not (item["prefectId"] == leave_prefect_id and item["day"] == "MONDAY")
             for item in workflow.assignments(roster_week_id)
@@ -294,7 +314,6 @@ def main() -> None:
         assert page.locator(".sy-progress-dialog").count() == 0
         log_content = (log_dir / "app.log").read_text(encoding="utf-8")
         assert "progress_draft_change_working" not in log_content
-        assert "虛構校內活動" not in log_content
 
         page.get_by_label("修改原因（必填）").fill("虛構草稿核對修正")
         with page.expect_navigation(wait_until="networkidle", timeout=20_000):
@@ -307,7 +326,7 @@ def main() -> None:
         log_content = (log_dir / "app.log").read_text(encoding="utf-8")
         assert "progress_draft_change_working" in log_content
         assert "虛構草稿核對修正" not in log_content
-        print("[4/7] Repaired a missing reason locally, then saved an auditable manual change", flush=True)
+        print("[4/7] Rejected a missing manual-change reason, then saved an auditable correction", flush=True)
 
         page.goto(f"{BASE_URL}/rosters/{roster_week_id}/adjustments", wait_until="networkidle")
         premature_adjustment = page.get_by_test_id("adjustment-unavailable-state")
@@ -426,10 +445,11 @@ def main() -> None:
         print("[7/7] Applied leave adjustment, built handover package, and restored a separate database", flush=True)
 
         page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="networkidle")
-        if page.locator("i.q-icon", has_text="light_mode").count():
-            page.locator("i.q-icon", has_text="light_mode").click()
+        desktop_theme_controls = page.locator(".sy-desktop-header-controls")
+        if desktop_theme_controls.locator("i.q-icon", has_text="light_mode").count():
+            desktop_theme_controls.locator("i.q-icon", has_text="light_mode").click()
             page.wait_for_load_state("networkidle")
-        page.locator("i.q-icon", has_text="dark_mode").click()
+        page.locator(".sy-desktop-header-controls").locator("i.q-icon", has_text="dark_mode").click()
         page.wait_for_function("document.body.classList.contains('body--dark')")
         page.screenshot(path=str(DARK_SCREENSHOT), full_page=True)
         page.set_viewport_size({"width": 390, "height": 844})
@@ -443,14 +463,14 @@ def main() -> None:
         # appears in only one card.
         assert mobile_cards.filter(has_text=str(adjusted["prefectName"])).count() >= 1
         page.screenshot(path=str(MOBILE_SCREENSHOT), full_page=True)
-        page.get_by_role("button", name="EN").click()
+        _click_mobile_drawer_tool(page, 0)
         page.wait_for_load_state("networkidle")
         page.get_by_text("Phone view:", exact=False).wait_for(timeout=10_000)
         english_mobile_cards = page.locator('[data-testid="mobile-roster-card"]')
         assert english_mobile_cards.count() == 26
         assert english_mobile_cards.filter(has_text=str(adjusted["prefectName"])).count() >= 1
 
-        page.get_by_role("button", name="中").click()
+        _click_mobile_drawer_tool(page, 0)
         page.wait_for_load_state("networkidle")
         page.goto(f"{BASE_URL}/prefects", wait_until="networkidle")
         page.get_by_text("名單管理", exact=True).wait_for(timeout=10_000)
@@ -469,10 +489,11 @@ def main() -> None:
             box = button.bounding_box()
             assert box is not None and box["width"] >= 280 and box["height"] >= 44
         page.screenshot(path=str(MOBILE_FORMS_DARK_SCREENSHOT), full_page=True)
-        page.locator("i.q-icon", has_text="light_mode").click()
+        _click_mobile_drawer_tool(page, 2, expects_navigation=False)
         page.wait_for_function("!document.body.classList.contains('body--dark')")
         page.screenshot(path=str(MOBILE_FORMS_LIGHT_SCREENSHOT), full_page=True)
         assert not console_errors, console_errors
+        assert not page_errors, page_errors
         browser.close()
 
     print(f"Write-pipeline browser verification passed; artifacts: {artifacts_dir}")

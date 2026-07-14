@@ -14,6 +14,62 @@ from typing import Iterable
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _MEDIA_EXTENSIONS = {".m4a", ".mp3", ".ogg", ".wav"}
 _IMPORT_EXTENSIONS = {".csv", ".xls", ".xlsx"}
+_RELEASE_SOURCE_DIRECTORIES = {
+    ".github",
+    "cloudflare",
+    "docs",
+    "migrations",
+    "nicegui_app",
+    "packages",
+    "scripts",
+    "tests",
+}
+_RELEASE_SOURCE_FILES = {
+    ".env.example",
+    ".gitattributes",
+    ".gitignore",
+    "alembic.ini",
+    "codex_prompts.md",
+    "contributing.md",
+    "daily_verses.py",
+    "license",
+    "notice.md",
+    "professional_design_system.md",
+    "project_status.md",
+    "pyproject.toml",
+    "readme-en.md",
+    "readme.md",
+    "requirements-dev.lock",
+    "requirements-dev.txt",
+    "requirements.lock",
+    "requirements.txt",
+    "reset_practice_mode.cmd",
+    "school badge (small).png",
+    "school badge (square).png",
+    "school badge.png",
+    "start_practice_mode.cmd",
+    "start_sing_yin_roster.cmd",
+}
+_RELEASE_SOURCE_SUFFIXES = {
+    ".cmd",
+    ".css",
+    ".ini",
+    ".js",
+    ".json",
+    ".jsonc",
+    ".md",
+    ".png",
+    ".ps1",
+    ".py",
+    ".svg",
+    ".toml",
+    ".ttf",
+    ".txt",
+    ".webp",
+    ".woff2",
+    ".yaml",
+    ".yml",
+}
 _REQUIRED_IGNORE_PROBES = {
     "environment": (".env", ".env.local"),
     "credential_file": ("demo_code2/service_account.json", "demo_code2/JSON 金钥.json"),
@@ -23,7 +79,13 @@ _REQUIRED_IGNORE_PROBES = {
     "generated_document": ("privacy-probe.pdf", "privacy-probe.zip"),
     "operator_import": ("privacy-probe.csv", "privacy-probe.xlsx"),
     "operator_music": ("music/privacy-probe.mp3", "music/custom/privacy-probe.m4a"),
-    "operator_preferences": ("music/custom-library.json", "music/youtube-playlists.json", ".nicegui/storage.json"),
+    "operator_preferences": (
+        "music/custom-library.json",
+        "music/youtube-playlists.json",
+        "music/.custom-library.json.lock",
+        "music/.youtube-playlists.json.lock",
+        ".nicegui/storage.json",
+    ),
     "remote_attachment": (".codex-remote-attachments/privacy-probe.bin",),
 }
 
@@ -38,6 +100,7 @@ class RepositoryHygieneReport:
     missing_ignore_count: int
     missing_ignore_categories: tuple[str, ...]
     env_example_trackable: bool
+    untracked_release_source_count: int
 
 
 def sensitive_category(raw_path: str) -> str | None:
@@ -83,6 +146,22 @@ def sensitive_category(raw_path: str) -> str | None:
     return None
 
 
+def is_release_source(raw_path: str) -> bool:
+    """Return whether an untracked path would be omitted from a source release."""
+    normalized = raw_path.replace("\\", "/").lower()
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    normalized = normalized.lstrip("/")
+    path = PurePosixPath(normalized)
+    if normalized in _RELEASE_SOURCE_FILES:
+        return True
+    return (
+        bool(path.parts)
+        and path.parts[0] in _RELEASE_SOURCE_DIRECTORIES
+        and path.suffix.lower() in _RELEASE_SOURCE_SUFFIXES
+    )
+
+
 def _git(root: Path, arguments: Iterable[str]) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
@@ -106,11 +185,11 @@ def audit_repository(root: Path = PROJECT_ROOT) -> RepositoryHygieneReport:
     root = root.resolve()
     repository_check = _git(root, ("rev-parse", "--is-inside-work-tree"))
     if repository_check.returncode != 0 or repository_check.stdout.strip().lower() != "true":
-        return RepositoryHygieneReport("fail", False, "missing", 0, (), 0, (), False)
+        return RepositoryHygieneReport("fail", False, "missing", 0, (), 0, (), False, 0)
 
     tracked_result = _git(root, ("ls-files", "-z"))
     if tracked_result.returncode != 0:
-        return RepositoryHygieneReport("fail", True, "unknown", 0, (), 0, (), False)
+        return RepositoryHygieneReport("fail", True, "unknown", 0, (), 0, (), False, 0)
     tracked_categories = tuple(
         sorted(
             {
@@ -122,6 +201,12 @@ def audit_repository(root: Path = PROJECT_ROOT) -> RepositoryHygieneReport:
     )
     tracked_sensitive_count = sum(
         1 for raw_path in tracked_result.stdout.split("\0") if raw_path and sensitive_category(raw_path) is not None
+    )
+    untracked_result = _git(root, ("ls-files", "--others", "--exclude-standard", "-z"))
+    if untracked_result.returncode != 0:
+        return RepositoryHygieneReport("fail", True, "unknown", 0, (), 0, (), False, 0)
+    untracked_release_source_count = sum(
+        1 for raw_path in untracked_result.stdout.split("\0") if raw_path and is_release_source(raw_path)
     )
 
     missing_ignore_categories = tuple(
@@ -138,6 +223,7 @@ def audit_repository(root: Path = PROJECT_ROOT) -> RepositoryHygieneReport:
         if (
             history == "present"
             and tracked_sensitive_count == 0
+            and untracked_release_source_count == 0
             and not missing_ignore_categories
             and env_example_trackable
         )
@@ -152,6 +238,7 @@ def audit_repository(root: Path = PROJECT_ROOT) -> RepositoryHygieneReport:
         len(missing_ignore_categories),
         missing_ignore_categories,
         env_example_trackable,
+        untracked_release_source_count,
     )
 
 
@@ -162,7 +249,7 @@ def main() -> int:
     try:
         report = audit_repository(args.root)
     except RuntimeError:
-        report = RepositoryHygieneReport("fail", False, "unknown", 0, (), 0, (), False)
+        report = RepositoryHygieneReport("fail", False, "unknown", 0, (), 0, (), False, 0)
     print(json.dumps(asdict(report), ensure_ascii=False, indent=2))
     return 0 if report.status == "pass" else 1
 

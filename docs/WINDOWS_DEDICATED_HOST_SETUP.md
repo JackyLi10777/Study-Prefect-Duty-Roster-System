@@ -506,9 +506,9 @@ powershell -ExecutionPolicy Bypass -File scripts\doctor_windows_remote_access.ps
 1. 確認主機已開機。
 2. 開啟 Edge 或 Chrome。
 3. 輸入唯一正式網址：`https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`。
-4. 按「管理員登入」，完成 Cloudflare 帳戶及 MFA 驗證；登入後仍在同一個網站。
+4. 按「管理員登入」，輸入 Access policy 精確列明的電郵及 Cloudflare 寄出的單次驗證碼；登入後仍在同一個網站。
 5. 先閱讀每日經文，再依「本週值班工作台」目前步驟操作。
-6. 使用完畢按「登出」；不要每天停止背景工作。
+6. 使用完畢按「登出」，讓網站清除簽署管理員 session 並結束 Cloudflare Access session；不要每天停止背景工作。
 
 如網站打不開：
 
@@ -560,24 +560,32 @@ C:\SingYinRoster\data\backups
 3. 按右鍵→「結束」。
 4. 確認瀏覽器重新整理後已不能進入網站。
 
-### 步驟 12.3：下載最新 `main`
+### 步驟 12.3：切換至已驗證的發布標籤
 
 開啟普通 PowerShell：
 
 ```powershell
 Set-Location C:\SingYinRoster
 git status --short
+$PreviousCommit = (git rev-parse HEAD).Trim()
 ```
 
 正常情況不會列出程式檔修改。如果看到不明檔案或 `M`、`D`，先停止，不要執行 reset 或刪除，交給維護者檢查。
 
-確認沒有不明修改後：
+先向維護者取得本次已通過 GitHub Quality gate 與 CodeQL 的發布標籤；例如 `v1.1.0-rc.8`。不要自行猜測 `main` 是否已完成驗證。確認沒有不明修改後：
 
 ```powershell
-git pull --ff-only origin main
+$ReleaseRef = "v1.1.0-rc.8"
+git fetch --prune --tags origin
+$ReleaseCommit = (git rev-parse "$ReleaseRef^{commit}").Trim()
+git merge-base --is-ancestor $ReleaseCommit origin/main
+if ($LASTEXITCODE -ne 0) { throw "發布標籤不在已推送的 origin/main 內。" }
+git switch --detach $ReleaseRef
+if ((git rev-parse HEAD).Trim() -ne $ReleaseCommit) { throw "目前程式與發布標籤不一致。" }
+git status --short
 ```
 
-這個命令只從 GitHub下載程式，不會上載本機資料。
+`$ReleaseCommit` 必須能解析為 commit，最後一條正常情況不會輸出任何項目。這些命令只從 GitHub 下載及切換已驗證程式，不會上載或刪除本機 `.env`、SQLite、備份、日誌或音樂。保留 `$PreviousCommit` 作回退證據；回退時切回該 commit，禁止使用 `git reset --hard`。
 
 ### 步驟 12.4：更新 Python 套件
 
@@ -592,6 +600,7 @@ C:\SingYinRoster\.venv\Scripts\python.exe -m pip install --require-hashes -r C:\
 3. 執行健康檢查。
 4. 核對名單、最近一份週表和最新備份仍可讀。
 5. 下載一份測試 PDF，確認中文正常顯示。
+6. 在 `C:\SingYinRoster` 執行 `git rev-parse --short HEAD` 並把短版 commit 記入交接紀錄；這個值必須與本次已驗證、已發布的 commit 相同。`/healthz` 正常只證明程式與資料庫可回應，不能證明畫面已更新到最新原始碼。
 
 ---
 
@@ -671,9 +680,9 @@ C:\SingYinRoster\.venv\Scripts\python.exe -X utf8 scripts\inspect_support_log.py
 - [ ] Windows 11 已更新。
 - [ ] 主機接電時不會睡眠。
 - [ ] 程式位於 `C:\SingYinRoster`，不在同步資料夾。
-- [ ] `main` 分支已下載。
+- [ ] 已下載並切換至本次通過 Quality gate 與 CodeQL 的確切 release tag／commit。
 - [ ] Python 3.12 `.venv` 已建立。
-- [ ] `requirements.txt` 安裝成功。
+- [ ] `requirements.lock` 已用 `--require-hashes` 安裝成功。
 - [ ] `.env` 維持 `local` 及 `127.0.0.1`。
 - [ ] 工作排程器只存在一個 `Sing Yin Roster Host`。
 - [ ] 重新啟動後網站會自動恢復。

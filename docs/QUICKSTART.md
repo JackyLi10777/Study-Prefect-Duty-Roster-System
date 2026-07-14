@@ -4,8 +4,8 @@
 
 1. 確認 Windows 專用主機已開機；背景工作會自動啟動，毋須每日雙擊程式。
 2. 在任何獲准裝置開啟唯一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。
-3. 未登入時是訪客唯讀模式；首席導學風紀按「管理員登入」，完成 Cloudflare 帳戶及 MFA 驗證後，同一網址會解鎖工作台。
-4. 完成工作後按「登出」，特別是共用裝置；只關閉分頁並不等於結束 Access session。
+3. 未登入時是訪客唯讀模式；首席導學風紀按「管理員登入」，輸入 Access policy 精確列明的電郵及 Cloudflare 寄出的單次驗證碼後，同一網址會解鎖工作台。
+4. 完成工作後按「登出」，特別是共用裝置；只關閉分頁並不等於清除網站的簽署管理員 session 及 Cloudflare Access session。
 
 ## 本機維護或 Cloudflare 故障復原
 
@@ -44,4 +44,4 @@
 
 ## English
 
-For daily work, open the single canonical website, select **Admin login**, and complete Cloudflare account/MFA verification; the same URL then unlocks the workbench. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for a real HTTP readiness response, and only then opens the browser. For a fictional, isolated rehearsal, use `START_PRACTICE_MODE.cmd`; close it and use `RESET_PRACTICE_MODE.cmd` for a clean practice workspace. The persistent banner and `PRACTICE_` PDF marks make the mode explicit.
+For daily work, open the single canonical website, select **Admin login**, enter an exact allowlisted email and the one-time code sent by Cloudflare; the same URL then unlocks the workbench under a separate signed administrator session. Select **Log out** when finished because closing the tab does not clear both sessions. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for a real HTTP readiness response, and only then opens the browser. For a fictional, isolated rehearsal, use `START_PRACTICE_MODE.cmd`; close it and use `RESET_PRACTICE_MODE.cmd` for a clean practice workspace. The persistent banner and `PRACTICE_` PDF marks make the mode explicit.

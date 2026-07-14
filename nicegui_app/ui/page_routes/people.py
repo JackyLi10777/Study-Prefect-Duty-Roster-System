@@ -36,14 +36,14 @@ def _show_prefect_dialog(existing: dict[str, object] | None = None) -> None:
     role_options = {"study_prefect": role_label("study_prefect"), "assistant_head": role_label("assistant_head")}
     with ui.dialog() as dialog, ui.card().classes("sy-surface w-full max-w-2xl p-6"):
         ui.label(t(title_key)).classes("text-xl font-semibold")
-        with ui.row().classes("w-full gap-3 flex-wrap"):
+        with ui.row().classes("sy-mobile-field-row w-full gap-3 flex-wrap"):
             name_zh = ui.input(label=t("name_zh"), value=existing["nameZh"] if existing else "").props(
                 "name=name-zh autocomplete=off"
             ).classes("grow")
             name_en = ui.input(label=t("name_en"), value=existing["nameEn"] if existing else "").props(
                 "name=name-en autocomplete=off"
             ).classes("grow")
-        with ui.row().classes("w-full gap-3 flex-wrap"):
+        with ui.row().classes("sy-mobile-field-row w-full gap-3 flex-wrap"):
             form = ui.select(label=t("form"), options=["F.3", "F.4", "F.5", "F.6"], value=existing["form"] if existing else "F.3").classes("grow")
             class_name = ui.input(label=t("class_name"), value=existing["className"] if existing else "").props(
                 "name=class-name autocomplete=off"
@@ -84,7 +84,13 @@ def _show_prefect_dialog(existing: dict[str, object] | None = None) -> None:
                 remarks=str(remarks.value or ""),
             )
             save_action = (
-                (lambda: workflow.update_prefect(str(existing["id"]), prefect_input))
+                (
+                    lambda: workflow.update_prefect(
+                        str(existing["id"]),
+                        prefect_input,
+                        expected_version=int(existing["version"]),
+                    )
+                )
                 if existing
                 else (lambda: workflow.create_prefect(prefect_input))
             )
@@ -93,13 +99,14 @@ def _show_prefect_dialog(existing: dict[str, object] | None = None) -> None:
                 title_key="progress_prefect_save_title",
                 working_key="progress_prefect_save_working",
                 icon="person_check",
+                on_conflict=lambda _error: ui.notify(t("prefect_write_conflict"), type="warning", timeout=8_000),
             )
             if result is not _OPERATION_FAILED:
                 dialog.close()
                 ui.notify(t("prefect_saved"), type="positive")
                 ui.navigate.reload()
 
-        with ui.row().classes("w-full justify-end gap-3 mt-4"):
+        with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-4"):
             ui.button(t("cancel"), icon="close", on_click=dialog.close).props("flat")
             ui.button(t("save"), icon="save", on_click=save_prefect).props("color=primary")
     _delete_dialog_after_close(dialog)
@@ -135,13 +142,13 @@ def _render_import_preview_content(preview_area, preview: ImportPreview) -> None
     preview_area.clear()
     with preview_area:
         if preview.issues:
-            ui.label(t("import_issues")).classes("font-semibold text-red-600")
+            ui.label(t("import_issues")).classes("font-semibold sy-fg-danger")
             for issue in preview.issues:
-                ui.label(issue).classes("text-sm text-red-600")
+                ui.label(issue).classes("text-sm sy-fg-danger")
         if preview.rows:
             if not preview.issues:
                 ui.label(t("import_ready")).classes("font-semibold sy-fg-stable")
-            ui.table(
+            _render_responsive_table(
                 rows=[
                     {
                         "name": row.name_zh,
@@ -160,7 +167,7 @@ def _render_import_preview_content(preview_area, preview: ImportPreview) -> None
                     {"name": "availability", "label": t("availability"), "field": "availability", "align": "left"},
                 ],
                 row_key="name",
-            ).classes("sy-table w-full")
+            )
 
 
 def _render_period_report(report: PeriodSummaryReport) -> None:
@@ -207,18 +214,43 @@ def _render_period_report(report: PeriodSummaryReport) -> None:
         with ui.card().classes("sy-surface w-full p-5 mt-4"):
             ui.label(t("fairness_trend")).classes("text-lg font-semibold")
             ui.label(t("fairness_trend_detail")).classes("text-sm text-[var(--sy-muted)] mt-1")
+            chart_dark = current_theme() == "dark"
+            chart_text = "#F5F5F7" if chart_dark else "#3A3A3C"
+            chart_muted = "#AEAEB2" if chart_dark else "#6E6E73"
+            chart_line = "rgba(235,235,245,.16)" if chart_dark else "rgba(60,60,67,.14)"
+            chart_tooltip = "#1C1C1E" if chart_dark else "#FFFFFF"
+            chart_action = "#9BC2D2" if chart_dark else "#35647C"
+            chart_attention = "#F0C96A" if chart_dark else "#8A6423"
+            chart_neutral = "#C5C7CA" if chart_dark else "#59686D"
             ui.echart(
                 {
                     "animation": False,
-                    "tooltip": {"trigger": "axis"},
-                    "legend": {"data": [t("trend_median"), t("trend_spread"), t("trend_stddev")]},
+                    "textStyle": {"color": chart_text},
+                    "tooltip": {
+                        "trigger": "axis",
+                        "backgroundColor": chart_tooltip,
+                        "borderColor": chart_line,
+                        "textStyle": {"color": chart_text},
+                    },
+                    "legend": {
+                        "type": "scroll",
+                        "data": [t("trend_median"), t("trend_spread"), t("trend_stddev")],
+                        "textStyle": {"color": chart_muted},
+                    },
                     "grid": {"left": 45, "right": 24, "top": 52, "bottom": 44},
                     "xAxis": {
                         "type": "category",
                         "data": [point.week_start.isoformat() for point in report.trend],
-                        "axisLabel": {"rotate": 25},
+                        "axisLabel": {"rotate": 25, "color": chart_muted, "hideOverlap": True},
+                        "axisLine": {"lineStyle": {"color": chart_line}},
                     },
-                    "yAxis": {"type": "value", "name": t("history_weight")},
+                    "yAxis": {
+                        "type": "value",
+                        "name": t("history_weight"),
+                        "nameTextStyle": {"color": chart_muted},
+                        "axisLabel": {"color": chart_muted},
+                        "splitLine": {"lineStyle": {"color": chart_line}},
+                    },
                     "series": [
                         {
                             "name": t("trend_median"),
@@ -226,8 +258,8 @@ def _render_period_report(report: PeriodSummaryReport) -> None:
                             "smooth": True,
                             "symbolSize": 7,
                             "data": [point.median for point in report.trend],
-                            "lineStyle": {"color": "#25647A", "width": 2},
-                            "itemStyle": {"color": "#25647A"},
+                            "lineStyle": {"color": chart_action, "width": 2},
+                            "itemStyle": {"color": chart_action},
                         },
                         {
                             "name": t("trend_spread"),
@@ -235,8 +267,8 @@ def _render_period_report(report: PeriodSummaryReport) -> None:
                             "smooth": True,
                             "symbolSize": 7,
                             "data": [point.spread for point in report.trend],
-                            "lineStyle": {"color": "#9A6B22", "width": 2},
-                            "itemStyle": {"color": "#9A6B22"},
+                            "lineStyle": {"color": chart_attention, "width": 2},
+                            "itemStyle": {"color": chart_attention},
                         },
                         {
                             "name": t("trend_stddev"),
@@ -244,14 +276,14 @@ def _render_period_report(report: PeriodSummaryReport) -> None:
                             "smooth": True,
                             "symbolSize": 7,
                             "data": [point.population_stddev for point in report.trend],
-                            "lineStyle": {"color": "#5E6D72", "width": 2},
-                            "itemStyle": {"color": "#5E6D72"},
+                            "lineStyle": {"color": chart_neutral, "width": 2},
+                            "itemStyle": {"color": chart_neutral},
                         },
                     ],
                 }
-            ).classes("w-full h-80 mt-3").props(f'aria-label="{t("fairness_trend")}" data-testid=fairness-trend-chart')
+            ).classes("sy-fairness-trend-chart w-full h-80 mt-3").props(f'aria-label="{t("fairness_trend")}" data-testid=fairness-trend-chart')
             with ui.expansion(t("trend_accessible_table"), icon="table_chart").classes("w-full"):
-                ui.table(
+                _render_responsive_table(
                     rows=[
                         {
                             "week": point.week_start.isoformat(),
@@ -274,12 +306,12 @@ def _render_period_report(report: PeriodSummaryReport) -> None:
                         {"name": "source", "label": t("report_source_version"), "field": "source", "align": "left"},
                     ],
                     row_key="week",
-                ).classes("sy-table w-full")
+                )
 
     with ui.card().classes("sy-surface w-full p-5 mt-4"):
         ui.label(t("recorded_service_participation")).classes("text-lg font-semibold")
         ui.label(t("recorded_service_participation_detail")).classes("text-sm text-[var(--sy-muted)] mt-1")
-        ui.table(
+        _render_responsive_table(
             rows=[
                 {
                     "name": row.name_zh,
@@ -302,7 +334,9 @@ def _render_period_report(report: PeriodSummaryReport) -> None:
                 {"name": "status", "label": t("support_status"), "field": "status", "align": "left"},
             ],
             row_key="name",
-        ).classes("sy-table w-full mt-3").props("data-testid=summary-contribution-table")
+            classes="mt-3",
+            test_id="summary-contribution-table",
+        )
 
     statement_options = {
         row.prefect_id: t(
@@ -373,7 +407,12 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
         {"name": "historyWeight", "label": t("history_weight"), "field": "historyWeight", "align": "right"},
         {"name": "historyDuties", "label": t("history_duties"), "field": "historyDuties", "align": "right"},
     ]
-    ui.table(rows=rows, columns=columns, row_key="id").classes("sy-table w-full mt-4")
+    _render_responsive_table(
+        rows=rows,
+        columns=columns,
+        row_key="id",
+        classes="mt-4",
+    )
 
     ui.separator().classes("my-7")
     with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
@@ -454,7 +493,7 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
             ui.notify(t("summary_export_ready"), type="positive")
 
     preview_button.on_click(refresh_report)
-    with ui.row().classes("w-full gap-3 flex-wrap mt-4"):
+    with ui.row().classes("sy-mobile-actions w-full gap-3 flex-wrap mt-4"):
         ui.button(t("download_summary_zh_pdf"), icon="picture_as_pdf", on_click=lambda: download_report("zh")).props(
             "outline color=primary data-testid=download-summary-zh"
         )
@@ -478,7 +517,7 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
 def prefects_page() -> None:
     workflow = get_workflow()
     with page_shell("prefects", "/prefects"):
-        with ui.row().classes("w-full items-center justify-between"):
+        with ui.row().classes("sy-page-lead w-full items-center justify-between"):
             ui.label(t("prefects")).classes("text-2xl font-semibold")
             ui.button(t("add_prefect"), icon="person_add", on_click=lambda: _show_prefect_dialog()).props("color=primary")
         with ui.tabs().classes("w-full sy-fg-action") as tabs:
@@ -490,6 +529,7 @@ def prefects_page() -> None:
                 prefects = workflow.prefects()
                 _render_operation_hint("hint_prefect_directory", icon="groups")
                 options = {item["id"]: f"{item['nameZh']} ({item['form']} {item['className']})" for item in prefects}
+                prefect_versions = {str(item["id"]): int(item["version"]) for item in prefects}
                 with ui.row().classes("sy-directory-actions w-full items-end gap-3 flex-wrap mb-4"):
                     selected = ui.select(label=t("select_prefect"), options=options, value=next(iter(options), None)).classes("sy-directory-selector min-w-[300px]")
 
@@ -509,16 +549,22 @@ def prefects_page() -> None:
                             prefect_id = str(selected.value)
                             archive_dialog.close()
                             result = await _run_with_progress(
-                                lambda: workflow.archive_prefect(prefect_id),
+                                lambda: workflow.archive_prefect(
+                                    prefect_id,
+                                    expected_version=prefect_versions[prefect_id],
+                                ),
                                 title_key="progress_prefect_archive_title",
                                 working_key="progress_prefect_archive_working",
                                 icon="person_off",
+                                on_conflict=lambda _error: ui.notify(
+                                    t("prefect_write_conflict"), type="warning", timeout=8_000
+                                ),
                             )
                             if result is not _OPERATION_FAILED:
                                 ui.notify(t("prefect_archived"), type="positive")
                                 ui.navigate.reload()
 
-                        with ui.row().classes("w-full justify-end gap-3 mt-5"):
+                        with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
                             ui.button(t("cancel"), icon="close", on_click=archive_dialog.close).props("flat")
                             ui.button(
                                 t("confirm_archive"),
@@ -905,13 +951,13 @@ def prefects_page() -> None:
                     preview_area.clear()
                     with preview_area:
                         if preview.issues:
-                            ui.label(t("import_issues")).classes("font-semibold text-red-600")
+                            ui.label(t("import_issues")).classes("font-semibold sy-fg-danger")
                             for issue in preview.issues:
-                                ui.label(issue).classes("text-sm text-red-600")
+                                ui.label(issue).classes("text-sm sy-fg-danger")
                         if preview.rows:
                             if not preview.issues:
                                 ui.label(t("import_ready")).classes("font-semibold sy-fg-stable")
-                            ui.table(
+                            _render_responsive_table(
                                 rows=[
                                     {
                                         "name": row.name_zh,
@@ -930,7 +976,7 @@ def prefects_page() -> None:
                                     {"name": "availability", "label": t("availability"), "field": "availability", "align": "left"},
                                 ],
                                 row_key="name",
-                            ).classes("sy-table w-full")
+                            )
 
                 async def import_preview() -> None:
                     preview = preview_state["value"]
@@ -947,7 +993,7 @@ def prefects_page() -> None:
                         ui.notify(t("imported_success"), type="positive")
                         ui.navigate.reload()
 
-                with ui.row().classes("gap-3 mt-4"):
+                with ui.row().classes("sy-mobile-actions gap-3 mt-4"):
                     ui.button(t("preview_import"), icon="fact_check", on_click=preview_import).props("outline color=primary")
                     ui.button(t("import_prefects"), icon="upload", on_click=import_preview).props("color=primary")
             with ui.tab_panel("fairness").classes("px-0"):

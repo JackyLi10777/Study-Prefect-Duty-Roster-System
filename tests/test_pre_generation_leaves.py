@@ -38,6 +38,19 @@ def test_pre_generation_leave_excludes_a_prefect_from_the_declared_day(workflow:
     assert workflow.pre_generation_leaves(WEEK_START) == [leave]
 
 
+def test_pre_generation_leave_reason_is_optional_and_round_trips_as_null(workflow: RosterWorkflow) -> None:
+    prefect_id = str(workflow.prefects()[0]["id"])
+
+    leave = workflow.declare_leave(
+        week_start=WEEK_START,
+        prefect_id=prefect_id,
+        day="MONDAY",
+    )
+
+    assert leave["reason"] is None
+    assert workflow.pre_generation_leaves(WEEK_START)[0]["reason"] is None
+
+
 def test_pre_generation_leave_is_rejected_after_the_week_is_published(workflow: RosterWorkflow) -> None:
     draft = workflow.generate_and_save_draft(WEEK_START)
     workflow.publish(draft.id, expected_week_version=draft.version)

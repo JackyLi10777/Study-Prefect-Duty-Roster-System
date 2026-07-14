@@ -10,7 +10,7 @@ def rosters_page() -> None:
     workflow = get_workflow()
     weeks = workflow.roster_weeks()
     with page_shell("rosters", "/rosters"):
-        with ui.row().classes("w-full items-center justify-between"):
+        with ui.row().classes("sy-page-lead w-full items-center justify-between"):
             ui.html(t("rosters"), tag="h2").classes("text-2xl font-semibold")
             ui.label(t("persistence_notice")).classes("text-sm text-[var(--sy-muted)]")
         _render_storage_lifecycle(workflow)
@@ -47,10 +47,20 @@ def rosters_page() -> None:
                             f'label label-always snap data-testid=history-priority-multiplier '
                             f'aria-label="{t("history_priority_label")}"'
                         ).classes("w-full mt-3")
-                        with ui.row().classes("w-full justify-between gap-2 text-xs text-[var(--sy-muted)]"):
-                            ui.label(t("history_priority_lower"))
-                            ui.label(t("history_priority_standard"))
-                            ui.label(t("history_priority_higher"))
+                        with ui.element("div").classes("sy-history-scale w-full").props(
+                            f'role=img aria-label="{t("history_priority_scale")}"'
+                        ):
+                            for value, position in (
+                                ("0.8", "0%"),
+                                ("1.0", "16.6667%"),
+                                ("2.0", "100%"),
+                            ):
+                                with ui.element("span").classes("sy-history-scale-mark").style(
+                                    f"left: {position}"
+                                ).props(f"data-value={value}"):
+                                    ui.label(value).classes("sy-history-scale-value")
+                                    ui.element("i").classes("sy-history-scale-tick").props("aria-hidden=true")
+                            ui.label(t("history_priority_scale_detail")).classes("sy-history-scale-help")
 
                     def refresh_history_priority() -> None:
                         selected = selected_week_start()
@@ -99,7 +109,7 @@ def rosters_page() -> None:
                                     }
                                     for index, item in enumerate(requirements, start=1)
                                 ]
-                                ui.table(
+                                _render_responsive_table(
                                     rows=rows,
                                     columns=[
                                         {"name": "day", "label": t("day"), "field": "day", "align": "left"},
@@ -109,7 +119,8 @@ def rosters_page() -> None:
                                         {"name": "status", "label": t("status"), "field": "status", "align": "left"},
                                     ],
                                     row_key="id",
-                                ).classes("sy-table w-full p-4")
+                                    classes="p-4",
+                                )
                     refresh_requirements()
 
                     ui.separator().classes("my-5")
@@ -119,7 +130,7 @@ def rosters_page() -> None:
                         str(prefect["id"]): f"{prefect['nameZh']} ({prefect['form']} {prefect['className']})"
                         for prefect in workflow.prefects()
                     }
-                    with ui.row().classes("w-full gap-3 flex-wrap"):
+                    with ui.row().classes("sy-mobile-field-row w-full gap-3 flex-wrap"):
                         leave_prefect = ui.select(
                             label=t("select_prefect"),
                             options=prefect_options,
@@ -148,9 +159,10 @@ def rosters_page() -> None:
                             if declarations:
                                 ui.label(t("declared_leaves")).classes("text-sm font-semibold")
                             for declaration in declarations:
-                                with ui.row().classes("w-full items-center justify-between gap-3 py-1"):
+                                with ui.row().classes("sy-mobile-list-action w-full items-center justify-between gap-3 py-1"):
+                                    reason_text = str(declaration.get("reason") or t("leave_reason_not_provided"))
                                     ui.label(
-                                        f"{day_label(str(declaration['day']))} | {declaration['prefectName']} | {declaration['reason']}"
+                                        f"{day_label(str(declaration['day']))} | {declaration['prefectName']} | {reason_text}"
                                     ).classes("text-sm text-[var(--sy-muted)]")
 
                                     async def cancel_leave(leave_id: int = int(declaration["id"])) -> None:
@@ -179,10 +191,6 @@ def rosters_page() -> None:
                             leave_day.run_method("focus")
                             return
                         reason = str(leave_reason.value or "").strip()
-                        if not reason:
-                            ui.notify(t("leave_reason_required"), type="warning")
-                            leave_reason.run_method("focus")
-                            return
                         prefect_id = str(leave_prefect.value)
                         leave_day_value = str(leave_day.value)
                         result = await _run_with_progress(
@@ -190,7 +198,7 @@ def rosters_page() -> None:
                                 week_start=week_start,
                                 prefect_id=prefect_id,
                                 day=leave_day_value,
-                                reason=reason,
+                                reason=reason or None,
                             ),
                             title_key="progress_leave_title",
                             working_key="progress_leave_working",
@@ -241,13 +249,13 @@ def rosters_page() -> None:
                     )
                 for week in weeks:
                     history_priority_value = f"{float(week.get('historyPriorityMultiplier', 1.0)):.1f}"
-                    with ui.row().classes("sy-surface w-full items-center justify-between px-5 py-4"):
+                    with ui.row().classes("sy-surface sy-roster-week-item w-full items-center justify-between px-5 py-4"):
                         with ui.column().classes("gap-0"):
                             ui.label(str(week["weekStart"])).classes("text-lg font-semibold")
                             ui.label(
                                 f"{t('version')} {week['version']}  |  {t('generated_at')}: {week['generatedAt']:%Y-%m-%d %H:%M}  |  "
                                 f"{t('history_priority_used', value=history_priority_value)}"
-                            ).classes("text-sm text-[var(--sy-muted)]")
+                            ).classes("sy-roster-week-meta text-sm text-[var(--sy-muted)]")
                         _tone_badge(t("published") if week["status"] == "published" else t("draft"), "stable" if week["status"] == "published" else "action")
                         ui.button(t("view"), icon="arrow_forward", on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}")).props("flat")
             with ui.tab_panel("adjust_edit").classes("px-0"):
@@ -261,7 +269,7 @@ def rosters_page() -> None:
                         icon="fact_check",
                     )
                 for week in published_weeks:
-                    with ui.row().classes("sy-surface w-full items-center justify-between px-5 py-4 mt-4"):
+                    with ui.row().classes("sy-surface sy-roster-week-item w-full items-center justify-between px-5 py-4 mt-4"):
                         with ui.column().classes("gap-0"):
                             ui.label(str(week["weekStart"])).classes("text-lg font-semibold")
                             ui.label(f"{t('version')} {week['version']}").classes("text-sm text-[var(--sy-muted)]")
@@ -291,7 +299,7 @@ def roster_detail_page(roster_week_id: int) -> None:
                 secondary_path="/settings",
             )
             return
-        with ui.row().classes("w-full items-start justify-between gap-4"):
+        with ui.row().classes("sy-roster-detail-head w-full items-start justify-between gap-4"):
             with ui.column().classes("gap-1"):
                 ui.label(str(week["weekStart"])).classes("text-2xl font-semibold")
                 ui.label(f"{t('version')} {week['version']}").classes("text-[var(--sy-muted)]")
@@ -301,7 +309,7 @@ def roster_detail_page(roster_week_id: int) -> None:
                         value=f"{float(week.get('historyPriorityMultiplier', 1.0)):.1f}",
                     )
                 ).classes("text-sm text-[var(--sy-muted)]")
-            with ui.row().classes("gap-2"):
+            with ui.row().classes("sy-mobile-actions sy-roster-detail-actions gap-2"):
                 if week["status"] == "draft":
                     reviewed_version = int(week["version"])
                     with ui.dialog() as publish_conflict_dialog, ui.card().classes("sy-surface w-full max-w-md p-6"):
@@ -314,7 +322,7 @@ def roster_detail_page(roster_week_id: int) -> None:
                             publish_conflict_dialog.close()
                             ui.navigate.reload()
 
-                        with ui.row().classes("w-full justify-end mt-5"):
+                        with ui.row().classes("sy-mobile-actions w-full justify-end mt-5"):
                             ui.button(
                                 t("publish_conflict_review_action"),
                                 icon="refresh",
@@ -344,7 +352,7 @@ def roster_detail_page(roster_week_id: int) -> None:
                                 ui.notify(t("published_success"), type="positive")
                                 ui.navigate.reload()
 
-                        with ui.row().classes("w-full justify-end gap-3 mt-5"):
+                        with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
                             ui.button(t("cancel"), icon="close", on_click=publish_dialog.close).props("flat")
                             ui.button(t("confirm_publish_action"), icon="publish", on_click=publish).props("color=primary")
                     ui.button(t("publish"), icon="publish", on_click=publish_dialog.open).props("color=primary")
@@ -367,6 +375,24 @@ def roster_detail_page(roster_week_id: int) -> None:
                 ui.label(t("manual_draft_change")).classes("text-lg font-semibold")
                 _render_operation_hint("hint_draft_change", icon="edit_note")
                 ui.label(t("manual_draft_change_notice")).classes("text-sm text-[var(--sy-muted)] mt-3")
+                with ui.dialog() as draft_change_conflict_dialog, ui.card().classes(
+                    "sy-surface w-full max-w-md p-6"
+                ):
+                    ui.label(t("draft_change_conflict_title")).classes("text-lg font-semibold")
+                    ui.label(t("draft_change_conflict_body", version=reviewed_version)).classes(
+                        "text-sm text-[var(--sy-muted)] mt-2"
+                    )
+
+                    def reload_after_draft_change_conflict() -> None:
+                        draft_change_conflict_dialog.close()
+                        ui.navigate.reload()
+
+                    with ui.row().classes("sy-mobile-actions w-full justify-end mt-5"):
+                        ui.button(
+                            t("draft_change_conflict_action"),
+                            icon="refresh",
+                            on_click=reload_after_draft_change_conflict,
+                        ).props("color=primary")
                 assignment_select = ui.select(
                     label=t("select_draft_assignment"),
                     options=assignment_options,
@@ -414,16 +440,18 @@ def roster_detail_page(roster_week_id: int) -> None:
                             assignment_id=assignment_id,
                             replacement_prefect_id=replacement_prefect_id,
                             reason=reason,
+                            expected_week_version=reviewed_version,
                         ),
                         title_key="progress_draft_change_title",
                         working_key="progress_draft_change_working",
                         icon="edit_note",
+                        on_conflict=lambda _error: draft_change_conflict_dialog.open(),
                     )
                     if result is not _OPERATION_FAILED:
                         ui.notify(t("draft_changed"), type="positive")
                         ui.navigate.reload()
 
-                with ui.row().classes("gap-3 mt-4"):
+                with ui.row().classes("sy-mobile-actions gap-3 mt-4"):
                     ui.button(t("load_draft_candidates"), icon="group_add", on_click=load_draft_candidates).props("outline color=primary")
                     ui.button(t("save_draft_change"), icon="save", on_click=save_draft_change).props("color=primary")
         else:

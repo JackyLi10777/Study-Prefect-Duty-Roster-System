@@ -6,7 +6,7 @@
 
 正式網址：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>
 
-NiceGUI、SQLite、PDF、備份及日誌仍在 Windows 主機，origin 只監聽 `127.0.0.1:8080`。Cloudflare Worker 是唯一前門；管理員請求經 Access、Worker JWT 驗證、Workers VPC、既有具名 Tunnel 才抵達 NiceGUI。這不是把資料庫搬進 Worker，也不是公開 Windows 連接埠。
+NiceGUI、SQLite、PDF、備份及日誌仍在 Windows 主機，origin 只監聽 `127.0.0.1:8080`。Cloudflare Worker 是唯一前門；管理員在 `/auth/login` 經 Access 與 Worker JWT 驗證後取得獨立簽署的第一方 session，其後只有該 session 通過驗證的請求才經 Workers VPC、既有具名 Tunnel 抵達 NiceGUI。這不是把資料庫搬進 Worker，也不是公開 Windows 連接埠。
 
 完整 Windows 安裝、工作排程器、健康檢查、更新、備份及搬機步驟見 [Windows 專用主機完整設定手冊](WINDOWS_DEDICATED_HOST_SETUP.md)；Access、VPC、Tunnel、驗收及後備程序見 [Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)；使用者入口、登入及分享見 [單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。目前不採用 Linux、Raspberry Pi、Docker 或真正雲端主機作正式資料來源。
 
@@ -17,28 +17,29 @@ NiceGUI、SQLite、PDF、備份及日誌仍在 Windows 主機，origin 只監聽
 | 未登入訪客 | 唯讀首頁及獲明確分享的 `/view#…` 已發布週表 | 不可生成、修改、發布、調整、公平審核、備份、還原或設定 |
 | 已驗證管理員 | 經 VPC 代理的完整 NiceGUI 工作台 | 可依既有政策、交易、確認及審計完成 OP 工作流 |
 
-不另派發「管理員網址」。`/auth/*` 只供同站登入流程；登入後由 Worker 在每個 NiceGUI 請求驗證 hostname-wide Access cookie。VPC Service、Tunnel、localhost 及私人 WARP 地址只給維護者。一般訪客不需 WARP、帳戶或密碼。
+不另派發「管理員網址」。Access 只保護同站 `/auth` 及 `/auth/*`；登入完成後，Worker 不把 Access cookie 當作全站管理 session，而是在每個 NiceGUI 請求驗證自己的 `__Host-SingYinAdminSession`。VPC Service、Tunnel、localhost 及私人 WARP 地址只給維護者。一般訪客不需 WARP、帳戶或密碼。
 
 ## 身份及 session 決定
 
 - Access policy、Worker 有限管理員名單及 WARP 維護後備 policy 目前共同接受三個精確身份：`s10777@syss.edu.hk`、`lichuangjie0208@gmail.com`、`lichuangjie0208@outlook.com`。只在其中一層出現並不足以取得編輯權。
-- Cloudflare IdP 的 **Restrict to account members** 已停用，讓上述個人電郵可用自己的 Cloudflare 帳戶完成身份驗證；真正授權邊界仍是 Access exact-email policy。個人電郵不需加入 Cloudflare Dashboard 成員名單，也不因此取得 DNS、Worker、Access 或帳單管理權。
-- 密碼、MFA、帳戶復原及身份生命週期由 Cloudflare Identity Provider／Cloudflare Access 管理。
+- Access 使用 **Cloudflare One-time PIN**：使用者輸入 policy 精確列明的電郵，再輸入 Cloudflare 寄出的單次驗證碼；毋須 Cloudflare Dashboard 帳戶，也不會因此取得 DNS、Worker、Access 或帳單管理權。
+- 授權生命週期由 Access exact-email policy、One-time PIN 及 Worker 的第二次白名單核對共同管理。系統不收集或保存管理員密碼，也沒有忘記密碼流程。
 - 系統不建立密碼資料表、Argon2／bcrypt hash、共用 OP 密碼或忘記密碼頁；SQLite、KV、備份及 Git 均不保存管理員密碼。
-- Access session 為 **8 小時**。完成工作必須按「登出」；離任交接以更新 exact-email policy 完成，不交接前任密碼。
+- Access token 與第一方管理員 session 均有時限；第一方 session 最長 **8 小時**，且不得超過 Access token 的到期時間。完成工作必須按「登出」；離任交接以更新 exact-email policy 完成，不交接前任密碼。
 - Access 應用只保護管理路徑，不可為整個 Worker 啟用強制登入，否則訪客也會被迫登入。
 
 目前 self-hosted Access app 的非敏感識別碼是 `25072aab-0e60-4787-8ec7-48029e448e8e`。Access audience、JWT、cookie、client secret 及管理 token 是秘密，不寫入公開文件、Git、截圖或日誌。
 
-## Worker 的第二道身份驗證
+## Worker 的 Access-to-session 交接
 
-Cloudflare Access 的路徑政策是第一道閘門；Worker 在轉送 NiceGUI 前仍必須：
+Cloudflare Access 的路徑政策是第一道閘門；Worker 的交接及每次轉送必須依次完成：
 
-1. 從 Cloudflare Access JWK 驗證 `Cf-Access-Jwt-Assertion` 簽章。
-2. 核對 `aud`、`iss`、`exp` 及 exact-email 管理員身份。
-3. 不相信瀏覽器提供的角色、電郵或自訂身份標頭。
-4. 驗證後移除外來 Access JWT、`CF_Authorization` cookie 及身份標頭，只注入由已驗證 claim 產生的內部身份。
-5. 缺少、過期、錯誤 audience／issuer 或不符管理員電郵的請求一律拒絕或回到訪客頁。
+1. 只在 Access 保護的 `/auth/login` 從 Cloudflare JWK 驗證 `Cf-Access-Jwt-Assertion` 簽章，並核對 `aud`、`iss`、`exp` 及 exact-email 管理員身份。
+2. 驗證通過後建立 HMAC 簽署的 `__Host-SingYinAdminSession`，設定 HttpOnly、Secure、SameSite=Lax、Path=/，不設 Domain；cookie 只保存獨立 session payload，絕不複製 Access JWT。
+3. session 最長 8 小時且受 Access `exp` 約束；每個 NiceGUI HTTP／WebSocket 請求都重新驗證簽章、時效及目前 exact-email allowlist。
+4. 不相信瀏覽器提供的角色、電郵或自訂身份標頭。送往 `ROSTER_ORIGIN` 前移除外來 Access JWT、`CF_Authorization`、第一方管理員 cookie 及身份標頭，只注入由已驗證 session 產生的內部身份。
+5. `/logout` 先清除第一方管理員 cookie，再前往 Cloudflare Access logout；缺少、過期、被竄改或已不在 allowlist 的 session 一律拒絕或回到訪客頁。
+6. Worker 必須在 secret store 同時具備 `ADMIN_BEARER_TOKEN` 與 `ADMIN_SESSION_SECRET`；缺少任何一項均 fail closed，值本身不得進入版本庫、文件、截圖、日誌或備份。
 
 Cloudflare team JWK endpoint 是 `https://restless-hall-73b2.cloudflareaccess.com/cdn-cgi/access/certs`。這是公開驗簽資料位置，不是登入網址；不要在使用者文件派發 `/auth/*` 或 JWK URL。
 
@@ -65,7 +66,7 @@ Worker 代理必須直接回傳 VPC `fetch()` 的原始 `Response`，不可重�
 - 這證明 VPC HTTP Upgrade 及 NiceGUI WebSocket 路徑在實際環境可通過。
 - probe script 及 workers.dev 子網域已刪除；它不是第二個入口，也不應留下書籤。
 
-這項證據只確認 transport。正式發布前仍須以虛構資料完成 Access 登入／登出、8 小時 session／撤銷、長時間重新連線、檔案上載、PDF 下載及完整寫入流程的瀏覽器驗收。
+這項證據只確認 transport。正式發布前仍須以虛構資料完成 exact-email One-time PIN、第一方管理員 session 的建立／登出／到期、長時間重新連線、檔案上載、PDF 下載及完整寫入流程的瀏覽器驗收。
 
 ## 同站唯讀分享邊界
 
@@ -91,7 +92,7 @@ Worker 代理必須直接回傳 VPC `fetch()` 的原始 `Response`，不可重�
 
 ### 維護後備的既有驗收契約
 
-原有「**私有 Cloudflare Tunnel + WARP**」路徑不再是日常入口，但仍是可復原的維護資產。其 **WARP device-enrollment policy**、WARP-on／WARP-off／未獲准裝置拒絕測試及「**主機連接器健康；待真人遠端裝置驗收**」狀態仍須保留至後備驗收完成。這個 **應用內權限** 契約只容許維護帳戶，不得升級訪客或取代 canonical Admin login。Access app destinations 只有 `/auth` 及 `/auth/*`；停用 path-only cookie 後，Worker 會在同一 hostname 的每個 NiceGUI 代理請求驗證身份，沒有管理員前綴或第二網站。
+原有「**私有 Cloudflare Tunnel + WARP**」路徑不再是日常入口，但仍是可復原的維護資產。其 **WARP device-enrollment policy**、WARP-on／WARP-off／未獲准裝置拒絕測試及「**主機連接器健康；待真人遠端裝置驗收**」狀態仍須保留至後備驗收完成。這個 **應用內權限** 契約只容許維護帳戶，不得升級訪客或取代 canonical Admin login。Access app destinations 只有 `/auth` 及 `/auth/*`；Worker 在 `/auth/login` 完成 JWT-to-session 交接後，於同一 hostname 的每個 NiceGUI 代理請求驗證第一方管理員 session，沒有管理員前綴或第二網站。
 
 ## 為甚麼不用 Quick Tunnel、Pages 或直接公開 origin？
 
@@ -110,6 +111,6 @@ Worker 代理必須直接回傳 VPC `fetch()` 的原始 `Response`，不可重�
 
 ## English summary
 
-The selected design uses one canonical `workers.dev` URL. Guests see read-only content; an approved administrator selects **Admin login**, completes Cloudflare Access sign-in and MFA, and returns to the same host with the full NiceGUI editor. The Worker independently verifies the Access JWT before proxying through Workers VPC and the existing named Tunnel to a Windows loopback origin.
+The selected design uses one canonical `workers.dev` URL. Guests see read-only content; an approved administrator selects **Admin login**, enters an exact allowlisted email and the Cloudflare One-time PIN, and returns to the same host. At `/auth/login`, the Worker validates the Access JWT and creates a separate HMAC-signed, HttpOnly `__Host-SingYinAdminSession`; subsequent NiceGUI requests validate that session and the exact allowlist before proxying through Workers VPC and the existing named Tunnel to a Windows loopback origin.
 
-Passwords, MFA, and account recovery remain with the Cloudflare identity provider. The application has no custom password database. Same-host `/view#…` links remain encrypted, expiring, and revocable. Localhost and private WARP are maintenance fallbacks only, not additional URLs to distribute. The Windows host remains the system of record; a true cloud-host migration is a separate L3 project.
+The application has no custom password database. The first-party administrator session lasts no longer than eight hours or the Access token expiry, is rechecked against the exact allowlist on every request, and never contains the Access JWT. Both identity cookies are stripped before the VPC origin; logout clears the first-party cookie before Cloudflare Access logout. Deployment requires `ADMIN_BEARER_TOKEN` and `ADMIN_SESSION_SECRET` in Worker secret storage. Same-host `/view#…` links remain encrypted, expiring, and revocable. Localhost and private WARP are maintenance fallbacks only, not additional URLs to distribute. The Windows host remains the system of record; a true cloud-host migration is a separate L3 project.

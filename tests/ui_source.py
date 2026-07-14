@@ -19,9 +19,8 @@ def combined_theme_source() -> str:
         (ui_root / filename).read_text(encoding="utf-8")
         for filename in ("theme.py", "theme_markup.py")
     ]
-    sources.append(
-        (PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-theme-v1.css").read_text(encoding="utf-8")
-    )
+    css_root = PROJECT_ROOT / "nicegui_app" / "assets" / "css"
+    sources.extend(path.read_text(encoding="utf-8") for path in sorted(css_root.glob("sing-yin-*-v1.css")))
     return "\n".join(sources)
 
 

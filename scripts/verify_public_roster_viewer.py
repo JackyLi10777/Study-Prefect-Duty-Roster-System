@@ -54,6 +54,7 @@ def _set_theme_reliably(page: Page, expected: str) -> None:
     for _ in THEME_STATES:
         current = _current_theme(page)
         if current == expected:
+            page.wait_for_timeout(250)
             return
         page.locator("#themeToggle").click()
         page.wait_for_function(
@@ -95,6 +96,20 @@ def _assert_guest_landing(page: Page, *, label: str) -> None:
     _assert_page_identity(page, label=label)
     if page.locator("#rosterState").is_visible():
         raise RuntimeError(f"{label} exposed the roster state without a share link.")
+
+    verse_refresh = page.locator("#refreshLandingVerse")
+    if verse_refresh.count() != 1 or not verse_refresh.is_visible():
+        raise RuntimeError(f"{label} does not expose the manual verse refresh action.")
+    verse_refresh_box = verse_refresh.bounding_box()
+    if (
+        verse_refresh_box is None
+        or verse_refresh_box["width"] < 44
+        or verse_refresh_box["height"] < 44
+    ):
+        raise RuntimeError(
+            f"{label} verse refresh is smaller than the 44 CSS pixel touch target: "
+            f"{verse_refresh_box}"
+        )
 
     login_link = page.locator('a[href="/auth/login"]')
     if login_link.count() != 1 or not login_link.is_visible():
@@ -253,6 +268,13 @@ def _assert_read_only_roster(page: Page, *, expected_names: set[str], label: str
     )
     if editable_controls.count() != 0:
         raise RuntimeError(f"{label} unexpectedly exposes {editable_controls.count()} editable controls.")
+    viewport = page.viewport_size or {}
+    if int(viewport.get("width", 0)) <= 900:
+        scroll_hint = page.locator("#rosterScrollHint")
+        if not scroll_hint.is_visible() or "SWIPE HORIZONTALLY" not in scroll_hint.inner_text().upper():
+            raise RuntimeError(f"{label} does not explain how to reach every weekday on a phone.")
+        if page.locator(".table-scroll").get_attribute("aria-describedby") != "rosterScrollHint":
+            raise RuntimeError(f"{label} does not associate its mobile scroll instruction with the roster.")
     _assert_document_fits_viewport(page, label=label)
 
 

@@ -34,9 +34,11 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 1. 在任何普通瀏覽器開啟唯一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。
 2. 按 **「管理員登入 / Admin login」**；網站會在內部交由 Cloudflare Access 驗證，不需要抄寫或收藏 `/auth/*` 路徑。
-3. 以 Access policy 精確列明的管理員電郵完成 Cloudflare 帳戶登入及 MFA。系統沒有自製密碼資料表，也不會要求在 NiceGUI 另設共用密碼。
-4. 驗證後仍留在同一網站，完整工作台才會解鎖。Access session 最長 8 小時；完成工作後按 **「登出 / Log out」**，共用裝置不可只關閉分頁。
+3. 輸入 Access policy 精確列明的管理員電郵，再輸入 Cloudflare 寄出的單次驗證碼。系統沒有自製密碼資料表，也不會要求在 NiceGUI 另設共用密碼。
+4. 驗證後仍留在同一網站，Worker 會建立最長 8 小時、已簽署且只供瀏覽器傳送的管理 session，完整工作台才會解鎖。完成工作後按 **「登出 / Log out」**；共用裝置不可只關閉分頁。
 5. 先閱讀首頁每日經文。經文方向可選「跟隨外觀／清晰指引／安靜安慰」；跟隨外觀只提供首次建議，亦可固定自己需要的方向。然後依「本週值班工作台」的目前步驟工作。
+
+切換淺／深色模式或介面提示音會在原頁即時生效，不會清空正在填寫的表格；首次開啟提示音時會播放一個短確認聲。切換繁中／英文需要重新整理文字，因此系統若偵測到本頁已有未儲存輸入，會先詢問是否離開。看到這個提示時，先取消、完成或抄下輸入，再切換語言。
 
 若 Cloudflare 暫時不可用，維護者才在 Windows 主機雙擊 `START_SING_YIN_ROSTER.cmd`，使用啟動器顯示的 localhost（通常是 `http://127.0.0.1:8080`），或以已登記 WARP 裝置進入後備地址。這些都是故障診斷與復原路徑，不是派發給日常使用者的第二個網站。
 
@@ -135,7 +137,7 @@ python -X utf8 -m nicegui_app.main
 
 ## 工程與品質證據
 
-README、架構文件及發布報告中的工程成果亦整理成獨立網站介面。它以完整自動化測試套件、目前發布報告的實際閘門比例、五層系統藍圖、可靠性工程能力及建造脈絡說明品質；閘門包括瀏覽器效能、記憶體穩定性及手機橫向溢出檢查。展示數字只來自仍與目前原始碼指紋相符的報告，不會加入使用人數、商業成效或其他虛假 KPI。
+README、架構文件及發布報告中的工程成果亦整理成獨立網站介面。它以完整自動化測試套件、目前發布報告的實際閘門比例、五層系統藍圖、可靠性工程能力及建造脈絡說明品質；目前驗證器有 12 道閘門，包括 Cloudflare Worker 的 Deno 契約、桌面瀏覽器、手機適應、效能、記憶體穩定性及完整寫入／復原。展示數字只來自仍與目前原始碼指紋相符的報告，不會加入使用人數、商業成效或其他虛假 KPI。
 
 ## 系統架構與可信設計
 
@@ -144,9 +146,9 @@ README、架構文件及發布報告中的工程成果亦整理成獨立網站�
 ```mermaid
 flowchart TB
     GUEST["訪客<br/>同一 workers.dev 網站"] --> EDGE["Cloudflare Worker<br/>單一正式入口"]
-    OP["首席導學風紀<br/>管理員登入 + MFA"] --> EDGE
+    OP["首席導學風紀<br/>管理員登入 + 電郵單次驗證碼"] --> EDGE
     EDGE -->|未登入| VIEWER["唯讀訪客頁<br/>加密已發布週表"]
-    EDGE -->|Access JWT 驗證通過| VPC["Workers VPC + Tunnel<br/>HTTP · WebSocket"]
+    EDGE -->|/auth 驗證 Access JWT<br/>其後驗證簽署管理 session| VPC["Workers VPC + Tunnel<br/>HTTP · WebSocket"]
     VPC --> UI["NiceGUI 操作層<br/>雙語 · 深淺模式 · 可存取提示"]
     UI --> WF["roster_workflow<br/>交易 · 公平帳本 · 審計"]
     WF --> CORE["roster_core<br/>純生成與完整驗證"]
@@ -201,7 +203,7 @@ stateDiagram-v2
 - **校規單一來源：** 頁面不自行決定誰可在哪裏當值。
 - **公平持久而可解釋：** 草稿不入帳，發布只入帳一次，請假調整留下扣回與轉移紀錄。
 - **重要寫入可復原：** 快照、manifest、SHA-256、SQLite 完整性及還原前安全快照共同工作。
-- **資料邊界清楚：** 同一網站不等於相同權限。未登入訪客只可讀取我明確確認後保存的最少週表密文；完整名單、請假、公平、審計、備份及 OP 工作台只會在 Worker 驗證 Access JWT 後經 VPC 連到受控主機。解密鑰匙只在完整分享連結的 URL fragment。
+- **資料邊界清楚：** 同一網站不等於相同權限。未登入訪客只可讀取我明確確認後保存的最少週表密文；Worker 只在 `/auth/login` 接收及驗證 Access JWT，之後每個 OP 請求均改為驗證獨立簽署的管理員 session 及精確電郵白名單，才經 VPC 連到受控主機。解密鑰匙只在完整分享連結的 URL fragment。
 
 ## YouTube 音樂控制窗（自選）
 
@@ -216,7 +218,9 @@ stateDiagram-v2
 
 ## 資料安全與遠端存取
 
-現時只派發一個正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。未登入訪客留在同站唯讀模式；管理員按「管理員登入」後，由 Cloudflare Access 以精確電郵、帳戶登入及 MFA 驗證，Worker 再核對 JWT 簽章、`aud`、`iss`、`exp` 及管理員電郵，才把請求透過 Workers VPC、具名 Tunnel 送到只監聽 `127.0.0.1` 的 NiceGUI。8 小時 session 到期或主動登出後，使用者回復訪客權限。
+現時只派發一個正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。未登入訪客留在同站唯讀模式；管理員按「管理員登入」後，輸入 Access policy 精確列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 只在 `/auth/login` 核對 Access JWT 簽章、`aud`、`iss`、`exp` 及管理員電郵，然後簽發獨立的 HMAC `__Host-SingYinAdminSession` cookie（HttpOnly、Secure、SameSite=Lax、Path=/）；它不複製 Access JWT，最長 8 小時且不超過 Access 到期時間。其後每個 HTTP／WebSocket 請求均重新驗證簽章、時效及精確電郵白名單；送往 VPC origin 前會移除 `CF_Authorization` 與管理員 session cookie。主動登出會先清除管理員 session，再結束 Cloudflare Access session，使用者隨即回復訪客權限。
+
+Worker 部署必須在 Cloudflare secret store 同時具備 `ADMIN_BEARER_TOKEN` 與 `ADMIN_SESSION_SECRET`；兩個值都不可寫入版本庫、README、截圖、日誌或主機備份。
 
 同一 host 下的 `/view#…` 分享連結仍是唯讀：Windows 主機以 AES-256-GCM 加密週次、日期、崗位、當值時間及中文姓名，Cloudflare KV 只保存密文、nonce 和最少的週次／建立／到期 metadata；解密鑰匙留在 URL fragment，不會隨初始 HTTP request 傳給 Worker。連結會到期，也可由管理員撤銷。`/auth/*`、VPC Service、localhost 及私人 WARP 地址都是內部或維護路徑，不另行派發。
 
@@ -273,7 +277,7 @@ stateDiagram-v2
 
 ## 開發與驗證
 
-目前自動化套件超過 180 項，並有三條互補的瀏覽器證據：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、手機排版、配圖主題切換、校徽、停用確認、無快照、無效快照、失效週表網址，以及交接頁發布證據／真人責任狀態；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名驗證星期與必填欄位修正、草稿不可進入發布後請假表單、並行驗證下的有效／無效快照並存、交接／還原入口啟用，並完成整條排班寫入及還原流程；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。
+目前測試收集已超過 400 項。發布驗證把互補證據分開：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、配圖主題切換、校徽、空／錯誤／復原狀態及瀏覽器 `pageerror`；`scripts/verify_runtime_performance.py` 核對冷載、重複開關音樂，以及跨代表頁面後返回首頁的 heap／DOM／listener 增長；`scripts/verify_nicegui_mobile.py` 專門核對 320／390 px 直向及手機橫向排列；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名完成整條排班寫入、雙語 PDF、請假調整及另一資料庫還原；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。所有瀏覽器階段同時把 console error 及未捕捉頁面錯誤視為失敗。
 
 ```powershell
 python -X utf8 scripts\check_deployment_readiness.py
@@ -292,11 +296,11 @@ python -m playwright install chromium
 python -X utf8 scripts\verify_release_candidate.py
 ```
 
-驗證器自行建立暫存 SQLite、備份及日誌路徑，依次執行版本庫衛生、安全閘門、完整測試、編譯、依賴檢查、繁中／英文與深淺模式 UI smoke、冷啟傳輸與記憶體／DOM／事件監聽器穩定性、整條虛構資料寫入／PDF／替補／交接／另一資料庫還原流程、嚴格部署檢查，以及獨立的「資料已提交但備份失敗」復原演練。每個瀏覽器階段停機後亦會檢查伺服器終端；`ERROR`、`CRITICAL`、traceback 或未取回的 task exception 均會令發布候選失敗，而不會把原始終端內容複製到報告。兩份 PDF 會直接解析並核對已發布狀態、五個星期、所有中文姓名及四個 202 室關閉格。它不會採用 `.env` 內的正式資料路徑；結果寫入 `logs/release-candidate-report.json`，並明確標示仍需真人驗收。任何一關失敗，整體狀態均為 `fail`，不可視為發布候選通過。
+驗證器自行建立暫存 SQLite、備份及日誌路徑，依次執行 12 道閘門：版本庫衛生、安全掃描、Cloudflare Worker Deno 契約、完整 Python 測試、Python 編譯、依賴完整性、桌面 NiceGUI smoke、跨頁效能／記憶體穩定性、整條虛構資料寫入／PDF／替補／交接／另一資料庫還原、獨立手機適應驗證、嚴格部署就緒，以及「資料已提交但備份失敗」復原演練。每個瀏覽器階段停機後亦會檢查伺服器終端；console error、`pageerror`、`ERROR`、`CRITICAL`、traceback 或未取回的 task exception 均會令發布候選失敗，而不會把原始終端內容複製到報告。兩份 PDF 會直接解析並核對已發布狀態、五個上課日、所有中文姓名及四個 202 室關閉格。它不會採用 `.env` 內的正式資料路徑；結果寫入 `logs/release-candidate-report.json`，並明確標示仍需真人驗收。任何一關失敗，整體狀態均為 `fail`，不可視為發布候選通過。
 
-交接頁會把機器報告與目前發布相關程式、測試、遷移、依賴及驗證腳本的 SHA-256 指紋重新比對。報告缺失、失敗、格式不可信或程式改動後過期時，均不會顯示為通過；即使當前十項檢查通過，畫面仍保留首席導學風紀 13 項及教師顧問 4 項真人驗收責任。
+交接頁會把機器報告與目前發布相關程式、測試、遷移、依賴、Cloudflare Worker／設定及驗證腳本的 SHA-256 指紋重新比對。報告缺失、失敗、格式不可信或程式改動後過期時，均不會顯示為通過；即使目前 12 項檢查全部通過，畫面仍保留首席導學風紀及教師顧問的真人驗收責任。
 
-`repository_hygiene` 只輸出類別與數量，不顯示檔名或內容。它會阻擋沒有 commit 歷史、即時 `.env`、運行中 SQLite／備份／日誌、PDF／ZIP、匯入名單及操作者自訂音樂，並核對 `.gitignore` 仍保留這些邊界。`security_gates` 另外核對鎖定依賴漏洞、中高風險程式問題及秘密候選。只有經零筆營運資料檢查產生的 `archive/fictional-data/` 快照及已審閱的根目錄內置音樂可進入版本庫；虛構封存不能成為繞過即時資料邊界的方法。
+`repository_hygiene` 只輸出類別與數量，不顯示檔名或內容。它會阻擋沒有 commit 歷史、即時 `.env`、運行中 SQLite／備份／日誌、PDF／ZIP、匯入名單及操作者自訂音樂，亦會阻擋尚未加入 Git 索引的發布敏感程式、遷移、Cloudflare、設定或交接文件，並核對 `.gitignore` 仍保留資料邊界。`security_gates` 另外核對鎖定依賴漏洞、中高風險程式問題，以及 Python／Worker／設定檔的秘密候選。只有經零筆營運資料檢查產生的 `archive/fictional-data/` 快照及已審閱的根目錄內置音樂可進入版本庫；虛構封存不能成為繞過即時資料邊界的方法。
 
 ---
 
@@ -309,8 +313,8 @@ The optional YouTube control window plays public playlists for free without sign
 ### Daily use
 
 1. Open the one canonical site: <https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>.
-2. Select **Admin login**. Cloudflare Access handles the account sign-in and MFA; the application has no custom password database.
-3. After successful verification, the same site unlocks the NiceGUI workbench. The Access session lasts at most eight hours; select **Log out** when finished.
+2. Select **Admin login**, enter an email listed exactly in the Access policy, and enter the one-time code sent by Cloudflare. The application has no custom password database.
+3. At `/auth/login`, the Worker validates the Access JWT and creates a separate HMAC-signed `__Host-SingYinAdminSession` cookie. That HttpOnly, Secure, SameSite=Lax session lasts no longer than eight hours or the Access token expiry, and the exact allowlist is checked again on every workbench request. Select **Log out** when finished.
 4. Read the Daily Verse. Its direction can follow appearance or be fixed to Clear guidance or Quiet comfort; appearance is only a default recommendation. Then follow the highlighted step in the weekly roster desk.
 5. Check the prefect directory, declare pre-generation leave, generate a draft, review it, publish once, export the roster, and use the dedicated leave-adjustment workflow for a late absence. If browser-direct viewing is needed, explicitly create a same-host read-only `/view#…` link; after a late adjustment, create a fresh link and revoke the old one.
 
@@ -328,7 +332,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-One canonical `workers.dev` site serves both modes. Guests remain read-only; an approved administrator selects **Admin login**, passes the path-specific Cloudflare Access policy, and is returned to the same site with the NiceGUI workbench proxied through Workers VPC and the existing Tunnel. The Worker independently verifies the Access JWT before forwarding. Same-host `/view#…` links remain expiring, revocable encrypted snapshots; KV stores ciphertext and minimum metadata while the AES-GCM key stays in the fragment. Localhost and private WARP are maintenance fallbacks. Quick Tunnels and public origin ports are not part of the design. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md) and [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md).
+One canonical `workers.dev` site serves both modes. Guests remain read-only; an approved administrator selects **Admin login**, enters an exact allowlisted email and Cloudflare One-time PIN, and is returned to the same site. The Worker validates the Access JWT only at `/auth/login`, then uses a separate HMAC-signed, HttpOnly administrator session for the NiceGUI workbench. Every request rechecks that session and the exact allowlist; neither the Access cookie nor the first-party administrator cookie is forwarded through Workers VPC and the existing Tunnel. Same-host `/view#…` links remain expiring, revocable encrypted snapshots; KV stores ciphertext and minimum metadata while the AES-GCM key stays in the fragment. Localhost and private WARP are maintenance fallbacks. Quick Tunnels and public origin ports are not part of the design. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md) and [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 
@@ -339,7 +343,7 @@ For operating instructions, recovery, architecture, and current release evidence
 - Official state stays in local SQLite. Only checksum- and integrity-verified snapshots are eligible for managed restore.
 - Prefect names remain Chinese in both locales and both schedule PDFs.
 - An `OP-...` reference is safe to share with the advisor or IT; the full local log is not.
-- One canonical site presents guest read-only access by default and unlocks the editor only after Cloudflare Access plus Worker-side JWT verification; local/private WARP remains a maintenance fallback.
+- One canonical site presents guest read-only access by default and unlocks the editor only after exact-email One-time PIN verification, Worker-side Access JWT validation at `/auth/login`, and a valid signed first-party administrator session; local/private WARP remains a maintenance fallback.
 
 ---
 

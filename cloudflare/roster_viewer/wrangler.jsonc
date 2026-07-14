@@ -1,13 +1,23 @@
 {
-  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "sing-yin-roster-viewer",
   "main": "worker.js",
   "compatibility_date": "2026-07-13",
   "workers_dev": true,
   "preview_urls": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    }
+  },
   "vars": {
     "ACCESS_TEAM_DOMAIN": "https://restless-hall-73b2.cloudflareaccess.com",
-    "ACCESS_AUD": "18a2123a23669de9c23ef344b45dfd87c6323e610e77376b5e21f75edb1bed7b",
+    "ACCESS_AUD": "18a2123a23669de9c23ef344b45dfd87c6323e610e77376b5e21f75edb1bed7b", // pragma: allowlist secret -- public Access application audience ID
     "ADMIN_IDENTITY_ALLOWLIST": {
       "emails": [
         "s10777@syss.edu.hk",
@@ -18,13 +28,14 @@
   },
   "secrets": {
     "required": [
-      "ADMIN_BEARER_TOKEN"
+      "ADMIN_BEARER_TOKEN",
+      "ADMIN_SESSION_SECRET"
     ]
   },
   "kv_namespaces": [
     {
       "binding": "ROSTER_SHARES",
-      "id": "5f0fb9a974f84bd3bc630873d1cd78e4"
+      "id": "5f0fb9a974f84bd3bc630873d1cd78e4" // pragma: allowlist secret -- public KV namespace identifier
     }
   ],
   "vpc_services": [

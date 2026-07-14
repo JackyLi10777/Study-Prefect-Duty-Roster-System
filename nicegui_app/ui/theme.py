@@ -44,12 +44,13 @@ def set_sound_feedback(enabled: bool) -> None:
     app.storage.user["sound_feedback"] = bool(enabled)
 
 
-def apply_theme() -> None:
+def apply_theme():  # type: ignore[no-untyped-def]
     """Inject one restrained theme system for every page before content renders."""
     is_dark = current_theme() == "dark"
-    ui.dark_mode(value=is_dark)
+    dark_mode = ui.dark_mode(value=is_dark)
     # Quasar's semantic primary is the single source for actionable controls.
     # Named teal palette classes remain available for verified/stable badges.
     ui.colors(primary="#47758B" if is_dark else "#35647C")
     ui.add_head_html(THEME_HEAD_HTML)
     ui.add_head_html(MOTION_HEAD_HTML)
+    return dark_mode

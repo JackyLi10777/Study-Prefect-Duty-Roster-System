@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 import random
 from pathlib import Path
+from threading import Barrier
+from time import sleep
 
 import pytest
 
@@ -116,6 +119,40 @@ def test_youtube_downloaded_audio_is_kept_in_dedicated_directory_and_deduplicate
             artist="Choir",
             source_id="video_123",
         )
+
+
+def test_parallel_local_music_imports_preserve_every_catalog_entry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "music"
+    libraries = [MusicLibrary(root) for _ in range(4)]
+    start = Barrier(len(libraries))
+    original_write = MusicLibrary._write_state
+
+    def delayed_write(library: MusicLibrary, state) -> None:  # type: ignore[no-untyped-def]
+        sleep(0.03)
+        original_write(library, state)
+
+    monkeypatch.setattr(MusicLibrary, "_write_state", delayed_write)
+    m4a = b"\x00\x00\x00\x18ftypM4A " + b"\x00" * 12
+
+    def add(index_and_library):  # type: ignore[no-untyped-def]
+        index, library = index_and_library
+        start.wait(timeout=5)
+        return library.add_local_audio(
+            original_name=f"Quiet hymn {index}.m4a",
+            content=m4a,
+            context="devotional",
+        )
+
+    with ThreadPoolExecutor(max_workers=len(libraries)) as executor:
+        tracks = list(executor.map(add, enumerate(libraries)))
+
+    catalog_tracks = [track for track in MusicLibrary(root).all_custom_tracks() if track.custom]
+    assert {track.id for track in catalog_tracks} == {track.id for track in tracks}
+    assert len(list((root / "custom").glob("*.m4a"))) == len(libraries)
+    assert not [path for path in root.iterdir() if path.name.endswith(".tmp")]
 
 
 def test_music_ui_is_manual_and_absent_from_sensitive_workflows() -> None:

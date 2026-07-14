@@ -13,7 +13,12 @@ from sqlalchemy import select
 
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.persistence.database import database_url
-from nicegui_app.persistence.models import AuditEventRecord, FairnessLedgerRecord
+from nicegui_app.persistence.models import (
+    AuditEventRecord,
+    FairnessLedgerRecord,
+    LeaveAdjustmentRecord,
+    LeaveDeclarationRecord,
+)
 from nicegui_app.services.roster_workflow import RosterWorkflow, WorkflowError
 from roster_core.generator import RosterGenerationError, generate_weekly_roster
 from roster_core.loaders import load_prefect_seed
@@ -166,3 +171,68 @@ def test_migration_preserves_existing_weeks_with_neutral_default(tmp_path) -> No
                 "UPDATE roster_weeks SET history_priority_multiplier = 2.1 WHERE week_start = ?",
                 ("2026-09-07",),
             )
+
+
+def test_0005_to_head_preserves_data_and_matches_reason_and_version_contracts(tmp_path) -> None:
+    database_path = tmp_path / "pre-optional-leave.sqlite3"
+    config = _alembic_config(database_path)
+    command.upgrade(config, "0005")
+    with sqlite3.connect(database_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO prefects (
+                id, name_zh, form, class_name, role_code,
+                history_weight, history_duties, history_weight_anchor, history_duties_anchor,
+                needs_mentoring, fixed_general_duty, remarks, active, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "prefect-migration",
+                "遷移測試風紀",
+                "F.5",
+                "5H",
+                "study_prefect",
+                3.0,
+                2,
+                1.0,
+                1,
+                0,
+                "NONE",
+                "preserve me",
+                1,
+                "2026-09-01",
+                "2026-09-01",
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO leave_declarations (
+                week_start, prefect_id, day, reason, active, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            ("2026-09-07", "prefect-migration", "MONDAY", "Existing reason", 1, "2026-09-01", "2026-09-01"),
+        )
+        connection.commit()
+
+    command.upgrade(config, "head")
+
+    with sqlite3.connect(database_path) as connection:
+        prefect = connection.execute(
+            "SELECT name_zh, remarks, version FROM prefects WHERE id = ?",
+            ("prefect-migration",),
+        ).fetchone()
+        leave = connection.execute(
+            "SELECT reason FROM leave_declarations WHERE prefect_id = ?",
+            ("prefect-migration",),
+        ).fetchone()
+        leave_columns = {row[1]: row for row in connection.execute("PRAGMA table_info(leave_declarations)")}
+        adjustment_columns = {row[1]: row for row in connection.execute("PRAGMA table_info(leave_adjustments)")}
+        prefect_columns = {row[1]: row for row in connection.execute("PRAGMA table_info(prefects)")}
+
+    assert prefect == ("遷移測試風紀", "preserve me", 1)
+    assert leave == ("Existing reason",)
+    assert leave_columns["reason"][3] == 0
+    assert adjustment_columns["reason"][3] == 1
+    assert prefect_columns["version"][3] == 1
+    assert LeaveDeclarationRecord.__table__.c.reason.nullable is True
+    assert LeaveAdjustmentRecord.__table__.c.reason.nullable is False

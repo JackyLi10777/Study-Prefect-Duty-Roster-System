@@ -13,6 +13,7 @@ from urllib.request import Request, urlopen
 from uuid import uuid4
 
 from nicegui_app.config import MUSIC_DIR
+from nicegui_app.services.json_catalog import locked_json_catalog, write_json_atomically
 from nicegui_app.services.music_library import MUSIC_CONTEXTS, MusicLibraryError
 
 
@@ -67,34 +68,35 @@ class YouTubePlaylistLibrary:
         if not clean_title:
             raise MusicLibraryError("title")
         playlist_id = extract_youtube_playlist_id(url_or_id)
-        state = self._state()
-        if any(item.get("playlistId") == playlist_id and item.get("context") == context for item in state):
-            raise MusicLibraryError("duplicate")
-        playlist = YouTubePlaylist(f"youtube-{uuid4().hex}", clean_title, playlist_id, context)
-        state.append({"id": playlist.id, "title": playlist.title, "playlistId": playlist.playlist_id, "context": context})
-        self._write(state)
+        with locked_json_catalog(self.state_path):
+            state = self._state()
+            if any(item.get("playlistId") == playlist_id and item.get("context") == context for item in state):
+                raise MusicLibraryError("duplicate")
+            playlist = YouTubePlaylist(f"youtube-{uuid4().hex}", clean_title, playlist_id, context)
+            state.append({"id": playlist.id, "title": playlist.title, "playlistId": playlist.playlist_id, "context": context})
+            self._write(state)
         return playlist
 
     def remove(self, playlist_id: str) -> None:
-        state = self._state()
-        if not any(item.get("id") == playlist_id for item in state):
-            raise MusicLibraryError("missing")
-        self._write([item for item in state if item.get("id") != playlist_id])
+        with locked_json_catalog(self.state_path):
+            state = self._state()
+            if not any(item.get("id") == playlist_id for item in state):
+                raise MusicLibraryError("missing")
+            self._write([item for item in state if item.get("id") != playlist_id])
 
     def _state(self) -> list[dict[str, Any]]:
-        if not self.state_path.exists():
-            return []
-        try:
-            payload = json.loads(self.state_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as error:
-            raise MusicLibraryError("library") from error
-        return list(payload.get("playlists", []))
+        with locked_json_catalog(self.state_path):
+            if not self.state_path.exists():
+                return []
+            try:
+                payload = json.loads(self.state_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as error:
+                raise MusicLibraryError("library") from error
+            return list(payload.get("playlists", []))
 
     def _write(self, playlists: list[dict[str, Any]]) -> None:
-        self.root.mkdir(parents=True, exist_ok=True)
-        temporary = self.state_path.with_suffix(".json.tmp")
-        temporary.write_text(json.dumps({"version": 1, "playlists": playlists}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        os.replace(temporary, self.state_path)
+        with locked_json_catalog(self.state_path):
+            write_json_atomically(self.state_path, {"version": 1, "playlists": playlists})
 
     @staticmethod
     def _playlist(item: dict[str, Any]) -> YouTubePlaylist:

@@ -10,7 +10,7 @@
 
 ## 1. 開啟系統
 
-日常只開啟這個正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。未登入時是訪客唯讀畫面；按 **「管理員登入 / Admin login」**，以 Cloudflare Access policy 精確列明的管理員電郵完成帳戶登入及 MFA，成功後同一網站才會解鎖 NiceGUI 工作台。Access session 最長 8 小時；完成工作後按 **「登出 / Log out」**，尤其不可在共用裝置只關閉分頁。密碼、MFA 及登入復原由 Cloudflare 身份提供者管理，系統沒有自製密碼資料表、hash 或忘記密碼頁。
+日常只開啟這個正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。未登入時是訪客唯讀畫面；按 **「管理員登入 / Admin login」**，輸入 Cloudflare Access policy 精確列明的管理員電郵，再輸入 Cloudflare 寄出的單次驗證碼，成功後同一網站才會解鎖 NiceGUI 工作台。網站會建立獨立簽署的管理員 session，最長 8 小時且不超過 Access 驗證的到期時間；每次操作仍會重新核對管理員白名單。完成工作後按 **「登出 / Log out」**，尤其不可在共用裝置只關閉分頁。系統沒有自製密碼資料表、hash 或忘記密碼頁。
 
 首頁的「本週值班工作台」按固定次序引導：生成草稿 → 核對並匯出 → 已發布後請假調整；當前可做的一步會最突出。三張工作流程卡以一致的系統圖示輔助辨識，而文字按鈕仍是完整可讀的主要入口。頁首的音量按鈕可選擇開啟短提示音；預設為關閉。每日經文欄可按「換一篇經文」閱讀另一段經文和反思，不會改動任何值班資料。
 

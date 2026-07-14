@@ -198,16 +198,29 @@ class CloudflarePublicRosterShareGateway:
                 "User-Agent": "Sing-Yin-Roster/1.0",
             },
         )
-        try:
-            # The origin is administrator-configured, HTTPS-only, and checked above.
-            with self._opener(request, timeout=self.settings.timeout_seconds) as response:  # nosec B310
-                raw = response.read(_MAX_RESPONSE_BYTES + 1)
-        except HTTPError as error:
-            if error.code in {401, 403}:
-                raise PublicRosterShareError("The public roster viewer rejected its administrator credential.") from error
-            raise PublicRosterShareError("The public roster viewer is temporarily unavailable.") from error
-        except (TimeoutError, URLError, OSError) as error:
-            raise PublicRosterShareError("The public roster viewer could not be reached. Try again later.") from error
+        attempts = 2 if method == "POST" and body is not None else 1
+        raw = b""
+        for attempt in range(attempts):
+            try:
+                # The origin is administrator-configured, HTTPS-only, and checked above.
+                # A create request may be replayed once with the exact same encrypted body.
+                # The Worker treats that replay as idempotent, covering a committed write
+                # whose HTTP response was lost in transit.
+                with self._opener(request, timeout=self.settings.timeout_seconds) as response:  # nosec B310
+                    raw = response.read(_MAX_RESPONSE_BYTES + 1)
+                break
+            except HTTPError as error:
+                if error.code in {401, 403}:
+                    raise PublicRosterShareError(
+                        "The public roster viewer rejected its administrator credential."
+                    ) from error
+                raise PublicRosterShareError("The public roster viewer is temporarily unavailable.") from error
+            except (TimeoutError, URLError, OSError) as error:
+                if attempt + 1 < attempts:
+                    continue
+                raise PublicRosterShareError(
+                    "The public roster viewer could not be reached. Try again later."
+                ) from error
         if len(raw) > _MAX_RESPONSE_BYTES:
             raise PublicRosterShareError("The public roster viewer returned an unexpectedly large response.")
         if not raw:

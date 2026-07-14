@@ -48,6 +48,26 @@ def test_generation_saves_and_replaces_a_draft_with_automatic_backups(workflow: 
     assert workflow.prefect_loads() == before_loads
 
 
+def test_concurrent_draft_generation_serializes_versions_without_lost_updates(workflow: RosterWorkflow, tmp_path) -> None:
+    contender = RosterWorkflow(
+        database_path=tmp_path / "sing-yin.sqlite3",
+        backup_dir=tmp_path / "backups",
+    )
+    contender.bootstrap()
+    start = Barrier(2)
+
+    def generate(service: RosterWorkflow):
+        start.wait(timeout=5)
+        return service.generate_and_save_draft(WEEK_START)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = list(executor.map(generate, (workflow, contender)))
+
+    assert {item.version for item in outcomes} == {1, 2}
+    assert len({item.id for item in outcomes}) == 1
+    assert workflow.roster_week(outcomes[0].id)["version"] == 2
+
+
 def test_publishing_posts_each_assignment_weight_once(workflow: RosterWorkflow) -> None:
     draft = workflow.generate_and_save_draft(WEEK_START)
     before = workflow.prefect_loads()
@@ -310,6 +330,7 @@ def test_manual_draft_change_stays_policy_valid_auditable_and_does_not_post_fair
         assignment_id=int(assignment["id"]),
         replacement_prefect_id=str(replacement["id"]),
         reason="Approved manual correction after roster review",
+        expected_week_version=draft.version,
     )
     changed = next(item for item in workflow.assignments(draft.id) if item["id"] == assignment["id"])
 
@@ -317,6 +338,41 @@ def test_manual_draft_change_stays_policy_valid_auditable_and_does_not_post_fair
     assert result.backup_path.exists()
     assert changed["prefectId"] == replacement["id"]
     assert workflow.prefect_loads() == before_loads
+
+
+def test_stale_manual_draft_editor_cannot_overwrite_a_newer_change(workflow: RosterWorkflow, tmp_path) -> None:
+    reviewed = workflow.generate_and_save_draft(WEEK_START)
+    assignment = workflow.assignments(reviewed.id)[0]
+    replacements = [
+        item
+        for item in workflow.draft_assignment_candidates(reviewed.id, int(assignment["id"]))
+        if item["id"] != assignment["prefectId"]
+    ]
+    contender = RosterWorkflow(
+        database_path=tmp_path / "sing-yin.sqlite3",
+        backup_dir=tmp_path / "backups",
+    )
+    contender.bootstrap()
+    saved = contender.update_draft_assignment(
+        roster_week_id=reviewed.id,
+        assignment_id=int(assignment["id"]),
+        replacement_prefect_id=str(replacements[0]["id"]),
+        reason="First browser saved a reviewed correction",
+        expected_week_version=reviewed.version,
+    )
+
+    with pytest.raises(WorkflowConflictError, match="another browser"):
+        workflow.update_draft_assignment(
+            roster_week_id=reviewed.id,
+            assignment_id=int(assignment["id"]),
+            replacement_prefect_id=str(replacements[-1]["id"]),
+            reason="Stale browser attempted to overwrite it",
+            expected_week_version=reviewed.version,
+        )
+
+    current = next(item for item in workflow.assignments(reviewed.id) if item["id"] == assignment["id"])
+    assert current["prefectId"] == replacements[0]["id"]
+    assert workflow.roster_week(reviewed.id)["version"] == saved.version
 
 
 def test_generation_requirements_expose_every_slot_before_generation(workflow: RosterWorkflow) -> None:

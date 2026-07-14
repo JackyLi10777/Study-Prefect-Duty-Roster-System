@@ -69,6 +69,7 @@ def isolated_environment(root: Path, port: int, *, blocked_backup: bool = False)
         "PYTHONUTF8": "1",
         "SING_YIN_E2E_ISOLATED": "1",
         "SING_YIN_E2E_RUN_ID": f"E2E-{uuid4().hex[:12].upper()}",
+        "SING_YIN_APP_MODE": "official",
         "SING_YIN_DATABASE_PATH": str(database_path),
         "SING_YIN_BACKUP_DIR": str(backup_path),
         "SING_YIN_LOG_DIR": str(log_dir),
@@ -77,6 +78,13 @@ def isolated_environment(root: Path, port: int, *, blocked_backup: bool = False)
         "SING_YIN_PORT": str(port),
         "SING_YIN_TEST_URL": f"http://127.0.0.1:{port}",
         "SING_YIN_OPEN_BROWSER": "false",
+        "SING_YIN_PUBLIC_ROSTER_VIEWER_ENABLED": "false",
+        "SING_YIN_PUBLIC_ROSTER_VIEWER_BASE_URL": "",
+        "SING_YIN_PUBLIC_ROSTER_VIEWER_ADMIN_TOKEN": "",
+        "SING_YIN_YOUTUBE_ENABLED": "false",
+        "SING_YIN_YOUTUBE_API_KEY": "",
+        "SING_YIN_DEEPSEEK_ENABLED": "false",
+        "SING_YIN_DEEPSEEK_API_KEY": "",
         "SING_YIN_STORAGE_SECRET": "release-verification-only-secret-0000000000000000",  # pragma: allowlist secret
     }
 
@@ -99,6 +107,16 @@ def _run_check(name: str, command: list[str], environment: dict[str, str], repor
     _write_report(report)
     if result.returncode != 0:
         raise ReleaseVerificationError(f"{name} failed with exit code {result.returncode}.")
+
+
+def _deno_gateway_command() -> list[str]:
+    """Return the deterministic Worker contract test command or fail clearly."""
+    executable = shutil.which("deno")
+    if executable is None:
+        raise ReleaseVerificationError(
+            "Deno is required for the Cloudflare gateway release tests but is not available on PATH."
+        )
+    return [executable, "test", "cloudflare/roster_viewer/worker_gateway_test.js"]
 
 
 def _start_server(environment: dict[str, str], log_path: Path) -> tuple[subprocess.Popen[str], IO[str]]:
@@ -220,6 +238,12 @@ def main() -> int:
             report,
         )
         _run_check(
+            "cloudflare_gateway_tests",
+            _deno_gateway_command(),
+            base_environment,
+            report,
+        )
+        _run_check(
             "automated_test_suite",
             [sys.executable, "-X", "utf8", "-m", "pytest", "-q"],
             base_environment,
@@ -239,6 +263,7 @@ def main() -> int:
                 "scripts/verify_nicegui_ui.py",
                 "scripts/verify_runtime_performance.py",
                 "scripts/verify_nicegui_write_pipeline.py",
+                "scripts/verify_nicegui_mobile.py",
             ),
             report=report,
         )

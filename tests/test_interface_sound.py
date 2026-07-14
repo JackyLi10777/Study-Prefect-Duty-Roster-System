@@ -25,7 +25,10 @@ def test_interface_sound_is_semantic_opt_in_and_ducks_music() -> None:
     assert 'SOUND_KINDS = {"navigation", "working", "success", "attention"}' in sound
     assert "sound_enabled = force or sound_feedback_enabled()" in sound
     assert "new CustomEvent('sy:feedback'" in sound
-    assert "music.volume = Math.max(0.02, base * 0.80)" in sound
+    assert "music.volume = Math.max(0.02, base * 0.55)" in sound
+    assert "now - lastPlayedAt < 140" in sound
+    assert "oscillator.disconnect()" in sound
+    assert "gain.disconnect()" in sound
     assert "setVolume" not in sound, "Visible YouTube volume remains under the operator's native controls"
     assert 'play_interface_sound("success")' in pages
     assert 'play_interface_sound("working")' in pages
@@ -34,3 +37,27 @@ def test_interface_sound_is_semantic_opt_in_and_ducks_music() -> None:
     assert "pointerover" not in sound.lower()
     assert "audio_setup_seen" in music
     assert "test_interface_sound" in music
+
+
+def test_shell_previews_and_updates_sound_without_reloading_unfinished_forms() -> None:
+    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+    handler = shell.split("async def _toggle_sound_feedback_with_preview", 1)[1].split(
+        "def _toggle_theme_in_place", 1
+    )[0]
+
+    assert "_sync_preference_controls" in handler
+    assert 'play_interface_sound("success", force=True)' in handler
+    assert "ui.navigate.reload" not in handler
+    assert "_toggle_sound_feedback_with_preview(sound_controls)" in shell
+    assert "sound_button.tooltip(sound_tooltip)" not in shell
+    assert "sound_tooltip_element = ui.tooltip(sound_tooltip)" in shell
+    assert 't("disable_sound_feedback")' in shell
+
+
+def test_settings_sound_switch_previews_the_enabled_state() -> None:
+    music = (PROJECT_ROOT / "nicegui_app" / "ui" / "music.py").read_text(encoding="utf-8")
+    handler = music.split("def change_sound_enabled", 1)[1].split("def change_sound_volume", 1)[0]
+
+    assert 'play_interface_sound("success", force=True)' in handler
+    assert 'ui.notify(t("sound_feedback_on")' in handler
+    assert 'ui.notify(t("sound_feedback_off")' in handler

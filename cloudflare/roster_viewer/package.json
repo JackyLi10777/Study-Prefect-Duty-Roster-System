@@ -1,0 +1,19 @@
+{
+  "name": "@sing-yin/roster-viewer-worker",
+  "version": "1.1.0-rc.8",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "gateway:test": "deno test worker_gateway_test.js",
+    "gateway:check": "deno check worker.js",
+    "deploy:dry-run": "wrangler deploy --dry-run --strict --config ./wrangler.jsonc",
+    "deploy": "wrangler deploy --strict --config ./wrangler.jsonc"
+  },
+  "devDependencies": {
+    "wrangler": "4.110.0"
+  }
+}

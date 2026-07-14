@@ -50,6 +50,7 @@ class PersistenceWorkflowMixin:
             needs_mentoring=prefect_input.needs_mentoring,
             fixed_general_duty=prefect_input.fixed_general_duty,
             remarks=prefect_input.remarks.strip(),
+            version=1,
             active=True,
             created_at=now,
             updated_at=now,
@@ -61,6 +62,11 @@ class PersistenceWorkflowMixin:
         for day in available_days:
             session.add(PrefectAvailabilityRecord(prefect_id=prefect_id, day=day))
         session.flush()
+
+    @staticmethod
+    def _begin_serialized_write(session: Session) -> None:
+        """Reserve SQLite's writer slot before reading compare-and-set state."""
+        session.connection().exec_driver_sql("BEGIN IMMEDIATE")
 
     def _assert_name_available(self, session: Session, name_zh: str, *, exclude_prefect_id: str | None = None) -> None:
         statement = select(PrefectRecord).where(PrefectRecord.name_zh == name_zh.strip())
@@ -85,6 +91,7 @@ class PersistenceWorkflowMixin:
             "needsMentoring": record.needs_mentoring,
             "fixedGeneralDuty": record.fixed_general_duty,
             "remarks": record.remarks,
+            "version": record.version,
             "active": record.active,
         }
 

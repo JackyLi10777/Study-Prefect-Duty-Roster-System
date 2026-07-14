@@ -35,9 +35,10 @@ the Streamlit page handlers: policy remains in `roster_policy`, generation in
 
 The only URL distributed to users is
 <https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>. Guests stay
-in read-only mode. An approved operator selects **Admin login**, completes the
-Cloudflare Access account sign-in and MFA, and returns to the same site with the
-NiceGUI editor unlocked. The Access session lasts at most eight hours; select
+in read-only mode. An approved operator selects **Admin login**, enters an exact
+allowlisted email address and the one-time code sent by Cloudflare Access, and
+returns to the same site with the NiceGUI editor unlocked. The signed browser
+session lasts at most eight hours; select
 **Log out** when finished. The application has no custom password database.
 
 The commands below prepare a host or maintenance workstation; they are not a
@@ -123,7 +124,7 @@ usage, commercial, or vanity KPIs; source changes make previous evidence stale.
 ```mermaid
 flowchart LR
     GUEST["Guest"] --> EDGE["One workers.dev site\nCloudflare Worker"]
-    ADMIN["Administrator\nAccess + MFA"] --> EDGE
+    ADMIN["Administrator\nAccess email code"] --> EDGE
     EDGE -->|read only| VIEW["Encrypted published roster"]
     EDGE -->|verified Access JWT| VPC["Workers VPC + Tunnel"]
     VPC --> UI["NiceGUI bilingual UI"]
@@ -164,10 +165,11 @@ dedicated Windows 11 PC, with NiceGUI bound to `127.0.0.1`. One canonical
 `workers.dev` site is the public front door: unauthenticated guests stay
 read-only, while **Admin login** invokes a path-specific Cloudflare Access
 policy. After Access authentication, the Worker independently verifies the JWT
-signature, audience, issuer, expiry, and exact administrator email before
-proxying the request through Workers VPC and the existing Tunnel. Passwords and
-MFA remain with the Cloudflare identity provider; no password hash is stored by
-NiceGUI, SQLite, KV, backups, or Git.
+signature, audience, issuer, expiry, and exact administrator email, then issues
+a short-lived signed HttpOnly administrator session which never contains the
+Access JWT. Every proxied request revalidates that session before travelling
+through Workers VPC and the existing Tunnel. Cloudflare sends the one-time
+email code; no password hash is stored by NiceGUI, SQLite, KV, backups, or Git.
 
 Same-host `/view#…` links are explicitly created, expiring and revocable. The
 Windows host encrypts the minimum published-roster snapshot with AES-256-GCM;
@@ -198,12 +200,13 @@ python -m playwright install chromium
 python -X utf8 scripts\verify_release_candidate.py
 ```
 
-The release candidate runs ten fail-closed checks: repository hygiene, supply-chain
-security, the complete Python suite, compilation, dependency integrity, browser
-smoke, measured runtime performance and memory stability, the fictional-data
-write/PDF and restore pipeline, strict deployment readiness, and
-committed-without-backup recovery. Machine evidence remains separate from the
-final operator/advisor acceptance checklist.
+The release candidate runs twelve fail-closed checks: repository hygiene,
+supply-chain security, Cloudflare Worker Deno contracts, the complete Python
+suite, compilation, dependency integrity, desktop browser smoke, measured
+runtime performance and memory stability, the fictional-data write/PDF and
+restore pipeline, independent mobile adaptation, strict deployment readiness,
+and committed-without-backup recovery. Machine evidence remains separate from
+the final operator/advisor acceptance checklist.
 
 ## Co-creation
 

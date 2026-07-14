@@ -7,6 +7,8 @@ from pathlib import Path
 from nicegui_app.config import POLICY_VERSION
 from nicegui_app.release_evidence import (
     PROJECT_ID,
+    RELEASE_EXCLUDED_DIRECTORY_NAMES,
+    RELEASE_SOURCE_FILES,
     RELEASE_SOURCE_ROOTS,
     RELEASE_SUFFIXES,
     load_release_evidence,
@@ -66,9 +68,62 @@ def test_runtime_source_fingerprint_is_cached_for_repeated_showcase_reads(monkey
 
 
 def test_release_fingerprint_tracks_ui_image_assets() -> None:
-    assert {".md", ".css", ".png", ".svg", ".webp", ".woff2", ".ttf", ".yml"} <= RELEASE_SUFFIXES
+    assert {".md", ".css", ".js", ".json", ".jsonc", ".png", ".svg", ".webp", ".woff2", ".ttf", ".yml"} <= RELEASE_SUFFIXES
     assert any(path.name == "docs" for path in RELEASE_SOURCE_ROOTS)
     assert any(path.name == ".github" for path in RELEASE_SOURCE_ROOTS)
+    assert any(path.name == "cloudflare" for path in RELEASE_SOURCE_ROOTS)
+    tracked_root_files = {path.name.lower() for path in RELEASE_SOURCE_FILES}
+    assert {
+        ".env.example",
+        ".gitattributes",
+        ".gitignore",
+        "codex_prompts.md",
+        "contributing.md",
+        "daily_verses.py",
+        "license",
+        "notice.md",
+        "school badge.png",
+        "school badge (small).png",
+        "school badge (square).png",
+        "prefects.zh-hk.seed.json",
+        "daily-verses.seed.json",
+    } <= tracked_root_files
+
+
+def test_release_fingerprint_tracks_package_manifest_but_not_dependency_cache(monkeypatch, tmp_path: Path) -> None:
+    worker_root = tmp_path / "cloudflare" / "roster_viewer"
+    worker_root.mkdir(parents=True)
+    manifest = worker_root / "package.json"
+    manifest.write_text('{"version":"1"}\n', encoding="utf-8")
+    dependency_manifest = worker_root / "node_modules" / "dependency" / "package.json"
+    dependency_manifest.parent.mkdir(parents=True)
+    dependency_manifest.write_text('{"version":"private-cache"}\n', encoding="utf-8")
+    monkeypatch.setattr(release_evidence, "RELEASE_SOURCE_ROOTS", (tmp_path / "cloudflare",))
+    monkeypatch.setattr(release_evidence, "RELEASE_SOURCE_FILES", ())
+
+    original, count = release_evidence._calculate_release_source_fingerprint()
+    manifest.write_text('{"version":"2"}\n', encoding="utf-8")
+    changed, changed_count = release_evidence._calculate_release_source_fingerprint()
+
+    assert {"node_modules", ".wrangler"} <= RELEASE_EXCLUDED_DIRECTORY_NAMES
+    assert count == changed_count == 1
+    assert original != changed
+
+
+def test_release_fingerprint_changes_with_cloudflare_worker_content(monkeypatch, tmp_path: Path) -> None:
+    worker_root = tmp_path / "cloudflare"
+    worker_root.mkdir()
+    worker = worker_root / "worker.js"
+    worker.write_text("export default { version: 1 };\n", encoding="utf-8")
+    monkeypatch.setattr(release_evidence, "RELEASE_SOURCE_ROOTS", (worker_root,))
+    monkeypatch.setattr(release_evidence, "RELEASE_SOURCE_FILES", ())
+
+    original, count = release_evidence._calculate_release_source_fingerprint()
+    worker.write_text("export default { version: 2 };\n", encoding="utf-8")
+    changed, changed_count = release_evidence._calculate_release_source_fingerprint()
+
+    assert count == changed_count == 1
+    assert original != changed
 
 
 def test_current_release_report_is_displayed_as_machine_pass_but_still_requires_people(tmp_path: Path) -> None:

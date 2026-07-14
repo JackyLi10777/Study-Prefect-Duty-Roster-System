@@ -38,38 +38,55 @@ def play_interface_sound(kind: str, *, force: bool = False) -> None:
           const kind = {kind!r};
           const level = {volume!r};
           const soundEnabled = {str(sound_enabled).lower()};
+          const forced = {str(force).lower()};
           window.dispatchEvent(new CustomEvent('sy:feedback', {{detail: {{kind}}}}));
-          if (!soundEnabled) return;
+          if (!soundEnabled || level <= 0) return;
+          const now = performance.now();
+          const lastPlayedAt = Number(window.__singYinSoundLastAt);
+          if (!forced && Number.isFinite(lastPlayedAt) && now - lastPlayedAt < 140) return;
+          window.__singYinSoundLastAt = now;
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
           if (!AudioContextClass) return;
           const context = window.__singYinAudioContext || new AudioContextClass();
           window.__singYinAudioContext = context;
-          context.resume();
           const sequences = {{
-            navigation: [[440, 0.00, 0.10, 0.016, 'sine']],
-            working: [[349.23, 0.00, 0.13, 0.016, 'triangle'], [440.00, 0.07, 0.15, 0.014, 'sine']],
-            success: [[523.25, 0.00, 0.15, 0.026, 'sine'], [659.25, 0.09, 0.19, 0.032, 'triangle']],
-            attention: [[392.00, 0.00, 0.14, 0.020, 'triangle'], [493.88, 0.10, 0.17, 0.022, 'sine']],
+            navigation: [[440, 0.00, 0.11, 0.026, 'sine']],
+            working: [[349.23, 0.00, 0.14, 0.030, 'triangle'], [440.00, 0.08, 0.17, 0.026, 'sine']],
+            success: [[523.25, 0.00, 0.17, 0.050, 'sine'], [659.25, 0.10, 0.22, 0.058, 'triangle']],
+            attention: [[392.00, 0.00, 0.16, 0.040, 'triangle'], [493.88, 0.11, 0.20, 0.044, 'sine']],
           }};
           const music = document.querySelector('audio.sy-page-music-audio');
           if (music && !music.paused) {{
             const base = Number(music.dataset.syBaseVolume || music.volume || 0.18);
             music.dataset.syBaseVolume = String(base);
-            music.volume = Math.max(0.02, base * 0.80);
+            music.volume = Math.max(0.02, base * 0.55);
             clearTimeout(window.__singYinMusicRestoreTimer);
-            window.__singYinMusicRestoreTimer = setTimeout(() => {{ music.volume = base; }}, 430);
+            window.__singYinMusicRestoreTimer = setTimeout(() => {{ music.volume = base; }}, 560);
           }}
-          for (const [frequency, offset, duration, peak, waveform] of sequences[kind]) {{
-            const oscillator = context.createOscillator();
-            const gain = context.createGain();
-            const start = context.currentTime + offset;
-            oscillator.type = waveform;
-            oscillator.frequency.setValueAtTime(frequency, start);
-            gain.gain.setValueAtTime(0.0001, start);
-            gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak * level), start + 0.025);
-            gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-            oscillator.connect(gain).connect(context.destination);
-            oscillator.start(start); oscillator.stop(start + duration + 0.01);
+          const play = () => {{
+            for (const [frequency, offset, duration, peak, waveform] of sequences[kind]) {{
+              const oscillator = context.createOscillator();
+              const gain = context.createGain();
+              const start = context.currentTime + offset;
+              oscillator.type = waveform;
+              oscillator.frequency.setValueAtTime(frequency, start);
+              gain.gain.setValueAtTime(0.0001, start);
+              gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak * level), start + 0.025);
+              gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+              oscillator.connect(gain).connect(context.destination);
+              oscillator.addEventListener('ended', () => {{
+                oscillator.disconnect();
+                gain.disconnect();
+              }}, {{once: true}});
+              oscillator.start(start);
+              oscillator.stop(start + duration + 0.01);
+            }}
+          }};
+          const resume = context.resume();
+          if (resume && typeof resume.then === 'function') {{
+            resume.then(play).catch(() => {{}});
+          }} else {{
+            play();
           }}
         }})();
         """

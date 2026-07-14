@@ -18,7 +18,9 @@
 6. 如需瀏覽器直達查看，從已發布週表或「存取控制台」明確建立唯讀連結；只把完整連結發給需要查看的人。
 7. 如發布後有人請假，使用「請假調整」；不要改動歷史資料或直接覆寫 SQLite 檔案。完成後重新匯出 PDF 或建立新 Viewer 連結，並撤銷舊連結。
 
-名單新增／修改／停用，以及生成前請假登記／取消，均可能同時建立本機快照。按下操作後，請等候雙語「安全處理」視窗完成，不要重複點擊或關閉分頁。漏填中文姓名、班別、可值班日、請假原因、草稿修改原因或替補選擇時，系統會先把焦點帶回相關欄位，不會開始寫入；週開始日期不是星期一亦會先提示修正。停用風紀前必須閱讀確認：停用不是刪除，既有週表、公平帳本及審計紀錄仍會保留，而且介面沒有即時復原功能。
+名單新增／修改／停用，以及生成前請假登記／取消，均可能同時建立本機快照。按下操作後，請等候雙語「安全處理」視窗完成，不要重複點擊或關閉分頁。漏填中文姓名、班別、可值班日、草稿修改原因或替補選擇時，系統會先把焦點帶回相關欄位，不會開始寫入；週開始日期不是星期一亦會先提示修正。生成前請假原因屬選填，留空會安全保存為「未提供」；發布後的請假調整原因仍必須填寫。停用風紀前必須閱讀確認：停用不是刪除，既有週表、公平帳本及審計紀錄仍會保留，而且介面沒有即時復原功能。
+
+如另一個分頁已修改同一位風紀或同一份草稿，系統會拒絕較舊版本，不會用舊畫面覆蓋新資料。不要再次按儲存；依提示重新載入、核對最新內容，再重做仍然需要的改動。淺／深色模式和提示音會在原頁即時切換，不會令表單重載；語言切換需要重載，因此有未儲存輸入時會先詢問是否離開。
 
 完整的新手與日常操作說明見 [操作手冊](OPERATOR_GUIDE.md)；系統內亦可從「使用手冊」直接閱讀同一流程。
 
@@ -60,6 +62,7 @@ JSON 是唯讀報告證據，不是 SQLite 還原備份。需要交接或復原�
 
 - 每次生成、發布、請假、名單修改與還原均會建立可驗證 SQLite 快照。
 - 在「系統設定」只選擇標示為「已驗證」的快照。還原前系統會先建立 `pre_restore` 安全快照。
+- 「已驗證」不只代表檔案可打開：系統會核對 manifest、SHA-256、SQLite 完整性及完整資料表契約。受控還原會先把候選快照複製到隔離位置，在副本上升級至目前 Alembic head，再核對 schema 與公平帳本；任何缺表、migration 或對帳失敗都會停止。正式 live 資料庫完成啟動或還原後必須位於目前 head，否則 `/healthz` 會顯示 degraded，而不是健康。
 - 新安裝或尚未完成第一次快照時，交接包與還原按鈕會停用；依空狀態提示按「立即建立已驗證快照」。只有校驗成功並重新載入後，才可選擇還原或建立交接包。不要嘗試以手動放置、改名或未附 manifest 的 SQLite 檔繞過此狀態。
 - 若畫面顯示「最近檢查的快照中，有 N 個未通過驗證」，這些檔案已被隔離於交接／還原選單。分類只用來指出 manifest、checksum、SQLite 或 schema 層級；不要自行修補或刪除證據。先建立新的已驗證快照，若仍失敗，向受控 IT 支援提供 OP／REQ 編號，由支援人員在本機調查。
 - 離機備份時，在「系統設定」按「建立交接備份包」。確認敏感資料提示後，系統只會下載最近一份已驗證快照、對應 SHA-256 manifest 及還原說明；封包在記憶體本機生成，不會自動加密、上載或留下第二份本機副本。
@@ -68,12 +71,13 @@ JSON 是唯讀報告證據，不是 SQLite 還原備份。需要交接或復原�
 - 如畫面顯示「資料已儲存，但備份未完成」，不可重複剛才的生成、發布、調整或名單操作。先按「重新載入並核對」，確認資料庫結果，再到「系統設定」按「立即建立已驗證快照」。只有新快照顯示「已驗證」後才繼續下一項工作。
 - 還原後，瀏覽器歷史或舊書籤可能指向已不存在的週表。看到「找不到這份值班表」時，不代表目前資料再次損壞；先按「查看現有值班表」核對現有週次，如剛完成還原則再按「核對備份與還原」確認快照。不要修改網址中的週表編號猜測資料。
 - 只有已發布週表可進入「值班後請假調整」。如直接開啟草稿的調整網址，系統會要求返回該週表完成核對及發布，不會顯示可提交表單，也不會改動公平帳本。
+- 還原會先進入全主機 maintenance 狀態。系統以跨程序 operation lease 等候其他分頁／程序的正常工作結束，然後才取得獨佔 marker；期間新操作會被拒絕，頁面會顯示維護狀態。候選快照會先在隔離副本完成 migration、外鍵及公平帳本對帳，再接觸正式資料庫。若交換後的重連或審計失敗，系統會自動裝回 `pre_restore`；只有無法證明回復安全時才保留 recovery-review marker，等待 IT 支援處理。
 
 ## 本機設定
 
 正式長期主機採用 Windows 11，並維持 NiceGUI 只監聽 `127.0.0.1`。第一次由空白電腦安裝、設定開機自動啟動、更新、保養或搬機時，先依 [Windows 專用主機完整設定手冊](WINDOWS_DEDICATED_HOST_SETUP.md) 完成，不要從本節零散拼湊指令。
 
-需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。訪客不登入；管理員按同站「管理員登入」，由 Cloudflare Access 以 exact-email policy、帳戶登入及 MFA 驗證，再由 Worker 核對 JWT 後透過 Workers VPC 與具名 Tunnel 連到 NiceGUI。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
+需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。訪客不登入；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 只在 `/auth/login` 核對 Access JWT，之後以獨立簽署的第一方管理員 session 驗證每個請求，再透過 Workers VPC 與具名 Tunnel 連到 NiceGUI。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
 
 ### 交接前練習模式
 
@@ -86,10 +90,10 @@ JSON 是唯讀報告證據，不是 SQLite 還原備份。需要交接或復原�
 ### 每日開啟（首席導學風紀）
 
 1. 開啟唯一正式網站，按「管理員登入」。不要收藏或派發內部 `/auth/*` 路徑。
-2. 使用 Access policy 內精確列明的管理員電郵完成 Cloudflare 帳戶登入及 MFA；驗證成功後同一網站解鎖工作台。
+2. 使用 Access policy 內精確列明的管理員電郵，輸入 Cloudflare 寄出的單次驗證碼；驗證成功後同一網站建立簽署管理員 session 並解鎖工作台。
 3. 首頁的「第一次使用？請由這裏開始」及選單「開始使用」會帶領新手先核對名單，再生成草稿。
 4. 「交接指引」會同時顯示三項資料準備狀態、目前機器驗證狀態，以及仍需真人完成的四個重點。看到「報告已過期」時，代表程式或驗證規則在上次報告後有改動；只由 IT 支援重新執行發布候選驗證，不要用真實資料自行試錯。
-5. 工作完成後按「登出」。Access session 最長 8 小時；共用裝置不可只關閉分頁。
+5. 工作完成後按「登出」。簽署管理員 session 最長 8 小時且受 Access 到期時間約束；登出會先清除該 session，再結束 Cloudflare Access session。共用裝置不可只關閉分頁。
 
 只有 Cloudflare 故障或主機維護時才雙擊 `START_SING_YIN_ROSTER.cmd`。啟動器會重用既有服務，並在 8080 被佔用時選用 8081–8099；使用黑色視窗顯示的完整 localhost，不要猜測埠號。
 
@@ -105,8 +109,9 @@ python -X utf8 -m nicegui_app.main
 
 3. `SING_YIN_OPEN_BROWSER` 預設為 `true`，令首次開啟更直接；受控或無介面運行可設為 `false`。
 4. 只使用 `http://127.0.0.1:8080`；現時程式刻意只綁定 localhost。
-5. 正式版本更新前，教師顧問或 IT 支援應先執行 `python -m pip install --require-hashes -r requirements-dev.lock` 及 `python -m playwright install chromium`，再執行 `python -X utf8 scripts\verify_release_candidate.py`。此入口會先執行 Git 邊界及安全掃描，再自行建立臨時資料庫、備份及日誌，完成 UI、效能／記憶體、正常寫入流程與備份失敗復原演練，絕不採用正式學校資料路徑。只有 `logs/release-candidate-report.json` 目前列出的全部閘門均為 `pass` 才算機器驗證完成；這不能取代下方的人手驗收。
-6. 發布前單獨執行 `python -X utf8 scripts\check_repository_hygiene.py`。只有 `status: pass` 且 `history: present` 才可繼續；沒有真正 commit 歷史會直接阻擋發布。再執行 `python -X utf8 scripts\run_security_checks.py`，確認依賴漏洞、程式靜態分析及秘密掃描全部通過。
+5. 正式版本更新前，教師顧問或 IT 支援應先執行 `python -m pip install --require-hashes -r requirements-dev.lock`、`python -m playwright install chromium`，並確認 Deno 可用，再執行 `python -X utf8 scripts\verify_release_candidate.py`。目前入口共有 12 道閘門：Git 邊界、安全掃描、Cloudflare Worker Deno 契約、完整 Python 測試、編譯、依賴、桌面 UI、跨頁效能／記憶體、隔離寫入／PDF／還原、手機適應、嚴格部署就緒及備份失敗復原。它自行建立臨時資料庫、備份及日誌，絕不採用正式學校資料路徑；只有 `logs/release-candidate-report.json` 的 12 項均為 `pass` 且指紋仍相符，才算機器驗證完成。這不能取代下方的人手驗收。
+   `D:\code_v3` 是開發及驗證副本，`C:\SingYinRoster` 是目前工作排程器實際執行的安裝副本；修改前者不會自動更新後者。完成驗證後仍須依 Windows 專用主機手冊第 12 節備份、停止、更新、重新啟動及核對，否則瀏覽器會繼續顯示舊版。
+6. 發布前單獨執行 `python -X utf8 scripts\check_repository_hygiene.py`。只有 `status: pass` 且 `history: present` 才可繼續；沒有真正 commit 歷史、被追蹤的運行資料，或尚未加入 Git 的發布敏感程式／遷移／Cloudflare／設定／交接文件，都會直接阻擋發布。再執行 `python -X utf8 scripts\run_security_checks.py`，確認依賴漏洞、程式靜態分析及 Python／Cloudflare 秘密掃描全部通過。
 
 ### 操作失敗與本機支援記錄
 
@@ -133,14 +138,16 @@ python -X utf8 -m nicegui_app.main
 
 開始交接前，先閱讀[部署與遠端存取決策指南](DEPLOYMENT_DECISION.md)、[Cloudflare 手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)及[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。只派發 canonical workers.dev 主網址；不另發管理員、WARP、localhost、VPC 或 `/auth/*` 網址。
 
+桌面與手機均使用同一主網址、登入、資料及權限；不要建立或派發 `/mobile`、第二個子網域或另一套登入。在 900px 或以下，手機／窄屏只是同一網站的獨立排列：上方為單行頁首，下方固定顯示 **Dashboard／Rosters／Prefects／More**；語言、深淺模式、聲音、登出及較少使用的頁面由 **More** 導覽抽屜開啟。抽屜必須可捲動到底，底部導航必須避開手機安全區，並不得遮蓋最後一個表單欄位或按鈕；鍵盤及讀屏順序會先讀本頁內容，再到固定底部導航。
+
 1. 核對主網址未登入時可正常顯示訪客唯讀頁，不會自動要求所有人登入。
-2. 核對「管理員登入」由 path-specific Cloudflare Access policy 接管；只有 exact-email 管理員可通過。密碼、MFA 及帳戶復原由 Cloudflare 身份提供者管理，系統沒有自製密碼資料表。
-3. 核對 Access session 為 8 小時，主動「登出」會清除 session 並回到訪客狀態；前任離任時更新 exact-email policy，不交接前任密碼。
-4. Worker 必須在轉送前核對 Access JWT 簽章、`aud`、`iss`、`exp` 及管理員電郵，移除外來身份標頭與 Access cookie，再注入由已驗證 claim 產生的內部身份。瀏覽器自報角色或電郵永遠不可信。
+2. 核對「管理員登入」由 path-specific Cloudflare Access policy 接管；只有 exact-email 管理員收到並正確輸入 Cloudflare One-time PIN 才可通過。系統沒有自製密碼資料表或帳戶復原頁。
+3. 核對第一方管理員 session 最長 8 小時且不超過 Access token 到期時間；主動「登出」會先清除該 session，再結束 Cloudflare Access session 並回到訪客狀態。前任離任時更新 exact-email policy，不交接前任密碼。
+4. Worker 只在 `/auth/login` 核對 Access JWT 簽章、`aud`、`iss`、`exp` 及管理員電郵，然後簽發 HMAC `__Host-SingYinAdminSession`（HttpOnly、Secure、SameSite=Lax、Path=/；不包含 Access JWT）。每個 NiceGUI HTTP／WebSocket 請求都重新驗證 session、時效及 exact-email allowlist；送往 VPC 前移除外來身份標頭、`CF_Authorization` 與第一方管理員 cookie，再注入由已驗證 session 產生的內部身份。瀏覽器自報角色或電郵永遠不可信。
 5. 具名 Tunnel 只連至 `127.0.0.1:8080`；VPC Service `sing-yin-roster-nicegui` 以 `localhost:8080` 為 target。NiceGUI 不綁 `0.0.0.0`，也不開放資料庫、備份目錄或檔案分享埠。
 6. WebSocket 代理必須直接回傳 VPC `fetch()` 的原始 `Response`。既有臨時 probe 已從同一 VPC Service 取得 `/healthz` HTTP 200，並從 NiceGUI Socket.IO 路徑收到 Engine.IO open packet；probe script 及子網域已刪除。這證明傳輸能力，但不取代正式登入／登出、長連線、上載及 PDF 真人驗收。
 7. 以虛構已發布週表實測同 host `/view#…` 連結的建立、普通瀏覽器直達、到期及撤銷；再證明訪客看不到名單、請假、公平、審計、備份及設定。
-8. 本機及 WARP 只保留作維護後備，不能在一般使用指引中成為第二個正常入口。Access audience、JWT、cookie、管理 token 及其他 secret 不可出現在版本庫、文件、截圖或交接包。
+8. 本機及 WARP 只保留作維護後備，不能在一般使用指引中成為第二個正常入口。Worker secret store 必須具備 `ADMIN_BEARER_TOKEN` 與 `ADMIN_SESSION_SECRET`；其值連同 Access audience、JWT、cookie、Tunnel token 及管理憑證均不可出現在版本庫、文件、截圖或交接包。
 
 ## 正式驗收清單
 
@@ -154,7 +161,8 @@ python -X utf8 -m nicegui_app.main
 - [ ] 漏填中文姓名、班別或可值班日時，畫面會指向需要修正的欄位且不開始寫入；停用風紀前會顯示保留歷史及沒有即時復原的確認。
 - [ ] 用只含虛構中文姓名的 CSV／XLSX 完成一次「工作表 → 欄位配對 → 預覽 → 明確匯入」；確認預覽前不會寫入，公式／不支援格式會被拒絕。
 - [ ] 如啟用可選 DeepSeek 建議，以測試檔確認建議只填入欄位選單，仍須人工核對及預覽；未配置時，手動配對仍可完成同一流程。
-- [ ] 週開始日期不是星期一、請假原因留空、尚未載入替補或草稿修改原因留空時，畫面會在本頁提示修正，不會出現處理進度或寫入日誌。
+- [ ] 週開始日期不是星期一、尚未載入替補、草稿修改原因或發布後請假調整原因留空時，畫面會在本頁提示修正，不會開始寫入；生成前請假原因留空則會成功登記並顯示「未提供」。
+- [ ] 在兩個分頁開啟同一風紀或草稿，先在其中一頁儲存，再從舊頁嘗試儲存；舊頁必須要求重新載入及核對，而不是覆蓋新資料。
 - [ ] 助理首席導學風紀只被安排為 Assist. in charge；導學風紀只出現在 302、303、202 室。
 - [ ] 302 每日一人、303 每日兩人、202 只在星期一/三/四每次兩人；同日無重複、生成安排無連續日。
 - [ ] 生成前請假會使草稿避開該人；新增請假後舊草稿被拒絕發布，重新生成後才可發布。
@@ -162,10 +170,13 @@ python -X utf8 -m nicegui_app.main
 - [ ] 發布後請假調整只提供合資格替補，並在帳本和審計中保留理由。
 - [ ] 下載中文及英文週表 PDF 均為清晰單頁，顯示正確崗位、星期、草稿/發布狀態及中文姓名；202 室星期二、五清楚標記為不開放。
 - [ ] 核對週表匯出視窗的校徽開關；乾淨發布版不含「僅供內部使用」、頁碼或經文提示，只有刻意開啟補充頁腳時才出現附註。
-- [ ] 未登入一般瀏覽器開啟 canonical 網站時只有訪客唯讀畫面；按「管理員登入」後，只有 exact-email 管理員通過 Access 及 MFA 才在同站取得 OP 工作台。
-- [ ] 主動登出及 8 小時 session 到期後回復訪客權限；缺少、過期、錯誤 audience／issuer 或非管理員電郵的 JWT 均被拒絕。
+- [ ] 未登入一般瀏覽器開啟 canonical 網站時只有訪客唯讀畫面；按「管理員登入」後，只有 exact-email 管理員完成 Cloudflare One-time PIN 才在同站取得 OP 工作台。
+- [ ] 主動登出、8 小時上限或 Access 較早到期後回復訪客權限；缺少、過期、錯誤 audience／issuer 或非管理員電郵的 JWT 在 `/auth/login` 被拒絕，缺少、過期、遭竄改或已不在白名單的第一方管理員 session 在任何工作台請求均被拒絕。
 - [ ] 以虛構已發布週表建立同 host `/view#…` 連結；一般瀏覽器可查看中文姓名週表但不能修改。撤銷後約一分鐘確認舊完整連結不能再載入。
 - [ ] 完成正式瀏覽器的 WebSocket 長連線／重新連線、檔案上載及 PDF 下載驗收；已記錄的 VPC probe 只作傳輸證據。
+- [x] 隔離 Chromium 真觸控模擬已覆蓋 390×844 繁中淺色、320×760 英文深色／reduced motion 及 844×390 橫向：單行頁首、`Dashboard／Rosters／Prefects／More`、可捲動 More 抽屜、手機資料卡、44px 操作、安全區、零橫向溢出及零 console/page error 均通過。
+- [ ] 在同一 canonical 網址以實體 iPhone Safari 及 Android Chrome 重複手機驗收，集中檢查鍵盤彈出、旋轉、瀏海與 home indicator 安全區；不用另建或測試 `/mobile` 網站。
+- [ ] 在一個未儲存表單中測試外觀、聲音及語言：外觀／聲音即時切換而不清空輸入，啟用聲音有一次短確認；切換語言前必須先出現離開提示。再以鍵盤確認頁面內容先於底部重複導航。
 - [ ] 內部公平審計 PDF 與群組週表分開；審計檔清楚標示為內部資料，且具名資料沒有被預設發群組。
 - [ ] 以兩個已發布測試週產生一次期間報告，確認草稿被排除、最終請假調整被反映、繁中／英文 PDF 姓名保持中文，而且重複產生報告不改動公平點數。
 - [ ] 核對報告把時數清楚稱為「已編排」而不是出席／證書；下載 JSON 後確認畫面說明它不是還原備份，亦沒有自動上載 GitHub。

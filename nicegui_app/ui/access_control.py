@@ -52,7 +52,7 @@ def _show_share_receipt(receipt) -> None:  # type: ignore[no-untyped-def]
         ui.label(t("public_share_expiry", value=_format_timestamp(receipt.expires_at))).classes(
             "text-sm text-[var(--sy-muted)]"
         )
-        with ui.row().classes("w-full justify-end gap-3 mt-5 flex-wrap"):
+        with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5 flex-wrap"):
             ui.button(t("close"), icon="close", on_click=dialog.close).props("flat")
             ui.button(
                 t("public_share_copy"),
@@ -83,7 +83,7 @@ def _open_create_confirmation(service: PublicRosterShareService, roster_week_id:
             if receipt is not _OPERATION_FAILED:
                 _show_share_receipt(receipt)
 
-        with ui.row().classes("w-full justify-end gap-3 mt-5 flex-wrap"):
+        with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5 flex-wrap"):
             ui.button(t("cancel"), icon="close", on_click=dialog.close).props("flat")
             ui.button(
                 t("public_share_confirm_action"), icon="link", on_click=create_share
@@ -178,7 +178,7 @@ def _render_active_shares(
                                         roster_week_id=roster_week_id,
                                     )
 
-                            with ui.row().classes("w-full justify-end gap-3 mt-5"):
+                            with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
                                 ui.button(t("cancel"), on_click=revoke_dialog.close).props("flat")
                                 ui.button(t("public_share_revoke"), icon="link_off", on_click=revoke).props(
                                     "color=negative data-testid=confirm-revoke-public-share"

@@ -19,6 +19,7 @@ function Invoke-SingYinNoRedirectRequest {
 
     $request = [System.Net.HttpWebRequest]::Create($Uri)
     $request.Method = "GET"
+    $request.UserAgent = "Mozilla/5.0 (compatible; SingYinRosterVerifier/1.0)"
     $request.AllowAutoRedirect = $false
     $request.Timeout = 20000
     $response = $null
@@ -34,6 +35,39 @@ function Invoke-SingYinNoRedirectRequest {
             Location = [string]$response.Headers["Location"]
         }
     } finally {
+        if ($response) { $response.Dispose() }
+    }
+}
+
+function Invoke-SingYinAccessLoginPageRequest {
+    param([Parameter(Mandatory = $true)][string]$Uri)
+
+    $request = [System.Net.HttpWebRequest]::Create($Uri)
+    $request.Method = "GET"
+    $request.UserAgent = "Mozilla/5.0 (compatible; SingYinRosterVerifier/1.0)"
+    $request.AllowAutoRedirect = $true
+    $request.MaximumAutomaticRedirections = 5
+    $request.CookieContainer = New-Object System.Net.CookieContainer
+    $request.Timeout = 20000
+    $response = $null
+    $reader = $null
+    try {
+        $response = [System.Net.HttpWebResponse]$request.GetResponse()
+        if ($response.ContentLength -gt 524288) {
+            throw "Cloudflare Access login page exceeded the 512 KiB verification limit."
+        }
+        $reader = New-Object System.IO.StreamReader($response.GetResponseStream())
+        $body = $reader.ReadToEnd()
+        if ($body.Length -gt 524288) {
+            throw "Cloudflare Access login page exceeded the 512 KiB verification limit."
+        }
+        return [pscustomobject]@{
+            StatusCode = [int]$response.StatusCode
+            FinalHost = $response.ResponseUri.Host.Trim().ToLowerInvariant().TrimEnd('.')
+            Body = $body
+        }
+    } finally {
+        if ($reader) { $reader.Dispose() }
         if ($response) { $response.Dispose() }
     }
 }
@@ -70,6 +104,25 @@ if (-not $accessRedirect) {
     throw "FAIL CLOSED: the administrator login route was not redirected to Cloudflare Access (HTTP $($authProbe.StatusCode)). Stop the cloudflared service."
 }
 
+try {
+    $loginPage = Invoke-SingYinAccessLoginPageRequest -Uri "https://$PublicHostname/auth/login"
+} catch {
+    throw "Cloudflare Access login page could not be verified: $($_.Exception.Message)"
+}
+
+$oneTimePinForm = (
+    $loginPage.StatusCode -eq 200 -and
+    $loginPage.FinalHost -eq $TeamDomain -and
+    $loginPage.Body -match '(?i)id=["'']totp-form["'']' -and
+    $loginPage.Body -match '(?i)type=["'']email["'']' -and
+    $loginPage.Body -match '(?i)verify-code'
+)
+$unexpectedAccountOAuth = $loginPage.Body -match '(?i)dash\.cloudflare\.com/oauth2|Unknown app'
+if (-not $oneTimePinForm -or $unexpectedAccountOAuth) {
+    throw "FAIL CLOSED: the expected Cloudflare One-time PIN email form was not found, or an unexpected Dashboard OAuth page was detected."
+}
+
 Write-Host "Public guest page verified: HTTP 200." -ForegroundColor Green
 Write-Host "Cloudflare Access gate verified: the administrator login route redirects before it reaches NiceGUI." -ForegroundColor Green
 Write-Host "Redirect host: $(([Uri]$authProbe.Location).Host)"
+Write-Host "Cloudflare One-time PIN verified: email form present; Dashboard OAuth and Unknown app are absent." -ForegroundColor Green

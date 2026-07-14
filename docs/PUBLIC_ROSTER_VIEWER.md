@@ -61,9 +61,9 @@
 1. 開啟同一個主網址。
 2. 按 **管理員登入 / Admin login**。
 3. 網站會在內部進入 `/auth/login`，Cloudflare Access 隨即接管驗證；使用者毋須自行輸入或收藏這條路徑。
-4. 以 Access policy 與 Worker 有限管理員名單內共同精確列明的其中一個管理員電郵完成 Cloudflare 帳戶登入及 MFA；只在其中一邊出現並不足以取得編輯權。
-5. 驗證成功後回到同一網站；Worker 核對 Access JWT，然後透過 Workers VPC 連到 Windows 主機的 NiceGUI。
-6. 完成工作後按 **登出 / Log out**。網站會前往 Cloudflare Access logout，清除 Access session，再返回訪客唯讀狀態。
+4. 輸入 Access policy 與 Worker 有限管理員名單內共同精確列明的其中一個電郵，再輸入 Cloudflare 寄出的 One-time PIN；只在其中一邊出現並不足以取得編輯權。
+5. 驗證成功後回到同一網站；Worker 核對 Access JWT，建立獨立的已簽署第一方管理員 session，然後才透過 Workers VPC 連到 Windows 主機的 NiceGUI。
+6. 完成工作後按 **登出 / Log out**。網站先清除第一方管理員 session，再前往 Cloudflare Access logout，最後返回訪客唯讀狀態。
 
 目前獲准的精確電郵是：
 
@@ -71,21 +71,21 @@
 - `lichuangjie0208@gmail.com`
 - `lichuangjie0208@outlook.com`
 
-Cloudflare IdP 已容許非 Dashboard member 的 Cloudflare 帳戶完成身份驗證，因此兩個個人電郵不需加入本專案的 Cloudflare Dashboard。是否可進入管理工作台，仍只由 Access exact-email policy 與 Worker 有限名單共同決定；這不會授予 Cloudflare 設定或帳單權限。
+Access 使用 Cloudflare One-time PIN；三個電郵都不需加入本專案的 Cloudflare Dashboard。是否可進入管理工作台，仍由 Access exact-email policy、Access JWT 驗證及 Worker 有限名單共同決定；這不會授予 Cloudflare 設定或帳單權限。
 
-Cloudflare Access session 設為 **8 小時**。這是最長的登入時段，不代表瀏覽器可以無限期保持編輯權。離開共用裝置前必須主動登出；管理員電郵或 Cloudflare 帳戶被撤銷後，不能再登入。
+Cloudflare Access 與第一方管理員 session 的最長時段都是 **8 小時**，而第一方 session 不會長過原 Access JWT。離開共用裝置前必須主動登出；管理員電郵從 allowlist 移除後，既有第一方 session 也會在下一個請求被拒絕。
 
 ## 密碼由誰管理
 
 這套系統**沒有自製密碼資料表、密碼 hash、忘記密碼頁或共用 OP 密碼**。
 
-- 管理員身份、密碼、MFA、登入復原及 Access session 由 Cloudflare Identity Provider／Cloudflare Access 管理。
+- Cloudflare Access 以獲准電郵及 One-time PIN 驗證身份；應用程式不接收管理員密碼。
 - NiceGUI、SQLite、KV、備份及 Git 都不保存管理員密碼。
 - 下一任交接時，同步更新 Access exact-email policy 與 Worker 的 bounded exact-email allowlist；不要把前任密碼交給下一任，也不要在 `.env` 建立人手密碼。
 
 ## Worker 為何仍要驗證 JWT
 
-Access 已是第一道身份閘門，但 Worker 仍作第二層防護。每次準備代理管理員工作台時，它會核對：
+Access 已是第一道身份閘門，但 Worker 仍作第二層防護。在 `/auth/login` 它會核對：
 
 - `Cf-Access-Jwt-Assertion` 是否存在；
 - JWT 是否由 `https://restless-hall-73b2.cloudflareaccess.com` 的有效簽署金鑰簽發；
@@ -93,14 +93,14 @@ Access 已是第一道身份閘門，但 Worker 仍作第二層防護。每次�
 - `iss`、`exp` 及管理員電郵是否符合設定；
 - 身份是否同時仍在 Access exact-email policy 及 Worker 的有限精確電郵 allowlist 內。
 
-Worker 不相信瀏覽器自行送來的 `role=admin`、email 或自訂 header。驗證完成後，它才建立受控的內部身份資訊；送往 NiceGUI 前會移除 Access JWT 及 `CF_Authorization` cookie。Access application ID 可記錄為非秘密部署識別值 `25072aab-0e60-4787-8ec7-48029e448e8e`，但 audience、session cookie、JWT、token 及 secret 不可寫入公開文件或截圖。
+Worker 不相信瀏覽器自行送來的 `role=admin`、email 或自訂 header。Access JWT 驗證完成後，它會建立 HMAC-SHA256 `__Host-SingYinAdminSession`；每次 HTTP／WebSocket 請求再核對簽章、期限及目前 allowlist。送往 NiceGUI 前會移除 Access JWT、`CF_Authorization` 及第一方管理員 cookie。Access application ID 可記錄為非秘密部署識別值 `25072aab-0e60-4787-8ec7-48029e448e8e`，但 audience、session cookie、JWT、token 及 secret 不可寫入公開文件或截圖。
 
 ## `/auth/*` 和登入後的頁面是甚麼
 
 - `/auth/*` 只供 Worker、Access 登入流程及回程使用；它不是公開 API、第二個網站或書籤。
-- 系統沒有另一個 `/op` 網站或管理員前綴。登入後仍在同一個 root／NiceGUI 路由；Worker 會先驗證 hostname-wide Access cookie，才代理任何工作台頁面。
+- 系統沒有另一個 `/op` 網站或管理員前綴。登入後仍在同一個 root／NiceGUI 路由；Worker 會先驗證已簽署的第一方管理員 session，才代理任何工作台頁面。
 - 對外文件、群組訊息和書籤只公布主網址；介面按鈕自行處理登入與登出路徑。
-- Access app destinations 只有 `/auth` 及 `/auth/*`，不可把整個 Worker 設為必須登入，否則訪客唯讀頁也會被攔截；登入後由 Worker 使用 hostname-wide cookie 逐一驗證 NiceGUI 請求。
+- Access app destinations 只有 `/auth` 及 `/auth/*`，不可把整個 Worker 設為必須登入，否則訪客唯讀頁也會被攔截；登入後由 Worker 使用第一方管理員 session 逐一驗證 NiceGUI 請求。
 
 ## 管理員流量怎樣到達 NiceGUI
 
@@ -109,8 +109,8 @@ Worker 不相信瀏覽器自行送來的 `role=admin`、email 或自訂 header�
     ├─ /                  → Worker 原生入口（無值班資料）
     ├─ /guest             → Worker 靜態導覽（只限 GET／HEAD；無 KV／VPC）
     ├─ /view#…            → Worker + KV 密文 → 瀏覽器本機解密（永遠唯讀）
-    └─ 管理員登入         → Cloudflare Access → Worker 驗證 JWT
-                                                   ↓
+    └─ 管理員登入         → Cloudflare Access One-time PIN → Worker 驗證 JWT
+                                                   ↓ 建立／驗證第一方管理員 session
                                           ROSTER_ORIGIN VPC binding
                                                    ↓
                                 VPC Service：sing-yin-roster-nicegui
@@ -131,7 +131,7 @@ Workers VPC 代理必須原樣返回 VPC `fetch()` 的 Response，保留 HTTP Up
 - 這證明 VPC HTTP Upgrade 及 NiceGUI WebSocket 路徑可實際通過，而不只是設定存在。
 - 臨時 probe script 與 workers.dev 子網域已在測試後刪除；它不是日常入口，也沒有保留可派發的 probe URL。
 
-正式 Worker 的 Access 登入、登出、長時間重新連線、檔案上載及 PDF 下載仍要納入最終瀏覽器驗收；臨時 probe 證明傳輸能力，不取代完整真人工作流驗收。
+正式 Worker 的 One-time PIN 登入、第一方 session 建立／登出、長時間重新連線、檔案上載及 PDF 下載仍要納入最終瀏覽器驗收；臨時 probe 證明傳輸能力，不取代完整真人工作流驗收。
 
 ## 訪客快照的加密生命週期
 

@@ -14,6 +14,7 @@ from urllib.parse import quote
 from uuid import uuid4
 
 from nicegui_app.config import MUSIC_DIR
+from nicegui_app.services.json_catalog import locked_json_catalog, write_json_atomically
 
 
 MUSIC_CONTEXTS = (
@@ -163,20 +164,21 @@ class MusicLibrary:
         temporary.write_bytes(content)
         os.replace(temporary, target)
 
-        state = self._state()
-        state["localTracks"].append(
-            {
-                "id": track_id,
-                "filename": relative_name,
-                "title": title,
-                "artist": "Local library",
-                "duration": "",
-                "context": context,
-                "arrangement": "local",
-            }
-        )
         try:
-            self._write_state(state)
+            with locked_json_catalog(self.state_path):
+                state = self._state()
+                state["localTracks"].append(
+                    {
+                        "id": track_id,
+                        "filename": relative_name,
+                        "title": title,
+                        "artist": "Local library",
+                        "duration": "",
+                        "context": context,
+                        "arrangement": "local",
+                    }
+                )
+                self._write_state(state)
         except Exception:
             target.unlink(missing_ok=True)
             raise
@@ -193,9 +195,6 @@ class MusicLibrary:
     ) -> MusicTrack:
         """Move a validated downloader result into the dedicated local import area."""
         self._require_context(context)
-        state = self._state()
-        if source_id and any(item.get("sourceId") == source_id for item in state["localTracks"]):
-            raise MusicLibraryError("duplicate")
         source = Path(source_path)
         extension = source.suffix.lower()
         if extension not in ALLOWED_AUDIO_EXTENSIONS:
@@ -220,21 +219,25 @@ class MusicLibrary:
         os.replace(temporary, target)
         clean_title = _clean_title(title or source.stem)
         clean_artist = _clean_title(artist or "YouTube local import")
-        state["localTracks"].append(
-            {
-                "id": track_id,
-                "filename": relative_name,
-                "title": clean_title,
-                "artist": clean_artist,
-                "duration": "",
-                "context": context,
-                "arrangement": "youtube",
-                "source": "youtube",
-                "sourceId": source_id,
-            }
-        )
         try:
-            self._write_state(state)
+            with locked_json_catalog(self.state_path):
+                state = self._state()
+                if source_id and any(item.get("sourceId") == source_id for item in state["localTracks"]):
+                    raise MusicLibraryError("duplicate")
+                state["localTracks"].append(
+                    {
+                        "id": track_id,
+                        "filename": relative_name,
+                        "title": clean_title,
+                        "artist": clean_artist,
+                        "duration": "",
+                        "context": context,
+                        "arrangement": "youtube",
+                        "source": "youtube",
+                        "sourceId": source_id,
+                    }
+                )
+                self._write_state(state)
         except Exception:
             target.unlink(missing_ok=True)
             raise
@@ -250,12 +253,13 @@ class MusicLibrary:
         )
 
     def remove_local_audio(self, track_id: str) -> None:
-        state = self._state()
-        item = next((entry for entry in state["localTracks"] if entry.get("id") == track_id), None)
-        if item is None:
-            raise MusicLibraryError("missing")
-        state["localTracks"] = [entry for entry in state["localTracks"] if entry.get("id") != track_id]
-        self._write_state(state)
+        with locked_json_catalog(self.state_path):
+            state = self._state()
+            item = next((entry for entry in state["localTracks"] if entry.get("id") == track_id), None)
+            if item is None:
+                raise MusicLibraryError("missing")
+            state["localTracks"] = [entry for entry in state["localTracks"] if entry.get("id") != track_id]
+            self._write_state(state)
         self._safe_relative_file(str(item["filename"])).unlink(missing_ok=True)
 
     def _safe_relative_file(self, relative_name: str) -> Path:
@@ -266,20 +270,18 @@ class MusicLibrary:
         return candidate
 
     def _state(self) -> dict[str, list[dict[str, Any]]]:
-        if not self.state_path.exists():
-            return {"localTracks": []}
-        try:
-            raw = json.loads(self.state_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as error:
-            raise MusicLibraryError("library") from error
-        return {"localTracks": list(raw.get("localTracks", []))}
+        with locked_json_catalog(self.state_path):
+            if not self.state_path.exists():
+                return {"localTracks": []}
+            try:
+                raw = json.loads(self.state_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as error:
+                raise MusicLibraryError("library") from error
+            return {"localTracks": list(raw.get("localTracks", []))}
 
     def _write_state(self, state: dict[str, list[dict[str, Any]]]) -> None:
-        self.root.mkdir(parents=True, exist_ok=True)
-        payload = {"version": 2, **state}
-        temporary = self.state_path.with_suffix(".json.tmp")
-        temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        os.replace(temporary, self.state_path)
+        with locked_json_catalog(self.state_path):
+            write_json_atomically(self.state_path, {"version": 2, **state})
 
     @staticmethod
     def _require_context(context: str) -> None:

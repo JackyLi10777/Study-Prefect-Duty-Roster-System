@@ -24,12 +24,11 @@ def _source() -> str:
 
 
 def _jsonc(path: Path) -> dict[str, object]:
-    return json.loads(
-        "\n".join(
-            line for line in path.read_text(encoding="utf-8").splitlines()
-            if not line.lstrip().startswith("//")
-        )
+    source = "\n".join(
+        line for line in path.read_text(encoding="utf-8").splitlines()
+        if not line.lstrip().startswith("//")
     )
+    return json.loads(re.sub(r"\s+//.*$", "", source, flags=re.MULTILINE))
 
 
 def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
@@ -38,12 +37,24 @@ def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
     assert configuration["workers_dev"] is True
     assert configuration["preview_urls"] is False
     assert configuration["main"] == "worker.js"
+    assert configuration["observability"] == {
+        "enabled": True,
+        "head_sampling_rate": 1,
+        "logs": {
+            "enabled": True,
+            "head_sampling_rate": 1,
+            "invocation_logs": True,
+            "persist": True,
+        },
+    }
     assert configuration["vars"] == {
         "ACCESS_TEAM_DOMAIN": "https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
         "ACCESS_AUD": "REPLACE_WITH_ACCESS_APPLICATION_AUD",
         "ADMIN_IDENTITY_ALLOWLIST": {"emails": ["REPLACE_WITH_EXACT_ADMIN_EMAIL"]},
     }
-    assert configuration["secrets"] == {"required": ["ADMIN_BEARER_TOKEN"]}
+    assert configuration["secrets"] == {
+        "required": ["ADMIN_BEARER_TOKEN", "ADMIN_SESSION_SECRET"]
+    }
     assert configuration["kv_namespaces"] == [
         {
             "binding": "ROSTER_SHARES",
@@ -58,6 +69,27 @@ def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
     ]
 
 
+def test_worker_deployment_toolchain_is_project_pinned() -> None:
+    package = json.loads((VIEWER_ROOT / "package.json").read_text(encoding="utf-8"))
+    lock = (VIEWER_ROOT / "pnpm-lock.yaml").read_text(encoding="utf-8")
+    workspace = (VIEWER_ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
+
+    assert package["private"] is True
+    assert package["packageManager"] == "pnpm@11.7.0"
+    assert package["engines"] == {"node": ">=22"}
+    assert package["devDependencies"] == {"wrangler": "4.110.0"}
+    assert package["scripts"]["deploy:dry-run"].startswith("wrangler deploy --dry-run --strict")
+    assert "wrangler@4.110.0" in lock
+    assert workspace.splitlines() == [
+        "allowBuilds:",
+        "  esbuild: true",
+        "  sharp: true",
+        "  workerd: true",
+        "strictDepBuilds: true",
+    ]
+    assert _jsonc(VIEWER_ROOT / "wrangler.jsonc")["$schema"] == "./node_modules/wrangler/config-schema.json"
+
+
 def test_production_gateway_uses_a_bounded_exact_admin_email_allowlist() -> None:
     configuration = _jsonc(VIEWER_ROOT / "wrangler.jsonc")
     variables = configuration["vars"]
@@ -66,7 +98,26 @@ def test_production_gateway_uses_a_bounded_exact_admin_email_allowlist() -> None
     assert "ADMIN_EMAIL" not in variables
     assert "ADMIN_EMAILS" not in variables
     assert len(set(variables["ADMIN_IDENTITY_ALLOWLIST"]["emails"])) == len(EXPECTED_ADMIN_EMAILS)
-    assert configuration["secrets"] == {"required": ["ADMIN_BEARER_TOKEN"]}
+    assert configuration["secrets"] == {
+        "required": ["ADMIN_BEARER_TOKEN", "ADMIN_SESSION_SECRET"]
+    }
+    assert configuration["observability"]["logs"]["persist"] is True
+
+
+def test_admin_login_failures_use_privacy_safe_support_references() -> None:
+    source = _source()
+
+    for required in (
+        "admin_login_bridge_failure",
+        "X-Sing-Yin-Support-Reference",
+        "assertionPresent",
+        "authorizationCookiePresent",
+        "jwt_missing",
+    ):
+        assert required in source
+    logged_failure = re.search(r"function loggedAccessFailure\(.*?\n\}", source, flags=re.DOTALL)
+    assert logged_failure is not None
+    assert "payload.email" not in logged_failure.group(0)
 
 
 def test_viewer_requires_fragment_key_and_client_side_aes_gcm() -> None:
@@ -119,10 +170,33 @@ def test_only_minimum_lifecycle_metadata_remains_outside_ciphertext() -> None:
     assert "payload.schemaVersion !== SHARE_SCHEMA" in source
     assert "Object.keys(payload).some(key => !allowedFields.has(key))" in source
     assert "validIsoDate(payload.weekStart)" in source
-    assert "weekStart: item.metadata?.weekStart || null" in source
-    assert "const createdAt = new Date(now).toISOString()" in source
+    assert "createdAt: new Date(createdMillis).toISOString()" in source
+    assert "contentDigest," in source
+    assert "weekStart: resolved.record.weekStart" in source
     assert "payload.aad" not in source
     assert "sing-yin-roster-share-v1:" in source
+
+
+def test_kv_share_storage_is_content_addressed_legacy_compatible_and_fail_closed() -> None:
+    source = _source()
+
+    for required in (
+        "const CONTENT_SHARE_KEY_PREFIX = 'share:v2:'",
+        "async function contentDigestFor(record)",
+        "return `${contentSharePrefix(shareId)}${contentDigest}`",
+        "const key = contentShareKey(validated.shareId, contentDigest)",
+        "version: 2",
+        "record.contentDigest !== parsedKey.contentDigest",
+        "await contentDigestFor(record) !== parsedKey.contentDigest",
+        "contentItems.length > 1 || (legacyRecord && contentItems.length > 0)",
+        "legacyRecord.version !== 1",
+        "if (resolved.kind !== 'record') return missingShare()",
+        "...contentItems.map(item => env.ROSTER_SHARES.delete(item.name))",
+    ):
+        assert required in source
+
+    assert "KV has no compare-and-swap" in source
+    assert "share_conflict" in source
 
 
 def test_viewer_uses_strict_headers_no_store_no_index_and_no_cors() -> None:
@@ -190,6 +264,25 @@ def test_viewer_is_bilingual_responsive_theme_aware_printable_and_reduced_motion
     assert "@media print" in source
     assert "@page { size: A4 landscape" in source
     assert "textContent" in source
+    assert "Swipe horizontally to view every weekday" in source
+    assert 'aria-describedby="rosterScrollHint"' in source
+    assert ".guest-tour-card--protected { border-color: var(--line-strong);" in source
+
+
+def test_mobile_public_controls_keep_a_44px_touch_target() -> None:
+    source = _source()
+
+    verse_refresh = re.search(r"\.verse-refresh \{(?P<body>.*?)\n\}", source, re.DOTALL)
+    compact_mobile = re.search(
+        r"@media \(max-width: 390px\) \{(?P<body>.*?)\n\}",
+        source,
+        re.DOTALL,
+    )
+
+    assert verse_refresh is not None
+    assert "min-height: 44px" in verse_refresh.group("body")
+    assert compact_mobile is not None
+    assert ".verse-refresh { width: 44px; padding-inline: 0; }" in compact_mobile.group("body")
 
 
 def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contract() -> None:
@@ -202,7 +295,7 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
         'href="/guest"',
         'id="shareSite"',
         'href="/auth/login"',
-        "一個入口，清晰完成每週值班工作",
+        "查看已發布週表，或登入開始工作",
         "收到值班表分享連結？",
         "分享網站入口",
         "只會分享首頁，不包含任何值班表或查看密鑰",
@@ -247,6 +340,12 @@ def test_guest_tour_is_edge_only_read_only_and_fail_closed() -> None:
     assert "訪客瀏覽模式" in guest_html
     assert "目前權限：只供查看" in guest_html
     assert "The guest tour contains no roster data." in guest_html
+    assert "Purpose and servant-leadership principle" in guest_html
+    assert "Any write-capable connection to the NiceGUI workbench" in guest_html
+    assert "Published-duty absence" in guest_html
+    assert "repeat(3, minmax(0, 1fr))" in source
+    assert "repeat(4, minmax(0, 1fr))" not in source
+    assert "加密值班表需要啟用 JavaScript" in source
     assert "if (!['GET', 'HEAD'].includes(request.method))" in source
     assert "window.location.pathname === '/guest'" in source
 
@@ -273,6 +372,33 @@ def test_viewer_rejects_oversized_or_long_lived_share_payloads() -> None:
     assert "Object.keys(payload).some(key => key !== 'shareId')" in source
 
 
+def test_public_share_errors_keep_the_key_only_for_retryable_service_failures() -> None:
+    source = _source()
+
+    for required in (
+        'id="retryShare"',
+        "showShareError('incomplete')",
+        "showShareError('unavailable')",
+        "showShareError('service')",
+        "showShareError('invalid')",
+        "if (!copy.retryable) clearStoredShareToken()",
+        "if (fragmentPersisted)",
+        "retryShare?.addEventListener('click'",
+        "暫時毋須重新索取分享連結",
+        "You do not need to request a new link yet.",
+    ):
+        assert required in source
+
+    service_copy = re.search(
+        r"service: \{(?P<body>.*?)\n\s*\},",
+        source,
+        flags=re.DOTALL,
+    )
+    assert service_copy is not None
+    assert "retryable: true" in service_copy.group("body")
+    assert "sessionStorage.removeItem" not in service_copy.group("body")
+
+
 def test_unified_gateway_validates_access_and_keeps_public_viewer_routes_separate() -> None:
     source = _source()
 
@@ -289,6 +415,7 @@ def test_unified_gateway_validates_access_and_keeps_public_viewer_routes_separat
         "/cdn-cgi/access/certs",
         "/cdn-cgi/access/logout",
         "path === '/auth/login'",
+        "path === '/auth/status'",
         "path === '/view'",
         "path === '/api/view'",
         "path === '/api/admin/shares'",
@@ -298,6 +425,22 @@ def test_unified_gateway_validates_access_and_keeps_public_viewer_routes_separat
     assert "管理員登入" in source
     assert "Administrator sign in" in source
     assert "Access-Control-Allow-Origin" not in source
+
+
+def test_authenticated_gateway_health_and_origin_failure_are_data_free_and_actionable() -> None:
+    source = _source()
+
+    for required in (
+        "origin_unavailable",
+        "X-Sing-Yin-Support-Reference",
+        "Retry-After",
+        "主機暫時未能連接",
+        "new URL('/healthz', request.url)",
+        "gateway: 'ok'",
+        "access: 'ok'",
+    ):
+        assert required in source
+    assert "Your administrator identity was verified" in source
 
 
 def test_authenticated_proxy_is_same_origin_sanitized_and_websocket_transparent() -> None:

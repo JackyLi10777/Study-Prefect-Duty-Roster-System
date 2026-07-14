@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from nicegui_app.services.workflow_dependencies import *
 
+
+_REQUIRED_DATABASE_TABLES = required_database_tables()
+
+
 class RecoveryWorkflowMixin:
     def handover_readiness(self) -> dict[str, object]:
         """Return non-sensitive, practical checks for a successor's local handover."""
@@ -36,14 +40,7 @@ class RecoveryWorkflowMixin:
 
     def verify_backup(self, backup_path: Path) -> dict[str, object]:
         """Validate a snapshot without mutating the live database."""
-        required_tables = {
-            "alembic_version",
-            "prefects",
-            "roster_weeks",
-            "roster_assignments",
-            "fairness_ledger",
-            "backup_runs",
-        }
+        required_tables = _REQUIRED_DATABASE_TABLES
         if not backup_path.exists() or not backup_path.is_file():
             return {"valid": False, "reasonCode": "missing_file", "error": "Backup file was not found."}
         if backup_path.suffix != ".sqlite3":
@@ -123,7 +120,7 @@ class RecoveryWorkflowMixin:
         }
 
     def restore_backup(self, backup_path: Path) -> dict[str, object]:
-        """Restore a managed, verified snapshot with a safety snapshot of live data first."""
+        """Preflight a snapshot in isolation, then restore with automatic rollback."""
         try:
             with self.maintenance.maintenance("restore"):
                 managed_directory = self.backup_dir.resolve()
@@ -137,50 +134,111 @@ class RecoveryWorkflowMixin:
                 if not verification.get("valid"):
                     raise WorkflowError(f"Backup verification failed: {verification.get('error', 'unknown error')}")
 
+                prepared_path = self._prepare_restore_candidate(requested_path)
                 pre_restore = self._create_and_record_backup("pre_restore", None)
                 pre_restore_path = self._require_backup(pre_restore)
-                temporary_path = self.database_path.with_name(f"{self.database_path.name}.restore.tmp")
                 try:
-                    self._dispose_database_connections()
-                    if temporary_path.exists():
-                        temporary_path.unlink()
-                    source = sqlite3.connect(str(requested_path))
-                    destination = sqlite3.connect(str(temporary_path))
-                    try:
-                        source.backup(destination)
-                    finally:
-                        destination.close()
-                        source.close()
-                    for stale_sidecar in (Path(f"{self.database_path}-wal"), Path(f"{self.database_path}-shm")):
-                        stale_sidecar.unlink(missing_ok=True)
-                    temporary_path.replace(self.database_path)
-                    self.sessions = create_session_factory(self.database_path)
+                    self._install_prepared_database(prepared_path)
+                    with self._session() as session:
+                        self._audit(
+                            session,
+                            "backup_restored",
+                            None,
+                            {
+                                "restoredFrom": str(requested_path),
+                                "preRestoreBackup": str(pre_restore_path),
+                                "sha256": verification["sha256"],
+                            },
+                        )
+                        self._assert_fairness_reconciled(session)
+                        session.commit()
+                    restored_backup = self._create_and_record_backup("backup_restored", None)
+                    restored_backup_path = self._require_backup(restored_backup, committed_event="backup_restored")
                 except Exception as error:
-                    temporary_path.unlink(missing_ok=True)
-                    self.sessions = create_session_factory(self.database_path)
-                    raise WorkflowError(f"Backup restore could not be completed: {error}") from error
-
-                with self._session() as session:
-                    self._audit(
-                        session,
-                        "backup_restored",
-                        None,
-                        {
-                            "restoredFrom": str(requested_path),
-                            "preRestoreBackup": str(pre_restore_path),
-                            "sha256": verification["sha256"],
-                        },
-                    )
-                    self._assert_fairness_reconciled(session)
-                    session.commit()
-                restored_backup = self._create_and_record_backup("backup_restored", None)
+                    prepared_path.unlink(missing_ok=True)
+                    try:
+                        rollback_path = self._prepare_restore_candidate(pre_restore_path)
+                        self._install_prepared_database(rollback_path)
+                    except Exception as rollback_error:
+                        self.maintenance.require_recovery_review(reason_code="restore_rollback_failed")
+                        raise WorkflowError(
+                            "Backup restore failed and automatic rollback could not be verified. "
+                            "The system remains locked for recovery review."
+                        ) from rollback_error
+                    raise WorkflowError(
+                        "Backup restore was not completed; the original database was restored automatically."
+                    ) from error
+                finally:
+                    prepared_path.unlink(missing_ok=True)
                 return {
                     "restoredFrom": backup_path,
                     "preRestoreBackup": pre_restore_path,
-                    "restoredBackup": self._require_backup(restored_backup, committed_event="backup_restored"),
+                    "restoredBackup": restored_backup_path,
                 }
         except MaintenanceModeError as error:
             raise WorkflowMaintenanceError(str(error)) from error
+
+    def _prepare_restore_candidate(self, source_path: Path) -> Path:
+        """Clone, migrate and reconcile a candidate without touching live data."""
+        prepared_path = self.database_path.with_name(
+            f".{self.database_path.name}.restore-{uuid4().hex}.tmp.sqlite3"
+        )
+        sessions: sessionmaker[Session] | None = None
+        try:
+            self._copy_sqlite_database(source_path, prepared_path)
+            sessions = create_session_factory(prepared_path)
+            with sessions() as session:
+                table_rows = session.connection().exec_driver_sql(
+                    "SELECT name FROM sqlite_master WHERE type = 'table'"
+                ).fetchall()
+                missing_tables = sorted(_REQUIRED_DATABASE_TABLES - {row[0] for row in table_rows})
+                if missing_tables:
+                    raise WorkflowError(
+                        "Backup preflight failed: required schema tables are missing: "
+                        f"{', '.join(missing_tables)}."
+                    )
+                foreign_key_errors = session.connection().exec_driver_sql("PRAGMA foreign_key_check").fetchall()
+                if foreign_key_errors:
+                    raise WorkflowError("Backup preflight failed: foreign-key integrity is not valid.")
+                self._assert_fairness_reconciled(session)
+            return prepared_path
+        except Exception:
+            if sessions is not None:
+                engine = sessions.kw.get("bind")
+                if engine is not None:
+                    engine.dispose()
+                sessions = None
+            self._remove_sqlite_sidecars(prepared_path)
+            prepared_path.unlink(missing_ok=True)
+            raise
+        finally:
+            if sessions is not None:
+                engine = sessions.kw.get("bind")
+                if engine is not None:
+                    engine.dispose()
+            self._remove_sqlite_sidecars(prepared_path)
+
+    def _install_prepared_database(self, prepared_path: Path) -> None:
+        self._dispose_database_connections()
+        self._remove_sqlite_sidecars(self.database_path)
+        prepared_path.replace(self.database_path)
+        self.sessions = create_session_factory(self.database_path)
+
+    @staticmethod
+    def _copy_sqlite_database(source_path: Path, destination_path: Path) -> None:
+        destination_path.unlink(missing_ok=True)
+        source = sqlite3.connect(str(source_path))
+        destination = sqlite3.connect(str(destination_path))
+        try:
+            source.backup(destination)
+        finally:
+            destination.close()
+            source.close()
+
+    @staticmethod
+    def _remove_sqlite_sidecars(database_path: Path) -> None:
+        for sidecar in (Path(f"{database_path}-wal"), Path(f"{database_path}-shm")):
+            sidecar.unlink(missing_ok=True)
 
     def backups(self, limit: int = 12) -> list[dict[str, object]]:
         """List recent managed snapshots with current verification evidence."""

@@ -1,5 +1,7 @@
 const SHARE_SCHEMA = 'sing-yin-public-roster-v1';
 const SHARE_KEY_PREFIX = 'share:';
+const CONTENT_SHARE_KEY_PREFIX = 'share:v2:';
+const CONTENT_DIGEST_PATTERN = /^[a-f0-9]{64}$/;
 const MAX_ADMIN_BODY_BYTES = 196_608;
 const MAX_VIEW_BODY_BYTES = 2_048;
 const MAX_SHARE_LIFETIME_MS = 31 * 24 * 60 * 60 * 1_000;
@@ -9,6 +11,10 @@ const ACCESS_JWKS_CACHE_TTL_MS = 5 * 60 * 1_000;
 const ACCESS_JWKS_MIN_REFRESH_MS = 60 * 1_000;
 const ACCESS_JWKS_MAX_BYTES = 65_536;
 const ACCESS_COOKIE_NAME = 'CF_Authorization';
+const ADMIN_SESSION_COOKIE_NAME = '__Host-SingYinAdminSession';
+const ADMIN_SESSION_VERSION = 1;
+const ADMIN_SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
+const ADMIN_SESSION_MAX_TOKEN_BYTES = 2_048;
 const accessJwksCache = new Map();
 
 // Small, non-sensitive landing-page selection copied from the canonical
@@ -81,21 +87,21 @@ const VIEWER_HTML = `<!doctype html>
   </header>
 
   <main id="mainContent" class="page-shell" tabindex="-1">
-    <section id="guestState" class="access-portal" hidden aria-labelledby="guestTitle" aria-describedby="guestDescription guestDescriptionEn">
+    <section id="guestState" class="access-portal" aria-labelledby="guestTitle" aria-describedby="guestDescription guestDescriptionEn">
       <div class="portal-story">
         <div class="portal-kicker">
           <span class="portal-kicker-mark" aria-hidden="true"></span>
           <span>導學風紀值班工作台</span>
           <span lang="en">Study Prefect Operations</span>
         </div>
-        <h1 id="guestTitle">一個入口，清晰完成每週值班工作</h1>
-        <p id="guestDescription" class="portal-lead">收到分享連結可直接查看已發布週表；首席導學風紀登入後，才可進入生成、發布及請假調整工作。</p>
-        <p id="guestDescriptionEn" class="portal-lead portal-lead--en" lang="en">One clear entrance for published-roster viewing and the complete weekly administrator workflow.</p>
+        <h1 id="guestTitle">查看已發布週表，或登入開始工作</h1>
+        <p id="guestDescription" class="portal-lead">收到完整分享連結可直接查看；首席導學風紀登入後，可完成生成、核對、發布、匯出及已發布後請假。</p>
+        <p id="guestDescriptionEn" class="portal-lead portal-lead--en" lang="en">Open a complete share link to view a published roster, or sign in to continue the weekly workflow.</p>
 
         <ol class="workflow-cue" aria-label="管理員每週流程 · Weekly administrator workflow">
           <li><span>01</span><strong>生成與核對</strong><small lang="en">Generate & review</small></li>
           <li><span>02</span><strong>發布與匯出</strong><small lang="en">Publish & export</small></li>
-          <li><span>03</span><strong>請假與公平調整</strong><small lang="en">Leave & fairness</small></li>
+          <li><span>03</span><strong>已發布後請假</strong><small lang="en">Published-duty absence</small></li>
         </ol>
 
         <section class="devotional-prompt" aria-labelledby="landingDevotionalTitle">
@@ -207,19 +213,19 @@ const VIEWER_HTML = `<!doctype html>
           <ol class="guest-flow">
             <li><span>01</span><p><strong>生成與核對</strong><small lang="en">Generate & review</small></p></li>
             <li><span>02</span><p><strong>發布與匯出</strong><small lang="en">Publish & export</small></p></li>
-            <li><span>03</span><p><strong>請假與公平調整</strong><small lang="en">Leave & fairness adjustment</small></p></li>
-            <li><span>04</span><p><strong>備份與交接</strong><small lang="en">Backup & handover</small></p></li>
+            <li><span>03</span><p><strong>已發布後請假</strong><small lang="en">Published-duty absence</small></p></li>
           </ol>
+          <p class="guest-flow-note">每一步完成後都會留下審計與備份證據，支援日後交接。 <span lang="en">Audit and backup evidence supports every step and the eventual handover.</span></p>
         </article>
 
         <article class="guest-tour-card">
           <p class="guest-card-kicker">WHAT YOU CAN VIEW</p>
           <h2>訪客可查看</h2>
           <ul>
-            <li>系統用途及僕人領袖精神</li>
-            <li>值班流程、公平原則與技術保障</li>
-            <li>今日經文與雙語靈修提醒</li>
-            <li>持完整分享連結查看指定已發布週表</li>
+            <li>系統用途及僕人領袖精神 <small lang="en">Purpose and servant-leadership principle</small></li>
+            <li>值班流程、公平原則與技術保障 <small lang="en">Workflow, fairness, and technical safeguards</small></li>
+            <li>今日經文與雙語靈修提醒 <small lang="en">Daily verse and bilingual reflection</small></li>
+            <li>持完整分享連結查看指定已發布週表 <small lang="en">A specified published roster with its complete share link</small></li>
           </ul>
         </article>
 
@@ -227,10 +233,10 @@ const VIEWER_HTML = `<!doctype html>
           <p class="guest-card-kicker">PROTECTED OPERATIONS</p>
           <h2>訪客不會取得</h2>
           <ul>
-            <li>名單、請假、公平帳本及歷史資料</li>
-            <li>生成、手動修改、發布及替補操作</li>
-            <li>備份、還原、設定、日誌或管理權限</li>
-            <li>任何可寫入 NiceGUI 工作台的連線</li>
+            <li>名單、請假、公平帳本及歷史資料 <small lang="en">Directory, leave, fairness ledger, or history</small></li>
+            <li>生成、手動修改、發布及替補操作 <small lang="en">Generate, edit, publish, or substitution actions</small></li>
+            <li>備份、還原、設定、日誌或管理權限 <small lang="en">Backups, restore, settings, logs, or administration</small></li>
+            <li>任何可寫入 NiceGUI 工作台的連線 <small lang="en">Any write-capable connection to the NiceGUI workbench</small></li>
           </ul>
         </article>
 
@@ -248,7 +254,14 @@ const VIEWER_HTML = `<!doctype html>
       </footer>
     </section>
 
-    <section id="loadingState" class="state-card" aria-live="polite" aria-busy="true">
+    <noscript>
+      <section class="state-card state-card--error" role="status">
+        <h1>訪客入口仍可閱讀；加密值班表需要啟用 JavaScript</h1>
+        <p lang="en">The guest entrance remains readable. Enable JavaScript only when opening an encrypted roster link.</p>
+      </section>
+    </noscript>
+
+    <section id="loadingState" class="state-card" hidden aria-live="polite" aria-busy="true">
       <span class="state-spinner" aria-hidden="true"></span>
       <h1>正在安全開啟值班表</h1>
       <p lang="en">Opening the roster securely…</p>
@@ -258,7 +271,11 @@ const VIEWER_HTML = `<!doctype html>
       <div class="state-icon" aria-hidden="true">!</div>
       <h1 id="errorTitle">未能開啟這份值班表</h1>
       <p id="errorMessage">連結可能不完整、已到期或已由首席導學風紀撤銷。</p>
-      <p class="state-english" lang="en">This link may be incomplete, expired, or revoked. Please ask the Head Study Prefect for a new link.</p>
+      <p id="errorMessageEn" class="state-english" lang="en">This link may be incomplete, expired, or revoked. Please ask the Head Study Prefect for a new link.</p>
+      <div class="guest-actions">
+        <button id="retryShare" class="admin-login" type="button" hidden>重新嘗試 <span lang="en">· Try again</span></button>
+        <a class="admin-login" href="/">返回網站入口 <span lang="en">· Return to entrance</span></a>
+      </div>
     </section>
 
     <article id="rosterState" class="roster-card" hidden>
@@ -285,7 +302,11 @@ const VIEWER_HTML = `<!doctype html>
         </div>
       </div>
 
-      <div class="table-scroll" tabindex="0" aria-label="值班表，可左右捲動 · Roster table, horizontally scrollable">
+      <p id="rosterScrollHint" class="table-scroll-hint">
+        <span aria-hidden="true">↔</span>
+        左右滑動查看完整星期 <small lang="en">Swipe horizontally to view every weekday</small>
+      </p>
+      <div class="table-scroll" tabindex="0" aria-label="值班表，可左右捲動 · Roster table, horizontally scrollable" aria-describedby="rosterScrollHint">
         <table id="rosterTable">
           <caption class="sr-only">導學風紀每週值班表 · Weekly Study Prefect Duty Roster</caption>
         </table>
@@ -566,7 +587,7 @@ button, input, select, textarea { font: inherit; }
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 7px 10px;
   border: 1px solid color-mix(in srgb, var(--gold) 34%, transparent);
   border-radius: 999px;
@@ -823,7 +844,7 @@ button, input, select, textarea { font: inherit; }
   background: var(--surface-muted);
 }
 .guest-tour-card--wide { grid-column: 1 / -1; }
-.guest-tour-card--protected { border-color: color-mix(in srgb, var(--gold) 28%, var(--line)); background: color-mix(in srgb, var(--devotional-surface) 48%, var(--surface)); }
+.guest-tour-card--protected { border-color: var(--line-strong); background: color-mix(in srgb, var(--surface-muted) 76%, var(--surface)); }
 .guest-tour-card--trust { background: var(--surface); }
 .guest-card-kicker { margin: 0 0 8px; color: var(--brand); font-size: 0.61rem; font-weight: 820; letter-spacing: 0.12em; }
 .guest-tour-card h2 { margin: 0; font-size: clamp(1.15rem, 2.4vw, 1.55rem); letter-spacing: -0.025em; }
@@ -831,7 +852,8 @@ button, input, select, textarea { font: inherit; }
 .guest-tour-card ul { display: grid; gap: 9px; margin: 16px 0 0; padding: 0; list-style: none; }
 .guest-tour-card ul li { position: relative; padding-left: 17px; color: var(--ink-muted); font-size: 0.76rem; line-height: 1.52; }
 .guest-tour-card ul li::before { content: ""; position: absolute; top: 0.62em; left: 1px; width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
-.guest-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 22px 0 0; padding: 0; list-style: none; }
+.guest-tour-card ul li small { display: block; margin-top: 2px; color: var(--ink-muted); font-size: 0.68rem; line-height: 1.45; }
+.guest-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 22px 0 0; padding: 0; list-style: none; }
 .guest-flow li { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 10px; min-width: 0; padding-top: 14px; border-top: 1px solid var(--line); }
 .guest-flow li > span { color: var(--brand); font-size: 0.62rem; font-weight: 820; letter-spacing: 0.08em; }
 .guest-flow p { margin: 0; }
@@ -839,6 +861,8 @@ button, input, select, textarea { font: inherit; }
 .guest-flow small { display: block; }
 .guest-flow strong { font-size: 0.76rem; line-height: 1.4; }
 .guest-flow small { margin-top: 3px; color: var(--ink-muted); font-size: 0.63rem; line-height: 1.4; }
+.guest-flow-note { margin: 18px 0 0; color: var(--ink-muted); font-size: 0.71rem; line-height: 1.55; }
+.guest-flow-note span { display: block; margin-top: 3px; font-size: 0.65rem; }
 .guest-portal-footer { margin: 0 30px 30px; padding: 20px 22px; border-top: 1px solid var(--line); color: var(--ink-muted); }
 .guest-portal-footer p { margin: 0; font-size: 0.72rem; line-height: 1.6; }
 .guest-portal-footer p + p { margin-top: 4px; font-size: 0.65rem; }
@@ -936,6 +960,7 @@ button, input, select, textarea { font: inherit; }
   justify-content: center;
   gap: 10px;
 }
+.guest-actions [hidden] { display: none; }
 
 .roster-card { overflow: hidden; }
 
@@ -986,6 +1011,9 @@ button, input, select, textarea { font: inherit; }
 .meta-label { display: block; margin-bottom: 5px; color: var(--ink-muted); font-size: 0.72rem; }
 .roster-meta strong { font-size: 0.96rem; font-variant-numeric: tabular-nums; }
 
+.table-scroll-hint { display: none; margin: 0; padding: 10px 18px; border-bottom: 1px solid var(--line); color: var(--ink-muted); background: var(--surface-muted); font-size: 0.72rem; line-height: 1.45; }
+.table-scroll-hint span { margin-right: 6px; color: var(--brand); font-weight: 800; }
+.table-scroll-hint small { margin-left: 4px; font-size: inherit; }
 .table-scroll { overflow-x: auto; outline: none; scrollbar-color: var(--line-strong) transparent; }
 .table-scroll:focus-visible { box-shadow: inset 0 0 0 3px var(--focus-ring); }
 
@@ -1219,6 +1247,10 @@ tbody td {
   .guest-flow { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 900px) {
+  .table-scroll-hint { display: block; }
+}
+
 @media (max-width: 390px) {
   .brand-subtitle { display: none; }
   .portal-story { padding-inline: 20px; }
@@ -1226,7 +1258,7 @@ tbody td {
   .access-panel { padding-inline: 20px; }
   .devotional-prompt-heading { align-items: center; }
   .verse-refresh span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
-  .verse-refresh { width: 40px; padding-inline: 0; }
+  .verse-refresh { width: 44px; padding-inline: 0; }
 }
 
 @media (forced-colors: active) {
@@ -1307,6 +1339,37 @@ const devotionalPrompt = document.querySelector('.devotional-prompt');
 const refreshLandingVerse = document.getElementById('refreshLandingVerse');
 const shareSite = document.getElementById('shareSite');
 const shareSiteStatus = document.getElementById('shareSiteStatus');
+const errorTitle = document.getElementById('errorTitle');
+const errorMessage = document.getElementById('errorMessage');
+const errorMessageEn = document.getElementById('errorMessageEn');
+const retryShare = document.getElementById('retryShare');
+
+const shareErrorCopy = {
+  incomplete: {
+    title: '分享連結不完整',
+    zh: '請重新開啟首席導學風紀發出的完整連結；不要只複製網址中 # 前面的部分。',
+    en: 'Open the complete link issued by the Head Study Prefect. Do not copy only the part before #.',
+    retryable: false,
+  },
+  unavailable: {
+    title: '這份值班表已不能使用',
+    zh: '連結可能已到期或已被撤銷。請向首席導學風紀索取最新分享連結。',
+    en: 'The link may have expired or been revoked. Ask the Head Study Prefect for the latest share link.',
+    retryable: false,
+  },
+  service: {
+    title: '查看服務暫時未有回應',
+    zh: '請保留此頁並稍後按「重新嘗試」；暫時毋須重新索取分享連結。',
+    en: 'Keep this page open and try again shortly. You do not need to request a new link yet.',
+    retryable: true,
+  },
+  invalid: {
+    title: '未能核對這份值班表',
+    zh: '連結內容可能不完整或已損壞。請重新開啟原本的完整連結；如仍失敗，請索取新連結。',
+    en: 'The link content could not be verified. Reopen the original complete link, then request a new one if it still fails.',
+    retryable: false,
+  },
+};
 
 const themeCopy = {
   system: { label: '自動 · Auto', aria: '外觀：跟隨系統 · Appearance: System' },
@@ -1473,12 +1536,19 @@ function hasShareToken() {
   }
 }
 
-function failOpen() {
-  try {
-    sessionStorage.removeItem(SESSION_TOKEN_KEY);
-  } catch {
+function clearStoredShareToken() {
+  try { sessionStorage.removeItem(SESSION_TOKEN_KEY); } catch {
     // Some privacy modes disable session storage; the viewer still fails closed.
   }
+}
+
+function showShareError(kind) {
+  const copy = shareErrorCopy[kind] || shareErrorCopy.invalid;
+  if (!copy.retryable) clearStoredShareToken();
+  errorTitle.textContent = copy.title;
+  errorMessage.textContent = copy.zh;
+  errorMessageEn.textContent = copy.en;
+  retryShare.hidden = !copy.retryable;
   showOnly(errorState);
 }
 
@@ -1492,15 +1562,19 @@ function base64UrlBytes(value) {
 function readToken() {
   const fragment = window.location.hash.slice(1).trim();
   if (fragment) {
+    let fragmentPersisted = false;
     try {
       sessionStorage.setItem(SESSION_TOKEN_KEY, fragment);
+      fragmentPersisted = true;
     } catch {
       // The fragment remains available for this page load when storage is blocked.
     }
-    try {
-      history.replaceState(null, '', window.location.pathname);
-    } catch {
-      // Decryption still works; leaving the fragment is safer than breaking the link.
+    if (fragmentPersisted) {
+      try {
+        history.replaceState(null, '', window.location.pathname);
+      } catch {
+        // Decryption still works; leaving the fragment is safer than breaking the link.
+      }
     }
   }
   let storedToken = '';
@@ -1626,6 +1700,8 @@ function renderRoster(snapshot, expiresAt) {
   showOnly(rosterState);
 }
 
+let shareOpenInFlight = false;
+
 async function openSharedRoster() {
   if (window.location.pathname === '/guest') {
     showOnly(guestPortalState);
@@ -1635,25 +1711,57 @@ async function openSharedRoster() {
     showOnly(guestState);
     return;
   }
+  if (shareOpenInFlight) return;
+  shareOpenInFlight = true;
+  retryShare.disabled = true;
+  retryShare.setAttribute('aria-busy', 'true');
+  showOnly(loadingState);
   try {
-    const { shareId, keyBytes } = readToken();
-    const response = await fetch('/api/view', {
-      method: 'POST',
-      credentials: 'same-origin',
-      cache: 'no-store',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shareId }),
-    });
-    if (!response.ok) throw new Error('share unavailable');
-    const payload = await response.json();
-    const snapshot = await decryptSnapshot(shareId, keyBytes, payload);
-    renderRoster(snapshot, payload.expiresAt);
-  } catch {
-    failOpen();
+    let credentials;
+    try {
+      credentials = readToken();
+    } catch {
+      showShareError('incomplete');
+      return;
+    }
+    const { shareId, keyBytes } = credentials;
+    let response;
+    try {
+      response = await fetch('/api/view', {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shareId }),
+      });
+    } catch {
+      showShareError('service');
+      return;
+    }
+    if (response.status === 404) {
+      showShareError('unavailable');
+      return;
+    }
+    if (!response.ok) {
+      showShareError('service');
+      return;
+    }
+    try {
+      const payload = await response.json();
+      const snapshot = await decryptSnapshot(shareId, keyBytes, payload);
+      renderRoster(snapshot, payload.expiresAt);
+    } catch {
+      showShareError('invalid');
+    }
+  } finally {
+    shareOpenInFlight = false;
+    retryShare.disabled = false;
+    retryShare.removeAttribute('aria-busy');
   }
 }
 
-openSharedRoster();
+retryShare?.addEventListener('click', () => { void openSharedRoster(); });
+void openSharedRoster();
 `;
 
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
@@ -1689,10 +1797,51 @@ const ACCESS_FAILURE_HTML = `<!doctype html>
 </body>
 </html>`;
 
+function gatewayReference() {
+  return `GW-${crypto.randomUUID().replaceAll('-', '').slice(0, 12).toUpperCase()}`;
+}
+
+function originFailureResponse(reference) {
+  const html = `<!doctype html>
+<html lang="zh-Hant-HK">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <title>工作台暫時未能連接 · Workbench temporarily unavailable</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/viewer.css">
+</head>
+<body>
+  <main class="page-shell">
+    <section class="state-card state-card--error" role="alert">
+      <div class="state-icon" aria-hidden="true">!</div>
+      <h1>主機暫時未能連接</h1>
+      <p>你的管理員身分已通過核對，但本機工作台暫時未有回應。請稍後重試；如問題持續，請在本機檢查網站及 Cloudflare 服務。</p>
+      <p class="state-english" lang="en">Your administrator identity was verified, but the local workbench is not responding. Try again shortly, then check the local site and Cloudflare services if the issue continues.</p>
+      <p class="support-reference">支援編號 · Support reference: <strong>${reference}</strong></p>
+      <div class="guest-actions">
+        <a class="admin-login" href="/">重新嘗試 <span lang="en">· Try again</span></a>
+        <a class="admin-login" href="/logout">登出 <span lang="en">· Sign out</span></a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>`;
+  return response(html, 503, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Retry-After': '15',
+    'X-Sing-Yin-Support-Reference': reference,
+  });
+}
+
 class AccessValidationError extends Error {
-  constructor() {
+  constructor(reason = 'access_validation_failed') {
     super('access_validation_failed');
     this.name = 'AccessValidationError';
+    this.reason = reason;
   }
 }
 
@@ -1755,13 +1904,11 @@ function normalizeAccessConfiguration(env) {
   return { teamDomain, audience, adminEmails };
 }
 
-function accessTokenFromRequest(request) {
-  const assertion = request.headers.get('Cf-Access-Jwt-Assertion');
-  if (assertion && assertion.trim()) return assertion.trim();
+function cookieValueFromRequest(request, cookieName) {
   const cookieHeader = request.headers.get('Cookie') || '';
   for (const part of cookieHeader.split(';')) {
     const separator = part.indexOf('=');
-    if (separator < 1 || part.slice(0, separator).trim().toLowerCase() !== ACCESS_COOKIE_NAME.toLowerCase()) continue;
+    if (separator < 1 || part.slice(0, separator).trim() !== cookieName) continue;
     const rawValue = part.slice(separator + 1).trim();
     try {
       return decodeURIComponent(rawValue);
@@ -1770,6 +1917,112 @@ function accessTokenFromRequest(request) {
     }
   }
   return '';
+}
+
+function accessTokenFromRequest(request) {
+  const assertion = request.headers.get('Cf-Access-Jwt-Assertion');
+  if (assertion && assertion.trim()) return assertion.trim();
+  return cookieValueFromRequest(request, ACCESS_COOKIE_NAME);
+}
+
+function adminSessionSecret(env) {
+  const secret = typeof env.ADMIN_SESSION_SECRET === 'string' ? env.ADMIN_SESSION_SECRET : ''; // pragma: allowlist secret -- environment variable name only
+  if (secret.length < 32 || secret.length > 512 || secret !== secret.trim()) {
+    throw new AccessValidationError('session_secret_configuration');
+  }
+  return secret;
+}
+
+async function adminSessionHmacKey(env, usage) {
+  return await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(adminSessionSecret(env)),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    usage,
+  );
+}
+
+async function createAdminSessionToken(email, accessExpiresAt, env, options = {}) {
+  const configuration = normalizeAccessConfiguration(env);
+  const normalizedEmail = typeof email === 'string' ? email.toLowerCase() : '';
+  if (!configuration.adminEmails.includes(normalizedEmail)) throw new AccessValidationError();
+  const nowSeconds = Math.floor((options.nowMillis ?? Date.now()) / 1_000);
+  const boundedAccessExpiry = Math.floor(accessExpiresAt);
+  const expiresAt = Math.min(nowSeconds + ADMIN_SESSION_MAX_AGE_SECONDS, boundedAccessExpiry);
+  if (!Number.isSafeInteger(nowSeconds) || !Number.isSafeInteger(expiresAt) || expiresAt <= nowSeconds) {
+    throw new AccessValidationError();
+  }
+  const nonceBytes = new Uint8Array(16);
+  crypto.getRandomValues(nonceBytes);
+  const payload = {
+    v: ADMIN_SESSION_VERSION,
+    email: normalizedEmail,
+    iat: nowSeconds,
+    exp: expiresAt,
+    nonce: encodeBase64Url(nonceBytes),
+  };
+  const payloadSegment = encodeBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
+  const key = await adminSessionHmacKey(env, ['sign']);
+  const signature = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payloadSegment)));
+  return { token: `${payloadSegment}.${encodeBase64Url(signature)}`, payload };
+}
+
+function adminSessionSetCookie(token, expiresAt) {
+  const nowSeconds = Math.floor(Date.now() / 1_000);
+  const maxAge = Math.max(0, Math.min(ADMIN_SESSION_MAX_AGE_SECONDS, expiresAt - nowSeconds));
+  return `${ADMIN_SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; Max-Age=${maxAge}; Expires=${new Date(expiresAt * 1_000).toUTCString()}; Path=/; HttpOnly; Secure; SameSite=Lax`;
+}
+
+function adminSessionClearCookie() {
+  return `${ADMIN_SESSION_COOKIE_NAME}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; HttpOnly; Secure; SameSite=Lax`;
+}
+
+async function validateAdminSessionToken(token, env, options = {}) {
+  if (typeof token !== 'string' || token.length < 32 || token.length > ADMIN_SESSION_MAX_TOKEN_BYTES) {
+    throw new AccessValidationError();
+  }
+  const parts = token.split('.');
+  if (parts.length !== 2 || parts.some(part => !part)) throw new AccessValidationError();
+  const [payloadSegment, signatureSegment] = parts;
+  const payloadBytes = decodeBase64Url(payloadSegment);
+  const signature = decodeBase64Url(signatureSegment);
+  if (!payloadBytes || payloadBytes.byteLength < 2 || payloadBytes.byteLength > 1_024 || !signature || signature.byteLength !== 32) {
+    throw new AccessValidationError();
+  }
+  const key = await adminSessionHmacKey(env, ['verify']);
+  const verified = await crypto.subtle.verify('HMAC', key, signature, new TextEncoder().encode(payloadSegment));
+  if (!verified) throw new AccessValidationError();
+  let payload;
+  try {
+    payload = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(payloadBytes));
+  } catch {
+    throw new AccessValidationError();
+  }
+  const nowSeconds = Math.floor((options.nowMillis ?? Date.now()) / 1_000);
+  const configuration = normalizeAccessConfiguration(env);
+  if (
+    !payload
+    || typeof payload !== 'object'
+    || Array.isArray(payload)
+    || Object.keys(payload).sort().join(',') !== 'email,exp,iat,nonce,v'
+    || payload.v !== ADMIN_SESSION_VERSION
+    || typeof payload.email !== 'string'
+    || payload.email !== payload.email.trim()
+    || payload.email !== payload.email.toLowerCase()
+    || !configuration.adminEmails.includes(payload.email)
+    || !Number.isSafeInteger(payload.iat)
+    || !Number.isSafeInteger(payload.exp)
+    || payload.iat > nowSeconds + 60
+    || payload.exp <= nowSeconds
+    || payload.exp <= payload.iat
+    || payload.exp - payload.iat > ADMIN_SESSION_MAX_AGE_SECONDS
+    || typeof payload.nonce !== 'string'
+    || !/^[A-Za-z0-9_-]{22}$/.test(payload.nonce)
+  ) {
+    throw new AccessValidationError();
+  }
+  return payload;
 }
 
 function jsonObjectFromJwtSegment(segment, maximumBytes) {
@@ -1798,22 +2051,22 @@ async function loadAccessJwks(teamDomain, fetcher, nowMillis, forceRefresh = fal
       redirect: 'error',
     });
   } catch {
-    throw new AccessValidationError();
+    throw new AccessValidationError('jwks_fetch');
   }
-  if (!certificateResponse || !certificateResponse.ok) throw new AccessValidationError();
+  if (!certificateResponse || !certificateResponse.ok) throw new AccessValidationError('jwks_response');
   const declaredLength = Number(certificateResponse.headers.get('Content-Length') || '0');
   if (Number.isFinite(declaredLength) && declaredLength > ACCESS_JWKS_MAX_BYTES) throw new AccessValidationError();
   let raw;
   try {
     raw = await readBoundedUtf8(certificateResponse, ACCESS_JWKS_MAX_BYTES);
   } catch {
-    throw new AccessValidationError();
+    throw new AccessValidationError('jwks_body');
   }
   let document;
   try {
     document = JSON.parse(raw);
   } catch {
-    throw new AccessValidationError();
+    throw new AccessValidationError('jwks_json');
   }
   if (!document || !Array.isArray(document.keys) || document.keys.length < 1 || document.keys.length > 16) {
     throw new AccessValidationError();
@@ -1860,10 +2113,10 @@ async function accessJwkForKid(teamDomain, kid, fetcher, nowMillis) {
 async function validateAccessJwt(token, env, options = {}) {
   const configuration = normalizeAccessConfiguration(env);
   if (typeof token !== 'string' || token.length < 16 || token.length > MAX_ACCESS_JWT_BYTES) {
-    throw new AccessValidationError();
+    throw new AccessValidationError('jwt_size');
   }
   const parts = token.split('.');
-  if (parts.length !== 3 || parts.some(part => !part)) throw new AccessValidationError();
+  if (parts.length !== 3 || parts.some(part => !part)) throw new AccessValidationError('jwt_structure');
   const [headerSegment, payloadSegment, signatureSegment] = parts;
   const header = jsonObjectFromJwtSegment(headerSegment, 4_096);
   const payload = jsonObjectFromJwtSegment(payloadSegment, 16_384);
@@ -1879,32 +2132,34 @@ async function validateAccessJwt(token, env, options = {}) {
     || signature.byteLength < 128
     || signature.byteLength > 1_024
   ) {
-    throw new AccessValidationError();
+    throw new AccessValidationError('jwt_header');
   }
 
   const nowMillis = options.nowMillis ?? Date.now();
   const nowSeconds = Math.floor(nowMillis / 1_000);
   const audiences = typeof payload.aud === 'string' ? [payload.aud] : payload.aud;
+  if (payload.iss !== configuration.teamDomain) throw new AccessValidationError('jwt_issuer');
   if (
-    payload.iss !== configuration.teamDomain
-    || !Array.isArray(audiences)
+    !Array.isArray(audiences)
     || !audiences.every(item => typeof item === 'string')
     || !audiences.includes(configuration.audience)
-    || typeof payload.exp !== 'number'
-    || !Number.isFinite(payload.exp)
-    || nowSeconds >= payload.exp
-    || (payload.nbf !== undefined && (
-      typeof payload.nbf !== 'number'
-      || !Number.isFinite(payload.nbf)
-      || nowSeconds < payload.nbf
-    ))
-    || typeof payload.email !== 'string'
+  ) throw new AccessValidationError('jwt_audience');
+  if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp) || nowSeconds >= payload.exp) {
+    throw new AccessValidationError('jwt_expiry');
+  }
+  if (payload.nbf !== undefined && (
+    typeof payload.nbf !== 'number'
+    || !Number.isFinite(payload.nbf)
+    || nowSeconds < payload.nbf
+  )) throw new AccessValidationError('jwt_not_before');
+  if (
+    typeof payload.email !== 'string'
     || payload.email !== payload.email.trim()
     || payload.email.length > 320
     || !/^[^@\s]+@[^@\s]+$/.test(payload.email)
-    || !configuration.adminEmails.includes(payload.email.toLowerCase())
-  ) {
-    throw new AccessValidationError();
+  ) throw new AccessValidationError('jwt_email');
+  if (!configuration.adminEmails.includes(payload.email.toLowerCase())) {
+    throw new AccessValidationError('jwt_email_allowlist');
   }
   const fetcher = options.fetcher ?? fetch;
   const jwk = await accessJwkForKid(configuration.teamDomain, header.kid, fetcher, nowMillis);
@@ -1920,7 +2175,7 @@ async function validateAccessJwt(token, env, options = {}) {
       ['verify'],
     );
   } catch {
-    throw new AccessValidationError();
+    throw new AccessValidationError('jwk_import');
   }
   const verified = await crypto.subtle.verify(
     { name: 'RSASSA-PKCS1-v1_5' },
@@ -1928,7 +2183,7 @@ async function validateAccessJwt(token, env, options = {}) {
     signature,
     new TextEncoder().encode(`${headerSegment}.${payloadSegment}`),
   );
-  if (!verified) throw new AccessValidationError();
+  if (!verified) throw new AccessValidationError('jwt_signature');
 
   return { payload, configuration };
 }
@@ -1947,7 +2202,8 @@ function stripAccessCredentials(inputHeaders) {
       if (!part) return false;
       const separator = part.indexOf('=');
       const name = (separator < 0 ? part : part.slice(0, separator)).trim();
-      return name.toLowerCase() !== ACCESS_COOKIE_NAME.toLowerCase();
+      return name.toLowerCase() !== ACCESS_COOKIE_NAME.toLowerCase()
+        && name !== ADMIN_SESSION_COOKIE_NAME;
     });
   if (retainedCookies.length) headers.set('Cookie', retainedCookies.join('; '));
   else headers.delete('Cookie');
@@ -1994,12 +2250,36 @@ async function proxyToRosterOrigin(request, env, verifiedEmail) {
   return await env.ROSTER_ORIGIN.fetch(originRequest);
 }
 
-function accessFailureResponse(status = 403) {
-  return response(ACCESS_FAILURE_HTML, status, { 'Content-Type': 'text/html; charset=utf-8' });
+function accessFailureResponse(status = 403, reference = '') {
+  const headers = { 'Content-Type': 'text/html; charset=utf-8' };
+  if (reference) headers['X-Sing-Yin-Support-Reference'] = reference;
+  return response(ACCESS_FAILURE_HTML, status, headers);
+}
+
+function loggedAccessFailure(request, phase, error) {
+  const reference = gatewayReference();
+  const reason = error instanceof AccessValidationError ? error.reason : 'unexpected_error';
+  console.warn(JSON.stringify({
+    event: 'admin_login_bridge_failure',
+    reference,
+    phase,
+    reason,
+    ray: (request.headers.get('CF-Ray') || '').slice(0, 32),
+    assertionPresent: Boolean(request.headers.get('Cf-Access-Jwt-Assertion')),
+    authorizationCookiePresent: Boolean(cookieValueFromRequest(request, ACCESS_COOKIE_NAME)),
+  }));
+  return accessFailureResponse(403, reference);
 }
 
 function redirectResponse(destination, requestUrl, status = 302) {
   return response(null, status, { Location: new URL(destination, requestUrl).toString() });
+}
+
+function logoutResponse(requestUrl) {
+  return response(null, 302, {
+    Location: new URL('/cdn-cgi/access/logout', requestUrl).toString(),
+    'Set-Cookie': adminSessionClearCookie(),
+  });
 }
 
 function originProxyResult(originResponse) {
@@ -2050,6 +2330,11 @@ function decodeBase64Url(value) {
   }
 }
 
+function encodeBase64Url(value) {
+  const bytes = value instanceof Uint8Array ? value : new Uint8Array(value);
+  return btoa(String.fromCharCode(...bytes)).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+}
+
 async function readBoundedUtf8(input, maximumBytes) {
   const declaredLength = Number(input.headers.get('Content-Length') || '0');
   if (Number.isFinite(declaredLength) && declaredLength > maximumBytes) throw new RangeError('request too large');
@@ -2095,11 +2380,12 @@ async function bearerAuthorized(request, env) {
   return configured.length >= 32 && difference === 0;
 }
 
-function storedRecordFrom(payload, shareId, weekStart, createdAt, expiresAt) {
+function storedRecordFrom(payload, shareId, weekStart, createdAt, expiresAt, contentDigest) {
   return {
-    version: 1,
+    version: 2,
     schemaVersion: SHARE_SCHEMA,
     shareId,
+    contentDigest,
     weekStart,
     ciphertext: payload.ciphertext,
     nonce: payload.nonce,
@@ -2125,15 +2411,155 @@ function validateCreatePayload(payload, now) {
   const ciphertext = decodeBase64Url(payload.ciphertext);
   if (!nonce || nonce.byteLength !== 12) return null;
   if (!ciphertext || ciphertext.byteLength < 17 || ciphertext.byteLength > 131_072) return null;
+  const createdMillis = Date.parse(payload.createdAt);
   const expiryMillis = Date.parse(payload.expiresAt);
-  if (!Number.isFinite(expiryMillis)) return null;
+  if (!Number.isFinite(createdMillis) || !Number.isFinite(expiryMillis)) return null;
+  if (createdMillis > now + 5 * 60 * 1_000 || createdMillis >= expiryMillis) return null;
   if (expiryMillis - now < MIN_SHARE_LIFETIME_MS || expiryMillis - now > MAX_SHARE_LIFETIME_MS) return null;
   return {
     shareId: payload.shareId,
     weekStart: payload.weekStart,
+    createdAt: new Date(createdMillis).toISOString(),
     expiresAt: new Date(expiryMillis).toISOString(),
     expiryMillis,
   };
+}
+
+function contentDigestInput(record) {
+  return JSON.stringify([
+    SHARE_SCHEMA,
+    record.shareId,
+    record.weekStart,
+    record.createdAt,
+    record.expiresAt,
+    record.nonce,
+    record.ciphertext,
+  ]);
+}
+
+async function contentDigestFor(record) {
+  const digest = await sha256(contentDigestInput(record));
+  return [...digest].map(value => value.toString(16).padStart(2, '0')).join('');
+}
+
+function contentSharePrefix(shareId) {
+  return `${CONTENT_SHARE_KEY_PREFIX}${shareId}:`;
+}
+
+function contentShareKey(shareId, contentDigest) {
+  return `${contentSharePrefix(shareId)}${contentDigest}`;
+}
+
+function parseContentShareKey(key) {
+  if (typeof key !== 'string' || !key.startsWith(CONTENT_SHARE_KEY_PREFIX)) return null;
+  const remainder = key.slice(CONTENT_SHARE_KEY_PREFIX.length);
+  const separator = remainder.lastIndexOf(':');
+  if (separator <= 0) return null;
+  const shareId = remainder.slice(0, separator);
+  const contentDigest = remainder.slice(separator + 1);
+  return validShareId(shareId) && CONTENT_DIGEST_PATTERN.test(contentDigest)
+    ? { shareId, contentDigest }
+    : null;
+}
+
+function parseStoredJson(raw) {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw === 'object') return raw;
+  if (typeof raw !== 'string') return undefined;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function storedRecordHasValidContent(record, shareId) {
+  if (!record || typeof record !== 'object') return false;
+  if (record.schemaVersion !== SHARE_SCHEMA || record.shareId !== shareId) return false;
+  if (!validIsoDate(record.weekStart)) return false;
+  const nonce = decodeBase64Url(record.nonce);
+  const ciphertext = decodeBase64Url(record.ciphertext);
+  if (!nonce || nonce.byteLength !== 12) return false;
+  if (!ciphertext || ciphertext.byteLength < 17 || ciphertext.byteLength > 131_072) return false;
+  const createdMillis = Date.parse(record.createdAt);
+  const expiryMillis = Date.parse(record.expiresAt);
+  return Number.isFinite(createdMillis) && Number.isFinite(expiryMillis) && createdMillis < expiryMillis;
+}
+
+function sameStoredContent(left, right) {
+  return left
+    && right
+    && left.schemaVersion === right.schemaVersion
+    && left.shareId === right.shareId
+    && left.weekStart === right.weekStart
+    && left.createdAt === right.createdAt
+    && left.expiresAt === right.expiresAt
+    && left.nonce === right.nonce
+    && left.ciphertext === right.ciphertext;
+}
+
+function sameLegacyPayloadContent(left, right) {
+  return left
+    && right
+    && left.schemaVersion === right.schemaVersion
+    && left.shareId === right.shareId
+    && left.weekStart === right.weekStart
+    && left.expiresAt === right.expiresAt
+    && left.nonce === right.nonce
+    && left.ciphertext === right.ciphertext;
+}
+
+async function listKvKeys(kv, prefix, limit = 1_000) {
+  const keys = [];
+  let cursor;
+  const seenCursors = new Set();
+  while (true) {
+    const options = { prefix, limit };
+    if (cursor) options.cursor = cursor;
+    const listing = await kv.list(options);
+    if (!listing || !Array.isArray(listing.keys)) throw new Error('invalid KV listing');
+    keys.push(...listing.keys);
+    if (listing.list_complete) return keys;
+    if (!listing.cursor || seenCursors.has(listing.cursor)) throw new Error('invalid KV cursor');
+    seenCursors.add(listing.cursor);
+    cursor = listing.cursor;
+  }
+}
+
+async function resolveStoredShare(shareId, env) {
+  const legacyKey = SHARE_KEY_PREFIX + shareId;
+  const [legacyRaw, contentItems] = await Promise.all([
+    env.ROSTER_SHARES.get(legacyKey),
+    listKvKeys(env.ROSTER_SHARES, contentSharePrefix(shareId), 2),
+  ]);
+  const legacyRecord = parseStoredJson(legacyRaw);
+  if (legacyRecord === undefined) return { kind: 'conflict' };
+  if (contentItems.length > 1 || (legacyRecord && contentItems.length > 0)) return { kind: 'conflict' };
+
+  if (contentItems.length === 1) {
+    const item = contentItems[0];
+    const parsedKey = parseContentShareKey(item.name);
+    if (!parsedKey || parsedKey.shareId !== shareId) return { kind: 'conflict' };
+    const record = parseStoredJson(await env.ROSTER_SHARES.get(item.name));
+    if (
+      record === undefined
+      || !record
+      || record.version !== 2
+      || record.contentDigest !== parsedKey.contentDigest
+      || !storedRecordHasValidContent(record, shareId)
+      || await contentDigestFor(record) !== parsedKey.contentDigest
+    ) return { kind: 'conflict' };
+    return { kind: 'record', key: item.name, record };
+  }
+
+  if (legacyRecord) {
+    if (legacyRecord.version !== 1 || !storedRecordHasValidContent(legacyRecord, shareId)) {
+      return { kind: 'conflict' };
+    }
+    return { kind: 'record', key: legacyKey, record: legacyRecord };
+  }
+  return { kind: 'missing' };
 }
 
 async function createShare(request, env) {
@@ -2146,20 +2572,49 @@ async function createShare(request, env) {
   const now = Date.now();
   const validated = validateCreatePayload(payload, now);
   if (!validated) return jsonResponse({ error: 'invalid_request' }, 400);
-  const key = SHARE_KEY_PREFIX + validated.shareId;
-  if (await env.ROSTER_SHARES.get(key)) return jsonResponse({ error: 'share_exists' }, 409);
-
-  const createdAt = new Date(now).toISOString();
+  const candidate = {
+    schemaVersion: SHARE_SCHEMA,
+    shareId: validated.shareId,
+    weekStart: validated.weekStart,
+    createdAt: validated.createdAt,
+    expiresAt: validated.expiresAt,
+    nonce: payload.nonce,
+    ciphertext: payload.ciphertext,
+  };
+  const contentDigest = await contentDigestFor(candidate);
+  const key = contentShareKey(validated.shareId, contentDigest);
   const record = storedRecordFrom(
     payload,
     validated.shareId,
     validated.weekStart,
-    createdAt,
+    validated.createdAt,
     validated.expiresAt,
+    contentDigest,
   );
+
+  // KV has no compare-and-swap.  This preflight is only an operator-friendly
+  // early conflict response; correctness comes from never sharing a mutable
+  // key between different payloads and resolving every visible collision closed.
+  const before = await resolveStoredShare(validated.shareId, env);
+  if (before.kind === 'conflict') return jsonResponse({ error: 'share_conflict' }, 409);
+  if (before.kind === 'record') {
+    const exactReplay = before.record.version === 1
+      ? sameLegacyPayloadContent(before.record, record)
+      : sameStoredContent(before.record, record);
+    if (!exactReplay) return jsonResponse({ error: 'share_exists' }, 409);
+    return jsonResponse({
+      shareId: before.record.shareId,
+      weekStart: before.record.weekStart,
+      createdAt: before.record.createdAt,
+      expiresAt: before.record.expiresAt,
+    }, 200);
+  }
   const metadata = {
+    storageVersion: 2,
+    shareId: validated.shareId,
+    contentDigest,
     weekStart: validated.weekStart,
-    createdAt,
+    createdAt: validated.createdAt,
     expiresAt: validated.expiresAt,
     schemaVersion: SHARE_SCHEMA,
   };
@@ -2167,28 +2622,58 @@ async function createShare(request, env) {
     expiration: Math.floor(validated.expiryMillis / 1_000),
     metadata,
   });
+
+  const after = await resolveStoredShare(validated.shareId, env);
+  if (after.kind === 'conflict') return jsonResponse({ error: 'share_conflict' }, 409);
+  if (after.kind === 'record' && !sameStoredContent(after.record, record)) {
+    return jsonResponse({ error: 'share_exists' }, 409);
+  }
   return jsonResponse({
     shareId: validated.shareId,
     weekStart: validated.weekStart,
-    createdAt,
+    createdAt: validated.createdAt,
     expiresAt: validated.expiresAt,
   }, 201);
 }
 
 async function listShares(env) {
-  const listing = await env.ROSTER_SHARES.list({ prefix: SHARE_KEY_PREFIX, limit: 1_000 });
-  const shares = listing.keys.map(item => ({
-    shareId: item.name.slice(SHARE_KEY_PREFIX.length),
-    weekStart: item.metadata?.weekStart || null,
-    createdAt: item.metadata?.createdAt || null,
-    expiresAt: item.metadata?.expiresAt || null,
-  }));
-  return jsonResponse({ shares, cursor: listing.list_complete ? null : listing.cursor || null });
+  const items = await listKvKeys(env.ROSTER_SHARES, SHARE_KEY_PREFIX);
+  const shareIds = new Set();
+  for (const item of items) {
+    const contentKey = parseContentShareKey(item.name);
+    if (contentKey) {
+      shareIds.add(contentKey.shareId);
+      continue;
+    }
+    const legacyShareId = typeof item.name === 'string' && item.name.startsWith(SHARE_KEY_PREFIX)
+      ? item.name.slice(SHARE_KEY_PREFIX.length)
+      : '';
+    if (!validShareId(legacyShareId)) return jsonResponse({ error: 'share_conflict' }, 409);
+    shareIds.add(legacyShareId);
+  }
+
+  const shares = [];
+  for (const shareId of shareIds) {
+    const resolved = await resolveStoredShare(shareId, env);
+    if (resolved.kind !== 'record') return jsonResponse({ error: 'share_conflict' }, 409);
+    shares.push({
+      shareId,
+      weekStart: resolved.record.weekStart,
+      createdAt: resolved.record.createdAt,
+      expiresAt: resolved.record.expiresAt,
+    });
+  }
+  shares.sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)));
+  return jsonResponse({ shares, cursor: null });
 }
 
 async function deleteShare(shareId, env) {
   if (!validShareId(shareId)) return jsonResponse({ error: 'invalid_request' }, 400);
-  await env.ROSTER_SHARES.delete(SHARE_KEY_PREFIX + shareId);
+  const contentItems = await listKvKeys(env.ROSTER_SHARES, contentSharePrefix(shareId));
+  await Promise.all([
+    env.ROSTER_SHARES.delete(SHARE_KEY_PREFIX + shareId),
+    ...contentItems.map(item => env.ROSTER_SHARES.delete(item.name)),
+  ]);
   return new Response(null, { status: 204 });
 }
 
@@ -2200,9 +2685,9 @@ async function viewShare(request, env, context) {
     return missingShare();
   }
   if (!payload || !validShareId(payload.shareId) || Object.keys(payload).some(key => key !== 'shareId')) return missingShare();
-  const key = SHARE_KEY_PREFIX + payload.shareId;
-  const record = await env.ROSTER_SHARES.get(key, { type: 'json' });
-  if (!record || record.shareId !== payload.shareId || record.schemaVersion !== SHARE_SCHEMA) return missingShare();
+  const resolved = await resolveStoredShare(payload.shareId, env);
+  if (resolved.kind !== 'record') return missingShare();
+  const { key, record } = resolved;
   const expiryMillis = Date.parse(record.expiresAt);
   if (!Number.isFinite(expiryMillis) || expiryMillis <= Date.now()) {
     context.waitUntil(env.ROSTER_SHARES.delete(key));
@@ -2263,33 +2748,82 @@ async function route(request, env, context) {
 
   if (path === '/logout') {
     if (request.method !== 'GET') return methodNotAllowed('GET');
-    return redirectResponse('/cdn-cgi/access/logout', request.url);
+    return logoutResponse(request.url);
   }
 
-  const token = accessTokenFromRequest(request);
-  if (!token) {
+  if (path === '/auth/login') {
+    if (request.method !== 'GET') return methodNotAllowed('GET');
+    const accessToken = accessTokenFromRequest(request);
+    if (!accessToken) return loggedAccessFailure(request, 'access_token', new AccessValidationError('jwt_missing'));
+    let access;
+    try {
+      access = await validateAccessJwt(accessToken, env);
+    } catch (error) {
+      return loggedAccessFailure(request, 'access_jwt', error);
+    }
+    let session;
+    try {
+      session = await createAdminSessionToken(access.payload.email, access.payload.exp, env);
+    } catch (error) {
+      return loggedAccessFailure(request, 'admin_session', error);
+    }
+    const redirect = redirectResponse('/', request.url);
+    redirect.headers.set('Set-Cookie', adminSessionSetCookie(session.token, session.payload.exp));
+    return redirect;
+  }
+
+  const adminSessionToken = cookieValueFromRequest(request, ADMIN_SESSION_COOKIE_NAME);
+  if (!adminSessionToken) {
     if (path === '/' && request.method === 'GET') {
       return response(VIEWER_HTML, 200, { 'Content-Type': 'text/html; charset=utf-8' });
     }
-    if (path === '/auth/login') return accessFailureResponse();
-    return redirectResponse('/', request.url);
+    return path.startsWith('/auth/') ? accessFailureResponse() : redirectResponse('/', request.url);
   }
-
-  let access;
+  let adminSession;
   try {
-    access = await validateAccessJwt(token, env);
+    adminSession = await validateAdminSessionToken(adminSessionToken, env);
   } catch {
     if (path === '/' && request.method === 'GET') {
       return response(VIEWER_HTML, 200, { 'Content-Type': 'text/html; charset=utf-8' });
     }
     return accessFailureResponse();
   }
-  if (path === '/auth/login') {
+  if (path === '/auth/status') {
     if (request.method !== 'GET') return methodNotAllowed('GET');
-    return redirectResponse('/', request.url);
+    const reference = gatewayReference();
+    try {
+      const originHealthRequest = new Request(new URL('/healthz', request.url), {
+        method: 'GET',
+        headers: request.headers,
+      });
+      const originHealth = await proxyToRosterOrigin(originHealthRequest, env, adminSession.email);
+      const healthy = originHealth.status === 200;
+      return jsonResponse(
+        {
+          status: healthy ? 'ok' : 'origin_unhealthy',
+          gateway: 'ok',
+          access: 'ok',
+          origin: healthy ? 'ok' : 'unhealthy',
+          reference,
+        },
+        healthy ? 200 : 503,
+      );
+    } catch {
+      return jsonResponse({
+        status: 'origin_unavailable',
+        gateway: 'ok',
+        access: 'ok',
+        origin: 'unavailable',
+        reference,
+      }, 503);
+    }
   }
   if (!authenticatedProxyRequestAllowed(request)) return accessFailureResponse();
-  return originProxyResult(await proxyToRosterOrigin(request, env, access.payload.email));
+  try {
+    return originProxyResult(await proxyToRosterOrigin(request, env, adminSession.email));
+  } catch {
+    return originFailureResponse(gatewayReference());
+  }
 }
 
 export default {
@@ -2305,14 +2839,17 @@ export default {
 };
 
 export {
+  ADMIN_SESSION_COOKIE_NAME,
   SECURITY_HEADERS,
   SHARE_SCHEMA,
   accessTokenFromRequest,
   authenticatedProxyRequestAllowed,
+  createAdminSessionToken,
   normalizeAccessConfiguration,
   proxyToRosterOrigin,
   storedRecordFrom,
   stripAccessCredentials,
+  validateAdminSessionToken,
   validateAccessJwt,
   validateCreatePayload,
 };

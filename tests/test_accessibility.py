@@ -24,6 +24,8 @@ def test_shared_shell_provides_landmarks_skip_link_and_accessible_icon_controls(
     assert 'aria-label="{t("open_navigation")}"' in shell
     assert 'aria-label="{sound_tooltip}"' in shell
     assert 'aria-label="{tooltip}"' in shell
+    assert "document.documentElement.lang" in shell
+    assert '"zh-Hant-HK"' in shell
     assert ".sy-skip-link:focus-visible" in theme
     assert "#main-content:focus-visible" in theme
     assert "overscroll-behavior: contain" in theme
@@ -140,7 +142,7 @@ def test_every_backup_sensitive_ui_write_uses_the_nonblocking_progress_boundary(
 def test_prefect_form_repairs_expected_omissions_before_starting_a_durable_write() -> None:
     pages = combined_page_source()
     save_handler = pages.split("async def save_prefect() -> None:", 1)[1].split(
-        'with ui.row().classes("w-full justify-end gap-3 mt-4"):', 1
+        'with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-4"):', 1
     )[0]
 
     for key in (
@@ -158,16 +160,47 @@ def test_roster_forms_repair_predictable_input_before_background_work() -> None:
         'ui.button(t("declare_leave")', 1
     )[0]
     draft_handler = pages.split("async def save_draft_change() -> None:", 1)[1].split(
-        'with ui.row().classes("gap-3 mt-4"):', 1
+        'with ui.row().classes("sy-mobile-actions gap-3 mt-4"):', 1
     )[0]
 
-    for key in ("leave_prefect_required", "leave_day_required", "leave_reason_required"):
+    for key in ("leave_prefect_required", "leave_day_required"):
         assert leave_handler.index(key) < leave_handler.index("_run_with_progress")
     for key in ("draft_assignment_required", "draft_candidate_required", "draft_change_reason_required"):
         assert draft_handler.index(key) < draft_handler.index("_run_with_progress")
     assert "workflow.validate_week_start(selected)" in pages
-    assert leave_handler.count('run_method("focus")') == 3
+    assert leave_handler.count('run_method("focus")') == 2
     assert draft_handler.count('run_method("focus")') == 3
+
+
+def test_history_priority_slider_marks_match_the_nonlinear_numeric_range() -> None:
+    pages = combined_page_source()
+    theme = combined_theme_source()
+    verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
+
+    # 1.0 sits one sixth of the way through the 0.8-2.0 range, not at the centre.
+    assert '("1.0", "16.6667%")' in pages
+    assert 'classes("sy-history-scale-mark")' in pages
+    assert 'props(f"data-value={value}")' in pages
+    assert ".sy-history-scale-mark" in theme
+    assert ".sy-history-scale-mark:first-child" not in theme
+    assert ".sy-history-scale-mark:nth-child(3)" not in theme
+    assert "sy-history-scale-help" in pages
+    assert 'tick_box["x"] + tick_box["width"] / 2' in verifier
+    assert 'abs(actual_x - expected_x) <= 1.0' in verifier
+
+
+def test_semantic_status_badges_do_not_inherit_quasar_primary_background() -> None:
+    shared = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_shared.py").read_text(encoding="utf-8")
+    theme = combined_theme_source()
+    verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
+
+    assert "ui.badge(text, color=None)" in shared
+    for tone in ("action", "stable", "attention", "danger", "neutral"):
+        selector = f"body .q-badge.sy-status-badge.sy-tone-{tone}"
+        assert selector in theme
+        assert f"var(--sy-status-{tone}-bg) !important" in theme
+    assert "assert_status_tone_contrast(page)" in verifier
+    assert 'ratio >= 4.5' in verifier
 
 
 def test_durable_handlers_snapshot_visible_form_values_before_the_first_await() -> None:

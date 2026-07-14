@@ -52,3 +52,15 @@ def test_motion_assets_are_loaded_from_same_origin_only() -> None:
     assert 'url_path="/assets/motion"' in main
     assert 'url_path="/assets/vendor"' in main
     assert 'url_path="/assets/css"' in main
+
+
+def test_component_transitions_use_the_shared_motion_tokens() -> None:
+    theme = (PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-theme-v1.css").read_text(
+        encoding="utf-8"
+    )
+
+    for token in ("--sy-motion-press: 90ms", "--sy-motion-state: 180ms", "--sy-motion-layer: 260ms"):
+        assert token in theme
+    for stray_duration in (".16s", ".18s", ".22s", ".24s", ".32s"):
+        assert stray_duration not in theme
+    assert "prefers-reduced-motion: reduce" in theme

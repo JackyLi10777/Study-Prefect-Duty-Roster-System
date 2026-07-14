@@ -291,7 +291,7 @@ def test_roster_preflight_repairs_are_complete_in_both_languages() -> None:
         "week_start_monday_required",
         "leave_prefect_required",
         "leave_day_required",
-        "leave_reason_required",
+        "leave_reason_not_provided",
         "draft_assignment_required",
         "draft_candidate_required",
         "draft_change_reason_required",

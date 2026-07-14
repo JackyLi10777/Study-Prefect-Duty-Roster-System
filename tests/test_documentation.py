@@ -111,7 +111,8 @@ def test_windows_dedicated_host_guide_is_complete_and_local_only() -> None:
         "SING_YIN_HOST=127.0.0.1",
         "Sing Yin Roster Host",
         "Invoke-RestMethod http://127.0.0.1:8080/healthz",
-        "git pull --ff-only origin main",
+        "git fetch --prune --tags origin",
+        "git switch --detach $ReleaseRef",
         "建立交接備份包",
     ):
         assert required_text in guide
@@ -146,6 +147,9 @@ def test_windows_and_cloudflare_automation_is_fail_closed_and_documented() -> No
     assert "$request.AllowAutoRedirect = $false" in verify
     assert '"https://$PublicHostname/auth/login"' in verify
     assert "cloudflareaccess\\.com" in verify
+    assert "Invoke-SingYinAccessLoginPageRequest" in verify
+    assert "totp-form" in verify and "verify-code" in verify
+    assert "dash\\.cloudflare\\.com/oauth2|Unknown app" in verify
     common = (PROJECT_ROOT / "scripts" / "windows_host_common.ps1").read_text(encoding="utf-8")
     assert "ProgramFiles(x86)" in common
     assert "不要在家中路由器開放 3389、8080" in guide

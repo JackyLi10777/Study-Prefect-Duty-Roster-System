@@ -202,12 +202,14 @@ def engineering_page() -> None:
     gates = (
         ("policy", "engineering_gate_repository"),
         ("security", "engineering_gate_security"),
+        ("cloud_done", "engineering_gate_cloudflare"),
         ("science", "engineering_gate_tests"),
         ("code", "engineering_gate_compile"),
         ("inventory_2", "engineering_gate_dependencies"),
         ("web", "engineering_gate_browser"),
         ("speed", "engineering_gate_runtime"),
         ("conversion_path", "engineering_gate_workflow"),
+        ("smartphone", "engineering_gate_mobile"),
         ("dns", "engineering_gate_deployment"),
         ("settings_backup_restore", "engineering_gate_recovery"),
     )

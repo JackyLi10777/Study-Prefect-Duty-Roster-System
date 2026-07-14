@@ -3,7 +3,7 @@ from __future__ import annotations
 from base64 import urlsafe_b64decode
 from datetime import date, datetime, timedelta, timezone
 import json
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import pytest
@@ -318,3 +318,38 @@ def test_cloudflare_gateway_uses_bearer_auth_and_same_origin_json_endpoint() -> 
         "authorization": f"Bearer {settings.admin_token}",
         "timeout": 10.0,
     }
+
+
+def test_cloudflare_gateway_replays_the_exact_create_request_once_after_network_loss() -> None:
+    settings = _settings()
+    captured_bodies: list[bytes | None] = []
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read(self, _limit):
+            return b'{"shareId":"same-share","createdAt":"2026-09-07T08:00:00Z"}'
+
+    def commit_then_lose_response(request, *, timeout):
+        assert timeout == 10.0
+        captured_bodies.append(request.data)
+        if len(captured_bodies) == 1:
+            raise URLError("response lost after commit")
+        return Response()
+
+    gateway = CloudflarePublicRosterShareGateway(settings, opener=commit_then_lose_response)
+    payload = {
+        "schemaVersion": "sing-yin-public-roster-v1",
+        "shareId": "same-share-identifier-1234",
+        "ciphertext": "encrypted",
+    }
+
+    result = gateway.create(payload)
+
+    assert result["shareId"] == "same-share"
+    assert len(captured_bodies) == 2
+    assert captured_bodies[0] == captured_bodies[1]

@@ -209,8 +209,14 @@ def render_music_library_settings() -> None:
         ui.label(t("music_volume")).classes("text-xs text-[var(--sy-muted)]")
 
         def change_sound_enabled(event: events.ValueChangeEventArguments) -> None:
-            set_sound_feedback(bool(event.value))
+            enabled = bool(event.value)
+            set_sound_feedback(enabled)
             app.storage.user["audio_setup_seen"] = True
+            if enabled:
+                play_interface_sound("success", force=True)
+                ui.notify(t("sound_feedback_on"), type="positive", timeout=2_500)
+            else:
+                ui.notify(t("sound_feedback_off"), type="info", timeout=2_500)
 
         def change_sound_volume(event: events.ValueChangeEventArguments) -> None:
             set_sound_volume(float(event.value) / 100)
@@ -379,7 +385,7 @@ def _render_removable_music_item(*, title: str, context: str, remove) -> None:  
                 ui.notify(t("music_item_removed"), type="positive")
                 ui.navigate.reload()
 
-            with ui.row().classes("w-full justify-end gap-3 mt-5"):
+            with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
                 ui.button(t("cancel"), on_click=confirm_dialog.close).props("flat")
                 ui.button(t("remove"), icon="delete_outline", on_click=confirm_remove).props("color=negative")
         ui.button(icon="delete_outline", on_click=confirm_dialog.open).props(f'flat round color=negative aria-label="{t("remove_music_item")}"')

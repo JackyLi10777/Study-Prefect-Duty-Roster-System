@@ -223,7 +223,7 @@ def settings_page() -> None:
                             ui.notify(t("handover_backup_package_ready"), type="positive")
                             handover_package_dialog.close()
 
-                    with ui.row().classes("w-full justify-end gap-3 mt-5"):
+                    with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
                         ui.button(t("cancel"), icon="close", on_click=handover_package_dialog.close).props("flat")
                         ui.button(t("confirm_handover_backup_package"), icon="download", on_click=download_handover_package).props("color=primary")
                 ui.button(
@@ -276,7 +276,7 @@ def settings_page() -> None:
                             ui.notify(t("backup_restored"), type="positive")
                             ui.navigate.reload()
 
-                    with ui.row().classes("w-full justify-end gap-3 mt-5"):
+                    with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
                         ui.button(t("cancel"), icon="close", on_click=restore_dialog.close).props("flat")
                         ui.button(t("confirm_restore"), icon="restore", on_click=restore_selected_backup).props(
                             "color=negative data-testid=confirm-restore-action"
