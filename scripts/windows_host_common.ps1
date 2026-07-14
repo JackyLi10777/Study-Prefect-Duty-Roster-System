@@ -381,9 +381,18 @@ function Get-SingYinAclStatus {
         $checked += 1
         $acl = Get-Acl -LiteralPath $path
         $identityPresent = [string]::IsNullOrWhiteSpace($RequiredIdentitySid)
-        foreach ($rule in @($acl.Access)) {
+        # Request SID-backed rules directly.  Reading the convenience `.Access`
+        # property asks Windows to translate every SID into an account name first;
+        # ephemeral CI accounts (and renamed local accounts) can make that reverse
+        # lookup fail even though the exact SID ACE is present on disk.
+        $accessRules = $acl.GetAccessRules(
+            $true,
+            $true,
+            [Security.Principal.SecurityIdentifier]
+        )
+        foreach ($rule in @($accessRules)) {
             if ($rule.AccessControlType -ne [Security.AccessControl.AccessControlType]::Allow) { continue }
-            try { $sid = $rule.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value } catch { continue }
+            $sid = $rule.IdentityReference.Value
             if ($sid -ceq $RequiredIdentitySid) { $identityPresent = $true }
             if ($sid -in $broadSids -and (([int64]$rule.FileSystemRights -band [int64]$writeMask) -ne 0)) {
                 $weak += 1

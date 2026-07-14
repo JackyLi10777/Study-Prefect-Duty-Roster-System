@@ -79,14 +79,19 @@ def test_acl_helper_removes_broad_write_access_from_temporary_paths(tmp_path: Pa
         "$runtimeSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value; "
         f"Protect-SingYinSensitivePath -Path '{_quoted(protected_dir)}'; "
         f"Protect-SingYinSensitivePath -Path '{_quoted(protected_file)}'; "
-        f"Get-SingYinAclStatus -Paths @('{_quoted(protected_dir)}','{_quoted(protected_file)}') "
-        "-RequiredIdentitySid $runtimeSid | ConvertTo-Json"
+        f"$paths = @('{_quoted(protected_dir)}','{_quoted(protected_file)}'); "
+        "$present = Get-SingYinAclStatus -Paths $paths -RequiredIdentitySid $runtimeSid; "
+        "$missing = Get-SingYinAclStatus -Paths $paths "
+        "-RequiredIdentitySid 'S-1-5-21-999999999-999999999-999999999-1001'; "
+        "[pscustomobject]@{ Present=$present; Missing=$missing } | ConvertTo-Json -Depth 3"
     )
     payload = json.loads(result.stdout)
-    assert payload["Checked"] == 2
-    assert payload["Weak"] == 0
-    assert payload["RequiredIdentityMissing"] == 0
-    assert payload["Compliant"] is True
+    assert payload["Present"]["Checked"] == 2
+    assert payload["Present"]["Weak"] == 0
+    assert payload["Present"]["RequiredIdentityMissing"] == 0
+    assert payload["Present"]["Compliant"] is True
+    assert payload["Missing"]["RequiredIdentityMissing"] == 2
+    assert payload["Missing"]["Compliant"] is False
 
 
 def test_remote_access_doctor_is_redacted_and_reports_unprepared_host_state() -> None:
@@ -162,6 +167,7 @@ def test_windows_host_scripts_bind_permissions_and_task_to_dedicated_runtime_use
     common = COMMON.read_text(encoding="utf-8")
     preparation = (PROJECT_ROOT / "scripts" / "prepare_windows_host.ps1").read_text(encoding="utf-8")
     startup = (PROJECT_ROOT / "scripts" / "register_windows_startup_task.ps1").read_text(encoding="utf-8")
+    activation = (PROJECT_ROOT / "scripts" / "activate_cloudflare_remote_access.ps1").read_text(encoding="utf-8")
     doctor = (PROJECT_ROOT / "scripts" / "doctor_windows_remote_access.ps1").read_text(encoding="utf-8")
 
     assert "Get-SingYinRuntimeAccount" in common
@@ -177,6 +183,12 @@ def test_windows_host_scripts_bind_permissions_and_task_to_dedicated_runtime_use
     assert 'RuntimeUser = "SingYinRosterSvc"' in startup
     assert "not owned by this project and runtime account" in startup
     assert "if ($inspection.Exists) { $register.Force = $true }" in startup
+    assert 'RuntimeUser = "SingYinRosterSvc"' in activation
+    activation_acl_calls = [
+        line for line in activation.splitlines() if "Protect-SingYinSensitivePath" in line
+    ]
+    assert activation_acl_calls
+    assert all("-RuntimeUser $runtimeAccount.Name" in line for line in activation_acl_calls)
     assert 'RuntimeUser = "SingYinRosterSvc"' in doctor
     assert 'Add-DoctorCheck "runtime_account" "pass"' in doctor
 

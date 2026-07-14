@@ -4,7 +4,8 @@ param(
     [Parameter(Mandatory = $true)][string]$TeamDomain,
     [Parameter(Mandatory = $true)][string]$AccessAudience,
     [string]$ProjectRoot = "",
-    [string]$ApplicationTaskName = "Sing Yin Roster Host"
+    [string]$ApplicationTaskName = "Sing Yin Roster Host",
+    [string]$RuntimeUser = "SingYinRosterSvc"
 )
 
 $ErrorActionPreference = "Stop"
@@ -41,6 +42,7 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $envPath = Join-Path $ProjectRoot ".env"
 if (-not (Test-Path -LiteralPath $envPath)) { throw ".env is missing. Run prepare_windows_host.ps1 first." }
+$runtimeAccount = Get-SingYinRuntimeAccount -UserName $RuntimeUser
 $cloudflared = Find-SingYinCloudflared
 if (-not $cloudflared) { throw "cloudflared is missing. Run prepare_cloudflare_remote_access.ps1 -InstallCloudflared first." }
 
@@ -52,7 +54,10 @@ if ($TeamDomain -notmatch '^[a-z0-9.-]+\.cloudflareaccess\.com$') { throw "Inval
 if ($AccessAudience.Length -lt 16) { throw "The Access audience tag looks incomplete." }
 
 $endpoint = Get-SingYinConfiguredEndpoint -EnvironmentPath $envPath
-$taskInspection = Get-SingYinTaskInspection -TaskName $ApplicationTaskName -ProjectRoot $ProjectRoot
+$taskInspection = Get-SingYinTaskInspection `
+    -TaskName $ApplicationTaskName `
+    -ProjectRoot $ProjectRoot `
+    -RuntimeUser $runtimeAccount.Name
 if (-not $taskInspection.Exists) { throw "The '$ApplicationTaskName' task is missing. Register and test the local host first." }
 if (-not $taskInspection.Owned) {
     throw "The '$ApplicationTaskName' task does not belong to this project root. Refusing to stop or restart it."
@@ -134,7 +139,7 @@ try {
     Set-EnvValue $envPath "SING_YIN_PUBLIC_HOSTNAME" $PublicHostname
     $existingSecret = Select-String -LiteralPath $envPath -Pattern '^SING_YIN_STORAGE_SECRET=(.{32,})$' | Select-Object -First 1
     if (-not $existingSecret) { Set-EnvValue $envPath "SING_YIN_STORAGE_SECRET" (New-StorageSecret) }
-    Protect-SingYinSensitivePath -Path $envPath
+    Protect-SingYinSensitivePath -Path $envPath -RuntimeUser $runtimeAccount.Name
 
     Stop-ScheduledTask -TaskName $ApplicationTaskName -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 2
@@ -160,12 +165,12 @@ try {
         createdAt = [DateTimeOffset]::UtcNow.ToString("o")
     }
     $ownerMarker | ConvertTo-Json | Set-Content -LiteralPath $ownerMarkerPath -Encoding UTF8
-    Protect-SingYinSensitivePath -Path $ownerMarkerPath
+    Protect-SingYinSensitivePath -Path $ownerMarkerPath -RuntimeUser $runtimeAccount.Name
     Write-Host "Remote access is active and protected by the verified Access redirect." -ForegroundColor Green
 } catch {
     Write-Host "Activation failed; returning NiceGUI and the Tunnel service to their previous state." -ForegroundColor Red
     if (Test-Path -LiteralPath $envBackup) { Copy-Item -LiteralPath $envBackup -Destination $envPath -Force }
-    Protect-SingYinSensitivePath -Path $envPath
+    Protect-SingYinSensitivePath -Path $envPath -RuntimeUser $runtimeAccount.Name
     if ($installedByThisRun) {
         Stop-Service cloudflared -ErrorAction SilentlyContinue
         & $cloudflared service uninstall | Out-Null

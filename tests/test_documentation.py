@@ -91,7 +91,11 @@ def test_double_click_launcher_handles_existing_and_conflicting_ports() -> None:
     assert '$env:SING_YIN_OPEN_BROWSER = "false"' in launcher
     assert "The system is ready" in launcher
     assert "WinError 10048" in quickstart
-    assert "https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/" in quickstart
+    expected_remote_access_line = (
+        "2. 在任何獲准裝置開啟唯一正式網站："
+        "<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。"
+    )
+    assert any(line == expected_remote_access_line for line in quickstart.splitlines())
     assert "本機維護" in quickstart
     assert 'applicationMode -eq $ExpectedApplicationMode' in launcher
     assert 'catch [System.Net.WebException]' in launcher
