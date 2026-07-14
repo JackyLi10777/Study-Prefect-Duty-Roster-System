@@ -536,10 +536,21 @@ def adjustment_detail_page(roster_week_id: int) -> None:
                 replacement_select = ui.select(
                     label=t("replacement"), options={"__vacant__": t("leave_vacant")}, value="__vacant__"
                 ).classes("w-full")
+                loaded_substitutes: dict[str, dict[str, object]] = {}
+
+                def clear_loaded_substitutes() -> None:
+                    loaded_substitutes.clear()
+                    replacement_select.options = {"__vacant__": t("leave_vacant")}
+                    replacement_select.value = "__vacant__"
+                    replacement_select.update()
+
+                assignment_select.on_value_change(lambda _event: clear_loaded_substitutes())
 
             def load_substitutes() -> None:
                 def action() -> None:
                     candidates = workflow.recommend_substitutes(roster_week_id, int(assignment_select.value))
+                    loaded_substitutes.clear()
+                    loaded_substitutes.update({str(item["id"]): item for item in candidates})
                     replacement_select.options = {"__vacant__": t("leave_vacant")}
                     replacement_select.options.update({str(item["id"]): f"{item['nameZh']} ({item['form']} {item['className']}; {item['historyWeight']:.1f})" for item in candidates})
                     replacement_select.value = "__vacant__"
@@ -547,6 +558,39 @@ def adjustment_detail_page(roster_week_id: int) -> None:
                     ui.notify(t("eligible_substitutes") if candidates else t("no_substitutes"), type="info")
 
                 _safe_read_action(action, action_name="load_adjustment_candidates")
+
+            adjustment_complete_dialog = ui.dialog().props("persistent")
+            with adjustment_complete_dialog, ui.card().classes(
+                "sy-surface w-full max-w-lg p-6"
+            ):
+                with ui.row().classes("w-full items-center gap-3"):
+                    ui.icon("task_alt").classes("sy-fg-stable text-2xl").props("aria-hidden=true")
+                    ui.label(t("adjustment_receipt_title")).classes("text-xl font-semibold")
+                adjustment_receipt_summary = ui.label("").classes("text-base font-medium mt-4")
+                adjustment_receipt_version = ui.label("").classes("text-sm text-[var(--sy-muted)] mt-2")
+                adjustment_receipt_safety = ui.label("").classes("text-sm text-[var(--sy-muted)] mt-2")
+                with ui.element("section").classes("sy-border-attention border-l-4 pl-4 mt-4"):
+                    ui.label(t("adjustment_old_pdf_warning")).classes("text-sm font-medium")
+
+                def open_updated_export() -> None:
+                    adjustment_complete_dialog.close()
+                    _open_roster_export_dialog(roster_week_id)
+
+                with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
+                    ui.button(
+                        t("review_updated_roster"),
+                        icon="fact_check",
+                        on_click=lambda: ui.navigate.to(f"/rosters/{roster_week_id}"),
+                    ).props("outline color=primary")
+                    ui.button(
+                        t("export_share_updated_pdf"),
+                        icon="ios_share",
+                        on_click=open_updated_export,
+                    ).props("color=primary data-testid=export-updated-roster")
+            # This receipt is page-owned rather than a one-shot runtime dialog.
+            # It deliberately remains mounted while it launches the nested PDF
+            # delivery dialog; deleting it on close would detach that new child
+            # before PDF preparation finishes.
 
             async def apply_adjustment() -> None:
                 reason = str(reason_input.value or "").strip()
@@ -570,8 +614,38 @@ def adjustment_detail_page(roster_week_id: int) -> None:
                     icon="swap_horiz",
                 )
                 if result is not _OPERATION_FAILED:
-                    ui.notify(t("adjustment_saved"), type="positive")
-                    ui.navigate.to(f"/rosters/{roster_week_id}")
+                    ui.notify(
+                        t("adjustment_replay_confirmed") if result.idempotent else t("adjustment_saved"),
+                        type="info" if result.idempotent else "positive",
+                    )
+                    if result.status == "vacant":
+                        adjustment_receipt_summary.set_text(
+                            t(
+                                "adjustment_receipt_vacant",
+                                original=result.original_prefect_name,
+                                weight=f"{result.weight:g}",
+                            )
+                        )
+                    else:
+                        adjustment_receipt_summary.set_text(
+                            t(
+                                "adjustment_receipt_transfer",
+                                original=result.original_prefect_name,
+                                replacement=result.replacement_prefect_name or "—",
+                                weight=f"{result.weight:g}",
+                            )
+                        )
+                    adjustment_receipt_version.set_text(
+                        t("adjustment_receipt_version", version=result.version)
+                    )
+                    safety_parts = [t("adjustment_receipt_safety")]
+                    if result.backup_path is not None:
+                        safety_parts.append(t("adjustment_receipt_backup_verified"))
+                    elif result.idempotent:
+                        safety_parts.append(t("adjustment_receipt_replayed"))
+                    adjustment_receipt_safety.set_text(" ".join(safety_parts))
+                    save_adjustment_button.disable()
+                    adjustment_complete_dialog.open()
 
             with ui.element("section").classes("sy-adjustment-step"):
                 ui.label(t("adjustment_step_reason")).classes("sy-adjustment-step-title")
@@ -580,4 +654,6 @@ def adjustment_detail_page(roster_week_id: int) -> None:
                 ).classes("w-full")
             with ui.row().classes("sy-adjustment-actions w-full gap-3"):
                 ui.button(t("load_substitutes"), icon="group_add", on_click=load_substitutes).props("outline color=primary")
-                ui.button(t("apply_adjustment"), icon="save", on_click=apply_adjustment).props("color=primary")
+                save_adjustment_button = ui.button(
+                    t("apply_adjustment"), icon="save", on_click=apply_adjustment
+                ).props("color=primary")

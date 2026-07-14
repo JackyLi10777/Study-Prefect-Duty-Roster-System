@@ -22,7 +22,7 @@ from nicegui_app.observability import (
     record_operator_failure,
     record_operator_partial_failure,
 )
-from nicegui_app.services.roster_export import build_fairness_audit_pdf, build_roster_pdf
+from nicegui_app.services.roster_export import RosterPdfExport, build_fairness_audit_pdf, build_roster_pdf
 from nicegui_app.services.summary_report_export import (
     build_duty_allocation_statement_pdf,
     build_summary_report_json,
@@ -44,6 +44,7 @@ from nicegui_app.services.roster_workflow import (
 from nicegui_app.ui.i18n import ZH_HK, current_locale, day_label, post_label, role_label, t
 from nicegui_app.ui.music import render_music_library_settings
 from nicegui_app.ui.operation_gate import claim_durable_operation, release_durable_operation
+from nicegui_app.ui.pdf_delivery import build_native_pdf_share_js, can_offer_native_pdf_share
 from nicegui_app.ui.platform_summary import PlatformSummary, load_platform_summary
 from nicegui_app.ui.shell import page_shell
 from nicegui_app.ui.sound import play_interface_sound
@@ -395,14 +396,14 @@ def _render_roster_table(roster_week_id: int) -> None:
     _render_mobile_roster_cards(rows)
 
 
-async def _download_roster_pdf(
+async def _prepare_roster_pdf(
     roster_week_id: int,
     language: str,
     *,
     include_audit: bool = False,
     show_crest: bool = True,
     show_footer_note: bool = False,
-) -> bool:
+) -> RosterPdfExport | None:
     """Create an in-memory local export rather than writing student data to a public URL."""
     export = await _run_with_progress(
         lambda: (
@@ -424,29 +425,122 @@ async def _download_roster_pdf(
         icon="picture_as_pdf",
     )
     if export is _OPERATION_FAILED:
+        return None
+    return export
+
+
+async def _download_roster_pdf(
+    roster_week_id: int,
+    language: str,
+    *,
+    include_audit: bool = False,
+    show_crest: bool = True,
+    show_footer_note: bool = False,
+) -> bool:
+    export = await _prepare_roster_pdf(
+        roster_week_id,
+        language,
+        include_audit=include_audit,
+        show_crest=show_crest,
+        show_footer_note=show_footer_note,
+    )
+    if export is None:
         return False
     ui.download(export.content, export.filename)
     ui.notify(t("pdf_ready"), type="positive")
     return True
 
 
+def _render_pdf_delivery_ready(container, export: RosterPdfExport) -> None:
+    """Offer native file sharing only for the share-safe group schedule."""
+    container.clear()
+    with container:
+        with ui.element("section").classes("sy-export-ready w-full mt-4 p-4").props(
+            'aria-live="polite" data-testid="pdf-delivery-ready"'
+        ):
+            with ui.row().classes("w-full items-start gap-3"):
+                ui.icon("task_alt").classes("sy-fg-stable text-xl").props("aria-hidden=true")
+                with ui.column().classes("gap-1 min-w-0"):
+                    ui.label(t("pdf_delivery_ready_title")).classes("font-semibold")
+                    ui.label(export.filename).classes("text-xs text-[var(--sy-muted)] break-all")
+                    ui.label(t("pdf_delivery_ready_notice")).classes("text-sm text-[var(--sy-muted)]")
+
+            def download_again() -> None:
+                ui.download(export.content, export.filename)
+                ui.notify(t("pdf_ready"), type="positive")
+
+            def report_share_result(event: events.GenericEventArguments) -> None:
+                args = event.args if isinstance(event.args, dict) else {}
+                status = str(args.get("status", "failed"))
+                if status == "shared":
+                    ui.notify(t("pdf_share_completed"), type="positive")
+                elif status == "cancelled":
+                    ui.notify(t("pdf_share_cancelled"), type="info")
+                elif status == "unsupported":
+                    ui.notify(t("pdf_share_unsupported"), type="warning", timeout=8000)
+                else:
+                    ui.notify(t("pdf_share_failed"), type="warning", timeout=8000)
+
+            with ui.row().classes("sy-mobile-actions w-full gap-2 mt-3"):
+                if can_offer_native_pdf_share(export.content):
+                    share_button = ui.button(t("share_schedule_pdf"), icon="ios_share").props(
+                        "color=primary data-testid=share-schedule-pdf"
+                    )
+                    share_button.on(
+                        "click",
+                        report_share_result,
+                        js_handler=build_native_pdf_share_js(
+                            content=export.content,
+                            filename=export.filename,
+                            title=t("pdf_share_title"),
+                            text=t("pdf_share_text"),
+                        ),
+                    )
+                ui.button(t("download_prepared_pdf"), icon="download", on_click=download_again).props(
+                    "outline color=primary data-testid=download-prepared-pdf"
+                )
+            ui.label(t("pdf_share_fallback_notice")).classes("text-xs text-[var(--sy-muted)] mt-3")
+
+
 def _open_roster_export_dialog(roster_week_id: int) -> None:
     """Keep the share-safe one-page roster distinct from named internal audit data."""
+    is_published = get_workflow().roster_week(roster_week_id)["status"] == "published"
     with ui.dialog() as dialog, ui.card().classes("sy-surface w-full max-w-2xl p-6"):
         with ui.row().classes("w-full items-center gap-4"):
             ui.icon("picture_as_pdf").classes("sy-export-symbol").props("aria-hidden=true")
             with ui.column().classes("gap-1"):
                 ui.label(t("choose_pdf_export")).classes("text-xl font-semibold")
                 ui.label(t("export_pdf_notice")).classes("text-sm text-[var(--sy-muted)]")
-        async def download(language: str, *, include_audit: bool = False) -> None:
-            if await _download_roster_pdf(
+        prepared_signature: list[tuple[bool, bool] | None] = [None]
+
+        async def deliver(language: str, *, include_audit: bool = False) -> None:
+            selected_options = (bool(show_crest.value), bool(show_footer_note.value))
+            if include_audit or not is_published:
+                if await _download_roster_pdf(
+                    roster_week_id,
+                    language,
+                    include_audit=include_audit,
+                    show_crest=selected_options[0],
+                    show_footer_note=selected_options[1],
+                ):
+                    dialog.close()
+                return
+
+            export = await _prepare_roster_pdf(
                 roster_week_id,
                 language,
-                include_audit=include_audit,
-                show_crest=bool(show_crest.value),
-                show_footer_note=bool(show_footer_note.value),
-            ):
-                dialog.close()
+                show_crest=selected_options[0],
+                show_footer_note=selected_options[1],
+            )
+            if export is not None:
+                if selected_options != (bool(show_crest.value), bool(show_footer_note.value)):
+                    delivery_area.clear()
+                    prepared_signature[0] = None
+                    ui.notify(t("pdf_options_changed"), type="warning")
+                    return
+                _render_pdf_delivery_ready(delivery_area, export)
+                prepared_signature[0] = selected_options
+                ui.notify(t("pdf_delivery_ready_title"), type="positive")
 
         with ui.card().classes("sy-export-option w-full mt-5 p-5"):
             ui.label(t("group_schedule_export")).classes("text-lg font-semibold")
@@ -456,14 +550,33 @@ def _open_roster_export_dialog(roster_week_id: int) -> None:
                 show_footer_note = ui.switch(t("pdf_show_footer_note"), value=False).props("color=primary")
             ui.label(t("pdf_clean_export_hint")).classes("text-xs text-[var(--sy-muted)] mt-2")
             with ui.row().classes("sy-mobile-actions w-full gap-2 mt-4"):
-                ui.button(t("export_schedule_zh"), icon="picture_as_pdf", on_click=lambda: download("zh")).props("color=primary")
-                ui.button(t("export_schedule_en"), icon="picture_as_pdf", on_click=lambda: download("en")).props("outline color=primary")
+                ui.button(
+                    t("prepare_schedule_zh") if is_published else t("export_schedule_zh"),
+                    icon="picture_as_pdf",
+                    on_click=lambda: deliver("zh"),
+                ).props("color=primary")
+                ui.button(
+                    t("prepare_schedule_en") if is_published else t("export_schedule_en"),
+                    icon="picture_as_pdf",
+                    on_click=lambda: deliver("en"),
+                ).props("outline color=primary")
+            delivery_area = ui.column().classes("w-full gap-0")
+
+            def invalidate_prepared_pdf() -> None:
+                if prepared_signature[0] is None:
+                    return
+                delivery_area.clear()
+                prepared_signature[0] = None
+                ui.notify(t("pdf_options_changed"), type="info")
+
+            show_crest.on_value_change(lambda _event: invalidate_prepared_pdf())
+            show_footer_note.on_value_change(lambda _event: invalidate_prepared_pdf())
         with ui.card().classes("sy-export-option sy-export-option--internal w-full mt-3 p-5"):
             ui.label(t("internal_audit_export")).classes("text-lg font-semibold")
             ui.label(t("internal_audit_export_notice")).classes("text-sm text-[var(--sy-muted)] mt-1")
             with ui.row().classes("sy-mobile-actions w-full gap-2 mt-4"):
-                ui.button(t("export_audit_zh"), icon="fact_check", on_click=lambda: download("zh", include_audit=True)).props("outline color=primary")
-                ui.button(t("export_audit_en"), icon="fact_check", on_click=lambda: download("en", include_audit=True)).props("outline color=primary")
+                ui.button(t("export_audit_zh"), icon="fact_check", on_click=lambda: deliver("zh", include_audit=True)).props("outline color=primary")
+                ui.button(t("export_audit_en"), icon="fact_check", on_click=lambda: deliver("en", include_audit=True)).props("outline color=primary")
         with ui.row().classes("sy-mobile-actions w-full justify-end mt-5"):
             ui.button(t("cancel"), icon="close", on_click=dialog.close).props("flat")
     _delete_dialog_after_close(dialog)

@@ -362,6 +362,8 @@ body .q-badge.sy-status-badge.sy-tone-neutral { color: var(--sy-status-neutral-f
 .sy-export-option--internal { background: color-mix(in srgb, var(--sy-surface) 92%, #FFF1D6); }
 .body--dark .sy-export-option { background: rgba(10,132,255,.13); }
 .body--dark .sy-export-option--internal { background: rgba(255,159,10,.13); }
+.sy-export-ready { border: 1px solid color-mix(in srgb, var(--sy-role-stable) 34%, var(--sy-line)); border-radius: 16px; background: color-mix(in srgb, var(--sy-surface) 91%, var(--sy-role-stable-soft)); }
+.body--dark .sy-export-ready { background: color-mix(in srgb, var(--sy-surface) 88%, var(--sy-role-stable-soft)); }
 .sy-export-symbol { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; flex: 0 0 auto; border-radius: 16px; color: var(--sy-teal); background: rgba(15,118,110,.10); font-size: 29px; }
 .sy-onboarding-intro { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 128px; padding: 24px 28px; border: 1px solid var(--sy-line); border-radius: 22px; background: #FAF8F2; box-shadow: 0 8px 24px rgba(28,28,30,.06); }
 .sy-onboarding-intro:before { content: ""; position: absolute; z-index: 0; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(255,253,248,.98) 0%, rgba(255,253,248,.92) 48%, rgba(255,253,248,.30) 100%); }

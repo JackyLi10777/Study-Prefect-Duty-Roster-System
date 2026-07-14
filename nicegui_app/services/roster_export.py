@@ -91,7 +91,7 @@ CLOSED = colors.HexColor("#EEF3F4")
 
 @dataclass(frozen=True)
 class RosterPdfExport:
-    """A PDF payload ready for a browser download; it never leaves the computer."""
+    """A locally generated PDF payload ready for operator-initiated delivery."""
 
     filename: str
     content: bytes
@@ -111,7 +111,7 @@ def build_roster_pdf(
     Labels follow the selected output language.  Prefect names intentionally
     remain the stored Traditional-Chinese names in both modes.
     """
-    week = workflow.roster_week(roster_week_id)
+    week, assignments = workflow.roster_schedule_snapshot(roster_week_id)
     fonts = _register_cjk_fonts()
     styles = _styles(fonts)
     output = BytesIO()
@@ -123,7 +123,7 @@ def build_roster_pdf(
     story.extend([
         Spacer(1, 4 * mm),
         _schedule_grid(
-            workflow.assignments(roster_week_id),
+            assignments,
             week_start=week["weekStart"],
             language=language,
             styles=styles,
@@ -138,7 +138,10 @@ def build_roster_pdf(
         onFirstPage=lambda canvas, doc: _draw_footer(canvas, doc, fonts["medium"], language, practice, visible=render_page_footer),
         onLaterPages=lambda canvas, doc: _draw_footer(canvas, doc, fonts["medium"], language, practice, visible=render_page_footer),
     )
-    return RosterPdfExport(filename=_schedule_filename(week["weekStart"], language, practice), content=output.getvalue())
+    return RosterPdfExport(
+        filename=_schedule_filename(week["weekStart"], language, int(week["version"]), practice),
+        content=output.getvalue(),
+    )
 
 
 def build_fairness_audit_pdf(
@@ -408,10 +411,12 @@ def _audit_confidentiality(language: ExportLanguage) -> str:
     return "此摘要含個人累計資料；如需向群組說明公平性，請先由老師顧問同意，並優先分享規則及整體趨勢。" if language == "zh" else "This summary contains individual cumulative data. If fairness needs to be explained to the group, obtain teacher-advisor approval and share the rules and overall trend first."
 
 
-def _schedule_filename(week_start: object, language: ExportLanguage, practice: bool = False) -> str:
+def _schedule_filename(
+    week_start: object, language: ExportLanguage, version: int, practice: bool = False
+) -> str:
     suffix = "中文" if language == "zh" else "EN"
     prefix = "PRACTICE_" if practice else ""
-    return f"{prefix}SYSS_Roster_{week_start:%Y%m%d}_{suffix}.pdf"
+    return f"{prefix}SYSS_Roster_{week_start:%Y%m%d}_v{version}_{suffix}.pdf"
 
 
 def _audit_filename(week_start: object, language: ExportLanguage, practice: bool = False) -> str:

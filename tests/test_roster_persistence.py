@@ -198,6 +198,9 @@ def test_repeated_leave_adjustment_command_is_idempotent(workflow: RosterWorkflo
     assert second.idempotent is True
     assert second.backup_path is None
     assert second.version == first.version
+    assert first.original_prefect_name == second.original_prefect_name == assignment["prefectName"]
+    assert first.replacement_prefect_name == second.replacement_prefect_name == replacement["nameZh"]
+    assert first.weight == second.weight == assignment["weight"]
     assert tuple(first.backup_path.parent.glob("*.sqlite3")) == backups_after_first
     assert workflow.prefect_loads() == after_first
     assert workflow.leave_adjustment_count(draft.id) == 1

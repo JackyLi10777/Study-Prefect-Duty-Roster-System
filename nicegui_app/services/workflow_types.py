@@ -63,6 +63,9 @@ class LeaveAdjustmentResult:
     backup_path: Path | None
     version: int = 0
     idempotent: bool = False
+    original_prefect_name: str = ""
+    replacement_prefect_name: str | None = None
+    weight: float = 0.0
 
 
 @dataclass(frozen=True)

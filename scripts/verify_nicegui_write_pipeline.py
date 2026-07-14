@@ -37,6 +37,26 @@ MOBILE_FORMS_LIGHT_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-write-pipeline-
 MOBILE_DIRECTORY_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-write-pipeline-mobile-directory.png"
 PREFECT_ARCHIVE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-prefect-archive-confirmation.png"
 
+NATIVE_PDF_SHARE_STUB = """
+Object.defineProperty(navigator, 'canShare', {
+    configurable: true,
+    value: (payload) => Boolean(payload?.files?.length),
+});
+Object.defineProperty(navigator, 'share', {
+    configurable: true,
+    value: async (payload) => {
+        const file = payload.files[0];
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        window.__singYinSharedPdf = {
+            filename: file.name,
+            size: file.size,
+            type: file.type,
+            header: String.fromCharCode(...bytes.slice(0, 4)),
+        };
+    },
+});
+"""
+
 
 def isolated_paths() -> tuple[Path, Path, Path]:
     """Refuse to run unless all persistent locations were explicitly isolated."""
@@ -183,6 +203,7 @@ def main() -> None:
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1440, "height": 1024}, accept_downloads=True)
+        page.add_init_script(NATIVE_PDF_SHARE_STUB)
         page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
         page.on("pageerror", lambda error: page_errors.append(str(error)))
         health_response = page.request.get(f"{BASE_URL}/healthz")
@@ -284,6 +305,7 @@ def main() -> None:
         browser.close()
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1440, "height": 1024}, accept_downloads=True)
+        page.add_init_script(NATIVE_PDF_SHARE_STUB)
         page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
         page.on("pageerror", lambda error: page_errors.append(str(error)))
         health_response = page.request.get(f"{BASE_URL}/healthz")
@@ -352,20 +374,44 @@ def main() -> None:
         page.get_by_role("button", name="下載列印版 PDF").click()
         page.get_by_text("選擇 PDF 匯出", exact=True).wait_for(timeout=10_000)
         expected_name = str(workflow.assignments(roster_week_id)[0]["prefectName"])
+        page.get_by_role("button", name="準備中文週表 PDF").click()
+        page.get_by_test_id("pdf-delivery-ready").wait_for(timeout=20_000)
+        # Some full-page NiceGUI transitions replace the browsing context in
+        # Chromium. Reinstall the deterministic test-only native-share target
+        # immediately before exercising the real client click handler.
+        page.evaluate(f"() => {{ {NATIVE_PDF_SHARE_STUB} }}")
+        page.get_by_test_id("share-schedule-pdf").click()
+        page.wait_for_timeout(1_000)
+        shared_pdf = page.evaluate("window.__singYinSharedPdf")
+        assert shared_pdf is not None, {
+            "navigatorCanShare": page.evaluate("typeof navigator.canShare"),
+            "navigatorShare": page.evaluate("typeof navigator.share"),
+            "consoleErrors": console_errors,
+            "pageErrors": page_errors,
+        }
+        assert shared_pdf["type"] == "application/pdf"
+        assert shared_pdf["header"] == "%PDF"
+        assert shared_pdf["filename"].endswith(f"_v{published['version']}_中文.pdf")
+        assert shared_pdf["size"] > 0
         with page.expect_download(timeout=20_000) as chinese_download_info:
-            page.get_by_role("button", name="下載中文週表 PDF").click()
+            page.get_by_test_id("download-prepared-pdf").click()
         chinese_download = chinese_download_info.value
         chinese_path = artifacts_dir / chinese_download.suggested_filename
         chinese_download.save_as(chinese_path)
+        assert shared_pdf["size"] == chinese_path.stat().st_size
         _assert_schedule_pdf(chinese_path.read_bytes(), english=False, expected_name=expected_name)
+        page.get_by_role("button", name="取消").last.click()
 
         page.get_by_role("button", name="下載列印版 PDF").click()
+        page.get_by_role("button", name="準備英文週表 PDF").click()
+        page.get_by_test_id("pdf-delivery-ready").wait_for(timeout=20_000)
         with page.expect_download(timeout=20_000) as english_download_info:
-            page.get_by_role("button", name="下載英文週表 PDF").click()
+            page.get_by_test_id("download-prepared-pdf").click()
         english_download = english_download_info.value
         english_path = artifacts_dir / english_download.suggested_filename
         english_download.save_as(english_path)
         _assert_schedule_pdf(english_path.read_bytes(), english=True, expected_name=expected_name)
+        page.get_by_role("button", name="取消").last.click()
         print("[6/7] Downloaded and inspected Chinese and English schedule PDFs", flush=True)
 
         adjustment_assignment = workflow.assignments(roster_week_id)[0]
@@ -378,12 +424,39 @@ def main() -> None:
         page.get_by_role("button", name="儲存請假調整").click()
         page.get_by_text("請先填寫調整原因", exact=False).wait_for(timeout=10_000)
         page.get_by_label("調整原因").fill("虛構已發布後請假")
-        with page.expect_navigation(wait_until="networkidle", timeout=20_000):
-            page.get_by_role("button", name="儲存請假調整").click()
-        page.get_by_text("已發布後有人請假？", exact=True).wait_for(timeout=10_000)
-
+        page.get_by_role("button", name="儲存請假調整").click()
+        page.get_by_text("請假調整已完成", exact=True).wait_for(timeout=20_000)
+        page.get_by_text("先前下載或已發出的 PDF 不會自行更新", exact=False).wait_for(timeout=10_000)
+        page.get_by_test_id("export-updated-roster").wait_for(timeout=10_000)
         workflow = _workflow(database_path, backup_dir)
         adjusted = next(item for item in workflow.assignments(roster_week_id) if item["id"] == adjustment_assignment["id"])
+        adjusted_week = workflow.roster_week(roster_week_id)
+        page.get_by_test_id("export-updated-roster").click()
+        page.get_by_text("選擇 PDF 匯出", exact=True).wait_for(timeout=10_000)
+        page.get_by_role("button", name="準備中文週表 PDF").click()
+        page.get_by_test_id("pdf-delivery-ready").wait_for(timeout=20_000)
+        page.get_by_test_id("share-schedule-pdf").click()
+        page.wait_for_function(
+            "expected => window.__singYinSharedPdf?.filename?.endsWith(expected)",
+            arg=f"_v{adjusted_week['version']}_中文.pdf",
+        )
+        corrected_shared_pdf = page.evaluate("window.__singYinSharedPdf")
+        with page.expect_download(timeout=20_000) as corrected_download_info:
+            page.get_by_test_id("download-prepared-pdf").click()
+        corrected_download = corrected_download_info.value
+        corrected_path = artifacts_dir / corrected_download.suggested_filename
+        corrected_download.save_as(corrected_path)
+        assert corrected_shared_pdf["header"] == "%PDF"
+        assert corrected_shared_pdf["size"] == corrected_path.stat().st_size
+        _assert_schedule_pdf(
+            corrected_path.read_bytes(),
+            english=False,
+            expected_name=str(replacement["nameZh"]),
+        )
+        page.get_by_role("button", name="取消").last.click()
+        page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="networkidle")
+        page.get_by_text("已發布後有人請假？", exact=True).wait_for(timeout=10_000)
+
         after_adjustment_loads = workflow.prefect_loads()
         assert adjusted["prefectId"] == replacement["id"]
         assert after_adjustment_loads[str(adjustment_assignment["prefectId"])] == round(

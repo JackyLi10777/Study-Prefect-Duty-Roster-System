@@ -38,7 +38,7 @@ def test_schedule_pdf_uses_single_page_weekly_grid_and_keeps_chinese_names(tmp_p
     export = build_roster_pdf(workflow, draft.id, language="en")
     reader = PdfReader(BytesIO(export.content))
 
-    assert export.filename == "SYSS_Roster_20260907_EN.pdf"
+    assert export.filename == "SYSS_Roster_20260907_v1_EN.pdf"
     assert export.content.startswith(b"%PDF")
     assert len(reader.pages) == 1
     assert float(reader.pages[0].mediabox.width) > float(reader.pages[0].mediabox.height)
@@ -61,6 +61,34 @@ def test_schedule_pdf_uses_single_page_weekly_grid_and_keeps_chinese_names(tmp_p
         (item["day"] for item in workflow.assignments(draft.id)),
         key=lambda day: ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY").index(day),
     )
+
+
+def test_schedule_pdf_uses_the_workflow_atomic_schedule_snapshot(tmp_path, monkeypatch) -> None:
+    workflow = RosterWorkflow(database_path=tmp_path / "snapshot.sqlite3", backup_dir=tmp_path / "backups")
+    workflow.bootstrap()
+    draft = workflow.generate_and_save_draft(date(2026, 9, 7))
+    snapshot_week, snapshot_assignments = workflow.roster_schedule_snapshot(draft.id)
+
+    monkeypatch.setattr(
+        workflow,
+        "roster_schedule_snapshot",
+        lambda _roster_week_id: (snapshot_week, snapshot_assignments),
+    )
+    monkeypatch.setattr(
+        workflow,
+        "roster_week",
+        lambda _roster_week_id: (_ for _ in ()).throw(AssertionError("separate week read")),
+    )
+    monkeypatch.setattr(
+        workflow,
+        "assignments",
+        lambda _roster_week_id: (_ for _ in ()).throw(AssertionError("separate assignment read")),
+    )
+
+    export = build_roster_pdf(workflow, draft.id, language="zh")
+
+    assert export.filename.endswith(f"_v{snapshot_week['version']}_中文.pdf")
+    assert export.content.startswith(b"%PDF")
 
 
 def test_group_schedule_crest_and_footer_are_explicit_export_options(tmp_path) -> None:
@@ -166,6 +194,55 @@ def test_internal_audit_pdf_is_separate_from_group_schedule(tmp_path) -> None:
     assert "Persistent workload ledger" in extracted_text
     assert "Internal record:" in extracted_text
     assert workflow.fairness_rows()[0]["nameZh"] in extracted_text
+
+
+def test_corrected_published_pdfs_show_the_substitute_and_reconciled_transfer(tmp_path) -> None:
+    workflow = RosterWorkflow(database_path=tmp_path / "live.sqlite3", backup_dir=tmp_path / "backups")
+    workflow.bootstrap()
+    draft = workflow.generate_and_save_draft(date(2026, 9, 7))
+    workflow.publish(draft.id, expected_week_version=draft.version)
+    assignment = next(item for item in workflow.assignments(draft.id) if item["postCode"] == "ROOM_302")
+    replacement = workflow.recommend_substitutes(draft.id, int(assignment["id"]))[0]
+    before_loads = workflow.prefect_loads()
+    before_text = {
+        language: "\n".join(
+            page.extract_text()
+            for page in PdfReader(BytesIO(build_roster_pdf(workflow, draft.id, language=language).content)).pages
+        )
+        for language in ("zh", "en")
+    }
+
+    outcome = workflow.apply_leave_adjustment(
+        roster_week_id=draft.id,
+        assignment_id=int(assignment["id"]),
+        replacement_prefect_id=str(replacement["id"]),
+        reason="已確認的校內活動",
+        command_id="pdf-correction-transfer",
+        expected_week_version=int(workflow.roster_week(draft.id)["version"]),
+    )
+    after_loads = workflow.prefect_loads()
+
+    for language in ("zh", "en"):
+        corrected_text = "\n".join(
+            page.extract_text()
+            for page in PdfReader(BytesIO(build_roster_pdf(workflow, draft.id, language=language).content)).pages
+        )
+        assert corrected_text.count(str(assignment["prefectName"])) == before_text[language].count(
+            str(assignment["prefectName"])
+        ) - 1
+        assert corrected_text.count(str(replacement["nameZh"])) == before_text[language].count(
+            str(replacement["nameZh"])
+        ) + 1
+
+    assert outcome.status == "replaced"
+    assert build_roster_pdf(workflow, draft.id, language="zh").filename == "SYSS_Roster_20260907_v2_中文.pdf"
+    assert after_loads[str(assignment["prefectId"])] == before_loads[str(assignment["prefectId"])] - float(
+        assignment["weight"]
+    )
+    assert after_loads[str(replacement["id"])] == before_loads[str(replacement["id"])] + float(
+        assignment["weight"]
+    )
+    assert workflow.reconcile_fairness().balanced
 
 
 def test_practice_pdfs_are_unmistakably_non_official_in_both_languages(tmp_path) -> None:

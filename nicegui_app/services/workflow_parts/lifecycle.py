@@ -294,6 +294,9 @@ class RosterLifecycleMixin:
         )
         committed_version = 0
         with self._session() as session:
+            week = self._week_or_error(session, roster_week_id)
+            assignment = self._assignment_or_error(session, roster_week_id, assignment_id)
+            assignment_weight = float(assignment.weight)
             duplicate = session.scalar(
                 select(LeaveAdjustmentRecord).where(LeaveAdjustmentRecord.command_id == operation_id)
             )
@@ -305,13 +308,12 @@ class RosterLifecycleMixin:
                     replacement_prefect_id=replacement_prefect_id,
                     reason=normalized_reason,
                     request_fingerprint=request_fingerprint,
+                    assignment_weight=assignment_weight,
                 )
 
-            week = self._week_or_error(session, roster_week_id)
             requested_version = week.version if expected_week_version is None else expected_week_version
             if week.status != "published":
                 raise WorkflowError("Post-publication adjustments require a published roster.")
-            assignment = self._assignment_or_error(session, roster_week_id, assignment_id)
             if assignment.status != "active" or assignment.prefect_id is None:
                 raise WorkflowError("This assignment is no longer active.")
             original = session.get(PrefectRecord, assignment.prefect_id)
@@ -352,6 +354,7 @@ class RosterLifecycleMixin:
                     replacement_prefect_id=replacement_prefect_id,
                     reason=normalized_reason,
                     request_fingerprint=request_fingerprint,
+                    assignment_weight=assignment_weight,
                 )
 
             original_name = assignment.prefect_name_snapshot
@@ -445,17 +448,21 @@ class RosterLifecycleMixin:
                     replacement_prefect_id=replacement_prefect_id,
                     reason=normalized_reason,
                     request_fingerprint=request_fingerprint,
+                    assignment_weight=assignment_weight,
                 )
             committed_version = requested_version + 1
 
         backup = self._create_and_record_backup("leave_adjusted", roster_week_id)
         return LeaveAdjustmentResult(
-            roster_week_id,
-            assignment_id,
-            status,
-            self._require_backup(backup, committed_event="leave_adjusted"),
-            committed_version,
-            False,
+            roster_week_id=roster_week_id,
+            assignment_id=assignment_id,
+            status=status,
+            backup_path=self._require_backup(backup, committed_event="leave_adjusted"),
+            version=committed_version,
+            idempotent=False,
+            original_prefect_name=original_name,
+            replacement_prefect_name=replacement_name,
+            weight=assignment_weight,
         )
 
     @staticmethod
@@ -491,6 +498,7 @@ class RosterLifecycleMixin:
         replacement_prefect_id: str | None,
         reason: str,
         request_fingerprint: str,
+        assignment_weight: float,
     ) -> LeaveAdjustmentResult:
         same_request = (
             duplicate.roster_week_id == roster_week_id
@@ -504,12 +512,15 @@ class RosterLifecycleMixin:
                 "This leave-adjustment command ID was already used for a different request."
             )
         return LeaveAdjustmentResult(
-            duplicate.roster_week_id,
-            duplicate.assignment_id,
-            duplicate.status,
-            None,
-            duplicate.committed_version,
-            True,
+            roster_week_id=duplicate.roster_week_id,
+            assignment_id=duplicate.assignment_id,
+            status=duplicate.status,
+            backup_path=None,
+            version=duplicate.committed_version,
+            idempotent=True,
+            original_prefect_name=duplicate.original_prefect_name,
+            replacement_prefect_name=duplicate.replacement_prefect_name,
+            weight=assignment_weight,
         )
 
     def roster_weeks(self) -> list[dict[str, object]]:
@@ -561,6 +572,38 @@ class RosterLifecycleMixin:
                 }
                 for row in rows
             ]
+
+    def roster_schedule_snapshot(
+        self, roster_week_id: int
+    ) -> tuple[dict[str, object], list[dict[str, object]]]:
+        """Read one versioned schedule from a single database transaction."""
+        with self._session() as session:
+            week = self._week_or_error(session, roster_week_id)
+            assignments = self._assignment_rows(session, roster_week_id)
+            return (
+                {
+                    "id": week.id,
+                    "weekStart": week.week_start,
+                    "status": week.status,
+                    "version": week.version,
+                    "historyPriorityMultiplier": week.history_priority_multiplier,
+                    "generatedAt": week.generated_at,
+                    "publishedAt": week.published_at,
+                },
+                [
+                    {
+                        "id": row.id,
+                        "day": row.day,
+                        "postCode": row.post_code,
+                        "slotIndex": row.slot_index,
+                        "prefectId": row.prefect_id,
+                        "prefectName": row.prefect_name_snapshot,
+                        "weight": row.weight,
+                        "status": row.status,
+                    }
+                    for row in assignments
+                ],
+            )
 
     def generation_requirements(self, week_start: date) -> list[dict[str, object]]:
         """Expose every required weekly slot and its currently eligible pool before generation."""
