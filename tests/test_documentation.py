@@ -412,3 +412,19 @@ def test_readme_showcases_current_architecture_faq_and_co_creation_without_legac
     assert "streamlit run" not in readme
     assert "`app.py`" not in readme
     assert "PDF 內嵌備份" not in readme
+
+
+def test_pdf_font_setup_documents_the_bundled_three_weight_contract() -> None:
+    env_example = (PROJECT_ROOT / ".env.example").read_text(encoding="utf-8")
+    host_setup = (PROJECT_ROOT / "docs" / "WINDOWS_DEDICATED_HOST_SETUP.md").read_text(encoding="utf-8")
+    handover = (PROJECT_ROOT / "docs" / "RELEASE_HANDOVER.md").read_text(encoding="utf-8")
+
+    for variable in (
+        "SING_YIN_PDF_FONT_REGULAR",
+        "SING_YIN_PDF_FONT_MEDIUM",
+        "SING_YIN_PDF_FONT_SEMIBOLD",
+    ):
+        assert variable in env_example
+        assert variable in handover
+    assert "NotoSansHK-*.ttf" in host_setup
+    assert "安裝 Noto Sans TC，或設定 `SING_YIN_PDF_FONT`" not in host_setup

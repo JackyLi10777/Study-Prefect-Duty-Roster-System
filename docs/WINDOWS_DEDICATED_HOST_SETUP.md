@@ -629,7 +629,7 @@ C:\SingYinRoster\.venv\Scripts\python.exe -m pip install --require-hashes -r C:\
 | `database : degraded` 或不是 `ok` | 停止正式操作，保留日誌和最新備份，聯絡維護者 | 不要直接修改 SQLite |
 | 畫面顯示 `OP-...` | 記下完整編號，先核對輸入；需要時查本機日誌 | 不要公開整份日誌 |
 | 顯示「資料已儲存，但備份未完成」 | 重新載入核對結果，再到設定建立已驗證快照 | 絕對不要重複剛才操作 |
-| 中文 PDF 變成方格 | 安裝 Noto Sans TC，或設定 `SING_YIN_PDF_FONT` | 不要改學生姓名為英文 |
+| 中文 PDF 變成方格 | 先從正式標籤重新部署並確認三個 `nicegui_app\assets\fonts\NotoSansHK-*.ttf` 完整；如必須替換字體，依交接手冊測試三個 per-weight 變數 | 不要改學生姓名為英文，也不要只換一個字重 |
 | 排程在改密碼後失敗 | 以 `SingYinRosterSvc` 新密碼重新登記工作 | 不要改成管理員帳戶長期運行 |
 | 排程顯示登入類型未獲授權 | 以管理員身份重新執行 `prepare_windows_host.ps1 -RuntimeUser "SingYinRosterSvc"`，再重新登記工作 | 不要把執行帳戶加入 Administrators |
 | 排程能啟動 Python 但立即結束 | 重新執行主機準備腳本；它會核對 `.venv\pyvenv.cfg` 並只為底層 Python runtime 補上讀取／執行權限 | 不要為整個使用者資料夾開放權限 |
