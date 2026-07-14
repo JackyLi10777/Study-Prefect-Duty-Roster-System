@@ -95,8 +95,10 @@ def test_acl_helper_removes_broad_write_access_from_temporary_paths(tmp_path: Pa
         f"$unprotected = Get-SingYinAclStatus -Paths @('{_quoted(inherited_file)}'); "
         "[pscustomobject]@{ Present=$present; Missing=$missing; "
         "Insufficient=$insufficient; Unprotected=$unprotected } "
-        "| ConvertTo-Json -Depth 3"
+        "| ConvertTo-Json -Depth 3",
+        check=False,
     )
+    assert result.returncode == 0, result.stderr.strip()
     payload = json.loads(result.stdout)
     assert payload["Present"]["Checked"] == 2
     assert payload["Present"]["Weak"] == 0

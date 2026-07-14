@@ -380,10 +380,36 @@ function Protect-SingYinSensitivePath {
     # ACL protection is a release safety boundary.  Re-read what Windows
     # actually retained and fail closed if any maintenance/runtime principal is
     # absent or if a broad write-capable principal survived canonicalisation.
-    foreach ($requiredSid in @($runtimeSid.Value, $systemSid.Value, $administratorsSid.Value)) {
-        $status = Get-SingYinAclStatus -Paths @($item.FullName) -RequiredIdentitySid $requiredSid
-        if (-not $status.Compliant) {
-            throw "Windows did not retain the required protected ACL for '$($item.FullName)'."
+    $verificationStates = @(
+        [pscustomobject]@{
+            Label = "runtime"
+            Status = Get-SingYinAclStatus -Paths @($item.FullName) `
+                -RequiredIdentitySid $runtimeSid.Value `
+                -RequiredRights ([Security.AccessControl.FileSystemRights]::Modify)
+        },
+        [pscustomobject]@{
+            Label = "system"
+            Status = Get-SingYinAclStatus -Paths @($item.FullName) `
+                -RequiredIdentitySid $systemSid.Value `
+                -RequiredRights ([Security.AccessControl.FileSystemRights]::FullControl)
+        },
+        [pscustomobject]@{
+            Label = "administrators"
+            Status = Get-SingYinAclStatus -Paths @($item.FullName) `
+                -RequiredIdentitySid $administratorsSid.Value `
+                -RequiredRights ([Security.AccessControl.FileSystemRights]::FullControl)
+        }
+    )
+    foreach ($verification in $verificationStates) {
+        if (-not $verification.Status.Compliant) {
+            $state = $verification.Status
+            throw (
+                "Windows did not retain the required protected ACL for " +
+                "'$($item.FullName)' [$($verification.Label): " +
+                "checked=$($state.Checked), weak=$($state.Weak), " +
+                "unprotected=$($state.Unprotected), missing=$($state.RequiredIdentityMissing), " +
+                "insufficient=$($state.RequiredIdentityInsufficient)]."
+            )
         }
     }
 }
