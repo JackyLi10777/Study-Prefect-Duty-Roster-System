@@ -634,6 +634,7 @@ C:\SingYinRoster\.venv\Scripts\python.exe -m pip install --require-hashes -r C:\
 | 排程顯示登入類型未獲授權 | 以管理員身份重新執行 `prepare_windows_host.ps1 -RuntimeUser "SingYinRosterSvc"`，再重新登記工作 | 不要把執行帳戶加入 Administrators |
 | 排程能啟動 Python 但立即結束 | 重新執行主機準備腳本；它會核對 `.venv\pyvenv.cfg` 並只為底層 Python runtime 補上讀取／執行權限 | 不要為整個使用者資料夾開放權限 |
 | 更新時 `git pull` 失敗 | 保留完整訊息，停止更新並聯絡維護者 | 不要執行 `git reset --hard` |
+| 停止排程後 PowerShell 5.1 的 `/healthz` 探測長時間不返回 | 先確認 8080 已沒有 `Listen` 狀態，再用工作排程器重新啟動；維護腳本應以 `Get-NetTCPConnection` 判斷離線，只在連接埠重新開啟後查 `/healthz` | 不要同時啟動第二個更新程序，也不要在網站離線時反覆呼叫 `Invoke-RestMethod` |
 | 電腦重新啟動後網站沒有出現 | 等候一分鐘，檢查工作排程器「歷程記錄」 | 不要重複建立多個工作 |
 
 查找一個 `OP-...` 編號時，可由維護者執行：
