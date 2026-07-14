@@ -153,6 +153,42 @@ function Get-SingYinRuntimeAccount {
     }
 }
 
+function Get-SingYinFileSystemAcl {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $item = Get-Item -LiteralPath $Path -Force -ErrorAction Stop
+    if ($item.PSIsContainer) {
+        return [System.IO.Directory]::GetAccessControl(
+            $item.FullName,
+            [Security.AccessControl.AccessControlSections]::Access
+        )
+    }
+    return [System.IO.File]::GetAccessControl(
+        $item.FullName,
+        [Security.AccessControl.AccessControlSections]::Access
+    )
+}
+
+function Set-SingYinFileSystemAcl {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)]$Acl
+    )
+
+    $item = Get-Item -LiteralPath $Path -Force -ErrorAction Stop
+    if ($item.PSIsContainer) {
+        if ($Acl -isnot [Security.AccessControl.DirectorySecurity]) {
+            throw "The supplied ACL does not match a directory."
+        }
+        [System.IO.Directory]::SetAccessControl($item.FullName, $Acl)
+        return
+    }
+    if ($Acl -isnot [Security.AccessControl.FileSecurity]) {
+        throw "The supplied ACL does not match a file."
+    }
+    [System.IO.File]::SetAccessControl($item.FullName, $Acl)
+}
+
 function Grant-SingYinRuntimeReadAccess {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
@@ -163,7 +199,7 @@ function Grant-SingYinRuntimeReadAccess {
         throw "The project root is unavailable for runtime access."
     }
     $runtimeAccount = Get-SingYinRuntimeAccount -UserName $RuntimeUser
-    $acl = Get-Acl -LiteralPath $Path
+    $acl = Get-SingYinFileSystemAcl -Path $Path
     $rule = [Security.AccessControl.FileSystemAccessRule]::new(
         $runtimeAccount.Sid,
         [Security.AccessControl.FileSystemRights]::ReadAndExecute,
@@ -173,7 +209,7 @@ function Grant-SingYinRuntimeReadAccess {
         [Security.AccessControl.AccessControlType]::Allow
     )
     $acl.SetAccessRule($rule)
-    Set-Acl -LiteralPath $Path -AclObject $acl
+    Set-SingYinFileSystemAcl -Path $Path -Acl $acl
 }
 
 function Grant-SingYinVenvBasePythonReadAccess {
@@ -325,7 +361,7 @@ function Protect-SingYinSensitivePath {
 
     if (-not (Test-Path -LiteralPath $Path)) { return }
     $item = Get-Item -LiteralPath $Path -Force
-    $acl = Get-Acl -LiteralPath $item.FullName
+    $acl = Get-SingYinFileSystemAcl -Path $item.FullName
     $acl.SetAccessRuleProtection($true, $false)
     foreach ($rule in @($acl.Access)) { [void]$acl.RemoveAccessRuleAll($rule) }
 
@@ -375,7 +411,7 @@ function Protect-SingYinSensitivePath {
     $acl.SetAccessRule($runtimeRule)
     $acl.SetAccessRule($systemRule)
     $acl.SetAccessRule($administratorsRule)
-    Set-Acl -LiteralPath $item.FullName -AclObject $acl
+    Set-SingYinFileSystemAcl -Path $item.FullName -Acl $acl
 
     # ACL protection is a release safety boundary.  Re-read what Windows
     # actually retained and fail closed if any maintenance/runtime principal is
@@ -437,7 +473,7 @@ function Get-SingYinAclStatus {
     foreach ($path in $Paths) {
         if (-not (Test-Path -LiteralPath $path)) { continue }
         $checked += 1
-        $acl = Get-Acl -LiteralPath $path
+        $acl = Get-SingYinFileSystemAcl -Path $path
         if (-not $acl.AreAccessRulesProtected) { $unprotected += 1 }
         $identityPresent = [string]::IsNullOrWhiteSpace($RequiredIdentitySid)
         $identitySufficient = $identityPresent

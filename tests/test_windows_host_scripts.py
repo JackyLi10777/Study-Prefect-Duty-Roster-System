@@ -89,9 +89,9 @@ def test_acl_helper_removes_broad_write_access_from_temporary_paths(tmp_path: Pa
         "-RequiredRights ([Security.AccessControl.FileSystemRights]::FullControl); "
         "$missing = Get-SingYinAclStatus -Paths $paths "
         "-RequiredIdentitySid 'S-1-5-21-999999999-999999999-999999999-1001'; "
-        f"$inheritedAcl = Get-Acl -LiteralPath '{_quoted(inherited_file)}'; "
+        f"$inheritedAcl = Get-SingYinFileSystemAcl -Path '{_quoted(inherited_file)}'; "
         "$inheritedAcl.SetAccessRuleProtection($false, $true); "
-        f"Set-Acl -LiteralPath '{_quoted(inherited_file)}' -AclObject $inheritedAcl; "
+        f"Set-SingYinFileSystemAcl -Path '{_quoted(inherited_file)}' -Acl $inheritedAcl; "
         f"$unprotected = Get-SingYinAclStatus -Paths @('{_quoted(inherited_file)}'); "
         "[pscustomobject]@{ Present=$present; Missing=$missing; "
         "Insufficient=$insufficient; Unprotected=$unprotected } "
@@ -120,6 +120,10 @@ def test_acl_helper_removes_broad_write_access_from_temporary_paths(tmp_path: Pa
     assert "$acl.SetAccessRule($systemRule)" in common_source
     assert "$acl.SetAccessRule($administratorsRule)" in common_source
     assert "Windows did not retain the required protected ACL" in common_source
+    assert "function Get-SingYinFileSystemAcl" in common_source
+    assert "function Set-SingYinFileSystemAcl" in common_source
+    assert "Get-Acl" not in common_source
+    assert "Set-Acl" not in common_source
 
 
 def test_remote_access_doctor_is_redacted_and_reports_unprepared_host_state() -> None:
