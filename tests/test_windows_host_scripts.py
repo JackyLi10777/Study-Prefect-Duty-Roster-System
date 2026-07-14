@@ -74,24 +74,50 @@ def test_acl_helper_removes_broad_write_access_from_temporary_paths(tmp_path: Pa
     protected_dir.mkdir()
     protected_file = tmp_path / ".env"
     protected_file.write_text("non-secret-test-value", encoding="utf-8")
+    inherited_file = tmp_path / "inherited.env"
+    inherited_file.write_text("non-secret-test-value", encoding="utf-8")
     result = _powershell(
         f". '{_quoted(COMMON)}'; "
         "$administratorsSid = 'S-1-5-32-544'; "
         f"Protect-SingYinSensitivePath -Path '{_quoted(protected_dir)}'; "
         f"Protect-SingYinSensitivePath -Path '{_quoted(protected_file)}'; "
         f"$paths = @('{_quoted(protected_dir)}','{_quoted(protected_file)}'); "
-        "$present = Get-SingYinAclStatus -Paths $paths -RequiredIdentitySid $administratorsSid; "
+        "$present = Get-SingYinAclStatus -Paths $paths -RequiredIdentitySid $administratorsSid "
+        "-RequiredRights ([Security.AccessControl.FileSystemRights]::FullControl); "
+        "$currentSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value; "
+        "$insufficient = Get-SingYinAclStatus -Paths $paths -RequiredIdentitySid $currentSid "
+        "-RequiredRights ([Security.AccessControl.FileSystemRights]::FullControl); "
         "$missing = Get-SingYinAclStatus -Paths $paths "
         "-RequiredIdentitySid 'S-1-5-21-999999999-999999999-999999999-1001'; "
-        "[pscustomobject]@{ Present=$present; Missing=$missing } | ConvertTo-Json -Depth 3"
+        f"$inheritedAcl = Get-Acl -LiteralPath '{_quoted(inherited_file)}'; "
+        "$inheritedAcl.SetAccessRuleProtection($false, $true); "
+        f"Set-Acl -LiteralPath '{_quoted(inherited_file)}' -AclObject $inheritedAcl; "
+        f"$unprotected = Get-SingYinAclStatus -Paths @('{_quoted(inherited_file)}'); "
+        "[pscustomobject]@{ Present=$present; Missing=$missing; "
+        "Insufficient=$insufficient; Unprotected=$unprotected } "
+        "| ConvertTo-Json -Depth 3"
     )
     payload = json.loads(result.stdout)
     assert payload["Present"]["Checked"] == 2
     assert payload["Present"]["Weak"] == 0
+    assert payload["Present"]["Unprotected"] == 0
     assert payload["Present"]["RequiredIdentityMissing"] == 0
+    assert payload["Present"]["RequiredIdentityInsufficient"] == 0
     assert payload["Present"]["Compliant"] is True
     assert payload["Missing"]["RequiredIdentityMissing"] == 2
     assert payload["Missing"]["Compliant"] is False
+    assert payload["Insufficient"]["RequiredIdentityMissing"] == 0
+    assert payload["Insufficient"]["RequiredIdentityInsufficient"] == 2
+    assert payload["Insufficient"]["Compliant"] is False
+    assert payload["Unprotected"]["Checked"] == 1
+    assert payload["Unprotected"]["Unprotected"] == 1
+    assert payload["Unprotected"]["Compliant"] is False
+
+    common_source = COMMON.read_text(encoding="utf-8-sig")
+    assert "$acl.SetAccessRule($runtimeRule)" in common_source
+    assert "$acl.SetAccessRule($systemRule)" in common_source
+    assert "$acl.SetAccessRule($administratorsRule)" in common_source
+    assert "Windows did not retain the required protected ACL" in common_source
 
 
 def test_remote_access_doctor_is_redacted_and_reports_unprepared_host_state() -> None:

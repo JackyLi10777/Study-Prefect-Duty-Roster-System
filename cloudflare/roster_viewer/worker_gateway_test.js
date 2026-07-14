@@ -182,8 +182,46 @@ Deno.test('validates every exact administrator email against the trusted team JW
   }
 
   assertEquals(captured.url, `${env.ACCESS_TEAM_DOMAIN}/cdn-cgi/access/certs`);
-  assertEquals(captured.init.cache, 'no-store');
-  assertEquals(captured.init.redirect, 'error');
+  assertEquals(captured.init.method, 'GET');
+  assertEquals(captured.init.headers.Accept, 'application/json');
+  assertEquals(captured.init.cache, undefined);
+  assertEquals(captured.init.redirect, undefined);
+});
+
+Deno.test('uses Worker-compatible JWKS fetch options for the complete Access callback', async () => {
+  const env = accessEnvironment('sing-yin-runtime-worker-fetch');
+  const fixture = await signingFixture();
+  const nowSeconds = Math.floor(Date.now() / 1_000);
+  const token = await signedJwt(validClaims(env, nowSeconds));
+  const originalFetch = globalThis.fetch;
+  let jwksRequests = 0;
+  globalThis.fetch = (url, init = {}) => {
+    if ('cache' in init || init.redirect === 'error') {
+      throw new TypeError('unsupported request initializer');
+    }
+    jwksRequests += 1;
+    assertEquals(String(url), `${env.ACCESS_TEAM_DOMAIN}/cdn-cgi/access/certs`);
+    return new Response(JSON.stringify({ keys: [fixture.jwk] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+  let result;
+  try {
+    result = await worker.fetch(new Request('https://gateway.example/auth/login', {
+      headers: {
+        'Cf-Access-Jwt-Assertion': token,
+        Cookie: `CF_Authorization=${token}`,
+      },
+    }), env, { waitUntil() {} });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assertEquals(jwksRequests, 1);
+  assertEquals(result.status, 302);
+  assertEquals(result.headers.get('Location'), 'https://gateway.example/');
+  assert((result.headers.get('Set-Cookie') || '').startsWith(`${ADMIN_SESSION_COOKIE_NAME}=`));
 });
 
 Deno.test('normalizes a bounded exact-email allowlist and rejects malformed configuration', async () => {

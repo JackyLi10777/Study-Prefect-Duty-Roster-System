@@ -224,7 +224,7 @@ return env.ROSTER_ORIGIN.fetch(request);
 |---|---|
 | 主網址完全不能開啟 | Worker deployment、Cloudflare status、主機網絡 |
 | 訪客一開 root 就被要求登入 | Access 是否誤設為保護整個 Worker；應只保護管理流程 |
-| 輸入 One-time PIN 後顯示「未能確認管理員身分」 | 先在 Access Logs 核對該事件是否 `Allow`；如已允許，以 Worker Logs 的 `admin_login_bridge_failure` 及 `GW-...` 對照 `access_token`、`access_jwt` 或 `admin_session` 階段，不要再反覆清除瀏覽器資料 |
+| 輸入 One-time PIN 後顯示「未能確認管理員身分」 | 先在 Access Logs 核對該事件是否 `Allow`；如已允許，以 Worker Logs 的 `admin_login_bridge_failure` 及 `GW-...` 對照 `access_token`、`access_jwt` 或 `admin_session` 階段。若是 `access_jwt / jwks_fetch`，檢查 Worker 的 JWKS 子請求及目前部署版本；不要反覆清除瀏覽器資料或重設電郵政策 |
 | 按登入後不斷返回訪客頁 | exact-email policy、Access session、Worker JWT `aud`／`iss`／`exp`／email及第一方管理員 session cookie |
 | 登入後只有外殼、按鈕不動 | VPC binding、Tunnel、主機 `/healthz`、原始 WebSocket Response 是否保留 |
 | 上載或 PDF 失敗 | VPC request／response streaming、檔案大小、NiceGUI 日誌中的 OP／REQ 編號 |

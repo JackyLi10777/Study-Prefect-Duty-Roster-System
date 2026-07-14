@@ -2047,8 +2047,6 @@ async function loadAccessJwks(teamDomain, fetcher, nowMillis, forceRefresh = fal
     certificateResponse = await fetcher(certificateUrl, {
       method: 'GET',
       headers: { Accept: 'application/json' },
-      cache: 'no-store',
-      redirect: 'error',
     });
   } catch {
     throw new AccessValidationError('jwks_fetch');

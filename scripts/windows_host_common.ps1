@@ -337,33 +337,63 @@ function Protect-SingYinSensitivePath {
     }
     $propagation = [Security.AccessControl.PropagationFlags]::None
     $allow = [Security.AccessControl.AccessControlType]::Allow
-    $runtimeSid = if ([string]::IsNullOrWhiteSpace($RuntimeUser)) {
+    [Security.Principal.SecurityIdentifier]$runtimeSid = if ([string]::IsNullOrWhiteSpace($RuntimeUser)) {
         [Security.Principal.WindowsIdentity]::GetCurrent().User
     } else {
         (Get-SingYinRuntimeAccount -UserName $RuntimeUser).Sid
     }
-    $identityRights = @(
-        @($runtimeSid, [Security.AccessControl.FileSystemRights]::Modify),
-        @([Security.Principal.SecurityIdentifier]::new("S-1-5-18"), [Security.AccessControl.FileSystemRights]::FullControl),
-        @([Security.Principal.SecurityIdentifier]::new("S-1-5-32-544"), [Security.AccessControl.FileSystemRights]::FullControl)
+    [Security.Principal.SecurityIdentifier]$systemSid =
+        [Security.Principal.SecurityIdentifier]::new("S-1-5-18")
+    [Security.Principal.SecurityIdentifier]$administratorsSid =
+        [Security.Principal.SecurityIdentifier]::new("S-1-5-32-544")
+
+    # Write each required ACE explicitly.  SetAccessRule is intentionally used
+    # instead of an array-driven AddAccessRule loop: it replaces any stale ACE
+    # for the same SID and behaves consistently in Windows PowerShell 5.1 on a
+    # local host as well as on the GitHub hosted Windows runner.
+    $runtimeRule = [Security.AccessControl.FileSystemAccessRule]::new(
+        $runtimeSid,
+        [Security.AccessControl.FileSystemRights]::Modify,
+        $inheritance,
+        $propagation,
+        $allow
     )
-    foreach ($identityAndRights in $identityRights) {
-        $rule = [Security.AccessControl.FileSystemAccessRule]::new(
-            $identityAndRights[0],
-            $identityAndRights[1],
-            $inheritance,
-            $propagation,
-            $allow
-        )
-        $acl.AddAccessRule($rule)
-    }
+    $systemRule = [Security.AccessControl.FileSystemAccessRule]::new(
+        $systemSid,
+        [Security.AccessControl.FileSystemRights]::FullControl,
+        $inheritance,
+        $propagation,
+        $allow
+    )
+    $administratorsRule = [Security.AccessControl.FileSystemAccessRule]::new(
+        $administratorsSid,
+        [Security.AccessControl.FileSystemRights]::FullControl,
+        $inheritance,
+        $propagation,
+        $allow
+    )
+    $acl.SetAccessRule($runtimeRule)
+    $acl.SetAccessRule($systemRule)
+    $acl.SetAccessRule($administratorsRule)
     Set-Acl -LiteralPath $item.FullName -AclObject $acl
+
+    # ACL protection is a release safety boundary.  Re-read what Windows
+    # actually retained and fail closed if any maintenance/runtime principal is
+    # absent or if a broad write-capable principal survived canonicalisation.
+    foreach ($requiredSid in @($runtimeSid.Value, $systemSid.Value, $administratorsSid.Value)) {
+        $status = Get-SingYinAclStatus -Paths @($item.FullName) -RequiredIdentitySid $requiredSid
+        if (-not $status.Compliant) {
+            throw "Windows did not retain the required protected ACL for '$($item.FullName)'."
+        }
+    }
 }
 
 function Get-SingYinAclStatus {
     param(
         [Parameter(Mandatory = $true)][string[]]$Paths,
-        [string]$RequiredIdentitySid = ""
+        [string]$RequiredIdentitySid = "",
+        [Security.AccessControl.FileSystemRights]$RequiredRights =
+            [Security.AccessControl.FileSystemRights]::Modify
     )
 
     $broadSids = @("S-1-1-0", "S-1-5-11", "S-1-5-32-545")
@@ -375,12 +405,16 @@ function Get-SingYinAclStatus {
         [Security.AccessControl.FileSystemRights]::WriteData
     $checked = 0
     $weak = 0
+    $unprotected = 0
     $requiredIdentityMissing = 0
+    $requiredIdentityInsufficient = 0
     foreach ($path in $Paths) {
         if (-not (Test-Path -LiteralPath $path)) { continue }
         $checked += 1
         $acl = Get-Acl -LiteralPath $path
+        if (-not $acl.AreAccessRulesProtected) { $unprotected += 1 }
         $identityPresent = [string]::IsNullOrWhiteSpace($RequiredIdentitySid)
+        $identitySufficient = $identityPresent
         # Request SID-backed rules directly.  Reading the convenience `.Access`
         # property asks Windows to translate every SID into an account name first;
         # ephemeral CI accounts (and renamed local accounts) can make that reverse
@@ -393,18 +427,32 @@ function Get-SingYinAclStatus {
         foreach ($rule in @($accessRules)) {
             if ($rule.AccessControlType -ne [Security.AccessControl.AccessControlType]::Allow) { continue }
             $sid = $rule.IdentityReference.Value
-            if ($sid -ceq $RequiredIdentitySid) { $identityPresent = $true }
+            if ($sid -ceq $RequiredIdentitySid) {
+                $identityPresent = $true
+                if (([int64]$rule.FileSystemRights -band [int64]$RequiredRights) -eq [int64]$RequiredRights) {
+                    $identitySufficient = $true
+                }
+            }
             if ($sid -in $broadSids -and (([int64]$rule.FileSystemRights -band [int64]$writeMask) -ne 0)) {
                 $weak += 1
                 break
             }
         }
         if (-not $identityPresent) { $requiredIdentityMissing += 1 }
+        elseif (-not $identitySufficient) { $requiredIdentityInsufficient += 1 }
     }
     return [pscustomobject]@{
         Checked = $checked
         Weak = $weak
+        Unprotected = $unprotected
         RequiredIdentityMissing = $requiredIdentityMissing
-        Compliant = ($checked -gt 0 -and $weak -eq 0 -and $requiredIdentityMissing -eq 0)
+        RequiredIdentityInsufficient = $requiredIdentityInsufficient
+        Compliant = (
+            $checked -gt 0 -and
+            $weak -eq 0 -and
+            $unprotected -eq 0 -and
+            $requiredIdentityMissing -eq 0 -and
+            $requiredIdentityInsufficient -eq 0
+        )
     }
 }
