@@ -76,11 +76,11 @@ def test_acl_helper_removes_broad_write_access_from_temporary_paths(tmp_path: Pa
     protected_file.write_text("non-secret-test-value", encoding="utf-8")
     result = _powershell(
         f". '{_quoted(COMMON)}'; "
-        "$runtimeSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value; "
+        "$administratorsSid = 'S-1-5-32-544'; "
         f"Protect-SingYinSensitivePath -Path '{_quoted(protected_dir)}'; "
         f"Protect-SingYinSensitivePath -Path '{_quoted(protected_file)}'; "
         f"$paths = @('{_quoted(protected_dir)}','{_quoted(protected_file)}'); "
-        "$present = Get-SingYinAclStatus -Paths $paths -RequiredIdentitySid $runtimeSid; "
+        "$present = Get-SingYinAclStatus -Paths $paths -RequiredIdentitySid $administratorsSid; "
         "$missing = Get-SingYinAclStatus -Paths $paths "
         "-RequiredIdentitySid 'S-1-5-21-999999999-999999999-999999999-1001'; "
         "[pscustomobject]@{ Present=$present; Missing=$missing } | ConvertTo-Json -Depth 3"
@@ -172,6 +172,7 @@ def test_windows_host_scripts_bind_permissions_and_task_to_dedicated_runtime_use
 
     assert "Get-SingYinRuntimeAccount" in common
     assert "must remain a standard user" in common
+    assert "(Get-SingYinRuntimeAccount -UserName $RuntimeUser).Sid" in common
     assert 'RuntimeUser = "SingYinRosterSvc"' in preparation
     assert "Grant-SingYinRuntimeReadAccess" in preparation
     assert "Grant-SingYinVenvBasePythonReadAccess" in preparation
