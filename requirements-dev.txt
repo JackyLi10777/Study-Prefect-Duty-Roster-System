@@ -6,7 +6,7 @@
 pytest>=9.0,<10
 playwright>=1.58,<2
 pypdf>=6.0,<7
-httpx2>=2.5,<3
+httpx2>=2.6.0,<3
 fonttools>=4.63,<5
 pip-tools>=7.5,<8
 pip-audit>=2.10,<3
