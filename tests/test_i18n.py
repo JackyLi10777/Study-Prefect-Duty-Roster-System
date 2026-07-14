@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 from nicegui_app.ui import page_shared as pages
-from nicegui_app.config import PROJECT_ROOT
+from nicegui_app.config import PREFECT_SEED_PATH, PROJECT_ROOT
 from nicegui_app.ui.i18n import EN, MESSAGES, OFFICIAL_ROLE_TERMS, POST_LABELS, ROLE_LABELS, ZH_HK
 from roster_policy import DutyPost
 from tests.ui_source import combined_theme_source
@@ -383,7 +383,11 @@ def test_roster_display_rows_keep_chinese_prefect_names_for_both_responsive_pres
 
     from nicegui_app.services.roster_workflow import RosterWorkflow
 
-    workflow = RosterWorkflow(database_path=tmp_path / "roster.sqlite3", backup_dir=tmp_path / "backups")
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "roster.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(date(2026, 9, 7))
     assignments = workflow.assignments(draft.id)
@@ -402,7 +406,11 @@ def test_roster_display_rows_keep_chinese_prefect_names_for_both_responsive_pres
 def test_prefect_directory_rows_keep_chinese_names_for_table_and_phone_cards(monkeypatch, tmp_path) -> None:
     from nicegui_app.services.roster_workflow import RosterWorkflow
 
-    workflow = RosterWorkflow(database_path=tmp_path / "directory.sqlite3", backup_dir=tmp_path / "backups")
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "directory.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
     workflow.bootstrap()
     prefects = workflow.prefects()
 

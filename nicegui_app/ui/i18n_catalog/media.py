@@ -4,6 +4,11 @@ MESSAGES = {'workbench_title': {'zh-HK': '本週值班工作台', 'en': "This we
  'workbench_intro': {'zh-HK': '按實際次序完成：生成草稿、核對並匯出、需要時處理已發布後請假。',
                      'en': 'Follow the real sequence: generate a draft, review and export it, then handle a published-duty absence if '
                            'needed.'},
+ 'flow_directory': {'zh-HK': '先建立正式名單', 'en': 'Prepare the official directory'},
+ 'flow_directory_detail': {'zh-HK': '目前正式資料是乾淨的空白狀態。請逐一新增導學風紀，或下載格式範例後匯入名單。',
+                           'en': 'The official workspace is currently clean and empty. Add prefects individually, or download the '
+                                 'template and import the directory.'},
+ 'flow_directory_ready': {'zh-HK': '正式名單尚未建立', 'en': 'Official directory not yet prepared'},
  'flow_generate': {'zh-HK': '生成草稿', 'en': 'Generate draft'},
  'flow_generate_detail': {'zh-HK': '先登記請假，系統會按校規和公平紀錄生成本週安排。',
                           'en': "Record leave first. The system generates this week's roster from policy and fairness history."},

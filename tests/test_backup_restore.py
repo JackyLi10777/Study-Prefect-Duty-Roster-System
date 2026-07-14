@@ -7,6 +7,7 @@ import sqlite3
 
 import pytest
 
+from nicegui_app.config import PREFECT_SEED_PATH
 from nicegui_app.services.roster_workflow import PrefectInput, RosterWorkflow, WorkflowError
 
 
@@ -17,6 +18,7 @@ def test_restore_reverts_to_a_verified_snapshot_and_preserves_a_pre_restore_snap
     workflow = RosterWorkflow(
         database_path=tmp_path / "live.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(WEEK_START)
@@ -46,6 +48,7 @@ def test_restore_rejects_a_checksum_valid_but_unreconciled_candidate_before_swap
     workflow = RosterWorkflow(
         database_path=tmp_path / "live.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(WEEK_START)
@@ -71,6 +74,7 @@ def test_restore_rejects_a_checksum_valid_snapshot_missing_a_core_table_before_s
     workflow = RosterWorkflow(
         database_path=tmp_path / "live.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     workflow.bootstrap()
     snapshot = workflow.create_verified_backup()
@@ -98,6 +102,7 @@ def test_failed_post_swap_validation_rolls_back_to_the_original_database(tmp_pat
     workflow = RosterWorkflow(
         database_path=tmp_path / "live.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(WEEK_START)

@@ -9,10 +9,26 @@ from nicegui_app.ui.access_control import render_roster_share_action
 def rosters_page() -> None:
     workflow = get_workflow()
     weeks = workflow.roster_weeks()
+    prefects = workflow.prefects()
     with page_shell("rosters", "/rosters"):
         with ui.row().classes("sy-page-lead w-full items-center justify-between"):
             ui.html(t("rosters"), tag="h2").classes("text-2xl font-semibold")
             ui.label(t("persistence_notice")).classes("text-sm text-[var(--sy-muted)]")
+        if not prefects:
+            with ui.element("section").classes("sy-empty-state sy-empty-state--illustrated w-full").props(
+                "data-testid=roster-requires-directory role=status"
+            ):
+                ui.icon("groups").classes("sy-empty-state-icon").props("aria-hidden=true")
+                ui.label(t("roster_requires_directory_title")).classes("text-xl font-semibold")
+                ui.label(t("roster_requires_directory_detail")).classes(
+                    "text-sm leading-6 text-[var(--sy-muted)] max-w-2xl text-center"
+                )
+                ui.button(
+                    t("roster_requires_directory_action"),
+                    icon="group_add",
+                    on_click=lambda: _navigate_with_feedback("/prefects"),
+                ).props("color=primary data-testid=roster-open-prefects")
+            return
         _render_storage_lifecycle(workflow)
         with ui.tabs().classes("w-full sy-fg-action") as tabs:
             generate_tab = ui.tab("generate_view", label=t("generate_view"), icon="calendar_month")

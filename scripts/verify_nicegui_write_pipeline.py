@@ -78,7 +78,11 @@ def isolated_paths() -> tuple[Path, Path, Path]:
 
 
 def _workflow(database_path: Path, backup_dir: Path) -> RosterWorkflow:
-    workflow = RosterWorkflow(database_path=database_path, backup_dir=backup_dir)
+    workflow = RosterWorkflow(
+        database_path=database_path,
+        backup_dir=backup_dir,
+        seed_path=PREFECT_SEED_PATH,
+    )
     workflow.bootstrap()
     return workflow
 

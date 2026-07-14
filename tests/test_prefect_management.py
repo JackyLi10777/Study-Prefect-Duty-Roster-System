@@ -5,6 +5,7 @@ from threading import Barrier
 
 import pytest
 
+from nicegui_app.config import PREFECT_SEED_PATH
 from nicegui_app.services.roster_workflow import PrefectInput, RosterWorkflow, WorkflowConflictError, WorkflowError
 from nicegui_app.utils.prefect_import import parse_prefect_import_text, prefect_import_template_csv
 
@@ -13,6 +14,7 @@ def _workflow(tmp_path) -> RosterWorkflow:
     workflow = RosterWorkflow(
         database_path=tmp_path / "sing-yin.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     workflow.bootstrap()
     return workflow

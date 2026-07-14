@@ -8,6 +8,7 @@ import json
 from pypdf import PdfReader
 import pytest
 
+from nicegui_app.config import PREFECT_SEED_PATH
 from nicegui_app.services.roster_workflow import PrefectInput, RosterWorkflow, WorkflowError
 from nicegui_app.services.summary_report_export import (
     build_duty_allocation_statement_pdf,
@@ -25,6 +26,7 @@ def workflow(tmp_path) -> RosterWorkflow:
     service = RosterWorkflow(
         database_path=tmp_path / "sing-yin.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     service.bootstrap()
     return service

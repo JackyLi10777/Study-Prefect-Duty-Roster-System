@@ -11,7 +11,7 @@ from alembic.config import Config
 import pytest
 from sqlalchemy import select
 
-from nicegui_app.config import PROJECT_ROOT
+from nicegui_app.config import PREFECT_SEED_PATH, PROJECT_ROOT
 from nicegui_app.persistence.database import database_url
 from nicegui_app.persistence.models import (
     AuditEventRecord,
@@ -32,6 +32,7 @@ def _workflow(tmp_path) -> RosterWorkflow:
     service = RosterWorkflow(
         database_path=tmp_path / "sing-yin.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     service.bootstrap()
     return service

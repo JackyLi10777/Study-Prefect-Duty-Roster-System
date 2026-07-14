@@ -17,6 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from nicegui_app.config import PROJECT_ROOT  # noqa: E402
+from nicegui_app.config import PREFECT_SEED_PATH  # noqa: E402
 from nicegui_app.services.public_roster_share import PublicRosterShareService, PublicRosterShareSettings
 from nicegui_app.services.roster_workflow import RosterWorkflow
 
@@ -150,41 +151,37 @@ def _assert_guest_tour(
     label: str,
     navigation_requests: list[tuple[str, str, str]],
 ) -> None:
-    page.locator("#guestPortalState").wait_for(state="visible")
+    page.locator("main#main").wait_for(state="visible")
     _assert_page_identity(page, label=label)
-    if page.locator("#guestState").is_visible() or page.locator("#rosterState").is_visible():
-        raise RuntimeError(f"{label} exposes another application state over the guest tour.")
     if urlparse(page.url).path != "/guest":
         raise RuntimeError(f"{label} did not remain on the edge-only /guest route: {page.url!r}")
 
-    copy = page.locator("#guestPortalState").inner_text()
-    access_label = page.locator(".guest-mode-band strong").text_content() or ""
-    if "只供查看" not in access_label:
-        raise RuntimeError(f"{label} does not identify the guest permission as view only.")
+    copy = page.locator("body").inner_text()
     for required in (
-        "訪客不會取得",
-        "The guest tour contains no roster data.",
-        "/view#…",
+        "虛構資料",
+        "The guest tour contains no official roster data.",
+        "不包含任何正式值班資料",
+        "零伺服器寫入",
     ):
         if required not in copy:
             raise RuntimeError(f"{label} is missing the safety explanation {required!r}.")
 
     editable_controls = page.locator(
-        "#guestPortalState form, #guestPortalState input, #guestPortalState textarea, "
-        "#guestPortalState select, #guestPortalState button, "
-        "#guestPortalState [contenteditable='true']"
+        "form, input, textarea, select, [contenteditable='true']"
     )
     if editable_controls.count() != 0:
         raise RuntimeError(
             f"{label} unexpectedly exposes {editable_controls.count()} form or write controls."
         )
-    if page.locator("#adminLogin").is_visible():
+    if page.locator("#adminLogin").count() and page.locator("#adminLogin").is_visible():
         raise RuntimeError(f"{label} unexpectedly exposes the administrator CTA inside the guest tour.")
-    exit_link = page.locator('a#guestExit[href="/"]')
+    if page.locator("button").count() != 2:
+        raise RuntimeError(f"{label} should expose only language and appearance controls.")
+    exit_link = page.locator('a.text-link[href="/"]')
     if exit_link.count() != 1 or not exit_link.is_visible():
         raise RuntimeError(f"{label} does not provide a clear route back to the entrance.")
 
-    allowed_paths = {"/guest", "/viewer.css", "/viewer.js", "/favicon.svg"}
+    allowed_paths = {"/guest", "/guest.js", "/trial.css", "/favicon.svg"}
     unsafe_requests = []
     for request_url, method, resource_type in navigation_requests:
         parsed = urlparse(request_url)
@@ -195,6 +192,17 @@ def _assert_guest_tour(
     if unsafe_requests:
         raise RuntimeError(f"{label} issued a non-static or write-capable request: {unsafe_requests}")
     _assert_document_fits_viewport(page, label=label)
+
+
+def _set_guest_theme_reliably(page: Page, expected: str) -> None:
+    if expected not in {"auto", "light", "dark"}:
+        raise ValueError(f"Unsupported guest theme state: {expected}")
+    for _ in range(3):
+        current = str(page.evaluate("() => document.documentElement.dataset.theme || 'auto'"))
+        if current == expected:
+            return
+        page.locator("#guestThemeToggle").click()
+    raise RuntimeError(f"Guest appearance control did not reach {expected!r}.")
 
 
 def _assert_theme_cycle(page: Page) -> None:
@@ -231,7 +239,8 @@ def _assert_reduced_motion(page: Page) -> None:
             const nodes = [...document.querySelectorAll(
                 '.access-portal, .portal-story, .access-panel, .devotional-prompt, .admin-login, ' +
                 '.guest-enter, .guest-portal, .guest-portal-header, .guest-mode-band, ' +
-                '.guest-tour-card, .guest-exit'
+                '.guest-tour-card, .guest-exit, .platform-hero, .hero-system, ' +
+                '.platform-page .button, .platform-page .control-button, .capability-grid article, .trust-layout'
             )];
             const durations = nodes.flatMap(node => {
                 const style = getComputedStyle(node);
@@ -291,6 +300,7 @@ def main() -> int:
         workflow = RosterWorkflow(
             database_path=temporary_root / "fictional.sqlite3",
             backup_dir=temporary_root / "backups",
+            seed_path=PREFECT_SEED_PATH,
         )
         workflow.bootstrap()
         today = date.today()
@@ -343,12 +353,13 @@ def main() -> int:
                 label="desktop edge-only guest tour",
                 navigation_requests=guest_navigation_requests,
             )
+            _set_guest_theme_reliably(page, "light")
             page.wait_for_timeout(500)
             page.screenshot(
                 path=str(GATEWAY_EVIDENCE_DIR / "guest-desktop-light.png"),
                 full_page=True,
             )
-            _set_theme_reliably(page, "dark")
+            _set_guest_theme_reliably(page, "dark")
             page.wait_for_timeout(250)
             page.screenshot(
                 path=str(GATEWAY_EVIDENCE_DIR / "guest-desktop-dark.png"),
@@ -395,6 +406,7 @@ def main() -> int:
                 label="390px edge-only guest tour",
                 navigation_requests=mobile_guest_requests,
             )
+            _set_guest_theme_reliably(mobile_page, "light")
             mobile_page.wait_for_timeout(500)
             mobile_page.screenshot(
                 path=str(GATEWAY_EVIDENCE_DIR / "guest-mobile-light.png"),
@@ -445,6 +457,7 @@ def main() -> int:
                 label="320px reduced-motion edge-only guest tour",
                 navigation_requests=compact_guest_requests,
             )
+            _set_guest_theme_reliably(compact_page, "dark")
             _assert_reduced_motion(compact_page)
             compact_page.wait_for_timeout(50)
             compact_page.screenshot(

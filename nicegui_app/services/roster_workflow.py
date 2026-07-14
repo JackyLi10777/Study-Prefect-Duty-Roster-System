@@ -23,7 +23,7 @@ class RosterWorkflow(
         *,
         database_path: Path = DEFAULT_DATABASE_PATH,
         backup_dir: Path = DEFAULT_BACKUP_DIR,
-        seed_path: Path = PREFECT_SEED_PATH,
+        seed_path: Path | None = None,
     ) -> None:
         self.database_path = database_path
         self.backup_dir = backup_dir
@@ -37,7 +37,7 @@ class RosterWorkflow(
     def bootstrap(self) -> None:
         self.sessions = create_session_factory(self.database_path)
         with self._session() as session:
-            if session.scalar(select(func.count()).select_from(PrefectRecord)) == 0:
+            if self.seed_path is not None and session.scalar(select(func.count()).select_from(PrefectRecord)) == 0:
                 self._seed_prefects(session)
                 self._audit(session, "prefects_seeded", None, {"source": str(self.seed_path)})
                 session.commit()

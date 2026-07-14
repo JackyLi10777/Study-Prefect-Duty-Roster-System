@@ -1,9 +1,9 @@
 import worker, {
-  ADMIN_SESSION_COOKIE_NAME,
-  LANDING_DEVOTIONALS,
   accessTokenFromRequest,
+  adminSessionCookieNameForTest,
   authenticatedProxyRequestAllowed,
   createAdminSessionToken,
+  landingDevotionalsForTest,
   normalizeAccessConfiguration,
   proxyToRosterOrigin,
   stripAccessCredentials,
@@ -11,6 +11,9 @@ import worker, {
   validateAccessJwt,
 } from './worker.js';
 import devotionalSeed from '../../data/devotional/daily-verses.seed.json' with { type: 'json' };
+
+const ADMIN_SESSION_COOKIE_NAME = adminSessionCookieNameForTest();
+const LANDING_DEVOTIONALS = landingDevotionalsForTest();
 
 function assert(condition, message = 'assertion failed') {
   if (!condition) throw new Error(message);
@@ -568,7 +571,7 @@ Deno.test('serves the guest tour at the edge without Access, KV, VPC, or write m
       assertEquals(guest.status, 200);
       const html = await guest.text();
       assert(html.includes('訪客瀏覽模式'));
-      assert(html.includes('The guest tour contains no roster data.'));
+      assert(html.includes('The guest tour contains no official roster data.'));
       for (const forbidden of ['<form', '<input', '<textarea', '<select', 'contenteditable']) {
         assert(!html.toLowerCase().includes(forbidden));
       }
@@ -595,6 +598,106 @@ Deno.test('serves the guest tour at the edge without Access, KV, VPC, or write m
 
   assertEquals(originCalls, 0, 'guest requests must never reach the private NiceGUI origin');
   assertEquals(certificateCalls, 0, 'guest requests must not invoke Access validation or external fetch');
+});
+
+Deno.test('serves a client-only trial with a route-specific no-connect boundary', async () => {
+  const env = accessEnvironment('sing-yin-runtime-client-trial');
+  const context = { waitUntil() { throw new Error('client trial must not schedule storage work'); } };
+  let originCalls = 0;
+  env.ROSTER_ORIGIN = {
+    fetch() {
+      originCalls += 1;
+      throw new Error('client trial reached the private origin');
+    },
+  };
+  env.ROSTER_SHARES = {
+    get() { throw new Error('client trial read KV'); },
+    put() { throw new Error('client trial wrote KV'); },
+    delete() { throw new Error('client trial deleted KV'); },
+    list() { throw new Error('client trial listed KV'); },
+  };
+
+  for (const [path, expectedType] of [
+    ['/guest', 'text/html'],
+    ['/guest.js', 'text/javascript'],
+    ['/try', 'text/html'],
+    ['/trial.css', 'text/css'],
+    ['/trial.js', 'text/javascript'],
+  ]) {
+    const result = await worker.fetch(new Request('https://gateway.example' + path), env, context);
+    assertEquals(result.status, 200);
+    assert(result.headers.get('Content-Type')?.startsWith(expectedType));
+    const policy = result.headers.get('Content-Security-Policy') || '';
+    assert(policy.includes("connect-src 'none'"), path + ' must forbid every runtime connection');
+    assert(!policy.includes("connect-src 'self'"), path + ' must not inherit the viewer connection policy');
+    assertEquals(result.headers.get('Cache-Control'), 'no-store, max-age=0');
+  }
+
+  const guest = await worker.fetch(new Request('https://gateway.example/guest'), env, context);
+  const guestHtml = await guest.text();
+  assert(guestHtml.includes('href="/try"'));
+  assert(guestHtml.includes('零伺服器寫入'));
+  assert(guestHtml.includes('The guest tour contains no official roster data.'));
+  assert(guestHtml.includes('不包含任何正式值班資料'));
+  assert(guestHtml.includes('src="/guest.js"'));
+
+  const guestScriptResponse = await worker.fetch(new Request('https://gateway.example/guest.js'), env, context);
+  const guestScript = await guestScriptResponse.text();
+  for (const required of ['guestLanguageToggle', 'guestThemeToggle', 'sing-yin-guest-display-v1']) {
+    assert(guestScript.includes(required), 'guest script is missing: ' + required);
+  }
+
+  const trial = await worker.fetch(new Request('https://gateway.example/try'), env, context);
+  const trialHtml = await trial.text();
+  assert(trialHtml.includes('全部為虛構'));
+  assert(trialHtml.includes('id="downloadPdf"'));
+  assert(trialHtml.includes('src="/trial.js"'));
+
+  const scriptResponse = await worker.fetch(new Request('https://gateway.example/trial.js'), env, context);
+  const script = await scriptResponse.text();
+  for (const forbidden of ['fetch(', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'sendBeacon', 'localStorage', 'indexedDB']) {
+    assert(!script.includes(forbidden), 'trial script contains forbidden network or persistent-storage primitive: ' + forbidden);
+  }
+  for (const required of ['sessionStorage', 'SESSION_TTL_MS', 'generateRoster', 'validateRoster', "type: 'application/pdf'", 'Assist. in charge']) {
+    assert(script.includes(required), 'trial script is missing: ' + required);
+  }
+
+  for (const path of ['/guest', '/guest.js', '/try', '/trial.css', '/trial.js']) {
+    const head = await worker.fetch(new Request('https://gateway.example' + path, { method: 'HEAD' }), env, context);
+    assertEquals(head.status, 200);
+    assertEquals(await head.text(), '');
+    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']) {
+      const denied = await worker.fetch(new Request('https://gateway.example' + path, { method }), env, context);
+      assertEquals(denied.status, 405, method + ' ' + path + ' must fail closed');
+      assertEquals(denied.headers.get('Allow'), 'GET, HEAD');
+    }
+  }
+
+  for (const method of ['GET', 'HEAD']) {
+    const missing = await worker.fetch(new Request('https://gateway.example/try/unknown-asset', { method }), env, context);
+    assertEquals(missing.status, 404);
+    assert((missing.headers.get('Content-Security-Policy') || '').includes("connect-src 'none'"));
+    if (method === 'HEAD') assertEquals(await missing.text(), '');
+  }
+  for (const method of ['GET', 'HEAD']) {
+    const missing = await worker.fetch(new Request('https://gateway.example/guest/unknown-asset', { method }), env, context);
+    assertEquals(missing.status, 404);
+    assert((missing.headers.get('Content-Security-Policy') || '').includes("connect-src 'none'"));
+    if (method === 'HEAD') assertEquals(await missing.text(), '');
+  }
+  for (const prefix of ['/try', '/guest']) {
+    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']) {
+      const denied = await worker.fetch(new Request('https://gateway.example' + prefix + '/unknown-asset', { method }), env, context);
+      assertEquals(denied.status, 405);
+      assertEquals(denied.headers.get('Allow'), 'GET, HEAD');
+      assert((denied.headers.get('Content-Security-Policy') || '').includes("connect-src 'none'"));
+    }
+  }
+  assertEquals(originCalls, 0, 'client trial requests must never reach the private origin');
+
+  const health = await worker.fetch(new Request('https://gateway.example/healthz'), env, context);
+  const healthPayload = await health.json();
+  assert(healthPayload.capabilities.includes('isolated-client-trial'));
 });
 
 Deno.test('cancels an oversized chunked public viewer request before buffering the full body', async () => {

@@ -34,8 +34,12 @@ the Streamlit page handlers: policy remains in `roster_policy`, generation in
 ## Canonical daily entry and Windows maintenance start
 
 The only URL distributed to users is
-<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>. Guests stay
-in read-only mode. An approved operator selects **Admin login**, enters an exact
+<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>. Guests can
+currently read the data-free platform tour at `/guest` or view an explicitly
+issued read-only `/view#…` roster. The current source candidate includes
+`/try`, a 30-minute device-only fictional trial at the same host, but the
+canonical site still needs deployment and post-deployment verification. An
+approved operator selects **Admin login**, enters an exact
 allowlisted email address and the one-time code sent by Cloudflare Access, and
 returns to the same site with the NiceGUI editor unlocked. The signed browser
 session lasts at most eight hours; select
@@ -66,6 +70,41 @@ For a fully isolated fictional rehearsal, double-click
 `START_PRACTICE_MODE.cmd`. Practice Mode has separate SQLite, backups, logs,
 preferences, port range, persistent bilingual identity, and non-official PDF
 marking. Close it and use `RESET_PRACTICE_MODE.cmd` for a clean rehearsal.
+
+The next release candidate requires the official application to start with an
+empty migrated database and never auto-seed demonstration prefects. Seeing an
+empty directory on first use is correct: import and review the real directory
+only after rehearsal. Fictional seed data belongs to Practice Mode and the
+public browser trial, never the official database. The installed host still
+requires a verified backup, Viewer-link revocation, controlled reset, complete
+verification, and deployment before this state may be claimed as live.
+
+### Source-ready, not yet deployed: product tour and browser-only trial
+
+The following contract is implemented in source and has focused tests plus a
+dedicated browser verifier. The complete release gate, production Worker
+deployment, and post-deployment browser run are still pending; this is not a
+claim that the canonical production URL already serves `/try`:
+
+`/guest` presents the product purpose, weekly journey, fairness safeguards, and
+the boundary around protected operations. `/try` then loads a fixed fictional
+Chinese-name directory and lets a visitor add trial leave, generate and review
+a roster, and download a bilingual landscape A4 PDF. All names remain Chinese.
+
+The Worker serves only version-controlled, same-origin HTML, CSS, and JavaScript
+assets for these pages. Trial interaction makes no application API call and
+does not touch VPC, NiceGUI, SQLite, KV, the fairness ledger, backups, or server
+logs. State is held in the current tab's `sessionStorage`, expires after 30
+minutes, and is removed when the tab closes or the visitor resets it. A PDF
+persists only when the visitor explicitly saves the downloaded file. Trial
+results cannot be published, shared through `/view#…`, or imported into the
+official workbench.
+
+Before release, a maintainer must run the focused Python tests, Worker Deno
+contracts, complete Python suite, and `scripts/verify_guest_trial.py`. Exact
+commands and the one-time official-host reset procedure are documented in
+[`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and
+[`WINDOWS_DEDICATED_HOST_SETUP.md`](docs/WINDOWS_DEDICATED_HOST_SETUP.md).
 
 ## Operator workflow
 
@@ -125,6 +164,9 @@ usage, commercial, or vanity KPIs; source changes make previous evidence stale.
 flowchart LR
     GUEST["Guest"] --> EDGE["One workers.dev site\nCloudflare Worker"]
     ADMIN["Administrator\nAccess email code"] --> EDGE
+    EDGE --> TOUR["/guest product tour\nno roster data"]
+    EDGE --> TRIAL["/try browser-only trial\n30-minute sessionStorage"]
+    TRIAL --> TRIALPDF["On-device bilingual\nlandscape A4 PDF"]
     EDGE -->|read only| VIEW["Encrypted published roster"]
     EDGE -->|verified Access JWT| VPC["Workers VPC + Tunnel"]
     VPC --> UI["NiceGUI bilingual UI"]

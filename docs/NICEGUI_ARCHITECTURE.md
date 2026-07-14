@@ -28,13 +28,14 @@ NiceGUI owns the rendering and navigation. The read model introduces no schema, 
 ## Canonical entry and local maintenance start
 
 The only URL distributed to users is
-`https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`. The same
-hostname has four security states with different owning layers:
+`https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`. The next
+source candidate has five security states with different owning layers:
 
 | State | Owning layer | Backend contact |
 |---|---|---|
 | Public `/` entrance without a valid first-party administrator session | Worker-native static landing | No roster data, VPC, NiceGUI, SQLite or KV |
 | `/guest` tour | Worker-native static read-only guide; route allows only `GET`／`HEAD` | No VPC, NiceGUI, SQLite or KV |
+| `/try` interactive trial | Worker-native static assets + browser-only state and PDF; route allows only `GET`／`HEAD` | Fixed fictional Chinese names; 30-minute `sessionStorage`; no application API, VPC, NiceGUI, SQLite, KV, fairness ledger, backup or server-log write |
 | `/view#…` published roster | Worker viewer shell + KV ciphertext + browser Web Crypto | KV only; no VPC, NiceGUI or SQLite, and the fragment key never reaches the Worker |
 | Verified administrator workbench at the same `/` | Cloudflare One-time PIN → Access JWT verification at `/auth/login` → signed first-party session → Workers VPC → named Tunnel → NiceGUI | Full NiceGUI and local workflow／SQLite access under existing application controls |
 
@@ -58,7 +59,7 @@ maintaining the host. The origin remains loopback in every deployment state.
 
 ### Official/practice composition boundary
 
-`nicegui_app.application_mode.ApplicationModeSettings` is an outer composition profile, not a roster-policy rule. `official` remains the default and accepts the established injected paths. `practice` starts only when database, backup, and log paths are all explicit, distinct, and contained by `data/practice/`; the runtime then injects those paths into `RosterWorkflow`. The practice launcher also uses a separate port range and NiceGUI storage secret.
+`nicegui_app.application_mode.ApplicationModeSettings` is an outer composition profile, not a roster-policy rule. `official` remains the default and accepts the established injected paths. Its workflow always receives `seed_path=None`: migration may create a structurally complete empty database, but official startup never inserts demonstration prefects. `practice` starts only when database, backup, and log paths are all explicit, distinct, and contained by `data/practice/`; the runtime then injects those paths and the fictional `PREFECT_SEED_PATH` into `RosterWorkflow`. The practice launcher also uses a separate port range and NiceGUI storage secret.
 
 The persistent shell banner and PDF marker receive the resolved mode as presentation input. They do not change eligibility, generation, fairness, publication, adjustment, backup, or restore behavior. `/healthz` exposes only the non-sensitive `applicationMode` identity so the two Windows launchers cannot reuse the wrong process. `scripts/reset_practice_mode.py` verifies its fixed workspace boundary and refuses to reset while a practice service is running.
 
@@ -66,7 +67,7 @@ The persistent shell banner and PDF marker receive the resolved mode as presenta
 - Schema migrations: `migrations/` via Alembic
 - Automatic backups: `data/backups/`
 - Canonical devotionals: `data/devotional/daily-verses.seed.json`
-- Demo prefect seed: `data/demo/prefects.zh-HK.seed.json`
+- Practice-only fictional prefect seed: `data/demo/prefects.zh-HK.seed.json`
 
 The workflow service is the only supported write path for roster operations:
 
@@ -105,7 +106,7 @@ The report deliberately calls service time **scheduled allocation**. `DUTY_SERVI
 
 Each share receives a random identifier, independent 256-bit AES-GCM key and 96-bit nonce. The service encrypts the JSON snapshot locally with authenticated additional data bound to that identifier. `CloudflarePublicRosterShareGateway` sends only schema version, share identifier, week, created/expiry times, nonce and ciphertext to the authenticated Worker admin endpoint. The resulting URL places the key after `#`, so it is absent from the initial HTTP request and Worker/KV record. The complete link is displayed once and is not persisted in SQLite, backups, audit, or logs.
 
-`cloudflare/roster_viewer/worker.js` is the canonical outer front door. Its public `/` route serves the entrance shell without roster data. Its `/guest` route serves the static system tour for `GET` and `HEAD` only; the client returns before any share request, and contract tests fail if that route schedules storage work, touches `ROSTER_SHARES`, reaches `ROSTER_ORIGIN`, or accepts a write／preflight method. This tour therefore has no route to VPC, NiceGUI, SQLite, PDF, directory, leave, fairness, audit, backup, restore, settings, music or KV.
+`cloudflare/roster_viewer/worker.js` is the canonical outer front door. Its public `/` route serves the entrance shell without roster data. `/guest` serves the static product tour, while `/try` and its same-origin assets serve the interactive trial; all accept `GET` and `HEAD` only. Contract tests must fail if either route schedules storage work, touches `ROSTER_SHARES`, reaches `ROSTER_ORIGIN`, accepts a write／preflight method, or exposes an application API. `/try` loads a fixed fictional Chinese-name directory, keeps leave and generated-roster state in schema-versioned `sessionStorage` for at most 30 minutes, and creates the bilingual A4 landscape PDF in the browser. It cannot publish, create a Viewer link, update `history_weight`, reach NiceGUI, SQLite, KV, VPC, backup or audit, or place trial data in server logs. The downloaded PDF survives only when the visitor explicitly saves it.
 
 `/view#…` is a separate public capability path, not the `/guest` tour. New `ROSTER_SHARES` records use immutable `share:v2:<shareId>:<SHA-256>` keys whose digest covers the normalized encrypted payload; exact retries resolve to the same key, while different content can never overwrite another record that happens to carry the same share identifier. The Worker continues to read and revoke legacy `share:<id>` records without rewriting them. Because Workers KV offers no compare-and-swap, `view` and `list` fail closed whenever multiple digests, mixed legacy／v2 records, or an invalid digest become visible. Anonymous `/api/view` accepts only one validated share identifier; browser Web Crypto decrypts locally, and DOM rendering uses `textContent`. This path uses KV but still has no VPC, NiceGUI or SQLite access. The public HTML/CSS/JS are same-origin and dependency-free, with no-store, CSP, no-referrer, noindex, frame denial and permissions restrictions.
 
@@ -240,6 +241,8 @@ The only deliberate application-originated external request carrying roster-deri
 ## Verification
 
 - `scripts/verify_practice_mode.py` checks the isolated health identity, bilingual persistent banner, light/dark styling, phone layout, console, and local screenshots without writing roster data.
+- `tests/test_official_data_reset.py` and runtime-mode tests own the candidate proof that official startup does not seed, the controlled reset verifies backup／isolated restore／Viewer revocation before replacement, and the resulting baseline contains zero operational rows. `tests/test_cloudflare_guest_trial.py` plus the Worker Deno contracts own the route-method, no-KV／no-VPC, fixed-fictional-data, 30-minute `sessionStorage`, and on-device bilingual-PDF boundary. These checks are release-candidate work until the full suite and browser evidence pass; their presence alone is not deployment evidence.
+- `scripts/verify_guest_trial.py` is run first against local Wrangler (`--base-url http://127.0.0.1:8791`) and again against the deployed canonical Worker. It records desktop／phone, light／dark, bilingual PDF, policy, true 30-minute expiry, malformed-state recovery, fail-closed child routes, no trial interaction requests, console and overflow evidence under `test-results/guest-trial/`. A local pass cannot be reused as production evidence because the report records its base URL.
 
 ```powershell
 python -X utf8 -m pytest -q

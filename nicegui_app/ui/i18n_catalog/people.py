@@ -2,6 +2,12 @@
 
 MESSAGES = {'directory': {'zh-HK': '名單管理', 'en': 'Directory'},
  'ai_import': {'zh-HK': '資料匯入', 'en': 'Data import'},
+ 'empty_prefect_title': {'zh-HK': '由一份乾淨的正式名單開始', 'en': 'Start with a clean official directory'},
+ 'empty_prefect_detail': {'zh-HK': '目前沒有任何導學風紀資料。你可逐一新增，或到「資料匯入」下載格式範例、核對預覽後一次匯入；建立名單前，系統不會生成值班表。',
+                          'en': 'There are no prefect records yet. Add them individually, or open Data import to download the template '
+                                'and import only after reviewing the preview. No roster can be generated until the directory is ready.'},
+ 'empty_prefect_add_action': {'zh-HK': '新增第一位導學風紀', 'en': 'Add the first prefect'},
+ 'empty_prefect_import_action': {'zh-HK': '前往資料匯入', 'en': 'Open data import'},
  'add_prefect': {'zh-HK': '新增風紀', 'en': 'Add prefect'},
  'edit_prefect': {'zh-HK': '編輯風紀', 'en': 'Edit prefect'},
  'archive_prefect': {'zh-HK': '停用風紀', 'en': 'Archive prefect'},

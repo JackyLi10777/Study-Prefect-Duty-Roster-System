@@ -6,7 +6,11 @@
 
 **資料來源：** Windows 11 專用主機上的 NiceGUI + SQLite；NiceGUI 只監聽 `127.0.0.1:8080`。
 
+> **發布狀態提示（2026-07-15）：** `/try` 純瀏覽器試用及正式零起點屬下一候選版本；在 Worker 契約、完整測試、瀏覽器證據及受控部署完成前，本手冊描述的是待驗證契約，不代表正式網址已啟用新試用頁或正式主機已清除。
+
 本方案不需購買網域，也不會把 NiceGUI 或 SQLite 直接公開到互聯網。Cloudflare Worker 是唯一前門；Cloudflare Access 管理登入，Workers VPC 與既有具名 Tunnel 把已驗證管理員請求送回 Windows 主機。localhost 及私人 WARP 地址只作維護後備。
+
+候選 `/guest`／`/try` 資產必須先依 `docs/PUBLIC_ROSTER_VIEWER.md` 的「發布前及部署後怎樣驗證試用邊界」在本機 Wrangler 通過；部署後再以 canonical 網址重跑同一瀏覽器驗證。只有本機證據、只見 HTTP 200，或只在桌面查看，都不能證明正式 `/try` 已上線且保持零伺服器寫入邊界。
 
 ---
 
@@ -16,7 +20,7 @@
 
 1. 開啟唯一正式網址，或首席導學風紀發出的同 host `/view#…` 完整週表連結。
 2. 不需安裝 WARP、不需帳戶、不需輸入密碼。
-3. 未登入狀態只有唯讀權限，不能生成、修改、發布、處理請假或進入公平、備份、還原及設定。
+3. `/guest` 可閱讀不含值班資料的產品導覽；`/try` 可用固定虛構中文姓名完成 30 分鐘裝置內試用及雙語 PDF。這些頁面不能生成或修改正式資料、發布、進入公平、備份、還原及設定。
 
 ### 管理員／首席導學風紀
 
@@ -43,7 +47,9 @@
 ```text
 同一 workers.dev 網站
     ├─ 未登入訪客
-    │    └─ Worker 唯讀頁／同 host 加密 /view#… 週表
+    │    ├─ /guest 產品導覽（無值班資料）
+    │    ├─ /try 30 分鐘瀏覽器試用（虛構資料；裝置內 PDF）
+    │    └─ 同 host 加密 /view#… 唯讀週表
     └─ 按「管理員登入」
          └─ Cloudflare Access：exact email + One-time PIN
               └─ Worker 驗證 Access JWT並簽發第一方管理員 session
@@ -52,7 +58,7 @@
                              └─ Windows localhost:8080 NiceGUI
 ```
 
-這是一個網站、兩種權限，不是兩套正常入口。本機及 WARP 留在背後，只在 Cloudflare 故障、主機診斷、還原或搬機時使用。
+這是一個網站、兩種權限，不是兩套正常入口。`/guest` 與 `/try` 都是公開層的靜態產品體驗，不是 NiceGUI 訪客帳戶或較低權限管理員。本機及 WARP 留在背後，只在 Cloudflare 故障、主機診斷、還原或搬機時使用。
 
 ---
 
@@ -187,6 +193,9 @@ return env.ROSTER_ORIGIN.fetch(request);
 - [ ] 訪客看不到生成、發布、請假調整、公平、備份、還原或設定。
 - [ ] 訪客直接輸入 `/prefects`、`/rosters` 或其他 NiceGUI 路徑只會返回訪客首頁，不能取得編輯權。
 - [ ] 訪客修改 query、header、local storage 或畫面 JavaScript 不能升級身份。
+- [ ] `/guest` 只載入產品導覽；`/try` 只載入固定虛構中文姓名，能完成示範請假、生成、預覽及雙語 A4 橫向 PDF。
+- [ ] 瀏覽器 Network／Worker 觀察證明試用互動沒有應用 API、KV、VPC 或 NiceGUI 請求；30 分鐘、關閉分頁及重置均清除 `sessionStorage` 狀態。
+- [ ] 試用 PDF 只在使用者下載後留於裝置，清楚標示非正式；不能發布、建立 `/view#…` 或影響 `history_weight`。
 
 ### B. 管理員登入及登出
 

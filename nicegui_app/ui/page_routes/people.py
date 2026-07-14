@@ -528,9 +528,32 @@ def prefects_page() -> None:
             with ui.tab_panel("directory").classes("px-0"):
                 prefects = workflow.prefects()
                 _render_operation_hint("hint_prefect_directory", icon="groups")
+                if not prefects:
+                    with ui.element("section").classes("sy-empty-state sy-empty-state--illustrated w-full mb-5").props(
+                        "data-testid=empty-prefect-directory role=status"
+                    ):
+                        ui.icon("group_add").classes("sy-empty-state-icon").props("aria-hidden=true")
+                        ui.label(t("empty_prefect_title")).classes("text-xl font-semibold")
+                        ui.label(t("empty_prefect_detail")).classes(
+                            "text-sm leading-6 text-[var(--sy-muted)] max-w-2xl text-center"
+                        )
+                        with ui.row().classes("sy-mobile-actions justify-center gap-3 flex-wrap mt-2"):
+                            ui.button(
+                                t("empty_prefect_add_action"),
+                                icon="person_add",
+                                on_click=lambda: _show_prefect_dialog(),
+                            ).props("color=primary data-testid=empty-add-prefect")
+                            ui.button(
+                                t("empty_prefect_import_action"),
+                                icon="upload_file",
+                                on_click=lambda: tabs.set_value("ai_import"),
+                            ).props("outline color=primary data-testid=empty-open-import")
                 options = {item["id"]: f"{item['nameZh']} ({item['form']} {item['className']})" for item in prefects}
                 prefect_versions = {str(item["id"]): int(item["version"]) for item in prefects}
-                with ui.row().classes("sy-directory-actions w-full items-end gap-3 flex-wrap mb-4"):
+                directory_actions_classes = "sy-directory-actions w-full items-end gap-3 flex-wrap mb-4"
+                if not prefects:
+                    directory_actions_classes += " hidden"
+                with ui.row().classes(directory_actions_classes):
                     selected = ui.select(label=t("select_prefect"), options=options, value=next(iter(options), None)).classes("sy-directory-selector min-w-[300px]")
 
                     def edit_selected() -> None:
@@ -578,10 +601,14 @@ def prefects_page() -> None:
                             return
                         archive_dialog.open()
 
-                    ui.button(t("edit_prefect"), icon="edit", on_click=edit_selected).props("outline color=primary")
-                    ui.button(t("archive_prefect"), icon="archive", on_click=archive_selected).props(
+                    edit_button = ui.button(t("edit_prefect"), icon="edit", on_click=edit_selected).props("outline color=primary")
+                    archive_button = ui.button(t("archive_prefect"), icon="archive", on_click=archive_selected).props(
                         "flat color=negative data-testid=open-archive-prefect"
                     )
+                    if not prefects:
+                        selected.disable()
+                        edit_button.disable()
+                        archive_button.disable()
                 rows = _prefect_directory_rows(prefects)
                 for row in rows:
                     row["supportStatus"] = _report_status_text(tuple(row["supportCodes"]))
@@ -595,7 +622,10 @@ def prefects_page() -> None:
                     {"name": "duties", "label": t("history_duties"), "field": "duties", "align": "right"},
                     {"name": "supportStatus", "label": t("support_status"), "field": "supportStatus", "align": "left"},
                 ]
-                ui.table(rows=rows, columns=columns, row_key="name").classes("sy-table sy-prefect-directory-desktop w-full")
+                directory_table_classes = "sy-table sy-prefect-directory-desktop w-full"
+                if not prefects:
+                    directory_table_classes += " hidden"
+                ui.table(rows=rows, columns=columns, row_key="name").classes(directory_table_classes)
                 _render_mobile_prefect_cards(rows)
             with ui.tab_panel("ai_import").classes("px-0"):
                 _render_operation_hint("hint_prefect_import", icon="upload_file")

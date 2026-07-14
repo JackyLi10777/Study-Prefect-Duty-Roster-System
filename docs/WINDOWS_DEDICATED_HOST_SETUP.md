@@ -6,6 +6,8 @@
 **日常網址：** `https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`
 **本機維護網址：** `http://127.0.0.1:8080`
 
+> **發布狀態提示（2026-07-15）：** `/try` 純瀏覽器試用及正式零起點屬下一候選版本。完成受控主機更新、資料重設、完整測試及瀏覽器驗收前，下文描述的是待驗證操作契約，不代表現有正式主機已清除或正式網址已啟用 `/try`。
+
 ---
 
 ## 0. 先理解這個方案
@@ -13,7 +15,7 @@
 完成本手冊後，運作方式如下：
 
 1. 一部 Windows 電腦長期保存程式、SQLite 資料庫、備份、日誌、PDF 及音樂。
-2. NiceGUI origin 只在這部電腦的 `127.0.0.1:8080` 開放；日常使用者從唯一正式 `workers.dev` 網站進入，未登入是訪客唯讀，管理員登入後仍留在同一網址。
+2. NiceGUI origin 只在這部電腦的 `127.0.0.1:8080` 開放；日常使用者從唯一正式 `workers.dev` 網站進入。未登入可閱讀 `/guest` 導覽；目前原始碼候選已包含同站 `/try` 的 30 分鐘裝置內虛構試用，但正式網址仍待重新部署及核對，管理員登入後仍留在同一網址。
 3. 電腦開機後，可由 Windows 工作排程器在背景自動啟動系統。
 4. 初次安裝先驗證 loopback origin，再依 Cloudflare 手冊連接既有 Tunnel、VPC Service、Access 及 Worker；始終不設定路由器轉發或公開 NiceGUI 連接埠。
 5. 即使電腦沒有互聯網，名單、排班、PDF、備份及還原仍可使用；YouTube 音樂除外。
@@ -370,6 +372,10 @@ C:\SingYinRoster\logs
 
 不要直接開啟或修改 `sing-yin-roster.sqlite3`。
 
+### 步驟 7.3A：確認正式資料是乾淨零起點
+
+第一次進入「風紀名單」時應顯示空狀態，active prefect、週表、請假及公平帳本均為零。關閉再啟動正式服務後仍應保持空白；正式模式不會從 `data\demo\prefects.zh-HK.seed.json` 自動載入任何姓名。若首次登入已見示範姓名，停止加入真實名單，不要逐項刪除；依下方「一次性退休舊示範資料」由維護者處理。
+
 ### 步驟 7.4：停止第一次測試
 
 回到黑色視窗，按 `Ctrl+C`。等待程序停止後才關閉視窗。
@@ -387,6 +393,33 @@ C:\SingYinRoster\logs
 5. 雙擊 `RESET_PRACTICE_MODE.cmd`，確認練習資料能安全重設。
 
 練習完成後才開始設定開機自動啟動。
+
+### 8.1 公開 `/try` 與本機 Practice Mode 不相同
+
+- `/try` 由 Worker 提供靜態資產，使用固定虛構中文姓名及目前分頁的 `sessionStorage`；30 分鐘、關閉分頁或按重置後清除。
+- 試用只包括示範請假、生成、預覽及中英並列 A4 橫向 PDF。它不連接應用 API、KV、VPC、NiceGUI、SQLite、公平帳本、備份或伺服器日誌；下載檔只因訪客主動保存而存在。
+- `START_PRACTICE_MODE.cmd` 才是完整 NiceGUI 演練，會使用獨立 SQLite、審計、備份及還原。兩者都不能代替正式名單匯入。
+
+### 8.2 一次性退休舊示範資料（維護者才可執行）
+
+目前原始碼候選包含 `scripts\reset_official_data.py`，但它不是日常重設按鈕。執行前必須通過該候選版本的完整自動化驗證，確認目標是正式主機，停止並停用 `Sing Yin Roster Host`，並核對整個正式啟動器範圍 **8080–8099** 均沒有監聽。工具會先建立已驗證快照、完成隔離還原、撤銷並重新核對所有公開 Viewer 連結，才把舊資料及舊備份移至受限 quarantine，原子安裝空白資料庫及已驗證空白基線。任何前置條件或後置核對失敗都會拒絕或回復。
+
+只有在已安裝並完整驗證候選版本、排程保持停用、8080–8099 全部停止，以及 `.env` 的正式 Viewer gateway 設定可用後，才可由維護者在 `C:\SingYinRoster` 執行：
+
+```powershell
+Set-Location C:\SingYinRoster
+.\.venv\Scripts\python.exe -X utf8 scripts\reset_official_data.py `
+  --database data\runtime\sing-yin-roster.sqlite3 `
+  --backup-dir data\backups `
+  --archive-dir data\retired-demo-data `
+  --report logs\official-data-reset-report.json `
+  --host-port-range 8080-8099 `
+  --confirm RESET-OFFICIAL-ROSTER-DATA
+```
+
+正常正式主機必須保留 `SING_YIN_PUBLIC_ROSTER_VIEWER_ENABLED`、`SING_YIN_PUBLIC_ROSTER_VIEWER_BASE_URL` 及 `SING_YIN_PUBLIC_ROSTER_VIEWER_ADMIN_TOKEN`，讓工具列出、撤銷並重新核對所有 Viewer 分享。只有能證明該主機**從未**設定 gateway、**從未**發出任何 `/view#…` 連結時，才可額外使用 `--attest-no-public-share-gateway`；這是會寫入 sanitized report 的明確聲明，不是跳過連線失敗的後備選項。`--report` 必須是 `.json`，且位於資料庫、備份與 quarantine 目錄之外。不要在 gateway 暫時故障時使用 attestation。
+
+正式清除完成與否只可根據 `logs\official-data-reset-report.json` 的 `status: pass`、所有 `emptyRowCounts` 為零、`publicShares.remainingCount` 為零、唯一一份有效空白基線，以及重新啟動後 `/healthz` 為 `ok` 判斷。工具只把舊檔移至受限 quarantine，不會把姓名或分享 ID 寫入報告；失敗時先保持排程停用並按 `failureReason` 調查，不可重複執行或手動刪除 SQLite。這項操作目前仍屬已完成原始碼、待完整閘門及受控主機執行的候選工作；在程序完成前，不可聲稱現有正式主機已清除。
 
 ---
 

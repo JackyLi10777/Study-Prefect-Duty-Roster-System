@@ -42,7 +42,11 @@ def _counts(path: Path) -> dict[str, int]:
 
 
 def main() -> int:
-    official = RosterWorkflow(database_path=DEFAULT_DATABASE_PATH, backup_dir=DEFAULT_BACKUP_DIR)
+    official = RosterWorkflow(
+        database_path=DEFAULT_DATABASE_PATH,
+        backup_dir=DEFAULT_BACKUP_DIR,
+        seed_path=None,
+    )
     official.bootstrap()
     fairness = official.reconcile_fairness()
     if not fairness.balanced:
@@ -63,7 +67,11 @@ def main() -> int:
         shutil.copy2(snapshot.with_suffix(".manifest.json"), copied_manifest)
 
         isolated_database = workspace / "restored.sqlite3"
-        isolated = RosterWorkflow(database_path=isolated_database, backup_dir=isolated_backups)
+        isolated = RosterWorkflow(
+            database_path=isolated_database,
+            backup_dir=isolated_backups,
+            seed_path=None,
+        )
         isolated.bootstrap()
         isolated.restore_backup(copied_snapshot)
         isolated_fairness = isolated.reconcile_fairness()

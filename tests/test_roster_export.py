@@ -6,7 +6,7 @@ from pathlib import Path
 
 from pypdf import PdfReader
 
-from nicegui_app.config import DISPLAY_PRINT_CREST_PATH
+from nicegui_app.config import DISPLAY_PRINT_CREST_PATH, PREFECT_SEED_PATH
 from nicegui_app.persistence.models import RosterAssignmentRecord
 from nicegui_app.services.roster_export import _school_badge, build_fairness_audit_pdf, build_roster_pdf
 from nicegui_app.services.roster_workflow import RosterWorkflow
@@ -31,7 +31,11 @@ def test_pdf_badge_uses_the_full_resolution_display_print_crest() -> None:
 
 
 def test_schedule_pdf_uses_single_page_weekly_grid_and_keeps_chinese_names(tmp_path) -> None:
-    workflow = RosterWorkflow(database_path=tmp_path / "live.sqlite3", backup_dir=tmp_path / "backups")
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(date(2026, 9, 7))
 
@@ -64,7 +68,11 @@ def test_schedule_pdf_uses_single_page_weekly_grid_and_keeps_chinese_names(tmp_p
 
 
 def test_schedule_pdf_uses_the_workflow_atomic_schedule_snapshot(tmp_path, monkeypatch) -> None:
-    workflow = RosterWorkflow(database_path=tmp_path / "snapshot.sqlite3", backup_dir=tmp_path / "backups")
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "snapshot.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(date(2026, 9, 7))
     snapshot_week, snapshot_assignments = workflow.roster_schedule_snapshot(draft.id)
@@ -92,7 +100,11 @@ def test_schedule_pdf_uses_the_workflow_atomic_schedule_snapshot(tmp_path, monke
 
 
 def test_group_schedule_crest_and_footer_are_explicit_export_options(tmp_path) -> None:
-    workflow = RosterWorkflow(database_path=tmp_path / "live.sqlite3", backup_dir=tmp_path / "backups")
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(date(2026, 9, 7))
 
@@ -120,7 +132,11 @@ def test_group_schedule_crest_and_footer_are_explicit_export_options(tmp_path) -
 
 
 def test_bilingual_published_schedule_pdfs_expose_every_operator_check(tmp_path) -> None:
-    workflow = RosterWorkflow(database_path=tmp_path / "live.sqlite3", backup_dir=tmp_path / "backups")
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(date(2026, 9, 7))
     workflow.publish(draft.id, expected_week_version=draft.version)
@@ -154,7 +170,11 @@ def test_bilingual_published_schedule_pdfs_expose_every_operator_check(tmp_path)
 
 
 def test_chinese_schedule_pdf_uses_the_full_assistant_head_study_prefect_duty_term(tmp_path) -> None:
-    workflow = RosterWorkflow(database_path=tmp_path / "live.sqlite3", backup_dir=tmp_path / "backups")
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(date(2026, 9, 7))
 
@@ -165,7 +185,11 @@ def test_chinese_schedule_pdf_uses_the_full_assistant_head_study_prefect_duty_te
 
 
 def test_pdf_export_escapes_a_prefect_name_without_breaking_the_document(tmp_path) -> None:
-    workflow = RosterWorkflow(database_path=tmp_path / "live.sqlite3", backup_dir=tmp_path / "backups")
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(date(2026, 9, 7))
     with workflow._session() as session:  # exercise imported names with PDF-sensitive characters
@@ -181,7 +205,11 @@ def test_pdf_export_escapes_a_prefect_name_without_breaking_the_document(tmp_pat
 
 
 def test_internal_audit_pdf_is_separate_from_group_schedule(tmp_path) -> None:
-    workflow = RosterWorkflow(database_path=tmp_path / "live.sqlite3", backup_dir=tmp_path / "backups")
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(date(2026, 9, 7))
 
@@ -197,7 +225,11 @@ def test_internal_audit_pdf_is_separate_from_group_schedule(tmp_path) -> None:
 
 
 def test_corrected_published_pdfs_show_the_substitute_and_reconciled_transfer(tmp_path) -> None:
-    workflow = RosterWorkflow(database_path=tmp_path / "live.sqlite3", backup_dir=tmp_path / "backups")
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(date(2026, 9, 7))
     workflow.publish(draft.id, expected_week_version=draft.version)
@@ -246,7 +278,11 @@ def test_corrected_published_pdfs_show_the_substitute_and_reconciled_transfer(tm
 
 
 def test_practice_pdfs_are_unmistakably_non_official_in_both_languages(tmp_path) -> None:
-    workflow = RosterWorkflow(database_path=tmp_path / "practice.sqlite3", backup_dir=tmp_path / "backups")
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "practice.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(date(2026, 9, 7))
 
@@ -262,7 +298,11 @@ def test_practice_pdfs_are_unmistakably_non_official_in_both_languages(tmp_path)
 
 
 def test_handover_readiness_reports_real_local_state(tmp_path) -> None:
-    workflow = RosterWorkflow(database_path=tmp_path / "live.sqlite3", backup_dir=tmp_path / "backups")
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(date(2026, 9, 7))
 

@@ -1,6 +1,11 @@
 """Bilingual weekly messages."""
 
 MESSAGES = {'current_rosters': {'zh-HK': '目前週表', 'en': 'Current rosters'},
+ 'roster_requires_directory_title': {'zh-HK': '請先建立正式名單', 'en': 'Prepare the official directory first'},
+ 'roster_requires_directory_detail': {'zh-HK': '目前沒有任何導學風紀資料，因此系統不會嘗試生成空白或不完整的值班表。請先新增或匯入名單，再回來登記請假及生成草稿。',
+                                      'en': 'There are no prefect records, so the system will not attempt to generate an empty or incomplete '
+                                            'roster. Add or import the directory first, then return to record leave and generate a draft.'},
+ 'roster_requires_directory_action': {'zh-HK': '前往建立名單', 'en': 'Prepare the directory'},
  'no_rosters': {'zh-HK': '尚未建立任何週表。', 'en': 'No roster has been created yet.'},
  'empty_roster_title': {'zh-HK': '本週工作由草稿開始', 'en': "Start this week's work with a draft"},
  'empty_roster_detail': {'zh-HK': '先核對導學風紀名單及請假，再安全生成草稿；草稿未會改動累計工作量。',

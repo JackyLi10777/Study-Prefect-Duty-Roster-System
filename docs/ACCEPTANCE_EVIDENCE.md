@@ -30,6 +30,8 @@
 | H-14 | 手機適應排列與讀取順序完整 | `verify_nicegui_mobile.py`; `test_mobile_layout.py`; 320／390px portrait、phone landscape、safe-area、44px、零 overflow／console／pageerror | 在實體 iPhone Safari 及 Android Chrome 核對鍵盤、旋轉、瀏海／home indicator；不另建 `/mobile` |
 | H-15 | 外觀／聲音不清空表單；語言離開前保護未儲存輸入 | `test_interface_sound.py`; `test_accessibility.py`; UI smoke 的 in-place theme／sound 及 dirty-language guard | 在一個未儲存表單親自切換三項偏好，確認提示、一次短聲及鍵盤流程自然 |
 | H-16 | 兩個分頁不能以舊資料覆蓋較新風紀或草稿 | prefect／roster concurrency tests；SQLite `BEGIN IMMEDIATE` 與 version CAS | 以虛構資料完成一次 stale-tab 演練，確認提示要求重新載入及核對 |
+| H-17 | 正式模式從空白名單開始且不自動 seed；Practice Mode 保留隔離虛構 seed | **原始碼證據已建立、最終閘門待重跑：** `test_official_data_reset.py`、runtime mode tests、reset report 零筆表格／空白基線契約；只有正式主機 sanitized reset report 及重啟 health 才是部署證據 | 正式清除只可在已驗證備份、隔離還原及 Viewer 撤銷後執行；重啟兩個模式並核對正式為零、練習有虛構資料 |
+| H-18 | `/guest` 是資料無關產品導覽；`/try` 是 30 分鐘純瀏覽器虛構試用 | **原始碼證據已建立、正式 Worker 驗證待執行：** `test_cloudflare_guest_trial.py`、Worker Deno routes／method／no-storage contracts、`scripts/verify_guest_trial.py` 本機與 canonical base URL 報告 | 實體手機完成請假→生成→預覽→雙語 PDF；核對中文姓名、非正式標記、30 分鐘／關閉分頁／重置清除及 Network 無試用 API／KV／VPC／NiceGUI 請求 |
 
 ## 教師顧問
 

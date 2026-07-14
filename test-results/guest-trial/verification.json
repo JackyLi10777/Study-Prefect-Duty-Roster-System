@@ -1,0 +1,21 @@
+{
+  "baseUrl": "http://127.0.0.1:8791/",
+  "status": "pass",
+  "guestCsp": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data: blob:; font-src 'none'; media-src 'none'; worker-src 'none'; child-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; manifest-src 'none'; upgrade-insecure-requests",
+  "trialCsp": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data: blob:; font-src 'none'; media-src 'none'; worker-src 'none'; child-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; manifest-src 'none'; upgrade-insecure-requests",
+  "interactionRequestCount": 0,
+  "pdf": "D:\\code_v3\\test-results\\guest-trial\\SYSS_Guest_Trial_Roster_2026-07-20_Bilingual.pdf",
+  "pdfPages": 1,
+  "pdfMediaBox": [
+    841.89,
+    595.28
+  ],
+  "ttlResetVerified": true,
+  "desktopLight": "D:\\code_v3\\test-results\\guest-trial\\trial-desktop-light.png",
+  "desktopDark": "D:\\code_v3\\test-results\\guest-trial\\trial-desktop-dark.png",
+  "mobileLight": "D:\\code_v3\\test-results\\guest-trial\\trial-mobile-light.png",
+  "mobileDark": "D:\\code_v3\\test-results\\guest-trial\\trial-mobile-dark.png",
+  "guestDesktopLight": "D:\\code_v3\\test-results\\guest-trial\\guest-desktop-light.png",
+  "guestDesktopDark": "D:\\code_v3\\test-results\\guest-trial\\guest-desktop-dark.png",
+  "guestMobileDark": "D:\\code_v3\\test-results\\guest-trial\\guest-mobile-dark.png"
+}

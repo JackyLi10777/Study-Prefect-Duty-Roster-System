@@ -60,7 +60,7 @@ This is the complete standing direction for future iterations. It replaces any t
 6. **Calm feedback, not theatre:** hover, press, one-time state changes, a short dialog settle, optional quiet success sound, honest progress phases, and operator-started quiet music are allowed. No looping animation, parallax, autoplay audio/video, fake loading percentage, forced ambient sound, bouncing icon, or motion that impedes reading.
 7. **Accessibility and language are non-negotiable:** Traditional Chinese is primary, English is complete, names stay Chinese in every locale, keyboard focus is clear, touch targets are practical, reduced motion is honoured, and light/dark themes meet contrast requirements for text, icons, charts, tables, and system states.
 8. **Reliability is part of the experience:** a polished surface cannot disguise a failed save. UI changes must preserve policy ownership, persistent `history_weight`, publish-once ledger posting, leave-adjustment auditability, checksum-verified snapshots, managed restore, local-first privacy, and clear error/empty/confirmation states.
-9. **Privacy before distribution:** no roster data is sent to generated imagery, media tools, analytics or a public NiceGUI origin. The only distributed surface is one canonical workers.dev hostname. Its unauthenticated `/` entrance and `/guest` tour are Worker-native and data-free; `/guest` accepts only `GET`／`HEAD` and touches neither VPC, NiceGUI, SQLite nor KV. After explicit confirmation, same-host `/view#…` links receive AES-GCM ciphertext for a minimum-field published-roster snapshot, keep no decryption key, expire or can be revoked. The editor appears on the same `/` only after Cloudflare Access and Worker-side JWT verification. NiceGUI never presents an anonymous guest role.
+9. **Privacy before distribution:** no roster data is sent to generated imagery, media tools, analytics or a public NiceGUI origin. The only distributed surface is one canonical workers.dev hostname. Its unauthenticated `/` entrance, `/guest` product tour and `/try` sandbox are Worker-native static surfaces. The trial loads only fixed fictional Chinese names; all changes, generation and PDF work remain in 30-minute `sessionStorage` and make no application API, KV, VPC, NiceGUI, SQLite, fairness-ledger, backup or server-log write. After explicit confirmation, same-host `/view#…` links receive AES-GCM ciphertext for a minimum-field published-roster snapshot, keep no decryption key, expire or can be revoked. The editor appears on the same `/` only after Cloudflare Access and Worker-side JWT verification. NiceGUI never presents an anonymous guest role.
 
 ### Design languages that intentionally differ
 
@@ -68,6 +68,7 @@ This is the complete standing direction for future iterations. It replaces any t
 |---|---|---|---|
 | Weekly roster work | Quiet operations desk: neutral surfaces, slate action, teal verified state, compact factual type | Calm, dependable, easy to scan | A KPI dashboard, a dense admin console, or a decorative template |
 | Daily Verse | Sacred reading chamber: deep indigo, warm parchment/gold, serif reading type, measured space, low movement | A moment of reflection before service | A generic hero banner, a sermon slide, or a dark-themed work card |
+| Visitor tour and trial | Editorial product narrative leading into a clearly bounded, fictional-data work sample | Credible, understandable, safe to explore | A fake admin account, a marketing maze, or a copy of another platform site |
 | Onboarding and handover | Gentle study archive: warm paper material, clear numbered action, reassuring recovery copy | A successor being calmly guided | A marketing landing page or tutorial carousel |
 | Error, risk, and recovery | Plain spoken safety sheet: high contrast, direct action, visible consequence | Clear and accountable | An alarmist or vague system message |
 
@@ -336,16 +337,19 @@ The roster grid is an operational document, not a dashboard chart. Preserve the 
 
 Import forms, report metrics, contribution tables, trend data and download notices are sensitive operational surfaces. They remain image-free in both themes. Hierarchy comes from spacing, type, neutral surfaces and semantic status tone—not illustration, background texture, pointer light or decorative motion.
 
-### 6.3.1 Canonical-site access control and four security states
+### 6.3.1 Canonical-site access control and five security states
 
-The canonical workers.dev hostname is one branded system with four clearly distinguished states, not four websites or an account dashboard:
+The canonical workers.dev hostname is one branded system with five clearly distinguished states, not five websites or an account dashboard:
 
 - **Public entrance `/` · Choose the safe next step:** without a valid Access session, this is a Worker-native editorial landing page with no roster data. It distinguishes system introduction, the data-free guest tour, the separate published-roster link and the one administrator action.
-- **Guest tour `/guest` · Understand, do not operate:** a Worker-native static guide which accepts only `GET`／`HEAD`. It may explain the weekly sequence, fairness principles and protected operations, but cannot show roster records or contact VPC, NiceGUI, SQLite or KV.
+- **Guest tour `/guest` · Understand before trying:** a Worker-native product guide which accepts only `GET`／`HEAD`. Its information order is purpose → capabilities → guided start → trust boundary → resources, with original Sing Yin copy and geometry. It cannot show official roster records or contact VPC, NiceGUI, SQLite or KV.
+- **Interactive trial `/try` · Experience without persistence:** a visibly non-official static workspace with fixed fictional Chinese names, one short leave/generation/review journey and a direct bilingual landscape-A4 PDF. State expires after 30 minutes or when the tab closes. Trial controls never resemble an unlocked administrator account, and the result cannot publish, share, update `history_weight`, or cross into official storage.
 - **Published roster `/view#…` · View one issued snapshot:** a calm, factual roster surface for locally decrypted ciphertext. It must look read-only, show expiry／latest-link guidance and never imply that the Viewer token opens editing.
 - **Administrator · Operate after verification:** reached through one unmistakable solid **Admin login** action on the entrance. Cloudflare Access owns account sign-in and MFA; successful verification returns to the same `/` and only then reveals the NiceGUI workbench through VPC. A persistent **Log out** action explains that it returns the browser to the public entrance.
 
-NiceGUI has no guest account, guest navigation shell or guest RBAC. The public entrance and tour must never imitate disabled NiceGUI controls; their visual language explains the boundary instead of suggesting that editing is present but greyed out.
+NiceGUI has no guest account, guest navigation shell or guest RBAC. The public entrance and tour must never imitate disabled NiceGUI controls; their visual language explains the boundary instead of suggesting that editing is present but greyed out. `/try` may use real interactive controls because it is a self-contained simulation, but a persistent boundary label, fictional-data label, expiry display and reset action must always remain visible.
+
+The platform-story sequence may learn from the information architecture of mature product and documentation sites—clear value statement, capability groups, one guided starting action, trust explanation, FAQ and resource footer—without copying their screen composition, text, visual assets or brand language. [Claude Platform](https://claude.com/platform/api) and [Claude Platform Docs](https://platform.claude.com/docs) are research references for hierarchy only, not templates.
 
 On a wide screen, the root uses a 58/42 editorial composition: the larger story column explains purpose, the three-stage weekly sequence and a compact sacred reading; the smaller access column explains the current permission state, the one next action and three bounded trust facts. It is not a marketing carousel. Below 700 px the same semantic blocks stack in reading order, and 320 px remains the minimum browser evidence width without horizontal overflow. The root offers **system / light / dark** appearance states; forced-colour mode retains native borders and text, and keyboard users receive a skip link plus visible focus.
 
@@ -488,6 +492,13 @@ Archive confirmation must name both sides of the consequence: the active person 
 - At phone width the band becomes part of normal document flow so it cannot cover navigation or the current action.
 - Practice and maintenance may both be true during a transition. They share one ordered `sy-status-stack`; neither banner may cover, replace, or visually merge with the other.
 - Practice PDF identity repeats in filename, document body, and footer. The marker does not rely on colour and stays independent from the selected output language.
+
+### Browser-trial identity
+
+- The trial is a product demonstration, not a second Practice Mode. Practice Mode is a durable isolated NiceGUI rehearsal with SQLite, audit, backup and restore; `/try` is a static, short-lived browser simulation with none of those systems.
+- A concise privacy seal states “fictional data / this tab only / 30 minutes / no server write” in Traditional Chinese first with complete English support. The statement remains visible at phone width and does not rely on colour.
+- Directory, leave controls, roster preview and PDF action share the same calm workbench grammar as the real product, but the trial omits publication, fairness totals, backups, restore, audit, import, settings and administrative navigation rather than showing misleading disabled controls.
+- The bilingual trial PDF is A4 landscape, keeps all names Chinese and carries an unmistakable non-official identity. It is created on-device; after download, retention belongs to the visitor's explicit save action.
 
 ---
 

@@ -11,6 +11,7 @@ node_modules/
 out/
 frontend/node_modules/
 frontend/.next/
+**/.wrangler/
 
 # Local environment
 .env

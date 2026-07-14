@@ -8,7 +8,7 @@
 
 **生成草稿 → 核對 → 發布 → 匯出 PDF → 已發布後請假調整 → 公平解釋 → 備份／還原 → 交接。**
 
-我把公平、清晰、責任、耐心與關顧定為這個系統的原則。所有人只需記住同一個正式網站：訪客在未登入狀態只能查看我明確分享的已發布週表；獲准管理員在同一網站按「管理員登入」，經 Cloudflare Access 驗證後才可使用完整工作台。正式名單、請假原因、公平帳本、PDF、備份及完整操作資料仍留在受控 Windows 主機；唯讀分享只把最少欄位的加密密文送到 Cloudflare KV。
+我把公平、清晰、責任、耐心與關顧定為這個系統的原則。所有人只需記住同一個正式網站：目前可閱讀不含值班資料的產品導覽，或查看我明確分享且永遠唯讀的 `/view#…` 已發布週表；目前原始碼候選已加入 `/try`，讓訪客以固定虛構中文姓名完成一次只留在瀏覽器分頁的 30 分鐘試用，但正式網址仍待重新部署及核對。獲准管理員在同一網站按「管理員登入」，經 Cloudflare Access 驗證後才可使用完整工作台。正式名單、請假原因、公平帳本、PDF、備份及完整操作資料仍留在受控 Windows 主機；唯讀分享只把最少欄位的加密密文送到 Cloudflare KV，而候選試用不會寫入 KV、NiceGUI、SQLite、備份或日誌。
 
 [English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)
 
@@ -44,11 +44,25 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 ### 第一次接手：先用練習模式走一次完整流程
 
+下一候選版本的正式資料契約是由零開始，**不會自動載入任何示範名單**。第一次登入看見空白名單才是正確狀態；先在練習模式完成演練，再返回正式模式匯入及逐人核對真正名單。只有本機 Practice Mode 會自動載入 `data/demo/prefects.zh-HK.seed.json` 的虛構資料。現有正式主機仍須完成已驗證備份、Viewer 撤銷、受控清除、完整測試及重新部署，才可聲稱已達到此狀態。
+
 - 雙擊 `START_PRACTICE_MODE.cmd`。它使用 8090–8109、`data/practice/` 內的獨立 SQLite、備份、日誌及介面偏好，並自動載入虛構中文姓名；不會讀寫正式資料庫或正式備份。
 - 每一頁頂部都會顯示繁中／英文「練習模式」狀態列；練習 PDF 的檔名、正文及頁尾均標示不可作正式發布。
 - 可放心練習「請假 → 生成 → 手動修改 → 發布 → 雙語 PDF → 發布後請假調整 → 公平審核 → 備份／還原」。
 - 要重新開始時，先關閉練習模式的黑色視窗，再雙擊 `RESET_PRACTICE_MODE.cmd`；它只會清除 `data/practice/`，然後重新建立虛構練習環境。
 - 正式日常工作使用上述唯一網站。`START_SING_YIN_ROSTER.cmd` 保留給主機維護及 Cloudflare 故障後備；兩個本機啟動器會透過 `/healthz` 的 `applicationMode` 身份辨識服務，不會互相誤開。
+
+### 已完成原始碼、尚待部署：訪客互動試用
+
+以下發布契約已在原始碼中實作，並已有聚焦測試與獨立瀏覽器驗證器；完整發布閘門、正式 Worker 重新部署及部署後瀏覽器核對仍未完成，因此不表示目前正式網址已啟用 `/try`：
+
+- `/guest` 是產品與安全邊界導覽；它解釋平台用途、每週流程、公平保障及哪些操作只屬管理員。
+- `/try` 載入固定的虛構中文姓名、職位及班別，讓訪客登記示範請假、生成並核對週表、預覽及直接下載中英並列的 A4 橫向 PDF。姓名在兩種語言均保持中文。
+- Worker 只提供同源、版本控制的 HTML／CSS／JavaScript 靜態資產。進入試用後，名單選擇、請假、生成結果及 PDF 都在目前分頁運算；沒有試用 API，也不接觸 VPC、NiceGUI、SQLite、KV、公平帳本、備份或伺服器日誌。
+- 試用狀態只使用 `sessionStorage`，建立後 30 分鐘失效，關閉分頁亦會清除；「重置」可立即刪除。只有訪客主動下載的 PDF 會因使用者選擇保存而留在裝置。
+- 試用結果不能發布、不能建立 `/view#…` 連結、不能更新 `history_weight`，也不能匯入正式模式。要練習完整發布、審計、備份及還原，仍應使用隔離的 Practice Mode。
+
+維護者在候選版本發布前，必須依序執行聚焦 Python 測試、Worker Deno 契約、完整 Python 套件及 `scripts/verify_guest_trial.py`；實際命令與正式主機一次性清除程序見 [單一網站存取手冊](docs/PUBLIC_ROSTER_VIEWER.md) 及 [Windows 專用主機完整設定手冊](docs/WINDOWS_DEDICATED_HOST_SETUP.md)。
 
 日常安全次序：
 
@@ -106,7 +120,7 @@ python -X utf8 -m nicegui_app.main
 | 雙擊啟動、埠號衝突、重複開啟 | [快速啟動](docs/QUICKSTART.md) |
 | 從零設定長期使用的 Windows 專用主機 | [Windows 專用主機完整設定手冊](docs/WINDOWS_DEDICATED_HOST_SETUP.md) |
 | 不購買網域，以同一 workers.dev 網站提供訪客唯讀及管理員登入 | [Cloudflare 免費無網域遠端存取手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md) |
-| 登入、登出、建立、發送、到期及撤銷唯讀週表 | [單一網站存取手冊](docs/PUBLIC_ROSTER_VIEWER.md) |
+| 訪客導覽、30 分鐘裝置內試用、登入、登出及唯讀週表 | [單一網站存取手冊](docs/PUBLIC_ROSTER_VIEWER.md) |
 | 第一次接手、隔離練習及重設 | `START_PRACTICE_MODE.cmd`、`RESET_PRACTICE_MODE.cmd` 及 [快速啟動](docs/QUICKSTART.md) |
 | 備份、還原、交接、正式驗收 | [首次發布與交接手冊](docs/RELEASE_HANDOVER.md) |
 | 每項驗收要求的自動化證據與真人責任 | [正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md) |
@@ -147,7 +161,10 @@ README、架構文件及發布報告中的工程成果亦整理成獨立網站�
 flowchart TB
     GUEST["訪客<br/>同一 workers.dev 網站"] --> EDGE["Cloudflare Worker<br/>單一正式入口"]
     OP["首席導學風紀<br/>管理員登入 + 電郵單次驗證碼"] --> EDGE
-    EDGE -->|未登入| VIEWER["唯讀訪客頁<br/>加密已發布週表"]
+    EDGE --> TOUR["/guest 產品導覽<br/>不含值班資料"]
+    EDGE --> TRIAL["/try 裝置內試用<br/>30 分鐘 sessionStorage"]
+    TRIAL --> TRIALPDF["瀏覽器直接產生<br/>雙語 A4 PDF"]
+    EDGE -->|完整 /view#… 連結| VIEWER["唯讀訪客頁<br/>加密已發布週表"]
     EDGE -->|/auth 驗證 Access JWT<br/>其後驗證簽署管理 session| VPC["Workers VPC + Tunnel<br/>HTTP · WebSocket"]
     VPC --> UI["NiceGUI 操作層<br/>雙語 · 深淺模式 · 可存取提示"]
     UI --> WF["roster_workflow<br/>交易 · 公平帳本 · 審計"]
@@ -203,7 +220,7 @@ stateDiagram-v2
 - **校規單一來源：** 頁面不自行決定誰可在哪裏當值。
 - **公平持久而可解釋：** 草稿不入帳，發布只入帳一次，請假調整留下扣回與轉移紀錄。
 - **重要寫入可復原：** 快照、manifest、SHA-256、SQLite 完整性及還原前安全快照共同工作。
-- **資料邊界清楚：** 同一網站不等於相同權限。未登入訪客只可讀取我明確確認後保存的最少週表密文；Worker 只在 `/auth/login` 接收及驗證 Access JWT，之後每個 OP 請求均改為驗證獨立簽署的管理員 session 及精確電郵白名單，才經 VPC 連到受控主機。解密鑰匙只在完整分享連結的 URL fragment。
+- **資料邊界清楚：** 同一網站不等於相同權限。`/guest` 只解釋平台；`/try` 只在分頁處理固定虛構資料；未登入訪客只有取得完整 `/view#…` 才可讀取我明確確認後保存的最少週表密文。Worker 只在 `/auth/login` 接收及驗證 Access JWT，之後每個 OP 請求均改為驗證獨立簽署的管理員 session 及精確電郵白名單，才經 VPC 連到受控主機。解密鑰匙只在完整分享連結的 URL fragment。
 
 ## YouTube 音樂控制窗（自選）
 
@@ -247,6 +264,9 @@ Worker 部署必須在 Cloudflare secret store 同時具備 `ADMIN_BEARER_TOKEN`
 
 **資料保存在甚麼地方？**  
 正式名單、週表、公平帳本及審計保存在受控電腦的本機 SQLite；音樂和個人介面偏好與排班資料分開。
+
+**訪客試用會保存、上載或影響正式資料嗎？**
+不會。`/try` 只使用固定虛構中文姓名，互動狀態留在目前分頁的 `sessionStorage`，30 分鐘後或關閉分頁時清除；它不呼叫應用 API、不寫入 KV／VPC／NiceGUI／SQLite／備份／日誌，也不更新公平帳本。只有訪客按「下載」後自行保存的 PDF 會留在其裝置。
 
 **可否直接用舊 SQLite 覆蓋目前資料庫？**  
 不可。必須在「系統設定」選擇已驗證快照，讓系統先建立安全快照，再執行原子還原及審計。

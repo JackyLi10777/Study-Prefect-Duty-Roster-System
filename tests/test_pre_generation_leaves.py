@@ -4,6 +4,7 @@ from datetime import date
 
 import pytest
 
+from nicegui_app.config import PREFECT_SEED_PATH
 from nicegui_app.services.roster_workflow import RosterWorkflow, WorkflowError
 
 
@@ -15,6 +16,7 @@ def workflow(tmp_path) -> RosterWorkflow:
     service = RosterWorkflow(
         database_path=tmp_path / "sing-yin.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     service.bootstrap()
     return service

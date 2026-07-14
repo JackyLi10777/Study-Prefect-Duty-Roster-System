@@ -6,6 +6,7 @@ from threading import Barrier
 
 import pytest
 
+from nicegui_app.config import PREFECT_SEED_PATH
 from nicegui_app.services.roster_workflow import RosterWorkflow, WorkflowConflictError, WorkflowError
 
 
@@ -17,6 +18,7 @@ def workflow(tmp_path):
     service = RosterWorkflow(
         database_path=tmp_path / "sing-yin.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     service.bootstrap()
     return service

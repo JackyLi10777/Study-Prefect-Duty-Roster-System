@@ -12,6 +12,7 @@ from zipfile import ZipFile
 
 import pytest
 
+from nicegui_app.config import PREFECT_SEED_PATH
 from nicegui_app.services.roster_workflow import CommittedWriteBackupError, RosterWorkflow, WorkflowError
 
 
@@ -22,6 +23,7 @@ def test_publish_backup_failure_is_reported_as_committed_and_cannot_post_fairnes
     workflow = RosterWorkflow(
         database_path=tmp_path / "live.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(WEEK_START)
@@ -54,6 +56,7 @@ def test_backup_evidence_failure_cannot_hide_a_committed_publish(monkeypatch, tm
     workflow = RosterWorkflow(
         database_path=tmp_path / "live.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(WEEK_START)
@@ -77,6 +80,7 @@ def test_automatic_backup_is_verified_and_can_bootstrap_a_fresh_workflow(tmp_pat
     workflow = RosterWorkflow(
         database_path=tmp_path / "live.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     workflow.bootstrap()
 
@@ -101,6 +105,7 @@ def test_backup_verification_rejects_a_tampered_manifest_checksum(tmp_path) -> N
     workflow = RosterWorkflow(
         database_path=tmp_path / "live.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(WEEK_START)
@@ -120,6 +125,7 @@ def test_backup_inventory_counts_safe_invalid_reason_codes(tmp_path) -> None:
     workflow = RosterWorkflow(
         database_path=tmp_path / "live.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     workflow.bootstrap()
     first = workflow.generate_and_save_draft(WEEK_START).backup_path
@@ -219,6 +225,7 @@ def test_verified_handover_package_contains_only_a_verified_snapshot_and_manifes
     workflow = RosterWorkflow(
         database_path=tmp_path / "live.sqlite3",
         backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
     )
     workflow.bootstrap()
     draft = workflow.generate_and_save_draft(WEEK_START)

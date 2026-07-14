@@ -13,8 +13,13 @@ def dashboard_page() -> None:
     scripture = verse.scripture_zh if locale_is_zh else verse.scripture_en
     reflection = verse.reflection_zh if locale_is_zh else verse.reflection_en
     weeks = workflow.roster_weeks()
+    has_prefects = bool(workflow.prefects())
     latest = weeks[0] if weeks else None
-    if latest is None:
+    if not has_prefects:
+        next_title_key = "flow_directory"
+        next_action_key = "open_prefects"
+        next_action = lambda: _navigate_with_feedback("/prefects")
+    elif latest is None:
         next_title_key = "flow_generate"
         next_action_key = "create_draft"
         next_action = lambda: _navigate_with_feedback("/rosters")
@@ -65,14 +70,20 @@ def dashboard_page() -> None:
                     with ui.column().classes("gap-1"):
                         ui.html(t("workbench_title"), tag="h2").classes("sy-workbench-title")
                         ui.label(t("workbench_intro")).classes("sy-workbench-intro")
-                    if latest is None:
+                    if not has_prefects:
+                        _tone_badge(t("flow_directory_ready"), "attention")
+                    elif latest is None:
                         _tone_badge(t("flow_no_roster"), "action")
                     elif latest["status"] == "draft":
                         _tone_badge(t("flow_draft_ready"), "action")
                     else:
                         _tone_badge(t("flow_published_ready"), "stable")
                 with ui.element("ol").classes("sy-flow mt-7").props(f'aria-label="{t("workbench_title")}"'):
-                    if latest is None:
+                    if not has_prefects:
+                        _render_flow_step(number=1, title_key="flow_directory", detail_key="flow_directory_detail", state="active", state_key="flow_current", icon="group_add", action_key="open_prefects", action=lambda: _navigate_with_feedback("/prefects"))
+                        _render_flow_step(number=2, title_key="flow_generate", detail_key="flow_generate_detail", state="pending", state_key="flow_waiting", icon="edit_calendar")
+                        _render_flow_step(number=3, title_key="flow_review", detail_key="flow_review_detail", state="pending", state_key="flow_waiting", icon="fact_check")
+                    elif latest is None:
                         _render_flow_step(number=1, title_key="flow_generate", detail_key="flow_generate_detail", state="active", state_key="flow_current", icon="edit_calendar", action_key="create_draft", action=lambda: _navigate_with_feedback("/rosters"))
                         _render_flow_step(number=2, title_key="flow_review", detail_key="flow_review_detail", state="pending", state_key="flow_waiting", icon="fact_check")
                         _render_flow_step(number=3, title_key="flow_leave", detail_key="flow_leave_detail", state="pending", state_key="flow_waiting", icon="event_busy")

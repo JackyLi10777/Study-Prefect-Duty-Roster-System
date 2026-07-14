@@ -1,3 +1,12 @@
+import {
+  GUEST_PLATFORM_HTML,
+  GUEST_PLATFORM_JS,
+  TRIAL_CSS,
+  TRIAL_HTML,
+  TRIAL_JS,
+  TRIAL_SECURITY_HEADERS,
+} from './guest_trial.js';
+
 const SHARE_SCHEMA = 'sing-yin-public-roster-v1';
 const SHARE_KEY_PREFIX = 'share:';
 const CONTENT_SHARE_KEY_PREFIX = 'share:v2:';
@@ -20,7 +29,7 @@ const accessJwksCache = new Map();
 // Small, non-sensitive landing-page selection copied from the canonical
 // devotional seed. Tests compare every field with the RCUV 2010 / NKJV source
 // so the public entrance cannot silently drift from the main application.
-export const LANDING_DEVOTIONALS = Object.freeze([
+const LANDING_DEVOTIONALS = Object.freeze([
   Object.freeze({ id: 'dv-0015', referenceZh: '哥林多前書 16:14', referenceEn: '1 Corinthians 16:14', scriptureZh: '你們所做的一切都要憑愛心而做。', scriptureEn: 'Let all that you do be done with love.', reflectionZh: '凡事憑愛心而行', reflectionEn: 'Let All Be Done in Love', prayerZh: '主啊，願愛約束我的語氣、決定和每一項服事。', prayerEn: 'Lord, let love govern my tone, decisions, and every act of service.' }),
   Object.freeze({ id: 'dv-0024', referenceZh: '哥林多前書 4:2', referenceEn: '1 Corinthians 4:2', scriptureZh: '所求於管家的，是要他忠心。', scriptureEn: 'Moreover it is required in stewards that one be found faithful.', reflectionZh: '管家所求的是忠心', reflectionEn: 'Faithful Stewards', prayerZh: '主啊，使我記得自己是管家，並在隱密處也忠心。', prayerEn: 'Lord, remind me that I am a steward, and make me faithful even in hidden work.' }),
   Object.freeze({ id: 'dv-0028', referenceZh: '阿摩司書 5:24', referenceEn: 'Amos 5:24', scriptureZh: '惟願公平如大水滾滾， 公義如江河滔滔。', scriptureEn: 'But let justice run down like water, And righteousness like a mighty stream.', reflectionZh: '公平如水滾滾', reflectionEn: 'Justice Like Waters', prayerZh: '主啊，使公平在我們團隊中成為穩定流動的常態。', prayerEn: 'Lord, make fairness a steady stream in our team, not an occasional act.' }),
@@ -154,7 +163,7 @@ const VIEWER_HTML = `<!doctype html>
           <span class="guest-enter-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="19" height="19"><path d="M2.8 12s3.4-6 9.2-6 9.2 6 9.2 6-3.4 6-9.2 6-9.2-6-9.2-6Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>
           </span>
-          <span class="guest-enter-copy"><strong>以訪客身份瀏覽</strong><span lang="en">Continue as guest · View only</span></span>
+          <span class="guest-enter-copy"><strong>訪客導覽及虛構試用</strong><span lang="en">Explore & try with fictional data</span></span>
           <span aria-hidden="true">→</span>
         </a>
         <p id="loginAssurance" class="login-assurance" aria-live="polite">
@@ -184,7 +193,7 @@ const VIEWER_HTML = `<!doctype html>
       </aside>
 
       <div class="trust-strip" aria-label="平台存取特點 · Access principles">
-        <div class="trust-item"><span aria-hidden="true">01</span><p><strong>分享連結只供查看</strong><small lang="en">Read-only sharing</small></p></div>
+        <div class="trust-item"><span aria-hidden="true">01</span><p><strong>正式分享連結只供查看</strong><small lang="en">Official shares stay read-only</small></p></div>
         <div class="trust-item"><span aria-hidden="true">02</span><p><strong>管理功能受控登入</strong><small lang="en">Verified administrator access</small></p></div>
         <div class="trust-item"><span aria-hidden="true">03</span><p><strong>登入後仍是同一工作台</strong><small lang="en">One continuous workbench</small></p></div>
       </div>
@@ -2294,8 +2303,18 @@ function jsonResponse(payload, status = 200) {
 
 function secured(input) {
   const output = new Response(input.body, input);
-  for (const [name, value] of Object.entries(SECURITY_HEADERS)) output.headers.set(name, value);
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    if (!output.headers.has(name)) output.headers.set(name, value);
+  }
   return output;
+}
+
+function trialAssetResponse(body, contentType, method, status = 200, headers = {}) {
+  return response(method === 'HEAD' ? null : body, status, {
+    ...TRIAL_SECURITY_HEADERS,
+    'Content-Type': contentType,
+    ...headers,
+  });
 }
 
 function methodNotAllowed(allowed) {
@@ -2704,10 +2723,36 @@ async function route(request, env, context) {
   const path = url.pathname;
 
   if (path === '/guest') {
-    if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
-    return response(request.method === 'HEAD' ? null : VIEWER_HTML, 200, {
-      'Content-Type': 'text/html; charset=utf-8',
-    });
+    if (!['GET', 'HEAD'].includes(request.method)) return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
+    return trialAssetResponse(GUEST_PLATFORM_HTML, 'text/html; charset=utf-8', request.method);
+  }
+  if (path === '/guest.js') {
+    if (!['GET', 'HEAD'].includes(request.method)) return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
+    return trialAssetResponse(GUEST_PLATFORM_JS, 'text/javascript; charset=utf-8', request.method);
+  }
+  if (path.startsWith('/guest/')) {
+    if (!['GET', 'HEAD'].includes(request.method)) {
+      return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
+    }
+    return trialAssetResponse('Guest asset not found', 'text/plain; charset=utf-8', request.method, 404);
+  }
+  if (path === '/try') {
+    if (!['GET', 'HEAD'].includes(request.method)) return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
+    return trialAssetResponse(TRIAL_HTML, 'text/html; charset=utf-8', request.method);
+  }
+  if (path.startsWith('/try/')) {
+    if (!['GET', 'HEAD'].includes(request.method)) {
+      return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
+    }
+    return trialAssetResponse('Trial asset not found', 'text/plain; charset=utf-8', request.method, 404);
+  }
+  if (path === '/trial.css') {
+    if (!['GET', 'HEAD'].includes(request.method)) return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
+    return trialAssetResponse(TRIAL_CSS, 'text/css; charset=utf-8', request.method);
+  }
+  if (path === '/trial.js') {
+    if (!['GET', 'HEAD'].includes(request.method)) return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
+    return trialAssetResponse(TRIAL_JS, 'text/javascript; charset=utf-8', request.method);
   }
   if (path === '/view' && request.method === 'GET') {
     return response(VIEWER_HTML, 200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -2728,7 +2773,7 @@ async function route(request, env, context) {
     return jsonResponse({
       status: 'ok',
       application: 'sing-yin-roster-gateway',
-      capabilities: ['encrypted-public-viewer', 'access-admin-gateway', 'private-origin-proxy'],
+      capabilities: ['encrypted-public-viewer', 'isolated-client-trial', 'access-admin-gateway', 'private-origin-proxy'],
     });
   }
   if (path === '/api/view') {
@@ -2836,10 +2881,19 @@ export default {
   },
 };
 
+// Cloudflare module workers may expose named functions for service/RPC use,
+// but reject named primitive or object exports at startup.  Keep the test
+// seam callable so the real workerd runtime and the Deno suite exercise the
+// same entry module without exporting constants that make deployment fail.
+export function landingDevotionalsForTest() {
+  return LANDING_DEVOTIONALS;
+}
+
+export function adminSessionCookieNameForTest() {
+  return ADMIN_SESSION_COOKIE_NAME;
+}
+
 export {
-  ADMIN_SESSION_COOKIE_NAME,
-  SECURITY_HEADERS,
-  SHARE_SCHEMA,
   accessTokenFromRequest,
   authenticatedProxyRequestAllowed,
   createAdminSessionToken,
