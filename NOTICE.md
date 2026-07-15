@@ -28,6 +28,26 @@ from its own localhost origin and does not depend on a runtime CDN request.
 使用。版本化程式及 npm 套件資料保存在 `nicegui_app/assets/vendor/`；網站只從
 本機 localhost 載入，不會在運行時依賴 CDN。
 
+The shared control family and public gateway include substantially rewritten
+interaction patterns adapted from Uiverse.io under the MIT License. References
+include adamgiebl's “massive-insect-65” button, andrew-demchenk0's
+“afraid-squid-51” button, Jay-9527's “weak-dingo-78” switch, Gautammsharma's
+“massive-rabbit-40” checkbox, Lanicet's “fluffy-otter-43” progress track,
+Li-Deheng's “shy-moth-10” Arrow Flow Button, and JkHuger's “little-falcon-22”
+loader. Production versions use local semantic tokens, scoped Quasar／gateway
+selectors, keyboard and touch states, real busy／disabled／progress semantics,
+and reduced-motion fallbacks. No Uiverse runtime dependency or remote asset is
+loaded.
+
+共用控制元件及公開入口採用若干經大幅重寫的 Uiverse.io 互動概念，並依 MIT
+License 使用。參考來源包括 adamgiebl 的「massive-insect-65」按鈕、
+andrew-demchenk0 的「afraid-squid-51」按鈕、Jay-9527 的
+「weak-dingo-78」切換器、Gautammsharma 的「massive-rabbit-40」勾選框、
+Lanicet 的「fluffy-otter-43」進度軌道、Li-Deheng 的「shy-moth-10」Arrow
+Flow Button，以及 JkHuger 的「little-falcon-22」載入元件。正式版本改用本專案
+語意色彩變數、限定 Quasar／入口類別、鍵盤／觸控狀態、真實 busy／disabled／
+progress 語意及 reduced-motion 後備；運行時不會載入 Uiverse 依賴或遠端素材。
+
 The optional local YouTube audio-import adapter uses the hash-locked `yt-dlp`
 2026.7.4 Python wheel distributed under the Unlicense and the hash-locked Deno
 2.9.2 runtime under the MIT License. Its operation remains separate from roster

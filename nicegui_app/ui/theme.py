@@ -22,6 +22,32 @@ ATMOSPHERE_THEME_PAIRS = {
     "empty-ready": ("empty-ready-light-v1.webp", "empty-ready-dark-v1.webp"),
 }
 
+QUASAR_LIGHT_PALETTE = {
+    "primary": "#35647C",
+    "secondary": "#0F766E",
+    "accent": "#0F766E",
+    "positive": "#0F766E",
+    "negative": "#963C35",
+    "info": "#35647C",
+    # Quasar renders warning notifications with dark text, so the framework
+    # fill must stay pale; the darker amber remains a CSS foreground token.
+    "warning": "#F0C96A",
+}
+
+QUASAR_DARK_PALETTE = {
+    # These values are framework FILLS (white text), not dark-mode foregrounds.
+    # Lighter action/stable/coral foregrounds remain in the CSS role tokens.
+    "primary": "#47758B",
+    "secondary": "#0F766E",
+    "accent": "#0F766E",
+    "dark": "#1C1C1E",
+    "dark_page": "#0D1117",
+    "positive": "#0F766E",
+    "negative": "#9A4A43",
+    "info": "#35647C",
+    "warning": "#F0C96A",
+}
+
 
 def current_theme() -> str:
     return app.storage.user.get("theme", "light")
@@ -44,13 +70,19 @@ def set_sound_feedback(enabled: bool) -> None:
     app.storage.user["sound_feedback"] = bool(enabled)
 
 
+def apply_quasar_palette(is_dark: bool) -> None:
+    """Keep Quasar utility classes aligned with the semantic CSS token system."""
+
+    ui.colors(**(QUASAR_DARK_PALETTE if is_dark else QUASAR_LIGHT_PALETTE))
+
+
 def apply_theme():  # type: ignore[no-untyped-def]
     """Inject one restrained theme system for every page before content renders."""
     is_dark = current_theme() == "dark"
     dark_mode = ui.dark_mode(value=is_dark)
-    # Quasar's semantic primary is the single source for actionable controls.
-    # Named teal palette classes remain available for verified/stable badges.
-    ui.colors(primary="#47758B" if is_dark else "#35647C")
+    # Quasar utilities and the CSS tokens must share every semantic role;
+    # otherwise framework defaults can leak into danger and dark-mode controls.
+    apply_quasar_palette(is_dark)
     ui.add_head_html(THEME_HEAD_HTML)
     ui.add_head_html(MOTION_HEAD_HTML)
     return dark_mode

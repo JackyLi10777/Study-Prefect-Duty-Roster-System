@@ -1,11 +1,34 @@
 from __future__ import annotations
 
 from inspect import signature
+import re
 
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.ui.i18n import EN, MESSAGES, ZH_HK
 from nicegui_app.ui import page_shared as pages
 from tests.ui_source import combined_page_source, combined_theme_source
+
+
+def _css_rules(source: str, selector_fragment: str) -> list[tuple[str, str]]:
+    """Collect selector/declaration pairs containing a stable fragment."""
+
+    matches = [
+        (match.group("selectors"), match.group("body"))
+        for match in re.finditer(
+            r"(?P<selectors>[^{}]+)\{(?P<body>[^{}]*)\}",
+            source,
+            re.DOTALL,
+        )
+        if selector_fragment in match.group("selectors")
+    ]
+    assert matches, f"Missing CSS contract for {selector_fragment}"
+    return matches
+
+
+def _css_declarations(source: str, selector_fragment: str) -> str:
+    """Collect declarations for every rule containing a stable selector fragment."""
+
+    return " ".join(body for _selectors, body in _css_rules(source, selector_fragment))
 
 
 def test_shared_shell_provides_landmarks_skip_link_and_accessible_icon_controls() -> None:
@@ -47,7 +70,11 @@ def test_quiet_precision_shell_uses_semantic_action_and_motion_tokens() -> None:
     assert ".sy-nav-active:before" in theme
     assert "--sy-button-primary-bg:" in theme
     assert ".sy-sidebar .q-btn .q-icon" in theme
-    assert 'ui.colors(primary="#47758B" if is_dark else "#35647C")' in theme
+    assert "apply_quasar_palette(is_dark)" in theme
+    assert '"negative": "#963C35"' in theme
+    assert '"negative": "#9A4A43"' in theme
+    assert '"primary": "#47758B"' in theme
+    assert '"warning": "#F0C96A"' in theme
     assert "color=teal-8" not in pages_source
     assert "bg-teal-" not in theme
     assert "color=primary" in pages_source
@@ -59,6 +86,9 @@ def test_quiet_precision_shell_uses_semantic_action_and_motion_tokens() -> None:
     assert "--sy-on-danger:" in theme
     assert "var(--sy-on-accent)" in theme
     assert "var(--sy-on-danger)" in theme
+    assert "text-transform: none !important" in theme
+    assert ".q-notification.bg-negative" in theme
+    assert ".q-uploader__header" in theme
     assert "100dvh" in theme
     assert "(pointer: coarse)" in theme
     assert "sidebar-stewardship-dark-v1.webp" in theme
@@ -69,9 +99,142 @@ def test_quiet_precision_shell_uses_semantic_action_and_motion_tokens() -> None:
     assert ".sy-co-creation-crest {" in theme
     assert ".body--dark .sy-co-creation-crest { border-color: transparent; background: transparent;" in theme
     assert "drop-shadow(0 1px 0 rgba(255,255,255" not in theme
-    assert ".sy-co-creation-crest { border-radius: 0; }" in theme
+    assert "border-radius: 0" in _css_declarations(theme, ".sy-co-creation-crest")
     assert ".sy-brand-mark .q-img__image--with-transition" in theme
     assert "transition-duration: 0s !important" in theme
+
+
+def test_global_control_skin_keeps_semantic_button_roles_distinct() -> None:
+    """Depth may be shared globally, but meaning must still come from the action role."""
+
+    theme = combined_theme_source()
+
+    for token in (
+        "--sy-control-edge:",
+        "--sy-control-highlight:",
+        "--sy-control-shadow:",
+        "--sy-control-shadow-hover:",
+    ):
+        assert token in theme
+
+    primary = _css_declarations(theme, ".q-btn.q-btn--standard.bg-primary")
+    outline = _css_declarations(theme, ".q-btn.q-btn--outline")
+    flat = _css_declarations(theme, ".q-btn.q-btn--flat")
+    danger = " ".join(
+        (
+            _css_declarations(theme, ".q-btn.text-negative"),
+            _css_declarations(theme, ".q-btn.bg-negative"),
+        )
+    )
+    attention = _css_declarations(theme, ".q-btn.sy-button-attention")
+
+    assert "--sy-button-primary-bg" in primary
+    assert "--sy-control-highlight" in primary and "--sy-control-shadow" in primary
+    assert "--sy-role-action" in outline and "--sy-control-outline-shadow" in outline
+    assert "--sy-action-soft" in flat or "--sy-role-action-soft" in flat
+    assert "--sy-role-danger" in danger and "--sy-on-danger" in danger
+    assert "--sy-button-danger-bg" in danger
+    assert ".q-btn.bg-negative .q-btn__content" in theme
+    assert "--sy-role-attention" in attention and "--sy-control-outline-shadow" in attention
+
+    action_outline_rules = [
+        selectors
+        for selectors, declarations in _css_rules(theme, ".q-btn.q-btn--outline")
+        if "--sy-role-action" in declarations
+    ]
+    assert action_outline_rules
+    assert all(":not(.text-negative)" in selectors for selectors in action_outline_rules)
+    assert all(":not(.sy-button-attention)" in selectors for selectors in action_outline_rules)
+
+
+def test_global_control_skin_excludes_quiet_navigation_and_round_controls() -> None:
+    """Global depth must not make compact chrome look like competing primary actions."""
+
+    theme = combined_theme_source()
+    raised_primary_rules = [
+        selectors
+        for selectors, declarations in _css_rules(theme, ".q-btn.q-btn--standard.bg-primary")
+        if "--sy-button-primary-bg" in declarations
+    ]
+    assert raised_primary_rules
+    assert all(":not(.q-btn--round)" in selectors for selectors in raised_primary_rules)
+
+    for selector_fragment in (
+        ".sy-header-tools .q-btn",
+        ".sy-sidebar .q-btn",
+        ".sy-mobile-tab",
+    ):
+        declarations = _css_declarations(theme, selector_fragment)
+        assert "box-shadow: none" in declarations, selector_fragment
+
+    round_control = " ".join(
+        declarations
+        for selectors, declarations in _css_rules(theme, ".q-btn--round")
+        if ":not(.q-btn--round)" not in selectors
+    )
+    assert round_control
+    assert "box-shadow:" in round_control
+    assert "--sy-control-shadow" not in round_control
+
+
+def test_global_control_skin_preserves_touch_focus_disabled_and_busy_states() -> None:
+    theme = combined_theme_source()
+
+    button = _css_declarations(theme, ".q-btn")
+    flat = _css_declarations(theme, ".q-btn.q-btn--flat")
+    focus = _css_declarations(theme, ".q-btn:focus-visible")
+    disabled = " ".join(
+        (
+            _css_declarations(theme, ".q-btn.disabled"),
+            _css_declarations(theme, '.q-btn[aria-disabled="true"]'),
+        )
+    )
+    busy = _css_declarations(theme, '.q-btn[aria-busy="true"]')
+
+    assert "min-height: 44px" in button
+    assert "min-height: 44px" in flat
+    assert "outline:" in focus and "var(--sy-focus)" in focus
+    assert "outline-offset:" in focus
+    assert "cursor: not-allowed" in disabled
+    assert "transform: none" in disabled
+    assert "opacity:" in disabled or "filter:" in disabled
+    assert "cursor: progress" in busy or "cursor: wait" in busy
+    pointer_selector = '.q-btn:not(.disabled):not([aria-disabled="true"]):not([aria-busy="true"])'
+    assert pointer_selector in theme
+    assert theme.index(pointer_selector) < theme.rindex('.q-btn[aria-busy="true"] { cursor: wait; }')
+
+
+def test_global_form_and_progress_skin_has_complete_semantic_states() -> None:
+    theme = combined_theme_source()
+
+    checkbox = _css_declarations(theme, ".q-checkbox__bg")
+    checkbox_checked = _css_declarations(theme, ".q-checkbox__inner--truthy")
+    toggle = _css_declarations(theme, ".q-toggle__track")
+    toggle_checked = _css_declarations(theme, ".q-toggle__inner--truthy")
+    radio_checked = _css_declarations(theme, ".q-radio__inner--truthy")
+    active_tab = _css_declarations(theme, ".q-tab--active")
+    progress = _css_declarations(theme, ".q-linear-progress__model")
+    disabled = " ".join(
+        _css_declarations(theme, selector)
+        for selector in (".q-field--disabled", ".q-checkbox.disabled", ".q-toggle.disabled", ".q-radio.disabled")
+    )
+
+    assert "border-color:" in checkbox and "box-shadow:" in checkbox
+    assert "--sy-role-action" in checkbox_checked
+    assert "box-shadow:" in toggle and "--sy-role-stable" in toggle_checked
+    assert "--sy-role-action" in radio_checked
+    assert "--sy-action-soft" in active_tab
+    assert "--sy-button-primary-bg" in progress
+    assert "opacity:" in disabled and "cursor: not-allowed" in disabled
+
+    for focus_selector in (
+        ".q-checkbox:focus-within",
+        ".q-toggle:focus-within",
+        ".q-radio:focus-within",
+    ):
+        focus = _css_declarations(theme, focus_selector)
+        assert "outline:" in focus and "var(--sy-focus)" in focus
+        assert "outline-offset:" in focus
 
 
 def test_component_colour_roles_are_semantic_and_consistent() -> None:
@@ -325,3 +488,33 @@ def test_invalid_backup_summary_is_safe_status_copy_not_raw_diagnostics() -> Non
     assert "invalid_backup_summary_body" in summary
     assert '["error"]' not in summary
     assert "verification.get(\"error\")" not in summary
+
+
+def test_reference_navigation_keeps_touch_targets_and_mobile_table_semantics() -> None:
+    theme = combined_theme_source()
+    toc_rule = theme.split(".sy-reference-toc-link {", 1)[1].split("}", 1)[0]
+    mobile_header_rule = theme.split(".sy-troubleshooting-head { position: absolute;", 1)[1].split("}", 1)[0]
+
+    assert "min-height: 44px" in toc_rule
+    assert "display: none" not in mobile_header_rule
+    assert "clip-path: inset(50%)" in mobile_header_rule
+
+
+def test_co_creation_identity_media_keeps_link_focus_touch_and_mobile_reflow() -> None:
+    theme = combined_theme_source()
+    page_source = combined_page_source()
+    social_rule = _css_declarations(theme, ".sy-co-creation-social")
+    focus_rule = _css_declarations(theme, ".sy-co-creation-social:focus-visible")
+    mobile_start = theme.index("@media (max-width: 900px) {", theme.index(".sy-co-creation-profile"))
+    mobile_scope = theme[mobile_start:]
+
+    assert "data-testid=co-creation-profile" in page_source
+    assert "aria-labelledby=co-creation-title" in page_source
+    assert "id=co-creation-title role=heading aria-level=2" in page_source
+    assert "co_creation_instagram_accessible" in page_source
+    assert "min-height: 44px" in social_rule
+    assert "outline: 3px solid var(--sy-focus)" in focus_rule
+    assert ".sy-co-creation-profile { grid-template-columns: 70px minmax(0, 1fr);" in mobile_scope
+    assert ".sy-co-creation-social { width: 100%; justify-content: center;" in mobile_scope
+    assert ".sy-co-creation-crest { display: none;" in mobile_scope
+    assert "object-fit: cover !important" in _css_declarations(theme, ".sy-co-creation-banner .q-img__image")

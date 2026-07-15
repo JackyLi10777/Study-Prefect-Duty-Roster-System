@@ -28,7 +28,7 @@ MESSAGES = {'app_name': {'zh-HK': '聖言中學導學風紀值班系統', 'en': 
  'system_architecture': {'zh-HK': '系統架構與可信設計', 'en': 'System architecture & trust'},
  'rosters': {'zh-HK': '值班表', 'en': 'Rosters'},
  'generate_roster': {'zh-HK': '生成值班表', 'en': 'Generate roster'},
- 'prefects': {'zh-HK': '風紀名單', 'en': 'Prefects'},
+ 'prefects': {'zh-HK': '導學風紀名單', 'en': 'Prefects'},
  'adjustments': {'zh-HK': '請假調整', 'en': 'Leave adjustments'},
  'audit': {'zh-HK': '公平審核', 'en': 'Fairness audit'},
  'handover': {'zh-HK': '交接指引', 'en': 'Handover guide'},
@@ -55,3 +55,10 @@ MESSAGES = {'app_name': {'zh-HK': '聖言中學導學風紀值班系統', 'en': 
  'devotional_return_work': {'zh-HK': '返回本週工作台', 'en': 'Return to the weekly desk'},
  'mark_1045': {'zh-HK': '馬可福音 10:45', 'en': 'Mark 10:45'},
  'why_we_serve': {'zh-HK': '在秩序與責任之中，記得我們服事的原因。', 'en': 'In every duty and decision, remember why we serve.'}}
+
+MESSAGES.update({
+    'reference_on_this_page': {'zh-HK': '本頁內容', 'en': 'On this page'},
+    'reference_continue_reading': {'zh-HK': '繼續閱讀', 'en': 'Continue reading'},
+    'reference_previous': {'zh-HK': '上一頁', 'en': 'Previous'},
+    'reference_next': {'zh-HK': '下一頁', 'en': 'Next'},
+})

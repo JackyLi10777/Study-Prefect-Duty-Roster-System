@@ -14,7 +14,7 @@ import sys
 import time
 from zipfile import ZipFile
 
-from playwright.sync_api import Page, sync_playwright
+from playwright.sync_api import Page, expect, sync_playwright
 from pypdf import PdfReader
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -644,9 +644,9 @@ def main() -> None:
         confirmation = page.get_by_test_id("school-year-rollover-confirmation")
         confirmation.wait_for(state="visible", timeout=10_000)
         confirm_rollover = page.get_by_test_id("confirm-school-year-rollover")
-        assert confirm_rollover.is_disabled()
+        expect(confirm_rollover).to_be_disabled()
         confirmation.fill("新學年重置")
-        assert confirm_rollover.is_enabled()
+        expect(confirm_rollover).to_be_enabled(timeout=10_000)
         with page.expect_navigation(wait_until="domcontentloaded", timeout=30_000):
             confirm_rollover.click()
         page.wait_for_url("**/prefects", timeout=15_000)

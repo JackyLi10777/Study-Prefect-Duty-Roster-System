@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from nicegui_app.ui.page_shared import *  # noqa: F403
+from nicegui_app.ui.reference_navigation import render_page_toc, render_reference_pager
 
 @ui.page("/handover")
 def handover_page() -> None:
@@ -14,12 +15,22 @@ def handover_page() -> None:
             ui.icon("handshake").classes("sy-handover-hero-icon").props("aria-hidden=true")
             ui.label(t("handover")).classes("sy-handover-hero-title")
             ui.label(t("handover_intro")).classes("sy-handover-hero-copy")
-        with ui.card().classes("sy-surface w-full max-w-3xl p-6"):
+        render_page_toc(
+            (
+                ("handover-steps-section", "handover_steps_title"),
+                ("handover-rollover-section", "school_year_rollover_title"),
+                ("handover-readiness-section", "handover_readiness_title"),
+                ("handover-acceptance-section", "acceptance_title"),
+            )
+        )
+        with ui.card().classes("sy-surface w-full max-w-3xl p-6").props(
+            f'id=handover-steps-section aria-label="{t("handover_steps_title")}"'
+        ):
             for key in ("handover_step_one", "handover_step_two", "handover_step_three", "handover_step_four"):
                 ui.label(t(key)).classes("text-sm leading-6")
 
         with ui.element("section").classes("sy-school-year-rollover w-full max-w-3xl").props(
-            f'aria-label="{t("school_year_rollover_title")}" data-testid=school-year-rollover'
+            f'id=handover-rollover-section aria-label="{t("school_year_rollover_title")}" data-testid=school-year-rollover'
         ):
             with ui.row().classes("w-full items-start gap-4 no-wrap"):
                 ui.icon("event_repeat").classes("sy-school-year-rollover-icon").props("aria-hidden=true")
@@ -95,7 +106,7 @@ def handover_page() -> None:
             ("handover_backup_ready", t("verified") if readiness["verifiedBackup"] else t("handover_attention"), readiness["verifiedBackup"]),
         )
         with ui.element("section").classes("sy-handover-readiness-grid w-full").props(
-            f'aria-label="{t("handover")}" data-testid=handover-readiness-grid'
+            f'id=handover-readiness-section aria-label="{t("handover_readiness_title")}" data-testid=handover-readiness-grid'
         ):
             for label_key, value, ready in checks:
                 with ui.element("article").classes("sy-surface sy-handover-readiness-card"):
@@ -129,7 +140,7 @@ def handover_page() -> None:
             "unreadable": "danger",
         }[release_evidence.state]
         with ui.element("section").classes("sy-acceptance-panel w-full").props(
-            f'role=status aria-live=polite aria-label="{t("acceptance_title")}" data-testid=acceptance-status'
+            f'id=handover-acceptance-section role=status aria-live=polite aria-label="{t("acceptance_title")}" data-testid=acceptance-status'
         ):
             with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
                 with ui.row().classes("items-start gap-3 no-wrap"):
@@ -189,6 +200,7 @@ def handover_page() -> None:
                     on_click=lambda: ui.navigate.to("/settings"),
                 ).props("flat data-testid=acceptance-open-settings")
         ui.button(t("open_system_architecture"), icon="account_tree", on_click=lambda: ui.navigate.to("/system-architecture")).props("flat").classes("self-start")
+        render_reference_pager(previous=("/guide", "operator_guide"))
 
 
 @ui.page("/settings")

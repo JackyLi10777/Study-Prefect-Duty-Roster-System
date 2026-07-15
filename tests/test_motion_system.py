@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 
 from nicegui_app.config import PROJECT_ROOT
 
@@ -64,3 +65,60 @@ def test_component_transitions_use_the_shared_motion_tokens() -> None:
     for stray_duration in (".16s", ".18s", ".22s", ".24s", ".32s"):
         assert stray_duration not in theme
     assert "prefers-reduced-motion: reduce" in theme
+
+
+def test_global_control_skin_hover_and_press_motion_stays_bounded() -> None:
+    theme = (PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-theme-v1.css").read_text(
+        encoding="utf-8"
+    )
+
+    fine_marker = "@media (hover: hover) and (pointer: fine)"
+    fine_start = theme.index(fine_marker)
+    fine_end = theme.find("@media", fine_start + len(fine_marker))
+    fine_scope = theme[fine_start : fine_end if fine_end >= 0 else None]
+
+    assert re.search(r"\.q-btn[^{}]*:hover\s*\{", fine_scope)
+    assert ":not(.q-btn--round)" in fine_scope
+    assert "--sy-control-shadow-hover" in fine_scope
+    assert "--sy-motion-state" in fine_scope or "--sy-motion-layer" in fine_scope
+
+    active_rules = " ".join(
+        match.group("body")
+        for match in re.finditer(
+            r"(?P<selectors>[^{}]*\.q-btn[^{}]*:active[^{}]*)\{(?P<body>[^{}]*)\}",
+            theme,
+            re.DOTALL,
+        )
+    )
+    assert active_rules
+    assert "scale(" in active_rules
+    assert "--sy-motion-press" in active_rules
+
+
+def test_global_control_skin_reduced_motion_is_static_and_non_decorative() -> None:
+    theme = (PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-theme-v1.css").read_text(
+        encoding="utf-8"
+    )
+    motion = (PROJECT_ROOT / "nicegui_app" / "assets" / "motion" / "sing-yin-motion.js").read_text(
+        encoding="utf-8"
+    )
+
+    reduced_marker = "@media (prefers-reduced-motion: reduce)"
+    reduced_start = theme.index(reduced_marker)
+    reduced_end = theme.find("@media", reduced_start + len(reduced_marker))
+    reduced_scope = theme[reduced_start : reduced_end if reduced_end >= 0 else None]
+
+    assert ".q-btn:hover" in reduced_scope
+    assert ".sy-co-creation-social:hover" in reduced_scope
+    assert "transform: none" in reduced_scope
+    assert "animation-iteration-count: 1" in reduced_scope
+    assert not re.search(r"animation(?:-iteration-count)?\s*:[^;}]*(?:infinite|forwards\s+infinite)", theme, re.I)
+    assert "repeat: -1" not in motion
+
+    # The shared skin is CSS-owned. Motion may listen on a bounded parent
+    # surface, but it must never allocate a listener for every rendered button.
+    for per_button_listener in (
+        r"querySelectorAll\(\s*['\"][^'\"]*(?:\.q-btn|\bbutton\b)",
+        r"(?:button|btn)\.addEventListener\(",
+    ):
+        assert re.search(per_button_listener, motion, re.I) is None

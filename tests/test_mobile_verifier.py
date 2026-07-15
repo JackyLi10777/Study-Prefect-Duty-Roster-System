@@ -114,7 +114,19 @@ def test_mobile_verifier_declares_real_touch_contexts_and_shared_route_matrix() 
     assert 'get_by_test_id("mobile-bottom-navigation")' in source
     assert "tabs.count() != 4" in source
     assert "item.width < 44 || item.height < 44" in source
+    for selector in (".q-toggle", ".q-checkbox", ".q-radio", ".q-item--clickable"):
+        assert f'"{selector}"' in source
     assert "drawer.evaluate" in source
+    assert 'get_by_test_id("mobile-more")' in source
+    assert "Opening mobile navigation must move focus into the drawer" in source
+    assert 'page.keyboard.press("Shift+Tab")' in source
+    assert "drawer did not cycle Tab to its first control" in source
+    assert 'locator(".q-drawer__backdrop:visible")' in source
+    assert 'page.keyboard.press("Escape")' in source
+    assert "Backdrop-closing mobile navigation must restore focus to More" in source
+    assert "document.activeElement === button" in source
+    assert "button?.getAttribute('aria-label') === 'More'" in source
+    assert "button?.dataset.syDrawerA11y === 'ready'" in source
     assert 'metrics["overflowY"]' in source
     assert "mainPaddingBottom" in source
     assert "navigationHeight" in source

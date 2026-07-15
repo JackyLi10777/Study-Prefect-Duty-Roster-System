@@ -129,6 +129,12 @@ def test_detailed_operator_guidance_and_architecture_copy_remain_bilingual() -> 
         "faq_restore_q",
         "faq_restore_a",
         "co_creation_body",
+        "co_creation_creator_name",
+        "co_creation_creator_role",
+        "co_creation_instagram_action",
+        "co_creation_instagram_accessible",
+        "co_creation_avatar_alt",
+        "co_creation_banner_alt",
         "co_creation_quote",
         "co_creation_signature",
         "co_creation_codex_title",
@@ -148,6 +154,14 @@ def test_detailed_operator_guidance_and_architecture_copy_remain_bilingual() -> 
     assert MESSAGES["co_creation_signature"][ZH_HK].startswith("— 李創杰，")
     assert "公平" in MESSAGES["co_creation_codex_body"][ZH_HK]
     assert "fairness" in MESSAGES["co_creation_codex_body"][EN]
+    assert MESSAGES["co_creation_creator_name"][ZH_HK] == "李創杰 · LI Chuangjie, Jacky"
+    assert MESSAGES["co_creation_creator_name"][EN] == "李創杰 · LI Chuangjie, Jacky"
+    assert "首席導學風紀" in MESSAGES["co_creation_creator_role"][ZH_HK]
+    assert "@5662jacky" in MESSAGES["co_creation_instagram_action"][EN]
+    assert "新分頁" in MESSAGES["co_creation_instagram_accessible"][ZH_HK]
+    assert "new tab" in MESSAGES["co_creation_instagram_accessible"][EN]
+    assert MESSAGES["co_creation_avatar_alt"][ZH_HK]
+    assert MESSAGES["co_creation_banner_alt"][EN]
 
 
 def test_enterprise_operating_model_keeps_official_roles_and_capabilities_bilingual() -> None:

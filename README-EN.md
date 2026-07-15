@@ -278,6 +278,8 @@ the final operator/advisor acceptance checklist.
 I am LI Chuangjie Jacky, Head Study Prefect for 2026–2027. I co-created this
 system with Codex under the Study Prefect Systems & Stewardship Office identity.
 
+**Creator profile:** 李創杰 · LI Chuangjie, Jacky · [Instagram @5662jacky](https://www.instagram.com/5662jacky/)
+
 Codex and I are the only two co-creators of this NiceGUI rebuild and formal
 release. The office name is our two-member project identity;
 it does not represent additional developers, contractors, or a separate team.

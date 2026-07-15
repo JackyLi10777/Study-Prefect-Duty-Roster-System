@@ -17,6 +17,17 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert 'data-testid=mobile-bottom-navigation' in shell
     assert 'data-testid=mobile-drawer-tools' in shell
     assert 'aria-controls=main-navigation-drawer' in shell
+    assert "aria-expanded=false data-testid=mobile-more" in shell
+    assert "_install_mobile_drawer_accessibility()" in shell
+    assert "event.key === 'Escape'" in shell
+    assert "button.focus({preventScroll: true})" in shell
+    assert "event.key !== 'Tab'" in shell
+    assert "const focusable = ()" in shell
+    assert "const shell = drawer.closest('.q-drawer')" in shell
+    assert "observer.observe(shell" in shell
+    assert "event.target.closest('.q-drawer__backdrop')" in shell
+    assert "window.__syDrawerA11yCleanup?.()" in shell
+    assert "controller.abort()" in shell
     assert "show-if-above breakpoint=900" in shell
     assert shell.index('with ui.element("main")') < shell.index("_render_mobile_tabbar(drawer, active_path)")
     assert '@ui.page("/mobile' not in pages
@@ -46,6 +57,8 @@ def test_phone_layout_has_safe_areas_touch_targets_and_scrollable_navigation() -
     assert ".sy-sidebar { position: relative; isolation: isolate; overflow-x: hidden; overflow-y: auto;" in theme
     assert ".sy-header-bar { min-height: 56px; flex-wrap: nowrap !important;" in theme
     assert ".sy-main .q-btn { min-width: 44px; min-height: 44px; }" in theme
+    assert ".sy-main .q-toggle, .sy-main .q-checkbox, .sy-main .q-radio { min-height: 44px; }" in theme
+    assert ".sy-sidebar .q-btn__content { width: 100%; justify-content: flex-start; text-align: left; }" in theme
     assert ".sy-main .q-item.q-item--clickable { min-height: 48px; }" in theme
     assert ".sy-main .q-field__native, .sy-main .q-field__input { font-size: 16px; }" in theme
     assert "max-height: min(92dvh, 760px)" in theme

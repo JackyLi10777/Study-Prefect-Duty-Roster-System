@@ -472,6 +472,30 @@ def test_public_request_and_jwks_bodies_are_streamed_with_hard_limits() -> None:
     assert "readBoundedUtf8(request, maximumBytes)" in source
 
 
+def test_gateway_cta_and_share_loading_expose_honest_accessible_states() -> None:
+    source = _source()
+
+    for required in (
+        'class="admin-login-indicator"',
+        'class="admin-login-spinner"',
+        'class="sy-secure-pulse"',
+        "adminLogin.setAttribute('aria-busy', 'true')",
+        "adminLogin.setAttribute('aria-disabled', 'true')",
+        "adminLogin.dataset.connecting === 'true'",
+        "event.preventDefault()",
+        "window.addEventListener('pageshow'",
+        "adminLogin.removeAttribute('aria-busy')",
+        "adminLogin.removeAttribute('aria-disabled')",
+        "@keyframes secure-pulse",
+        "@media (prefers-reduced-motion: reduce)",
+        ".sy-secure-pulse::after { animation: none",
+    ):
+        assert required in source
+
+    assert "touch-action: manipulation" in source
+    assert ".access-panel .admin-login::before" in source
+
+
 @pytest.mark.skipif(shutil.which("deno") is None, reason="Deno is unavailable for Worker runtime verification")
 def test_worker_runtime_access_crypto_and_proxy_contracts() -> None:
     result = subprocess.run(

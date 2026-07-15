@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from nicegui_app.ui.page_shared import *  # noqa: F403
+from nicegui_app.ui.reference_navigation import render_page_toc, render_reference_pager
 
 @ui.page("/")
 def dashboard_page() -> None:
@@ -123,50 +124,138 @@ def dashboard_alias() -> None:
 @ui.page("/getting-started")
 def getting_started_page() -> None:
     with page_shell("getting_started", "/getting-started", music_context="getting_started"):
-        with ui.element("section").classes("sy-onboarding-intro w-full max-w-4xl"):
+        with ui.element("section").classes("sy-onboarding-intro w-full max-w-4xl").props("id=start-intro"):
             with ui.column().classes("gap-2"):
                 ui.label(t("getting_started")).classes("sy-page-title")
                 ui.label(t("new_user_intro")).classes("text-[var(--sy-muted)] max-w-2xl")
             ui.icon("calendar_month").classes("sy-onboarding-symbol").props("aria-hidden=true")
-        steps = (
-            ("new_user_step_start", "new_user_step_start_detail"),
-            ("new_user_step_prepare", "new_user_step_prepare_detail"),
-            ("new_user_step_week", "new_user_step_week_detail"),
+        render_page_toc(
+            (
+                ("start-first-steps", "start_toc_first_steps"),
+                ("start-reference-map", "start_toc_reference_map"),
+            )
         )
-        for title_key, detail_key in steps:
-            with ui.card().classes("sy-surface w-full max-w-3xl p-5"):
-                ui.label(t(title_key)).classes("text-lg font-semibold")
-                ui.label(t(detail_key)).classes("text-sm text-[var(--sy-muted)] mt-1")
-                if title_key == "new_user_step_start":
-                    ui.label(f"{t('local_address_label')}: http://127.0.0.1:8080").classes("font-mono text-sm font-semibold mt-3")
-        with ui.row().classes("gap-3 flex-wrap"):
-            ui.button(t("open_prefects"), icon="groups", on_click=lambda: ui.navigate.to("/prefects")).props("outline color=primary")
-            ui.button(t("open_rosters"), icon="calendar_month", on_click=lambda: ui.navigate.to("/rosters")).props("color=primary")
-            ui.button(t("operator_guide"), icon="help", on_click=lambda: ui.navigate.to("/guide")).props("flat")
-            ui.button(t("open_handover_guide"), icon="handshake", on_click=lambda: ui.navigate.to("/handover")).props("flat")
+        with ui.element("section").classes("grid gap-4 w-full").props(
+            f'id=start-first-steps aria-label="{t("start_toc_first_steps")}"'
+        ):
+            steps = (
+                ("new_user_step_start", "new_user_step_start_detail"),
+                ("new_user_step_prepare", "new_user_step_prepare_detail"),
+                ("new_user_step_week", "new_user_step_week_detail"),
+            )
+            for title_key, detail_key in steps:
+                with ui.card().classes("sy-surface w-full max-w-3xl p-5"):
+                    ui.label(t(title_key)).classes("text-lg font-semibold")
+                    ui.label(t(detail_key)).classes("text-sm text-[var(--sy-muted)] mt-1")
+                    if title_key == "new_user_step_start":
+                        ui.label(f"{t('local_address_label')}: http://127.0.0.1:8080").classes("font-mono text-sm font-semibold mt-3")
+            with ui.row().classes("gap-3 flex-wrap"):
+                ui.button(t("open_prefects"), icon="groups", on_click=lambda: ui.navigate.to("/prefects")).props("outline color=primary")
+                ui.button(t("open_rosters"), icon="calendar_month", on_click=lambda: ui.navigate.to("/rosters")).props("color=primary")
+                ui.button(t("operator_guide"), icon="help", on_click=lambda: ui.navigate.to("/guide")).props("flat")
+                ui.button(t("open_handover_guide"), icon="handshake", on_click=lambda: ui.navigate.to("/handover")).props("flat")
+
+        reference_cards = (
+            ("calendar_month", "start_reference_weekly_title", "start_reference_weekly_body", "open_rosters", "/rosters"),
+            ("support", "start_reference_recovery_title", "start_reference_recovery_body", "operator_guide", "/guide"),
+            ("verified_user", "start_reference_trust_title", "start_reference_trust_body", "platform", "/platform"),
+        )
+        with ui.element("section").classes("sy-reference-index w-full max-w-5xl").props(
+            f'id=start-reference-map aria-label="{t("start_reference_title")}" data-testid=reference-index'
+        ):
+            ui.label(t("start_reference_title")).classes("sy-reference-index-title")
+            ui.label(t("start_reference_copy")).classes("sy-reference-index-copy")
+            with ui.element("div").classes("sy-reference-index-grid"):
+                for icon, title_key, body_key, action_key, route in reference_cards:
+                    with ui.element("article").classes("sy-reference-index-card"):
+                        ui.icon(icon).classes("sy-reference-index-icon").props("aria-hidden=true")
+                        ui.label(t(title_key)).classes("sy-reference-index-card-title")
+                        ui.label(t(body_key)).classes("sy-reference-index-card-copy")
+                        ui.button(
+                            t(action_key),
+                            icon="arrow_forward",
+                            on_click=lambda destination=route: ui.navigate.to(destination),
+                        ).props("outline color=primary").classes("sy-reference-index-action")
+        render_reference_pager(next_=("/guide", "operator_guide"))
 
 
 @ui.page("/guide")
 def operator_guide_page() -> None:
-    sections = (
-        ("guide_open_title", "guide_open_body"),
-        ("guide_directory_title", "guide_directory_body"),
-        ("guide_draft_title", "guide_draft_body"),
-        ("guide_manual_title", "guide_manual_body"),
-        ("guide_publish_title", "guide_publish_body"),
-        ("guide_recovery_title", "guide_recovery_body"),
-        ("guide_support_title", "guide_support_body"),
+    groups = (
+        (
+            "guide-prepare",
+            "guide_group_prepare_title",
+            (("guide_open_title", "guide_open_body"), ("guide_directory_title", "guide_directory_body")),
+        ),
+        (
+            "guide-weekly",
+            "guide_group_weekly_title",
+            (
+                ("guide_draft_title", "guide_draft_body"),
+                ("guide_manual_title", "guide_manual_body"),
+                ("guide_publish_title", "guide_publish_body"),
+            ),
+        ),
+        (
+            "guide-stewardship",
+            "guide_group_stewardship_title",
+            (("guide_recovery_title", "guide_recovery_body"), ("guide_support_title", "guide_support_body")),
+        ),
+    )
+    issues = (
+        ("guide_issue_vacancy_seen", "guide_issue_vacancy_meaning", "guide_issue_vacancy_next"),
+        ("guide_issue_stale_seen", "guide_issue_stale_meaning", "guide_issue_stale_next"),
+        ("guide_issue_publish_seen", "guide_issue_publish_meaning", "guide_issue_publish_next"),
+        ("guide_issue_backup_seen", "guide_issue_backup_meaning", "guide_issue_backup_next"),
+        ("guide_issue_restore_seen", "guide_issue_restore_meaning", "guide_issue_restore_next"),
+        ("guide_issue_session_seen", "guide_issue_session_meaning", "guide_issue_session_next"),
+        ("guide_issue_support_seen", "guide_issue_support_meaning", "guide_issue_support_next"),
     )
     with page_shell("operator_guide", "/guide", music_context="guide"):
         with ui.element("section").classes("sy-guide-hero w-full").props(f'aria-label="{t("operator_guide")}"'):
             with ui.column().classes("gap-2 max-w-3xl"):
                 ui.label(t("operator_guide")).classes("sy-page-title")
                 ui.label(t("guide_intro")).classes("text-[var(--sy-muted)] leading-7")
-        for title_key, body_key in sections:
-            with ui.expansion(t(title_key), icon="help").classes("sy-surface w-full max-w-4xl"):
-                ui.label(t(body_key)).classes("p-4 text-sm leading-6 text-[var(--sy-muted)]")
+        render_page_toc(
+            (
+                ("guide-prepare", "guide_group_prepare_title"),
+                ("guide-weekly", "guide_group_weekly_title"),
+                ("guide-stewardship", "guide_group_stewardship_title"),
+                ("guide-troubleshooting", "guide_troubleshooting_title"),
+            )
+        )
+        for anchor, group_title_key, sections in groups:
+            with ui.element("section").classes("sy-guide-group w-full max-w-4xl").props(f"id={anchor}"):
+                ui.label(t(group_title_key)).classes("sy-guide-group-title")
+                with ui.column().classes("w-full gap-2"):
+                    for title_key, body_key in sections:
+                        with ui.expansion(t(title_key), icon="help").classes("sy-surface w-full"):
+                            ui.label(t(body_key)).classes("p-4 text-sm leading-6 text-[var(--sy-muted)]")
+        with ui.element("section").classes("sy-guide-troubleshooting w-full max-w-5xl").props(
+            f'id=guide-troubleshooting aria-label="{t("guide_troubleshooting_title")}" data-testid=guide-troubleshooting'
+        ):
+            ui.label(t("guide_troubleshooting_title")).classes("sy-guide-group-title")
+            ui.label(t("guide_troubleshooting_copy")).classes("sy-reference-index-copy")
+            with ui.element("div").classes("sy-troubleshooting-table").props(
+                f'role=table aria-label="{t("guide_troubleshooting_title")}"'
+            ):
+                with ui.element("div").classes("sy-troubleshooting-row sy-troubleshooting-head").props("role=row"):
+                    for heading_key in ("guide_issue_seen", "guide_issue_meaning", "guide_issue_next"):
+                        ui.label(t(heading_key)).classes("sy-troubleshooting-cell").props("role=columnheader")
+                for seen_key, meaning_key, next_key in issues:
+                    with ui.element("div").classes("sy-troubleshooting-row").props("role=row"):
+                        ui.label(t(seen_key)).classes("sy-troubleshooting-cell sy-troubleshooting-symptom").props(
+                            f'role=cell data-label="{t("guide_issue_seen")}"'
+                        )
+                        ui.label(t(meaning_key)).classes("sy-troubleshooting-cell").props(
+                            f'role=cell data-label="{t("guide_issue_meaning")}"'
+                        )
+                        ui.label(t(next_key)).classes("sy-troubleshooting-cell").props(
+                            f'role=cell data-label="{t("guide_issue_next")}"'
+                        )
         _render_feedback_channel(compact=True)
         ui.button(t("open_system_architecture"), icon="account_tree", on_click=lambda: ui.navigate.to("/system-architecture")).props("flat").classes("self-start")
+        render_reference_pager(previous=("/getting-started", "getting_started"), next_=("/handover", "handover"))
 
 
 

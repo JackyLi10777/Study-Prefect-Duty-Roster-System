@@ -233,7 +233,7 @@ MESSAGES = {'current_rosters': {'zh-HK': '目前週表', 'en': 'Current rosters'
  'hint_leave_adjustment': {'zh-HK': '用途：記錄已發布後的請假及替補。做法：選擇原崗位、先載入合資格替補、填寫原因，最後儲存調整。',
                            'en': 'Purpose: record a published-duty absence and replacement. Select the original post, load eligible '
                                  'substitutes, give a reason, then save the adjustment.'},
- 'hint_prefect_directory': {'zh-HK': '用途：維持本學年的風紀名單。做法：先核對中文姓名、職務及可值班日；停用舊名單而不是刪除歷史紀錄。',
+ 'hint_prefect_directory': {'zh-HK': '用途：維持本學年的導學風紀名單。做法：先核對中文姓名、職務及可值班日；停用舊名單而不是刪除歷史紀錄。',
                             'en': "Purpose: maintain this year's prefect directory. Check Chinese names, roles, and available days; "
                                   'archive old records instead of deleting history.'},
  'hint_prefect_import': {'zh-HK': '用途：一次過更新較多名單資料。做法：先下載虛構 CSV 範例，貼上資料後按「驗證與預覽」，確認無誤才匯入。',

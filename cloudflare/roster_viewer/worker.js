@@ -157,7 +157,10 @@ const VIEWER_HTML = `<!doctype html>
             <strong>管理員登入</strong>
             <span lang="en">Administrator sign in</span>
           </span>
-          <span class="admin-login-arrow" aria-hidden="true">→</span>
+          <span class="admin-login-indicator" aria-hidden="true">
+            <span class="admin-login-arrow">→</span>
+            <span class="admin-login-spinner"></span>
+          </span>
         </a>
         <a id="guestEnter" class="guest-enter" href="/guest">
           <span class="guest-enter-icon" aria-hidden="true">
@@ -271,7 +274,7 @@ const VIEWER_HTML = `<!doctype html>
     </noscript>
 
     <section id="loadingState" class="state-card" hidden aria-live="polite" aria-busy="true">
-      <span class="state-spinner" aria-hidden="true"></span>
+      <span class="sy-secure-pulse" aria-hidden="true"></span>
       <h1>正在安全開啟值班表</h1>
       <p lang="en">Opening the roster securely…</p>
     </section>
@@ -669,7 +672,12 @@ button, input, select, textarea { font: inherit; }
 .access-copy { margin: 0; color: var(--ink-muted); font-size: 0.87rem; line-height: 1.62; }
 .access-copy--en { margin-top: 5px; font-size: 0.76rem; }
 
+/* Directional feedback adapted from Li-Deheng's Uiverse Arrow Flow Button
+   (MIT), rewritten with one bounded sheen, honest busy state and keyboard focus. */
 .access-panel .admin-login {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   width: 100%;
   min-height: 58px;
   margin-top: 26px;
@@ -679,16 +687,46 @@ button, input, select, textarea { font: inherit; }
   background: var(--action);
   color: var(--action-ink);
   box-shadow: 0 10px 24px color-mix(in srgb, var(--action) 20%, transparent);
+  touch-action: manipulation;
 }
+
+.access-panel .admin-login::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0 auto 0 -26%;
+  width: 22%;
+  background: linear-gradient(105deg, transparent, color-mix(in srgb, white 42%, transparent), transparent);
+  content: "";
+  pointer-events: none;
+  transform: skewX(-17deg) translateX(-180%);
+  transition: transform 460ms var(--ease-standard);
+}
+
+.access-panel .admin-login > * { position: relative; z-index: 1; }
 
 .admin-login-copy { display: grid; gap: 1px; text-align: left; }
 .admin-login-copy strong { font-size: 0.87rem; }
 .admin-login-copy span { font-size: 0.66rem; font-weight: 560; opacity: 0.78; }
-.admin-login-arrow { margin-left: auto; font-size: 1.1rem; transition: transform 160ms var(--ease-standard); }
+.admin-login-indicator { display: grid; place-items: center; width: 20px; height: 20px; margin-left: auto; }
+.admin-login-arrow,
+.admin-login-spinner { grid-area: 1 / 1; }
+.admin-login-arrow { font-size: 1.1rem; transition: opacity 120ms ease, transform 160ms var(--ease-standard); }
+.admin-login-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid color-mix(in srgb, currentColor 42%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.78);
+}
 .access-panel .admin-login:hover { border-color: var(--action-hover); background: var(--action-hover); box-shadow: 0 14px 28px color-mix(in srgb, var(--action) 25%, transparent); }
+.access-panel .admin-login:hover::before { transform: skewX(-17deg) translateX(690%); }
 .access-panel .admin-login:hover .admin-login-arrow { transform: translateX(3px); }
 .access-panel .admin-login:active { transform: translateY(0) scale(0.985); }
 .access-panel .admin-login[data-connecting="true"] { pointer-events: none; opacity: 0.88; }
+.access-panel .admin-login[data-connecting="true"] .admin-login-arrow { opacity: 0; transform: translateX(5px); }
+.access-panel .admin-login[data-connecting="true"] .admin-login-spinner { opacity: 1; transform: scale(1); animation: spin 760ms linear infinite; }
 
 .guest-enter {
   display: grid;
@@ -917,6 +955,26 @@ button, input, select, textarea { font: inherit; }
   animation: spin 900ms linear infinite;
 }
 
+.sy-secure-pulse {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border: 1px solid color-mix(in srgb, var(--brand) 58%, var(--line));
+  border-radius: 14px;
+  background: var(--brand-soft);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 42%, transparent), 0 7px 18px color-mix(in srgb, var(--brand) 16%, transparent);
+}
+.sy-secure-pulse::before,
+.sy-secure-pulse::after {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  border-radius: 50%;
+  content: "";
+  transform: translate(-50%, -50%);
+}
+.sy-secure-pulse::before { width: 10px; height: 10px; background: var(--brand); }
+.sy-secure-pulse::after { width: 22px; height: 22px; border: 1px solid var(--brand); animation: secure-pulse 1.4s var(--ease-standard) infinite; }
+
 .state-icon {
   display: grid;
   place-items: center;
@@ -1121,6 +1179,7 @@ tbody td {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes secure-pulse { 0%, 100% { opacity: .3; transform: translate(-50%, -50%) scale(.76); } 50% { opacity: .9; transform: translate(-50%, -50%) scale(1); } }
 @keyframes portal-story-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes portal-panel-enter { from { opacity: 0; transform: translateY(12px) scale(0.992); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes portal-strip-enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -1294,6 +1353,9 @@ tbody td {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  .access-panel .admin-login::before { display: none; }
+  .access-panel .admin-login[data-connecting="true"] .admin-login-spinner { animation: none; border-color: currentColor; opacity: .8; }
+  .sy-secure-pulse::after { animation: none; opacity: .65; transform: translate(-50%, -50%) scale(1); }
 }
 
 @media print {
@@ -1518,13 +1580,29 @@ shareSite?.addEventListener('click', async () => {
   }
 });
 
-adminLogin?.addEventListener('click', () => {
+adminLogin?.addEventListener('click', (event) => {
+  if (adminLogin.dataset.connecting === 'true') {
+    event.preventDefault();
+    return;
+  }
   adminLogin.dataset.connecting = 'true';
   adminLogin.setAttribute('aria-busy', 'true');
+  adminLogin.setAttribute('aria-disabled', 'true');
   const zh = adminLogin.querySelector('strong');
   const en = adminLogin.querySelector('[lang="en"]');
   if (zh) zh.textContent = '正在連接安全登入…';
   if (en) en.textContent = 'Connecting securely…';
+});
+
+window.addEventListener('pageshow', () => {
+  if (!adminLogin) return;
+  delete adminLogin.dataset.connecting;
+  adminLogin.removeAttribute('aria-busy');
+  adminLogin.removeAttribute('aria-disabled');
+  const zh = adminLogin.querySelector('strong');
+  const en = adminLogin.querySelector('[lang="en"]');
+  if (zh) zh.textContent = '管理員登入';
+  if (en) en.textContent = 'Administrator sign in';
 });
 
 function showOnly(element) {

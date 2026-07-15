@@ -15,14 +15,21 @@ from nicegui_app.runtime import get_workflow
 from nicegui_app.ui.i18n import current_locale, t, toggle_locale
 from nicegui_app.ui.music import render_page_music_control
 from nicegui_app.ui.sound import play_interface_sound
-from nicegui_app.ui.theme import apply_theme, current_theme, sound_feedback_enabled, toggle_sound_feedback, toggle_theme
+from nicegui_app.ui.theme import (
+    apply_quasar_palette,
+    apply_theme,
+    current_theme,
+    sound_feedback_enabled,
+    toggle_sound_feedback,
+    toggle_theme,
+)
 
 
 NAVIGATION_GROUPS = (
     ("nav_weekly_work", (("/", "dashboard", "space_dashboard"), ("/rosters", "rosters", "calendar_month"))),
     ("nav_people_fairness", (("/prefects", "prefects", "groups"),)),
     ("nav_support_system", (("/handover", "handover", "handshake"), ("/access-control", "access_control", "admin_panel_settings"), ("/settings", "settings", "settings"))),
-    ("nav_reference", (("/platform", "platform", "domain"), ("/engineering", "engineering", "build_circle"), ("/system-architecture", "system_architecture", "account_tree"), ("/getting-started", "getting_started", "play_circle"), ("/guide", "operator_guide", "help_outline"), ("/devotional", "devotional", "menu_book"))),
+    ("nav_reference", (("/platform", "platform", "domain"), ("/system-architecture", "system_architecture", "account_tree"), ("/engineering", "engineering", "build_circle"), ("/getting-started", "getting_started", "play_circle"), ("/guide", "operator_guide", "help_outline"), ("/devotional", "devotional", "menu_book"))),
 )
 
 MOBILE_PRIMARY_NAVIGATION = (
@@ -92,7 +99,7 @@ def _toggle_theme_in_place(dark_mode, controls) -> None:  # type: ignore[no-unty
     toggle_theme()
     is_dark = current_theme() == "dark"
     dark_mode.set_value(is_dark)
-    ui.colors(primary="#47758B" if is_dark else "#35647C")
+    apply_quasar_palette(is_dark)
     label = t("light_mode") if is_dark else t("dark_mode")
     _sync_preference_controls(
         controls,
@@ -137,7 +144,7 @@ def _render_mobile_drawer_tools(
                     t("access_admin_logout"),
                     icon="logout",
                     on_click=lambda: ui.navigate.to("/logout"),
-                ).props("flat no-caps color=negative data-testid=mobile-administrator-logout").classes(
+                ).props("flat no-caps data-testid=mobile-administrator-logout").classes(
                     "sy-mobile-drawer-tool"
                 )
 
@@ -157,10 +164,102 @@ def _render_mobile_tabbar(drawer, active_path: str) -> None:  # type: ignore[no-
             if active_path == path:
                 button.classes("sy-mobile-tab--active").props("aria-current=page")
         more = ui.button(t("mobile_more"), icon="menu", on_click=drawer.toggle).props(
-            f'flat no-caps aria-label="{t("mobile_more")}" aria-controls=main-navigation-drawer'
+            f'flat no-caps aria-label="{t("mobile_more")}" aria-controls=main-navigation-drawer '
+            'aria-expanded=false data-testid=mobile-more'
         ).classes("sy-mobile-tab")
         if active_path not in primary_paths:
             more.classes("sy-mobile-tab--active").props("aria-current=page")
+
+
+def _install_mobile_drawer_accessibility() -> None:
+    """Synchronise drawer state, keyboard escape and focus in the rendered browser."""
+
+    ui.run_javascript(
+        """
+        (() => {
+          const button = document.querySelector('[data-testid="mobile-more"]');
+          const currentDrawer = () => document.getElementById('main-navigation-drawer');
+          if (!button || !currentDrawer()) return;
+          if (button.dataset.syDrawerA11y === 'ready' && window.__syDrawerA11yOwner === button) return;
+          window.__syDrawerA11yCleanup?.();
+          const controller = new AbortController();
+          button.dataset.syDrawerA11y = 'ready';
+          window.__syDrawerA11yOwner = button;
+          const isMobile = () => matchMedia('(max-width: 900px)').matches;
+          const isOpen = () => {
+            if (!isMobile()) return false;
+            const drawer = currentDrawer();
+            if (!drawer) return false;
+            const bounds = drawer.getBoundingClientRect();
+            const style = getComputedStyle(drawer);
+            return style.visibility !== 'hidden' && bounds.width > 0 &&
+              bounds.right > Math.min(44, bounds.width * .25);
+          };
+          const focusable = () => {
+            const drawer = currentDrawer();
+            if (!drawer) return [];
+            return [...drawer.querySelectorAll(
+              'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )].filter(element => element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden');
+          };
+          let observedShell = null;
+          const observer = new MutationObserver(() => sync(false));
+          const observeShell = () => {
+            const drawer = currentDrawer();
+            if (!drawer) return;
+            const shell = drawer.closest('.q-drawer');
+            if (!shell || shell === observedShell) return;
+            observer.disconnect();
+            observedShell = shell;
+            observer.observe(shell, {attributes: true, attributeFilter: ['class', 'style', 'aria-hidden']});
+          };
+          const sync = (focusDrawer = false) => {
+            observeShell();
+            const wasOpen = button.getAttribute('aria-expanded') === 'true';
+            const open = isOpen();
+            button.setAttribute('aria-expanded', String(open));
+            if (focusDrawer && open) {
+              const first = focusable()[0];
+              first?.focus({preventScroll: true});
+            }
+            if (wasOpen && !open) button.focus({preventScroll: true});
+          };
+          button.addEventListener('click', () => setTimeout(() => sync(true), 220), {signal: controller.signal});
+          document.addEventListener('click', event => {
+            if (!(event.target instanceof Element) || !event.target.closest('.q-drawer__backdrop')) return;
+            setTimeout(() => sync(false), 260);
+          }, {capture: true, signal: controller.signal});
+          document.addEventListener('keydown', event => {
+            if (!isOpen()) return;
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              button.click();
+              setTimeout(() => sync(false), 260);
+              return;
+            }
+            if (event.key !== 'Tab') return;
+            const items = focusable();
+            if (!items.length) return;
+            const drawer = currentDrawer();
+            if (!drawer) return;
+            const first = items[0]; const last = items[items.length - 1];
+            if (event.shiftKey && (document.activeElement === first || !drawer.contains(document.activeElement))) {
+              event.preventDefault(); last.focus({preventScroll: true});
+            } else if (!event.shiftKey && (document.activeElement === last || !drawer.contains(document.activeElement))) {
+              event.preventDefault(); first.focus({preventScroll: true});
+            }
+          }, {signal: controller.signal});
+          window.addEventListener('resize', () => sync(false), {passive: true, signal: controller.signal});
+          window.__syDrawerA11yCleanup = () => {
+            observer.disconnect();
+            observedShell = null;
+            controller.abort();
+            if (window.__syDrawerA11yOwner === button) window.__syDrawerA11yOwner = null;
+          };
+          requestAnimationFrame(() => sync(false));
+        })();
+        """
+    )
 
 
 @contextmanager
@@ -306,3 +405,4 @@ def page_shell(title_key: str, active_path: str, *, music_context: str | None = 
     with ui.element("main").props("id=main-content tabindex=-1").classes("sy-main w-full gap-6"):
         yield
     _render_mobile_tabbar(drawer, active_path)
+    _install_mobile_drawer_accessibility()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 from nicegui_app.ui.i18n import MESSAGES
@@ -277,6 +278,30 @@ def test_platform_showcase_exposes_enterprise_style_operating_model_without_fake
     assert "not additional departments or staff" in MESSAGES["capability_map_copy"]["en"]
 
 
+def test_co_creation_profile_uses_local_identity_media_and_canonical_instagram_link() -> None:
+    shared = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_shared.py").read_text(encoding="utf-8")
+    contact = (PROJECT_ROOT / "nicegui_app" / "contact.py").read_text(encoding="utf-8")
+    avatar = PROJECT_ROOT / "nicegui_app" / "assets" / "brand" / "li-chuangjie-avatar.jpg"
+    banner = PROJECT_ROOT / "nicegui_app" / "assets" / "brand" / "li-chuangjie-banner.png"
+
+    assert avatar.is_file()
+    assert banner.is_file()
+    assert hashlib.sha256(avatar.read_bytes()).hexdigest() == (
+        "9ab4506d8254d157579b3927acd57e343a537913528a9223113689ed4703413a"
+    )
+    assert hashlib.sha256(banner.read_bytes()).hexdigest() == (
+        "35fa985443809865909ac0b44c5cd592dc9e4252618a6f364cb3dcd18b609e13"
+    )
+    assert "data-testid=co-creation-profile" in shared
+    assert "/assets/brand/li-chuangjie-avatar.jpg" in shared
+    assert "/assets/brand/li-chuangjie-banner.png" in shared
+    assert "loading=lazy decoding=async" in shared
+    assert 'INSTAGRAM_PROFILE_URL = "https://www.instagram.com/5662jacky/"' in contact
+    assert "with ui.link(target=INSTAGRAM_PROFILE_URL)" in shared
+    assert 'target=_blank rel="noopener noreferrer"' in shared
+    assert "李創杰 · LI Chuangjie, Jacky" in MESSAGES["co_creation_creator_name"]["zh-HK"]
+
+
 def test_engineering_showcase_turns_documented_quality_into_verifiable_ui_evidence() -> None:
     pages = combined_page_source()
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
@@ -313,6 +338,7 @@ def test_feedback_channel_is_consistent_bilingual_and_does_not_invite_data_attac
 
     assert 'FEEDBACK_EMAIL = "s10777@syss.edu.hk"' in contact
     assert 'GITHUB_REPOSITORY_URL = "https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System"' in contact
+    assert 'INSTAGRAM_PROFILE_URL = "https://www.instagram.com/5662jacky/"' in contact
     assert "mailto:" in contact and "urlencode" in contact
     assert "data-testid=sidebar-feedback" in shell
     assert "data-testid=feedback-channel" in pages
@@ -428,3 +454,62 @@ def test_pdf_font_setup_documents_the_bundled_three_weight_contract() -> None:
         assert variable in handover
     assert "NotoSansHK-*.ttf" in host_setup
     assert "安裝 Noto Sans TC，或設定 `SING_YIN_PDF_FONT`" not in host_setup
+
+
+def test_reference_pages_form_two_clear_reading_lanes_without_duplicate_docs_route() -> None:
+    pages = combined_page_source()
+    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+    navigation = (PROJECT_ROOT / "nicegui_app" / "ui" / "reference_navigation.py").read_text(encoding="utf-8")
+    design = (PROJECT_ROOT / "Professional_Design_System.md").read_text(encoding="utf-8")
+
+    assert '@ui.page("/docs")' not in pages
+    assert "render_page_toc" in navigation and "render_reference_pager" in navigation
+    assert 'data-testid=guide-troubleshooting' in pages
+    assert pages.count('data-testid=reference-index') == 1
+    assert 'previous=("/getting-started", "getting_started")' in pages
+    assert 'next_=("/handover", "handover")' in pages
+    assert 'previous=("/guide", "operator_guide")' in pages
+    assert 'next_=("/system-architecture", "system_architecture")' in pages
+    assert 'previous=("/platform", "platform")' in pages
+    assert 'next_=("/engineering", "engineering")' in pages
+    assert shell.index('(\"/platform\", \"platform\", \"domain\")') < shell.index(
+        '(\"/system-architecture\", \"system_architecture\", \"account_tree\")'
+    ) < shell.index('(\"/engineering\", \"engineering\", \"build_circle\")')
+    assert '("verified_user", "start_reference_trust_title", "start_reference_trust_body", "platform", "/platform")' in pages
+    for anchor in (
+        "platform-snapshot-section",
+        "platform-team-section",
+        "platform-capabilities-section",
+        "platform-solutions-section",
+        "platform-principles-section",
+        "platform-resources-section",
+        "handover-steps-section",
+        "handover-rollover-section",
+        "handover-readiness-section",
+        "handover-acceptance-section",
+        "start-first-steps",
+        "start-reference-map",
+    ):
+        assert anchor in pages
+    assert 'role=table aria-label="{t("guide_troubleshooting_title")}"' in pages
+    assert 'id=start-first-steps aria-label="{t("start_toc_first_steps")}"' in pages
+    assert 'id=handover-steps-section aria-label="{t("handover_steps_title")}"' in pages
+    assert "what you see／what it means／safe next action" in design
+    assert "DeepSeek API Docs" in design
+
+
+def test_operator_troubleshooting_reference_is_complete_and_bilingual() -> None:
+    for issue in ("vacancy", "stale", "publish", "backup", "restore", "session", "support"):
+        for column in ("seen", "meaning", "next"):
+            key = f"guide_issue_{issue}_{column}"
+            assert key in MESSAGES
+            assert MESSAGES[key]["zh-HK"].strip()
+            assert MESSAGES[key]["en"].strip()
+
+
+def test_uiverse_attribution_is_kept_with_the_component_governance() -> None:
+    notice = (PROJECT_ROOT / "NOTICE.md").read_text(encoding="utf-8")
+    design = (PROJECT_ROOT / "Professional_Design_System.md").read_text(encoding="utf-8")
+
+    assert "Uiverse" in notice and "MIT License" in notice
+    assert "Sing Yin tactile component grammar" in design

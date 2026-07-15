@@ -13,7 +13,7 @@ from uuid import uuid4
 
 from nicegui import app, events, run, ui
 
-from nicegui_app.contact import FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL, GITHUB_REPOSITORY_URL
+from nicegui_app.contact import FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL, GITHUB_REPOSITORY_URL, INSTAGRAM_PROFILE_URL
 from nicegui_app.release_evidence import load_release_evidence
 from nicegui_app.runtime import get_workflow
 from nicegui_app.observability import (
@@ -755,11 +755,31 @@ def _render_roster_route_state(
 def _render_co_creation() -> None:
     """Render the shared, non-sensitive co-creation closing panel."""
 
-    with ui.element("section").classes("sy-co-creation w-full").props(f'aria-label="{t("co_creation_title")}"'):
-        ui.image("/assets/brand/sing-yin-crest-display-web.png").classes("sy-co-creation-crest").props(
-            f'alt="{t("school_crest_alt")}" width=640 height=615 loading=lazy decoding=async'
+    with ui.element("section").classes("sy-co-creation w-full").props(
+        "aria-labelledby=co-creation-title data-testid=co-creation-profile"
+    ):
+        ui.image("/assets/brand/li-chuangjie-banner.png").classes("sy-co-creation-banner").props(
+            f'alt="{t("co_creation_banner_alt")}" width=1536 height=1024 loading=lazy decoding=async'
         )
-        ui.label(t("co_creation_title")).classes("sy-co-creation-title")
+        with ui.element("div").classes("sy-co-creation-profile"):
+            ui.image("/assets/brand/li-chuangjie-avatar.jpg").classes("sy-co-creation-avatar").props(
+                f'alt="{t("co_creation_avatar_alt")}" width=1024 height=1024 loading=lazy decoding=async'
+            )
+            with ui.column().classes("sy-co-creation-identity gap-1 min-w-0"):
+                ui.label(t("co_creation_creator_name")).classes("sy-co-creation-name")
+                ui.label(t("co_creation_creator_role")).classes("sy-co-creation-role")
+                with ui.link(target=INSTAGRAM_PROFILE_URL).classes("sy-co-creation-social").props(
+                    f'target=_blank rel="noopener noreferrer" aria-label="{t("co_creation_instagram_accessible")}"'
+                ):
+                    ui.icon("photo_camera").props("aria-hidden=true")
+                    ui.label(t("co_creation_instagram_action"))
+                    ui.icon("open_in_new").classes("text-sm").props("aria-hidden=true")
+            ui.image("/assets/brand/sing-yin-crest-display-web.png").classes("sy-co-creation-crest").props(
+                f'alt="{t("school_crest_alt")}" width=640 height=615 loading=lazy decoding=async'
+            )
+        ui.label(t("co_creation_title")).classes("sy-co-creation-title").props(
+            "id=co-creation-title role=heading aria-level=2"
+        )
         ui.label(t("co_creation_team")).classes("sy-co-creation-team")
         ui.label(t("co_creation_body")).classes("sy-co-creation-copy")
         ui.label(t("co_creation_quote")).classes("sy-co-creation-quote")

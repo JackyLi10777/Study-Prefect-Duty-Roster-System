@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from nicegui_app.ui.page_shared import *  # noqa: F403
+from nicegui_app.ui.reference_navigation import render_page_toc, render_reference_pager
 
 
 def _release_evidence_tone(state: str) -> str:
@@ -84,7 +85,20 @@ def platform_page() -> None:
                 ui.label(t("platform_intro")).classes("sy-architecture-copy")
                 ui.label(t("platform_principle")).classes("sy-platform-principle")
 
-        with ui.element("section").classes("sy-architecture-section w-full"):
+        render_page_toc(
+            (
+                ("platform-snapshot-section", "platform_snapshot_title"),
+                ("platform-team-section", "team_operating_model_title"),
+                ("platform-capabilities-section", "capability_map_title"),
+                ("platform-solutions-section", "solutions_portfolio_title"),
+                ("platform-principles-section", "platform_culture_title"),
+                ("platform-resources-section", "platform_resources_title"),
+            )
+        )
+
+        with ui.element("section").classes("sy-architecture-section w-full").props(
+            "id=platform-snapshot-section"
+        ):
             _render_architecture_section_heading(
                 "platform_snapshot_kicker", "platform_snapshot_title", "platform_snapshot_copy", show_kicker=True
             )
@@ -116,7 +130,7 @@ def platform_page() -> None:
                         )
 
         with ui.element("section").classes("sy-architecture-section w-full").props(
-            f'aria-label="{t("team_operating_model_title")}"'
+            f'id=platform-team-section aria-label="{t("team_operating_model_title")}"'
         ):
             _render_architecture_section_heading(
                 "team_operating_model_kicker", "team_operating_model_title", "team_operating_model_copy"
@@ -132,7 +146,9 @@ def platform_page() -> None:
                         ui.label(t(body_key)).classes("sy-team-role-copy")
             ui.label(t("team_operating_model_note")).classes("sy-team-operating-model-note")
 
-        with ui.element("section").classes("sy-architecture-section w-full"):
+        with ui.element("section").classes("sy-architecture-section w-full").props(
+            "id=platform-capabilities-section"
+        ):
             _render_architecture_section_heading("capability_map_kicker", "capability_map_title", "capability_map_copy")
             with ui.element("div").classes("sy-capability-map").props("data-testid=capability-map"):
                 for icon, title_key, body_key, output_key in capability_groups:
@@ -142,7 +158,9 @@ def platform_page() -> None:
                         ui.label(t(body_key)).classes("sy-capability-copy")
                         ui.label(t(output_key)).classes("sy-capability-output")
 
-        with ui.element("section").classes("sy-architecture-section w-full"):
+        with ui.element("section").classes("sy-architecture-section w-full").props(
+            "id=platform-solutions-section"
+        ):
             _render_architecture_section_heading(
                 "solutions_portfolio_kicker", "solutions_portfolio_title", "solutions_portfolio_copy"
             )
@@ -160,7 +178,9 @@ def platform_page() -> None:
                             on_click=lambda destination=route: ui.navigate.to(destination),
                         ).props("flat").classes("sy-solution-action self-start")
 
-        with ui.element("section").classes("sy-architecture-section w-full"):
+        with ui.element("section").classes("sy-architecture-section w-full").props(
+            "id=platform-principles-section"
+        ):
             _render_architecture_section_heading(
                 "platform_culture_kicker", "platform_culture_title", "platform_culture_copy"
             )
@@ -171,7 +191,9 @@ def platform_page() -> None:
                         ui.label(t(title_key)).classes("sy-platform-value-title")
                         ui.label(t(body_key)).classes("sy-platform-value-copy")
 
-        with ui.element("section").classes("sy-architecture-section w-full"):
+        with ui.element("section").classes("sy-architecture-section w-full").props(
+            "id=platform-resources-section"
+        ):
             _render_architecture_section_heading(
                 "platform_resources_kicker", "platform_resources_title", "platform_resources_copy"
             )
@@ -188,6 +210,7 @@ def platform_page() -> None:
 
         _render_feedback_channel()
         _render_co_creation()
+        render_reference_pager(next_=("/system-architecture", "system_architecture"))
 
 
 @ui.page("/engineering")
@@ -264,7 +287,18 @@ def engineering_page() -> None:
                 ui.label(t("engineering_intro")).classes("sy-architecture-copy")
                 _tone_badge(t("engineering_badge"), "stable").classes("mt-3 self-start")
 
-        with ui.element("section").classes("sy-architecture-section w-full"):
+        render_page_toc(
+            (
+                ("engineering-facts-section", "engineering_facts_title"),
+                ("engineering-blueprint-section", "engineering_blueprint_title"),
+                ("engineering-release-section", "engineering_pipeline_title"),
+                ("engineering-pillars-section", "engineering_pillars_title"),
+                ("engineering-evolution-section", "engineering_evolution_title"),
+                ("engineering-resources-section", "engineering_resources_title"),
+            )
+        )
+
+        with ui.element("section").classes("sy-architecture-section w-full").props("id=engineering-facts-section"):
             ui.html(t("engineering_facts_title"), tag="h2").classes("sy-architecture-section-title")
             with ui.element("div").classes("sy-engineering-facts").props("data-testid=engineering-facts"):
                 for value, icon, title_key, body_key in facts:
@@ -275,7 +309,7 @@ def engineering_page() -> None:
                         ui.label(t(title_key)).classes("sy-engineering-fact-title")
                         ui.label(t(body_key)).classes("sy-engineering-fact-copy")
 
-        with ui.element("section").classes("sy-architecture-section w-full"):
+        with ui.element("section").classes("sy-architecture-section w-full").props("id=engineering-blueprint-section"):
             _render_architecture_section_heading(
                 "engineering_blueprint_kicker", "engineering_blueprint_title", "engineering_blueprint_copy"
             )
@@ -288,7 +322,7 @@ def engineering_page() -> None:
                         ui.label(t(title_key)).classes("sy-engineering-blueprint-title")
                         ui.label(t(body_key)).classes("sy-engineering-blueprint-copy")
 
-        with ui.element("section").classes("sy-architecture-section w-full"):
+        with ui.element("section").classes("sy-architecture-section w-full").props("id=engineering-release-section"):
             _render_architecture_section_heading(
                 "engineering_pipeline_kicker", "engineering_pipeline_title", "engineering_pipeline_copy", show_kicker=True
             )
@@ -300,7 +334,7 @@ def engineering_page() -> None:
                         ui.icon(icon).classes(f"sy-engineering-gate-icon sy-fg-{evidence_tone}").props("aria-hidden=true")
                         ui.label(t(title_key)).classes("sy-engineering-gate-title")
 
-        with ui.element("section").classes("sy-architecture-section w-full"):
+        with ui.element("section").classes("sy-architecture-section w-full").props("id=engineering-pillars-section"):
             _render_architecture_section_heading(
                 "engineering_pillars_kicker", "engineering_pillars_title", "engineering_pillars_copy"
             )
@@ -311,7 +345,7 @@ def engineering_page() -> None:
                         ui.label(t(title_key)).classes("sy-engineering-pillar-title")
                         ui.label(t(body_key)).classes("sy-engineering-pillar-copy")
 
-        with ui.element("section").classes("sy-architecture-section w-full"):
+        with ui.element("section").classes("sy-architecture-section w-full").props("id=engineering-evolution-section"):
             _render_architecture_section_heading(
                 "engineering_evolution_kicker", "engineering_evolution_title", "engineering_evolution_copy"
             )
@@ -321,7 +355,7 @@ def engineering_page() -> None:
                         ui.label(t(title_key)).classes("sy-engineering-evolution-title")
                         ui.label(t(body_key)).classes("sy-engineering-evolution-copy")
 
-        with ui.element("section").classes("sy-engineering-resources w-full"):
+        with ui.element("section").classes("sy-engineering-resources w-full").props("id=engineering-resources-section"):
             ui.html(t("engineering_resources_title"), tag="h2").classes("sy-architecture-section-title")
             with ui.row().classes("gap-3 flex-wrap mt-4"):
                 ui.link(t("engineering_open_github"), GITHUB_REPOSITORY_URL, new_tab=True).props(
@@ -333,6 +367,7 @@ def engineering_page() -> None:
                 ui.button(
                     t("engineering_open_platform"), icon="domain", on_click=lambda: ui.navigate.to("/platform")
                 ).props("flat")
+        render_reference_pager(previous=("/system-architecture", "system_architecture"))
 
 
 @ui.page("/system-architecture")
@@ -382,7 +417,18 @@ def system_architecture_page() -> None:
                     "outline data-testid=architecture-open-platform"
                 ).classes("mt-2 self-start")
 
-        with ui.element("section").classes("sy-architecture-section w-full").props(f'aria-label="{t("architecture_flow_title")}"'):
+        render_page_toc(
+            (
+                ("architecture-flow-section", "architecture_flow_title"),
+                ("architecture-layers-section", "architecture_layers_title"),
+                ("architecture-evidence-section", "architecture_evidence_title"),
+                ("architecture-faq-section", "architecture_faq_title"),
+            )
+        )
+
+        with ui.element("section").classes("sy-architecture-section w-full").props(
+            f'id=architecture-flow-section aria-label="{t("architecture_flow_title")}"'
+        ):
             _render_architecture_section_heading(
                 "architecture_flow_kicker", "architecture_flow_title", "architecture_flow_copy", show_kicker=True
             )
@@ -397,7 +443,9 @@ def system_architecture_page() -> None:
                         ui.label(t(body_key)).classes("sy-service-stage-copy")
                         ui.label(t(result_key)).classes("sy-service-stage-result")
 
-        with ui.element("section").classes("sy-architecture-section w-full").props(f'aria-label="{t("architecture_layers_title")}"'):
+        with ui.element("section").classes("sy-architecture-section w-full").props(
+            f'id=architecture-layers-section aria-label="{t("architecture_layers_title")}"'
+        ):
             _render_architecture_section_heading("architecture_layers_kicker", "architecture_layers_title", "architecture_layers_copy")
         with ui.element("section").classes("sy-architecture-grid w-full").props(f'aria-label="{t("architecture_layers_title")}"'):
             for icon, title_key, body_key in layers:
@@ -406,7 +454,9 @@ def system_architecture_page() -> None:
                     ui.label(t(title_key)).classes("sy-architecture-layer-title")
                     ui.label(t(body_key)).classes("sy-architecture-layer-copy")
 
-        with ui.element("section").classes("sy-architecture-section w-full").props(f'aria-label="{t("architecture_evidence_title")}"'):
+        with ui.element("section").classes("sy-architecture-section w-full").props(
+            f'id=architecture-evidence-section aria-label="{t("architecture_evidence_title")}"'
+        ):
             _render_architecture_section_heading("architecture_evidence_kicker", "architecture_evidence_title", "architecture_evidence_copy")
             with ui.element("div").classes("sy-trust-evidence-grid").props("data-testid=trust-evidence"):
                 for icon, title_key, body_key, label_key in evidence:
@@ -416,13 +466,16 @@ def system_architecture_page() -> None:
                         ui.label(t(body_key)).classes("sy-trust-evidence-copy")
                         ui.label(t(label_key)).classes("sy-trust-evidence-label")
 
-        with ui.element("section").classes("sy-architecture-faq w-full").props(f'aria-label="{t("architecture_faq_title")}" data-testid=architecture-faq'):
+        with ui.element("section").classes("sy-architecture-faq w-full").props(
+            f'id=architecture-faq-section aria-label="{t("architecture_faq_title")}" data-testid=architecture-faq'
+        ):
             _render_architecture_section_heading("architecture_faq_kicker", "architecture_faq_title", "architecture_faq_copy")
             with ui.column().classes("sy-architecture-faq-list w-full gap-2"):
                 for question_key, answer_key in faq_items:
                     with ui.expansion(t(question_key), icon="help_outline").classes("sy-architecture-faq-item w-full"):
                         ui.label(t(answer_key)).classes("sy-architecture-faq-answer")
         _render_feedback_channel()
+        render_reference_pager(previous=("/platform", "platform"), next_=("/engineering", "engineering"))
 
 
 def _render_architecture_section_heading(

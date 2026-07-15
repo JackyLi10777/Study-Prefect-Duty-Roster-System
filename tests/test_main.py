@@ -99,7 +99,10 @@ def test_pointer_hover_motion_is_scoped_and_reduced_motion_safe() -> None:
     assert "--sy-pointer-x" in theme and "--sy-pointer-y" in theme
     assert ".q-expansion-item .q-item { cursor: pointer; }" in theme
     assert "prefers-reduced-motion: reduce" in theme
-    assert ".sy-pointer-reactive:hover { transform: none !important; }" in theme
+    reduced_scope = theme.split("@media (prefers-reduced-motion: reduce)", 1)[1].split("@media", 1)[0]
+    assert ".sy-pointer-reactive:hover" in reduced_scope
+    assert ".sy-co-creation-social:hover" in reduced_scope
+    assert "transform: none !important" in reduced_scope
     assert ".sy-pointer-light, .sy-feedback-pulse { display: none !important; }" in theme
     assert ".sy-table" not in motion.split("const pointerSurfaceSelector", 1)[1].split("].join", 1)[0]
     assert "pointerenter" in motion

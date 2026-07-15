@@ -111,6 +111,7 @@ def test_write_pipeline_uses_semantic_readiness_instead_of_network_quiet() -> No
     assert 'wait_until="networkidle"' not in script
     assert 'wait_for_load_state("networkidle")' not in script
     assert 'wait_until="domcontentloaded"' in script
+    assert "expect(confirm_rollover).to_be_enabled(timeout=10_000)" in script
 
 
 def test_write_pipeline_has_a_unique_reviewed_new_school_year_import() -> None:

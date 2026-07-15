@@ -115,7 +115,11 @@ def _assert_no_horizontal_overflow(page: Page, *, label: str) -> None:
 
 
 def _assert_touch_targets(page: Page, *, label: str, root: str = "body") -> None:
-    failures = page.locator(f"{root} .q-btn:visible").evaluate_all(
+    target_selector = ", ".join(
+        f"{root} {selector}:visible"
+        for selector in (".q-btn", ".q-toggle", ".q-checkbox", ".q-radio", ".q-item--clickable")
+    )
+    failures = page.locator(target_selector).evaluate_all(
         """(elements) => elements
           .map((element) => {
             const bounds = element.getBoundingClientRect();
@@ -209,15 +213,34 @@ def _assert_mobile_page(page: Page, route: str, *, label: str) -> None:
 
 
 def _open_mobile_drawer(page: Page) -> Locator:
-    more = page.get_by_test_id("mobile-bottom-navigation").locator(".sy-mobile-tab").last
+    more = page.get_by_test_id("mobile-more")
+    if more.get_attribute("aria-expanded") != "false":
+        raise AssertionError("Mobile More must expose its initial collapsed state.")
     more.click()
     drawer = page.locator("#main-navigation-drawer")
     drawer.wait_for(state="visible", timeout=5_000)
+    page.wait_for_function(
+        "document.querySelector('[data-testid=mobile-more]')?.getAttribute('aria-expanded') === 'true'"
+    )
+    if not page.evaluate("document.activeElement?.closest?.('#main-navigation-drawer') !== null"):
+        raise AssertionError("Opening mobile navigation must move focus into the drawer.")
     return drawer
 
 
 def _assert_drawer_scrolls(page: Page, *, label: str) -> None:
     drawer = _open_mobile_drawer(page)
+    focusables = drawer.locator('a[href]:visible, button:visible, [tabindex]:not([tabindex="-1"]):visible')
+    if focusables.count() < 2:
+        raise AssertionError(f"{label} drawer does not expose enough keyboard destinations.")
+    first = focusables.first
+    last = focusables.last
+    first.focus()
+    page.keyboard.press("Shift+Tab")
+    if not last.evaluate("element => document.activeElement === element"):
+        raise AssertionError(f"{label} drawer did not cycle Shift+Tab to its last control.")
+    page.keyboard.press("Tab")
+    if not first.evaluate("element => document.activeElement === element"):
+        raise AssertionError(f"{label} drawer did not cycle Tab to its first control.")
     # NiceGUI applies the requested id/classes to Quasar's scrollable drawer
     # content node itself, rather than to an extra wrapper around that node.
     metrics = drawer.evaluate(
@@ -238,6 +261,27 @@ def _assert_drawer_scrolls(page: Page, *, label: str) -> None:
     if metrics["overflowY"] not in {"auto", "scroll"}:
         raise AssertionError(f"{label} drawer does not expose a scrollable overflow mode: {metrics}")
     _assert_touch_targets(page, label=label, root="#main-navigation-drawer")
+    backdrop = page.locator(".q-drawer__backdrop:visible")
+    backdrop_box = backdrop.bounding_box()
+    if backdrop_box is None:
+        raise AssertionError(f"{label} drawer did not expose a closable backdrop.")
+    backdrop.click(position={"x": backdrop_box["width"] - 2, "y": 8})
+    drawer.wait_for(state="hidden", timeout=5_000)
+    page.wait_for_function(
+        "document.querySelector('[data-testid=mobile-more]')?.getAttribute('aria-expanded') === 'false'"
+    )
+    if page.evaluate("document.activeElement?.getAttribute('data-testid')") != "mobile-more":
+        raise AssertionError("Backdrop-closing mobile navigation must restore focus to More.")
+    _open_mobile_drawer(page)
+    page.keyboard.press("Escape")
+    drawer.wait_for(state="hidden", timeout=5_000)
+    page.wait_for_function(
+        """() => {
+          const button = document.querySelector('[data-testid="mobile-more"]');
+          return button?.getAttribute('aria-expanded') === 'false' && document.activeElement === button;
+        }""",
+        timeout=5_000,
+    )
 
 
 def _assert_responsive_table_cards(page: Page) -> None:
@@ -329,6 +373,15 @@ def main() -> int:
         if compact_tools.count() < 3:
             raise AssertionError("320px drawer does not expose language, sound, and appearance controls.")
         compact_tools.nth(0).click()
+        compact_page.wait_for_function(
+            """() => {
+              const button = document.querySelector('[data-testid="mobile-more"]');
+              return button?.getAttribute('aria-label') === 'More' &&
+                button?.getAttribute('aria-expanded') === 'false' &&
+                button?.dataset.syDrawerA11y === 'ready';
+            }""",
+            timeout=10_000,
+        )
         compact_page.locator('[role="heading"][aria-level="1"]').filter(has_text="Dashboard").wait_for(
             state="visible",
             timeout=10_000,

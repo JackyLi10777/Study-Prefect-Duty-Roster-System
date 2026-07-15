@@ -78,10 +78,13 @@
 
   .sy-sidebar { padding-bottom: calc(var(--sy-mobile-tabbar-height) + 18px + env(safe-area-inset-bottom)); }
   .sy-sidebar .q-btn { min-height: 48px; }
+  .sy-sidebar .q-btn__content { width: 100%; justify-content: flex-start; text-align: left; }
+  .sy-sidebar .q-btn__content .q-icon { flex: 0 0 24px; width: 24px; }
   .sy-sidebar-feedback { margin-bottom: 18px; }
 
   .q-btn { touch-action: manipulation; }
   .sy-main .q-btn { min-width: 44px; min-height: 44px; }
+  .sy-main .q-toggle, .sy-main .q-checkbox, .sy-main .q-radio { min-height: 44px; }
   .sy-main .q-item.q-item--clickable { min-height: 48px; }
   .sy-sidebar-feedback-link { min-height: 44px; }
   [data-testid="operator-access-card"], [data-testid="viewer-access-card"] {

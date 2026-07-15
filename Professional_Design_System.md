@@ -120,6 +120,12 @@ The school crest is an official identity asset, not generated atmosphere artwork
 
 The original alpha transparency is preserved; no JPEG conversion or automated background removal is allowed. Navigation and display crests use a transparent container in **both** appearances—no white tile, border or rectangular shadow may be added even on a white page. A restrained shape-aware drop shadow may follow the visible shield so the ribbon, red cross and dark-blue outline remain legible without creating a square. Keep the favicon, navigation, display, and print paths centralized in `nicegui_app/config.py`; future replacements must update these semantic files, retain Chinese characters and English school name, and pass browser and PDF verification at their actual rendered sizes.
 
+### Creator identity media
+
+`nicegui_app/assets/brand/li-chuangjie-avatar.jpg` and `nicegui_app/assets/brand/li-chuangjie-banner.png` are user-supplied creator identity content—not generated atmosphere or reusable background art. They may appear only in the `/platform` co-creation conclusion beside semantic text naming `李創杰 · LI Chuangjie, Jacky`. The canonical social destination is centralized as `INSTAGRAM_PROFILE_URL` in `nicegui_app/contact.py`; it opens in a new tab with `noopener noreferrer`.
+
+Keep the supplied bytes and deliberate crop, provide bilingual alternative text and intrinsic dimensions, lazy-load/decode the media, and verify the containing surface, border and link contrast independently in light and dark mode. Essential identity, role and destination remain semantic HTML, so neither the Ichthys artwork nor the Greek banner text is the only source of meaning. Because these are foreground identity media rather than atmosphere backgrounds, they do not require synthetic light/dark duplicates. Never place them behind or inside a roster, directory, form, warning, fairness record, PDF or operational action.
+
 ---
 
 ## 2. Confirmed state and decision brief
@@ -213,7 +219,7 @@ The common claim that a systematic SaaS layout automatically creates a clearer o
 | `button-action` | `#35647C` | `#47758B` | Filled primary button with white text; never used merely for decoration |
 | `action-slate-soft` | `#E8F0F3` | `#1A2B34` | Current-step grouping and quiet action context; never a text-only state |
 | `attention-amber` | `#8A5A00` | `#F0C96A` | Draft, missing prerequisite, practice mode, partial success or review needed |
-| `danger-red` | `#B42318` | `#FF8A80` | Destructive, blocked or failed state only |
+| `danger-red` | `#963C35` | `#D98F87` | Destructive, blocked or failed state only; a muted brick/coral pair avoids alarm-red glare |
 | `neutral-control` | `#5F6368` | `#C5C7CA` | Pending, inactive, ordinary navigation and non-status icons |
 | `ink` | `#1C1C1E` | `#F5F5F7` | Important text |
 | `secondary-ink` | `#6E6E73` | `#AEAEB2` | Supporting copy and metadata |
@@ -396,7 +402,7 @@ Phone layout is a deliberate arrangement of the same product, not a compressed d
 - `<= 900px` is the adaptive navigation shell; `> 900px` keeps the desktop drawer and utility row. Tighter content rules may still activate at 600px, but Quasar's drawer breakpoint, CSS navigation swap and bottom-nav visibility must never disagree.
 - The phone top bar stays on one line and contains only page identity plus the optional page-music control. Appearance, language, sound, logout and secondary destinations move to the **More** navigation drawer instead of wrapping the header.
 - A persistent four-item bottom navigation exposes **Dashboard / Rosters / Prefects / More**. It respects `env(safe-area-inset-bottom)`, keeps practical targets at least 44px, identifies the current destination without colour alone, and adds enough content padding that the final control is never hidden underneath it.
-- **More** opens the same semantic navigation drawer used by the shared shell. It must remain vertically scrollable at 320px, support keyboard and screen-reader navigation, dismiss through the platform-standard drawer interaction, and keep destructive or identity-changing actions clearly labelled.
+- **More** opens the same semantic navigation drawer used by the shared shell. It must remain vertically scrollable at 320px, support keyboard and screen-reader navigation, dismiss through the platform-standard drawer interaction, and keep destructive or identity-changing actions clearly labelled. When opened, **More** sets `aria-expanded=true`, moves focus to its first available control and contains Tab／Shift+Tab navigation; Escape or backdrop dismissal closes it, restores focus to **More** and returns `aria-expanded=false`.
 - Dense tables use cards, row detail or another scan-safe phone representation generated from the same localized display model. A mobile card may reorder information, but it may not omit names, status, workload, reasons or actions needed for the same decision.
 - Landscape phone layout is a compact phone composition, not an automatic return to the desktop sidebar. Hover is never required; form actions stack in consequence order and touch targets remain separated.
 
@@ -432,6 +438,23 @@ Brand context and technical evidence use two connected pages instead of one over
 
 Enterprise references inform information order, not visual imitation. Platform, solutions, trust, resources, and company/team narratives must be translated into the Sing Yin context with original geometry and copy. A generated narrative image may support the non-sensitive operating-model story only when a same-composition light/dark pair is present; organisational meaning must remain in semantic HTML, never inside image text or a fake diagram.
 
+### 6.6 Reference and documentation information architecture
+
+The website already owns the necessary reference routes; professionalism comes from connecting them, not multiplying top-level pages. Two reading lanes are canonical:
+
+- **Operator lane:** Getting Started → Operator Guide → Handover.
+- **Trust lane:** Platform & Team → System Architecture & Trust → Engineering & Quality.
+
+The information architecture may learn from the grouped navigation, page-local contents, cause／solution tables, curated update history and previous／next continuity used by mature documentation systems such as [DeepSeek API Docs](https://api-docs.deepseek.com/zh-cn/), its [error reference](https://api-docs.deepseek.com/zh-cn/quick_start/error_codes/) and [update history](https://api-docs.deepseek.com/zh-cn/updates/). The implementation remains original and follows these constraints:
+
+1. Do not create an API-style sidebar, pricing page, model catalogue, developer-console imitation, or a second operator manual merely to resemble a software platform.
+2. Getting Started is the compact index. It answers three real situations: begin weekly work, recover from uncertainty, or understand trust and fairness.
+3. Operator Guide groups instructions by decision stage and includes a bilingual **what you see／what it means／safe next action** reference. It uses existing workflow meanings and support references; it must not invent public error codes.
+4. Page-local contents links wrap on mobile and remain in normal document flow. They are never a second sticky sidebar competing with weekly navigation.
+5. Previous／next links stay within one reading lane. An operator is never sent unexpectedly from a recovery instruction into a technical showcase.
+6. Engineering updates are curated operator-visible milestones backed by release evidence. Internal styling rounds, unverified counts, and marketing-style release claims stay out of the interface.
+7. Reference navigation chrome, page-local contents, pagers and troubleshooting matrices are image-free. Their hierarchy comes from typography, spacing, semantic links, structured rows, focus states and concise bilingual copy. The `/platform` co-creation block may show foreground creator identity media only under the separate Creator identity media contract; it is never a reference background or a carrier of workflow meaning.
+
 ---
 
 ## 7. Components and interaction patterns
@@ -452,14 +475,66 @@ Enterprise references inform information order, not visual imitation. Platform, 
 
 | Kind | Use | Visual rule |
 |---|---|---|
-| Primary | The one next consequential action | Solid action blue, clear verb, 44px touch target |
-| Secondary | A valid alternative or review path | Outline/quiet surface, same clear verb |
-| Tertiary | Navigation or low-risk discovery | Flat text with icon only when it clarifies meaning |
-| Destructive | Archive/irreversible action | Danger colour and confirmation |
+| Primary | The one next consequential action | Low-saturation action blue; 1px highlight, inset lower edge and short two-stage shadow; clear verb; minimum 44px target |
+| Secondary | A valid alternative or review path | Warm/dark neutral surface, semantic outline, shallow offset shadow and the same geometry as Primary |
+| Tertiary | Navigation or low-risk discovery | Quiet surface response; no raised CTA shadow; icon only when it clarifies meaning |
+| Attention | A safe recovery or unresolved prerequisite | Amber outline／surface only; never decorative variety and never a substitute for error copy |
+| Destructive | Archive／remove／restore-overwrite action | Warm danger treatment, persistent label, compressed shadow on press and an explicit consequence confirmation |
 
 Buttons must say what happens: “生成並儲存草稿”, “確認發布並入帳”, “建立交接備份包”. Avoid “提交”, “確定”, or icon-only critical actions.
 
 Dialog actions use one responsive grammar. Desktop presents a short, right-aligned action row; at `<= 900px`, the same semantic order becomes `sy-mobile-actions` with full-width controls of at least 48px. The safest exit or review action remains distinguishable from the consequential action, and source order follows consequence rather than visual convenience.
+
+#### Sing Yin tactile component grammar
+
+The interface may use Uiverse Elements broadly **only through one rewritten Sing Yin grammar**. Coverage may be extensive; visual dialects may not. The production source does not paste component HTML, use Uiverse global class names, load a Uiverse script, or make each page look like a different contributor's portfolio. It extracts a small interaction principle, maps it to the project tokens and Quasar state model, then supplies the missing accessibility and reliability states.
+
+The current reference set is deliberately bounded:
+
+| Reference pattern | Accepted idea | Rejected／rewritten behaviour |
+|---|---|---|
+| `adamgiebl / massive-insect-65` | Inset edge, shallow elevation and a press sink for the primary family | Fixed blue, monospace type, 56px-only sizing and 2px hover travel |
+| `andrew-demchenk0 / afraid-squid-51` | Offset depth that visibly compresses on press | Heavy black neobrutalist border, 4px travel and a one-off component geometry |
+| `Jay-9527 / weak-dingo-78` | A clearly separated track and thumb for switches | Hidden zero-size control without a visible project focus contract, generic green and 400ms timing |
+| `Gautammsharma / massive-rabbit-40` | Checked, hover, focus and disabled states remain part of one checkbox | Standalone Material colour and selectors; production remains the semantic Quasar control |
+| `Lanicet / fluffy-otter-43` | Inset progress track and rounded real fill | Infinite fabricated percentage animation; progress is driven only by actual workflow state |
+| `Li-Deheng / shy-moth-10` and `JkHuger / little-falcon-22` | Directional public-login feedback and a calm encrypted-loading pulse | Multi-arrow decoration, looping colour spectacle, generic classes and motion-only meaning |
+
+Attribution is retained in `NOTICE.md`; local source comments identify the adapted family. Uiverse remains a design reference and MIT source archive, not a runtime dependency.
+
+The shared implementation owner is `nicegui_app/assets/css/sing-yin-theme-v1.css`. It exposes one set of control tokens—`--sy-control-edge`, `--sy-control-highlight`, `--sy-control-shadow`, `--sy-control-shadow-hover`, `--sy-control-outline-shadow` and `--sy-control-danger-shadow`—with separate light／dark values. Quasar props remain the semantic API: `color=primary` is Primary, `outline` is Secondary, `flat` is Tertiary, `negative` is Destructive and `sy-button-attention` is Attention. Primary fill selectors must positively require `.bg-primary`; generic outline／hover rules must explicitly exclude `.text-negative` and `.sy-button-attention`. This semantic cascade rule prevents a broad visual rule from silently recolouring destructive or recovery actions. Pages must not recreate shadows, gradients or transition timings inline.
+
+Quasar's palette is a **framework fill bridge**, not the complete design palette. `bg-primary`, `bg-positive`, `bg-negative` and `bg-info` normally carry white text, while `bg-warning` carries dark text; their values must therefore remain fill-safe in both themes. Dark-mode outline／flat foregrounds are intentionally lighter component tokens and must not be fed back into those filled utilities. The current bridge is: action fill `#35647C`／`#47758B`, stable fill `#0F766E`, danger fill `#963C35`／`#9A4A43`, info fill `#35647C`, and warning fill `#F0C96A`. CSS child-content rules supply dark outline action `#9BC2D2`, stable `#72D6C7`, danger `#D98F87` and attention `#F0C96A`. Browser evidence must measure the rendered label against the rendered surface rather than merely confirming that two colours differ.
+
+All members of the family share these rules:
+
+1. Geometry stays at 12px for buttons／fields, 44px minimum target and 48px for stacked phone actions. Hover never changes layout or label width.
+2. A leading icon may sit in a small tonal well on Primary／Secondary controls, but critical text remains visible. Icon-only controls require an accessible name and use the compact tool family, not the prominent CTA shadow.
+3. Fine-pointer hover may rise by 1px and deepen an existing shadow. Press sinks by 1px and compresses the shadow. Coarse pointers do not depend on hover; reduced-motion removes transforms while retaining colour, edge and state text.
+4. Sidebar items, header utilities, bottom navigation, round tools, disabled, busy and loading controls are explicitly excluded from prominent elevation. Busy controls expose real `aria-busy`／disabled semantics and cannot be clicked twice.
+5. Danger never hides its label or expands an icon over the text. Attention and danger are semantic states, not alternatives chosen for visual variety.
+6. A switch keeps a real labelled control, visible focus, a track/thumb position cue and a non-colour label. Checkbox and radio retain focus, checked, indeterminate and disabled states.
+7. Fields use restrained inset depth and a four-pixel soft focus halo in addition to the visible focus outline. Placeholder text never becomes the label.
+8. Tabs gain a quiet active surface without becoming separate floating cards. Progress tracks are inset, but the fill represents a real value or an explicitly indeterminate operation; no decorative infinite progress is admitted.
+9. CSS is the normal implementation path. Do not attach per-button pointer listeners or GSAP timelines merely to reproduce a hover effect; runtime motion is reserved for state transitions that CSS cannot truthfully express.
+10. Button labels use sentence case; uppercase is reserved for short kickers and section labels. An uploader is a neutral input surface, never a competing primary CTA. Notifications use the same stable／info／attention／danger fills, icon and plain-language next step as the page that triggered them.
+11. Filled danger is reserved for the last consequential remove／overwrite confirmation. Sign-out, cancel, close and ordinary navigation remain neutral even when they end a session or leave a screen.
+
+Component acceptance requires desktop light, desktop dark, 390px and 320px mobile evidence; keyboard focus; primary／secondary／tertiary／attention／danger／disabled／busy examples; notification and uploader states; no console or page errors; no unintended overlap or horizontal overflow; 44px phone targets for buttons, toggles, checkboxes, radios and clickable rows; rendered label contrast of at least 4.5:1; static reduced-motion behaviour; and bounded DOM, listener and heap evidence. A more dimensional appearance does not waive any of these checks.
+
+The grammar governs the whole interface through component families, not page-by-page decoration:
+
+| Family | Shared contract | Deliberate limit |
+|---|---|---|
+| Actions | Same 12px geometry, 44／48px target, semantic colour, focus, press, busy and disabled states | Only the current primary action receives the strongest depth |
+| Form controls | One field surface, focus halo, labelled checkbox／radio and track-thumb switch language | A placeholder, colour or thumb position never carries meaning alone |
+| Navigation | Common active marker, quiet surface and predictable icon weight | Header, sidebar and phone tabs never imitate raised CTAs |
+| Data | Stable table grid, tab hierarchy, honest progress and Chinese-name authority | No background imagery, ornamental gradients or fabricated percentages |
+| Feedback | Semantic stable／attention／danger／neutral badge and recovery language | Status colour never becomes an arbitrary icon palette |
+| Surfaces | One border, radius and elevation scale for cards, sheets and dialogs | Nested cards require a real change of ownership or task |
+| Sacred reading | Independent scripture typography, indigo／parchment／gold and generous reading rhythm | Its distinct language never leaks into operational controls |
+
+When a new component is introduced, its owner must first assign it to one of these families. If none fits, update this specification and the shared tokens before styling the page. A new Uiverse reference is accepted only when it fills a documented interaction gap and can be rewritten into this grammar without adding a new visual dialect.
 
 ### Forms
 
@@ -549,6 +624,7 @@ Shared CSS motion tokens are the only default timing vocabulary: `--sy-motion-pr
 ### Hover and press response
 
 - Primary buttons rise by at most 1px on hover and compress slightly on press.
+- Community component libraries are references, not a replacement design system. Uiverse-derived ideas enter only through the tactile component grammar in section 7: project tokens, scoped Quasar selectors, complete focus／touch／busy／disabled states and a static reduced-motion fallback. The original contributor colours, generic global class names, layout-changing hover, disappearing labels, fake progress and decorative looping effects are deliberately excluded.
 - Active Weekly Pulse cards may rise by at most 2px on hover; pending cards remain still.
 - Daily verse and workbench surfaces may gain a slightly deeper shadow on hover, but must never shift surrounding layout.
 - Background artwork is static. Its purpose is atmosphere, not animation.

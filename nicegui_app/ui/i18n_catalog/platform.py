@@ -412,6 +412,14 @@ MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服
                                 'en': 'Include only the issue description and support reference; do not attach names, leave details, '
                                       'rosters, PDFs, databases, backups, screenshots, or complete logs.'},
  'co_creation_title': {'zh-HK': '共創結語', 'en': 'A co-creation note'},
+ 'co_creation_creator_name': {'zh-HK': '李創杰 · LI Chuangjie, Jacky', 'en': '李創杰 · LI Chuangjie, Jacky'},
+ 'co_creation_creator_role': {'zh-HK': '2026–2027 年度首席導學風紀', 'en': 'Head Study Prefect, 2026–2027'},
+ 'co_creation_instagram_action': {'zh-HK': 'Instagram：@5662jacky', 'en': 'Instagram: @5662jacky'},
+ 'co_creation_instagram_accessible': {'zh-HK': 'Instagram：@5662jacky（在新分頁開啟）',
+                                      'en': 'Instagram: @5662jacky (opens in a new tab)'},
+ 'co_creation_avatar_alt': {'zh-HK': '李創杰的魚形基督標記社交媒體頭像', 'en': "LI Chuangjie Jacky's Ichthys social profile image"},
+ 'co_creation_banner_alt': {'zh-HK': '魚形基督標記橫幅；希臘文意為「耶穌基督、神的兒子、救主」',
+                            'en': 'Ichthys banner reading “Jesus Christ, Son of God, Saviour” in Greek'},
  'co_creation_team': {'zh-HK': 'Study Prefect Systems & Stewardship Office／導學風紀系統與傳承組', 'en': 'Study Prefect Systems & Stewardship Office'},
  'co_creation_body': {'zh-HK': '我是李創杰，2026–2027 年度首席導學風紀。這次 NiceGUI 重構及正式版本只由我與 Codex 兩位共創者完成。Codex '
                                '是我的共創作者與技術同事，協助我把操作流程、介面、可靠性、測試和交接逐步落實；項目團隊名稱不代表另有開發者或外判團隊。',

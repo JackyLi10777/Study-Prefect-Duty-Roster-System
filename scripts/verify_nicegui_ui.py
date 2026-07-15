@@ -52,6 +52,11 @@ SETTINGS_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-settings-dark.png"
 SETTINGS_MOBILE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-settings-mobile.png"
 DEVOTIONAL_LIGHT_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-devotional-light.png"
 DEVOTIONAL_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-devotional-dark.png"
+COMPONENT_EVIDENCE_DIR = PROJECT_ROOT / "test-results" / "uiverse-components"
+COMPONENT_LIGHT_SCREENSHOT = COMPONENT_EVIDENCE_DIR / "desktop-light-components.png"
+COMPONENT_DARK_SCREENSHOT = COMPONENT_EVIDENCE_DIR / "desktop-dark-components.png"
+COMPONENT_MOBILE_LIGHT_SCREENSHOT = COMPONENT_EVIDENCE_DIR / "mobile-320-light-components.png"
+COMPONENT_MOBILE_DARK_SCREENSHOT = COMPONENT_EVIDENCE_DIR / "mobile-390-dark-components.png"
 
 
 def assert_unexpected_host_rejected() -> None:
@@ -212,6 +217,230 @@ def assert_status_tone_contrast(page) -> None:  # type: ignore[no-untyped-def]
     fixture.evaluate("element => element.remove()")
 
 
+def ensure_rendered_theme(page, target: str) -> None:  # type: ignore[no-untyped-def]
+    """Switch through the visible UI at desktop or phone width and wait for the real body state."""
+
+    assert target in {"light", "dark"}
+    wants_dark = target == "dark"
+    if (page.locator("body.body--dark").count() == 1) == wants_dark:
+        return
+
+    icon = "dark_mode" if wants_dark else "light_mode"
+    visible_controls = page.locator("button:visible").filter(
+        has=page.locator("i.q-icon", has_text=icon)
+    )
+    if visible_controls.count() == 0:
+        mobile_navigation = page.get_by_test_id("mobile-bottom-navigation")
+        assert mobile_navigation.count() == 1
+        mobile_navigation.locator("button").last.click()
+        drawer_tools = page.get_by_test_id("mobile-drawer-tools")
+        drawer_tools.wait_for(timeout=10_000)
+        visible_controls = page.locator("button:visible").filter(
+            has=page.locator("i.q-icon", has_text=icon)
+        )
+
+    assert visible_controls.count() >= 1
+    visible_controls.first.click()
+    if wants_dark:
+        page.locator("body.body--dark").wait_for(timeout=10_000)
+    else:
+        page.locator("body:not(.body--dark)").wait_for(timeout=10_000)
+    # The mobile drawer deliberately remains open after changing a preference.
+    # The isolated component evidence layer is placed above and hides shell chrome
+    # while capturing, so the verification does not depend on drawer-close timing.
+
+
+def assert_component_grammar(page, screenshot_path: Path) -> None:  # type: ignore[no-untyped-def]
+    """Render the production cascade as a temporary, data-free component matrix."""
+
+    screenshot_path.parent.mkdir(parents=True, exist_ok=True)
+    page.evaluate(
+        """
+        () => {
+          document.querySelector('#sy-component-evidence')?.remove();
+          const fixture = document.createElement('section');
+          fixture.id = 'sy-component-evidence';
+          fixture.className = 'sy-surface';
+          fixture.setAttribute('aria-label', 'Component verification fixture');
+          fixture.style.cssText = [
+            'position:relative', 'z-index:2147483000', 'isolation:isolate', 'display:grid', 'gap:18px',
+            'width:100%', 'max-width:980px', 'margin:0 auto 24px', 'padding:22px',
+            'border:1px solid var(--sy-line)', 'border-radius:22px',
+            'background:var(--sy-surface)', 'color:var(--sy-ink)',
+            'box-shadow:0 16px 42px rgba(28,28,30,.10)'
+          ].join(';');
+          fixture.innerHTML = `
+            <div style="display:grid;gap:4px">
+              <strong style="font-size:18px">統一元件語法 · Unified component grammar</strong>
+              <span style="color:var(--sy-muted);font-size:12px">Data-free browser verification fixture</span>
+            </div>
+            <div data-group="actions" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px">
+              <button id="componentPrimary" class="q-btn q-btn-item non-selectable no-outline q-btn--rectangle q-btn--standard bg-primary text-white"><span class="q-btn__content">主要操作 · Primary</span></button>
+              <button id="componentSecondary" class="q-btn q-btn-item non-selectable no-outline q-btn--rectangle q-btn--outline text-primary"><span class="q-btn__content">檢視 · Secondary</span></button>
+              <button id="componentTertiary" class="q-btn q-btn-item non-selectable no-outline q-btn--rectangle q-btn--flat text-primary"><span class="q-btn__content">稍後 · Tertiary</span></button>
+              <button id="componentAttention" class="q-btn q-btn-item non-selectable no-outline q-btn--rectangle q-btn--outline text-primary sy-button-attention"><span class="q-btn__content">復原核對 · Attention</span></button>
+              <button id="componentDanger" class="q-btn q-btn-item non-selectable no-outline q-btn--rectangle q-btn--standard bg-negative text-white"><span class="q-btn__content">移除 · Danger</span></button>
+              <button id="componentDangerOutline" class="q-btn q-btn-item non-selectable no-outline q-btn--rectangle q-btn--outline text-negative"><span class="q-btn__content">審慎移除 · Danger outline</span></button>
+              <button id="componentDisabled" class="q-btn q-btn-item non-selectable no-outline q-btn--rectangle q-btn--standard bg-primary text-white disabled" aria-disabled="true"><span class="q-btn__content">尚未可用 · Disabled</span></button>
+              <button id="componentBusy" class="q-btn q-btn-item non-selectable no-outline q-btn--rectangle q-btn--standard bg-primary text-white" aria-busy="true"><span class="q-btn__content">處理中 · Busy</span></button>
+            </div>
+            <div data-group="forms" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:14px;border:1px solid var(--sy-line);border-radius:16px;background:var(--sy-surface-subtle)">
+              <label id="componentCheckbox" class="q-checkbox cursor-pointer no-outline row inline no-wrap items-center" tabindex="0" role="checkbox" aria-checked="true"><div class="q-checkbox__inner relative-position non-selectable q-checkbox__inner--truthy text-primary" aria-hidden="true"><input class="hidden q-checkbox__native absolute q-ma-none q-pa-none" type="checkbox" checked><div class="q-checkbox__bg absolute"><svg class="q-checkbox__svg fit absolute-full" viewBox="0 0 24 24"><path class="q-checkbox__truthy" fill="none" d="M4.1 12.7 9 17.6 20.3 6.3"></path></svg></div></div><div class="q-checkbox__label q-anchor--skip">已核對</div></label>
+              <label id="componentToggle" class="q-toggle cursor-pointer no-outline row inline no-wrap items-center" tabindex="0" role="switch" aria-checked="true"><div class="q-toggle__inner relative-position non-selectable q-toggle__inner--truthy text-primary" aria-hidden="true"><input class="hidden q-toggle__native absolute q-ma-none q-pa-none" type="checkbox" checked><div class="q-toggle__track"></div><div class="q-toggle__thumb absolute flex flex-center no-wrap"></div></div><div class="q-toggle__label q-anchor--skip">已啟用</div></label>
+              <label id="componentRadio" class="q-radio cursor-pointer no-outline row inline no-wrap items-center" tabindex="0" role="radio" aria-checked="true"><div class="q-radio__inner relative-position non-selectable q-radio__inner--truthy text-primary" aria-hidden="true"><input class="hidden q-radio__native absolute q-ma-none q-pa-none" type="radio" checked><div class="q-radio__bg absolute"><svg class="q-radio__svg fit absolute-full" viewBox="0 0 24 24"><path class="q-radio__check" d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"></path></svg></div></div><div class="q-radio__label q-anchor--skip">目前選項</div></label>
+              <label id="componentToggleDisabled" class="q-toggle row no-wrap inline items-center disabled" role="switch" aria-checked="false" aria-disabled="true"><div class="q-toggle__inner relative-position non-selectable q-toggle__inner--falsy" aria-hidden="true"><input class="hidden q-toggle__native absolute q-ma-none q-pa-none" type="checkbox" disabled><div class="q-toggle__track"></div><div class="q-toggle__thumb absolute flex flex-center no-wrap"></div></div><div class="q-toggle__label q-anchor--skip">不可用</div></label>
+            </div>
+            <div data-group="data" style="display:grid;gap:14px">
+              <div class="q-tabs"><div id="componentTab" class="q-tab q-tab--active" style="display:inline-flex;padding:10px 16px">本週值班</div></div>
+              <div class="q-linear-progress" style="position:relative;height:8px;overflow:hidden;border-radius:999px"><div id="componentProgress" class="q-linear-progress__model" style="position:absolute;inset:0 35% 0 0"></div></div>
+            </div>`;
+          (document.querySelector('main#main-content') || document.body).prepend(fixture);
+        }
+        """
+    )
+    fixture = page.locator("#sy-component-evidence")
+    fixture.wait_for(timeout=5_000)
+    # Quasar outlines live on ::before and semantic button transitions settle
+    # shortly after this fixture enters the production cascade.
+    page.wait_for_timeout(500)
+    styles = page.evaluate(
+        """
+        () => {
+          const pick = id => {
+            const element = document.getElementById(id);
+            const style = getComputedStyle(element);
+            const before = getComputedStyle(element, '::before');
+            return {color: style.color, background: style.backgroundImage,
+                    backgroundColor: style.backgroundColor, border: style.borderTopColor,
+                    outlineBorder: before.borderTopColor,
+                    outlineWidth: before.borderTopWidth,
+                    shadow: style.boxShadow, opacity: Number(style.opacity), cursor: style.cursor};
+          };
+          return Object.fromEntries(['componentPrimary', 'componentSecondary', 'componentAttention',
+            'componentDanger', 'componentDangerOutline', 'componentDisabled', 'componentBusy',
+            'componentTab', 'componentProgress', 'componentToggleDisabled'].map(id => [id, pick(id)]));
+        }
+        """
+    )
+    assert styles["componentPrimary"]["backgroundColor"] != styles["componentDanger"]["backgroundColor"], styles
+    assert styles["componentPrimary"]["border"] != styles["componentDanger"]["border"], styles
+    assert styles["componentPrimary"]["shadow"] != "none", styles
+    assert styles["componentDanger"]["shadow"] != "none", styles
+    outline_signatures = {
+        (styles[key]["color"], styles[key]["outlineBorder"])
+        for key in ("componentSecondary", "componentAttention", "componentDangerOutline")
+    }
+    assert len(outline_signatures) == 3, styles
+    assert all(
+        styles[key]["outlineWidth"] == "1px"
+        for key in ("componentSecondary", "componentAttention", "componentDangerOutline")
+    ), styles
+    assert styles["componentDisabled"]["opacity"] < 0.8
+    assert styles["componentBusy"]["cursor"] in {"wait", "progress"}
+    assert styles["componentProgress"]["background"] != "none"
+    assert styles["componentToggleDisabled"]["opacity"] < 0.8
+
+    for component_id in (
+        "componentPrimary",
+        "componentSecondary",
+        "componentTertiary",
+        "componentAttention",
+        "componentDanger",
+        "componentDangerOutline",
+        "componentBusy",
+    ):
+        ratio = element_contrast_ratio(page.locator(f"#{component_id} .q-btn__content"))
+        assert ratio >= 4.5, f"{component_id} label contrast was only {ratio:.2f}:1"
+
+    layout = fixture.evaluate(
+        """
+        element => {
+          const groups = ['[data-group="actions"] > button', '[data-group="forms"] > label'];
+          const outside = [];
+          const overlaps = [];
+          const root = element.getBoundingClientRect();
+          for (const selector of groups) {
+            const items = [...element.querySelectorAll(selector)];
+            const boxes = items.map(item => ({id: item.id, box: item.getBoundingClientRect()}));
+            for (const {id, box} of boxes) {
+              if (box.left < root.left - 1 || box.right > root.right + 1 ||
+                  box.top < root.top - 1 || box.bottom > root.bottom + 1) outside.push(id);
+              if (innerWidth <= 420 && (box.width < 44 || box.height < 44)) {
+                outside.push(`${id}:touch-${box.width.toFixed(1)}x${box.height.toFixed(1)}`);
+              }
+            }
+            for (let i = 0; i < boxes.length; i += 1) {
+              for (let j = i + 1; j < boxes.length; j += 1) {
+                const a = boxes[i]; const b = boxes[j];
+                const intersects = Math.min(a.box.right, b.box.right) - Math.max(a.box.left, b.box.left) > 1 &&
+                  Math.min(a.box.bottom, b.box.bottom) - Math.max(a.box.top, b.box.top) > 1;
+                if (intersects) overlaps.push(`${a.id}/${b.id}`);
+              }
+            }
+          }
+          return {outside, overlaps};
+        }
+        """
+    )
+    assert not layout["outside"], layout
+    assert not layout["overlaps"], layout
+
+    page.evaluate(
+        """
+        () => {
+          const host = document.createElement('div');
+          host.id = 'componentNotificationProbes';
+          host.style.cssText = 'position:absolute;left:-10000px;top:0;display:grid;gap:8px';
+          host.innerHTML = [
+            ['positive text-white', 'stable'], ['info text-white', 'info'],
+            ['warning text-dark', 'attention'], ['negative text-white', 'danger']
+          ].map(([tone, id]) =>
+            `<div class="q-notification bg-${tone}"><div id="notification-${id}" class="q-notification__message">${id}</div></div>`
+          ).join('');
+          document.body.appendChild(host);
+        }
+        """
+    )
+    try:
+        for tone in ("stable", "info", "attention", "danger"):
+            ratio = element_contrast_ratio(page.locator(f"#notification-{tone}"))
+            assert ratio >= 4.5, f"{tone} notification contrast was only {ratio:.2f}:1"
+    finally:
+        page.locator("#componentNotificationProbes").evaluate("element => element.remove()")
+
+    page.locator("#componentCheckbox").focus()
+    focus_style = page.locator("#componentCheckbox .q-checkbox__inner").evaluate(
+        "element => ({style:getComputedStyle(element).outlineStyle, width:getComputedStyle(element).outlineWidth})"
+    )
+    assert focus_style["style"] != "none" and float(focus_style["width"].removesuffix("px")) >= 3
+    page.locator("#componentCheckbox").evaluate("element => element.blur()")
+    page.evaluate(
+        """
+        () => {
+          const selectors = '.sy-app-header,.sy-mobile-tabbar,.q-drawer,.q-drawer__backdrop,.sy-skip-link,.sy-status-stack';
+          document.querySelectorAll(selectors).forEach(element => {
+            element.dataset.syEvidenceVisibility = element.style.visibility || '';
+            element.style.visibility = 'hidden';
+          });
+        }
+        """
+    )
+    try:
+        fixture.screenshot(path=str(screenshot_path))
+    finally:
+        page.evaluate(
+            """
+            () => {
+              document.querySelectorAll('[data-sy-evidence-visibility]').forEach(element => {
+                element.style.visibility = element.dataset.syEvidenceVisibility;
+                delete element.dataset.syEvidenceVisibility;
+              });
+            }
+            """
+        )
+        fixture.evaluate("element => element.remove()")
+
+
 def main() -> None:
     LIGHT_SCREENSHOT.parent.mkdir(parents=True, exist_ok=True)
     expected_invalid_backups = prepare_invalid_backup_fixture()
@@ -248,6 +477,7 @@ def main() -> None:
         assert page.locator(".sy-flow-step--active .q-btn.bg-primary").evaluate(
             "element => getComputedStyle(element).backgroundColor"
         ) == "rgb(53, 100, 124)"
+        assert_component_grammar(page, COMPONENT_LIGHT_SCREENSHOT)
         assert page.locator(".sy-sidebar .sy-nav-active").evaluate(
             "element => getComputedStyle(element).color"
         ) == "rgb(48, 50, 49)"
@@ -400,6 +630,8 @@ def main() -> None:
             assert response is not None and response.status == 200, path
             page.get_by_text(expected_text, exact=False).first.wait_for(timeout=10_000)
         page.goto(f"{BASE_URL}/handover", wait_until="domcontentloaded")
+        assert page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link").count() == 4
+        assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 1
         assert "handover-archive-light-v1.webp" in page.locator(".sy-handover-hero").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         readiness_cards = page.locator(".sy-handover-readiness-card")
         assert readiness_cards.count() == 3
@@ -422,8 +654,12 @@ def main() -> None:
             assert box is not None and box["height"] >= 44
         page.screenshot(path=str(HANDOVER_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
+        assert page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link").count() == 6
+        assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 1
         page.get_by_text("共創結語", exact=True).wait_for(timeout=10_000)
-        page.get_by_text("Study Prefect Team：由服事責任建立的團隊架構", exact=True).wait_for(timeout=10_000)
+        page.get_by_role(
+            "heading", name="Study Prefect Team：由服事責任建立的團隊架構", exact=True
+        ).wait_for(timeout=10_000)
         feedback_links = page.get_by_test_id("feedback-channel").locator("a")
         assert feedback_links.count() == 2
         feedback_link = page.get_by_test_id("feedback-channel").locator('a[href^="mailto:s10777@syss.edu.hk"]')
@@ -455,6 +691,30 @@ def main() -> None:
         assert display_crest_image.evaluate("element => element.naturalWidth") == 640
         assert display_crest.evaluate("element => getComputedStyle(element).backgroundColor") == "rgba(0, 0, 0, 0)"
         assert display_crest.evaluate("element => getComputedStyle(element).borderTopWidth") == "0px"
+        creator_profile = page.get_by_test_id("co-creation-profile")
+        creator_banner_image = creator_profile.locator(".sy-co-creation-banner img")
+        creator_avatar_image = creator_profile.locator(".sy-co-creation-avatar img")
+        creator_instagram = creator_profile.locator('a[href="https://www.instagram.com/5662jacky/"]')
+        assert creator_profile.get_by_text("李創杰 · LI Chuangjie, Jacky", exact=True).count() == 1
+        assert creator_banner_image.count() == 1 and creator_avatar_image.count() == 1
+        page.wait_for_function(
+            "element => element.complete && element.naturalWidth > 0",
+            arg=creator_banner_image.element_handle(),
+        )
+        page.wait_for_function(
+            "element => element.complete && element.naturalWidth > 0",
+            arg=creator_avatar_image.element_handle(),
+        )
+        assert creator_banner_image.evaluate("element => element.naturalWidth") == 1536
+        assert creator_avatar_image.evaluate("element => element.naturalWidth") == 1024
+        assert creator_instagram.count() == 1
+        assert creator_instagram.get_attribute("target") == "_blank"
+        creator_instagram_rel = set((creator_instagram.get_attribute("rel") or "").split())
+        assert {"noopener", "noreferrer"} <= creator_instagram_rel
+        creator_instagram_box = creator_instagram.bounding_box()
+        assert creator_instagram_box is not None and creator_instagram_box["height"] >= 44
+        assert element_contrast_ratio(creator_profile.locator(".sy-co-creation-name")) >= 4.5
+        assert element_contrast_ratio(creator_instagram) >= 4.5
         pointer_surface = page.locator(".sy-co-creation")
         pointer_surface.locator(".sy-pointer-light").wait_for(timeout=10_000, state="attached")
         page.wait_for_timeout(520)
@@ -478,6 +738,8 @@ def main() -> None:
         assert page.get_by_role("heading", level=2).count() >= 5
         assert page.get_by_test_id("engineering-pillars").locator(".sy-engineering-pillar").count() == 6
         assert page.get_by_test_id("engineering-evolution").locator(".sy-engineering-evolution-item").count() == 4
+        assert page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link").count() == 6
+        assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 1
         engineering_links = page.locator(".sy-engineering-resources a, .sy-engineering-resources .q-btn")
         assert engineering_links.count() == 3
         for link in engineering_links.all():
@@ -493,6 +755,8 @@ def main() -> None:
         assert page.get_by_test_id("service-lifeline").locator(".sy-service-stage").count() == 6
         assert page.get_by_test_id("trust-evidence").locator(".sy-trust-evidence-card").count() == 4
         assert page.get_by_test_id("architecture-faq").locator(".sy-architecture-faq-item").count() == 9
+        assert page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link").count() == 4
+        assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 2
         assert "architecture-lifeline-light-v1.webp" in page.get_by_test_id("architecture-lifeline-visual").evaluate(
             "element => getComputedStyle(element).backgroundImage"
         )
@@ -508,6 +772,9 @@ def main() -> None:
         assert "guide-handbook-light-v1.webp" in page.locator(".sy-guide-hero").evaluate(
             "element => getComputedStyle(element, '::after').backgroundImage"
         )
+        assert page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link").count() == 4
+        assert page.get_by_test_id("guide-troubleshooting").locator(".sy-troubleshooting-row").count() == 8
+        assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 2
         page.screenshot(path=str(GUIDE_SCREENSHOT), full_page=True)
         expansion_header = page.locator(".q-expansion-item .q-item").first
         assert expansion_header.evaluate("element => getComputedStyle(element).cursor") == "pointer"
@@ -516,6 +783,7 @@ def main() -> None:
         assert expansion_header.evaluate("element => getComputedStyle(element).transform") != "none"
         page.goto(f"{BASE_URL}/getting-started", wait_until="domcontentloaded")
         page.locator(".sy-onboarding-symbol").wait_for(timeout=10_000)
+        assert page.get_by_test_id("reference-index").locator(".sy-reference-index-card").count() == 3
         assert "onboarding-desk-light-v1.webp" in page.locator(".sy-onboarding-intro").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         page.screenshot(path=str(ONBOARDING_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/rosters/999999", wait_until="domcontentloaded")
@@ -753,6 +1021,7 @@ def main() -> None:
         dark_music_dialog.get_by_text("Quiet reflection", exact=False).first.wait_for(timeout=10_000)
         assert dark_music_dialog.locator("audio.sy-page-music-audio").evaluate("element => getComputedStyle(element).colorScheme") == "dark"
         close_music_dialog(dark_music_dialog)
+        assert_component_grammar(page, COMPONENT_DARK_SCREENSHOT)
         page.screenshot(path=str(DARK_SCREENSHOT), full_page=True)
         assert page.locator(".sy-daily-start-verse").evaluate("element => getComputedStyle(element).color") != "rgb(0, 0, 0)"
         page.goto(f"{BASE_URL}/devotional", wait_until="domcontentloaded")
@@ -786,6 +1055,26 @@ def main() -> None:
         assert "platform-stewardship-dark-v1.webp" in page.locator(".sy-platform-hero").evaluate(
             "element => getComputedStyle(element, '::before').backgroundImage"
         )
+        dark_creator_profile = page.get_by_test_id("co-creation-profile")
+        dark_creator_profile.scroll_into_view_if_needed()
+        dark_creator_banner_image = dark_creator_profile.locator(".sy-co-creation-banner img")
+        dark_creator_avatar_image = dark_creator_profile.locator(".sy-co-creation-avatar img")
+        page.wait_for_function(
+            "element => element.complete && element.naturalWidth > 0",
+            arg=dark_creator_banner_image.element_handle(),
+        )
+        page.wait_for_function(
+            "element => element.complete && element.naturalWidth > 0",
+            arg=dark_creator_avatar_image.element_handle(),
+        )
+        assert dark_creator_banner_image.evaluate(
+            "element => element.complete && element.naturalWidth"
+        ) == 1536
+        assert dark_creator_avatar_image.evaluate(
+            "element => element.complete && element.naturalWidth"
+        ) == 1024
+        assert element_contrast_ratio(dark_creator_profile.locator(".sy-co-creation-name")) >= 4.5
+        assert element_contrast_ratio(dark_creator_profile.locator(".sy-co-creation-social")) >= 4.5
         page.screenshot(path=str(PLATFORM_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/engineering", wait_until="domcontentloaded")
         assert page.locator("body.body--dark").count() == 1
@@ -809,7 +1098,9 @@ def main() -> None:
         page.set_viewport_size({"width": 390, "height": 844})
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
         page.get_by_text("A co-creation note", exact=True).wait_for(timeout=10_000)
-        page.get_by_text("Study Prefect Team: an organisation built around service", exact=True).wait_for(timeout=10_000)
+        page.get_by_role(
+            "heading", name="Study Prefect Team: an organisation built around service", exact=True
+        ).wait_for(timeout=10_000)
         assert page.locator(".sy-platform-metric").count() == 4
         assert page.locator(".sy-team-role").count() == 4
         assert page.locator(".sy-capability-card").count() == 4
@@ -818,6 +1109,20 @@ def main() -> None:
         second_solution_box = page.locator(".sy-solution-card").nth(1).bounding_box()
         assert first_solution_box is not None and second_solution_box is not None
         assert first_solution_box["y"] < second_solution_box["y"], "Solution cards should stack on a phone"
+        mobile_creator_profile = page.get_by_test_id("co-creation-profile")
+        mobile_creator_profile.scroll_into_view_if_needed()
+        mobile_creator_box = mobile_creator_profile.bounding_box()
+        mobile_creator_social_box = mobile_creator_profile.locator(".sy-co-creation-social").bounding_box()
+        assert mobile_creator_box is not None and mobile_creator_box["width"] <= 390
+        assert mobile_creator_social_box is not None and mobile_creator_social_box["height"] >= 44
+        assert mobile_creator_profile.locator(".sy-co-creation-crest").is_hidden()
+        assert mobile_creator_profile.locator(".sy-co-creation-banner img").evaluate(
+            "element => element.complete && element.naturalWidth"
+        ) == 1536
+        assert mobile_creator_profile.locator(".sy-co-creation-avatar img").evaluate(
+            "element => element.complete && element.naturalWidth"
+        ) == 1024
+        assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
         page.screenshot(path=str(PLATFORM_MOBILE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/engineering", wait_until="domcontentloaded")
         page.get_by_text("Engineering & quality", exact=True).first.wait_for(timeout=10_000)
@@ -833,6 +1138,20 @@ def main() -> None:
         page.screenshot(path=str(ENGINEERING_MOBILE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/guide", wait_until="domcontentloaded")
         page.get_by_text("Operator guide", exact=True).first.wait_for(timeout=10_000)
+        assert page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link").count() == 4
+        assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 2
+        troubleshooting_head = page.get_by_test_id("guide-troubleshooting").locator(".sy-troubleshooting-head")
+        head_style = troubleshooting_head.evaluate(
+            "element => { const style = getComputedStyle(element); return {position: style.position, width: style.width, height: style.height, overflow: style.overflow, clipPath: style.clipPath}; }"
+        )
+        assert head_style["position"] == "absolute", head_style
+        assert float(head_style["width"].removesuffix("px")) <= 1, head_style
+        assert float(head_style["height"].removesuffix("px")) <= 1, head_style
+        assert head_style["overflow"] in {"hidden", "clip"}, head_style
+        assert head_style["clipPath"] not in {"none", "auto"}, head_style
+        assert troubleshooting_head.locator('[role="columnheader"]').count() == 3
+        first_issue = page.get_by_test_id("guide-troubleshooting").locator(".sy-troubleshooting-row").nth(1)
+        assert first_issue.evaluate("element => getComputedStyle(element).gridTemplateColumns").count(" ") == 0
         assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
         page.screenshot(path=str(GUIDE_MOBILE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
@@ -903,6 +1222,35 @@ def main() -> None:
             header_tools_box = page.locator(".sy-header-tools").bounding_box()
             assert header_tools_box is not None
             assert header_tools_box["x"] + header_tools_box["width"] <= narrow_width, header_tools_box
+            if narrow_width == 320:
+                page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
+                narrow_profile = page.get_by_test_id("co-creation-profile")
+                narrow_profile.scroll_into_view_if_needed()
+                narrow_social_box = narrow_profile.locator(".sy-co-creation-social").bounding_box()
+                assert narrow_social_box is not None and narrow_social_box["height"] >= 44
+                assert narrow_social_box["x"] + narrow_social_box["width"] <= narrow_width
+                assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
+        component_dark_context = browser.new_context(
+            viewport={"width": 390, "height": 844}, has_touch=True, is_mobile=True, color_scheme="dark"
+        )
+        component_dark_page = component_dark_context.new_page()
+        component_dark_page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
+        component_dark_page.on("pageerror", lambda error: page_errors.append(str(error)))
+        component_dark_page.goto(BASE_URL, wait_until="domcontentloaded")
+        ensure_rendered_theme(component_dark_page, "dark")
+        assert_component_grammar(component_dark_page, COMPONENT_MOBILE_DARK_SCREENSHOT)
+        component_dark_context.close()
+
+        component_light_context = browser.new_context(
+            viewport={"width": 320, "height": 780}, has_touch=True, is_mobile=True, color_scheme="light"
+        )
+        component_light_page = component_light_context.new_page()
+        component_light_page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
+        component_light_page.on("pageerror", lambda error: page_errors.append(str(error)))
+        component_light_page.goto(BASE_URL, wait_until="domcontentloaded")
+        ensure_rendered_theme(component_light_page, "light")
+        assert_component_grammar(component_light_page, COMPONENT_MOBILE_LIGHT_SCREENSHOT)
+        component_light_context.close()
         reduced_context = browser.new_context(viewport={"width": 1280, "height": 900}, reduced_motion="reduce")
         reduced_page = reduced_context.new_page()
         reduced_page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
