@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from nicegui_app.services.workflow_dependencies import *
+from nicegui_app.services.workflow_fencing import fenced_workflow_write
 
 class RosterLifecycleMixin:
     def validate_week_start(self, week_start: date) -> None:
         """Expose the Monday-based workflow boundary without duplicating it in the UI."""
         self._require_monday(week_start)
 
+    @fenced_workflow_write
     def generate_and_save_draft(
         self,
         week_start: date,
@@ -81,6 +83,7 @@ class RosterLifecycleMixin:
             **{**result.__dict__, "backup_path": self._require_backup(backup, committed_event="draft_generated")}
         )
 
+    @fenced_workflow_write
     def publish(self, roster_week_id: int, *, expected_week_version: int) -> RosterWeekResult:
         """Publish exactly the draft version the operator reviewed.
 
@@ -194,6 +197,7 @@ class RosterLifecycleMixin:
             assignment = self._assignment_or_error(session, roster_week_id, assignment_id)
             return self._eligible_assignment_candidates(session, week, assignment)
 
+    @fenced_workflow_write
     def update_draft_assignment(
         self,
         *,
@@ -270,6 +274,7 @@ class RosterLifecycleMixin:
             }
         )
 
+    @fenced_workflow_write
     def apply_leave_adjustment(
         self,
         *,
@@ -314,6 +319,10 @@ class RosterLifecycleMixin:
             requested_version = week.version if expected_week_version is None else expected_week_version
             if week.status != "published":
                 raise WorkflowError("Post-publication adjustments require a published roster.")
+            if week.version != requested_version:
+                raise WorkflowConflictError(
+                    "This roster was updated in another tab. Refresh it and review the adjustment again."
+                )
             if assignment.status != "active" or assignment.prefect_id is None:
                 raise WorkflowError("This assignment is no longer active.")
             original = session.get(PrefectRecord, assignment.prefect_id)

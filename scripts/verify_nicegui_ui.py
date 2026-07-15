@@ -895,9 +895,30 @@ def main() -> None:
             "資料已通過驗證，可安全匯入。",
             exact=True,
         ).count() == 0
-        page.locator("textarea").fill("姓名,級別,班別,職務,可值班日\n測試風紀,F.3,3H,導學風紀,星期一、星期三")
-        page.get_by_role("button", name="驗證與預覽").click()
+        pasted_input = page.get_by_test_id("paste-prefect-import-input")
+        pasted_import = page.get_by_test_id("import-pasted-prefects")
+        assert pasted_import.is_disabled()
+        reviewed_text = "姓名,級別,班別,職務,可值班日\n測試風紀,F.3,3H,導學風紀,星期一、星期三"
+        pasted_input.fill(reviewed_text)
+        page.get_by_test_id("preview-pasted-prefects").click()
         page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).first.wait_for(timeout=10_000)
+        page.wait_for_function(
+            "document.querySelector('[data-testid=\"import-pasted-prefects\"]')?.matches(':disabled') === false"
+        )
+        pasted_input.fill(reviewed_text.replace("測試風紀", "已修改風紀"))
+        page.wait_for_function(
+            "document.querySelector('[data-testid=\"import-pasted-prefects\"]')?.matches(':disabled') === true"
+        )
+        page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).wait_for(
+            state="detached",
+            timeout=10_000,
+        )
+        pasted_input.fill(reviewed_text)
+        page.get_by_test_id("preview-pasted-prefects").click()
+        page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).first.wait_for(timeout=10_000)
+        page.wait_for_function(
+            "document.querySelector('[data-testid=\"import-pasted-prefects\"]')?.matches(':disabled') === false"
+        )
         page.screenshot(path=str(PREFECT_IMPORT_SCREENSHOT), full_page=True)
 
         fictional_csv, fictional_count = fictional_directory_csv_bytes()

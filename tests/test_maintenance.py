@@ -150,6 +150,47 @@ with coordinator.operation():
             process.wait(timeout=5)
 
 
+def test_serialized_operation_fences_writes_in_another_process(tmp_path) -> None:
+    database_path = tmp_path / "roster.sqlite3"
+    ready_path = tmp_path / "serialized-ready"
+    release_path = tmp_path / "serialized-release"
+    child_code = """
+import sys
+import time
+from pathlib import Path
+from nicegui_app.services.maintenance import MaintenanceCoordinator
+
+database_path, ready_path, release_path = map(Path, sys.argv[1:4])
+coordinator = MaintenanceCoordinator(database_path)
+with coordinator.serialized_operation():
+    ready_path.write_text('ready', encoding='utf-8')
+    while not release_path.exists():
+        time.sleep(0.02)
+"""
+    process = subprocess.Popen(
+        [sys.executable, "-X", "utf8", "-c", child_code, str(database_path), str(ready_path), str(release_path)],
+        cwd=PROJECT_ROOT,
+    )
+    try:
+        deadline = time.monotonic() + 5
+        while not ready_path.exists() and time.monotonic() < deadline:
+            time.sleep(0.02)
+        assert ready_path.exists(), "child process did not acquire the serialized write fence"
+        timer = Timer(0.35, lambda: release_path.write_text("release", encoding="utf-8"))
+        timer.start()
+        started = time.monotonic()
+        with MaintenanceCoordinator(database_path).serialized_operation():
+            elapsed = time.monotonic() - started
+        timer.join(timeout=2)
+        assert elapsed >= 0.2
+        assert process.wait(timeout=5) == 0
+    finally:
+        release_path.write_text("release", encoding="utf-8")
+        if process.poll() is None:
+            process.terminate()
+            process.wait(timeout=5)
+
+
 def test_stale_cross_process_operation_lease_is_pruned(tmp_path) -> None:
     coordinator = MaintenanceCoordinator(tmp_path / "roster.sqlite3")
     coordinator.operation_lease_dir.mkdir()

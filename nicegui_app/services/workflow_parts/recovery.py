@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from nicegui_app.services.workflow_dependencies import *
+from nicegui_app.services.workflow_fencing import fenced_workflow_write
 
 
 _REQUIRED_DATABASE_TABLES = required_database_tables()
@@ -323,6 +324,7 @@ class RecoveryWorkflowMixin:
             source_backup_path=source_backup_path,
         )
 
+    @fenced_workflow_write
     def _create_and_record_backup(self, event_type: str, roster_week_id: int | None) -> BackupResult:
         backup_path: Path | None = None
         try:

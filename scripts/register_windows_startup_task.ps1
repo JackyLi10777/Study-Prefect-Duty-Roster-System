@@ -37,6 +37,8 @@ $taskOperation = if ($NoStart) {
 }
 if (-not $PSCmdlet.ShouldProcess($TaskName, $taskOperation)) { return }
 
+Assert-SingYinAdministrator -Operation "Registering the Sing Yin roster startup task"
+
 $inspection = Get-SingYinTaskInspection -TaskName $TaskName -ProjectRoot $ProjectRoot -RuntimeUser $runtimeAccount.Name
 if ($inspection.Exists -and -not $inspection.Owned) {
     throw "A same-named Windows task already exists but is not owned by this project and runtime account."

@@ -9,6 +9,7 @@ import ctypes
 import json
 import os
 from pathlib import Path
+import sqlite3
 from threading import Condition, get_ident
 import time
 from typing import Iterator
@@ -36,15 +37,23 @@ class MaintenanceCoordinator:
     """
 
     _DRAIN_TIMEOUT_SECONDS = 30.0
+    _SERIALIZED_OPERATION_TIMEOUT_SECONDS = 30.0
 
     def __init__(self, database_path: Path) -> None:
         self.marker_path = database_path.with_name(f".{database_path.name}.maintenance.json")
         self.operation_lease_dir = database_path.with_name(f".{database_path.name}.operations")
+        self.serialized_operation_path = database_path.with_name(
+            f".{database_path.name}.serialized-operations.sqlite3"
+        )
         self._condition = Condition()
         self._active_operations = 0
+        self._operation_depths: dict[int, int] = {}
         self._maintenance_owner: int | None = None
         self._maintenance_name: str | None = None
         self._preserve_marker = False
+        self._serialized_owner: int | None = None
+        self._serialized_depth = 0
+        self._serialized_connection: sqlite3.Connection | None = None
 
     def status(self) -> MaintenanceStatus:
         with self._condition:
@@ -69,24 +78,97 @@ class MaintenanceCoordinator:
         lease_path: Path | None = None
         with self._condition:
             if self._maintenance_owner == owner:
-                yield_as_owner = True
+                operation_kind = "maintenance_owner"
+            elif self._operation_depths.get(owner, 0) > 0:
+                operation_kind = "nested"
+                self._operation_depths[owner] += 1
             else:
-                yield_as_owner = False
+                operation_kind = "outer"
                 if self._maintenance_owner is not None or self.marker_path.exists():
                     raise MaintenanceModeError("The roster system is in maintenance mode.")
                 self._active_operations += 1
+                self._operation_depths[owner] = 1
         try:
-            if not yield_as_owner:
+            if operation_kind == "outer":
                 lease_path = self._acquire_operation_lease(owner)
             yield
         finally:
-            if not yield_as_owner:
+            if operation_kind == "nested":
+                with self._condition:
+                    depth = self._operation_depths.get(owner, 0)
+                    if depth < 2:
+                        raise RuntimeError("Nested roster operation ownership was lost.")
+                    self._operation_depths[owner] = depth - 1
+            elif operation_kind == "outer":
                 if lease_path is not None:
                     lease_path.unlink(missing_ok=True)
                     self._remove_empty_lease_directory()
                 with self._condition:
+                    self._operation_depths.pop(owner, None)
                     self._active_operations -= 1
                     self._condition.notify_all()
+
+    @contextmanager
+    def serialized_operation(self) -> Iterator[None]:
+        """Run one database write-and-snapshot sequence at a time.
+
+        The ordinary operation lease makes maintenance wait for the complete
+        sequence.  A separate, payload-free SQLite database supplies a
+        crash-safe host-wide mutex, so another process cannot commit a later
+        roster change between this operation's commit and its recovery
+        snapshot.  Nested calls from the same workflow thread are re-entrant;
+        this is required when an already-fenced write creates and records its
+        automatic backup.
+        """
+
+        owner = get_ident()
+        with self.operation():
+            with self._condition:
+                reentrant = self._serialized_owner == owner
+                if reentrant:
+                    self._serialized_depth += 1
+
+            connection: sqlite3.Connection | None = None
+            if not reentrant:
+                try:
+                    self.serialized_operation_path.parent.mkdir(parents=True, exist_ok=True)
+                    connection = sqlite3.connect(
+                        str(self.serialized_operation_path),
+                        timeout=self._SERIALIZED_OPERATION_TIMEOUT_SECONDS,
+                    )
+                    connection.execute(
+                        f"PRAGMA busy_timeout = {int(self._SERIALIZED_OPERATION_TIMEOUT_SECONDS * 1000)}"
+                    )
+                    connection.execute("BEGIN IMMEDIATE")
+                except sqlite3.Error as error:
+                    if connection is not None:
+                        connection.close()
+                    raise MaintenanceModeError(
+                        "Another roster write is still finishing its verified recovery snapshot."
+                    ) from error
+                with self._condition:
+                    self._serialized_owner = owner
+                    self._serialized_depth = 1
+                    self._serialized_connection = connection
+
+            try:
+                yield
+            finally:
+                release_connection: sqlite3.Connection | None = None
+                with self._condition:
+                    if self._serialized_owner != owner or self._serialized_depth < 1:
+                        raise RuntimeError("Serialized roster operation ownership was lost.")
+                    self._serialized_depth -= 1
+                    if self._serialized_depth == 0:
+                        release_connection = self._serialized_connection
+                        self._serialized_connection = None
+                        self._serialized_owner = None
+                        self._condition.notify_all()
+                if release_connection is not None:
+                    try:
+                        release_connection.rollback()
+                    finally:
+                        release_connection.close()
 
     @contextmanager
     def maintenance(self, operation: str) -> Iterator[None]:

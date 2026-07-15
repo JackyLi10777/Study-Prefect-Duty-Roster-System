@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from datetime import date
 import json
 import os
 from pathlib import Path
 import sqlite3
-from threading import Lock
+from threading import Event, Lock
 from time import sleep
 from zipfile import ZipFile
 
@@ -17,6 +18,99 @@ from nicegui_app.services.roster_workflow import CommittedWriteBackupError, Rost
 
 
 WEEK_START = date(2026, 9, 7)
+
+
+def _roster_version_in_snapshot(snapshot_path: Path, roster_week_id: int) -> int:
+    connection = sqlite3.connect(snapshot_path)
+    try:
+        row = connection.execute(
+            "SELECT version FROM roster_weeks WHERE id = ?",
+            (roster_week_id,),
+        ).fetchone()
+    finally:
+        connection.close()
+    assert row is not None
+    return int(row[0])
+
+
+def test_concurrent_workflows_return_the_recovery_point_for_their_own_commit(monkeypatch, tmp_path) -> None:
+    database_path = tmp_path / "live.sqlite3"
+    backup_dir = tmp_path / "backups"
+    first_workflow = RosterWorkflow(
+        database_path=database_path,
+        backup_dir=backup_dir,
+        seed_path=PREFECT_SEED_PATH,
+    )
+    second_workflow = RosterWorkflow(
+        database_path=database_path,
+        backup_dir=backup_dir,
+        seed_path=PREFECT_SEED_PATH,
+    )
+    first_workflow.bootstrap()
+    second_workflow.bootstrap()
+    first_backup_started = Event()
+    release_first_backup = Event()
+    original_create_backup = first_workflow._create_and_record_backup
+
+    def delay_first_backup(event_type: str, roster_week_id: int | None):  # type: ignore[no-untyped-def]
+        if event_type == "draft_generated":
+            first_backup_started.set()
+            assert release_first_backup.wait(timeout=5)
+        return original_create_backup(event_type, roster_week_id)
+
+    monkeypatch.setattr(first_workflow, "_create_and_record_backup", delay_first_backup)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first_write = executor.submit(first_workflow.generate_and_save_draft, WEEK_START)
+        assert first_backup_started.wait(timeout=5)
+        second_write = executor.submit(second_workflow.generate_and_save_draft, WEEK_START)
+        sleep(0.15)
+        assert not second_write.done(), "the later commit crossed the first commit-to-snapshot fence"
+        release_first_backup.set()
+        first_result = first_write.result(timeout=10)
+        second_result = second_write.result(timeout=10)
+
+    assert first_result.version == 1
+    assert second_result.version == 2
+    assert _roster_version_in_snapshot(first_result.backup_path, first_result.id) == first_result.version
+    assert _roster_version_in_snapshot(second_result.backup_path, second_result.id) == second_result.version
+
+
+def test_restore_waits_for_an_in_progress_verified_backup(monkeypatch, tmp_path) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    restore_source = workflow.generate_and_save_draft(WEEK_START).backup_path
+    backup_verification_started = Event()
+    release_backup_verification = Event()
+    original_sha256 = workflow._sha256
+    should_block = True
+
+    def blocking_sha256(path: Path) -> str:
+        nonlocal should_block
+        if should_block:
+            should_block = False
+            backup_verification_started.set()
+            assert release_backup_verification.wait(timeout=5)
+        return original_sha256(path)
+
+    monkeypatch.setattr(workflow, "_sha256", blocking_sha256)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        backup = executor.submit(workflow.create_verified_backup)
+        assert backup_verification_started.wait(timeout=5)
+        restore = executor.submit(workflow.restore_backup, restore_source)
+        sleep(0.15)
+        assert not restore.done(), "restore entered maintenance while a verified snapshot was still being built"
+        release_backup_verification.set()
+        assert backup.result(timeout=10).exists()
+        restore_result = restore.result(timeout=15)
+
+    assert restore_result["restoredFrom"] == restore_source
+    assert workflow.verify_backup(restore_result["restoredBackup"])["valid"] is True
 
 
 def test_publish_backup_failure_is_reported_as_committed_and_cannot_post_fairness_twice(tmp_path) -> None:

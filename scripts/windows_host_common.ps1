@@ -236,38 +236,17 @@ function Grant-SingYinVenvBasePythonReadAccess {
     Grant-SingYinRuntimeReadAccess -Path $resolvedPythonHome -RuntimeUser $RuntimeUser
 }
 
-function Test-SingYinBatchLogonRight {
-    param([Parameter(Mandatory = $true)][string]$RuntimeUser)
+function Assert-SingYinAdministrator {
+    param([string]$Operation = "This Windows host operation")
 
-    $runtimeAccount = Get-SingYinRuntimeAccount -UserName $RuntimeUser
-    $tempRoot = Join-Path $env:TEMP ("SingYinRoster-Rights-" + [guid]::NewGuid().ToString("N"))
-    try {
-        $null = New-Item -ItemType Directory -Path $tempRoot -Force
-        $policyPath = Join-Path $tempRoot "rights.inf"
-        & "$env:SystemRoot\System32\secedit.exe" /export /cfg $policyPath /areas USER_RIGHTS /quiet | Out-Null
-        if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $policyPath)) {
-            throw "Windows could not inspect the batch-logon policy."
-        }
-        $line = Get-Content -LiteralPath $policyPath |
-            Where-Object { $_ -match '^SeBatchLogonRight\s*=' } |
-            Select-Object -First 1
-        return [bool]($line -and $line.Contains($runtimeAccount.Sid.Value))
-    } finally {
-        if (Test-Path -LiteralPath $tempRoot) {
-            $resolvedTemp = (Resolve-Path -LiteralPath $tempRoot).Path
-            $expectedPrefix = [IO.Path]::GetFullPath($env:TEMP).TrimEnd('\') + '\SingYinRoster-Rights-'
-            if ($resolvedTemp.StartsWith($expectedPrefix, [StringComparison]::OrdinalIgnoreCase)) {
-                Remove-Item -LiteralPath $resolvedTemp -Recurse -Force -ErrorAction SilentlyContinue
-            }
-        }
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+    if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        throw "$Operation requires an Administrator PowerShell. Close this window, open PowerShell with 'Run as administrator', and run the command again."
     }
 }
 
-function Grant-SingYinBatchLogonRight {
-    param([Parameter(Mandatory = $true)][string]$RuntimeUser)
-
-    if (Test-SingYinBatchLogonRight -RuntimeUser $RuntimeUser) { return }
-    $runtimeAccount = Get-SingYinRuntimeAccount -UserName $RuntimeUser
+function Initialize-SingYinBatchLogonRightsNative {
     if (-not ("SingYinBatchLogonRightsNative" -as [type])) {
         Add-Type -TypeDefinition @'
 using System;
@@ -304,19 +283,76 @@ public static class SingYinBatchLogonRightsNative
     private static extern uint LsaAddAccountRights(IntPtr policyHandle, IntPtr accountSid,
         LSA_UNICODE_STRING[] userRights, uint countOfRights);
 
+    [DllImport("advapi32.dll", PreserveSig = true)]
+    private static extern uint LsaEnumerateAccountRights(IntPtr policyHandle, IntPtr accountSid,
+        out IntPtr userRights, out uint countOfRights);
+
     [DllImport("advapi32.dll")]
     private static extern uint LsaClose(IntPtr policyHandle);
 
     [DllImport("advapi32.dll")]
+    private static extern uint LsaFreeMemory(IntPtr buffer);
+
+    [DllImport("advapi32.dll")]
     private static extern uint LsaNtStatusToWinError(uint status);
+
+    private static byte[] GetSidBytes(string accountName)
+    {
+        var sid = (SecurityIdentifier)new NTAccount(accountName).Translate(typeof(SecurityIdentifier));
+        var sidBytes = new byte[sid.BinaryLength];
+        sid.GetBinaryForm(sidBytes, 0);
+        return sidBytes;
+    }
+
+    public static bool HasRight(string accountName, string rightName)
+    {
+        const uint POLICY_LOOKUP_NAMES = 0x800;
+        var sidBytes = GetSidBytes(accountName);
+        var sidHandle = GCHandle.Alloc(sidBytes, GCHandleType.Pinned);
+        IntPtr policyHandle = IntPtr.Zero;
+        IntPtr userRights = IntPtr.Zero;
+        try
+        {
+            var attributes = new LSA_OBJECT_ATTRIBUTES();
+            attributes.Length = Marshal.SizeOf(typeof(LSA_OBJECT_ATTRIBUTES));
+            uint status = LsaOpenPolicy(IntPtr.Zero, ref attributes,
+                POLICY_LOOKUP_NAMES, out policyHandle);
+            if (status != 0) throw new Win32Exception((int)LsaNtStatusToWinError(status));
+
+            uint countOfRights;
+            status = LsaEnumerateAccountRights(policyHandle, sidHandle.AddrOfPinnedObject(),
+                out userRights, out countOfRights);
+            if (status != 0)
+            {
+                int winError = (int)LsaNtStatusToWinError(status);
+                if (winError == 2) return false;
+                throw new Win32Exception(winError);
+            }
+
+            int itemSize = Marshal.SizeOf(typeof(LSA_UNICODE_STRING));
+            for (uint index = 0; index < countOfRights; index++)
+            {
+                IntPtr itemPointer = IntPtr.Add(userRights, checked((int)index * itemSize));
+                var item = (LSA_UNICODE_STRING)Marshal.PtrToStructure(
+                    itemPointer, typeof(LSA_UNICODE_STRING));
+                string value = Marshal.PtrToStringUni(item.Buffer, item.Length / 2);
+                if (String.Equals(value, rightName, StringComparison.Ordinal)) return true;
+            }
+            return false;
+        }
+        finally
+        {
+            if (userRights != IntPtr.Zero) LsaFreeMemory(userRights);
+            if (policyHandle != IntPtr.Zero) LsaClose(policyHandle);
+            if (sidHandle.IsAllocated) sidHandle.Free();
+        }
+    }
 
     public static void Grant(string accountName, string rightName)
     {
         const uint POLICY_CREATE_ACCOUNT = 0x10;
         const uint POLICY_LOOKUP_NAMES = 0x800;
-        var sid = (SecurityIdentifier)new NTAccount(accountName).Translate(typeof(SecurityIdentifier));
-        var sidBytes = new byte[sid.BinaryLength];
-        sid.GetBinaryForm(sidBytes, 0);
+        var sidBytes = GetSidBytes(accountName);
         var sidHandle = GCHandle.Alloc(sidBytes, GCHandleType.Pinned);
         IntPtr policyHandle = IntPtr.Zero;
         IntPtr rightBuffer = IntPtr.Zero;
@@ -347,6 +383,26 @@ public static class SingYinBatchLogonRightsNative
 }
 '@
     }
+}
+
+function Test-SingYinBatchLogonRight {
+    param([Parameter(Mandatory = $true)][string]$RuntimeUser)
+
+    $runtimeAccount = Get-SingYinRuntimeAccount -UserName $RuntimeUser
+    Initialize-SingYinBatchLogonRightsNative
+    return [SingYinBatchLogonRightsNative]::HasRight(
+        $runtimeAccount.QualifiedName,
+        "SeBatchLogonRight"
+    )
+}
+
+function Grant-SingYinBatchLogonRight {
+    param([Parameter(Mandatory = $true)][string]$RuntimeUser)
+
+    Assert-SingYinAdministrator -Operation "Granting the Sing Yin roster batch-logon right"
+    if (Test-SingYinBatchLogonRight -RuntimeUser $RuntimeUser) { return }
+    $runtimeAccount = Get-SingYinRuntimeAccount -UserName $RuntimeUser
+    Initialize-SingYinBatchLogonRightsNative
     [SingYinBatchLogonRightsNative]::Grant($runtimeAccount.QualifiedName, "SeBatchLogonRight")
     if (-not (Test-SingYinBatchLogonRight -RuntimeUser $RuntimeUser)) {
         throw "Windows did not retain the required batch-logon right."

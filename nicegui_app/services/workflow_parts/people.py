@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from nicegui_app.services.workflow_dependencies import *
+from nicegui_app.services.workflow_fencing import fenced_workflow_write
 
 class PeopleWorkflowMixin:
     def prefect_loads(self) -> dict[str, float]:
@@ -37,6 +38,7 @@ class PeopleWorkflowMixin:
                 raise WorkflowError("Prefect was not found.")
             return self._prefect_output(session, record)
 
+    @fenced_workflow_write
     def create_prefect(self, prefect_input: PrefectInput) -> dict[str, object]:
         self._validate_prefect_input(prefect_input)
         with self._session() as session:
@@ -53,6 +55,7 @@ class PeopleWorkflowMixin:
         self._require_backup(backup, committed_event="prefect_created")
         return output
 
+    @fenced_workflow_write
     def update_prefect(
         self,
         prefect_id: str,
@@ -109,6 +112,7 @@ class PeopleWorkflowMixin:
         self._require_backup(backup, committed_event="prefect_updated")
         return output
 
+    @fenced_workflow_write
     def archive_prefect(self, prefect_id: str, *, expected_version: int | None = None) -> None:
         with self._session() as session:
             self._begin_serialized_write(session)
@@ -233,6 +237,7 @@ class PeopleWorkflowMixin:
                 "afterBackup": after_backup,
             }
 
+    @fenced_workflow_write
     def import_prefects(self, prefect_inputs: Iterable[PrefectInput]) -> list[dict[str, object]]:
         inputs = list(prefect_inputs)
         if not inputs:
@@ -269,6 +274,7 @@ class PeopleWorkflowMixin:
                 or 0
             )
 
+    @fenced_workflow_write
     def declare_leave(
         self,
         *,
@@ -330,6 +336,7 @@ class PeopleWorkflowMixin:
         self._require_backup(backup, committed_event="pre_generation_leave_declared")
         return output
 
+    @fenced_workflow_write
     def cancel_pre_generation_leave(self, leave_declaration_id: int) -> None:
         with self._session() as session:
             self._begin_serialized_write(session)

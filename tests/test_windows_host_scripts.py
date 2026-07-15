@@ -226,6 +226,16 @@ def test_windows_host_scripts_bind_permissions_and_task_to_dedicated_runtime_use
     assert "Grant-SingYinVenvBasePythonReadAccess" in startup
     assert "Grant-SingYinBatchLogonRight" in startup
     assert "SeBatchLogonRight" in common
+    assert "Assert-SingYinAdministrator" in common
+    assert (
+        'Assert-SingYinAdministrator -Operation "Granting the Sing Yin roster batch-logon right"'
+        in common
+    )
+    assert 'Assert-SingYinAdministrator -Operation "Registering the Sing Yin roster startup task"' in startup
+    assert "LsaEnumerateAccountRights" in common
+    assert "LsaFreeMemory" in common
+    assert "HasRight" in common
+    assert "secedit.exe" not in common
     assert "-RequiredIdentitySid $runtimeAccount.Sid.Value" in preparation
     assert 'RuntimeUser = "SingYinRosterSvc"' in startup
     assert "not owned by this project and runtime account" in startup

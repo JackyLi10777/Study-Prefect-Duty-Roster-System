@@ -29,6 +29,13 @@ def _prefect_file_preview_fingerprint(
     ).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
 
+
+def _prefect_text_preview_fingerprint(text: str) -> str:
+    """Bind a pasted-directory preview to the exact text the operator reviewed."""
+
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 def _show_prefect_dialog(existing: dict[str, object] | None = None) -> None:
     workflow = get_workflow()
     title_key = "edit_prefect" if existing else "add_prefect"
@@ -970,14 +977,46 @@ def prefects_page() -> None:
                 ui.label(t("paste_import_fallback")).classes("font-semibold")
                 ui.label(t("paste_import_fallback_detail")).classes("text-sm text-[var(--sy-muted)]")
                 import_text = ui.textarea(label=t("ai_import_input")).props(
-                    "name=prefect-import autocomplete=off"
+                    "name=prefect-import autocomplete=off data-testid=paste-prefect-import-input"
                 ).classes("w-full max-w-3xl")
                 preview_state: dict[str, ImportPreview | None] = {"value": None}
+                preview_fingerprint: dict[str, str | None] = {"value": None}
+                text_import_button_state: dict[str, object | None] = {"value": None}
                 preview_area = ui.column().classes("w-full max-w-4xl gap-3 mt-4")
 
+                def set_text_import_enabled(enabled: bool) -> None:
+                    button = text_import_button_state["value"]
+                    if button is None:
+                        return
+                    if enabled:
+                        button.enable()
+                    else:
+                        button.disable()
+
+                def invalidate_text_preview() -> None:
+                    preview_state["value"] = None
+                    preview_fingerprint["value"] = None
+                    preview_area.clear()
+                    set_text_import_enabled(False)
+
+                def handle_text_change(event: object) -> None:
+                    if preview_state["value"] is None:
+                        return
+                    text = str(getattr(event, "value", "") or "")
+                    approved_fingerprint = preview_fingerprint["value"]
+                    if (
+                        approved_fingerprint is None
+                        or _prefect_text_preview_fingerprint(text) != approved_fingerprint
+                    ):
+                        invalidate_text_preview()
+
+                import_text.on_value_change(handle_text_change)
+
                 def preview_import() -> None:
-                    preview = parse_prefect_import_text(str(import_text.value or ""))
+                    text = str(import_text.value or "")
+                    preview = parse_prefect_import_text(text)
                     preview_state["value"] = preview
+                    preview_fingerprint["value"] = None
                     preview_area.clear()
                     with preview_area:
                         if preview.issues:
@@ -1007,14 +1046,29 @@ def prefects_page() -> None:
                                 ],
                                 row_key="name",
                             )
+                    ready = not preview.issues and bool(preview.rows)
+                    if ready:
+                        preview_fingerprint["value"] = _prefect_text_preview_fingerprint(text)
+                    set_text_import_enabled(ready)
 
                 async def import_preview() -> None:
                     preview = preview_state["value"]
                     if preview is None or preview.issues or not preview.rows:
                         ui.notify(t("operation_error"), type="negative")
                         return
+                    text = str(import_text.value or "")
+                    fingerprint = _prefect_text_preview_fingerprint(text)
+                    if fingerprint != preview_fingerprint["value"]:
+                        invalidate_text_preview()
+                        ui.notify(t("operation_error"), type="negative")
+                        return
+                    fresh_preview = parse_prefect_import_text(text)
+                    if fresh_preview.issues or not fresh_preview.rows:
+                        invalidate_text_preview()
+                        ui.notify(t("operation_error"), type="negative")
+                        return
                     result = await _run_with_progress(
-                        lambda: workflow.import_prefects(preview.rows),
+                        lambda: workflow.import_prefects(fresh_preview.rows),
                         title_key="progress_import_title",
                         working_key="progress_import_working",
                         icon="upload_file",
@@ -1024,8 +1078,14 @@ def prefects_page() -> None:
                         ui.navigate.reload()
 
                 with ui.row().classes("sy-mobile-actions gap-3 mt-4"):
-                    ui.button(t("preview_import"), icon="fact_check", on_click=preview_import).props("outline color=primary")
-                    ui.button(t("import_prefects"), icon="upload", on_click=import_preview).props("color=primary")
+                    ui.button(t("preview_import"), icon="fact_check", on_click=preview_import).props(
+                        "outline color=primary data-testid=preview-pasted-prefects"
+                    )
+                    import_button = ui.button(t("import_prefects"), icon="upload", on_click=import_preview).props(
+                        "color=primary data-testid=import-pasted-prefects"
+                    )
+                    import_button.disable()
+                    text_import_button_state["value"] = import_button
             with ui.tab_panel("fairness").classes("px-0"):
                 _render_fairness_panel(workflow)
 

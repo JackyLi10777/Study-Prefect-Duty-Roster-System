@@ -118,6 +118,14 @@ def _click_mobile_drawer_tool(page: Page, index: int, *, expects_navigation: boo
             tools.nth(index).click()
     else:
         tools.nth(index).click()
+        page.wait_for_function(
+            "document.querySelector('[data-testid=\"mobile-more\"]')?.getAttribute('aria-expanded') === 'true'"
+        )
+        page.keyboard.press("Escape")
+        drawer.wait_for(state="hidden", timeout=10_000)
+        page.wait_for_function(
+            "document.querySelector('[data-testid=\"mobile-more\"]')?.getAttribute('aria-expanded') === 'false'"
+        )
     # NiceGUI keeps a WebSocket open and, after a user gesture, page-context
     # audio may stream in the background.  Neither is a page-readiness signal,
     # so waiting for ``networkidle`` can hang even when the UI is fully ready.

@@ -34,6 +34,14 @@ powershell -ExecutionPolicy Bypass -File scripts\prepare_windows_host.ps1 -Insta
 powershell -ExecutionPolicy Bypass -File scripts\register_windows_startup_task.ps1 -AtStartup -RuntimeUser "SingYinRosterSvc"
 ```
 
+如視窗標題沒有顯示「系統管理員」，可在目前 PowerShell 貼上以下命令。Windows 會顯示 UAC；按「是」後，新的管理員視窗才會執行註冊。腳本會先拒絕非管理員環境，再以 Windows LSA 原生介面直接核對 `SeBatchLogonRight`，不依賴可能延遲的安全原則文字匯出：
+
+```powershell
+Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File "C:\SingYinRoster\scripts\register_windows_startup_task.ps1" -ProjectRoot "C:\SingYinRoster" -AtStartup -NoStart -RuntimeUser "SingYinRosterSvc"'
+```
+
+只在 Windows 認證視窗輸入 `SingYinRosterSvc` 的密碼；不要把密碼貼在命令、文件、日誌或對話中。看到 `Registered 'Sing Yin Roster Host' without starting it.` 後才算完成。若仍看到舊訊息 `Windows did not retain the required batch-logon right.`，代表執行的是未更新的舊腳本；先完成正式版本更新，再核對命令中的腳本路徑是 `C:\SingYinRoster\scripts\register_windows_startup_task.ps1`。
+
 如網站目前仍由舊程序運行，而排程工作需要重建，請先加上 `-NoStart`。這會保存啟動認證但不會立即開啟第二個 NiceGUI 程序；核對工作動作、帳戶及觸發條件後，才進行一次受控重啟：
 
 ```powershell
