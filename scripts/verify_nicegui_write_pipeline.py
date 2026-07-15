@@ -125,7 +125,7 @@ def _fixture_prefect_items() -> list[dict[str, object]]:
     return list(json.loads(PREFECT_SEED_PATH.read_text(encoding="utf-8"))["prefects"])
 
 
-def _fixture_import_csv() -> str:
+def _fixture_import_csv(*, existing_names: set[str] | frozenset[str] = frozenset()) -> str:
     """Build a reviewed CSV so the browser imports the complete fictional directory itself."""
     day_labels = {
         "MONDAY": "星期一",
@@ -138,6 +138,8 @@ def _fixture_import_csv() -> str:
     writer = csv.writer(output, lineterminator="\n")
     writer.writerow(("姓名", "級別", "班別", "職務", "可值班日", "備註"))
     for item in _fixture_prefect_items():
+        if str(item["name"]) in existing_names:
+            continue
         role = (
             "助理首席導學風紀"
             if "Assistant Head Study Prefect" in str(item["role"])
@@ -154,7 +156,8 @@ def _fixture_import_csv() -> str:
                 item.get("remarks", ""),
             )
         )
-    writer.writerow(("虛構驗證風紀", "F.3", "3T", "導學風紀", "星期五", "瀏覽器隔離驗收"))
+    if "虛構驗證風紀" not in existing_names:
+        writer.writerow(("虛構驗證風紀", "F.3", "3T", "導學風紀", "星期五", "瀏覽器隔離驗收"))
     return output.getvalue()
 
 
@@ -258,7 +261,8 @@ def main() -> None:
         request_reference = first_response.headers.get("x-request-id", "")
         assert re.fullmatch(r"REQ-[A-F0-9]{8}", request_reference)
         page.get_by_text("資料匯入", exact=True).click()
-        page.locator("textarea").fill(_fixture_import_csv())
+        existing_names = {str(item["nameZh"]) for item in _workflow(database_path, backup_dir).prefects()}
+        page.locator("textarea").fill(_fixture_import_csv(existing_names=existing_names))
         page.get_by_role("button", name="驗證與預覽").click()
         page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).wait_for(timeout=10_000)
         page.get_by_role("button", name="匯入風紀").click()

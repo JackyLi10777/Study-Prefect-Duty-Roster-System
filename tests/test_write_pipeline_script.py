@@ -86,6 +86,11 @@ def test_write_pipeline_imports_a_complete_fictional_directory_through_the_ui() 
     assert leave_prefect_name in {item.name_zh for item in preview.rows}
     assert {item.role_code for item in preview.rows} == {"assistant_head", "study_prefect"}
 
+    incremental = parse_prefect_import_text(_fixture_import_csv(existing_names={leave_prefect_name}))
+    assert incremental.issues == ()
+    assert leave_prefect_name not in {item.name_zh for item in incremental.rows}
+    assert "虛構驗證風紀" in {item.name_zh for item in incremental.rows}
+
 
 def test_write_pipeline_uses_current_reviewed_import_label() -> None:
     script = (Path(__file__).parents[1] / "scripts" / "verify_nicegui_write_pipeline.py").read_text(encoding="utf-8")
