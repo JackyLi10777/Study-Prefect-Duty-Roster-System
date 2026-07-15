@@ -174,6 +174,10 @@ MESSAGES = {'current_rosters': {'zh-HK': '目前週表', 'en': 'Current rosters'
  'committed_without_backup_body': {'zh-HK': '請勿重複執行剛才的操作。資料庫變更已生效；先重新載入核對結果，再到「系統設定」建立一份已驗證快照。',
                                    'en': 'Do not repeat the action. The database change took effect. Reload to review the result, then '
                                          'create a verified snapshot in Settings.'},
+ 'committed_recovery_lock_title': {'zh-HK': '資料已變更，系統已鎖定等候復原核對',
+                                   'en': 'Data changed; the system is locked for recovery review'},
+ 'committed_recovery_lock_body': {'zh-HK': '請勿重複操作、重新開機或手動修改資料庫。保持主機運行，記下下方支援編號，交由受控 IT 支援核對操作前備份及解除維護鎖。',
+                                  'en': 'Do not repeat the action, reboot, or edit the database manually. Keep the host running, note the support reference below, and ask controlled IT support to verify the pre-operation backup and clear the maintenance lock.'},
  'support_reference_only': {'zh-HK': '支援編號：{reference}', 'en': 'Support reference: {reference}'},
  'reload_and_review': {'zh-HK': '重新載入並核對', 'en': 'Reload and review'},
  'progress_preparing': {'zh-HK': '正在準備…', 'en': 'Preparing…'},

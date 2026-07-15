@@ -1,5 +1,7 @@
 # 快速啟動 / Quick start
 
+> **目前部署過渡狀態（2026-07-15）：** 本文件的日常步驟只可在 `PROJECT_STATUS.md` 記錄 Windows 排程工作修復及候選 Worker 部署後驗收通過後採用。目前本機既有程序仍健康運行，但不可依賴重新開機自動恢復；維護者須先按 [Windows 專用主機手冊](WINDOWS_DEDICATED_HOST_SETUP.md) 以 `-NoStart` 重建排程，再完成一次受控重啟。
+
 ## 每日使用
 
 1. 確認 Windows 專用主機已開機；背景工作會自動啟動，毋須每日雙擊程式。

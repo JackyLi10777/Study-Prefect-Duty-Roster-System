@@ -88,9 +88,8 @@ def create_sqlite_engine(database_path: Path) -> Engine:
     @event.listens_for(engine, "connect")
     def configure_sqlite(connection, _connection_record) -> None:  # type: ignore[no-untyped-def]
         cursor = connection.cursor()
-        cursor.execute("PRAGMA foreign_keys = ON")
-        cursor.execute("PRAGMA journal_mode = WAL")
         cursor.execute("PRAGMA busy_timeout = 10000")
+        cursor.execute("PRAGMA foreign_keys = ON")
         cursor.close()
 
     return engine
@@ -98,4 +97,15 @@ def create_sqlite_engine(database_path: Path) -> Engine:
 
 def create_session_factory(database_path: Path) -> sessionmaker[Session]:
     migrate_database(database_path)
+    # WAL is a persistent database setting rather than a per-connection
+    # option. Applying it before the pooled engine opens avoids two concurrent
+    # checkouts contending on `PRAGMA journal_mode` during a write.
+    connection = sqlite3.connect(database_path, timeout=10)
+    try:
+        connection.execute("PRAGMA busy_timeout = 10000")
+        journal_mode = connection.execute("PRAGMA journal_mode = WAL").fetchone()
+        if not journal_mode or str(journal_mode[0]).lower() != "wal":
+            raise sqlite3.OperationalError("SQLite did not enable WAL journal mode")
+    finally:
+        connection.close()
     return sessionmaker(bind=create_sqlite_engine(database_path), expire_on_commit=False, future=True)

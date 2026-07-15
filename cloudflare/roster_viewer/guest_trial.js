@@ -54,7 +54,9 @@ export const GUEST_PLATFORM_HTML = String.raw`<!doctype html>
   <header class="platform-nav">
     ${BRAND}
     <nav class="platform-controls" aria-label="訪客導覽 · Guest navigation">
+      <a class="platform-section-link" href="#team" data-guest-i18n="navTeam">團隊架構</a>
       <a class="platform-section-link" href="#capabilities" data-guest-i18n="navCapabilities">平台能力</a>
+      <a class="platform-section-link" href="#resources" data-guest-i18n="navResources">平台資源</a>
       <a class="platform-section-link" href="#trust" data-guest-i18n="navTrust">資料邊界</a>
       <button id="guestLanguageToggle" class="control-button" type="button" aria-label="Switch language">中文 / EN</button>
       <button id="guestThemeToggle" class="control-button" type="button" aria-label="切換外觀 · Change appearance">外觀：自動</button>
@@ -87,6 +89,16 @@ export const GUEST_PLATFORM_HTML = String.raw`<!doctype html>
       </aside>
     </section>
 
+    <section id="team" class="platform-section" aria-labelledby="team-title">
+      <div class="section-heading"><p class="kicker">OPERATING MODEL</p><h2 id="team-title" data-guest-i18n="teamTitle">一個以服事為核心、責任清楚的團隊。</h2><p data-guest-i18n="teamLead">平台把每個角色的工作界線、核對責任與交接關係說清楚，讓公平不依賴某一個人的記憶。</p></div>
+      <div class="operating-grid">
+        <article><span class="role-mark">01</span><h3 data-guest-i18n="roleHeadTitle">首席導學風紀</h3><p data-guest-i18n="roleHeadCopy">主持每週生成、核對、發布、請假調整與交接；對操作決定負責。</p></article>
+        <article><span class="role-mark">02</span><h3 data-guest-i18n="roleAssistantTitle">助理首席導學風紀</h3><p data-guest-i18n="roleAssistantCopy">在值班安排中只負責 Assist. in charge，保持角色界線清晰。</p></article>
+        <article><span class="role-mark">03</span><h3 data-guest-i18n="rolePrefectTitle">導學風紀</h3><p data-guest-i18n="rolePrefectCopy">按可值班日及公平紀錄服務 302、303 與 202 室。</p></article>
+        <article><span class="role-mark">04</span><h3 data-guest-i18n="roleAdvisorTitle">顧問老師</h3><p data-guest-i18n="roleAdvisorCopy">在正式驗收與需要時提供校務方向；日常操作由學生領袖負責。</p></article>
+      </div>
+    </section>
+
     <section id="capabilities" class="platform-section" aria-labelledby="capability-title">
       <div class="section-heading"><p class="kicker">CAPABILITIES</p><h2 id="capability-title" data-guest-i18n="capabilityTitle">一條完整而克制的試用路徑</h2><p data-guest-i18n="capabilityLead">與正式系統採用相同的核心概念，但所有結果只屬於這一個瀏覽器分頁。</p></div>
       <div class="capability-grid">
@@ -95,6 +107,27 @@ export const GUEST_PLATFORM_HTML = String.raw`<!doctype html>
         <article><span class="index">03</span><h3 data-guest-i18n="cap3Title">生成及核對</h3><p data-guest-i18n="cap3Copy">在裝置內建立固定、可重複、符合角色與不連續規則的示範週表。</p></article>
         <article><span class="index">04</span><h3 data-guest-i18n="cap4Title">匯出雙語 PDF</h3><p data-guest-i18n="cap4Copy">直接下載 A4 橫向 PDF；中英文標籤並列，所有姓名保持中文。</p></article>
       </div>
+    </section>
+
+    <section class="platform-section" aria-labelledby="solutions-title">
+      <div class="section-heading"><p class="kicker">SERVICE SOLUTIONS</p><h2 id="solutions-title" data-guest-i18n="solutionsTitle">由每週工作到多年交接，形成一條完整服務生命線。</h2></div>
+      <div class="solution-grid">
+        <article><span aria-hidden="true">週</span><div><h3 data-guest-i18n="solutionWeeklyTitle">每週值班運作</h3><p data-guest-i18n="solutionWeeklyCopy">生成草稿、逐項核對、發布並匯出中英文 PDF。</p></div></article>
+        <article><span aria-hidden="true">調</span><div><h3 data-guest-i18n="solutionAdjustTitle">已發布後調整</h3><p data-guest-i18n="solutionAdjustCopy">在不重排整週的前提下，安全記錄請假與替補。</p></div></article>
+        <article><span aria-hidden="true">衡</span><div><h3 data-guest-i18n="solutionFairTitle">公平與可解釋性</h3><p data-guest-i18n="solutionFairCopy">以 history_weight、公平帳本與審計記錄說明每次安排。</p></div></article>
+        <article><span aria-hidden="true">承</span><div><h3 data-guest-i18n="solutionHandoverTitle">延續與交接</h3><p data-guest-i18n="solutionHandoverCopy">由備份、受控還原到新學年名單，讓下一任可安全接手。</p></div></article>
+      </div>
+    </section>
+
+    <section id="resources" class="platform-section" aria-labelledby="resources-title">
+      <div class="section-heading"><p class="kicker">PLATFORM &amp; RESOURCES</p><h2 id="resources-title" data-guest-i18n="resourcesTitle">把操作方法、工程證據與團隊文化放在同一個可信框架。</h2><p data-guest-i18n="resourcesLead">訪客可完整了解平台如何服務、如何保護資料，以及為何能交給下一任使用；正式編輯能力仍只屬於管理員。</p></div>
+      <div class="resource-grid">
+        <article><span class="resource-icon" aria-hidden="true">冊</span><h3 data-guest-i18n="resourceGuideTitle">操作與入門</h3><p data-guest-i18n="resourceGuideCopy">繁中優先、英文完整的逐步指引，涵蓋名單、請假、生成、發布與復原。</p></article>
+        <article><span class="resource-icon" aria-hidden="true">構</span><h3 data-guest-i18n="resourceArchitectureTitle">架構與可信設計</h3><p data-guest-i18n="resourceArchitectureCopy">清楚分開介面、政策、工作流、交易、備份與審計責任。</p></article>
+        <article><span class="resource-icon" aria-hidden="true">證</span><h3 data-guest-i18n="resourceQualityTitle">工程與品質證據</h3><p data-guest-i18n="resourceQualityCopy">以自動測試、隔離驗收、健康檢查及可追蹤日誌支持每次發布。</p></article>
+        <article><span class="resource-icon" aria-hidden="true">心</span><h3 data-guest-i18n="resourceCultureTitle">服事文化</h3><p data-guest-i18n="resourceCultureCopy">公平、清晰、責任、耐心與關顧，不只是標語，而是工作流的判斷準則。</p></article>
+      </div>
+      <div class="co-creation-strip"><div><p class="kicker">CO-CREATED BY STUDY PREFECT OPERATIONS</p><h3 data-guest-i18n="coCreationTitle">由李創杰與 Codex 共同建立，為下一任留下可理解、可核對、可接手的平台。</h3></div><div class="co-creation-links"><a class="text-link" href="mailto:s10777@syss.edu.hk" data-guest-i18n="feedbackLink">電郵反饋</a><a class="text-link" href="https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System" target="_blank" rel="noopener noreferrer" data-guest-i18n="githubLink">查看 GitHub</a></div></div>
     </section>
 
     <section id="trust" class="platform-section platform-section--trust" aria-labelledby="trust-title">
@@ -123,10 +156,10 @@ export const GUEST_PLATFORM_JS = String.raw`(() => {
   const THEMES = ['auto', 'light', 'dark'];
   const COPY = {
     zh: {
-      skip: '跳到主要內容', navCapabilities: '平台能力', navTrust: '資料邊界', navTry: '開始試用', heroLine1: '先理解平台，', heroLine2: '再親手完成一張值班表。', heroLead: '以一組完全虛構的中文名單，體驗生成、核對、雙語預覽及 PDF 匯出。正式學校資料、管理員工作台與公平帳本全程保持隔離。', enterTry: '進入互動試用', returnEntrance: '返回登入入口', proofFictional: '虛構資料', proofDevice: '裝置內運算', proofExpiry: '30 分鐘後失效', proofServer: '不寫入伺服器', flowBrowser: '瀏覽器工作區', flowSession: '分頁暫存', flowPdf: '裝置內 PDF', zeroWrites: '零伺服器寫入', capabilityTitle: '一條完整而克制的試用路徑', capabilityLead: '與正式系統採用相同的核心概念，但所有結果只屬於這一個瀏覽器分頁。', cap1Title: '查看虛構名單', cap1Copy: '中文姓名、職位與班別清楚標示；角色界線與正式規則一致。', cap2Title: '登記示範請假', cap2Copy: '加入或撤回生成前請假，立即理解排班前準備的用途。', cap3Title: '生成及核對', cap3Copy: '在裝置內建立固定、可重複、符合角色與不連續規則的示範週表。', cap4Title: '匯出雙語 PDF', cap4Copy: '直接下載 A4 橫向 PDF；中英文標籤並列，所有姓名保持中文。', trustTitle: '試用與正式資料之間，有一道真正的邊界。', trustCopy: '不包含任何正式值班資料。試用頁只載入固定虛構名單及本機程式碼；操作後不會連接 NiceGUI、KV、SQLite、備份、日誌或公平帳本。', boundaryTabTitle: '只在目前分頁', boundaryTabCopy: '使用 sessionStorage，關閉分頁即清除。', boundaryTimeTitle: '有時限', boundaryTimeCopy: '建立後 30 分鐘自動失效並重置。', boundaryResetTitle: '可隨時重置', boundaryResetCopy: '一個按鈕清除請假與草稿；語言及外觀設定會保留。', boundaryPublishTitle: '沒有發布能力', boundaryPublishCopy: '不能建立分享連結或改動任何正式資料。', trustTry: '使用虛構資料開始試用', footerPrinciple: '不是要受人的服事，乃是要服事人。', footerPlatform: '為公平、謹慎服務而建立的本機優先值班平台。', themeAuto: '外觀：自動', themeLight: '外觀：淺色', themeDark: '外觀：深色',
+      skip: '跳到主要內容', navTeam: '團隊架構', navCapabilities: '平台能力', navResources: '平台資源', navTrust: '資料邊界', navTry: '開始試用', heroLine1: '先理解平台，', heroLine2: '再親手完成一張值班表。', heroLead: '以一組完全虛構的中文名單，體驗生成、核對、雙語預覽及 PDF 匯出。正式學校資料、管理員工作台與公平帳本全程保持隔離。', enterTry: '進入互動試用', returnEntrance: '返回登入入口', proofFictional: '虛構資料', proofDevice: '裝置內運算', proofExpiry: '30 分鐘後失效', proofServer: '不寫入伺服器', flowBrowser: '瀏覽器工作區', flowSession: '分頁暫存', flowPdf: '裝置內 PDF', zeroWrites: '零伺服器寫入', teamTitle: '一個以服事為核心、責任清楚的團隊。', teamLead: '平台把每個角色的工作界線、核對責任與交接關係說清楚，讓公平不依賴某一個人的記憶。', roleHeadTitle: '首席導學風紀', roleHeadCopy: '主持每週生成、核對、發布、請假調整與交接；對操作決定負責。', roleAssistantTitle: '助理首席導學風紀', roleAssistantCopy: '在值班安排中只負責 Assist. in charge，保持角色界線清晰。', rolePrefectTitle: '導學風紀', rolePrefectCopy: '按可值班日及公平紀錄服務 302、303 與 202 室。', roleAdvisorTitle: '顧問老師', roleAdvisorCopy: '在正式驗收與需要時提供校務方向；日常操作由學生領袖負責。', capabilityTitle: '一條完整而克制的試用路徑', capabilityLead: '與正式系統採用相同的核心概念，但所有結果只屬於這一個瀏覽器分頁。', cap1Title: '查看虛構名單', cap1Copy: '中文姓名、職位與班別清楚標示；角色界線與正式規則一致。', cap2Title: '登記示範請假', cap2Copy: '加入或撤回生成前請假，立即理解排班前準備的用途。', cap3Title: '生成及核對', cap3Copy: '在裝置內建立固定、可重複、符合角色與不連續規則的示範週表。', cap4Title: '匯出雙語 PDF', cap4Copy: '直接下載 A4 橫向 PDF；中英文標籤並列，所有姓名保持中文。', solutionsTitle: '由每週工作到多年交接，形成一條完整服務生命線。', solutionWeeklyTitle: '每週值班運作', solutionWeeklyCopy: '生成草稿、逐項核對、發布並匯出中英文 PDF。', solutionAdjustTitle: '已發布後調整', solutionAdjustCopy: '在不重排整週的前提下，安全記錄請假與替補。', solutionFairTitle: '公平與可解釋性', solutionFairCopy: '以 history_weight、公平帳本與審計記錄說明每次安排。', solutionHandoverTitle: '延續與交接', solutionHandoverCopy: '由備份、受控還原到新學年名單，讓下一任可安全接手。', resourcesTitle: '把操作方法、工程證據與團隊文化放在同一個可信框架。', resourcesLead: '訪客可完整了解平台如何服務、如何保護資料，以及為何能交給下一任使用；正式編輯能力仍只屬於管理員。', resourceGuideTitle: '操作與入門', resourceGuideCopy: '繁中優先、英文完整的逐步指引，涵蓋名單、請假、生成、發布與復原。', resourceArchitectureTitle: '架構與可信設計', resourceArchitectureCopy: '清楚分開介面、政策、工作流、交易、備份與審計責任。', resourceQualityTitle: '工程與品質證據', resourceQualityCopy: '以自動測試、隔離驗收、健康檢查及可追蹤日誌支持每次發布。', resourceCultureTitle: '服事文化', resourceCultureCopy: '公平、清晰、責任、耐心與關顧，不只是標語，而是工作流的判斷準則。', coCreationTitle: '由李創杰與 Codex 共同建立，為下一任留下可理解、可核對、可接手的平台。', feedbackLink: '電郵反饋', githubLink: '查看 GitHub', trustTitle: '試用與正式資料之間，有一道真正的邊界。', trustCopy: '不包含任何正式值班資料。試用頁只載入固定虛構名單及本機程式碼；操作後不會連接 NiceGUI、KV、SQLite、備份、日誌或公平帳本。', boundaryTabTitle: '只在目前分頁', boundaryTabCopy: '使用 sessionStorage，關閉分頁即清除。', boundaryTimeTitle: '有時限', boundaryTimeCopy: '建立後 30 分鐘自動失效並重置。', boundaryResetTitle: '可隨時重置', boundaryResetCopy: '一個按鈕清除請假與草稿；語言及外觀設定會保留。', boundaryPublishTitle: '沒有發布能力', boundaryPublishCopy: '不能建立分享連結或改動任何正式資料。', trustTry: '使用虛構資料開始試用', footerPrinciple: '不是要受人的服事，乃是要服事人。', footerPlatform: '為公平、謹慎服務而建立的本機優先值班平台。', themeAuto: '外觀：自動', themeLight: '外觀：淺色', themeDark: '外觀：深色',
     },
     en: {
-      skip: 'Skip to main content', navCapabilities: 'Capabilities', navTrust: 'Data boundary', navTry: 'Start trial', heroLine1: 'Understand the platform.', heroLine2: 'Then build a roster yourself.', heroLead: 'Explore generation, review, bilingual preview, and PDF export with a completely fictional Chinese directory. Official school data, the administrator workbench, and the fairness ledger remain isolated.', enterTry: 'Enter interactive trial', returnEntrance: 'Return to sign-in entrance', proofFictional: 'Fictional data', proofDevice: 'On-device processing', proofExpiry: 'Expires after 30 minutes', proofServer: 'Zero server writes', flowBrowser: 'Browser workspace', flowSession: 'Tab-only state', flowPdf: 'On-device PDF', zeroWrites: 'Zero server writes', capabilityTitle: 'A complete, deliberately bounded trial journey', capabilityLead: 'It uses the same core concepts as the official system, but every result belongs only to this browser tab.', cap1Title: 'Review the fictional directory', cap1Copy: 'Chinese names, roles, and classes are clear, with the same role boundaries as the official rules.', cap2Title: 'Declare trial leave', cap2Copy: 'Add or remove pre-generation leave to understand the preparation step before scheduling.', cap3Title: 'Generate and review', cap3Copy: 'Build a deterministic on-device roster that respects role and no-consecutive-duty rules.', cap4Title: 'Export a bilingual PDF', cap4Copy: 'Download an A4 landscape PDF with bilingual labels while every prefect name remains Chinese.', trustTitle: 'A real boundary separates the trial from official data.', trustCopy: 'No official roster data is included. The trial loads only a fixed fictional directory and local code; interactions never connect to NiceGUI, KV, SQLite, backups, logs, or the fairness ledger.', boundaryTabTitle: 'Current tab only', boundaryTabCopy: 'sessionStorage is cleared when the tab closes.', boundaryTimeTitle: 'Time bounded', boundaryTimeCopy: 'The session expires and resets automatically after 30 minutes.', boundaryResetTitle: 'Reset at any time', boundaryResetCopy: 'One action clears trial leave and roster; language and appearance remain.', boundaryPublishTitle: 'No publishing capability', boundaryPublishCopy: 'The trial cannot create share links or modify official data.', trustTry: 'Start with fictional data', footerPrinciple: 'Not to be served, but to serve.', footerPlatform: 'A local-first roster platform built for fair, careful service.', themeAuto: 'Theme: Auto', themeLight: 'Theme: Light', themeDark: 'Theme: Dark',
+      skip: 'Skip to main content', navTeam: 'Team model', navCapabilities: 'Capabilities', navResources: 'Resources', navTrust: 'Data boundary', navTry: 'Start trial', heroLine1: 'Understand the platform.', heroLine2: 'Then build a roster yourself.', heroLead: 'Explore generation, review, bilingual preview, and PDF export with a completely fictional Chinese directory. Official school data, the administrator workbench, and the fairness ledger remain isolated.', enterTry: 'Enter interactive trial', returnEntrance: 'Return to sign-in entrance', proofFictional: 'Fictional data', proofDevice: 'On-device processing', proofExpiry: 'Expires after 30 minutes', proofServer: 'Zero server writes', flowBrowser: 'Browser workspace', flowSession: 'Tab-only state', flowPdf: 'On-device PDF', zeroWrites: 'Zero server writes', teamTitle: 'A service-centred team with explicit responsibilities.', teamLead: 'The platform makes role boundaries, review ownership, and succession relationships visible so fairness does not depend on one person’s memory.', roleHeadTitle: 'Head Study Prefect', roleHeadCopy: 'Owns weekly generation, review, publishing, absence adjustment, and handover decisions.', roleAssistantTitle: 'Assistant Head Study Prefect', roleAssistantCopy: 'Serves only Assist. in charge in the roster, preserving a clear role boundary.', rolePrefectTitle: 'Study Prefect', rolePrefectCopy: 'Serves Rooms 302, 303, and 202 according to availability and fairness history.', roleAdvisorTitle: 'Teacher Advisor', roleAdvisorCopy: 'Provides school direction at formal acceptance and when needed; student leaders own daily operation.', capabilityTitle: 'A complete, deliberately bounded trial journey', capabilityLead: 'It uses the same core concepts as the official system, but every result belongs only to this browser tab.', cap1Title: 'Review the fictional directory', cap1Copy: 'Chinese names, roles, and classes are clear, with the same role boundaries as the official rules.', cap2Title: 'Declare trial leave', cap2Copy: 'Add or remove pre-generation leave to understand the preparation step before scheduling.', cap3Title: 'Generate and review', cap3Copy: 'Build a deterministic on-device roster that respects role and no-consecutive-duty rules.', cap4Title: 'Export a bilingual PDF', cap4Copy: 'Download an A4 landscape PDF with bilingual labels while every prefect name remains Chinese.', solutionsTitle: 'A complete service lifeline from weekly work to multi-year succession.', solutionWeeklyTitle: 'Weekly roster operations', solutionWeeklyCopy: 'Generate a draft, review each item, publish, and export Chinese and English PDFs.', solutionAdjustTitle: 'Post-publication adjustment', solutionAdjustCopy: 'Record absence and substitution safely without rebuilding the entire week.', solutionFairTitle: 'Fairness and explanation', solutionFairCopy: 'Explain every assignment through history_weight, the fairness ledger, and audit records.', solutionHandoverTitle: 'Continuity and handover', solutionHandoverCopy: 'Verified backups, managed restore, and new-year directory preparation support a safe succession.', resourcesTitle: 'One trusted framework for guidance, engineering evidence, and team culture.', resourcesLead: 'Visitors can understand how the platform serves, protects data, and remains handover-ready, while official editing remains administrator-only.', resourceGuideTitle: 'Guidance and onboarding', resourceGuideCopy: 'Traditional Chinese-first and complete English procedures for directory, leave, generation, publishing, and recovery.', resourceArchitectureTitle: 'Architecture and trust', resourceArchitectureCopy: 'Clear responsibility boundaries across interface, policy, workflow, transactions, backup, and audit.', resourceQualityTitle: 'Engineering and quality evidence', resourceQualityCopy: 'Automated tests, isolated acceptance, health checks, and traceable logs support each release.', resourceCultureTitle: 'Service culture', resourceCultureCopy: 'Fairness, clarity, responsibility, patience, and care are operating criteria, not decoration.', coCreationTitle: 'Co-created by Lee Chong Kit and Codex to leave the next Head Study Prefect a platform that can be understood, verified, and safely inherited.', feedbackLink: 'Email feedback', githubLink: 'View GitHub', trustTitle: 'A real boundary separates the trial from official data.', trustCopy: 'No official roster data is included. The trial loads only a fixed fictional directory and local code; interactions never connect to NiceGUI, KV, SQLite, backups, logs, or the fairness ledger.', boundaryTabTitle: 'Current tab only', boundaryTabCopy: 'sessionStorage is cleared when the tab closes.', boundaryTimeTitle: 'Time bounded', boundaryTimeCopy: 'The session expires and resets automatically after 30 minutes.', boundaryResetTitle: 'Reset at any time', boundaryResetCopy: 'One action clears trial leave and roster; language and appearance remain.', boundaryPublishTitle: 'No publishing capability', boundaryPublishCopy: 'The trial cannot create share links or modify official data.', trustTry: 'Start with fictional data', footerPrinciple: 'Not to be served, but to serve.', footerPlatform: 'A local-first roster platform built for fair, careful service.', themeAuto: 'Theme: Auto', themeLight: 'Theme: Light', themeDark: 'Theme: Dark',
     },
   };
   let state = { language: 'zh', theme: 'auto' };
@@ -319,6 +352,20 @@ button:focus-visible, a:focus-visible, select:focus-visible { outline: 3px solid
 .capability-grid h3 { margin: 72px 0 10px; font-size: 1.1rem; }
 .capability-grid p { color: var(--muted); font-size: .78rem; }
 .capability-grid small { display: block; margin-top: 18px; color: var(--muted); font-size: .67rem; }
+.operating-grid, .resource-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.operating-grid article, .resource-grid article { min-height: 230px; padding: 24px; border: 1px solid var(--line); border-radius: 19px; background: var(--surface); }
+.role-mark { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 11px; color: var(--brand-strong); background: var(--brand-soft); font-size: .66rem; font-weight: 820; }
+.operating-grid h3, .resource-grid h3 { margin: 42px 0 10px; font-size: 1.05rem; }
+.operating-grid p, .resource-grid p { color: var(--muted); font-size: .76rem; }
+.solution-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+.solution-grid article { display: grid; grid-template-columns: 54px 1fr; gap: 18px; min-height: 170px; align-items: start; padding: 26px; border: 1px solid var(--line); border-radius: 19px; background: var(--surface); }
+.solution-grid article > span, .resource-icon { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 14px; color: var(--brand-strong); background: var(--brand-soft); font-weight: 820; }
+.solution-grid h3 { margin: 2px 0 9px; font-size: 1rem; }
+.solution-grid p { margin: 0; color: var(--muted); font-size: .76rem; }
+.resource-grid h3 { margin-top: 32px; }
+.co-creation-strip { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; margin-top: 16px; padding: 30px; border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--line)); border-radius: 19px; background: var(--brand-soft); }
+.co-creation-strip h3 { max-width: 780px; margin: 10px 0 0; font-size: clamp(1.15rem, 2.5vw, 1.75rem); line-height: 1.35; }
+.co-creation-links { display: flex; flex: 0 0 auto; gap: 18px; }
 .platform-section--trust { padding-bottom: 130px; }
 .trust-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; margin-bottom: 38px; }
 .trust-statement { padding: 30px; border-left: 4px solid var(--brand); background: var(--surface); }
@@ -400,6 +447,7 @@ td.vacant { color: var(--danger); }
   .platform-hero { grid-template-columns: 1fr; min-height: 0; padding-top: 50px; }
   .hero-system { max-width: 520px; }
   .capability-grid { grid-template-columns: repeat(2, 1fr); }
+  .operating-grid, .resource-grid { grid-template-columns: repeat(2, 1fr); }
   .trust-layout { grid-template-columns: 1fr; }
   .directory-grid { grid-template-columns: repeat(2, 1fr); }
   .trial-intro { display: grid; }
@@ -416,6 +464,9 @@ td.vacant { color: var(--danger); }
   .hero-actions { align-items: stretch; flex-direction: column; }
   .hero-actions .button { width: 100%; }
   .capability-grid { grid-template-columns: 1fr; }
+  .operating-grid, .resource-grid, .solution-grid { grid-template-columns: 1fr; }
+  .co-creation-strip { align-items: flex-start; flex-direction: column; }
+  .co-creation-links { flex-wrap: wrap; }
   .capability-grid article { min-height: 230px; }
   .capability-grid h3 { margin-top: 45px; }
   .platform-footer { display: grid; }

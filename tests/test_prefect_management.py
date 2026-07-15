@@ -1,12 +1,23 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from datetime import date
+import sqlite3
 from threading import Barrier
 
 import pytest
 
 from nicegui_app.config import PREFECT_SEED_PATH
-from nicegui_app.services.roster_workflow import PrefectInput, RosterWorkflow, WorkflowConflictError, WorkflowError
+from nicegui_app.services.maintenance import MaintenanceModeError
+from nicegui_app.services.roster_workflow import (
+    BackupResult,
+    CommittedWriteBackupError,
+    PrefectInput,
+    RosterWorkflow,
+    WorkflowConflictError,
+    WorkflowError,
+    WorkflowMaintenanceError,
+)
 from nicegui_app.utils.prefect_import import parse_prefect_import_text, prefect_import_template_csv
 
 
@@ -52,6 +63,144 @@ def test_prefect_can_be_created_updated_and_archived_without_erasing_history(tmp
     assert updated["needsMentoring"] is True
     assert created["id"] not in {item["id"] for item in workflow.prefects()}
     assert len(list((tmp_path / "backups").glob("*.sqlite3"))) == 3
+
+
+def test_new_school_year_rollover_clears_active_directory_and_retains_audited_history(tmp_path) -> None:
+    workflow = _workflow(tmp_path)
+    original = workflow.prefects()[0]
+    workflow.declare_leave(
+        week_start=date(2026, 7, 20),
+        prefect_id=str(original["id"]),
+        day="MONDAY",
+        reason="Fictional rollover test",
+    )
+
+    receipt = workflow.prepare_new_school_year()
+
+    assert receipt["archivedPrefectCount"] == 24
+    assert receipt["cancelledLeaveCount"] == 1
+    assert workflow.prefects() == []
+    assert workflow.prefect(str(original["id"]))["active"] is False
+    assert workflow.verify_backup(receipt["beforeBackup"])["valid"] is True
+    assert workflow.verify_backup(receipt["afterBackup"])["valid"] is True
+
+    replacement = workflow.create_prefect(
+        PrefectInput(
+            name_zh=str(original["nameZh"]),
+            form="F.5",
+            class_name="5A",
+            role_code="study_prefect",
+            available_days=("MONDAY", "WEDNESDAY"),
+        )
+    )
+    assert replacement["id"] != original["id"]
+    assert workflow.prefect(str(original["id"]))["active"] is False
+
+    with sqlite3.connect(tmp_path / "sing-yin.sqlite3") as connection:
+        audit_count = connection.execute(
+            "SELECT COUNT(*) FROM audit_events WHERE event_type = 'school_year_directory_archived'"
+        ).fetchone()[0]
+        active_leave_count = connection.execute(
+            "SELECT COUNT(*) FROM leave_declarations WHERE active = 1"
+        ).fetchone()[0]
+    assert audit_count == 1
+    assert active_leave_count == 0
+
+
+def test_new_school_year_rollover_refuses_an_already_empty_directory_without_new_backup(tmp_path) -> None:
+    workflow = _workflow(tmp_path)
+    workflow.prepare_new_school_year()
+    backup_count = len(list((tmp_path / "backups").glob("*.sqlite3")))
+
+    with pytest.raises(WorkflowError, match="already empty"):
+        workflow.prepare_new_school_year()
+
+    assert len(list((tmp_path / "backups").glob("*.sqlite3"))) == backup_count
+
+
+def test_new_school_year_rollover_has_one_winner_across_concurrent_clients(tmp_path) -> None:
+    first = _workflow(tmp_path)
+    second = _workflow(tmp_path)
+    barrier = Barrier(2)
+
+    def rollover(workflow: RosterWorkflow) -> tuple[str, object]:
+        barrier.wait(timeout=5)
+        try:
+            return "completed", workflow.prepare_new_school_year()
+        except (MaintenanceModeError, WorkflowError) as error:
+            return "refused", error
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = list(executor.map(rollover, (first, second)))
+
+    assert [status for status, _ in outcomes].count("completed") == 1
+    assert [status for status, _ in outcomes].count("refused") == 1
+    assert first.prefects() == []
+    with sqlite3.connect(tmp_path / "sing-yin.sqlite3") as connection:
+        audit_count = connection.execute(
+            "SELECT COUNT(*) FROM audit_events WHERE event_type = 'school_year_directory_archived'"
+        ).fetchone()[0]
+        active_count = connection.execute("SELECT COUNT(*) FROM prefects WHERE active = 1").fetchone()[0]
+    assert audit_count == 1
+    assert active_count == 0
+    backups = list((tmp_path / "backups").glob("*.sqlite3"))
+    assert len(backups) == 2
+    assert all(first.verify_backup(path)["valid"] is True for path in backups)
+    assert not (tmp_path / ".sing-yin.sqlite3.maintenance.json").exists()
+
+
+def test_new_school_year_rollover_does_not_archive_when_pre_operation_backup_fails(monkeypatch, tmp_path) -> None:
+    workflow = _workflow(tmp_path)
+
+    monkeypatch.setattr(
+        workflow,
+        "_create_and_record_backup",
+        lambda *_args, **_kwargs: BackupResult(False, None, "simulated pre-backup failure"),
+    )
+
+    with pytest.raises(WorkflowError, match="did not start"):
+        workflow.prepare_new_school_year()
+
+    assert len(workflow.prefects()) == 24
+    assert workflow.maintenance_status().active is False
+
+
+def test_new_school_year_rollover_preserves_recovery_lock_when_post_backup_fails(monkeypatch, tmp_path) -> None:
+    workflow = _workflow(tmp_path)
+    create_backup = workflow._create_and_record_backup
+    calls = 0
+
+    def fail_second_backup(event_type: str, roster_week_id: int | None) -> BackupResult:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            return BackupResult(False, None, "simulated post-backup failure")
+        return create_backup(event_type, roster_week_id)
+
+    monkeypatch.setattr(workflow, "_create_and_record_backup", fail_second_backup)
+
+    with pytest.raises(CommittedWriteBackupError) as captured:
+        workflow.prepare_new_school_year()
+
+    assert captured.value.event_type == "school_year_directory_archived"
+    status = workflow.maintenance_status()
+    assert status.active is True
+    assert status.recovery_required is True
+    assert "school_year_rollover_post_backup_failed" in workflow.maintenance.marker_path.read_text(encoding="utf-8")
+    with sqlite3.connect(tmp_path / "sing-yin.sqlite3") as connection:
+        active_count = connection.execute("SELECT COUNT(*) FROM prefects WHERE active = 1").fetchone()[0]
+    assert active_count == 0
+    assert len(list((tmp_path / "backups").glob("*.sqlite3"))) == 1
+    with pytest.raises(WorkflowMaintenanceError, match="maintenance mode"):
+        workflow.create_prefect(
+            PrefectInput(
+                name_zh="測試風紀",
+                form="F.5",
+                class_name="5A",
+                role_code="study_prefect",
+                available_days=("MONDAY",),
+            )
+        )
 
 
 def test_stale_prefect_editor_cannot_overwrite_a_newer_saved_version(tmp_path) -> None:

@@ -155,20 +155,33 @@ def test_parallel_local_music_imports_preserve_every_catalog_entry(
     assert not [path for path in root.iterdir() if path.name.endswith(".tmp")]
 
 
-def test_music_ui_is_manual_and_absent_from_sensitive_workflows() -> None:
+def test_music_ui_has_operator_controlled_autoplay_on_every_workspace_page() -> None:
     music_ui = (PROJECT_ROOT / "nicegui_app" / "ui" / "music.py").read_text(encoding="utf-8")
+    sound_ui = (PROJECT_ROOT / "nicegui_app" / "ui" / "sound.py").read_text(encoding="utf-8")
     pages = combined_page_source()
     main = (PROJECT_ROOT / "nicegui_app" / "main.py").read_text(encoding="utf-8")
 
-    assert "autoplay=False" in music_ui
+    assert "autoplay=False" in music_ui, "The audio element starts conservatively before the saved preference is applied"
+    assert 'DEFAULT_MUSIC_AUTOPLAY = True' in sound_ui
+    assert 'MUSIC_AUTOPLAY_STORAGE_KEY = "music_autoplay"' in sound_ui
+    assert 'app.storage.user.get("music_autoplay"' not in music_ui
+    assert music_ui.count("music_autoplay_enabled()") >= 3
+    assert music_ui.count("set_music_autoplay(enabled)") == 2
+    assert 'data-testid=music-autoplay-switch' in music_ui
+    assert 'data-testid=music-playback-status' in music_ui
+    assert 'data-music-state=' in music_ui
+    assert "_music_state_script('blocked')" in music_ui
+    assert "audio.play().then" in music_ui
+    assert "audio.pause()" in music_ui
     assert "loop=False" in music_ui
     assert 'audio.on("ended", advance_playlist)' in music_ui
     assert '"sequential": t("music_mode_sequential")' in music_ui
     assert '"shuffle": t("music_mode_shuffle")' in music_ui
     assert 'music_context="devotional"' in pages
     assert 'music_context="handover"' in pages
-    assert 'with page_shell("adjustments", "/rosters")' in pages
-    assert 'with page_shell("settings", "/settings")' in pages
+    assert 'music_context="weekly"' in pages
+    assert 'music_context="people"' in pages
+    assert 'music_context="settings"' in pages
     assert 'url_path="/assets/music"' in main
     assert "YoutubeMusicLink" not in music_ui
     assert "add_youtube_link" not in music_ui

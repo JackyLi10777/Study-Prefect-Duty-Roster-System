@@ -69,7 +69,10 @@ class PersistenceWorkflowMixin:
         session.connection().exec_driver_sql("BEGIN IMMEDIATE")
 
     def _assert_name_available(self, session: Session, name_zh: str, *, exclude_prefect_id: str | None = None) -> None:
-        statement = select(PrefectRecord).where(PrefectRecord.name_zh == name_zh.strip())
+        statement = select(PrefectRecord).where(
+            PrefectRecord.name_zh == name_zh.strip(),
+            PrefectRecord.active.is_(True),
+        )
         existing = session.scalar(statement)
         if existing is not None and existing.id != exclude_prefect_id:
             raise WorkflowError("A prefect with this Chinese name already exists.")

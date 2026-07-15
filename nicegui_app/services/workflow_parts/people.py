@@ -146,6 +146,93 @@ class PeopleWorkflowMixin:
         backup = self._create_and_record_backup("prefect_archived", None)
         self._require_backup(backup, committed_event="prefect_archived")
 
+    def prepare_new_school_year(self) -> dict[str, object]:
+        """Archive the active directory while retaining every historical record.
+
+        The rollover runs under the host-wide maintenance lock so the verified
+        pre-change snapshot, directory archive, audit event, and verified
+        post-change snapshot describe one controlled operation.
+        """
+        with self.maintenance.maintenance("school_year_rollover"):
+            with self._session() as session:
+                active_count = int(
+                    session.scalar(
+                        select(func.count()).select_from(PrefectRecord).where(PrefectRecord.active.is_(True))
+                    )
+                    or 0
+                )
+                if active_count == 0:
+                    raise WorkflowError("The active prefect directory is already empty.")
+                self._assert_fairness_reconciled(session)
+
+            before_result = self._create_and_record_backup("pre_school_year_rollover", None)
+            if not before_result.success or before_result.path is None:
+                raise WorkflowError(
+                    "The school-year rollover did not start because the pre-operation backup failed."
+                )
+            before_backup = before_result.path
+
+            with self._session() as session:
+                self._begin_serialized_write(session)
+                now = self._now()
+                cancelled_leave_count = int(
+                    session.scalar(
+                        select(func.count())
+                        .select_from(LeaveDeclarationRecord)
+                        .where(LeaveDeclarationRecord.active.is_(True))
+                    )
+                    or 0
+                )
+                archived = session.execute(
+                    update(PrefectRecord)
+                    .where(PrefectRecord.active.is_(True))
+                    .values(
+                        active=False,
+                        version=PrefectRecord.version + 1,
+                        updated_at=now,
+                    )
+                )
+                session.execute(
+                    update(LeaveDeclarationRecord)
+                    .where(LeaveDeclarationRecord.active.is_(True))
+                    .values(active=False, updated_at=now)
+                )
+                archived_count = int(archived.rowcount or 0)
+                if archived_count != active_count:
+                    raise WorkflowConflictError(
+                        "The prefect directory changed while the school-year rollover was starting."
+                    )
+                self._audit(
+                    session,
+                    "school_year_directory_archived",
+                    None,
+                    {
+                        "archivedPrefectCount": archived_count,
+                        "cancelledLeaveCount": cancelled_leave_count,
+                    },
+                )
+                session.commit()
+
+            try:
+                after_backup = self._require_backup(
+                    self._create_and_record_backup("post_school_year_rollover", None),
+                    committed_event="school_year_directory_archived",
+                )
+            except CommittedWriteBackupError:
+                # The directory archive is already durable.  Keep the
+                # host-wide marker so no later write can make the verified
+                # pre-operation recovery point stale before review.
+                self.maintenance.require_recovery_review(
+                    reason_code="school_year_rollover_post_backup_failed"
+                )
+                raise
+            return {
+                "archivedPrefectCount": archived_count,
+                "cancelledLeaveCount": cancelled_leave_count,
+                "beforeBackup": before_backup,
+                "afterBackup": after_backup,
+            }
+
     def import_prefects(self, prefect_inputs: Iterable[PrefectInput]) -> list[dict[str, object]]:
         inputs = list(prefect_inputs)
         if not inputs:

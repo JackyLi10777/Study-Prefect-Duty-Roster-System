@@ -45,5 +45,13 @@ MESSAGES = {'app_name': {'zh-HK': '聖言中學導學風紀值班系統', 'en': 
  'devotional_tone_comfort': {'zh-HK': '安靜安慰', 'en': 'Quiet comfort'},
  'reflection': {'zh-HK': '靈修反思', 'en': 'Devotional reflection'},
  'prayer': {'zh-HK': '今日禱告', 'en': 'Prayer for today'},
+ 'devotional_page_intro': {'zh-HK': '先安靜讀完經文，再帶着清晰、耐心與關顧開始今天的服事。',
+                           'en': 'Read quietly first, then begin today\'s service with clarity, patience, and care.'},
+ 'devotional_reflection_title': {'zh-HK': '默想與回應', 'en': 'Reflect and respond'},
+ 'devotional_prayer_title': {'zh-HK': '安靜禱告', 'en': 'A quiet prayer'},
+ 'devotional_prepare_title': {'zh-HK': '帶着經文開始工作', 'en': 'Carry the verse into the work'},
+ 'devotional_prepare_body': {'zh-HK': '今天作出每個排班決定時，先問：這是否公平、清楚，並真正關顧被安排的人？',
+                             'en': 'For each roster decision today, ask whether it is fair, clear, and genuinely considerate of the people assigned.'},
+ 'devotional_return_work': {'zh-HK': '返回本週工作台', 'en': 'Return to the weekly desk'},
  'mark_1045': {'zh-HK': '馬可福音 10:45', 'en': 'Mark 10:45'},
  'why_we_serve': {'zh-HK': '在秩序與責任之中，記得我們服事的原因。', 'en': 'In every duty and decision, remember why we serve.'}}

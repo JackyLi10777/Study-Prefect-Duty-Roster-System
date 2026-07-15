@@ -19,11 +19,14 @@ from nicegui_app.services.json_catalog import locked_json_catalog, write_json_at
 
 MUSIC_CONTEXTS = (
     "dashboard",
+    "weekly",
+    "people",
     "devotional",
     "getting_started",
     "guide",
     "architecture",
     "handover",
+    "settings",
 )
 PLAYBACK_MODES = ("sequential", "shuffle")
 MUSIC_PROFILES = ("bright", "quiet")
@@ -64,15 +67,15 @@ class MusicTrack:
 
 BUILTIN_TRACKS = (
     # Bright focus: gentle forward movement for starting and understanding work.
-    MusicTrack("ambre", "Nils Frahm - Ambre.m4a", "Ambre", "Nils Frahm", "3:47", ("dashboard", "guide"), ("bright", "quiet")),
+    MusicTrack("ambre", "Nils Frahm - Ambre.m4a", "Ambre", "Nils Frahm", "3:47", ("dashboard", "guide", "weekly"), ("bright", "quiet")),
     MusicTrack("near-light", "Ólafur Arnalds - Near Light.m4a", "Near Light", "Ólafur Arnalds", "3:28", ("dashboard", "guide"), ("bright", "quiet")),
-    MusicTrack("glass", "Hania Rani - Glass.m4a", "Glass", "Hania Rani", "4:30", ("dashboard", "architecture"), ("bright", "quiet")),
-    MusicTrack("we-move-lightly", "Dustin O_Halloran - We Move Lightly.m4a", "We Move Lightly", "Dustin O'Halloran", "3:10", ("getting_started", "guide", "handover"), ("bright",)),
-    MusicTrack("fairytale", "Ludovico Einaudi - Einaudi： Fairytale.m4a", "Fairytale", "Ludovico Einaudi", "", ("dashboard", "guide"), ("bright",)),
-    MusicTrack("earth-prelude", "Ludovico Einaudi - The Earth Prelude.m4a", "The Earth Prelude", "Ludovico Einaudi", "", ("dashboard", "architecture"), ("bright",)),
+    MusicTrack("glass", "Hania Rani - Glass.m4a", "Glass", "Hania Rani", "4:30", ("dashboard", "architecture", "people"), ("bright", "quiet")),
+    MusicTrack("we-move-lightly", "Dustin O_Halloran - We Move Lightly.m4a", "We Move Lightly", "Dustin O'Halloran", "3:10", ("getting_started", "guide", "handover", "settings"), ("bright",)),
+    MusicTrack("fairytale", "Ludovico Einaudi - Einaudi： Fairytale.m4a", "Fairytale", "Ludovico Einaudi", "", ("dashboard", "guide", "weekly"), ("bright",)),
+    MusicTrack("earth-prelude", "Ludovico Einaudi - The Earth Prelude.m4a", "The Earth Prelude", "Ludovico Einaudi", "", ("dashboard", "architecture", "people"), ("bright",)),
     MusicTrack("canon-piano", "Music Lab Collective - Canon in D Major (Arr. for Piano).m4a", "Canon in D Major", "Music Lab Collective", "", ("dashboard", "getting_started"), ("bright",)),
     MusicTrack("morning-has-broken", "Relaxing Piano - Topic - Morning ⧸ Morning Has Broken.m4a", "Morning Has Broken", "Relaxing Piano", "", ("dashboard", "getting_started"), ("bright",)),
-    MusicTrack("bach-prelude-fugue-1", "Sviatoslav Richter - Topic - Prelude and Fugue： No. 1 in C Major, BWV 846.m4a", "Prelude and Fugue No. 1", "Sviatoslav Richter", "", ("guide", "architecture"), ("bright",)),
+    MusicTrack("bach-prelude-fugue-1", "Sviatoslav Richter - Topic - Prelude and Fugue： No. 1 in C Major, BWV 846.m4a", "Prelude and Fugue No. 1", "Sviatoslav Richter", "", ("guide", "architecture", "settings"), ("bright",)),
     MusicTrack("be-thou-my-vision", "bHp Music - Be Thou My Vision ｜ Piano Instrumental with Lyrics.m4a", "Be Thou My Vision", "bHp Music", "3:17", ("getting_started", "architecture"), ("bright",)),
     MusicTrack("servant-king", "Maranatha! Music - Topic - The Servant King (Instrumental).m4a", "The Servant King", "Maranatha! Music", "4:12", ("architecture", "handover"), ("bright", "quiet")),
     MusicTrack("bless-the-lord", "Taizé - Topic - Bless the Lord (Accompaniment).m4a", "Bless the Lord", "Taizé", "4:48", ("devotional", "getting_started"), ("bright",), "instrumental"),
@@ -82,12 +85,12 @@ BUILTIN_TRACKS = (
     MusicTrack("jubilate-deo", "The Cambridge Singers - Topic - Jubilate Deo.m4a", "Jubilate Deo", "The Cambridge Singers", "", ("devotional", "getting_started"), ("bright",), "vocal"),
     # Quiet reflection: slower, prayerful and reassuring material for reading and handover.
     MusicTrack("good-night-day", "Hildur Guðnadóttir - Jóhannsson： Good Night, Day.m4a", "Good Night, Day", "Hildur Guðnadóttir & Jóhann Jóhannsson", "", ("dashboard", "handover"), ("quiet",)),
-    MusicTrack("fur-alina", "Jürgen Kruse - Topic - Für Alina, for Piano Solo.m4a", "Für Alina", "Jürgen Kruse", "", ("devotional", "guide"), ("quiet",)),
-    MusicTrack("le-onde", "Ludovico Einaudi - Einaudi： Le Onde.m4a", "Le Onde", "Ludovico Einaudi", "", ("dashboard", "handover"), ("quiet",)),
+    MusicTrack("fur-alina", "Jürgen Kruse - Topic - Für Alina, for Piano Solo.m4a", "Für Alina", "Jürgen Kruse", "", ("devotional", "guide", "people"), ("quiet",)),
+    MusicTrack("le-onde", "Ludovico Einaudi - Einaudi： Le Onde.m4a", "Le Onde", "Ludovico Einaudi", "", ("dashboard", "handover", "weekly"), ("quiet",)),
     MusicTrack("hands-be-still", "Ólafur Arnalds - Hands, Be Still.m4a", "Hands, Be Still", "Ólafur Arnalds", "", ("devotional", "guide"), ("quiet",)),
-    MusicTrack("only-the-winds", "Ólafur Arnalds - Only The Winds.m4a", "Only The Winds", "Ólafur Arnalds", "", ("handover", "architecture"), ("quiet",)),
+    MusicTrack("only-the-winds", "Ólafur Arnalds - Only The Winds.m4a", "Only The Winds", "Ólafur Arnalds", "", ("handover", "architecture", "settings"), ("quiet",)),
     MusicTrack("spiegel-im-spiegel", "Benjamin Hudson - Topic - Spiegel im Spiegel, for Viola & Piano.m4a", "Spiegel im Spiegel", "Benjamin Hudson & Jürgen Kruse", "10:05", ("devotional", "architecture"), ("quiet",)),
-    MusicTrack("serenity", "Serenity (O Magnum Mysterium) — Tenebrae.m4a", "Serenity (O Magnum Mysterium)", "Tenebrae", "", ("devotional", "handover"), ("quiet",), "vocal"),
+    MusicTrack("serenity", "Serenity (O Magnum Mysterium) — Tenebrae.m4a", "Serenity (O Magnum Mysterium)", "Tenebrae", "", ("devotional", "handover", "settings"), ("quiet",), "vocal"),
     MusicTrack("the-spheres", "Tenebrae - Topic - Gjeilo： The Spheres.m4a", "The Spheres", "Tenebrae", "", ("devotional", "architecture"), ("quiet",), "vocal"),
     MusicTrack("ubi-caritas", "Taizé - Topic - Ubi caritas (Accompaniment).m4a", "Ubi caritas", "Taizé", "3:20", ("devotional", "handover"), ("quiet",), "instrumental"),
     MusicTrack("ubi-caritas-vocal", "Taizé - Topic - Ubi caritas.m4a", "Ubi caritas", "Taizé", "", ("devotional", "handover"), ("quiet",), "vocal"),

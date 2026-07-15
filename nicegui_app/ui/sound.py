@@ -8,6 +8,17 @@ from nicegui_app.ui.theme import sound_feedback_enabled
 
 
 SOUND_KINDS = {"navigation", "working", "success", "attention"}
+MUSIC_AUTOPLAY_STORAGE_KEY = "music_autoplay"
+DEFAULT_MUSIC_AUTOPLAY = True
+
+
+def music_autoplay_enabled() -> bool:
+    """Return the browser-local preference from one canonical default."""
+    return bool(app.storage.user.get(MUSIC_AUTOPLAY_STORAGE_KEY, DEFAULT_MUSIC_AUTOPLAY))
+
+
+def set_music_autoplay(enabled: bool) -> None:
+    app.storage.user[MUSIC_AUTOPLAY_STORAGE_KEY] = bool(enabled)
 
 
 def preferred_music_volume() -> float:

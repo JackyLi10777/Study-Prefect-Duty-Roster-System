@@ -3,7 +3,8 @@ param(
     [string]$ProjectRoot = "",
     [string]$TaskName = "Sing Yin Roster Host",
     [string]$RuntimeUser = "SingYinRosterSvc",
-    [switch]$AtStartup
+    [switch]$AtStartup,
+    [switch]$NoStart
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,7 +30,12 @@ $settings = New-ScheduledTaskSettingsSet `
     -RestartInterval (New-TimeSpan -Minutes 1) `
     -MultipleInstances IgnoreNew
 
-if (-not $PSCmdlet.ShouldProcess($TaskName, "Register and start Windows scheduled task")) { return }
+$taskOperation = if ($NoStart) {
+    "Register Windows scheduled task without starting it"
+} else {
+    "Register and start Windows scheduled task"
+}
+if (-not $PSCmdlet.ShouldProcess($TaskName, $taskOperation)) { return }
 
 $inspection = Get-SingYinTaskInspection -TaskName $TaskName -ProjectRoot $ProjectRoot -RuntimeUser $runtimeAccount.Name
 if ($inspection.Exists -and -not $inspection.Owned) {
@@ -79,6 +85,11 @@ if ($AtStartup) {
     Register-ScheduledTask @register | Out-Null
 }
 
-Start-ScheduledTask -TaskName $TaskName
-Write-Host "Registered and started '$TaskName'." -ForegroundColor Green
-Write-Host "Check: Invoke-RestMethod http://127.0.0.1:8080/healthz | Format-List"
+if ($NoStart) {
+    Write-Host "Registered '$TaskName' without starting it." -ForegroundColor Green
+    Write-Host "Inspect the task before the controlled restart rehearsal." -ForegroundColor Yellow
+} else {
+    Start-ScheduledTask -TaskName $TaskName
+    Write-Host "Registered and started '$TaskName'." -ForegroundColor Green
+    Write-Host "Check: Invoke-RestMethod http://127.0.0.1:8080/healthz | Format-List"
+}

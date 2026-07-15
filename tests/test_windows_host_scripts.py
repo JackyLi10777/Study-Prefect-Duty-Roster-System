@@ -30,6 +30,20 @@ def _quoted(path: Path) -> str:
     return str(path).replace("'", "''")
 
 
+def _powershell_block(source: str, marker: str) -> str:
+    marker_index = source.index(marker)
+    block_start = source.index("{", marker_index)
+    depth = 0
+    for index in range(block_start, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[block_start + 1:index]
+    raise AssertionError(f"PowerShell block after {marker!r} is not balanced")
+
+
 def test_access_redirect_requires_exact_https_tenant_and_access_path() -> None:
     cases = {
         "https://school.cloudflareaccess.com/cdn-cgi/access/login/app": True,
@@ -216,6 +230,14 @@ def test_windows_host_scripts_bind_permissions_and_task_to_dedicated_runtime_use
     assert 'RuntimeUser = "SingYinRosterSvc"' in startup
     assert "not owned by this project and runtime account" in startup
     assert "if ($inspection.Exists) { $register.Force = $true }" in startup
+    assert "[switch]$NoStart" in startup
+    assert "if ($NoStart)" in startup
+    no_start_branch = _powershell_block(startup, "if ($NoStart)")
+    start_branch = _powershell_block(startup, "else {\n    Start-ScheduledTask")
+    assert "Start-ScheduledTask" not in no_start_branch
+    assert start_branch.count("Start-ScheduledTask -TaskName $TaskName") == 1
+    assert startup.count("Start-ScheduledTask -TaskName $TaskName") == 1
+    assert '"Register Windows scheduled task without starting it"' in startup
     assert 'RuntimeUser = "SingYinRosterSvc"' in activation
     activation_acl_calls = [
         line for line in activation.splitlines() if "Protect-SingYinSensitivePath" in line

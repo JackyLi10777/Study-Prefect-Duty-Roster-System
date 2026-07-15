@@ -110,7 +110,7 @@ def _delete_dialog_after_close(dialog, *, delay_seconds: float = _DIALOG_DISMISS
     dialog.on_value_change(handle_value_change)
 
 
-def _show_committed_without_backup(reference: str) -> None:
+def _show_committed_without_backup(reference: str, *, recovery_required: bool = False) -> None:
     """Explain a committed write accurately and give two safe recovery paths."""
     with ui.dialog().props("persistent data-testid=committed-without-backup-dialog") as dialog, ui.card().classes(
         "sy-partial-success-dialog w-full max-w-lg p-6"
@@ -118,8 +118,16 @@ def _show_committed_without_backup(reference: str) -> None:
         with ui.row().classes("items-start gap-3 no-wrap"):
             ui.icon("warning_amber").classes("sy-partial-success-icon").props("aria-hidden=true")
             with ui.column().classes("gap-1"):
-                ui.label(t("committed_without_backup_title")).classes("text-lg font-semibold")
-                ui.label(t("committed_without_backup_body")).classes("text-sm leading-6 text-[var(--sy-muted)]")
+                ui.label(
+                    t("committed_recovery_lock_title")
+                    if recovery_required
+                    else t("committed_without_backup_title")
+                ).classes("text-lg font-semibold")
+                ui.label(
+                    t("committed_recovery_lock_body")
+                    if recovery_required
+                    else t("committed_without_backup_body")
+                ).classes("text-sm leading-6 text-[var(--sy-muted)]")
                 ui.label(t("support_reference_only", reference=reference)).classes("text-xs text-[var(--sy-muted)] mt-2")
         with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5 flex-wrap"):
             ui.button(
@@ -127,11 +135,18 @@ def _show_committed_without_backup(reference: str) -> None:
                 icon="refresh",
                 on_click=ui.navigate.reload,
             ).props("outline data-testid=partial-review-action")
-            ui.button(
-                t("open_backup_settings"),
-                icon="settings_backup_restore",
-                on_click=lambda: (dialog.close(), ui.navigate.to("/settings")),
-            ).props("data-testid=partial-backup-settings-action")
+            if recovery_required:
+                ui.button(
+                    t("operator_guide"),
+                    icon="menu_book",
+                    on_click=lambda: (dialog.close(), ui.navigate.to("/guide")),
+                ).props("data-testid=partial-recovery-guide-action")
+            else:
+                ui.button(
+                    t("open_backup_settings"),
+                    icon="settings_backup_restore",
+                    on_click=lambda: (dialog.close(), ui.navigate.to("/settings")),
+                ).props("data-testid=partial-backup-settings-action")
     _delete_dialog_after_close(dialog)
     dialog.open()
 
@@ -227,7 +242,10 @@ async def _run_with_progress(
         if dialog is not None:
             dialog.close()
         record_operator_partial_failure(error, action=working_key, reference=reference, started_at=started_at)
-        _show_committed_without_backup(reference)
+        _show_committed_without_backup(
+            reference,
+            recovery_required=get_workflow().maintenance_status().recovery_required,
+        )
         return _OPERATION_FAILED
     except WorkflowConflictError as error:
         if dialog is not None:

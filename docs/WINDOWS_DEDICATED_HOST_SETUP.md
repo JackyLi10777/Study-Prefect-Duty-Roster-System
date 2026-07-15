@@ -6,7 +6,7 @@
 **日常網址：** `https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`
 **本機維護網址：** `http://127.0.0.1:8080`
 
-> **發布狀態提示（2026-07-15）：** `/try` 純瀏覽器試用及正式零起點屬下一候選版本。完成受控主機更新、資料重設、完整測試及瀏覽器驗收前，下文描述的是待驗證操作契約，不代表現有正式主機已清除或正式網址已啟用 `/try`。
+> **發布狀態提示（2026-07-15）：** `/try` 純瀏覽器試用及正式零起點屬下一候選版本。完成受控主機更新、資料重設、完整測試及瀏覽器驗收前，下文描述的是待驗證操作契約，不代表現有正式主機已清除或正式網址已啟用 `/try`。目前 `127.0.0.1:8080` 的既有程序仍可健康回應，但 `Sing Yin Roster Host` 排程工作尚待重建；在依第 0 節以 `-NoStart` 保存認證並完成受控重啟驗證前，不可停止既有程序或假設重新開機後會自動恢復。
 
 ---
 
@@ -33,6 +33,14 @@ Set-Location C:\SingYinRoster
 powershell -ExecutionPolicy Bypass -File scripts\prepare_windows_host.ps1 -InstallPrerequisites -RuntimeUser "SingYinRosterSvc"
 powershell -ExecutionPolicy Bypass -File scripts\register_windows_startup_task.ps1 -AtStartup -RuntimeUser "SingYinRosterSvc"
 ```
+
+如網站目前仍由舊程序運行，而排程工作需要重建，請先加上 `-NoStart`。這會保存啟動認證但不會立即開啟第二個 NiceGUI 程序；核對工作動作、帳戶及觸發條件後，才進行一次受控重啟：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\register_windows_startup_task.ps1 -AtStartup -NoStart -RuntimeUser "SingYinRosterSvc"
+```
+
+不要在 8080 仍由現有程序監聽時省略 `-NoStart`。兩個程序同時接觸同一 SQLite 資料庫，即使第二個最後因連接埠衝突退出，也不是可接受的部署程序。
 
 第一條會自動檢查或安裝 Git、Python 3.12，建立 `.venv`、安裝套件、建立本機環境與執行預檢；它亦會為標準執行帳戶加入 Windows 背景工作所需的「以批次工作登入」權限，並在 Python 由安裝者個人帳戶提供時，只開放該 Python runtime 的讀取／執行權限。第二條只在 Windows 必須保存開機工作時要求你輸入一次主機帳戶密碼。以下各節仍保留完整手動步驟，方便查錯及交接。
 

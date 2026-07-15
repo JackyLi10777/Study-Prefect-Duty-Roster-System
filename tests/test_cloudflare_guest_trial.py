@@ -108,6 +108,14 @@ def test_guest_platform_separates_overview_from_focused_trial() -> None:
     assert 'href="/try"' in source
     assert "PUBLIC PRODUCT TOUR" in source
     assert "CAPABILITIES" in source
+    assert "OPERATING MODEL" in source
+    assert "SERVICE SOLUTIONS" in source
+    assert "PLATFORM &amp; RESOURCES" in source
+    assert "首席導學風紀" in source
+    assert "Assistant Head Study Prefect" in source
+    assert "history_weight" in source
+    assert "s10777@syss.edu.hk" in source
+    assert "JackyLi10777/Study-Prefect-Duty-Roster-System" in source
     assert "TRUST BOUNDARY" in source
     assert "The guest tour contains no official roster data." in source
     assert "不包含任何正式值班資料" in source
@@ -120,6 +128,28 @@ def test_guest_platform_separates_overview_from_focused_trial() -> None:
     assert "--button-ink: #0b2422" in source
     assert ".platform-controls { flex-wrap: wrap" in source
     assert 'data-i18n="exit"' in source
+
+
+def test_guest_platform_resource_tour_remains_read_only_and_bilingual() -> None:
+    source = _trial_source()
+
+    for key in (
+        "navTeam",
+        "navResources",
+        "teamTitle",
+        "roleHeadTitle",
+        "solutionsTitle",
+        "resourcesTitle",
+        "resourceArchitectureTitle",
+        "coCreationTitle",
+        "feedbackLink",
+        "githubLink",
+    ):
+        assert source.count(f"{key}:") == 2, f"{key} must have complete Chinese and English copy"
+    assert 'id="team"' in source
+    assert 'id="resources"' in source
+    assert "fetch(" not in source
+    assert "form-action 'none'" in source
 
 
 def test_generated_preview_replaces_the_empty_state() -> None:

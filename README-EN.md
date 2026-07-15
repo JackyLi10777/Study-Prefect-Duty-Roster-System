@@ -45,6 +45,13 @@ returns to the same site with the NiceGUI editor unlocked. The signed browser
 session lasts at most eight hours; select
 **Log out** when finished. The application has no custom password database.
 
+Administrator remote editing is still a release-candidate contract, not a
+completed live acceptance result: the candidate Worker must be redeployed and
+its login, logout, WebSocket, mobile, and PDF paths verified before it is treated
+as operational. The current local process is healthy, but the Windows scheduled
+task also requires the documented `-NoStart` repair and a controlled restart
+before automatic recovery after reboot can be relied upon.
+
 The commands below prepare a host or maintenance workstation; they are not a
 second normal entry point.
 
@@ -70,6 +77,13 @@ For a fully isolated fictional rehearsal, double-click
 `START_PRACTICE_MODE.cmd`. Practice Mode has separate SQLite, backups, logs,
 preferences, port range, persistent bilingual identity, and non-official PDF
 marking. Close it and use `RESET_PRACTICE_MODE.cmd` for a clean rehearsal.
+
+At the end of a school year, use **Prepare new school-year directory** from the
+Handover Guide only after the final roster, published-duty adjustments, and
+fairness reconciliation are complete. The workflow takes the maintenance lock,
+creates verified before/after backups, archives active prefect records, and
+withdraws unused pre-generation leave. It preserves old rosters, the fairness
+ledger, audit history, and archived names; it is not a database wipe.
 
 The next release candidate requires the official application to start with an
 empty migrated database and never auto-seed demonstration prefects. Seeing an
@@ -197,8 +211,17 @@ context discoverable without making a daily operator scan one oversized page.
 - Phone-specific roster and prefect cards rather than clipped desktop tables.
 - Keyboard focus, semantic landmarks, 44px actions, reduced-motion support.
 - Dignified Daily Verse reading language separate from the workbench.
-- Optional local and visible YouTube music controls with no autoplay.
+- Local ambience makes one low-volume autoplay attempt after each page is ready.
+  The operator can pause it or turn cross-page autoplay off at any time, and the
+  control exposes playing, paused, browser-blocked, and off states. The separate
+  visible YouTube player never autoplays.
 - Privacy-safe `OP-...` and `REQ-...` support references.
+
+Mature SaaS patterns are treated as hypotheses, not a visual target. The system
+adopts a pattern only when it improves first-use comprehension, task completion,
+recovery, mobile use, or accessibility; it deliberately omits pricing tiers,
+marketing funnels, invented KPIs, and decorative density from the operator
+workbench.
 
 ## Deployment
 

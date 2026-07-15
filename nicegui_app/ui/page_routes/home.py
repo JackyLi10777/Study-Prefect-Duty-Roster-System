@@ -172,19 +172,63 @@ def operator_guide_page() -> None:
 
 @ui.page("/devotional")
 def devotional_page() -> None:
-    verse = select_daily_verse()
+    verse = _dashboard_verse()
     locale_is_zh = current_locale() == ZH_HK
     reference = verse.reference_zh if locale_is_zh else verse.reference_en
     scripture = verse.scripture_zh if locale_is_zh else verse.scripture_en
     reflection = verse.reflection_zh if locale_is_zh else verse.reflection_en
+    tone_preference = str(app.storage.user.get("devotional_tone", "auto"))
+    if tone_preference not in {"auto", "guidance", "comfort"}:
+        tone_preference = "auto"
     with page_shell("devotional", "/devotional", music_context="devotional"):
-        with ui.element("section").classes("sy-chapel w-full"):
-            ui.label(t("daily_verse")).classes("sy-kicker")
-            ui.label(scripture).classes("sy-verse")
-            ui.label(reference).classes("text-base font-medium text-[#F2D393]")
-            ui.label(t("verse_translation_label")).classes("sy-verse-translation sy-verse-translation--chapel")
-            ui.separator().classes("my-7 bg-[#F2D393]/50")
-            ui.label(reflection.get("title", "")).classes("text-xl font-semibold")
-            ui.label(reflection.get("body", "")).classes("sy-reflection")
-            if reflection.get("prayer"):
-                ui.label(f"{t('prayer')}: {reflection['prayer']}").classes("mt-3 text-sm italic text-[#F2D393]")
+        with ui.element("section").classes("sy-chapel sy-devotional-page w-full").props(
+            f'aria-label="{t("daily_verse")}"'
+        ):
+            with ui.row().classes("sy-devotional-page-head w-full items-start justify-between gap-5 flex-wrap"):
+                with ui.column().classes("gap-1 max-w-2xl"):
+                    with ui.row().classes("items-center gap-3"):
+                        ui.icon("auto_stories").classes("sy-devotional-page-icon").props("aria-hidden=true")
+                        ui.label(t("daily_verse")).classes("sy-kicker")
+                    ui.label(t("devotional_page_intro")).classes("sy-devotional-page-intro")
+                with ui.row().classes("sy-devotional-page-controls items-end gap-3 flex-wrap"):
+                    tone_select = ui.select(
+                        label=t("devotional_tone_label"),
+                        options={
+                            "auto": t("devotional_tone_auto"),
+                            "guidance": t("devotional_tone_guidance"),
+                            "comfort": t("devotional_tone_comfort"),
+                        },
+                        value=tone_preference,
+                    ).props("dense outlined options-dense").classes("sy-devotional-tone-select")
+                    tone_select.on_value_change(lambda event: _set_devotional_tone(str(event.value)))
+                    ui.button(
+                        t("refresh_verse"),
+                        icon="refresh",
+                        on_click=_refresh_dashboard_verse,
+                    ).props("outline").classes("sy-devotional-page-refresh")
+            with ui.element("article").classes("sy-devotional-reading mt-8"):
+                ui.label(scripture).classes("sy-verse")
+                ui.label(reference).classes("sy-devotional-reference")
+                ui.label(t("verse_translation_label")).classes("sy-verse-translation sy-verse-translation--chapel")
+
+        with ui.element("section").classes("sy-devotional-reading-grid w-full").props(
+            f'aria-label="{t("reflection")}"'
+        ):
+            with ui.element("article").classes("sy-devotional-companion sy-devotional-companion--reflection"):
+                ui.icon("menu_book").classes("sy-devotional-companion-icon").props("aria-hidden=true")
+                ui.label(t("devotional_reflection_title")).classes("sy-devotional-companion-kicker")
+                ui.label(reflection.get("title", "")).classes("sy-devotional-companion-title")
+                ui.label(reflection.get("body", "")).classes("sy-devotional-companion-copy")
+            with ui.element("article").classes("sy-devotional-companion sy-devotional-companion--prayer"):
+                ui.icon("spa").classes("sy-devotional-companion-icon").props("aria-hidden=true")
+                ui.label(t("devotional_prayer_title")).classes("sy-devotional-companion-kicker")
+                ui.label(reflection.get("prayer", t("why_we_serve"))).classes("sy-devotional-prayer")
+            with ui.element("article").classes("sy-devotional-companion sy-devotional-companion--action"):
+                ui.icon("east").classes("sy-devotional-companion-icon").props("aria-hidden=true")
+                ui.label(t("devotional_prepare_title")).classes("sy-devotional-companion-title")
+                ui.label(t("devotional_prepare_body")).classes("sy-devotional-companion-copy")
+                ui.button(
+                    t("devotional_return_work"),
+                    icon="calendar_month",
+                    on_click=lambda: _navigate_with_feedback("/"),
+                ).props("outline").classes("mt-3 self-start")

@@ -516,7 +516,7 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
 @ui.page("/prefects")
 def prefects_page() -> None:
     workflow = get_workflow()
-    with page_shell("prefects", "/prefects"):
+    with page_shell("prefects", "/prefects", music_context="people"):
         with ui.row().classes("sy-page-lead w-full items-center justify-between"):
             ui.label(t("prefects")).classes("text-2xl font-semibold")
             ui.button(t("add_prefect"), icon="person_add", on_click=lambda: _show_prefect_dialog()).props("color=primary")

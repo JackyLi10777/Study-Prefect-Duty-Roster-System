@@ -17,6 +17,78 @@ def handover_page() -> None:
         with ui.card().classes("sy-surface w-full max-w-3xl p-6"):
             for key in ("handover_step_one", "handover_step_two", "handover_step_three", "handover_step_four"):
                 ui.label(t(key)).classes("text-sm leading-6")
+
+        with ui.element("section").classes("sy-school-year-rollover w-full max-w-3xl").props(
+            f'aria-label="{t("school_year_rollover_title")}" data-testid=school-year-rollover'
+        ):
+            with ui.row().classes("w-full items-start gap-4 no-wrap"):
+                ui.icon("event_repeat").classes("sy-school-year-rollover-icon").props("aria-hidden=true")
+                with ui.column().classes("gap-1 grow min-w-0"):
+                    ui.label(t("school_year_rollover_title")).classes("sy-school-year-rollover-title")
+                    ui.label(t("school_year_rollover_intro")).classes("sy-school-year-rollover-copy")
+                    ui.label(t("school_year_rollover_safety")).classes("sy-school-year-rollover-safety")
+
+            if readiness["activePrefectCount"] > 0:
+                confirmation_phrase = t("school_year_rollover_confirmation_phrase")
+                with ui.dialog() as rollover_dialog, ui.card().classes("sy-surface w-full max-w-lg p-6"):
+                    ui.label(t("school_year_rollover_confirm_title")).classes("text-xl font-semibold")
+                    ui.label(t("school_year_rollover_confirm_body")).classes(
+                        "mt-2 text-sm leading-6 text-[var(--sy-muted)]"
+                    )
+                    confirmation = ui.input(
+                        label=t("school_year_rollover_confirmation_label", phrase=confirmation_phrase)
+                    ).props("autocomplete=off data-testid=school-year-rollover-confirmation").classes("w-full mt-5")
+
+                    async def perform_school_year_rollover() -> None:
+                        if str(confirmation.value or "").strip() != confirmation_phrase:
+                            return
+                        rollover_dialog.close()
+                        result = await _run_with_progress(
+                            workflow.prepare_new_school_year,
+                            title_key="progress_school_year_rollover_title",
+                            working_key="progress_school_year_rollover_working",
+                            icon="event_repeat",
+                        )
+                        if result is not _OPERATION_FAILED:
+                            ui.notify(
+                                t(
+                                    "school_year_rollover_done",
+                                    count=int(result["archivedPrefectCount"]),
+                                ),
+                                type="positive",
+                                timeout=7_000,
+                            )
+                            ui.navigate.to("/prefects")
+
+                    with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
+                        ui.button(t("cancel"), icon="close", on_click=rollover_dialog.close).props("flat")
+                        confirm_rollover = ui.button(
+                            t("school_year_rollover_confirm_action"),
+                            icon="event_repeat",
+                            on_click=perform_school_year_rollover,
+                        ).props("color=negative data-testid=confirm-school-year-rollover")
+                        confirm_rollover.disable()
+
+                    def update_rollover_confirmation(event: events.ValueChangeEventArguments) -> None:
+                        if str(event.value or "").strip() == confirmation_phrase:
+                            confirm_rollover.enable()
+                        else:
+                            confirm_rollover.disable()
+
+                    confirmation.on_value_change(update_rollover_confirmation)
+
+                ui.button(
+                    t("school_year_rollover_action"),
+                    icon="event_repeat",
+                    on_click=rollover_dialog.open,
+                ).props("outline color=negative data-testid=open-school-year-rollover").classes("mt-4")
+            else:
+                _tone_badge(t("school_year_rollover_already_empty"), "stable").classes("mt-4")
+                ui.button(
+                    t("school_year_rollover_empty_action"),
+                    icon="upload_file",
+                    on_click=lambda: ui.navigate.to("/prefects"),
+                ).props("outline color=primary data-testid=open-new-directory-import").classes("mt-4")
         checks = (
             ("handover_prefects_ready", f"{readiness['activePrefectCount']}", readiness["activePrefectCount"] > 0),
             ("handover_rosters_ready", f"{readiness['rosterCount']}", readiness["rosterCount"] > 0),
@@ -131,7 +203,7 @@ def settings_page() -> None:
         if item["verification"].get("valid")
     }
     readiness = workflow.handover_readiness()
-    with page_shell("settings", "/settings"):
+    with page_shell("settings", "/settings", music_context="settings"):
         ui.label(t("settings")).classes("text-2xl font-semibold")
         _render_operation_hint("hint_settings", icon="settings_backup_restore")
         render_music_library_settings()

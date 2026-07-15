@@ -33,6 +33,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import time
 from typing import Any
 from urllib.parse import urlparse
 
@@ -546,6 +547,23 @@ def _verify_empty_database(database_path: Path) -> dict[str, int]:
     return counts
 
 
+def _remove_isolated_workspace(workspace: Path, *, attempts: int = 3) -> Exception | None:
+    """Remove a rehearsal workspace despite short-lived Windows file handles."""
+    last_error: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            shutil.rmtree(workspace)
+        except FileNotFoundError:
+            return None
+        except Exception as error:  # pragma: no cover - platform timing dependent
+            last_error = error
+        if not workspace.exists():
+            return None
+        if attempt + 1 < attempts:
+            time.sleep(0.05 * (attempt + 1))
+    return last_error or RuntimeError("The isolated restore workspace still exists after cleanup retries.")
+
+
 def _verify_isolated_restore(snapshot: Path, *, source_database: Path) -> None:
     workspace = Path(tempfile.mkdtemp(prefix="sing-yin-reset-restore-"))
     restored: RosterWorkflow | None = None
@@ -583,10 +601,8 @@ def _verify_isolated_restore(snapshot: Path, *, source_database: Path) -> None:
                 restored._dispose_database_connections()
             except Exception as error:  # pragma: no cover - defensive fail-closed path
                 cleanup_error = error
-        try:
-            shutil.rmtree(workspace)
-        except Exception as error:
-            cleanup_error = cleanup_error or error
+        removal_error = _remove_isolated_workspace(workspace)
+        cleanup_error = cleanup_error or removal_error
         if workspace.exists() or cleanup_error is not None:
             raise OfficialDataResetError(
                 "isolated_restore_cleanup_failed",

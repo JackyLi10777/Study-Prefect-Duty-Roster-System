@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
+import sqlite3
 from threading import Barrier
 
 import pytest
@@ -29,6 +30,13 @@ def test_week_start_validation_is_owned_by_the_workflow(workflow: RosterWorkflow
 
     with pytest.raises(WorkflowError, match="Monday"):
         workflow.validate_week_start(date(2026, 9, 8))
+
+
+def test_sqlite_wal_is_persisted_before_pooled_connections_are_used(workflow: RosterWorkflow) -> None:
+    with sqlite3.connect(workflow.database_path) as connection:
+        mode = connection.execute("PRAGMA journal_mode").fetchone()[0]
+
+    assert str(mode).lower() == "wal"
 
 
 def test_assignment_read_distinguishes_a_stale_roster_id_from_an_empty_roster(workflow: RosterWorkflow) -> None:

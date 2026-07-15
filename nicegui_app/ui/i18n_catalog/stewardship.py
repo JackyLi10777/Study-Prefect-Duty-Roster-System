@@ -95,6 +95,31 @@ MESSAGES = {'backup_restore': {'zh-HK': '備份還原', 'en': 'Backup restore'},
  'handover_step_four': {'zh-HK': '4. 在「系統設定」確認最新備份已驗證；另依學校政策保存加密、離機副本。',
                         'en': '4. In Settings, confirm the latest backup is verified; keep an encrypted off-device copy under school '
                               'policy.'},
+ 'school_year_rollover_title': {'zh-HK': '新學年名單交接', 'en': 'New-school-year directory handover'},
+ 'school_year_rollover_intro': {'zh-HK': '在下一任首席導學風紀接手前，將目前名單移出日常工作區，再由新一任匯入新學年名單。',
+                                'en': 'Before the next Head Study Prefect takes over, remove the current directory from the active workspace, '
+                                      'then let the successor import the new school-year directory.'},
+ 'school_year_rollover_safety': {'zh-HK': '系統會先鎖定所有寫入並建立已驗證備份，然後封存現有名單及撤回尚未使用的生成前請假；舊週表、公平帳本及審計紀錄會完整保留。完成後會再建立一份已驗證備份。',
+                                 'en': 'The system first locks all writes and creates a verified backup, then archives the active directory '
+                                       'and cancels unused pre-generation leave. Existing rosters, the fairness ledger, and audit history '
+                                       'remain intact. A second verified backup is created afterward.'},
+ 'school_year_rollover_action': {'zh-HK': '準備新學年名單', 'en': 'Prepare the new school-year directory'},
+ 'school_year_rollover_empty_action': {'zh-HK': '匯入新學年名單', 'en': 'Import the new school-year directory'},
+ 'school_year_rollover_confirm_title': {'zh-HK': '確認封存本學年名單', 'en': 'Confirm current-directory archive'},
+ 'school_year_rollover_confirm_body': {'zh-HK': '這會令目前所有風紀立即不再出現在可用名單。請先確認本學年工作已完成；如需返回舊狀態，可由「系統設定」使用操作前備份受控還原。',
+                                       'en': 'Every current prefect will immediately disappear from the active directory. Confirm that this '
+                                             'school year is complete. To return to the previous state, use the pre-operation backup through '
+                                             'managed restore in Settings.'},
+ 'school_year_rollover_confirmation_label': {'zh-HK': '輸入「{phrase}」以確認', 'en': 'Type “{phrase}” to confirm'},
+ 'school_year_rollover_confirmation_phrase': {'zh-HK': '新學年重置', 'en': 'RESET SCHOOL YEAR'},
+ 'school_year_rollover_confirm_action': {'zh-HK': '封存名單並建立新學年空白狀態', 'en': 'Archive directory and prepare an empty new year'},
+ 'school_year_rollover_done': {'zh-HK': '已封存 {count} 名風紀；現在可匯入新學年名單。', 'en': 'Archived {count} prefects. The new school-year directory can now be imported.'},
+ 'school_year_rollover_already_empty': {'zh-HK': '目前名單已是新學年空白狀態；可直接前往風紀名單匯入。',
+                                        'en': 'The directory is already empty for the new school year. Open Prefects to import the new directory.'},
+ 'progress_school_year_rollover_title': {'zh-HK': '正在準備新學年', 'en': 'Preparing the new school year'},
+ 'progress_school_year_rollover_working': {'zh-HK': '正在鎖定寫入、建立操作前備份、封存現有名單並核對操作後備份。請保持頁面開啟。',
+                                           'en': 'Locking writes, creating the pre-operation backup, archiving the current directory, and verifying '
+                                                 'the post-operation backup. Keep this page open.'},
  'handover_prefects_ready': {'zh-HK': '現有風紀名單', 'en': 'Active prefect directory'},
  'handover_rosters_ready': {'zh-HK': '現有週表', 'en': 'Existing roster history'},
  'handover_backup_ready': {'zh-HK': '最近備份', 'en': 'Latest backup'},

@@ -6,6 +6,6 @@ from nicegui_app.ui.access_control import render_access_control_console
 
 @ui.page("/access-control")
 def access_control_page() -> None:
-    with page_shell("access_control", "/access-control"):
+    with page_shell("access_control", "/access-control", music_context="settings"):
         ui.label(t("access_control")).classes("text-2xl font-semibold")
         render_access_control_console(get_workflow())

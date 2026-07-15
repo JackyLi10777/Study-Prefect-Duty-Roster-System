@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import csv
+import json
 from http.client import HTTPConnection
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -48,6 +50,8 @@ ROSTER_RECOVERY_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-roster-unavailable
 SETTINGS_LIGHT_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-settings-light.png"
 SETTINGS_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-settings-dark.png"
 SETTINGS_MOBILE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-settings-mobile.png"
+DEVOTIONAL_LIGHT_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-devotional-light.png"
+DEVOTIONAL_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-devotional-dark.png"
 
 
 def assert_unexpected_host_rejected() -> None:
@@ -104,6 +108,34 @@ def invalid_formula_workbook_bytes() -> bytes:
     workbook.save(output)
     workbook.close()
     return output.getvalue()
+
+
+def fictional_directory_csv_bytes() -> tuple[bytes, int]:
+    """Build the checked-in fictional directory for an isolated browser import."""
+    seed_path = PROJECT_ROOT / "data" / "demo" / "prefects.zh-HK.seed.json"
+    prefects = json.loads(seed_path.read_text(encoding="utf-8"))["prefects"]
+    day_labels = {
+        "MONDAY": "星期一",
+        "TUESDAY": "星期二",
+        "WEDNESDAY": "星期三",
+        "THURSDAY": "星期四",
+        "FRIDAY": "星期五",
+    }
+    output = StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(["姓名", "級別", "班別", "職務", "可值班日"])
+    for prefect in prefects:
+        role = "助理首席導學風紀" if "Assistant Head" in prefect["role"] else "導學風紀"
+        writer.writerow(
+            [
+                prefect["name"],
+                prefect["form"],
+                prefect["class"],
+                role,
+                "、".join(day_labels[day] for day in prefect["availableDays"]),
+            ]
+        )
+    return output.getvalue().encode("utf-8-sig"), len(prefects)
 
 
 def element_contrast_ratio(locator) -> float:  # type: ignore[no-untyped-def]
@@ -264,6 +296,8 @@ def main() -> None:
         page.wait_for_function("element => element.complete && element.naturalWidth > 0", arg=navigation_crest_image.element_handle())
         assert navigation_crest_image.evaluate("element => element.naturalWidth") == 545
         assert (navigation_crest.bounding_box() or {"width": 0})["width"] >= 58
+        assert navigation_crest.evaluate("element => getComputedStyle(element).backgroundColor") == "rgba(0, 0, 0, 0)"
+        assert navigation_crest.evaluate("element => getComputedStyle(element).borderTopWidth") == "0px"
         assert page.locator(".sy-flow-symbol").count() == 3
         assert page.locator(".sy-flow-step--active .sy-tone-action").evaluate(
             "element => getComputedStyle(element).color"
@@ -288,6 +322,15 @@ def main() -> None:
         music_dialog = page.get_by_test_id("page-music-dialog")
         music_dialog.wait_for(timeout=10_000)
         music_dialog.get_by_text("明亮專注", exact=False).first.wait_for(timeout=10_000)
+        assert music_dialog.get_by_test_id("music-autoplay-switch").is_checked()
+        assert page.locator("body").get_attribute("data-sy-music-autoplay") in {"playing", "blocked"}
+        music_state = music_button.get_attribute("data-music-state")
+        assert music_state in {"playing", "blocked"}
+        assert music_dialog.get_by_test_id("music-playback-status").get_attribute("data-music-state") == music_state
+        if music_state == "playing":
+            music_dialog.get_by_text("正在播放", exact=True).wait_for(timeout=10_000)
+        else:
+            music_dialog.get_by_text("等待你按播放", exact=True).wait_for(timeout=10_000)
         music_audio = music_dialog.locator("audio.sy-page-music-audio")
         assert music_audio.count() == 1
         assert music_audio.get_attribute("autoplay") is None
@@ -320,6 +363,26 @@ def main() -> None:
         )
         assert "Near%20Light.m4a" in (music_audio.get_attribute("src") or "")
         close_music_dialog(music_dialog)
+        page.goto(f"{BASE_URL}/devotional", wait_until="domcontentloaded")
+        page.locator(".sy-devotional-page").wait_for(timeout=10_000)
+        # Quasar's desktop drawer animates after navigation.  Capture and measure
+        # only after that layout transition has settled, otherwise the first
+        # frame can make the reading appear clipped even though the final layout
+        # is correct.
+        page.wait_for_timeout(450)
+        assert page.locator(".sy-devotional-reading-grid .sy-devotional-companion").count() == 3
+        assert page.get_by_role("button", name="換一篇經文").count() == 1
+        assert page.locator(".sy-devotional-tone-select").count() == 1
+        assert "devotional-sacred-light-v1.webp" in page.locator(".sy-chapel").evaluate(
+            "element => getComputedStyle(element, '::after').backgroundImage"
+        )
+        chapel_box = page.locator(".sy-chapel").bounding_box()
+        reading_box = page.locator(".sy-devotional-reading").bounding_box()
+        assert chapel_box is not None and reading_box is not None
+        assert reading_box["x"] >= chapel_box["x"] + 20
+        assert reading_box["x"] + reading_box["width"] <= chapel_box["x"] + chapel_box["width"] - 20
+        assert page.locator(".sy-chapel").evaluate("element => element.scrollWidth <= element.clientWidth") is True
+        page.screenshot(path=str(DEVOTIONAL_LIGHT_SCREENSHOT), full_page=True)
         for path, expected_text in (
             ("/", "今日經文"),
             ("/getting-started", "開始使用"),
@@ -327,32 +390,15 @@ def main() -> None:
             ("/platform", "平台與團隊"),
             ("/engineering", "工程與品質證據"),
             ("/system-architecture", "系統架構與可信設計"),
-            ("/rosters", "生成與檢視"),
+            ("/rosters", "請先建立正式名單"),
             ("/prefects", "名單管理"),
-            ("/adjustments", "生成與檢視"),
+            ("/adjustments", "請先建立正式名單"),
             ("/audit", "公平審核"),
             ("/handover", "交接指引"),
         ):
             response = page.goto(f"{BASE_URL}{path}", wait_until="domcontentloaded")
             assert response is not None and response.status == 200, path
             page.get_by_text(expected_text, exact=False).first.wait_for(timeout=10_000)
-        page.goto(f"{BASE_URL}/rosters", wait_until="domcontentloaded")
-        slider = page.get_by_test_id("history-priority-multiplier")
-        slider.wait_for(timeout=10_000)
-        track_box = slider.locator(".q-slider__track").bounding_box()
-        assert track_box is not None
-        for value in (0.8, 1.0, 2.0):
-            tick = page.locator(f'.sy-history-scale-mark[data-value="{value:.1f}"] .sy-history-scale-tick')
-            tick_box = tick.bounding_box()
-            assert tick_box is not None
-            expected_x = track_box["x"] + track_box["width"] * ((value - 0.8) / (2.0 - 0.8))
-            actual_x = tick_box["x"] + tick_box["width"] / 2
-            assert abs(actual_x - expected_x) <= 1.0, (value, actual_x, expected_x)
-        assert "1.0 為標準" in page.locator(".sy-history-scale-help").inner_text()
-        leave_reason_label = page.locator(
-            '.q-field:has([name="pre-generation-leave-reason"]) .q-field__label'
-        )
-        assert "選填" in leave_reason_label.inner_text()
         page.goto(f"{BASE_URL}/handover", wait_until="domcontentloaded")
         assert "handover-archive-light-v1.webp" in page.locator(".sy-handover-hero").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         readiness_cards = page.locator(".sy-handover-readiness-card")
@@ -366,6 +412,7 @@ def main() -> None:
         assert element_contrast_ratio(attention_badge) >= 4.5
         hero_copy = page.locator(".sy-handover-hero-copy")
         assert element_contrast_ratio(hero_copy) >= 4.5
+        assert page.get_by_test_id("open-new-directory-import").count() == 1
         page.get_by_text("仍需首席導學風紀及教師顧問確認", exact=True).wait_for(timeout=10_000)
         acceptance_steps = page.get_by_test_id("acceptance-human-steps")
         acceptance_steps.locator(".q-item").click()
@@ -406,6 +453,8 @@ def main() -> None:
         display_crest.scroll_into_view_if_needed()
         page.wait_for_function("element => element.complete && element.naturalWidth > 0", arg=display_crest_image.element_handle())
         assert display_crest_image.evaluate("element => element.naturalWidth") == 640
+        assert display_crest.evaluate("element => getComputedStyle(element).backgroundColor") == "rgba(0, 0, 0, 0)"
+        assert display_crest.evaluate("element => getComputedStyle(element).borderTopWidth") == "0px"
         pointer_surface = page.locator(".sy-co-creation")
         pointer_surface.locator(".sy-pointer-light").wait_for(timeout=10_000, state="attached")
         page.wait_for_timeout(520)
@@ -469,19 +518,6 @@ def main() -> None:
         page.locator(".sy-onboarding-symbol").wait_for(timeout=10_000)
         assert "onboarding-desk-light-v1.webp" in page.locator(".sy-onboarding-intro").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         page.screenshot(path=str(ONBOARDING_SCREENSHOT), full_page=True)
-        page.goto(f"{BASE_URL}/rosters", wait_until="domcontentloaded")
-        page.get_by_text("生成前請假", exact=True).wait_for(timeout=10_000)
-        page.get_by_text("請假原因（選填）", exact=True).wait_for(timeout=10_000)
-        assert page.locator(".sy-operation-hint").count() >= 1
-        page.get_by_text("用途：生成尚未發布的本週草稿。", exact=False).wait_for(timeout=10_000)
-        page.locator(".sy-storage-lifecycle").wait_for(timeout=10_000)
-        page.get_by_text("公平帳本說明", exact=True).click()
-        page.get_by_text("草稿：已儲存，未入帳", exact=True).wait_for(timeout=10_000)
-        page.get_by_text("本週崗位與空缺預覽", exact=True).click()
-        page.get_by_text("尚待生成", exact=True).first.wait_for(timeout=10_000)
-        page.screenshot(path=str(ROSTER_SCREENSHOT), full_page=True)
-        page.get_by_text("調整與編輯", exact=True).click()
-        page.get_by_text("請假調整", exact=True).wait_for(timeout=10_000)
         page.goto(f"{BASE_URL}/rosters/999999", wait_until="domcontentloaded")
         unavailable = page.get_by_test_id("roster-unavailable-state")
         unavailable.wait_for(timeout=10_000)
@@ -491,13 +527,18 @@ def main() -> None:
         page.goto(f"{BASE_URL}/rosters/999999/adjustments", wait_until="domcontentloaded")
         page.get_by_test_id("adjustment-roster-unavailable-state").wait_for(timeout=10_000)
         page.goto(f"{BASE_URL}/settings", wait_until="domcontentloaded")
-        assert page.get_by_test_id("page-music-button").count() == 0
+        assert page.get_by_test_id("page-music-button").count() == 1
         page.get_by_test_id("online-music-settings").wait_for(timeout=10_000)
         if YOUTUBE_ENABLED:
-            page.get_by_text("公開歌單播放已就緒", exact=False).wait_for(timeout=10_000)
+            page.get_by_test_id("online-music-settings").get_by_text(
+                "公開歌單播放已就緒", exact=False
+            ).wait_for(timeout=10_000)
         else:
-            page.get_by_text("YouTube 播放器已由環境設定停用", exact=False).wait_for(timeout=10_000)
+            page.get_by_test_id("online-music-settings").get_by_text(
+                "YouTube 播放器已由環境設定停用", exact=False
+            ).wait_for(timeout=10_000)
         page.get_by_test_id("music-library-settings").wait_for(timeout=10_000)
+        assert page.get_by_test_id("settings-music-autoplay").count() == 1
         settings_profile = page.locator('[name="settings-music-profile"]')
         assert settings_profile.count() == 1
         assert page.locator('[name="youtube-local-import-url"]').count() == 1
@@ -548,8 +589,6 @@ def main() -> None:
             page.screenshot(path=str(PROGRESS_SCREENSHOT), full_page=False)
             page.wait_for_url("**/rosters/*", timeout=10_000)
         page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
-        page.get_by_text("助理首席導學風紀", exact=True).first.wait_for(timeout=10_000)
-        page.get_by_text("導學風紀", exact=True).first.wait_for(timeout=10_000)
         page.get_by_role("button", name="新增風紀", exact=True).click()
         page.get_by_text("備註（選填）", exact=True).last.wait_for(timeout=10_000)
         page.get_by_role("button", name="取消", exact=True).last.click()
@@ -557,14 +596,6 @@ def main() -> None:
         static_table = page.locator(".sy-table").first
         assert static_table.evaluate("element => getComputedStyle(element).cursor") != "pointer"
         assert static_table.evaluate("element => getComputedStyle(element).transform") == "none"
-        # Archiving is consequential but this smoke run must remain read-only:
-        # verify the recovery copy and cancel before the workflow is invoked.
-        page.get_by_test_id("open-archive-prefect").click()
-        page.get_by_text("確認停用這位風紀？", exact=True).wait_for(timeout=10_000)
-        page.get_by_text("歷史週表、公平帳本及審計紀錄會完整保留", exact=False).wait_for(timeout=10_000)
-        page.get_by_text("此介面沒有即時復原按鈕", exact=False).wait_for(timeout=10_000)
-        page.get_by_role("button", name="取消", exact=True).last.click()
-        page.get_by_text("確認停用這位風紀？", exact=True).wait_for(state="hidden", timeout=10_000)
         page.get_by_text("資料匯入", exact=True).click()
         page.get_by_role("button", name="下載名單 CSV 格式範例").wait_for(timeout=10_000)
         page.get_by_text("上載 CSV／XLSX 或貼上 JSON／CSV", exact=False).wait_for(timeout=10_000)
@@ -600,6 +631,61 @@ def main() -> None:
         page.get_by_role("button", name="驗證與預覽").click()
         page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).first.wait_for(timeout=10_000)
         page.screenshot(path=str(PREFECT_IMPORT_SCREENSHOT), full_page=True)
+
+        fictional_csv, fictional_count = fictional_directory_csv_bytes()
+        page.get_by_test_id("prefect-file-upload").locator('input[type="file"]').set_input_files(
+            {
+                "name": "fictional-release-directory.csv",
+                "mimeType": "text/csv",
+                "buffer": fictional_csv,
+            }
+        )
+        page.get_by_text(f"已讀取 {fictional_count} 筆資料、5 個欄位。", exact=True).wait_for(timeout=10_000)
+        page.get_by_test_id("preview-prefect-file").click()
+        page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).first.wait_for(timeout=10_000)
+        page.get_by_test_id("import-prefect-file").click()
+        page.get_by_text("名單管理", exact=True).wait_for(timeout=15_000)
+        page.get_by_text("助理首席導學風紀", exact=True).first.wait_for(timeout=10_000)
+        page.get_by_text("導學風紀", exact=True).first.wait_for(timeout=10_000)
+        # Archiving is consequential; verify the recovery copy and cancel before invoking it.
+        page.get_by_test_id("open-archive-prefect").click()
+        page.get_by_text("確認停用這位風紀？", exact=True).wait_for(timeout=10_000)
+        page.get_by_text("歷史週表、公平帳本及審計紀錄會完整保留", exact=False).wait_for(timeout=10_000)
+        page.get_by_text("此介面沒有即時復原按鈕", exact=False).wait_for(timeout=10_000)
+        page.get_by_role("button", name="取消", exact=True).last.click()
+        page.get_by_text("確認停用這位風紀？", exact=True).wait_for(state="hidden", timeout=10_000)
+
+        page.goto(f"{BASE_URL}/rosters", wait_until="domcontentloaded")
+        page.get_by_text("生成前請假", exact=True).wait_for(timeout=10_000)
+        page.get_by_text("請假原因（選填）", exact=True).wait_for(timeout=10_000)
+        assert page.locator(".sy-operation-hint").count() >= 1
+        page.get_by_text("用途：生成尚未發布的本週草稿。", exact=False).wait_for(timeout=10_000)
+        page.locator(".sy-storage-lifecycle").wait_for(timeout=10_000)
+        page.get_by_text("公平帳本說明", exact=True).click()
+        page.get_by_text("草稿：已儲存，未入帳", exact=True).wait_for(timeout=10_000)
+        page.get_by_text("本週崗位與空缺預覽", exact=True).click()
+        page.get_by_text("尚待生成", exact=True).first.wait_for(timeout=10_000)
+        page.screenshot(path=str(ROSTER_SCREENSHOT), full_page=True)
+        slider = page.get_by_test_id("history-priority-multiplier")
+        slider.wait_for(timeout=10_000)
+        track_box = slider.locator(".q-slider__track").bounding_box()
+        assert track_box is not None
+        for value in (0.8, 1.0, 2.0):
+            tick = page.locator(f'.sy-history-scale-mark[data-value="{value:.1f}"] .sy-history-scale-tick')
+            tick_box = tick.bounding_box()
+            assert tick_box is not None
+            expected_x = track_box["x"] + track_box["width"] * ((value - 0.8) / (2.0 - 0.8))
+            actual_x = tick_box["x"] + tick_box["width"] / 2
+            assert abs(actual_x - expected_x) <= 1.0, (value, actual_x, expected_x)
+        assert "1.0 為標準" in page.locator(".sy-history-scale-help").inner_text()
+        leave_reason_label = page.locator(
+            '.q-field:has([name="pre-generation-leave-reason"]) .q-field__label'
+        )
+        assert "選填" in leave_reason_label.inner_text()
+        page.get_by_text("調整與編輯", exact=True).click()
+        page.get_by_text("請假調整", exact=True).wait_for(timeout=10_000)
+
+        page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
         page.get_by_text("公平審核", exact=True).click()
         page.get_by_text("服務與公平總結報告", exact=True).wait_for(timeout=10_000)
         page.get_by_text("唯讀・不會重複入帳", exact=True).wait_for(timeout=10_000)
@@ -669,6 +755,14 @@ def main() -> None:
         close_music_dialog(dark_music_dialog)
         page.screenshot(path=str(DARK_SCREENSHOT), full_page=True)
         assert page.locator(".sy-daily-start-verse").evaluate("element => getComputedStyle(element).color") != "rgb(0, 0, 0)"
+        page.goto(f"{BASE_URL}/devotional", wait_until="domcontentloaded")
+        page.locator(".sy-devotional-page").wait_for(timeout=10_000)
+        page.wait_for_timeout(450)
+        assert "devotional-sacred-dark-v1.webp" in page.locator(".sy-chapel").evaluate(
+            "element => getComputedStyle(element, '::after').backgroundImage"
+        )
+        assert page.locator(".sy-devotional-reading-grid .sy-devotional-companion").count() == 3
+        page.screenshot(path=str(DEVOTIONAL_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
         page.get_by_text("Data import", exact=True).click()
         page.get_by_text("Upload CSV/XLSX or paste JSON/CSV", exact=False).wait_for(timeout=10_000)

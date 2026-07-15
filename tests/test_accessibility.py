@@ -63,7 +63,10 @@ def test_quiet_precision_shell_uses_semantic_action_and_motion_tokens() -> None:
     assert "(pointer: coarse)" in theme
     assert "sidebar-stewardship-dark-v1.webp" in theme
     assert "rgba(13,17,23,.66)" in theme
+    assert ".sy-brand-mark { width: 60px; height: 58px; padding: 0;" in theme
+    assert "border: 0; border-radius: 0; background: transparent;" in theme
     assert ".body--dark .sy-brand-mark { border-color: transparent; background: transparent;" in theme
+    assert ".sy-co-creation-crest {" in theme
     assert ".body--dark .sy-co-creation-crest { border-color: transparent; background: transparent;" in theme
 
 

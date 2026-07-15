@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from nicegui import app, events, run, ui
 
 from nicegui_app.services.music_library import (
@@ -23,9 +25,11 @@ from nicegui_app.services.youtube_audio_import import (
 from nicegui_app.ui.youtube_music import render_youtube_panel, render_youtube_settings
 from nicegui_app.ui.i18n import t
 from nicegui_app.ui.sound import (
+    music_autoplay_enabled,
     play_interface_sound,
     preferred_music_volume,
     preferred_sound_volume,
+    set_music_autoplay,
     set_music_volume,
     set_sound_volume,
 )
@@ -42,9 +46,32 @@ def music_track_label(track: MusicTrack) -> str:
     return f"{track.title} — {track.artist} · {arrangement}{timing}"
 
 
+def _music_state_script(state: str) -> str:
+    """Keep the trigger, live status, and page state in sync in one place."""
+    label = t(f"music_status_{state}")
+    accessible_name = f'{t("page_music")} — {label}'
+    return (
+        "(() => {"
+        f"const state = {json.dumps(state)};"
+        f"const label = {json.dumps(label, ensure_ascii=False)};"
+        f"const accessibleName = {json.dumps(accessible_name, ensure_ascii=False)};"
+        "document.body.dataset.syMusicAutoplay = state;"
+        "const trigger = document.querySelector('[data-testid=page-music-button]');"
+        "if (trigger) {"
+        "trigger.dataset.musicState = state;"
+        "trigger.setAttribute('aria-label', accessibleName);"
+        "trigger.setAttribute('title', label);"
+        "}"
+        "const status = document.querySelector('[data-testid=music-playback-status]');"
+        "if (status) { status.dataset.musicState = state; status.textContent = label; }"
+        "})();"
+    )
+
+
 def render_page_music_control(context: str) -> None:
-    """Render one manual, low-volume playlist control for an approved quiet page."""
+    """Render one low-volume playlist with an explicit, persisted autoplay preference."""
     library = MusicLibrary()
+    autoplay_enabled = music_autoplay_enabled()
     profile_preference = str(app.storage.user.get("music_profile", "auto"))
     if profile_preference not in MUSIC_PROFILE_PREFERENCES:
         profile_preference = "auto"
@@ -72,6 +99,41 @@ def render_page_music_control(context: str) -> None:
 
             with ui.column().classes("w-full gap-4 p-5"):
                 ui.label(t("music_optional_notice")).classes("text-sm leading-6 text-[var(--sy-muted)]")
+                initial_state = "starting" if autoplay_enabled and tracks else "off"
+                with ui.row().classes("sy-music-playback-status items-center gap-2").props(
+                    "role=status aria-live=polite"
+                ):
+                    ui.icon("circle").classes("sy-music-status-dot").props("aria-hidden=true")
+                    ui.label(t(f"music_status_{initial_state}")).props(
+                        f"data-testid=music-playback-status data-music-state={initial_state}"
+                    )
+                autoplay_switch = ui.switch(
+                    t("music_autoplay"),
+                    value=autoplay_enabled,
+                ).props("name=music-autoplay data-testid=music-autoplay-switch")
+                ui.label(t("music_autoplay_hint")).classes("text-xs leading-5 text-[var(--sy-muted)] -mt-3")
+
+                def change_autoplay(event: events.ValueChangeEventArguments) -> None:
+                    enabled = bool(event.value)
+                    set_music_autoplay(enabled)
+                    if enabled:
+                        ui.run_javascript(
+                            _music_state_script("starting") +
+                            "document.querySelectorAll('audio.sy-page-music-audio').forEach(audio => {"
+                            f"audio.volume = {preferred_music_volume()!r}; audio.dataset.syBaseVolume = String(audio.volume);"
+                            f"audio.play().then(() => {{ {_music_state_script('playing')} }})"
+                            f".catch(() => {{ {_music_state_script('blocked')} }});"
+                            "});"
+                        )
+                        ui.notify(t("music_autoplay_on"), type="positive", timeout=2_500)
+                    else:
+                        ui.run_javascript(
+                            "document.querySelectorAll('audio.sy-page-music-audio').forEach(audio => audio.pause());"
+                            + _music_state_script("off")
+                        )
+                        ui.notify(t("music_autoplay_off"), type="info", timeout=2_500)
+
+                autoplay_switch.on_value_change(change_autoplay)
                 profile_select = ui.select(
                     label=t("music_profile"),
                     options={
@@ -134,6 +196,14 @@ def render_page_music_control(context: str) -> None:
                     audio = ui.audio(track_by_id[selected_track_id].asset_url, controls=True, autoplay=False, muted=False, loop=False)
                     audio.classes("sy-page-music-audio w-full").props(f'preload=metadata aria-label="{t("page_music")}"')
 
+                    audio.on("play", lambda: ui.run_javascript(_music_state_script("playing")))
+                    audio.on(
+                        "pause",
+                        lambda: ui.run_javascript(
+                            _music_state_script("paused" if music_autoplay_enabled() else "off")
+                        ),
+                    )
+
                     def load_track(track_id: str, *, continue_playback: bool) -> None:
                         track = track_by_id.get(track_id)
                         if track is None:
@@ -169,6 +239,21 @@ def render_page_music_control(context: str) -> None:
     panel.set_visibility(False)
     panel.on("keydown.escape", close_panel)
 
+    if tracks and autoplay_enabled:
+        ui.timer(
+            0.35,
+            lambda: ui.run_javascript(
+                "(() => {"
+                "const audio = document.querySelector('audio.sy-page-music-audio');"
+                "if (!audio) return;"
+                f"audio.volume = {preferred_music_volume()!r}; audio.dataset.syBaseVolume = String(audio.volume);"
+                f"audio.play().then(() => {{ {_music_state_script('playing')} }})"
+                f".catch(() => {{ {_music_state_script('blocked')} }});"
+                "})()"
+            ),
+            once=True,
+        )
+
     def open_dialog() -> None:
         panel.set_visibility(True)
         ui.timer(
@@ -182,7 +267,11 @@ def render_page_music_control(context: str) -> None:
             once=True,
         )
 
-    ui.button(icon="headphones", on_click=open_dialog).props(f'flat round aria-label="{t("page_music")}" data-testid=page-music-button').classes("sy-music-trigger").style("color: var(--sy-nav-ink) !important").tooltip(t("page_music"))
+    initial_trigger_state = "starting" if autoplay_enabled and tracks else "off"
+    ui.button(icon="headphones", on_click=open_dialog).props(
+        f'flat round aria-label="{t("page_music")} — {t(f"music_status_{initial_trigger_state}")}" '
+        f'data-testid=page-music-button data-music-state={initial_trigger_state}'
+    ).classes("sy-music-trigger").style("color: var(--sy-nav-ink) !important").tooltip(t("page_music"))
 
 
 def render_music_library_settings() -> None:
@@ -199,6 +288,11 @@ def render_music_library_settings() -> None:
             ui.icon("graphic_eq").classes("sy-settings-section-icon").props("aria-hidden=true")
 
         sound_switch = ui.switch(t("interface_sounds"), value=sound_feedback_enabled()).props("name=interface-sounds").classes("mt-4")
+        autoplay_switch = ui.switch(
+            t("music_autoplay"),
+            value=music_autoplay_enabled(),
+        ).props("name=settings-music-autoplay data-testid=settings-music-autoplay")
+        ui.label(t("music_autoplay_hint")).classes("text-xs leading-5 text-[var(--sy-muted)]")
         sound_slider = ui.slider(min=0, max=100, value=round(preferred_sound_volume() * 100)).props(
             f'label aria-label="{t("interface_sound_volume")}"'
         ).classes("w-full max-w-md")
@@ -221,6 +315,24 @@ def render_music_library_settings() -> None:
         def change_sound_volume(event: events.ValueChangeEventArguments) -> None:
             set_sound_volume(float(event.value) / 100)
 
+        def change_music_autoplay(event: events.ValueChangeEventArguments) -> None:
+            enabled = bool(event.value)
+            set_music_autoplay(enabled)
+            if enabled:
+                ui.run_javascript(
+                    _music_state_script("starting")
+                    + "document.querySelectorAll('audio.sy-page-music-audio').forEach(audio => "
+                    + f"audio.play().then(() => {{ {_music_state_script('playing')} }})"
+                    + f".catch(() => {{ {_music_state_script('blocked')} }}));"
+                )
+                ui.notify(t("music_autoplay_on"), type="positive", timeout=2_500)
+            else:
+                ui.run_javascript(
+                    "document.querySelectorAll('audio.sy-page-music-audio').forEach(audio => audio.pause());"
+                    + _music_state_script("off")
+                )
+                ui.notify(t("music_autoplay_off"), type="info", timeout=2_500)
+
         def change_music_volume(event: events.ValueChangeEventArguments) -> None:
             set_music_volume(float(event.value) / 100)
             ui.run_javascript(
@@ -228,6 +340,7 @@ def render_music_library_settings() -> None:
             )
 
         sound_switch.on_value_change(change_sound_enabled)
+        autoplay_switch.on_value_change(change_music_autoplay)
         sound_slider.on_value_change(change_sound_volume)
         music_slider.on_value_change(change_music_volume)
         ui.button(t("test_interface_sound"), icon="volume_up", on_click=lambda: play_interface_sound("success", force=True)).props("outline").classes("mt-3")
