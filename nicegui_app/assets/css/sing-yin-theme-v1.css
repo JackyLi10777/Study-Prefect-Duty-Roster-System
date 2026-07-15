@@ -198,6 +198,7 @@ button, [role="button"], a, input, textarea, select { touch-action: manipulation
 .sy-mobile-tabbar, .sy-mobile-drawer-tools { display: none; }
 .sy-responsive-table-mobile { display: none !important; }
 .sy-brand-mark { width: 60px; height: 58px; padding: 0; object-fit: contain; image-rendering: auto; transform: translateZ(0); border: 0; border-radius: 0; background: transparent; filter: drop-shadow(0 4px 10px rgba(15,118,110,.16)); }
+.sy-brand-mark .q-img__image--with-transition, .sy-co-creation-crest .q-img__image--with-transition { transition-duration: 0s !important; }
 .body--dark .sy-brand-mark { border-color: transparent; background: transparent; filter: drop-shadow(0 7px 14px rgba(0,0,0,.52)); }
 .body--dark .q-field__native, .body--dark .q-field__input, .body--dark .q-field__label,
 .body--dark .q-tab, .body--dark .q-table, .body--dark .q-td, .body--dark .q-th,

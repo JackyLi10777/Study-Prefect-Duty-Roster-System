@@ -642,6 +642,10 @@ No phase may weaken roster policy, persistent fairness, backup verification, pri
 3. The sidebar remains one shared structural slot with paired light/dark artwork. Dark mode must reference `sidebar-stewardship-dark-v1.webp` and use a translucent near-black veil that preserves visible material texture without reducing navigation contrast.
 4. New artwork is added only when it explains an otherwise unclear orientation or empty state. A future seeded static Service Weave light/dark pair may replace generic showcase still life, but no runtime canvas, looping background, extra corporate title or decorative illustration button is approved.
 5. Release evidence maps `pass → stable`, `running → action`, `stale/missing/unreadable → attention`, and `fail → danger`; engineering gates inherit that real evidence tone rather than appearing teal by default.
+6. School crests use the reviewed alpha PNGs in transparent, borderless containers. Navigation and co-creation marks may use a restrained theme-aware shadow, but never a white tile, rim or rounded image plate; their local image transition is immediate so the first frame does not look washed out.
+7. The public guest narrative retains exactly six non-sensitive orientation entries—Platform & Team, Engineering & Quality, System Architecture & Trust, Getting Started, Operator Guide and Daily Verse. They explain the product without exposing names, rosters, backup paths, audit payloads or any write control.
+8. Contextual audio is a persistent operator preference, not a page-completion signal. Every supported page context and light/dark recommendation must resolve to at least one local track, while browser verification waits for semantic DOM／URL／workflow results rather than `networkidle` after audio has been unlocked.
+9. Daily Verse is a distinct sacred reading sequence—read, reflect, pray, return to service—not a decorative dashboard card. Its gold／indigo language, paired theme imagery and spacious typography remain subordinate to Scripture and must support reduced motion.
 
 ---
 

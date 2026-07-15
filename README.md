@@ -56,7 +56,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 以下發布契約已在原始碼中實作，並已有聚焦測試與獨立瀏覽器驗證器；完整發布閘門、正式 Worker 重新部署及部署後瀏覽器核對仍未完成，因此不表示目前正式網址已啟用 `/try`：
 
-- `/guest` 是產品與安全邊界導覽；它解釋平台用途、每週流程、公平保障及哪些操作只屬管理員。
+- `/guest` 是產品與安全邊界導覽；它保留六個不含營運資料的公共資源入口：平台與團隊、工程與品質證據、系統架構與可信設計、開始使用、使用手冊及每日經文，並解釋每週流程、公平保障及哪些操作只屬管理員。
 - `/try` 載入固定的虛構中文姓名、職位及班別，讓訪客登記示範請假、生成並核對週表、預覽及直接下載中英並列的 A4 橫向 PDF。姓名在兩種語言均保持中文。
 - Worker 只提供同源、版本控制的 HTML／CSS／JavaScript 靜態資產。進入試用後，名單選擇、請假、生成結果及 PDF 都在目前分頁運算；沒有試用 API，也不接觸 VPC、NiceGUI、SQLite、KV、公平帳本、備份或伺服器日誌。
 - 試用狀態只使用 `sessionStorage`，建立後 30 分鐘失效，關閉分頁亦會清除；「重置」可立即刪除。只有訪客主動下載的 PDF 會因使用者選擇保存而留在裝置。
@@ -303,7 +303,7 @@ Worker 部署必須在 Cloudflare secret store 同時具備 `ADMIN_BEARER_TOKEN`
 
 ## 開發與驗證
 
-目前測試收集已超過 400 項。發布驗證把互補證據分開：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、配圖主題切換、校徽、空／錯誤／復原狀態及瀏覽器 `pageerror`；`scripts/verify_runtime_performance.py` 核對冷載、重複開關音樂，以及跨代表頁面後返回首頁的 heap／DOM／listener 增長；`scripts/verify_nicegui_mobile.py` 專門核對 320／390 px 直向及手機橫向排列；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名完成整條排班寫入、雙語 PDF、請假調整及另一資料庫還原；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。所有瀏覽器階段同時把 console error 及未捕捉頁面錯誤視為失敗。
+目前測試收集為 457 項。發布驗證把互補證據分開：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、配圖主題切換、校徽、空／錯誤／復原狀態及瀏覽器 `pageerror`；`scripts/verify_runtime_performance.py` 核對冷載、重複開關音樂，以及跨代表頁面後返回首頁的 heap／DOM／listener 增長；`scripts/verify_nicegui_mobile.py` 專門核對 320／390 px 直向及手機橫向排列；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名完成整條排班寫入、雙語 PDF、請假調整、另一資料庫還原，以及確認語句保護的新學年封存與新名單匯入；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。NiceGUI 的長連線及互動後背景音樂令全網絡靜止不是可靠完成訊號，因此測試以 DOM、URL 及真實操作結果判斷就緒；所有瀏覽器階段同時把 console error 及未捕捉頁面錯誤視為失敗。
 
 ```powershell
 python -X utf8 scripts\check_deployment_readiness.py
