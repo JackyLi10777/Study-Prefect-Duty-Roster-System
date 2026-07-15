@@ -14,6 +14,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from nicegui_app.config import PREFECT_SEED_PATH
+from nicegui_app.services.roster_workflow import RosterWorkflow
 from scripts.verify_nicegui_write_pipeline import isolated_paths
 
 
@@ -21,10 +23,23 @@ BASE_URL = os.getenv("SING_YIN_TEST_URL", "http://127.0.0.1:8080")
 SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-committed-without-backup.png"
 
 
+def prepare_fictional_directory(database_path: Path) -> None:
+    """Seed only this disposable failure drill without weakening official-mode clean start."""
+    workflow = RosterWorkflow(
+        database_path=database_path,
+        backup_dir=database_path.parent / "fixture-setup-backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    if not workflow.prefects():
+        raise RuntimeError("The isolated partial-backup drill could not prepare its fictional directory.")
+
+
 def main() -> None:
     database_path, blocked_backup_path, log_dir = isolated_paths()
     if not blocked_backup_path.is_file():
         raise RuntimeError("SING_YIN_BACKUP_DIR must initially point to an isolated blocking file for this test.")
+    prepare_fictional_directory(database_path)
     SCREENSHOT.parent.mkdir(parents=True, exist_ok=True)
     console_errors: list[str] = []
 
@@ -32,7 +47,7 @@ def main() -> None:
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1280, "height": 900})
         page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
-        page.goto(f"{BASE_URL}/rosters", wait_until="networkidle")
+        page.goto(f"{BASE_URL}/rosters", wait_until="domcontentloaded")
         page.get_by_role("button", name="生成並儲存草稿").click()
 
         partial_dialog = page.get_by_test_id("committed-without-backup-dialog")

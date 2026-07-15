@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from nicegui_app.utils.prefect_import import parse_prefect_import_text
+from scripts.verify_nicegui_partial_backup import prepare_fictional_directory
 from scripts.verify_nicegui_write_pipeline import _fixture_import_csv, _fixture_leave_prefect, isolated_paths
 from scripts.verify_nicegui_ui import prepare_invalid_backup_fixture
 
@@ -104,3 +105,15 @@ def test_partial_backup_drill_uses_the_stable_action_name_instead_of_an_icon() -
 
     assert 'get_by_role("button", name="生成並儲存草稿")' in script
     assert 'has_text="auto_awesome"' not in script
+
+
+def test_partial_backup_drill_prepares_only_its_isolated_fictional_directory(tmp_path) -> None:
+    database_path = tmp_path / "partial.sqlite3"
+
+    prepare_fictional_directory(database_path)
+
+    from nicegui_app.services.roster_workflow import RosterWorkflow
+
+    workflow = RosterWorkflow(database_path=database_path, backup_dir=tmp_path / "read-backups", seed_path=None)
+    workflow.bootstrap()
+    assert workflow.prefects()
