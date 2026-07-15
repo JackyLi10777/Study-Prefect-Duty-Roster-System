@@ -31,7 +31,7 @@ def main() -> None:
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1440, "height": 980})
         page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
-        page.goto(BASE_URL, wait_until="networkidle")
+        page.goto(BASE_URL, wait_until="domcontentloaded")
 
         banner = page.get_by_test_id("practice-mode-banner")
         banner.wait_for(timeout=10_000)
@@ -43,7 +43,7 @@ def main() -> None:
         page.screenshot(path=str(OUTPUT_DIR / "desktop-light.png"), full_page=True)
 
         page.get_by_role("button", name="EN").click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("domcontentloaded")
         english_banner = page.get_by_test_id("practice-mode-banner")
         english_banner.get_by_text("Practice Mode", exact=True).wait_for(timeout=10_000)
         assert "fictional names" in english_banner.inner_text()
@@ -58,7 +58,7 @@ def main() -> None:
         page.screenshot(path=str(OUTPUT_DIR / "desktop-dark.png"), full_page=True)
 
         page.set_viewport_size({"width": 390, "height": 844})
-        page.goto(BASE_URL, wait_until="networkidle")
+        page.goto(BASE_URL, wait_until="domcontentloaded")
         mobile_banner = page.get_by_test_id("practice-mode-banner")
         mobile_banner.wait_for(timeout=10_000)
         banner_box = mobile_banner.bounding_box()

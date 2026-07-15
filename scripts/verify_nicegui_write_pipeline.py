@@ -117,7 +117,10 @@ def _click_mobile_drawer_tool(page: Page, index: int, *, expects_navigation: boo
             tools.nth(index).click()
     else:
         tools.nth(index).click()
-    page.wait_for_load_state("networkidle")
+    # NiceGUI keeps a WebSocket open and, after a user gesture, page-context
+    # audio may stream in the background.  Neither is a page-readiness signal,
+    # so waiting for ``networkidle`` can hang even when the UI is fully ready.
+    page.wait_for_load_state("domcontentloaded")
 
 
 def _fixture_prefect_items() -> list[dict[str, object]]:
@@ -256,7 +259,7 @@ def main() -> None:
         assert health_response.json().get("e2eRunId") == e2e_run_id, (
             "Write verification connected to a different server; no browser write was attempted."
         )
-        first_response = page.goto(f"{BASE_URL}/prefects", wait_until="networkidle")
+        first_response = page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
         assert first_response is not None
         request_reference = first_response.headers.get("x-request-id", "")
         assert re.fullmatch(r"REQ-[A-F0-9]{8}", request_reference)
@@ -382,7 +385,7 @@ def main() -> None:
         assert "progress_draft_change_working" not in log_content
 
         page.get_by_label("修改原因（必填）").fill("虛構草稿核對修正")
-        with page.expect_navigation(wait_until="networkidle", timeout=20_000):
+        with page.expect_navigation(wait_until="domcontentloaded", timeout=20_000):
             page.get_by_role("button", name="儲存草稿修改").click()
         page.get_by_text("草稿預覽", exact=True).wait_for(timeout=10_000)
         workflow = _workflow(database_path, backup_dir)
@@ -394,7 +397,7 @@ def main() -> None:
         assert "虛構草稿核對修正" not in log_content
         print("[4/7] Rejected a missing manual-change reason, then saved an auditable correction", flush=True)
 
-        page.goto(f"{BASE_URL}/rosters/{roster_week_id}/adjustments", wait_until="networkidle")
+        page.goto(f"{BASE_URL}/rosters/{roster_week_id}/adjustments", wait_until="domcontentloaded")
         premature_adjustment = page.get_by_test_id("adjustment-unavailable-state")
         premature_adjustment.wait_for(timeout=10_000)
         assert page.locator(".sy-adjustment-form").count() == 0
@@ -404,7 +407,7 @@ def main() -> None:
 
         page.get_by_role("button", name="發布週表").click()
         page.get_by_text("確認發布週表", exact=True).wait_for(timeout=10_000)
-        with page.expect_navigation(wait_until="networkidle", timeout=20_000):
+        with page.expect_navigation(wait_until="domcontentloaded", timeout=20_000):
             page.get_by_role("button", name="確認發布並入帳").click()
         page.get_by_role("button", name="處理請假調整").first.wait_for(timeout=10_000)
         page.screenshot(path=str(LIGHT_SCREENSHOT), full_page=True)
@@ -498,7 +501,7 @@ def main() -> None:
             expected_name=str(replacement["nameZh"]),
         )
         page.get_by_role("button", name="取消").last.click()
-        page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="networkidle")
+        page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="domcontentloaded")
         page.get_by_text("已發布後有人請假？", exact=True).wait_for(timeout=10_000)
 
         after_adjustment_loads = workflow.prefect_loads()
@@ -524,7 +527,7 @@ def main() -> None:
         assert "event=http_request method=GET target=prefects status=200" in log_content
         assert "虛構已發布後請假" not in log_content
 
-        page.goto(f"{BASE_URL}/settings", wait_until="networkidle")
+        page.goto(f"{BASE_URL}/settings", wait_until="domcontentloaded")
         assert page.get_by_test_id("handover-package-ready-action").is_enabled()
         assert page.get_by_test_id("restore-ready-action").is_enabled()
         assert page.get_by_test_id("handover-package-disabled-no-backup").count() == 0
@@ -561,16 +564,16 @@ def main() -> None:
         assert recovery.leave_adjustment_count(roster_week_id) == 1
         print("[7/7] Applied leave adjustment, built handover package, and restored a separate database", flush=True)
 
-        page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="networkidle")
+        page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="domcontentloaded")
         desktop_theme_controls = page.locator(".sy-desktop-header-controls")
         if desktop_theme_controls.locator("i.q-icon", has_text="light_mode").count():
             desktop_theme_controls.locator("i.q-icon", has_text="light_mode").click()
-            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("domcontentloaded")
         page.locator(".sy-desktop-header-controls").locator("i.q-icon", has_text="dark_mode").click()
         page.wait_for_function("document.body.classList.contains('body--dark')")
         page.screenshot(path=str(DARK_SCREENSHOT), full_page=True)
         page.set_viewport_size({"width": 390, "height": 844})
-        page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="networkidle")
+        page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="domcontentloaded")
         page.get_by_text("已發布後有人請假？", exact=True).wait_for(timeout=10_000)
         mobile_cards = page.locator('[data-testid="mobile-roster-card"]')
         assert mobile_cards.count() == 26
@@ -581,15 +584,15 @@ def main() -> None:
         assert mobile_cards.filter(has_text=str(adjusted["prefectName"])).count() >= 1
         page.screenshot(path=str(MOBILE_SCREENSHOT), full_page=True)
         _click_mobile_drawer_tool(page, 0)
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("domcontentloaded")
         page.get_by_text("Phone view:", exact=False).wait_for(timeout=10_000)
         english_mobile_cards = page.locator('[data-testid="mobile-roster-card"]')
         assert english_mobile_cards.count() == 26
         assert english_mobile_cards.filter(has_text=str(adjusted["prefectName"])).count() >= 1
 
         _click_mobile_drawer_tool(page, 0)
-        page.wait_for_load_state("networkidle")
-        page.goto(f"{BASE_URL}/prefects", wait_until="networkidle")
+        page.wait_for_load_state("domcontentloaded")
+        page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
         page.get_by_text("名單管理", exact=True).wait_for(timeout=10_000)
         mobile_prefect_cards = page.locator('[data-testid="mobile-prefect-card"]')
         assert mobile_prefect_cards.count() == len(workflow.prefects())
@@ -597,7 +600,7 @@ def main() -> None:
         assert mobile_prefect_cards.filter(has_text="虛構驗證風紀").count() == 1
         page.screenshot(path=str(MOBILE_DIRECTORY_SCREENSHOT), full_page=True)
 
-        page.goto(f"{BASE_URL}/rosters/{roster_week_id}/adjustments", wait_until="networkidle")
+        page.goto(f"{BASE_URL}/rosters/{roster_week_id}/adjustments", wait_until="domcontentloaded")
         page.get_by_text("請假調整", exact=True).last.wait_for(timeout=10_000)
         adjustment_steps = page.locator(".sy-adjustment-step")
         assert adjustment_steps.count() == 3
