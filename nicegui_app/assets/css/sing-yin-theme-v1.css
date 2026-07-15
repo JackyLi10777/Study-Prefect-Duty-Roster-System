@@ -198,7 +198,7 @@ button, [role="button"], a, input, textarea, select { touch-action: manipulation
 .sy-mobile-tabbar, .sy-mobile-drawer-tools { display: none; }
 .sy-responsive-table-mobile { display: none !important; }
 .sy-brand-mark { width: 60px; height: 58px; padding: 0; object-fit: contain; image-rendering: auto; transform: translateZ(0); border: 0; border-radius: 0; background: transparent; filter: drop-shadow(0 4px 10px rgba(15,118,110,.16)); }
-.body--dark .sy-brand-mark { border-color: transparent; background: transparent; filter: drop-shadow(0 1px 0 rgba(255,255,255,.12)) drop-shadow(0 7px 14px rgba(0,0,0,.52)); }
+.body--dark .sy-brand-mark { border-color: transparent; background: transparent; filter: drop-shadow(0 7px 14px rgba(0,0,0,.52)); }
 .body--dark .q-field__native, .body--dark .q-field__input, .body--dark .q-field__label,
 .body--dark .q-tab, .body--dark .q-table, .body--dark .q-td, .body--dark .q-th,
 .body--dark .q-card, .body--dark .q-dialog__inner > .q-card { color: var(--sy-ink) !important; }
@@ -603,7 +603,7 @@ body .q-badge.sy-status-badge.sy-tone-neutral { color: var(--sy-status-neutral-f
 .sy-codex-closing-copy { margin-top: 8px; color: var(--sy-muted); font-size: 13px; line-height: 1.78; }
 .body--dark .sy-co-creation { border-color: rgba(45,212,191,.28); background: linear-gradient(135deg, rgba(15,118,110,.16), var(--sy-surface)); }
 .body--dark .sy-co-creation-team, .body--dark .sy-co-creation-quote { color: #5EEAD4; }
-.body--dark .sy-co-creation-crest { border-color: transparent; background: transparent; box-shadow: none; filter: drop-shadow(0 1px 0 rgba(255,255,255,.12)) drop-shadow(0 12px 24px rgba(0,0,0,.50)); }
+.body--dark .sy-co-creation-crest { border-color: transparent; background: transparent; box-shadow: none; filter: drop-shadow(0 12px 24px rgba(0,0,0,.50)); }
 
 .sy-school-year-rollover { padding: clamp(20px, 3vw, 28px); border: 1px solid color-mix(in srgb, var(--sy-role-attention) 34%, var(--sy-line)); border-radius: 20px; background: color-mix(in srgb, var(--sy-surface) 92%, var(--sy-role-attention-soft) 8%); box-shadow: 0 10px 28px rgba(28,28,30,.06); }
 .sy-school-year-rollover-icon { flex: 0 0 auto; width: 44px; height: 44px; padding: 10px; border-radius: 14px; color: var(--sy-status-attention-fg); background: var(--sy-role-attention-soft); font-size: 24px; }
@@ -676,6 +676,7 @@ body .q-badge.sy-status-badge.sy-tone-neutral { color: var(--sy-status-neutral-f
 }
 @media (max-width: 900px) {
   .sy-platform-facts, .sy-platform-snapshot, .sy-platform-culture, .sy-platform-resources, .sy-engineering-facts, .sy-engineering-blueprint, .sy-engineering-gates, .sy-engineering-pillars, .sy-engineering-evolution, .sy-team-operating-model, .sy-capability-map, .sy-solutions-grid { grid-template-columns: 1fr; }
+  .sy-co-creation-crest { border-radius: 0; }
   .sy-platform-fact { min-height: 0; border-right: 0; border-bottom: 1px solid var(--sy-line); }
   .sy-platform-fact:last-child { border-bottom: 0; }
   .sy-platform-hero { min-height: 0; padding: 26px 22px; }

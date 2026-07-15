@@ -88,7 +88,7 @@ BUILTIN_TRACKS = (
     MusicTrack("fur-alina", "Jürgen Kruse - Topic - Für Alina, for Piano Solo.m4a", "Für Alina", "Jürgen Kruse", "", ("devotional", "guide", "people"), ("quiet",)),
     MusicTrack("le-onde", "Ludovico Einaudi - Einaudi： Le Onde.m4a", "Le Onde", "Ludovico Einaudi", "", ("dashboard", "handover", "weekly"), ("quiet",)),
     MusicTrack("hands-be-still", "Ólafur Arnalds - Hands, Be Still.m4a", "Hands, Be Still", "Ólafur Arnalds", "", ("devotional", "guide"), ("quiet",)),
-    MusicTrack("only-the-winds", "Ólafur Arnalds - Only The Winds.m4a", "Only The Winds", "Ólafur Arnalds", "", ("handover", "architecture", "settings"), ("quiet",)),
+    MusicTrack("only-the-winds", "Ólafur Arnalds - Only The Winds.m4a", "Only The Winds", "Ólafur Arnalds", "", ("getting_started", "handover", "architecture", "settings"), ("quiet",)),
     MusicTrack("spiegel-im-spiegel", "Benjamin Hudson - Topic - Spiegel im Spiegel, for Viola & Piano.m4a", "Spiegel im Spiegel", "Benjamin Hudson & Jürgen Kruse", "10:05", ("devotional", "architecture"), ("quiet",)),
     MusicTrack("serenity", "Serenity (O Magnum Mysterium) — Tenebrae.m4a", "Serenity (O Magnum Mysterium)", "Tenebrae", "", ("devotional", "handover", "settings"), ("quiet",), "vocal"),
     MusicTrack("the-spheres", "Tenebrae - Topic - Gjeilo： The Spheres.m4a", "The Spheres", "Tenebrae", "", ("devotional", "architecture"), ("quiet",), "vocal"),

@@ -140,7 +140,12 @@ def test_guest_platform_resource_tour_remains_read_only_and_bilingual() -> None:
         "roleHeadTitle",
         "solutionsTitle",
         "resourcesTitle",
+        "resourceTeamTitle",
+        "resourceQualityTitle",
         "resourceArchitectureTitle",
+        "resourceStartTitle",
+        "resourceGuideTitle",
+        "resourceDevotionalTitle",
         "coCreationTitle",
         "feedbackLink",
         "githubLink",
@@ -148,6 +153,10 @@ def test_guest_platform_resource_tour_remains_read_only_and_bilingual() -> None:
         assert source.count(f"{key}:") == 2, f"{key} must have complete Chinese and English copy"
     assert 'id="team"' in source
     assert 'id="resources"' in source
+    assert source.count('class="resource-icon"') == 6
+    assert ".resource-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }" in source
+    assert "RCUV 2010（神版）及 NKJV" in source
+    assert "RCUV 2010 (Shen Edition) and NKJV" in source
     assert "fetch(" not in source
     assert "form-action 'none'" in source
 

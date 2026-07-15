@@ -68,6 +68,8 @@ def test_quiet_precision_shell_uses_semantic_action_and_motion_tokens() -> None:
     assert ".body--dark .sy-brand-mark { border-color: transparent; background: transparent;" in theme
     assert ".sy-co-creation-crest {" in theme
     assert ".body--dark .sy-co-creation-crest { border-color: transparent; background: transparent;" in theme
+    assert "drop-shadow(0 1px 0 rgba(255,255,255" not in theme
+    assert ".sy-co-creation-crest { border-radius: 0; }" in theme
 
 
 def test_component_colour_roles_are_semantic_and_consistent() -> None:

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import csv
 from datetime import date
-from io import BytesIO
+from io import BytesIO, StringIO
+import json
 import os
 from pathlib import Path
 import re
@@ -81,7 +83,7 @@ def _workflow(database_path: Path, backup_dir: Path) -> RosterWorkflow:
     workflow = RosterWorkflow(
         database_path=database_path,
         backup_dir=backup_dir,
-        seed_path=PREFECT_SEED_PATH,
+        seed_path=None,
     )
     workflow.bootstrap()
     return workflow
@@ -118,11 +120,47 @@ def _click_mobile_drawer_tool(page: Page, index: int, *, expects_navigation: boo
     page.wait_for_load_state("networkidle")
 
 
-def _fixture_leave_prefect() -> tuple[str, str]:
-    """Pick a seeded Monday assignment without writing a preliminary draft."""
-    import json
+def _fixture_prefect_items() -> list[dict[str, object]]:
+    """Load the version-controlled fictional directory used only by this isolated verifier."""
+    return list(json.loads(PREFECT_SEED_PATH.read_text(encoding="utf-8"))["prefects"])
 
-    raw_prefects = json.loads(PREFECT_SEED_PATH.read_text(encoding="utf-8"))["prefects"]
+
+def _fixture_import_csv() -> str:
+    """Build a reviewed CSV so the browser imports the complete fictional directory itself."""
+    day_labels = {
+        "MONDAY": "星期一",
+        "TUESDAY": "星期二",
+        "WEDNESDAY": "星期三",
+        "THURSDAY": "星期四",
+        "FRIDAY": "星期五",
+    }
+    output = StringIO(newline="")
+    writer = csv.writer(output, lineterminator="\n")
+    writer.writerow(("姓名", "級別", "班別", "職務", "可值班日", "備註"))
+    for item in _fixture_prefect_items():
+        role = (
+            "助理首席導學風紀"
+            if "Assistant Head Study Prefect" in str(item["role"])
+            else "導學風紀"
+        )
+        available_days = "、".join(day_labels[str(day)] for day in item["availableDays"])
+        writer.writerow(
+            (
+                item["name"],
+                item["form"],
+                item["class"],
+                role,
+                available_days,
+                item.get("remarks", ""),
+            )
+        )
+    writer.writerow(("虛構驗證風紀", "F.3", "3T", "導學風紀", "星期五", "瀏覽器隔離驗收"))
+    return output.getvalue()
+
+
+def _fixture_leave_prefect() -> tuple[str, str]:
+    """Pick a fictional Monday assignment without writing a preliminary draft."""
+    raw_prefects = _fixture_prefect_items()
     prefects = [
         Prefect(
             id=str(item["id"]),
@@ -220,10 +258,7 @@ def main() -> None:
         request_reference = first_response.headers.get("x-request-id", "")
         assert re.fullmatch(r"REQ-[A-F0-9]{8}", request_reference)
         page.get_by_text("資料匯入", exact=True).click()
-        page.locator("textarea").fill(
-            "姓名,級別,班別,職務,可值班日\n"
-            "虛構驗證風紀,F.3,3T,導學風紀,星期五"
-        )
+        page.locator("textarea").fill(_fixture_import_csv())
         page.get_by_role("button", name="驗證與預覽").click()
         page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).wait_for(timeout=10_000)
         page.get_by_role("button", name="匯入風紀").click()
@@ -274,7 +309,8 @@ def main() -> None:
         print("[2/7] Imported, created, edited, and confirmation-archived fictional prefect data through the UI", flush=True)
 
         workflow = _workflow(database_path, backup_dir)
-        leave_prefect = workflow.prefect(leave_prefect_id)
+        leave_prefect = next(item for item in workflow.prefects() if item["nameZh"] == leave_prefect_name)
+        leave_prefect_id = str(leave_prefect["id"])
         leave_prefect_option = f"{leave_prefect_name} ({leave_prefect['form']} {leave_prefect['className']})"
 
         page.goto(f"{BASE_URL}/rosters", wait_until="commit", timeout=10_000)

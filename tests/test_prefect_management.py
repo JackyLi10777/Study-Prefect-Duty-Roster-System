@@ -68,8 +68,22 @@ def test_prefect_can_be_created_updated_and_archived_without_erasing_history(tmp
 def test_new_school_year_rollover_clears_active_directory_and_retains_audited_history(tmp_path) -> None:
     workflow = _workflow(tmp_path)
     original = workflow.prefects()[0]
+    draft = workflow.generate_and_save_draft(date(2026, 7, 20))
+    workflow.publish(draft.id, expected_week_version=draft.version)
+    with sqlite3.connect(tmp_path / "sing-yin.sqlite3") as connection:
+        history_before = (
+            connection.execute("SELECT COUNT(*) FROM roster_weeks").fetchone()[0],
+            connection.execute("SELECT COUNT(*) FROM roster_assignments").fetchone()[0],
+            connection.execute(
+                "SELECT COUNT(*), COALESCE(SUM(delta), 0), COALESCE(SUM(duty_delta), 0) "
+                "FROM fairness_ledger"
+            ).fetchone(),
+        )
+    assert history_before[0] == 1
+    assert history_before[1] > 0
+    assert history_before[2][0] > 0
     workflow.declare_leave(
-        week_start=date(2026, 7, 20),
+        week_start=date(2026, 7, 27),
         prefect_id=str(original["id"]),
         day="MONDAY",
         reason="Fictional rollover test",
@@ -103,8 +117,17 @@ def test_new_school_year_rollover_clears_active_directory_and_retains_audited_hi
         active_leave_count = connection.execute(
             "SELECT COUNT(*) FROM leave_declarations WHERE active = 1"
         ).fetchone()[0]
+        history_after = (
+            connection.execute("SELECT COUNT(*) FROM roster_weeks").fetchone()[0],
+            connection.execute("SELECT COUNT(*) FROM roster_assignments").fetchone()[0],
+            connection.execute(
+                "SELECT COUNT(*), COALESCE(SUM(delta), 0), COALESCE(SUM(duty_delta), 0) "
+                "FROM fairness_ledger"
+            ).fetchone(),
+        )
     assert audit_count == 1
     assert active_leave_count == 0
+    assert history_after == history_before
 
 
 def test_new_school_year_rollover_refuses_an_already_empty_directory_without_new_backup(tmp_path) -> None:

@@ -4,7 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from scripts.verify_nicegui_write_pipeline import _fixture_leave_prefect, isolated_paths
+from nicegui_app.utils.prefect_import import parse_prefect_import_text
+from scripts.verify_nicegui_write_pipeline import _fixture_import_csv, _fixture_leave_prefect, isolated_paths
 from scripts.verify_nicegui_ui import prepare_invalid_backup_fixture
 
 
@@ -73,6 +74,17 @@ def test_write_pipeline_fixture_uses_stable_role_codes() -> None:
 
     assert prefect_id
     assert prefect_name
+
+
+def test_write_pipeline_imports_a_complete_fictional_directory_through_the_ui() -> None:
+    _, leave_prefect_name = _fixture_leave_prefect()
+
+    preview = parse_prefect_import_text(_fixture_import_csv())
+
+    assert preview.issues == ()
+    assert len(preview.rows) >= 15
+    assert leave_prefect_name in {item.name_zh for item in preview.rows}
+    assert {item.role_code for item in preview.rows} == {"assistant_head", "study_prefect"}
 
 
 def test_write_pipeline_uses_current_reviewed_import_label() -> None:

@@ -32,6 +32,12 @@ def test_builtin_music_catalog_is_complete_local_and_page_categorised() -> None:
     assert {profile for track in BUILTIN_TRACKS for profile in track.profiles} == set(MUSIC_PROFILES)
     assert {track.arrangement for track in BUILTIN_TRACKS} == {"instrumental", "vocal"}
     assert all(sum(context in track.contexts for track in BUILTIN_TRACKS) >= 2 for context in MUSIC_CONTEXTS)
+    for context in MUSIC_CONTEXTS:
+        for profile in MUSIC_PROFILES:
+            assert MusicLibrary().tracks_for_context(context, profile=profile), (
+                f"{context} must keep a local {profile} playlist so appearance-based autoplay "
+                "never removes the page music control"
+            )
 
 
 def test_local_music_import_is_validated_and_kept_inside_custom_directory(tmp_path: Path) -> None:
