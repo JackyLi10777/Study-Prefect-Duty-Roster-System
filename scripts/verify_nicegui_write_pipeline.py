@@ -38,6 +38,7 @@ MOBILE_FORMS_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-write-pipeline-m
 MOBILE_FORMS_LIGHT_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-write-pipeline-mobile-forms-light.png"
 MOBILE_DIRECTORY_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-write-pipeline-mobile-directory.png"
 PREFECT_ARCHIVE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-prefect-archive-confirmation.png"
+NEW_SCHOOL_YEAR_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-new-school-year-empty.png"
 
 NATIVE_PDF_SHARE_STUB = """
 Object.defineProperty(navigator, 'canShare', {
@@ -164,6 +165,15 @@ def _fixture_import_csv(*, existing_names: set[str] | frozenset[str] = frozenset
     return output.getvalue()
 
 
+def _new_school_year_import_csv() -> str:
+    """Return one unique fictional record for the post-rollover browser check."""
+    output = StringIO(newline="")
+    writer = csv.writer(output, lineterminator="\n")
+    writer.writerow(("姓名", "級別", "班別", "職務", "可值班日", "備註"))
+    writer.writerow(("虛構新學年風紀", "F.3", "3N", "導學風紀", "星期一、星期三", "新學年隔離驗收"))
+    return output.getvalue()
+
+
 def _fixture_leave_prefect() -> tuple[str, str]:
     """Pick a fictional Monday assignment without writing a preliminary draft."""
     raw_prefects = _fixture_prefect_items()
@@ -240,7 +250,7 @@ def _assert_schedule_pdf(content: bytes, *, english: bool, expected_name: str) -
 def main() -> None:
     database_path, backup_dir, log_dir = isolated_paths()
     e2e_run_id = os.environ["SING_YIN_E2E_RUN_ID"].strip()
-    print("[1/7] Starting isolated browser write-pipeline verification", flush=True)
+    print("[1/8] Starting isolated browser write-pipeline verification", flush=True)
     artifacts_dir = database_path.parent / "write-pipeline-artifacts"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     LIGHT_SCREENSHOT.parent.mkdir(parents=True, exist_ok=True)
@@ -313,7 +323,7 @@ def main() -> None:
         workflow = _workflow(database_path, backup_dir)
         assert created_prefect["id"] not in {item["id"] for item in workflow.prefects()}
         assert {"prefect_created", "prefect_updated", "prefect_archived"} <= _audit_event_types(database_path)
-        print("[2/7] Imported, created, edited, and confirmation-archived fictional prefect data through the UI", flush=True)
+        print("[2/8] Imported, created, edited, and confirmation-archived fictional prefect data through the UI", flush=True)
 
         workflow = _workflow(database_path, backup_dir)
         leave_prefect = next(item for item in workflow.prefects() if item["nameZh"] == leave_prefect_name)
@@ -359,7 +369,7 @@ def main() -> None:
         assert health_response.status == 200 and health_response.json().get("e2eRunId") == e2e_run_id
         page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="domcontentloaded")
         page.get_by_text("草稿預覽", exact=True).wait_for(timeout=10_000)
-        print("[3/7] Recorded leave and generated a draft through the UI", flush=True)
+        print("[3/8] Recorded leave and generated a draft through the UI", flush=True)
 
         workflow = _workflow(database_path, backup_dir)
         week = workflow.roster_weeks()[0]
@@ -395,7 +405,7 @@ def main() -> None:
         log_content = (log_dir / "app.log").read_text(encoding="utf-8")
         assert "progress_draft_change_working" in log_content
         assert "虛構草稿核對修正" not in log_content
-        print("[4/7] Rejected a missing manual-change reason, then saved an auditable correction", flush=True)
+        print("[4/8] Rejected a missing manual-change reason, then saved an auditable correction", flush=True)
 
         page.goto(f"{BASE_URL}/rosters/{roster_week_id}/adjustments", wait_until="domcontentloaded")
         premature_adjustment = page.get_by_test_id("adjustment-unavailable-state")
@@ -416,7 +426,7 @@ def main() -> None:
         assert published["status"] == "published"
         after_publish_loads = workflow.prefect_loads()
         assert sum(after_publish_loads.values()) - sum(before_publish_loads.values()) == 34.0
-        print("[5/7] Published once and verified fairness-ledger posting", flush=True)
+        print("[5/8] Published once and verified fairness-ledger posting", flush=True)
 
         page.get_by_role("button", name="下載列印版 PDF").click()
         page.get_by_text("選擇 PDF 匯出", exact=True).wait_for(timeout=10_000)
@@ -459,7 +469,7 @@ def main() -> None:
         english_download.save_as(english_path)
         _assert_schedule_pdf(english_path.read_bytes(), english=True, expected_name=expected_name)
         page.get_by_role("button", name="取消").last.click()
-        print("[6/7] Downloaded and inspected Chinese and English schedule PDFs", flush=True)
+        print("[6/8] Downloaded and inspected Chinese and English schedule PDFs", flush=True)
 
         adjustment_assignment = workflow.assignments(roster_week_id)[0]
         replacement = workflow.recommend_substitutes(roster_week_id, int(adjustment_assignment["id"]))[0]
@@ -562,7 +572,7 @@ def main() -> None:
         assert restored["restoredFrom"] == recovery_backups / snapshot_name
         assert recovery.roster_week(roster_week_id)["status"] == "published"
         assert recovery.leave_adjustment_count(roster_week_id) == 1
-        print("[7/7] Applied leave adjustment, built handover package, and restored a separate database", flush=True)
+        print("[7/8] Applied leave adjustment, built handover package, and restored a separate database", flush=True)
 
         page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="domcontentloaded")
         desktop_theme_controls = page.locator(".sy-desktop-header-controls")
@@ -612,6 +622,66 @@ def main() -> None:
         _click_mobile_drawer_tool(page, 2, expects_navigation=False)
         page.wait_for_function("!document.body.classList.contains('body--dark')")
         page.screenshot(path=str(MOBILE_FORMS_LIGHT_SCREENSHOT), full_page=True)
+
+        # Finish with the real handover path: the operator must type the exact
+        # phrase, historical roster/fairness rows must survive, and the next
+        # directory must be importable immediately from the resulting empty UI.
+        page.set_viewport_size({"width": 1440, "height": 1024})
+        workflow = _workflow(database_path, backup_dir)
+        with sqlite3.connect(database_path) as connection:
+            history_before_rollover = (
+                connection.execute("SELECT COUNT(*) FROM roster_weeks").fetchone()[0],
+                connection.execute("SELECT COUNT(*) FROM roster_assignments").fetchone()[0],
+                connection.execute(
+                    "SELECT COUNT(*), COALESCE(SUM(delta), 0), COALESCE(SUM(duty_delta), 0) "
+                    "FROM fairness_ledger"
+                ).fetchone(),
+            )
+        verified_backups_before_rollover = int(workflow.backup_inventory()["verifiedCount"])
+
+        page.goto(f"{BASE_URL}/handover", wait_until="domcontentloaded")
+        page.get_by_test_id("open-school-year-rollover").click()
+        confirmation = page.get_by_test_id("school-year-rollover-confirmation")
+        confirmation.wait_for(state="visible", timeout=10_000)
+        confirm_rollover = page.get_by_test_id("confirm-school-year-rollover")
+        assert confirm_rollover.is_disabled()
+        confirmation.fill("新學年重置")
+        assert confirm_rollover.is_enabled()
+        with page.expect_navigation(wait_until="domcontentloaded", timeout=30_000):
+            confirm_rollover.click()
+        page.wait_for_url("**/prefects", timeout=15_000)
+        page.get_by_text("名單管理", exact=True).wait_for(timeout=15_000)
+        page.screenshot(path=str(NEW_SCHOOL_YEAR_SCREENSHOT), full_page=True)
+
+        workflow = _workflow(database_path, backup_dir)
+        assert workflow.prefects() == []
+        assert int(workflow.backup_inventory()["verifiedCount"]) >= verified_backups_before_rollover + 2
+        with sqlite3.connect(database_path) as connection:
+            history_after_rollover = (
+                connection.execute("SELECT COUNT(*) FROM roster_weeks").fetchone()[0],
+                connection.execute("SELECT COUNT(*) FROM roster_assignments").fetchone()[0],
+                connection.execute(
+                    "SELECT COUNT(*), COALESCE(SUM(delta), 0), COALESCE(SUM(duty_delta), 0) "
+                    "FROM fairness_ledger"
+                ).fetchone(),
+            )
+            rollover_audit_count = connection.execute(
+                "SELECT COUNT(*) FROM audit_events WHERE event_type = 'school_year_directory_archived'"
+            ).fetchone()[0]
+        assert history_after_rollover == history_before_rollover
+        assert rollover_audit_count == 1
+
+        page.get_by_text("資料匯入", exact=True).click()
+        page.locator("textarea").fill(_new_school_year_import_csv())
+        page.get_by_role("button", name="驗證與預覽").click()
+        page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).wait_for(timeout=10_000)
+        page.get_by_role("button", name="匯入風紀").click()
+        _wait_for_progress_cycle(page)
+        page.get_by_text("虛構新學年風紀", exact=True).first.wait_for(timeout=15_000)
+        workflow = _workflow(database_path, backup_dir)
+        assert [item["nameZh"] for item in workflow.prefects()] == ["虛構新學年風紀"]
+        print("[8/8] Archived the old directory, retained history, and imported the next school-year directory", flush=True)
+
         assert not console_errors, console_errors
         assert not page_errors, page_errors
         browser.close()

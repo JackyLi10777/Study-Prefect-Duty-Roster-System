@@ -6,7 +6,12 @@ import pytest
 
 from nicegui_app.utils.prefect_import import parse_prefect_import_text
 from scripts.verify_nicegui_partial_backup import prepare_fictional_directory
-from scripts.verify_nicegui_write_pipeline import _fixture_import_csv, _fixture_leave_prefect, isolated_paths
+from scripts.verify_nicegui_write_pipeline import (
+    _fixture_import_csv,
+    _fixture_leave_prefect,
+    _new_school_year_import_csv,
+    isolated_paths,
+)
 from scripts.verify_nicegui_ui import prepare_invalid_backup_fixture
 
 
@@ -98,6 +103,22 @@ def test_write_pipeline_uses_current_reviewed_import_label() -> None:
 
     assert 'get_by_text("資料匯入", exact=True)' in script
     assert 'get_by_text("AI 匯入", exact=True)' not in script
+
+
+def test_write_pipeline_uses_semantic_readiness_instead_of_network_quiet() -> None:
+    script = (Path(__file__).parents[1] / "scripts" / "verify_nicegui_write_pipeline.py").read_text(encoding="utf-8")
+
+    assert 'wait_until="networkidle"' not in script
+    assert 'wait_for_load_state("networkidle")' not in script
+    assert 'wait_until="domcontentloaded"' in script
+
+
+def test_write_pipeline_has_a_unique_reviewed_new_school_year_import() -> None:
+    preview = parse_prefect_import_text(_new_school_year_import_csv())
+
+    assert preview.issues == ()
+    assert [item.name_zh for item in preview.rows] == ["虛構新學年風紀"]
+    assert preview.rows[0].role_code == "study_prefect"
 
 
 def test_partial_backup_drill_uses_the_stable_action_name_instead_of_an_icon() -> None:
