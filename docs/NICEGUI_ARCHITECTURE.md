@@ -28,8 +28,8 @@ NiceGUI owns the rendering and navigation. The read model introduces no schema, 
 ## Canonical entry and local maintenance start
 
 The only URL distributed to users is
-`https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`. The next
-source candidate has five security states with different owning layers:
+`https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`. The live
+canonical gateway has five security states with different owning layers:
 
 | State | Owning layer | Backend contact |
 |---|---|---|

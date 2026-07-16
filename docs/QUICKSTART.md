@@ -1,6 +1,6 @@
 # 快速啟動 / Quick start
 
-> **目前部署過渡狀態（2026-07-15）：** 本文件的日常步驟只可在 `PROJECT_STATUS.md` 記錄 Windows 排程工作修復及候選 Worker 部署後驗收通過後採用。目前本機既有程序仍健康運行，但不可依賴重新開機自動恢復；維護者須先按 [Windows 專用主機手冊](WINDOWS_DEDICATED_HOST_SETUP.md) 以 `-NoStart` 重建排程，再完成一次受控重啟。
+> **目前部署過渡狀態（2026-07-16）：** 正式 Worker 與目前 loopback origin 均健康，`C:\SingYinRoster` 已安裝 rc.16；但 `Sing Yin Roster Host` 開機排程仍未註冊，因此暫時不可依賴重新開機自動恢復。維護者須先按 [Windows 專用主機手冊](WINDOWS_DEDICATED_HOST_SETUP.md) 以 `-NoStart` 保存排程認證、核對工作內容，再完成一次受控切換。完成前不要停止目前 8080 程序。
 
 ## 每日使用
 

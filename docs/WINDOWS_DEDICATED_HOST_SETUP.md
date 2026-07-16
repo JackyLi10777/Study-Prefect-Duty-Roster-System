@@ -6,7 +6,7 @@
 **日常網址：** `https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`
 **本機維護網址：** `http://127.0.0.1:8080`
 
-> **發布狀態提示（2026-07-15）：** `/try` 純瀏覽器試用及正式零起點屬下一候選版本。完成受控主機更新、資料重設、完整測試及瀏覽器驗收前，下文描述的是待驗證操作契約，不代表現有正式主機已清除或正式網址已啟用 `/try`。目前 `127.0.0.1:8080` 的既有程序仍可健康回應，但 `Sing Yin Roster Host` 排程工作尚待重建；在依第 0 節以 `-NoStart` 保存認證並完成受控重啟驗證前，不可停止既有程序或假設重新開機後會自動恢復。
+> **目前狀態（2026-07-16）：** rc.16 Worker、`/guest`、`/try`、唯讀 Viewer、Access 轉向及 VPC 健康已在正式網址通過自動化核對；`C:\SingYinRoster` 亦已切換至不可變標籤 `v1.1.0-rc.16` 並通過雜湊鎖定依賴檢查。正式主機尚未完成資料受控清理，`Sing Yin Roster Host` 排程工作亦尚待重建；在依第 0 節以 `-NoStart` 保存認證並完成受控切換前，不可停止目前 8080 程序或假設重新開機後會自動恢復。
 
 ---
 
@@ -418,9 +418,9 @@ C:\SingYinRoster\logs
 
 ### 8.2 一次性退休舊示範資料（維護者才可執行）
 
-目前原始碼候選包含 `scripts\reset_official_data.py`，但它不是日常重設按鈕。執行前必須通過該候選版本的完整自動化驗證，確認目標是正式主機，停止並停用 `Sing Yin Roster Host`，並核對整個正式啟動器範圍 **8080–8099** 均沒有監聽。工具會先建立已驗證快照、完成隔離還原、撤銷並重新核對所有公開 Viewer 連結，才把舊資料及舊備份移至受限 quarantine，原子安裝空白資料庫及已驗證空白基線。任何前置條件或後置核對失敗都會拒絕或回復。
+rc.16 包含 `scripts\reset_official_data.py`，但它不是日常重設按鈕。執行前必須確認該不可變版本的完整自動化驗證已通過、目標是正式主機，停止並停用 `Sing Yin Roster Host`，並核對整個正式啟動器範圍 **8080–8099** 均沒有監聽。工具會先建立已驗證快照、完成隔離還原、撤銷並重新核對所有公開 Viewer 連結，才把舊資料及舊備份移至受限 quarantine，原子安裝空白資料庫及已驗證空白基線。任何前置條件或後置核對失敗都會拒絕或回復。
 
-只有在已安裝並完整驗證候選版本、排程保持停用、8080–8099 全部停止，以及 `.env` 的正式 Viewer gateway 設定可用後，才可由維護者在 `C:\SingYinRoster` 執行：
+只有在已安裝並完整驗證 rc.16、排程保持停用、8080–8099 全部停止，以及 `.env` 的正式 Viewer gateway 設定可用後，才可由維護者在 `C:\SingYinRoster` 執行：
 
 ```powershell
 Set-Location C:\SingYinRoster
@@ -435,7 +435,7 @@ Set-Location C:\SingYinRoster
 
 正常正式主機必須保留 `SING_YIN_PUBLIC_ROSTER_VIEWER_ENABLED`、`SING_YIN_PUBLIC_ROSTER_VIEWER_BASE_URL` 及 `SING_YIN_PUBLIC_ROSTER_VIEWER_ADMIN_TOKEN`，讓工具列出、撤銷並重新核對所有 Viewer 分享。只有能證明該主機**從未**設定 gateway、**從未**發出任何 `/view#…` 連結時，才可額外使用 `--attest-no-public-share-gateway`；這是會寫入 sanitized report 的明確聲明，不是跳過連線失敗的後備選項。`--report` 必須是 `.json`，且位於資料庫、備份與 quarantine 目錄之外。不要在 gateway 暫時故障時使用 attestation。
 
-正式清除完成與否只可根據 `logs\official-data-reset-report.json` 的 `status: pass`、所有 `emptyRowCounts` 為零、`publicShares.remainingCount` 為零、唯一一份有效空白基線，以及重新啟動後 `/healthz` 為 `ok` 判斷。工具只把舊檔移至受限 quarantine，不會把姓名或分享 ID 寫入報告；失敗時先保持排程停用並按 `failureReason` 調查，不可重複執行或手動刪除 SQLite。這項操作目前仍屬已完成原始碼、待完整閘門及受控主機執行的候選工作；在程序完成前，不可聲稱現有正式主機已清除。
+正式清除完成與否只可根據 `logs\official-data-reset-report.json` 的 `status: pass`、所有 `emptyRowCounts` 為零、`publicShares.remainingCount` 為零、唯一一份有效空白基線，以及重新啟動後 `/healthz` 為 `ok` 判斷。工具只把舊檔移至受限 quarantine，不會把姓名或分享 ID 寫入報告；失敗時先保持排程停用並按 `failureReason` 調查，不可重複執行或手動刪除 SQLite。這項操作的程式與發布閘門已完成，但正式主機尚未執行；在受控程序及報告完成前，不可聲稱現有正式主機已清除。
 
 ---
 

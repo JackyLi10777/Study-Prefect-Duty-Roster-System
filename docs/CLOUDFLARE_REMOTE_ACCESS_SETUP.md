@@ -6,11 +6,11 @@
 
 **資料來源：** Windows 11 專用主機上的 NiceGUI + SQLite；NiceGUI 只監聽 `127.0.0.1:8080`。
 
-> **發布狀態提示（2026-07-15）：** `/try` 純瀏覽器試用及正式零起點屬下一候選版本；在 Worker 契約、完整測試、瀏覽器證據及受控部署完成前，本手冊描述的是待驗證契約，不代表正式網址已啟用新試用頁或正式主機已清除。
+> **目前狀態（2026-07-16）：** rc.16 Worker、`/guest`、`/try`、唯讀 Viewer、Access 轉向及 VPC 健康已在正式網址通過自動化核對。`C:\SingYinRoster` 亦已安裝 rc.16；尚未完成的是 `Sing Yin Roster Host` 開機排程註冊、正式資料受控清理，以及管理員登入／登出、長時間重連、上載與 PDF 的真人驗收。
 
 本方案不需購買網域，也不會把 NiceGUI 或 SQLite 直接公開到互聯網。Cloudflare Worker 是唯一前門；Cloudflare Access 管理登入，Workers VPC 與既有具名 Tunnel 把已驗證管理員請求送回 Windows 主機。localhost 及私人 WARP 地址只作維護後備。
 
-候選 `/guest`／`/try` 資產必須先依 `docs/PUBLIC_ROSTER_VIEWER.md` 的「發布前及部署後怎樣驗證試用邊界」在本機 Wrangler 通過；部署後再以 canonical 網址重跑同一瀏覽器驗證。只有本機證據、只見 HTTP 200，或只在桌面查看，都不能證明正式 `/try` 已上線且保持零伺服器寫入邊界。
+每次後續修改 `/guest`／`/try` 資產，都必須先依 `docs/PUBLIC_ROSTER_VIEWER.md` 的「發布前及部署後怎樣驗證試用邊界」在本機 Wrangler 通過；部署後再以 canonical 網址重跑同一瀏覽器驗證。只有本機證據、只見 HTTP 200，或只在桌面查看，都不能證明更新後的 `/try` 仍保持零伺服器寫入邊界。
 
 ---
 
