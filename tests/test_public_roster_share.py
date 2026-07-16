@@ -107,6 +107,7 @@ def test_settings_load_only_the_dedicated_public_viewer_environment(monkeypatch)
     monkeypatch.setenv("SING_YIN_PUBLIC_ROSTER_VIEWER_BASE_URL", "https://viewer.example.workers.dev/")
     monkeypatch.setenv("SING_YIN_PUBLIC_ROSTER_VIEWER_ADMIN_TOKEN", "s" * 48)
     monkeypatch.setenv("SING_YIN_PUBLIC_ROSTER_VIEWER_TIMEOUT_SECONDS", "7")
+    monkeypatch.setenv("SING_YIN_PUBLIC_ROSTER_VIEWER_VISIBILITY_TIMEOUT_SECONDS", "65")
 
     settings = PublicRosterShareSettings.from_environment()
 
@@ -115,6 +116,19 @@ def test_settings_load_only_the_dedicated_public_viewer_environment(monkeypatch)
     assert settings.base_url == "https://viewer.example.workers.dev"
     assert settings.admin_token == "s" * 48
     assert settings.timeout_seconds == 7
+    assert settings.visibility_timeout_seconds == 65
+
+
+def test_settings_reject_invalid_visibility_timeout(monkeypatch) -> None:
+    monkeypatch.setenv("SING_YIN_PUBLIC_ROSTER_VIEWER_ENABLED", "true")
+    monkeypatch.setenv("SING_YIN_PUBLIC_ROSTER_VIEWER_BASE_URL", "https://viewer.example.workers.dev")
+    monkeypatch.setenv("SING_YIN_PUBLIC_ROSTER_VIEWER_ADMIN_TOKEN", "s" * 48)
+    monkeypatch.setenv("SING_YIN_PUBLIC_ROSTER_VIEWER_VISIBILITY_TIMEOUT_SECONDS", "4")
+
+    settings = PublicRosterShareSettings.from_environment()
+
+    assert settings.visibility_timeout_seconds == 4
+    assert settings.configured is False
 
 
 def test_encrypted_public_snapshot_contains_only_approved_roster_fields(workflow: RosterWorkflow) -> None:
@@ -325,8 +339,12 @@ def test_cloudflare_gateway_uses_bearer_auth_and_same_origin_json_endpoint() -> 
 def test_cloudflare_gateway_replays_the_exact_create_request_once_after_network_loss() -> None:
     settings = _settings()
     captured_bodies: list[bytes | None] = []
+    captured_authorization: list[str | None] = []
 
     class Response:
+        def __init__(self, body: bytes) -> None:
+            self.body = body
+
         def __enter__(self):
             return self
 
@@ -334,24 +352,269 @@ def test_cloudflare_gateway_replays_the_exact_create_request_once_after_network_
             return None
 
         def read(self, _limit):
-            return b'{"shareId":"same-share","createdAt":"2026-09-07T08:00:00Z"}'
+            return self.body
 
     def commit_then_lose_response(request, *, timeout):
         assert timeout == 10.0
         captured_bodies.append(request.data)
+        captured_authorization.append(request.get_header("Authorization"))
         if len(captured_bodies) == 1:
             raise URLError("response lost after commit")
-        return Response()
+        if request.full_url.endswith("/api/admin/shares"):
+            return Response(
+                b'{"shareId":"same-share-identifier-1234",'
+                b'"createdAt":"2026-09-07T08:00:00Z"}'
+            )
+        return Response(
+            b'{"schemaVersion":"sing-yin-public-roster-v1",'
+            b'"ciphertext":"encrypted","nonce":"nonce",'
+            b'"expiresAt":"2026-09-13T15:59:59.000Z"}'
+        )
 
     gateway = CloudflarePublicRosterShareGateway(settings, opener=commit_then_lose_response)
     payload = {
         "schemaVersion": "sing-yin-public-roster-v1",
         "shareId": "same-share-identifier-1234",
         "ciphertext": "encrypted",
+        "nonce": "nonce",
+        "expiresAt": "2026-09-13T15:59:59Z",
     }
 
     result = gateway.create(payload)
 
-    assert result["shareId"] == "same-share"
-    assert len(captured_bodies) == 2
+    assert result["shareId"] == "same-share-identifier-1234"
+    assert len(captured_bodies) == 3
     assert captured_bodies[0] == captured_bodies[1]
+    assert captured_authorization[:2] == [
+        f"Bearer {settings.admin_token}",
+        f"Bearer {settings.admin_token}",
+    ]
+    assert captured_authorization[2] is None
+
+
+def test_cloudflare_gateway_waits_for_exact_public_record_without_sending_admin_token() -> None:
+    settings = PublicRosterShareSettings(
+        enabled=True,
+        base_url="https://roster-view.example.workers.dev",
+        admin_token="a" * 48,
+        visibility_timeout_seconds=10,
+    )
+    now = [0.0]
+    requests: list[tuple[str, str, str | None]] = []
+    public_attempts = [404, 404, 200]
+
+    class Response:
+        def __init__(self, body: bytes) -> None:
+            self.body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read(self, _limit):
+            return self.body
+
+    def opener(request, *, timeout):
+        assert 0 < timeout <= 10.0
+        requests.append(
+            (request.full_url, request.get_method(), request.get_header("Authorization"))
+        )
+        if request.full_url.endswith("/api/admin/shares"):
+            return Response(b'{"shareId":"visible-share-identifier-1234"}')
+        status = public_attempts.pop(0)
+        if status == 404:
+            raise HTTPError(request.full_url, 404, "not found", {}, None)
+        return Response(
+            b'{"schemaVersion":"sing-yin-public-roster-v1",'
+            b'"ciphertext":"encrypted","nonce":"nonce","expiresAt":"2026-09-13T15:59:59Z"}'
+        )
+
+    gateway = CloudflarePublicRosterShareGateway(
+        settings,
+        opener=opener,
+        sleeper=lambda seconds: now.__setitem__(0, now[0] + seconds),
+        clock=lambda: now[0],
+    )
+    result = gateway.create(
+        {
+            "shareId": "visible-share-identifier-1234",
+            "ciphertext": "encrypted",
+            "nonce": "nonce",
+            "expiresAt": "2026-09-13T15:59:59Z",
+        }
+    )
+
+    assert result["shareId"] == "visible-share-identifier-1234"
+    assert now[0] == 4.0
+    assert [item[2] for item in requests] == [
+        f"Bearer {settings.admin_token}",
+        None,
+        None,
+        None,
+    ]
+
+
+def test_cloudflare_gateway_withdraws_share_that_never_becomes_visible() -> None:
+    settings = PublicRosterShareSettings(
+        enabled=True,
+        base_url="https://roster-view.example.workers.dev",
+        admin_token="a" * 48,
+        visibility_timeout_seconds=5,
+    )
+    now = [0.0]
+    methods: list[str] = []
+
+    class Response:
+        def __init__(self, body: bytes = b"{}") -> None:
+            self.body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read(self, _limit):
+            return self.body
+
+    def opener(request, *, timeout):
+        assert 0 < timeout <= 10.0
+        methods.append(request.get_method())
+        if request.get_method() == "POST" and request.full_url.endswith("/api/admin/shares"):
+            return Response(
+                b'{"shareId":"timeout-share-identifier-1234",'
+                b'"contentDigest":"dddddddddddddddddddddddddddddddd'
+                b'dddddddddddddddddddddddddddddddd"}'
+            )
+        if request.full_url.endswith("/api/view"):
+            raise HTTPError(request.full_url, 404, "not found", {}, None)
+        assert request.get_method() == "DELETE"
+        return Response()
+
+    gateway = CloudflarePublicRosterShareGateway(
+        settings,
+        opener=opener,
+        sleeper=lambda seconds: now.__setitem__(0, now[0] + seconds),
+        clock=lambda: now[0],
+    )
+
+    with pytest.raises(PublicRosterShareError, match="withdrawal request"):
+        gateway.create(
+            {
+                "shareId": "timeout-share-identifier-1234",
+                "ciphertext": "encrypted",
+                "nonce": "nonce",
+            }
+        )
+
+    assert now[0] == 5.0
+    assert methods.count("DELETE") == 1
+
+
+@pytest.mark.parametrize(
+    "receipt",
+    [
+        (
+            b'{"shareId":"different-share-identifier-1234",'
+            b'"contentDigest":"dddddddddddddddddddddddddddddddd'
+            b'dddddddddddddddddddddddddddddddd"}'
+        ),
+        (
+            b'{"shareId":"metadata-share-identifier-1234",'
+            b'"createdAt":"not-a-date",'
+            b'"contentDigest":"dddddddddddddddddddddddddddddddd'
+            b'dddddddddddddddddddddddddddddddd"}'
+        ),
+    ],
+)
+def test_cloudflare_gateway_requests_exact_withdrawal_for_invalid_create_metadata(
+    receipt: bytes,
+) -> None:
+    settings = _settings()
+    urls: list[str] = []
+
+    class Response:
+        def __init__(self, body: bytes = b"{}") -> None:
+            self.body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read(self, _limit):
+            return self.body
+
+    def opener(request, *, timeout):
+        assert 0 < timeout <= 10.0
+        urls.append(request.full_url)
+        if request.get_method() == "POST":
+            return Response(receipt)
+        assert request.get_method() == "DELETE"
+        return Response()
+
+    gateway = CloudflarePublicRosterShareGateway(settings, opener=opener)
+
+    with pytest.raises(PublicRosterShareError, match="invalid share metadata"):
+        gateway.create(
+            {
+                "shareId": "metadata-share-identifier-1234",
+                "ciphertext": "encrypted",
+                "nonce": "nonce",
+                "expiresAt": "2026-09-13T15:59:59Z",
+            }
+        )
+
+    assert urls[-1].endswith(
+        "/api/admin/shares/metadata-share-identifier-1234"
+        "?contentDigest=" + ("d" * 64)
+    )
+
+
+def test_cloudflare_gateway_withdraws_unexpected_visible_record() -> None:
+    settings = _settings()
+    methods: list[str] = []
+
+    class Response:
+        def __init__(self, body: bytes = b"{}") -> None:
+            self.body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read(self, _limit):
+            return self.body
+
+    def opener(request, *, timeout):
+        assert 0 < timeout <= 10.0
+        methods.append(request.get_method())
+        if request.get_method() == "POST" and request.full_url.endswith("/api/admin/shares"):
+            return Response(b'{"shareId":"mismatch-share-identifier-1234"}')
+        if request.full_url.endswith("/api/view"):
+            return Response(
+                b'{"schemaVersion":"sing-yin-public-roster-v1",'
+                b'"ciphertext":"different","nonce":"nonce",'
+                b'"expiresAt":"2026-09-13T15:59:59Z"}'
+            )
+        assert request.get_method() == "DELETE"
+        return Response()
+
+    gateway = CloudflarePublicRosterShareGateway(settings, opener=opener)
+
+    with pytest.raises(PublicRosterShareError, match="unexpected encrypted share"):
+        gateway.create(
+            {
+                "shareId": "mismatch-share-identifier-1234",
+                "ciphertext": "encrypted",
+                "nonce": "nonce",
+                "expiresAt": "2026-09-13T15:59:59Z",
+            }
+        )
+
+    assert methods == ["POST", "POST", "DELETE"]

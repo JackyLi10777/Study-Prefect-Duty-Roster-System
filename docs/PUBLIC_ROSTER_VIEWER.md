@@ -88,7 +88,7 @@ python -X utf8 scripts\verify_guest_trial.py --base-url http://127.0.0.1:8791
 `/guest` 是不含資料的系統導覽；它不能代替某一週的分享連結。要查看指定週表，必須依以下流程使用完整 `/view#…` 連結：
 
 1. 我在管理員工作台完成「生成草稿 → 核對 → 發布」。草稿不能公開查看。
-2. 如需要指定週表連結，我在已發布週表建立 Viewer 連結，並把完整 `https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/view#…` 發給收件者。
+2. 如需要指定週表連結，我在已發布週表建立 Viewer 連結，並等待安全處理完成。Cloudflare KV 需要時間把新密文同步到可讀節點；系統會先以不帶管理員權杖的公開請求核對同一份密文，成功後才顯示完整 `https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/view#…`。如逾時，系統不會交付連結或解密鑰匙，並會對該次密文的精確儲存鍵提出撤銷要求；操作員仍應在「存取控制台」核對。
 3. 收件者以 Edge、Chrome、Safari 或 Firefox 開啟；不需安裝 WARP、登入、輸入密碼或建立帳戶。
 4. 瀏覽器在裝置內解密並顯示週次、日期、崗位、當值時間及中文姓名。
 5. 訪客頁面沒有編輯控制，也不能經網址參數把自己變成管理員。

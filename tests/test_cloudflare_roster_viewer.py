@@ -281,6 +281,8 @@ def test_mobile_public_controls_keep_a_44px_touch_target() -> None:
 
     assert verse_refresh is not None
     assert "min-height: 44px" in verse_refresh.group("body")
+    assert "min-width: 44px" in verse_refresh.group("body")
+    assert "flex: 0 0 auto" in verse_refresh.group("body")
     assert compact_mobile is not None
     assert ".verse-refresh { width: 44px; padding-inline: 0; }" in compact_mobile.group("body")
 

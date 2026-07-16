@@ -875,10 +875,51 @@ Deno.test('replays an identical share create safely but rejects a conflicting sh
   assertEquals(conflict.status, 409);
   assertEquals(createdBody.shareId, replayedBody.shareId);
   assertEquals(createdBody.createdAt, replayedBody.createdAt);
+  assertEquals(createdBody.contentDigest, replayedBody.contentDigest);
   assertEquals(kv.records.size, 1);
   const [storedKey] = [...kv.records.keys()];
   assert(storedKey.startsWith(`share:v2:${payload.shareId}:`));
   assert(/:[a-f0-9]{64}$/.test(storedKey));
+  assertEquals(createdBody.contentDigest, storedKey.slice(storedKey.lastIndexOf(':') + 1));
+});
+
+Deno.test('exact share cleanup deletes the content key without relying on KV listing visibility', async () => {
+  const kv = memoryKv();
+  const env = {
+    ADMIN_BEARER_TOKEN: 'd'.repeat(48),
+    ROSTER_SHARES: kv,
+  };
+  const payload = {
+    schemaVersion: 'sing-yin-public-roster-v1',
+    shareId: 'exact_cleanup_share_identifier_1234',
+    weekStart: '2026-09-07',
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+    nonce: base64Url(new Uint8Array(12).fill(1)),
+    ciphertext: base64Url(new Uint8Array(32).fill(2)),
+  };
+  const created = await worker.fetch(new Request('https://gateway.example/api/admin/shares', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.ADMIN_BEARER_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  }), env, { waitUntil() {} });
+  const receipt = await created.json();
+  assertEquals(created.status, 201);
+  assert(/^[a-f0-9]{64}$/.test(receipt.contentDigest));
+
+  const originalList = kv.list;
+  kv.list = async () => ({ keys: [], list_complete: true });
+  const deleted = await worker.fetch(new Request(
+    `https://gateway.example/api/admin/shares/${payload.shareId}?contentDigest=${receipt.contentDigest}`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${env.ADMIN_BEARER_TOKEN}` } },
+  ), env, { waitUntil() {} });
+  kv.list = originalList;
+
+  assertEquals(deleted.status, 204);
+  assertEquals(kv.records.size, 0);
 });
 
 Deno.test('concurrent conflicting creates remain immutable and every visible conflict fails closed', async () => {

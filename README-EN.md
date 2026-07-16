@@ -35,22 +35,21 @@ the Streamlit page handlers: policy remains in `roster_policy`, generation in
 
 The only URL distributed to users is
 <https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>. Guests can
-currently read the data-free platform tour at `/guest` or view an explicitly
-issued read-only `/view#…` roster. The current source candidate includes
-`/try`, a 30-minute device-only fictional trial at the same host, but the
-canonical site still needs deployment and post-deployment verification. An
+read the data-free platform tour at `/guest`, use `/try` for a 30-minute
+device-only fictional trial, or view an explicitly issued read-only
+`/view#…` roster. An
 approved operator selects **Admin login**, enters an exact
 allowlisted email address and the one-time code sent by Cloudflare Access, and
 returns to the same site with the NiceGUI editor unlocked. The signed browser
 session lasts at most eight hours; select
 **Log out** when finished. The application has no custom password database.
 
-Administrator remote editing is still a release-candidate contract, not a
-completed live acceptance result: the candidate Worker must be redeployed and
-its login, logout, WebSocket, mobile, and PDF paths verified before it is treated
-as operational. The current local process is healthy, but the Windows scheduled
-task also requires the documented `-NoStart` repair and a controlled restart
-before automatic recovery after reboot can be relied upon.
+The canonical Worker, guest routes, read-only Viewer, Access redirect, VPC
+health and mobile/light/dark browser matrix are live and automated. Administrator
+remote editing still needs supervised sign-off for login, logout, long-lived
+WebSocket reconnection, upload and PDF delivery. The current loopback origin is
+healthy, but the dedicated Windows scheduled task must still be registered and
+verified before automatic recovery after reboot can be relied upon.
 
 The commands below prepare a host or maintenance workstation; they are not a
 second normal entry point.
@@ -85,7 +84,7 @@ creates verified before/after backups, archives active prefect records, and
 withdraws unused pre-generation leave. It preserves old rosters, the fairness
 ledger, audit history, and archived names; it is not a database wipe.
 
-The next release candidate requires the official application to start with an
+The official clean-first-use contract requires the application to start with an
 empty migrated database and never auto-seed demonstration prefects. Seeing an
 empty directory on first use is correct: import and review the real directory
 only after rehearsal. Fictional seed data belongs to Practice Mode and the
@@ -93,12 +92,10 @@ public browser trial, never the official database. The installed host still
 requires a verified backup, Viewer-link revocation, controlled reset, complete
 verification, and deployment before this state may be claimed as live.
 
-### Source-ready, not yet deployed: product tour and browser-only trial
+### Live product tour and browser-only trial
 
-The following contract is implemented in source and has focused tests plus a
-dedicated browser verifier. The complete release gate, production Worker
-deployment, and post-deployment browser run are still pending; this is not a
-claim that the canonical production URL already serves `/try`:
+The following contract is deployed at the canonical site and has focused tests
+plus a dedicated production-browser verifier:
 
 `/guest` presents the product purpose, weekly journey, fairness safeguards, and
 the boundary around protected operations. `/try` then loads a fixed fictional
@@ -114,7 +111,7 @@ persists only when the visitor explicitly saves the downloaded file. Trial
 results cannot be published, shared through `/view#…`, or imported into the
 official workbench.
 
-Before release, a maintainer must run the focused Python tests, Worker Deno
+For every release, a maintainer runs the focused Python tests, Worker Deno
 contracts, complete Python suite, and `scripts/verify_guest_trial.py`. Exact
 commands and the one-time official-host reset procedure are documented in
 [`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and
@@ -239,8 +236,12 @@ email code; no password hash is stored by NiceGUI, SQLite, KV, backups, or Git.
 Same-host `/view#…` links are explicitly created, expiring and revocable. The
 Windows host encrypts the minimum published-roster snapshot with AES-256-GCM;
 Cloudflare KV stores ciphertext, nonce, and minimum week/creation/expiry
-metadata, while the key stays in the URL fragment. Localhost and private WARP
-are maintenance fallbacks, not additional URLs to distribute. See
+metadata, while the key stays in the URL fragment. Because KV is eventually
+consistent, the application waits until the anonymous Viewer can read the exact
+encrypted record before revealing the link or its key. If that check times out,
+no key is issued and the Worker receives an exact content-key withdrawal
+request. Localhost and private WARP are maintenance fallbacks, not additional
+URLs to distribute. See
 [`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and
 [`DEPLOYMENT_DECISION.md`](docs/DEPLOYMENT_DECISION.md) before changing the
 access boundary.

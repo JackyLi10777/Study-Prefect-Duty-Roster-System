@@ -600,6 +600,8 @@ button, input, select, textarea { font: inherit; }
   justify-content: center;
   gap: 6px;
   min-height: 44px;
+  min-width: 44px;
+  flex: 0 0 auto;
   padding: 7px 10px;
   border: 1px solid color-mix(in srgb, var(--gold) 34%, transparent);
   border-radius: 999px;
@@ -2702,6 +2704,7 @@ async function createShare(request, env) {
       weekStart: before.record.weekStart,
       createdAt: before.record.createdAt,
       expiresAt: before.record.expiresAt,
+      ...(before.record.version === 2 ? { contentDigest: before.record.contentDigest } : {}),
     }, 200);
   }
   const metadata = {
@@ -2728,6 +2731,7 @@ async function createShare(request, env) {
     weekStart: validated.weekStart,
     createdAt: validated.createdAt,
     expiresAt: validated.expiresAt,
+    contentDigest,
   }, 201);
 }
 
@@ -2762,8 +2766,23 @@ async function listShares(env) {
   return jsonResponse({ shares, cursor: null });
 }
 
-async function deleteShare(shareId, env) {
+async function deleteShare(request, shareId, env) {
   if (!validShareId(shareId)) return jsonResponse({ error: 'invalid_request' }, 400);
+  const url = new URL(request.url);
+  const parameters = [...url.searchParams.keys()];
+  if (parameters.some(name => name !== 'contentDigest')) {
+    return jsonResponse({ error: 'invalid_request' }, 400);
+  }
+  const contentDigests = url.searchParams.getAll('contentDigest');
+  if (contentDigests.length > 1) return jsonResponse({ error: 'invalid_request' }, 400);
+  if (contentDigests.length === 1) {
+    const [contentDigest] = contentDigests;
+    if (!CONTENT_DIGEST_PATTERN.test(contentDigest)) {
+      return jsonResponse({ error: 'invalid_request' }, 400);
+    }
+    await env.ROSTER_SHARES.delete(contentShareKey(shareId, contentDigest));
+    return new Response(null, { status: 204 });
+  }
   const contentItems = await listKvKeys(env.ROSTER_SHARES, contentSharePrefix(shareId));
   await Promise.all([
     env.ROSTER_SHARES.delete(SHARE_KEY_PREFIX + shareId),
@@ -2863,7 +2882,9 @@ async function route(request, env, context) {
     if (!(await bearerAuthorized(request, env))) return jsonResponse({ error: 'unauthorized' }, 401);
     if (path === '/api/admin/shares' && request.method === 'POST') return createShare(request, env);
     if (path === '/api/admin/shares' && request.method === 'GET') return listShares(env);
-    if (request.method === 'DELETE') return deleteShare(path.slice('/api/admin/shares/'.length), env);
+    if (request.method === 'DELETE') {
+      return deleteShare(request, path.slice('/api/admin/shares/'.length), env);
+    }
     return methodNotAllowed('GET, POST, DELETE');
   }
 

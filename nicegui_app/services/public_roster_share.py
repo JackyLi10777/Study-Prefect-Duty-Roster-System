@@ -16,6 +16,7 @@ import json
 import os
 import re
 import secrets
+from time import monotonic, sleep
 from typing import Any, Callable, Mapping, Protocol, Sequence
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin, urlparse
@@ -39,7 +40,9 @@ SNAPSHOT_SCHEMA_VERSION = "sing-yin-public-roster-v1"
 _AAD_PREFIX = "sing-yin-roster-share-v1:"
 _HONG_KONG = ZoneInfo("Asia/Hong_Kong")
 _SHARE_ID = re.compile(r"^[A-Za-z0-9_-]{20,64}$")
+_CONTENT_DIGEST = re.compile(r"^[a-f0-9]{64}$")
 _MAX_RESPONSE_BYTES = 1_000_000
+_VISIBILITY_POLL_SECONDS = 2.0
 
 _DAYS: tuple[SchoolDay, ...] = (
     SchoolDay.MONDAY,
@@ -81,6 +84,7 @@ class PublicRosterShareSettings:
     base_url: str
     admin_token: str
     timeout_seconds: float = 10.0
+    visibility_timeout_seconds: float = 75.0
 
     @classmethod
     def from_environment(cls) -> "PublicRosterShareSettings":
@@ -95,11 +99,20 @@ class PublicRosterShareSettings:
             timeout_seconds = float(raw_timeout)
         except ValueError:
             timeout_seconds = 10.0
+        raw_visibility_timeout = os.getenv(
+            "SING_YIN_PUBLIC_ROSTER_VIEWER_VISIBILITY_TIMEOUT_SECONDS",
+            "75",
+        ).strip()
+        try:
+            visibility_timeout_seconds = float(raw_visibility_timeout)
+        except ValueError:
+            visibility_timeout_seconds = 75.0
         return cls(
             enabled=enabled,
             base_url=os.getenv("SING_YIN_PUBLIC_ROSTER_VIEWER_BASE_URL", "").strip().rstrip("/"),
             admin_token=os.getenv("SING_YIN_PUBLIC_ROSTER_VIEWER_ADMIN_TOKEN", "").strip(),
             timeout_seconds=timeout_seconds,
+            visibility_timeout_seconds=visibility_timeout_seconds,
         )
 
     @property
@@ -111,6 +124,7 @@ class PublicRosterShareSettings:
             and bool(parsed.hostname)
             and len(self.admin_token) >= 32
             and 1 <= self.timeout_seconds <= 30
+            and 5 <= self.visibility_timeout_seconds <= 120
         )
 
     def require_configured(self) -> None:
@@ -154,12 +168,71 @@ class CloudflarePublicRosterShareGateway:
         settings: PublicRosterShareSettings,
         *,
         opener: Callable[..., Any] = urlopen,
+        sleeper: Callable[[float], None] = sleep,
+        clock: Callable[[], float] = monotonic,
     ) -> None:
         self.settings = settings
         self._opener = opener
+        self._sleep = sleeper
+        self._clock = clock
 
     def create(self, payload: Mapping[str, object]) -> Mapping[str, object]:
-        return self._request_json("POST", "/api/admin/shares", payload)
+        share_id = str(payload.get("shareId") or "")
+        _require_share_id(share_id)
+        result = self._request_json("POST", "/api/admin/shares", payload)
+        exact_digest: str | None = None
+        try:
+            returned_digest = result.get("contentDigest")
+            if returned_digest is not None:
+                exact_digest = str(returned_digest)
+                if not _CONTENT_DIGEST.fullmatch(exact_digest):
+                    exact_digest = None
+                    raise PublicRosterShareError(
+                        "The public roster viewer returned invalid share metadata."
+                    )
+            returned_share_id = result.get("shareId")
+            if returned_share_id is not None and returned_share_id != share_id:
+                raise PublicRosterShareError(
+                    "The public roster viewer returned invalid share metadata."
+                )
+            if result.get("createdAt") is not None:
+                try:
+                    _parse_datetime(result["createdAt"])
+                except (TypeError, ValueError) as error:
+                    raise PublicRosterShareError(
+                        "The public roster viewer returned invalid share metadata."
+                    ) from error
+            if self._wait_until_visible(share_id, payload):
+                return result
+        except PublicRosterShareError:
+            self._request_best_effort_withdrawal(share_id, exact_digest)
+            raise
+
+        withdrawal_requested = self._request_best_effort_withdrawal(share_id, exact_digest)
+        if withdrawal_requested:
+            raise PublicRosterShareError(
+                "The encrypted roster link did not become readable in time. "
+                "No decryption key was issued, and a withdrawal request was sent. "
+                "Check the access console before trying again."
+            )
+        raise PublicRosterShareError(
+            "The encrypted roster link did not become readable in time, and no decryption key was issued. "
+            "Check the access console and revoke it before trying again."
+        )
+
+    def _request_best_effort_withdrawal(
+        self,
+        share_id: str,
+        content_digest: str | None,
+    ) -> bool:
+        path = f"/api/admin/shares/{share_id}"
+        if content_digest is not None and _CONTENT_DIGEST.fullmatch(content_digest):
+            path = f"{path}?contentDigest={content_digest}"
+        try:
+            self._request_json("DELETE", path)
+        except PublicRosterShareError:
+            return False
+        return True
 
     def list(self) -> Sequence[Mapping[str, object]]:
         result = self._request_json("GET", "/api/admin/shares")
@@ -172,6 +245,95 @@ class CloudflarePublicRosterShareGateway:
         _require_share_id(share_id)
         self._request_json("DELETE", f"/api/admin/shares/{share_id}")
 
+    def _wait_until_visible(
+        self,
+        share_id: str,
+        expected: Mapping[str, object],
+    ) -> bool:
+        deadline = self._clock() + self.settings.visibility_timeout_seconds
+        while True:
+            remaining = deadline - self._clock()
+            if remaining <= 0:
+                return False
+            visible = self._request_public_share(
+                share_id,
+                timeout_seconds=min(self.settings.timeout_seconds, remaining),
+            )
+            if visible is not None:
+                try:
+                    same_expiry = _parse_datetime(visible.get("expiresAt")) == _parse_datetime(
+                        expected.get("expiresAt")
+                    )
+                except (TypeError, ValueError, PublicRosterShareError):
+                    same_expiry = False
+                if (
+                    visible.get("schemaVersion") != SNAPSHOT_SCHEMA_VERSION
+                    or visible.get("ciphertext") != expected.get("ciphertext")
+                    or visible.get("nonce") != expected.get("nonce")
+                    or not same_expiry
+                ):
+                    raise PublicRosterShareError(
+                        "The public roster viewer returned an unexpected encrypted share."
+                    )
+                return True
+            remaining = deadline - self._clock()
+            if remaining > 0:
+                self._sleep(min(_VISIBILITY_POLL_SECONDS, remaining))
+
+    def _request_public_share(
+        self,
+        share_id: str,
+        *,
+        timeout_seconds: float,
+    ) -> Mapping[str, object] | None:
+        self.settings.require_configured()
+        endpoint = self._validated_endpoint("/api/view")
+        body = json.dumps(
+            {"shareId": share_id},
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        request = Request(
+            endpoint,
+            data=body,
+            method="POST",
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "User-Agent": "Sing-Yin-Roster/1.0",
+            },
+        )
+        try:
+            with self._opener(request, timeout=timeout_seconds) as response:  # nosec B310
+                raw = response.read(_MAX_RESPONSE_BYTES + 1)
+        except HTTPError as error:
+            if error.code == 404 or error.code == 429 or 500 <= error.code <= 599:
+                return None
+            if error.code in {401, 403}:
+                raise PublicRosterShareError(
+                    "The public roster viewer is not accepting public share checks."
+                ) from error
+            raise PublicRosterShareError("The public roster viewer is temporarily unavailable.") from error
+        except (TimeoutError, URLError, OSError):
+            return None
+        if len(raw) > _MAX_RESPONSE_BYTES:
+            raise PublicRosterShareError("The public roster viewer returned an unexpectedly large response.")
+        try:
+            parsed_payload = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise PublicRosterShareError("The public roster viewer returned an invalid response.") from error
+        if not isinstance(parsed_payload, dict):
+            raise PublicRosterShareError("The public roster viewer returned an invalid response.")
+        return parsed_payload
+
+    def _validated_endpoint(self, path: str) -> str:
+        endpoint = urljoin(f"{self.settings.base_url}/", path.lstrip("/"))
+        parsed = urlparse(endpoint)
+        base = urlparse(self.settings.base_url)
+        if parsed.scheme != "https" or parsed.netloc != base.netloc:
+            raise PublicRosterShareError("The public roster viewer address is invalid.")
+        return endpoint
+
     def _request_json(
         self,
         method: str,
@@ -179,11 +341,7 @@ class CloudflarePublicRosterShareGateway:
         payload: Mapping[str, object] | None = None,
     ) -> Mapping[str, object]:
         self.settings.require_configured()
-        endpoint = urljoin(f"{self.settings.base_url}/", path.lstrip("/"))
-        parsed = urlparse(endpoint)
-        base = urlparse(self.settings.base_url)
-        if parsed.scheme != "https" or parsed.netloc != base.netloc:
-            raise PublicRosterShareError("The public roster viewer address is invalid.")
+        endpoint = self._validated_endpoint(path)
         body = None
         if payload is not None:
             body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
