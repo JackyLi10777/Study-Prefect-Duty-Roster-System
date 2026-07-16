@@ -8,6 +8,7 @@ from nicegui_app.config import POLICY_VERSION
 from nicegui_app.release_evidence import (
     PROJECT_ID,
     RELEASE_EXCLUDED_DIRECTORY_NAMES,
+    RELEASE_EXCLUDED_RELATIVE_PREFIXES,
     RELEASE_SOURCE_FILES,
     RELEASE_SOURCE_ROOTS,
     RELEASE_SUFFIXES,
@@ -67,27 +68,46 @@ def test_runtime_source_fingerprint_is_cached_for_repeated_showcase_reads(monkey
     release_evidence._cached_release_source_fingerprint.cache_clear()
 
 
-def test_release_fingerprint_tracks_ui_image_assets() -> None:
-    assert {".md", ".css", ".js", ".json", ".jsonc", ".png", ".svg", ".webp", ".woff2", ".ttf", ".yml"} <= RELEASE_SUFFIXES
-    assert any(path.name == "docs" for path in RELEASE_SOURCE_ROOTS)
-    assert any(path.name == ".github" for path in RELEASE_SOURCE_ROOTS)
+def test_release_fingerprint_tracks_deployed_artifacts_without_documentation_or_ci() -> None:
+    assert {
+        ".md",
+        ".m4a",
+        ".css",
+        ".js",
+        ".json",
+        ".jsonc",
+        ".png",
+        ".svg",
+        ".webp",
+        ".woff2",
+        ".ttf",
+        ".yml",
+    } <= RELEASE_SUFFIXES
+    assert not any(path.name in {"docs", "tests", ".github"} for path in RELEASE_SOURCE_ROOTS)
     assert any(path.name == "cloudflare" for path in RELEASE_SOURCE_ROOTS)
-    tracked_root_files = {path.name.lower() for path in RELEASE_SOURCE_FILES}
+    assert any(path.name == "music" for path in RELEASE_SOURCE_ROOTS)
+    tracked_relative_files = {
+        path.relative_to(release_evidence.PROJECT_ROOT).as_posix().lower()
+        for path in RELEASE_SOURCE_FILES
+    }
     assert {
         ".env.example",
         ".gitattributes",
         ".gitignore",
-        "codex_prompts.md",
-        "contributing.md",
         "daily_verses.py",
-        "license",
-        "notice.md",
-        "school badge.png",
-        "school badge (small).png",
-        "school badge (square).png",
-        "prefects.zh-hk.seed.json",
-        "daily-verses.seed.json",
-    } <= tracked_root_files
+        "data/demo/prefects.zh-hk.seed.json",
+        "data/devotional/daily-verses.seed.json",
+        "scripts/start_sing_yin_roster.ps1",
+        "scripts/verify_release_candidate.py",
+        "scripts/run_security_checks.py",
+    } <= tracked_relative_files
+    assert {
+        "readme.md",
+        "project_status.md",
+        "professional_design_system.md",
+    }.isdisjoint(tracked_relative_files)
+    assert "music/custom/" in RELEASE_EXCLUDED_RELATIVE_PREFIXES
+    assert "music/youtube-imports/" in RELEASE_EXCLUDED_RELATIVE_PREFIXES
 
 
 def test_release_fingerprint_tracks_package_manifest_but_not_dependency_cache(monkeypatch, tmp_path: Path) -> None:

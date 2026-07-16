@@ -3,9 +3,34 @@ name: CodeQL
 on:
   push:
     branches: [main, nicegui-self-hosted]
+    paths:
+      - "nicegui_app/**/*.py"
+      - "packages/**/*.py"
+      - "migrations/**/*.py"
+      - "scripts/**/*.py"
+      - "daily_verses.py"
+      - "requirements*.txt"
+      - "requirements*.lock"
+      - "pyproject.toml"
+      - ".github/workflows/codeql.yml"
   pull_request:
+    paths:
+      - "nicegui_app/**/*.py"
+      - "packages/**/*.py"
+      - "migrations/**/*.py"
+      - "scripts/**/*.py"
+      - "daily_verses.py"
+      - "requirements*.txt"
+      - "requirements*.lock"
+      - "pyproject.toml"
+      - ".github/workflows/codeql.yml"
   schedule:
     - cron: "23 3 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

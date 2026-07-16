@@ -121,10 +121,13 @@ results cannot be published, shared through `/view#…`, or imported into the
 official workbench.
 
 For every release, a maintainer runs the focused Python tests, Worker Deno
-contracts, complete Python suite, and `scripts/verify_guest_trial.py`. Exact
-commands and the one-time official-host reset procedure are documented in
+contracts, complete Python suite, and `scripts/verify_guest_trial.py`. Routine
+changes first use `python -X utf8 scripts\verify_update.py`; it selects the
+smallest safe profile and upgrades unknown or deployable changes to full
+verification. Exact commands and the one-time official-host reset procedure are documented in
 [`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and
-[`WINDOWS_DEDICATED_HOST_SETUP.md`](docs/WINDOWS_DEDICATED_HOST_SETUP.md).
+[`WINDOWS_DEDICATED_HOST_SETUP.md`](docs/WINDOWS_DEDICATED_HOST_SETUP.md). The
+complete risk matrix is in [`UPDATE_WORKFLOW.md`](docs/UPDATE_WORKFLOW.md).
 
 ## Operator workflow
 
@@ -280,12 +283,21 @@ adjustment, or fairness rows.
 ## Verification
 
 ```powershell
+python -X utf8 scripts\verify_update.py
+```
+
+This is the normal one-command entry point. Documentation, test-only, CI,
+Worker, and deployable runtime changes receive different fail-closed profiles;
+unknown paths are upgraded to full verification. Independent read-only checks
+run concurrently. A formal runtime release still uses:
+
+```powershell
 python -m pip install -r requirements-dev.txt
 python -m playwright install chromium
 python -X utf8 scripts\verify_release_candidate.py
 ```
 
-The current complete suite contains 483 Python tests plus 23 Worker Deno
+The current complete suite contains 505 Python tests plus 23 Worker Deno
 contract tests. The release candidate runs twelve fail-closed checks: repository hygiene,
 supply-chain security, Cloudflare Worker Deno contracts, the complete Python
 suite, compilation, dependency integrity, desktop browser smoke, measured

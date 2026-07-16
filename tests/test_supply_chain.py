@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.run_security_checks import _is_public_pnpm_integrity
+from scripts.run_security_checks import _SECRET_SCAN_TARGETS, _is_public_pnpm_integrity
 from zoneinfo import ZoneInfo
 
 
@@ -39,12 +39,16 @@ def test_github_quality_gates_use_full_history_and_locked_dependencies() -> None
 
     assert "fetch-depth: 0" in workflow
     assert "--require-hashes -r requirements-dev.lock" in workflow
-    assert "check_repository_hygiene.py" in workflow
-    assert "run_security_checks.py" in workflow
+    assert "verify_update.py" in workflow
+    assert "needs_deno" in workflow
+    assert "cancel-in-progress: true" in workflow
 
 
 def test_codeql_and_dependabot_are_configured() -> None:
-    assert (ROOT / ".github" / "workflows" / "codeql.yml").exists()
+    codeql = (ROOT / ".github" / "workflows" / "codeql.yml").read_text(encoding="utf-8")
+    assert "nicegui_app/**/*.py" in codeql
+    assert "docs/**" not in codeql
+    assert "cancel-in-progress: true" in codeql
     dependabot = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
     assert "package-ecosystem: pip" in dependabot
     assert "package-ecosystem: github-actions" in dependabot
@@ -55,6 +59,7 @@ def test_local_secret_scan_includes_the_cloudflare_gateway() -> None:
 
     assert '"cloudflare"' in security_gate
     assert '"pnpm-lock.yaml"' not in security_gate
+    assert {"docs", "README.md", "PROJECT_STATUS.md"} <= set(_SECRET_SCAN_TARGETS)
 
 
 def test_secret_scan_ignores_only_standard_public_pnpm_integrity_lines() -> None:

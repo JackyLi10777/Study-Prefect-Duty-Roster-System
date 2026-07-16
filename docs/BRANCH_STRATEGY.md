@@ -23,9 +23,14 @@ legacy Streamlit history.
 
 ## Release sequence
 
-1. Run `python -X utf8 scripts/verify_release_candidate.py`.
-2. Confirm `logs/release-candidate-report.json` reports all gates passed.
+1. Run `python -X utf8 scripts/verify_update.py`. It classifies the committed
+   change and runs the smallest safe profile; unknown paths fail closed.
+2. If the plan reports a formal runtime release, confirm
+   `logs/release-candidate-report.json` reports all gates passed for the current
+   runtime fingerprint. Do not rerun hygiene or security separately because
+   the formal verifier already owns those gates.
 3. Build the public fictional-data/evidence archive with
    `python -X utf8 scripts/build_public_archive.py`.
-4. Review staged paths and run `python -X utf8 scripts/check_repository_hygiene.py`.
-5. Commit on `main`, update `nicegui-self-hosted`, and push both without force.
+4. Review staged paths; never use an unreviewed `git add -A`.
+5. Commit on `main`, update `nicegui-self-hosted` only for a matching platform
+   release, and push without force.

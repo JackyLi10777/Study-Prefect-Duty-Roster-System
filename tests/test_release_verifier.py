@@ -113,6 +113,13 @@ def test_release_verifier_builds_the_real_deno_gateway_test_command(monkeypatch)
     ]
 
 
+def test_release_verifier_deselects_the_python_deno_wrapper_to_avoid_duplicate_runtime_tests() -> None:
+    source = Path(verify_release_candidate.__file__).read_text(encoding="utf-8")
+
+    assert "--deselect=" in source
+    assert "test_worker_runtime_access_crypto_and_proxy_contracts" in source
+
+
 def test_release_verifier_accepts_normal_and_classified_disconnect_console_lines(tmp_path: Path) -> None:
     log_path = tmp_path / "server-console.log"
     log_path.write_text(

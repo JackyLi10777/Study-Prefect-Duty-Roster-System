@@ -141,9 +141,9 @@ python -X utf8 -m nicegui_app.main
 
 3. `SING_YIN_OPEN_BROWSER` 預設為 `true`，令首次開啟更直接；受控或無介面運行可設為 `false`。
 4. 只使用 `http://127.0.0.1:8080`；現時程式刻意只綁定 localhost。
-5. 正式版本更新前，教師顧問或 IT 支援應先執行 `python -m pip install --require-hashes -r requirements-dev.lock`、`python -m playwright install chromium`，並確認 Deno 可用，再執行 `python -X utf8 scripts\verify_release_candidate.py`。目前入口共有 12 道閘門：Git 邊界、安全掃描、Cloudflare Worker Deno 契約、完整 Python 測試、編譯、依賴、桌面 UI、跨頁效能／記憶體、隔離寫入／PDF／還原、手機適應、嚴格部署就緒及備份失敗復原。它自行建立臨時資料庫、備份及日誌，絕不採用正式學校資料路徑；只有 `logs/release-candidate-report.json` 的 12 項均為 `pass` 且指紋仍相符，才算機器驗證完成。這不能取代下方的人手驗收。
+5. 完成一批更新後先執行 `python -X utf8 scripts\verify_update.py`。它會按 Git 變更自動選擇 `docs`、`tests`、`assurance`、`worker` 或 `full`，並顯示執行及略過理由；未知路徑一律升級，不會靜默少驗證。只有正式 runtime、政策、資料庫、依賴、Worker、Windows 主機或正式證據閘門改動，才需要先安裝 `requirements-dev.lock`、Chromium 及 Deno，再由同一命令啟動完整 `verify_release_candidate.py`。完整入口共有 12 道閘門：Git 邊界、安全掃描、Cloudflare Worker Deno 契約、完整 Python 測試、編譯、依賴、桌面 UI、跨頁效能／記憶體、隔離寫入／PDF／還原、手機適應、嚴格部署就緒及備份失敗復原。它自行建立臨時資料庫、備份及日誌，絕不採用正式學校資料路徑；只有 `logs/release-candidate-report.json` 的 12 項均為 `pass` 且 runtime 指紋仍相符，才算機器驗證完成。文件、測試及 CI 改動另有聚焦證據，不會令已證實的 runtime 誤報過期；詳細矩陣見 `docs/UPDATE_WORKFLOW.md`。這不能取代下方的人手驗收。
    `D:\code_v3` 是開發及驗證副本，`C:\SingYinRoster` 是目前工作排程器實際執行的安裝副本；修改前者不會自動更新後者。完成驗證後仍須依 Windows 專用主機手冊第 12 節備份、停止、更新、重新啟動及核對，否則瀏覽器會繼續顯示舊版。
-6. 發布前單獨執行 `python -X utf8 scripts\check_repository_hygiene.py`。只有 `status: pass` 且 `history: present` 才可繼續；沒有真正 commit 歷史、被追蹤的運行資料，或尚未加入 Git 的發布敏感程式／遷移／Cloudflare／設定／交接文件，都會直接阻擋發布。再執行 `python -X utf8 scripts\run_security_checks.py`，確認依賴漏洞、程式靜態分析及 Python／Cloudflare 秘密掃描全部通過。
+6. 不要在 `verify_update.py` 或完整 verifier 通過後再重跑同一套 hygiene／security；它們已由所選 profile 擁有。只有單獨調查某一道閘門時才直接執行相應腳本。發布前仍須人工閱讀 `git status --short`，不可用未核對的 `git add -A`；沒有真正 commit 歷史、被追蹤的運行資料，或尚未加入 Git 的發布敏感程式／遷移／Cloudflare／設定／交接文件，都會由 repository hygiene 阻擋。
 
 ### 操作失敗與本機支援記錄
 

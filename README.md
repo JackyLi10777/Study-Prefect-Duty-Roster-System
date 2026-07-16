@@ -127,6 +127,7 @@ python -X utf8 -m nicegui_app.main
 | 訪客導覽、30 分鐘裝置內試用、登入、登出及唯讀週表 | [單一網站存取手冊](docs/PUBLIC_ROSTER_VIEWER.md) |
 | 第一次接手、隔離練習及重設 | `START_PRACTICE_MODE.cmd`、`RESET_PRACTICE_MODE.cmd` 及 [快速啟動](docs/QUICKSTART.md) |
 | 備份、還原、交接、正式驗收 | [首次發布與交接手冊](docs/RELEASE_HANDOVER.md) |
+| 完成一批改動後，按風險一次完成必要驗證 | [更新、驗證與上傳流程](docs/UPDATE_WORKFLOW.md) |
 | 每項驗收要求的自動化證據與真人責任 | [正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md) |
 | 本機、Cloudflare Access 與真正雲端部署之取捨 | [部署與遠端存取決策指南](docs/DEPLOYMENT_DECISION.md) |
 | NiceGUI、政策、工作流與資料層責任 | [NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) |
@@ -308,7 +309,15 @@ Cloudflare KV 會在不同節點同步新密文。系統不會提早顯示一條
 
 ## 開發與驗證
 
-目前完整套件收集為 483 項 Python 測試，Worker 另有 23 項 Deno 合約測試。發布驗證把互補證據分開：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、配圖主題切換、校徽、空／錯誤／復原狀態及瀏覽器 `pageerror`；`scripts/verify_runtime_performance.py` 核對冷載、重複開關音樂，以及跨代表頁面後返回首頁的 heap／DOM／listener 增長；`scripts/verify_nicegui_mobile.py` 專門核對 320／390 px 直向及手機橫向排列；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名完成整條排班寫入、雙語 PDF、請假調整、另一資料庫還原，以及確認語句保護的新學年封存與新名單匯入；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。NiceGUI 的長連線及互動後背景音樂令全網絡靜止不是可靠完成訊號，因此測試以 DOM、URL 及真實操作結果判斷就緒；所有瀏覽器階段同時把 console error 及未捕捉頁面錯誤視為失敗。
+目前完整套件收集為 505 項 Python 測試，Worker 另有 23 項 Deno 合約測試。發布驗證把互補證據分開：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、配圖主題切換、校徽、空／錯誤／復原狀態及瀏覽器 `pageerror`；`scripts/verify_runtime_performance.py` 核對冷載、重複開關音樂，以及跨代表頁面後返回首頁的 heap／DOM／listener 增長；`scripts/verify_nicegui_mobile.py` 專門核對 320／390 px 直向及手機橫向排列；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名完成整條排班寫入、雙語 PDF、請假調整、另一資料庫還原，以及確認語句保護的新學年封存與新名單匯入；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。NiceGUI 的長連線及互動後背景音樂令全網絡靜止不是可靠完成訊號，因此測試以 DOM、URL 及真實操作結果判斷就緒；所有瀏覽器階段同時把 console error 及未捕捉頁面錯誤視為失敗。
+
+日常修改不再靠人手猜測要跑哪一套檢查。完成一批改動後先執行：
+
+```powershell
+python -X utf8 scripts\verify_update.py
+```
+
+它按 Git 變更在 `docs`、`tests`、`assurance`、`worker` 及 `full` profile 中失敗時向高風險選擇，並行執行互不寫入的低風險檢查。只有可部署 runtime、政策、資料庫、依賴、Worker、主機或正式證據閘門改動才啟動完整候選驗證；文件、測試及 CI 改動不再令已證實的 runtime 指紋過期。完整矩陣及不可省略的人手邊界見[更新、驗證與上傳流程](docs/UPDATE_WORKFLOW.md)。
 
 ```powershell
 python -X utf8 scripts\check_deployment_readiness.py
@@ -329,7 +338,7 @@ python -X utf8 scripts\verify_release_candidate.py
 
 驗證器自行建立暫存 SQLite、備份及日誌路徑，依次執行 12 道閘門：版本庫衛生、安全掃描、Cloudflare Worker Deno 契約、完整 Python 測試、Python 編譯、依賴完整性、桌面 NiceGUI smoke、跨頁效能／記憶體穩定性、整條虛構資料寫入／PDF／替補／交接／另一資料庫還原、獨立手機適應驗證、嚴格部署就緒，以及「資料已提交但備份失敗」復原演練。每個瀏覽器階段停機後亦會檢查伺服器終端；console error、`pageerror`、`ERROR`、`CRITICAL`、traceback 或未取回的 task exception 均會令發布候選失敗，而不會把原始終端內容複製到報告。兩份 PDF 會直接解析並核對已發布狀態、五個上課日、所有中文姓名及四個 202 室關閉格。它不會採用 `.env` 內的正式資料路徑；結果寫入 `logs/release-candidate-report.json`，並明確標示仍需真人驗收。任何一關失敗，整體狀態均為 `fail`，不可視為發布候選通過。
 
-交接頁會把機器報告與目前發布相關程式、測試、遷移、依賴、Cloudflare Worker／設定及驗證腳本的 SHA-256 指紋重新比對。報告缺失、失敗、格式不可信或程式改動後過期時，均不會顯示為通過；即使目前 12 項檢查全部通過，畫面仍保留首席導學風紀及教師顧問的真人驗收責任。
+交接頁會把機器報告與目前可部署 runtime、遷移、依賴、Cloudflare Worker／設定、Windows 主機操作及正式證據閘門的 SHA-256 指紋重新比對。報告缺失、失敗、格式不可信或這些發布輸入改動後過期時，均不會顯示為通過；文件、測試或 CI 文字本身不會把已證實的 runtime 誤標為過期。即使目前 12 項檢查全部通過，畫面仍保留首席導學風紀及教師顧問的真人驗收責任。
 
 `repository_hygiene` 只輸出類別與數量，不顯示檔名或內容。它會阻擋沒有 commit 歷史、即時 `.env`、運行中 SQLite／備份／日誌、PDF／ZIP、匯入名單及操作者自訂音樂，亦會阻擋尚未加入 Git 索引的發布敏感程式、遷移、Cloudflare、設定或交接文件，並核對 `.gitignore` 仍保留資料邊界。`security_gates` 另外核對鎖定依賴漏洞、中高風險程式問題，以及 Python／Worker／設定檔的秘密候選。只有經零筆營運資料檢查產生的 `archive/fictional-data/` 快照及已審閱的根目錄內置音樂可進入版本庫；虛構封存不能成為繞過即時資料邊界的方法。
 

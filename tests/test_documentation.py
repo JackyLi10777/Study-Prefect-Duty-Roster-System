@@ -38,6 +38,7 @@ def test_readme_explains_safe_start_and_links_to_operator_documents() -> None:
         "NOTICE.md",
         "CONTRIBUTING.md",
         "docs/BRANCH_STRATEGY.md",
+        "docs/UPDATE_WORKFLOW.md",
         "archive/README.md",
     ):
         assert (PROJECT_ROOT / relative_path).is_file()
@@ -198,6 +199,9 @@ def test_release_verification_dependencies_and_safe_orchestrator_are_shipped() -
     assert "verify_nicegui_write_pipeline.py" in verifier
     assert "verify_nicegui_partial_backup.py" in verifier
     assert "check_deployment_readiness.py" in verifier
+    update_workflow = (PROJECT_ROOT / "docs" / "UPDATE_WORKFLOW.md").read_text(encoding="utf-8")
+    assert "python -X utf8 scripts\\verify_update.py" in update_workflow
+    assert "未能識別的新路徑或 Git base" in update_workflow
 
 
 def test_acceptance_matrix_separates_machine_evidence_from_human_approval() -> None:

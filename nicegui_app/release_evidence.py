@@ -19,25 +19,14 @@ RELEASE_SOURCE_ROOTS = (
     PROJECT_ROOT / "nicegui_app",
     PROJECT_ROOT / "packages",
     PROJECT_ROOT / "migrations",
-    PROJECT_ROOT / "scripts",
-    PROJECT_ROOT / "tests",
-    PROJECT_ROOT / "docs",
-    PROJECT_ROOT / ".github",
     PROJECT_ROOT / "cloudflare",
+    PROJECT_ROOT / "music",
 )
 RELEASE_SOURCE_FILES = (
     PROJECT_ROOT / ".env.example",
     PROJECT_ROOT / ".gitattributes",
     PROJECT_ROOT / ".gitignore",
-    PROJECT_ROOT / "README.md",
-    PROJECT_ROOT / "README-EN.md",
-    PROJECT_ROOT / "CODEX_PROMPTS.md",
-    PROJECT_ROOT / "CONTRIBUTING.md",
     PROJECT_ROOT / "daily_verses.py",
-    PROJECT_ROOT / "LICENSE",
-    PROJECT_ROOT / "NOTICE.md",
-    PROJECT_ROOT / "Professional_Design_System.md",
-    PROJECT_ROOT / "PROJECT_STATUS.md",
     PROJECT_ROOT / "requirements.txt",
     PROJECT_ROOT / "requirements-dev.txt",
     PROJECT_ROOT / "requirements.lock",
@@ -47,13 +36,51 @@ RELEASE_SOURCE_FILES = (
     PROJECT_ROOT / "START_SING_YIN_ROSTER.cmd",
     PROJECT_ROOT / "START_PRACTICE_MODE.cmd",
     PROJECT_ROOT / "RESET_PRACTICE_MODE.cmd",
-    PROJECT_ROOT / "school badge.png",
-    PROJECT_ROOT / "school badge (small).png",
-    PROJECT_ROOT / "school badge (square).png",
     PROJECT_ROOT / "data" / "demo" / "prefects.zh-HK.seed.json",
     PROJECT_ROOT / "data" / "devotional" / "daily-verses.seed.json",
+    # Runtime and host-operation scripts are explicit. Documentation, tests,
+    # CI definitions, and the fast change classifier have their own focused
+    # verification and no longer stale a proven runtime candidate.
+    PROJECT_ROOT / "scripts" / "activate_cloudflare_private_warp.ps1",
+    PROJECT_ROOT / "scripts" / "activate_cloudflare_remote_access.ps1",
+    PROJECT_ROOT / "scripts" / "build_pdf_fonts.py",
+    PROJECT_ROOT / "scripts" / "check_deployment_readiness.py",
+    PROJECT_ROOT / "scripts" / "doctor_windows_remote_access.ps1",
+    PROJECT_ROOT / "scripts" / "inspect_support_log.py",
+    PROJECT_ROOT / "scripts" / "prepare_cloudflare_remote_access.ps1",
+    PROJECT_ROOT / "scripts" / "prepare_windows_host.ps1",
+    PROJECT_ROOT / "scripts" / "register_windows_startup_task.ps1",
+    PROJECT_ROOT / "scripts" / "reset_official_data.py",
+    PROJECT_ROOT / "scripts" / "reset_practice_mode.py",
+    PROJECT_ROOT / "scripts" / "start_sing_yin_roster.ps1",
+    PROJECT_ROOT / "scripts" / "verify_cloudflare_access.ps1",
+    PROJECT_ROOT / "scripts" / "verify_cloudflare_private_warp.ps1",
+    PROJECT_ROOT / "scripts" / "verify_formal_backup_restore.py",
+    PROJECT_ROOT / "scripts" / "verify_practice_mode.py",
+    PROJECT_ROOT / "scripts" / "verify_public_roster_viewer.py",
+    PROJECT_ROOT / "scripts" / "windows_host_common.ps1",
+    # A change to a formal evidence gate invalidates old evidence. Ordinary
+    # tests and documentation do not alter the deployed artifact.
+    PROJECT_ROOT / "scripts" / "check_repository_hygiene.py",
+    PROJECT_ROOT / "scripts" / "run_security_checks.py",
+    PROJECT_ROOT / "scripts" / "verify_guest_trial.py",
+    PROJECT_ROOT / "scripts" / "verify_nicegui_mobile.py",
+    PROJECT_ROOT / "scripts" / "verify_nicegui_partial_backup.py",
+    PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py",
+    PROJECT_ROOT / "scripts" / "verify_nicegui_write_pipeline.py",
+    PROJECT_ROOT / "scripts" / "verify_release_candidate.py",
+    PROJECT_ROOT / "scripts" / "verify_runtime_performance.py",
 )
 RELEASE_EXCLUDED_DIRECTORY_NAMES = {"__pycache__", "node_modules", ".wrangler"}
+RELEASE_EXCLUDED_RELATIVE_PREFIXES = (
+    "music/custom/",
+    "music/youtube-imports/",
+    "music/.youtube-import-staging/",
+    "music/custom-library.json",
+    "music/youtube-playlists.json",
+    "music/.custom-library.json",
+    "music/.youtube-playlists.json",
+)
 RELEASE_SUFFIXES = {
     ".py",
     ".ini",
@@ -66,6 +93,7 @@ RELEASE_SUFFIXES = {
     ".json",
     ".jsonc",
     ".md",
+    ".m4a",
     ".png",
     ".svg",
     ".webp",
@@ -86,6 +114,14 @@ class ReleaseEvidence:
     human_acceptance_required: bool = True
 
 
+def _is_excluded_release_path(path: Path) -> bool:
+    try:
+        relative = path.relative_to(PROJECT_ROOT).as_posix().lower()
+    except ValueError:
+        return False
+    return any(relative.startswith(prefix) for prefix in RELEASE_EXCLUDED_RELATIVE_PREFIXES)
+
+
 def _calculate_release_source_fingerprint(paths: Iterable[Path] | None = None) -> tuple[str, int]:
     candidates = [
         path
@@ -96,6 +132,7 @@ def _calculate_release_source_fingerprint(paths: Iterable[Path] | None = None) -
             path.is_file()
             and path.suffix.lower() in RELEASE_SUFFIXES
             and not RELEASE_EXCLUDED_DIRECTORY_NAMES.intersection(path.parts)
+            and not _is_excluded_release_path(path)
         )
     ] if paths is None else [Path(path) for path in paths if Path(path).is_file()]
     if paths is None:

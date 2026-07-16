@@ -39,6 +39,10 @@ _SERVER_FAILURE_MARKERS = (
     re.compile(r"Traceback \(most recent call last\):"),
     re.compile(r"Task exception was never retrieved", re.IGNORECASE),
 )
+_WORKER_RUNTIME_TEST = (
+    "tests/test_cloudflare_roster_viewer.py::"
+    "test_worker_runtime_access_crypto_and_proxy_contracts"
+)
 
 
 class ReleaseVerificationError(RuntimeError):
@@ -245,7 +249,15 @@ def main() -> int:
         )
         _run_check(
             "automated_test_suite",
-            [sys.executable, "-X", "utf8", "-m", "pytest", "-q"],
+            [
+                sys.executable,
+                "-X",
+                "utf8",
+                "-m",
+                "pytest",
+                "-q",
+                f"--deselect={_WORKER_RUNTIME_TEST}",
+            ],
             base_environment,
             report,
         )
