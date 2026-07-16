@@ -421,7 +421,8 @@ def test_secondary_pages_share_semantic_colour_and_empty_state_grammar() -> None
     assert "music_no_custom_tracks_title" in music_source
     assert "youtube_library_empty_title" in youtube_source
     assert "sy-empty-state--illustrated" in theme
-    assert page_source.count("illustrated=True") == 2
+    assert page_source.count("illustrated=True") == 1
+    assert 'classes("sy-dashboard-history-empty")' in page_source
     assert "sy-button-attention" in page_source
     assert "color=negative data-testid=confirm-restore-action" in page_source
     assert 'classes(f"sy-acceptance-card-icon sy-fg-{state_tone}")' in page_source

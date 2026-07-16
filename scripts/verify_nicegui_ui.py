@@ -542,9 +542,15 @@ def main() -> None:
         assert_status_tone_contrast(page)
         assert "devotional-sacred-light-v1.webp" in page.locator(".sy-daily-start").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "weekly-pulse-light-v1.webp" in page.locator(".sy-workbench").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
-        assert "empty-ready-light-v1.webp" in page.locator(".sy-empty-state--illustrated").first.evaluate(
-            "element => getComputedStyle(element).backgroundImage"
-        )
+        dashboard_history = page.get_by_test_id("dashboard-history")
+        assert dashboard_history.count() == 1
+        assert dashboard_history.locator(".sy-dashboard-history-empty").count() == 1
+        assert dashboard_history.evaluate("element => getComputedStyle(element).backgroundImage") == "none"
+        workbench_box = page.locator(".sy-workbench").bounding_box()
+        history_box = dashboard_history.bounding_box()
+        assert workbench_box is not None and history_box is not None
+        assert history_box["x"] > workbench_box["x"] + workbench_box["width"] - 2
+        assert abs(history_box["y"] - workbench_box["y"]) <= 2
         assert page.locator(".sy-devotional-tone-select").count() == 1
         music_button = page.get_by_test_id("page-music-button")
         assert music_button.count() == 1
@@ -629,6 +635,10 @@ def main() -> None:
             response = page.goto(f"{BASE_URL}{path}", wait_until="domcontentloaded")
             assert response is not None and response.status == 200, path
             page.get_by_text(expected_text, exact=False).first.wait_for(timeout=10_000)
+            if path == "/rosters":
+                assert "empty-ready-light-v1.webp" in page.locator(".sy-empty-state--illustrated").evaluate(
+                    "element => getComputedStyle(element).backgroundImage"
+                )
         page.goto(f"{BASE_URL}/handover", wait_until="domcontentloaded")
         assert page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link").count() == 4
         assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 1
@@ -1024,9 +1034,9 @@ def main() -> None:
         )
         assert "devotional-sacred-dark-v1.webp" in page.locator(".sy-daily-start").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "weekly-pulse-dark-v1.webp" in page.locator(".sy-workbench").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
-        assert "empty-ready-dark-v1.webp" in page.locator(".sy-empty-state--illustrated").first.evaluate(
+        assert page.get_by_test_id("dashboard-history").evaluate(
             "element => getComputedStyle(element).backgroundImage"
-        )
+        ) == "none"
         assert page.locator(".sy-flow-step--active .sy-tone-action").evaluate(
             "element => getComputedStyle(element).color"
         ) == "rgb(155, 194, 210)"
@@ -1220,7 +1230,11 @@ def main() -> None:
         mobile_primary_box = mobile_primary_actions.bounding_box()
         assert mobile_primary_box is not None and mobile_primary_box["y"] + mobile_primary_box["height"] <= 844, mobile_primary_box
         assert page.locator(".sy-flow-step--active .sy-flow-action").is_hidden()
-        assert page.locator(".sy-empty-state--illustrated .q-btn").count() == 0
+        mobile_workbench_box = page.locator(".sy-workbench").bounding_box()
+        mobile_history_box = page.get_by_test_id("dashboard-history").bounding_box()
+        assert mobile_workbench_box is not None and mobile_history_box is not None
+        assert mobile_history_box["y"] >= mobile_workbench_box["y"] + mobile_workbench_box["height"]
+        assert page.locator(".sy-empty-state--illustrated").count() == 0
         mobile_music_button = page.get_by_test_id("page-music-button")
         mobile_music_box = mobile_music_button.bounding_box()
         assert mobile_music_box is not None and mobile_music_box["width"] >= 44 and mobile_music_box["height"] >= 44

@@ -116,6 +116,8 @@ def test_guest_platform_separates_overview_from_focused_trial() -> None:
     assert "history_weight" in source
     assert "s10777@syss.edu.hk" in source
     assert "JackyLi10777/Study-Prefect-Duty-Roster-System" in source
+    assert "Co-created by LI Chuangjie Jacky and Codex" in source
+    assert "Lee Chong Kit" not in source
     assert "TRUST BOUNDARY" in source
     assert "The guest tour contains no official roster data." in source
     assert "不包含任何正式值班資料" in source

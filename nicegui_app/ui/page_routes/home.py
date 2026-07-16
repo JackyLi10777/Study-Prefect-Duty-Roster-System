@@ -65,8 +65,8 @@ def dashboard_page() -> None:
                 ui.label(t("mobile_next_action_label")).classes("sy-mobile-next-action-kicker")
                 ui.label(t(next_title_key)).classes("sy-mobile-next-action-title")
             ui.button(t(next_action_key), icon="arrow_forward", on_click=next_action).props("color=primary")
-        with ui.row().classes("sy-dashboard-grid sy-dashboard-grid--single w-full items-stretch"):
-            with ui.element("section").classes("sy-workbench grow min-w-[620px]"):
+        with ui.row().classes("sy-dashboard-grid w-full items-stretch"):
+            with ui.element("section").classes("sy-workbench grow min-w-0"):
                 with ui.row().classes("w-full items-start justify-between gap-5 flex-wrap"):
                     with ui.column().classes("gap-1"):
                         ui.html(t("workbench_title"), tag="h2").classes("sy-workbench-title")
@@ -97,23 +97,41 @@ def dashboard_page() -> None:
                         _render_flow_step(number=2, title_key="flow_review", detail_key="flow_review_detail", state="done", state_key="flow_done", icon="fact_check", action_key="flow_open_published", action=lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}"))
                         _render_flow_step(number=3, title_key="flow_leave", detail_key="flow_leave_detail", state="active", state_key="flow_current", icon="event_busy", action_key="flow_open_adjustment", action=lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}/adjustments"))
                 ui.button(t("first_time_link"), icon="play_circle", on_click=lambda: ui.navigate.to("/getting-started")).props("flat").classes("mt-5")
-        ui.html(t("current_rosters"), tag="h2").classes("text-xl font-semibold mt-3")
-        weeks = weeks[:3]
-        if not weeks:
-            _render_empty_state(
-                title_key="empty_roster_title",
-                body_key="empty_roster_detail",
-                icon="event_note",
-                illustrated=True,
-            )
-        else:
-            for week in weeks:
-                with ui.row().classes("sy-surface w-full items-center justify-between px-5 py-4"):
-                    with ui.column().classes("gap-0"):
-                        ui.label(str(week["weekStart"])).classes("font-semibold")
-                        ui.label(f"{t('version')} {week['version']}").classes("text-sm text-[var(--sy-muted)]")
-                    _tone_badge(t("published") if week["status"] == "published" else t("draft"), "stable" if week["status"] == "published" else "action")
-                    ui.button(t("view"), icon="arrow_forward", on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}")).props("flat")
+            recent_weeks = weeks[:3]
+            with ui.element("aside").classes("sy-dashboard-history").props(
+                "aria-labelledby=dashboard-history-title data-testid=dashboard-history"
+            ):
+                with ui.row().classes("sy-dashboard-history-header w-full items-start justify-between gap-3"):
+                    with ui.column().classes("gap-1 min-w-0"):
+                        ui.html(t("current_rosters"), tag="h2").classes("sy-dashboard-history-title").props(
+                            "id=dashboard-history-title"
+                        )
+                        ui.label(t("dashboard_history_copy")).classes("sy-dashboard-history-copy")
+                    if recent_weeks:
+                        _tone_badge(t("dashboard_history_count", count=len(recent_weeks)), "neutral")
+                if not recent_weeks:
+                    with ui.element("div").classes("sy-dashboard-history-empty").props("role=status"):
+                        ui.icon("event_note").classes("sy-dashboard-history-empty-icon").props("aria-hidden=true")
+                        with ui.column().classes("gap-1 min-w-0"):
+                            ui.label(t("empty_roster_title")).classes("sy-dashboard-history-empty-title")
+                            ui.label(t("empty_roster_detail")).classes("sy-dashboard-history-empty-copy")
+                else:
+                    with ui.element("ul").classes("sy-dashboard-history-list"):
+                        for week in recent_weeks:
+                            with ui.element("li").classes("sy-dashboard-history-item"):
+                                with ui.row().classes("w-full items-start justify-between gap-3 no-wrap"):
+                                    with ui.column().classes("gap-1 min-w-0"):
+                                        ui.label(str(week["weekStart"])).classes("sy-dashboard-history-week")
+                                        ui.label(f"{t('version')} {week['version']}").classes("sy-dashboard-history-meta")
+                                    _tone_badge(
+                                        t("published") if week["status"] == "published" else t("draft"),
+                                        "stable" if week["status"] == "published" else "action",
+                                    )
+                                ui.button(
+                                    t("view"),
+                                    icon="arrow_forward",
+                                    on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}"),
+                                ).props("flat").classes("sy-dashboard-history-action")
 
 
 @ui.page("/dashboard")

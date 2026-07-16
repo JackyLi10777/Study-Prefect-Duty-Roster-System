@@ -196,6 +196,33 @@ The common claim that a systematic SaaS layout automatically creates a clearer o
 
 **Decision rule:** adopt the smallest version of a pattern that resolves a demonstrated operator or visitor problem. Revise or remove it if browser evidence shows slower task completion, a missed consequence, increased navigation, permission confusion, information loss on mobile, or weaker contrast／focus. “Premium”, “enterprise” and “modern” are value judgements, not acceptance criteria.
 
+### Reference-led prompt and component protocol
+
+The project may study public component galleries and design agents, but they are discovery tools rather than a second design system. The observed ideas and their Sing Yin adaptations must remain separate:
+
+| Reference | Observed strength | Adopted adaptation | Rejected default |
+|---|---|---|---|
+| ReactBits | Demonstrates motion and interaction variants as isolated components | Use it to ask whether one restrained state transition could clarify feedback; reimplement only with the existing NiceGUI／Quasar／local-GSAP grammar | React-only source imports, shaders, cursor spectacle, looping text, animated backgrounds or landing-page motion inside operational screens |
+| SuperDesign | Uses a strong screen default followed by a small set of hard constraints and delta-based iteration | Every design task names the operator moment, affected route and source files, retained structure, three to six constraints, required states and browser evidence | Vague “premium dashboard” prompts, full-screen regeneration and repeated aesthetic rerolls |
+| 21st.dev | Organises examples by component, screen and theme and supports side-by-side variants | Search by the actual component problem—table, empty state, dialog, stepper—then compare structure before visual style | Installing community React／Tailwind components into NiceGUI or mixing several contributors’ visual dialects |
+| Linear design analysis | Uses scarce accent colour, a stable surface ladder, hairlines and predictable spacing | Keep one action colour, semantic status tones, solid surfaces and stable spacing; let real roster content lead | Near-black-only branding, proprietary type, marketing screenshots, aggressive negative tracking and dark-mode-only rules |
+
+Reusable design prompt for this repository:
+
+```text
+Operator moment: [one real Head Study Prefect decision].
+Route and owners: [NiceGUI route/component files]; keep policy, workflow, persistence and URLs unchanged.
+Keep: [existing information order and components that already work].
+Change: [one evidence-backed friction], using existing Professional_Design_System tokens and components.
+Constraints: Traditional Chinese first and complete English; Chinese names unchanged; one primary action;
+AA contrast, visible focus, 44px touch target, light/dark/mobile parity and reduced-motion parity.
+States: populated, empty, loading, error, disabled/busy and recovery where the component can reach them.
+Avoid: KPI-dashboard defaults, new decorative imagery, glass, looping motion, copied brand assets and a new runtime dependency.
+Evidence: focused test plus isolated desktop-light, desktop-dark and phone browser checks with zero console/page errors.
+```
+
+Iterate with one delta at a time. A reference may suggest a question or layout relationship; it never overrides the current data model, operator path, accessibility gate or design tokens.
+
 ### Useful inheritance from the former Professional Teal reference
 
 - Respectful spacing, low visual fatigue, semantic colour, light/dark parity, accessible focus, and a local-first professional tone.
@@ -254,7 +281,7 @@ Equivalent actions keep one tone even when their content differs: the share-safe
 
 Settings follows the same rule at section level. Interface audio, local music, and YouTube are peer configuration sections, so their top rule and heading icon all use action slate; YouTube becomes teal only where a badge explicitly says the connection is ready. Backup warnings and the entry into restore use attention amber. The final restore confirmation uses danger red because it replaces the active database, even though the workflow first creates a safety snapshot.
 
-Full illustrated empty states are reserved for orientation moments where a new operator must understand how to begin, currently the dashboard and roster workspace before the first week exists. Music libraries, unavailable backups, recovery routes, and repeated empty panels use compact neutral guidance without imagery. This prevents one paired scene from repeating down a settings page and keeps warnings, forms, and recovery decisions visually unambiguous.
+Full illustrated empty states are reserved for orientation moments where a new operator must understand how to begin, currently the roster workspace before the first week exists. The Dashboard already carries the Weekly Pulse atmosphere in its primary workbench, so its recent-history rail uses compact neutral guidance rather than repeating a second scene. Music libraries, unavailable backups, recovery routes, and repeated empty panels likewise remain image-free. This prevents one paired scene from repeating down a page and keeps warnings, forms, and recovery decisions visually unambiguous.
 
 ### 5.2 Typography
 
@@ -315,7 +342,7 @@ Recent roster history (quiet, secondary)
 - The daily verse comes first but remains compact; its reflection is progressively disclosed.
 - The current step carries blue emphasis. Completed steps use teal confirmation. Future steps are neutral.
 - The primary button opens the relevant working page directly.
-- Recent history stays subordinate. It must not compete with the current work.
+- Recent history stays subordinate. On wide desktop it occupies one compact right-hand review rail beside the workbench; on narrower screens it follows the workbench in the same DOM order. It uses one containing surface with divided list rows—not a wall of equal cards—and must not compete with the current action.
 
 ### 6.1.1 Daily Verse: sacred reading component
 
