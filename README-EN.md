@@ -19,7 +19,7 @@ adjust published leave → explain fairness → back up, restore, and hand over.
 · [Architecture](docs/NICEGUI_ARCHITECTURE.md) · [Release status](PROJECT_STATUS.md)
 · [Canonical-site access guide](docs/PUBLIC_ROSTER_VIEWER.md)
 
-**Current production deployment (2026-07-16):** immutable
+**Current rollback deployment (2026-07-16):** immutable
 `v1.1.0-rc.16` runs from `C:\SingYinRoster` through the dedicated Windows
 scheduled task. NiceGUI listens only on `127.0.0.1:8080`; the `cloudflared`
 service and canonical Worker are healthy. The internal administrator API bearer
@@ -32,7 +32,8 @@ official-data cleanup remains a separately authorized operation.
 
 | Branch | Platform | Status |
 |---|---|---|
-| `main` | NiceGUI + SQLite, self-hosted | Current maintained release |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Verified v1.2 unified Guest/Admin release candidate; controlled deployment in progress |
+| `main` | NiceGUI + SQLite, self-hosted | Deployed v1.1 rollback source; receiving the v1.2 candidate |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
@@ -43,22 +44,28 @@ the Streamlit page handlers: policy remains in `roster_policy`, generation in
 ## Canonical daily entry and Windows maintenance start
 
 The only URL distributed to users is
-<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>. Guests can
-read the data-free platform tour at `/guest`, use `/try` for a 30-minute
-device-only fictional trial, or view an explicitly issued read-only
-`/view#…` roster. An
-approved operator selects **Admin login**, enters an exact
-allowlisted email address and the one-time code sent by Cloudflare Access, and
-returns to the same site with the NiceGUI editor unlocked. The signed browser
-session lasts at most eight hours; select
-**Log out** when finished. The application has no custom password database.
+<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>.
 
-The canonical Worker, guest routes, read-only Viewer, Access redirect, VPC
-health and mobile/light/dark browser matrix are live and automated. The
-dedicated Windows scheduled task now runs the single loopback origin under the
-non-administrative service account. Administrator remote editing still needs
-supervised sign-off for login, logout, long-lived WebSocket reconnection, upload
-and PDF delivery; automatic recovery still needs one supervised reboot proof.
+The deployed v1.1 baseline still serves its data-free Worker tour and
+browser-only fictional trial. The v1.2 source candidate replaces those two
+separate products with one NiceGUI product: a visitor selects **Guest
+experience** to receive a bounded 30-minute fictional workspace, while an
+approved operator selects **Admin login**, enters an exact allowlisted email
+address and the one-time code sent by Cloudflare Access, and receives the
+official workflow at the same routes. `/guest` and `/try` become compatibility
+redirects; an explicitly issued `/view#…` link remains the separate encrypted,
+read-only published-roster viewer.
+
+The v1.2 Worker and origin authenticate both modes with server-verified,
+HMAC-signed principals. On 2026-07-17 the frozen 256-input source passed all 13
+formal release gates with fingerprint
+`6b526bccd3e90106660b9ecab2195a22343e31b57d99b107e05904d414ec919d`,
+including isolated Admin/Guest browser, mobile, performance, write/PDF, backup,
+and recovery evidence. Machine verification is complete.
+`SING_YIN_UNIFIED_GUEST=0` remains the deployment default until the controlled
+Windows, exact `/auth/login` Access, Worker-secret, and live
+Admin/Guest/Viewer sequence completes. The application has no custom password
+database.
 
 The commands below prepare a host or maintenance workstation; they are not a
 second normal entry point.
@@ -102,34 +109,34 @@ The official clean-first-use contract requires the application to start with an
 empty migrated database and never auto-seed demonstration prefects. Seeing an
 empty directory on first use is correct: import and review the real directory
 only after rehearsal. Fictional seed data belongs to Practice Mode and the
-public browser trial, never the official database. The installed host still
+bounded v1.2 Guest adapter, never the official database. The installed host still
 requires a verified backup, Viewer-link revocation, controlled reset, complete
 verification, and deployment before this state may be claimed as live.
 
-### Live product tour and browser-only trial
+### v1.2 candidate: one Guest and Admin product
 
-The following contract is deployed at the canonical site and has focused tests
-plus a dedicated production-browser verifier:
+Guest and Admin use the same NiceGUI routes, navigation, components, and weekly
+sequence. A server-verified `PageContext` resolves either the official
+`RosterWorkflow` and SQLite database or a bounded `GuestWorkspaceAdapter`
+populated only with fixed fictional Chinese names. UI hiding is not the
+security boundary: callbacks, services, downloads, exports, storage, sharing,
+and integrations recheck capabilities.
 
-`/guest` presents the product purpose, weekly journey, fairness safeguards, and
-the boundary around protected operations. `/try` then loads a fixed fictional
-Chinese-name directory and lets a visitor add trial leave, generate and review
-a roster, and download a bilingual landscape A4 PDF. All names remain Chinese.
+Each Guest tab receives a separate process-memory workspace. The origin pushes
+each meaningful revision back to that exact tab as a signed token stored only
+in `sessionStorage`. A refresh can restore the latest token only after the
+server verifies its session, workspace, tab, revision, application boot, and a
+live-connection nonce. Duplicated tabs receive new workspaces; copied,
+tampered, expired, stale, or old-boot tokens are rejected and replaced by the
+safe fictional fixture. Sign-out, expiry, revocation, and cross-tab session
+termination clear temporary state. Guest PDF/JSON downloads are memory-only,
+one-shot, `DEMO`-marked, and `Cache-Control: no-store`.
 
-The Worker serves only version-controlled, same-origin HTML, CSS, and JavaScript
-assets for these pages. Trial interaction makes no application API call and
-does not touch VPC, NiceGUI, SQLite, KV, the fairness ledger, backups, or server
-logs. State is held in the current tab's `sessionStorage`, expires after 30
-minutes, and is removed when the tab closes or the visitor resets it. A PDF
-persists only when the visitor explicitly saves the downloaded file. Trial
-results cannot be published, shared through `/view#…`, or imported into the
-official workbench.
-
-For every release, a maintainer runs the focused Python tests, Worker Deno
-contracts, complete Python suite, and `scripts/verify_guest_trial.py`. Routine
-changes first use `python -X utf8 scripts\verify_update.py`; it selects the
-smallest safe profile and upgrades unknown or deployable changes to full
-verification. Exact commands and the one-time official-host reset procedure are documented in
+Focused snapshot-bridge tests now pass, but this is not deployment evidence.
+For the v1.2 release, a maintainer must still run the complete Python suite,
+Worker contracts, isolated unified-Guest browser verification, formal release
+verifier, verified backup and isolated restore. Exact commands and the
+controlled host procedure are documented in
 [`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and
 [`WINDOWS_DEDICATED_HOST_SETUP.md`](docs/WINDOWS_DEDICATED_HOST_SETUP.md). The
 complete risk matrix is in [`UPDATE_WORKFLOW.md`](docs/UPDATE_WORKFLOW.md).
@@ -192,13 +199,12 @@ usage, commercial, or vanity KPIs; source changes make previous evidence stale.
 flowchart LR
     GUEST["Guest"] --> EDGE["One workers.dev site\nCloudflare Worker"]
     ADMIN["Administrator\nAccess email code"] --> EDGE
-    EDGE --> TOUR["/guest product tour\nno roster data"]
-    EDGE --> TRIAL["/try browser-only trial\n30-minute sessionStorage"]
-    TRIAL --> TRIALPDF["On-device bilingual\nlandscape A4 PDF"]
     EDGE -->|read only| VIEW["Encrypted published roster"]
-    EDGE -->|verified Access JWT| VPC["Workers VPC + Tunnel"]
+    EDGE -->|signed Guest/Admin principal| VPC["Workers VPC + Tunnel"]
     VPC --> UI["NiceGUI bilingual UI"]
-    UI --> WF["roster_workflow transactions"]
+    UI -->|Guest adapter| GUESTMEM["Bounded process memory\nsigned sessionStorage bridge"]
+    GUESTMEM --> TRIALPDF["One-shot DEMO\nPDF / JSON"]
+    UI -->|Admin adapter| WF["roster_workflow transactions"]
     WF --> CORE["roster_core generation"]
     CORE --> POLICY["roster_policy rules"]
     WF --> DB["SQLite + Alembic"]
@@ -240,15 +246,17 @@ workbench.
 ## Deployment
 
 The maintained OP application remains a long-running Python service on a
-dedicated Windows 11 PC, with NiceGUI bound to `127.0.0.1`. One canonical
-`workers.dev` site is the public front door: unauthenticated guests stay
-read-only, while **Admin login** invokes a path-specific Cloudflare Access
-policy. After Access authentication, the Worker independently verifies the JWT
-signature, audience, issuer, expiry, and exact administrator email, then issues
-a short-lived signed HttpOnly administrator session which never contains the
-Access JWT. Every proxied request revalidates that session before travelling
-through Workers VPC and the existing Tunnel. Cloudflare sends the one-time
-email code; no password hash is stored by NiceGUI, SQLite, KV, backups, or Git.
+dedicated Windows 11 PC, with NiceGUI bound to `127.0.0.1`. In the v1.2
+candidate, the canonical `workers.dev` site is the public front door:
+**Guest experience** creates a time-limited signed Guest session, while
+**Admin login** invokes a path-specific Cloudflare Access policy. Both verified
+modes are proxied to the same NiceGUI origin with different signed principals;
+the origin resolves different adapters. After Access authentication, the
+Worker independently verifies the JWT signature, audience, issuer, expiry, and
+exact administrator email, then issues a short-lived signed HttpOnly
+administrator session which never contains the Access JWT. Cloudflare sends
+the one-time email code; no password hash is stored by NiceGUI, SQLite, KV,
+backups, or Git.
 
 The formal server-mode host receives an independent `SING_YIN_STORAGE_SECRET`
 from its protected `.env`; local and practice modes may use their ignored,
@@ -302,14 +310,16 @@ python -m playwright install chromium
 python -X utf8 scripts\verify_release_candidate.py
 ```
 
-The current complete suite contains 505 Python tests plus 23 Worker Deno
-contract tests. The release candidate runs twelve fail-closed checks: repository hygiene,
+The formal release candidate runs fail-closed checks for repository hygiene,
 supply-chain security, Cloudflare Worker Deno contracts, the complete Python
 suite, compilation, dependency integrity, desktop browser smoke, measured
 runtime performance and memory stability, the fictional-data write/PDF and
 restore pipeline, independent mobile adaptation, strict deployment readiness,
-and committed-without-backup recovery. Machine evidence remains separate from
-the final operator/advisor acceptance checklist.
+committed-without-backup recovery, and the isolated unified-Guest workflow.
+The formal verifier has thirteen gates; the final matching fingerprint is
+recorded only after the frozen-source rerun. Machine evidence remains separate
+from the final operator/advisor acceptance checklist and from the live
+host/Cloudflare switchover evidence.
 
 ## Co-creation
 

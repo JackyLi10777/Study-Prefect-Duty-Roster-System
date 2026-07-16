@@ -41,11 +41,40 @@
     '.sy-engineering-resource-link',
     '.sy-co-creation'
   ].join(',');
+  const interactiveIconSelector = [
+    '.q-icon.material-icons',
+    '.q-icon.material-icons-outlined',
+    '.q-icon.material-symbols-outlined',
+    '.q-icon.material-symbols-rounded'
+  ].join(',');
+  const interactiveIconHostSelector = '.q-btn,.q-tab,.q-item.q-item--clickable';
+  const iconMotionRoles = new Map([
+    ...['arrow_forward', 'east', 'open_in_new', 'ios_share', 'link'].map((name) => [name, 'forward']),
+    ...['arrow_back'].map((name) => [name, 'back']),
+    ...['refresh', 'event_repeat', 'restore', 'settings_backup_restore'].map((name) => [name, 'refresh']),
+    ...['save', 'publish', 'archive', 'inventory_2', 'fact_check', 'task_alt', 'check_circle', 'verified_user', 'person_check', 'lock', 'encrypted'].map((name) => [name, 'confirm']),
+    ...['download', 'download_for_offline', 'picture_as_pdf', 'data_object'].map((name) => [name, 'download']),
+    ...['upload', 'upload_file', 'add_to_drive'].map((name) => [name, 'upload']),
+    ...['swap_horiz', 'content_copy'].map((name) => [name, 'exchange']),
+    ...['person_add', 'group_add', 'playlist_add'].map((name) => [name, 'create']),
+    ...['edit', 'edit_note', 'edit_calendar', 'auto_fix_high'].map((name) => [name, 'edit']),
+    ...['dark_mode', 'light_mode', 'translate', 'volume_off', 'volume_up', 'menu', 'manage_accounts', 'admin_panel_settings'].map((name) => [name, 'toggle']),
+    ...['play_arrow', 'play_circle', 'smart_display'].map((name) => [name, 'play']),
+    ...['search'].map((name) => [name, 'search']),
+    ...['delete_outline', 'logout', 'person_off', 'link_off', 'close', 'event_busy'].map((name) => [name, 'danger']),
+    ...['warning_amber', 'assignment_late', 'gpp_maybe', 'pending_actions'].map((name) => [name, 'attention'])
+  ]);
 
   const pointerControllers = new Map();
+  const feedbackTimers = new Map();
+  const ACTION_MEMORY_MS = 5 * 60 * 1000;
   let intersectionObserver = null;
   let mutationObserver = null;
   let motionMedia = null;
+  let interactionAbortController = null;
+  let lastActionHost = null;
+  let lastActionAt = 0;
+  let operationFeedbackHost = null;
   let feedbackHandler = null;
   let domReadyHandler = null;
   let disposed = false;
@@ -60,9 +89,19 @@
   const animateOnce = (element, children = false) => {
     if (element.dataset.syMotionReady === 'true') return;
     element.dataset.syMotionReady = 'true';
-    if (reducedMotion() || !window.gsap) return;
+    delete element.dataset.syMotionComplete;
+    const complete = () => {
+      element.dataset.syMotionComplete = 'true';
+    };
+    if (reducedMotion() || !window.gsap) {
+      complete();
+      return;
+    }
     const targets = children ? Array.from(element.children).slice(0, 8) : [element];
-    if (!targets.length) return;
+    if (!targets.length) {
+      complete();
+      return;
+    }
     window.gsap.fromTo(
       targets,
       { autoAlpha: 0.78, y: 12 },
@@ -73,7 +112,8 @@
         stagger: children ? 0.045 : 0,
         ease: 'power2.out',
         overwrite: 'auto',
-        clearProps: 'transform,opacity,visibility'
+        clearProps: 'transform,opacity,visibility',
+        onComplete: complete
       }
     );
   };
@@ -83,6 +123,7 @@
     element.dataset.syMotionObserved = 'true';
     if (!intersectionObserver || reducedMotion()) {
       element.dataset.syMotionReady = 'true';
+      element.dataset.syMotionComplete = 'true';
       return;
     }
     element.dataset.syMotionChildren = children ? 'true' : 'false';
@@ -159,6 +200,16 @@
     queryWithin(root, narrativeSelectors).forEach((element) => observe(element, false));
     queryWithin(root, groupSelectors).forEach((element) => observe(element, true));
   };
+  const hydrateIconMotion = (root = document) => {
+    queryWithin(root, interactiveIconSelector).forEach((icon) => {
+      const host = icon.closest(interactiveIconHostSelector);
+      const name = icon.textContent?.trim() || '';
+      if (!host || !name) return;
+      const role = iconMotionRoles.get(name) || 'signal';
+      icon.dataset.syIconMotion = role;
+      icon.dataset.syIconName = name;
+    });
+  };
   const hydratePointers = (root = document) => {
     queryWithin(root, pointerSurfaceSelector).forEach(enhancePointerSurface);
   };
@@ -168,10 +219,43 @@
     root.querySelectorAll?.('.sy-pointer-reactive').forEach(removePointerSurface);
   };
 
-  const feedbackPulse = (kind) => {
+  const rememberActionHost = (event) => {
+    if (
+      event.type === 'keydown'
+      && !['Enter', ' '].includes(event.key)
+    ) return;
+    const source = event.target instanceof Element
+      ? event.target.closest(interactiveIconHostSelector)
+      : null;
+    if (!(source instanceof HTMLElement) || !source.querySelector(interactiveIconSelector)) return;
+    lastActionHost = source;
+    lastActionAt = Date.now();
+    operationFeedbackHost = null;
+  };
+  const resolveFeedbackTarget = (kind) => {
+    const active = document.activeElement instanceof HTMLElement
+      ? document.activeElement.closest(interactiveIconHostSelector)
+      : null;
+    if (active instanceof HTMLElement && active.isConnected && active.querySelector(interactiveIconSelector)) {
+      lastActionHost = active;
+      lastActionAt = Date.now();
+      return active;
+    }
+    if (
+      ['success', 'attention', 'error'].includes(kind)
+      && operationFeedbackHost instanceof HTMLElement
+      && operationFeedbackHost.isConnected
+    ) return operationFeedbackHost;
+    if (
+      lastActionHost instanceof HTMLElement
+      && lastActionHost.isConnected
+      && Date.now() - lastActionAt <= ACTION_MEMORY_MS
+    ) return lastActionHost;
+    return null;
+  };
+  const feedbackPulse = (kind, target) => {
     if (reducedMotion() || !window.gsap) return;
-    const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const bounds = active && active !== document.body ? active.getBoundingClientRect() : null;
+    const bounds = target instanceof HTMLElement ? target.getBoundingClientRect() : null;
     const pulse = document.createElement('span');
     pulse.className = `sy-feedback-pulse sy-feedback-pulse--${kind}`;
     pulse.setAttribute('aria-hidden', 'true');
@@ -182,6 +266,23 @@
       .fromTo(pulse, { autoAlpha: 0, scale: 0.68 }, { autoAlpha: 0.72, scale: 1, duration: 0.16, ease: 'power2.out' })
       .to(pulse, { autoAlpha: 0, scale: 1.52, duration: 0.34, ease: 'power1.out' });
   };
+  const markFeedbackTarget = (kind, target) => {
+    if (!(target instanceof HTMLElement)) return;
+    const state = ['success', 'working', 'attention', 'error'].includes(kind) ? kind : 'navigation';
+    if (kind === 'working') operationFeedbackHost = target;
+    const existing = feedbackTimers.get(target);
+    if (existing) window.clearTimeout(existing);
+    target.dataset.syFeedbackState = state;
+    const timer = window.setTimeout(() => {
+      if (target.dataset.syFeedbackState === state) delete target.dataset.syFeedbackState;
+      feedbackTimers.delete(target);
+      if (
+        ['success', 'attention', 'error'].includes(kind)
+        && operationFeedbackHost === target
+      ) operationFeedbackHost = null;
+    }, 620);
+    feedbackTimers.set(target, timer);
+  };
 
   const dispose = () => {
     if (disposed) return;
@@ -189,10 +290,18 @@
     intersectionObserver?.disconnect();
     mutationObserver?.disconnect();
     motionMedia?.revert();
+    interactionAbortController?.abort();
     Array.from(pointerControllers.keys()).forEach(removePointerSurface);
+    feedbackTimers.forEach((timer) => window.clearTimeout(timer));
+    feedbackTimers.clear();
     if (feedbackHandler) window.removeEventListener('sy:feedback', feedbackHandler);
     if (domReadyHandler) document.removeEventListener('DOMContentLoaded', domReadyHandler);
     document.querySelectorAll('.sy-feedback-pulse').forEach((pulse) => pulse.remove());
+    document.querySelectorAll('[data-sy-feedback-state]').forEach((element) => {
+      delete element.dataset.syFeedbackState;
+    });
+    lastActionHost = null;
+    operationFeedbackHost = null;
     delete document.documentElement.dataset.syMotion;
     window.__singYinMotionBootstrapped = false;
   };
@@ -220,6 +329,14 @@
       { rootMargin: '0px 0px -7% 0px', threshold: 0.12 }
     );
     hydrateMotion();
+    hydrateIconMotion();
+    interactionAbortController = new AbortController();
+    const interactionListenerOptions = {
+      capture: true,
+      signal: interactionAbortController.signal
+    };
+    document.addEventListener('pointerdown', rememberActionHost, interactionListenerOptions);
+    document.addEventListener('keydown', rememberActionHost, interactionListenerOptions);
 
     motionMedia = window.gsap.matchMedia();
     motionMedia.add(
@@ -239,6 +356,7 @@
         mutation.addedNodes.forEach((node) => {
           if (!(node instanceof Element)) return;
           hydrateMotion(node);
+          hydrateIconMotion(node);
           if (!reducedMotion() && window.matchMedia(FINE_POINTER_QUERY).matches) hydratePointers(node);
         });
       });
@@ -247,7 +365,12 @@
     document.fonts?.ready.then(() => {
       if (!disposed) hydrateMotion();
     });
-    feedbackHandler = (event) => feedbackPulse(event.detail?.kind || 'success');
+    feedbackHandler = (event) => {
+      const kind = event.detail?.kind || 'success';
+      const target = resolveFeedbackTarget(kind);
+      feedbackPulse(kind, target);
+      markFeedbackTarget(kind, target);
+    };
     window.addEventListener('sy:feedback', feedbackHandler);
   };
 

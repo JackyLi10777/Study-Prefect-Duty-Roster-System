@@ -13,7 +13,8 @@ def test_engineering_showcase_uses_current_release_evidence_instead_of_stale_cou
     assert "engineering_gate_runtime" in source
     assert "engineering_gate_cloudflare" in source
     assert "engineering_gate_mobile" in source
-    assert source.count('"engineering_gate_') == 12
+    assert "engineering_gate_guest" in source
+    assert source.count('"engineering_gate_') == 13
     assert 'tag="h2"' in source
 
 

@@ -1,0 +1,282 @@
+/*
+ * Sing Yin material layer.
+ *
+ * Fine paper fibre and linen weave add tactility to structural and editorial
+ * surfaces only. They never sit behind forms, names, tables, fairness data,
+ * warnings or PDF output. Light and dark appearances use paired local assets
+ * with the same geometry and independently tuned visibility.
+ */
+
+:root {
+  --sy-material-paper: url("/assets/materials/paper-fibre-light-v1.svg");
+  --sy-material-linen: url("/assets/materials/linen-weave-light-v1.svg");
+  --sy-material-paper-blend: multiply;
+  --sy-material-linen-blend: multiply;
+  --sy-material-paper-opacity: .42;
+  --sy-material-linen-opacity: .30;
+  --sy-material-hero-opacity: .30;
+  --sy-material-edge:
+    inset 0 1px 0 color-mix(in srgb, white 72%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--sy-ink) 5%, transparent);
+}
+
+.body--dark {
+  --sy-material-paper: url("/assets/materials/paper-fibre-dark-v1.svg");
+  --sy-material-linen: url("/assets/materials/linen-weave-dark-v1.svg");
+  --sy-material-paper-blend: screen;
+  --sy-material-linen-blend: screen;
+  --sy-material-paper-opacity: .28;
+  --sy-material-linen-opacity: .22;
+  --sy-material-hero-opacity: .20;
+  --sy-material-edge:
+    inset 0 1px 0 color-mix(in srgb, white 9%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, black 30%, transparent);
+}
+
+/* The ground reads as quiet paper rather than an empty app canvas. */
+
+.sy-main {
+  background-color: var(--sy-ground);
+  background-image:
+    var(--sy-material-paper),
+    radial-gradient(circle at 9% 2%, color-mix(in srgb, var(--sy-role-stable-soft) 38%, transparent), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, var(--sy-ground) 94%, white), var(--sy-ground));
+  background-repeat: repeat, no-repeat, no-repeat;
+  background-size: 192px 192px, 100% 620px, 100% 100%;
+  background-blend-mode: var(--sy-material-paper-blend), normal, normal;
+}
+
+.body--dark .sy-main {
+  background-image:
+    var(--sy-material-paper),
+    radial-gradient(circle at 11% 0%, color-mix(in srgb, var(--sy-role-action-soft) 42%, transparent), transparent 30%),
+    linear-gradient(180deg, color-mix(in srgb, var(--sy-ground) 96%, #15202a), var(--sy-ground));
+}
+
+.q-header {
+  background-image:
+    var(--sy-material-paper),
+    linear-gradient(180deg, color-mix(in srgb, var(--sy-surface) 98%, white), var(--sy-surface)) !important;
+  background-repeat: repeat, no-repeat;
+  background-size: 192px 192px, 100% 100%;
+  background-blend-mode: var(--sy-material-paper-blend), normal;
+  box-shadow:
+    var(--sy-material-edge),
+    0 8px 24px color-mix(in srgb, var(--sy-ink) 4%, transparent);
+}
+
+.sy-sidebar::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background-image: var(--sy-material-linen);
+  background-repeat: repeat;
+  background-size: 96px 96px;
+  content: "";
+  mix-blend-mode: var(--sy-material-linen-blend);
+  opacity: var(--sy-material-linen-opacity);
+  pointer-events: none;
+}
+
+/* Signature narrative surfaces retain their imagery while gaining touch. */
+
+.sy-workbench {
+  background-color: var(--sy-surface);
+  background-image:
+    var(--sy-material-paper),
+    linear-gradient(145deg, color-mix(in srgb, var(--sy-surface) 97%, var(--sy-role-action-soft)), var(--sy-surface));
+  background-repeat: repeat, no-repeat;
+  background-size: 192px 192px, 100% 100%;
+  background-blend-mode: var(--sy-material-paper-blend), normal;
+  box-shadow:
+    var(--sy-material-edge),
+    0 16px 42px color-mix(in srgb, var(--sy-ink) 8%, transparent);
+}
+
+.sy-daily-start {
+  background-color: #F5EEDC;
+  background-image:
+    var(--sy-material-paper),
+    linear-gradient(132deg, #F5EEDC 0%, #EFE3C9 61%, #E7D8BA 100%);
+  background-repeat: repeat, no-repeat;
+  background-size: 192px 192px, 100% 100%;
+  background-blend-mode: multiply, normal;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .64),
+    inset 0 -1px 0 rgba(105, 77, 36, .08),
+    0 14px 34px rgba(74, 59, 35, .13);
+}
+
+.body--dark .sy-daily-start {
+  background-color: #0F1B2D;
+  background-image:
+    var(--sy-material-paper),
+    linear-gradient(132deg, #0F1B2D 0%, #142840 61%, #22334A 100%);
+  background-blend-mode: screen, normal;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 242, 207, .10),
+    inset 0 -1px 0 rgba(0, 0, 0, .38),
+    0 16px 38px rgba(0, 0, 0, .28);
+}
+
+.sy-handover-hero {
+  background-color: #F7F3EA;
+  background-image:
+    var(--sy-material-paper),
+    linear-gradient(145deg, #FAF7F0, #F1EBDD);
+  background-repeat: repeat, no-repeat;
+  background-size: 192px 192px, 100% 100%;
+  background-blend-mode: multiply, normal;
+  box-shadow:
+    var(--sy-material-edge),
+    0 14px 34px rgba(28, 28, 30, .08);
+}
+
+.body--dark .sy-handover-hero {
+  background-color: #101820;
+  background-image:
+    var(--sy-material-paper),
+    linear-gradient(145deg, #111b25, #0d141c);
+  background-blend-mode: screen, normal;
+}
+
+.sy-engineering-hero {
+  background-image:
+    var(--sy-material-paper),
+    linear-gradient(135deg, color-mix(in srgb, var(--sy-surface) 95%, var(--sy-action-soft)), var(--sy-surface));
+  background-repeat: repeat, no-repeat;
+  background-size: 192px 192px, 100% 100%;
+  background-blend-mode: var(--sy-material-paper-blend), normal;
+}
+
+/*
+ * Editorial evidence cards use a non-semantic overlay. Required information
+ * remains in the foreground and the cards do not become false controls.
+ */
+
+:is(
+  .sy-dashboard-history,
+  .sy-reference-index-card,
+  .sy-team-role,
+  .sy-capability-card,
+  .sy-solution-card,
+  .sy-platform-value,
+  .sy-platform-resource,
+  .sy-architecture-layer,
+  .sy-trust-evidence-card,
+  .sy-service-stage,
+  .sy-co-creation
+) {
+  isolation: isolate;
+  overflow: hidden;
+  box-shadow:
+    var(--sy-material-edge),
+    0 10px 26px color-mix(in srgb, var(--sy-ink) 5%, transparent);
+}
+
+:is(
+  .sy-dashboard-history,
+  .sy-reference-index-card,
+  .sy-team-role,
+  .sy-capability-card,
+  .sy-solution-card,
+  .sy-platform-value,
+  .sy-platform-resource,
+  .sy-architecture-layer,
+  .sy-trust-evidence-card,
+  .sy-service-stage,
+  .sy-co-creation
+)::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background-image: var(--sy-material-paper);
+  background-repeat: repeat;
+  background-size: 192px 192px;
+  content: "";
+  mix-blend-mode: var(--sy-material-paper-blend);
+  opacity: var(--sy-material-paper-opacity);
+  pointer-events: none;
+}
+
+:is(
+  .sy-dashboard-history,
+  .sy-reference-index-card,
+  .sy-team-role,
+  .sy-capability-card,
+  .sy-solution-card,
+  .sy-platform-value,
+  .sy-platform-resource,
+  .sy-architecture-layer,
+  .sy-trust-evidence-card,
+  .sy-service-stage,
+  .sy-co-creation
+) > *:not(.sy-pointer-light) {
+  position: relative;
+  z-index: 1;
+}
+
+.sy-platform-hero::after,
+.sy-architecture-hero::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background-image: var(--sy-material-paper);
+  background-repeat: repeat;
+  background-size: 192px 192px;
+  content: "";
+  mix-blend-mode: var(--sy-material-paper-blend);
+  opacity: var(--sy-material-hero-opacity);
+  pointer-events: none;
+}
+
+.sy-devotional-companion--reflection {
+  background-image:
+    var(--sy-material-paper),
+    linear-gradient(145deg, color-mix(in srgb, var(--sy-surface) 96%, #F2D393), var(--sy-surface));
+  background-size: 192px 192px, 100% 100%;
+  background-blend-mode: var(--sy-material-paper-blend), normal;
+}
+
+.sy-devotional-companion--prayer {
+  background-image:
+    var(--sy-material-paper),
+    linear-gradient(145deg, color-mix(in srgb, var(--sy-surface) 88%, #F2D393), var(--sy-surface));
+  background-size: 192px 192px, 100% 100%;
+  background-blend-mode: var(--sy-material-paper-blend), normal;
+}
+
+.sy-devotional-companion--action {
+  background-image:
+    var(--sy-material-paper),
+    linear-gradient(145deg, color-mix(in srgb, var(--sy-surface) 94%, var(--sy-action-soft)), var(--sy-surface));
+  background-size: 192px 192px, 100% 100%;
+  background-blend-mode: var(--sy-material-paper-blend), normal;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --sy-material-paper-opacity: .30;
+    --sy-material-linen-opacity: .22;
+    --sy-material-hero-opacity: .22;
+  }
+
+  .body--dark {
+    --sy-material-paper-opacity: .22;
+    --sy-material-linen-opacity: .17;
+    --sy-material-hero-opacity: .16;
+  }
+
+  .sy-main {
+    background-size: 192px 192px, 100% 420px, 100% 100%;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root,
+  .body--dark {
+    --sy-material-paper-opacity: .16;
+    --sy-material-linen-opacity: .12;
+    --sy-material-hero-opacity: .12;
+  }
+}

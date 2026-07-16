@@ -50,10 +50,17 @@ def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
     assert configuration["vars"] == {
         "ACCESS_TEAM_DOMAIN": "https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
         "ACCESS_AUD": "REPLACE_WITH_ACCESS_APPLICATION_AUD",
+        "AUTH_EPOCH": 1,
+        "ORIGIN_PRINCIPAL_KID": "origin-v1",
         "ADMIN_IDENTITY_ALLOWLIST": {"emails": ["REPLACE_WITH_EXACT_ADMIN_EMAIL"]},
     }
     assert configuration["secrets"] == {
-        "required": ["ADMIN_BEARER_TOKEN", "ADMIN_SESSION_SECRET"]
+        "required": [
+            "ADMIN_BEARER_TOKEN",
+            "ADMIN_SESSION_SECRET",
+            "GUEST_SESSION_SECRET",
+            "ORIGIN_PRINCIPAL_SECRET",
+        ]
     }
     assert configuration["kv_namespaces"] == [
         {
@@ -99,7 +106,12 @@ def test_production_gateway_uses_a_bounded_exact_admin_email_allowlist() -> None
     assert "ADMIN_EMAILS" not in variables
     assert len(set(variables["ADMIN_IDENTITY_ALLOWLIST"]["emails"])) == len(EXPECTED_ADMIN_EMAILS)
     assert configuration["secrets"] == {
-        "required": ["ADMIN_BEARER_TOKEN", "ADMIN_SESSION_SECRET"]
+        "required": [
+            "ADMIN_BEARER_TOKEN",
+            "ADMIN_SESSION_SECRET",
+            "GUEST_SESSION_SECRET",
+            "ORIGIN_PRINCIPAL_SECRET",
+        ]
     }
     assert configuration["observability"]["logs"]["persist"] is True
 

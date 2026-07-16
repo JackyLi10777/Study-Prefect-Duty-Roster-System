@@ -1,6 +1,6 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **v1.2 候選狀態：** 統一訪客模式已在來源分支實作，但 `SING_YIN_UNIFIED_GUEST` 預設仍為 `0`，尚未完成正式 gate、合併、標籤或部署。現行 `C:\SingYinRoster`／Cloudflare 正式服務仍是 v1.1 基線；不要把本文件視為 v1.2 已上線證明。
+> **v1.2 候選狀態：** 統一訪客模式已在來源分支實作並納入 13 道正式 gate；最終來源仍須產生相符報告，再完成 Windows／Access／Worker 受控切換。現行 `C:\SingYinRoster`／Cloudflare 正式服務在切換完成前仍是 v1.1 回退基線。
 
 我是李創杰。我希望所有使用者只需記住同一個網站，但同一個網址不代表相同權限。v1.2 把入口、完整 Guest 體驗及管理員工作台統一到同一套 NiceGUI 路由和元件；只有已發布週表的 `/view#…` 保留為獨立、只讀、可分享的能力連結。
 
@@ -29,7 +29,7 @@
 
 ## 訪客怎樣使用
 
-1. 開啟同一正式網址。
+1. 開啟同一正式網址：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。
 2. 按 **訪客體驗 / Try as guest**。
 3. 系統建立有時限的 Guest session，再開啟與管理員相同的 Dashboard。
 4. 依「生成 → 核對／匯出 → 已發布請假調整」完成虛構示範。
@@ -38,7 +38,7 @@
 
 訪客可以修改虛構名單、示範請假、草稿、手動調整、示範發布、公平顯示及 `DEMO` PDF／JSON。AI、檔案匯入、上載、剪貼簿、外部音樂網址、正式備份／還原、Viewer 分享、真實資料匯出及永久設定均不可用。
 
-每個分頁有獨立 workspace；一個分頁的示範修改不應覆寫另一個分頁。程序重啟後 Guest 狀態消失是刻意行為。
+每個分頁有獨立 workspace；一個分頁的示範修改不應覆寫另一個分頁。每次有意義修改後，origin 只把最新、已簽署的 token 推送到該分頁 `sessionStorage`。重新整理時還原必須通過目前 Guest session、workspace、NiceGUI tab、revision、boot ID 及連線 nonce 核對；複製、篡改、過期、舊 revision 或 origin 重啟後的 token 會被拒絕並回到安全虛構 fixture。這不是長期儲存。
 
 ## 管理員怎樣登入
 
@@ -97,6 +97,7 @@ Cloudflare 暫時不可用時，只有維護者才使用 localhost 或已核准 
 - [ ] Guest 與 Admin 每一正式路由有相同頁面骨架及清楚能力狀態。
 - [ ] Guest adapter 不引用正式 SQLAlchemy、AI、HTTP、備份、上載、分享或背景工作。
 - [ ] 兩個 Guest、同一 Guest 多分頁、登出、到期、撤權、程序重啟及交叉下載均通過。
+- [ ] 同一分頁重新整理只還原最新合法 snapshot；複製分頁獲得新 workspace，篡改／過期／舊 boot token 安全回到 fixture。
 - [ ] Guest PDF／JSON 標明 `DEMO`，使用 `no-store`，不含真實資料。
 - [ ] `/view#…` 只接受已發布快照，草稿不能分享。
 - [ ] 管理員登入／登出、長時間重連、上載、PDF 及完整寫入流程完成真人驗收。
@@ -104,6 +105,6 @@ Cloudflare 暫時不可用時，只有維護者才使用 localhost 或已核准 
 
 ## English quick guide
 
-The v1.2 candidate uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
+The v1.2 candidate uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
 
-`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The unified guest feature is disabled by default until the formal release candidate, isolated browser, concurrency, recovery, accessibility, and Cloudflare gates pass.
+`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The source candidate is covered by the thirteen-gate verifier; the feature becomes live only after the matching report, controlled Windows rollout, exact `/auth/login` Access path, Worker secrets, and live acceptance all pass.

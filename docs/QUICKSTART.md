@@ -12,6 +12,8 @@
 4. 完成後按「登出」，特別是共用裝置；只關閉分頁不等於清除管理員／Guest session 及同 session 的其他分頁狀態。
 5. 如只需查看首席導學風紀發出的週表，直接開啟完整 `/view#…` 連結；不要以 Guest 或 Admin 入口取代分享連結。
 
+Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 session／workspace／tab 的示範 revision；複製分頁會獲得另一個 workspace。這只是 30 分鐘臨時續接，不是長期儲存；登出、到期、撤權或 origin 重啟後舊 token 會失效。
+
 ## 本機維護或 Cloudflare 故障復原
 
 只有在專用主機背景工作失效、Cloudflare 故障或 IT 診斷時，才在主機的系統資料夾雙擊 `START_SING_YIN_ROSTER.cmd`。等待黑色視窗顯示「The system is ready」；瀏覽器只會在服務真正可以回應 HTTP 後才自動開啟。如瀏覽器沒有自動開啟，使用黑色視窗最後顯示的完整本機網址。
@@ -50,4 +52,4 @@
 
 ## English
 
-After the v1.2 gate and deployment, the single canonical site offers either the time-limited **Guest experience** with fictional in-memory data or **Admin login** through Cloudflare Access. Select **Log out** when finished because closing one tab does not clear every session state. `/view#…` remains the separate read-only published-roster link. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for HTTP readiness, and only then opens the browser. For a durable fictional rehearsal with backup/restore, use `START_PRACTICE_MODE.cmd`; the remote Guest workspace is intentionally temporary. Check `/readyz`, not only `/healthz`, before accepting official writes.
+After the v1.2 gate and deployment, the single canonical site offers either the time-limited **Guest experience** with fictional in-memory data or **Admin login** through Cloudflare Access. A refresh in the same Guest tab may restore its latest signed revision, but a duplicated tab receives another workspace and logout, expiry, revocation, or origin restart invalidates the temporary token. Select **Log out** when finished because closing one tab does not clear every session state. `/view#…` remains the separate read-only published-roster link. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for HTTP readiness, and only then opens the browser. For a durable fictional rehearsal with backup/restore, use `START_PRACTICE_MODE.cmd`; the remote Guest workspace is intentionally temporary. Check `/readyz`, not only `/healthz`, before accepting official writes.

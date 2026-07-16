@@ -1,6 +1,6 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
-> **文件狀態（v1.2 候選）：** 本文件描述 `codex/unified-guest-redesign` 分支的現行程式契約。統一訪客模式仍由 `SING_YIN_UNIFIED_GUEST=0` 預設關閉；只有正式發布 gate、隔離瀏覽器證據及 Cloudflare 設定全部通過後，才可在 Windows origin 啟用。這不是已部署聲明。
+> **文件狀態（v1.2 已驗證候選）：** 本文件描述 `codex/unified-guest-redesign` 的現行程式契約。2026-07-17 的候選已通過 13／13 正式 gate及隔離 Admin／Guest 瀏覽器證據；統一訪客模式仍由 `SING_YIN_UNIFIED_GUEST=0` 關閉，直至 Windows origin、Access 路徑、Worker secrets、備份／還原及線上驗收在同一次受控發布完成。這仍不是已部署聲明。
 
 ## 1. 目的
 
@@ -63,16 +63,18 @@ Cloudflare Worker 會：
 
 登出、session 到期、撤權、分頁斷線及 origin 重啟會作冪等清理；前端以 `BroadcastChannel` 通知同 session 分頁清除狀態、媒體及下載票據。
 
-### 尚未完成的瀏覽器 snapshot 橋接
+### 已實作的瀏覽器 snapshot 橋接
 
-程式已具備 HMAC snapshot codec，並驗證篡改、錯誤 SID、錯誤 workspace／tab、過期、大小、revision、重播及程序 boot ID。**現時 NiceGUI 頁面尚未把每次 Guest workspace revision 寫入及還原自 `sessionStorage`。** 因此 v1.2 正式啟用前仍要完成並驗證：
+程式已具備 HMAC snapshot codec 及 NiceGUI 瀏覽器橋接：
 
-- 每次有意義修改後保存已簽署 snapshot；
-- 重新整理同一分頁時只還原同 SID／workspace／tab 的最新 revision；
-- 複製分頁時重新分配 workspace，而非兩頁共用；
-- 到期、登出、撤權及程序重啟後拒絕舊 snapshot。
+- 每次有意義修改後，Guest adapter 只向該連線分頁推送最新、已簽署的 snapshot token；
+- 分頁只把 token、workspace／tab ID 及 revision 寫入 `sessionStorage`，不保存可獨立信任的明文工作區；
+- 重新整理時，前端向 `POST /api/guest/snapshot/restore` 提交 token，伺服器須同時核對 Worker 已驗證的 Guest session、穩定 NiceGUI tab、workspace、程序 boot ID、revision 及當次連線 nonce；
+- 複製分頁會因新的 NiceGUI tab ID 取得另一個 workspace；來源分頁的 token 不能綁定到新分頁；
+- 篡改、錯誤 SID、錯誤 workspace／tab、過期、過大、舊 revision、重播或舊 boot token 均被拒絕；頁面繼續使用安全虛構 fixture，並收到新的合法 token；
+- 登出、到期、撤權及跨分頁 session 終止會清除 `sessionStorage`、媒體及待下載票據；origin 重啟後舊 boot token 按設計失效。
 
-在這項 gate 完成前，不得把「重新整理後仍保留 30 分鐘 Guest 狀態」寫成已完成。
+`tests/test_guest_snapshot_bridge.py` 聚焦驗證同分頁還原、token 輪換、複製／篡改拒絕、連線 nonce、登出清理及只使用 `sessionStorage` 的前端契約；完整 pytest、隔離瀏覽器及 release verifier 亦已納入 13／13 正式候選報告。正式備份／隔離還原及 Cloudflare 線上驗收仍是部署 gate。
 
 ## 4. 資料與整合限制
 
@@ -120,4 +122,4 @@ Guest adapter 不引用正式 SQLAlchemy、AI、HTTP、備份、上載、分享�
 
 The v1.2 candidate uses the same NiceGUI routes and components for administrators and guests, but resolves a server-verified `PageContext` to either the official workflow or a bounded in-memory guest adapter. Guest capability is deny-by-default and excludes AI, upload/import, persistent storage, external delivery, official backup/restore, and real-data export. Guest exports are one-shot, memory-only, `DEMO`-marked, and `no-store`.
 
-The source contains signed principal verification, a bounded guest registry, per-client workspace IDs, session expiry/revocation monitoring, cross-tab logout cleanup, and an HMAC snapshot codec. The browser bridge that saves and restores the latest signed snapshot through `sessionStorage` is still a release gate. `SING_YIN_UNIFIED_GUEST` therefore remains disabled by default, and this document does not claim that v1.2 has been deployed.
+The source contains signed principal verification, a bounded guest registry, per-client workspace IDs, session expiry/revocation monitoring, cross-tab logout cleanup, an HMAC snapshot codec, and the `sessionStorage` browser bridge. Each revision is saved only as a signed, tab-bound token; restore also requires the current live-connection nonce. Duplicate tabs receive new workspaces, while tampered, copied, expired, stale, or old-boot tokens fall back safely to the fictional fixture. On 2026-07-17 the frozen source passed all 13 formal gates with fingerprint `6b526bccd3e90106660b9ecab2195a22343e31b57d99b107e05904d414ec919d`. `SING_YIN_UNIFIED_GUEST` remains disabled until the controlled host, exact `/auth/login` Access scope, Worker secrets, backup/restore, and live acceptance sequence completes. This document does not yet claim that v1.2 is deployed.

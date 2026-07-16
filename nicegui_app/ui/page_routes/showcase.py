@@ -245,6 +245,7 @@ def engineering_page() -> None:
         ("conversion_path", "engineering_gate_workflow"),
         ("smartphone", "engineering_gate_mobile"),
         ("dns", "engineering_gate_deployment"),
+        ("verified_user", "engineering_gate_guest"),
         ("settings_backup_restore", "engineering_gate_recovery"),
     )
     pillars = (

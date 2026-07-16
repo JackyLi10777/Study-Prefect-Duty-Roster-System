@@ -29,7 +29,7 @@ from nicegui_app.ui.downloads import deliver_generated_download
 from nicegui_app.ui.operation_gate import claim_durable_operation, release_durable_operation
 from nicegui_app.ui.page_access import is_demo_export
 from nicegui_app.ui.pdf_delivery import build_native_pdf_share_js, can_offer_native_pdf_share
-from nicegui_app.ui.sound import play_interface_sound
+from nicegui_app.ui.sound import emit_interface_feedback, play_interface_sound
 from roster_policy import ROOM_OPENING_TIME_WINDOWS, DutyPost
 
 _OPERATION_FAILED = object()
@@ -124,6 +124,7 @@ def _safe_read_action(action: Callable[[], None], *, action_name: str = "ui_read
         action()
     except Exception as error:
         record_operator_failure(error, action=action_name, reference=reference, started_at=started_at)
+        emit_interface_feedback("error")
         ui.notify(_operation_error_message(reference), type="negative", timeout=8_000)
     else:
         record_operator_event(action=action_name, outcome="completed", reference=reference, started_at=started_at)
@@ -146,6 +147,7 @@ async def _run_with_progress(
     """
     operation_state = app.storage.client
     if not claim_durable_operation(operation_state, working_key):
+        emit_interface_feedback("attention")
         ui.notify(t("operation_already_running"), type="warning", timeout=6_000)
         return _OPERATION_FAILED
 
@@ -175,6 +177,7 @@ async def _run_with_progress(
         if dialog is not None:
             dialog.close()
         record_operator_partial_failure(error, action=working_key, reference=reference, started_at=started_at)
+        emit_interface_feedback("attention")
         _show_committed_without_backup(
             reference,
             recovery_required=get_workflow().maintenance_status().recovery_required,
@@ -184,6 +187,7 @@ async def _run_with_progress(
         if dialog is not None:
             dialog.close()
         record_operator_event(action=working_key, outcome="conflict", reference=reference, started_at=started_at)
+        emit_interface_feedback("attention")
         if on_conflict is None:
             ui.notify(t("roster_write_conflict"), type="warning", timeout=8_000)
         else:
@@ -191,6 +195,7 @@ async def _run_with_progress(
         return _OPERATION_FAILED
     except Exception as error:
         record_operator_failure(error, action=working_key, reference=reference, started_at=started_at)
+        emit_interface_feedback("error")
         ui.notify(_operation_error_message(reference), type="negative", timeout=8_000)
         return _OPERATION_FAILED
     else:
@@ -356,17 +361,22 @@ async def _prepare_roster_pdf(
     show_footer_note: bool = False,
 ) -> RosterPdfExport | None:
     """Create an in-memory local export rather than writing student data to a public URL."""
+    # Resolve the verified page-scoped adapter and export mode while the
+    # NiceGUI client context is still available. The PDF renderer runs in a
+    # worker thread and must not try to rediscover browser identity there.
+    workflow = get_workflow()
+    practice = is_demo_export()
     export = await _run_with_progress(
         lambda: (
             build_fairness_audit_pdf(
-                get_workflow(), roster_week_id, language=language, practice=is_demo_export()
+                workflow, roster_week_id, language=language, practice=practice
             )  # type: ignore[arg-type]
             if include_audit
             else build_roster_pdf(
-                get_workflow(),
+                workflow,
                 roster_week_id,
                 language=language,
-                practice=is_demo_export(),
+                practice=practice,
                 show_crest=show_crest,
                 show_footer_note=show_footer_note,
             )  # type: ignore[arg-type]

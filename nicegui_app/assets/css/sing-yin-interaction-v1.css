@@ -1,0 +1,265 @@
+/*
+ * Sing Yin semantic interaction layer.
+ *
+ * Icons move according to the action they communicate, not according to the
+ * page on which they happen to appear.  The runtime assigns stable
+ * data-sy-icon-motion roles from Material icon names; CSS owns every visual
+ * state so there are no per-button listeners or decorative animation loops.
+ */
+
+:where(.q-btn, .q-tab, .q-item.q-item--clickable) .q-icon[data-sy-icon-motion] {
+  --sy-icon-intent-transform: translate3d(0, -1px, 0) scale(1.04);
+  transform: translate3d(0, 0, 0);
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+  transition:
+    transform var(--sy-motion-state) var(--sy-ease),
+    color var(--sy-motion-state) var(--sy-ease),
+    background-color var(--sy-motion-state) var(--sy-ease);
+}
+
+.q-icon[data-sy-icon-motion="forward"] {
+  --sy-icon-intent-transform: translate3d(2px, 0, 0);
+}
+
+.q-icon[data-sy-icon-motion="back"] {
+  --sy-icon-intent-transform: translate3d(-2px, 0, 0);
+}
+
+.q-icon[data-sy-icon-motion="refresh"] {
+  --sy-icon-intent-transform: rotate(22deg);
+}
+
+.q-icon[data-sy-icon-motion="confirm"] {
+  --sy-icon-intent-transform: translate3d(0, 1px, 0) scale(1.04);
+}
+
+.q-icon[data-sy-icon-motion="download"] {
+  --sy-icon-intent-transform: translate3d(0, 2px, 0);
+}
+
+.q-icon[data-sy-icon-motion="upload"] {
+  --sy-icon-intent-transform: translate3d(0, -2px, 0);
+}
+
+.q-icon[data-sy-icon-motion="exchange"] {
+  --sy-icon-intent-transform: translate3d(2px, 0, 0) scale(1.03);
+}
+
+.q-icon[data-sy-icon-motion="create"] {
+  --sy-icon-intent-transform: translate3d(0, -1px, 0) scale(1.09);
+}
+
+.q-icon[data-sy-icon-motion="edit"] {
+  --sy-icon-intent-transform: translate3d(1px, -1px, 0) rotate(-5deg);
+}
+
+.q-icon[data-sy-icon-motion="toggle"] {
+  --sy-icon-intent-transform: rotate(8deg) scale(1.04);
+}
+
+.q-icon[data-sy-icon-motion="play"] {
+  --sy-icon-intent-transform: translate3d(2px, 0, 0) scale(1.06);
+}
+
+.q-icon[data-sy-icon-motion="search"] {
+  --sy-icon-intent-transform: scale(1.09);
+}
+
+.q-icon[data-sy-icon-motion="danger"] {
+  --sy-icon-intent-transform: scale(.92);
+}
+
+.q-icon[data-sy-icon-motion="attention"] {
+  --sy-icon-intent-transform: rotate(-6deg) scale(1.03);
+}
+
+body :is(.q-btn, .q-tab, .q-item.q-item--clickable)
+  :is(.q-icon[data-sy-icon-motion]) {
+  position: relative;
+  isolation: isolate;
+}
+
+body :is(.q-btn, .q-tab, .q-item.q-item--clickable)
+  :is(.q-icon[data-sy-icon-motion])::after {
+  position: absolute;
+  z-index: -1;
+  inset: -5px;
+  border-radius: 9px;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  content: "";
+  opacity: 0;
+  transform: scale(.78);
+  transition:
+    opacity var(--sy-motion-state) var(--sy-ease),
+    transform var(--sy-motion-state) var(--sy-ease);
+}
+
+body :is(.q-btn, .q-tab, .q-item.q-item--clickable):not(.disabled):not([aria-disabled="true"]):not(.q-btn--loading):not([aria-busy="true"]):focus-visible
+  .q-icon[data-sy-icon-motion] {
+  transform: var(--sy-icon-intent-transform);
+}
+
+body :is(.q-btn, .q-tab, .q-item.q-item--clickable):not(.disabled):not([aria-disabled="true"]):not(.q-btn--loading):not([aria-busy="true"]):focus-visible
+  .q-icon[data-sy-icon-motion]::after {
+  opacity: .72;
+  transform: scale(1);
+}
+
+body :is(.q-btn, .q-tab, .q-item.q-item--clickable):not(.disabled):not([aria-disabled="true"]):not(.q-btn--loading):not([aria-busy="true"]):active
+  .q-icon[data-sy-icon-motion] {
+  transform: translate3d(0, 1px, 0) scale(.9);
+  transition-duration: var(--sy-motion-press);
+}
+
+body :is(
+  .q-btn.disabled,
+  .q-btn[aria-disabled="true"],
+  .q-btn.q-btn--loading,
+  .q-btn[aria-busy="true"],
+  .q-tab.disabled,
+  .q-item[aria-disabled="true"]
+) .q-icon[data-sy-icon-motion] {
+  animation: none !important;
+  transform: none !important;
+}
+
+body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
+  .q-icon[data-sy-icon-motion] {
+  opacity: .48;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body :is(.q-btn, .q-tab, .q-item.q-item--clickable):not(.disabled):not([aria-disabled="true"]):not(.q-btn--loading):not([aria-busy="true"]):hover
+    .q-icon[data-sy-icon-motion] {
+    transform: var(--sy-icon-intent-transform);
+  }
+
+  body :is(.q-btn, .q-tab, .q-item.q-item--clickable):not(.disabled):not([aria-disabled="true"]):not(.q-btn--loading):not([aria-busy="true"]):hover
+    .q-icon[data-sy-icon-motion]::after {
+    opacity: .72;
+    transform: scale(1);
+  }
+}
+
+/*
+ * Semantic completion feedback is one-shot.  It reuses the existing global
+ * sy:feedback event and therefore follows actual navigation, working,
+ * attention and success states instead of running on a decorative timer.
+ */
+
+@keyframes sy-icon-confirm {
+  0% { transform: scale(.88); }
+  54% { transform: translate3d(0, -1px, 0) scale(1.14); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes sy-icon-working {
+  0% { transform: rotate(0deg) scale(.96); }
+  56% { transform: rotate(24deg) scale(1.05); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+@keyframes sy-icon-attention {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  35% { transform: translate3d(-2px, 0, 0); }
+  68% { transform: translate3d(2px, 0, 0); }
+}
+
+@keyframes sy-icon-error {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  38% { transform: translate3d(-2px, 0, 0) rotate(-4deg) scale(.94); }
+  72% { transform: translate3d(1px, 0, 0) rotate(2deg) scale(.98); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+
+[data-sy-feedback-state="success"] .q-icon[data-sy-icon-motion] {
+  animation: sy-icon-confirm var(--sy-motion-layer) var(--sy-ease) 1;
+}
+
+[data-sy-feedback-state="working"] .q-icon[data-sy-icon-motion] {
+  animation: sy-icon-working var(--sy-motion-layer) var(--sy-ease) 1;
+}
+
+[data-sy-feedback-state="attention"] .q-icon[data-sy-icon-motion] {
+  animation: sy-icon-attention var(--sy-motion-layer) var(--sy-ease) 1;
+}
+
+[data-sy-feedback-state="error"] .q-icon[data-sy-icon-motion] {
+  animation: sy-icon-error var(--sy-motion-layer) var(--sy-ease) 1;
+}
+
+/*
+ * Editorial showcase cards are not disguised as buttons. Static team,
+ * capability and metric cards stay physically still; only the explanatory
+ * icon acknowledges a fine-pointer hover. Cards with real actions retain the
+ * separate, existing lift and focus treatment.
+ */
+
+:is(
+  .sy-team-role-icon,
+  .sy-capability-icon,
+  .sy-platform-metric-icon,
+  .sy-solution-icon,
+  .sy-reference-index-icon,
+  .sy-engineering-fact-icon,
+  .sy-engineering-pillar-icon,
+  .sy-architecture-layer-icon,
+  .sy-trust-evidence-icon
+) {
+  transform: translate3d(0, 0, 0);
+  transform-origin: 50% 50%;
+  transition:
+    transform var(--sy-motion-state) var(--sy-ease),
+    color var(--sy-motion-state) var(--sy-ease),
+    background-color var(--sy-motion-state) var(--sy-ease);
+}
+
+.sy-solution-card:focus-within .sy-solution-icon,
+.sy-reference-index-card:focus-within .sy-reference-index-icon {
+  transform: translate3d(2px, -1px, 0) scale(1.04);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sy-team-role:hover .sy-team-role-icon,
+  .sy-platform-metric:hover .sy-platform-metric-icon {
+    transform: translate3d(0, -1px, 0) scale(1.04);
+  }
+
+  .sy-capability-card:hover .sy-capability-icon,
+  .sy-engineering-pillar:hover .sy-engineering-pillar-icon,
+  .sy-architecture-layer:hover .sy-architecture-layer-icon,
+  .sy-trust-evidence-card:hover .sy-trust-evidence-icon {
+    transform: translate3d(0, -1px, 0) rotate(-3deg) scale(1.03);
+  }
+
+  .sy-solution-card:hover .sy-solution-icon,
+  .sy-reference-index-card:hover .sy-reference-index-icon,
+  .sy-engineering-fact:hover .sy-engineering-fact-icon {
+    transform: translate3d(2px, -1px, 0) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.q-btn, .q-tab, .q-item.q-item--clickable) .q-icon[data-sy-icon-motion],
+  :is(
+    .sy-team-role-icon,
+    .sy-capability-icon,
+    .sy-platform-metric-icon,
+    .sy-solution-icon,
+    .sy-reference-index-icon,
+    .sy-engineering-fact-icon,
+    .sy-engineering-pillar-icon,
+    .sy-architecture-layer-icon,
+    .sy-trust-evidence-icon
+  ) {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  :where(.q-btn, .q-tab, .q-item.q-item--clickable)
+    .q-icon[data-sy-icon-motion]::after {
+    opacity: 0 !important;
+    transform: none !important;
+  }
+}

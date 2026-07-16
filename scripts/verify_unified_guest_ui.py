@@ -5,16 +5,18 @@ The release orchestrator starts two loopback origins:
 * an isolated local-maintenance origin representing the operator renderer;
 * an isolated guest origin using the guarded E2E guest principal override.
 
-This verifier compares the shared route shell, exercises one complete guest
-draft action across two tabs, proves that the guest SQLite database did not
-change, and verifies browser/session cleanup.  It never accepts a non-loopback
-URL or the canonical school database.
+This verifier compares the shared route shell, drives the real guest product
+through the weekly operational lifecycle, proves signed same-tab restoration
+and duplicated-tab isolation, checks bounded DEMO downloads, proves that the
+guest SQLite database did not change, and verifies browser/session cleanup.
+It never accepts a non-loopback URL or the canonical school database.
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
 import hashlib
+from io import BytesIO
 import json
 import os
 from pathlib import Path
@@ -26,13 +28,32 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from playwright.sync_api import BrowserContext, Error as PlaywrightError, Page, sync_playwright
+from playwright.sync_api import (
+    BrowserContext,
+    Download,
+    Error as PlaywrightError,
+    Locator,
+    Page,
+    sync_playwright,
+)
+from pypdf import PdfReader
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_DATABASE = (PROJECT_ROOT / "data" / "runtime" / "sing-yin-roster.sqlite3").resolve()
 DEFAULT_EVIDENCE_DIR = PROJECT_ROOT / "logs" / "unified-guest-verification"
 E2E_RUN_ID_PATTERN = re.compile(r"^E2E-[A-F0-9]{12}$")
+GUEST_SNAPSHOT_STORAGE_KEY = "sing-yin-guest-workspace-snapshot-v1"
+FIXTIONAL_PREFECT_NAMES = (
+    "陳樂言",
+    "林頌恩",
+    "黃善行",
+    "李思澄",
+    "何頌謙",
+    "周恩言",
+    "張樂晴",
+    "郭善恩",
+)
 
 SHARED_ROUTES = (
     "/",
@@ -234,7 +255,7 @@ def _install_gateway_stubs(context: BrowserContext) -> None:
     )
 
 
-def _wait_for_app(page: Page) -> None:
+def _wait_for_app_once(page: Page) -> None:
     page.wait_for_selector("main#main-content", timeout=15_000)
     page.wait_for_selector(".sy-header-title", timeout=10_000)
     page.wait_for_function(
@@ -248,6 +269,25 @@ def _wait_for_app(page: Page) -> None:
     )
     if int(overflow) > 1:
         raise UnifiedGuestVerificationError(f"Horizontal overflow detected at {page.url}: {overflow}px")
+
+
+def _is_navigation_context_reset(error: PlaywrightError) -> bool:
+    message = str(error).lower()
+    return "execution context was destroyed" in message and "navigation" in message
+
+
+def _wait_for_app(page: Page) -> None:
+    for attempt in range(3):
+        try:
+            _wait_for_app_once(page)
+            return
+        except PlaywrightError as error:
+            if not _is_navigation_context_reset(error) or attempt == 2:
+                raise
+            # A duplicated guest tab intentionally reloads once after receiving
+            # a fresh workspace binding. Allow that safe navigation to settle,
+            # then repeat the complete shell/font/overflow verification.
+            page.wait_for_timeout(120)
 
 
 def _open_route(page: Page, base_url: str, route: str) -> None:
@@ -370,30 +410,484 @@ def _tab_storage_keys(page: Page) -> dict[str, str]:
     )
 
 
-def _exercise_cross_tab_isolation(first: Page, second: Page, guest_url: str) -> None:
-    _open_route(first, guest_url, "/")
-    _open_route(second, guest_url, "/")
-    if _history_count(first) != 0 or _history_count(second) != 0:
-        raise UnifiedGuestVerificationError("A fresh guest tab did not start from the fixture baseline.")
+def _snapshot_record(page: Page) -> dict[str, Any]:
+    page.wait_for_function(
+        f"() => Boolean(sessionStorage.getItem({json.dumps(GUEST_SNAPSHOT_STORAGE_KEY)}))",
+        timeout=10_000,
+    )
+    value = page.evaluate(
+        f"() => JSON.parse(sessionStorage.getItem({json.dumps(GUEST_SNAPSHOT_STORAGE_KEY)}))"
+    )
+    if (
+        not isinstance(value, dict)
+        or not isinstance(value.get("workspaceId"), str)
+        or not isinstance(value.get("tabId"), str)
+        or not isinstance(value.get("revision"), int)
+        or not isinstance(value.get("token"), str)
+    ):
+        raise UnifiedGuestVerificationError("The signed guest snapshot record is malformed.")
+    return value
 
-    _open_route(first, guest_url, "/rosters")
-    first.get_by_test_id("history-priority-multiplier").wait_for(state="visible", timeout=10_000)
-    first.get_by_role(
+
+def _select_option(
+    page: Page,
+    select: Locator,
+    *,
+    text: re.Pattern[str] | None = None,
+    exclude: re.Pattern[str] | None = None,
+) -> str:
+    select.click()
+    menu_items = page.locator(".q-menu .q-item:visible")
+    menu_items.first.wait_for(state="visible", timeout=10_000)
+    for index in range(menu_items.count()):
+        item = menu_items.nth(index)
+        label = " ".join(item.inner_text().split())
+        if text is not None and text.search(label) is None:
+            continue
+        if exclude is not None and exclude.search(label) is not None:
+            continue
+        item.click()
+        return label
+    raise UnifiedGuestVerificationError(
+        f"No eligible select option was visible (text={text!r}, exclude={exclude!r})."
+    )
+
+
+def _selected_text(select: Locator) -> str:
+    return " ".join(select.locator(".q-field__native").inner_text().split())
+
+
+def _download_bytes(page: Page, trigger: Locator) -> tuple[str, bytes]:
+    with page.expect_download(timeout=30_000) as download_info:
+        trigger.click()
+    download: Download = download_info.value
+    path = download.path()
+    if path is None:
+        raise UnifiedGuestVerificationError("The browser did not expose the generated download.")
+    content = Path(path).read_bytes()
+    if not content:
+        raise UnifiedGuestVerificationError(f"The generated download {download.suggested_filename!r} is empty.")
+    return download.suggested_filename, content
+
+
+def _pdf_text(content: bytes) -> str:
+    if not content.startswith(b"%PDF-"):
+        raise UnifiedGuestVerificationError("A generated PDF does not begin with a PDF header.")
+    try:
+        return "\n".join(page.extract_text() or "" for page in PdfReader(BytesIO(content)).pages)
+    except Exception as error:  # pragma: no cover - release verifier diagnostic
+        raise UnifiedGuestVerificationError("A generated PDF could not be parsed.") from error
+
+
+def _demo_download_evidence(
+    *,
+    filename: str,
+    content: bytes,
+    kind: str,
+    language: str | None = None,
+) -> dict[str, object]:
+    if kind == "json":
+        try:
+            payload = json.loads(content.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise UnifiedGuestVerificationError("The DEMO JSON download is invalid.") from error
+        if (
+            "DEMO" not in filename
+            or payload.get("demo") is not True
+            or payload.get("fictional") is not True
+            or "demo" not in str(payload.get("evidenceType", "")).lower()
+        ):
+            raise UnifiedGuestVerificationError("The JSON evidence is not explicitly marked as fictional DEMO data.")
+    elif kind in {"roster-pdf", "summary-pdf"}:
+        text = _pdf_text(content)
+        if kind == "roster-pdf":
+            expected_filename_marker = "PRACTICE_"
+            expected_document_marker = (
+                "練習版本" if language == "zh" else "PRACTICE VERSION"
+            )
+        else:
+            expected_filename_marker = "SYSS_DEMO"
+            expected_document_marker = "DEMO"
+        if expected_filename_marker not in filename or expected_document_marker not in text:
+            raise UnifiedGuestVerificationError(
+                f"The {kind} download is not visibly marked as a fictional demonstration."
+            )
+        title = (
+            "聖言中學導學風紀"
+            if language == "zh"
+            else (
+                "Sing Yin Secondary School"
+                if kind == "roster-pdf"
+                else "Sing Yin Study Prefect"
+            )
+        )
+        if title not in text:
+            raise UnifiedGuestVerificationError(
+                f"The {language} {kind} does not contain its expected bilingual title."
+            )
+        if not any(name in text for name in FIXTIONAL_PREFECT_NAMES):
+            raise UnifiedGuestVerificationError(
+                f"The {language} {kind} did not preserve a fictional Chinese prefect name."
+            )
+    else:  # pragma: no cover - programming guard
+        raise ValueError(f"Unsupported DEMO download kind: {kind}")
+    return {
+        "filename": filename,
+        "bytes": len(content),
+        "sha256": hashlib.sha256(content).hexdigest(),
+        "kind": kind,
+        "language": language,
+    }
+
+
+def _assert_fixture_directory(page: Page, guest_url: str) -> None:
+    _open_route(page, guest_url, "/prefects")
+    for name in FIXTIONAL_PREFECT_NAMES[:3]:
+        page.get_by_text(name, exact=True).first.wait_for(state="visible", timeout=10_000)
+
+
+def _download_roster_pdfs(page: Page) -> list[dict[str, object]]:
+    page.get_by_role(
+        "button",
+        name=re.compile(r"下載列印版 PDF|Download print-ready PDF"),
+    ).click()
+    evidence: list[dict[str, object]] = []
+    for language, prepare_pattern, filename_pattern in (
+        ("zh", r"準備中文週表 PDF|Prepare Chinese schedule PDF", r"_中文\.pdf$"),
+        ("en", r"準備英文週表 PDF|Prepare English schedule PDF", r"_EN\.pdf$"),
+    ):
+        page.get_by_role("button", name=re.compile(prepare_pattern)).click()
+        ready = page.get_by_test_id("pdf-delivery-ready")
+        ready.wait_for(state="visible", timeout=30_000)
+        ready.get_by_text(re.compile(filename_pattern)).wait_for(state="visible", timeout=10_000)
+        filename, content = _download_bytes(
+            page,
+            ready.get_by_test_id("download-prepared-pdf"),
+        )
+        evidence.append(
+            _demo_download_evidence(
+                filename=filename,
+                content=content,
+                kind="roster-pdf",
+                language=language,
+            )
+        )
+    page.get_by_role("button", name=re.compile(r"取消|Cancel")).last.click()
+    return evidence
+
+
+def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
+    """Drive the same guest renderer through the real weekly operational flow."""
+
+    _assert_fixture_directory(page, guest_url)
+    _open_route(page, guest_url, "/rosters")
+    page.get_by_test_id("history-priority-multiplier").wait_for(state="visible", timeout=10_000)
+    # NiceGUI keeps the page-level music dialog mounted while it is closed.
+    # Its three Quasar selects precede the operational fields in DOM order, so
+    # index-based workflow assertions must be scoped to currently visible
+    # controls rather than accidentally waiting on a hidden dialog control.
+    selects = page.locator("main#main-content .q-select:visible")
+    _select_option(page, selects.nth(0), text=re.compile(r"張樂晴"))
+    leave_reason = "示範請假（不會長期儲存）"
+    page.locator("input[name='pre-generation-leave-reason']").fill(leave_reason)
+    page.get_by_role("button", name=re.compile(r"登記請假|Record leave")).click()
+    page.locator("main#main-content .sy-mobile-list-action").filter(
+        has_text=leave_reason,
+    ).wait_for(
+        state="visible",
+        timeout=20_000,
+    )
+
+    page.get_by_role(
         "button",
         name=re.compile(r"生成並儲存草稿|Generate and save draft"),
     ).click()
-    first.wait_for_url(re.compile(r".*/rosters/[0-9]+$"), timeout=20_000)
-    first.locator("main#main-content").wait_for(state="visible", timeout=10_000)
+    page.wait_for_url(re.compile(r".*/rosters/[0-9]+$"), timeout=30_000)
+    _wait_for_app(page)
+    roster_week_id = int(page.url.rstrip("/").rsplit("/", 1)[-1])
 
-    _open_route(first, guest_url, "/")
-    _open_route(second, guest_url, "/")
-    if _history_count(first) != 1:
-        raise UnifiedGuestVerificationError(
-            "The generating guest tab did not retain its own in-memory draft: "
-            f"firstStorage={_tab_storage_keys(first)}, secondStorage={_tab_storage_keys(second)}"
+    page.get_by_role(
+        "button",
+        name=re.compile(r"載入合資格人選|Load eligible candidates"),
+    ).click()
+    draft_selects = page.locator("main#main-content .q-select:visible")
+    chosen_draft_candidate = _select_option(page, draft_selects.nth(1))
+    page.locator("textarea[name='draft-change-reason']").fill("示範核對後調整")
+    page.get_by_role(
+        "button",
+        name=re.compile(r"儲存草稿修改|Save draft change"),
+    ).click()
+    page.wait_for_function(
+        "() => /(?:版本|Version)\\s*2/.test(document.querySelector('.sy-roster-detail-head')?.innerText || '')",
+        timeout=30_000,
+    )
+
+    page.get_by_role("button", name=re.compile(r"發布週表|Publish roster")).click()
+    page.get_by_role(
+        "button",
+        name=re.compile(r"確認發布並入帳|Publish and post to ledger"),
+    ).click()
+    page.get_by_role(
+        "button",
+        name=re.compile(r"處理請假調整|Handle leave adjustment"),
+    ).first.wait_for(state="visible", timeout=30_000)
+    roster_downloads = _download_roster_pdfs(page)
+
+    _open_route(page, guest_url, f"/rosters/{roster_week_id}/adjustments")
+    adjustment_selects = page.locator("main#main-content .q-select:visible")
+    original_assignment = _selected_text(adjustment_selects.nth(0))
+    page.get_by_role(
+        "button",
+        name=re.compile(r"載入合資格替補|Load eligible substitutes"),
+    ).click()
+    replacement = _select_option(
+        page,
+        adjustment_selects.nth(1),
+        exclude=re.compile(r"保留空缺|Keep vacancy|Vacant", re.IGNORECASE),
+    )
+    page.locator("textarea[name='leave-adjustment-reason']").fill("示範已發布後請假")
+    page.get_by_role(
+        "button",
+        name=re.compile(r"儲存請假調整|Save leave adjustment"),
+    ).click()
+    adjustment_receipt = page.get_by_test_id("export-updated-roster")
+    adjustment_receipt.wait_for(state="visible", timeout=30_000)
+    receipt_text = " ".join(
+        adjustment_receipt.locator("xpath=ancestor::*[@role='dialog'][1]").inner_text().split()
+    )
+    original_name = next((name for name in FIXTIONAL_PREFECT_NAMES if name in original_assignment), "")
+    replacement_name = next((name for name in FIXTIONAL_PREFECT_NAMES if name in replacement), "")
+    if not original_name or not replacement_name or original_name not in receipt_text or replacement_name not in receipt_text:
+        raise UnifiedGuestVerificationError("The published-duty adjustment receipt did not prove its fairness transfer.")
+    page.get_by_role(
+        "button",
+        name=re.compile(r"核對更新後週表|Review updated roster"),
+    ).click()
+    page.wait_for_url(re.compile(rf".*/rosters/{roster_week_id}$"), timeout=20_000)
+
+    return {
+        "rosterWeekId": roster_week_id,
+        "preGenerationLeave": True,
+        "manualDraftChange": {
+            "reasonRequired": True,
+            "candidate": chosen_draft_candidate,
+        },
+        "demoPublish": True,
+        "rosterDownloads": roster_downloads,
+        "publishedDutyAdjustment": {
+            "original": original_name,
+            "replacement": replacement_name,
+            "fairnessTransferReceipt": True,
+        },
+    }
+
+
+def _exercise_summary_downloads(page: Page, guest_url: str) -> dict[str, object]:
+    _open_route(page, guest_url, "/prefects")
+    page.get_by_role("tab", name=re.compile(r"公平審核|Audit|Fairness")).click()
+    metrics = page.get_by_test_id("summary-report-metrics")
+    metrics.wait_for(state="visible", timeout=20_000)
+    metrics_text = " ".join(metrics.inner_text().split())
+    if not re.search(r"一致|Balanced", metrics_text):
+        raise UnifiedGuestVerificationError("The demo fairness ledger did not reconcile after its adjustment.")
+
+    downloads: list[dict[str, object]] = []
+    for test_id, language in (
+        ("download-summary-zh", "zh"),
+        ("download-summary-en", "en"),
+    ):
+        filename, content = _download_bytes(page, page.get_by_test_id(test_id))
+        downloads.append(
+            _demo_download_evidence(
+                filename=filename,
+                content=content,
+                kind="summary-pdf",
+                language=language,
+            )
         )
-    if _history_count(second) != 0:
-        raise UnifiedGuestVerificationError("A guest draft leaked into another tab workspace.")
+    json_filename, json_content = _download_bytes(
+        page,
+        page.get_by_test_id("download-summary-json"),
+    )
+    downloads.append(
+        _demo_download_evidence(
+            filename=json_filename,
+            content=json_content,
+            kind="json",
+        )
+    )
+    return {
+        "ledgerBalanced": True,
+        "downloads": downloads,
+    }
+
+
+def _reload_and_verify_signed_snapshot(page: Page) -> dict[str, object]:
+    before = _snapshot_record(page)
+    before_history = _history_count(page)
+    if before_history != 1:
+        raise UnifiedGuestVerificationError("The completed guest workflow was not visible before refresh.")
+    try:
+        page.reload(wait_until="domcontentloaded", timeout=20_000)
+    except PlaywrightError as error:
+        if "ERR_ABORTED" not in str(error):
+            raise
+    _wait_for_app(page)
+    page.wait_for_function(
+        "() => document.body.dataset.syGuestSnapshotRestore === 'accepted'",
+        timeout=15_000,
+    )
+    after = _snapshot_record(page)
+    if (
+        after["workspaceId"] != before["workspaceId"]
+        or after["tabId"] != before["tabId"]
+        or int(after["revision"]) < int(before["revision"])
+        or _history_count(page) != before_history
+    ):
+        raise UnifiedGuestVerificationError("Same-tab refresh did not preserve the signed guest workspace.")
+    return {
+        "accepted": True,
+        "workspaceStable": True,
+        "revisionBefore": int(before["revision"]),
+        "revisionAfter": int(after["revision"]),
+        "historyPreserved": True,
+    }
+
+
+def _exercise_handover_reset_restore(page: Page, guest_url: str) -> dict[str, object]:
+    _open_route(page, guest_url, "/settings")
+    create_backup = page.get_by_test_id("create-verified-backup-action").first
+    create_backup.wait_for(state="visible", timeout=10_000)
+    create_backup.click()
+    package_action = page.get_by_test_id("handover-package-ready-action")
+    package_action.wait_for(state="visible", timeout=30_000)
+    package_action.click()
+    handover_filename, handover_content = _download_bytes(
+        page,
+        page.get_by_role(
+            "button",
+            name=re.compile(r"建立並下載交接備份包|Create and download handover package"),
+        ),
+    )
+    try:
+        handover_payload = json.loads(handover_content.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise UnifiedGuestVerificationError("The in-memory DEMO handover package is invalid.") from error
+    if (
+        "DEMO" not in handover_filename
+        or handover_payload.get("demo") is not True
+        or handover_payload.get("fictional") is not True
+    ):
+        raise UnifiedGuestVerificationError("The handover package is not explicitly marked as DEMO data.")
+
+    _open_route(page, guest_url, "/handover")
+    page.get_by_test_id("open-school-year-rollover").click()
+    confirmation = page.locator(
+        "[data-testid='school-year-rollover-confirmation'] input,"
+        "input[data-testid='school-year-rollover-confirmation']"
+    )
+    confirmation.fill("新學年重置")
+    page.get_by_test_id("confirm-school-year-rollover").click()
+    page.wait_for_url(re.compile(r".*/prefects$"), timeout=30_000)
+    page.get_by_test_id("empty-prefect-directory").wait_for(state="visible", timeout=20_000)
+
+    _open_route(page, guest_url, "/settings")
+    page.get_by_test_id("restore-ready-action").wait_for(state="visible", timeout=20_000)
+    page.get_by_test_id("restore-ready-action").click()
+    page.get_by_test_id("confirm-restore-action").click()
+    page.get_by_test_id("handover-package-ready-action").wait_for(state="visible", timeout=30_000)
+    _assert_fixture_directory(page, guest_url)
+    _open_route(page, guest_url, "/")
+    if _history_count(page) != 1:
+        raise UnifiedGuestVerificationError("The in-memory DEMO restore did not recover the completed roster.")
+    return {
+        "checkpointCreated": True,
+        "handoverDownload": {
+            "filename": handover_filename,
+            "bytes": len(handover_content),
+            "sha256": hashlib.sha256(handover_content).hexdigest(),
+        },
+        "schoolYearReset": True,
+        "emptyDirectoryObserved": True,
+        "controlledRestore": True,
+        "completedRosterRecovered": True,
+    }
+
+
+def _exercise_true_duplicate_and_tamper(
+    source: Page,
+    guest_url: str,
+    *,
+    register_page,
+) -> tuple[Page, dict[str, object]]:
+    _open_route(source, guest_url, "/")
+    # Once another guest workspace exists (for example the mobile evidence
+    # context), the first HTTP composition deliberately uses a neutral
+    # fixture until the websocket supplies this tab's stable identity. Binding
+    # then triggers one safe reload. Wait for that real workspace DOM before
+    # taking the source snapshot or asserting cross-tab isolation.
+    source.locator(
+        "[data-testid='dashboard-history'] .sy-dashboard-history-item"
+    ).first.wait_for(state="visible", timeout=20_000)
+    source_snapshot = _snapshot_record(source)
+    if _history_count(source) != 1:
+        raise UnifiedGuestVerificationError("The source tab lost its completed DEMO workflow.")
+    with source.expect_popup(timeout=15_000) as popup_info:
+        source.evaluate("() => window.open(window.location.href, '_blank')")
+    duplicate = popup_info.value
+    register_page(duplicate)
+    _wait_for_app(duplicate)
+    duplicate.wait_for_function(
+        f"""sourceWorkspace => {{
+          try {{
+            const record = JSON.parse(sessionStorage.getItem({json.dumps(GUEST_SNAPSHOT_STORAGE_KEY)}));
+            return record?.workspaceId && record.workspaceId !== sourceWorkspace;
+          }} catch {{ return false; }}
+        }}""",
+        arg=source_snapshot["workspaceId"],
+        timeout=20_000,
+    )
+    duplicate_snapshot = _snapshot_record(duplicate)
+    _open_route(duplicate, guest_url, "/")
+    if _history_count(duplicate) != 0 or _history_count(source) != 1:
+        raise UnifiedGuestVerificationError("A truly duplicated browser tab shared mutable guest state.")
+
+    encoded_payload, encoded_signature = str(duplicate_snapshot["token"]).rsplit(".", 1)
+    tampered_signature = (
+        ("A" if encoded_signature[0] != "A" else "B") + encoded_signature[1:]
+    )
+    tampered_token = f"{encoded_payload}.{tampered_signature}"
+    duplicate.evaluate(
+        f"""record => {{
+          record.token = {json.dumps(tampered_token)};
+          sessionStorage.setItem({json.dumps(GUEST_SNAPSHOT_STORAGE_KEY)}, JSON.stringify(record));
+        }}""",
+        duplicate_snapshot,
+    )
+    try:
+        duplicate.reload(wait_until="domcontentloaded", timeout=20_000)
+    except PlaywrightError as error:
+        if "ERR_ABORTED" not in str(error):
+            raise
+    _wait_for_app(duplicate)
+    duplicate.wait_for_function(
+        "() => document.body.dataset.syGuestSnapshotRestore === 'safe-fixture'",
+        timeout=15_000,
+    )
+    if _history_count(duplicate) != 0:
+        raise UnifiedGuestVerificationError("A tampered snapshot replaced the duplicated tab's safe fixture.")
+    fresh_duplicate_snapshot = _snapshot_record(duplicate)
+    if fresh_duplicate_snapshot["token"] == tampered_token:
+        raise UnifiedGuestVerificationError("The rejected tampered snapshot was not rotated.")
+    return duplicate, {
+        "copiedSessionStorageDetected": True,
+        "workspaceIsolated": True,
+        "sourceHistoryCount": 1,
+        "duplicateHistoryCount": 0,
+        "tamperedSnapshotRejected": True,
+        "safeFixtureRetained": True,
+        "tokenRotated": True,
+    }
 
 
 def _exercise_broadcast_cleanup(first: Page, second: Page) -> None:
@@ -435,6 +929,11 @@ def main() -> int:
     console_errors: list[str] = []
     page_errors: list[str] = []
     parity: list[dict[str, object]] = []
+    workflow_evidence: dict[str, object] = {}
+    summary_evidence: dict[str, object] = {}
+    snapshot_evidence: dict[str, object] = {}
+    handover_evidence: dict[str, object] = {}
+    duplicate_evidence: dict[str, object] = {}
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
@@ -450,8 +949,8 @@ def main() -> int:
         _install_gateway_stubs(guest_context)
         admin_page = admin_context.new_page()
         guest_page = guest_context.new_page()
-        second_guest_page = guest_context.new_page()
-        for page in (admin_page, guest_page, second_guest_page):
+
+        def register_browser_page(page: Page) -> None:
             page.on(
                 "console",
                 lambda message: console_errors.append(message.text)
@@ -460,9 +959,16 @@ def main() -> int:
             )
             page.on("pageerror", lambda error: page_errors.append(str(error)))
 
+        for page in (admin_page, guest_page):
+            register_browser_page(page)
+
         parity = _assert_route_parity(admin_page, guest_page, admin_url, guest_url)
         _assert_guest_restrictions(guest_page, guest_url)
-        _exercise_cross_tab_isolation(guest_page, second_guest_page, guest_url)
+        workflow_evidence = _exercise_weekly_workflow(guest_page, guest_url)
+        summary_evidence = _exercise_summary_downloads(guest_page, guest_url)
+        _open_route(guest_page, guest_url, "/")
+        snapshot_evidence = _reload_and_verify_signed_snapshot(guest_page)
+        handover_evidence = _exercise_handover_reset_restore(guest_page, guest_url)
         _wait_for_guest_sessions(guest_url, 1)
 
         _open_route(guest_page, guest_url, "/")
@@ -490,7 +996,12 @@ def main() -> int:
         mobile_page.screenshot(path=str(evidence_dir / "unified-guest-mobile-dark.png"), full_page=True)
         mobile_context.close()
 
-        _exercise_broadcast_cleanup(guest_page, second_guest_page)
+        duplicate_guest_page, duplicate_evidence = _exercise_true_duplicate_and_tamper(
+            guest_page,
+            guest_url,
+            register_page=register_browser_page,
+        )
+        _exercise_broadcast_cleanup(guest_page, duplicate_guest_page)
         guest_context.close()
         _wait_for_guest_sessions(guest_url, 0)
         admin_context.close()
@@ -502,7 +1013,7 @@ def main() -> int:
     _assert_clean_browser(console_errors, page_errors)
 
     report = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "status": "pass",
         "verifiedAt": datetime.now(timezone.utc).isoformat(),
         "routes": parity,
@@ -510,7 +1021,14 @@ def main() -> int:
         "editorialParityRouteCount": len(EDITORIAL_PARITY_ROUTES),
         "databaseFingerprintUnchanged": True,
         "databaseTableCount": len(before_counts),
-        "crossTabIsolation": True,
+        "fictionalFixtureDirectory": True,
+        "weeklyWorkflow": workflow_evidence,
+        "fairnessAndReports": summary_evidence,
+        "sameTabSnapshotRefresh": snapshot_evidence,
+        "handoverResetRestore": handover_evidence,
+        "duplicateTab": duplicate_evidence,
+        "crossTabIsolation": bool(duplicate_evidence.get("workspaceIsolated")),
+        "tamperedSnapshotFallback": bool(duplicate_evidence.get("safeFixtureRetained")),
         "broadcastCleanup": True,
         "serverWorkspaceCleanup": True,
         "readyz": {

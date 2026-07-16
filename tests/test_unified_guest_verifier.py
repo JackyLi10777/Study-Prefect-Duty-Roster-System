@@ -10,8 +10,11 @@ from nicegui_app.release_evidence import RELEASE_SOURCE_FILES
 from scripts import verify_release_candidate, verify_unified_guest_ui
 from scripts.verify_unified_guest_ui import (
     EDITORIAL_PARITY_ROUTES,
+    FIXTIONAL_PREFECT_NAMES,
     SHARED_ROUTES,
     UnifiedGuestVerificationError,
+    _demo_download_evidence,
+    _is_navigation_context_reset,
     isolated_inputs,
     logical_database_fingerprint,
 )
@@ -111,14 +114,53 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
     for contract in (
         "logical_database_fingerprint",
         "_assert_route_parity",
-        "_exercise_cross_tab_isolation",
+        "_exercise_weekly_workflow",
+        "_exercise_summary_downloads",
+        "_reload_and_verify_signed_snapshot",
+        "_exercise_handover_reset_restore",
+        "_exercise_true_duplicate_and_tamper",
+        "_demo_download_evidence",
         "_exercise_broadcast_cleanup",
         "_wait_for_guest_sessions",
         "/readyz",
         "guest-mode-banner",
         "guest-restricted-state",
+        "pre-generation-leave-reason",
+        "draft-change-reason",
+        "leave-adjustment-reason",
+        "download-summary-json",
+        "school-year-rollover-confirmation",
+        "safe-fixture",
+        "main#main-content .q-select:visible",
     ):
         assert contract in source
+    assert source.count('page.locator("main#main-content .q-select:visible")') == 3
+
+
+def test_unified_guest_verifier_accepts_only_explicit_fictional_demo_json() -> None:
+    content = (
+        b'{"demo":true,"fictional":true,'
+        b'"evidenceType":"sing-yin-study-prefect-demo-period-summary"}'
+    )
+
+    evidence = _demo_download_evidence(
+        filename="SYSS_DEMO_Service_Summary_20260720.json",
+        content=content,
+        kind="json",
+    )
+
+    assert evidence["filename"] == "SYSS_DEMO_Service_Summary_20260720.json"
+    assert evidence["kind"] == "json"
+    assert evidence["bytes"] == len(content)
+    assert len(evidence["sha256"]) == 64
+    assert all(name for name in FIXTIONAL_PREFECT_NAMES)
+
+    with pytest.raises(UnifiedGuestVerificationError, match="fictional DEMO"):
+        _demo_download_evidence(
+            filename="SYSS_Service_Summary_20260720.json",
+            content=b'{"demo":false,"fictional":false,"evidenceType":"official"}',
+            kind="json",
+        )
 
 
 def test_release_candidate_launches_separate_unified_operator_and_guest_origins(
@@ -174,3 +216,17 @@ def test_release_fingerprint_tracks_unified_guest_verifier() -> None:
         verify_unified_guest_ui.PROJECT_ROOT / "scripts" / "verify_unified_guest_ui.py"
         in RELEASE_SOURCE_FILES
     )
+
+
+def test_app_wait_retries_only_the_expected_safe_navigation_context_reset() -> None:
+    expected = verify_unified_guest_ui.PlaywrightError(
+        "Page.evaluate: Execution context was destroyed, most likely because of a navigation"
+    )
+    unrelated = verify_unified_guest_ui.PlaywrightError("Page.evaluate: JavaScript exception")
+
+    assert _is_navigation_context_reset(expected) is True
+    assert _is_navigation_context_reset(unrelated) is False
+
+    source = Path(verify_unified_guest_ui.__file__).read_text(encoding="utf-8")
+    assert "for attempt in range(3):" in source
+    assert "if not _is_navigation_context_reset(error) or attempt == 2:" in source

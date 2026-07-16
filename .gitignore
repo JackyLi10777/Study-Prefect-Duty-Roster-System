@@ -50,8 +50,11 @@ music/youtube-imports/
 music/.youtube-import-staging/
 local-imports/
 .codex-remote-attachments/
+.codex/
 .nicegui/
 tmp/
+.superdesign/tmp/
+test-results/narrative-verification/
 
 # OS / editor
 .DS_Store

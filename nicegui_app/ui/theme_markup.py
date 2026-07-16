@@ -5,5 +5,7 @@ THEME_HEAD_HTML = """
 <link rel="stylesheet" href="/assets/css/sing-yin-tokens-v1.css">
 <link rel="stylesheet" href="/assets/css/sing-yin-theme-v1.css">
 <link rel="stylesheet" href="/assets/css/sing-yin-narrative-v1.css">
+<link rel="stylesheet" href="/assets/css/sing-yin-material-v1.css">
+<link rel="stylesheet" href="/assets/css/sing-yin-interaction-v1.css">
 <link rel="stylesheet" href="/assets/css/sing-yin-mobile-v1.css" media="(max-width: 900px)">
 """

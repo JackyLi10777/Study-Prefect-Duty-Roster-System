@@ -60,7 +60,7 @@ This is the complete standing direction for future iterations. It replaces any t
 6. **Calm feedback, not theatre:** hover, press, one-time state changes, a short dialog settle, optional quiet success sound, honest progress phases, and low-volume page-context music are allowed. The local context player may make one low-volume autoplay attempt after a page becomes ready, with a browser-local default that the operator can turn off. It must expose playing／paused／browser-blocked／off states, an immediate pause/off control, and an explanation when browser media policy requires one manual start. No looping decorative animation, parallax, autoplay video, forced unclosable audio, fake loading percentage, bouncing icon, or motion that impedes reading.
 7. **Accessibility and language are non-negotiable:** Traditional Chinese is primary, English is complete, names stay Chinese in every locale, keyboard focus is clear, touch targets are practical, reduced motion is honoured, and light/dark themes meet contrast requirements for text, icons, charts, tables, and system states.
 8. **Reliability is part of the experience:** a polished surface cannot disguise a failed save. UI changes must preserve policy ownership, persistent `history_weight`, publish-once ledger posting, leave-adjustment auditability, checksum-verified snapshots, managed restore, local-first privacy, and clear error/empty/confirmation states.
-9. **Privacy before distribution:** no roster data is sent to generated imagery, media tools, analytics or a public NiceGUI origin. The only distributed surface is one canonical workers.dev hostname. Its unauthenticated `/` entrance, `/guest` product tour and `/try` sandbox are Worker-native static surfaces. The trial loads only fixed fictional Chinese names; all changes, generation and PDF work remain in 30-minute `sessionStorage` and make no application API, KV, VPC, NiceGUI, SQLite, fairness-ledger, backup or server-log write. After explicit confirmation, same-host `/view#…` links receive AES-GCM ciphertext for a minimum-field published-roster snapshot, keep no decryption key, expire or can be revoked. The editor appears on the same `/` only after Cloudflare Access and Worker-side JWT verification. NiceGUI never presents an anonymous guest role.
+9. **Privacy before distribution:** no roster data is sent to generated imagery, media tools, analytics or an unauthorised client. The only distributed surface is one canonical workers.dev hostname. Public `/` has no application capability; a time-limited Guest session and an Access-verified Admin session enter the same NiceGUI routes through different HMAC-signed principals and adapters. Guest state contains only fixed fictional Chinese names, remains authoritative in bounded origin memory, and may place only the latest signed, session／workspace／tab-bound token in that tab's `sessionStorage`; it never enters official SQLite, backups, the fairness ledger, Viewer KV, AI, uploads, external delivery or content logs. After explicit confirmation, same-host `/view#…` links receive AES-GCM ciphertext for a minimum-field published-roster snapshot, keep no decryption key, expire or can be revoked. UI visibility is never the permission boundary.
 
 ### Design languages that intentionally differ
 
@@ -68,7 +68,7 @@ This is the complete standing direction for future iterations. It replaces any t
 |---|---|---|---|
 | Weekly roster work | Quiet operations desk: neutral surfaces, slate action, teal verified state, compact factual type | Calm, dependable, easy to scan | A KPI dashboard, a dense admin console, or a decorative template |
 | Daily Verse | Sacred reading chamber: deep indigo, warm parchment/gold, serif reading type, measured space, low movement | A moment of reflection before service | A generic hero banner, a sermon slide, or a dark-themed work card |
-| Visitor tour and trial | Editorial product narrative leading into a clearly bounded, fictional-data work sample | Credible, understandable, safe to explore | A fake admin account, a marketing maze, or a copy of another platform site |
+| Public entrance and Guest | Editorial product narrative leading into the same workbench with a clearly bounded fictional-data adapter | Credible, understandable, safe to explore | A fake admin account, a marketing maze, or a copy of another platform site |
 | Onboarding and handover | Gentle study archive: warm paper material, clear numbered action, reassuring recovery copy | A successor being calmly guided | A marketing landing page or tutorial carousel |
 | Error, risk, and recovery | Plain spoken safety sheet: high contrast, direct action, visible consequence | Clear and accountable | An alarmist or vague system message |
 
@@ -185,7 +185,7 @@ The common claim that a systematic SaaS layout automatically creates a clearer o
 
 | Proposed pattern | Decision for this system | Adaptation and boundary | Evidence required |
 |---|---|---|---|
-| Explain the product within the first few seconds | **Adopt for the public entrance; reinterpret after login** | The public root states purpose, guest tour／trial and one Admin login action. The authenticated Dashboard starts with Daily Verse and the next safe weekly action—not a marketing proposition. | In an unprompted check, a new visitor can identify the system purpose and choose guest or Admin within five seconds; an operator can name the next safe action within five seconds. |
+| Explain the product within the first few seconds | **Adopt for the public entrance; reinterpret after identity selection** | The public root states purpose, one Guest experience action and one Admin login action. The shared Dashboard then starts with Daily Verse and the next safe weekly action—not a marketing proposition. | In an unprompted check, a new visitor can identify the system purpose and choose Guest or Admin within five seconds; an operator can name the next safe action within five seconds. |
 | Compare plans with cards and tables | **Reject as a literal pattern** | There are no prices, subscriptions or product tiers. A compact Guest／Administrator capability comparison is allowed only when it prevents a permission misunderstanding; it must not resemble an upsell matrix. | A reviewer can explain who may view, try, edit and publish without seeing a pricing or upgrade metaphor. |
 | Introduce complex features progressively | **Adopt with consequence visibility** | Present purpose／outcome first, then the relevant task group, then details. Progressive disclosure may hide supporting explanation, but never a required field, policy restriction, publication consequence, recovery dependency, or current error. | A first-time operator completes the weekly path without opening unrelated pages; every consequential confirmation states the result before the final action. |
 | Treat login as a complete interactive flow | **Adopt strongly** | Loading, disabled, expired, denied, verified, signed-out and safe-return states need explicit bilingual feedback. Cloudflare Access owns credentials; the product must not invent a parallel password or registration experience. | Keyboard and phone checks cover every access state, including expired／invalid sessions, and always offer one safe next action without a redirect loop. |
@@ -336,6 +336,18 @@ Use a 4px base with a disciplined rhythm: `4, 8, 12, 16, 24, 32, 48`.
 
 Do not layer a card inside a card unless there is a real change of task or ownership.
 
+### 5.5 Material and texture
+
+Premium tactility comes from a controlled material stack, not from filling every blank area with illustration. The shared implementation is `nicegui_app/assets/css/sing-yin-material-v1.css`, backed by same-geometry light／dark pairs in `nicegui_app/assets/materials/`.
+
+- **Paper fibre** belongs to the page ground, header, Weekly Pulse, Daily Verse, handover hero, engineering hero and bounded editorial／evidence cards. It uses locally served, repeating micro-texture plus a restrained inset edge so large surfaces stop reading as flat template rectangles.
+- **Linen weave** belongs to structural identity surfaces such as the sidebar. It may enrich an existing paired atmosphere image but must not become a second illustration or reduce navigation contrast.
+- Light and dark assets share dimensions, seed, fibre direction and crop logic; only tone, opacity and blend mode change. The switch therefore preserves one material identity rather than replacing the scene.
+- Texture is non-semantic and pointer-transparent. Removing it must not remove hierarchy, state, focus, content or an affordance.
+- Texture is prohibited behind forms, fields, tables, roster cards, prefect names, fairness records, warnings, recovery consequences, export controls and PDFs. Those surfaces remain solid and maximally legible.
+- Mobile reduces material opacity and complexity. `prefers-reduced-transparency` receives a quieter fallback even though no glass or blur is used.
+- A new material is a system change: add a paired asset, a named variable, approved placement selectors, both-theme browser evidence, a sensitive-surface exclusion test and this specification in the same revision.
+
 ---
 
 ## 6. Layout system
@@ -405,15 +417,15 @@ Import forms, report metrics, contribution tables, trend data and download notic
 
 ### 6.3.1 Canonical-site access control and five security states
 
-The canonical workers.dev hostname is one branded system with five clearly distinguished states, not five websites or an account dashboard:
+The canonical workers.dev hostname is one branded system with five clearly distinguished application states, not five websites or an account dashboard:
 
-- **Public entrance `/` · Choose the safe next step:** without a valid Access session, this is a Worker-native editorial landing page with no roster data. It distinguishes system introduction, the data-free guest tour, the separate published-roster link and the one administrator action.
-- **Guest tour `/guest` · Understand before trying:** a Worker-native product guide which accepts only `GET`／`HEAD`. Its information order is purpose → capabilities → guided start → trust boundary → resources, with original Sing Yin copy and geometry. It cannot show official roster records or contact VPC, NiceGUI, SQLite or KV.
-- **Interactive trial `/try` · Experience without persistence:** a visibly non-official static workspace with fixed fictional Chinese names, one short leave/generation/review journey and a direct bilingual landscape-A4 PDF. State expires after 30 minutes or when the tab closes. Trial controls never resemble an unlocked administrator account, and the result cannot publish, share, update `history_weight`, or cross into official storage.
+- **Public entrance `/` · Choose the safe next step:** without a verified application session, the editorial entrance contains no roster data or write capability. It explains purpose, the Guest experience, the separate published-roster link and the one administrator action.
+- **Guest · Experience the real product safely:** after **Guest experience**, the Worker creates a bounded session and the origin renders the same NiceGUI routes, navigation and components through a fictional-memory adapter. A persistent `DEMO` identity, remaining-session consequence and restriction states make the boundary clear without pretending that disabled Admin functions are available.
 - **Published roster `/view#…` · View one issued snapshot:** a calm, factual roster surface for locally decrypted ciphertext. It must look read-only, show expiry／latest-link guidance and never imply that the Viewer token opens editing.
-- **Administrator · Operate after verification:** reached through one unmistakable solid **Admin login** action on the entrance. Cloudflare Access owns account sign-in and MFA; successful verification returns to the same `/` and only then reveals the NiceGUI workbench through VPC. A persistent **Log out** action explains that it returns the browser to the public entrance.
+- **Administrator · Operate after verification:** reached through one unmistakable solid **Admin login** action on the entrance. Cloudflare Access owns account sign-in and MFA; successful verification returns to the same `/` and resolves the official NiceGUI workflow through VPC. A persistent **Log out** action explains that it returns the browser to the public entrance.
+- **Local maintenance · Recover under host control:** loopback／approved maintenance access keeps the same operational product but exposes no new policy or data capability beyond the verified local principal.
 
-NiceGUI has no guest account, guest navigation shell or guest RBAC. The public entrance and tour must never imitate disabled NiceGUI controls; their visual language explains the boundary instead of suggesting that editing is present but greyed out. `/try` may use real interactive controls because it is a self-contained simulation, but a persistent boundary label, fictional-data label, expiry display and reset action must always remain visible.
+`/guest` and `/try` are compatibility redirects, not separate products. Guest is a real NiceGUI application mode with deny-by-default capabilities, a bounded fictional workspace and the same navigation grammar as Admin. The browser stores only a signed snapshot token in `sessionStorage`; a live connection nonce plus SID／workspace／tab／revision binding is required for restore. Duplicated tabs receive new workspaces, while copied, tampered, expired, stale or old-boot tokens fall back to the safe fixture. The interface must show these consequences without implying that colour or a disabled button is the security boundary.
 
 The platform-story sequence may learn from the information architecture of mature product and documentation sites—clear value statement, capability groups, one guided starting action, trust explanation, FAQ and resource footer—without copying their screen composition, text, visual assets or brand language. [Claude Platform](https://claude.com/platform/api) and [Claude Platform Docs](https://platform.claude.com/docs) are research references for hierarchy only, not templates.
 
@@ -429,7 +441,7 @@ Active viewing links remain text-first, image-free records. Week, expiry, and a 
 
 The `/view#…` Worker viewer remains a quiet document surface, not a miniature dashboard or a continuation of the editorial root. It uses Traditional Chinese first, complete English context, Chinese names, system fonts, a restrained teal published marker, and a high-contrast roster matrix. It supports light/dark preference, phone horizontal table access with a visible bilingual swipe instruction associated through `aria-describedby`, A4-landscape print, reduced motion, and honest loading/error states. It contains no atmosphere image, school-data background, animation showcase, music, third-party font, analytics, advertising, or edit affordance. Admin login is an identity transition, not a suggestion that the visible roster itself is editable. Protected-operation explanations use neutral trust surfaces; gold remains reserved for devotional reading.
 
-Root presentation motion is restricted to one initial 380–440 ms transform/opacity settle, a small press/arrow response on the real login action, and a brief manual verse replacement. Nothing loops, floats continuously, parallax-scrolls or auto-advances. Under `prefers-reduced-motion`, all content is immediately visible and state changes remain understandable without movement. These visual rules do not alter Access destinations, JWT verification, the VPC proxy, Viewer encryption, or the no-guest-editor boundary.
+Root presentation motion is restricted to one initial 380–440 ms transform/opacity settle, a small press/arrow response on the real access actions, and a brief manual verse replacement. Nothing loops, floats continuously, parallax-scrolls or auto-advances. Under `prefers-reduced-motion`, all content is immediately visible and state changes remain understandable without movement. These visual rules do not alter Access destinations, signed-principal verification, the VPC proxy, Viewer encryption, or the Guest/Admin capability boundary.
 
 Viewer success is measured by one question: can a recipient open the complete link and understand the current published duty in one scan? Decorative richness must never compete with names, dates, posts, duty times, expiry, or the read-only consequence.
 
@@ -628,12 +640,13 @@ Archive confirmation must name both sides of the consequence: the active person 
 - Practice and maintenance may both be true during a transition. They share one ordered `sy-status-stack`; neither banner may cover, replace, or visually merge with the other.
 - Practice PDF identity repeats in filename, document body, and footer. The marker does not rely on colour and stays independent from the selected output language.
 
-### Browser-trial identity
+### Unified Guest identity
 
-- The trial is a product demonstration, not a second Practice Mode. Practice Mode is a durable isolated NiceGUI rehearsal with SQLite, audit, backup and restore; `/try` is a static, short-lived browser simulation with none of those systems.
-- A concise privacy seal states “fictional data / this tab only / 30 minutes / no server write” in Traditional Chinese first with complete English support. The statement remains visible at phone width and does not rely on colour.
-- Directory, leave controls, roster preview and PDF action share the same calm workbench grammar as the real product, but the trial omits publication, fairness totals, backups, restore, audit, import, settings and administrative navigation rather than showing misleading disabled controls.
-- The bilingual trial PDF is A4 landscape, keeps all names Chinese and carries an unmistakable non-official identity. It is created on-device; after download, retention belongs to the visitor's explicit save action.
+- Guest is a temporary NiceGUI application mode, not a second Practice Mode. Practice Mode is a durable isolated rehearsal with its own SQLite, audit, backup and restore; Guest uses a bounded process-memory adapter, fictional fixture, signed per-tab snapshot token and no official persistence.
+- A concise identity seal states “fictional data / this tab / 30 minutes / no official write” in Traditional Chinese first with complete English support. The statement remains visible at phone width and does not rely on colour.
+- Directory, leave controls, roster preview, demonstration publication, fairness explanation and PDF／JSON actions use the same calm workbench grammar and routes as Admin. Restricted AI, import, upload, external music, official share, backup／restore and permanent settings use one consistent `RESTRICTED` or `PRECOMPUTED` state; they are never secured only by hiding a control.
+- The bilingual Guest PDF is A4 landscape, keeps all names Chinese, carries an unmistakable `DEMO` identity and is generated in memory behind a one-shot `no-store` download. Retention begins only if the visitor explicitly saves it.
+- A refresh may restore only the newest valid signed token for the exact live session／workspace／tab. Duplicate-tab allocation, invalid-token fallback, expiry, logout, revocation and origin-restart cleanup must remain understandable without exposing token or storage internals in normal UI copy.
 
 ---
 
@@ -653,11 +666,15 @@ Shared CSS motion tokens are the only default timing vocabulary: `--sy-motion-pr
 | Non-sensitive narrative surface | One-time opacity/12px settle when it first enters view | 360–440ms |
 | Grouped evidence cards | One-time 45ms stagger, capped at eight children | 360ms per item |
 | Semantic operation feedback | Short action/stable/attention pulse at the active control | 500ms total |
+| Action icon intent | Directional, confirm, transfer, create, edit, play or attention cue inside the active control | 90–180ms |
 | Consequential local operation | Preparing → safely processing → finalising progress state | No invented duration |
 | Page navigation | No theatrical transition; preserve orientation | 0–180ms |
 
 - CSS uses the standard easing `cubic-bezier(.2, .8, .2, 1)`. The local GSAP runtime uses matching `power2.out`/`power1.out` curves for one-shot narrative entry, capped group stagger, cursor smoothing, and semantic feedback pulse.
 - GSAP is locally vendored and same-origin; it has no data, navigation, policy, persistence, or network responsibility. `IntersectionObserver` starts a surface only once, while `MutationObserver` discovers NiceGUI-rendered content without polling the application state. The runtime owns an idempotent disposer, disconnects both observers, aborts pointer listeners, removes generated nodes, and uses `gsap.matchMedia()` so a live reduced-motion or pointer-capability change can revert enhancements safely.
+- Material icon names are hydrated into stable semantic motion roles—`forward`, `back`, `refresh`, `confirm`, `download`, `upload`, `exchange`, `create`, `edit`, `toggle`, `play`, `search`, `danger`, `attention`, or neutral `signal`. The role describes the action rather than the page, so the same save, publish, download or edit action behaves consistently throughout Dashboard, rosters, prefects, handover, platform and settings.
+- Icon feedback has complete control states: hover and keyboard focus express intent; press acknowledges input; busy and disabled remain still; accepted work may emit one short `working`, `success`, `attention` or silent `error` response at the initiating control. A single delegated recent-action reference survives a progress dialog taking focus, remains bounded in time, and is cleared safely; hydration uses the shared mutation observer and CSS state selectors rather than per-button listeners.
+- Static evidence, team, architecture and metric cards must not masquerade as controls. On a fine pointer, only their explanatory icon may make a restrained response; the card surface remains still unless it contains a real link or action.
 - Respect `prefers-reduced-motion`: skip GSAP entry/stagger/pulse motion, remove hover transforms and nonessential transitions, and keep the final content immediately visible. If GSAP cannot load, the runtime fails open to a static interface after a bounded retry rather than blocking the page.
 - Sound remains opt-in and quiet. Navigation, accepted long-operation start, and successful completion may use short semantic cues; no hover, page-load, error, or background sound may play automatically. Visual feedback remains available when sound is off.
 - Music is a separate comfort layer whose local player may make one visible, low-volume page-ready attempt and always offers immediate pause/off controls. A YouTube player must remain fully visible with native controls, never autoplay, and never sit behind a form, name, table, warning, roster, fairness record, or PDF. Public playlist playback does not require sign-in; optional API search and saved playlist names must never carry student data.
@@ -761,7 +778,7 @@ No phase may weaken roster policy, persistent fairness, backup verification, pri
 4. New artwork is added only when it explains an otherwise unclear orientation or empty state. A future seeded static Service Weave light/dark pair may replace generic showcase still life, but no runtime canvas, looping background, extra corporate title or decorative illustration button is approved.
 5. Release evidence maps `pass → stable`, `running → action`, `stale/missing/unreadable → attention`, and `fail → danger`; engineering gates inherit that real evidence tone rather than appearing teal by default.
 6. School crests use the reviewed alpha PNGs in transparent, borderless containers. Navigation and co-creation marks may use a restrained theme-aware shadow, but never a white tile, rim or rounded image plate; their local image transition is immediate so the first frame does not look washed out.
-7. The public guest narrative retains exactly six non-sensitive orientation entries—Platform & Team, Engineering & Quality, System Architecture & Trust, Getting Started, Operator Guide and Daily Verse. They explain the product without exposing names, rosters, backup paths, audit payloads or any write control.
+7. The Guest reference lane retains the six non-sensitive orientation destinations—Platform & Team, Engineering & Quality, System Architecture & Trust, Getting Started, Operator Guide and Daily Verse—alongside the same fictional weekly-work routes used by Admin. These pages may explain the product and demonstrate bounded operations, but they never expose official names, rosters, backup paths or audit payloads.
 8. Contextual audio is a persistent operator preference, not a page-completion signal. Every supported page context and light/dark recommendation must resolve to at least one local track, while browser verification waits for semantic DOM／URL／workflow results rather than `networkidle` after audio has been unlocked.
 9. Daily Verse is a distinct sacred reading sequence—read, reflect, pray, return to service—not a decorative dashboard card. Its gold／indigo language, paired theme imagery and spacious typography remain subordinate to Scripture and must support reduced motion.
 
@@ -769,14 +786,17 @@ No phase may weaken roster policy, persistent fairness, backup verification, pri
 
 ## 11. Governance
 
-This file is the design source of truth for the active NiceGUI application. When a UI decision changes, update this file and `PROJECT_STATUS.md` together. A change needs an explicit rationale if it:
+This file is the design source of truth for the active NiceGUI application, but it is a **living executable standard rather than a permanent creative restriction**. A better design direction may replace an earlier rule when evidence shows clearer operation, stronger accessibility, better brand coherence or lower maintenance risk. The change is complete only when the shared tokens, reusable components, every affected route, both themes, both languages, responsive states, reduced-motion behaviour, tests and this document all move together. A one-page exception is not an evolution of the system; it is design drift.
+
+When a UI decision changes, update this file and `PROJECT_STATUS.md` together. Retire or migrate superseded selectors and components instead of leaving two competing visual dialects. A change needs an explicit rationale if it:
 
 - adds a new colour role, radius, shadow level, or icon family;
+- adds or changes a material texture, blend mode, approved placement or paired theme asset;
 - changes the primary weekly workflow order;
 - changes an accessibility, dark-mode, or motion rule;
 - introduces a visual treatment that could be mistaken for liquid glass or an Apple asset;
 - changes a print/PDF hierarchy.
-- changes guest versus authenticated-administrator meaning, Access login/logout, Worker JWT trust, the public-share data whitelist, link lifecycle, or the no-guest-editor rule.
+- changes Guest versus authenticated-Admin meaning, Access login/logout, signed-principal trust, snapshot binding, the public-share data whitelist, or link lifecycle.
 - changes the canonical Scripture source, RCUV 2010（神版）／NKJV contract, verification status, or the distinction between a direct quotation and a labelled service principle.
 
 Before implementation, the maintainer should record: the operator moment, the affected component, the intended evidence, and the screenshots/tests required. This keeps visual quality maintainable for future 首席導學風紀 instead of relying on personal taste.

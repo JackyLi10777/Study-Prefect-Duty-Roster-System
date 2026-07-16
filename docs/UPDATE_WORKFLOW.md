@@ -18,7 +18,7 @@ python -X utf8 scripts\verify_update.py --plan
 - 選中的驗證 profile；
 - 為何需要這個層級；
 - 會執行哪些檢查；
-- 正式部署前是否仍需要 12-gate 發布證據。
+- 正式部署前是否仍需要完整的正式發布證據。
 
 然後閱讀 `git status --short`，逐一加入本次確實要上傳的檔案。不要使用 `git add -A`。完成 staging 後，執行真正的 pre-push gate：
 
@@ -62,7 +62,7 @@ python -X utf8 scripts\verify_update.py --release --plan
 | 只有測試及文件 | `tests` | 被修改的測試；共用 test helper 改動則升級為完整 Python suite；另加 hygiene 及秘密掃描 |
 | GitHub workflow 或快速分類器 | `assurance` | assurance 聚焦測試、完整安全閘門及 hygiene |
 | Cloudflare Worker／登入／Viewer | `worker` | pre-push 跑 Worker 聚焦契約、hygiene 及秘密掃描；正式部署使用 `--release` |
-| NiceGUI、政策、公平、交易、SQLite、遷移、依賴、運行資產、Windows 主機腳本或正式驗證器 | `full` | pre-push 跑完整 Python、安全、Worker 及 hygiene；正式部署使用 `--release` 執行 12-gate |
+| NiceGUI、政策、公平、交易、SQLite、遷移、依賴、運行資產、Windows 主機腳本或正式驗證器 | `full` | pre-push 跑完整 Python、安全、Worker 及 hygiene；正式部署使用 `--release` 執行當前完整 gate（2026-07-17 為 13 項） |
 | 未能識別的新路徑或 Git base | `full` | 失敗時向高風險升級，不會靜默略過 |
 
 pre-push profile 內互不寫入的檢查會並行執行。正式候選驗證仍保持受控次序，因為瀏覽器寫入、備份及還原證據不可互相競爭同一個隔離環境。

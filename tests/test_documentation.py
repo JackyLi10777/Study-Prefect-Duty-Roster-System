@@ -85,6 +85,40 @@ def test_github_handover_documents_current_runtime_and_public_archive_boundary()
     assert "李創杰與 Codex 兩位共創者" in (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
 
 
+def test_v12_guest_documents_match_the_signed_browser_bridge_and_release_truth() -> None:
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    readme_en = (PROJECT_ROOT / "README-EN.md").read_text(encoding="utf-8")
+    status = (PROJECT_ROOT / "PROJECT_STATUS.md").read_text(encoding="utf-8")
+    design = (PROJECT_ROOT / "Professional_Design_System.md").read_text(encoding="utf-8")
+    architecture = (PROJECT_ROOT / "docs" / "NICEGUI_ARCHITECTURE.md").read_text(
+        encoding="utf-8"
+    )
+    security = (PROJECT_ROOT / "docs" / "UNIFIED_GUEST_SECURITY_MODEL.md").read_text(
+        encoding="utf-8"
+    )
+    handover = (PROJECT_ROOT / "docs" / "RELEASE_HANDOVER.md").read_text(
+        encoding="utf-8"
+    )
+
+    for document in (readme, readme_en, status, architecture, security, handover):
+        assert "sessionStorage" in document
+        assert "workspace" in document
+
+    assert "tests/test_guest_snapshot_bridge.py" in security
+    assert "live-connection nonce" in readme_en
+    assert "per-connection nonce" in architecture
+    assert "連線 nonce" in handover
+    assert "SING_YIN_UNIFIED_GUEST" in status
+    assert "13／13" in status
+    assert "v1.1 rollback" in readme_en
+    assert "13／13" in readme
+    assert "NiceGUI has no guest" not in design
+    assert "NiceGUI never presents an anonymous guest role" not in design
+    assert "still a v1.2 release gate" not in architecture
+    assert "瀏覽器 snapshot 橋接" in security
+    assert "尚未完成的瀏覽器 snapshot 橋接" not in security
+
+
 def test_author_facing_documents_use_li_chuangjie_first_person_voice() -> None:
     readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     readme_en = (PROJECT_ROOT / "README-EN.md").read_text(encoding="utf-8")
@@ -246,7 +280,8 @@ def test_deployment_guide_preserves_local_first_and_access_gates() -> None:
     assert "應用內權限" in guide
     assert "127.0.0.1:8080" in guide
     assert "主機連接器健康；待真人遠端裝置驗收" in guide
-    assert "Access app destinations 只有 `/auth` 及 `/auth/*`" in guide
+    assert "Access app destination 只可是 `/auth/login`" in guide
+    assert "Guest start、status 及 logout 必須由 Worker 公開接收" in guide
     assert "沒有管理員前綴或第二網站" in guide
     assert "CLOUDFLARE_REMOTE_ACCESS_SETUP.md" in guide
 
@@ -352,6 +387,7 @@ def test_engineering_showcase_turns_documented_quality_into_verifiable_ui_eviden
     assert "The full gate chain" in messages
     assert "engineering_gate_security" in messages
     assert "engineering_gate_runtime" in messages
+    assert "engineering_gate_guest" in messages
 
 
 def test_feedback_channel_is_consistent_bilingual_and_does_not_invite_data_attachments() -> None:

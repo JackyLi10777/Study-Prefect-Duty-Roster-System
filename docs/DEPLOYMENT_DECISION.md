@@ -38,7 +38,8 @@ NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另�
 既有 **私有 Cloudflare Tunnel + WARP** 路徑仍保留作維護後備。
 交接時要保留並重新核對 **WARP device-enrollment policy**。其歷史狀態
 「**主機連接器健康；待真人遠端裝置驗收**」只代表後備傳輸，不代表
-v1.2 正式驗收完成。**Access app destinations 只有 `/auth` 及 `/auth/*`**；
+v1.2 正式驗收完成。**Access app destination 只可是 `/auth/login`**；
+`/auth/admin/start`、Guest start、status 及 logout 必須由 Worker 公開接收，
 v1.2 的**應用內權限**由簽署 `PageContext` 決定，
 **沒有管理員前綴或第二網站**。
 
@@ -81,6 +82,7 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 - 提交交易同時建立 `backup_obligations`；未完成義務在啟動時修復，失敗則 `/readyz` degraded 並阻止新寫入。
 - 外部分享使用 durable outbox，綁定值班表版本及 digest；不以「HTTP 回應遺失」當作可以盲目重建分享的理由。
 - Guest adapter 不接觸正式 SQLite、備份、外部整合或背景工作。
+- Guest 最新 revision 只以簽署 token 存入該分頁 `sessionStorage`；還原要重新核對 live nonce、session／workspace／tab／boot／revision，複製或無效 token 不能跨工作區重播。
 
 ## 為甚麼保留 Windows 主機
 

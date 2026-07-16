@@ -1,12 +1,14 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **v1.2 發布狀態：** 本文件是下一次受控部署程序，不表示 v1.2 已經上線。`codex/unified-guest-redesign` 尚須通過完整 release gate；`SING_YIN_UNIFIED_GUEST` 預設保持 `0`。現有 `C:\SingYinRoster` 及 Cloudflare 設定屬 v1.1 基線，部署前必須重新核對實際 Dashboard、Worker version、secret 名稱及主機健康。
+> **v1.2 發布狀態：** 2026-07-17 凍結來源已以指紋 `6b526bccd3e90106660b9ecab2195a22343e31b57d99b107e05904d414ec919d` 通過 13／13 正式 gate。現依次執行新備份、隔離還原、origin、Access `/auth/login`、Worker secrets 及線上抽查；`C:\SingYinRoster` 及 live Worker 在切換前保留 v1.1 回退基線。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
 ## 1. 日常使用者只需知道
 
 所有人使用同一個 canonical `workers.dev` 網址：
+
+<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>
 
 - 訪客按 **訪客體驗**，進入同一套 NiceGUI 頁面，但只操作虛構資料。
 - 首席導學風紀按 **管理員登入**，經 Cloudflare Access 驗證後進入正式工作台。
@@ -49,6 +51,7 @@ SING_YIN_DEPLOYMENT_MODE=server
 SING_YIN_HOST=127.0.0.1
 SING_YIN_PORT=8080
 SING_YIN_UNIFIED_GUEST=0
+SING_YIN_REQUIRE_GATEWAY_PRINCIPAL=1
 ORIGIN_PRINCIPAL_SECRET=<managed-secret>
 ORIGIN_PRINCIPAL_KID=<active-key-id>
 AUTH_EPOCH=<positive-integer>
@@ -73,7 +76,8 @@ Worker 必須有：
 
 ### Cloudflare Access
 
-- Access application 只保護管理登入路徑，不保護整個 root。
+- Access application 只保護精確的 `/auth/login`，不可保護 `/auth/*` 或整個 root。
+- `/auth/admin/start`、Guest start、status 及 logout 由 Worker 公開接收；只有管理員 callback 進入 Access。
 - 管理員使用 exact-email allow policy 及 One-time PIN。
 - Allowlist 必須在 Access policy 與 Worker 驗證設定一致。
 - 不把管理員加入 Cloudflare Dashboard 成員作為登入前提。
@@ -100,6 +104,8 @@ python -X utf8 scripts\verify_release_candidate.py
 - PDF、console、DOM／監聽器／heap 證據。
 
 只有 `pytest` 綠燈不足以批准部署。
+
+來源候選的 `tests/test_guest_snapshot_bridge.py` 已聚焦通過：它驗證同分頁最新 revision 還原、連線 nonce、token 輪換、複製／篡改拒絕、登出清理及只使用 `sessionStorage`。這項結果只關閉 snapshot 橋接的實作缺口，不取代本節列出的完整 release report、正式備份／隔離還原或 Cloudflare 線上驗收。
 
 ## 5. 部署前備份
 
@@ -176,6 +182,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 - [ ] 可完成請假、生成、手動修改、示範發布、PDF／JSON、請假調整及公平說明。
 - [ ] AI、上載、匯入、外部音樂、正式分享、備份／還原及永久設定均被服務層拒絕。
 - [ ] 兩分頁互不覆寫；登出、到期、撤權及重啟清除狀態。
+- [ ] 同一分頁重新整理只還原最新合法 token；複製分頁取得新 workspace，篡改／錯誤綁定／舊 boot token 安全回到虛構 fixture。
 - [ ] 下載為一次性、`no-store`、不超過限制。
 
 ### Admin

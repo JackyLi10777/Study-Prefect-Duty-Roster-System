@@ -495,6 +495,24 @@ def main() -> None:
         assert page.get_by_role("link", name="跳至主要內容").count() == 1
         page.wait_for_function("document.documentElement.dataset.syMotion === 'ready'")
         assert page.evaluate("window.gsap?.version") == "3.13.0"
+        primary_flow_action = page.locator(".sy-flow-step--active .q-btn.bg-primary")
+        primary_flow_icon = primary_flow_action.locator(".q-icon[data-sy-icon-motion]").first
+        primary_flow_icon.wait_for(timeout=5_000)
+        assert primary_flow_icon.get_attribute("data-sy-icon-motion") == "forward"
+        resting_icon_transform = primary_flow_icon.evaluate(
+            "element => getComputedStyle(element).transform"
+        )
+        primary_flow_action.hover()
+        page.wait_for_timeout(220)
+        assert primary_flow_icon.evaluate(
+            "element => getComputedStyle(element).transform"
+        ) != resting_icon_transform
+        page.mouse.move(1, 1)
+        primary_flow_action.focus()
+        page.wait_for_timeout(220)
+        assert primary_flow_icon.evaluate(
+            "element => getComputedStyle(element).transform"
+        ) != resting_icon_transform
         page.evaluate(
             """() => {
               window.__syVerifiedSoundKinds = [];
@@ -515,7 +533,23 @@ def main() -> None:
         page.get_by_role("button", name="關閉提示音").wait_for(timeout=5_000)
         page.get_by_role("button", name="關閉提示音").click()
         page.get_by_role("button", name="開啟提示音").wait_for(timeout=5_000)
+        primary_flow_action.dispatch_event("pointerdown")
+        page.evaluate(
+            """() => {
+              const sink = document.createElement('span');
+              sink.id = 'sy-feedback-focus-sink';
+              sink.tabIndex = -1;
+              document.body.appendChild(sink);
+              sink.focus();
+            }"""
+        )
         page.evaluate("window.dispatchEvent(new CustomEvent('sy:feedback', {detail: {kind: 'success'}}))")
+        page.locator(
+            '.sy-flow-step--active .q-btn.bg-primary[data-sy-feedback-state="success"]'
+        ).wait_for(
+            timeout=2_000,
+            state="attached",
+        )
         page.locator(".sy-feedback-pulse--success").wait_for(timeout=2_000, state="attached")
         page.locator(".sy-feedback-pulse--success").wait_for(timeout=2_000, state="detached")
         images_without_alt = page.locator("img:not([alt])").count()
@@ -542,6 +576,15 @@ def main() -> None:
         assert_status_tone_contrast(page)
         assert "devotional-sacred-light-v1.webp" in page.locator(".sy-daily-start").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "weekly-pulse-light-v1.webp" in page.locator(".sy-workbench").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
+        assert "paper-fibre-light-v1.svg" in page.locator(".sy-main").evaluate(
+            "element => getComputedStyle(element).backgroundImage"
+        )
+        assert "paper-fibre-light-v1.svg" in page.locator(".sy-workbench").evaluate(
+            "element => getComputedStyle(element).backgroundImage"
+        )
+        assert "linen-weave-light-v1.svg" in page.locator(".sy-sidebar").evaluate(
+            "element => getComputedStyle(element, '::after').backgroundImage"
+        )
         dashboard_history = page.get_by_test_id("dashboard-history")
         assert dashboard_history.count() == 1
         assert dashboard_history.locator(".sy-dashboard-history-empty").count() == 1
@@ -690,6 +733,35 @@ def main() -> None:
         assert page.get_by_test_id("solutions-portfolio").locator(".sy-solution-card").count() == 4
         assert page.get_by_test_id("platform-principles").locator(".sy-platform-value").count() == 5
         assert page.get_by_test_id("platform-resources").locator(".sy-platform-resource").count() == 3
+        team_role = page.get_by_test_id("team-operating-model").locator(".sy-team-role").first
+        team_role_icon = team_role.locator(".sy-team-role-icon")
+        team_role.scroll_into_view_if_needed()
+        page.wait_for_function(
+            """() => {
+              const model = document.querySelector(
+                '[data-testid="team-operating-model"]'
+              );
+              const role = model?.querySelector('.sy-team-role');
+              return model?.dataset.syMotionComplete === 'true'
+                && role
+                && getComputedStyle(role).transform === 'none';
+            }""",
+            timeout=2_000,
+        )
+        static_card_transform = team_role.evaluate(
+            "element => getComputedStyle(element).transform"
+        )
+        static_icon_transform = team_role_icon.evaluate(
+            "element => getComputedStyle(element).transform"
+        )
+        team_role.hover()
+        page.wait_for_timeout(220)
+        assert team_role.evaluate(
+            "element => getComputedStyle(element).transform"
+        ) == static_card_transform
+        assert team_role_icon.evaluate(
+            "element => getComputedStyle(element).transform"
+        ) != static_icon_transform
         assert "platform-stewardship-light-v1.webp" in page.locator(".sy-platform-hero").evaluate(
             "element => getComputedStyle(element, '::before').backgroundImage"
         )
@@ -744,7 +816,7 @@ def main() -> None:
         )
         assert page.get_by_test_id("engineering-facts").locator(".sy-engineering-fact").count() == 4
         assert page.get_by_test_id("engineering-blueprint").locator(".sy-engineering-blueprint-layer").count() == 5
-        assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 12
+        assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 13
         assert page.get_by_role("heading", level=2).count() >= 5
         assert page.get_by_test_id("engineering-pillars").locator(".sy-engineering-pillar").count() == 6
         assert page.get_by_test_id("engineering-evolution").locator(".sy-engineering-evolution-item").count() == 4
@@ -1034,6 +1106,15 @@ def main() -> None:
         )
         assert "devotional-sacred-dark-v1.webp" in page.locator(".sy-daily-start").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "weekly-pulse-dark-v1.webp" in page.locator(".sy-workbench").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
+        assert "paper-fibre-dark-v1.svg" in page.locator(".sy-main").evaluate(
+            "element => getComputedStyle(element).backgroundImage"
+        )
+        assert "paper-fibre-dark-v1.svg" in page.locator(".sy-workbench").evaluate(
+            "element => getComputedStyle(element).backgroundImage"
+        )
+        assert "linen-weave-dark-v1.svg" in page.locator(".sy-sidebar").evaluate(
+            "element => getComputedStyle(element, '::after').backgroundImage"
+        )
         assert page.get_by_test_id("dashboard-history").evaluate(
             "element => getComputedStyle(element).backgroundImage"
         ) == "none"
@@ -1112,7 +1193,7 @@ def main() -> None:
         assert "engineering-workbench-dark-v1.webp" in page.locator(".sy-engineering-hero").evaluate(
             "element => getComputedStyle(element, '::after').backgroundImage"
         )
-        assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 12
+        assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 13
         page.screenshot(path=str(ENGINEERING_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
         assert "architecture-stewardship-dark-v1.webp" in page.locator(".sy-architecture-hero").evaluate("element => getComputedStyle(element, '::before').backgroundImage")
@@ -1296,6 +1377,10 @@ def main() -> None:
         assert reduced_layer.locator(".sy-pointer-light").count() == 0
         reduced_layer.hover()
         assert reduced_layer.evaluate("element => getComputedStyle(element).transform") == "none"
+        reduced_icon = reduced_page.locator(".q-btn .q-icon[data-sy-icon-motion]").first
+        reduced_icon.wait_for(timeout=5_000)
+        reduced_icon.locator("xpath=ancestor::*[contains(@class,'q-btn')][1]").hover()
+        assert reduced_icon.evaluate("element => getComputedStyle(element).transform") == "none"
         assert reduced_page.evaluate("typeof window.__disposeSingYinMotion") == "function"
         reduced_page.evaluate("window.__disposeSingYinMotion()")
         assert reduced_page.evaluate("document.documentElement.dataset.syMotion || null") is None

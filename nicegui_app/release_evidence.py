@@ -46,6 +46,7 @@ RELEASE_SOURCE_FILES = (
     PROJECT_ROOT / "scripts" / "build_pdf_fonts.py",
     PROJECT_ROOT / "scripts" / "check_deployment_readiness.py",
     PROJECT_ROOT / "scripts" / "doctor_windows_remote_access.ps1",
+    PROJECT_ROOT / "scripts" / "deploy_windows_release.ps1",
     PROJECT_ROOT / "scripts" / "inspect_support_log.py",
     PROJECT_ROOT / "scripts" / "prepare_cloudflare_remote_access.ps1",
     PROJECT_ROOT / "scripts" / "prepare_windows_host.ps1",

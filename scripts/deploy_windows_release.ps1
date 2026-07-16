@@ -1,0 +1,949 @@
+[CmdletBinding()]
+param(
+    [string]$SourceRoot = "D:\code_v3",
+    [string]$HostRoot = "C:\SingYinRoster",
+    [Parameter(Mandatory = $true)][string]$ReleaseRef,
+    [string]$TaskName = "Sing Yin Roster Host",
+    [string]$RuntimeUser = "SingYinRosterSvc",
+    [string]$EnvironmentOverlayPath = ""
+)
+
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+function Write-Step([string]$Message) {
+    Write-Host "`n==> $Message" -ForegroundColor Cyan
+}
+
+function Protect-ReportText([string]$Text) {
+    if ([string]::IsNullOrWhiteSpace($Text)) { return $Text }
+    $redacted = [regex]::Replace(
+        $Text,
+        '(?i)\b(Bearer)\s+[A-Za-z0-9._~+/-]+=*',
+        '$1 <redacted>'
+    )
+    $redacted = [regex]::Replace(
+        $redacted,
+        '(?i)\b(token|secret|password|authorization|cookie)(\s*[:=]\s*|\s+)([^\s,;]+)',
+        '$1$2<redacted>'
+    )
+    return $redacted
+}
+
+function Write-DeploymentReport([System.Collections.IDictionary]$Payload) {
+    $directory = Split-Path -Parent $script:ReportPath
+    if (-not (Test-Path -LiteralPath $directory)) {
+        $null = New-Item -ItemType Directory -Path $directory -Force
+    }
+    $Payload | ConvertTo-Json -Depth 8 |
+        Set-Content -LiteralPath $script:ReportPath -Encoding UTF8
+}
+
+function Invoke-Native {
+    param(
+        [Parameter(Mandatory = $true)][string]$Executable,
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][string]$WorkingDirectory
+    )
+    Push-Location -LiteralPath $WorkingDirectory
+    $previousPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $nativeOutput = @(& $Executable @Arguments 2>&1)
+        $nativeExitCode = $LASTEXITCODE
+        $lines = @($nativeOutput | ForEach-Object { Protect-ReportText $_.ToString() })
+        if ($lines.Count -gt 0) {
+            $lines | ForEach-Object { Write-Host $_ }
+            Add-Content -LiteralPath $script:NativeLogPath -Encoding UTF8 -Value @(
+                ""
+                "[$([DateTimeOffset]::UtcNow.ToString('o'))] $Executable"
+                $lines
+            )
+        }
+        if ($nativeExitCode -ne 0) {
+            throw "$Executable failed with exit code $nativeExitCode. See $script:NativeLogPath."
+        }
+        return $nativeOutput
+    } finally {
+        $ErrorActionPreference = $previousPreference
+        Pop-Location
+    }
+}
+
+function Get-GitValue {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string[]]$Arguments
+    )
+    $previousPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $value = @(& git.exe -C $Repository @Arguments 2>&1)
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousPreference
+    }
+    if ($exitCode -ne 0) {
+        throw "git $($Arguments -join ' ') failed."
+    }
+    return ($value | Out-String).Trim()
+}
+
+function Assert-ImmutableReleaseTag {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string]$TagName
+    )
+    $tagReference = "refs/tags/$TagName"
+    $tagType = Get-GitValue -Repository $Repository -Arguments @("cat-file", "-t", $tagReference)
+    if ($tagType -cne "tag") {
+        throw "The release reference must be an annotated immutable Git tag."
+    }
+    $localTagObject = Get-GitValue -Repository $Repository -Arguments @(
+        "rev-parse",
+        "$tagReference^{tag}"
+    )
+    $localCommit = Get-GitValue -Repository $Repository -Arguments @(
+        "rev-parse",
+        "$tagReference^{commit}"
+    )
+    $previousPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $remoteLines = @(
+            & git.exe -C $Repository ls-remote --tags origin $tagReference "$tagReference^{}" 2>&1
+        )
+        $remoteExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousPreference
+    }
+    if ($remoteExitCode -ne 0) {
+        throw "The release tag could not be verified against origin."
+    }
+    $escapedReference = [regex]::Escape($tagReference)
+    $remoteTagObject = $null
+    $remoteCommit = $null
+    foreach ($rawLine in $remoteLines) {
+        $line = $rawLine.ToString().Trim()
+        if ($line -match "^([0-9a-f]{40})\s+$escapedReference$") {
+            $remoteTagObject = $Matches[1]
+        } elseif ($line -match "^([0-9a-f]{40})\s+$escapedReference\^\{\}$") {
+            $remoteCommit = $Matches[1]
+        }
+    }
+    if ($remoteTagObject -cne $localTagObject -or $remoteCommit -cne $localCommit) {
+        throw "The local release tag does not match the immutable tag published to origin."
+    }
+    return $localCommit
+}
+
+function Get-CurrentReleaseFingerprint {
+    param(
+        [Parameter(Mandatory = $true)][string]$Python,
+        [Parameter(Mandatory = $true)][string]$Repository
+    )
+    $code = @'
+import json
+from nicegui_app.release_evidence import release_source_fingerprint
+fingerprint, file_count = release_source_fingerprint()
+print(json.dumps({"fingerprint": fingerprint, "fileCount": file_count}))
+'@
+    $previousPreference = $ErrorActionPreference
+    try {
+        Push-Location -LiteralPath $Repository
+        $ErrorActionPreference = "Continue"
+        $output = @(& $Python -X utf8 -c $code 2>&1)
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousPreference
+        Pop-Location
+    }
+    if ($exitCode -ne 0) {
+        throw "The release source fingerprint could not be calculated."
+    }
+    $jsonLine = @($output | Where-Object { -not [string]::IsNullOrWhiteSpace($_.ToString()) })[-1]
+    try {
+        return ($jsonLine.ToString() | ConvertFrom-Json)
+    } catch {
+        throw "The release source fingerprint result was not valid JSON."
+    }
+}
+
+function Import-HostEnvironment([string]$EnvironmentPath) {
+    if (-not (Test-Path -LiteralPath $EnvironmentPath -PathType Leaf)) {
+        throw "The protected host environment file is missing."
+    }
+    $values = @{}
+    foreach ($rawLine in Get-Content -LiteralPath $EnvironmentPath -Encoding UTF8) {
+        $line = $rawLine.Trim()
+        if ([string]::IsNullOrWhiteSpace($line) -or $line.StartsWith("#")) { continue }
+        $separator = $line.IndexOf("=")
+        if ($separator -lt 1) { continue }
+        $name = $line.Substring(0, $separator).Trim()
+        if ($name -notmatch "^[A-Za-z_][A-Za-z0-9_]*$") { continue }
+        $value = $line.Substring($separator + 1).Trim()
+        if (
+            $value.Length -ge 2 -and
+            (($value.StartsWith('"') -and $value.EndsWith('"')) -or
+             ($value.StartsWith("'") -and $value.EndsWith("'")))
+        ) {
+            $value = $value.Substring(1, $value.Length - 2)
+        }
+        $values[$name] = $value
+        [Environment]::SetEnvironmentVariable($name, $value, "Process")
+    }
+    return $values
+}
+
+function Assert-UnifiedGuestHostSettings([hashtable]$Values) {
+    $required = @(
+        "SING_YIN_UNIFIED_GUEST",
+        "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL",
+        "ORIGIN_PRINCIPAL_SECRET",
+        "ORIGIN_PRINCIPAL_KID",
+        "AUTH_EPOCH",
+        "SING_YIN_GUEST_SNAPSHOT_SECRET"
+    )
+    foreach ($name in $required) {
+        if (-not $Values.ContainsKey($name) -or [string]::IsNullOrWhiteSpace([string]$Values[$name])) {
+            throw "The protected host environment is missing required v1.2 setting $name."
+        }
+    }
+    if ([string]$Values["SING_YIN_UNIFIED_GUEST"] -notmatch '^(0|1|true|false)$') {
+        throw "SING_YIN_UNIFIED_GUEST must be 0, 1, true, or false."
+    }
+    if ([string]$Values["SING_YIN_REQUIRE_GATEWAY_PRINCIPAL"] -notmatch '^(1|true)$') {
+        throw "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL must be 1 or true for a controlled release."
+    }
+    if ([string]$Values["AUTH_EPOCH"] -notmatch '^\d+$') {
+        throw "AUTH_EPOCH must be a non-negative integer."
+    }
+}
+
+function Read-EnvironmentOverlay([string]$Path) {
+    $allowedNames = @(
+        "SING_YIN_UNIFIED_GUEST",
+        "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL",
+        "ORIGIN_PRINCIPAL_SECRET",
+        "ORIGIN_PRINCIPAL_KID",
+        "AUTH_EPOCH",
+        "SING_YIN_GUEST_SNAPSHOT_SECRET"
+    )
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw "The environment overlay file is missing."
+    }
+    $overlayItem = Get-Item -LiteralPath $Path -Force
+    if (($overlayItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+        throw "The environment overlay must not be a reparse point."
+    }
+    if ([int64]$overlayItem.Length -gt 65536) {
+        throw "The environment overlay exceeds the 64 KiB safety limit."
+    }
+    $overlayAcl = Get-SingYinAclStatus -Paths @($Path)
+    if (
+        [int]$overlayAcl.Checked -ne 1 -or
+        [int]$overlayAcl.Weak -ne 0 -or
+        [int]$overlayAcl.Unprotected -ne 0 -or
+        -not [bool]$overlayAcl.Compliant
+    ) {
+        throw "The environment overlay ACL is too broad or inherits permissions."
+    }
+    $broadSids = @("S-1-1-0", "S-1-5-11", "S-1-5-32-545")
+    $rawAcl = Get-SingYinFileSystemAcl -Path $Path
+    $rawRules = $rawAcl.GetAccessRules(
+        $true,
+        $true,
+        [Security.Principal.SecurityIdentifier]
+    )
+    foreach ($rule in @($rawRules)) {
+        if (
+            $rule.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and
+            $rule.IdentityReference.Value -in $broadSids
+        ) {
+            throw "The environment overlay grants access to a broad Windows identity."
+        }
+    }
+
+    $values = @{}
+    $lineNumber = 0
+    foreach ($rawLine in Get-Content -LiteralPath $Path -Encoding UTF8) {
+        $lineNumber += 1
+        if ([string]::IsNullOrWhiteSpace($rawLine) -or $rawLine.TrimStart().StartsWith("#")) {
+            continue
+        }
+        if ($rawLine -notmatch '^([A-Za-z_][A-Za-z0-9_]*)=(.*)$') {
+            throw "The environment overlay contains a malformed entry on line $lineNumber."
+        }
+        $name = [string]$Matches[1]
+        $value = [string]$Matches[2]
+        if ($allowedNames -cnotcontains $name) {
+            throw "The environment overlay contains an unsupported setting."
+        }
+        if ($values.ContainsKey($name)) {
+            throw "The environment overlay contains a duplicate setting."
+        }
+        if (
+            [string]::IsNullOrWhiteSpace($value) -or
+            $value -cne $value.Trim() -or
+            $value -match '[\x00\r\n#''"]'
+        ) {
+            throw "The environment overlay contains an unsafe or empty value."
+        }
+        if ($name -ceq "SING_YIN_UNIFIED_GUEST" -and $value -notmatch '^(0|1|true|false)$') {
+            throw "SING_YIN_UNIFIED_GUEST must be 0, 1, true, or false."
+        }
+        if (
+            $name -ceq "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL" -and
+            $value -notmatch '^(1|true)$'
+        ) {
+            throw "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL must be 1 or true."
+        }
+        if ($name -ceq "AUTH_EPOCH" -and $value -notmatch '^\d+$') {
+            throw "AUTH_EPOCH must be a non-negative integer."
+        }
+        if ($name -ceq "ORIGIN_PRINCIPAL_KID" -and $value -notmatch '^[A-Za-z0-9._-]{1,64}$') {
+            throw "ORIGIN_PRINCIPAL_KID contains unsupported characters."
+        }
+        $values[$name] = $value
+    }
+    if ($values.Count -eq 0) {
+        throw "The environment overlay does not contain any supported settings."
+    }
+    return $values
+}
+
+function Merge-EnvironmentOverlay {
+    param(
+        [Parameter(Mandatory = $true)][string]$EnvironmentPath,
+        [Parameter(Mandatory = $true)][hashtable]$Overlay,
+        [Parameter(Mandatory = $true)][string]$RuntimeIdentity
+    )
+    $output = New-Object System.Collections.Generic.List[string]
+    $written = New-Object 'System.Collections.Generic.HashSet[string]' (
+        [StringComparer]::Ordinal
+    )
+    foreach ($line in [IO.File]::ReadAllLines($EnvironmentPath, [Text.Encoding]::UTF8)) {
+        if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=') {
+            $name = [string]$Matches[1]
+            if ($Overlay.ContainsKey($name)) {
+                if ($written.Add($name)) {
+                    $output.Add("${name}=$($Overlay[$name])")
+                }
+                continue
+            }
+        }
+        $output.Add($line)
+    }
+    foreach ($name in @(
+        "SING_YIN_UNIFIED_GUEST",
+        "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL",
+        "ORIGIN_PRINCIPAL_SECRET",
+        "ORIGIN_PRINCIPAL_KID",
+        "AUTH_EPOCH",
+        "SING_YIN_GUEST_SNAPSHOT_SECRET"
+    )) {
+        if ($Overlay.ContainsKey($name) -and $written.Add($name)) {
+            $output.Add("${name}=$($Overlay[$name])")
+        }
+    }
+
+    $temporaryPath = "$EnvironmentPath.release-overlay-$([Guid]::NewGuid().ToString('N')).tmp"
+    try {
+        [IO.File]::WriteAllBytes($temporaryPath, [byte[]]@())
+        Protect-SingYinSensitivePath -Path $temporaryPath -RuntimeUser $RuntimeIdentity
+        $content = [string]::Join([Environment]::NewLine, $output.ToArray()) +
+            [Environment]::NewLine
+        [IO.File]::WriteAllText(
+            $temporaryPath,
+            $content,
+            (New-Object Text.UTF8Encoding($false))
+        )
+        Move-Item -LiteralPath $temporaryPath -Destination $EnvironmentPath -Force
+        Protect-SingYinSensitivePath -Path $EnvironmentPath -RuntimeUser $RuntimeIdentity
+    } finally {
+        Remove-Item -LiteralPath $temporaryPath -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Remove-EnvironmentOverlay([string]$Path) {
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path)) {
+        return
+    }
+    $item = Get-Item -LiteralPath $Path -Force
+    if ($item.PSIsContainer) {
+        throw "The environment overlay cleanup target must be a file."
+    }
+    $isReparsePoint = ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0
+    if (-not $isReparsePoint) {
+        [IO.File]::WriteAllBytes($Path, [byte[]]@())
+    }
+    Remove-Item -LiteralPath $Path -Force -ErrorAction Stop
+    if (Test-Path -LiteralPath $Path) {
+        throw "The one-use environment overlay could not be deleted."
+    }
+}
+
+function Wait-PortReleased([int]$Port, [int]$TimeoutSeconds = 30) {
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (-not (Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue)) {
+            return
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    throw "Port $Port is still in use after the owned startup task was stopped."
+}
+
+function Wait-LoopbackHealth([int]$TimeoutSeconds = 90) {
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $health = Invoke-RestMethod -Uri "http://127.0.0.1:8080/healthz" -TimeoutSec 3
+            if (
+                $health.application -ceq "sing-yin-roster" -and
+                $health.applicationMode -ceq "official" -and
+                $health.status -ceq "ok" -and
+                $health.database -ceq "ok"
+            ) {
+                return $health
+            }
+        } catch {
+            # The owned task may still be starting.
+        }
+        Start-Sleep -Milliseconds 750
+    }
+    throw "The official origin did not become healthy within $TimeoutSeconds seconds."
+}
+
+function Wait-LoopbackReadiness([int]$TimeoutSeconds = 90) {
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $ready = Invoke-RestMethod -Uri "http://127.0.0.1:8080/readyz" -TimeoutSec 3
+            if (
+                $ready.status -ceq "ready" -and
+                $ready.writeReady -eq $true -and
+                $ready.maintenance -eq $false -and
+                $ready.recoveryRequired -eq $false -and
+                [int]$ready.pendingBackupObligations -eq 0 -and
+                $ready.backupRepairFailed -eq $false
+            ) {
+                return $ready
+            }
+        } catch {
+            # Readiness may remain degraded briefly while startup repair finishes.
+        }
+        Start-Sleep -Milliseconds 750
+    }
+    throw "The official origin did not become write-ready within $TimeoutSeconds seconds."
+}
+
+$resolvedOverlayPath = $null
+$overlayPathToDelete = $null
+$deploymentExitCode = 1
+$controlledEnvironmentNames = @()
+$processEnvironmentSnapshot = @{}
+$processEnvironmentCaptured = $false
+try {
+    if (-not [string]::IsNullOrWhiteSpace($EnvironmentOverlayPath)) {
+        $resolvedOverlayPath = [IO.Path]::GetFullPath($EnvironmentOverlayPath)
+        $overlayName = [IO.Path]::GetFileName($resolvedOverlayPath)
+        $overlayDirectory = [IO.Path]::GetFullPath(
+            (Split-Path -Parent $resolvedOverlayPath)
+        ).TrimEnd([IO.Path]::DirectorySeparatorChar)
+        $expectedTempDirectory = [IO.Path]::GetFullPath(
+            [IO.Path]::GetTempPath()
+        ).TrimEnd([IO.Path]::DirectorySeparatorChar)
+        if (
+            $overlayName -notmatch '^sing-yin-release-overlay-[A-Za-z0-9_-]{8,128}\.env$' -or
+            -not [string]::Equals(
+                $overlayDirectory,
+                $expectedTempDirectory,
+                [StringComparison]::OrdinalIgnoreCase
+            )
+        ) {
+            throw "The environment overlay must use the controlled one-use name in the Windows temp directory."
+        }
+        $prospectiveHostEnvironment = [IO.Path]::GetFullPath(
+            (Join-Path ([IO.Path]::GetFullPath($HostRoot)) ".env")
+        )
+        if (
+            [string]::Equals(
+                $prospectiveHostEnvironment,
+                $resolvedOverlayPath,
+                [StringComparison]::OrdinalIgnoreCase
+            )
+        ) {
+            throw "The one-use environment overlay must be separate from the protected host environment."
+        }
+        if (
+            -not (Test-Path -LiteralPath $resolvedOverlayPath -PathType Leaf)
+        ) {
+            throw "The environment overlay file is missing."
+        }
+        $candidateOverlayItem = Get-Item -LiteralPath $resolvedOverlayPath -Force
+        if (($candidateOverlayItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "The environment overlay must not be a reparse point."
+        }
+        $overlayPathToDelete = $resolvedOverlayPath
+    }
+    if ($ReleaseRef -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$') {
+        throw "ReleaseRef must be a simple immutable release tag name."
+    }
+    foreach ($requiredRoot in @($SourceRoot, $HostRoot)) {
+        if (-not (Test-Path -LiteralPath $requiredRoot -PathType Container)) {
+            throw "Required path is missing: $requiredRoot"
+        }
+    }
+    $SourceRoot = (Resolve-Path -LiteralPath $SourceRoot).Path
+    $HostRoot = (Resolve-Path -LiteralPath $HostRoot).Path
+
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+    if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        throw "This controlled deployment must run from an elevated Windows session."
+    }
+
+    . (Join-Path $SourceRoot "scripts\windows_host_common.ps1")
+    $runtimeAccount = Get-SingYinRuntimeAccount -UserName $RuntimeUser
+
+    $safeReleaseName = $ReleaseRef -replace '[^A-Za-z0-9._-]', '-'
+    $script:ReportPath = Join-Path $SourceRoot "logs\windows-release-deployment-$safeReleaseName.json"
+    $script:NativeLogPath = Join-Path $SourceRoot "logs\windows-release-deployment-$safeReleaseName-native.log"
+    $null = New-Item -ItemType Directory -Path (Split-Path -Parent $script:ReportPath) -Force
+    Set-Content -LiteralPath $script:NativeLogPath -Encoding UTF8 -Value (
+        "Sing Yin Roster controlled Windows release deployment native output"
+    )
+
+    $requiredChecks = @(
+        "repository_hygiene",
+        "security_gates",
+        "cloudflare_gateway_tests",
+        "automated_test_suite",
+        "python_compile",
+        "dependency_integrity",
+        "verify_nicegui_ui",
+        "verify_runtime_performance",
+        "verify_nicegui_write_pipeline",
+        "verify_nicegui_mobile",
+        "strict_deployment_readiness",
+        "verify_unified_guest_ui",
+        "verify_nicegui_partial_backup"
+    )
+    $startedAt = [DateTimeOffset]::UtcNow
+    $releaseCommit = $null
+    $previousCommit = $null
+    $backupReport = $null
+    $taskInitiallyRunning = $false
+    $taskInitiallyEnabled = $false
+    $taskStopped = $false
+    $switchedHost = $false
+    $environmentPath = Join-Path $HostRoot ".env"
+    $environmentBytes = $null
+    $environmentHash = $null
+    $environmentOverlayApplied = $false
+    $controlledEnvironmentNames = @(
+        "SING_YIN_UNIFIED_GUEST",
+        "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL",
+        "ORIGIN_PRINCIPAL_SECRET",
+        "ORIGIN_PRINCIPAL_KID",
+        "AUTH_EPOCH",
+        "SING_YIN_GUEST_SNAPSHOT_SECRET"
+    )
+    $processEnvironmentSnapshot = @{}
+    $processEnvironmentCaptured = $false
+    $rollbackAttempted = $false
+    $rollbackSucceeded = $false
+    $rollbackError = $null
+
+    try {
+    Write-Step "Validating the immutable release and thirteen-gate evidence"
+    $sourceStatus = Get-GitValue -Repository $SourceRoot -Arguments @(
+        "status",
+        "--porcelain",
+        "--untracked-files=all"
+    )
+    if (-not [string]::IsNullOrWhiteSpace($sourceStatus)) {
+        throw "The source repository is not clean."
+    }
+    Invoke-Native -Executable "git.exe" -Arguments @(
+        "fetch",
+        "--prune",
+        "--tags",
+        "origin"
+    ) -WorkingDirectory $SourceRoot | Out-Null
+    Invoke-Native -Executable "git.exe" -Arguments @(
+        "fetch",
+        "origin",
+        "main"
+    ) -WorkingDirectory $SourceRoot | Out-Null
+    $releaseCommit = Assert-ImmutableReleaseTag -Repository $SourceRoot -TagName $ReleaseRef
+    $sourceHead = Get-GitValue -Repository $SourceRoot -Arguments @("rev-parse", "HEAD")
+    if ($sourceHead -cne $releaseCommit) {
+        throw "The source HEAD does not match the immutable release tag."
+    }
+    & git.exe -C $SourceRoot merge-base --is-ancestor $releaseCommit origin/main
+    if ($LASTEXITCODE -ne 0) {
+        throw "$ReleaseRef is not contained in origin/main."
+    }
+
+    $sourcePython = Join-Path $SourceRoot ".venv\Scripts\python.exe"
+    if (-not (Test-Path -LiteralPath $sourcePython -PathType Leaf)) {
+        throw "The verified source Python environment is missing."
+    }
+    $releaseReportPath = Join-Path $SourceRoot "logs\release-candidate-report.json"
+    $releaseReport = Get-Content -LiteralPath $releaseReportPath -Raw -Encoding UTF8 |
+        ConvertFrom-Json
+    $reportChecks = @($releaseReport.checks)
+    $passedNames = @(
+        $reportChecks |
+            Where-Object { $_.status -ceq "pass" } |
+            ForEach-Object { [string]$_.name }
+    )
+    $unexpectedNames = @($passedNames | Where-Object { $_ -notin $requiredChecks })
+    $missingNames = @($requiredChecks | Where-Object { $_ -notin $passedNames })
+    if (
+        $releaseReport.status -cne "pass" -or
+        $reportChecks.Count -ne 13 -or
+        $passedNames.Count -ne 13 -or
+        @($passedNames | Select-Object -Unique).Count -ne 13 -or
+        $unexpectedNames.Count -ne 0 -or
+        $missingNames.Count -ne 0
+    ) {
+        throw "The thirteen-gate source release report is not a complete pass."
+    }
+    $currentFingerprint = Get-CurrentReleaseFingerprint -Python $sourcePython -Repository $SourceRoot
+    if (
+        [string]$releaseReport.sourceFingerprint -cne [string]$currentFingerprint.fingerprint -or
+        [int]$releaseReport.sourceFileCount -ne [int]$currentFingerprint.fileCount
+    ) {
+        throw "The release report fingerprint does not match the immutable release source."
+    }
+
+    Write-Step "Inspecting the owned startup task and protecting host settings"
+    $inspection = Get-SingYinTaskInspection `
+        -TaskName $TaskName `
+        -ProjectRoot $HostRoot `
+        -RuntimeUser $runtimeAccount.Name
+    if (-not $inspection.Exists -or -not $inspection.Owned) {
+        throw "The startup task is missing or is not safely owned by this release host."
+    }
+    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    if (@($task.Actions).Count -ne 1) {
+        throw "The owned startup task must contain exactly one action."
+    }
+    if ([string]$task.Principal.LogonType -cne "Password") {
+        throw "The owned startup task must use the password-backed service account."
+    }
+    $taskInitiallyRunning = [string]$task.State -ceq "Running"
+    $taskInitiallyEnabled = [bool]$task.Settings.Enabled
+
+    Protect-SingYinSensitivePath -Path $environmentPath -RuntimeUser $runtimeAccount.Name
+    $aclStatus = Get-SingYinAclStatus `
+        -Paths @($environmentPath) `
+        -RequiredIdentitySid $runtimeAccount.Sid.Value
+    if (-not $aclStatus.Compliant) {
+        throw "The protected host environment ACL is not compliant."
+    }
+    $environmentBytes = [IO.File]::ReadAllBytes($environmentPath)
+    if ($null -ne $resolvedOverlayPath) {
+        if (
+            [string]::Equals(
+                [IO.Path]::GetFullPath($environmentPath),
+                $resolvedOverlayPath,
+                [StringComparison]::OrdinalIgnoreCase
+            )
+        ) {
+            throw "The one-use environment overlay must be separate from the protected host environment."
+        }
+        $environmentOverlay = Read-EnvironmentOverlay -Path $resolvedOverlayPath
+        Merge-EnvironmentOverlay `
+            -EnvironmentPath $environmentPath `
+            -Overlay $environmentOverlay `
+            -RuntimeIdentity $runtimeAccount.Name
+        $environmentOverlayApplied = $true
+        Remove-EnvironmentOverlay -Path $resolvedOverlayPath
+    }
+    $deployedEnvironmentBytes = [IO.File]::ReadAllBytes($environmentPath)
+    $environmentHash = (
+        [BitConverter]::ToString(
+            [Security.Cryptography.SHA256]::Create().ComputeHash($deployedEnvironmentBytes)
+        )
+    ).Replace("-", "").ToLowerInvariant()
+    foreach ($name in $controlledEnvironmentNames) {
+        $processEnvironmentSnapshot[$name] = [Environment]::GetEnvironmentVariable(
+            $name,
+            "Process"
+        )
+    }
+    $processEnvironmentCaptured = $true
+    $environmentValues = Import-HostEnvironment -EnvironmentPath $environmentPath
+    Assert-UnifiedGuestHostSettings -Values $environmentValues
+
+    $hostStatus = Get-GitValue -Repository $HostRoot -Arguments @(
+        "status",
+        "--porcelain",
+        "--untracked-files=all"
+    )
+    if (-not [string]::IsNullOrWhiteSpace($hostStatus)) {
+        throw "The installed host repository is not clean."
+    }
+    $previousCommit = Get-GitValue -Repository $HostRoot -Arguments @("rev-parse", "HEAD")
+
+    Write-Step "Stopping the owned task and fencing port 8080"
+    if ([string]$task.State -ceq "Running") {
+        Stop-ScheduledTask -TaskName $TaskName
+    }
+    Disable-ScheduledTask -TaskName $TaskName | Out-Null
+    $taskStopped = $true
+    Wait-PortReleased -Port 8080 -TimeoutSeconds 30
+
+    Write-Step "Creating a fresh verified backup and isolated restore proof"
+    $env:SING_YIN_APP_MODE = "official"
+    $env:SING_YIN_DATABASE_PATH = Join-Path $HostRoot "data\runtime\sing-yin-roster.sqlite3"
+    $env:SING_YIN_BACKUP_DIR = Join-Path $HostRoot "data\backups"
+    $env:SING_YIN_LOG_DIR = Join-Path $HostRoot "logs"
+    $backupStartedAt = [DateTimeOffset]::UtcNow
+    Invoke-Native -Executable $sourcePython -Arguments @(
+        "-X",
+        "utf8",
+        "scripts\verify_formal_backup_restore.py"
+    ) -WorkingDirectory $SourceRoot | Out-Null
+    $backupReportPath = Join-Path $SourceRoot "logs\formal-backup-restore-report.json"
+    $backupReportFile = Get-Item -LiteralPath $backupReportPath -ErrorAction Stop
+    if ([DateTimeOffset]$backupReportFile.LastWriteTimeUtc -lt $backupStartedAt.AddSeconds(-2)) {
+        throw "The formal backup report was not refreshed by this deployment."
+    }
+    $backupReport = Get-Content -LiteralPath $backupReportPath -Raw -Encoding UTF8 |
+        ConvertFrom-Json
+    if (
+        $backupReport.status -cne "pass" -or
+        -not [bool]$backupReport.isolatedRestore -or
+        -not [bool]$backupReport.fairnessBalanced -or
+        -not [bool]$backupReport.rowCountsMatched -or
+        -not [bool]$backupReport.restoreAuditAppended -or
+        [string]$backupReport.integrity -cne "ok" -or
+        [string]$backupReport.sha256 -notmatch '^[0-9a-f]{64}$'
+    ) {
+        throw "The fresh backup and isolated restore proof is incomplete."
+    }
+    $snapshotName = [IO.Path]::GetFileName([string]$backupReport.snapshotFile)
+    if ($snapshotName -cne [string]$backupReport.snapshotFile) {
+        throw "The formal backup report contains an unsafe snapshot path."
+    }
+    $snapshotPath = Join-Path $env:SING_YIN_BACKUP_DIR $snapshotName
+    $manifestPath = [IO.Path]::ChangeExtension($snapshotPath, ".manifest.json")
+    if (
+        -not (Test-Path -LiteralPath $snapshotPath -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $manifestPath -PathType Leaf)
+    ) {
+        throw "The verified snapshot or checksum manifest is missing."
+    }
+    $snapshotHash = (Get-FileHash -LiteralPath $snapshotPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($snapshotHash -cne ([string]$backupReport.sha256).ToLowerInvariant()) {
+        throw "The verified snapshot checksum no longer matches the backup report."
+    }
+
+    Write-Step "Switching the Windows host to the immutable release tag"
+    Invoke-Native -Executable "git.exe" -Arguments @(
+        "fetch",
+        "--prune",
+        "--tags",
+        "origin"
+    ) -WorkingDirectory $HostRoot | Out-Null
+    Invoke-Native -Executable "git.exe" -Arguments @(
+        "fetch",
+        "origin",
+        "main"
+    ) -WorkingDirectory $HostRoot | Out-Null
+    $hostReleaseCommit = Assert-ImmutableReleaseTag -Repository $HostRoot -TagName $ReleaseRef
+    if ($hostReleaseCommit -cne $releaseCommit) {
+        throw "The installed host resolved a different release commit."
+    }
+    & git.exe -C $HostRoot merge-base --is-ancestor $hostReleaseCommit origin/main
+    if ($LASTEXITCODE -ne 0) {
+        throw "The installed host release tag is not contained in origin/main."
+    }
+    Invoke-Native -Executable "git.exe" -Arguments @(
+        "switch",
+        "--detach",
+        $ReleaseRef
+    ) -WorkingDirectory $HostRoot | Out-Null
+    $switchedHost = $true
+    if ((Get-GitValue -Repository $HostRoot -Arguments @("rev-parse", "HEAD")) -cne $releaseCommit) {
+        throw "The installed host did not switch to the exact release commit."
+    }
+
+    Write-Step "Installing hash-locked dependencies and restoring protected ACLs"
+    $hostPython = Join-Path $HostRoot ".venv\Scripts\python.exe"
+    Invoke-Native -Executable $hostPython -Arguments @(
+        "-m",
+        "pip",
+        "install",
+        "--require-hashes",
+        "-r",
+        (Join-Path $HostRoot "requirements.lock")
+    ) -WorkingDirectory $HostRoot | Out-Null
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (
+        Join-Path $HostRoot "scripts\prepare_windows_host.ps1"
+    ) -ProjectRoot $HostRoot -RuntimeUser $RuntimeUser
+    if ($LASTEXITCODE -ne 0) {
+        throw "Windows host preparation failed."
+    }
+    $currentEnvironmentBytes = [IO.File]::ReadAllBytes($environmentPath)
+    $currentEnvironmentHash = (
+        [BitConverter]::ToString(
+            [Security.Cryptography.SHA256]::Create().ComputeHash($currentEnvironmentBytes)
+        )
+    ).Replace("-", "").ToLowerInvariant()
+    if ($currentEnvironmentHash -cne $environmentHash) {
+        throw "The protected host environment changed during the release switch."
+    }
+    Protect-SingYinSensitivePath -Path $environmentPath -RuntimeUser $runtimeAccount.Name
+
+    $postSwitchInspection = Get-SingYinTaskInspection `
+        -TaskName $TaskName `
+        -ProjectRoot $HostRoot `
+        -RuntimeUser $runtimeAccount.Name
+    if (-not $postSwitchInspection.Exists -or -not $postSwitchInspection.Owned) {
+        throw "The startup task no longer matches the updated release host."
+    }
+
+    Write-Step "Starting the official origin and enforcing health and write-readiness"
+    Enable-ScheduledTask -TaskName $TaskName | Out-Null
+    Start-ScheduledTask -TaskName $TaskName
+    $health = Wait-LoopbackHealth
+    $readiness = Wait-LoopbackReadiness
+    Invoke-Native -Executable $hostPython -Arguments @(
+        "-X",
+        "utf8",
+        "scripts\check_deployment_readiness.py",
+        "--strict"
+    ) -WorkingDirectory $HostRoot | Out-Null
+    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+
+    Write-DeploymentReport -Payload ([ordered]@{
+        schemaVersion = 1
+        status = "pass"
+        startedAt = $startedAt.ToString("o")
+        finishedAt = [DateTimeOffset]::UtcNow.ToString("o")
+        releaseRef = $ReleaseRef
+        releaseCommit = $releaseCommit
+        previousCommit = $previousCommit
+        sourceFingerprint = [string]$currentFingerprint.fingerprint
+        sourceFileCount = [int]$currentFingerprint.fileCount
+        releaseChecksPassed = 13
+        snapshotFile = $snapshotName
+        snapshotSha256 = [string]$backupReport.sha256
+        isolatedRestore = [bool]$backupReport.isolatedRestore
+        fairnessBalanced = [bool]$backupReport.fairnessBalanced
+        rowCountsMatched = [bool]$backupReport.rowCountsMatched
+        restoreAuditAppended = [bool]$backupReport.restoreAuditAppended
+        environmentProtected = $true
+        environmentOverlayApplied = $environmentOverlayApplied
+        taskName = $TaskName
+        taskState = [string]$task.State
+        taskRuntimeAccount = $runtimeAccount.Name
+        health = [ordered]@{
+            status = [string]$health.status
+            application = [string]$health.application
+            applicationMode = [string]$health.applicationMode
+            database = [string]$health.database
+        }
+        readiness = [ordered]@{
+            status = [string]$readiness.status
+            writeReady = [bool]$readiness.writeReady
+            maintenance = [bool]$readiness.maintenance
+            recoveryRequired = [bool]$readiness.recoveryRequired
+            pendingBackupObligations = [int]$readiness.pendingBackupObligations
+            backupRepairFailed = [bool]$readiness.backupRepairFailed
+        }
+        rollback = [ordered]@{
+            attempted = $false
+            succeeded = $false
+            commit = $null
+            error = $null
+        }
+    })
+    Write-Host "`nWindows release deployment passed. Report: $script:ReportPath" -ForegroundColor Green
+    $deploymentExitCode = 0
+    } catch {
+    $failure = Protect-ReportText $_.Exception.Message
+    Write-Host "`nDEPLOYMENT FAILED: $failure" -ForegroundColor Red
+    if ($taskStopped -or $null -ne $environmentBytes) {
+        $rollbackAttempted = $true
+        try {
+            if ($taskStopped) {
+                Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+                try { Wait-PortReleased -Port 8080 -TimeoutSeconds 15 } catch { }
+                if ($switchedHost -and -not [string]::IsNullOrWhiteSpace($previousCommit)) {
+                    Write-Host "Restoring the previous host commit $previousCommit ..." -ForegroundColor Yellow
+                    Invoke-Native -Executable "git.exe" -Arguments @(
+                        "switch",
+                        "--detach",
+                        $previousCommit
+                    ) -WorkingDirectory $HostRoot | Out-Null
+                    $rollbackPython = Join-Path $HostRoot ".venv\Scripts\python.exe"
+                    Invoke-Native -Executable $rollbackPython -Arguments @(
+                        "-m",
+                        "pip",
+                        "install",
+                        "--require-hashes",
+                        "-r",
+                        (Join-Path $HostRoot "requirements.lock")
+                    ) -WorkingDirectory $HostRoot | Out-Null
+                }
+            }
+            if ($null -ne $environmentBytes) {
+                [IO.File]::WriteAllBytes($environmentPath, $environmentBytes)
+                Protect-SingYinSensitivePath `
+                    -Path $environmentPath `
+                    -RuntimeUser $runtimeAccount.Name
+            }
+            if ($taskStopped) {
+                if ($taskInitiallyEnabled -or $taskInitiallyRunning) {
+                    Enable-ScheduledTask -TaskName $TaskName | Out-Null
+                }
+                if ($taskInitiallyRunning) {
+                    Start-ScheduledTask -TaskName $TaskName
+                    $null = Wait-LoopbackHealth -TimeoutSeconds 90
+                }
+            }
+            $rollbackSucceeded = $true
+        } catch {
+            $rollbackError = Protect-ReportText $_.Exception.Message
+            $failure = "$failure Rollback also needs review."
+        }
+    }
+    Write-DeploymentReport -Payload ([ordered]@{
+        schemaVersion = 1
+        status = "fail"
+        startedAt = $startedAt.ToString("o")
+        finishedAt = [DateTimeOffset]::UtcNow.ToString("o")
+        releaseRef = $ReleaseRef
+        releaseCommit = $releaseCommit
+        previousCommit = $previousCommit
+        failure = $failure
+        nativeLog = [IO.Path]::GetFileName($script:NativeLogPath)
+        rollback = [ordered]@{
+            attempted = $rollbackAttempted
+            succeeded = $rollbackSucceeded
+            commit = if ($rollbackSucceeded) { $previousCommit } else { $null }
+            error = $rollbackError
+        }
+    })
+    $deploymentExitCode = 1
+    }
+} finally {
+    if ($processEnvironmentCaptured) {
+        foreach ($name in $controlledEnvironmentNames) {
+            [Environment]::SetEnvironmentVariable(
+                $name,
+                $processEnvironmentSnapshot[$name],
+                "Process"
+            )
+        }
+    }
+    Remove-EnvironmentOverlay -Path $overlayPathToDelete
+}
+exit $deploymentExitCode

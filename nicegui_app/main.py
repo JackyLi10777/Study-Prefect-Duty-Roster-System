@@ -33,6 +33,8 @@ from nicegui_app.gateway_identity import OriginPrincipalError, principal_from_re
 from nicegui_app.runtime import (
     cleanup_guest_session,
     get_admin_workflow,
+    require_runtime_principal_active,
+    revoke_authenticated_session,
     restore_guest_browser_snapshot,
     runtime_readiness,
 )
@@ -122,7 +124,7 @@ async def restore_guest_snapshot(request: Request) -> Response:
         return _guest_download_not_found()
     try:
         principal = principal_from_request(request)
-        principal.require_active()
+        require_runtime_principal_active(principal)
         body = await request.body()
         if len(body) > DEFAULT_MAX_SNAPSHOT_BYTES + 2_048:
             return _guest_download_not_found()
@@ -182,7 +184,7 @@ def guest_download(token: str, request: Request) -> Response:
 
     try:
         principal = principal_from_request(request)
-        principal.require_active()
+        require_runtime_principal_active(principal)
     except (OriginPrincipalError, PermissionError):
         return _guest_download_not_found()
     if principal.mode is not AccessMode.GUEST or not principal.session_id:
@@ -224,7 +226,7 @@ def cleanup_guest_downloads(request: Request) -> Response:
 
     try:
         principal = principal_from_request(request)
-        principal.require_active()
+        require_runtime_principal_active(principal)
     except (OriginPrincipalError, PermissionError):
         return _guest_download_not_found()
     if principal.mode is not AccessMode.GUEST or not principal.session_id:
@@ -234,6 +236,38 @@ def cleanup_guest_downloads(request: Request) -> Response:
     return Response(
         status_code=204,
         headers={"Cache-Control": "no-store, max-age=0"},
+    )
+
+
+@app.post("/api/auth/session/revoke", include_in_schema=False)
+def revoke_origin_session(request: Request) -> Response:
+    """Invalidate one signed gateway session before its cookies are cleared.
+
+    This endpoint is intentionally idempotent: a second logout notification
+    for an already-revoked session still succeeds after the signed principal
+    itself has been verified and confirmed unexpired.
+    """
+
+    try:
+        principal = principal_from_request(request)
+        principal.require_active()
+    except (OriginPrincipalError, PermissionError):
+        return _guest_download_not_found()
+    if (
+        principal.mode not in {AccessMode.ADMIN, AccessMode.GUEST}
+        or not principal.session_id
+    ):
+        return _guest_download_not_found()
+    revoke_authenticated_session(principal)
+    if principal.mode is AccessMode.GUEST:
+        guest_download_registry().cleanup_session(principal.session_id)
+        cleanup_guest_session(principal.session_id)
+    return Response(
+        status_code=204,
+        headers={
+            "Cache-Control": "no-store, max-age=0",
+            "Pragma": "no-cache",
+        },
     )
 
 
@@ -272,6 +306,7 @@ def run() -> None:
         app.add_static_files(url_path="/assets/atmosphere", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "atmosphere")
         app.add_static_files(url_path="/assets/fonts", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "fonts")
         app.add_static_files(url_path="/assets/css", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "css")
+        app.add_static_files(url_path="/assets/materials", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "materials")
         app.add_static_files(url_path="/assets/motion", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "motion")
         app.add_static_files(url_path="/assets/vendor", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "vendor")
         app.add_static_files(url_path="/assets/music", local_directory=MUSIC_DIR)

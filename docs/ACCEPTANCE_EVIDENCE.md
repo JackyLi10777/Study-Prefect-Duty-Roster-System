@@ -4,7 +4,7 @@
 
 ## 使用方法
 
-1. 維護者先執行 `python -X utf8 scripts\verify_release_candidate.py`，確認 JSON 報告目前 12 項檢查均為 `pass`；其中 `repository_hygiene` 必須證明有真正 commit 歷史、無已追蹤敏感檔、無尚未加入 Git 的發布敏感來源，且 ignore 契約完整；`security_gates` 必須通過依賴、靜態程式及 Python／Cloudflare 秘密掃描；`cloudflare_gateway_tests` 必須通過 Deno Worker 契約；`verify_runtime_performance` 必須證明字體完成後的冷載、重複元件及跨頁返回後，強制 GC 的 heap／DOM／listener 增長與手機 overflow 均在門檻內。桌面、寫入、效能及手機瀏覽器閘門亦會把 console error 或未捕捉 `pageerror` 視為失敗。
+1. 維護者先執行 `python -X utf8 scripts\verify_release_candidate.py`，確認 JSON 報告目前 13 項檢查均為 `pass`；其中 `repository_hygiene` 必須證明有真正 commit 歷史、無已追蹤敏感檔、無尚未加入 Git 的發布敏感來源，且 ignore 契約完整；`security_gates` 必須通過依賴、靜態程式及 Python／Cloudflare 秘密掃描；`cloudflare_gateway_tests` 必須通過 Deno Worker 契約；`verify_runtime_performance` 必須證明字體完成後的冷載、重複元件及跨頁返回後，強制 GC 的 heap／DOM／listener 增長與手機 overflow 均在門檻內；`verify_unified_guest_ui` 必須證明同路由訪客隔離、虛構資料、限制狀態、分頁與下載邊界。桌面、寫入、效能及手機瀏覽器閘門亦會把 console error 或未捕捉 `pageerror` 視為失敗。
    網站「交接指引」亦會核對報告的程式指紋；若顯示過期、失敗或格式不可信，先停止驗收並由 IT 支援重跑。
 2. 首席導學風紀依下表只執行「仍需真人確認」欄，不需要重做已由自動化精確覆蓋的故障注入。
 3. 教師顧問完成 A-01 至 A-04，並在 `docs/RELEASE_HANDOVER.md` 的正式驗收清單簽核。
@@ -31,7 +31,7 @@
 | H-15 | 外觀／聲音不清空表單；語言離開前保護未儲存輸入 | `test_interface_sound.py`; `test_accessibility.py`; UI smoke 的 in-place theme／sound 及 dirty-language guard | 在一個未儲存表單親自切換三項偏好，確認提示、一次短聲及鍵盤流程自然 |
 | H-16 | 兩個分頁不能以舊資料覆蓋較新風紀或草稿 | prefect／roster concurrency tests；SQLite `BEGIN IMMEDIATE` 與 version CAS | 以虛構資料完成一次 stale-tab 演練，確認提示要求重新載入及核對 |
 | H-17 | 正式模式從空白名單開始且不自動 seed；Practice Mode 保留隔離虛構 seed | **rc.16 自動化閘門已通過：** `test_official_data_reset.py`、runtime mode tests、reset report 零筆表格／空白基線契約；只有正式主機 sanitized reset report 及重啟 health 才是已完成清除的部署證據 | 正式清除只可在已驗證備份、隔離還原及 Viewer 撤銷後執行；重啟兩個模式並核對正式為零、練習有虛構資料 |
-| H-18 | `/guest` 是資料無關產品導覽；`/try` 是 30 分鐘純瀏覽器虛構試用 | **正式 Worker 自動化驗證已通過：** `test_cloudflare_guest_trial.py`、23 個 Worker Deno 契約，以及 `scripts/verify_guest_trial.py` canonical desktop／mobile／reduced-motion 報告；未發現試用 API、KV、VPC、NiceGUI 或 WebSocket 請求 | 在實體手機完成請假→生成→預覽→雙語 PDF；核對中文姓名、非正式標記、30 分鐘／關閉分頁／重置清除及 Network 邊界 |
+| H-18 | v1.2 Guest 與 Admin 使用相同 NiceGUI 路由，但 Guest 只操作每分頁隔離的虛構記憶體 workspace；重新整理可還原最新合法 token，複製／篡改／過期／重啟後不可重播 | `verify_unified_guest_ui` 是正式 13 道 gate 之一；配合 `test_guest_workspace.py`、`test_guest_adapter.py`、`test_guest_downloads.py`、`test_guest_snapshot_bridge.py` 驗證相同路由、簽署、綁定、nonce、revision、重播拒絕、下載及 `sessionStorage` 邊界。只有與最終來源 fingerprint 相符的 report 才有效；v1.1 靜態 `/guest`／`/try` 只可作回退紀錄 | v1.2 部署後在實體手機完成訪客請假→生成→修改→示範發布→雙語 PDF／JSON→請假調整；核對中文姓名、`DEMO`、30 分鐘、兩分頁隔離、重新整理、登出及 Network／正式資料邊界 |
 
 ## 教師顧問
 
@@ -40,10 +40,10 @@
 | A-01 | 公平帳本符合學校做法 | 角色、點數、一次性發布及請假轉移均有單元／整合測試 | 審閱一份發布表和一次調整；確認 `history_weight` 解釋符合學校政策 |
 | A-02 | 最近備份可驗證及還原 | strict readiness、`test_backup_restore.py`、write pipeline 第二隔離資料庫；完整 table／Alembic head preflight、跨程序 maintenance lease、失敗後自動回復測試 | 在非正式副本完成一次受監督演練並記錄日期；確認維護期間其他分頁不能寫入 |
 | A-03 | 專用電腦、秘密、加密離機位置及責任人 | readiness 只會指出缺口，不會替學校作決定 | 指定電腦、保管人、輪替方式及事故聯絡人 |
-| A-04 | 外部存取保持私有或完成 Cloudflare 遠端驗收 | deployment fail-closed tests 證明兩種 server 路線均只綁定 loopback；private WARP 必須有有效 team domain、私有 hostname 且不可混入 public Access 設定，public Access 仍需 Protect with Access、AUD 及公開 Host。UI middleware 拒絕未聲明 Host | 啟用連接器後，以已登記 WARP 裝置、WARP-off、未獲准登記及直接 LAN origin 四條路徑驗收一次 |
+| A-04 | 正式 canonical 網站完成 Cloudflare 遠端驗收，維護入口仍保持私有 | deployment fail-closed tests 證明 origin 只綁定 loopback；Worker 契約驗證 Public、Guest、Admin OTP callback、Viewer、簽署 principal、WebSocket 及隔離邊界。Access 只保護 `/auth/login`，UI middleware 拒絕未聲明 Host | 以 <https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/> 驗收 Public、Guest、Admin OTP、Viewer、WebSocket／重連及隔離；再核對 WARP 後備可用，而 WARP-off、未獲准裝置及直接 LAN origin 均不可繞過 |
 
 ## 證據失效規則
 
-- 修改排班政策、交易、備份、PDF、語言、路由復原、Cloudflare Worker／JSONC 或發布驗證器後，必須重新執行完整 12 項發布候選驗證。
+- 修改排班政策、交易、備份、PDF、語言、路由復原、Cloudflare Worker／JSONC 或發布驗證器後，必須重新執行當前完整發布候選驗證（2026-07-17 為 13 項）。
 - JSON 報告缺少 `humanAcceptanceRequired: true`、任何檢查不是 `pass`，或報告早於最後程式改動，均不可用作發布證據。
 - 自動化只使用虛構中文姓名；正式姓名、請假原因、PDF、資料庫、備份及日誌不可上載到公開服務。

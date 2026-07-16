@@ -70,3 +70,10 @@ def test_narrative_grammar_covers_work_reflection_and_reference_pages() -> None:
         assert selector in motion
 
     assert "repeat: -1" not in motion
+
+
+def test_editorial_context_labels_remain_readable() -> None:
+    narrative = _read("nicegui_app/assets/css/sing-yin-narrative-v1.css")
+
+    for undersized_label in ("font-size: 8px", "font-size: 9px", "font-size: 10px"):
+        assert undersized_label not in narrative

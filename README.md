@@ -18,8 +18,8 @@
 
 | 分支 | 運行平台 | 定位 |
 |---|---|---|
-| `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | v1.2 統一 Guest／Admin 候選；尚未正式部署 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 現行 v1.1 正式維護基線及回退來源 |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | v1.2 統一 Guest／Admin 已驗證發布候選；正進行受控部署 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | v1.1 已部署回退來源；將接收 v1.2 候選 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -33,7 +33,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **已部署基線（v1.1）：** `C:\SingYinRoster` 的現有 Windows origin 及 Cloudflare gateway 仍是正式運行基線。
 
-**目前來源候選（v1.2）：** `codex/unified-guest-redesign` 正在把 Admin／Guest 統一到同一套 NiceGUI 路由、加入簽署 `PageContext`、記憶體 Guest workspace、版本衝突、命令收據、備份義務及 `/readyz`。`SING_YIN_UNIFIED_GUEST` 預設保持 `0`；完整測試、release verifier、已驗證備份、隔離還原及 Cloudflare 線上驗收通過前，不會聲稱 v1.2 已合併、標籤或部署。
+**目前來源候選（v1.2）：** `codex/unified-guest-redesign` 已把 Admin／Guest 統一到同一套 NiceGUI 路由，並完成簽署 `PageContext`、記憶體 Guest workspace、版本衝突、命令收據、備份義務、`/readyz`、雙主題材質及一致圖標微互動。2026-07-17 凍結來源已以指紋 `6b526bccd3e90106660b9ecab2195a22343e31b57d99b107e05904d414ec919d` 通過 13／13 項正式 gate；Windows／Access／Worker 受控切換仍在進行，因此 `SING_YIN_UNIFIED_GUEST` 在切換完成前保持 `0`。
 
 ## 首席導學風紀：每日怎樣進入
 
@@ -57,13 +57,13 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 - 要重新開始時，先關閉練習模式的黑色視窗，再雙擊 `RESET_PRACTICE_MODE.cmd`；它只會清除 `data/practice/`，然後重新建立虛構練習環境。
 - 正式日常工作使用上述唯一網站。`START_SING_YIN_ROSTER.cmd` 保留給主機維護及 Cloudflare 故障後備；兩個本機啟動器會透過 `/healthz` 的 `applicationMode` 身份辨識服務，不會互相誤開。
 
-### v1.2 候選：統一訪客體驗
+### v1.2 已驗證候選：統一訪客體驗
 
 - `/guest`、`/try` 只保留為兼容入口，會回到同一品牌入口並開始 Guest session；不再維護第二套靜態試用產品。
 - Guest 與 Admin 使用相同的 Dashboard、值班表、風紀及公平、交接、平台、工程、架構、手冊與經文頁；差別由伺服器核實的 `PageContext` 及 adapter 決定，不靠隱藏按鈕。
 - Guest 只獲 `demo_data.read`、`demo_state.modify`、`demo_result.download`、`session_preferences.modify`；AI、匯入、上載、正式備份／還原、Viewer 分享、外部交付及永久寫入均被服務層拒絕。
 - 每分頁取得獨立、有限額、程序記憶體內的虛構工作區。Guest PDF／JSON 標明 `DEMO`，以一次性 `no-store` 下載回傳。
-- HMAC snapshot codec 已有篡改、到期、SID／workspace／tab、大小、revision 及重播契約；把每次 revision 實際保存及還原自 `sessionStorage` 的瀏覽器橋接仍是正式發布 gate，未完成前不會把重新整理保留狀態寫成已完成。
+- HMAC snapshot codec 及瀏覽器橋接已完成：每次有意義修改後，origin 只把最新、已簽署且綁定 SID／workspace／tab／revision 的 token 推送到該分頁 `sessionStorage`；重新整理時必須連同當次連線 nonce 交回伺服器核實。複製分頁會獲得新 workspace；篡改、錯誤綁定、過期、舊 boot 或重播 token 會被拒絕並回到安全虛構 fixture。完整 pytest、隔離 Admin／Guest 瀏覽器、手機、效能、寫入、PDF、備份及復原已納入 13／13 正式候選報告；餘下 gate 是受控主機／Cloudflare 發布及真人驗收。
 - 完整安全模型及 gate 見 [統一訪客模式安全模型](docs/UNIFIED_GUEST_SECURITY_MODEL.md)。
 
 日常安全次序：
@@ -158,7 +158,7 @@ python -X utf8 -m nicegui_app.main
 
 ## 工程與品質證據
 
-README、架構文件及發布報告中的工程成果亦整理成獨立網站介面。它以完整自動化測試套件、目前發布報告的實際閘門比例、五層系統藍圖、可靠性工程能力及建造脈絡說明品質；目前驗證器有 12 道閘門，包括 Cloudflare Worker 的 Deno 契約、桌面瀏覽器、手機適應、效能、記憶體穩定性及完整寫入／復原。展示數字只來自仍與目前原始碼指紋相符的報告，不會加入使用人數、商業成效或其他虛假 KPI。
+README、架構文件及發布報告中的工程成果亦整理成獨立網站介面。它以完整自動化測試套件、目前發布報告的實際閘門比例、五層系統藍圖、可靠性工程能力及建造脈絡說明品質；目前驗證器有 13 道閘門，包括 Cloudflare Worker 的 Deno 契約、桌面瀏覽器、手機適應、效能、記憶體穩定性、統一 Guest 隔離及完整寫入／復原。展示數字只來自仍與目前可部署原始碼指紋相符的報告，不會加入使用人數、商業成效或其他虛假 KPI。
 
 ## 系統架構與可信設計
 
@@ -274,7 +274,7 @@ Worker 部署除 Viewer 管理所需的 `ADMIN_BEARER_TOKEN` 外，亦必須配�
 正式名單、週表、公平帳本及審計保存在受控電腦的本機 SQLite；音樂和個人介面偏好與排班資料分開。
 
 **訪客體驗會保存、上載或影響正式資料嗎？**
-不會影響正式資料。v1.2 Guest 會經 Worker／VPC 進入同一 NiceGUI 產品，但只連到有時限的程序記憶體 adapter，不會寫正式 SQLite、備份、公平帳本、分享 KV 或外部整合。下載是一次性、`DEMO` 標示及 `no-store`。HMAC snapshot codec 已完成，但瀏覽器 `sessionStorage` 保存／還原橋接仍是發布前 gate。
+不會影響正式資料。v1.2 Guest 會經 Worker／VPC 進入同一 NiceGUI 產品，但只連到有時限的程序記憶體 adapter，不會寫正式 SQLite、備份、公平帳本、分享 KV 或外部整合。下載是一次性、`DEMO` 標示及 `no-store`。同一分頁的最新示範狀態可透過已簽署、綁定 session／workspace／tab 的 `sessionStorage` token 在重新整理後還原；它不是永久資料，不能跨分頁、跨 session 或 origin 重啟重播，登出、到期或撤權時會清除。
 
 **可否直接用舊 SQLite 覆蓋目前資料庫？**  
 不可。必須在「系統設定」選擇已驗證快照，讓系統先建立安全快照，再執行原子還原及審計。
@@ -286,7 +286,7 @@ Worker 部署除 Viewer 管理所需的 `ADMIN_BEARER_TOKEN` 外，亦必須配�
 不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
 
 **目前可否在校外使用？**
-現有 v1.1 canonical 網站仍可按其已部署功能使用；v1.2 統一 Guest／Admin 工作台尚未部署。v1.2 上線前仍要核對完整 release report、已驗證備份、隔離還原、`/readyz`、管理員登入／登出、Guest 多分頁、長時間 WebSocket、檔案上載、PDF 及 Viewer。一般使用者毋須安裝 WARP；WARP 只保留作維護後備。
+可以。現有 canonical 網站在受控切換完成前仍由 v1.1 基線服務；v1.2 已通過 13／13 正式候選 gate，正依「新備份與隔離還原 → Windows origin → Access 路徑 → Worker → Admin／Guest／Viewer 抽查」次序發布。一般使用者毋須安裝 WARP；WARP 只保留作維護後備。
 
 **別人可否用 Viewer 連結編輯週表？**
 不可。分享連結永遠唯讀；網址參數、瀏覽器標頭或畫面操作都不能把訪客升級為管理員。只有 Access policy 內的管理員身份通過驗證後，Worker 才轉送完整工作台。
@@ -338,9 +338,9 @@ python -m playwright install chromium
 python -X utf8 scripts\verify_release_candidate.py
 ```
 
-驗證器自行建立暫存 SQLite、備份及日誌路徑，依次執行 12 道閘門：版本庫衛生、安全掃描、Cloudflare Worker Deno 契約、完整 Python 測試、Python 編譯、依賴完整性、桌面 NiceGUI smoke、跨頁效能／記憶體穩定性、整條虛構資料寫入／PDF／替補／交接／另一資料庫還原、獨立手機適應驗證、嚴格部署就緒，以及「資料已提交但備份失敗」復原演練。每個瀏覽器階段停機後亦會檢查伺服器終端；console error、`pageerror`、`ERROR`、`CRITICAL`、traceback 或未取回的 task exception 均會令發布候選失敗，而不會把原始終端內容複製到報告。兩份 PDF 會直接解析並核對已發布狀態、五個上課日、所有中文姓名及四個 202 室關閉格。它不會採用 `.env` 內的正式資料路徑；結果寫入 `logs/release-candidate-report.json`，並明確標示仍需真人驗收。任何一關失敗，整體狀態均為 `fail`，不可視為發布候選通過。
+驗證器自行建立暫存 SQLite、備份及日誌路徑，依次執行 13 道閘門：版本庫衛生、安全掃描、Cloudflare Worker Deno 契約、完整 Python 測試、Python 編譯、依賴完整性、桌面 NiceGUI smoke、跨頁效能／記憶體穩定性、整條虛構資料寫入／PDF／替補／交接／另一資料庫還原、獨立手機適應驗證、嚴格部署就緒、統一 Guest 隔離，以及「資料已提交但備份失敗」復原演練。每個瀏覽器階段停機後亦會檢查伺服器終端；console error、`pageerror`、`ERROR`、`CRITICAL`、traceback 或未取回的 task exception 均會令發布候選失敗，而不會把原始終端內容複製到報告。兩份 PDF 會直接解析並核對已發布狀態、五個上課日、所有中文姓名及四個 202 室關閉格。它不會採用 `.env` 內的正式資料路徑；結果寫入 `logs/release-candidate-report.json`，並明確標示仍需真人驗收。任何一關失敗，整體狀態均為 `fail`，不可視為發布候選通過。
 
-交接頁會把機器報告與目前可部署 runtime、遷移、依賴、Cloudflare Worker／設定、Windows 主機操作及正式證據閘門的 SHA-256 指紋重新比對。報告缺失、失敗、格式不可信或這些發布輸入改動後過期時，均不會顯示為通過；文件、測試或 CI 文字本身不會把已證實的 runtime 誤標為過期。即使目前 12 項檢查全部通過，畫面仍保留首席導學風紀及教師顧問的真人驗收責任。
+交接頁會把機器報告與目前可部署 runtime、遷移、依賴、Cloudflare Worker／設定、Windows 主機操作及正式證據閘門的 SHA-256 指紋重新比對。報告缺失、失敗、格式不可信或這些發布輸入改動後過期時，均不會顯示為通過；文件、測試或 CI 文字本身不會把已證實的 runtime 誤標為過期。即使目前 13 項檢查全部通過，畫面仍保留首席導學風紀及教師顧問的真人驗收責任。
 
 `repository_hygiene` 只輸出類別與數量，不顯示檔名或內容。它會阻擋沒有 commit 歷史、即時 `.env`、運行中 SQLite／備份／日誌、PDF／ZIP、匯入名單及操作者自訂音樂，亦會阻擋尚未加入 Git 索引的發布敏感程式、遷移、Cloudflare、設定或交接文件，並核對 `.gitignore` 仍保留資料邊界。`security_gates` 另外核對鎖定依賴漏洞、中高風險程式問題，以及 Python／Worker／設定檔的秘密候選。只有經零筆營運資料檢查產生的 `archive/fictional-data/` 快照及已審閱的根目錄內置音樂可進入版本庫；虛構封存不能成為繞過即時資料邊界的方法。
 
@@ -374,7 +374,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The v1.2 candidate uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. `SING_YIN_UNIFIED_GUEST` remains off until the complete release and Cloudflare gates pass. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
+The verified v1.2 candidate uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The 2026-07-17 candidate passed all 13 formal gates; `SING_YIN_UNIFIED_GUEST` remains off only until the controlled host, Access-policy, Worker-secret, and live acceptance sequence completes. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 

@@ -2,7 +2,7 @@
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
-> **v1.2 交接狀態：** 統一 Admin／Guest 來源候選尚未完成正式 gate、合併、標籤或部署。`C:\SingYinRoster` 仍是 v1.1 運行基線，`SING_YIN_UNIFIED_GUEST` 預設為 `0`。本手冊的統一 Guest 步驟只在 v1.2 受控發布後生效。
+> **v1.2 交接狀態：** 統一 Admin／Guest 候選已具備 13 道正式 gate；最終來源凍結後仍須產生相符報告，再依次完成正式備份／隔離還原、不可變標籤、Windows origin、Access `/auth/login`、Worker secrets 及線上抽查。`C:\SingYinRoster` 在切換完成前仍是 v1.1 回退基線。
 
 ## 運作原則
 
@@ -84,7 +84,7 @@ JSON 是唯讀報告證據，不是 SQLite 還原備份。需要交接或復原�
 
 受控技術維護可使用 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。正式設定只接受 Ed25519 金鑰、只監聽 loopback，並拒絕密碼、轉發及公開 TCP 22。`SingYinRosterSvc` 仍是非互動網站執行帳戶，不可用作 SSH 登入；SSH 私鑰亦不可放入 Git、交接備份、日誌或雲端同步資料夾。
 
-需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。訪客不登入；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 只在 `/auth/login` 核對 Access JWT，之後以獨立簽署的第一方管理員 session 驗證每個請求，再透過 Workers VPC 與具名 Tunnel 連到 NiceGUI。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
+需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。v1.2 啟用後，訪客不需輸入電郵或密碼，只按「訪客體驗」建立有限期 Guest session；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 驗證相應 session 後，以獨立 HMAC principal 把 Guest／Admin 送到同一 NiceGUI origin；origin 再分流至虛構記憶體 adapter 或正式 workflow。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
 
 ### 交接前練習模式
 
@@ -98,8 +98,9 @@ JSON 是唯讀報告證據，不是 SQLite 還原備份。需要交接或復原�
 
 - 正式模式第一次啟動只建立已遷移的空白資料庫，不會自動載入示範名單。空白「導學風紀名單」是正確的首次狀態；只可由首席導學風紀核對後匯入真正名單。
 - Practice Mode 保留虛構 seed、獨立 SQLite、審計、備份及還原，供繼任者完整演練。
-- 公開 `/try` 不是 Practice Mode。它只在瀏覽器分頁使用固定虛構中文姓名，30 分鐘後失效，可試請假、生成、預覽及下載雙語 A4 橫向 PDF；它不連接應用 API、KV、VPC、NiceGUI、SQLite、公平帳本、備份或伺服器日誌。
-- `/try` 的下載檔只因訪客主動保存而存在；試用狀態不能發布、不能建立 Viewer 連結、不能轉入正式資料或成為公平／服務證據。
+- v1.2 Guest 不是 Practice Mode，也不是另一套 `/try` 靜態產品。`/guest`、`/try` 只作兼容重定向；Guest 使用同一 NiceGUI 路由，但只連到固定虛構中文姓名的程序記憶體 workspace，30 分鐘後失效。
+- Guest 可示範請假、生成、手動修改、發布、雙語 PDF／JSON、發布後請假調整及公平說明；AI、匯入、上載、正式備份／還原、Viewer 分享及永久設定仍由服務層拒絕。每個分頁的最新狀態只以已簽署、綁定 session／workspace／tab 的 token 放在 `sessionStorage`，還原時須核對當次連線 nonce；它不能寫正式 SQLite、公平帳本、備份或外部整合。
+- Guest 下載是一次性、`DEMO` 標示及 `no-store`；下載檔只因訪客主動保存而存在，不能轉入正式資料或成為公平／服務證據。
 
 ### 一次性退休舊示範資料（只供受控 IT 維護）
 
@@ -145,7 +146,7 @@ python -X utf8 -m nicegui_app.main
 
 3. `SING_YIN_OPEN_BROWSER` 預設為 `true`，令首次開啟更直接；受控或無介面運行可設為 `false`。
 4. 只使用 `http://127.0.0.1:8080`；現時程式刻意只綁定 localhost。
-5. 完成一批更新後先執行 `python -X utf8 scripts\verify_update.py`。它會按 Git 變更自動選擇 `docs`、`tests`、`assurance`、`worker` 或 `full`，並顯示執行及略過理由；未知路徑一律升級，不會靜默少驗證。只有正式 runtime、政策、資料庫、依賴、Worker、Windows 主機或正式證據閘門改動，才需要先安裝 `requirements-dev.lock`、Chromium 及 Deno，再由同一命令啟動完整 `verify_release_candidate.py`。完整入口共有 12 道閘門：Git 邊界、安全掃描、Cloudflare Worker Deno 契約、完整 Python 測試、編譯、依賴、桌面 UI、跨頁效能／記憶體、隔離寫入／PDF／還原、手機適應、嚴格部署就緒及備份失敗復原。它自行建立臨時資料庫、備份及日誌，絕不採用正式學校資料路徑；只有 `logs/release-candidate-report.json` 的 12 項均為 `pass` 且 runtime 指紋仍相符，才算機器驗證完成。文件、測試及 CI 改動另有聚焦證據，不會令已證實的 runtime 誤報過期；詳細矩陣見 `docs/UPDATE_WORKFLOW.md`。這不能取代下方的人手驗收。
+5. 完成一批更新後先執行 `python -X utf8 scripts\verify_update.py`。它會按 Git 變更自動選擇 `docs`、`tests`、`assurance`、`worker` 或 `full`，並顯示執行及略過理由；未知路徑一律升級，不會靜默少驗證。只有正式 runtime、政策、資料庫、依賴、Worker、Windows 主機或正式證據閘門改動，才需要先安裝 `requirements-dev.lock`、Chromium 及 Deno，再由同一命令啟動完整 `verify_release_candidate.py`。目前完整入口共有 13 道閘門：Git 邊界、安全掃描、Cloudflare Worker Deno 契約、完整 Python 測試、編譯、依賴、桌面 UI、跨頁效能／記憶體、隔離寫入／PDF／還原、手機適應、嚴格部署就緒、統一訪客隔離及備份失敗復原。它自行建立臨時資料庫、備份及日誌，絕不採用正式學校資料路徑；只有 `logs/release-candidate-report.json` 的所有項目均為 `pass` 且 runtime 指紋仍相符，才算機器驗證完成。文件、測試及 CI 改動另有聚焦證據，不會令已證實的 runtime 誤報過期；詳細矩陣見 `docs/UPDATE_WORKFLOW.md`。這不能取代下方的人手驗收。
    `D:\code_v3` 是開發及驗證副本，`C:\SingYinRoster` 是目前工作排程器實際執行的安裝副本；修改前者不會自動更新後者。完成驗證後仍須依 Windows 專用主機手冊第 12 節備份、停止、更新、重新啟動及核對，否則瀏覽器會繼續顯示舊版。
 6. 不要在 `verify_update.py` 或完整 verifier 通過後再重跑同一套 hygiene／security；它們已由所選 profile 擁有。只有單獨調查某一道閘門時才直接執行相應腳本。發布前仍須人工閱讀 `git status --short`，不可用未核對的 `git add -A`；沒有真正 commit 歷史、被追蹤的運行資料，或尚未加入 Git 的發布敏感程式／遷移／Cloudflare／設定／交接文件，都會由 repository hygiene 阻擋。
 

@@ -18,6 +18,8 @@
   "vars": {
     "ACCESS_TEAM_DOMAIN": "https://restless-hall-73b2.cloudflareaccess.com",
     "ACCESS_AUD": "18a2123a23669de9c23ef344b45dfd87c6323e610e77376b5e21f75edb1bed7b", // pragma: allowlist secret -- public Access application audience ID
+    "AUTH_EPOCH": 1,
+    "ORIGIN_PRINCIPAL_KID": "origin-v1",
     "ADMIN_IDENTITY_ALLOWLIST": {
       "emails": [
         "s10777@syss.edu.hk",
@@ -29,7 +31,9 @@
   "secrets": {
     "required": [
       "ADMIN_BEARER_TOKEN",
-      "ADMIN_SESSION_SECRET"
+      "ADMIN_SESSION_SECRET",
+      "GUEST_SESSION_SECRET",
+      "ORIGIN_PRINCIPAL_SECRET"
     ]
   },
   "kv_namespaces": [

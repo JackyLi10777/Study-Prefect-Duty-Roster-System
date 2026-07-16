@@ -29,6 +29,8 @@ def test_motion_runtime_is_purposeful_interruptible_and_reduced_motion_safe() ->
     assert "prefers-reduced-motion: reduce" in motion
     assert "window.gsap.matchMedia()" in motion
     assert "window.__disposeSingYinMotion = dispose" in motion
+    assert "element.dataset.syMotionComplete = 'true'" in motion
+    assert "onComplete: complete" in motion
     assert "mutationObserver?.disconnect()" in motion
     assert "intersectionObserver?.disconnect()" in motion
     assert "new AbortController()" in motion

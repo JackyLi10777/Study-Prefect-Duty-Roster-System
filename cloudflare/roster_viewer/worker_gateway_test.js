@@ -748,6 +748,82 @@ Deno.test('POST logout clears both gateway identities and public status stays da
   assert(cookies.match(/Max-Age=0/g)?.length >= 2);
 });
 
+Deno.test('authenticated logout revokes admin and guest origin sessions before clearing cookies', async () => {
+  const env = accessEnvironment('sing-yin-runtime-revocation-order');
+  const nowSeconds = Math.floor(Date.now() / 1_000);
+  const credentials = [
+    {
+      mode: 'admin',
+      cookie: await adminSessionCookiePair(
+        env,
+        env.ADMIN_IDENTITY_ALLOWLIST.emails[0],
+        nowSeconds + 600,
+      ),
+    },
+    {
+      mode: 'guest',
+      cookie: await guestSessionCookiePair(env),
+    },
+  ];
+  const observed = [];
+  env.ROSTER_ORIGIN = {
+    fetch(request) {
+      observed.push({
+        method: request.method,
+        url: request.url,
+        principal: signedPayload(
+          request.headers.get('X-Sing-Yin-Origin-Principal') || '',
+        ),
+      });
+      return new Response(null, { status: 204 });
+    },
+  };
+
+  for (const credential of credentials) {
+    const response = await worker.fetch(new Request('https://gateway.example/auth/logout', {
+      method: 'POST',
+      headers: {
+        Cookie: credential.cookie,
+        Origin: 'https://gateway.example',
+        'Sec-Fetch-Site': 'same-origin',
+      },
+    }), env, { waitUntil() {} });
+    assertEquals(response.status, 303);
+    assert((response.headers.get('Set-Cookie') || '').includes('Max-Age=0'));
+  }
+
+  assertEquals(observed.length, 2);
+  for (let index = 0; index < observed.length; index += 1) {
+    assertEquals(observed[index].method, 'POST');
+    assertEquals(observed[index].url, 'http://127.0.0.1:8080/api/auth/session/revoke');
+    assertEquals(observed[index].principal.mode, credentials[index].mode);
+    assertEquals(observed[index].principal.request_binding.length > 20, true);
+  }
+});
+
+Deno.test('authenticated logout fails closed when origin revocation is not confirmed', async () => {
+  const env = accessEnvironment('sing-yin-runtime-revocation-failure');
+  const guestCookie = await guestSessionCookiePair(env);
+  env.ROSTER_ORIGIN = {
+    fetch() {
+      return new Response('not revoked', { status: 503 });
+    },
+  };
+
+  const response = await worker.fetch(new Request('https://gateway.example/auth/logout', {
+    method: 'POST',
+    headers: {
+      Cookie: guestCookie,
+      Origin: 'https://gateway.example',
+      'Sec-Fetch-Site': 'same-origin',
+    },
+  }), env, { waitUntil() {} });
+
+  assertEquals(response.status, 503);
+  assertEquals((await response.json()).error, 'logout_temporarily_unavailable');
+  assertEquals(response.headers.get('Set-Cookie'), null);
+});
+
 Deno.test('cancels an oversized chunked public viewer request before buffering the full body', async () => {
   let cancelled = false;
   let emitted = 0;

@@ -9,6 +9,7 @@ from nicegui_app.ui.theme import sound_feedback_enabled
 
 
 SOUND_KINDS = {"navigation", "working", "success", "attention"}
+VISUAL_FEEDBACK_KINDS = SOUND_KINDS | {"error"}
 MUSIC_AUTOPLAY_STORAGE_KEY = "music_autoplay"
 DEFAULT_MUSIC_AUTOPLAY = True
 
@@ -102,6 +103,17 @@ def play_interface_sound(kind: str, *, force: bool = False) -> None:
           }}
         }})();
         """
+    )
+
+
+def emit_interface_feedback(kind: str) -> None:
+    """Emit one visual-only state response, including silent error feedback."""
+    if kind not in VISUAL_FEEDBACK_KINDS:
+        raise ValueError(f"Unknown interface feedback: {kind}")
+    ui.run_javascript(
+        "window.dispatchEvent("
+        f"new CustomEvent('sy:feedback', {{detail: {{kind: {kind!r}}}}})"
+        ");"
     )
 
 

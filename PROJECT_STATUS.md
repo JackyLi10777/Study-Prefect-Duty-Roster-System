@@ -2,13 +2,13 @@
 
 **Last Updated:** 2026-07-17
 **Project Root:** `D:\code_v3`  
-**Current Phase:** v1.2 unified Admin／Guest source candidate on `codex/unified-guest-redesign`; formal gates, merge, release tag and controlled deployment remain
+**Current Phase:** v1.2 unified Admin／Guest frozen source passed its matching 13-gate report; controlled Windows／Cloudflare rollout is in progress
 **Primary Theme Color:** `#0F766E`
 
 **Windows SSH maintenance (2026-07-17):** OpenSSH Server is installed on `LAPTOP-NQ22TI3V` and runs automatically. The hardened service accepts only the `lichu` Ed25519 maintenance key, listens only on `127.0.0.1:22` and `[::1]:22`, disables password and interactive authentication plus all forwarding, and leaves the Windows OpenSSH inbound firewall rule disabled. A real key-only SSH session returned the administrator identity and confirmed official application and database health; a password-only probe was rejected with `Permission denied (publickey)`. Evidence is stored in `logs/windows-ssh-verification.json`. Off-device SSH through a separate Cloudflare private route remains an explicit future step and is not yet claimed.
 
 **Repository:** `JackyLi10777/Study-Prefect-Duty-Roster-System`  
-**Branches:** `codex/unified-guest-redesign` (current candidate), `main` (deployed v1.1 baseline source), `nicegui-self-hosted` (platform snapshot), `streamlit-cloud` (legacy reference)
+**Branches:** `codex/unified-guest-redesign` (verified v1.2 candidate), `main` (v1.1 deployed rollback source until promotion), `nicegui-self-hosted` (platform snapshot), `streamlit-cloud` (legacy reference)
 
 **Co-creators:** LI Chuangjie Jacky（李創杰）and Codex only. `Study Prefect Systems & Stewardship Office` is their two-member project identity; no additional developer or contractor contributed to this NiceGUI rebuild and formal release.
 
@@ -20,9 +20,9 @@ This is a fresh, local-first rebuild of the Sing Yin Study Prefect Duty Roster S
 
 - `SING_YIN_UNIFIED_GUEST` remains disabled by default. A verified Guest principal is rejected by the origin while the flag is `0`.
 - Signed Worker-to-origin principals, deny-by-default capabilities, per-client Guest workspaces, session expiry/revocation monitoring, one-shot `DEMO` downloads, process locking, `/readyz`, v1.2 persistence tables, command receipts, backup obligations and the external-share outbox exist in the source candidate.
-- The Guest snapshot codec exists and is covered for integrity, binding, expiry, size, revision and replay. The browser bridge which persists and restores the latest signed snapshot through `sessionStorage` is still a release gate.
-- Focused tests are being added and run during implementation, but this status does **not** claim that the final full suite or `scripts/verify_release_candidate.py` has passed for the current source fingerprint.
-- `C:\SingYinRoster` and the canonical Worker remain the deployed v1.1 baseline until a verified backup, isolated restore, full release report, supervised browser acceptance, merge and release tag have completed.
+- The Guest snapshot codec and browser bridge now exist in the source candidate. Each meaningful revision is pushed only to the connected tab as a signed `sessionStorage` token; restore requires the live connection nonce and exact SID／workspace／tab binding. Duplicate tabs receive new workspaces, while copied, tampered, expired, stale or old-boot tokens are rejected in favour of the safe fixture.
+- The frozen 2026-07-17 source passed 13／13 formal checks with fingerprint `6b526bccd3e90106660b9ecab2195a22343e31b57d99b107e05904d414ec919d` across 256 release inputs. Evidence covers the complete Python suite, Worker contracts, dependency integrity, desktop/mobile UI, performance, full write/PDF/fairness/backup/restore flow, readiness, unified Guest isolation, and committed-without-backup recovery. The report at `logs/release-candidate-report.json` finished at `2026-07-17T05:29:46+08:00`; machine verification is no longer a rollout blocker.
+- `C:\SingYinRoster` and the canonical Worker remain the healthy deployed v1.1 rollback baseline only until the fresh production backup, isolated restore, immutable v1.2 release ref, Windows origin, Access-path, Worker-secret, and live acceptance sequence completes.
 - v1.2 documentation: [Unified guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md), [Canonical site guide](docs/PUBLIC_ROSTER_VIEWER.md), [Cloudflare rollout](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), and [Deployment decision](docs/DEPLOYMENT_DECISION.md).
 
 The current Head Study Prefect is the normal daily operator. The teacher advisor mainly reviews published results, fairness, recovery, and handover evidence after completion rather than operating the weekly workflow day to day.
@@ -52,18 +52,18 @@ The deployment decision remains a dedicated Windows 11 host whose NiceGUI origin
 - NiceGUI verification of signature, expiry, `auth_epoch` and `kid`.
 - `GuestWorkspaceRegistry` limits: 30 minutes, 24 sessions, four tabs per session, 40 fictional prefects, four weeks, 256 KiB snapshot, 5 MiB download and 60 commands/minute.
 - Same-route `GuestWorkspaceAdapter`, session-scoped preferences, one-shot `no-store` downloads and cross-tab logout cleanup.
+- Signed browser snapshot save／restore, live-connection nonce binding, safe invalid-token fallback and duplicate-tab workspace reallocation.
 - Database-path process lock before migration.
 - Alembic v1.2 schema: leave version, operation command receipts, backup obligations, external share outbox, audit actor/command/request fields and active Chinese-name uniqueness.
 - Version and command inputs on critical interactive writes; pending backup obligations are repaired on startup or place `/readyz` in degraded state.
 - External share intent is bound to roster version/digest through a durable outbox.
 
-### Still gated or pending
+### Controlled rollout steps still pending
 
-- Browser save/restore of signed Guest snapshots through `sessionStorage`, including duplicate-tab reallocation.
-- Complete service-level capability matrix and import-boundary proof for every Guest route.
-- Final Admin／Guest browser route parity, multi-user/multi-tab, expiry, revocation, cross-download, crash and memory-growth evidence.
-- Full `python -X utf8 -m pytest -q` and `python -X utf8 scripts/verify_release_candidate.py` against the final source fingerprint.
-- Verified formal backup, isolated restore, supervised Cloudflare acceptance, `v1.2.0-rc.1`, merge to `main`, Windows bundle update and Worker rollout.
+- Fresh verified formal backup and isolated restore against the current production database.
+- Immutable `v1.2.0-rc.1`, promotion to `main`, one elevated Windows bundle update, `/healthz`／`/readyz`, and retained rc.16 rollback evidence.
+- Access policy must be narrowed from the currently deployed v1.1 `/auth/*` scope to exact `/auth/login`, without intercepting Guest start/status/logout.
+- Worker Guest／origin signing secrets, staged Worker rollout, then live Admin／Guest／Viewer and long-WebSocket acceptance.
 
 ### Deployed v1.1 baseline evidence
 
@@ -141,6 +141,8 @@ The 2026-07-16 verification-efficiency refinement is complete in the source repo
 - Removed white crest tiles in both appearances while preserving the supplied PNG alpha. Navigation and co-creation crests now sit on transparent surfaces with restrained shape-aware shadows; PDF crest rendering is unchanged.
 - Added a user-supplied creator identity block to the `/platform` co-creation conclusion: the original Ichthys avatar and Greek confession banner, `李創杰 · LI Chuangjie, Jacky`, and the centrally owned canonical Instagram destination now form one responsive semantic profile. The files are foreground content media rather than backgrounds, carry bilingual alternatives and intrinsic dimensions, use safe external-link attributes, remain outside operational/PDF surfaces, and receive independently checked light/dark surrounding treatment.
 - Hardened the local GSAP runtime lifecycle. Pointer light is limited to genuine interactive/editorial surfaces, current bounds are read after scroll, pointer listeners are abortable, removed NiceGUI nodes are cleaned up, observers and global feedback listeners have an idempotent disposer, and live reduced-motion/fine-pointer changes are owned by `gsap.matchMedia()`.
+- Added one shared semantic icon-interaction layer across buttons, tabs and clickable navigation. Stable action roles now give matching save, publish, edit, transfer, download, refresh and attention icons the same hover, keyboard-focus, press, busy, disabled and one-shot result behaviour on every route; static team／architecture／metric cards move only their explanatory icon, and reduced-motion removes the transforms. This uses the existing observer lifecycle and CSS state selectors rather than per-control event listeners.
+- Added a paired local material layer so the product no longer relies on flat white／charcoal rectangles for its sense of finish. Same-geometry light／dark paper fibre and linen weave now enrich the page ground, header, sidebar, Weekly Pulse, Daily Verse, handover／engineering heroes and bounded non-sensitive editorial evidence cards. Opacity is reduced on phones and under reduced-transparency preference; forms, fields, tables, roster／prefect cards, fairness data, warnings, export controls and PDFs are explicitly excluded and tested.
 - Advanced the interface to the adaptive **Quiet Precision / 安靜精準** layer: removed the runtime electric-blue override, introduced semantic 90/180/260 ms motion tokens, grouped header utilities into a solid accessible dock, changed the current navigation state to a restrained position rail plus text weight, raised primary controls to a 44 px target, and paired the slate action treatment across light/dark modes. Browser-computed colour checks now keep light and dark primary actions distinct from teal status and retain at least 4.5:1 white-text contrast. The change preserves reduced motion and removes hydration-time colour flash without touching policy or persistence.
 - Added `Professional_Design_System.md` as the active source of truth for the original Apple-inspired, non-liquid-glass visual language. It records the current design diagnosis, Weekly Pulse signature, token roles, type, surfaces, motion, accessibility gates, implementation phases, and governance for future UI work.
 - Added two original, non-identifying atmosphere assets for the Daily Verse and Weekly Pulse workbench only. Solid readability layers, dark-mode opacity rules, and no-table/no-button/no-PDF restrictions keep imagery supportive rather than template-like or distracting.
@@ -243,7 +245,7 @@ The 2026-07-16 verification-efficiency refinement is complete in the source repo
 - The earlier 2026-07-14 mobile-login incident build passed its then-current Python／Deno checks and confirmed the One-time PIN form, guest routes and administrator action at 390 px. Worker version `87f6d774-ddeb-474b-aa43-28e09de18b5e` from that incident is now superseded by the canonical version recorded near the top of this document. The remaining proof is still the operator-entered email code and authenticated NiceGUI browser workflow; no inbox or code is accessed by automation.
 - Replacement-host preparation was exercised on Windows with Python 3.12.10: the script recovered from a missing `py.exe` launcher by using `python.exe`, created the project `.venv`, installed production/development requirements and Playwright Chromium, preserved loopback local mode, and installed `cloudflared` 2026.7.1 without activating a Tunnel. The complete 8/8 release candidate then passed from the new `.venv`.
 - Practice Mode browser verification passed against `data/practice/e2e/` only. It verified `applicationMode=practice`, a persistent bilingual text banner, distinct readable light/dark treatments, 390px normal-flow layout, clean console, and refreshed screenshots under `output/playwright/practice-mode/`; the isolated database, backups, logs, and storage secret were then removed after a resolved-path boundary check.
-- Release candidate is rerun after every release-sensitive UI or documentation change across twelve gates: repository hygiene, supply-chain security, Cloudflare Worker Deno contracts, the complete Python suite, Python compilation, dependency integrity, full NiceGUI browser smoke, measured runtime performance and cross-route leak checks, fictional-data write/PDF/restore pipeline, adaptive-phone browser verification, strict deployment readiness, and partial-backup recovery. The last complete fingerprint and file count remain recorded in `logs/release-candidate-report.json`; any later release-sensitive working-tree change makes that report stale until all twelve gates are rerun. Cloudflare JavaScript／JSONC, Practice Mode launch wrappers, Windows deployment scripts, semantic colour system, Markdown handover documents, CSS, and PNG/SVG/WebP interface assets are included in that staleness boundary.
+- The current release candidate uses thirteen gates: repository hygiene, supply-chain security, Cloudflare Worker Deno contracts, the complete Python suite, Python compilation, dependency integrity, full NiceGUI browser smoke, measured runtime performance and cross-route leak checks, fictional-data write/PDF/restore pipeline, adaptive-phone browser verification, strict deployment readiness, unified Guest isolation, and partial-backup recovery. The last complete fingerprint and file count remain recorded in `logs/release-candidate-report.json`; changes to deployable runtime, dependencies, built-in assets/music, Cloudflare, selected Windows host-operation scripts or formal evidence gates make that report stale. Ordinary documentation, tests, CI definitions and the fast classifier retain focused verification without changing the deployed-runtime fingerprint.
 - The 2026-07-13 visual and release regression verified that dark mode selects `sidebar-stewardship-dark-v1.webp` in the same sidebar slot as the light asset, with a dedicated translucent near-black veil that keeps navigation readable while exposing the dark paper/notebook material. Desktop light/dark and phone screenshots, console checks, 320/360/390 px assertions, motion teardown, and the complete Python suite pass. Runtime measurement remained bounded at about 1.19 MiB initial transfer, +0.47 MiB heap, +0 DOM nodes, and +0 listeners; the isolated write/PDF/restore and partial-backup recovery drills also pass.
 - Browser release scripts now fail on uncaught `pageerror` as well as console errors. Runtime performance also measures representative route navigation followed by return to the Dashboard, so bounded music-panel reuse cannot hide heap／DOM／listener growth caused by page lifecycle teardown.
 - Double-click launcher verification passed: the real `.cmd` entry point returned exit code 0 while reusing an existing local service; an occupied test port moved the application to the next free port, reached HTTP 200, opened the exact URL, and a second launch reused that port without creating another NiceGUI process. Test processes were stopped after verification.
@@ -333,12 +335,11 @@ revision; they do not supersede the v1.2 release truth at the top of this file.
 
 ## Next Steps
 
-1. Complete the signed Guest snapshot browser bridge and prove refresh, duplicate-tab reallocation, expiry, logout, revocation and restart invalidation.
-2. Complete the Admin／Guest route-parity, capability-bypass, multi-user／multi-tab, cross-download, outbox retry, backup-crash and heap-growth browser evidence using isolated SQLite, backup and log paths.
-3. Run `python -X utf8 -m pytest -q` and `python -X utf8 scripts/verify_release_candidate.py`; regenerate the release report only after the final source and documentation settle.
-4. Create a new verified official backup and complete isolated restore, then perform supervised Cloudflare Admin／Guest／Viewer acceptance.
-5. Only after all gates pass: merge to `main`, create `v1.2.0-rc.1`, update the Windows bundle under maintenance, verify `/healthz`／`/readyz`, stage the Worker, and finally enable `SING_YIN_UNIFIED_GUEST=1`.
-6. Retain the existing v1.1 host bundle and Worker version as the rollback target until formal human acceptance is signed off.
+1. Correct the v1.2 environment/Worker secret manifest and use the generic fail-closed Windows rollout script.
+2. Promote the verified source to `main` and an immutable `v1.2.0-rc.1` reference.
+3. Create a fresh verified official backup, complete isolated restore, update the Windows bundle once under UAC, and verify `/healthz`／`/readyz`.
+4. Narrow Cloudflare Access to the Admin handoff, install Guest／origin signing secrets, deploy the Worker, and enable `SING_YIN_UNIFIED_GUEST=1` only after both sides agree.
+5. Complete live Admin／Guest／Viewer smoke checks and preserve the v1.1 host/Worker as rollback until formal human acceptance is signed off.
 
 ## Key Decisions and Architecture
 
@@ -352,7 +353,7 @@ revision; they do not supersede the v1.2 release truth at the top of this file.
 | Localization | Traditional Chinese default; English is a full UI counterpart; direct Scripture quotations use RCUV 2010（神版）and NKJV respectively |
 | Theme | Professional Teal `#0F766E`, restrained gold, light/dark support |
 | Responsive presentation | One URL, login, route set, data and policy engine; desktop and phone use independent arrangements from shared view models, never a second mobile site or user-agent-routed application |
-| External access | v1.2 candidate: one canonical workers.dev hostname; public `/` entrance; signed Guest session → VPC → same NiceGUI routes backed by an in-memory adapter; exact-email One-time PIN → signed Admin session → official workflow; `/guest` and `/try` compatibility redirects; separate encrypted `/view#…` Viewer. NiceGUI remains loopback and `SING_YIN_UNIFIED_GUEST=0` until formal gates pass. |
+| External access | v1.2 verified candidate: one canonical workers.dev hostname; public `/` entrance; signed Guest session → VPC → same NiceGUI routes backed by an in-memory adapter; exact-email One-time PIN → signed Admin session → official workflow; `/guest` and `/try` compatibility redirects; separate encrypted `/view#…` Viewer. NiceGUI remains loopback and `SING_YIN_UNIFIED_GUEST=0` until the controlled live switchover completes. |
 | Optional online music | Visible YouTube public-playlist player; no sign-in/payment/API key for playback, optional local-environment API key for search |
 | PDF export | Local-memory ReportLab generation with a Traditional Chinese CJK font; no public upload |
 
@@ -367,8 +368,8 @@ Important boundaries:
 
 | Risk | Status | Mitigation |
 |---|---|---|
-| v1.2 source is not deployed | Open release gate | Keep the existing v1.1 host／Worker as the official baseline; do not enable the feature flag until the final report, backup, restore and supervised acceptance pass |
-| Signed Guest snapshot is not yet wired to browser save/restore | Open implementation gate | Complete the `sessionStorage` bridge and duplicate-tab/replay tests; until then, do not promise Guest refresh persistence |
+| v1.2 is verified but not yet live | Controlled deployment gate | Keep the existing v1.1 host／Worker active until the fresh backup, isolated restore, origin, Access and Worker sequence passes |
+| Signed Guest snapshot bridge | Resolved in verified candidate | Same-tab refresh, duplicate-tab allocation, nonce binding, replay rejection and cleanup are included in the 13-gate report |
 | Guest and Admin share page renderers | Managed by capability boundary | Deny by default in `PageContext`, adapter and services; keep dependency-boundary and direct-service bypass tests in the formal gate |
 | Canonical Access/VPC gateway is live but not yet fully human-accepted | Managed acceptance | Guest/viewer desktop, dark and mobile evidence plus Access-JWT／signed-session／VPC／WebSocket automation pass; keep localhost/WARP as maintenance fallback until the exact-email One-time PIN login/logout, reconnect, upload, PDF and isolated full write flow are signed off |
 | Adaptive phone shell has automated browser evidence but not physical-device sign-off | Managed acceptance | The isolated 320px, 390px and landscape touch matrix passes with shared routes/models; repeat keyboard, rotation and real safe-area checks on iPhone Safari and Android Chrome during formal acceptance |

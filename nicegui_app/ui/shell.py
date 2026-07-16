@@ -83,14 +83,19 @@ def _sign_out() -> None:
               });
             } catch {}
             try {
-              await fetch('/auth/logout', {
+              const response = await fetch('/auth/logout', {
                 method: 'POST',
                 credentials: 'same-origin',
                 cache: 'no-store',
                 keepalive: true,
                 headers: {'Accept': 'application/json'},
               });
-            } catch {}
+              if (!response.ok) throw new Error(`logout ${response.status}`);
+            } catch {
+              document.body.dataset.syLogout = 'retry-required';
+              window.alert('未能安全完成登出，請稍後再試。\\nSecure sign-out could not be completed. Please retry.');
+              return;
+            }
             window.location.replace('/');
           })();
         })();
@@ -262,7 +267,7 @@ def _install_auth_status_monitor(access_mode: AccessMode, expires_at) -> None:  
 
           const controller = new AbortController();
           const tabId = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
-          const channel = expectedMode === 'guest' && 'BroadcastChannel' in window
+          const channel = 'BroadcastChannel' in window
             ? new BroadcastChannel('sing-yin-guest-session-v1')
             : null;
           let intervalId = 0;
@@ -302,6 +307,48 @@ def _install_auth_status_monitor(access_mode: AccessMode, expires_at) -> None:  
             }
           };
 
+          const showLogoutRetry = () => {
+            document.body.dataset.syLogout = 'retry-required';
+            const main = document.getElementById('main-content');
+            if (main) {
+              main.setAttribute('inert', '');
+              main.setAttribute('aria-hidden', 'true');
+            }
+            let state = document.getElementById('sy-auth-exit-state');
+            if (!state) {
+              state = document.createElement('section');
+              state.id = 'sy-auth-exit-state';
+              state.setAttribute('role', 'alert');
+              state.setAttribute('aria-live', 'assertive');
+              state.innerHTML = `
+                <div class="sy-guest-capacity-card">
+                  <span class="sy-guest-capacity-mark" aria-hidden="true">安</span>
+                  <p class="sy-guest-capacity-kicker">SECURE SIGN-OUT · 安全登出</p>
+                  <h1>登出尚未安全完成</h1>
+                  <p>系統未能確認伺服器已撤銷這個工作階段，因此沒有假裝完成登出。請保持此頁開啟並重新嘗試。</p>
+                  <p lang="en">The server could not confirm that this session was revoked, so sign-out was not falsely reported as complete. Keep this page open and retry.</p>
+                  <div class="sy-guest-capacity-actions">
+                    <button id="sy-auth-exit-retry" type="button">重新登出 · Retry sign-out</button>
+                  </div>
+                </div>`;
+              document.body.appendChild(state);
+            }
+            document.getElementById('sy-auth-exit-retry')?.addEventListener(
+              'click',
+              () => {
+                state.remove();
+                if (main) {
+                  main.removeAttribute('inert');
+                  main.removeAttribute('aria-hidden');
+                }
+                invalidating = false;
+                invalidate({broadcast: false});
+              },
+              {once: true},
+            );
+            document.getElementById('sy-auth-exit-retry')?.focus();
+          };
+
           const invalidate = async ({broadcast = true} = {}) => {
             if (invalidating) return;
             invalidating = true;
@@ -319,14 +366,18 @@ def _install_auth_status_monitor(access_mode: AccessMode, expires_at) -> None:  
               } catch {}
             }
             try {
-              await fetch('/auth/logout', {
+              const response = await fetch('/auth/logout', {
                 method: 'POST',
                 credentials: 'same-origin',
                 cache: 'no-store',
                 keepalive: true,
                 headers: {'Accept': 'application/json'},
               });
-            } catch {}
+              if (!response.ok) throw new Error(`logout ${response.status}`);
+            } catch {
+              showLogoutRetry();
+              return;
+            }
             window.location.replace('/');
           };
 

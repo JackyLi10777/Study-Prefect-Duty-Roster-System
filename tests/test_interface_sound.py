@@ -23,6 +23,7 @@ def test_interface_sound_is_semantic_opt_in_and_ducks_music() -> None:
     music = (PROJECT_ROOT / "nicegui_app" / "ui" / "music.py").read_text(encoding="utf-8")
 
     assert 'SOUND_KINDS = {"navigation", "working", "success", "attention"}' in sound
+    assert 'VISUAL_FEEDBACK_KINDS = SOUND_KINDS | {"error"}' in sound
     assert "sound_enabled = force or sound_feedback_enabled()" in sound
     assert "new CustomEvent('sy:feedback'" in sound
     assert "music.volume = Math.max(0.02, base * 0.55)" in sound
@@ -33,6 +34,8 @@ def test_interface_sound_is_semantic_opt_in_and_ducks_music() -> None:
     assert 'play_interface_sound("success")' in pages
     assert 'play_interface_sound("working")' in pages
     assert 'play_interface_sound("navigation")' in pages
+    assert 'emit_interface_feedback("error")' in pages
+    assert 'emit_interface_feedback("attention")' in pages
     assert "mouseover" not in sound.lower()
     assert "pointerover" not in sound.lower()
     assert "audio_setup_seen" in music

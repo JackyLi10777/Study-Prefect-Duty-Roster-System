@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -154,9 +156,14 @@ def test_runtime_pushes_each_signed_revision_to_the_connected_tab(
     runtime._active_guest_client_by_workspace[("sid", "work")] = "client"
     runtime._guest_snapshot_nonces[("sid", "work")] = "N" * 32
     scripts: list[str] = []
-    monkeypatch.setattr(runtime.ui, "run_javascript", scripts.append)
+    client = SimpleNamespace(run_javascript=scripts.append)
+    monkeypatch.setattr(
+        runtime.ui,
+        "run_javascript",
+        lambda _script: pytest.fail("snapshot publish used the ambient UI context"),
+    )
 
-    runtime._publish_guest_snapshot("client", view)
+    runtime._publish_guest_snapshot(client, "client", view)
 
     assert len(scripts) == 1
     assert "__syGuestSnapshotBridge.accept" in scripts[0]
@@ -165,6 +172,35 @@ def test_runtime_pushes_each_signed_revision_to_the_connected_tab(
     assert '"revision":0' in scripts[0]
     token = registry.seal_snapshot(session_id="sid", workspace_id="work", tab_id="tab")
     assert token in scripts[0]
+
+
+def test_runtime_can_publish_a_guest_snapshot_from_a_worker_thread(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry = GuestWorkspaceRegistry(SECRET, boot_id="boot-a", clock=lambda: 1_000)
+    _isolated_runtime(monkeypatch, registry)
+    view = registry.create_workspace(session_id="sid", tab_id="tab", workspace_id="work")
+    runtime._active_guest_client_by_workspace[("sid", "work")] = "client"
+    runtime._guest_snapshot_nonces[("sid", "work")] = "N" * 32
+    scripts: list[str] = []
+    client = SimpleNamespace(run_javascript=scripts.append)
+    monkeypatch.setattr(
+        runtime.ui,
+        "run_javascript",
+        lambda _script: pytest.fail("worker thread used the ambient UI context"),
+    )
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        executor.submit(
+            runtime._publish_guest_snapshot,
+            client,
+            "client",
+            view,
+        ).result(timeout=5)
+
+    assert len(scripts) == 1
+    assert "__syGuestSnapshotBridge.accept" in scripts[0]
+    assert '"revision":0' in scripts[0]
 
 
 def test_shared_shell_uses_only_session_storage_for_signed_guest_snapshots() -> None:

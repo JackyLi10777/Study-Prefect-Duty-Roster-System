@@ -2538,6 +2538,16 @@ async function proxyToRosterOrigin(request, env, principal) {
   return await env.ROSTER_ORIGIN.fetch(originRequest);
 }
 
+async function notifyOriginSessionRevocation(request, env, principal) {
+  const revokeUrl = new URL('/api/auth/session/revoke', request.url);
+  const revokeRequest = new Request(revokeUrl.toString(), {
+    method: 'POST',
+    headers: request.headers,
+  });
+  const result = await proxyToRosterOrigin(revokeRequest, env, principal);
+  if (!result || result.status !== 204) throw new AccessValidationError('origin_logout_rejected');
+}
+
 function accessFailureResponse(status = 403, reference = '') {
   const headers = { 'Content-Type': 'text/html; charset=utf-8' };
   if (reference) headers['X-Sing-Yin-Support-Reference'] = reference;
@@ -3154,6 +3164,24 @@ async function route(request, env, context) {
   if (path === '/auth/logout') {
     if (request.method !== 'POST') return methodNotAllowed('POST');
     if (url.search || !authenticatedProxyRequestAllowed(request)) return accessFailureResponse();
+    let logoutPrincipal = null;
+    try {
+      logoutPrincipal = await gatewayPrincipalFromRequest(request, env);
+    } catch (error) {
+      if (isConfigurationError(error)) return jsonResponse({ error: 'service_unavailable' }, 503);
+      // An invalid or expired gateway cookie has no usable origin session.
+      // Clear it locally without claiming that a valid session was revoked.
+      return authLogoutResponse(request.url);
+    }
+    if (logoutPrincipal) {
+      try {
+        // Complete this notification before clearing cookies. waitUntil would
+        // leave an already-open NiceGUI callback active if delivery failed.
+        await notifyOriginSessionRevocation(request, env, logoutPrincipal);
+      } catch {
+        return jsonResponse({ error: 'logout_temporarily_unavailable' }, 503);
+      }
+    }
     return authLogoutResponse(request.url);
   }
 

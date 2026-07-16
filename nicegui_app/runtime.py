@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from functools import wraps
 import hashlib
 import json
 import os
@@ -23,6 +24,7 @@ from nicegui_app.gateway_identity import (
 )
 from nicegui_app.observability import current_request_reference
 from nicegui_app.services.guest_workspace import (
+    GuestCapacityError,
     GuestSnapshotError,
     GuestWorkspaceRegistry,
     GuestWorkspaceView,
@@ -39,6 +41,7 @@ _active_guest_client_by_workspace: dict[tuple[str, str], str] = {}
 _guest_snapshot_nonces: dict[tuple[str, str], str] = {}
 _guest_cleanup_timers: dict[tuple[str, str], Timer] = {}
 _page_contexts: dict[str, PageContext] = {}
+_revoked_sessions: dict[tuple[AccessMode, str], datetime | None] = {}
 _disconnect_registered: set[str] = set()
 _runtime_lock = RLock()
 _GUEST_DISCONNECT_GRACE_SECONDS = 12.0
@@ -100,14 +103,148 @@ def _current_client() -> Any | None:
         return None
 
 
-def _cached_context_is_active(context: PageContext) -> bool:
-    context.principal.require_active()
-    if context.principal.mode in {AccessMode.ADMIN, AccessMode.GUEST}:
-        if context.principal.auth_epoch != configured_auth_epoch(os.environ):
+def _purge_revoked_sessions_locked(now: datetime) -> None:
+    expired = [
+        key
+        for key, expires_at in _revoked_sessions.items()
+        if expires_at is not None and expires_at <= now
+    ]
+    for key in expired:
+        _revoked_sessions.pop(key, None)
+
+
+def revoke_authenticated_session(context_or_principal: PageContext | Any) -> None:
+    """Immediately invalidate one verified gateway session in this process.
+
+    Cookie removal happens at the gateway, but existing NiceGUI callbacks may
+    already hold a page context or workflow adapter. Keeping this short-lived
+    deny-list makes the next callback fail closed without waiting for the
+    browser's periodic status poll.
+    """
+
+    principal = (
+        context_or_principal.principal
+        if isinstance(context_or_principal, PageContext)
+        else context_or_principal
+    )
+    if (
+        principal.mode not in {AccessMode.ADMIN, AccessMode.GUEST}
+        or not principal.session_id
+    ):
+        raise OriginPrincipalError("only authenticated sessions may be revoked")
+    now = datetime.now(timezone.utc)
+    with _runtime_lock:
+        _purge_revoked_sessions_locked(now)
+        _revoked_sessions[(principal.mode, principal.session_id)] = principal.expires_at
+
+
+def require_runtime_principal_active(principal: Any) -> None:
+    """Reject expired, rotated, epoch-stale, or process-revoked principals."""
+
+    principal.require_active()
+    if principal.mode in {AccessMode.ADMIN, AccessMode.GUEST}:
+        if principal.auth_epoch != configured_auth_epoch(os.environ):
             raise OriginPrincipalError("the authenticated session has been revoked")
-        if context.principal.key_id != configured_key_id(os.environ):
+        if principal.key_id != configured_key_id(os.environ):
             raise OriginPrincipalError("the authenticated key has been rotated")
+        now = datetime.now(timezone.utc)
+        with _runtime_lock:
+            _purge_revoked_sessions_locked(now)
+            if (principal.mode, principal.session_id) in _revoked_sessions:
+                raise OriginPrincipalError("the authenticated session has been revoked")
+
+
+def _cached_context_is_active(context: PageContext) -> bool:
+    require_runtime_principal_active(context.principal)
     return True
+
+
+class _RuntimeGuardedAdapter:
+    """Recheck a cached page identity before every captured adapter access."""
+
+    def __init__(self, delegate: Any, context: PageContext) -> None:
+        self._delegate = delegate
+        self._context = context
+
+    def __getattr__(self, name: str) -> Any:
+        _cached_context_is_active(self._context)
+        attribute = getattr(self._delegate, name)
+        if not callable(attribute):
+            return attribute
+
+        @wraps(attribute)
+        def invoke(*args: Any, **kwargs: Any) -> Any:
+            _cached_context_is_active(self._context)
+            return attribute(*args, **kwargs)
+
+        return invoke
+
+
+def _guest_capacity_script() -> str:
+    """Render an accessible bilingual terminal state for a bounded guest."""
+
+    return r"""
+    (() => {
+      const show = () => {
+        window.__syGuestSnapshotBridge?.destroy?.();
+        document.body.dataset.syGuestCapacity = 'busy';
+        const main = document.getElementById('main-content');
+        if (main) {
+          main.setAttribute('inert', '');
+          main.setAttribute('aria-hidden', 'true');
+        }
+        let state = document.getElementById('sy-guest-capacity-state');
+        if (!state) {
+          state = document.createElement('section');
+          state.id = 'sy-guest-capacity-state';
+          state.setAttribute('role', 'alert');
+          state.setAttribute('aria-live', 'assertive');
+          state.innerHTML = `
+            <div class="sy-guest-capacity-card">
+              <span class="sy-guest-capacity-mark" aria-hidden="true">候</span>
+              <p class="sy-guest-capacity-kicker">DEMO WORKSPACE · 暫時繁忙</p>
+              <h1>示範工作區暫時未能開啟</h1>
+              <p>這個訪客工作階段目前已有太多分頁，或示範容量已滿。請關閉另一個試用分頁後重試；你的正式資料不會受到影響。</p>
+              <p lang="en">The demo workspace is temporarily busy or this guest session has too many open tabs. Close another trial tab, then retry. Official data is unaffected.</p>
+              <div class="sy-guest-capacity-actions">
+                <button id="sy-guest-capacity-retry" type="button">重新嘗試 · Retry</button>
+                <button id="sy-guest-capacity-exit" type="button">離開示範 · Exit demo</button>
+              </div>
+            </div>`;
+          document.body.appendChild(state);
+        }
+        document.getElementById('sy-guest-capacity-retry')?.addEventListener(
+          'click',
+          () => window.location.reload(),
+          {once: true},
+        );
+        document.getElementById('sy-guest-capacity-exit')?.addEventListener(
+          'click',
+          async () => {
+            try {
+              const response = await fetch('/auth/logout', {
+                method: 'POST',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: {'Accept': 'application/json'},
+              });
+              if (!response.ok) throw new Error(`logout ${response.status}`);
+              window.location.replace('/');
+            } catch {
+              state.dataset.logout = 'retry';
+            }
+          },
+          {once: true},
+        );
+        document.getElementById('sy-guest-capacity-retry')?.focus();
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', show, {once: true});
+      } else {
+        show();
+      }
+    })();
+    """
 
 
 def _cancel_guest_cleanup(key: tuple[str, str]) -> None:
@@ -154,7 +291,11 @@ def _guest_snapshot_script(action: str, payload: dict[str, object]) -> str:
     )
 
 
-def _publish_guest_snapshot(client_id: str, view: GuestWorkspaceView) -> None:
+def _publish_guest_snapshot(
+    client: Any,
+    client_id: str,
+    view: GuestWorkspaceView,
+) -> None:
     """Push the latest signed revision to the exact connected browser tab."""
 
     key = (view.session_id, view.workspace_id)
@@ -169,7 +310,7 @@ def _publish_guest_snapshot(client_id: str, view: GuestWorkspaceView) -> None:
         workspace_id=view.workspace_id,
         tab_id=view.tab_id,
     )
-    ui.run_javascript(
+    client.run_javascript(
         _guest_snapshot_script(
             "accept",
             {
@@ -184,6 +325,7 @@ def _publish_guest_snapshot(client_id: str, view: GuestWorkspaceView) -> None:
 
 
 def _bootstrap_guest_snapshot_bridge(
+    client: Any,
     client_id: str,
     view: GuestWorkspaceView,
 ) -> None:
@@ -199,7 +341,7 @@ def _bootstrap_guest_snapshot_bridge(
         workspace_id=view.workspace_id,
         tab_id=view.tab_id,
     )
-    ui.run_javascript(
+    client.run_javascript(
         _guest_snapshot_script(
             "bind",
             {
@@ -236,10 +378,29 @@ def _bind_guest_client(client_id: str, client: Any) -> None:
         key = (session_id, workspace_id)
         _cancel_guest_cleanup(key)
         initial_view = context.workspace
-        bound_view = adapter.bind_workspace(
-            workspace_id=workspace_id,
-            tab_id=stable_tab_id,
-        )
+        try:
+            bound_view = adapter.bind_workspace(
+                workspace_id=workspace_id,
+                tab_id=stable_tab_id,
+            )
+        except GuestCapacityError:
+            previous_workspace_id = context.metadata.get("workspaceId", "")
+            _guest_adapters.pop((session_id, previous_workspace_id), None)
+            _client_guest_adapters.pop(client_id, None)
+            _page_contexts[client_id] = PageContext.create(
+                context.principal,
+                workspace=None,
+                preference_store=context.preference_store,
+                request_reference=context.request_reference,
+                metadata={
+                    **context.metadata,
+                    "tabId": stable_tab_id,
+                    "workspaceId": workspace_id,
+                    "binding": "capacity-denied",
+                },
+            )
+            ui.run_javascript(_guest_capacity_script())
+            return
         previous_workspace_id = context.metadata.get("workspaceId", "")
         _guest_adapters.pop((session_id, previous_workspace_id), None)
         _guest_adapters[key] = adapter
@@ -257,7 +418,7 @@ def _bind_guest_client(client_id: str, client: Any) -> None:
                 "binding": "stable",
             },
         )
-    _bootstrap_guest_snapshot_bridge(client_id, bound_view)
+    _bootstrap_guest_snapshot_bridge(client, client_id, bound_view)
     if (
         initial_view is not None
         and (
@@ -401,6 +562,7 @@ def current_page_context() -> PageContext:
             return cached
 
     principal = principal_from_request(request)
+    require_runtime_principal_active(principal)
     workspace = None
     metadata: dict[str, str] = {}
     if principal.mode is AccessMode.GUEST:
@@ -440,7 +602,10 @@ def get_workflow() -> Any:
 
     context = current_page_context()
     if context.principal.mode is not AccessMode.GUEST:
-        return PageContextWorkflowAdapter(get_admin_workflow(), context)
+        return _RuntimeGuardedAdapter(
+            PageContextWorkflowAdapter(get_admin_workflow(), context),
+            context,
+        )
     session_id = context.principal.session_id
     workspace_id = context.metadata.get("workspaceId", "")
     if not session_id or not workspace_id:
@@ -464,7 +629,8 @@ def get_workflow() -> Any:
                 ),
                 initial_view=context.workspace,
                 snapshot_publisher=(
-                    (lambda view, bound_client_id=client_id: _publish_guest_snapshot(
+                    (lambda view, bound_client=client, bound_client_id=client_id: _publish_guest_snapshot(
+                        bound_client,
                         bound_client_id,
                         view,
                     ))
@@ -475,7 +641,7 @@ def get_workflow() -> Any:
             _guest_adapters[key] = adapter
         if client_id:
             _client_guest_adapters[client_id] = adapter
-        return adapter
+        return _RuntimeGuardedAdapter(adapter, context)
 
 
 def runtime_readiness() -> dict[str, object]:
@@ -500,6 +666,8 @@ __all__ = [
     "get_admin_workflow",
     "get_guest_registry",
     "get_workflow",
+    "require_runtime_principal_active",
+    "revoke_authenticated_session",
     "restore_guest_browser_snapshot",
     "runtime_readiness",
 ]

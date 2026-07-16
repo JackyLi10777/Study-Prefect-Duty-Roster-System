@@ -97,6 +97,7 @@ def test_release_fingerprint_tracks_deployed_artifacts_without_documentation_or_
         "daily_verses.py",
         "data/demo/prefects.zh-hk.seed.json",
         "data/devotional/daily-verses.seed.json",
+        "scripts/deploy_windows_release.ps1",
         "scripts/start_sing_yin_roster.ps1",
         "scripts/verify_release_candidate.py",
         "scripts/run_security_checks.py",

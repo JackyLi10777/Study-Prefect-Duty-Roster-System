@@ -103,9 +103,9 @@ MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服
  'engineering_pipeline_kicker': {'zh-HK': 'RELEASE ASSURANCE／發布保證', 'en': 'RELEASE ASSURANCE'},
  'engineering_pipeline_title': {'zh-HK': '完整閘門鏈共同證明，而不是單靠一句「測試通過」',
                                 'en': 'The full gate chain proves the release—not one generic “tests passed” claim'},
- 'engineering_pipeline_copy': {'zh-HK': '發布報告與目前原始碼指紋綁定；程式、文件或設計素材改變後，舊報告會自動標記為過時。',
-                               'en': 'The release report is bound to the current source fingerprint; a code, documentation, or '
-                                     'design-asset change automatically makes old evidence stale.'},
+ 'engineering_pipeline_copy': {'zh-HK': '發布報告與可部署原始碼指紋綁定；運行程式、依賴、資產、Cloudflare、主機腳本或正式閘門改變後，舊報告會自動標記為過時。',
+                               'en': 'The release report is bound to the deployable source fingerprint; changes to runtime code, '
+                                     'dependencies, assets, Cloudflare, host scripts, or formal gates automatically make old evidence stale.'},
  'engineering_gate_repository': {'zh-HK': '版本庫衛生', 'en': 'Repository hygiene'},
  'engineering_gate_security': {'zh-HK': '依賴與安全掃描', 'en': 'Supply-chain security'},
  'engineering_gate_cloudflare': {'zh-HK': 'Cloudflare 存取閘道', 'en': 'Cloudflare access gateway'},
@@ -117,6 +117,7 @@ MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服
  'engineering_gate_workflow': {'zh-HK': '完整寫入流水線', 'en': 'Full write pipeline'},
  'engineering_gate_mobile': {'zh-HK': '手機自適應驗證', 'en': 'Mobile adaptive verification'},
  'engineering_gate_deployment': {'zh-HK': '部署就緒', 'en': 'Deployment readiness'},
+ 'engineering_gate_guest': {'zh-HK': '統一訪客隔離', 'en': 'Unified Guest isolation'},
  'engineering_gate_recovery': {'zh-HK': '部分成功復原', 'en': 'Partial-success recovery'},
  'engineering_release_current': {'zh-HK': '目前證據：{passed}/{total} 道閘門通過', 'en': 'Current evidence: {passed}/{total} gates passed'},
  'engineering_release_state': {'zh-HK': '目前證據：{state}', 'en': 'Current evidence: {state}'},
