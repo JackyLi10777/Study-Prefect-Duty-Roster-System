@@ -110,6 +110,7 @@ RELEASE_SUFFIXES = {
     ".yml",
     ".yaml",
 }
+RELEASE_BYTE_EXACT_SUFFIXES = {".m4a", ".png", ".webp", ".woff2", ".ttf"}
 EvidenceState = Literal["pass", "running", "stale", "fail", "missing", "unreadable"]
 
 
@@ -131,6 +132,17 @@ def _is_excluded_release_path(path: Path) -> bool:
         any(relative.startswith(prefix) for prefix in RELEASE_EXCLUDED_RELATIVE_PREFIXES)
         or any(PurePosixPath(relative).match(pattern) for pattern in RELEASE_EXCLUDED_RELATIVE_GLOBS)
     )
+
+
+def _release_fingerprint_payload(path: Path) -> bytes:
+    """Return stable checkout bytes while preserving binary integrity exactly."""
+    payload = path.read_bytes()
+    if path.suffix.lower() in RELEASE_BYTE_EXACT_SUFFIXES:
+        return payload
+    # Git may materialize the same text blob as LF or CRLF on Windows. Only
+    # canonicalize that checkout representation; BOMs, lone CRs, encodings,
+    # whitespace, and all binary inputs remain significant.
+    return payload.replace(b"\r\n", b"\n")
 
 
 def _calculate_release_source_fingerprint(paths: Iterable[Path] | None = None) -> tuple[str, int]:
@@ -157,7 +169,7 @@ def _calculate_release_source_fingerprint(paths: Iterable[Path] | None = None) -
             relative = path.name
         digest.update(relative.encode("utf-8"))
         digest.update(b"\0")
-        digest.update(path.read_bytes())
+        digest.update(_release_fingerprint_payload(path))
         digest.update(b"\0")
     return digest.hexdigest(), len(unique_paths)
 

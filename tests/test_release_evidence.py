@@ -7,6 +7,7 @@ from pathlib import Path
 from nicegui_app.config import POLICY_VERSION
 from nicegui_app.release_evidence import (
     PROJECT_ID,
+    RELEASE_BYTE_EXACT_SUFFIXES,
     RELEASE_EXCLUDED_DIRECTORY_NAMES,
     RELEASE_EXCLUDED_RELATIVE_GLOBS,
     RELEASE_EXCLUDED_RELATIVE_PREFIXES,
@@ -50,6 +51,45 @@ def test_release_source_fingerprint_changes_with_release_input_content(tmp_path:
 
     assert count == changed_count == 2
     assert original != changed
+
+
+def test_release_source_fingerprint_normalizes_windows_text_line_endings(tmp_path: Path) -> None:
+    source = tmp_path / ".env.example"
+    source.write_bytes(b"FIRST=one\nSECOND=two\n")
+    lf_fingerprint, lf_count = release_source_fingerprint((source,))
+
+    source.write_bytes(b"FIRST=one\r\nSECOND=two\r\n")
+    crlf_fingerprint, crlf_count = release_source_fingerprint((source,))
+
+    assert lf_count == crlf_count == 1
+    assert lf_fingerprint == crlf_fingerprint
+
+
+def test_release_text_normalization_preserves_bom_and_lone_carriage_return(tmp_path: Path) -> None:
+    source = tmp_path / "settings.txt"
+    source.write_bytes(b"value=one\r\n")
+    original, _ = release_source_fingerprint((source,))
+
+    source.write_bytes(b"\xef\xbb\xbfvalue=one\r\n")
+    bom_changed, _ = release_source_fingerprint((source,))
+    source.write_bytes(b"value=one\r")
+    lone_cr_changed, _ = release_source_fingerprint((source,))
+
+    assert bom_changed != original
+    assert lone_cr_changed != original
+
+
+def test_release_binary_inputs_remain_byte_exact(tmp_path: Path) -> None:
+    assert RELEASE_BYTE_EXACT_SUFFIXES <= RELEASE_SUFFIXES
+    for suffix in sorted(RELEASE_BYTE_EXACT_SUFFIXES):
+        source = tmp_path / f"asset{suffix}"
+        source.write_bytes(b"binary\r\nbytes")
+        original, original_count = release_source_fingerprint((source,))
+        source.write_bytes(b"binary\nbytes")
+        changed, changed_count = release_source_fingerprint((source,))
+
+        assert original_count == changed_count == 1
+        assert changed != original, suffix
 
 
 def test_runtime_source_fingerprint_is_cached_for_repeated_showcase_reads(monkeypatch) -> None:
