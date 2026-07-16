@@ -33,7 +33,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **已部署基線（v1.1）：** `C:\SingYinRoster` 的現有 Windows origin 及 Cloudflare gateway 仍是正式運行基線。
 
-**目前來源候選（v1.2）：** `codex/unified-guest-redesign` 已把 Admin／Guest 統一到同一套 NiceGUI 路由，並完成簽署 `PageContext`、記憶體 Guest workspace、版本衝突、命令收據、備份義務、`/readyz`、雙主題材質及一致圖標微互動。2026-07-17 可重現的凍結來源已以指紋 `5896a8394dfa6170a7e04b6dd92ad317e88a9fff4f199f316e5c42eac4ce2189` 通過 13／13 項正式 gate；Windows／Access／Worker 受控切換仍在進行，因此 `SING_YIN_UNIFIED_GUEST` 在切換完成前保持 `0`。
+**目前來源候選（v1.2）：** `codex/unified-guest-redesign` 已把 Admin／Guest 統一到同一套 NiceGUI 路由，並完成簽署 `PageContext`、記憶體 Guest workspace、版本衝突、命令收據、備份義務、`/readyz`、雙主題材質及一致圖標微互動。2026-07-17 可重現的凍結來源已以指紋 `e5b9c84ca357fc48b41a24b69d91e1f0890d3e0cb2fcf7a8591e27cc05719ee1`（238 個發布輸入）通過 13／13 項正式 gate；Cloudflare Access 已經截圖核對為只保護精確的 `/auth/login`。發布用不可變參照將是 `v1.2.0-rc.3`；rc.1／rc.2 均在任何主機變更前因可重現性或瀏覽器驗證 gate 停止，從未部署。Windows origin 與 live Worker 仍是 v1.1 回退基線，因此 `SING_YIN_UNIFIED_GUEST` 在兩端受控切換完成前保持 `0`。
 
 ## 首席導學風紀：每日怎樣進入
 

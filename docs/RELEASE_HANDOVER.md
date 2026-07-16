@@ -2,7 +2,7 @@
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
-> **v1.2 交接狀態：** 統一 Admin／Guest 候選已具備 13 道正式 gate；最終來源凍結後仍須產生相符報告，再依次完成正式備份／隔離還原、不可變標籤、Windows origin、Access `/auth/login`、Worker secrets 及線上抽查。`C:\SingYinRoster` 在切換完成前仍是 v1.1 回退基線。
+> **v1.2 交接狀態：** 統一 Admin／Guest 凍結來源已以指紋 `e5b9c84ca357fc48b41a24b69d91e1f0890d3e0cb2fcf7a8591e27cc05719ee1`（238 個發布輸入）通過 13／13 正式 gate；匹配報告於 2026-07-17 07:37:16（香港時間）完成。Cloudflare Access 已截圖核對為只保護精確 `/auth/login`。本次不可變標籤將是 `v1.2.0-rc.3`；rc.1／rc.2 均在任何主機變更前停止，從未部署。正式備份／隔離還原、Windows origin、Worker secrets 及線上抽查仍待同一次受控發布完成；`C:\SingYinRoster` 與 live Worker 在切換前仍是 v1.1 回退基線。
 
 ## 運作原則
 
@@ -194,7 +194,7 @@ python -X utf8 -m nicegui_app.main
 1. 在來源分支完成 `python -X utf8 -m pytest -q`。
 2. 執行 `python -X utf8 scripts\verify_release_candidate.py`，核對 report 與最終來源 fingerprint 一致。
 3. 在現行正式系統建立新已驗證快照及交接包，並在另一個隔離 SQLite 完成還原。
-4. Gate 及備份證據全通過後，才合併 `main` 並建立目前發布用的 annotated tag（本次為 `v1.2.0-rc.2`）；保存上一個 Windows bundle／tag 及 Worker version ID 作回退。
+4. Gate 及備份證據全通過後，才合併 `main` 並建立目前發布用的 annotated tag（本次為 `v1.2.0-rc.3`）；rc.1／rc.2 從未部署，保存上一個 Windows bundle／tag 及 Worker version ID 作回退。
 5. 進入 maintenance，從該不可變 tag 更新 Windows bundle，執行 additive migration；先以 `SING_YIN_UNIFIED_GUEST=0` 啟動。
 6. 核對 `/healthz`、`/readyz`、管理員本機工作流及備份義務。
 7. staged 部署同一 tag 對應的 Worker，核對 Public、Admin、Guest、Viewer 及 WebSocket。

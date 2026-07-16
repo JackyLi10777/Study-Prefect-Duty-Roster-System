@@ -57,14 +57,19 @@ redirects; an explicitly issued `/view#…` link remains the separate encrypted,
 read-only published-roster viewer.
 
 The v1.2 Worker and origin authenticate both modes with server-verified,
-HMAC-signed principals. On 2026-07-17 the reproducible frozen 238-input source passed all 13
-formal release gates with fingerprint
-`5896a8394dfa6170a7e04b6dd92ad317e88a9fff4f199f316e5c42eac4ce2189`,
+HMAC-signed principals. On 2026-07-17 the reproducible frozen 238-input source
+passed all 13 formal release gates with fingerprint
+`e5b9c84ca357fc48b41a24b69d91e1f0890d3e0cb2fcf7a8591e27cc05719ee1`,
 including isolated Admin/Guest browser, mobile, performance, write/PDF, backup,
-and recovery evidence. Machine verification is complete.
-`SING_YIN_UNIFIED_GUEST=0` remains the deployment default until the controlled
-Windows, exact `/auth/login` Access, Worker-secret, and live
-Admin/Guest/Viewer sequence completes. The application has no custom password
+and recovery evidence. The matching report completed at
+`2026-07-16T23:37:16.301926Z`; machine verification is complete. Cloudflare
+Access is now screenshot-confirmed to protect only the exact `/auth/login`
+destination. The immutable rollout reference will be `v1.2.0-rc.3`; rc.1 and
+rc.2 were never deployed because reproducibility or browser-verifier gates
+stopped them before any host mutation. The Windows origin and live Worker still
+run the v1.1 rollback baseline, so `SING_YIN_UNIFIED_GUEST=0` remains the
+deployment default until the controlled two-sided switch and live
+Admin/Guest/Viewer sequence complete. The application has no custom password
 database.
 
 The commands below prepare a host or maintenance workstation; they are not a

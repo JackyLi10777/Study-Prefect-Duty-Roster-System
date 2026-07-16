@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **v1.2 發布狀態：** 2026-07-17 可重現的凍結來源已以指紋 `5896a8394dfa6170a7e04b6dd92ad317e88a9fff4f199f316e5c42eac4ce2189` 通過 13／13 正式 gate。現依次執行新備份、隔離還原、origin、Access `/auth/login`、Worker secrets 及線上抽查；`C:\SingYinRoster` 及 live Worker 在切換前保留 v1.1 回退基線。
+> **v1.2 發布狀態：** 2026-07-17 可重現的凍結來源已以指紋 `e5b9c84ca357fc48b41a24b69d91e1f0890d3e0cb2fcf7a8591e27cc05719ee1`（238 個發布輸入）通過 13／13 正式 gate；匹配報告於 `2026-07-16T23:37:16.301926Z` 完成。Cloudflare Access 已以控制台截圖確認只保護精確的 `/auth/login`。發布參照將是 `v1.2.0-rc.3`；rc.1／rc.2 均在任何主機變更前由可重現性或瀏覽器驗證 gate 停止，從未部署。現依次執行新備份、隔離還原、origin、Worker secrets 及線上抽查；`C:\SingYinRoster` 及 live Worker 在切換前保留 v1.1 回退基線。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
@@ -82,6 +82,8 @@ Worker 必須有：
 - Allowlist 必須在 Access policy 與 Worker 驗證設定一致。
 - 不把管理員加入 Cloudflare Dashboard 成員作為登入前提。
 - 不建立應用內共用密碼。
+
+**目前控制台證據（2026-07-17）：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。這只完成 Access 路徑設定；在 Windows origin 及 Worker 仍為 v1.1 時，不可把它寫成 v1.2 已部署。
 
 ## 4. 來源驗證
 
