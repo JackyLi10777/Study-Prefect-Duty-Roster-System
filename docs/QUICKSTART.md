@@ -1,6 +1,6 @@
 # 快速啟動 / Quick start
 
-> **目前部署過渡狀態（2026-07-16）：** 正式 Worker 與目前 loopback origin 均健康，`C:\SingYinRoster` 已安裝 rc.16；但 `Sing Yin Roster Host` 開機排程仍未註冊，因此暫時不可依賴重新開機自動恢復。維護者須先按 [Windows 專用主機手冊](WINDOWS_DEDICATED_HOST_SETUP.md) 以 `-NoStart` 保存排程認證、核對工作內容，再完成一次受控切換。完成前不要停止目前 8080 程序。
+> **目前正式狀態（2026-07-16）：** `C:\SingYinRoster` rc.16 已成為唯一 official origin；`Sing Yin Roster Host` 正在 `SingYinRosterSvc` 帳戶下運行，NiceGUI 只監聽 `127.0.0.1:8080`，Tunnel 與正式 Worker 均健康。管理權杖亦已輪換並核對新值可用、舊值失效。仍須由人在場完成一次 Windows 重新開機驗證，以及管理員登入／登出、長時間重連、上載與 PDF 的正式驗收。
 
 ## 每日使用
 

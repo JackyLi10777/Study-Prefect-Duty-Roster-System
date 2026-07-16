@@ -11,13 +11,25 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 POWERSHELL = shutil.which("powershell.exe") or shutil.which("powershell")
 COMMON = PROJECT_ROOT / "scripts" / "windows_host_common.ps1"
+POWERSHELL_UTF8_PREAMBLE = (
+    "[Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false); "
+    "[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); "
+    "$OutputEncoding = [Console]::OutputEncoding; "
+)
 
 
 def _powershell(command: str, *, check: bool = True) -> subprocess.CompletedProcess[str]:
     if not POWERSHELL:
         pytest.skip("Windows PowerShell is required for the selected host model")
     return subprocess.run(
-        [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
+        [
+            POWERSHELL,
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            f"{POWERSHELL_UTF8_PREAMBLE}{command}",
+        ],
         cwd=PROJECT_ROOT,
         capture_output=True,
         text=True,
@@ -144,14 +156,7 @@ def test_remote_access_doctor_is_redacted_and_reports_unprepared_host_state() ->
     script = PROJECT_ROOT / "scripts" / "doctor_windows_remote_access.ps1"
     if not POWERSHELL:
         pytest.skip("Windows PowerShell is required for the selected host model")
-    result = subprocess.run(
-        [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)],
-        cwd=PROJECT_ROOT,
-        capture_output=True,
-        text=True,
-        encoding="utf-8-sig",
-        check=False,
-    )
+    result = _powershell(f"& '{_quoted(script)}'", check=False)
     assert result.stderr == ""
     payload = json.loads(result.stdout)
     assert payload["project"] == "sing-yin-study-prefect-duty-roster"

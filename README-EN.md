@@ -19,6 +19,15 @@ adjust published leave → explain fairness → back up, restore, and hand over.
 · [Architecture](docs/NICEGUI_ARCHITECTURE.md) · [Release status](PROJECT_STATUS.md)
 · [Canonical-site access guide](docs/PUBLIC_ROSTER_VIEWER.md)
 
+**Current production deployment (2026-07-16):** immutable
+`v1.1.0-rc.16` runs from `C:\SingYinRoster` through the dedicated Windows
+scheduled task. NiceGUI listens only on `127.0.0.1:8080`; the `cloudflared`
+service and canonical Worker are healthy. The internal administrator API bearer
+credential has been synchronously rotated, with the replacement accepted and
+the retired credential rejected. A supervised Windows reboot, administrator
+login/logout, long reconnect, upload and PDF acceptance remain outstanding;
+official-data cleanup remains a separately authorized operation.
+
 ## Repository editions
 
 | Branch | Platform | Status |
@@ -45,11 +54,11 @@ session lasts at most eight hours; select
 **Log out** when finished. The application has no custom password database.
 
 The canonical Worker, guest routes, read-only Viewer, Access redirect, VPC
-health and mobile/light/dark browser matrix are live and automated. Administrator
-remote editing still needs supervised sign-off for login, logout, long-lived
-WebSocket reconnection, upload and PDF delivery. The current loopback origin is
-healthy, but the dedicated Windows scheduled task must still be registered and
-verified before automatic recovery after reboot can be relied upon.
+health and mobile/light/dark browser matrix are live and automated. The
+dedicated Windows scheduled task now runs the single loopback origin under the
+non-administrative service account. Administrator remote editing still needs
+supervised sign-off for login, logout, long-lived WebSocket reconnection, upload
+and PDF delivery; automatic recovery still needs one supervised reboot proof.
 
 The commands below prepare a host or maintenance workstation; they are not a
 second normal entry point.
@@ -233,6 +242,16 @@ Access JWT. Every proxied request revalidates that session before travelling
 through Workers VPC and the existing Tunnel. Cloudflare sends the one-time
 email code; no password hash is stored by NiceGUI, SQLite, KV, backups, or Git.
 
+The formal server-mode host receives an independent `SING_YIN_STORAGE_SECRET`
+from its protected `.env`; local and practice modes may use their ignored,
+managed runtime secret. The Worker requires `ADMIN_BEARER_TOKEN` and
+`ADMIN_SESSION_SECRET` in Cloudflare secret storage. The Worker bearer must
+match `SING_YIN_PUBLIC_ROSTER_VIEWER_ADMIN_TOKEN` in the protected origin
+settings. A rotation updates both sides in one controlled maintenance window,
+restarts the dedicated task, proves replacement HTTP 200 and retired HTTP 401,
+and rolls both sides back if any step fails. Secret values never belong in Git,
+documentation, screenshots, logs, or backups.
+
 Same-host `/view#…` links are explicitly created, expiring and revocable. The
 Windows host encrypts the minimum published-roster snapshot with AES-256-GCM;
 Cloudflare KV stores ciphertext, nonce, and minimum week/creation/expiry
@@ -266,7 +285,8 @@ python -m playwright install chromium
 python -X utf8 scripts\verify_release_candidate.py
 ```
 
-The release candidate runs twelve fail-closed checks: repository hygiene,
+The current complete suite contains 483 Python tests plus 23 Worker Deno
+contract tests. The release candidate runs twelve fail-closed checks: repository hygiene,
 supply-chain security, Cloudflare Worker Deno contracts, the complete Python
 suite, compilation, dependency integrity, desktop browser smoke, measured
 runtime performance and memory stability, the fictional-data write/PDF and

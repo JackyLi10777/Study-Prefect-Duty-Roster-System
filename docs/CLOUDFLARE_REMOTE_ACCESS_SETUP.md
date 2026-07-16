@@ -6,7 +6,7 @@
 
 **資料來源：** Windows 11 專用主機上的 NiceGUI + SQLite；NiceGUI 只監聽 `127.0.0.1:8080`。
 
-> **目前狀態（2026-07-16）：** rc.16 Worker、`/guest`、`/try`、唯讀 Viewer、Access 轉向及 VPC 健康已在正式網址通過自動化核對。`C:\SingYinRoster` 亦已安裝 rc.16；尚未完成的是 `Sing Yin Roster Host` 開機排程註冊、正式資料受控清理，以及管理員登入／登出、長時間重連、上載與 PDF 的真人驗收。
+> **目前狀態（2026-07-16）：** rc.16 Worker、`/guest`、`/try`、唯讀 Viewer、Access 轉向及 VPC 健康已在正式網址通過自動化核對。`C:\SingYinRoster` 已成為唯一 official origin，開機排程在專用非管理員帳戶下運行，Tunnel 服務為 Running／Automatic；Worker 管理權杖亦已同步輪換，新值通過、舊值被拒絕。尚未完成的是一次有人在場的 Windows 重新開機證明、正式資料受控清理，以及管理員登入／登出、長時間重連、上載與 PDF 的真人驗收。
 
 本方案不需購買網域，也不會把 NiceGUI 或 SQLite 直接公開到互聯網。Cloudflare Worker 是唯一前門；Cloudflare Access 管理登入，Workers VPC 與既有具名 Tunnel 把已驗證管理員請求送回 Windows 主機。localhost 及私人 WARP 地址只作維護後備。
 
@@ -64,11 +64,12 @@
 
 ## 3. 目前已建立的非秘密設定
 
-截至 2026-07-14：
+截至 2026-07-16：
 
 | 項目 | 目前值 | 狀態 |
 |---|---|---|
 | Canonical Worker | `sing-yin-roster-viewer.singyin-study-prefect.workers.dev` | 根路徑未登入回傳 200 |
+| Worker production version | `754f36b4-c36d-4d48-82ee-08c98c82831f` | 100%；兩個必需 secret 名稱均存在，值不寫入文件 |
 | Cloudflare team domain | `restless-hall-73b2.cloudflareaccess.com` | 已建立 |
 | Self-hosted Access app ID | `25072aab-0e60-4787-8ec7-48029e448e8e` | 已建立；只保護管理流程 |
 | Access identities | exact email：`s10777@syss.edu.hk`、`lichuangjie0208@gmail.com`、`lichuangjie0208@outlook.com` | Access policy、Worker 名單及 WARP 後備 policy 已同步 |
@@ -81,7 +82,10 @@
 | VPC Service ID | `019f5b30-d07c-7a63-a273-6b2ccb7318f8` | 非秘密識別值 |
 | Worker VPC binding | `ROSTER_ORIGIN` | remote VPC Service |
 | Viewer KV | `ROSTER_SHARES` | 只存密文、nonce 及最少 metadata |
-| NiceGUI origin | `127.0.0.1:8080` | 不監聽公網 |
+| Official origin | `C:\SingYinRoster`，`v1.1.0-rc.16` | 唯一正式 Python origin；`D:\code_v3` 只作開發及驗證 |
+| Windows task | `Sing Yin Roster Host`／`SingYinRosterSvc` | Running；專用非管理員帳戶、stored-password logon |
+| Tunnel service | `cloudflared` | Running／Automatic |
+| NiceGUI origin | `127.0.0.1:8080` | `server` mode，但只限 loopback，不監聽 LAN／公網 |
 
 Access audience、JWT、cookie、Tunnel token、Worker admin token、API token 及其他 secret 不列在本表，也不可寫入 Git、文件、截圖、電郵、PDF、備份或日誌。
 
@@ -99,6 +103,14 @@ pnpm exec wrangler whoami
 ```
 
 只有以上檢查通過、工作樹乾淨、兩個 secret 名稱均能由 `pnpm exec wrangler secret list` 讀回，而且已記錄目前 Worker version ID，才可執行 `pnpm run deploy`。不要使用未固定版本的全域 Wrangler；回退必須指定已記錄的 version ID，且不會回復 KV 內容。
+
+### 管理 API bearer 權杖輪換
+
+`ADMIN_BEARER_TOKEN` 是 Worker 與受保護 NiceGUI origin 之間的內部 API 憑證，**不是**首席導學風紀登入密碼，也不取代 Cloudflare One-time PIN。平日不需查看或輸入它。
+
+只有懷疑洩漏、交接或安全維護時，才由維護者以經審閱的受控程序在同一個互斥維護窗口更新 Worker secret 與主機 `SING_YIN_PUBLIC_ROSTER_VIEWER_ADMIN_TOKEN`。程序必須使用標準輸入及原子檔案替換，不在參數、輸出或 recovery 檔名留下值；重新啟動專用工作後，核對 owner、loopback health、Tunnel 及 Worker，再證明新值回傳 HTTP 200、舊值回傳 HTTP 401。任何一步失敗必須回復兩端，不能容許 token drift。交接紀錄只保存日期、Worker version、通過／失敗與不可逆短指紋，不保存 token。
+
+2026-07-16 已完成一次正式輪換：Worker version `754f36b4-c36d-4d48-82ee-08c98c82831f` 為 100%，新值通過、舊值被拒絕，C-host 仍由 `SingYinRosterSvc` 運行，臨時 recovery copy 已移除。
 
 Worker observability 只保存登入橋接及 invocation 的受控技術事件。登入失敗會回傳 `GW-...` 支援編號，並只記錄階段、穩定原因代碼、截短的 Cloudflare Ray ID，以及 assertion／authorization cookie 是否存在；不記錄電郵、JWT、cookie、session secret、值班表或請假資料。排查時以 `GW-...` 對應 Cloudflare Logs，不要把完整日誌貼到公開渠道。
 

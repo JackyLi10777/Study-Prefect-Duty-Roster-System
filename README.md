@@ -30,6 +30,8 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **共創者說明：我是李創杰。這次 NiceGUI 重構、設計、測試、文件及正式發布版本，只由我與 Codex 共同完成。`Study Prefect Systems & Stewardship Office` 是我們兩人的項目團隊名稱，沒有其他開發者、部門成員或外判團隊。**
 
+**目前正式部署（2026-07-16）：** 不可變版本 `v1.1.0-rc.16` 現由 `C:\SingYinRoster` 的專用 Windows 工作排程運行，NiceGUI 只監聽 `127.0.0.1:8080`，`cloudflared` 服務與唯一正式 Worker 均健康。管理 API 權杖已完成同步輪換，新值通過而舊值被拒絕。仍待完成的是一次有人在場的 Windows 重新開機證明、管理員登入／登出、長時間重連、上載與 PDF 真人驗收，以及另行獲准後才可進行的正式資料受控清理。
+
 ## 首席導學風紀：每日怎樣進入
 
 1. 在任何普通瀏覽器開啟唯一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。
@@ -106,7 +108,7 @@ python -m pip install --require-hashes -r requirements.lock
 Copy-Item .env.example .env
 ```
 
-本機模式不需手動建立 session secret：第一次啟動會原子建立並持續沿用已被 Git 忽略的 `data/runtime/.nicegui-storage-secret`。只有日後改為專用主機的 `server` 模式時，才必須以受控環境變數提供獨立 `SING_YIN_STORAGE_SECRET`。然後以：
+臨時本機／練習模式不需手動建立 session secret：第一次啟動會原子建立並持續沿用已被 Git 忽略的 `data/runtime/.nicegui-storage-secret`。目前正式 Windows 主機已使用 `server` 模式，並從受保護的主機 `.env` 取得獨立 `SING_YIN_STORAGE_SECRET`；其值不可寫入版本庫、文件、截圖、日誌或備份。然後以：
 
 ```powershell
 python -X utf8 -m nicegui_app.main
@@ -240,7 +242,7 @@ stateDiagram-v2
 
 現時只派發一個正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。未登入訪客留在同站唯讀模式；管理員按「管理員登入」後，輸入 Access policy 精確列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 只在 `/auth/login` 核對 Access JWT 簽章、`aud`、`iss`、`exp` 及管理員電郵，然後簽發獨立的 HMAC `__Host-SingYinAdminSession` cookie（HttpOnly、Secure、SameSite=Lax、Path=/）；它不複製 Access JWT，最長 8 小時且不超過 Access 到期時間。其後每個 HTTP／WebSocket 請求均重新驗證簽章、時效及精確電郵白名單；送往 VPC origin 前會移除 `CF_Authorization` 與管理員 session cookie。主動登出會先清除管理員 session，再結束 Cloudflare Access session，使用者隨即回復訪客權限。
 
-Worker 部署必須在 Cloudflare secret store 同時具備 `ADMIN_BEARER_TOKEN` 與 `ADMIN_SESSION_SECRET`；兩個值都不可寫入版本庫、README、截圖、日誌或主機備份。
+Worker 部署必須在 Cloudflare secret store 同時具備 `ADMIN_BEARER_TOKEN` 與 `ADMIN_SESSION_SECRET`；兩個值都不可寫入版本庫、README、截圖、日誌或主機備份。`ADMIN_BEARER_TOKEN` 必須與受保護 origin 設定中的 `SING_YIN_PUBLIC_ROSTER_VIEWER_ADMIN_TOKEN` 同步；輪換時要在同一次受控維護內更新兩端、重新啟動專用工作、證明新值回傳 200 及舊值回傳 401，任何一步失敗則兩端一併回復，不能只改一邊。
 
 同一 host 下的 `/view#…` 分享連結仍是唯讀：Windows 主機以 AES-256-GCM 加密週次、日期、崗位、當值時間及中文姓名，Cloudflare KV 只保存密文、nonce 和最少的週次／建立／到期 metadata；解密鑰匙留在 URL fragment，不會隨初始 HTTP request 傳給 Worker。連結會到期，也可由管理員撤銷。`/auth/*`、VPC Service、localhost 及私人 WARP 地址都是內部或維護路徑，不另行派發。
 
@@ -306,7 +308,7 @@ Cloudflare KV 會在不同節點同步新密文。系統不會提早顯示一條
 
 ## 開發與驗證
 
-目前測試收集為 457 項。發布驗證把互補證據分開：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、配圖主題切換、校徽、空／錯誤／復原狀態及瀏覽器 `pageerror`；`scripts/verify_runtime_performance.py` 核對冷載、重複開關音樂，以及跨代表頁面後返回首頁的 heap／DOM／listener 增長；`scripts/verify_nicegui_mobile.py` 專門核對 320／390 px 直向及手機橫向排列；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名完成整條排班寫入、雙語 PDF、請假調整、另一資料庫還原，以及確認語句保護的新學年封存與新名單匯入；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。NiceGUI 的長連線及互動後背景音樂令全網絡靜止不是可靠完成訊號，因此測試以 DOM、URL 及真實操作結果判斷就緒；所有瀏覽器階段同時把 console error 及未捕捉頁面錯誤視為失敗。
+目前完整套件收集為 483 項 Python 測試，Worker 另有 23 項 Deno 合約測試。發布驗證把互補證據分開：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、配圖主題切換、校徽、空／錯誤／復原狀態及瀏覽器 `pageerror`；`scripts/verify_runtime_performance.py` 核對冷載、重複開關音樂，以及跨代表頁面後返回首頁的 heap／DOM／listener 增長；`scripts/verify_nicegui_mobile.py` 專門核對 320／390 px 直向及手機橫向排列；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名完成整條排班寫入、雙語 PDF、請假調整、另一資料庫還原，以及確認語句保護的新學年封存與新名單匯入；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。NiceGUI 的長連線及互動後背景音樂令全網絡靜止不是可靠完成訊號，因此測試以 DOM、URL 及真實操作結果判斷就緒；所有瀏覽器階段同時把 console error 及未捕捉頁面錯誤視為失敗。
 
 ```powershell
 python -X utf8 scripts\check_deployment_readiness.py

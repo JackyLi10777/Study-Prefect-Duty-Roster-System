@@ -6,7 +6,7 @@
 **日常網址：** `https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`
 **本機維護網址：** `http://127.0.0.1:8080`
 
-> **目前狀態（2026-07-16）：** rc.16 Worker、`/guest`、`/try`、唯讀 Viewer、Access 轉向及 VPC 健康已在正式網址通過自動化核對；`C:\SingYinRoster` 亦已切換至不可變標籤 `v1.1.0-rc.16` 並通過雜湊鎖定依賴檢查。正式主機尚未完成資料受控清理，`Sing Yin Roster Host` 排程工作亦尚待重建；在依第 0 節以 `-NoStart` 保存認證並完成受控切換前，不可停止目前 8080 程序或假設重新開機後會自動恢復。
+> **目前狀態（2026-07-16）：** `C:\SingYinRoster` 已固定於不可變標籤 `v1.1.0-rc.16`，並完成正式資料快照、隔離還原及受控切換。`Sing Yin Roster Host` 現由非管理員 `SingYinRosterSvc` 帳戶運行，唯一 NiceGUI listener 是 `127.0.0.1:8080`；Tunnel、Worker、`/guest`、`/try`、唯讀 Viewer、Access 轉向及 VPC 健康均已核對。管理 API 權杖已完成同步輪換，舊值已失效。尚未完成的是一次有人在場的 Windows 重新開機證明、正式資料受控清理，以及管理員登入／登出、長時間重連、上載與 PDF 的真人驗收。
 
 ---
 
@@ -310,9 +310,9 @@ Copy-Item .env.example .env
 notepad .env
 ```
 
-### 步驟 6.2：把本機設定改成以下內容
+### 步驟 6.2：先建立只限 loopback 的 staging 設定
 
-在記事本內，確認至少有以下設定：
+全新安裝先以 `local` 模式確認 Python、SQLite、PDF 與 localhost 正常；這只是啟用 Cloudflare 前的 staging 步驟。在記事本內，確認至少有以下設定：
 
 ```dotenv
 SING_YIN_DEPLOYMENT_MODE=local
@@ -340,6 +340,8 @@ SING_YIN_LOG_BACKUP_COUNT=5
 - `SING_YIN_CLOUDFLARE_PRIVATE_HOSTNAME`
 
 本機模式第一次啟動會自動建立 `data\runtime\.nicegui-storage-secret`，不需要手動輸入 secret，也不要打開、分享或修改該檔案。
+
+完成本機驗證後，正式啟用程序才會把受保護主機設定切換為 `server` 模式，仍固定監聽 `127.0.0.1:8080`，並啟用 Access、Viewer gateway 與獨立 `SING_YIN_STORAGE_SECRET`。不要手動逐項拼湊正式設定；依本手冊及 [Cloudflare 遠端存取手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 的受控啟用／核對程序一次完成。現行 rc.16 正式主機已處於這個 server-mode／loopback 狀態。
 
 ---
 
@@ -621,10 +623,10 @@ $PreviousCommit = (git rev-parse HEAD).Trim()
 
 正常情況不會列出程式檔修改。如果看到不明檔案或 `M`、`D`，先停止，不要執行 reset 或刪除，交給維護者檢查。
 
-先向維護者取得本次已通過 GitHub Quality gate 與 CodeQL 的發布標籤；例如 `v1.1.0-rc.8`。不要自行猜測 `main` 是否已完成驗證。確認沒有不明修改後：
+先向維護者取得本次已通過 GitHub Quality gate 與 CodeQL 的發布標籤；目前正式例子是 `v1.1.0-rc.16`。不要自行猜測 `main` 是否已完成驗證，也不要把例子當作未來永遠固定的版本。確認沒有不明修改後：
 
 ```powershell
-$ReleaseRef = "v1.1.0-rc.8"
+$ReleaseRef = "v1.1.0-rc.16"
 git fetch --prune --tags origin
 $ReleaseCommit = (git rev-parse "$ReleaseRef^{commit}").Trim()
 git merge-base --is-ancestor $ReleaseCommit origin/main
@@ -650,6 +652,19 @@ C:\SingYinRoster\.venv\Scripts\python.exe -m pip install --require-hashes -r C:\
 4. 核對名單、最近一份週表和最新備份仍可讀。
 5. 下載一份測試 PDF，確認中文正常顯示。
 6. 在 `C:\SingYinRoster` 執行 `git rev-parse --short HEAD` 並把短版 commit 記入交接紀錄；這個值必須與本次已驗證、已發布的 commit 相同。`/healthz` 正常只證明程式與資料庫可回應，不能證明畫面已更新到最新原始碼。
+
+### 步驟 12.6：如需輪換管理 API 權杖
+
+這不是使用者登入密碼，也不是每次更新都要執行。只有懷疑洩漏、交接或安全維護時，才由維護者以經審閱的受控程序輪換：
+
+1. 先核對目前 C-host、工作排程、單一 loopback listener、Worker version 和既有授權邊界。
+2. 以密碼學安全來源產生新值；全程不得把新舊值寫入命令輸出、文件、截圖或日誌。
+3. 在同一個互斥維護程序內，以標準輸入更新 Worker 的 `ADMIN_BEARER_TOKEN`，再原子更新受保護 `.env` 內的 `SING_YIN_PUBLIC_ROSTER_VIEWER_ADMIN_TOKEN`；檔案 ACL 必須繼續只允許系統、管理員及 `SingYinRosterSvc`。
+4. 只重新啟動 `Sing Yin Roster Host`，核對 owner、`127.0.0.1:8080`、official／database health、Tunnel 與 Worker。
+5. 對管理 API 證明新值回傳 HTTP 200、舊值回傳 HTTP 401；只記錄時間、Worker version、通過／失敗及不具可逆性的短指紋。
+6. 任何一步失敗，必須獨立回復 Worker 與主機兩端，再核對舊值仍可用；不可留下只更新一邊的狀態。成功後刪除受保護的臨時 recovery copy。
+
+2026-07-16 的正式輪換已依上述邊界完成；文件只記錄結果，不保存任何值。
 
 ---
 
@@ -733,7 +748,7 @@ C:\SingYinRoster\.venv\Scripts\python.exe -X utf8 scripts\inspect_support_log.py
 - [ ] 已下載並切換至本次通過 Quality gate 與 CodeQL 的確切 release tag／commit。
 - [ ] Python 3.12 `.venv` 已建立。
 - [ ] `requirements.lock` 已用 `--require-hashes` 安裝成功。
-- [ ] `.env` 維持 `local` 及 `127.0.0.1`。
+- [ ] 正式 `.env` 為 `server` 模式，但 host 仍固定為 `127.0.0.1:8080`；Access、Viewer gateway 與獨立 storage secret 已啟用。
 - [ ] 工作排程器只存在一個 `Sing Yin Roster Host`。
 - [ ] 重新啟動後網站會自動恢復。
 - [ ] `/healthz` 顯示 official 及 database ok。
