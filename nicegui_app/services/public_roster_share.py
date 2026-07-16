@@ -12,6 +12,7 @@ from __future__ import annotations
 from base64 import urlsafe_b64encode
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
+import hashlib
 import json
 import os
 import re
@@ -25,6 +26,7 @@ from zoneinfo import ZoneInfo
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from nicegui_app.access_context import AccessMode, Capability, CapabilityPolicy
 from roster_policy import (
     DUTY_SERVICE_TIME_WINDOWS,
     DutyPost,
@@ -413,11 +415,14 @@ class PublicRosterShareService:
         roster_week_id: int,
         *,
         expires_at: datetime | None = None,
+        command_id: str | None = None,
     ) -> PublicRosterShareReceipt:
+        self._require_external_delivery()
         self.settings.require_configured()
         snapshot = self._build_snapshot(roster_week_id)
         now = _as_utc(self._now())
         week_start = date.fromisoformat(str(snapshot["weekStart"]))
+        roster_version = int(snapshot["version"])
         normalized_expiry = _as_utc(expires_at) if expires_at else _default_expiry(week_start, now)
         if normalized_expiry <= now + timedelta(minutes=1):
             raise PublicRosterShareError("The public roster link expiry must be in the future.")
@@ -429,29 +434,111 @@ class PublicRosterShareService:
         nonce = os.urandom(12)
         aad = f"{_AAD_PREFIX}{share_id}".encode("utf-8")
         plaintext = json.dumps(snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        content_digest = hashlib.sha256(plaintext).hexdigest()
+        normalized_expiry_text = _iso_z(normalized_expiry.replace(microsecond=0))
+        operation_id = command_id
+        if operation_id is None:
+            operation_id = self.workflow.retryable_external_share_command(
+                roster_week_id=roster_week_id,
+                roster_version=roster_version,
+                content_digest=content_digest,
+                expires_at=normalized_expiry_text,
+            )
+        operation_id = operation_id or f"public-share:{secrets.token_hex(16)}"
         ciphertext = AESGCM(key).encrypt(nonce, plaintext, aad)
         created_at = now.replace(microsecond=0)
         normalized_expiry = normalized_expiry.replace(microsecond=0)
-        gateway_receipt = self.gateway.create(
-            {
-                "schemaVersion": SNAPSHOT_SCHEMA_VERSION,
-                "shareId": share_id,
-                "weekStart": week_start.isoformat(),
-                "createdAt": _iso_z(created_at),
-                "expiresAt": _iso_z(normalized_expiry),
-                "nonce": _base64url(nonce),
-                "ciphertext": _base64url(ciphertext),
-            }
+        delivery_payload = {
+            "schemaVersion": SNAPSHOT_SCHEMA_VERSION,
+            "shareId": share_id,
+            "weekStart": week_start.isoformat(),
+            "createdAt": _iso_z(created_at),
+            "expiresAt": normalized_expiry_text,
+            "nonce": _base64url(nonce),
+            "ciphertext": _base64url(ciphertext),
+        }
+        receipt_metadata = {
+            "shareId": share_id,
+            "weekStart": week_start.isoformat(),
+            "createdAt": _iso_z(created_at),
+            "expiresAt": normalized_expiry_text,
+        }
+        queued = self.workflow.queue_external_share(
+            command_id=operation_id,
+            roster_week_id=roster_week_id,
+            roster_version=roster_version,
+            content_digest=content_digest,
+            share_id=share_id,
+            delivery_payload=delivery_payload,
+            share_key=_base64url(key),
+            receipt_metadata=receipt_metadata,
         )
+        if queued.get("outboxStatus") == "delivered":
+            raise PublicRosterShareError(
+                "This public-share request was already delivered. "
+                "Its decryption key is no longer stored; revoke it or create a new link."
+            )
+        delivery = self.workflow.begin_external_share_delivery(command_id=operation_id)
+        if delivery.get("outboxStatus") == "delivered":
+            raise PublicRosterShareError(
+                "This public-share request was already delivered. "
+                "Its decryption key is no longer stored; revoke it or create a new link."
+            )
+        persisted_payload = delivery.get("deliveryPayload")
+        persisted_receipt = delivery.get("receipt")
+        persisted_key = str(delivery.get("shareKey") or "")
+        if (
+            not isinstance(persisted_payload, dict)
+            or not isinstance(persisted_receipt, dict)
+            or not persisted_key
+        ):
+            self.workflow.fail_external_share_delivery(
+                command_id=operation_id,
+                error_code="invalid_persisted_envelope",
+            )
+            raise PublicRosterShareError("The queued public-share delivery envelope is invalid.")
+
+        try:
+            gateway_receipt = self.gateway.create(persisted_payload)
+        except Exception as error:
+            self.workflow.fail_external_share_delivery(
+                command_id=operation_id,
+                error_code=type(error).__name__,
+            )
+            raise
         if gateway_receipt and gateway_receipt.get("createdAt") is not None:
             try:
                 created_at = _parse_datetime(gateway_receipt["createdAt"])
             except (TypeError, ValueError) as error:
+                self.workflow.fail_external_share_delivery(
+                    command_id=operation_id,
+                    error_code="invalid_gateway_receipt",
+                )
                 raise PublicRosterShareError("The public roster viewer returned invalid share metadata.") from error
-        share_url = f"{self.settings.base_url}/view#{share_id}.{_base64url(key)}"
-        return PublicRosterShareReceipt(share_id, share_url, week_start, created_at, normalized_expiry)
+        share_id = str(persisted_receipt["shareId"])
+        week_start = date.fromisoformat(str(persisted_receipt["weekStart"]))
+        normalized_expiry = _parse_datetime(persisted_receipt["expiresAt"])
+        share_url = f"{self.settings.base_url}/view#{share_id}.{persisted_key}"
+        self.workflow.complete_external_share_delivery(
+            command_id=operation_id,
+            delivered_receipt={
+                "shareId": share_id,
+                "shareUrl": share_url,
+                "weekStart": week_start.isoformat(),
+                "createdAt": _iso_z(created_at),
+                "expiresAt": _iso_z(normalized_expiry),
+            },
+        )
+        return PublicRosterShareReceipt(
+            share_id,
+            share_url,
+            week_start,
+            created_at,
+            normalized_expiry,
+        )
 
     def list_shares(self) -> list[PublicRosterShareMetadata]:
+        self._require_external_delivery()
         self.settings.require_configured()
         local_weeks = {
             _coerce_date(item.get("weekStart")): int(item["id"])
@@ -480,9 +567,25 @@ class PublicRosterShareService:
         return sorted(shares, key=lambda item: item.created_at, reverse=True)
 
     def revoke_share(self, share_id: str) -> None:
+        self._require_external_delivery()
         self.settings.require_configured()
         _require_share_id(share_id)
         self.gateway.revoke(share_id)
+
+    def _require_external_delivery(self) -> None:
+        """Reject guest/public adapters even when a caller bypasses the UI."""
+
+        raw_mode = getattr(self.workflow, "access_mode", None)
+        if raw_mode is None:
+            # Direct RosterWorkflow use is reserved for trusted local scripts
+            # and tests. Browser requests are always wrapped in a verified
+            # PageContextWorkflowAdapter.
+            return
+        try:
+            mode = raw_mode if isinstance(raw_mode, AccessMode) else AccessMode(str(raw_mode))
+        except ValueError as error:
+            raise PublicRosterShareError("The public-share access mode is invalid.") from error
+        CapabilityPolicy.require(mode, Capability.EXTERNAL_DELIVERY)
 
     def _build_snapshot(self, roster_week_id: int) -> dict[str, object]:
         week = self.workflow.roster_week(roster_week_id)

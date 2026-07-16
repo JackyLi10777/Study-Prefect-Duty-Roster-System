@@ -7,7 +7,12 @@ def combined_page_source() -> str:
     """Return the refactored page contract as one source string for static tests."""
 
     ui_root = PROJECT_ROOT / "nicegui_app" / "ui"
-    files = [ui_root / "page_shared.py", *(sorted((ui_root / "page_routes").glob("*.py")))]
+    files = [
+        ui_root / "devotional.py",
+        ui_root / "page_access.py",
+        ui_root / "page_shared.py",
+        *(sorted((ui_root / "page_routes").glob("*.py"))),
+    ]
     return "\n".join(path.read_text(encoding="utf-8") for path in files)
 
 

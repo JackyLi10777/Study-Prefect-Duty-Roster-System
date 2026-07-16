@@ -19,11 +19,33 @@ def test_readme_explains_safe_start_and_links_to_operator_documents() -> None:
     assert "docs/RELEASE_HANDOVER.md" in readme
     assert "docs/DEPLOYMENT_DECISION.md" in readme
     assert "docs/WINDOWS_DEDICATED_HOST_SETUP.md" in readme
+    assert "docs/WINDOWS_SSH_MAINTENANCE.md" in readme
     assert "docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md" in readme
     assert "START_PRACTICE_MODE.cmd" in readme
     assert "RESET_PRACTICE_MODE.cmd" in readme
     assert "nicegui-self-hosted" in readme
     assert "streamlit-cloud" in readme
+
+
+def test_windows_ssh_maintenance_guide_preserves_private_key_and_network_boundaries() -> None:
+    guide = (PROJECT_ROOT / "docs" / "WINDOWS_SSH_MAINTENANCE.md").read_text(
+        encoding="utf-8"
+    )
+    readme_en = (PROJECT_ROOT / "README-EN.md").read_text(encoding="utf-8")
+    handover = (PROJECT_ROOT / "docs" / "RELEASE_HANDOVER.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "ssh sing-yin-roster-host" in guide
+    assert "verify_windows_ssh.ps1" in guide
+    assert "127.0.0.1:22" in guide and "[::1]:22" in guide
+    assert "密碼及互動式登入均停用" in guide
+    assert "never change `ListenAddress` to `0.0.0.0`" in guide
+    assert "不可把 SSH 私鑰" in guide
+    assert "SingYinRosterSvc" in guide and "不能透過 SSH 登入" in guide
+    assert "Cloudflare private route" in guide
+    assert "docs/WINDOWS_SSH_MAINTENANCE.md" in readme_en
+    assert "WINDOWS_SSH_MAINTENANCE.md" in handover
     for relative_path in (
         "docs/OPERATOR_GUIDE.md",
         "docs/QUICKSTART.md",

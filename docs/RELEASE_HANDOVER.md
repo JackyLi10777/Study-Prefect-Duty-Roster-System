@@ -2,9 +2,11 @@
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
+> **v1.2 交接狀態：** 統一 Admin／Guest 來源候選尚未完成正式 gate、合併、標籤或部署。`C:\SingYinRoster` 仍是 v1.1 運行基線，`SING_YIN_UNIFIED_GUEST` 預設為 `0`。本手冊的統一 Guest 步驟只在 v1.2 受控發布後生效。
+
 ## 運作原則
 
-我把本系統設計成本機優先、單一網站進入的工具。所有人只需記住同一個 workers.dev 網址：訪客可閱讀 `/guest` 產品導覽，以 `/try` 使用固定虛構資料完成 30 分鐘裝置內試用，或開啟我明確發出的唯讀 `/view#…` 週表。獲准管理員按「管理員登入」，經 Cloudflare Access 驗證後才在同站使用完整工作台。完整名單、請假、公平帳本、審計、備份及 PDF 仍留在受控 Windows 主機；只有首席導學風紀明確建立分享連結時，系統才把最少欄位、AES-GCM 加密的已發布週表密文保存到 Cloudflare KV。我希望每一項操作都服務於清楚、公平、責任與關顧，而不是把管理負擔交給下一位風紀。
+我把本系統設計成本機優先、單一網站進入的工具。v1.2 中，訪客與管理員使用同一套 NiceGUI 頁面；訪客只操作有時限、虛構、記憶體內的工作區，管理員經 Cloudflare Access 後才使用正式 SQLite 工作流。收到我明確發出的 `/view#…` 連結的人只可查看該已發布週表。完整名單、請假、公平帳本、審計、備份及正式 PDF 仍留在受控 Windows 主機；只有首席導學風紀明確建立分享連結時，系統才把最少欄位、AES-GCM 加密的已發布週表密文保存到 Cloudflare KV。我希望每一項操作都服務於清楚、公平、責任與關顧，而不是把管理負擔交給下一位風紀。
 
 我在任內由首席導學風紀負責日常操作；交接後亦應由下一任首席導學風紀承接。顧問老師主要在週表完成後檢視已發布結果、公平審計、備份和交接證據；本發布不要求老師日常生成、編輯或處理請假。
 
@@ -79,6 +81,8 @@ JSON 是唯讀報告證據，不是 SQLite 還原備份。需要交接或復原�
 ## 本機設定
 
 正式長期主機採用 Windows 11，並維持 NiceGUI 只監聽 `127.0.0.1`。第一次由空白電腦安裝、設定開機自動啟動、更新、保養或搬機時，先依 [Windows 專用主機完整設定手冊](WINDOWS_DEDICATED_HOST_SETUP.md) 完成，不要從本節零散拼湊指令。
+
+受控技術維護可使用 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。正式設定只接受 Ed25519 金鑰、只監聽 loopback，並拒絕密碼、轉發及公開 TCP 22。`SingYinRosterSvc` 仍是非互動網站執行帳戶，不可用作 SSH 登入；SSH 私鑰亦不可放入 Git、交接備份、日誌或雲端同步資料夾。
 
 需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。訪客不登入；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 只在 `/auth/login` 核對 Access JWT，之後以獨立簽署的第一方管理員 session 驗證每個請求，再透過 Workers VPC 與具名 Tunnel 連到 NiceGUI。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
 
@@ -168,20 +172,33 @@ python -X utf8 -m nicegui_app.main
 7. 首頁經文的「跟隨外觀」會在淺色模式優先清晰指引、深色模式優先安靜安慰；首席導學風紀可改為固定方向。音樂已採相同語法：淺色建議「明亮專注」、深色建議「安靜反思」，也可固定選擇。切換外觀不會自動開始歌曲。
 8. 可把獲准使用的 HTTPS YouTube／YouTube Music 影片、Shorts 或公開歌單分享連結保存到 `music/youtube-imports/`。每次最多 25 首、每首 25 MB、合計 150 MB；匯入器不登入、不讀 cookies，並與排班 SQLite、備份及交接包分開。完整技術決定見 `docs/MUSIC_IMPORT_DECISION.md`。
 
-## 單一網站遠端交接：訪客唯讀與管理員編輯
+## 單一網站遠端交接：Guest 示範、管理員編輯與唯讀 Viewer
 
 開始交接前，先閱讀[部署與遠端存取決策指南](DEPLOYMENT_DECISION.md)、[Cloudflare 手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)及[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。只派發 canonical workers.dev 主網址；不另發管理員、WARP、localhost、VPC 或 `/auth/*` 網址。
 
 桌面與手機均使用同一主網址、登入、資料及權限；不要建立或派發 `/mobile`、第二個子網域或另一套登入。在 900px 或以下，手機／窄屏只是同一網站的獨立排列：上方為單行頁首，下方固定顯示 **Dashboard／Rosters／Prefects／More**；語言、深淺模式、聲音、登出及較少使用的頁面由 **More** 導覽抽屜開啟。抽屜必須可捲動到底，底部導航必須避開手機安全區，並不得遮蓋最後一個表單欄位或按鈕；鍵盤及讀屏順序會先讀本頁內容，再到固定底部導航。鍵盤開啟抽屜後，焦點會移到抽屜並在其中以 Tab／Shift+Tab 循環；按 Escape 或背景關閉後，焦點會返回 **More**。
 
-1. 核對主網址未登入時可正常顯示訪客唯讀頁，不會自動要求所有人登入。
-2. 核對「管理員登入」由 path-specific Cloudflare Access policy 接管；只有 exact-email 管理員收到並正確輸入 Cloudflare One-time PIN 才可通過。系統沒有自製密碼資料表或帳戶復原頁。
-3. 核對第一方管理員 session 最長 8 小時且不超過 Access token 到期時間；主動「登出」會先清除該 session，再結束 Cloudflare Access session 並回到訪客狀態。前任離任時更新 exact-email policy，不交接前任密碼。
-4. Worker 只在 `/auth/login` 核對 Access JWT 簽章、`aud`、`iss`、`exp` 及管理員電郵，然後簽發 HMAC `__Host-SingYinAdminSession`（HttpOnly、Secure、SameSite=Lax、Path=/；不包含 Access JWT）。每個 NiceGUI HTTP／WebSocket 請求都重新驗證 session、時效及 exact-email allowlist；送往 VPC 前移除外來身份標頭、`CF_Authorization` 與第一方管理員 cookie，再注入由已驗證 session 產生的內部身份。瀏覽器自報角色或電郵永遠不可信。
-5. 具名 Tunnel 只連至 `127.0.0.1:8080`；VPC Service `sing-yin-roster-nicegui` 以 `localhost:8080` 為 target。NiceGUI 不綁 `0.0.0.0`，也不開放資料庫、備份目錄或檔案分享埠。
-6. WebSocket 代理必須直接回傳 VPC `fetch()` 的原始 `Response`。既有臨時 probe 已從同一 VPC Service 取得 `/healthz` HTTP 200，並從 NiceGUI Socket.IO 路徑收到 Engine.IO open packet；probe script 及子網域已刪除。這證明傳輸能力，但不取代正式登入／登出、長連線、上載及 PDF 真人驗收。
-7. 以虛構已發布週表實測同 host `/view#…` 連結的建立、普通瀏覽器直達、到期及撤銷；再證明訪客看不到名單、請假、公平、審計、備份及設定。
-8. 本機及 WARP 只保留作維護後備，不能在一般使用指引中成為第二個正常入口。Worker secret store 必須具備 `ADMIN_BEARER_TOKEN` 與 `ADMIN_SESSION_SECRET`；其值連同 Access audience、JWT、cookie、Tunnel token 及管理憑證均不可出現在版本庫、文件、截圖或交接包。
+1. 核對主網址未登入時顯示統一品牌入口，不會自動要求所有人登入。
+2. 按「訪客體驗」後，Worker 建立最長 30 分鐘 Guest session；NiceGUI 顯示與管理員相同的路由及元件，但只使用虛構記憶體 workspace。
+3. 核對「管理員登入」由 path-specific Cloudflare Access policy 接管；只有 exact-email 管理員收到並正確輸入 Cloudflare One-time PIN 才可通過。系統沒有自製密碼資料表或帳戶復原頁。
+4. Worker 對 Guest／Admin 分別建立有限期 session，移除瀏覽器身份標頭，再向 origin 注入 HMAC 簽署的 `mode`、`subject`、`sid`、`exp`、`auth_epoch` 及 `kid`。NiceGUI 重新驗證後才建立 `PageContext`；瀏覽器自報角色或電郵永遠不可信。
+5. 主動「登出」會清除應用 session、Guest workspace、待下載檔案及同 session 分頁狀態，再結束 Cloudflare Access session。前任離任時更新 exact-email policy，不交接前任密碼。
+6. 具名 Tunnel 只連至 `127.0.0.1:8080`；NiceGUI 不綁 `0.0.0.0`，也不開放資料庫、備份目錄或檔案分享埠。
+7. 同時核對 `/healthz` 及 `/readyz`；只有 `writeReady=true`、沒有 maintenance／recovery／pending backup obligation 時才接受正式寫入。
+8. 以虛構已發布週表實測同 host `/view#…` 連結的建立、普通瀏覽器直達、到期及撤銷；Guest 不能建立正式 Viewer 連結。
+9. 本機及 WARP 只保留作維護後備。Worker／origin 的 session、principal、Viewer 及 Tunnel secret 值不可出現在版本庫、文件、截圖或交接包。
+
+### v1.2 受控發布次序
+
+1. 在來源分支完成 `python -X utf8 -m pytest -q`。
+2. 執行 `python -X utf8 scripts\verify_release_candidate.py`，核對 report 與最終來源 fingerprint 一致。
+3. 在現行正式系統建立新已驗證快照及交接包，並在另一個隔離 SQLite 完成還原。
+4. Gate 及備份證據全通過後，才合併 `main` 並建立 `v1.2.0-rc.1`；保存上一個 Windows bundle／tag 及 Worker version ID 作回退。
+5. 進入 maintenance，從該不可變 tag 更新 Windows bundle，執行 additive migration；先以 `SING_YIN_UNIFIED_GUEST=0` 啟動。
+6. 核對 `/healthz`、`/readyz`、管理員本機工作流及備份義務。
+7. staged 部署同一 tag 對應的 Worker，核對 Public、Admin、Guest、Viewer 及 WebSocket。
+8. 才把 `SING_YIN_UNIFIED_GUEST=1`，重新啟動 origin 並完成線上 Guest／Admin 隔離驗收。
+9. 所有線上證據通過後才宣布 v1.2 可供驗收；任一失敗立即恢復 flag、主機 bundle 及 Worker version。
 
 ## 正式驗收清單
 
@@ -205,9 +222,12 @@ python -X utf8 -m nicegui_app.main
 - [ ] 草稿下載及發布後準備的中文／英文週表 PDF 均為清晰單頁，檔名帶有正確 `v版本`，顯示正確崗位、星期、草稿／發布狀態及中文姓名；202 室星期二、五清楚標記為不開放。請假調整後的修正版必須顯示新替補及新版本。
 - [ ] 核對週表匯出視窗的校徽開關；乾淨發布版不含「僅供內部使用」、頁碼或經文提示，只有刻意開啟補充頁腳時才出現附註。
 - [ ] 在實體手機準備已發布週表後，按「分享 PDF（可選 WhatsApp）」會開啟系統分享面板；人工選擇 WhatsApp／正確群組、取消一次分享，並測試不支援時的下載附件後備路徑。內部公平審計必須只可下載，不可出現群組分享入口。
-- [ ] 未登入一般瀏覽器開啟 canonical 網站時只有訪客唯讀畫面；按「管理員登入」後，只有 exact-email 管理員完成 Cloudflare One-time PIN 才在同站取得 OP 工作台。
-- [ ] `/guest` 不顯示正式資料；`/try` 只用固定虛構中文姓名，在桌面及手機完成示範請假、生成、預覽及雙語 A4 PDF。核對 30 分鐘、關閉分頁與重置均清除狀態，Network 沒有試用 API／KV／VPC／NiceGUI 請求。
-- [ ] 主動登出、8 小時上限或 Access 較早到期後回復訪客權限；缺少、過期、錯誤 audience／issuer 或非管理員電郵的 JWT 在 `/auth/login` 被拒絕，缺少、過期、遭竄改或已不在白名單的第一方管理員 session 在任何工作台請求均被拒絕。
+- [ ] 未登入一般瀏覽器開啟 canonical 網站時顯示統一入口；只有按「訪客體驗」或「管理員登入」後才建立相應 session。
+- [ ] Guest 使用與管理員相同的 Dashboard、值班表、風紀、公平、交接、平台、工程、架構、手冊及經文頁，只見固定虛構中文姓名及 `DEMO` 狀態。
+- [ ] Guest 可完成示範請假、生成、手動修改、發布、雙語 PDF／JSON、發布後請假調整及公平說明；AI、上載、匯入、外部音樂、正式分享、備份／還原及永久設定在服務層被拒絕。
+- [ ] 同一 Guest 的兩個分頁取得獨立 workspace；複製分頁、重新整理、登出、30 分鐘到期、撤權及 origin 重啟均依安全模型處理，不能重播舊 revision 或交叉取得下載。
+- [ ] 主動登出、管理 session 上限或 Access 較早到期後回到 public；缺少、過期、錯誤 audience／issuer 或非管理員電郵的 JWT 被拒絕，缺少、過期、遭竄改、auth epoch／kid 不符的 session 或 principal 在任何工作台回調均被拒絕。
+- [ ] `/healthz` 及 `/readyz` 同時通過；以崩潰注入留下 backup obligation 後，重啟必須先修復，否則保持 degraded／唯讀而不可接受新寫入。
 - [ ] 以虛構已發布週表建立同 host `/view#…` 連結；一般瀏覽器可查看中文姓名週表但不能修改。撤銷後約一分鐘確認舊完整連結不能再載入。
 - [ ] 完成正式瀏覽器的 WebSocket 長連線／重新連線、檔案上載及 PDF 下載驗收；已記錄的 VPC probe 只作傳輸證據。
 - [x] 隔離 Chromium 真觸控模擬已覆蓋 390×844 繁中淺色、320×760 英文深色／reduced motion 及 844×390 橫向：單行頁首、`Dashboard／Rosters／Prefects／More`、可捲動 More 抽屜、`aria-expanded`、開啟後焦點、Tab／Shift+Tab 循環、Escape／背景關閉及焦點恢復、手機資料卡、44px 操作、安全區、零橫向溢出及零 console/page error 均通過。

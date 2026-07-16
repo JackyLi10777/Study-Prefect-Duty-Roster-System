@@ -64,20 +64,22 @@ def test_docs_profile_runs_only_documentation_hygiene_and_secret_checks() -> Non
     assert "secret_scan" in flattened
 
 
-def test_local_full_profile_delegates_to_the_formal_release_verifier_once() -> None:
+def test_local_full_profile_runs_pre_push_quality_gates_without_browser_drills() -> None:
     plan = classify_paths(("nicegui_app/main.py",))
     tasks = build_tasks(plan, ("nicegui_app/main.py",), ci=False, base=None, head="HEAD", staged=False)
 
-    assert [task.name for task in tasks] == ["diff_whitespace", "formal_release_candidate"]
-    assert sum(
-        argument == "scripts/verify_release_candidate.py"
-        for task in tasks
-        for command in task.commands
-        for argument in command
-    ) == 1
+    assert [task.name for task in tasks] == [
+        "diff_whitespace",
+        "automated_test_suite",
+        "worker_contract",
+        "repository_hygiene",
+        "security_gates",
+    ]
+    flattened = [argument for task in tasks for command in task.commands for argument in command]
+    assert "verify_release_candidate.py" not in flattened
 
 
-def test_local_worker_profile_requires_formal_release_evidence() -> None:
+def test_local_worker_profile_defers_formal_release_evidence_until_release_intent() -> None:
     plan = classify_paths(("cloudflare/roster_viewer/worker.js",))
     tasks = build_tasks(
         plan,
@@ -89,7 +91,48 @@ def test_local_worker_profile_requires_formal_release_evidence() -> None:
     )
 
     assert plan.formal_release_required is True
+    assert [task.name for task in tasks] == [
+        "diff_whitespace",
+        "worker_contract",
+        "repository_hygiene",
+        "secret_scan",
+    ]
+
+
+def test_explicit_release_intent_runs_the_formal_verifier_once() -> None:
+    plan = classify_paths(("nicegui_app/main.py",))
+    tasks = build_tasks(
+        plan,
+        ("nicegui_app/main.py",),
+        ci=False,
+        release=True,
+        base=None,
+        head="HEAD",
+        staged=False,
+    )
+
     assert [task.name for task in tasks] == ["diff_whitespace", "formal_release_candidate"]
+    assert sum(
+        argument == "scripts/verify_release_candidate.py"
+        for task in tasks
+        for command in task.commands
+        for argument in command
+    ) == 1
+
+
+def test_explicit_release_intent_can_refresh_formal_evidence_without_source_changes() -> None:
+    plan = classify_paths(())
+    tasks = build_tasks(
+        plan,
+        (),
+        ci=False,
+        release=True,
+        base=None,
+        head="HEAD",
+        staged=False,
+    )
+
+    assert [task.name for task in tasks] == ["formal_release_candidate"]
 
 
 def test_ci_full_profile_uses_non_browser_quality_gates() -> None:

@@ -21,6 +21,16 @@ def fenced_workflow_write(method: Callable[P, R]) -> Callable[P, R]:
         workflow = args[0]
         try:
             with workflow.maintenance.serialized_operation():
+                if method.__name__ != "_create_and_record_backup":
+                    pending_count = getattr(workflow, "pending_backup_obligation_count", lambda: 0)()
+                    if pending_count:
+                        preflight = getattr(workflow, "_raise_terminal_write_error", None)
+                        if callable(preflight):
+                            preflight(method.__name__, args[1:], kwargs)
+                        raise WorkflowMaintenanceError(
+                            "A committed operation still needs a verified recovery snapshot. "
+                            "The system is read-only until startup repair succeeds."
+                        )
                 return method(*args, **kwargs)
         except MaintenanceModeError as error:
             raise WorkflowMaintenanceError(str(error)) from error

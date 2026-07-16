@@ -4,35 +4,55 @@
 
 最近一份完整候選報告約需 **225 秒**；當中約 95% 用於完整 Python 套件、桌面／手機瀏覽器、寫入／PDF／還原、效能及備份失敗演練。這些證據對政策、資料庫、工作流、部署或正式 runtime 改動很重要，但不應因 README 改一句話而重跑。最近三次沒有 runtime 改動的提交亦在 GitHub Quality 與 CodeQL 合計使用約 18 分鐘。
 
-## 日常唯一入口
+## 日常唯一入口：先診斷，再核對 staged commit
 
-完成一批改動後，在 `D:\code_v3` 執行：
-
-```powershell
-python -X utf8 scripts\verify_update.py
-```
-
-它會先讀取 Git 變更，再顯示：
-
-- 選中的驗證 profile；
-- 為何需要這個層級；
-- 會執行哪些檢查；
-- 每項結果及耗時；
-- 是否需要正式 12-gate 發布證據。
-
-可先只看計劃：
+完成一批改動後，在 `D:\code_v3` 先執行：
 
 ```powershell
 python -X utf8 scripts\verify_update.py --plan
 ```
 
-只核對已加入 staging area 的內容：
+它會先讀取 Git 變更，再顯示：
+
+- 目前意圖是 `working-tree` 診斷，不是提交或正式發布；
+- 選中的驗證 profile；
+- 為何需要這個層級；
+- 會執行哪些檢查；
+- 正式部署前是否仍需要 12-gate 發布證據。
+
+然後閱讀 `git status --short`，逐一加入本次確實要上傳的檔案。不要使用 `git add -A`。完成 staging 後，執行真正的 pre-push gate：
 
 ```powershell
 python -X utf8 scripts\verify_update.py --staged
 ```
 
-結果會另存於 `logs/change-verification-report.json`；它不會覆蓋正式的 `logs/release-candidate-report.json`。
+它會顯示 `Verification intent: pre-push`，執行每項檢查、列出耗時，並把結果寫入 `logs/change-verification-report.json`；它不會覆蓋正式的 `logs/release-candidate-report.json`。
+
+如這批改動沒有新增檔案，也可直接對整個工作樹執行：
+
+```powershell
+python -X utf8 scripts\verify_update.py
+```
+
+但未 staged 的新 release source 會令 repository hygiene 失敗，避免新程式檔在 push 時被漏掉。這是工作樹尚未整理完成的訊號，不是功能測試失敗。
+
+pre-push 命令只證明「已 staged 的變更適合提交／push 並交給 CI」，不聲稱已可部署。即使分類為 `worker` 或 `full`，它也只執行完整 Python 測試、安全閘門、Worker 契約及 repository hygiene；桌面／手機瀏覽器、寫入／PDF、備份、還原及失敗演練會留待正式發布。
+
+## 只有正式發布才使用 `--release`
+
+準備建立 release tag、更新 Windows 正式 bundle 或部署 Worker 時，明確執行：
+
+```powershell
+python -X utf8 scripts\verify_update.py --release
+```
+
+這會啟動 `scripts/verify_release_candidate.py`，產生正式 `logs/release-candidate-report.json`。即使工作樹沒有新改動，`--release` 仍可重新產生與目前 source fingerprint 對應的正式證據。
+
+可先檢視正式發布計劃：
+
+```powershell
+python -X utf8 scripts\verify_update.py --release --plan
+```
 
 ## 風險矩陣
 
@@ -41,11 +61,11 @@ python -X utf8 scripts\verify_update.py --staged
 | 文件、README、狀態及交接文字 | `docs` | whitespace、文件契約、repository hygiene、包含文件的秘密掃描 |
 | 只有測試及文件 | `tests` | 被修改的測試；共用 test helper 改動則升級為完整 Python suite；另加 hygiene 及秘密掃描 |
 | GitHub workflow 或快速分類器 | `assurance` | assurance 聚焦測試、完整安全閘門及 hygiene |
-| Cloudflare Worker／登入／Viewer | `worker` | CI 跑 Worker 聚焦契約；正式部署前仍由同一命令啟動完整候選驗證 |
-| NiceGUI、政策、公平、交易、SQLite、遷移、依賴、運行資產、Windows 主機腳本或正式驗證器 | `full` | 完整隔離 12-gate `verify_release_candidate.py` |
+| Cloudflare Worker／登入／Viewer | `worker` | pre-push 跑 Worker 聚焦契約、hygiene 及秘密掃描；正式部署使用 `--release` |
+| NiceGUI、政策、公平、交易、SQLite、遷移、依賴、運行資產、Windows 主機腳本或正式驗證器 | `full` | pre-push 跑完整 Python、安全、Worker 及 hygiene；正式部署使用 `--release` 執行 12-gate |
 | 未能識別的新路徑或 Git base | `full` | 失敗時向高風險升級，不會靜默略過 |
 
-低風險 profile 內互不寫入的檢查會並行執行。正式候選驗證仍保持受控次序，因為瀏覽器寫入、備份及還原證據不可互相競爭同一個隔離環境。
+pre-push profile 內互不寫入的檢查會並行執行。正式候選驗證仍保持受控次序，因為瀏覽器寫入、備份及還原證據不可互相競爭同一個隔離環境。
 
 ## 正式證據不再被文字改動誤傷
 
@@ -71,7 +91,7 @@ python -X utf8 scripts\verify_update.py --staged
 
 ## 甚麼仍不可省略
 
-以下情況不是一般「上傳更新」，完整驗證與人手確認仍然必要：
+以下情況不是一般「上傳更新」；部署前必須使用 `--release`，並保留所列人手確認：
 
 - 正式政策、公平、交易、備份、還原或 migration 改動；
 - Worker 身份驗證、管理 session、Viewer 加密或 VPC 邊界改動；

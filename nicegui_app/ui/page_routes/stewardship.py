@@ -2,8 +2,28 @@
 
 from __future__ import annotations
 
-from nicegui_app.ui.page_shared import *  # noqa: F403
+from pathlib import Path
+
+from nicegui import events, ui
+
+from nicegui_app.release_evidence import load_release_evidence
+from nicegui_app.runtime import get_workflow
+from nicegui_app.ui.downloads import deliver_generated_download
+from nicegui_app.ui.i18n import t
+from nicegui_app.ui.music import render_guest_music_settings, render_music_library_settings
+from nicegui_app.ui.page_access import (
+    is_guest_mode as _is_guest_mode,
+    render_restricted_capability as _render_restricted_capability,
+)
+from nicegui_app.ui.page_shared import (
+    _OPERATION_FAILED,
+    _render_empty_state,
+    _render_operation_hint,
+    _run_with_progress,
+    _tone_badge,
+)
 from nicegui_app.ui.reference_navigation import render_page_toc, render_reference_pager
+from nicegui_app.ui.shell import page_shell
 
 @ui.page("/handover")
 def handover_page() -> None:
@@ -218,7 +238,11 @@ def settings_page() -> None:
     with page_shell("settings", "/settings", music_context="settings"):
         ui.label(t("settings")).classes("text-2xl font-semibold")
         _render_operation_hint("hint_settings", icon="settings_backup_restore")
-        render_music_library_settings()
+        if _is_guest_mode():
+            render_guest_music_settings()
+            _render_restricted_capability(icon="library_music")
+        else:
+            render_music_library_settings()
         with ui.card().classes("sy-surface w-full max-w-3xl p-6"):
             with ui.row().classes("w-full items-center justify-between gap-4 flex-wrap"):
                 with ui.column().classes("gap-1"):
@@ -303,7 +327,11 @@ def settings_page() -> None:
                             icon="archive",
                         )
                         if package is not _OPERATION_FAILED:
-                            ui.download(package.content, package.filename)
+                            deliver_generated_download(
+                                package.content,
+                                package.filename,
+                                media_type="application/zip",
+                            )
                             ui.notify(t("handover_backup_package_ready"), type="positive")
                             handover_package_dialog.close()
 

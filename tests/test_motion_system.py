@@ -56,8 +56,10 @@ def test_motion_assets_are_loaded_from_same_origin_only() -> None:
 
 
 def test_component_transitions_use_the_shared_motion_tokens() -> None:
-    theme = (PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-theme-v1.css").read_text(
-        encoding="utf-8"
+    css_root = PROJECT_ROOT / "nicegui_app" / "assets" / "css"
+    theme = "\n".join(
+        (css_root / filename).read_text(encoding="utf-8")
+        for filename in ("sing-yin-tokens-v1.css", "sing-yin-theme-v1.css")
     )
 
     for token in ("--sy-motion-press: 90ms", "--sy-motion-state: 180ms", "--sy-motion-layer: 260ms"):

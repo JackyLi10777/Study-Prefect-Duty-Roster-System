@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from nicegui import app, ui
+from nicegui import ui
 
+from nicegui_app.ui.design_token_contract import quasar_palette
+from nicegui_app.ui.preferences import preference_get, preference_set
 from nicegui_app.ui.theme_markup import THEME_HEAD_HTML
 from nicegui_app.ui.motion import MOTION_HEAD_HTML
 
@@ -22,52 +24,31 @@ ATMOSPHERE_THEME_PAIRS = {
     "empty-ready": ("empty-ready-light-v1.webp", "empty-ready-dark-v1.webp"),
 }
 
-QUASAR_LIGHT_PALETTE = {
-    "primary": "#35647C",
-    "secondary": "#0F766E",
-    "accent": "#0F766E",
-    "positive": "#0F766E",
-    "negative": "#963C35",
-    "info": "#35647C",
-    # Quasar renders warning notifications with dark text, so the framework
-    # fill must stay pale; the darker amber remains a CSS foreground token.
-    "warning": "#F0C96A",
-}
-
-QUASAR_DARK_PALETTE = {
-    # These values are framework FILLS (white text), not dark-mode foregrounds.
-    # Lighter action/stable/coral foregrounds remain in the CSS role tokens.
-    "primary": "#47758B",
-    "secondary": "#0F766E",
-    "accent": "#0F766E",
-    "dark": "#1C1C1E",
-    "dark_page": "#0D1117",
-    "positive": "#0F766E",
-    "negative": "#9A4A43",
-    "info": "#35647C",
-    "warning": "#F0C96A",
-}
+# Quasar is a framework-fill bridge, not a second palette. Both dictionaries
+# resolve from the same versioned contract that generates the CSS variables.
+QUASAR_LIGHT_PALETTE = quasar_palette(mode="light")
+QUASAR_DARK_PALETTE = quasar_palette(mode="dark")
 
 
 def current_theme() -> str:
-    return app.storage.user.get("theme", "light")
+    return str(preference_get("theme", "light"))
 
 
 def toggle_theme() -> None:
-    app.storage.user["theme"] = "dark" if current_theme() == "light" else "light"
+    preference_set("theme", "dark" if current_theme() == "light" else "light")
 
 
 def sound_feedback_enabled() -> bool:
     """Sound is always opt-in so shared school computers remain quiet by default."""
-    return bool(app.storage.user.get("sound_feedback", False))
+    return bool(preference_get("sound_feedback", False))
 
 
 def toggle_sound_feedback() -> None:
-    app.storage.user["sound_feedback"] = not sound_feedback_enabled()
+    preference_set("sound_feedback", not sound_feedback_enabled())
 
 
 def set_sound_feedback(enabled: bool) -> None:
-    app.storage.user["sound_feedback"] = bool(enabled)
+    preference_set("sound_feedback", bool(enabled))
 
 
 def apply_quasar_palette(is_dark: bool) -> None:

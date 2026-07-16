@@ -235,6 +235,40 @@ class MaintenanceCoordinator:
             self.marker_path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
             self._preserve_marker = True
 
+    def require_startup_recovery_review(self, *, reason_code: str) -> None:
+        """Fail closed before serving writes when startup repair cannot finish.
+
+        Unlike :meth:`require_recovery_review`, this path is intentionally used
+        before a maintenance owner exists.  The marker contains no roster
+        content and blocks every later normal operation until a maintainer has
+        reviewed the failed recovery obligation.
+        """
+
+        with self._condition:
+            if self._maintenance_owner is not None:
+                raise MaintenanceModeError("Startup recovery cannot replace active maintenance.")
+            if self.marker_path.exists():
+                return
+            self.marker_path.parent.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "operation": "startup_backup_repair",
+                "pid": os.getpid(),
+                "recoveryRequired": True,
+                "reasonCode": reason_code,
+                "updatedAt": datetime.now(timezone.utc).isoformat(),
+            }
+            temporary_path = self.marker_path.with_suffix(".tmp")
+            try:
+                descriptor = os.open(temporary_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                try:
+                    os.write(descriptor, json.dumps(payload, sort_keys=True).encode("utf-8"))
+                    os.fsync(descriptor)
+                finally:
+                    os.close(descriptor)
+                os.replace(temporary_path, self.marker_path)
+            finally:
+                temporary_path.unlink(missing_ok=True)
+
     def _acquire_operation_lease(self, owner: int) -> Path:
         if self.marker_path.exists():
             raise MaintenanceModeError("The roster system is in maintenance mode.")
@@ -302,6 +336,16 @@ class MaintenanceCoordinator:
             return None
 
     def _remove_empty_lease_directory(self) -> None:
+        # A second thread can already have passed ``mkdir`` in
+        # ``_acquire_operation_lease`` while the first thread is releasing its
+        # own lease.  Removing the directory while any local operation is
+        # admitted creates a narrow FileNotFoundError race before the second
+        # thread opens its temporary lease file.  Keep the empty directory
+        # until no local operation is in flight; maintenance owns admission at
+        # that point, so removal is safe.
+        with self._condition:
+            if self._active_operations:
+                return
         try:
             self.operation_lease_dir.rmdir()
         except OSError:

@@ -6,8 +6,10 @@
   const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
   const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
   const narrativeSelectors = [
+    '.sy-page-context',
     '.sy-daily-start',
     '.sy-workbench',
+    '.sy-dashboard-history',
     '.sy-onboarding-intro',
     '.sy-guide-hero',
     '.sy-handover-hero',
@@ -19,6 +21,8 @@
   ].join(',');
   const groupSelectors = [
     '.sy-flow',
+    '.sy-devotional-reading-grid',
+    '.sy-reference-index',
     '.sy-engineering-facts',
     '.sy-team-operating-model',
     '.sy-capability-map',
@@ -29,6 +33,8 @@
   ].join(',');
   /* Pointer light is reserved for real links/actions and editorial showcase surfaces. */
   const pointerSurfaceSelector = [
+    '.sy-dashboard-history-item:has(.q-btn)',
+    '.sy-reference-index-card:has(.q-btn)',
     '.sy-export-option:has(.q-btn)',
     '.sy-platform-resource[href]',
     '.sy-solution-card:has(.q-btn)',

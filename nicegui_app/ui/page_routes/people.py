@@ -3,10 +3,59 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import date
 import hashlib
 import json
 
-from nicegui_app.ui.page_shared import *  # noqa: F403
+from nicegui import events, ui
+
+from nicegui_app.access_context import Capability
+from nicegui_app.runtime import get_workflow
+from nicegui_app.services.prefect_import_assistant import (
+    ImportAssistantError,
+    import_assistant_status,
+    suggest_deepseek_column_mapping,
+)
+from nicegui_app.services.roster_workflow import PeriodSummaryReport, PrefectInput
+from nicegui_app.services.summary_report_export import (
+    build_duty_allocation_statement_pdf,
+    build_summary_report_json,
+    build_summary_report_pdf,
+)
+from nicegui_app.ui.downloads import deliver_generated_download
+from nicegui_app.ui.i18n import day_label, role_label, t
+from nicegui_app.ui.page_access import (
+    allows as _allows,
+    render_restricted_capability as _render_restricted_capability,
+)
+from nicegui_app.ui.page_shared import (
+    _OPERATION_FAILED,
+    _delete_dialog_after_close,
+    _prefect_directory_rows,
+    _render_mobile_prefect_cards,
+    _render_operation_hint,
+    _render_responsive_table,
+    _run_with_progress,
+    _tone_badge,
+)
+from nicegui_app.ui.shell import page_shell
+from nicegui_app.ui.theme import current_theme
+from nicegui_app.utils.prefect_file_import import (
+    MAX_IMPORT_BYTES,
+    ParsedImportFile,
+    PrefectFileImportError,
+    TARGET_FIELDS,
+    parse_prefect_file,
+    suggest_local_column_mapping,
+    validate_target_mapping,
+)
+from nicegui_app.utils.prefect_import import (
+    ImportPreview,
+    parse_prefect_import_rows,
+    parse_prefect_import_text,
+    prefect_import_template_csv,
+)
+from roster_policy import SchoolDay
 
 
 def _prefect_file_preview_fingerprint(
@@ -384,7 +433,11 @@ def _render_period_report(report: PeriodSummaryReport) -> None:
                     icon="workspace_premium",
                 )
                 if export is not _OPERATION_FAILED:
-                    ui.download(export.content, export.filename)
+                    deliver_generated_download(
+                        export.content,
+                        export.filename,
+                        media_type=export.media_type,
+                    )
                     ui.notify(t("allocation_statement_ready"), type="positive")
 
             with ui.row().classes("w-full gap-3 flex-wrap mt-3"):
@@ -496,7 +549,11 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
             icon="download",
         )
         if export is not _OPERATION_FAILED:
-            ui.download(export.content, export.filename)
+            deliver_generated_download(
+                export.content,
+                export.filename,
+                media_type=export.media_type,
+            )
             ui.notify(t("summary_export_ready"), type="positive")
 
     preview_button.on_click(refresh_report)
@@ -636,6 +693,10 @@ def prefects_page() -> None:
                 _render_mobile_prefect_cards(rows)
             with ui.tab_panel("ai_import").classes("px-0"):
                 _render_operation_hint("hint_prefect_import", icon="upload_file")
+                import_allowed = _allows(Capability.DATA_IMPORT) and _allows(Capability.FILE_UPLOAD)
+                ai_allowed = _allows(Capability.AI_USE)
+                if not import_allowed:
+                    _render_restricted_capability(icon="lock")
                 ui.label(t("ai_import_help")).classes("text-[var(--sy-muted)] max-w-3xl")
                 ui.label(t("import_template_notice")).classes("text-sm text-[var(--sy-muted)] max-w-3xl mt-2")
                 ui.button(
@@ -809,6 +870,9 @@ def prefects_page() -> None:
                                     )
 
                                 async def ask_deepseek() -> None:
+                                    if not ai_allowed:
+                                        _render_restricted_capability(icon="lock")
+                                        return
                                     if revision != file_state["revision"] or file_state["parsed"] is not parsed:
                                         invalidate_file_preview()
                                         return
@@ -855,7 +919,7 @@ def prefects_page() -> None:
                                     icon="auto_fix_high",
                                     on_click=ask_deepseek,
                                 ).props(
-                                    f"outline color=primary data-testid=deepseek-column-mapping {'disable' if not status.ready else ''}"
+                                    f"outline color=primary data-testid=deepseek-column-mapping {'disable' if not status.ready or not ai_allowed else ''}"
                                 ).classes("mt-3")
 
                             def preview_file_mapping() -> None:
@@ -933,6 +997,9 @@ def prefects_page() -> None:
                                 import_button_state["value"] = import_button
 
                     async def upload_prefect_file(event: events.UploadEventArguments) -> None:
+                        if not import_allowed:
+                            ui.notify(t("access_restricted_title"), type="warning")
+                            return
                         revision = reset_file_import_state()
                         try:
                             content = await event.file.read()
@@ -972,6 +1039,8 @@ def prefects_page() -> None:
                         on_rejected=reject_prefect_file,
                         auto_upload=True,
                     ).props("accept=.csv,.xlsx data-testid=prefect-file-upload").classes("w-full max-w-2xl mt-3")
+                    if not import_allowed:
+                        upload_control.disable()
 
                 ui.separator().classes("my-6")
                 ui.label(t("paste_import_fallback")).classes("font-semibold")
@@ -979,6 +1048,8 @@ def prefects_page() -> None:
                 import_text = ui.textarea(label=t("ai_import_input")).props(
                     "name=prefect-import autocomplete=off data-testid=paste-prefect-import-input"
                 ).classes("w-full max-w-3xl")
+                if not _allows(Capability.CLIPBOARD_INGEST):
+                    import_text.disable()
                 preview_state: dict[str, ImportPreview | None] = {"value": None}
                 preview_fingerprint: dict[str, str | None] = {"value": None}
                 text_import_button_state: dict[str, object | None] = {"value": None}
@@ -1078,7 +1149,7 @@ def prefects_page() -> None:
                         ui.navigate.reload()
 
                 with ui.row().classes("sy-mobile-actions gap-3 mt-4"):
-                    ui.button(t("preview_import"), icon="fact_check", on_click=preview_import).props(
+                    preview_import_button = ui.button(t("preview_import"), icon="fact_check", on_click=preview_import).props(
                         "outline color=primary data-testid=preview-pasted-prefects"
                     )
                     import_button = ui.button(t("import_prefects"), icon="upload", on_click=import_preview).props(
@@ -1086,6 +1157,8 @@ def prefects_page() -> None:
                     )
                     import_button.disable()
                     text_import_button_state["value"] = import_button
+                    if not _allows(Capability.CLIPBOARD_INGEST):
+                        preview_import_button.disable()
             with ui.tab_panel("fairness").classes("px-0"):
                 _render_fairness_panel(workflow)
 

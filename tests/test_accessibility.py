@@ -71,10 +71,8 @@ def test_quiet_precision_shell_uses_semantic_action_and_motion_tokens() -> None:
     assert "--sy-button-primary-bg:" in theme
     assert ".sy-sidebar .q-btn .q-icon" in theme
     assert "apply_quasar_palette(is_dark)" in theme
-    assert '"negative": "#963C35"' in theme
-    assert '"negative": "#9A4A43"' in theme
-    assert '"primary": "#47758B"' in theme
-    assert '"warning": "#F0C96A"' in theme
+    assert 'QUASAR_LIGHT_PALETTE = quasar_palette(mode="light")' in theme
+    assert 'QUASAR_DARK_PALETTE = quasar_palette(mode="dark")' in theme
     assert "color=teal-8" not in pages_source
     assert "bg-teal-" not in theme
     assert "color=primary" in pages_source
@@ -411,9 +409,9 @@ def test_secondary_pages_share_semantic_colour_and_empty_state_grammar() -> None
     youtube_source = (PROJECT_ROOT / "nicegui_app" / "ui" / "youtube_music.py").read_text(encoding="utf-8")
     theme = combined_theme_source()
 
-    assert music_source.count("sy-settings-section ") == 2
+    assert music_source.count("sy-settings-section ") == 3
     assert "sy-settings-section sy-online-music-settings" in youtube_source
-    assert music_source.count("sy-settings-section-icon") == 2
+    assert music_source.count("sy-settings-section-icon") == 3
     assert "sy-settings-section-icon" in youtube_source
     assert "text-[var(--sy-teal)]" not in music_source
     assert "text-[var(--sy-teal)]" not in youtube_source
@@ -442,7 +440,7 @@ def test_dashboard_devotional_direction_is_theme_aware_but_operator_overridable(
     page_source = combined_page_source()
     theme = combined_theme_source()
 
-    assert 'app.storage.user.get("devotional_tone", "auto")' in page_source
+    assert 'preference_get("devotional_tone", "auto")' in page_source
     assert 'return "comfort" if current_theme() == "dark" else "guidance"' in page_source
     assert "_DEVOTIONAL_GUIDANCE_THEMES" in page_source
     assert "_DEVOTIONAL_COMFORT_THEMES" in page_source

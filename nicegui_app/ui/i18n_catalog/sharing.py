@@ -53,6 +53,26 @@ MESSAGES = {
         "zh-HK": "登出",
         "en": "Sign out",
     },
+    "access_guest_mode": {
+        "zh-HK": "訪客示範模式",
+        "en": "Guest demo mode",
+    },
+    "access_guest_signed_in": {
+        "zh-HK": "DEMO・臨時工作區",
+        "en": "DEMO · Temporary workspace",
+    },
+    "access_guest_mode_body": {
+        "zh-HK": "你正在使用只含虛構中文姓名的臨時工作區；可完整試用排班流程，但資料不會寫入正式名單、帳本、備份或外部服務。",
+        "en": "You are using a temporary workspace containing fictional Chinese names only. You can try the full roster flow, but nothing is written to the official directory, ledger, backups, or external services.",
+    },
+    "access_restricted_title": {
+        "zh-HK": "RESTRICTED・訪客模式不會執行此操作",
+        "en": "RESTRICTED · Not executed in guest mode",
+    },
+    "access_restricted_body": {
+        "zh-HK": "這項功能涉及上載、外部連接或永久資料。你仍可使用已核准的虛構資料完成其餘示範流程。",
+        "en": "This feature uses uploads, an external connection, or permanent data. Continue the demonstration with the approved fictional dataset.",
+    },
     "access_select_roster": {
         "zh-HK": "選擇已發布週表",
         "en": "Choose a published roster",

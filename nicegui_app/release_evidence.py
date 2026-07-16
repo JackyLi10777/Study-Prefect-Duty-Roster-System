@@ -70,6 +70,7 @@ RELEASE_SOURCE_FILES = (
     PROJECT_ROOT / "scripts" / "verify_nicegui_write_pipeline.py",
     PROJECT_ROOT / "scripts" / "verify_release_candidate.py",
     PROJECT_ROOT / "scripts" / "verify_runtime_performance.py",
+    PROJECT_ROOT / "scripts" / "verify_unified_guest_ui.py",
 )
 RELEASE_EXCLUDED_DIRECTORY_NAMES = {"__pycache__", "node_modules", ".wrangler"}
 RELEASE_EXCLUDED_RELATIVE_PREFIXES = (

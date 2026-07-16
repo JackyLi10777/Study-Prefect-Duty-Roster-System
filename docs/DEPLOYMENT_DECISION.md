@@ -1,116 +1,138 @@
-# 部署與遠端存取決策指南 / Deployment and remote-access decision guide
+# 部署與遠端存取決策指南 / Deployment decision
 
-## 結論 / Recommendation
+## 結論
 
-**正式方案是一部 Windows 11 專用主機，加上一個不需購買網域的 canonical workers.dev 網站。所有人開啟同一 URL：訪客未登入時只能查看；管理員在同站按「管理員登入」，通過 Cloudflare Access 後才進入完整 NiceGUI 工作台。**
+正式架構維持：
 
-正式網址：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>
+```text
+一個 canonical workers.dev 網址
+        │
+        ▼
+Cloudflare Worker：入口、身份交接、簽署 principal、Viewer
+        │
+        ▼
+Workers VPC + 具名 Tunnel
+        │
+        ▼
+Windows 11 專用主機：單一 NiceGUI origin
+        │
+        ▼
+本機 SQLite／備份／日誌／PDF／音樂
+```
 
-NiceGUI、SQLite、PDF、備份及日誌仍在 Windows 主機，origin 只監聽 `127.0.0.1:8080`。Cloudflare Worker 是唯一前門；管理員在 `/auth/login` 經 Access 與 Worker JWT 驗證後取得獨立簽署的第一方 session，其後只有該 session 通過驗證的請求才經 Workers VPC、既有具名 Tunnel 抵達 NiceGUI。這不是把資料庫搬進 Worker，也不是公開 Windows 連接埠。
+目前不把正式資料搬到 Vercel、Supabase、GitHub Pages 或其他靜態主機。NiceGUI 需要長時間 Python 程序、WebSocket、可寫 SQLite、受控備份及還原；Windows 主機仍是唯一 system of record。真正遷移到受管 VM／容器及 PostgreSQL 是另一個 L3 決定。
 
-完整 Windows 安裝、工作排程器、健康檢查、更新、備份及搬機步驟見 [Windows 專用主機完整設定手冊](WINDOWS_DEDICATED_HOST_SETUP.md)；Access、VPC、Tunnel、驗收及後備程序見 [Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)；使用者入口、登入及分享見 [單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。目前不採用 Linux、Raspberry Pi、Docker 或真正雲端主機作正式資料來源。
+NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另行固定於 `127.0.0.1:22` 及 `[::1]:22`，只接受 Ed25519 金鑰，不開放 LAN、公網、防火牆入站規則或路由器轉發；日後校外 SSH 只能經獨立的 Cloudflare 私有路由進入。
 
-## 一個網址，兩種權限 / One URL, two permission states
+## v1.1 已部署基線與 v1.2 候選
 
-| 狀態 | 同一網站顯示 | 權限 |
-|---|---|---|
-| 未登入訪客 | 唯讀首頁及獲明確分享的 `/view#…` 已發布週表 | 不可生成、修改、發布、調整、公平審核、備份、還原或設定 |
-| 已驗證管理員 | 經 VPC 代理的完整 NiceGUI 工作台 | 可依既有政策、交易、確認及審計完成 OP 工作流 |
-
-不另派發「管理員網址」。Access 只保護同站 `/auth` 及 `/auth/*`；登入完成後，Worker 不把 Access cookie 當作全站管理 session，而是在每個 NiceGUI 請求驗證自己的 `__Host-SingYinAdminSession`。VPC Service、Tunnel、localhost 及私人 WARP 地址只給維護者。一般訪客不需 WARP、帳戶或密碼。
-
-## 身份及 session 決定
-
-- Access policy、Worker 有限管理員名單及 WARP 維護後備 policy 目前共同接受三個精確身份：`s10777@syss.edu.hk`、`lichuangjie0208@gmail.com`、`lichuangjie0208@outlook.com`。只在其中一層出現並不足以取得編輯權。
-- Access 使用 **Cloudflare One-time PIN**：使用者輸入 policy 精確列明的電郵，再輸入 Cloudflare 寄出的單次驗證碼；毋須 Cloudflare Dashboard 帳戶，也不會因此取得 DNS、Worker、Access 或帳單管理權。
-- 授權生命週期由 Access exact-email policy、One-time PIN 及 Worker 的第二次白名單核對共同管理。系統不收集或保存管理員密碼，也沒有忘記密碼流程。
-- 系統不建立密碼資料表、Argon2／bcrypt hash、共用 OP 密碼或忘記密碼頁；SQLite、KV、備份及 Git 均不保存管理員密碼。
-- Access token 與第一方管理員 session 均有時限；第一方 session 最長 **8 小時**，且不得超過 Access token 的到期時間。完成工作必須按「登出」；離任交接以更新 exact-email policy 完成，不交接前任密碼。
-- Access 應用只保護管理路徑，不可為整個 Worker 啟用強制登入，否則訪客也會被迫登入。
-
-目前 self-hosted Access app 的非敏感識別碼是 `25072aab-0e60-4787-8ec7-48029e448e8e`。Access audience、JWT、cookie、client secret 及管理 token 是秘密，不寫入公開文件、Git、截圖或日誌。
-
-## Worker 的 Access-to-session 交接
-
-Cloudflare Access 的路徑政策是第一道閘門；Worker 的交接及每次轉送必須依次完成：
-
-1. 只在 Access 保護的 `/auth/login` 從 Cloudflare JWK 驗證 `Cf-Access-Jwt-Assertion` 簽章，並核對 `aud`、`iss`、`exp` 及 exact-email 管理員身份。
-2. 驗證通過後建立 HMAC 簽署的 `__Host-SingYinAdminSession`，設定 HttpOnly、Secure、SameSite=Lax、Path=/，不設 Domain；cookie 只保存獨立 session payload，絕不複製 Access JWT。
-3. session 最長 8 小時且受 Access `exp` 約束；每個 NiceGUI HTTP／WebSocket 請求都重新驗證簽章、時效及目前 exact-email allowlist。
-4. 不相信瀏覽器提供的角色、電郵或自訂身份標頭。送往 `ROSTER_ORIGIN` 前移除外來 Access JWT、`CF_Authorization`、第一方管理員 cookie 及身份標頭，只注入由已驗證 session 產生的內部身份。
-5. `/logout` 先清除第一方管理員 cookie，再前往 Cloudflare Access logout；缺少、過期、被竄改或已不在 allowlist 的 session 一律拒絕或回到訪客頁。
-6. Worker 必須在 secret store 同時具備 `ADMIN_BEARER_TOKEN` 與 `ADMIN_SESSION_SECRET`；缺少任何一項均 fail closed，值本身不得進入版本庫、文件、截圖、日誌或備份。
-
-Cloudflare team JWK endpoint 是 `https://restless-hall-73b2.cloudflareaccess.com/cdn-cgi/access/certs`。這是公開驗簽資料位置，不是登入網址；不要在使用者文件派發 `/auth/*` 或 JWK URL。
-
-## VPC 與 Tunnel 邊界
-
-| 元件 | 已選設定 |
+| 層 | 現況 |
 |---|---|
-| Named Tunnel | `sing-yin-roster-windows-private` |
-| Tunnel ID | `ba6b6426-d012-4ecb-bafa-cbdbf2659731` |
-| VPC Service | `sing-yin-roster-nicegui` |
-| VPC Service ID | `019f5b30-d07c-7a63-a273-6b2ccb7318f8` |
-| VPC target | `localhost:8080` |
-| Worker binding | `ROSTER_ORIGIN`（remote VPC Service） |
-| NiceGUI listen address | `127.0.0.1:8080` |
+| `C:\SingYinRoster` | 現有 v1.1 正式 Windows origin；不是本分支 v1.2 |
+| 現有 Cloudflare Worker／Access／Tunnel | 已有可用基線；外部設定及真人驗收仍須以當前 Dashboard 狀態重新核對 |
+| `codex/unified-guest-redesign` | v1.2 來源候選，尚未合併、標籤或正式部署 |
+| `SING_YIN_UNIFIED_GUEST` | 預設 `0`；正式 gate 全通過後才可改為 `1` |
 
-Worker 代理必須直接回傳 VPC `fetch()` 的原始 `Response`，不可重建 status／headers／body 後另造一份 Response；否則 `response.webSocket` 會遺失，NiceGUI 的即時連線會失效。
+任何文件中的既有 Worker version ID、主機 tag 或歷史成功紀錄，只能證明當時的 v1.1 基線，不可當作 v1.2 已部署證據。
 
-## 已完成的傳輸證據
+既有 **私有 Cloudflare Tunnel + WARP** 路徑仍保留作維護後備。
+交接時要保留並重新核對 **WARP device-enrollment policy**。其歷史狀態
+「**主機連接器健康；待真人遠端裝置驗收**」只代表後備傳輸，不代表
+v1.2 正式驗收完成。**Access app destinations 只有 `/auth` 及 `/auth/*`**；
+v1.2 的**應用內權限**由簽署 `PageContext` 決定，
+**沒有管理員前綴或第二網站**。
 
-臨時 `sing-yin-roster-vpc-probe` Worker 曾綁定上述 VPC Service，經 Tunnel 連到 Windows 的 `localhost:8080`：
+## 一個網址，四種應用身份
 
-- `/healthz` 回傳 HTTP 200。
-- WebSocket client 連到 `/_nicegui_ws/socket.io/?EIO=4&transport=websocket`，收到 Engine.IO open packet。
-- 這證明 VPC HTTP Upgrade 及 NiceGUI WebSocket 路徑在實際環境可通過。
-- probe script 及 workers.dev 子網域已刪除；它不是第二個入口，也不應留下書籤。
+- `PUBLIC`：品牌入口，不具應用能力。
+- `GUEST`：同一 NiceGUI 產品及虛構資料工作區，不寫正式資料。
+- `ADMIN`：Cloudflare Access 驗證後的正式工作台。
+- `LOCAL_MAINTENANCE`：只供 Windows 主機受控維護。
 
-這項證據只確認 transport。正式發布前仍須以虛構資料完成 exact-email One-time PIN、第一方管理員 session 的建立／登出／到期、長時間重新連線、檔案上載、PDF 下載及完整寫入流程的瀏覽器驗收。
+`/view#…` 是獨立唯讀 Viewer 能力連結。它不等於 Guest session，也不能成為管理員身份。
 
-## 同站唯讀分享邊界
+v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作兼容重定向。詳細安全契約見 [統一訪客模式安全模型](UNIFIED_GUEST_SECURITY_MODEL.md)。
 
-1. 只有 `published` 週表可建立 `/view#…` 連結；草稿及完整資料庫不送到 Worker。
-2. 分享白名單只有週次／日期、崗位、當值時間、中文姓名及休室／待補顯示狀態。
-3. Windows 主機為每條連結產生獨立 AES-256-GCM key 及 nonce；KV 沒有 key，不能獨立解讀密文。
-4. key 留在完整 URL fragment，不會隨初始 HTTP request 傳給 Worker；同源 JavaScript 在收件者瀏覽器解密。
-5. KV 記錄會到期，也可由管理員撤銷；邊緣同步最多可能約一分鐘。
-6. 持有完整連結的人在到期或撤銷前都可查看。誤發時立即撤銷；週表經請假調整後建立新連結並撤銷舊連結。
+## 身份交接
 
-同一 host 同時提供訪客與管理員模式，但兩者資料權限完全不同；分享連結本身永遠不能把訪客升級為管理員。
+管理員：
 
-## 本機及 WARP 的定位
+1. `/auth/admin/start` 進入 Cloudflare Access。
+2. Access policy 以 exact-email 及 One-time PIN 核實身份。
+3. Worker 驗證 Access JWT 並建立有限期管理 session。
+4. Worker 移除瀏覽器身份標頭，向 origin 注入 HMAC 簽署 principal。
+5. NiceGUI 核對簽章、`mode`、`sid`、到期、`auth_epoch` 及 `kid`。
 
-`http://127.0.0.1:8080` 與 `http://roster.singyin.internal:8080` 保留作：
+訪客：
 
-- Cloudflare／Access／Worker 故障時的健康檢查與緊急維護；
-- 主機、Tunnel、VPC 或 WebSocket 診斷；
-- 正式入口未通過完整真人驗收前的安全後備；
-- 還原或搬機時的受控現場操作。
+1. `POST /auth/guest/start` 建立最長 30 分鐘 Guest session。
+2. Worker 向 origin 注入簽署 Guest principal。
+3. NiceGUI 只在 `SING_YIN_UNIFIED_GUEST=1` 時建立記憶體工作區。
+4. `/auth/status`、每次寫入回調及 WebSocket 生命週期重新核對到期與能力。
 
-它們不是正常分享地址，不放入群組、首頁快速入口或一般使用者書籤。WARP device enrollment 仍只列出維護所需的獲准帳戶；WARP-off 及未獲准裝置應不能使用後備地址。
+系統不保存管理員密碼。Worker secret、Access token、cookie、Tunnel token、API token及 HMAC key 不可進入 Git、文件、截圖、日誌或備份。
 
-### 維護後備的既有驗收契約
+## 資料及並行邊界
 
-原有「**私有 Cloudflare Tunnel + WARP**」路徑不再是日常入口，但仍是可復原的維護資產。其 **WARP device-enrollment policy**、WARP-on／WARP-off／未獲准裝置拒絕測試及「**主機連接器健康；待真人遠端裝置驗收**」狀態仍須保留至後備驗收完成。這個 **應用內權限** 契約只容許維護帳戶，不得升級訪客或取代 canonical Admin login。Access app destinations 只有 `/auth` 及 `/auth/*`；Worker 在 `/auth/login` 完成 JWT-to-session 交接後，於同一 hostname 的每個 NiceGUI 代理請求驗證第一方管理員 session，沒有管理員前綴或第二網站。
+- 只支援一部 Windows 主機、一個 NiceGUI origin、多使用者／多分頁。
+- SQLite 版本不宣稱支援多個 NiceGUI origin。
+- 第二個 origin 程序在 migration 前由資料庫絕對路徑鎖阻止。
+- 正式互動寫入使用 `expected_version`、命令收據及冪等重播。
+- 提交交易同時建立 `backup_obligations`；未完成義務在啟動時修復，失敗則 `/readyz` degraded 並阻止新寫入。
+- 外部分享使用 durable outbox，綁定值班表版本及 digest；不以「HTTP 回應遺失」當作可以盲目重建分享的理由。
+- Guest adapter 不接觸正式 SQLite、備份、外部整合或背景工作。
 
-## 為甚麼不用 Quick Tunnel、Pages 或直接公開 origin？
+## 為甚麼保留 Windows 主機
 
-完整系統需要長時間運行的 Python NiceGUI、WebSocket、可寫入 SQLite、備份及日誌。靜態網站平台不能取代這些狀態；Quick Tunnel 是短暫開發工具，也不提供這套固定身份、VPC、驗收及復原邊界。Windows 防火牆不應為 NiceGUI、SQLite、備份或檔案分享開放公網入站連接埠。
+優點：
 
-## 真正雲端主機是另一個 L3 決定
+- 現有 NiceGUI、SQLite、ReportLab、音樂及備份可直接運行；
+- 日常資料與復原點仍在可控制的本機；
+- 不需立即重寫成無狀態雲端服務；
+- 現有工作排程器、ACL、loopback origin 及 Tunnel 流程可沿用。
 
-如日後確有多主機高可用或集中 IT 維護需要，才另行設計：
+代價：
 
-- 長時間運行的受管 VM／容器，而不是靜態網站主機；
-- 加密持久化儲存，以及經測試的 PostgreSQL 遷移或單主機資料策略；
-- 保留 `history_weight`、一次性發布、審計、備份及還原語義；
-- 身份與角色生命週期、資料保留、事故處理、成本上限及災難復原演練。
+- 主機斷電、Windows 更新、網絡或硬碟故障會影響可用性；
+- 必須完成開機自啟、健康監察、已驗證備份及隔離還原；
+- 不能水平擴展多個 origin；
+- 遠端可用性仍依賴 Cloudflare、家中網絡及主機運作。
 
-目前 Worker + Access + VPC + Tunnel 只是安全地把同一 Windows origin 帶到一個正式網址，Windows 主機仍是唯一 system of record。
+## 不採用的方案
+
+- **Quick Tunnel：** 只供短暫測試，沒有固定身份、版本、復原及交接契約。
+- **直接開放路由器連接埠：** 不採用；NiceGUI origin 必須保持 loopback。
+- **Vercel／GitHub Pages：** 靜態／短生命週期執行模型不能直接承載目前的 NiceGUI、SQLite、WebSocket 及備份。
+- **把真實資料、備份或日誌當作 Git 儲存：** 不採用；Git 是程式和非敏感可重建資產的版本庫，不是運行資料庫或災難復原系統。
+- **多個 NiceGUI origin 共用 SQLite：** 不支援。
+
+## 正式切換程序
+
+只有完整 release report 與來源 fingerprint 一致時，才可：
+
+1. 建立並驗證正式備份；
+2. 在另一隔離資料庫完成還原；
+3. 進入短暫 maintenance；
+4. 更新 Windows bundle，執行 additive migration；
+5. 核對 `/healthz` 及 `/readyz`；
+6. 部署／啟用對應 Worker；
+7. 以虛構資料核對 Admin、Guest、Viewer、PDF、登出及多分頁；
+8. 才把 `SING_YIN_UNIFIED_GUEST` 切為 `1`。
+
+任何 gate 失敗，回復上一個主機 bundle 及 Worker version；additive migration 必須讓舊版本仍可讀原有資料。
+
+逐步 Cloudflare 設定、staged rollout、驗收及回退命令見
+[`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)。
+
+正式驗證命令：
+
+```powershell
+python -X utf8 -m pytest -q
+python -X utf8 scripts\verify_release_candidate.py
+```
 
 ## English summary
 
-The selected design uses one canonical `workers.dev` URL. Guests see read-only content; an approved administrator selects **Admin login**, enters an exact allowlisted email and the Cloudflare One-time PIN, and returns to the same host. At `/auth/login`, the Worker validates the Access JWT and creates a separate HMAC-signed, HttpOnly `__Host-SingYinAdminSession`; subsequent NiceGUI requests validate that session and the exact allowlist before proxying through Workers VPC and the existing named Tunnel to a Windows loopback origin.
+The selected topology remains one canonical Cloudflare Worker in front of one loopback-only NiceGUI origin on a dedicated Windows host. The Windows machine remains the sole system of record for SQLite, backups, logs, PDFs, and local music. v1.2 unifies administrator and guest pages through a signed `PageContext`, but guest data stays in a bounded in-memory adapter and the feature flag remains off until formal release gates pass.
 
-The application has no custom password database. The first-party administrator session lasts no longer than eight hours or the Access token expiry, is rechecked against the exact allowlist on every request, and never contains the Access JWT. Both identity cookies are stripped before the VPC origin; logout clears the first-party cookie before Cloudflare Access logout. Deployment requires `ADMIN_BEARER_TOKEN` and `ADMIN_SESSION_SECRET` in Worker secret storage. Same-host `/view#…` links remain encrypted, expiring, and revocable. Localhost and private WARP are maintenance fallbacks only, not additional URLs to distribute. The Windows host remains the system of record; a true cloud-host migration is a separate L3 project.
+The existing v1.1 host and Cloudflare deployment are a baseline, not evidence that v1.2 is live. Deployment requires a verified backup, isolated restore, additive migration, `/healthz` and `/readyz`, complete automated release evidence, and supervised browser acceptance before `SING_YIN_UNIFIED_GUEST=1`.

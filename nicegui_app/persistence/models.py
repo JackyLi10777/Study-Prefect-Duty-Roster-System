@@ -4,7 +4,20 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -16,6 +29,12 @@ class PrefectRecord(Base):
     __tablename__ = "prefects"
     __table_args__ = (
         CheckConstraint("role_code IN ('assistant_head', 'study_prefect')", name="ck_prefect_role_code"),
+        Index(
+            "uq_prefects_active_name_zh",
+            "name_zh",
+            unique=True,
+            sqlite_where=text("active = 1"),
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
@@ -132,7 +151,10 @@ class LeaveDeclarationRecord(Base):
     """A pre-generation absence constraint for a specific roster week."""
 
     __tablename__ = "leave_declarations"
-    __table_args__ = (UniqueConstraint("week_start", "prefect_id", "day", name="uq_leave_declaration"),)
+    __table_args__ = (
+        UniqueConstraint("week_start", "prefect_id", "day", name="uq_leave_declaration"),
+        CheckConstraint("version >= 1", name="ck_leave_declaration_version"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     week_start: Mapped[date] = mapped_column(Date)
@@ -140,17 +162,26 @@ class LeaveDeclarationRecord(Base):
     day: Mapped[str] = mapped_column(String(16))
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     created_at: Mapped[datetime] = mapped_column(DateTime)
     updated_at: Mapped[datetime] = mapped_column(DateTime)
 
 
 class AuditEventRecord(Base):
     __tablename__ = "audit_events"
+    __table_args__ = (
+        Index("ix_audit_events_command_id", "command_id"),
+        Index("ix_audit_events_request_reference", "request_reference"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     event_type: Mapped[str] = mapped_column(String(64))
     roster_week_id: Mapped[int | None] = mapped_column(ForeignKey("roster_weeks.id"), nullable=True)
     metadata_json: Mapped[str] = mapped_column(Text, default="{}")
+    actor_subject: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    actor_mode: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    command_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    request_reference: Mapped[str | None] = mapped_column(String(128), nullable=True)
     occurred_at: Mapped[datetime] = mapped_column(DateTime)
 
 
@@ -164,3 +195,67 @@ class BackupRunRecord(Base):
     success: Mapped[bool] = mapped_column(Boolean)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class OperationCommandRecord(Base):
+    """A durable receipt binding one idempotency key to one canonical command."""
+
+    __tablename__ = "operation_commands"
+
+    command_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    operation_type: Mapped[str] = mapped_column(String(64))
+    request_fingerprint: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(24), default="committed", server_default="committed")
+    result_json: Mapped[str] = mapped_column(Text, default="{}", server_default="{}")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class BackupObligationRecord(Base):
+    """A recoverable obligation created atomically with a committed command."""
+
+    __tablename__ = "backup_obligations"
+    __table_args__ = (
+        UniqueConstraint("command_id", name="uq_backup_obligation_command"),
+        Index("ix_backup_obligations_status_created", "status", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    command_id: Mapped[str] = mapped_column(
+        ForeignKey("operation_commands.command_id", ondelete="CASCADE")
+    )
+    operation_type: Mapped[str] = mapped_column(String(64))
+    roster_week_id: Mapped[int | None] = mapped_column(ForeignKey("roster_weeks.id"), nullable=True)
+    status: Mapped[str] = mapped_column(String(24), default="pending", server_default="pending")
+    backup_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class ExternalShareOutboxRecord(Base):
+    """A durable, replay-safe share request bound to roster version and digest."""
+
+    __tablename__ = "external_share_outbox"
+    __table_args__ = (
+        UniqueConstraint("command_id", name="uq_external_share_outbox_command"),
+        UniqueConstraint("share_id", name="uq_external_share_outbox_share"),
+        CheckConstraint("roster_version >= 1", name="ck_external_share_outbox_roster_version"),
+        CheckConstraint("attempts >= 0", name="ck_external_share_outbox_attempts"),
+        Index("ix_external_share_outbox_status_updated", "status", "updated_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    command_id: Mapped[str] = mapped_column(
+        ForeignKey("operation_commands.command_id", ondelete="CASCADE")
+    )
+    share_id: Mapped[str] = mapped_column(String(64))
+    roster_week_id: Mapped[int] = mapped_column(ForeignKey("roster_weeks.id"))
+    roster_version: Mapped[int] = mapped_column(Integer)
+    content_digest: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(24), default="pending", server_default="pending")
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

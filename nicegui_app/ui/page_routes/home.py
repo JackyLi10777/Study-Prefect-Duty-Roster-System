@@ -2,8 +2,24 @@
 
 from __future__ import annotations
 
-from nicegui_app.ui.page_shared import *  # noqa: F403
+from nicegui import ui
+
+from nicegui_app.runtime import get_workflow
+from nicegui_app.ui.devotional import (
+    dashboard_verse as _dashboard_verse,
+    refresh_dashboard_verse as _refresh_dashboard_verse,
+    set_devotional_tone as _set_devotional_tone,
+)
+from nicegui_app.ui.i18n import ZH_HK, current_locale, t
+from nicegui_app.ui.page_shared import (
+    _navigate_with_feedback,
+    _render_feedback_channel,
+    _render_flow_step,
+    _tone_badge,
+)
+from nicegui_app.ui.preferences import preference_get
 from nicegui_app.ui.reference_navigation import render_page_toc, render_reference_pager
+from nicegui_app.ui.shell import page_shell
 
 @ui.page("/")
 def dashboard_page() -> None:
@@ -42,7 +58,7 @@ def dashboard_page() -> None:
                     ui.label(reference).classes("sy-daily-start-reference")
                     ui.label(t("verse_translation_label")).classes("sy-verse-translation")
                 with ui.column().classes("sy-devotional-controls gap-2 items-end"):
-                    tone_preference = str(app.storage.user.get("devotional_tone", "auto"))
+                    tone_preference = str(preference_get("devotional_tone", "auto"))
                     ui.button(t("refresh_verse"), icon="refresh", on_click=_refresh_dashboard_verse).props("flat").classes("sy-daily-start-refresh")
             with ui.expansion(reflection.get("title", ""), icon="auto_stories").classes("sy-daily-start-reflection mt-3"):
                 tone_select = ui.select(
@@ -284,7 +300,7 @@ def devotional_page() -> None:
     reference = verse.reference_zh if locale_is_zh else verse.reference_en
     scripture = verse.scripture_zh if locale_is_zh else verse.scripture_en
     reflection = verse.reflection_zh if locale_is_zh else verse.reflection_en
-    tone_preference = str(app.storage.user.get("devotional_tone", "auto"))
+    tone_preference = str(preference_get("devotional_tone", "auto"))
     if tone_preference not in {"auto", "guidance", "comfort"}:
         tone_preference = "auto"
     with page_shell("devotional", "/devotional", music_context="devotional"):

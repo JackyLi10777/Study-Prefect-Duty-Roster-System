@@ -1,13 +1,16 @@
 # 快速啟動 / Quick start
 
-> **目前正式狀態（2026-07-16）：** `C:\SingYinRoster` rc.16 已成為唯一 official origin；`Sing Yin Roster Host` 正在 `SingYinRosterSvc` 帳戶下運行，NiceGUI 只監聽 `127.0.0.1:8080`，Tunnel 與正式 Worker 均健康。管理權杖亦已輪換並核對新值可用、舊值失效。仍須由人在場完成一次 Windows 重新開機驗證，以及管理員登入／登出、長時間重連、上載與 PDF 的正式驗收。
+> **目前狀態：** `C:\SingYinRoster` 仍是現有 v1.1 official origin。v1.2 統一訪客候選位於 `codex/unified-guest-redesign`，`SING_YIN_UNIFIED_GUEST` 預設為 `0`，尚未正式部署。以下「每日使用」適用於 v1.2 通過 gate 並啟用後；現行線上行為仍以實際 v1.1 畫面為準。
 
 ## 每日使用
 
 1. 確認 Windows 專用主機已開機；背景工作會自動啟動，毋須每日雙擊程式。
 2. 在任何獲准裝置開啟唯一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。
-3. 未登入時是訪客唯讀模式；首席導學風紀按「管理員登入」，輸入 Access policy 精確列明的電郵及 Cloudflare 寄出的單次驗證碼後，同一網址會解鎖工作台。
-4. 完成工作後按「登出」，特別是共用裝置；只關閉分頁並不等於清除網站的簽署管理員 session 及 Cloudflare Access session。
+3. 未登入時可選：
+   - **訪客體驗：** 進入同一套 NiceGUI 頁面，只操作虛構資料，不寫正式 SQLite、備份或公平帳本。
+   - **管理員登入：** 輸入 Access policy 精確列明的電郵及 Cloudflare 寄出的單次驗證碼，同一網址才會解鎖正式工作台。
+4. 完成後按「登出」，特別是共用裝置；只關閉分頁不等於清除管理員／Guest session 及同 session 的其他分頁狀態。
+5. 如只需查看首席導學風紀發出的週表，直接開啟完整 `/view#…` 連結；不要以 Guest 或 Admin 入口取代分享連結。
 
 ## 本機維護或 Cloudflare 故障復原
 
@@ -42,8 +45,9 @@
 - 顯示 `Python is not installed`：請由教師顧問或 IT 支援按 README 的首次設定安裝 Python 3.12 及需求。
 - 顯示 `No free local port`：關閉不需要的本機服務後再試；不要直接修改資料庫或刪除資料夾。
 - 若畫面顯示 `OP-...`：這是應用程式操作支援編號，請保留編號並查看本機 `logs/app.log`。
+- `/healthz` 只表示程序及資料庫可讀；不能寫入時要同時查看 `/readyz`。如 `/readyz` 顯示 maintenance、recovery 或 pending backup obligation，停止重試並交由維護者處理。
 - 若啟動器報錯：保留黑色視窗中的完整訊息，交給教師顧問或 IT 支援；不要只報告「網站打不開」。
 
 ## English
 
-For daily work, open the single canonical website, select **Admin login**, enter an exact allowlisted email and the one-time code sent by Cloudflare; the same URL then unlocks the workbench under a separate signed administrator session. Select **Log out** when finished because closing the tab does not clear both sessions. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for a real HTTP readiness response, and only then opens the browser. For a fictional, isolated rehearsal, use `START_PRACTICE_MODE.cmd`; close it and use `RESET_PRACTICE_MODE.cmd` for a clean practice workspace. The persistent banner and `PRACTICE_` PDF marks make the mode explicit.
+After the v1.2 gate and deployment, the single canonical site offers either the time-limited **Guest experience** with fictional in-memory data or **Admin login** through Cloudflare Access. Select **Log out** when finished because closing one tab does not clear every session state. `/view#…` remains the separate read-only published-roster link. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for HTTP readiness, and only then opens the browser. For a durable fictional rehearsal with backup/restore, use `START_PRACTICE_MODE.cmd`; the remote Guest workspace is intentionally temporary. Check `/readyz`, not only `/healthz`, before accepting official writes.

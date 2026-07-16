@@ -144,7 +144,7 @@ This is an **L2 workflow and visual-system improvement**. It should improve conf
 
 ### Strategy and evidence
 
-The owner is `nicegui_app/ui/theme.py` plus the versioned `nicegui_app/assets/css/sing-yin-theme-v1.css` for tokens and component language; `theme_markup.py` contains only same-origin preload／stylesheet links. `nicegui_app/ui/page_routes/` plus `page_shared.py` own page hierarchy, while `nicegui_app/ui/i18n_catalog/` behind the stable `i18n.py` facade owns bilingual copy. Every implementation phase must preserve policy boundaries, keyboard access, light/dark contrast, and browser evidence in both modes and at mobile width.
+The executable owner is the versioned `design_system/tokens.v1.json` contract. It generates `nicegui_app/assets/css/sing-yin-tokens-v1.css`, supplies the Quasar fill bridge through `nicegui_app/ui/design_token_contract.py`, and generates `cloudflare/roster_viewer/design-tokens-v1.generated.json` for Worker drift validation. `nicegui_app/assets/css/sing-yin-theme-v1.css` remains the compatibility implementation layer for base, layout, component, page, motion and utility selectors; it must not redeclare managed tokens. `theme_markup.py` contains only same-origin preload／stylesheet links and loads the token layer before compatibility and mobile CSS. `nicegui_app/ui/page_routes/` plus `page_shared.py` own page hierarchy, while `nicegui_app/ui/i18n_catalog/` behind the stable `i18n.py` facade owns bilingual copy. Every implementation phase must preserve policy boundaries, keyboard access, light/dark contrast, and browser evidence in both modes and at mobile width.
 
 ---
 
@@ -236,6 +236,21 @@ Iterate with one delta at a time. A reference may suggest a question or layout r
 ---
 
 ## 5. Token system
+
+### 5.0 Executable contract and maintenance rule
+
+`design_system/tokens.v1.json` is the only file in which a managed colour, motion, atmosphere, semantic status, component-control or Quasar bridge value may be changed. Its fixed layer order is:
+
+1. **Primitive:** durable raw colours and motion values without UI meaning.
+2. **Semantic:** action, stable, attention, danger, neutral, text, surface, focus and atmosphere roles for each light／dark platform.
+3. **Component:** button, control depth, status capsule, hover and veil values that depend on semantic roles.
+
+The two checked-in generated artifacts serve different deployment boundaries:
+
+- `nicegui_app/assets/css/sing-yin-tokens-v1.css` is the same-origin `@layer sy.tokens` stylesheet consumed directly by NiceGUI before the compatibility theme.
+- `cloudflare/roster_viewer/design-tokens-v1.generated.json` is the machine contract for the zero-network Worker. The Worker remains self-contained rather than fetching JSON at runtime; validation compares its inline light, explicit-dark and automatic-dark declarations with this generated contract.
+
+Run `python -X utf8 scripts/generate_design_system_tokens.py` after an intentional contract change, then run `python -X utf8 scripts/generate_design_system_tokens.py --check`. The check fails if a generated file is stale, the NiceGUI loader order changes, compatibility CSS silently redeclares a managed token, the Quasar bridge diverges, or any Worker theme differs. Generated files are committed but never hand-edited.
 
 ### 5.1 Colour roles
 
@@ -529,7 +544,7 @@ The current reference set is deliberately bounded:
 
 Attribution is retained in `NOTICE.md`; local source comments identify the adapted family. Uiverse remains a design reference and MIT source archive, not a runtime dependency.
 
-The shared implementation owner is `nicegui_app/assets/css/sing-yin-theme-v1.css`. It exposes one set of control tokens—`--sy-control-edge`, `--sy-control-highlight`, `--sy-control-shadow`, `--sy-control-shadow-hover`, `--sy-control-outline-shadow` and `--sy-control-danger-shadow`—with separate light／dark values. Quasar props remain the semantic API: `color=primary` is Primary, `outline` is Secondary, `flat` is Tertiary, `negative` is Destructive and `sy-button-attention` is Attention. Primary fill selectors must positively require `.bg-primary`; generic outline／hover rules must explicitly exclude `.text-negative` and `.sy-button-attention`. This semantic cascade rule prevents a broad visual rule from silently recolouring destructive or recovery actions. Pages must not recreate shadows, gradients or transition timings inline.
+The shared token owner is `design_system/tokens.v1.json`; generated `sing-yin-tokens-v1.css` exposes one set of control tokens—`--sy-control-edge`, `--sy-control-highlight`, `--sy-control-shadow`, `--sy-control-shadow-hover`, `--sy-control-outline-shadow` and `--sy-control-danger-shadow`—with separate light／dark values. `sing-yin-theme-v1.css` consumes those tokens for the shared component selectors. Quasar props remain the semantic API: `color=primary` is Primary, `outline` is Secondary, `flat` is Tertiary, `negative` is Destructive and `sy-button-attention` is Attention. Primary fill selectors must positively require `.bg-primary`; generic outline／hover rules must explicitly exclude `.text-negative` and `.sy-button-attention`. This semantic cascade rule prevents a broad visual rule from silently recolouring destructive or recovery actions. Pages must not recreate shadows, gradients or transition timings inline.
 
 Quasar's palette is a **framework fill bridge**, not the complete design palette. `bg-primary`, `bg-positive`, `bg-negative` and `bg-info` normally carry white text, while `bg-warning` carries dark text; their values must therefore remain fill-safe in both themes. Dark-mode outline／flat foregrounds are intentionally lighter component tokens and must not be fed back into those filled utilities. The current bridge is: action fill `#35647C`／`#47758B`, stable fill `#0F766E`, danger fill `#963C35`／`#9A4A43`, info fill `#35647C`, and warning fill `#F0C96A`. CSS child-content rules supply dark outline action `#9BC2D2`, stable `#72D6C7`, danger `#D98F87` and attention `#F0C96A`. Browser evidence must measure the rendered label against the rendered surface rather than merely confirming that two colours differ.
 
@@ -733,7 +748,7 @@ No phase may weaken roster policy, persistent fairness, backup verification, pri
 ### Phase E — measured performance and lifecycle quality
 
 1. Web UI uses Inter plus platform-native Hong Kong／Traditional Chinese fallbacks; the large Noto TTF files remain for deterministic PDF embedding, not cold browser download.
-2. Shared theme CSS is one versioned same-origin asset so navigation can reuse the browser cache instead of repeating the full design system in every HTML response.
+2. Shared theme CSS is a versioned same-origin token layer followed by compatibility and responsive layers, so navigation reuses browser-cached assets instead of repeating the design system in every HTML response.
 3. The optional music controller is a single persistent non-modal panel. Opening and closing it must not mount another dialog tree; Escape and the close control return focus to the trigger.
 4. Phone layout places one responsive “next safe step” immediately after Daily Verse and hides the repeated three-card flow inside the workbench at 600 px or below. The compact workbench summary and start guide remain available; the verse stays first and the only current action remains inside the first viewport.
 5. `verify_runtime_performance.py` is a release gate for cold transfer, largest resource, resource count, forced-GC heap growth, DOM nodes, JavaScript listeners, console errors, representative routes, and mobile overflow. Motion on reduced-motion or touch input adds no pointer-light node.

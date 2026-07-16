@@ -320,48 +320,33 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
     assert "navigator.clipboard?.writeText" in source
 
 
-def test_guest_tour_is_edge_only_read_only_and_fail_closed() -> None:
+def test_guest_entry_uses_a_signed_bounded_session_and_the_same_origin_workbench() -> None:
     source = _source()
-    guest_section = re.search(
-        r'<section id="guestPortalState".*?</section>',
-        source,
-        flags=re.DOTALL,
-    )
-    assert guest_section is not None
-    guest_html = guest_section.group(0)
 
-    for forbidden in (
-        "<form",
-        "<input",
-        "<textarea",
-        "<select",
-        "contenteditable",
-        "ROSTER_ORIGIN",
-        "ROSTER_SHARES",
+    for required in (
+        "const GUEST_SESSION_COOKIE_NAME = '__Host-SingYinGuestSession'",
+        "const GUEST_SESSION_MAX_AGE_SECONDS = 30 * 60",
+        "path === '/auth/guest/start'",
+        "request.method !== 'POST'",
+        "authenticatedProxyRequestAllowed(request)",
+        "createGuestSessionToken(env)",
+        "validateGuestSessionToken(guestToken, env)",
+        "return redirectResponse('/?guest=1', request.url)",
+        'data-guest-bootstrap="true"',
+        "fetch('/auth/guest/start'",
+        "principal.mode",
+        "proxyToRosterOrigin(request, env, principal)",
     ):
-        assert forbidden not in guest_html
+        assert required in source
 
-    assert "訪客瀏覽模式" in guest_html
-    assert "目前權限：只供查看" in guest_html
-    assert "The guest tour contains no roster data." in guest_html
-    assert "Purpose and servant-leadership principle" in guest_html
-    assert "Any write-capable connection to the NiceGUI workbench" in guest_html
-    assert "Published-duty absence" in guest_html
-    assert "repeat(3, minmax(0, 1fr))" in source
-    assert "repeat(4, minmax(0, 1fr))" not in source
-    assert "加密值班表需要啟用 JavaScript" in source
-    assert "if (!['GET', 'HEAD'].includes(request.method))" in source
-    assert "window.location.pathname === '/guest'" in source
-
-    guest_boot = re.search(
-        r"if \(window\.location\.pathname === '/guest'\) \{(?P<body>.*?)\n\s*\}",
+    assert source.index("const adminToken = cookieValueFromRequest") < source.index(
+        "const guestToken = cookieValueFromRequest"
+    )
+    assert "sessionStorage" not in re.search(
+        r"async function createGuestSessionToken.*?\n\}",
         source,
         flags=re.DOTALL,
-    )
-    assert guest_boot is not None
-    assert "showOnly(guestPortalState)" in guest_boot.group("body")
-    assert "return;" in guest_boot.group("body")
-    assert "fetch(" not in guest_boot.group("body")
+    ).group(0)
 
 
 def test_viewer_rejects_oversized_or_long_lived_share_payloads() -> None:
@@ -418,6 +403,9 @@ def test_unified_gateway_validates_access_and_keeps_public_viewer_routes_separat
         "configuration.adminEmails.includes(payload.email.toLowerCase())",
         "/cdn-cgi/access/certs",
         "/cdn-cgi/access/logout",
+        "path === '/auth/admin/start'",
+        "path === '/auth/guest/start'",
+        "path === '/auth/logout'",
         "path === '/auth/login'",
         "path === '/auth/status'",
         "path === '/view'",
@@ -454,14 +442,46 @@ def test_authenticated_proxy_is_same_origin_sanitized_and_websocket_transparent(
     assert "const isUnsafeMethod = !['GET', 'HEAD', 'OPTIONS'].includes(method)" in source
     assert "fetchSite === 'same-origin'" in source
     assert "new URL(suppliedOrigin).origin !== expectedOrigin" in source
-    assert "name.toLowerCase().startsWith('cf-access-')" in source
+    assert "normalized.startsWith('cf-access-')" in source
+    assert "normalized.startsWith('x-sing-yin-')" in source
+    assert "normalized.startsWith('x-forwarded-')" in source
     assert "ACCESS_COOKIE_NAME.toLowerCase()" in source
-    assert "headers.set('X-Sing-Yin-Access-Email', verifiedEmail)" in source
+    assert "name !== GUEST_SESSION_COOKIE_NAME" in source
+    assert "headers.set(ORIGIN_PRINCIPAL_HEADER, originPrincipal.token)" in source
+    assert "const ORIGIN_PRINCIPAL_HEADER = 'X-Sing-Yin-Origin-Principal'" in source
+    assert "request_binding: await originRequestBinding(request)" in source
+    assert "auth_epoch: authEpoch(env)" in source
+    assert "kid: originPrincipalKid(env)" in source
     assert "new URL('http://127.0.0.1:8080')" in source
     assert "env.ROSTER_ORIGIN.fetch(originRequest)" in source
     assert "if (routed && routed.originResponse) return routed.originResponse" in source
     assert "console.log" not in source
     assert "console.error" not in source
+
+
+def test_gateway_sessions_fail_closed_and_keep_admin_precedence() -> None:
+    source = _source()
+
+    for required in (
+        "GUEST_SESSION_SECRET",
+        "ORIGIN_PRINCIPAL_SECRET",
+        "guest_session_secret_configuration",
+        "origin_principal_secret_configuration",
+        "const GUEST_SESSION_MAX_AGE_SECONDS = 30 * 60",
+        "const ADMIN_SESSION_MAX_AGE_SECONDS = 8 * 60 * 60",
+        "payload.epoch !== authEpoch(env)",
+        "const adminToken = cookieValueFromRequest(request, ADMIN_SESSION_COOKIE_NAME)",
+        "const guestToken = cookieValueFromRequest(request, GUEST_SESSION_COOKIE_NAME)",
+        "headers.append('Set-Cookie', adminSessionClearCookie())",
+        "headers.append('Set-Cookie', guestSessionClearCookie())",
+    ):
+        assert required in source
+
+    assert source.index(
+        "const adminToken = cookieValueFromRequest(request, ADMIN_SESSION_COOKIE_NAME)"
+    ) < source.index(
+        "const guestToken = cookieValueFromRequest(request, GUEST_SESSION_COOKIE_NAME)"
+    )
 
 
 def test_public_request_and_jwks_bodies_are_streamed_with_hard_limits() -> None:

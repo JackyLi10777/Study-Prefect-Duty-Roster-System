@@ -8,7 +8,7 @@
 
 **生成草稿 → 核對 → 發布 → 匯出 PDF → 已發布後請假調整 → 公平解釋 → 備份／還原 → 交接。**
 
-我把公平、清晰、責任、耐心與關顧定為這個系統的原則。所有人只需記住同一個正式網站：目前可閱讀不含值班資料的產品導覽、使用 `/try` 以固定虛構中文姓名完成一次只留在瀏覽器分頁的 30 分鐘試用，或查看我明確分享且永遠唯讀的 `/view#…` 已發布週表。獲准管理員在同一網站按「管理員登入」，經 Cloudflare Access 驗證後才可使用完整工作台。正式名單、請假原因、公平帳本、PDF、備份及完整操作資料仍留在受控 Windows 主機；唯讀分享只把最少欄位的加密密文送到 Cloudflare KV，而試用不會寫入 KV、NiceGUI、SQLite、備份或日誌。
+我把公平、清晰、責任、耐心與關顧定為這個系統的原則。v1.2 的方向是讓所有人只需記住同一個網站及同一套 NiceGUI 產品：訪客以固定虛構中文姓名完成臨時示範，獲准管理員經 Cloudflare Access 使用正式工作台，收到完整 `/view#…` 連結的人只可查看我明確分享的已發布週表。正式名單、請假原因、公平帳本、PDF、備份及完整操作資料仍留在受控 Windows 主機；Guest workspace 只在 origin 記憶體及受限的瀏覽器 session 範圍運作，不會寫入正式 SQLite、備份或公平帳本。
 
 [English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)
 
@@ -18,7 +18,8 @@
 
 | 分支 | 運行平台 | 定位 |
 |---|---|---|
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 目前正式維護版本及交接來源 |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | v1.2 統一 Guest／Admin 候選；尚未正式部署 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 現行 v1.1 正式維護基線及回退來源 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -30,7 +31,9 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **共創者說明：我是李創杰。這次 NiceGUI 重構、設計、測試、文件及正式發布版本，只由我與 Codex 共同完成。`Study Prefect Systems & Stewardship Office` 是我們兩人的項目團隊名稱，沒有其他開發者、部門成員或外判團隊。**
 
-**目前正式部署（2026-07-16）：** 不可變版本 `v1.1.0-rc.16` 現由 `C:\SingYinRoster` 的專用 Windows 工作排程運行，NiceGUI 只監聽 `127.0.0.1:8080`，`cloudflared` 服務與唯一正式 Worker 均健康。管理 API 權杖已完成同步輪換，新值通過而舊值被拒絕。仍待完成的是一次有人在場的 Windows 重新開機證明、管理員登入／登出、長時間重連、上載與 PDF 真人驗收，以及另行獲准後才可進行的正式資料受控清理。
+**已部署基線（v1.1）：** `C:\SingYinRoster` 的現有 Windows origin 及 Cloudflare gateway 仍是正式運行基線。
+
+**目前來源候選（v1.2）：** `codex/unified-guest-redesign` 正在把 Admin／Guest 統一到同一套 NiceGUI 路由、加入簽署 `PageContext`、記憶體 Guest workspace、版本衝突、命令收據、備份義務及 `/readyz`。`SING_YIN_UNIFIED_GUEST` 預設保持 `0`；完整測試、release verifier、已驗證備份、隔離還原及 Cloudflare 線上驗收通過前，不會聲稱 v1.2 已合併、標籤或部署。
 
 ## 首席導學風紀：每日怎樣進入
 
@@ -46,7 +49,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 ### 第一次接手：先用練習模式走一次完整流程
 
-正式資料契約是由零開始，**不會自動載入任何示範名單**。第一次登入看見空白名單才是正確狀態；先在練習模式完成演練，再返回正式模式匯入及逐人核對真正名單。只有本機 Practice Mode 會自動載入 `data/demo/prefects.zh-HK.seed.json` 的虛構資料。rc.16 程式及公開試用已部署，但現有正式資料仍須完成已驗證備份、Viewer 撤銷及受控清除，才可聲稱主機已達到正式空白起點。
+正式資料契約是由零開始，**不會自動載入任何示範名單**。第一次登入看見空白名單才是正確狀態；先在練習模式完成演練，再返回正式模式匯入及逐人核對真正名單。只有本機 Practice Mode 會自動載入 `data/demo/prefects.zh-HK.seed.json` 的虛構資料。現有 v1.1 主機狀態與 v1.2 Guest 候選互相獨立；任何正式資料清理仍須先完成已驗證備份、Viewer 撤銷、隔離還原及受控清除，才可聲稱主機已達到正式空白起點。
 
 - 雙擊 `START_PRACTICE_MODE.cmd`。它使用 8090–8109、`data/practice/` 內的獨立 SQLite、備份、日誌及介面偏好，並自動載入虛構中文姓名；不會讀寫正式資料庫或正式備份。
 - 每一頁頂部都會顯示繁中／英文「練習模式」狀態列；練習 PDF 的檔名、正文及頁尾均標示不可作正式發布。
@@ -54,17 +57,14 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 - 要重新開始時，先關閉練習模式的黑色視窗，再雙擊 `RESET_PRACTICE_MODE.cmd`；它只會清除 `data/practice/`，然後重新建立虛構練習環境。
 - 正式日常工作使用上述唯一網站。`START_SING_YIN_ROSTER.cmd` 保留給主機維護及 Cloudflare 故障後備；兩個本機啟動器會透過 `/healthz` 的 `applicationMode` 身份辨識服務，不會互相誤開。
 
-### 已上線：訪客互動試用
+### v1.2 候選：統一訪客體驗
 
-以下發布契約已在正式 Worker 上線，並通過聚焦測試、完整發布閘門及正式網址的桌面／手機瀏覽器核對：
-
-- `/guest` 是產品與安全邊界導覽；它保留六個不含營運資料的公共資源入口：平台與團隊、工程與品質證據、系統架構與可信設計、開始使用、使用手冊及每日經文，並解釋每週流程、公平保障及哪些操作只屬管理員。
-- `/try` 載入固定的虛構中文姓名、職位及班別，讓訪客登記示範請假、生成並核對週表、預覽及直接下載中英並列的 A4 橫向 PDF。姓名在兩種語言均保持中文。
-- Worker 只提供同源、版本控制的 HTML／CSS／JavaScript 靜態資產。進入試用後，名單選擇、請假、生成結果及 PDF 都在目前分頁運算；沒有試用 API，也不接觸 VPC、NiceGUI、SQLite、KV、公平帳本、備份或伺服器日誌。
-- 試用狀態只使用 `sessionStorage`，建立後 30 分鐘失效，關閉分頁亦會清除；「重置」可立即刪除。只有訪客主動下載的 PDF 會因使用者選擇保存而留在裝置。
-- 試用結果不能發布、不能建立 `/view#…` 連結、不能更新 `history_weight`，也不能匯入正式模式。要練習完整發布、審計、備份及還原，仍應使用隔離的 Practice Mode。
-
-維護者在每次後續發布前，仍必須依序執行聚焦 Python 測試、Worker Deno 契約、完整 Python 套件及 `scripts/verify_guest_trial.py`；實際命令與正式主機一次性清除程序見 [單一網站存取手冊](docs/PUBLIC_ROSTER_VIEWER.md) 及 [Windows 專用主機完整設定手冊](docs/WINDOWS_DEDICATED_HOST_SETUP.md)。
+- `/guest`、`/try` 只保留為兼容入口，會回到同一品牌入口並開始 Guest session；不再維護第二套靜態試用產品。
+- Guest 與 Admin 使用相同的 Dashboard、值班表、風紀及公平、交接、平台、工程、架構、手冊與經文頁；差別由伺服器核實的 `PageContext` 及 adapter 決定，不靠隱藏按鈕。
+- Guest 只獲 `demo_data.read`、`demo_state.modify`、`demo_result.download`、`session_preferences.modify`；AI、匯入、上載、正式備份／還原、Viewer 分享、外部交付及永久寫入均被服務層拒絕。
+- 每分頁取得獨立、有限額、程序記憶體內的虛構工作區。Guest PDF／JSON 標明 `DEMO`，以一次性 `no-store` 下載回傳。
+- HMAC snapshot codec 已有篡改、到期、SID／workspace／tab、大小、revision 及重播契約；把每次 revision 實際保存及還原自 `sessionStorage` 的瀏覽器橋接仍是正式發布 gate，未完成前不會把重新整理保留狀態寫成已完成。
+- 完整安全模型及 gate 見 [統一訪客模式安全模型](docs/UNIFIED_GUEST_SECURITY_MODEL.md)。
 
 日常安全次序：
 
@@ -123,8 +123,10 @@ python -X utf8 -m nicegui_app.main
 | 每週生成、發布、PDF、請假調整 | [首席導學風紀操作手冊](docs/OPERATOR_GUIDE.md) |
 | 雙擊啟動、埠號衝突、重複開啟 | [快速啟動](docs/QUICKSTART.md) |
 | 從零設定長期使用的 Windows 專用主機 | [Windows 專用主機完整設定手冊](docs/WINDOWS_DEDICATED_HOST_SETUP.md) |
-| 不購買網域，以同一 workers.dev 網站提供訪客唯讀及管理員登入 | [Cloudflare 免費無網域遠端存取手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md) |
-| 訪客導覽、30 分鐘裝置內試用、登入、登出及唯讀週表 | [單一網站存取手冊](docs/PUBLIC_ROSTER_VIEWER.md) |
+| 以金鑰安全維護正式 Windows 主機 | [Windows SSH 維護通道](docs/WINDOWS_SSH_MAINTENANCE.md) |
+| 不購買網域，以同一 workers.dev 網站提供 Guest／Admin 及唯讀 Viewer | [Cloudflare 單一網址遠端存取手冊](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md) |
+| Guest 體驗、登入、登出及唯讀週表 | [單一網站存取手冊](docs/PUBLIC_ROSTER_VIEWER.md) |
+| Guest 能力、記憶體工作區、snapshot、下載及發布 gate | [統一訪客模式安全模型](docs/UNIFIED_GUEST_SECURITY_MODEL.md) |
 | 第一次接手、隔離練習及重設 | `START_PRACTICE_MODE.cmd`、`RESET_PRACTICE_MODE.cmd` 及 [快速啟動](docs/QUICKSTART.md) |
 | 備份、還原、交接、正式驗收 | [首次發布與交接手冊](docs/RELEASE_HANDOVER.md) |
 | 完成一批改動後，按風險一次完成必要驗證 | [更新、驗證與上傳流程](docs/UPDATE_WORKFLOW.md) |
@@ -166,12 +168,12 @@ README、架構文件及發布報告中的工程成果亦整理成獨立網站�
 flowchart TB
     GUEST["訪客<br/>同一 workers.dev 網站"] --> EDGE["Cloudflare Worker<br/>單一正式入口"]
     OP["首席導學風紀<br/>管理員登入 + 電郵單次驗證碼"] --> EDGE
-    EDGE --> TOUR["/guest 產品導覽<br/>不含值班資料"]
-    EDGE --> TRIAL["/try 裝置內試用<br/>30 分鐘 sessionStorage"]
-    TRIAL --> TRIALPDF["瀏覽器直接產生<br/>雙語 A4 PDF"]
+    EDGE -->|簽署 Guest principal| GUESTUI["NiceGUI Guest 工作台<br/>相同路由 · 虛構資料"]
+    GUESTUI --> GUESTMEM["記憶體 Guest workspace<br/>每分頁隔離 · 有時限"]
+    GUESTMEM --> TRIALPDF["一次性 DEMO 下載<br/>no-store PDF／JSON"]
     EDGE -->|完整 /view#… 連結| VIEWER["唯讀訪客頁<br/>加密已發布週表"]
-    EDGE -->|/auth 驗證 Access JWT<br/>其後驗證簽署管理 session| VPC["Workers VPC + Tunnel<br/>HTTP · WebSocket"]
-    VPC --> UI["NiceGUI 操作層<br/>雙語 · 深淺模式 · 可存取提示"]
+    EDGE -->|簽署 Admin principal| VPC["Workers VPC + Tunnel<br/>HTTP · WebSocket"]
+    VPC --> UI["NiceGUI 正式操作層<br/>雙語 · 深淺模式 · 可存取提示"]
     UI --> WF["roster_workflow<br/>交易 · 公平帳本 · 審計"]
     WF --> CORE["roster_core<br/>純生成與完整驗證"]
     CORE --> POLICY["roster_policy<br/>校規唯一來源"]
@@ -225,7 +227,7 @@ stateDiagram-v2
 - **校規單一來源：** 頁面不自行決定誰可在哪裏當值。
 - **公平持久而可解釋：** 草稿不入帳，發布只入帳一次，請假調整留下扣回與轉移紀錄。
 - **重要寫入可復原：** 快照、manifest、SHA-256、SQLite 完整性及還原前安全快照共同工作。
-- **資料邊界清楚：** 同一網站不等於相同權限。`/guest` 只解釋平台；`/try` 只在分頁處理固定虛構資料；未登入訪客只有取得完整 `/view#…` 才可讀取我明確確認後保存的最少週表密文。Worker 只在 `/auth/login` 接收及驗證 Access JWT，之後每個 OP 請求均改為驗證獨立簽署的管理員 session 及精確電郵白名單，才經 VPC 連到受控主機。解密鑰匙只在完整分享連結的 URL fragment。
+- **資料邊界清楚：** 同一網站及相同畫面不等於相同權限。Worker 為 Admin／Guest 簽發不同身份，NiceGUI 以 `PageContext` 分流正式工作流或記憶體 Guest adapter；Guest 不能觸及正式 SQLite、備份、分享或外部整合。未登入收件者只有取得完整 `/view#…` 才可讀取我明確確認後保存的最少週表密文，解密鑰匙只在 URL fragment。
 
 ## YouTube 音樂控制窗（自選）
 
@@ -241,9 +243,9 @@ stateDiagram-v2
 
 ## 資料安全與遠端存取
 
-現時只派發一個正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。未登入訪客留在同站唯讀模式；管理員按「管理員登入」後，輸入 Access policy 精確列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 只在 `/auth/login` 核對 Access JWT 簽章、`aud`、`iss`、`exp` 及管理員電郵，然後簽發獨立的 HMAC `__Host-SingYinAdminSession` cookie（HttpOnly、Secure、SameSite=Lax、Path=/）；它不複製 Access JWT，最長 8 小時且不超過 Access 到期時間。其後每個 HTTP／WebSocket 請求均重新驗證簽章、時效及精確電郵白名單；送往 VPC origin 前會移除 `CF_Authorization` 與管理員 session cookie。主動登出會先清除管理員 session，再結束 Cloudflare Access session，使用者隨即回復訪客權限。
+正式方向只派發一個網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。v1.2 中，未登入使用者可開始 Guest session，管理員則按「管理員登入」完成 Cloudflare Access One-time PIN。Worker 會移除瀏覽器偽造的身份標頭，為兩種身份分別簽署 origin principal；NiceGUI 再核對 `mode`、`subject`、`sid`、`exp`、`auth_epoch`、`kid` 及 HMAC。主動登出會清除應用身份、Guest 工作區、待下載資料及同 session 分頁狀態。
 
-Worker 部署必須在 Cloudflare secret store 同時具備 `ADMIN_BEARER_TOKEN` 與 `ADMIN_SESSION_SECRET`；兩個值都不可寫入版本庫、README、截圖、日誌或主機備份。`ADMIN_BEARER_TOKEN` 必須與受保護 origin 設定中的 `SING_YIN_PUBLIC_ROSTER_VIEWER_ADMIN_TOKEN` 同步；輪換時要在同一次受控維護內更新兩端、重新啟動專用工作、證明新值回傳 200 及舊值回傳 401，任何一步失敗則兩端一併回復，不能只改一邊。
+Worker 部署除 Viewer 管理所需的 `ADMIN_BEARER_TOKEN` 外，亦必須配置管理員／Guest session 及 origin principal 的受控 HMAC secrets；origin 要使用相同 principal secret、`ORIGIN_PRINCIPAL_KID` 及 `AUTH_EPOCH`。所有值都不可寫入版本庫、README、截圖、日誌或主機備份。輪換必須在同一次受控維護內更新兩端、提高 epoch 或 key ID、重新啟動專用工作並核對新 session 可用、舊 session 被拒絕；任何一步失敗則兩端一併回復，不能只改一邊。
 
 同一 host 下的 `/view#…` 分享連結仍是唯讀：Windows 主機以 AES-256-GCM 加密週次、日期、崗位、當值時間及中文姓名，Cloudflare KV 只保存密文、nonce 和最少的週次／建立／到期 metadata；解密鑰匙留在 URL fragment，不會隨初始 HTTP request 傳給 Worker。連結會到期，也可由管理員撤銷。`/auth/*`、VPC Service、localhost 及私人 WARP 地址都是內部或維護路徑，不另行派發。
 
@@ -271,8 +273,8 @@ Worker 部署必須在 Cloudflare secret store 同時具備 `ADMIN_BEARER_TOKEN`
 **資料保存在甚麼地方？**  
 正式名單、週表、公平帳本及審計保存在受控電腦的本機 SQLite；音樂和個人介面偏好與排班資料分開。
 
-**訪客試用會保存、上載或影響正式資料嗎？**
-不會。`/try` 只使用固定虛構中文姓名，互動狀態留在目前分頁的 `sessionStorage`，30 分鐘後或關閉分頁時清除；它不呼叫應用 API、不寫入 KV／VPC／NiceGUI／SQLite／備份／日誌，也不更新公平帳本。只有訪客按「下載」後自行保存的 PDF 會留在其裝置。
+**訪客體驗會保存、上載或影響正式資料嗎？**
+不會影響正式資料。v1.2 Guest 會經 Worker／VPC 進入同一 NiceGUI 產品，但只連到有時限的程序記憶體 adapter，不會寫正式 SQLite、備份、公平帳本、分享 KV 或外部整合。下載是一次性、`DEMO` 標示及 `no-store`。HMAC snapshot codec 已完成，但瀏覽器 `sessionStorage` 保存／還原橋接仍是發布前 gate。
 
 **可否直接用舊 SQLite 覆蓋目前資料庫？**  
 不可。必須在「系統設定」選擇已驗證快照，讓系統先建立安全快照，再執行原子還原及審計。
@@ -284,7 +286,7 @@ Worker 部署必須在 Cloudflare secret store 同時具備 `ADMIN_BEARER_TOKEN`
 不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
 
 **目前可否在校外使用？**
-可以使用唯一的 workers.dev 入口閱讀產品導覽、裝置內試用或指定已發布週表；自動化亦已核對手機、深淺模式、唯讀 Viewer、Access 轉向及 VPC 健康。管理員遠端編輯只在 Windows 來源站健康時可用，而且正式真人驗收仍須核對登入、登出、長時間 WebSocket、檔案上載及 PDF。未登入訪客不能進入正式 NiceGUI 或編輯資料；一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
+現有 v1.1 canonical 網站仍可按其已部署功能使用；v1.2 統一 Guest／Admin 工作台尚未部署。v1.2 上線前仍要核對完整 release report、已驗證備份、隔離還原、`/readyz`、管理員登入／登出、Guest 多分頁、長時間 WebSocket、檔案上載、PDF 及 Viewer。一般使用者毋須安裝 WARP；WARP 只保留作維護後備。
 
 **別人可否用 Viewer 連結編輯週表？**
 不可。分享連結永遠唯讀；網址參數、瀏覽器標頭或畫面操作都不能把訪客升級為管理員。只有 Access policy 內的管理員身份通過驗證後，Worker 才轉送完整工作台。
@@ -372,7 +374,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-One canonical `workers.dev` site serves both modes. Guests remain read-only; an approved administrator selects **Admin login**, enters an exact allowlisted email and Cloudflare One-time PIN, and is returned to the same site. The Worker validates the Access JWT only at `/auth/login`, then uses a separate HMAC-signed, HttpOnly administrator session for the NiceGUI workbench. Every request rechecks that session and the exact allowlist; neither the Access cookie nor the first-party administrator cookie is forwarded through Workers VPC and the existing Tunnel. Same-host `/view#…` links remain expiring, revocable encrypted snapshots; KV stores ciphertext and minimum metadata while the AES-GCM key stays in the fragment. Localhost and private WARP are maintenance fallbacks. Quick Tunnels and public origin ports are not part of the design. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md) and [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md).
+The v1.2 candidate uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. `SING_YIN_UNIFIED_GUEST` remains off until the complete release and Cloudflare gates pass. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 
@@ -383,7 +385,7 @@ For operating instructions, recovery, architecture, and current release evidence
 - Official state stays in local SQLite. Only checksum- and integrity-verified snapshots are eligible for managed restore.
 - Prefect names remain Chinese in both locales and both schedule PDFs.
 - An `OP-...` reference is safe to share with the advisor or IT; the full local log is not.
-- One canonical site presents guest read-only access by default and unlocks the editor only after exact-email One-time PIN verification, Worker-side Access JWT validation at `/auth/login`, and a valid signed first-party administrator session; local/private WARP remains a maintenance fallback.
+- One canonical site uses a server-verified `PageContext`: Guest receives the same page structure backed only by a fictional in-memory workspace; Admin receives the official workflow only after Cloudflare Access and signed-principal verification. `/view#…` remains a separate read-only share, and local/private WARP remains a maintenance fallback.
 
 ---
 

@@ -6,6 +6,8 @@
 **日常網址：** `https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`
 **本機維護網址：** `http://127.0.0.1:8080`
 
+> **SSH 維護狀態（2026-07-17）：** Windows OpenSSH Server 已以金鑰限定模式運行，只監聽 `127.0.0.1:22` 及 `[::1]:22`；密碼、互動式登入、轉發及 Windows 公開入站規則均停用。安裝、驗證、金鑰輪換及緊急停用程序見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。這是維護入口，不是另一個使用者網站。
+
 > **目前狀態（2026-07-16）：** `C:\SingYinRoster` 已固定於不可變標籤 `v1.1.0-rc.16`，並完成正式資料快照、隔離還原及受控切換。`Sing Yin Roster Host` 現由非管理員 `SingYinRosterSvc` 帳戶運行，唯一 NiceGUI listener 是 `127.0.0.1:8080`；Tunnel、Worker、`/guest`、`/try`、唯讀 Viewer、Access 轉向及 VPC 健康均已核對。管理 API 權杖已完成同步輪換，舊值已失效。尚未完成的是一次有人在場的 Windows 重新開機證明、正式資料受控清理，以及管理員登入／登出、長時間重連、上載與 PDF 的真人驗收。
 
 ---

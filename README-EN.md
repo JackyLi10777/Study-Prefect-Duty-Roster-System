@@ -81,6 +81,11 @@ browser access is prepared separately by
 which keeps the origin on `127.0.0.1` and refuses activation unless an
 unauthenticated request is redirected to Cloudflare Access.
 
+Key-only host maintenance is documented separately in
+[`WINDOWS_SSH_MAINTENANCE.md`](docs/WINDOWS_SSH_MAINTENANCE.md). The SSH server
+binds only to loopback, disables password authentication and forwarding, and
+does not create a public or LAN-facing port 22.
+
 For a fully isolated fictional rehearsal, double-click
 `START_PRACTICE_MODE.cmd`. Practice Mode has separate SQLite, backups, logs,
 preferences, port range, persistent bilingual identity, and non-official PDF

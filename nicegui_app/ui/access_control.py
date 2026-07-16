@@ -8,7 +8,9 @@ from zoneinfo import ZoneInfo
 
 from nicegui import ui
 
+from nicegui_app.access_context import Capability
 from nicegui_app.deployment import DeploymentSettings
+from nicegui_app.runtime import current_page_context
 from nicegui_app.services.public_roster_share import (
     PublicRosterShareMetadata,
     PublicRosterShareService,
@@ -25,7 +27,37 @@ def _format_timestamp(value: datetime) -> str:
     return value.astimezone(_HONG_KONG).strftime("%Y-%m-%d %H:%M HKT")
 
 
+def _external_share_allowed() -> bool:
+    return current_page_context().allows(Capability.EXTERNAL_DELIVERY)
+
+
+def _public_share_service(
+    workflow,  # type: ignore[no-untyped-def]
+    *,
+    settings: PublicRosterShareSettings | None = None,
+) -> PublicRosterShareService:
+    """Construct the external service only after a server-side capability check."""
+
+    current_page_context().require(Capability.EXTERNAL_DELIVERY)
+    resolved_settings = settings or PublicRosterShareSettings.from_environment()
+    return PublicRosterShareService(workflow, settings=resolved_settings)
+
+
+def _render_external_share_restricted() -> None:
+    with ui.element("section").classes(
+        "sy-surface sy-restricted-state w-full max-w-3xl px-6 py-5"
+    ).props("role=status data-testid=guest-public-share-restricted"):
+        with ui.row().classes("items-start gap-3 no-wrap"):
+            ui.icon("lock").classes("sy-fg-attention text-xl").props("aria-hidden=true")
+            with ui.column().classes("gap-1 min-w-0"):
+                ui.label(t("access_restricted_title")).classes("font-semibold")
+                ui.label(t("access_restricted_body")).classes(
+                    "text-sm leading-6 text-[var(--sy-muted)]"
+                )
+
+
 async def _copy_value(value: str) -> None:
+    current_page_context().require(Capability.EXTERNAL_DELIVERY)
     encoded = json.dumps(value, ensure_ascii=False)
     try:
         await ui.run_javascript(f"navigator.clipboard.writeText({encoded})", timeout=5.0)
@@ -64,6 +96,7 @@ def _show_share_receipt(receipt) -> None:  # type: ignore[no-untyped-def]
 
 
 def _open_create_confirmation(service: PublicRosterShareService, roster_week_id: int) -> None:
+    current_page_context().require(Capability.EXTERNAL_DELIVERY)
     with ui.dialog().props(
         "data-testid=public-share-confirm-dialog"
     ) as dialog, ui.card().classes("sy-surface w-full max-w-lg p-6"):
@@ -73,6 +106,7 @@ def _open_create_confirmation(service: PublicRosterShareService, roster_week_id:
         )
 
         async def create_share() -> None:
+            current_page_context().require(Capability.EXTERNAL_DELIVERY)
             dialog.close()
             receipt = await _run_with_progress(
                 lambda: service.create_share(roster_week_id),
@@ -93,6 +127,9 @@ def _open_create_confirmation(service: PublicRosterShareService, roster_week_id:
 
 def render_roster_share_action(workflow, roster_week_id: int) -> None:  # type: ignore[no-untyped-def]
     """Render the deliberate share decision beside one published roster."""
+    if not _external_share_allowed():
+        _render_external_share_restricted()
+        return
     settings = PublicRosterShareSettings.from_environment()
     with ui.element("section").classes("sy-surface w-full max-w-3xl px-6 py-5").props(
         "data-testid=published-roster-sharing"
@@ -113,7 +150,7 @@ def render_roster_share_action(workflow, roster_week_id: int) -> None:  # type: 
                 "text-sm text-[var(--sy-muted)] mt-3"
             )
             return
-        service = PublicRosterShareService(workflow, settings=settings)
+        service = _public_share_service(workflow, settings=settings)
         ui.button(
             t("public_share_create"),
             icon="link",
@@ -161,6 +198,7 @@ def _render_active_shares(
                             )
 
                             async def revoke() -> None:
+                                current_page_context().require(Capability.EXTERNAL_DELIVERY)
                                 revoke_dialog.close()
                                 result = await _run_with_progress(
                                     lambda: service.revoke_share(item.share_id),
@@ -192,9 +230,12 @@ def _render_active_shares(
 
 def render_access_control_console(workflow) -> None:  # type: ignore[no-untyped-def]
     """Render the administrator console for the unified guest/operator website."""
+    if not _external_share_allowed():
+        _render_external_share_restricted()
+        return
     deployment = DeploymentSettings.from_environment()
     settings = PublicRosterShareSettings.from_environment()
-    service = PublicRosterShareService(workflow, settings=settings)
+    service = _public_share_service(workflow, settings=settings)
     local_url = f"http://127.0.0.1:{deployment.port}"
     canonical_url = settings.base_url if settings.configured else local_url
 
@@ -252,6 +293,7 @@ def render_access_control_console(workflow) -> None:  # type: ignore[no-untyped-
     management_area = ui.column().classes("w-full gap-3")
     if settings.configured:
         async def load_active() -> None:
+            current_page_context().require(Capability.EXTERNAL_DELIVERY)
             result = await _run_with_progress(
                 service.list_shares,
                 title_key="public_share_manage_progress_title",

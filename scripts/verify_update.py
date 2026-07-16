@@ -2,8 +2,10 @@
 
 The formal release-candidate verifier remains the authority for deployable
 runtime changes. This command prevents documentation, test-only, Worker-only,
-and release-tooling changes from paying that full cost unnecessarily.
-Unknown paths fail closed to the full profile.
+and release-tooling changes from paying that full cost unnecessarily. Normal
+use verifies a branch before commit or push; ``--release`` explicitly runs the
+formal browser, write, backup, and recovery evidence gate. Unknown paths fail
+closed to the highest pre-push profile.
 """
 
 from __future__ import annotations
@@ -347,11 +349,20 @@ def build_tasks(
     paths: Iterable[str],
     *,
     ci: bool,
+    release: bool = False,
     base: str | None,
     head: str,
     staged: bool,
 ) -> tuple[Task, ...]:
     """Build independent read-only tasks for the selected profile."""
+    if release:
+        tasks: list[Task] = []
+        if plan.profile != "none":
+            tasks.append(Task("diff_whitespace", (_diff_check_command(base, head, staged),)))
+        tasks.append(
+            Task("formal_release_candidate", (_python("scripts/verify_release_candidate.py"),))
+        )
+        return tuple(tasks)
     if plan.profile == "none":
         return ()
     diff_task = Task("diff_whitespace", (_diff_check_command(base, head, staged),))
@@ -379,11 +390,6 @@ def build_tasks(
             secret_scan,
         )
     if plan.profile == "worker":
-        if not ci:
-            return (
-                diff_task,
-                Task("formal_release_candidate", (_python("scripts/verify_release_candidate.py"),)),
-            )
         deno = shutil.which("deno") or "deno"
         return (
             diff_task,
@@ -410,32 +416,27 @@ def build_tasks(
             hygiene,
             Task("security_gates", (_python("scripts/run_security_checks.py"),)),
         )
-    if ci:
-        deno = shutil.which("deno") or "deno"
-        return (
-            diff_task,
-            Task(
-                "automated_test_suite",
-                (_python(
-                    "-m",
-                    "pytest",
-                    "-q",
-                    f"--deselect={_WORKER_RUNTIME_TEST}",
-                ),),
-            ),
-            Task(
-                "worker_contract",
-                (
-                    (deno, "check", "cloudflare/roster_viewer/worker.js"),
-                    (deno, "test", "--no-check", "cloudflare/roster_viewer/worker_gateway_test.js"),
-                ),
-            ),
-            hygiene,
-            Task("security_gates", (_python("scripts/run_security_checks.py"),)),
-        )
+    deno = shutil.which("deno") or "deno"
     return (
         diff_task,
-        Task("formal_release_candidate", (_python("scripts/verify_release_candidate.py"),)),
+        Task(
+            "automated_test_suite",
+            (_python(
+                "-m",
+                "pytest",
+                "-q",
+                f"--deselect={_WORKER_RUNTIME_TEST}",
+            ),),
+        ),
+        Task(
+            "worker_contract",
+            (
+                (deno, "check", "cloudflare/roster_viewer/worker.js"),
+                (deno, "test", "--no-check", "cloudflare/roster_viewer/worker_gateway_test.js"),
+            ),
+        ),
+        hygiene,
+        Task("security_gates", (_python("scripts/run_security_checks.py"),)),
     )
 
 
@@ -497,16 +498,29 @@ def execute_tasks(tasks: Sequence[Task], *, max_workers: int) -> tuple[TaskResul
     return tuple(results_by_name[task.name] for task in tasks)
 
 
-def _write_report(plan: VerificationPlan, results: Sequence[TaskResult], *, ci: bool) -> None:
+def _write_report(
+    plan: VerificationPlan,
+    results: Sequence[TaskResult],
+    *,
+    ci: bool,
+    release: bool,
+    staged: bool,
+) -> None:
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    mode = (
+        "release"
+        if release
+        else ("ci" if ci else ("pre-push" if staged else "working-tree"))
+    )
     payload = {
         "schemaVersion": 1,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
-        "mode": "ci" if ci else "local",
+        "mode": mode,
         "profile": plan.profile,
         "reason": plan.reason,
         "changedPathCount": plan.changed_path_count,
         "formalReleaseRequired": plan.formal_release_required,
+        "formalReleaseExecuted": release,
         "status": "pass" if all(result.status == "pass" for result in results) else "fail",
         "checks": [
             {
@@ -530,10 +544,33 @@ def _write_github_output(path: Path, plan: VerificationPlan) -> None:
         output.write(f"formal_release_required={'true' if plan.formal_release_required else 'false'}\n")
 
 
-def _print_plan(plan: VerificationPlan, tasks: Sequence[Task]) -> None:
+def _print_plan(
+    plan: VerificationPlan,
+    tasks: Sequence[Task],
+    *,
+    ci: bool,
+    release: bool,
+    staged: bool,
+) -> None:
+    intent = (
+        "release"
+        if release
+        else ("ci" if ci else ("pre-push" if staged else "working-tree"))
+    )
+    print(f"Verification intent: {intent}", flush=True)
     print(f"Verification profile: {plan.profile}", flush=True)
     print(f"Reason: {plan.reason}", flush=True)
     print(f"Changed paths: {plan.changed_path_count}", flush=True)
+    if intent == "working-tree":
+        print(
+            "Commit scope: diagnostic only; review and stage intended files, then rerun with --staged.",
+            flush=True,
+        )
+    if plan.formal_release_required and not release:
+        print(
+            "Formal release evidence: required before deployment; deferred for this pre-push run.",
+            flush=True,
+        )
     if tasks:
         print("Checks: " + ", ".join(task.name for task in tasks), flush=True)
     else:
@@ -553,10 +590,17 @@ def main() -> int:
     )
     parser.add_argument("--plan", action="store_true", help="Print the selected plan without executing it.")
     parser.add_argument("--ci", action="store_true", help="Use CI checks without browser release drills.")
+    parser.add_argument(
+        "--release",
+        action="store_true",
+        help="Run the formal browser, write, backup, and recovery release-candidate verifier.",
+    )
     parser.add_argument("--github-output", type=Path, help="Append profile outputs for GitHub Actions.")
     parser.add_argument("--max-workers", type=int, default=4, help="Maximum parallel read-only checks.")
     parser.add_argument("--path", action="append", dest="paths", help="Classify an explicit path (repeatable).")
     args = parser.parse_args()
+    if args.ci and args.release:
+        parser.error("--ci and --release cannot be used together")
 
     paths = tuple(args.paths) if args.paths else changed_paths(base=args.base, head=args.head, staged=args.staged)
     auto_plan = classify_paths(paths)
@@ -564,8 +608,22 @@ def main() -> int:
         plan = select_profile(auto_plan, args.profile)
     except ValueError as error:
         parser.error(str(error))
-    tasks = build_tasks(plan, paths, ci=args.ci, base=args.base, head=args.head, staged=args.staged)
-    _print_plan(plan, tasks)
+    tasks = build_tasks(
+        plan,
+        paths,
+        ci=args.ci,
+        release=args.release,
+        base=args.base,
+        head=args.head,
+        staged=args.staged,
+    )
+    _print_plan(
+        plan,
+        tasks,
+        ci=args.ci,
+        release=args.release,
+        staged=args.staged,
+    )
     if args.github_output:
         _write_github_output(args.github_output, plan)
     if args.plan:
@@ -578,7 +636,13 @@ def main() -> int:
         print(f"[{result.status.upper()}] {result.name} ({result.duration_ms} ms)")
         if result.status == "fail" and result.output:
             print(result.output)
-    _write_report(plan, results, ci=args.ci)
+    _write_report(
+        plan,
+        results,
+        ci=args.ci,
+        release=args.release,
+        staged=args.staged,
+    )
     if all(result.status == "pass" for result in results):
         print(f"Verification passed. Report: {REPORT_PATH}")
         return 0

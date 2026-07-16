@@ -58,6 +58,64 @@ def test_generation_saves_and_replaces_a_draft_with_automatic_backups(workflow: 
     assert workflow.prefect_loads() == before_loads
 
 
+def test_draft_generation_command_replays_without_incrementing_version(
+    workflow: RosterWorkflow,
+) -> None:
+    first = workflow.generate_and_save_draft(
+        WEEK_START,
+        expected_week_version=0,
+        command_id="draft-command-replay",
+    )
+    replay = workflow.generate_and_save_draft(
+        WEEK_START,
+        expected_week_version=0,
+        command_id="draft-command-replay",
+    )
+
+    assert replay.id == first.id
+    assert replay.version == first.version == 1
+    assert replay.backup_path == first.backup_path
+    assert workflow.roster_week(first.id)["version"] == 1
+
+
+def test_stale_generation_version_cannot_overwrite_a_newer_draft(
+    workflow: RosterWorkflow,
+) -> None:
+    first = workflow.generate_and_save_draft(
+        WEEK_START,
+        expected_week_version=0,
+        command_id="draft-version-1",
+    )
+
+    with pytest.raises(WorkflowConflictError, match="changed in another browser"):
+        workflow.generate_and_save_draft(
+            WEEK_START,
+            expected_week_version=0,
+            command_id="stale-draft-version",
+        )
+
+    assert workflow.roster_week(first.id)["version"] == 1
+
+
+def test_draft_command_id_cannot_be_reused_for_different_content(
+    workflow: RosterWorkflow,
+) -> None:
+    workflow.generate_and_save_draft(
+        WEEK_START,
+        history_priority_multiplier=1.0,
+        expected_week_version=0,
+        command_id="draft-command-content",
+    )
+
+    with pytest.raises(WorkflowConflictError, match="different work"):
+        workflow.generate_and_save_draft(
+            WEEK_START,
+            history_priority_multiplier=1.4,
+            expected_week_version=0,
+            command_id="draft-command-content",
+        )
+
+
 def test_concurrent_draft_generation_serializes_versions_without_lost_updates(workflow: RosterWorkflow, tmp_path) -> None:
     contender = RosterWorkflow(
         database_path=tmp_path / "sing-yin.sqlite3",

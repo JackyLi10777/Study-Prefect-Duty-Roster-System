@@ -1,0 +1,49 @@
+{
+  "contractVersion": "1.0.0",
+  "generatedFrom": "design_system/tokens.v1.json",
+  "selectors": {
+    "light": ":root",
+    "dark": "html[data-theme=\"dark\"]",
+    "autoDark": "html[data-theme=\"auto\"]"
+  },
+  "themes": {
+    "light": {
+      "--paper": "#f5f3ed",
+      "--surface": "#fffefa",
+      "--surface-soft": "#eeece5",
+      "--ink": "#182321",
+      "--muted": "#66706c",
+      "--line": "#d8d8d0",
+      "--line-strong": "#b9c0ba",
+      "--brand": "#176b67",
+      "--brand-strong": "#0d514e",
+      "--brand-soft": "#e3f0ec",
+      "--blue": "#245f8f",
+      "--gold": "#987332",
+      "--danger": "#9b3f35",
+      "--focus": "#1f73b7",
+      "--button-ink": "#ffffff",
+      "--shadow": "0 22px 70px rgba(33, 42, 38, 0.10)",
+      "--radius": "22px",
+      "--font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang HK\", \"Noto Sans HK\", \"Microsoft JhengHei\", sans-serif"
+    },
+    "dark": {
+      "--paper": "#0d1417",
+      "--surface": "#141d20",
+      "--surface-soft": "#1a2527",
+      "--ink": "#edf3ef",
+      "--muted": "#aab7b1",
+      "--line": "#2c393b",
+      "--line-strong": "#465456",
+      "--brand": "#7fc5bb",
+      "--brand-strong": "#a6dbd2",
+      "--brand-soft": "#183936",
+      "--blue": "#8dbbdd",
+      "--gold": "#d3b16a",
+      "--danger": "#e1a098",
+      "--focus": "#8ec8f2",
+      "--button-ink": "#0b2422",
+      "--shadow": "0 24px 80px rgba(0, 0, 0, 0.30)"
+    }
+  }
+}

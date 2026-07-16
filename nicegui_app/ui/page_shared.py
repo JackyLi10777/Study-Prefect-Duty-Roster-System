@@ -6,15 +6,12 @@ import asyncio
 import weakref
 from collections.abc import Callable
 from datetime import date, timedelta
-from pathlib import Path
 from time import perf_counter
 from typing import TypeVar
-from uuid import uuid4
 
 from nicegui import app, events, run, ui
 
 from nicegui_app.contact import FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL, GITHUB_REPOSITORY_URL, INSTAGRAM_PROFILE_URL
-from nicegui_app.release_evidence import load_release_evidence
 from nicegui_app.runtime import get_workflow
 from nicegui_app.observability import (
     new_operation_reference,
@@ -23,58 +20,20 @@ from nicegui_app.observability import (
     record_operator_partial_failure,
 )
 from nicegui_app.services.roster_export import RosterPdfExport, build_fairness_audit_pdf, build_roster_pdf
-from nicegui_app.services.summary_report_export import (
-    build_duty_allocation_statement_pdf,
-    build_summary_report_json,
-    build_summary_report_pdf,
-)
-from nicegui_app.services.prefect_import_assistant import (
-    ImportAssistantError,
-    import_assistant_status,
-    suggest_deepseek_column_mapping,
-)
-from nicegui_app.application_mode import current_application_mode
 from nicegui_app.services.roster_workflow import (
     CommittedWriteBackupError,
-    PrefectInput,
-    PeriodSummaryReport,
     WorkflowConflictError,
-    WorkflowError,
 )
-from nicegui_app.ui.i18n import ZH_HK, current_locale, day_label, post_label, role_label, t
-from nicegui_app.ui.music import render_music_library_settings
+from nicegui_app.ui.i18n import day_label, post_label, role_label, t
+from nicegui_app.ui.downloads import deliver_generated_download
 from nicegui_app.ui.operation_gate import claim_durable_operation, release_durable_operation
+from nicegui_app.ui.page_access import is_demo_export
 from nicegui_app.ui.pdf_delivery import build_native_pdf_share_js, can_offer_native_pdf_share
-from nicegui_app.ui.platform_summary import PlatformSummary, load_platform_summary
-from nicegui_app.ui.shell import page_shell
 from nicegui_app.ui.sound import play_interface_sound
-from nicegui_app.ui.theme import current_theme
-from nicegui_app.utils.prefect_file_import import (
-    MAX_IMPORT_BYTES,
-    ParsedImportFile,
-    PrefectFileImportError,
-    TARGET_FIELDS,
-    parse_prefect_file,
-    suggest_local_column_mapping,
-    validate_target_mapping,
-)
-from nicegui_app.utils.prefect_import import (
-    ImportPreview,
-    parse_prefect_import_rows,
-    parse_prefect_import_text,
-    prefect_import_template_csv,
-)
-from roster_core import (
-    HISTORY_PRIORITY_MULTIPLIER_MAX,
-    HISTORY_PRIORITY_MULTIPLIER_MIN,
-    select_daily_verse,
-)
-from roster_policy import ROOM_OPENING_TIME_WINDOWS, DutyPost, SchoolDay, required_posts_for_day
+from roster_policy import ROOM_OPENING_TIME_WINDOWS, DutyPost
 
 _OPERATION_FAILED = object()
 _OperationResult = TypeVar("_OperationResult")
-_DEVOTIONAL_GUIDANCE_THEMES = ("servant-leadership", "justice-fairness", "wisdom-discernment", "witness-light")
-_DEVOTIONAL_COMFORT_THEMES = ("prayer-peace", "mercy-care", "perseverance", "faithfulness", "spiritual-formation")
 _DIALOG_DISMISSAL_SECONDS = 0.35
 
 
@@ -154,32 +113,6 @@ def _show_committed_without_backup(reference: str, *, recovery_required: bool = 
 def _next_monday() -> date:
     today = date.today()
     return today + timedelta(days=(-today.weekday()) % 7)
-
-
-def _devotional_tone() -> str:
-    preference = str(app.storage.user.get("devotional_tone", "auto"))
-    if preference == "auto":
-        return "comfort" if current_theme() == "dark" else "guidance"
-    return preference if preference in {"guidance", "comfort"} else "guidance"
-
-
-def _set_devotional_tone(value: str) -> None:
-    if value not in {"auto", "guidance", "comfort"}:
-        return
-    app.storage.user["devotional_tone"] = value
-    app.storage.user["dashboard_verse_offset"] = 0
-    ui.navigate.reload()
-
-
-def _dashboard_verse() -> object:
-    offset = int(app.storage.user.get("dashboard_verse_offset", 0))
-    themes = _DEVOTIONAL_COMFORT_THEMES if _devotional_tone() == "comfort" else _DEVOTIONAL_GUIDANCE_THEMES
-    return select_daily_verse(date.today() + timedelta(days=offset), themes_any=themes)
-
-
-def _refresh_dashboard_verse() -> None:
-    app.storage.user["dashboard_verse_offset"] = int(app.storage.user.get("dashboard_verse_offset", 0)) + 1
-    ui.navigate.reload()
 
 
 def _safe_read_action(action: Callable[[], None], *, action_name: str = "ui_read_action") -> None:
@@ -426,14 +359,14 @@ async def _prepare_roster_pdf(
     export = await _run_with_progress(
         lambda: (
             build_fairness_audit_pdf(
-                get_workflow(), roster_week_id, language=language, practice=current_application_mode().is_practice
+                get_workflow(), roster_week_id, language=language, practice=is_demo_export()
             )  # type: ignore[arg-type]
             if include_audit
             else build_roster_pdf(
                 get_workflow(),
                 roster_week_id,
                 language=language,
-                practice=current_application_mode().is_practice,
+                practice=is_demo_export(),
                 show_crest=show_crest,
                 show_footer_note=show_footer_note,
             )  # type: ignore[arg-type]
@@ -464,7 +397,11 @@ async def _download_roster_pdf(
     )
     if export is None:
         return False
-    ui.download(export.content, export.filename)
+    deliver_generated_download(
+        export.content,
+        export.filename,
+        media_type="application/pdf",
+    )
     ui.notify(t("pdf_ready"), type="positive")
     return True
 
@@ -484,7 +421,11 @@ def _render_pdf_delivery_ready(container, export: RosterPdfExport) -> None:
                     ui.label(t("pdf_delivery_ready_notice")).classes("text-sm text-[var(--sy-muted)]")
 
             def download_again() -> None:
-                ui.download(export.content, export.filename)
+                deliver_generated_download(
+                    export.content,
+                    export.filename,
+                    media_type="application/pdf",
+                )
                 ui.notify(t("pdf_ready"), type="positive")
 
             def report_share_result(event: events.GenericEventArguments) -> None:
@@ -789,5 +730,28 @@ def _render_co_creation() -> None:
             ui.label(t("co_creation_codex_body")).classes("sy-codex-closing-copy")
 
 
-# Route modules intentionally import private shared helpers through this explicit export.
-__all__ = [name for name in globals() if not name.startswith('__')]
+# Stable route-facing boundary. Framework objects, workflow models, translations,
+# and utility dependencies are imported by their owning route modules directly.
+# This list is deliberately explicit so adding an import to page_shared cannot
+# silently expand every page's dependency surface again.
+__all__ = (
+    "_OPERATION_FAILED",
+    "_delete_dialog_after_close",
+    "_navigate_with_feedback",
+    "_next_monday",
+    "_open_roster_export_dialog",
+    "_prefect_directory_rows",
+    "_render_co_creation",
+    "_render_empty_state",
+    "_render_feedback_channel",
+    "_render_flow_step",
+    "_render_mobile_prefect_cards",
+    "_render_operation_hint",
+    "_render_responsive_table",
+    "_render_roster_route_state",
+    "_render_roster_table",
+    "_render_storage_lifecycle",
+    "_run_with_progress",
+    "_safe_read_action",
+    "_tone_badge",
+)

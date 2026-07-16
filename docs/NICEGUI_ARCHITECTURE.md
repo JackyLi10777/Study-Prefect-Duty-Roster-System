@@ -4,6 +4,11 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
+> **v1.2 status:** This file documents the `codex/unified-guest-redesign`
+> source candidate. The deployed Windows／Cloudflare service remains the v1.1
+> baseline until the complete release gate, verified backup, isolated restore,
+> merge, tag and controlled rollout finish.
+
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 
 ## Product, Organisation, and Solution Architecture
@@ -27,23 +32,24 @@ NiceGUI owns the rendering and navigation. The read model introduces no schema, 
 
 ## Canonical entry and local maintenance start
 
+> **v1.2 source contract:** The unified Guest architecture is feature-gated by
+> `SING_YIN_UNIFIED_GUEST`, which defaults to `0`. This section describes the
+> candidate design and implementation, not a completed production rollout.
+
 The only URL distributed to users is
-`https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`. The live
-canonical gateway has five security states with different owning layers:
+`https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`.
 
-| State | Owning layer | Backend contact |
+| State | Owning layer | Data adapter |
 |---|---|---|
-| Public `/` entrance without a valid first-party administrator session | Worker-native static landing | No roster data, VPC, NiceGUI, SQLite or KV |
-| `/guest` tour | Worker-native static read-only guide; route allows only `GET`／`HEAD` | No VPC, NiceGUI, SQLite or KV |
-| `/try` interactive trial | Worker-native static assets + browser-only state and PDF; route allows only `GET`／`HEAD` | Fixed fictional Chinese names; 30-minute `sessionStorage`; no application API, VPC, NiceGUI, SQLite, KV, fairness ledger, backup or server-log write |
-| `/view#…` published roster | Worker viewer shell + KV ciphertext + browser Web Crypto | KV only; no VPC, NiceGUI or SQLite, and the fragment key never reaches the Worker |
-| Verified administrator workbench at the same `/` | Cloudflare One-time PIN → Access JWT verification at `/auth/login` → signed first-party session → Workers VPC → named Tunnel → NiceGUI | Full NiceGUI and local workflow／SQLite access under existing application controls |
+| Public `/` | Worker-native identity-neutral entrance | No application capability |
+| Guest `/` after `POST /auth/guest/start` | Worker session + signed origin principal + shared NiceGUI renderer | Bounded process-memory `GuestWorkspaceAdapter` with fictional data |
+| Admin `/` after `/auth/admin/start` | Access JWT → Worker session → signed origin principal + shared NiceGUI renderer | Official `RosterWorkflow` and SQLite |
+| `/view#…` | Worker viewer shell + KV ciphertext + browser Web Crypto | Read-only published snapshot; no NiceGUI or SQLite read |
+| Local maintenance | Loopback-only origin | Official or isolated practice composition under host controls |
 
-NiceGUI does not own or implement a guest account, guest role or guest RBAC. An
-unauthenticated request remains in Worker-owned surfaces, while **Admin login**
-enters the internal Access flow and only a verified administrator reaches the
-loopback origin. Localhost and enrolled private WARP are maintenance fallbacks,
-not additional normal entry points.
+`/guest` and `/try` are compatibility redirects to the unified entry rather
+than separate static products. Localhost and enrolled private WARP remain
+maintenance fallbacks, not additional normal entry points.
 
 For host maintenance:
 
@@ -54,6 +60,33 @@ python -X utf8 -m nicegui_app.main
 
 Open `http://127.0.0.1:8080` locally only while diagnosing, recovering, or
 maintaining the host. The origin remains loopback in every deployment state.
+
+### Verified `PageContext` and Guest adapter
+
+`nicegui_app.access_context` defines translation-independent `AccessMode`,
+`Capability`, `Principal`, and `PageContext` contracts. The Worker removes
+browser-supplied identity headers and injects an HMAC-signed principal carrying
+`mode`, `subject`, `sid`, `exp`, `auth_epoch`, and `kid`. The origin verifies
+the signature and lifecycle before resolving a workflow.
+
+Admin and Guest use the same routes, components, and DOM structure. The
+composition root returns a `PageContextWorkflowAdapter` around the official
+workflow for Admin／local maintenance, or a `GuestWorkspaceAdapter` for Guest.
+The capability matrix is deny-by-default; UI disabling is only a presentation
+aid and every service boundary rechecks the capability.
+
+Guest workspaces are bounded to 30 minutes, 24 concurrent sessions, four tabs
+per session, 40 fictional prefects, four weeks, 256 KiB signed snapshot, 5 MiB
+download, and 60 commands per minute. Each NiceGUI client receives a separate
+workspace ID. Guest data does not enter SQLAlchemy, official SQLite, backups,
+files, KV, AI, upload, external delivery, or background jobs. Guest exports are
+memory-only, `DEMO`-marked, single-use, and `Cache-Control: no-store`.
+
+The HMAC snapshot codec and its binding／expiry／replay checks are implemented.
+The browser bridge which writes and restores each latest revision through
+`sessionStorage` is still a v1.2 release gate. Until that bridge is complete,
+refresh persistence must not be described as delivered. The detailed contract
+is [Unified guest security model](UNIFIED_GUEST_SECURITY_MODEL.md).
 
 ## Durable Data Contract
 
@@ -69,6 +102,12 @@ The persistent shell banner and PDF marker receive the resolved mode as presenta
 - Canonical devotionals: `data/devotional/daily-verses.seed.json`
 - Practice-only fictional prefect seed: `data/demo/prefects.zh-HK.seed.json`
 
+Before workflow bootstrap or migration, `nicegui_app.process_lock` acquires a
+process-lifetime lock keyed by the resolved absolute database path. A second
+NiceGUI origin targeting the same SQLite file exits safely rather than racing
+Alembic or serving a second writer. This does not make SQLite a multi-origin
+database; v1.2 supports one origin process with multiple users and tabs.
+
 The workflow service is the only supported write path for roster operations:
 
 1. Generate: validates school policy and saves or replaces the Monday-based draft.
@@ -80,11 +119,11 @@ The workflow service is the only supported write path for roster operations:
 7. PDF export: builds a bilingual A4 PDF in memory from durable roster reads; it is a local download and never a public upload. Versioned Noto Sans HK Regular/Medium/SemiBold files make output deterministic on a replacement host. The schedule export accepts presentation-only crest and supplementary-footer switches; clean group-sharing output is the default.
 8. Period reporting: reads published roster weeks, final active assignment state, leave adjustments and the fairness ledger to build one immutable report model. Chinese preview, bilingual PDF and checksummed JSON are presentations of that same model; report generation performs no roster, ledger, backup or audit write.
 
-`nicegui_app.persistence.database.database_readiness()` is the single schema-readiness contract used by `/healthz` and deployment checks. A SQLite file is ready only when it opens read-only, passes `PRAGMA quick_check`, contains the complete table set derived from the current SQLAlchemy metadata plus `alembic_version`, and reports exactly the current Alembic head. A checksum-valid but partial or older database is therefore degraded rather than advertised as healthy. Readiness reports only the aggregate state; it does not expose rows or table contents.
+`nicegui_app.persistence.database.database_readiness()` remains the schema-readiness contract used by `/healthz`. A SQLite file is healthy only when it opens read-only, passes `PRAGMA quick_check`, contains the complete table set derived from current SQLAlchemy metadata plus `alembic_version`, and reports the current Alembic head. `/readyz` adds runtime admission: no active maintenance, no recovery-required marker, no pending backup obligation, and no failed startup repair. Deployment and load admission must check both endpoints; `/healthz` alone is insufficient.
 
 Published-duty substitute recommendations and the final leave-adjustment save share the same role, availability, declared-leave, same-day uniqueness, and no-consecutive-duty gates. A previously recorded absence cannot become eligible merely because the adjustment happens after publication.
 
-Every successful generate, publish, adjustment, leave declaration, and prefect-management write creates a SQLite online-backup snapshot and manifest. A backup failure is surfaced as an action failure; it is never silently ignored. Each manifest includes a SHA-256 checksum; the service validates the manifest checksum against the actual file, `PRAGMA integrity_check`, and required tables before a snapshot is trusted, packaged, or restored. The complete commit-to-snapshot sequence holds a payload-free host-wide SQLite serialization fence. Another tab or host process cannot commit a later version before the current operation has finished copying, checksumming, verifying and recording its recovery point; consequently the backup path returned for version N is guaranteed to contain version N rather than a later write.
+Each interactive official write claims an `operation_commands` receipt inside the same transaction as its result and creates a `backup_obligations` row before commit. The command ID and normalized fingerprint make exact retries replayable while rejecting reuse with different content. The obligation is marked complete only after the SQLite online backup, manifest, SHA-256 and integrity verification succeed. Startup repairs unfinished obligations before accepting new work; a failed repair leaves `/readyz` degraded and the workflow fence rejects subsequent writes. This removes the crash window where the database commit succeeded but no durable recovery point was recorded.
 
 Publication has a database-level single-winner claim: the `roster_weeks` row changes from `draft` to `published` only through a conditional update inside the same transaction that writes fairness-ledger entries. A second tab or concurrent local client is rejected before it can post duplicate workload points.
 
@@ -108,11 +147,18 @@ Each share receives a random identifier, independent 256-bit AES-GCM key and 96-
 
 Workers KV is globally eventually consistent, so a successful administrator write is not by itself proof that a newly issued link is already readable at the public edge. After creation, the gateway polls anonymous `POST /api/view` without the administrator bearer token and accepts success only when the public response contains the exact expected schema, nonce, ciphertext and equivalent expiry instant. This bounded visibility fence runs outside the NiceGUI event loop through the existing progress workflow. If the exact record does not become readable within the configured window, no URL fragment or AES key is issued to the operator. New version-2 create receipts include the non-secret content digest, allowing the gateway to request deletion of that exact content-addressed KV key without depending on a possibly stale prefix listing; the UI still describes this accurately as a withdrawal request rather than claiming immediate global disappearance. `SING_YIN_PUBLIC_ROSTER_VIEWER_VISIBILITY_TIMEOUT_SECONDS` defaults to 75 seconds and is deliberately separate from the per-request HTTP timeout.
 
-`cloudflare/roster_viewer/worker.js` is the canonical outer front door. Its public `/` route serves the entrance shell without roster data. `/guest` serves the static product tour, while `/try` and its same-origin assets serve the interactive trial; all accept `GET` and `HEAD` only. Contract tests must fail if either route schedules storage work, touches `ROSTER_SHARES`, reaches `ROSTER_ORIGIN`, accepts a write／preflight method, or exposes an application API. `/try` loads a fixed fictional Chinese-name directory, keeps leave and generated-roster state in schema-versioned `sessionStorage` for at most 30 minutes, and creates the bilingual A4 landscape PDF in the browser. It cannot publish, create a Viewer link, update `history_weight`, reach NiceGUI, SQLite, KV, VPC, backup or audit, or place trial data in server logs. The downloaded PDF survives only when the visitor explicitly saves it.
+v1.2 adds `external_share_outbox` beside the operation command receipt. A
+share intent is committed with the authoritative roster week, version and
+content digest before the HTTP delivery begins. Delivery claims, successes and
+categorical failures update that same record, so a lost response or retry does
+not silently create an unrelated share. The outbox stores no AES key and does
+not turn Worker delivery into a roster-policy write.
+
+`cloudflare/roster_viewer/worker.js` is the canonical outer front door. Public `/` serves the identity-neutral entrance. `POST /auth/guest/start` creates the bounded Guest session; `/auth/admin/start` enters Access; `/auth/status` rechecks mode, expiry and origin health; `/auth/logout` clears the application identity. `/guest` and `/try` redirect to the unified entry. For both verified modes, the Worker strips browser identity headers, signs the origin principal and proxies HTTP／WebSocket through `ROSTER_ORIGIN`. The origin resolves the adapter; the Worker never accepts a browser-declared role.
 
 `/view#…` is a separate public capability path, not the `/guest` tour. New `ROSTER_SHARES` records use immutable `share:v2:<shareId>:<SHA-256>` keys whose digest covers the normalized encrypted payload; exact retries resolve to the same key, while different content can never overwrite another record that happens to carry the same share identifier. The Worker continues to read and revoke legacy `share:<id>` records without rewriting them. Because Workers KV offers no compare-and-swap, `view` and `list` fail closed whenever multiple digests, mixed legacy／v2 records, or an invalid digest become visible. Anonymous `/api/view` accepts only one validated share identifier; browser Web Crypto decrypts locally, and DOM rendering uses `textContent`. This path uses KV but still has no VPC, NiceGUI or SQLite access. The public HTML/CSS/JS are same-origin and dependency-free, with no-store, CSP, no-referrer, noindex, frame denial and permissions restrictions.
 
-The same Worker also owns the administrator transition. **Admin login** enters internal `/auth` and `/auth/*` destinations protected by Cloudflare Access. The user enters an exact allowlisted email and Cloudflare One-time PIN; only at `/auth/login` does the Worker verify the Access JWT signature, `aud`, `iss`, `exp`, and exact administrator email. It then creates a separate HMAC-signed `__Host-SingYinAdminSession` cookie with HttpOnly, Secure, SameSite=Lax and Path=/, no Domain, and an expiry bounded by both eight hours and the Access token expiry. The Access JWT is never copied into this cookie. For every proxied NiceGUI HTTP or WebSocket request, the Worker verifies the first-party session signature, time bounds and current exact allowlist, strips all browser-supplied `Cf-Access-*`／identity headers plus both `CF_Authorization` and the first-party administrator cookie, then injects only an identity derived from the verified session before proxying through `ROSTER_ORIGIN`. NiceGUI is therefore an authenticated administrator origin, not the component that downgrades anonymous users into a guest role. There is no application password table, hash or password-recovery flow.
+The administrator transition still enters the Cloudflare Access protected path. The Worker verifies the Access JWT signature, `aud`, `iss`, `exp`, and exact administrator email before issuing its bounded HttpOnly session. Guest and Admin cookies are mutually cleared during mode transitions. Neither cookie nor the Access assertion is forwarded to the origin; only the newly signed principal is injected. There is no application password table, hash or password-recovery flow.
 
 The in-app access-control surface creates same-host links for published rosters and lists/revokes active KV records. Revocation deletes ciphertext; KV propagation may take about one minute. A share token never promotes a guest to OP. The canonical root remains public; only `/auth` and `/auth/*` invoke Access, so a guest is not forced to authenticate merely to view. After login, the Worker verifies its signed first-party administrator session before every NiceGUI proxy request. `/logout` clears that cookie before continuing to Cloudflare Access logout.
 
@@ -170,11 +216,13 @@ The UI does not append `WorkflowError` text to notifications. It displays the bi
 | Core | `packages/roster_core/` | Pure daily devotional selection and weekly roster generation/validation |
 | Persistence | `nicegui_app/persistence/` | SQLite engine, Alembic schema, durable records |
 | Workflow | `nicegui_app/services/roster_workflow.py`, `nicegui_app/services/workflow_parts/` | Stable facade plus separated transactions, fairness ledger, people, backups, adjustments, recovery, and read-only period-report composition |
+| Access composition | `nicegui_app/access_context.py`, `gateway_identity.py`, `runtime.py`, `operation_context.py` | Verify signed principals, resolve deny-by-default capabilities and bind one request/client to the official or Guest adapter |
+| Guest workspace | `nicegui_app/services/guest_workspace.py`, `guest_adapter.py`, `guest_downloads.py` | Bounded fictional memory state, signed snapshot codec, per-tab revision and one-shot no-store DEMO downloads; no official persistence or external integration |
 | Presentation | `nicegui_app/ui/page_routes/`, `page_shared.py`, `i18n_catalog/`, `theme_markup.py`, `assets/css/sing-yin-theme-v1.css`, `motion.py` | NiceGUI routes, shared components, domain-grouped bilingual copy, versioned cacheable design-system CSS, local motion bootstrap, page shell, anonymous platform summary, and non-sensitive architecture explanation |
 | Import adapters | `nicegui_app/utils/prefect_import.py`, `prefect_file_import.py`, `nicegui_app/services/prefect_import_assistant.py` | Bounded local normalization and optional heading-only mapping suggestions; no policy or direct persistence writes |
 | Export | `nicegui_app/services/roster_export.py`, `summary_report_export.py` | Local-only bilingual roster／report PDF and report-JSON composition; no persistence or upload writes |
 | Public share adapter | `nicegui_app/services/public_roster_share.py`, `nicegui_app/ui/access_control.py` | Explicit minimum-data snapshot, local AES-GCM encryption, same-host link receipt, active-link listing and revocation; one exact create body may be replayed once after transport loss and returns the original receipt, while conflicting reuse is rejected; Worker-owned public paths never become NiceGUI editing sessions |
-| Canonical edge runtime | `cloudflare/roster_viewer/worker.js`, Cloudflare Access, Workers VPC, KV `ROSTER_SHARES` | Serve guest read-only assets and ciphertext; exchange a verified administrator Access JWT at `/auth/login` for a signed first-party session; revalidate that session and exact allowlist; proxy only verified management sessions through VPC／Tunnel to loopback NiceGUI |
+| Canonical edge runtime | `cloudflare/roster_viewer/worker.js`, Cloudflare Access, Workers VPC, KV `ROSTER_SHARES` | Serve the public entrance and Viewer; create verified Guest/Admin sessions; strip forged identity; inject signed origin principals; proxy authenticated modes through VPC／Tunnel to loopback NiceGUI |
 | Observability | `nicegui_app/observability.py` | Payload-free local operation evidence and rotating support logs |
 | Optional media | `nicegui_app/services/online_music.py`, `music_library.py`, `json_catalog.py`, `youtube_audio_import.py`, `nicegui_app/ui/music.py` | Public YouTube playlist validation/search, visible playback, appearance-recommended local playlists, and bounded local audio import; a re-entrant Windows named mutex／POSIX `flock` protects the complete cross-process read／modify／write window, while a unique fsynced temporary file and atomic replace protect the JSON bytes; strictly separate from roster persistence |
 
@@ -243,12 +291,13 @@ The only deliberate application-originated external request carrying roster-deri
 ## Verification
 
 - `scripts/verify_practice_mode.py` checks the isolated health identity, bilingual persistent banner, light/dark styling, phone layout, console, and local screenshots without writing roster data.
-- `tests/test_official_data_reset.py` and runtime-mode tests own the candidate proof that official startup does not seed, the controlled reset verifies backup／isolated restore／Viewer revocation before replacement, and the resulting baseline contains zero operational rows. `tests/test_cloudflare_guest_trial.py` plus the Worker Deno contracts own the route-method, no-KV／no-VPC, fixed-fictional-data, 30-minute `sessionStorage`, and on-device bilingual-PDF boundary. These checks are release-candidate work until the full suite and browser evidence pass; their presence alone is not deployment evidence.
-- `scripts/verify_guest_trial.py` is run first against local Wrangler (`--base-url http://127.0.0.1:8791`) and again against the deployed canonical Worker. It records desktop／phone, light／dark, bilingual PDF, policy, true 30-minute expiry, malformed-state recovery, fail-closed child routes, no trial interaction requests, console and overflow evidence under `test-results/guest-trial/`. A local pass cannot be reused as production evidence because the report records its base URL.
+- `tests/test_access_context.py`, `tests/test_gateway_identity.py`, `tests/test_guest_workspace.py`, `tests/test_guest_adapter.py`, `tests/test_guest_downloads.py`, and Guest UI safety tests own the capability, signed-principal, bounded-workspace, snapshot and no-store download contracts.
+- `scripts/verify_unified_guest_ui.py` launches an isolated Guest-mode NiceGUI origin with temporary paths and a bounded E2E principal. It is intended to prove same-route rendering, restriction states, fictional data, theme／locale／phone behavior, console cleanliness and no official persistence. The final release orchestrator must run it as a separate phase; a focused script pass is not deployment evidence.
+- Worker Deno contracts own `/auth/admin/start`, `/auth/guest/start`, `/auth/status`, `/auth/logout`, compatibility redirects, principal signing, forged-header stripping, VPC proxying and Viewer isolation.
 
 ```powershell
 python -X utf8 -m pytest -q
-python C:\Users\lichu\.codex\skills\webapp-testing\scripts\with_server.py --server "python -X utf8 -m nicegui_app.main" --port 8080 -- python -X utf8 scripts\verify_nicegui_ui.py
+python -X utf8 scripts\verify_release_candidate.py
 ```
 
 The browser check covers Dashboard, Roster, Prefects, Adjustments, Audit, language switching, in-place dark/sound changes, the unsaved-form language guard, favicon delivery, console errors and uncaught `pageerror`, captured light/dark screenshots, stale roster and adjustment URLs in both languages, and the mobile requirement that Daily Verse precedes the weekly workbench. The isolated release pipeline additionally asserts 26 visible phone roster cards, the absence of clipped desktop roster and directory tables at 390px, the persisted Chinese substitute name in both interface languages, a draft adjustment URL with no writable form, full-width 44px published-adjustment actions, and the safe missing-reason message before a write. With the isolated opt-in environment above, it also verifies the visible progress dialog for an actual generated draft.

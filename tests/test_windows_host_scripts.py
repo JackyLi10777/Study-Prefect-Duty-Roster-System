@@ -275,3 +275,48 @@ def test_windows_scripts_do_not_resolve_psscriptroot_inside_parameter_defaults()
         parameter_block = source.split("$ErrorActionPreference", 1)[0]
         assert "Split-Path -Parent $PSScriptRoot" not in parameter_block
         assert "if ([string]::IsNullOrWhiteSpace($ProjectRoot))" in source
+
+
+def test_windows_ssh_setup_is_key_only_loopback_only_and_fail_closed() -> None:
+    setup = (PROJECT_ROOT / "scripts" / "configure_windows_ssh.ps1").read_text(
+        encoding="utf-8"
+    )
+    verification = (PROJECT_ROOT / "scripts" / "verify_windows_ssh.ps1").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'Add-WindowsCapability -Online -Name "OpenSSH.Server~~~~0.0.1.0"' in setup
+    assert setup.count('Get-WindowsCapability -Online -Name "OpenSSH.Server*"') >= 2
+    assert "ListenAddress 127.0.0.1" in setup
+    assert "ListenAddress ::1" in setup
+    assert "AuthenticationMethods publickey" in setup
+    assert "PasswordAuthentication no" in setup
+    assert "KbdInteractiveAuthentication no" in setup
+    assert "AllowAgentForwarding no" in setup
+    assert "AllowTcpForwarding no" in setup
+    assert "GatewayPorts no" in setup
+    assert "PermitTunnel no" in setup
+    assert "AllowUsers $MaintenanceUser" in setup
+    assert "administrators_authorized_keys" in setup
+    assert "Set-RestrictedFileAcl" in setup
+    assert "'^ssh_host_(rsa|ecdsa|ed25519)_key$'" in setup
+    assert "-AllowedSids @($systemSid, $administratorsSid)" in setup
+    assert "-AllowedSids @($account.SID, $systemSid)" in setup
+    assert "Disable-NetFirewallRule" in setup
+    assert "ssh-ed25519" in setup
+    assert "PasswordAuthentication no" in setup.split(
+        "# BEGIN SING YIN ROSTER MANAGED SSH", 1
+    )[1]
+    assert "configBackupCreated" in setup
+    assert "Write-JsonReport -Payload $report" in setup
+
+    assert "-o BatchMode=yes" in verification
+    assert "-o ConnectTimeout=8" in verification
+    assert "isAdministrator" in verification
+    assert 'Get-Service -Name "sshd"' in verification
+    assert 'Get-ScheduledTask -TaskName "Sing Yin Roster Host"' in verification
+    assert "safe.directory=C:/SingYinRoster" in verification
+    assert "'^[0-9a-f]{40}$'" in verification
+    assert '"http://127.0.0.1:8080/healthz"' in verification
+    assert '$remote.applicationMode -eq "official"' in verification
+    assert '$remote.database -eq "ok"' in verification

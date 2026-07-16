@@ -23,17 +23,21 @@ from nicegui_app.config import DEFAULT_BACKUP_DIR, DEFAULT_DATABASE_PATH, POLICY
 from nicegui_app.persistence.database import create_session_factory, required_database_tables
 from nicegui_app.persistence.models import (
     AuditEventRecord,
+    BackupObligationRecord,
     BackupRunRecord,
     Base,
+    ExternalShareOutboxRecord,
     FairnessLedgerRecord,
     LeaveAdjustmentRecord,
     LeaveDeclarationRecord,
+    OperationCommandRecord,
     PrefectAvailabilityRecord,
     PrefectRecord,
     RosterAssignmentRecord,
     RosterWeekRecord,
 )
 from nicegui_app.services.maintenance import MaintenanceModeError, MaintenanceStatus, maintenance_coordinator
+from nicegui_app.services.operation_context import current_operation_actor
 from nicegui_app.services.workflow_types import *
 from roster_core.generator import RosterGenerationError, generate_weekly_roster, validate_assignments
 from roster_core.models import Assignment, Prefect, parse_prefect_role

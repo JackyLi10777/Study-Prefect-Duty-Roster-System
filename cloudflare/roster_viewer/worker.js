@@ -1,12 +1,3 @@
-import {
-  GUEST_PLATFORM_HTML,
-  GUEST_PLATFORM_JS,
-  TRIAL_CSS,
-  TRIAL_HTML,
-  TRIAL_JS,
-  TRIAL_SECURITY_HEADERS,
-} from './guest_trial.js';
-
 const SHARE_SCHEMA = 'sing-yin-public-roster-v1';
 const SHARE_KEY_PREFIX = 'share:';
 const CONTENT_SHARE_KEY_PREFIX = 'share:v2:';
@@ -21,9 +12,16 @@ const ACCESS_JWKS_MIN_REFRESH_MS = 60 * 1_000;
 const ACCESS_JWKS_MAX_BYTES = 65_536;
 const ACCESS_COOKIE_NAME = 'CF_Authorization';
 const ADMIN_SESSION_COOKIE_NAME = '__Host-SingYinAdminSession';
-const ADMIN_SESSION_VERSION = 1;
+const GUEST_SESSION_COOKIE_NAME = '__Host-SingYinGuestSession';
+const ADMIN_SESSION_VERSION = 2;
+const GUEST_SESSION_VERSION = 1;
 const ADMIN_SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
+const GUEST_SESSION_MAX_AGE_SECONDS = 30 * 60;
 const ADMIN_SESSION_MAX_TOKEN_BYTES = 2_048;
+const GUEST_SESSION_MAX_TOKEN_BYTES = 2_048;
+const ORIGIN_PRINCIPAL_VERSION = 1;
+const ORIGIN_PRINCIPAL_AUDIENCE = 'sing-yin-roster-origin';
+const ORIGIN_PRINCIPAL_HEADER = 'X-Sing-Yin-Origin-Principal';
 const accessJwksCache = new Map();
 
 // Small, non-sensitive landing-page selection copied from the canonical
@@ -75,7 +73,7 @@ const VIEWER_HTML = `<!doctype html>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/viewer.css">
 </head>
-<body>
+<body data-guest-bootstrap="false">
   <a class="skip-link" href="#mainContent">跳到主要內容 · Skip to main content</a>
   <header class="site-header">
     <div class="brand-lockup">
@@ -1791,6 +1789,23 @@ function renderRoster(snapshot, expiresAt) {
 
 let shareOpenInFlight = false;
 
+async function bootstrapGuestSession() {
+  if (document.body?.dataset.guestBootstrap !== 'true') return false;
+  showOnly(loadingState);
+  try {
+    const result = await fetch('/auth/guest/start', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
+    });
+    if (!result.ok) throw new Error('guest_bootstrap_failed');
+    window.location.replace('/');
+  } catch {
+    showShareError('service');
+  }
+  return true;
+}
+
 async function openSharedRoster() {
   if (window.location.pathname === '/guest') {
     showOnly(guestPortalState);
@@ -1850,7 +1865,9 @@ async function openSharedRoster() {
 }
 
 retryShare?.addEventListener('click', () => { void openSharedRoster(); });
-void openSharedRoster();
+void bootstrapGuestSession().then(started => {
+  if (!started) void openSharedRoster();
+});
 `;
 
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
@@ -2022,14 +2039,65 @@ function adminSessionSecret(env) {
   return secret;
 }
 
-async function adminSessionHmacKey(env, usage) {
+function guestSessionSecret(env) {
+  const secret = typeof env.GUEST_SESSION_SECRET === 'string' ? env.GUEST_SESSION_SECRET : ''; // pragma: allowlist secret -- environment variable name only
+  if (secret.length < 32 || secret.length > 512 || secret !== secret.trim()) {
+    throw new AccessValidationError('guest_session_secret_configuration');
+  }
+  return secret;
+}
+
+function originPrincipalSecret(env) {
+  const secret = typeof env.ORIGIN_PRINCIPAL_SECRET === 'string' ? env.ORIGIN_PRINCIPAL_SECRET : ''; // pragma: allowlist secret -- environment variable name only
+  if (secret.length < 32 || secret.length > 512 || secret !== secret.trim()) {
+    throw new AccessValidationError('origin_principal_secret_configuration');
+  }
+  return secret;
+}
+
+function authEpoch(env) {
+  const raw = env.AUTH_EPOCH ?? 1;
+  if (
+    (typeof raw !== 'number' && typeof raw !== 'string')
+    || (typeof raw === 'string' && !/^[1-9][0-9]{0,9}$/.test(raw))
+  ) {
+    throw new AccessValidationError('auth_epoch_configuration');
+  }
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < 1 || value > 2_147_483_647) {
+    throw new AccessValidationError('auth_epoch_configuration');
+  }
+  return value;
+}
+
+function originPrincipalKid(env) {
+  const raw = env.ORIGIN_PRINCIPAL_KID ?? 'origin-v1';
+  if (typeof raw !== 'string' || raw !== raw.trim() || !/^[A-Za-z0-9._-]{1,64}$/.test(raw)) {
+    throw new AccessValidationError('origin_principal_kid_configuration');
+  }
+  return raw;
+}
+
+async function hmacKey(secret, usage) {
   return await crypto.subtle.importKey(
     'raw',
-    new TextEncoder().encode(adminSessionSecret(env)),
+    new TextEncoder().encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     usage,
   );
+}
+
+async function adminSessionHmacKey(env, usage) {
+  return await hmacKey(adminSessionSecret(env), usage);
+}
+
+async function guestSessionHmacKey(env, usage) {
+  return await hmacKey(guestSessionSecret(env), usage);
+}
+
+async function originPrincipalHmacKey(env, usage) {
+  return await hmacKey(originPrincipalSecret(env), usage);
 }
 
 async function createAdminSessionToken(email, accessExpiresAt, env, options = {}) {
@@ -2049,6 +2117,7 @@ async function createAdminSessionToken(email, accessExpiresAt, env, options = {}
     email: normalizedEmail,
     iat: nowSeconds,
     exp: expiresAt,
+    epoch: authEpoch(env),
     nonce: encodeBase64Url(nonceBytes),
   };
   const payloadSegment = encodeBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
@@ -2065,6 +2134,41 @@ function adminSessionSetCookie(token, expiresAt) {
 
 function adminSessionClearCookie() {
   return `${ADMIN_SESSION_COOKIE_NAME}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; HttpOnly; Secure; SameSite=Lax`;
+}
+
+async function createGuestSessionToken(env, options = {}) {
+  const nowSeconds = Math.floor((options.nowMillis ?? Date.now()) / 1_000);
+  const expiresAt = nowSeconds + GUEST_SESSION_MAX_AGE_SECONDS;
+  if (!Number.isSafeInteger(nowSeconds) || !Number.isSafeInteger(expiresAt)) {
+    throw new AccessValidationError();
+  }
+  const sidBytes = new Uint8Array(16);
+  if (options.sidBytes instanceof Uint8Array && options.sidBytes.byteLength === 16) {
+    sidBytes.set(options.sidBytes);
+  } else {
+    crypto.getRandomValues(sidBytes);
+  }
+  const payload = {
+    v: GUEST_SESSION_VERSION,
+    sid: encodeBase64Url(sidBytes),
+    iat: nowSeconds,
+    exp: expiresAt,
+    epoch: authEpoch(env),
+  };
+  const payloadSegment = encodeBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
+  const key = await guestSessionHmacKey(env, ['sign']);
+  const signature = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payloadSegment)));
+  return { token: `${payloadSegment}.${encodeBase64Url(signature)}`, payload };
+}
+
+function guestSessionSetCookie(token, expiresAt) {
+  const nowSeconds = Math.floor(Date.now() / 1_000);
+  const maxAge = Math.max(0, Math.min(GUEST_SESSION_MAX_AGE_SECONDS, expiresAt - nowSeconds));
+  return `${GUEST_SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; Max-Age=${maxAge}; Expires=${new Date(expiresAt * 1_000).toUTCString()}; Path=/; HttpOnly; Secure; SameSite=Lax`;
+}
+
+function guestSessionClearCookie() {
+  return `${GUEST_SESSION_COOKIE_NAME}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; HttpOnly; Secure; SameSite=Lax`;
 }
 
 async function validateAdminSessionToken(token, env, options = {}) {
@@ -2094,7 +2198,7 @@ async function validateAdminSessionToken(token, env, options = {}) {
     !payload
     || typeof payload !== 'object'
     || Array.isArray(payload)
-    || Object.keys(payload).sort().join(',') !== 'email,exp,iat,nonce,v'
+    || Object.keys(payload).sort().join(',') !== 'email,epoch,exp,iat,nonce,v'
     || payload.v !== ADMIN_SESSION_VERSION
     || typeof payload.email !== 'string'
     || payload.email !== payload.email.trim()
@@ -2106,12 +2210,101 @@ async function validateAdminSessionToken(token, env, options = {}) {
     || payload.exp <= nowSeconds
     || payload.exp <= payload.iat
     || payload.exp - payload.iat > ADMIN_SESSION_MAX_AGE_SECONDS
+    || payload.epoch !== authEpoch(env)
     || typeof payload.nonce !== 'string'
     || !/^[A-Za-z0-9_-]{22}$/.test(payload.nonce)
   ) {
     throw new AccessValidationError();
   }
   return payload;
+}
+
+async function validateGuestSessionToken(token, env, options = {}) {
+  if (typeof token !== 'string' || token.length < 32 || token.length > GUEST_SESSION_MAX_TOKEN_BYTES) {
+    throw new AccessValidationError();
+  }
+  const parts = token.split('.');
+  if (parts.length !== 2 || parts.some(part => !part)) throw new AccessValidationError();
+  const [payloadSegment, signatureSegment] = parts;
+  const payloadBytes = decodeBase64Url(payloadSegment);
+  const signature = decodeBase64Url(signatureSegment);
+  if (!payloadBytes || payloadBytes.byteLength < 2 || payloadBytes.byteLength > 1_024 || !signature || signature.byteLength !== 32) {
+    throw new AccessValidationError();
+  }
+  const key = await guestSessionHmacKey(env, ['verify']);
+  const verified = await crypto.subtle.verify('HMAC', key, signature, new TextEncoder().encode(payloadSegment));
+  if (!verified) throw new AccessValidationError();
+  let payload;
+  try {
+    payload = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(payloadBytes));
+  } catch {
+    throw new AccessValidationError();
+  }
+  const nowSeconds = Math.floor((options.nowMillis ?? Date.now()) / 1_000);
+  if (
+    !payload
+    || typeof payload !== 'object'
+    || Array.isArray(payload)
+    || Object.keys(payload).sort().join(',') !== 'epoch,exp,iat,sid,v'
+    || payload.v !== GUEST_SESSION_VERSION
+    || typeof payload.sid !== 'string'
+    || !/^[A-Za-z0-9_-]{22}$/.test(payload.sid)
+    || !Number.isSafeInteger(payload.iat)
+    || !Number.isSafeInteger(payload.exp)
+    || payload.iat > nowSeconds + 60
+    || payload.exp <= nowSeconds
+    || payload.exp <= payload.iat
+    || payload.exp - payload.iat > GUEST_SESSION_MAX_AGE_SECONDS
+    || payload.epoch !== authEpoch(env)
+  ) {
+    throw new AccessValidationError();
+  }
+  return payload;
+}
+
+async function originRequestBinding(request) {
+  const url = new URL(request.url);
+  const material = [
+    request.method.toUpperCase(),
+    url.host.toLowerCase(),
+    `${url.pathname}${url.search}`,
+  ].join('\n');
+  return encodeBase64Url(await sha256(material));
+}
+
+async function createOriginPrincipalToken(request, principal, env, options = {}) {
+  const nowSeconds = Math.floor((options.nowMillis ?? Date.now()) / 1_000);
+  const sessionExpiresAt = Number(principal?.exp);
+  if (
+    !principal
+    || !['admin', 'guest'].includes(principal.mode)
+    || typeof principal.subject !== 'string'
+    || !principal.subject
+    || principal.subject.length > 320
+    || typeof principal.sid !== 'string'
+    || !/^[A-Za-z0-9_-]{22}$/.test(principal.sid)
+    || !Number.isSafeInteger(sessionExpiresAt)
+    || !Number.isSafeInteger(nowSeconds)
+    || sessionExpiresAt <= nowSeconds
+  ) {
+    throw new AccessValidationError();
+  }
+  const payload = {
+    v: ORIGIN_PRINCIPAL_VERSION,
+    aud: ORIGIN_PRINCIPAL_AUDIENCE,
+    mode: principal.mode,
+    subject: principal.subject,
+    sid: principal.sid,
+    iat: nowSeconds,
+    exp: sessionExpiresAt,
+    auth_epoch: authEpoch(env),
+    kid: originPrincipalKid(env),
+    request_binding: await originRequestBinding(request),
+  };
+  const payloadSegment = encodeBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
+  const key = await originPrincipalHmacKey(env, ['sign']);
+  const signature = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payloadSegment)));
+  return { token: `${payloadSegment}.${encodeBase64Url(signature)}`, payload };
 }
 
 function jsonObjectFromJwtSegment(segment, maximumBytes) {
@@ -2278,9 +2471,15 @@ async function validateAccessJwt(token, env, options = {}) {
 function stripAccessCredentials(inputHeaders) {
   const headers = new Headers(inputHeaders);
   for (const name of [...headers.keys()]) {
-    if (name.toLowerCase().startsWith('cf-access-')) headers.delete(name);
+    const normalized = name.toLowerCase();
+    if (
+      normalized.startsWith('cf-access-')
+      || normalized.startsWith('x-sing-yin-')
+      || normalized.startsWith('x-forwarded-')
+    ) {
+      headers.delete(name);
+    }
   }
-  headers.delete('X-Sing-Yin-Access-Email');
   const cookieHeader = headers.get('Cookie') || '';
   const retainedCookies = cookieHeader
     .split(';')
@@ -2290,7 +2489,8 @@ function stripAccessCredentials(inputHeaders) {
       const separator = part.indexOf('=');
       const name = (separator < 0 ? part : part.slice(0, separator)).trim();
       return name.toLowerCase() !== ACCESS_COOKIE_NAME.toLowerCase()
-        && name !== ADMIN_SESSION_COOKIE_NAME;
+        && name !== ADMIN_SESSION_COOKIE_NAME
+        && name !== GUEST_SESSION_COOKIE_NAME;
     });
   if (retainedCookies.length) headers.set('Cookie', retainedCookies.join('; '));
   else headers.delete('Cookie');
@@ -2317,7 +2517,7 @@ function authenticatedProxyRequestAllowed(request) {
   return !fetchSite || fetchSite === 'same-origin';
 }
 
-async function proxyToRosterOrigin(request, env, verifiedEmail) {
+async function proxyToRosterOrigin(request, env, principal) {
   if (!env.ROSTER_ORIGIN || typeof env.ROSTER_ORIGIN.fetch !== 'function') throw new AccessValidationError();
   const publicUrl = new URL(request.url);
   const originUrl = new URL('http://127.0.0.1:8080');
@@ -2326,7 +2526,8 @@ async function proxyToRosterOrigin(request, env, verifiedEmail) {
   const headers = stripAccessCredentials(request.headers);
   headers.set('X-Forwarded-Host', publicUrl.host);
   headers.set('X-Forwarded-Proto', 'https');
-  headers.set('X-Sing-Yin-Access-Email', verifiedEmail);
+  const originPrincipal = await createOriginPrincipalToken(request, principal, env);
+  headers.set(ORIGIN_PRINCIPAL_HEADER, originPrincipal.token);
   const init = {
     method: request.method,
     headers,
@@ -2363,10 +2564,82 @@ function redirectResponse(destination, requestUrl, status = 302) {
 }
 
 function logoutResponse(requestUrl) {
-  return response(null, 302, {
+  const headers = new Headers({
     Location: new URL('/cdn-cgi/access/logout', requestUrl).toString(),
-    'Set-Cookie': adminSessionClearCookie(),
   });
+  headers.append('Set-Cookie', adminSessionClearCookie());
+  headers.append('Set-Cookie', guestSessionClearCookie());
+  return response(null, 302, headers);
+}
+
+function authLogoutResponse(requestUrl) {
+  const headers = new Headers({
+    Location: new URL('/', requestUrl).toString(),
+  });
+  headers.append('Set-Cookie', adminSessionClearCookie());
+  headers.append('Set-Cookie', guestSessionClearCookie());
+  return response(null, 303, headers);
+}
+
+function isConfigurationError(error) {
+  return error instanceof AccessValidationError && error.reason.endsWith('_configuration');
+}
+
+async function gatewayPrincipalFromRequest(request, env) {
+  const adminToken = cookieValueFromRequest(request, ADMIN_SESSION_COOKIE_NAME);
+  let invalidCredential = false;
+  if (adminToken) {
+    try {
+      const session = await validateAdminSessionToken(adminToken, env);
+      return {
+        mode: 'admin',
+        subject: session.email,
+        sid: session.nonce,
+        exp: session.exp,
+      };
+    } catch (error) {
+      if (isConfigurationError(error)) throw error;
+      invalidCredential = true;
+    }
+  }
+
+  const guestToken = cookieValueFromRequest(request, GUEST_SESSION_COOKIE_NAME);
+  if (guestToken) {
+    try {
+      const session = await validateGuestSessionToken(guestToken, env);
+      return {
+        mode: 'guest',
+        subject: 'guest',
+        sid: session.sid,
+        exp: session.exp,
+      };
+    } catch (error) {
+      if (isConfigurationError(error)) throw error;
+      invalidCredential = true;
+    }
+  }
+  if (invalidCredential) throw new AccessValidationError('gateway_session_invalid');
+  return null;
+}
+
+async function guestStartResponse(request, env) {
+  if (!authenticatedProxyRequestAllowed(request)) return accessFailureResponse();
+  const session = await createGuestSessionToken(env);
+  const acceptsJson = (request.headers.get('Accept') || '').toLowerCase().includes('application/json');
+  const headers = new Headers({
+    'Set-Cookie': guestSessionSetCookie(session.token, session.payload.exp),
+  });
+  if (acceptsJson) {
+    headers.set('Content-Type', 'application/json; charset=utf-8');
+    return response(JSON.stringify({
+      authenticated: true,
+      mode: 'guest',
+      expiresAt: session.payload.exp,
+      redirect: '/',
+    }), 201, headers);
+  }
+  headers.set('Location', new URL('/', request.url).toString());
+  return response(null, 303, headers);
 }
 
 function originProxyResult(originResponse) {
@@ -2387,14 +2660,6 @@ function secured(input) {
     if (!output.headers.has(name)) output.headers.set(name, value);
   }
   return output;
-}
-
-function trialAssetResponse(body, contentType, method, status = 200, headers = {}) {
-  return response(method === 'HEAD' ? null : body, status, {
-    ...TRIAL_SECURITY_HEADERS,
-    'Content-Type': contentType,
-    ...headers,
-  });
 }
 
 function methodNotAllowed(allowed) {
@@ -2820,36 +3085,18 @@ async function route(request, env, context) {
   const path = url.pathname;
 
   if (path === '/guest') {
-    if (!['GET', 'HEAD'].includes(request.method)) return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
-    return trialAssetResponse(GUEST_PLATFORM_HTML, 'text/html; charset=utf-8', request.method);
-  }
-  if (path === '/guest.js') {
-    if (!['GET', 'HEAD'].includes(request.method)) return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
-    return trialAssetResponse(GUEST_PLATFORM_JS, 'text/javascript; charset=utf-8', request.method);
+    if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
+    return redirectResponse('/?guest=1', request.url);
   }
   if (path.startsWith('/guest/')) {
-    if (!['GET', 'HEAD'].includes(request.method)) {
-      return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
-    }
-    return trialAssetResponse('Guest asset not found', 'text/plain; charset=utf-8', request.method, 404);
+    return response('Not found', 404, { 'Content-Type': 'text/plain; charset=utf-8' });
   }
   if (path === '/try') {
-    if (!['GET', 'HEAD'].includes(request.method)) return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
-    return trialAssetResponse(TRIAL_HTML, 'text/html; charset=utf-8', request.method);
+    if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
+    return redirectResponse('/?guest=1', request.url);
   }
   if (path.startsWith('/try/')) {
-    if (!['GET', 'HEAD'].includes(request.method)) {
-      return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
-    }
-    return trialAssetResponse('Trial asset not found', 'text/plain; charset=utf-8', request.method, 404);
-  }
-  if (path === '/trial.css') {
-    if (!['GET', 'HEAD'].includes(request.method)) return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
-    return trialAssetResponse(TRIAL_CSS, 'text/css; charset=utf-8', request.method);
-  }
-  if (path === '/trial.js') {
-    if (!['GET', 'HEAD'].includes(request.method)) return trialAssetResponse('Method not allowed', 'text/plain; charset=utf-8', request.method, 405, { Allow: 'GET, HEAD' });
-    return trialAssetResponse(TRIAL_JS, 'text/javascript; charset=utf-8', request.method);
+    return response('Not found', 404, { 'Content-Type': 'text/plain; charset=utf-8' });
   }
   if (path === '/view' && request.method === 'GET') {
     return response(VIEWER_HTML, 200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -2870,7 +3117,7 @@ async function route(request, env, context) {
     return jsonResponse({
       status: 'ok',
       application: 'sing-yin-roster-gateway',
-      capabilities: ['encrypted-public-viewer', 'isolated-client-trial', 'access-admin-gateway', 'private-origin-proxy'],
+      capabilities: ['encrypted-public-viewer', 'unified-guest-gateway', 'access-admin-gateway', 'signed-origin-principal', 'private-origin-proxy'],
     });
   }
   if (path === '/api/view') {
@@ -2893,6 +3140,23 @@ async function route(request, env, context) {
     return logoutResponse(request.url);
   }
 
+  if (path === '/auth/admin/start') {
+    if (request.method !== 'GET') return methodNotAllowed('GET');
+    return redirectResponse('/auth/login', request.url);
+  }
+
+  if (path === '/auth/guest/start') {
+    if (request.method !== 'POST') return methodNotAllowed('POST');
+    if (url.search) return jsonResponse({ error: 'invalid_request' }, 400);
+    return await guestStartResponse(request, env);
+  }
+
+  if (path === '/auth/logout') {
+    if (request.method !== 'POST') return methodNotAllowed('POST');
+    if (url.search || !authenticatedProxyRequestAllowed(request)) return accessFailureResponse();
+    return authLogoutResponse(request.url);
+  }
+
   if (path === '/auth/login') {
     if (request.method !== 'GET') return methodNotAllowed('GET');
     const accessToken = accessTokenFromRequest(request);
@@ -2910,25 +3174,35 @@ async function route(request, env, context) {
       return loggedAccessFailure(request, 'admin_session', error);
     }
     const redirect = redirectResponse('/', request.url);
-    redirect.headers.set('Set-Cookie', adminSessionSetCookie(session.token, session.payload.exp));
+    redirect.headers.append('Set-Cookie', adminSessionSetCookie(session.token, session.payload.exp));
+    redirect.headers.append('Set-Cookie', guestSessionClearCookie());
     return redirect;
   }
 
-  const adminSessionToken = cookieValueFromRequest(request, ADMIN_SESSION_COOKIE_NAME);
-  if (!adminSessionToken) {
+  let principal;
+  try {
+    principal = await gatewayPrincipalFromRequest(request, env);
+  } catch (error) {
+    if (isConfigurationError(error)) return jsonResponse({ error: 'service_unavailable' }, 503);
+    return accessFailureResponse();
+  }
+  if (!principal) {
+    if (path === '/auth/status') {
+      if (request.method !== 'GET') return methodNotAllowed('GET');
+      return jsonResponse({
+        status: 'ok',
+        gateway: 'ok',
+        authenticated: false,
+        mode: 'public',
+      });
+    }
     if (path === '/' && request.method === 'GET') {
-      return response(VIEWER_HTML, 200, { 'Content-Type': 'text/html; charset=utf-8' });
+      const landingHtml = url.search === '?guest=1'
+        ? VIEWER_HTML.replace('data-guest-bootstrap="false"', 'data-guest-bootstrap="true"')
+        : VIEWER_HTML;
+      return response(landingHtml, 200, { 'Content-Type': 'text/html; charset=utf-8' });
     }
     return path.startsWith('/auth/') ? accessFailureResponse() : redirectResponse('/', request.url);
-  }
-  let adminSession;
-  try {
-    adminSession = await validateAdminSessionToken(adminSessionToken, env);
-  } catch {
-    if (path === '/' && request.method === 'GET') {
-      return response(VIEWER_HTML, 200, { 'Content-Type': 'text/html; charset=utf-8' });
-    }
-    return accessFailureResponse();
   }
   if (path === '/auth/status') {
     if (request.method !== 'GET') return methodNotAllowed('GET');
@@ -2938,7 +3212,7 @@ async function route(request, env, context) {
         method: 'GET',
         headers: request.headers,
       });
-      const originHealth = await proxyToRosterOrigin(originHealthRequest, env, adminSession.email);
+      const originHealth = await proxyToRosterOrigin(originHealthRequest, env, principal);
       const healthy = originHealth.status === 200;
       return jsonResponse(
         {
@@ -2946,6 +3220,9 @@ async function route(request, env, context) {
           gateway: 'ok',
           access: 'ok',
           origin: healthy ? 'ok' : 'unhealthy',
+          authenticated: true,
+          mode: principal.mode,
+          expiresAt: principal.exp,
           reference,
         },
         healthy ? 200 : 503,
@@ -2956,13 +3233,16 @@ async function route(request, env, context) {
         gateway: 'ok',
         access: 'ok',
         origin: 'unavailable',
+        authenticated: true,
+        mode: principal.mode,
+        expiresAt: principal.exp,
         reference,
       }, 503);
     }
   }
   if (!authenticatedProxyRequestAllowed(request)) return accessFailureResponse();
   try {
-    return originProxyResult(await proxyToRosterOrigin(request, env, adminSession.email));
+    return originProxyResult(await proxyToRosterOrigin(request, env, principal));
   } catch {
     return originFailureResponse(gatewayReference());
   }
@@ -2992,15 +3272,24 @@ export function adminSessionCookieNameForTest() {
   return ADMIN_SESSION_COOKIE_NAME;
 }
 
+export function guestSessionCookieNameForTest() {
+  return GUEST_SESSION_COOKIE_NAME;
+}
+
 export {
   accessTokenFromRequest,
   authenticatedProxyRequestAllowed,
   createAdminSessionToken,
+  createGuestSessionToken,
+  createOriginPrincipalToken,
+  gatewayPrincipalFromRequest,
   normalizeAccessConfiguration,
+  originRequestBinding,
   proxyToRosterOrigin,
   storedRecordFrom,
   stripAccessCredentials,
   validateAdminSessionToken,
   validateAccessJwt,
   validateCreatePayload,
+  validateGuestSessionToken,
 };

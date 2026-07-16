@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from nicegui import app
-
 from roster_policy import DutyPost, SchoolDay
+from nicegui_app.ui.preferences import preference_get, preference_set
 
 
 ZH_HK = "zh-HK"
@@ -41,7 +40,7 @@ ROLE_LABELS = {
 
 
 def current_locale() -> str:
-    return app.storage.user.get("locale", ZH_HK)
+    return str(preference_get("locale", ZH_HK))
 
 
 def t(key: str, **values: object) -> str:
@@ -63,7 +62,7 @@ def role_label(role_code: str) -> str:
 
 
 def toggle_locale() -> None:
-    app.storage.user["locale"] = EN if current_locale() == ZH_HK else ZH_HK
+    preference_set("locale", EN if current_locale() == ZH_HK else ZH_HK)
 
 
 def _localized(messages: dict[str, str]) -> str:

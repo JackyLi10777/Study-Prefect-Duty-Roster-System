@@ -13,6 +13,28 @@ def _image_dimensions(path) -> tuple[int, int]:  # type: ignore[no-untyped-def]
         return image.size
 
 
+def _css_blocks(source: str, header: str) -> tuple[str, ...]:
+    blocks: list[str] = []
+    cursor = 0
+    while (start := source.find(header, cursor)) >= 0:
+        opening = source.find("{", start + len(header))
+        if opening < 0:
+            break
+        depth = 0
+        for index in range(opening, len(source)):
+            if source[index] == "{":
+                depth += 1
+            elif source[index] == "}":
+                depth -= 1
+                if depth == 0:
+                    blocks.append(source[opening + 1:index])
+                    cursor = index + 1
+                    break
+        else:
+            break
+    return tuple(blocks)
+
+
 def test_browser_opens_by_default_for_local_new_users(monkeypatch) -> None:
     monkeypatch.delenv("SING_YIN_OPEN_BROWSER", raising=False)
     assert open_browser_on_startup() is True
@@ -99,7 +121,7 @@ def test_pointer_hover_motion_is_scoped_and_reduced_motion_safe() -> None:
     assert "--sy-pointer-x" in theme and "--sy-pointer-y" in theme
     assert ".q-expansion-item .q-item { cursor: pointer; }" in theme
     assert "prefers-reduced-motion: reduce" in theme
-    reduced_scope = theme.split("@media (prefers-reduced-motion: reduce)", 1)[1].split("@media", 1)[0]
+    reduced_scope = "\n".join(_css_blocks(theme, "@media (prefers-reduced-motion: reduce)"))
     assert ".sy-pointer-reactive:hover" in reduced_scope
     assert ".sy-co-creation-social:hover" in reduced_scope
     assert "transform: none !important" in reduced_scope

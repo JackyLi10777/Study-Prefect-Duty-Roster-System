@@ -2,8 +2,19 @@
 
 from __future__ import annotations
 
-from nicegui_app.ui.page_shared import *  # noqa: F403
+from time import perf_counter
+
+from nicegui import ui
+
+from nicegui_app.contact import GITHUB_REPOSITORY_URL
+from nicegui_app.observability import new_operation_reference, record_operator_failure
+from nicegui_app.release_evidence import load_release_evidence
+from nicegui_app.runtime import get_workflow
+from nicegui_app.ui.i18n import t
+from nicegui_app.ui.page_shared import _render_co_creation, _render_feedback_channel, _tone_badge
+from nicegui_app.ui.platform_summary import PlatformSummary, load_platform_summary
 from nicegui_app.ui.reference_navigation import render_page_toc, render_reference_pager
+from nicegui_app.ui.shell import page_shell
 
 
 def _release_evidence_tone(state: str) -> str:

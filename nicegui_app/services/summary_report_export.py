@@ -30,6 +30,11 @@ class SummaryReportDownload:
     filename: str
     content: bytes
     media_type: str
+    cache_control: str = "no-store, max-age=0"
+
+
+def _is_demo_report(report: PeriodSummaryReport) -> bool:
+    return report.schema_version.endswith("-demo") or "demo_data_only" in report.note_codes
 
 
 def _json_value(value: Any) -> Any:
@@ -59,15 +64,29 @@ def summary_report_payload(report: PeriodSummaryReport) -> dict[str, Any]:
 
 def build_summary_report_json(report: PeriodSummaryReport) -> SummaryReportDownload:
     payload = summary_report_payload(report)
+    demo = _is_demo_report(report)
     canonical_payload = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     envelope = {
-        "evidenceType": "sing-yin-study-prefect-period-summary",
+        "evidenceType": (
+            "sing-yin-study-prefect-demo-period-summary"
+            if demo
+            else "sing-yin-study-prefect-period-summary"
+        ),
         "payloadSha256": hashlib.sha256(canonical_payload).hexdigest(),
         "payload": payload,
     }
+    if demo:
+        envelope.update(
+            {
+                "demo": True,
+                "fictional": True,
+                "notice": "DEMO — fictional data; no official roster or fairness record.",
+            }
+        )
     content = json.dumps(envelope, ensure_ascii=False, sort_keys=True, indent=2).encode("utf-8")
+    prefix = "SYSS_DEMO" if demo else "SYSS"
     return SummaryReportDownload(
-        filename=f"SYSS_Service_Summary_{_period_slug(report)}.json",
+        filename=f"{prefix}_Service_Summary_{_period_slug(report)}.json",
         content=content,
         media_type="application/json",
     )
@@ -82,7 +101,9 @@ def build_summary_report_pdf(
     fonts = _register_cjk_fonts()
     styles = _styles(fonts)
     output = BytesIO()
-    title = _text(language, "title")
+    demo = _is_demo_report(report)
+    base_title = _text(language, "title")
+    title = f"DEMO — {base_title}" if demo else base_title
     document = SimpleDocTemplate(
         output,
         pagesize=A4,
@@ -97,6 +118,16 @@ def build_summary_report_pdf(
         Paragraph(title, styles["title"]),
         Paragraph(_period_line(report, language), styles["subtitle"]),
         Spacer(1, 5 * mm),
+    ]
+    if demo:
+        story.extend(
+            [
+                Paragraph(_text(language, "demo_marker"), styles["marker"]),
+                Spacer(1, 3 * mm),
+            ]
+        )
+    story.extend(
+        [
         Paragraph(_text(language, "internal_marker"), styles["marker"]),
         Spacer(1, 5 * mm),
         Paragraph(_text(language, "executive_summary"), styles["section"]),
@@ -108,7 +139,8 @@ def build_summary_report_pdf(
         Paragraph(_text(language, "contribution_note"), styles["small"]),
         Spacer(1, 2 * mm),
         _contribution_table(report, language, styles),
-    ]
+        ]
+    )
     if report.trend:
         story.extend(
             [
@@ -130,12 +162,17 @@ def build_summary_report_pdf(
     )
     document.build(
         story,
-        onFirstPage=lambda canvas, doc: _draw_page_footer(canvas, doc, fonts["medium"], language),
-        onLaterPages=lambda canvas, doc: _draw_page_footer(canvas, doc, fonts["medium"], language),
+        onFirstPage=lambda canvas, doc: _draw_page_footer(
+            canvas, doc, fonts["medium"], language, demo=demo
+        ),
+        onLaterPages=lambda canvas, doc: _draw_page_footer(
+            canvas, doc, fonts["medium"], language, demo=demo
+        ),
     )
     suffix = "ZH" if language == "zh" else "EN"
+    prefix = "SYSS_DEMO" if demo else "SYSS"
     return SummaryReportDownload(
-        filename=f"SYSS_Service_Summary_{_period_slug(report)}_{suffix}.pdf",
+        filename=f"{prefix}_Service_Summary_{_period_slug(report)}_{suffix}.pdf",
         content=output.getvalue(),
         media_type="application/pdf",
     )
@@ -160,11 +197,13 @@ def build_duty_allocation_statement_pdf(
     fonts = _register_cjk_fonts()
     styles = _styles(fonts)
     output = BytesIO()
-    title = (
+    demo = _is_demo_report(report)
+    base_title = (
         "聖言中學導學風紀值班編配時數證明"
         if language == "zh"
         else "Sing Yin Study Prefect Duty Allocation Hours Statement"
     )
+    title = f"DEMO — {base_title}" if demo else base_title
     document = SimpleDocTemplate(
         output,
         pagesize=A4,
@@ -200,23 +239,42 @@ def build_duty_allocation_statement_pdf(
         Paragraph(title, styles["title"]),
         Paragraph(period, styles["subtitle"]),
         Spacer(1, 5 * mm),
-        Paragraph(identity, styles["section"]),
-        Paragraph(total_line, styles["body"]),
-        Spacer(1, 3 * mm),
-        Paragraph(caution, styles["marker"]),
-        Spacer(1, 5 * mm),
-        _allocation_table(contribution, language, styles),
-        Spacer(1, 8 * mm),
-        _allocation_signoff_table(language, styles),
     ]
+    if demo:
+        story.extend(
+            [
+                Paragraph(_text(language, "demo_marker"), styles["marker"]),
+                Spacer(1, 3 * mm),
+            ]
+        )
+    story.extend(
+        [
+            Paragraph(identity, styles["section"]),
+            Paragraph(total_line, styles["body"]),
+            Spacer(1, 3 * mm),
+            Paragraph(caution, styles["marker"]),
+            Spacer(1, 5 * mm),
+            _allocation_table(contribution, language, styles),
+            Spacer(1, 8 * mm),
+            _allocation_signoff_table(language, styles),
+        ]
+    )
     document.build(
         story,
-        onFirstPage=lambda canvas, doc: _draw_allocation_footer(canvas, doc, fonts["medium"], language),
-        onLaterPages=lambda canvas, doc: _draw_allocation_footer(canvas, doc, fonts["medium"], language),
+        onFirstPage=lambda canvas, doc: _draw_allocation_footer(
+            canvas, doc, fonts["medium"], language, demo=demo
+        ),
+        onLaterPages=lambda canvas, doc: _draw_allocation_footer(
+            canvas, doc, fonts["medium"], language, demo=demo
+        ),
     )
     suffix = "ZH" if language == "zh" else "EN"
+    prefix = "SYSS_DEMO" if demo else "SYSS"
     return SummaryReportDownload(
-        filename=f"SYSS_Duty_Allocation_{contribution.name_zh}_{_period_slug(report)}_{suffix}.pdf",
+        filename=(
+            f"{prefix}_Duty_Allocation_{contribution.name_zh}_"
+            f"{_period_slug(report)}_{suffix}.pdf"
+        ),
         content=output.getvalue(),
         media_type="application/pdf",
     )
@@ -301,7 +359,14 @@ def _scheduled_duration_text(minutes: int, language: ReportLanguage) -> str:
     return f"{hours} h {remaining} min ({decimal_hours:.2f} hours)"
 
 
-def _draw_allocation_footer(canvas, document, font_name: str, language: ReportLanguage) -> None:  # type: ignore[no-untyped-def]
+def _draw_allocation_footer(
+    canvas,
+    document,
+    font_name: str,
+    language: ReportLanguage,
+    *,
+    demo: bool = False,
+) -> None:  # type: ignore[no-untyped-def]
     canvas.saveState()
     canvas.setFont(font_name, 7.5)
     canvas.setFillColor(colors.HexColor("#52666B"))
@@ -310,6 +375,8 @@ def _draw_allocation_footer(canvas, document, font_name: str, language: ReportLa
         if language == "zh"
         else f"Duty allocation hours statement | Page {document.page}"
     )
+    if demo:
+        text = f"DEMO ｜ {text}"
     canvas.drawCentredString(A4[0] / 2, 7 * mm, text)
     canvas.restoreState()
 
@@ -472,11 +539,20 @@ def _source_line(report: PeriodSummaryReport, language: ReportLanguage) -> str:
     return xml_escape(f"{prefix}{source_text}")
 
 
-def _draw_page_footer(canvas, document, font_name: str, language: ReportLanguage) -> None:  # type: ignore[no-untyped-def]
+def _draw_page_footer(
+    canvas,
+    document,
+    font_name: str,
+    language: ReportLanguage,
+    *,
+    demo: bool = False,
+) -> None:  # type: ignore[no-untyped-def]
     canvas.saveState()
     canvas.setFont(font_name, 7.5)
     canvas.setFillColor(colors.HexColor("#52666B"))
     text = f"內部服務與公平記錄 ｜ 第 {document.page} 頁" if language == "zh" else f"Internal service and fairness record | Page {document.page}"
+    if demo:
+        text = f"DEMO ｜ {text}"
     canvas.drawCentredString(A4[0] / 2, 7 * mm, text)
     canvas.restoreState()
 
@@ -501,6 +577,7 @@ def _styles(fonts: dict[str, str]) -> dict[str, ParagraphStyle]:
 _TEXT = {
     "zh": {
         "title": "聖言中學導學風紀服務與公平總結報告",
+        "demo_marker": "DEMO・虛構示範資料：此文件不屬於正式名單、公平帳本、服務證明或校務存檔。",
         "internal_marker": "用途：供年度／學期審查、團隊匯報及校內存檔。公開值班表與本內部報告應分開分享。",
         "executive_summary": "執行摘要",
         "published_weeks": "已發布週數",
@@ -526,6 +603,7 @@ _TEXT = {
     },
     "en": {
         "title": "Sing Yin Study Prefect Service & Fairness Summary",
+        "demo_marker": "DEMO · Fictional data: this document is not an official directory, fairness ledger, service certificate, or school record.",
         "internal_marker": "Purpose: annual or term review, team briefing, and internal archive. Keep the public weekly roster separate from this named internal report.",
         "executive_summary": "Executive summary",
         "published_weeks": "Published weeks",

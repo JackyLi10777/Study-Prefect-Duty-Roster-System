@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 
-from nicegui import app, events, run, ui
+from nicegui import events, run, ui
 
+from nicegui_app.access_context import AccessMode
+from nicegui_app.runtime import current_page_context
 from nicegui_app.services.music_library import (
     MAX_AUDIO_BYTES,
     MUSIC_CONTEXTS,
@@ -13,6 +15,7 @@ from nicegui_app.services.music_library import (
     MusicLibrary,
     MusicLibraryError,
     MusicTrack,
+    builtin_tracks_for_context,
     next_track_id,
     resolve_music_profile,
 )
@@ -24,6 +27,7 @@ from nicegui_app.services.youtube_audio_import import (
 )
 from nicegui_app.ui.youtube_music import render_youtube_panel, render_youtube_settings
 from nicegui_app.ui.i18n import t
+from nicegui_app.ui.preferences import preference_get, preference_set
 from nicegui_app.ui.sound import (
     music_autoplay_enabled,
     play_interface_sound,
@@ -44,6 +48,19 @@ def music_track_label(track: MusicTrack) -> str:
     arrangement = t(f"music_arrangement_{track.arrangement}")
     timing = f" · {track.duration}" if track.duration else ""
     return f"{track.title} — {track.artist} · {arrangement}{timing}"
+
+
+def _tracks_for_page(
+    context: str,
+    *,
+    profile: str,
+    guest_mode: bool,
+) -> list[MusicTrack]:
+    """Resolve a playlist without exposing the persistent custom catalogue to guests."""
+
+    if guest_mode:
+        return builtin_tracks_for_context(context, profile=profile)
+    return MusicLibrary().tracks_for_context(context, profile=profile)
 
 
 def _music_state_script(state: str) -> str:
@@ -70,15 +87,19 @@ def _music_state_script(state: str) -> str:
 
 def render_page_music_control(context: str) -> None:
     """Render one low-volume playlist with an explicit, persisted autoplay preference."""
-    library = MusicLibrary()
+    guest_mode = current_page_context().principal.mode is AccessMode.GUEST
     autoplay_enabled = music_autoplay_enabled()
-    profile_preference = str(app.storage.user.get("music_profile", "auto"))
+    profile_preference = str(preference_get("music_profile", "auto"))
     if profile_preference not in MUSIC_PROFILE_PREFERENCES:
         profile_preference = "auto"
     resolved_profile = resolve_music_profile(profile_preference, current_theme())
-    tracks = library.tracks_for_context(context, profile=resolved_profile)
+    tracks = _tracks_for_page(
+        context,
+        profile=resolved_profile,
+        guest_mode=guest_mode,
+    )
     online_settings = YouTubeSettings.from_environment()
-    if not tracks and not online_settings.enabled:
+    if not tracks and (guest_mode or not online_settings.enabled):
         return
 
     def close_panel() -> None:
@@ -148,26 +169,26 @@ def render_page_music_control(context: str) -> None:
                     preference = str(event.value)
                     if preference not in MUSIC_PROFILE_PREFERENCES:
                         return
-                    app.storage.user["music_profile"] = preference
+                    preference_set("music_profile", preference)
                     ui.navigate.reload()
 
                 profile_select.on_value_change(choose_profile)
                 ui.label(t("music_profile_auto_hint")).classes("text-xs leading-5 text-[var(--sy-muted)]")
 
-                if not bool(app.storage.user.get("audio_setup_seen", False)):
+                if not bool(preference_get("audio_setup_seen", False)):
                     with ui.column().classes("sy-audio-setup w-full gap-3 p-4") as audio_setup:
                         ui.label(t("audio_setup_title")).classes("font-semibold")
                         ui.label(t("audio_setup_notice")).classes("text-sm leading-6 text-[var(--sy-muted)]")
 
                         def enable_and_preview() -> None:
                             set_sound_feedback(True)
-                            app.storage.user["audio_setup_seen"] = True
+                            preference_set("audio_setup_seen", True)
                             play_interface_sound("success", force=True)
                             audio_setup.set_visibility(False)
 
                         def keep_quiet() -> None:
                             set_sound_feedback(False)
-                            app.storage.user["audio_setup_seen"] = True
+                            preference_set("audio_setup_seen", True)
                             audio_setup.set_visibility(False)
 
                         with ui.row().classes("w-full gap-3 flex-wrap"):
@@ -177,9 +198,9 @@ def render_page_music_control(context: str) -> None:
                 if tracks:
                     track_by_id = {track.id: track for track in tracks}
                     track_ids = list(track_by_id)
-                    saved_track = str(app.storage.user.get(f"music_track_{context}", track_ids[0]))
+                    saved_track = str(preference_get(f"music_track_{context}", track_ids[0]))
                     selected_track_id = saved_track if saved_track in track_by_id else track_ids[0]
-                    saved_mode = str(app.storage.user.get("music_playback_mode", "sequential"))
+                    saved_mode = str(preference_get("music_playback_mode", "sequential"))
                     playback_mode = saved_mode if saved_mode in {"sequential", "shuffle"} else "sequential"
 
                     track_select = ui.select(
@@ -208,7 +229,7 @@ def render_page_music_control(context: str) -> None:
                         track = track_by_id.get(track_id)
                         if track is None:
                             return
-                        app.storage.user[f"music_track_{context}"] = track.id
+                        preference_set(f"music_track_{context}", track.id)
                         audio.pause()
                         audio.set_source(track.asset_url)
                         now_playing.set_text(music_track_label(track))
@@ -221,7 +242,7 @@ def render_page_music_control(context: str) -> None:
                     def choose_mode(event: events.ValueChangeEventArguments) -> None:
                         mode = str(event.value)
                         if mode in {"sequential", "shuffle"}:
-                            app.storage.user["music_playback_mode"] = mode
+                            preference_set("music_playback_mode", mode)
 
                     def advance_playlist() -> None:
                         current = str(track_select.value or track_ids[0])
@@ -235,7 +256,8 @@ def render_page_music_control(context: str) -> None:
                     mode_select.on_value_change(choose_mode)
                     audio.on("ended", advance_playlist)
                     ui.label(t("music_loop_notice")).classes("text-xs leading-5 text-[var(--sy-muted)]")
-                render_youtube_panel(context, online_settings)
+                if not guest_mode:
+                    render_youtube_panel(context, online_settings)
     panel.set_visibility(False)
     panel.on("keydown.escape", close_panel)
 
@@ -305,7 +327,7 @@ def render_music_library_settings() -> None:
         def change_sound_enabled(event: events.ValueChangeEventArguments) -> None:
             enabled = bool(event.value)
             set_sound_feedback(enabled)
-            app.storage.user["audio_setup_seen"] = True
+            preference_set("audio_setup_seen", True)
             if enabled:
                 play_interface_sound("success", force=True)
                 ui.notify(t("sound_feedback_on"), type="positive", timeout=2_500)
@@ -356,7 +378,7 @@ def render_music_library_settings() -> None:
             ui.label(t("music_usage_steps")).classes("text-sm leading-7 text-[var(--sy-muted)]")
             ui.label(t("music_rights_notice")).classes("text-sm leading-7 text-[var(--sy-muted)] mt-2")
 
-        profile_preference = str(app.storage.user.get("music_profile", "auto"))
+        profile_preference = str(preference_get("music_profile", "auto"))
         if profile_preference not in MUSIC_PROFILE_PREFERENCES:
             profile_preference = "auto"
         profile_select = ui.select(
@@ -372,7 +394,7 @@ def render_music_library_settings() -> None:
         def save_profile(event: events.ValueChangeEventArguments) -> None:
             preference = str(event.value)
             if preference in MUSIC_PROFILE_PREFERENCES:
-                app.storage.user["music_profile"] = preference
+                preference_set("music_profile", preference)
 
         profile_select.on_value_change(save_profile)
         ui.label(t("music_profile_auto_hint")).classes("text-xs leading-5 text-[var(--sy-muted)] max-w-2xl")
@@ -477,6 +499,59 @@ def render_music_library_settings() -> None:
                 with ui.column().classes("gap-0 min-w-0"):
                     ui.label(t("music_no_custom_tracks_title")).classes("sy-inline-empty-title")
                     ui.label(t("music_no_custom_tracks_body")).classes("sy-inline-empty-copy")
+
+
+def render_guest_music_settings() -> None:
+    """Expose session-only playback preferences without any guest file or URL input."""
+
+    with ui.card().classes("sy-surface sy-settings-section sy-audio-settings w-full max-w-3xl p-6").props(
+        "data-testid=guest-audio-settings"
+    ):
+        with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
+            with ui.column().classes("gap-1 max-w-2xl"):
+                ui.label(t("audio_preferences")).classes("text-lg font-semibold")
+                ui.label(t("access_guest_mode_body")).classes(
+                    "text-sm leading-6 text-[var(--sy-muted)]"
+                )
+            ui.icon("headphones").classes("sy-settings-section-icon").props("aria-hidden=true")
+
+        sound_switch = ui.switch(
+            t("interface_sounds"),
+            value=sound_feedback_enabled(),
+        ).props("name=guest-interface-sounds").classes("mt-4")
+        autoplay_switch = ui.switch(
+            t("music_autoplay"),
+            value=music_autoplay_enabled(),
+        ).props("name=guest-music-autoplay data-testid=guest-music-autoplay")
+        profile_select = ui.select(
+            label=t("music_profile"),
+            options={
+                "auto": t("music_profile_auto"),
+                "bright": t("music_profile_bright"),
+                "quiet": t("music_profile_quiet"),
+            },
+            value=str(preference_get("music_profile", "auto")),
+        ).props("name=guest-music-profile autocomplete=off").classes("w-full max-w-md")
+
+        def change_sound(event: events.ValueChangeEventArguments) -> None:
+            set_sound_feedback(bool(event.value))
+            if event.value:
+                play_interface_sound("success", force=True)
+
+        def change_autoplay(event: events.ValueChangeEventArguments) -> None:
+            set_music_autoplay(bool(event.value))
+
+        def change_profile(event: events.ValueChangeEventArguments) -> None:
+            value = str(event.value)
+            if value in MUSIC_PROFILE_PREFERENCES:
+                preference_set("music_profile", value)
+
+        sound_switch.on_value_change(change_sound)
+        autoplay_switch.on_value_change(change_autoplay)
+        profile_select.on_value_change(change_profile)
+        ui.label(t("access_restricted_body")).classes(
+            "text-xs leading-5 text-[var(--sy-muted)] mt-2"
+        )
 
 
 def _render_removable_music_item(*, title: str, context: str, remove) -> None:  # type: ignore[no-untyped-def]

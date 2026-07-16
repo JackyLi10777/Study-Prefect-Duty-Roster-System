@@ -65,6 +65,51 @@ def test_prefect_can_be_created_updated_and_archived_without_erasing_history(tmp
     assert len(list((tmp_path / "backups").glob("*.sqlite3"))) == 3
 
 
+def test_prefect_create_command_replays_without_duplicate_or_second_backup(tmp_path) -> None:
+    workflow = _workflow(tmp_path)
+    prefect_input = PrefectInput(
+        name_zh="許朗然",
+        form="F.4",
+        class_name="4H",
+        role_code="study_prefect",
+        available_days=("MONDAY", "WEDNESDAY"),
+    )
+
+    first = workflow.create_prefect(prefect_input, command_id="create-prefect-once")
+    backups_after_first = tuple((tmp_path / "backups").glob("*.sqlite3"))
+    second = workflow.create_prefect(prefect_input, command_id="create-prefect-once")
+
+    assert second == first
+    assert [item["nameZh"] for item in workflow.prefects()].count("許朗然") == 1
+    assert tuple((tmp_path / "backups").glob("*.sqlite3")) == backups_after_first
+
+
+def test_prefect_create_command_cannot_be_reused_for_different_data(tmp_path) -> None:
+    workflow = _workflow(tmp_path)
+    workflow.create_prefect(
+        PrefectInput(
+            name_zh="許朗然",
+            form="F.4",
+            class_name="4H",
+            role_code="study_prefect",
+            available_days=("MONDAY",),
+        ),
+        command_id="bound-prefect-create",
+    )
+
+    with pytest.raises(WorkflowConflictError, match="different work"):
+        workflow.create_prefect(
+            PrefectInput(
+                name_zh="梁朗然",
+                form="F.4",
+                class_name="4H",
+                role_code="study_prefect",
+                available_days=("MONDAY",),
+            ),
+            command_id="bound-prefect-create",
+        )
+
+
 def test_new_school_year_rollover_clears_active_directory_and_retains_audited_history(tmp_path) -> None:
     workflow = _workflow(tmp_path)
     original = workflow.prefects()[0]

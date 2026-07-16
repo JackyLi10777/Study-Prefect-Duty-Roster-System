@@ -16,18 +16,26 @@ def _trial_source() -> str:
     return TRIAL.read_text(encoding="utf-8")
 
 
-def test_trial_routes_are_bounded_static_assets_and_fail_closed() -> None:
+def test_legacy_trial_entrypoints_redirect_into_the_unified_guest_bootstrap() -> None:
     worker = _worker_source()
 
-    assert "from './guest_trial.js'" in worker
-    for path in ("/guest", "/guest.js", "/try", "/trial.css", "/trial.js"):
+    assert "from './guest_trial.js'" not in worker
+    for path in ("/guest", "/try"):
         assert f"path === '{path}'" in worker
-    assert worker.count("trialAssetResponse('Method not allowed'") >= 6
-    assert "trialAssetResponse" in worker
+    assert "return redirectResponse('/?guest=1', request.url)" in worker
+    assert 'data-guest-bootstrap="false"' in worker
+    assert 'data-guest-bootstrap="true"' in worker
+    assert "fetch('/auth/guest/start'" in worker
+    assert "window.location.replace('/')" in worker
+
+    for path in ("/guest.js", "/trial.css", "/trial.js"):
+        assert f"path === '{path}'" not in worker
+    assert "trialAssetResponse" not in worker
     assert "if (!output.headers.has(name))" in worker
     assert "if (path.startsWith('/try/'))" in worker
     assert "if (path.startsWith('/guest/'))" in worker
-    assert "'isolated-client-trial'" in worker
+    assert "'unified-guest-gateway'" in worker
+    assert "'signed-origin-principal'" in worker
 
 
 def test_trial_content_security_policy_forbids_all_runtime_connections() -> None:

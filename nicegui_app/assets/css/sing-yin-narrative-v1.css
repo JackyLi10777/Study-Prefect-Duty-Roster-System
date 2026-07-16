@@ -1,0 +1,554 @@
+/*
+ * Sing Yin visual narrative layer.
+ *
+ * This file does not decorate records, forms, tables, PDFs or policy states.
+ * It gives the shared shell, editorial introductions and public reference
+ * pages one coherent story: begin quietly, do the weekly work, explain
+ * fairness, and leave trustworthy evidence for the next steward.
+ */
+
+/* ---------- Shared canvas and chapter spine ---------- */
+
+body {
+  background:
+    radial-gradient(circle at 14% -8%, color-mix(in srgb, var(--sy-action-soft) 68%, transparent), transparent 34rem),
+    radial-gradient(circle at 94% 12%, color-mix(in srgb, var(--sy-role-stable-soft) 34%, transparent), transparent 30rem),
+    var(--sy-ground);
+}
+
+.body--dark {
+  background:
+    radial-gradient(circle at 13% -10%, color-mix(in srgb, var(--sy-action-soft) 42%, transparent), transparent 32rem),
+    radial-gradient(circle at 94% 9%, color-mix(in srgb, var(--sy-role-stable-soft) 26%, transparent), transparent 28rem),
+    var(--sy-ground);
+}
+
+.sy-page-shell {
+  position: relative;
+  isolation: isolate;
+  counter-reset: sy-editorial-section;
+}
+
+.sy-page-shell::before {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: clamp(18px, 3vw, 48px);
+  left: clamp(18px, 3vw, 48px);
+  height: 310px;
+  border-top: 1px solid color-mix(in srgb, var(--sy-line) 62%, transparent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--sy-line) 22%, transparent) 1px, transparent 1px) 0 0 / 96px 100%,
+    linear-gradient(color-mix(in srgb, var(--sy-line) 18%, transparent) 1px, transparent 1px) 0 0 / 100% 72px;
+  content: "";
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, .48), transparent 82%);
+  opacity: .42;
+  pointer-events: none;
+}
+
+.sy-page-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.sy-page-context {
+  display: grid;
+  grid-template-columns: auto auto auto minmax(48px, 1fr);
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 26px;
+  color: var(--sy-muted);
+  font-size: 10px;
+  font-weight: 780;
+  letter-spacing: .095em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.sy-page-context-index {
+  color: var(--sy-role-neutral);
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.sy-page-context-icon {
+  color: var(--sy-role-neutral);
+  font-size: 16px;
+}
+
+.sy-page-context-label {
+  color: var(--sy-muted);
+  white-space: nowrap;
+}
+
+.sy-page-context-line {
+  display: block;
+  height: 1px;
+  background: linear-gradient(90deg, var(--sy-line), transparent);
+}
+
+/* ---------- Brand lockup and navigation as a stable story spine ---------- */
+
+.sy-brand-lockup {
+  min-height: 72px;
+  padding: 5px 3px 8px;
+}
+
+.sy-brand-copy {
+  max-width: 160px;
+}
+
+.sy-brand-eyebrow {
+  margin-bottom: 3px;
+  color: var(--sy-role-neutral);
+  font-size: 8px;
+  font-weight: 820;
+  letter-spacing: .11em;
+  line-height: 1.25;
+}
+
+.sy-brand-principle {
+  max-width: 230px;
+  padding: 0 4px 15px;
+  border-bottom: 1px solid color-mix(in srgb, var(--sy-line) 70%, transparent);
+  line-height: 1.55;
+}
+
+.sy-nav-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sy-nav-section::before {
+  min-width: 20px;
+  color: var(--sy-role-neutral);
+  content: attr(data-sy-section);
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+  font-size: 9px;
+  font-weight: 820;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+}
+
+.sy-sidebar .q-btn {
+  border: 1px solid transparent;
+}
+
+.sy-sidebar .q-btn:not(.sy-nav-active) {
+  background: color-mix(in srgb, var(--sy-surface) 46%, transparent);
+}
+
+.body--dark .sy-sidebar .q-btn:not(.sy-nav-active) {
+  background: color-mix(in srgb, var(--sy-surface) 28%, transparent);
+}
+
+.sy-sidebar-feedback {
+  position: relative;
+  overflow: hidden;
+}
+
+.sy-sidebar-feedback::after {
+  position: absolute;
+  right: -32px;
+  bottom: -38px;
+  width: 96px;
+  height: 96px;
+  border: 1px solid color-mix(in srgb, var(--sy-role-action) 22%, transparent);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+/* ---------- Header hierarchy ---------- */
+
+.sy-header-leading {
+  min-width: 0;
+}
+
+.sy-header-context {
+  justify-content: center;
+}
+
+.sy-header-eyebrow {
+  overflow: hidden;
+  color: var(--sy-muted);
+  font-size: 9px;
+  font-weight: 790;
+  letter-spacing: .09em;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sy-header-title {
+  line-height: 1.22;
+}
+
+.sy-header-tools {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 48%, transparent);
+}
+
+.body--dark .sy-header-tools {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
+}
+
+/* ---------- Material surfaces without obscuring working data ---------- */
+
+.sy-surface,
+.sy-dashboard-history,
+.sy-devotional-companion,
+.sy-reference-index-card,
+.sy-team-role,
+.sy-capability-card,
+.sy-solution-card,
+.sy-platform-value,
+.sy-platform-resource,
+.sy-architecture-layer,
+.sy-trust-evidence-card {
+  border-color: color-mix(in srgb, var(--sy-line) 90%, var(--sy-role-neutral-soft));
+}
+
+.sy-surface {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 62%, transparent),
+    0 1px 2px color-mix(in srgb, var(--sy-ink) 4%, transparent),
+    0 12px 30px color-mix(in srgb, var(--sy-ink) 5%, transparent);
+}
+
+.body--dark .sy-surface {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 7%, transparent),
+    0 14px 32px rgba(0, 0, 0, .18);
+}
+
+/* ---------- Weekly dashboard: from quiet reflection to action to record ---------- */
+
+.sy-page-dashboard .sy-daily-start {
+  margin-top: 2px;
+}
+
+.sy-page-dashboard .sy-workbench {
+  min-height: 100%;
+}
+
+.sy-dashboard-history {
+  position: relative;
+  overflow: hidden;
+}
+
+.sy-dashboard-history::before {
+  display: block;
+  width: 42px;
+  height: 3px;
+  margin-bottom: 18px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sy-role-action), var(--sy-role-stable));
+  content: "";
+}
+
+.sy-dashboard-history-list {
+  counter-reset: sy-roster-history;
+}
+
+.sy-dashboard-history-item {
+  position: relative;
+  padding-left: 30px;
+  counter-increment: sy-roster-history;
+}
+
+.sy-dashboard-history-item::before {
+  position: absolute;
+  top: 17px;
+  left: 0;
+  color: var(--sy-role-neutral);
+  content: counter(sy-roster-history, decimal-leading-zero);
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+  font-size: 9px;
+  font-weight: 820;
+}
+
+.sy-dashboard-history-empty {
+  position: relative;
+}
+
+/* ---------- Devotional: a distinct sacred reading language ---------- */
+
+.sy-devotional-page .sy-devotional-reading {
+  padding-top: 26px;
+}
+
+.sy-devotional-page .sy-devotional-reading::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 64px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #F2D393, transparent);
+  content: "";
+}
+
+.sy-devotional-reading-grid {
+  counter-reset: sy-devotional-companion;
+}
+
+.sy-devotional-companion {
+  position: relative;
+  overflow: hidden;
+  counter-increment: sy-devotional-companion;
+}
+
+.sy-devotional-companion::after {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  color: color-mix(in srgb, var(--sy-muted) 44%, transparent);
+  content: counter(sy-devotional-companion, decimal-leading-zero);
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+  font-size: 10px;
+  font-weight: 820;
+  letter-spacing: .08em;
+}
+
+.sy-devotional-companion--reflection {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--sy-surface) 96%, #F2D393), var(--sy-surface));
+}
+
+.sy-devotional-companion--prayer {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--sy-surface) 88%, #F2D393), var(--sy-surface));
+}
+
+.sy-devotional-companion--action {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--sy-surface) 94%, var(--sy-action-soft)), var(--sy-surface));
+}
+
+.body--dark .sy-devotional-companion--reflection,
+.body--dark .sy-devotional-companion--prayer,
+.body--dark .sy-devotional-companion--action {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--sy-surface) 94%, #F2D393 6%), var(--sy-surface));
+}
+
+/* ---------- Reference pages: numbered editorial chapters ---------- */
+
+.sy-page-platform > .sy-architecture-section,
+.sy-page-engineering > .sy-architecture-section,
+.sy-page-system-architecture > .sy-architecture-section {
+  position: relative;
+  padding-left: clamp(46px, 5vw, 72px);
+  counter-increment: sy-editorial-section;
+}
+
+.sy-page-platform > .sy-architecture-section::before,
+.sy-page-engineering > .sy-architecture-section::before,
+.sy-page-system-architecture > .sy-architecture-section::before {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  width: 34px;
+  padding-top: 8px;
+  border-top: 2px solid color-mix(in srgb, var(--sy-role-neutral) 58%, transparent);
+  color: var(--sy-role-neutral);
+  content: counter(sy-editorial-section, decimal-leading-zero);
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+  font-size: 10px;
+  font-weight: 820;
+  font-variant-numeric: tabular-nums;
+}
+
+.sy-architecture-section-heading {
+  position: relative;
+}
+
+.sy-architecture-section-title {
+  text-wrap: balance;
+}
+
+.sy-architecture-section-copy {
+  text-wrap: pretty;
+}
+
+.sy-team-role,
+.sy-capability-card,
+.sy-solution-card,
+.sy-platform-value,
+.sy-platform-resource,
+.sy-architecture-layer,
+.sy-trust-evidence-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.sy-team-role::before,
+.sy-capability-card::before,
+.sy-solution-card::before,
+.sy-platform-value::before,
+.sy-platform-resource::before,
+.sy-architecture-layer::before,
+.sy-trust-evidence-card::before {
+  position: absolute;
+  top: 0;
+  right: 18px;
+  left: 18px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--sy-line) 75%, var(--sy-role-neutral)), transparent);
+  content: "";
+  opacity: .72;
+}
+
+.sy-guide-group {
+  position: relative;
+  padding-left: clamp(22px, 3vw, 40px);
+  border-left: 1px solid color-mix(in srgb, var(--sy-line) 72%, var(--sy-role-neutral));
+}
+
+.sy-reference-index {
+  position: relative;
+  overflow: hidden;
+}
+
+.sy-reference-index::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(300px, 34%);
+  height: 100%;
+  background:
+    var(--sy-image-onboarding) right center / cover no-repeat;
+  content: "";
+  mask-image: linear-gradient(90deg, transparent, black);
+  opacity: .10;
+  pointer-events: none;
+}
+
+.body--dark .sy-reference-index::before {
+  opacity: .18;
+}
+
+.sy-reference-index > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Access modes share the same product, with honest context ---------- */
+
+.sy-mode-guest .sy-page-context-index,
+.sy-mode-guest .sy-page-context-icon {
+  color: var(--sy-status-attention-fg);
+}
+
+.sy-mode-admin .sy-page-context-index,
+.sy-mode-admin .sy-page-context-icon {
+  color: var(--sy-role-stable);
+}
+
+/* ---------- Purposeful interaction: only navigable editorial surfaces move ---------- */
+
+@media (hover: hover) and (pointer: fine) {
+  .sy-dashboard-history-item,
+  .sy-reference-index-card,
+  .sy-platform-resource,
+  .sy-solution-card,
+  .sy-architecture-layer,
+  .sy-trust-evidence-card {
+    transition:
+      border-color var(--sy-motion-state) var(--sy-ease),
+      box-shadow var(--sy-motion-layer) var(--sy-ease),
+      transform var(--sy-motion-state) var(--sy-ease);
+  }
+
+  .sy-dashboard-history-item:has(.q-btn):hover,
+  .sy-reference-index-card:has(.q-btn):hover,
+  .sy-platform-resource:has(.q-btn):hover,
+  .sy-solution-card:has(.q-btn):hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* ---------- Responsive reading rhythm ---------- */
+
+@media (max-width: 900px) {
+  .sy-page-shell::before {
+    right: 16px;
+    left: 16px;
+    height: 220px;
+    background-size: 72px 100%, 100% 60px;
+    opacity: .30;
+  }
+
+  .sy-page-context {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    padding-inline: 2px;
+  }
+
+  .sy-page-context-line {
+    display: none;
+  }
+
+  .sy-header-eyebrow {
+    display: none;
+  }
+
+  .sy-brand-eyebrow {
+    font-size: 9px;
+  }
+
+  .sy-page-platform > .sy-architecture-section,
+  .sy-page-engineering > .sy-architecture-section,
+  .sy-page-system-architecture > .sy-architecture-section {
+    padding-left: 0;
+    padding-top: 42px;
+  }
+
+  .sy-page-platform > .sy-architecture-section::before,
+  .sy-page-engineering > .sy-architecture-section::before,
+  .sy-page-system-architecture > .sy-architecture-section::before {
+    top: 4px;
+  }
+
+  .sy-guide-group {
+    padding-left: 18px;
+  }
+
+  .sy-reference-index::before {
+    width: 52%;
+    opacity: .08;
+  }
+}
+
+@media (max-width: 480px) {
+  .sy-page-context {
+    min-height: 20px;
+  }
+
+  .sy-page-context-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sy-dashboard-history-item {
+    padding-left: 26px;
+  }
+
+  .sy-devotional-companion::after {
+    top: 14px;
+    right: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sy-dashboard-history-item,
+  .sy-reference-index-card,
+  .sy-platform-resource,
+  .sy-solution-card,
+  .sy-architecture-layer,
+  .sy-trust-evidence-card {
+    transform: none !important;
+  }
+}

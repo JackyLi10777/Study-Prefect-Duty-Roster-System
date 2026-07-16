@@ -23,11 +23,15 @@ def test_access_console_explains_one_site_with_authenticated_editing() -> None:
 
 def test_authenticated_gateway_identity_adds_admin_state_and_logout() -> None:
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+    gateway = (PROJECT_ROOT / "nicegui_app" / "gateway_identity.py").read_text(encoding="utf-8")
 
-    assert 'request.headers.get("x-sing-yin-access-email"' in shell
+    assert "current_page_context()" in shell
+    assert "x-sing-yin-origin-principal" in gateway
+    assert "x-sing-yin-access-email" not in shell
     assert "data-testid=administrator-mode" in shell
     assert "data-testid=administrator-logout" in shell
-    assert 'ui.navigate.to("/logout")' in shell
+    assert "fetch('/auth/logout'" in shell
+    assert "data-testid=guest-mode" in shell
 
 
 def test_public_share_ui_requires_confirmation_and_shows_keyed_link_once() -> None:

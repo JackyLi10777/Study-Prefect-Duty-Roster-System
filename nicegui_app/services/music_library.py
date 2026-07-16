@@ -112,16 +112,7 @@ class MusicLibrary:
         self.state_path = self.root / "custom-library.json"
 
     def tracks_for_context(self, context: str, *, profile: str | None = None) -> list[MusicTrack]:
-        self._require_context(context)
-        if profile is not None and profile not in MUSIC_PROFILES:
-            raise MusicLibraryError("profile")
-        tracks = [
-            track
-            for track in BUILTIN_TRACKS
-            if context in track.contexts
-            and (profile is None or profile in track.profiles)
-            and (self.root / track.filename).is_file()
-        ]
+        tracks = builtin_tracks_for_context(context, profile=profile, root=self.root)
         for item in self._state()["localTracks"]:
             if item.get("context") != context:
                 continue
@@ -290,6 +281,31 @@ class MusicLibrary:
     def _require_context(context: str) -> None:
         if context not in MUSIC_CONTEXTS:
             raise MusicLibraryError("context")
+
+
+def builtin_tracks_for_context(
+    context: str,
+    *,
+    profile: str | None = None,
+    root: Path = MUSIC_DIR,
+) -> list[MusicTrack]:
+    """Return only bundled tracks without opening the operator-managed catalogue.
+
+    Guest pages use this function so their playlist can never reveal, parse, or
+    depend on custom filenames and metadata saved by an administrator.
+    """
+
+    MusicLibrary._require_context(context)
+    if profile is not None and profile not in MUSIC_PROFILES:
+        raise MusicLibraryError("profile")
+    music_root = Path(root)
+    return [
+        track
+        for track in BUILTIN_TRACKS
+        if context in track.contexts
+        and (profile is None or profile in track.profiles)
+        and (music_root / track.filename).is_file()
+    ]
 
 
 def next_track_id(track_ids: list[str], current_id: str, mode: str, *, rng: random.Random | None = None) -> str:

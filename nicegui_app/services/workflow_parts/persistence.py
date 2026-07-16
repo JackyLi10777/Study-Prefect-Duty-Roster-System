@@ -68,6 +68,167 @@ class PersistenceWorkflowMixin:
         """Reserve SQLite's writer slot before reading compare-and-set state."""
         session.connection().exec_driver_sql("BEGIN IMMEDIATE")
 
+    def _operation_command_id(self, operation_type: str, command_id: str | None) -> str:
+        actor = current_operation_actor()
+        candidate = command_id or (actor.command_id if actor else None) or f"{operation_type}:{uuid4().hex}"
+        normalized = candidate.strip()
+        if not normalized or len(normalized) > 64:
+            raise WorkflowError("Operation command ID is invalid.")
+        return normalized
+
+    @staticmethod
+    def _operation_fingerprint(operation_type: str, payload: dict[str, object]) -> str:
+        encoded = json.dumps(
+            {"operationType": operation_type, "payload": payload},
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        ).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    def _claim_operation_command(
+        self,
+        session: Session,
+        *,
+        operation_type: str,
+        command_id: str,
+        payload: dict[str, object],
+    ) -> tuple[OperationCommandRecord, dict[str, object] | None]:
+        fingerprint = self._operation_fingerprint(operation_type, payload)
+        existing = session.get(OperationCommandRecord, command_id)
+        if existing is not None:
+            if (
+                existing.operation_type != operation_type
+                or existing.request_fingerprint != fingerprint
+            ):
+                raise WorkflowConflictError(
+                    "This command ID was already used for different work. Start the action again."
+                )
+            if existing.status != "committed":
+                raise WorkflowConflictError(
+                    "This command is still being recovered. Refresh after the system is ready."
+                )
+            try:
+                result = json.loads(existing.result_json)
+            except json.JSONDecodeError as error:
+                raise WorkflowError("The saved operation receipt is invalid.") from error
+            if not isinstance(result, dict):
+                raise WorkflowError("The saved operation receipt is invalid.")
+            return existing, result
+
+        now = self._now()
+        record = OperationCommandRecord(
+            command_id=command_id,
+            operation_type=operation_type,
+            request_fingerprint=fingerprint,
+            status="pending",
+            result_json="{}",
+            created_at=now,
+            completed_at=None,
+        )
+        session.add(record)
+        session.flush()
+        return record, None
+
+    def _commit_operation_command(
+        self,
+        session: Session,
+        *,
+        record: OperationCommandRecord,
+        result: dict[str, object],
+        roster_week_id: int | None,
+    ) -> None:
+        now = self._now()
+        record.status = "committed"
+        record.result_json = json.dumps(
+            result,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        )
+        record.completed_at = now
+        session.add(
+            BackupObligationRecord(
+                command_id=record.command_id,
+                operation_type=record.operation_type,
+                roster_week_id=roster_week_id,
+                status="pending",
+                backup_path=None,
+                error=None,
+                created_at=now,
+                completed_at=None,
+            )
+        )
+
+    def _fulfill_backup_obligation(self, command_id: str) -> Path:
+        """Create or replay the verified snapshot owed by one committed command."""
+
+        with self.maintenance.serialized_operation():
+            with self._session() as session:
+                obligation = session.scalar(
+                    select(BackupObligationRecord).where(
+                        BackupObligationRecord.command_id == command_id
+                    )
+                )
+                if obligation is None:
+                    raise WorkflowError("The operation backup obligation was not found.")
+                if obligation.status == "completed" and obligation.backup_path:
+                    path = Path(obligation.backup_path)
+                    if path.is_file() and self.verify_backup(path).get("valid"):
+                        return path
+                operation_type = obligation.operation_type
+                roster_week_id = obligation.roster_week_id
+
+            backup = self._create_and_record_backup(operation_type, roster_week_id)
+            with self._session() as session:
+                self._begin_serialized_write(session)
+                obligation = session.scalar(
+                    select(BackupObligationRecord).where(
+                        BackupObligationRecord.command_id == command_id
+                    )
+                )
+                if obligation is None:
+                    raise WorkflowError("The operation backup obligation was not found.")
+                obligation.status = "completed" if backup.success and backup.path else "failed"
+                obligation.backup_path = str(backup.path) if backup.path else None
+                obligation.error = backup.error_message
+                obligation.completed_at = self._now() if backup.success else None
+                session.commit()
+            return self._require_backup(backup, committed_event=operation_type)
+
+    def pending_backup_obligation_count(self) -> int:
+        with self._session() as session:
+            return int(
+                session.scalar(
+                    select(func.count())
+                    .select_from(BackupObligationRecord)
+                    .where(BackupObligationRecord.status != "completed")
+                )
+                or 0
+            )
+
+    def repair_pending_backup_obligations(self) -> int:
+        """Repair every committed-but-unverified write before enabling service."""
+
+        with self._session() as session:
+            command_ids = list(
+                session.scalars(
+                    select(BackupObligationRecord.command_id)
+                    .where(BackupObligationRecord.status != "completed")
+                    .order_by(BackupObligationRecord.id)
+                ).all()
+            )
+        repaired = 0
+        for command_id in command_ids:
+            try:
+                self._fulfill_backup_obligation(str(command_id))
+            except Exception:
+                raise
+            repaired += 1
+        return repaired
+
     def _assert_name_available(self, session: Session, name_zh: str, *, exclude_prefect_id: str | None = None) -> None:
         statement = select(PrefectRecord).where(
             PrefectRecord.name_zh == name_zh.strip(),
@@ -190,6 +351,7 @@ class PersistenceWorkflowMixin:
             "prefectName": prefect.name_zh,
             "day": declaration.day,
             "reason": declaration.reason,
+            "version": declaration.version,
             "createdAt": declaration.created_at,
             "updatedAt": declaration.updated_at,
         }
@@ -295,11 +457,16 @@ class PersistenceWorkflowMixin:
         return assignment
 
     def _audit(self, session: Session, event_type: str, roster_week_id: int | None, metadata: dict[str, object]) -> None:
+        actor = current_operation_actor()
         session.add(
             AuditEventRecord(
                 event_type=event_type,
                 roster_week_id=roster_week_id,
                 metadata_json=json.dumps(metadata, ensure_ascii=False, sort_keys=True),
+                actor_subject=actor.subject if actor else None,
+                actor_mode=actor.mode if actor else None,
+                command_id=actor.command_id if actor else None,
+                request_reference=actor.request_reference if actor and actor.request_reference else None,
                 occurred_at=self._now(),
             )
         )

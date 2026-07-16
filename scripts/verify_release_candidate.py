@@ -73,6 +73,8 @@ def isolated_environment(root: Path, port: int, *, blocked_backup: bool = False)
         "PYTHONUTF8": "1",
         "SING_YIN_E2E_ISOLATED": "1",
         "SING_YIN_E2E_RUN_ID": f"E2E-{uuid4().hex[:12].upper()}",
+        "SING_YIN_E2E_ACCESS_MODE": "",
+        "SING_YIN_UNIFIED_GUEST": "0",
         "SING_YIN_APP_MODE": "official",
         "SING_YIN_DATABASE_PATH": str(database_path),
         "SING_YIN_BACKUP_DIR": str(backup_path),
@@ -137,14 +139,28 @@ def _start_server(environment: dict[str, str], log_path: Path) -> tuple[subproce
     return process, output
 
 
-def _wait_until_ready(process: subprocess.Popen[str], base_url: str, log_path: Path, timeout: float = 30.0) -> None:
+def _wait_until_ready(
+    process: subprocess.Popen[str],
+    base_url: str,
+    log_path: Path,
+    timeout: float = 30.0,
+    *,
+    require_write_ready: bool = True,
+) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if process.poll() is not None:
             break
         try:
-            with urlopen(f"{base_url}/healthz", timeout=1.0) as response:  # noqa: S310 - fixed localhost URL
-                if response.status == 200:
+            endpoint = "readyz" if require_write_ready else "healthz"
+            with urlopen(f"{base_url}/{endpoint}", timeout=1.0) as response:  # noqa: S310 - fixed localhost URL
+                if response.status != 200:
+                    time.sleep(0.25)
+                    continue
+                if not require_write_ready:
+                    return
+                payload = json.loads(response.read().decode("utf-8"))
+                if payload.get("status") == "ready" and payload.get("writeReady") is True:
                     return
         except (URLError, TimeoutError):
             pass
@@ -190,7 +206,12 @@ def _run_browser_phase(
     server_log = root / "server-console.log"
     process, output = _start_server(environment, server_log)
     try:
-        _wait_until_ready(process, environment["SING_YIN_TEST_URL"], server_log)
+        _wait_until_ready(
+            process,
+            environment["SING_YIN_TEST_URL"],
+            server_log,
+            require_write_ready=not blocked_backup,
+        )
         for script in scripts:
             _run_check(
                 Path(script).stem,
@@ -208,6 +229,54 @@ def _run_browser_phase(
     finally:
         _stop_server(process, output)
     _assert_server_console_clean(server_log)
+
+
+def _run_unified_access_phase(
+    *,
+    root: Path,
+    report: dict[str, object],
+) -> None:
+    """Run the same NiceGUI routes as an isolated operator and guest."""
+
+    admin_port = _free_loopback_port()
+    guest_port = _free_loopback_port()
+    admin_environment = isolated_environment(root / "admin", admin_port)
+    guest_environment = isolated_environment(root / "guest", guest_port)
+    for environment in (admin_environment, guest_environment):
+        environment["SING_YIN_UNIFIED_GUEST"] = "1"
+    guest_environment["SING_YIN_E2E_ACCESS_MODE"] = "guest"
+    guest_environment["SING_YIN_ADMIN_TEST_URL"] = admin_environment["SING_YIN_TEST_URL"]
+    guest_environment["SING_YIN_GUEST_TEST_URL"] = guest_environment["SING_YIN_TEST_URL"]
+    guest_environment["SING_YIN_UNIFIED_GUEST_EVIDENCE_DIR"] = str(
+        (PROJECT_ROOT / "logs" / "unified-guest-verification").resolve()
+    )
+
+    admin_log = root / "admin" / "server-console.log"
+    guest_log = root / "guest" / "server-console.log"
+    admin_process, admin_output = _start_server(admin_environment, admin_log)
+    guest_process, guest_output = _start_server(guest_environment, guest_log)
+    try:
+        _wait_until_ready(
+            admin_process,
+            admin_environment["SING_YIN_TEST_URL"],
+            admin_log,
+        )
+        _wait_until_ready(
+            guest_process,
+            guest_environment["SING_YIN_TEST_URL"],
+            guest_log,
+        )
+        _run_check(
+            "verify_unified_guest_ui",
+            [sys.executable, "-X", "utf8", "scripts/verify_unified_guest_ui.py"],
+            guest_environment,
+            report,
+        )
+    finally:
+        _stop_server(guest_process, guest_output)
+        _stop_server(admin_process, admin_output)
+    _assert_server_console_clean(admin_log)
+    _assert_server_console_clean(guest_log)
 
 
 def main() -> int:
@@ -277,6 +346,10 @@ def main() -> int:
                 "scripts/verify_nicegui_write_pipeline.py",
                 "scripts/verify_nicegui_mobile.py",
             ),
+            report=report,
+        )
+        _run_unified_access_phase(
+            root=workspace / "unified-access",
             report=report,
         )
         _run_browser_phase(

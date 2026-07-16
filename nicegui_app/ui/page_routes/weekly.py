@@ -2,8 +2,33 @@
 
 from __future__ import annotations
 
-from nicegui_app.ui.page_shared import *  # noqa: F403
+from datetime import date
+from uuid import uuid4
+
+from nicegui import ui
+
+from nicegui_app.runtime import get_workflow
+from nicegui_app.services.roster_workflow import WorkflowError
 from nicegui_app.ui.access_control import render_roster_share_action
+from nicegui_app.ui.i18n import day_label, post_label, t
+from nicegui_app.ui.page_shared import (
+    _OPERATION_FAILED,
+    _navigate_with_feedback,
+    _next_monday,
+    _open_roster_export_dialog,
+    _render_empty_state,
+    _render_operation_hint,
+    _render_responsive_table,
+    _render_roster_route_state,
+    _render_roster_table,
+    _render_storage_lifecycle,
+    _run_with_progress,
+    _safe_read_action,
+    _tone_badge,
+)
+from nicegui_app.ui.shell import page_shell
+from roster_core import HISTORY_PRIORITY_MULTIPLIER_MAX, HISTORY_PRIORITY_MULTIPLIER_MIN
+from roster_policy import SchoolDay
 
 @ui.page("/rosters")
 def rosters_page() -> None:
@@ -43,6 +68,10 @@ def rosters_page() -> None:
                     )
                     multiplier_by_week = {
                         week["weekStart"]: float(week.get("historyPriorityMultiplier", 1.0))
+                        for week in weeks
+                    }
+                    version_by_week = {
+                        week["weekStart"]: int(week["version"])
                         for week in weeks
                     }
                     try:
@@ -161,9 +190,11 @@ def rosters_page() -> None:
                         "name=pre-generation-leave-reason autocomplete=off"
                     ).classes("w-full")
                     leave_list = ui.column().classes("w-full gap-2 mt-3")
+                    leave_versions: dict[tuple[str, str], int] = {}
 
                     def refresh_leave_list() -> None:
                         leave_list.clear()
+                        leave_versions.clear()
                         week_start = selected_week_start()
                         if week_start is None:
                             return
@@ -175,15 +206,28 @@ def rosters_page() -> None:
                             if declarations:
                                 ui.label(t("declared_leaves")).classes("text-sm font-semibold")
                             for declaration in declarations:
+                                declaration_key = (
+                                    str(declaration["prefectId"]),
+                                    str(declaration["day"]),
+                                )
+                                leave_versions[declaration_key] = int(declaration["version"])
                                 with ui.row().classes("sy-mobile-list-action w-full items-center justify-between gap-3 py-1"):
                                     reason_text = str(declaration.get("reason") or t("leave_reason_not_provided"))
                                     ui.label(
                                         f"{day_label(str(declaration['day']))} | {declaration['prefectName']} | {reason_text}"
                                     ).classes("text-sm text-[var(--sy-muted)]")
 
-                                    async def cancel_leave(leave_id: int = int(declaration["id"])) -> None:
+                                    async def cancel_leave(
+                                        leave_id: int = int(declaration["id"]),
+                                        leave_version: int = int(declaration["version"]),
+                                        cancel_command_id: str = f"leave-cancel-ui:{uuid4().hex}",
+                                    ) -> None:
                                         result = await _run_with_progress(
-                                            lambda: workflow.cancel_pre_generation_leave(leave_id),
+                                            lambda: workflow.cancel_pre_generation_leave(
+                                                leave_id,
+                                                expected_version=leave_version,
+                                                command_id=cancel_command_id,
+                                            ),
                                             title_key="progress_leave_cancel_title",
                                             working_key="progress_leave_cancel_working",
                                             icon="event_available",
@@ -209,12 +253,19 @@ def rosters_page() -> None:
                         reason = str(leave_reason.value or "").strip()
                         prefect_id = str(leave_prefect.value)
                         leave_day_value = str(leave_day.value)
+                        expected_leave_version = leave_versions.get(
+                            (prefect_id, leave_day_value),
+                            0,
+                        )
+                        declare_command_id = f"leave-declare-ui:{uuid4().hex}"
                         result = await _run_with_progress(
                             lambda: workflow.declare_leave(
                                 week_start=week_start,
                                 prefect_id=prefect_id,
                                 day=leave_day_value,
                                 reason=reason or None,
+                                expected_version=expected_leave_version,
+                                command_id=declare_command_id,
                             ),
                             title_key="progress_leave_title",
                             working_key="progress_leave_working",
@@ -241,10 +292,14 @@ def rosters_page() -> None:
                         week_start = selected_week_start(announce_error=True)
                         if week_start is None:
                             return
+                        expected_week_version = version_by_week.get(week_start, 0)
+                        generation_command_id = f"draft-generate-ui:{uuid4().hex}"
                         result = await _run_with_progress(
                             lambda: workflow.generate_and_save_draft(
                                 week_start,
                                 history_priority_multiplier=float(history_priority.value or 1.0),
+                                expected_week_version=expected_week_version,
+                                command_id=generation_command_id,
                             ),
                             title_key="progress_generate_title",
                             working_key="progress_generate_working",
@@ -328,6 +383,7 @@ def roster_detail_page(roster_week_id: int) -> None:
             with ui.row().classes("sy-mobile-actions sy-roster-detail-actions gap-2"):
                 if week["status"] == "draft":
                     reviewed_version = int(week["version"])
+                    publish_command_id = f"roster-publish-ui:{uuid4().hex}"
                     with ui.dialog() as publish_conflict_dialog, ui.card().classes("sy-surface w-full max-w-md p-6"):
                         ui.label(t("publish_conflict_title")).classes("text-lg font-semibold")
                         ui.label(t("publish_conflict_body", version=reviewed_version)).classes(
@@ -358,6 +414,7 @@ def roster_detail_page(roster_week_id: int) -> None:
                                 lambda: workflow.publish(
                                     roster_week_id,
                                     expected_week_version=reviewed_version,
+                                    command_id=publish_command_id,
                                 ),
                                 title_key="progress_publish_title",
                                 working_key="progress_publish_working",
@@ -450,6 +507,7 @@ def roster_detail_page(roster_week_id: int) -> None:
                         return
                     assignment_id = int(assignment_select.value)
                     replacement_prefect_id = str(candidate_select.value)
+                    draft_change_command_id = f"draft-change-ui:{uuid4().hex}"
                     result = await _run_with_progress(
                         lambda: workflow.update_draft_assignment(
                             roster_week_id=roster_week_id,
@@ -457,6 +515,7 @@ def roster_detail_page(roster_week_id: int) -> None:
                             replacement_prefect_id=replacement_prefect_id,
                             reason=reason,
                             expected_week_version=reviewed_version,
+                            command_id=draft_change_command_id,
                         ),
                         title_key="progress_draft_change_title",
                         working_key="progress_draft_change_working",

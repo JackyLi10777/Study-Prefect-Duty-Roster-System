@@ -3,16 +3,22 @@ import worker, {
   adminSessionCookieNameForTest,
   authenticatedProxyRequestAllowed,
   createAdminSessionToken,
+  createGuestSessionToken,
+  createOriginPrincipalToken,
+  guestSessionCookieNameForTest,
   landingDevotionalsForTest,
   normalizeAccessConfiguration,
+  originRequestBinding,
   proxyToRosterOrigin,
   stripAccessCredentials,
   validateAdminSessionToken,
+  validateGuestSessionToken,
   validateAccessJwt,
 } from './worker.js';
 import devotionalSeed from '../../data/devotional/daily-verses.seed.json' with { type: 'json' };
 
 const ADMIN_SESSION_COOKIE_NAME = adminSessionCookieNameForTest();
+const GUEST_SESSION_COOKIE_NAME = guestSessionCookieNameForTest();
 const LANDING_DEVOTIONALS = landingDevotionalsForTest();
 
 function assert(condition, message = 'assertion failed') {
@@ -82,12 +88,27 @@ function accessEnvironment(teamName) {
       ],
     },
     ADMIN_SESSION_SECRET: 'test-only-admin-session-secret-with-more-than-32-characters', // pragma: allowlist secret -- deterministic test fixture
+    GUEST_SESSION_SECRET: 'test-only-guest-session-secret-with-more-than-32-characters', // pragma: allowlist secret -- deterministic test fixture
+    ORIGIN_PRINCIPAL_SECRET: 'test-only-origin-principal-secret-with-more-than-32-characters', // pragma: allowlist secret -- deterministic test fixture
+    AUTH_EPOCH: 7,
+    ORIGIN_PRINCIPAL_KID: 'test-origin-v7',
   };
 }
 
 async function adminSessionCookiePair(env, email, accessExpiresAt, options = {}) {
   const session = await createAdminSessionToken(email, accessExpiresAt, env, options);
   return `${ADMIN_SESSION_COOKIE_NAME}=${encodeURIComponent(session.token)}`;
+}
+
+async function guestSessionCookiePair(env, options = {}) {
+  const session = await createGuestSessionToken(env, options);
+  return `${GUEST_SESSION_COOKIE_NAME}=${encodeURIComponent(session.token)}`;
+}
+
+function signedPayload(token) {
+  const [payloadSegment] = token.split('.');
+  const padded = payloadSegment.replaceAll('-', '+').replaceAll('_', '/') + '='.repeat((4 - payloadSegment.length % 4) % 4);
+  return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(padded), character => character.charCodeAt(0))));
 }
 
 function memoryKv() {
@@ -376,13 +397,17 @@ Deno.test('strips Access and gateway session credentials but preserves the NiceG
     'Cf-Access-Authenticated-User-Email': 'spoofed-access@example.com',
     'Cf-Access-User-UUID': 'spoofed-uuid',
     'X-Sing-Yin-Access-Email': 'spoofed@example.com',
-    Cookie: `session=nicegui-session; CF_Authorization=secret-cookie; ${ADMIN_SESSION_COOKIE_NAME}=signed-session; preference=zh-HK`,
+    'X-Sing-Yin-Origin-Principal': 'spoofed-principal',
+    'X-Forwarded-Host': 'attacker.example',
+    Cookie: `session=nicegui-session; CF_Authorization=secret-cookie; ${ADMIN_SESSION_COOKIE_NAME}=signed-session; ${GUEST_SESSION_COOKIE_NAME}=signed-guest; preference=zh-HK`,
   }));
 
   assertEquals(sanitized.get('Cf-Access-Jwt-Assertion'), null);
   assertEquals(sanitized.get('Cf-Access-Authenticated-User-Email'), null);
   assertEquals(sanitized.get('Cf-Access-User-UUID'), null);
   assertEquals(sanitized.get('X-Sing-Yin-Access-Email'), null);
+  assertEquals(sanitized.get('X-Sing-Yin-Origin-Principal'), null);
+  assertEquals(sanitized.get('X-Forwarded-Host'), null);
   assertEquals(sanitized.get('Cookie'), 'session=nicegui-session; preference=zh-HK');
 });
 
@@ -423,6 +448,7 @@ Deno.test('proxies the exact path, query, body, and session while injecting only
   let capturedRequest;
   const sentinel = { status: 101, webSocket: { preserved: true } };
   const env = {
+    ...accessEnvironment('sing-yin-runtime-direct-proxy'),
     ROSTER_ORIGIN: {
       fetch(request) {
         capturedRequest = request;
@@ -435,18 +461,30 @@ Deno.test('proxies the exact path, query, body, and session while injecting only
     headers: {
       'Content-Type': 'application/json',
       'Cf-Access-Jwt-Assertion': 'secret-jwt',
+      'X-Sing-Yin-Origin-Principal': 'spoofed-principal',
       Cookie: 'session=nicegui-session; CF_Authorization=secret-cookie',
     },
     body: JSON.stringify({ confirmed: true }),
   });
 
-  const result = await proxyToRosterOrigin(incoming, env, 'admin@syss.edu.hk');
+  const result = await proxyToRosterOrigin(incoming, env, {
+    mode: 'admin',
+    subject: 'admin@syss.edu.hk',
+    sid: base64Url(new Uint8Array(16).fill(9)),
+    exp: Math.floor(Date.now() / 1_000) + 300,
+  });
 
   assertEquals(result, sentinel, 'origin response must be returned by identity');
   assertEquals(capturedRequest.url, 'http://127.0.0.1:8080/op/save?draft=3');
   assertEquals(capturedRequest.headers.get('Cf-Access-Jwt-Assertion'), null);
   assertEquals(capturedRequest.headers.get('Cookie'), 'session=nicegui-session');
-  assertEquals(capturedRequest.headers.get('X-Sing-Yin-Access-Email'), 'admin@syss.edu.hk');
+  assertEquals(capturedRequest.headers.get('X-Sing-Yin-Access-Email'), null);
+  const principal = signedPayload(capturedRequest.headers.get('X-Sing-Yin-Origin-Principal') || '');
+  assertEquals(principal.mode, 'admin');
+  assertEquals(principal.subject, 'admin@syss.edu.hk');
+  assertEquals(principal.auth_epoch, env.AUTH_EPOCH);
+  assertEquals(principal.kid, env.ORIGIN_PRINCIPAL_KID);
+  assertEquals(principal.request_binding, await originRequestBinding(incoming));
   assertEquals(capturedRequest.headers.get('X-Forwarded-Host'), 'gateway.example');
   assertEquals(await capturedRequest.text(), JSON.stringify({ confirmed: true }));
 });
@@ -533,171 +571,181 @@ Deno.test('admin sessions are bounded and reject tampering, expiry, and removed 
   await expectRejected(() => validateAdminSessionToken(session.token, changedAllowlist, { nowMillis }));
 });
 
-Deno.test('serves the guest tour at the edge without Access, KV, VPC, or write methods', async () => {
-  const env = accessEnvironment('sing-yin-runtime-guest-tour');
-  const context = { waitUntil() { throw new Error('guest tour must not schedule storage work'); } };
-  let originCalls = 0;
-  let certificateCalls = 0;
-  env.ROSTER_ORIGIN = {
-    fetch() {
-      originCalls += 1;
-      throw new Error('guest tour reached the private origin');
+Deno.test('creates a bounded guest session only through a same-origin POST', async () => {
+  const env = accessEnvironment('sing-yin-runtime-guest-start');
+  const context = { waitUntil() {} };
+  const denied = await worker.fetch(new Request('https://gateway.example/auth/guest/start', {
+    method: 'POST',
+    headers: { Origin: 'https://attacker.example', 'Sec-Fetch-Site': 'cross-site' },
+  }), env, context);
+  assertEquals(denied.status, 403);
+
+  const started = await worker.fetch(new Request('https://gateway.example/auth/guest/start', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Origin: 'https://gateway.example',
+      'Sec-Fetch-Site': 'same-origin',
     },
-  };
-  env.ROSTER_SHARES = {
-    get() { throw new Error('guest tour read KV'); },
-    put() { throw new Error('guest tour wrote KV'); },
-    delete() { throw new Error('guest tour deleted KV'); },
-    list() { throw new Error('guest tour listed KV'); },
-  };
-
-  const fixture = await signingFixture();
-  const nowSeconds = Math.floor(Date.now() / 1_000);
-  const token = await signedJwt(validClaims(env, nowSeconds));
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = () => {
-    certificateCalls += 1;
-    return new Response(JSON.stringify({ keys: [fixture.jwk] }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  };
-  try {
-    for (const headers of [
-      {},
-      { 'X-Sing-Yin-Access-Email': 'spoofed@syss.edu.hk', 'X-Sing-Yin-Access-Role': 'admin' },
-      { 'Cf-Access-Jwt-Assertion': token, Cookie: `CF_Authorization=${token}` },
-    ]) {
-      const guest = await worker.fetch(new Request('https://gateway.example/guest', { headers }), env, context);
-      assertEquals(guest.status, 200);
-      const html = await guest.text();
-      assert(html.includes('訪客瀏覽模式'));
-      assert(html.includes('The guest tour contains no official roster data.'));
-      for (const forbidden of ['<form', '<input', '<textarea', '<select', 'contenteditable']) {
-        assert(!html.toLowerCase().includes(forbidden));
-      }
-    }
-
-    const head = await worker.fetch(new Request('https://gateway.example/guest', { method: 'HEAD' }), env, context);
-    assertEquals(head.status, 200);
-    assertEquals(await head.text(), '');
-
-    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']) {
-      const denied = await worker.fetch(new Request('https://gateway.example/guest', { method }), env, context);
-      assertEquals(denied.status, 405, `${method} must be rejected at the public boundary`);
-      assertEquals(denied.headers.get('Allow'), 'GET, HEAD');
-    }
-
-    for (const path of ['/_nicegui_ws', '/rosters', '/adjustments', '/settings', '/access-control']) {
-      const denied = await worker.fetch(new Request(`https://gateway.example${path}`), env, context);
-      assertEquals(denied.status, 302, `${path} must not reach the private origin without Access`);
-      assertEquals(denied.headers.get('Location'), 'https://gateway.example/');
-    }
-  } finally {
-    globalThis.fetch = originalFetch;
+  }), env, context);
+  assertEquals(started.status, 201);
+  const body = await started.json();
+  assertEquals(body.mode, 'guest');
+  assertEquals(body.authenticated, true);
+  assertEquals(body.redirect, '/');
+  const cookie = started.headers.get('Set-Cookie') || '';
+  assert(cookie.startsWith(`${GUEST_SESSION_COOKIE_NAME}=`));
+  for (const attribute of ['Max-Age=', 'Path=/', 'HttpOnly', 'Secure', 'SameSite=Lax']) {
+    assert(cookie.includes(attribute), `missing guest cookie attribute: ${attribute}`);
   }
-
-  assertEquals(originCalls, 0, 'guest requests must never reach the private NiceGUI origin');
-  assertEquals(certificateCalls, 0, 'guest requests must not invoke Access validation or external fetch');
+  const token = decodeURIComponent(cookie.split(';', 1)[0].split('=', 2)[1]);
+  const validated = await validateGuestSessionToken(token, env);
+  assertEquals(validated.exp - validated.iat, 30 * 60);
+  assertEquals(validated.epoch, env.AUTH_EPOCH);
 });
 
-Deno.test('serves a client-only trial with a route-specific no-connect boundary', async () => {
-  const env = accessEnvironment('sing-yin-runtime-client-trial');
-  const context = { waitUntil() { throw new Error('client trial must not schedule storage work'); } };
-  let originCalls = 0;
+Deno.test('rejects guest-session tampering expiry epoch changes and missing secrets', async () => {
+  const env = accessEnvironment('sing-yin-runtime-guest-session');
+  const nowMillis = 2_000_000_000_000;
+  const session = await createGuestSessionToken(env, {
+    nowMillis,
+    sidBytes: new Uint8Array(16).fill(5),
+  });
+  assertEquals((await validateGuestSessionToken(session.token, env, { nowMillis })).sid, base64Url(new Uint8Array(16).fill(5)));
+
+  const [payload, signature] = session.token.split('.');
+  const tampered = `${payload}.${signature.startsWith('A') ? 'B' : 'A'}${signature.slice(1)}`;
+  await expectRejected(() => validateGuestSessionToken(tampered, env, { nowMillis }));
+  await expectRejected(() => validateGuestSessionToken(session.token, env, { nowMillis: nowMillis + 30 * 60 * 1_000 }));
+  await expectRejected(() => validateGuestSessionToken(session.token, { ...env, AUTH_EPOCH: env.AUTH_EPOCH + 1 }, { nowMillis }));
+  const noSecret = { ...env };
+  delete noSecret.GUEST_SESSION_SECRET;
+  await expectRejected(() => createGuestSessionToken(noSecret, { nowMillis }));
+});
+
+Deno.test('legacy guest paths redirect into the unified bootstrap and then proxy the same origin', async () => {
+  const env = accessEnvironment('sing-yin-runtime-unified-guest');
+  const context = { waitUntil() {} };
+  let originRequest;
   env.ROSTER_ORIGIN = {
-    fetch() {
-      originCalls += 1;
-      throw new Error('client trial reached the private origin');
+    fetch(request) {
+      originRequest = request;
+      return new Response('unified guest workbench', { status: 200 });
     },
   };
-  env.ROSTER_SHARES = {
-    get() { throw new Error('client trial read KV'); },
-    put() { throw new Error('client trial wrote KV'); },
-    delete() { throw new Error('client trial deleted KV'); },
-    list() { throw new Error('client trial listed KV'); },
+
+  for (const path of ['/guest', '/try']) {
+    const legacy = await worker.fetch(new Request(`https://gateway.example${path}`), env, context);
+    assertEquals(legacy.status, 302);
+    assertEquals(legacy.headers.get('Location'), 'https://gateway.example/?guest=1');
+  }
+  const bootstrap = await worker.fetch(new Request('https://gateway.example/?guest=1'), env, context);
+  assertEquals(bootstrap.status, 200);
+  const html = await bootstrap.text();
+  assert(html.includes('data-guest-bootstrap="true"'));
+  const viewerScript = await worker.fetch(new Request('https://gateway.example/viewer.js'), env, context);
+  const script = await viewerScript.text();
+  assert(script.includes("fetch('/auth/guest/start'"));
+  assert(script.includes("window.location.replace('/')"));
+
+  const guestCookie = await guestSessionCookiePair(env);
+  const app = await worker.fetch(new Request('https://gateway.example/rosters', {
+    headers: { Cookie: `session=nicegui-session; ${guestCookie}` },
+  }), env, context);
+  assertEquals(await app.text(), 'unified guest workbench');
+  assertEquals(originRequest.url, 'http://127.0.0.1:8080/rosters');
+  assertEquals(originRequest.headers.get('Cookie'), 'session=nicegui-session');
+  const principal = signedPayload(originRequest.headers.get('X-Sing-Yin-Origin-Principal') || '');
+  assertEquals(principal.mode, 'guest');
+  assertEquals(principal.subject, 'guest');
+  assertEquals(principal.exp - principal.iat <= 30 * 60, true);
+
+  const status = await worker.fetch(new Request('https://gateway.example/auth/status', {
+    headers: { Cookie: guestCookie },
+  }), env, context);
+  const statusPayload = await status.json();
+  assertEquals(status.status, 200);
+  assertEquals(statusPayload.authenticated, true);
+  assertEquals(statusPayload.mode, 'guest');
+  assertEquals(statusPayload.origin, 'ok');
+});
+
+Deno.test('admin principal wins when both valid gateway cookies are present', async () => {
+  const env = accessEnvironment('sing-yin-runtime-principal-precedence');
+  const nowSeconds = Math.floor(Date.now() / 1_000);
+  const adminCookie = await adminSessionCookiePair(env, env.ADMIN_IDENTITY_ALLOWLIST.emails[0], nowSeconds + 600);
+  const guestCookie = await guestSessionCookiePair(env);
+  let originRequest;
+  env.ROSTER_ORIGIN = {
+    fetch(request) {
+      originRequest = request;
+      return new Response('admin');
+    },
   };
+  const result = await worker.fetch(new Request('https://gateway.example/settings', {
+    headers: { Cookie: `${adminCookie}; ${guestCookie}; session=nicegui-session` },
+  }), env, { waitUntil() {} });
+  assertEquals(await result.text(), 'admin');
+  const principal = signedPayload(originRequest.headers.get('X-Sing-Yin-Origin-Principal') || '');
+  assertEquals(principal.mode, 'admin');
+  assertEquals(principal.subject, env.ADMIN_IDENTITY_ALLOWLIST.emails[0]);
+  assertEquals(originRequest.headers.get('Cookie'), 'session=nicegui-session');
+});
 
-  for (const [path, expectedType] of [
-    ['/guest', 'text/html'],
-    ['/guest.js', 'text/javascript'],
-    ['/try', 'text/html'],
-    ['/trial.css', 'text/css'],
-    ['/trial.js', 'text/javascript'],
-  ]) {
-    const result = await worker.fetch(new Request('https://gateway.example' + path), env, context);
-    assertEquals(result.status, 200);
-    assert(result.headers.get('Content-Type')?.startsWith(expectedType));
-    const policy = result.headers.get('Content-Security-Policy') || '';
-    assert(policy.includes("connect-src 'none'"), path + ' must forbid every runtime connection');
-    assert(!policy.includes("connect-src 'self'"), path + ' must not inherit the viewer connection policy');
-    assertEquals(result.headers.get('Cache-Control'), 'no-store, max-age=0');
-  }
+Deno.test('origin principal vector is deterministic request-bound epoch-aware and key-rotation-aware', async () => {
+  const env = accessEnvironment('sing-yin-runtime-origin-vector');
+  const nowMillis = 2_000_000_000_000;
+  const request = new Request('https://gateway.example/rosters?week=2026-07-13', { method: 'GET' });
+  const principal = {
+    mode: 'guest',
+    subject: 'guest',
+    sid: base64Url(new Uint8Array(16).fill(4)),
+    exp: Math.floor(nowMillis / 1_000) + 1_800,
+  };
+  const signed = await createOriginPrincipalToken(request, principal, env, { nowMillis });
+  assertEquals(signed.payload.request_binding, await originRequestBinding(request));
+  assertEquals(signed.payload.request_binding, 'IA6owyScWUXkk2hYMBvAgo2d9EdLSxS3Jwil1BFlIrQ'); // pragma: allowlist secret -- deterministic request-binding vector
+  assertEquals(signed.payload.auth_epoch, env.AUTH_EPOCH);
+  assertEquals(signed.payload.kid, env.ORIGIN_PRINCIPAL_KID);
+  assertEquals(signed.payload.exp, principal.exp);
+  assertEquals(signed.payload.iat, Math.floor(nowMillis / 1_000));
+  assertEquals(
+    signed.token,
+    'eyJ2IjoxLCJhdWQiOiJzaW5nLXlpbi1yb3N0ZXItb3JpZ2luIiwibW9kZSI6Imd1ZXN0Iiwic3ViamVjdCI6Imd1ZXN0Iiwic2lkIjoiQkFRRUJBUUVCQVFFQkFRRUJBUUVCQSIsImlhdCI6MjAwMDAwMDAwMCwiZXhwIjoyMDAwMDAxODAwLCJhdXRoX2Vwb2NoIjo3LCJraWQiOiJ0ZXN0LW9yaWdpbi12NyIsInJlcXVlc3RfYmluZGluZyI6IklBNm93eVNjV1VYa2syaFlNQnZBZ28yZDlFZExTeFMzSndpbDFCRmxJclEifQ.2TQ5sfwCOuoBII4Ytf8FJLCuYV-8Eo7ki3-FPmJWv04',
+  );
 
-  const guest = await worker.fetch(new Request('https://gateway.example/guest'), env, context);
-  const guestHtml = await guest.text();
-  assert(guestHtml.includes('href="/try"'));
-  assert(guestHtml.includes('零伺服器寫入'));
-  assert(guestHtml.includes('The guest tour contains no official roster data.'));
-  assert(guestHtml.includes('不包含任何正式值班資料'));
-  assert(guestHtml.includes('src="/guest.js"'));
+  const changedPath = new Request('https://gateway.example/settings', { method: 'GET' });
+  const changed = await createOriginPrincipalToken(changedPath, principal, env, { nowMillis });
+  assert(signed.token !== changed.token);
+  assert(signed.payload.request_binding !== changed.payload.request_binding);
+  const rotated = await createOriginPrincipalToken(request, principal, {
+    ...env,
+    ORIGIN_PRINCIPAL_KID: 'test-origin-v8',
+    ORIGIN_PRINCIPAL_SECRET: 'rotated-test-origin-principal-secret-with-more-than-32-characters', // pragma: allowlist secret -- deterministic rotation fixture
+  }, { nowMillis });
+  assertEquals(rotated.payload.kid, 'test-origin-v8');
+  assert(rotated.token !== signed.token);
+  const noOriginSecret = { ...env };
+  delete noOriginSecret.ORIGIN_PRINCIPAL_SECRET;
+  await expectRejected(() => createOriginPrincipalToken(request, principal, noOriginSecret, { nowMillis }));
+});
 
-  const guestScriptResponse = await worker.fetch(new Request('https://gateway.example/guest.js'), env, context);
-  const guestScript = await guestScriptResponse.text();
-  for (const required of ['guestLanguageToggle', 'guestThemeToggle', 'sing-yin-guest-display-v1']) {
-    assert(guestScript.includes(required), 'guest script is missing: ' + required);
-  }
+Deno.test('POST logout clears both gateway identities and public status stays data-free', async () => {
+  const env = accessEnvironment('sing-yin-runtime-auth-lifecycle');
+  const context = { waitUntil() {} };
+  const publicStatus = await worker.fetch(new Request('https://gateway.example/auth/status'), env, context);
+  assertEquals(publicStatus.status, 200);
+  assertEquals((await publicStatus.json()).mode, 'public');
 
-  const trial = await worker.fetch(new Request('https://gateway.example/try'), env, context);
-  const trialHtml = await trial.text();
-  assert(trialHtml.includes('全部為虛構'));
-  assert(trialHtml.includes('id="downloadPdf"'));
-  assert(trialHtml.includes('src="/trial.js"'));
-
-  const scriptResponse = await worker.fetch(new Request('https://gateway.example/trial.js'), env, context);
-  const script = await scriptResponse.text();
-  for (const forbidden of ['fetch(', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'sendBeacon', 'localStorage', 'indexedDB']) {
-    assert(!script.includes(forbidden), 'trial script contains forbidden network or persistent-storage primitive: ' + forbidden);
-  }
-  for (const required of ['sessionStorage', 'SESSION_TTL_MS', 'generateRoster', 'validateRoster', "type: 'application/pdf'", 'Assist. in charge']) {
-    assert(script.includes(required), 'trial script is missing: ' + required);
-  }
-
-  for (const path of ['/guest', '/guest.js', '/try', '/trial.css', '/trial.js']) {
-    const head = await worker.fetch(new Request('https://gateway.example' + path, { method: 'HEAD' }), env, context);
-    assertEquals(head.status, 200);
-    assertEquals(await head.text(), '');
-    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']) {
-      const denied = await worker.fetch(new Request('https://gateway.example' + path, { method }), env, context);
-      assertEquals(denied.status, 405, method + ' ' + path + ' must fail closed');
-      assertEquals(denied.headers.get('Allow'), 'GET, HEAD');
-    }
-  }
-
-  for (const method of ['GET', 'HEAD']) {
-    const missing = await worker.fetch(new Request('https://gateway.example/try/unknown-asset', { method }), env, context);
-    assertEquals(missing.status, 404);
-    assert((missing.headers.get('Content-Security-Policy') || '').includes("connect-src 'none'"));
-    if (method === 'HEAD') assertEquals(await missing.text(), '');
-  }
-  for (const method of ['GET', 'HEAD']) {
-    const missing = await worker.fetch(new Request('https://gateway.example/guest/unknown-asset', { method }), env, context);
-    assertEquals(missing.status, 404);
-    assert((missing.headers.get('Content-Security-Policy') || '').includes("connect-src 'none'"));
-    if (method === 'HEAD') assertEquals(await missing.text(), '');
-  }
-  for (const prefix of ['/try', '/guest']) {
-    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']) {
-      const denied = await worker.fetch(new Request('https://gateway.example' + prefix + '/unknown-asset', { method }), env, context);
-      assertEquals(denied.status, 405);
-      assertEquals(denied.headers.get('Allow'), 'GET, HEAD');
-      assert((denied.headers.get('Content-Security-Policy') || '').includes("connect-src 'none'"));
-    }
-  }
-  assertEquals(originCalls, 0, 'client trial requests must never reach the private origin');
-
-  const health = await worker.fetch(new Request('https://gateway.example/healthz'), env, context);
-  const healthPayload = await health.json();
-  assert(healthPayload.capabilities.includes('isolated-client-trial'));
+  const loggedOut = await worker.fetch(new Request('https://gateway.example/auth/logout', {
+    method: 'POST',
+    headers: { Origin: 'https://gateway.example', 'Sec-Fetch-Site': 'same-origin' },
+  }), env, context);
+  assertEquals(loggedOut.status, 303);
+  const cookies = loggedOut.headers.get('Set-Cookie') || '';
+  assert(cookies.includes(`${ADMIN_SESSION_COOKIE_NAME}=`));
+  assert(cookies.includes(`${GUEST_SESSION_COOKIE_NAME}=`));
+  assert(cookies.match(/Max-Age=0/g)?.length >= 2);
 });
 
 Deno.test('cancels an oversized chunked public viewer request before buffering the full body', async () => {
@@ -767,7 +815,11 @@ Deno.test('authenticated app routes return the VPC response directly without clo
     assertEquals(result, sentinel, 'the 101/WebSocket carrier must not pass through secured()');
     assertEquals(originRequest.url, 'http://127.0.0.1:8080/op');
     assertEquals(originRequest.headers.get('Cookie'), 'session=nicegui-session');
-    assertEquals(originRequest.headers.get('X-Sing-Yin-Access-Email'), env.ADMIN_IDENTITY_ALLOWLIST.emails[0]);
+    assertEquals(originRequest.headers.get('X-Sing-Yin-Access-Email'), null);
+    const principal = signedPayload(originRequest.headers.get('X-Sing-Yin-Origin-Principal') || '');
+    assertEquals(principal.mode, 'admin');
+    assertEquals(principal.subject, env.ADMIN_IDENTITY_ALLOWLIST.emails[0]);
+    assertEquals(principal.exp - principal.iat <= 8 * 60 * 60, true);
 
     const websocketResult = await worker.fetch(new Request('https://gateway.example/_nicegui_ws', {
       headers: {
@@ -812,6 +864,7 @@ Deno.test('authenticated status verifies the private origin without exposing ide
   assert(body.includes('"gateway":"ok"'));
   assert(body.includes('"access":"ok"'));
   assert(body.includes('"origin":"ok"'));
+  assert(body.includes('"mode":"admin"'));
   assert(!body.includes(env.ACCESS_AUD));
   assert(!body.includes(env.ADMIN_IDENTITY_ALLOWLIST.emails[0]));
 });

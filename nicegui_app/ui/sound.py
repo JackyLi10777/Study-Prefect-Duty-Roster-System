@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from nicegui import app, ui
+from nicegui import ui
 
+from nicegui_app.ui.preferences import preference_get, preference_set
 from nicegui_app.ui.theme import sound_feedback_enabled
 
 
@@ -14,27 +15,27 @@ DEFAULT_MUSIC_AUTOPLAY = True
 
 def music_autoplay_enabled() -> bool:
     """Return the browser-local preference from one canonical default."""
-    return bool(app.storage.user.get(MUSIC_AUTOPLAY_STORAGE_KEY, DEFAULT_MUSIC_AUTOPLAY))
+    return bool(preference_get(MUSIC_AUTOPLAY_STORAGE_KEY, DEFAULT_MUSIC_AUTOPLAY))
 
 
 def set_music_autoplay(enabled: bool) -> None:
-    app.storage.user[MUSIC_AUTOPLAY_STORAGE_KEY] = bool(enabled)
+    preference_set(MUSIC_AUTOPLAY_STORAGE_KEY, bool(enabled))
 
 
 def preferred_music_volume() -> float:
-    return _bounded_float(app.storage.user.get("music_volume", 0.18), default=0.18, maximum=0.6)
+    return _bounded_float(preference_get("music_volume", 0.18), default=0.18, maximum=0.6)
 
 
 def preferred_sound_volume() -> float:
-    return _bounded_float(app.storage.user.get("sound_volume", 0.7), default=0.7, maximum=1.0)
+    return _bounded_float(preference_get("sound_volume", 0.7), default=0.7, maximum=1.0)
 
 
 def set_music_volume(value: float) -> None:
-    app.storage.user["music_volume"] = _bounded_float(value, default=0.18, maximum=0.6)
+    preference_set("music_volume", _bounded_float(value, default=0.18, maximum=0.6))
 
 
 def set_sound_volume(value: float) -> None:
-    app.storage.user["sound_volume"] = _bounded_float(value, default=0.7, maximum=1.0)
+    preference_set("sound_volume", _bounded_float(value, default=0.7, maximum=1.0))
 
 
 def play_interface_sound(kind: str, *, force: bool = False) -> None:

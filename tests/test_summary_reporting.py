@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 import hashlib
 from io import BytesIO
@@ -176,6 +177,48 @@ def test_bilingual_summary_pdfs_keep_authoritative_chinese_names(workflow: Roste
     for name in authoritative_names:
         assert name in chinese_text
         assert name in english_text
+
+
+def test_guest_summary_exports_are_unmistakably_demo_and_non_cacheable(
+    workflow: RosterWorkflow,
+) -> None:
+    _publish(workflow, FIRST_WEEK)
+    official = workflow.build_period_report()
+    demo = replace(
+        official,
+        schema_version="1.0-demo",
+        note_codes=(*official.note_codes, "demo_data_only"),
+    )
+
+    json_download = build_summary_report_json(demo)
+    pdf_download = build_summary_report_pdf(demo, language="en")
+    contribution = next(row for row in demo.contributions if row.allocations)
+    statement = build_duty_allocation_statement_pdf(
+        demo,
+        contribution.prefect_id,
+        language="en",
+    )
+    envelope = json.loads(json_download.content.decode("utf-8"))
+    pdf_text = "\n".join(
+        page.extract_text() for page in PdfReader(BytesIO(pdf_download.content)).pages
+    )
+    statement_text = "\n".join(
+        page.extract_text() for page in PdfReader(BytesIO(statement.content)).pages
+    )
+
+    assert json_download.filename.startswith("SYSS_DEMO_")
+    assert pdf_download.filename.startswith("SYSS_DEMO_")
+    assert statement.filename.startswith("SYSS_DEMO_")
+    assert json_download.cache_control == "no-store, max-age=0"
+    assert pdf_download.cache_control == "no-store, max-age=0"
+    assert statement.cache_control == "no-store, max-age=0"
+    assert envelope["evidenceType"] == "sing-yin-study-prefect-demo-period-summary"
+    assert envelope["demo"] is True
+    assert envelope["fictional"] is True
+    assert "DEMO" in pdf_text
+    assert "Fictional data" in pdf_text
+    assert "DEMO" in statement_text
+    assert "Fictional data" in statement_text
 
 
 def test_bilingual_allocation_statement_lists_dates_room_times_and_calculated_hours(

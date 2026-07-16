@@ -1,18 +1,29 @@
 # Sing Yin Study Prefect Duty Roster System - Project Status
 
-**Last Updated:** 2026-07-16
+**Last Updated:** 2026-07-17
 **Project Root:** `D:\code_v3`  
-**Current Phase:** Canonical rc.16 Cloudflare gateway and the protected `C:\SingYinRoster` Windows origin are live; reboot proof, supervised administrator workflow acceptance and the separately authorized official-data reset remain
+**Current Phase:** v1.2 unified Admin／Guest source candidate on `codex/unified-guest-redesign`; formal gates, merge, release tag and controlled deployment remain
 **Primary Theme Color:** `#0F766E`
 
+**Windows SSH maintenance (2026-07-17):** OpenSSH Server is installed on `LAPTOP-NQ22TI3V` and runs automatically. The hardened service accepts only the `lichu` Ed25519 maintenance key, listens only on `127.0.0.1:22` and `[::1]:22`, disables password and interactive authentication plus all forwarding, and leaves the Windows OpenSSH inbound firewall rule disabled. A real key-only SSH session returned the administrator identity and confirmed official application and database health; a password-only probe was rejected with `Permission denied (publickey)`. Evidence is stored in `logs/windows-ssh-verification.json`. Off-device SSH through a separate Cloudflare private route remains an explicit future step and is not yet claimed.
+
 **Repository:** `JackyLi10777/Study-Prefect-Duty-Roster-System`  
-**Branches:** `main` (current), `nicegui-self-hosted` (platform snapshot), `streamlit-cloud` (legacy reference)
+**Branches:** `codex/unified-guest-redesign` (current candidate), `main` (deployed v1.1 baseline source), `nicegui-self-hosted` (platform snapshot), `streamlit-cloud` (legacy reference)
 
 **Co-creators:** LI Chuangjie Jacky（李創杰）and Codex only. `Study Prefect Systems & Stewardship Office` is their two-member project identity; no additional developer or contractor contributed to this NiceGUI rebuild and formal release.
 
 ## Project Overview
 
-This is a fresh, local-first rebuild of the Sing Yin Study Prefect Duty Roster System. It runs on a dedicated Windows computer through NiceGUI, while one canonical `workers.dev` website is the only URL distributed to users. The live gateway defines five deliberately separate states: public `/` without a valid first-party administrator session is the Worker-native entrance; `/guest` is a static, data-free platform tour; `/try` is a 30-minute browser-tab trial using only fixed fictional Chinese names and device-side PDF generation; `/view#…` retrieves an explicitly issued encrypted published-roster snapshot from KV and decrypts it in the browser; and an approved administrator completes Cloudflare Access One-time PIN verification before the Worker creates a separate signed session and proxies the full NiceGUI editor at the same root through Workers VPC and the existing Tunnel. NiceGUI does not implement a guest role or guest RBAC. Localhost and private WARP remain maintenance fallbacks. It is not a migration of the Streamlit, `demo_code`, or `demo_code2` applications.
+This is a fresh, local-first rebuild of the Sing Yin Study Prefect Duty Roster System. The v1.2 candidate keeps one canonical `workers.dev` site and one NiceGUI product. A server-verified `PageContext` resolves `PUBLIC`, `ADMIN`, `GUEST`, or `LOCAL_MAINTENANCE`; Admin uses the official workflow and SQLite, while Guest uses the same routes and components backed only by a bounded in-memory workspace with fictional Chinese names. `/guest` and `/try` become compatibility redirects rather than a second static product. `/view#…` remains the separate encrypted, read-only published-roster capability. Localhost and private WARP remain maintenance fallbacks. It is not a migration of the Streamlit, `demo_code`, or `demo_code2` applications.
+
+### v1.2 release truth
+
+- `SING_YIN_UNIFIED_GUEST` remains disabled by default. A verified Guest principal is rejected by the origin while the flag is `0`.
+- Signed Worker-to-origin principals, deny-by-default capabilities, per-client Guest workspaces, session expiry/revocation monitoring, one-shot `DEMO` downloads, process locking, `/readyz`, v1.2 persistence tables, command receipts, backup obligations and the external-share outbox exist in the source candidate.
+- The Guest snapshot codec exists and is covered for integrity, binding, expiry, size, revision and replay. The browser bridge which persists and restores the latest signed snapshot through `sessionStorage` is still a release gate.
+- Focused tests are being added and run during implementation, but this status does **not** claim that the final full suite or `scripts/verify_release_candidate.py` has passed for the current source fingerprint.
+- `C:\SingYinRoster` and the canonical Worker remain the deployed v1.1 baseline until a verified backup, isolated restore, full release report, supervised browser acceptance, merge and release tag have completed.
+- v1.2 documentation: [Unified guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md), [Canonical site guide](docs/PUBLIC_ROSTER_VIEWER.md), [Cloudflare rollout](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), and [Deployment decision](docs/DEPLOYMENT_DECISION.md).
 
 The current Head Study Prefect is the normal daily operator. The teacher advisor mainly reviews published results, fairness, recovery, and handover evidence after completion rather than operating the weekly workflow day to day.
 
@@ -28,11 +39,35 @@ Guiding principle:
 
 The principle shapes the Dashboard devotional space, fairness ledger, leave-adjustment tone, and leadership language. Every direct Scripture quotation shown by the maintained application or canonical gateway uses Traditional Chinese **Revised Chinese Union Version 2010 (Shen Edition)／和合本修訂版 2010（神版）** and English **New King James Version (NKJV)**; the service principle remains labelled as a principle rather than presented as a verbatim Bible quotation.
 
-## Current Status
+## Current v1.2 Status
 
-The NiceGUI application now has a durable roster workflow and a unified multi-page operating structure. The canonical hostname exposes five explicit states. The public `/` entrance explains the next safe action; `/guest` is a Worker-native, data-free product tour; `/try` is a separate static interactive sandbox whose fixed fictional directory, trial leave, generated roster and bilingual PDF remain in the browser tab; an explicitly issued `/view#…` link is a separate encrypted, expiring and revocable published-roster snapshot; and the Head Study Prefect receives OP editing only after exact-email One-time PIN verification, Worker-side Access JWT validation at `/auth/login`, and creation of a separate signed first-party administrator session. `/try` uses `sessionStorage` with a 30-minute expiry and makes no trial-data request to an application API, KV, VPC, NiceGUI, SQLite, fairness ledger, backup or server log. A downloaded PDF persists only because the visitor explicitly saves it. The root continues to use a calm 58/42 story-and-access composition, stacks semantically down to 320 px, and keeps the real administrator action visually distinct from product exploration.
+The source candidate has a durable roster workflow and a unified multi-page operating structure. Public `/` remains the identity-neutral entrance. `POST /auth/guest/start` creates a bounded Guest session; `/auth/admin/start` enters Cloudflare Access; `/auth/status` rechecks mode, expiry and origin health; `/auth/logout` clears identity and Guest state. `/guest` and `/try` redirect to the unified entry. An explicitly issued `/view#…` link remains a separate encrypted, expiring and revocable published-roster snapshot.
 
-The deployment decision is a dedicated Windows 11 host whose NiceGUI origin always stays on `127.0.0.1`. `docs/WINDOWS_DEDICATED_HOST_SETUP.md` provides a zero-knowledge installation and operating procedure. The PowerShell toolchain prepares the host, restricts local-data ACLs, registers an ownership-marked startup task, installs cloudflared, refuses to take over an unknown same-named service, and preserves a WARP maintenance route. In the deployed topology, public `/`, `/guest`, `/try` and their version-controlled static assets remain at the edge; `/view#…` uses only the encrypted KV snapshot path; and only a request carrying a valid signed administrator session is sent through remote VPC Service `sing-yin-roster-nicegui`, named Tunnel `sing-yin-roster-windows-private`, and the loopback origin. No router port-forward, purchased domain, or public NiceGUI listen address is used.
+The deployment decision remains a dedicated Windows 11 host whose NiceGUI origin stays on `127.0.0.1`. In the v1.2 topology, both verified Admin and Guest sessions are proxied through VPC to the same origin, but the Worker injects different signed principals and the origin resolves different adapters. `/view#…` remains at the edge/KV boundary. No router port-forward, purchased domain, or public NiceGUI listen address is used.
+
+### Implemented in the source candidate
+
+- Stable `AccessMode`, `Capability`, `CapabilityPolicy`, `Principal` and `PageContext`.
+- Worker Guest/Admin session routes and HMAC origin principal.
+- NiceGUI verification of signature, expiry, `auth_epoch` and `kid`.
+- `GuestWorkspaceRegistry` limits: 30 minutes, 24 sessions, four tabs per session, 40 fictional prefects, four weeks, 256 KiB snapshot, 5 MiB download and 60 commands/minute.
+- Same-route `GuestWorkspaceAdapter`, session-scoped preferences, one-shot `no-store` downloads and cross-tab logout cleanup.
+- Database-path process lock before migration.
+- Alembic v1.2 schema: leave version, operation command receipts, backup obligations, external share outbox, audit actor/command/request fields and active Chinese-name uniqueness.
+- Version and command inputs on critical interactive writes; pending backup obligations are repaired on startup or place `/readyz` in degraded state.
+- External share intent is bound to roster version/digest through a durable outbox.
+
+### Still gated or pending
+
+- Browser save/restore of signed Guest snapshots through `sessionStorage`, including duplicate-tab reallocation.
+- Complete service-level capability matrix and import-boundary proof for every Guest route.
+- Final Admin／Guest browser route parity, multi-user/multi-tab, expiry, revocation, cross-download, crash and memory-growth evidence.
+- Full `python -X utf8 -m pytest -q` and `python -X utf8 scripts/verify_release_candidate.py` against the final source fingerprint.
+- Verified formal backup, isolated restore, supervised Cloudflare acceptance, `v1.2.0-rc.1`, merge to `main`, Windows bundle update and Worker rollout.
+
+### Deployed v1.1 baseline evidence
+
+The paragraphs below record the previous v1.1 deployment and remain useful rollback context. They do not describe the v1.2 Guest architecture and must not be used as v1.2 acceptance evidence.
 
 Windows ACL verification now reads SID-backed access rules directly, so renamed or short-lived Windows account names cannot make a valid rule appear missing. The guarded Cloudflare activation path also resolves the dedicated `SingYinRosterSvc` account from the owned startup task and preserves that account on every protected `.env` and ownership-marker write, including rollback; it never widens access to Users, Authenticated Users or Everyone.
 
@@ -226,7 +261,11 @@ The 2026-07-16 verification-efficiency refinement is complete in the source repo
 - Prefect tests cover create, update, archive, and Traditional Chinese CSV import normalization.
 - Browser smoke check verifies core routes, Roster/Prefects tabs, AI import preview, bilingual switching, dark mode, console errors, and screenshots.
 
-## In Progress
+## Historical Delivery Record (v1.1 and earlier)
+
+The entries below are retained as audit history. Dates, test counts, Worker
+versions, route behavior and deployment claims describe their own source
+revision; they do not supersede the v1.2 release truth at the top of this file.
 
 - Remote-access preparation Round 2 completed: the no-domain deployment is now live as a first-class private-WARP path rather than a public-hostname workaround. Cloudflare contains the named `sing-yin-roster-windows-private` Tunnel, one exact-account WARP enrollment policy, and the `roster.singyin.internal` hostname route; Gateway proxy, Split Tunnel and Local Domain Fallback are configured only for private-hostname routing. NiceGUI still binds exclusively to `127.0.0.1`. The protected token-file Windows service and ownership marker are active, four local checks pass, Cloudflare reports one healthy connector with four edge connections, and the full Python suite passes. The remaining live step is one enrolled remote-device acceptance run.
 
@@ -294,11 +333,12 @@ The 2026-07-16 verification-efficiency refinement is complete in the source repo
 
 ## Next Steps
 
-1. Perform one supervised Windows reboot, wait for the delayed boot task, then re-check task state／owner, the single loopback listener, official／database health, Running／Automatic Tunnel service and the canonical public gateway.
-2. Retire pre-production demonstration data only after explicit operator authorization and only through the controlled reset report; then verify the official empty first-use state and rehearse Practice Mode before importing a real directory.
-3. During supervised acceptance, verify exact-email One-time PIN login/logout, long WebSocket reconnect, upload and bilingual PDF delivery; repeat one physical iPhone Safari and one Android Chrome check for keyboard, rotation and real safe areas.
-4. Define encrypted, off-device backup retention before using real data beyond the local computer; separately harden automatic Viewer-link staleness after corrections and expiry-aware closure of already established administrator WebSockets.
-5. During formal human acceptance, rehearse the reviewed CSV／XLSX import and period-report download with fictional Chinese names; explicitly confirm that manual mapping works with DeepSeek disabled, scheduled hours are not treated as attendance, and JSON is not mistaken for the verified handover backup.
+1. Complete the signed Guest snapshot browser bridge and prove refresh, duplicate-tab reallocation, expiry, logout, revocation and restart invalidation.
+2. Complete the Admin／Guest route-parity, capability-bypass, multi-user／multi-tab, cross-download, outbox retry, backup-crash and heap-growth browser evidence using isolated SQLite, backup and log paths.
+3. Run `python -X utf8 -m pytest -q` and `python -X utf8 scripts/verify_release_candidate.py`; regenerate the release report only after the final source and documentation settle.
+4. Create a new verified official backup and complete isolated restore, then perform supervised Cloudflare Admin／Guest／Viewer acceptance.
+5. Only after all gates pass: merge to `main`, create `v1.2.0-rc.1`, update the Windows bundle under maintenance, verify `/healthz`／`/readyz`, stage the Worker, and finally enable `SING_YIN_UNIFIED_GUEST=1`.
+6. Retain the existing v1.1 host bundle and Worker version as the rollback target until formal human acceptance is signed off.
 
 ## Key Decisions and Architecture
 
@@ -312,7 +352,7 @@ The 2026-07-16 verification-efficiency refinement is complete in the source repo
 | Localization | Traditional Chinese default; English is a full UI counterpart; direct Scripture quotations use RCUV 2010（神版）and NKJV respectively |
 | Theme | Professional Teal `#0F766E`, restrained gold, light/dark support |
 | Responsive presentation | One URL, login, route set, data and policy engine; desktop and phone use independent arrangements from shared view models, never a second mobile site or user-agent-routed application |
-| External access | Live contract for one canonical workers.dev hostname with five states: public unauthenticated `/` Worker entrance; `/guest` static data-free product tour; `/try` 30-minute browser-only fictional trial with on-device PDF and no application API/storage path; `/view#…` encrypted published-roster snapshot via KV and in-browser decryption; exact-email One-time PIN → Access JWT verification at `/auth/login` → signed first-party administrator session → VPC → NiceGUI at the same root. Access destinations are only `/auth` and `/auth/*`; NiceGUI has no guest RBAC and remains loopback. Localhost/private WARP are maintenance fallbacks. Production desktop／mobile trial automation passes; supervised administrator login／logout, long reconnect, upload and PDF acceptance remain. |
+| External access | v1.2 candidate: one canonical workers.dev hostname; public `/` entrance; signed Guest session → VPC → same NiceGUI routes backed by an in-memory adapter; exact-email One-time PIN → signed Admin session → official workflow; `/guest` and `/try` compatibility redirects; separate encrypted `/view#…` Viewer. NiceGUI remains loopback and `SING_YIN_UNIFIED_GUEST=0` until formal gates pass. |
 | Optional online music | Visible YouTube public-playlist player; no sign-in/payment/API key for playback, optional local-environment API key for search |
 | PDF export | Local-memory ReportLab generation with a Traditional Chinese CJK font; no public upload |
 
@@ -327,6 +367,9 @@ Important boundaries:
 
 | Risk | Status | Mitigation |
 |---|---|---|
+| v1.2 source is not deployed | Open release gate | Keep the existing v1.1 host／Worker as the official baseline; do not enable the feature flag until the final report, backup, restore and supervised acceptance pass |
+| Signed Guest snapshot is not yet wired to browser save/restore | Open implementation gate | Complete the `sessionStorage` bridge and duplicate-tab/replay tests; until then, do not promise Guest refresh persistence |
+| Guest and Admin share page renderers | Managed by capability boundary | Deny by default in `PageContext`, adapter and services; keep dependency-boundary and direct-service bypass tests in the formal gate |
 | Canonical Access/VPC gateway is live but not yet fully human-accepted | Managed acceptance | Guest/viewer desktop, dark and mobile evidence plus Access-JWT／signed-session／VPC／WebSocket automation pass; keep localhost/WARP as maintenance fallback until the exact-email One-time PIN login/logout, reconnect, upload, PDF and isolated full write flow are signed off |
 | Adaptive phone shell has automated browser evidence but not physical-device sign-off | Managed acceptance | The isolated 320px, 390px and landscape touch matrix passes with shared routes/models; repeat keyboard, rotation and real safe-area checks on iPhone Safari and Android Chrome during formal acceptance |
 | NiceGUI session-signing secret | Managed | The dedicated server-mode host uses an independent value in its protected `.env`; it is not stored in source, reports, screenshots or backups |
@@ -348,6 +391,10 @@ Important boundaries:
 | Path | Purpose |
 |---|---|
 | `nicegui_app/main.py` | Official application entry point |
+| `nicegui_app/access_context.py` | Stable access modes, deny-by-default capabilities, verified principals and `PageContext` |
+| `nicegui_app/gateway_identity.py` | Verification of Worker-signed origin principals, expiry, auth epoch and key ID |
+| `nicegui_app/services/guest_workspace.py` | Bounded in-memory fictional Guest workspaces and signed snapshot codec |
+| `nicegui_app/services/guest_adapter.py` | Same-route Guest workflow facade with no official persistence or external integration |
 | `nicegui_app/services/roster_workflow.py` | Generate, publish, leave-adjustment, fairness, backup transactions |
 | `nicegui_app/ui/` | Shared shell, bilingual messages, theme, pages |
 | `nicegui_app/utils/prefect_import.py`, `prefect_file_import.py` | Local JSON／CSV normalization plus bounded CSV／XLSX parsing and reviewed field mapping |
@@ -373,6 +420,7 @@ Important boundaries:
 | `docs/WINDOWS_DEDICATED_HOST_SETUP.md` | Zero-knowledge Windows 11 installation, startup, operation, update, backup, and host replacement |
 | `docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md` | Protected remote-browser setup, activation, verification, shutdown, and operator-only inputs |
 | `docs/PUBLIC_ROSTER_VIEWER.md` | First-person one-URL guide for guest viewing, administrator login/logout and Viewer-link handover |
+| `docs/UNIFIED_GUEST_SECURITY_MODEL.md` | v1.2 Guest capability, workspace, snapshot, download, cleanup and release-gate contract |
 | `docs/MUSIC_IMPORT_DECISION.md` | YouTube local-audio candidate comparison, adopted adapter, limits, proof, and replacement path |
 | `START_SING_YIN_ROSTER.cmd` | Windows double-click launcher for a non-technical operator |
 | `START_PRACTICE_MODE.cmd` / `RESET_PRACTICE_MODE.cmd` | Isolated fictional rehearsal and safe clean restart |
