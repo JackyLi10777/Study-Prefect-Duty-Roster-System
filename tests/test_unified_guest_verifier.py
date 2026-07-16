@@ -230,3 +230,18 @@ def test_app_wait_retries_only_the_expected_safe_navigation_context_reset() -> N
     source = Path(verify_unified_guest_ui.__file__).read_text(encoding="utf-8")
     assert "for attempt in range(3):" in source
     assert "if not _is_navigation_context_reset(error) or attempt == 2:" in source
+
+
+def test_duplicate_isolation_precedes_mobile_disconnect_cleanup_race() -> None:
+    source = Path(verify_unified_guest_ui.__file__).read_text(encoding="utf-8")
+    main_phase = source.split("def main() -> int:", 1)[1]
+
+    assert main_phase.index("_exercise_true_duplicate_and_tamper(") < main_phase.index(
+        "mobile_context = browser.new_context("
+    )
+    assert main_phase.index("mobile_context = browser.new_context(") < main_phase.index(
+        "_exercise_broadcast_cleanup("
+    )
+    assert main_phase.index("_exercise_broadcast_cleanup(") < main_phase.index(
+        "mobile_context.close()"
+    )

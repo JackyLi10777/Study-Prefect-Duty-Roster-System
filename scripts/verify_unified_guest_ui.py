@@ -977,6 +977,18 @@ def main() -> int:
         guest_page.locator("body.body--dark").wait_for(state="attached", timeout=10_000)
         guest_page.screenshot(path=str(evidence_dir / "unified-guest-desktop-dark.png"), full_page=True)
 
+        duplicate_guest_page, duplicate_evidence = _exercise_true_duplicate_and_tamper(
+            guest_page,
+            guest_url,
+            register_page=register_browser_page,
+        )
+
+        # Keep the source and true duplicate stable while proving their copied
+        # sessionStorage is isolated. Mobile evidence is composed afterwards,
+        # then the same authenticated-session revocation clears all three
+        # workspaces immediately. Closing the mobile context first would enter
+        # the deliberate 12-second disconnect grace period and race a forced
+        # source navigation against safe workspace recovery.
         mobile_context = browser.new_context(
             viewport={"width": 390, "height": 844},
             color_scheme="dark",
@@ -994,14 +1006,9 @@ def main() -> int:
         mobile_page.on("pageerror", lambda error: page_errors.append(str(error)))
         _open_route(mobile_page, guest_url, "/platform")
         mobile_page.screenshot(path=str(evidence_dir / "unified-guest-mobile-dark.png"), full_page=True)
-        mobile_context.close()
 
-        duplicate_guest_page, duplicate_evidence = _exercise_true_duplicate_and_tamper(
-            guest_page,
-            guest_url,
-            register_page=register_browser_page,
-        )
         _exercise_broadcast_cleanup(guest_page, duplicate_guest_page)
+        mobile_context.close()
         guest_context.close()
         _wait_for_guest_sessions(guest_url, 0)
         admin_context.close()
