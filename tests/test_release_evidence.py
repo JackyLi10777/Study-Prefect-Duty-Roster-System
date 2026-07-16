@@ -8,6 +8,7 @@ from nicegui_app.config import POLICY_VERSION
 from nicegui_app.release_evidence import (
     PROJECT_ID,
     RELEASE_EXCLUDED_DIRECTORY_NAMES,
+    RELEASE_EXCLUDED_RELATIVE_GLOBS,
     RELEASE_EXCLUDED_RELATIVE_PREFIXES,
     RELEASE_SOURCE_FILES,
     RELEASE_SOURCE_ROOTS,
@@ -109,6 +110,40 @@ def test_release_fingerprint_tracks_deployed_artifacts_without_documentation_or_
     }.isdisjoint(tracked_relative_files)
     assert "music/custom/" in RELEASE_EXCLUDED_RELATIVE_PREFIXES
     assert "music/youtube-imports/" in RELEASE_EXCLUDED_RELATIVE_PREFIXES
+    assert "music/*(1).m4a" in RELEASE_EXCLUDED_RELATIVE_GLOBS
+
+
+def test_release_fingerprint_ignores_untracked_downloader_duplicate_music(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    music_root = tmp_path / "music"
+    music_root.mkdir()
+    curated = music_root / "Ubi caritas.m4a"
+    duplicate = music_root / "Ubi caritas(1).M4A"
+    nested_duplicate = music_root / "archive" / "Ubi caritas(1).m4a"
+    numbered_original = music_root / "Ubi caritas(11).m4a"
+    nested_duplicate.parent.mkdir()
+    curated.write_bytes(b"curated-release-track")
+    duplicate.write_bytes(b"local-duplicate-a")
+    nested_duplicate.write_bytes(b"nested-release-track-a")
+    numbered_original.write_bytes(b"numbered-release-track-a")
+    monkeypatch.setattr(release_evidence, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(release_evidence, "RELEASE_SOURCE_ROOTS", (music_root,))
+    monkeypatch.setattr(release_evidence, "RELEASE_SOURCE_FILES", ())
+
+    original, count = release_evidence._calculate_release_source_fingerprint()
+    duplicate.write_bytes(b"local-duplicate-b")
+    unchanged, unchanged_count = release_evidence._calculate_release_source_fingerprint()
+    nested_duplicate.write_bytes(b"nested-release-track-b")
+    nested_changed, nested_changed_count = release_evidence._calculate_release_source_fingerprint()
+    numbered_original.write_bytes(b"numbered-release-track-b")
+    numbered_changed, numbered_changed_count = release_evidence._calculate_release_source_fingerprint()
+
+    assert count == unchanged_count == nested_changed_count == numbered_changed_count == 3
+    assert original == unchanged
+    assert nested_changed != original
+    assert numbered_changed != nested_changed
 
 
 def test_release_fingerprint_tracks_package_manifest_but_not_dependency_cache(monkeypatch, tmp_path: Path) -> None:

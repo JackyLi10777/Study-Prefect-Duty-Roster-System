@@ -7,7 +7,7 @@ from datetime import datetime
 from functools import lru_cache
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Iterable, Literal
 
 from nicegui_app.config import POLICY_VERSION, PROJECT_ROOT
@@ -83,6 +83,12 @@ RELEASE_EXCLUDED_RELATIVE_PREFIXES = (
     "music/.custom-library.json",
     "music/.youtube-playlists.json",
 )
+RELEASE_EXCLUDED_RELATIVE_GLOBS = (
+    # Keep the immutable release fingerprint aligned with .gitignore. These
+    # downloader-created duplicate copies are browser-local library noise and
+    # are never part of a clean release tag or host bundle.
+    "music/*(1).m4a",
+)
 RELEASE_SUFFIXES = {
     ".py",
     ".ini",
@@ -121,7 +127,10 @@ def _is_excluded_release_path(path: Path) -> bool:
         relative = path.relative_to(PROJECT_ROOT).as_posix().lower()
     except ValueError:
         return False
-    return any(relative.startswith(prefix) for prefix in RELEASE_EXCLUDED_RELATIVE_PREFIXES)
+    return (
+        any(relative.startswith(prefix) for prefix in RELEASE_EXCLUDED_RELATIVE_PREFIXES)
+        or any(PurePosixPath(relative).match(pattern) for pattern in RELEASE_EXCLUDED_RELATIVE_GLOBS)
+    )
 
 
 def _calculate_release_source_fingerprint(paths: Iterable[Path] | None = None) -> tuple[str, int]:
