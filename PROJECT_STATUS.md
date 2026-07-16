@@ -21,7 +21,7 @@ This is a fresh, local-first rebuild of the Sing Yin Study Prefect Duty Roster S
 - `SING_YIN_UNIFIED_GUEST` remains disabled by default. A verified Guest principal is rejected by the origin while the flag is `0`.
 - Signed Worker-to-origin principals, deny-by-default capabilities, per-client Guest workspaces, session expiry/revocation monitoring, one-shot `DEMO` downloads, process locking, `/readyz`, v1.2 persistence tables, command receipts, backup obligations and the external-share outbox exist in the source candidate.
 - The Guest snapshot codec and browser bridge now exist in the source candidate. Each meaningful revision is pushed only to the connected tab as a signed `sessionStorage` token; restore requires the live connection nonce and exact SID／workspace／tab binding. Duplicate tabs receive new workspaces, while copied, tampered, expired, stale or old-boot tokens are rejected in favour of the safe fixture.
-- The frozen 2026-07-17 source passed 13／13 formal checks with fingerprint `6b526bccd3e90106660b9ecab2195a22343e31b57d99b107e05904d414ec919d` across 256 release inputs. Evidence covers the complete Python suite, Worker contracts, dependency integrity, desktop/mobile UI, performance, full write/PDF/fairness/backup/restore flow, readiness, unified Guest isolation, and committed-without-backup recovery. The report at `logs/release-candidate-report.json` finished at `2026-07-17T05:29:46+08:00`; machine verification is no longer a rollout blocker.
+- The reproducible frozen 2026-07-17 source passed 13／13 formal checks with fingerprint `5896a8394dfa6170a7e04b6dd92ad317e88a9fff4f199f316e5c42eac4ce2189` across 238 release inputs. Evidence covers the complete Python suite, Worker contracts, dependency integrity, desktop/mobile UI, performance, full write/PDF/fairness/backup/restore flow, readiness, unified Guest isolation, and committed-without-backup recovery. The report at `logs/release-candidate-report.json` finished at `2026-07-17T07:02:01+08:00`; machine verification is no longer a rollout blocker. Ignored downloader duplicate files matching `music/*(1).m4a` are now excluded from the release fingerprint exactly as they are excluded from Git, so a clean immutable tag reproduces the verified artifact.
 - `C:\SingYinRoster` and the canonical Worker remain the healthy deployed v1.1 rollback baseline only until the fresh production backup, isolated restore, immutable v1.2 release ref, Windows origin, Access-path, Worker-secret, and live acceptance sequence completes.
 - v1.2 documentation: [Unified guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md), [Canonical site guide](docs/PUBLIC_ROSTER_VIEWER.md), [Cloudflare rollout](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), and [Deployment decision](docs/DEPLOYMENT_DECISION.md).
 
@@ -61,7 +61,7 @@ The deployment decision remains a dedicated Windows 11 host whose NiceGUI origin
 ### Controlled rollout steps still pending
 
 - Fresh verified formal backup and isolated restore against the current production database.
-- Immutable `v1.2.0-rc.1`, promotion to `main`, one elevated Windows bundle update, `/healthz`／`/readyz`, and retained rc.16 rollback evidence.
+- Immutable `v1.2.0-rc.2`, promotion to `main`, one elevated Windows bundle update, `/healthz`／`/readyz`, and retained rc.16 rollback evidence. `rc.1` was not deployed: both attempts stopped before host mutation when clean-source／fingerprint reproducibility checks correctly failed.
 - Access policy must be narrowed from the currently deployed v1.1 `/auth/*` scope to exact `/auth/login`, without intercepting Guest start/status/logout.
 - Worker Guest／origin signing secrets, staged Worker rollout, then live Admin／Guest／Viewer and long-WebSocket acceptance.
 
@@ -336,7 +336,7 @@ revision; they do not supersede the v1.2 release truth at the top of this file.
 ## Next Steps
 
 1. Correct the v1.2 environment/Worker secret manifest and use the generic fail-closed Windows rollout script.
-2. Promote the verified source to `main` and an immutable `v1.2.0-rc.1` reference.
+2. Promote the verified source to `main` and an immutable `v1.2.0-rc.2` reference.
 3. Create a fresh verified official backup, complete isolated restore, update the Windows bundle once under UAC, and verify `/healthz`／`/readyz`.
 4. Narrow Cloudflare Access to the Admin handoff, install Guest／origin signing secrets, deploy the Worker, and enable `SING_YIN_UNIFIED_GUEST=1` only after both sides agree.
 5. Complete live Admin／Guest／Viewer smoke checks and preserve the v1.1 host/Worker as rollback until formal human acceptance is signed off.

@@ -57,9 +57,9 @@ redirects; an explicitly issued `/view#…` link remains the separate encrypted,
 read-only published-roster viewer.
 
 The v1.2 Worker and origin authenticate both modes with server-verified,
-HMAC-signed principals. On 2026-07-17 the frozen 256-input source passed all 13
+HMAC-signed principals. On 2026-07-17 the reproducible frozen 238-input source passed all 13
 formal release gates with fingerprint
-`6b526bccd3e90106660b9ecab2195a22343e31b57d99b107e05904d414ec919d`,
+`5896a8394dfa6170a7e04b6dd92ad317e88a9fff4f199f316e5c42eac4ce2189`,
 including isolated Admin/Guest browser, mobile, performance, write/PDF, backup,
 and recovery evidence. Machine verification is complete.
 `SING_YIN_UNIFIED_GUEST=0` remains the deployment default until the controlled
