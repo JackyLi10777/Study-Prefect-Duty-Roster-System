@@ -1,6 +1,6 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **v1.2 候選狀態：** 統一訪客模式已在來源分支實作並納入 13 道正式 gate；最終來源仍須產生相符報告，再完成 Windows／Access／Worker 受控切換。現行 `C:\SingYinRoster`／Cloudflare 正式服務在切換完成前仍是 v1.1 回退基線。
+> **v1.2 rc5 候選狀態：** commit `bafaef6` 的統一訪客來源已以 fingerprint `c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd`（238 inputs）通過 13／13 正式 gate，計劃標籤為 `v1.2.0-rc.5`。`C:\SingYinRoster` 已 forward-recover 至健康、ready 的 schema-compatible rc4／`30f282f`；Cloudflare Worker 仍保留 pre-v1.2 baseline。Access 精確 `/auth/login` 已確認，Windows／Worker 受控切換仍待完成，尚未宣告 rc5 已部署。
 
 我是李創杰。我希望所有使用者只需記住同一個網站，但同一個網址不代表相同權限。v1.2 把入口、完整 Guest 體驗及管理員工作台統一到同一套 NiceGUI 路由和元件；只有已發布週表的 `/view#…` 保留為獨立、只讀、可分享的能力連結。
 
@@ -105,6 +105,6 @@ Cloudflare 暫時不可用時，只有維護者才使用 localhost 或已核准 
 
 ## English quick guide
 
-The v1.2 candidate uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
+The verified v1.2 rc5 candidate uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
 
-`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The source candidate is covered by the thirteen-gate verifier; the feature becomes live only after the matching report, controlled Windows rollout, exact `/auth/login` Access path, Worker secrets, and live acceptance all pass.
+`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The rc5 source has its matching thirteen-gate report; the feature becomes live only after the controlled rc5 Windows rollout, already-confirmed exact `/auth/login` Access path, matching Worker secrets, Worker deployment and live acceptance all pass.

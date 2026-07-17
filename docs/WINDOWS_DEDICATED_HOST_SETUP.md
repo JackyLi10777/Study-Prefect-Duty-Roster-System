@@ -17,7 +17,7 @@
 完成本手冊後，運作方式如下：
 
 1. 一部 Windows 電腦長期保存程式、SQLite 資料庫、備份、日誌、PDF 及音樂。
-2. NiceGUI origin 只在這部電腦的 `127.0.0.1:8080` 開放；日常使用者從唯一正式 `workers.dev` 網站進入。現行 v1.1 仍提供 Worker 靜態 `/guest`／`/try` 基線；v1.2 通過完整 gate 後，兩個舊路徑只作兼容重定向，訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace。管理員登入後仍留在同一網址。不要把 v1.1 的既有實站證據當作 v1.2 已部署證明。
+2. NiceGUI origin 只在這部電腦的 `127.0.0.1:8080` 開放；日常使用者從唯一正式 `workers.dev` 網站進入。目前 Windows origin 已 forward-recover 至健康、ready 的 rc4／`30f282f`，Worker 仍提供 pre-v1.2 靜態 `/guest`／`/try` 基線。已驗證 rc5／`bafaef6` 受控部署後，兩個舊路徑只作兼容重定向，訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace。管理員登入後仍留在同一網址。不要把 rc4 origin health 或 pre-v1.2 Worker 證據當作 rc5 已部署證明。
 3. 電腦開機後，可由 Windows 工作排程器在背景自動啟動系統。
 4. 初次安裝先驗證 loopback origin，再依 Cloudflare 手冊連接既有 Tunnel、VPC Service、Access 及 Worker；始終不設定路由器轉發或公開 NiceGUI 連接埠。
 5. 即使電腦沒有互聯網，名單、排班、PDF、備份及還原仍可使用；YouTube 音樂除外。
@@ -416,7 +416,7 @@ C:\SingYinRoster\logs
 
 ### 8.1 v1.2 Guest 與本機 Practice Mode 不相同
 
-- v1.1 的 `/try` 靜態試用只屬目前已部署回退基線。v1.2 啟用後，`/guest`、`/try` 只作兼容重定向；訪客由統一入口建立 30 分鐘 Guest session，再使用同一套 NiceGUI 路由及元件。
+- pre-v1.2 Worker 的 `/try` 靜態試用只屬目前回退基線。v1.2 rc5 啟用後，`/guest`、`/try` 只作兼容重定向；訪客由統一入口建立 30 分鐘 Guest session，再使用同一套 NiceGUI 路由及元件。
 - v1.2 Guest 只連到固定虛構中文姓名的程序記憶體 adapter。最新 revision 只以已簽署、綁定 session／workspace／tab 的 token 存在該分頁 `sessionStorage`；複製分頁獲得新 workspace，登出、到期、撤權或 origin 重啟後舊 token 失效。
 - Guest 可完成較完整的示範流程，但 AI、匯入、上載、正式分享、永久設定、正式備份／還原及正式資料寫入均由服務層拒絕。PDF／JSON 只在記憶體建立，標示 `DEMO` 並一次性 `no-store` 下載。
 - `START_PRACTICE_MODE.cmd` 才是可持久演練備份及還原的隔離 NiceGUI 環境，會使用自己的 SQLite、審計及備份。Guest、Practice Mode 都不能代替正式名單匯入。

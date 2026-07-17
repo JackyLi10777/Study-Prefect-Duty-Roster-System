@@ -2,7 +2,9 @@
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
-> **v1.2 交接狀態：** 統一 Admin／Guest 凍結來源已以指紋 `c8a9b8c5c06480e32b127d8e565f007dc37a6d291fe3fb6ca0ad1dce36ce9aca`（238 個發布輸入）通過 13／13 正式 gate；匹配報告於 2026-07-17 08:09:33（香港時間）完成。Cloudflare Access 已截圖核對為只保護精確 `/auth/login`。本次不可變標籤將是 `v1.2.0-rc.4`；rc.1／rc.2／rc.3 均在任何主機變更前停止，從未部署。正式備份／隔離還原、Windows origin、Worker secrets 及線上抽查仍待同一次受控發布完成；`C:\SingYinRoster` 與 live Worker 在切換前仍是 v1.1 回退基線。
+> **v1.2 rc5 交接狀態：** commit `bafaef6` 的統一 Admin／Guest 凍結來源已以指紋 `c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd`（238 個發布輸入）通過 13／13 正式 gate；匹配報告由 `2026-07-17T00:32:33.970049Z` 執行至 `2026-07-17T00:38:01.130845Z`（2026-07-17 08:38:01 香港時間）。Cloudflare Access 已截圖核對為只保護精確 `/auth/login`，計劃中的不可變標籤是 `v1.2.0-rc.5`。`C:\SingYinRoster` 已 forward-recover 至 schema-compatible rc4／`30f282f`，`/healthz` 正常且 `/readyz` ready；live Worker 仍刻意保留 pre-v1.2 production baseline，直至 rc5 兩端受控切換。這仍不是 rc5 已部署聲明。
+
+> **rc4 rollout 記錄：** rc4 已成功把正式 Alembic schema 由 `0007` 升至 `0008`，建立已驗證備份並完成隔離還原；其後 `git fetch origin main` 只更新 `FETCH_HEAD`，而 ancestry gate 讀取 stale `origin/main`，造成假失敗。rc4 因而從未被宣告為 live。自動 rollback 未能證明 origin health 後，主機以相容的 rc4／`30f282f` 完成 forward recovery；rc5／`bafaef6` 已改用明確 remote-tracking refspec，並重新通過完整 13-gate 報告。
 
 ## 運作原則
 
@@ -194,7 +196,7 @@ python -X utf8 -m nicegui_app.main
 1. 在來源分支完成 `python -X utf8 -m pytest -q`。
 2. 執行 `python -X utf8 scripts\verify_release_candidate.py`，核對 report 與最終來源 fingerprint 一致。
 3. 在現行正式系統建立新已驗證快照及交接包，並在另一個隔離 SQLite 完成還原。
-4. Gate 及備份證據全通過後，才合併 `main` 並建立目前發布用的 annotated tag（本次為 `v1.2.0-rc.4`）；rc.1／rc.2／rc.3 從未部署，保存上一個 Windows bundle／tag 及 Worker version ID 作回退。
+4. Gate 及備份證據全通過後，才合併 `main` 並建立目前發布用的 annotated tag（本次計劃為 `v1.2.0-rc.5`／`bafaef6`）；rc.1／rc.2／rc.3 均在 host mutation 前停止，rc4 則按頁首記錄在 migration／備份／隔離還原後因 stale remote-tracking ref 假失敗而未宣告 live。保存 rc4 Windows bundle 及 pre-v1.2 Worker version ID 作回退。
 5. 進入 maintenance，從該不可變 tag 更新 Windows bundle，執行 additive migration；先以 `SING_YIN_UNIFIED_GUEST=0` 啟動。
 6. 核對 `/healthz`、`/readyz`、管理員本機工作流及備份義務。
 7. staged 部署同一 tag 對應的 Worker，核對 Public、Admin、Guest、Viewer 及 WebSocket。

@@ -4,10 +4,13 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
-> **v1.2 status:** This file documents the `codex/unified-guest-redesign`
-> source candidate. The deployed Windows／Cloudflare service remains the v1.1
-> baseline until the complete release gate, verified backup, isolated restore,
-> merge, tag and controlled rollout finish.
+> **v1.2 rc5 status:** This file documents commit `bafaef6` on
+> `codex/unified-guest-redesign`. Its 238-input source passed all 13 formal gates
+> with fingerprint `c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd`.
+> The Windows origin has been forward-recovered to schema-compatible rc4 commit
+> `30f282f` and reports healthy／ready; the live Worker remains on the pre-v1.2
+> baseline until the planned immutable `v1.2.0-rc.5` rollout completes. This is
+> not a claim that rc5 is already deployed.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 
@@ -32,9 +35,10 @@ NiceGUI owns the rendering and navigation. The read model introduces no schema, 
 
 ## Canonical entry and local maintenance start
 
-> **v1.2 source contract:** The unified Guest architecture is feature-gated by
-> `SING_YIN_UNIFIED_GUEST`, which defaults to `0`. This section describes the
-> candidate design and implementation, not a completed production rollout.
+> **v1.2 rc5 source contract:** The unified Guest architecture is feature-gated
+> by `SING_YIN_UNIFIED_GUEST`, which defaults to `0`. This section describes the
+> verified rc5 design and implementation. The recovered rc4 origin remains
+> fail-closed and the Worker remains pre-v1.2 until the controlled rollout.
 
 The only URL distributed to users is
 `https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`.
@@ -306,10 +310,13 @@ The only deliberate application-originated external request carrying roster-deri
 - Worker Deno contracts own `/auth/admin/start`, `/auth/guest/start`, `/auth/status`, `/auth/logout`, compatibility redirects, principal signing, forged-header stripping, VPC proxying and Viewer isolation.
 
 The focused browser-snapshot tests, complete Python suite, unified Guest browser
-verifier and release-candidate orchestrator are all part of the current
-thirteen-gate candidate. A fresh formal backup／isolated restore and Cloudflare
-acceptance remain required for deployment; this architecture document is not
-deployment evidence.
+verifier and release-candidate orchestrator all passed in the matching rc5
+13-gate report. Commit `bafaef6` produced fingerprint
+`c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd` from 238
+inputs between `2026-07-17T00:32:33.970049Z` and
+`2026-07-17T00:38:01.130845Z`. A fresh rc5 formal backup／isolated restore,
+origin／Worker switchover and live Cloudflare acceptance remain required; this
+architecture document is not deployment evidence.
 
 ```powershell
 python -X utf8 -m pytest -q

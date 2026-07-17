@@ -1,6 +1,6 @@
 # 快速啟動 / Quick start
 
-> **目前狀態：** `C:\SingYinRoster` 仍是現有 v1.1 official origin。v1.2 統一訪客候選位於 `codex/unified-guest-redesign`，`SING_YIN_UNIFIED_GUEST` 預設為 `0`，尚未正式部署。以下「每日使用」適用於 v1.2 通過 gate 並啟用後；現行線上行為仍以實際 v1.1 畫面為準。
+> **目前狀態：** `C:\SingYinRoster` 已 forward-recover 至 schema-compatible rc4／`30f282f`，`/healthz` 正常且 `/readyz` ready；canonical Worker 仍保留 pre-v1.2 baseline。v1.2 rc5 候選 commit `bafaef6` 已以 fingerprint `c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd`（238 inputs）通過 13／13 gate，計劃標籤為 `v1.2.0-rc.5`。`SING_YIN_UNIFIED_GUEST` 保持 `0`，直至 rc5 origin／Worker 受控切換；以下統一 Guest「每日使用」尚未正式上線。
 
 ## 每日使用
 

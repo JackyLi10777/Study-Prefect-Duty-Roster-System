@@ -19,21 +19,21 @@ adjust published leave → explain fairness → back up, restore, and hand over.
 · [Architecture](docs/NICEGUI_ARCHITECTURE.md) · [Release status](PROJECT_STATUS.md)
 · [Canonical-site access guide](docs/PUBLIC_ROSTER_VIEWER.md)
 
-**Current rollback deployment (2026-07-16):** immutable
-`v1.1.0-rc.16` runs from `C:\SingYinRoster` through the dedicated Windows
-scheduled task. NiceGUI listens only on `127.0.0.1:8080`; the `cloudflared`
-service and canonical Worker are healthy. The internal administrator API bearer
-credential has been synchronously rotated, with the replacement accepted and
-the retired credential rejected. A supervised Windows reboot, administrator
-login/logout, long reconnect, upload and PDF acceptance remain outstanding;
-official-data cleanup remains a separately authorized operation.
+**Current pre-rc5 deployment (2026-07-17):** `C:\SingYinRoster` has been
+forward-recovered to the schema-compatible rc4 source at commit `30f282f`;
+`/healthz` is healthy and `/readyz` is ready. NiceGUI remains loopback-only on
+`127.0.0.1:8080`. The canonical Worker deliberately remains on the pre-v1.2
+production baseline until the rc5 host and Worker are switched together. A
+supervised Windows reboot, administrator login/logout, long reconnect, upload
+and PDF acceptance remain outstanding; official-data cleanup remains a
+separately authorized operation.
 
 ## Repository editions
 
 | Branch | Platform | Status |
 |---|---|---|
-| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Verified v1.2 unified Guest/Admin release candidate; controlled deployment in progress |
-| `main` | NiceGUI + SQLite, self-hosted | Deployed v1.1 rollback source; receiving the v1.2 candidate |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Verified v1.2 rc5 unified Guest/Admin candidate at `bafaef6`; controlled deployment pending |
+| `main` | NiceGUI + SQLite, self-hosted | rc4 source at `30f282f`; current Windows forward-recovery baseline |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
@@ -46,8 +46,8 @@ the Streamlit page handlers: policy remains in `roster_policy`, generation in
 The only URL distributed to users is
 <https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>.
 
-The deployed v1.1 baseline still serves its data-free Worker tour and
-browser-only fictional trial. The v1.2 source candidate replaces those two
+The pre-v1.2 Worker still serves its data-free tour and browser-only fictional
+trial. The v1.2 rc5 source candidate replaces those two
 separate products with one NiceGUI product: a visitor selects **Guest
 experience** to receive a bounded 30-minute fictional workspace, while an
 approved operator selects **Admin login**, enters an exact allowlisted email
@@ -57,21 +57,24 @@ redirects; an explicitly issued `/view#…` link remains the separate encrypted,
 read-only published-roster viewer.
 
 The v1.2 Worker and origin authenticate both modes with server-verified,
-HMAC-signed principals. On 2026-07-17 the reproducible frozen 238-input source
-passed all 13 formal release gates with fingerprint
-`c8a9b8c5c06480e32b127d8e565f007dc37a6d291fe3fb6ca0ad1dce36ce9aca`,
+HMAC-signed principals. On 2026-07-17 the reproducible frozen 238-input rc5
+source at commit `bafaef6` passed all 13 formal release gates with fingerprint
+`c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd`,
 including isolated Admin/Guest browser, mobile, performance, write/PDF, backup,
-and recovery evidence. The matching report completed at
-`2026-07-17T00:09:33.953144Z`; machine verification is complete. Cloudflare
-Access is now screenshot-confirmed to protect only the exact `/auth/login`
-destination. The immutable rollout reference will be `v1.2.0-rc.4`; rc.1,
-rc.2, and rc.3 were never deployed because reproducibility, browser-verifier,
-or Windows PowerShell fingerprint gates
-stopped them before any host mutation. The Windows origin and live Worker still
-run the v1.1 rollback baseline, so `SING_YIN_UNIFIED_GUEST=0` remains the
-deployment default until the controlled two-sided switch and live
-Admin/Guest/Viewer sequence complete. The application has no custom password
-database.
+and recovery evidence. The matching report ran from
+`2026-07-17T00:32:33.970049Z` to `2026-07-17T00:38:01.130845Z`; machine
+verification is complete. Cloudflare Access is screenshot-confirmed to protect
+only the exact `/auth/login` destination. The planned immutable rollout
+reference is `v1.2.0-rc.5`; rc.1, rc.2, and rc.3 were never deployed because
+their release gates stopped them before host mutation. The rc4 rollout did
+migrate the official schema from `0007` to `0008` and completed a verified
+backup plus isolated restore, but a stale `origin/main` check caused a false
+failure before rc4 could be declared live. The origin has since been
+forward-recovered to rc4 commit `30f282f`; rc5 commit `bafaef6` explicitly
+refreshes the remote-tracking reference. The Worker remains on its pre-v1.2
+baseline, so `SING_YIN_UNIFIED_GUEST=0` remains the deployment default until
+the controlled rc5 switch and live Admin/Guest/Viewer sequence complete. The
+application has no custom password database.
 
 The commands below prepare a host or maintenance workstation; they are not a
 second normal entry point.
@@ -115,11 +118,12 @@ The official clean-first-use contract requires the application to start with an
 empty migrated database and never auto-seed demonstration prefects. Seeing an
 empty directory on first use is correct: import and review the real directory
 only after rehearsal. Fictional seed data belongs to Practice Mode and the
-bounded v1.2 Guest adapter, never the official database. The installed host still
-requires a verified backup, Viewer-link revocation, controlled reset, complete
-verification, and deployment before this state may be claimed as live.
+bounded v1.2 Guest adapter, never the official database. The installed host
+still requires Viewer-link revocation and the separately authorised controlled
+reset before an empty official-data state may be claimed; the rc5 application
+rollout does not perform that data-clearing operation.
 
-### v1.2 candidate: one Guest and Admin product
+### v1.2 rc5 candidate: one Guest and Admin product
 
 Guest and Admin use the same NiceGUI routes, navigation, components, and weekly
 sequence. A server-verified `PageContext` resolves either the official
@@ -138,11 +142,11 @@ safe fictional fixture. Sign-out, expiry, revocation, and cross-tab session
 termination clear temporary state. Guest PDF/JSON downloads are memory-only,
 one-shot, `DEMO`-marked, and `Cache-Control: no-store`.
 
-Focused snapshot-bridge tests now pass, but this is not deployment evidence.
-For the v1.2 release, a maintainer must still run the complete Python suite,
-Worker contracts, isolated unified-Guest browser verification, formal release
-verifier, verified backup and isolated restore. Exact commands and the
-controlled host procedure are documented in
+Focused snapshot-bridge tests and the matching 13-gate rc5 report now pass, but
+the report is not a claim that rc5 is already deployed. The controlled rc5 host
+procedure must still create its fresh verified backup and isolated restore,
+switch the origin and Worker, and complete live acceptance. Exact commands are
+documented in
 [`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and
 [`WINDOWS_DEDICATED_HOST_SETUP.md`](docs/WINDOWS_DEDICATED_HOST_SETUP.md). The
 complete risk matrix is in [`UPDATE_WORKFLOW.md`](docs/UPDATE_WORKFLOW.md).
@@ -252,8 +256,8 @@ workbench.
 ## Deployment
 
 The maintained OP application remains a long-running Python service on a
-dedicated Windows 11 PC, with NiceGUI bound to `127.0.0.1`. In the v1.2
-candidate, the canonical `workers.dev` site is the public front door:
+dedicated Windows 11 PC, with NiceGUI bound to `127.0.0.1`. In the verified v1.2
+rc5 design, the canonical `workers.dev` site is the public front door:
 **Guest experience** creates a time-limited signed Guest session, while
 **Admin login** invokes a path-specific Cloudflare Access policy. Both verified
 modes are proxied to the same NiceGUI origin with different signed principals;
