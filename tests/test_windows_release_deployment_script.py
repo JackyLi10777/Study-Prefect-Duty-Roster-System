@@ -240,6 +240,7 @@ def test_deployment_script_switches_locked_host_and_requires_write_readiness() -
     assert "$ready.backupRepairFailed -eq $false" in source
     assert '"scripts\\check_deployment_readiness.py",' in source
     assert '"--strict"' in source
+    assert '"--allow-pending-cloudflare-access"' in source
 
 
 def test_deployment_script_rolls_back_commit_dependencies_environment_and_task() -> None:

@@ -19,6 +19,7 @@ from nicegui_app.deployment import (
     resolve_storage_secret,
     storage_secret_readiness,
 )
+from scripts.check_deployment_readiness import blocking_checks
 from nicegui_app.services.roster_workflow import RosterWorkflow
 
 
@@ -316,6 +317,35 @@ def test_readiness_script_runs_directly_from_project_root(tmp_path: Path) -> Non
     assert result.returncode == 0, result.stderr
     assert '"deploymentMode": "local"' in result.stdout
     assert '"code": "database_integrity"' in result.stdout
+
+
+def test_staged_origin_readiness_defers_only_cloudflare_live_verification() -> None:
+    payload = {
+        "checks": [
+            {"code": "database_integrity", "status": "pass"},
+            {"code": "cloudflare_access", "status": "warning"},
+        ]
+    }
+
+    assert blocking_checks(payload, strict=True, allow_pending_cloudflare_access=False) == (
+        "cloudflare_access",
+    )
+    assert blocking_checks(payload, strict=True, allow_pending_cloudflare_access=True) == ()
+
+
+def test_staged_origin_readiness_never_defers_other_warnings_or_failures() -> None:
+    payload = {
+        "checks": [
+            {"code": "cloudflare_access", "status": "warning"},
+            {"code": "endpoint", "status": "warning"},
+            {"code": "database_integrity", "status": "fail"},
+        ]
+    }
+
+    assert blocking_checks(payload, strict=True, allow_pending_cloudflare_access=True) == (
+        "endpoint",
+        "database_integrity",
+    )
 
 
 def test_local_storage_secret_is_generated_once_and_persists(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

@@ -818,7 +818,8 @@ try {
         "-X",
         "utf8",
         "scripts\check_deployment_readiness.py",
-        "--strict"
+        "--strict",
+        "--allow-pending-cloudflare-access"
     ) -WorkingDirectory $HostRoot | Out-Null
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
 
