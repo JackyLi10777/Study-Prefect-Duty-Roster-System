@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import base64
+import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -67,11 +70,38 @@ def test_deployment_script_requires_the_current_thirteen_gate_fingerprint() -> N
     assert "$reportChecks.Count -ne 13" in source
     assert "$passedNames.Count -ne 13" in source
     assert "release_source_fingerprint" in source
+    assert "json.dumps({'fingerprint': fingerprint, 'fileCount': file_count})" in source
+    assert 'json.dumps({"fingerprint": fingerprint, "fileCount": file_count})' not in source
     assert "sourceFingerprint" in source
     assert "sourceFileCount" in source
     assert "The release report fingerprint does not match the immutable release source." in source
     assert "checks.Count -ne 12" not in source
     assert "twelve-gate" not in source.lower()
+
+
+def test_deployment_fingerprint_snippet_executes_in_windows_powershell_51() -> None:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production host script")
+    source = _source()
+    snippet = source.split("$code = @'", 1)[1].split("'@", 1)[0].strip()
+    python = str(Path(sys.executable)).replace("'", "''")
+    command = f"$code = @'\n{snippet}\n'@\n& '{python}' -X utf8 -c $code"
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout.splitlines()[-1])
+    assert payload["fingerprint"]
+    assert payload["fileCount"] > 0
 
 
 def test_deployment_script_fences_data_and_preserves_the_protected_environment() -> None:

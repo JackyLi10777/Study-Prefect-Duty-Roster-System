@@ -146,7 +146,7 @@ function Get-CurrentReleaseFingerprint {
 import json
 from nicegui_app.release_evidence import release_source_fingerprint
 fingerprint, file_count = release_source_fingerprint()
-print(json.dumps({"fingerprint": fingerprint, "fileCount": file_count}))
+print(json.dumps({'fingerprint': fingerprint, 'fileCount': file_count}))
 '@
     $previousPreference = $ErrorActionPreference
     try {
