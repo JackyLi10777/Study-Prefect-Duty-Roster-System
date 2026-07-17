@@ -2,9 +2,11 @@
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
-> **v1.2 rc5 交接狀態：** commit `bafaef6` 的統一 Admin／Guest 凍結來源已以指紋 `c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd`（238 個發布輸入）通過 13／13 正式 gate；匹配報告由 `2026-07-17T00:32:33.970049Z` 執行至 `2026-07-17T00:38:01.130845Z`（2026-07-17 08:38:01 香港時間）。Cloudflare Access 已截圖核對為只保護精確 `/auth/login`，計劃中的不可變標籤是 `v1.2.0-rc.5`。`C:\SingYinRoster` 已 forward-recover 至 schema-compatible rc4／`30f282f`，`/healthz` 正常且 `/readyz` ready；live Worker 仍刻意保留 pre-v1.2 production baseline，直至 rc5 兩端受控切換。這仍不是 rc5 已部署聲明。
+> **v1.2 rc6 交接狀態：** 統一 Admin／Guest runtime `d38813f` 已以指紋 `2a26204a47baaed7fca297de16c301b92b5503f554f202aa3ddcf85ff47c2c34`（238 個發布輸入）通過 13／13 正式 gate。2026-07-17 的 rc5 origin rollout 建立全新已驗證備份並完成隔離還原，之後因 strict local readiness 把刻意留待 Worker 階段核實的 `cloudflare_access` warning 當成致命而安全回滾。`C:\SingYinRoster` 現仍是健康、ready 的 rc4／`30f282f`，live Worker 仍是 pre-v1.2 baseline；這不是 v1.2 已部署聲明。
 
 > **rc4 rollout 記錄：** rc4 已成功把正式 Alembic schema 由 `0007` 升至 `0008`，建立已驗證備份並完成隔離還原；其後 `git fetch origin main` 只更新 `FETCH_HEAD`，而 ancestry gate 讀取 stale `origin/main`，造成假失敗。rc4 因而從未被宣告為 live。自動 rollback 未能證明 origin health 後，主機以相容的 rc4／`30f282f` 完成 forward recovery；rc5／`bafaef6` 已改用明確 remote-tracking refspec，並重新通過完整 13-gate 報告。
+
+> **rc6 分階段規則：** origin 階段仍會阻擋每一個 failure 及所有其他 warning；只有明確依賴尚未部署 Worker 的 `cloudflare_access` 可暫時延後。匹配 Worker 上線後，這項檢查以及 Admin／Guest／Viewer／WebSocket 線上驗收仍必須全部通過，才可結束 maintenance 並交接。
 
 ## 運作原則
 

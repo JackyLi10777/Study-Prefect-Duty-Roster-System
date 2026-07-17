@@ -4,13 +4,13 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
-> **v1.2 rc5 status:** This file documents commit `bafaef6` on
-> `codex/unified-guest-redesign`. Its 238-input source passed all 13 formal gates
-> with fingerprint `c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd`.
-> The Windows origin has been forward-recovered to schema-compatible rc4 commit
-> `30f282f` and reports healthy／ready; the live Worker remains on the pre-v1.2
-> baseline until the planned immutable `v1.2.0-rc.5` rollout completes. This is
-> not a claim that rc5 is already deployed.
+> **v1.2 rc6 status:** This file documents runtime commit `d38813f`; its
+> 238-input source passed all 13 formal gates with fingerprint
+> `2a26204a47baaed7fca297de16c301b92b5503f554f202aa3ddcf85ff47c2c34`. The rc5 origin rollout created a
+> fresh verified backup and passed isolated restore, then rolled back safely
+> because strict local readiness treated the intentionally pending
+> `cloudflare_access` warning as fatal before the Worker stage. The Windows
+> origin is healthy／ready on rc4 `30f282f`; rc6 corrects only this staging rule.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 
@@ -310,13 +310,16 @@ The only deliberate application-originated external request carrying roster-deri
 - Worker Deno contracts own `/auth/admin/start`, `/auth/guest/start`, `/auth/status`, `/auth/logout`, compatibility redirects, principal signing, forged-header stripping, VPC proxying and Viewer isolation.
 
 The focused browser-snapshot tests, complete Python suite, unified Guest browser
-verifier and release-candidate orchestrator all passed in the matching rc5
-13-gate report. Commit `bafaef6` produced fingerprint
-`c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd` from 238
-inputs between `2026-07-17T00:32:33.970049Z` and
-`2026-07-17T00:38:01.130845Z`. A fresh rc5 formal backup／isolated restore,
-origin／Worker switchover and live Cloudflare acceptance remain required; this
-architecture document is not deployment evidence.
+verifier and release-candidate orchestrator all passed in the matching rc6
+13-gate report. Runtime commit `d38813f` produced fingerprint
+`2a26204a47baaed7fca297de16c301b92b5503f554f202aa3ddcf85ff47c2c34` from 238
+inputs between `2026-07-17T09:07:48.151493+08:00` and
+`2026-07-17T09:13:10.917021+08:00`. The rc5 rollout then completed a fresh formal
+backup and isolated restore before its safe rollback. rc6 keeps every failure
+and every non-`cloudflare_access` warning blocking; only that Worker-dependent
+warning is deferred from local-origin readiness to the matching Worker stage.
+Live Cloudflare acceptance remains mandatory, so this architecture document is
+not deployment evidence.
 
 ```powershell
 python -X utf8 -m pytest -q

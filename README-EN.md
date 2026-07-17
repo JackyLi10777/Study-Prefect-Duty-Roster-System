@@ -37,8 +37,8 @@ separately authorized operation.
 
 | Branch | Platform | Status |
 |---|---|---|
-| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Published rc5 source at `1305a54` (verified runtime `bafaef6`); rc6 staged-readiness correction pending |
-| `main` | NiceGUI + SQLite, self-hosted | Contains `v1.2.0-rc.5`; the production Windows origin remains on rc4 `30f282f` pending rc6 |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Verified rc6 source at runtime `d38813f`; controlled origin/Worker rollout in progress |
+| `main` | NiceGUI + SQLite, self-hosted | rc6 will be synchronized before the controlled switch; production remains on rc4 `30f282f` |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
@@ -62,15 +62,15 @@ redirects; an explicitly issued `/view#…` link remains the separate encrypted,
 read-only published-roster viewer.
 
 The v1.2 Worker and origin authenticate both modes with server-verified,
-HMAC-signed principals. On 2026-07-17 the reproducible frozen 238-input rc5
-source at commit `bafaef6` passed all 13 formal release gates with fingerprint
-`c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd`,
+HMAC-signed principals. On 2026-07-17 the reproducible frozen 238-input rc6
+source at runtime commit `d38813f` passed all 13 formal release gates with fingerprint
+`2a26204a47baaed7fca297de16c301b92b5503f554f202aa3ddcf85ff47c2c34`,
 including isolated Admin/Guest browser, mobile, performance, write/PDF, backup,
 and recovery evidence. The matching report ran from
-`2026-07-17T00:32:33.970049Z` to `2026-07-17T00:38:01.130845Z`; machine
+`2026-07-17T09:07:48.151493+08:00` to `2026-07-17T09:13:10.917021+08:00`; machine
 verification is complete. Cloudflare Access is screenshot-confirmed to protect
 only the exact `/auth/login` destination. The planned immutable rollout
-reference is `v1.2.0-rc.5`; rc.1, rc.2, and rc.3 were never deployed because
+reference is `v1.2.0-rc.6`; rc.1, rc.2, and rc.3 were never deployed because
 their release gates stopped them before host mutation. The rc4 rollout did
 migrate the official schema from `0007` to `0008` and completed a verified
 backup plus isolated restore, but a stale `origin/main` check caused a false

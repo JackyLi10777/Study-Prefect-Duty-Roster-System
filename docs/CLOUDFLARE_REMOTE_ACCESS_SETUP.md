@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **v1.2 rc5 發布狀態：** commit `bafaef6` 的可重現凍結來源已以指紋 `c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd`（238 個發布輸入）通過 13／13 正式 gate；匹配報告由 `2026-07-17T00:32:33.970049Z` 執行至 `2026-07-17T00:38:01.130845Z`。Cloudflare Access 已以控制台截圖確認只保護精確 `/auth/login`，計劃中的不可變參照是 `v1.2.0-rc.5`。Windows origin 已 forward-recover 至 schema-compatible rc4／`30f282f`，`/healthz` 正常且 `/readyz` ready；live Worker 仍保留 pre-v1.2 production baseline。現依次執行 rc5 新備份、隔離還原、origin、Worker secrets 及線上抽查，尚未宣告 rc5 已部署。
+> **v1.2 rc6 發布狀態：** runtime `d38813f` 已以指紋 `2a26204a47baaed7fca297de16c301b92b5503f554f202aa3ddcf85ff47c2c34`（238 個發布輸入）通過 13／13 正式 gate。2026-07-17 的 rc5 origin rollout 已完成全新已驗證備份及隔離還原，之後因 strict local readiness 把預期在 Worker 階段才可完成的 `cloudflare_access` warning 視為 fatal 而安全回滾。Windows origin 現仍是健康、ready 的 rc4／`30f282f`，live Worker 仍是 pre-v1.2 baseline。rc6 只延後這一項跨階段 warning；其他 failure／warning 照常阻擋，Worker 及線上驗收仍是整體發布硬閘門。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
@@ -83,7 +83,7 @@ Worker 必須有：
 - 不把管理員加入 Cloudflare Dashboard 成員作為登入前提。
 - 不建立應用內共用密碼。
 
-**目前控制台證據（2026-07-17）：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。這只完成 Access 路徑設定；Windows origin 雖已在 rc4 forward-recovery build 上健康、ready，Worker 仍未切換至 rc5，因此不可把它寫成 v1.2 已部署。
+**目前控制台證據（2026-07-17）：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。這只完成 Access 路徑設定；Windows origin 雖在 rc4 build 上健康、ready，Worker 仍未切換至 v1.2，因此不可把它寫成已部署。rc6 的本機 origin gate 可把 `cloudflare_access` 保留為唯一 pending warning，但 matching Worker 部署後必須立即把它轉為 pass。
 
 ## 4. 來源驗證
 
@@ -140,6 +140,8 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 `/healthz` 只證明可讀；`/readyz` 必須顯示 `writeReady=true`、沒有 maintenance／recovery、沒有 pending backup obligation，才可繼續。
 
 **2026-07-17 rc4 incident lesson：** rc4 rollout 的 additive migration `0007` → `0008`、已驗證正式備份及隔離還原均成功；失敗發生在其後的 ancestry gate。`git fetch origin main` 只刷新 `FETCH_HEAD`，但 gate 讀取 stale `origin/main`，因而把有效 commit 誤判為未包含於 `main`。rc4 從未被宣告 live；主機已 forward-recover 至相容的 rc4／`30f282f` 並重獲 healthy／ready。rc5／`bafaef6` 的部署腳本必須以明確 refspec `+refs/heads/main:refs/remotes/origin/main` 刷新 remote-tracking branch，且正式 report 必須與該 commit 及 fingerprint 完全一致。
+
+**2026-07-17 rc5 staged-readiness lesson：** rc5 已再次建立全新 checksum-verified backup 並通過 isolated restore；停止原因不是資料或 origin health 失敗，而是 generic strict-warning gate 在 matching Worker 尚未部署時，把 `cloudflare_access` 的預期 pending 狀態當成 fatal。自動回滾恢復並確認 rc4。rc6 的 origin 階段只允許這個具名 warning 暫留；若出現任何 failure 或其他 warning，仍必須立即停止。Worker 部署後若 `cloudflare_access` 或任一線上檢查未通過，整體發布仍告失敗並回滾。
 
 ## 7. Worker staged rollout
 

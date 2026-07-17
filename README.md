@@ -18,8 +18,8 @@
 
 | 分支 | 運行平台 | 定位 |
 |---|---|---|
-| `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 已發布 rc5 來源（`1305a54`，已驗證 runtime `bafaef6`）；rc6 分階段 readiness 修正準備中 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 已包含 `v1.2.0-rc.5` 來源；正式 Windows origin 暫仍使用 rc4／`30f282f` |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | rc6 已驗證來源（runtime `d38813f`）；受控 origin／Worker 發布進行中 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | rc6 將於受控切換前同步；正式 Windows origin 暫仍使用 rc4／`30f282f` |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -33,7 +33,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **目前正式基線：** `C:\SingYinRoster` 保持在 schema-compatible rc4／`30f282f`，`/healthz` 正常、`/readyz` ready；canonical Worker 亦保留 pre-v1.2 production baseline。2026-07-17 的 rc5 origin rollout 已建立全新已驗證備份並通過隔離還原，之後因本機 strict readiness 把刻意留待 Worker 階段核實的 `cloudflare_access` 警告視為致命而安全回滾，沒有宣告 rc5 上線。
 
-**下一個來源候選（v1.2 rc6）：** rc5 的已驗證 runtime `bafaef6` 已把 Admin／Guest 統一到同一套 NiceGUI 路由，並以指紋 `c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd`（238 個發布輸入）通過 13／13 正式 gate；`v1.2.0-rc.5`／`1305a54` 已發布到 Git。rc6 只修正分階段 readiness：origin 階段仍會阻擋所有 failure 及其他 warning，但把唯一需要 live Worker 才能證明的 `cloudflare_access` 暫留至下一階段。匹配 Worker 部署後，該檢查及 Admin／Guest／Viewer／WebSocket 線上驗收仍必須全部通過，否則整體發布失敗並回滾。
+**下一個來源候選（v1.2 rc6）：** runtime `d38813f` 已把 Admin／Guest 統一到同一套 NiceGUI 路由，並以指紋 `2a26204a47baaed7fca297de16c301b92b5503f554f202aa3ddcf85ff47c2c34`（238 個發布輸入）通過 13／13 正式 gate。rc6 只修正分階段 readiness：origin 階段仍會阻擋所有 failure 及其他 warning，但把唯一需要 live Worker 才能證明的 `cloudflare_access` 暫留至下一階段。匹配 Worker 部署後，該檢查及 Admin／Guest／Viewer／WebSocket 線上驗收仍必須全部通過，否則整體發布失敗並回滾。
 
 ## 首席導學風紀：每日怎樣進入
 
