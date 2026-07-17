@@ -47,6 +47,21 @@ def test_deployment_script_is_generic_and_requires_an_immutable_published_tag() 
     assert 'if ($sourceHead -cne $releaseCommit)' in source
 
 
+def test_deployment_script_refreshes_origin_main_before_ancestor_checks() -> None:
+    source = _source()
+    explicit_refspec = '"+refs/heads/main:refs/remotes/origin/main"'
+    source_ancestor_check = "merge-base --is-ancestor $releaseCommit origin/main"
+    host_ancestor_check = "merge-base --is-ancestor $hostReleaseCommit origin/main"
+
+    first_fetch = source.index(explicit_refspec)
+    second_fetch = source.index(explicit_refspec, first_fetch + 1)
+
+    assert source.count(explicit_refspec) == 2
+    assert first_fetch < source.index(source_ancestor_check)
+    assert second_fetch < source.index(host_ancestor_check)
+    assert '"origin",\n        "main"' not in source
+
+
 def test_deployment_script_requires_the_current_thirteen_gate_fingerprint() -> None:
     source = _source()
     required_checks = (

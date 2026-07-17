@@ -575,7 +575,7 @@ try {
     Invoke-Native -Executable "git.exe" -Arguments @(
         "fetch",
         "origin",
-        "main"
+        "+refs/heads/main:refs/remotes/origin/main"
     ) -WorkingDirectory $SourceRoot | Out-Null
     $releaseCommit = Assert-ImmutableReleaseTag -Repository $SourceRoot -TagName $ReleaseRef
     $sourceHead = Get-GitValue -Repository $SourceRoot -Arguments @("rev-parse", "HEAD")
@@ -754,7 +754,7 @@ try {
     Invoke-Native -Executable "git.exe" -Arguments @(
         "fetch",
         "origin",
-        "main"
+        "+refs/heads/main:refs/remotes/origin/main"
     ) -WorkingDirectory $HostRoot | Out-Null
     $hostReleaseCommit = Assert-ImmutableReleaseTag -Repository $HostRoot -TagName $ReleaseRef
     if ($hostReleaseCommit -cne $releaseCommit) {
