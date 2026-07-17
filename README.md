@@ -18,8 +18,8 @@
 
 | 分支 | 運行平台 | 定位 |
 |---|---|---|
-| `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | v1.2 rc5 統一 Guest／Admin 已驗證候選（`bafaef6`）；待受控部署 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | rc4 來源（`30f282f`）；目前 Windows forward-recovery 基線 |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 已發布 rc5 來源（`1305a54`，已驗證 runtime `bafaef6`）；rc6 分階段 readiness 修正準備中 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 已包含 `v1.2.0-rc.5` 來源；正式 Windows origin 暫仍使用 rc4／`30f282f` |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -31,9 +31,9 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **共創者說明：我是李創杰。這次 NiceGUI 重構、設計、測試、文件及正式發布版本，只由我與 Codex 共同完成。`Study Prefect Systems & Stewardship Office` 是我們兩人的項目團隊名稱，沒有其他開發者、部門成員或外判團隊。**
 
-**目前正式基線：** `C:\SingYinRoster` 已 forward-recover 至 schema-compatible rc4／`30f282f`，`/healthz` 正常、`/readyz` ready；canonical Worker 仍刻意保留在 pre-v1.2 production baseline，直至 rc5 兩端受控切換。
+**目前正式基線：** `C:\SingYinRoster` 保持在 schema-compatible rc4／`30f282f`，`/healthz` 正常、`/readyz` ready；canonical Worker 亦保留 pre-v1.2 production baseline。2026-07-17 的 rc5 origin rollout 已建立全新已驗證備份並通過隔離還原，之後因本機 strict readiness 把刻意留待 Worker 階段核實的 `cloudflare_access` 警告視為致命而安全回滾，沒有宣告 rc5 上線。
 
-**目前來源候選（v1.2 rc5）：** `codex/unified-guest-redesign` 的 commit `bafaef6` 已把 Admin／Guest 統一到同一套 NiceGUI 路由，並完成簽署 `PageContext`、記憶體 Guest workspace、版本衝突、命令收據、備份義務、`/readyz`、雙主題材質及一致圖標微互動。2026-07-17 可重現的凍結來源以指紋 `c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd`（238 個發布輸入）通過 13／13 項正式 gate；報告由 `2026-07-17T00:32:33.970049Z` 執行至 `2026-07-17T00:38:01.130845Z`。Cloudflare Access 已截圖核對為只保護精確 `/auth/login`，發布用不可變參照將是 `v1.2.0-rc.5`。rc4 rollout 已成功把正式 schema 由 `0007` 升至 `0008`，並完成已驗證備份及隔離還原，之後因 stale `origin/main` 檢查產生假失敗而未宣告上線；主機已安全 forward-recover 至 rc4，rc5 修正明確刷新 remote-tracking ref。Worker 尚未切換，因此 `SING_YIN_UNIFIED_GUEST` 在 rc5 兩端受控切換完成前保持 `0`。
+**下一個來源候選（v1.2 rc6）：** rc5 的已驗證 runtime `bafaef6` 已把 Admin／Guest 統一到同一套 NiceGUI 路由，並以指紋 `c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd`（238 個發布輸入）通過 13／13 正式 gate；`v1.2.0-rc.5`／`1305a54` 已發布到 Git。rc6 只修正分階段 readiness：origin 階段仍會阻擋所有 failure 及其他 warning，但把唯一需要 live Worker 才能證明的 `cloudflare_access` 暫留至下一階段。匹配 Worker 部署後，該檢查及 Admin／Guest／Viewer／WebSocket 線上驗收仍必須全部通過，否則整體發布失敗並回滾。
 
 ## 首席導學風紀：每日怎樣進入
 

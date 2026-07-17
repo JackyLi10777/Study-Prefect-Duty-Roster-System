@@ -2,13 +2,13 @@
 
 **Last Updated:** 2026-07-17
 **Project Root:** `D:\code_v3`  
-**Current Phase:** v1.2 rc5 unified Admin／Guest source passed its matching 13-gate report; the Windows origin is healthy on the schema-compatible rc4 forward-recovery build and the controlled rc5／Worker rollout is pending
+**Current Phase:** v1.2 rc5 completed its protected origin rehearsal and rolled back safely; the Windows origin remains healthy on the schema-compatible rc4 build while the narrowly corrected rc6 origin／Worker rollout is pending
 **Primary Theme Color:** `#0F766E`
 
 **Windows SSH maintenance (2026-07-17):** OpenSSH Server is installed on `LAPTOP-NQ22TI3V` and runs automatically. The hardened service accepts only the `lichu` Ed25519 maintenance key, listens only on `127.0.0.1:22` and `[::1]:22`, disables password and interactive authentication plus all forwarding, and leaves the Windows OpenSSH inbound firewall rule disabled. A real key-only SSH session returned the administrator identity and confirmed official application and database health; a password-only probe was rejected with `Permission denied (publickey)`. Evidence is stored in `logs/windows-ssh-verification.json`. Off-device SSH through a separate Cloudflare private route remains an explicit future step and is not yet claimed.
 
 **Repository:** `JackyLi10777/Study-Prefect-Duty-Roster-System`  
-**Branches:** `codex/unified-guest-redesign` (verified rc5 candidate at `bafaef6`), `main` (rc4 source at `30f282f`, currently used by the recovered Windows origin), `nicegui-self-hosted` (platform snapshot), `streamlit-cloud` (legacy reference)
+**Branches:** `codex/unified-guest-redesign` and `main` contain the published rc5 source (`v1.2.0-rc.5`, release commit `1305a54`, verified runtime commit `bafaef6`); the running Windows origin remains on rc4 commit `30f282f` pending the rc6 staged-rollout correction. `nicegui-self-hosted` is the platform snapshot and `streamlit-cloud` is the legacy reference.
 
 **Co-creators:** LI Chuangjie Jacky（李創杰）and Codex only. `Study Prefect Systems & Stewardship Office` is their two-member project identity; no additional developer or contractor contributed to this NiceGUI rebuild and formal release.
 
@@ -22,7 +22,9 @@ This is a fresh, local-first rebuild of the Sing Yin Study Prefect Duty Roster S
 - Signed Worker-to-origin principals, deny-by-default capabilities, per-client Guest workspaces, session expiry/revocation monitoring, one-shot `DEMO` downloads, process locking, `/readyz`, v1.2 persistence tables, command receipts, backup obligations and the external-share outbox exist in the source candidate.
 - The Guest snapshot codec and browser bridge now exist in the source candidate. Each meaningful revision is pushed only to the connected tab as a signed `sessionStorage` token; restore requires the live connection nonce and exact SID／workspace／tab binding. Duplicate tabs receive new workspaces, while copied, tampered, expired, stale or old-boot tokens are rejected in favour of the safe fixture.
 - The reproducible frozen rc5 source at commit `bafaef6` passed 13／13 formal checks with fingerprint `c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd` across 238 release inputs. Evidence covers the complete Python suite, Worker contracts, dependency integrity, desktop/mobile UI, performance, full write/PDF/fairness/backup/restore flow, readiness, unified Guest isolation, and committed-without-backup recovery. The matching report at `logs/release-candidate-report.json` ran from `2026-07-17T00:32:33.970049Z` to `2026-07-17T00:38:01.130845Z`（2026-07-17 08:38:01 香港時間）；machine verification is no longer a rollout blocker. Text inputs use a documented LF／CRLF-normalized fingerprint contract while release binary assets remain byte-exact, so a clean immutable tag reproduces the verified artifact across Windows worktrees.
-- `C:\SingYinRoster` has been forward-recovered to the schema-compatible rc4 source at commit `30f282f`; `/healthz` is healthy and `/readyz` is ready. The canonical Worker deliberately remains on the pre-v1.2 production baseline until the immutable rc5 host and Worker are switched together and the live acceptance sequence completes.
+- The 2026-07-17 rc5 origin rollout created a fresh checksum-verified production backup and passed isolated restore before changing the host. It then rolled back safely because strict local readiness treated the intentionally pending `cloudflare_access` live-verification warning as fatal before the matching Worker stage. No data-loss or failed-restore condition occurred.
+- `C:\SingYinRoster` remains on the schema-compatible rc4 source at commit `30f282f`; `/healthz` is healthy and `/readyz` is ready. The canonical Worker deliberately remains on the pre-v1.2 production baseline until the corrected rc6 host and Worker stages, followed by mandatory live acceptance, complete.
+- rc6 keeps fail-closed readiness for every failure and every warning other than the specifically identified `cloudflare_access` warning. That one warning may be deferred only during the local-origin stage; it must pass after the matching Worker is deployed before the overall release can succeed.
 - Cloudflare Access is now confirmed to protect the exact `/auth/login` destination only. The public root, Guest start/status/logout, and compatibility routes are no longer inside the Access application path scope; this configuration evidence does not by itself claim that the v1.2 origin or Worker is deployed.
 - v1.2 documentation: [Unified guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md), [Canonical site guide](docs/PUBLIC_ROSTER_VIEWER.md), [Cloudflare rollout](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), and [Deployment decision](docs/DEPLOYMENT_DECISION.md).
 
@@ -59,16 +61,20 @@ The deployment decision remains a dedicated Windows 11 host whose NiceGUI origin
 - Version and command inputs on critical interactive writes; pending backup obligations are repaired on startup or place `/readyz` in degraded state.
 - External share intent is bound to roster version/digest through a durable outbox.
 
-### Controlled rc5 rollout steps still pending
+### Controlled rc6 rollout steps still pending
 
-- Create the rc5 rollout's fresh verified formal backup and isolated restore against the current production database. The rc4 attempt already produced a verified backup and successful isolated restore, but that evidence does not turn rc4 into the deployed unified release.
-- Create immutable `v1.2.0-rc.5` from verified commit `bafaef6`, promote it to `main`, perform one controlled Windows bundle update, and recheck `/healthz`／`/readyz` while retaining rc.16／rc4 recovery evidence. `rc.1`, `rc.2`, and `rc.3` were never deployed: each stopped before host mutation when its release gate correctly failed.
+- Re-run the protected origin rollout from the rc6 release reference. rc5 already proved that a fresh verified formal backup and isolated restore complete against the production database; rc6 must create and record its own fresh evidence rather than reusing that result.
+- During the origin stage, block every readiness failure and every warning except the exact `cloudflare_access` warning that depends on the not-yet-deployed matching Worker. Recheck `/healthz`／`/readyz` while retaining rc4 recovery evidence.
 - Cloudflare Access path configuration is complete and screenshot-confirmed at exact `/auth/login`; it must remain unchanged while the origin and Worker are switched.
-- Worker Guest／origin signing secrets, staged Worker rollout, then live Admin／Guest／Viewer and long-WebSocket acceptance.
+- Install matching Guest／origin signing secrets, deploy the matching Worker, then require `cloudflare_access` and live Admin／Guest／Viewer／WebSocket checks to pass before declaring the overall release complete.
 
 ### rc4 rollout interruption and forward recovery
 
 The rc4 rollout successfully migrated the official database from Alembic `0007` to `0008`, created a checksum-verified production backup and completed its isolated restore. It then stopped on a false ancestry failure because `git fetch origin main` refreshed only `FETCH_HEAD` while the check read the stale `origin/main` remote-tracking reference. The rollout therefore never declared rc4 live. Automatic rollback did not prove origin health, so the host was forward-recovered to the schema-compatible rc4 commit `30f282f`; `/healthz` is healthy and `/readyz` is ready. Commit `bafaef6` corrects the release fetch to update `refs/remotes/origin/main` explicitly, and the matching rc5 report above is the evidence for the next controlled attempt.
+
+### rc5 staged-readiness stop and safe rollback
+
+On 2026-07-17 rc5 again completed the production backup, checksum／integrity verification and isolated restore, then installed the candidate long enough to reach strict local readiness. The only reported warning was `cloudflare_access`, whose live proof deliberately depends on the matching Worker stage that had not yet run. The generic strict-warning rule treated it as fatal, so the deployment restored the previous host bundle and confirmed the rc4 origin healthy instead of leaving a mixed release. rc6 changes only the staging order: that single warning may remain pending between origin and Worker deployment; every other failure or warning still stops the rollout, and the deferred warning plus all live checks must pass before completion.
 
 ### Retained v1.1 rollback evidence
 

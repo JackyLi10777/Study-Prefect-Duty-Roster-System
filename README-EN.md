@@ -19,11 +19,16 @@ adjust published leave → explain fairness → back up, restore, and hand over.
 · [Architecture](docs/NICEGUI_ARCHITECTURE.md) · [Release status](PROJECT_STATUS.md)
 · [Canonical-site access guide](docs/PUBLIC_ROSTER_VIEWER.md)
 
-**Current pre-rc5 deployment (2026-07-17):** `C:\SingYinRoster` has been
+**Current pre-v1.2 deployment (2026-07-17):** `C:\SingYinRoster` has been
 forward-recovered to the schema-compatible rc4 source at commit `30f282f`;
 `/healthz` is healthy and `/readyz` is ready. NiceGUI remains loopback-only on
 `127.0.0.1:8080`. The canonical Worker deliberately remains on the pre-v1.2
-production baseline until the rc5 host and Worker are switched together. A
+production baseline. The rc5 origin rollout created a fresh verified backup and
+passed isolated restore, then rolled back safely because strict local readiness
+treated the intentionally pending `cloudflare_access` warning as fatal before
+the matching Worker stage. This remains the documented **v1.1 rollback** baseline while the rc6 correction defers only that warning to the
+Worker stage; every failure and every other warning remains blocking, and live
+acceptance is still mandatory. A
 supervised Windows reboot, administrator login/logout, long reconnect, upload
 and PDF acceptance remain outstanding; official-data cleanup remains a
 separately authorized operation.
@@ -32,8 +37,8 @@ separately authorized operation.
 
 | Branch | Platform | Status |
 |---|---|---|
-| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Verified v1.2 rc5 unified Guest/Admin candidate at `bafaef6`; controlled deployment pending |
-| `main` | NiceGUI + SQLite, self-hosted | rc4 source at `30f282f`; current Windows forward-recovery baseline |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Published rc5 source at `1305a54` (verified runtime `bafaef6`); rc6 staged-readiness correction pending |
+| `main` | NiceGUI + SQLite, self-hosted | Contains `v1.2.0-rc.5`; the production Windows origin remains on rc4 `30f282f` pending rc6 |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
