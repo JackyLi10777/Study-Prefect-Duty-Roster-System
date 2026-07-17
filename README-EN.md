@@ -59,13 +59,14 @@ read-only published-roster viewer.
 The v1.2 Worker and origin authenticate both modes with server-verified,
 HMAC-signed principals. On 2026-07-17 the reproducible frozen 238-input source
 passed all 13 formal release gates with fingerprint
-`e5b9c84ca357fc48b41a24b69d91e1f0890d3e0cb2fcf7a8591e27cc05719ee1`,
+`c8a9b8c5c06480e32b127d8e565f007dc37a6d291fe3fb6ca0ad1dce36ce9aca`,
 including isolated Admin/Guest browser, mobile, performance, write/PDF, backup,
 and recovery evidence. The matching report completed at
-`2026-07-16T23:37:16.301926Z`; machine verification is complete. Cloudflare
+`2026-07-17T00:09:33.953144Z`; machine verification is complete. Cloudflare
 Access is now screenshot-confirmed to protect only the exact `/auth/login`
-destination. The immutable rollout reference will be `v1.2.0-rc.3`; rc.1 and
-rc.2 were never deployed because reproducibility or browser-verifier gates
+destination. The immutable rollout reference will be `v1.2.0-rc.4`; rc.1,
+rc.2, and rc.3 were never deployed because reproducibility, browser-verifier,
+or Windows PowerShell fingerprint gates
 stopped them before any host mutation. The Windows origin and live Worker still
 run the v1.1 rollback baseline, so `SING_YIN_UNIFIED_GUEST=0` remains the
 deployment default until the controlled two-sided switch and live

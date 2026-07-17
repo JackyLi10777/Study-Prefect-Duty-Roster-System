@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **v1.2 發布狀態：** 2026-07-17 可重現的凍結來源已以指紋 `e5b9c84ca357fc48b41a24b69d91e1f0890d3e0cb2fcf7a8591e27cc05719ee1`（238 個發布輸入）通過 13／13 正式 gate；匹配報告於 `2026-07-16T23:37:16.301926Z` 完成。Cloudflare Access 已以控制台截圖確認只保護精確的 `/auth/login`。發布參照將是 `v1.2.0-rc.3`；rc.1／rc.2 均在任何主機變更前由可重現性或瀏覽器驗證 gate 停止，從未部署。現依次執行新備份、隔離還原、origin、Worker secrets 及線上抽查；`C:\SingYinRoster` 及 live Worker 在切換前保留 v1.1 回退基線。
+> **v1.2 發布狀態：** 2026-07-17 可重現的凍結來源已以指紋 `c8a9b8c5c06480e32b127d8e565f007dc37a6d291fe3fb6ca0ad1dce36ce9aca`（238 個發布輸入）通過 13／13 正式 gate；匹配報告於 `2026-07-17T00:09:33.953144Z` 完成。Cloudflare Access 已以控制台截圖確認只保護精確的 `/auth/login`。發布參照將是 `v1.2.0-rc.4`；rc.1／rc.2／rc.3 均在任何主機變更前由可重現性、瀏覽器驗證或 Windows PowerShell 指紋 gate 停止，從未部署。現依次執行新備份、隔離還原、origin、Worker secrets 及線上抽查；`C:\SingYinRoster` 及 live Worker 在切換前保留 v1.1 回退基線。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
