@@ -709,8 +709,8 @@ def main() -> None:
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
         platform_toc = page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link")
         assert platform_toc.count() == 7
-        operating_map_link = platform_toc.locator('[href="#platform-operating-map-section"]')
-        assert operating_map_link.count() == 1
+        operating_map_link = platform_toc.nth(2)
+        assert "platform-operating-map-section" in (operating_map_link.get_attribute("href") or "")
         operating_map_link.focus()
         assert operating_map_link.is_focused()
         assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 1
