@@ -707,7 +707,12 @@ def main() -> None:
             assert box is not None and box["height"] >= 44
         page.screenshot(path=str(HANDOVER_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
-        assert page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link").count() == 6
+        platform_toc = page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link")
+        assert platform_toc.count() == 7
+        operating_map_link = platform_toc.locator('[href="#platform-operating-map-section"]')
+        assert operating_map_link.count() == 1
+        operating_map_link.focus()
+        assert operating_map_link.is_focused()
         assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 1
         page.get_by_text("共創結語", exact=True).wait_for(timeout=10_000)
         page.get_by_role(
@@ -730,6 +735,7 @@ def main() -> None:
         assert page.get_by_test_id("platform-live-summary").locator(".sy-platform-metric").count() == 4
         assert page.get_by_test_id("team-operating-model").locator(".sy-team-role").count() == 4
         assert page.get_by_test_id("capability-map").locator(".sy-capability-card").count() == 4
+        assert page.get_by_test_id("platform-operating-map").locator(".sy-platform-operating-node").count() == 6
         assert page.get_by_test_id("solutions-portfolio").locator(".sy-solution-card").count() == 4
         assert page.get_by_test_id("platform-principles").locator(".sy-platform-value").count() == 5
         assert page.get_by_test_id("platform-resources").locator(".sy-platform-resource").count() == 3

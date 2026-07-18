@@ -206,6 +206,7 @@ def test_platform_operating_map_has_bounded_motion_and_mobile_flow() -> None:
     page = _read("nicegui_app/ui/page_routes/showcase.py")
 
     assert "data-testid=platform-operating-map" in page
+    assert '"platform-operating-map-section"' in page
     assert "'.sy-platform-operating-map'" in motion
     assert ".sy-platform-map-node:hover" in css
     assert 'content: "arrow_downward"' in css
