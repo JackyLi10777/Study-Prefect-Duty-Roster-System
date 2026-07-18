@@ -12,6 +12,7 @@ SOUND_KINDS = {"navigation", "working", "success", "attention"}
 VISUAL_FEEDBACK_KINDS = SOUND_KINDS | {"error"}
 MUSIC_AUTOPLAY_STORAGE_KEY = "music_autoplay"
 DEFAULT_MUSIC_AUTOPLAY = True
+DEFAULT_MUSIC_VOLUME = 0.24
 
 
 def music_autoplay_enabled() -> bool:
@@ -24,7 +25,11 @@ def set_music_autoplay(enabled: bool) -> None:
 
 
 def preferred_music_volume() -> float:
-    return _bounded_float(preference_get("music_volume", 0.18), default=0.18, maximum=0.6)
+    return _bounded_float(
+        preference_get("music_volume", DEFAULT_MUSIC_VOLUME),
+        default=DEFAULT_MUSIC_VOLUME,
+        maximum=0.6,
+    )
 
 
 def preferred_sound_volume() -> float:
@@ -32,7 +37,10 @@ def preferred_sound_volume() -> float:
 
 
 def set_music_volume(value: float) -> None:
-    preference_set("music_volume", _bounded_float(value, default=0.18, maximum=0.6))
+    preference_set(
+        "music_volume",
+        _bounded_float(value, default=DEFAULT_MUSIC_VOLUME, maximum=0.6),
+    )
 
 
 def set_sound_volume(value: float) -> None:
@@ -70,7 +78,7 @@ def play_interface_sound(kind: str, *, force: bool = False) -> None:
           }};
           const music = document.querySelector('audio.sy-page-music-audio');
           if (music && !music.paused) {{
-            const base = Number(music.dataset.syBaseVolume || music.volume || 0.18);
+            const base = Number(music.dataset.syBaseVolume || music.volume || {DEFAULT_MUSIC_VOLUME!r});
             music.dataset.syBaseVolume = String(base);
             music.volume = Math.max(0.02, base * 0.55);
             clearTimeout(window.__singYinMusicRestoreTimer);

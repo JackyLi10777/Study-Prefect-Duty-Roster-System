@@ -441,3 +441,31 @@ MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服
                                   'understand, operate with confidence, and recover when something goes wrong. May this platform remain '
                                   'faithful to its first purpose: reduce avoidable burden, bring order to service, and make fairness '
                                   'visible.'}}
+
+MESSAGES.update({
+    'platform_operating_map_kicker': {'zh-HK': '運作脈絡', 'en': 'Operating map'},
+    'platform_operating_map_title': {'zh-HK': '一個操作，如何成為可核對的結果',
+                                     'en': 'How one action becomes a verifiable result'},
+    'platform_operating_map_copy': {'zh-HK': '圖中展示正式工作由操作意圖、規則、交易到證據的完整流向；每一層只負責自己的工作。',
+                                    'en': 'This map shows the formal path from operator intent through rules and transactions to evidence; every layer owns one clear responsibility.'},
+    'platform_operating_map_note': {'zh-HK': '任何一步失敗，系統會停在可解釋的狀態，不會把半完成結果當成成功。',
+                                    'en': 'If any stage fails, the system stops in an explainable state rather than presenting a partial result as success.'},
+    'platform_map_intent_title': {'zh-HK': '操作意圖', 'en': 'Operator intent'},
+    'platform_map_intent_body': {'zh-HK': '生成、核對、發布、匯出或請假調整。',
+                                 'en': 'Generate, review, publish, export, or adjust leave.'},
+    'platform_map_ui_title': {'zh-HK': '工作台回饋', 'en': 'Workbench feedback'},
+    'platform_map_ui_body': {'zh-HK': 'NiceGUI 顯示輸入、進度、衝突及下一步。',
+                             'en': 'NiceGUI presents inputs, progress, conflicts, and the next step.'},
+    'platform_map_policy_title': {'zh-HK': '規則核對', 'en': 'Policy validation'},
+    'platform_map_policy_body': {'zh-HK': 'roster_policy 與 roster_core 核對角色及排班限制。',
+                                 'en': 'roster_policy and roster_core validate roles and roster constraints.'},
+    'platform_map_workflow_title': {'zh-HK': '交易與公平', 'en': 'Transactions and fairness'},
+    'platform_map_workflow_body': {'zh-HK': '工作流一次性處理版本、公平帳本及冪等命令。',
+                                   'en': 'The workflow handles versions, the fairness ledger, and idempotent commands once.'},
+    'platform_map_evidence_title': {'zh-HK': '本機證據', 'en': 'Local evidence'},
+    'platform_map_evidence_body': {'zh-HK': 'SQLite、審計及已驗證備份保存可追溯結果。',
+                                   'en': 'SQLite, audit records, and verified backups preserve traceable results.'},
+    'platform_map_output_title': {'zh-HK': '可交付成果', 'en': 'Deliverable output'},
+    'platform_map_output_body': {'zh-HK': '雙語 PDF、公開查看、報告及交接包。',
+                                 'en': 'Bilingual PDFs, public viewing, reports, and handover packages.'},
+})

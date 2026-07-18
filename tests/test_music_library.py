@@ -169,6 +169,7 @@ def test_music_ui_has_operator_controlled_autoplay_on_every_workspace_page() -> 
 
     assert "autoplay=False" in music_ui, "The audio element starts conservatively before the saved preference is applied"
     assert 'DEFAULT_MUSIC_AUTOPLAY = True' in sound_ui
+    assert 'DEFAULT_MUSIC_VOLUME = 0.24' in sound_ui
     assert 'MUSIC_AUTOPLAY_STORAGE_KEY = "music_autoplay"' in sound_ui
     assert 'app.storage.user.get("music_autoplay"' not in music_ui
     assert music_ui.count("music_autoplay_enabled()") >= 3
@@ -191,3 +192,14 @@ def test_music_ui_has_operator_controlled_autoplay_on_every_workspace_page() -> 
     assert 'url_path="/assets/music"' in main
     assert "YoutubeMusicLink" not in music_ui
     assert "add_youtube_link" not in music_ui
+
+
+def test_same_track_continues_across_page_navigation_without_permanent_storage() -> None:
+    music_ui = (PROJECT_ROOT / "nicegui_app" / "ui" / "music.py").read_text(encoding="utf-8")
+
+    assert "sing-yin:music-continuity:v1" in music_ui
+    assert "sessionStorage.setItem(storageKey" in music_ui
+    assert "previous.source === normalizedSource()" in music_ui
+    assert "audio.currentTime = safePosition" in music_ui
+    assert "audio.dataset.syContinuityPlaying === 'false'" in music_ui
+    assert "localStorage" not in music_ui

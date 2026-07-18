@@ -42,6 +42,9 @@ def test_material_icon_names_map_to_stable_semantic_motion_roles() -> None:
         "edit": {"edit"},
         "manage_accounts": {"settings", "toggle"},
         "delete_outline": {"danger"},
+        "space_dashboard": {"navigation"},
+        "calendar_month": {"navigation"},
+        "groups": {"navigation"},
     }
     for icon_name, roles in expected_roles.items():
         role_alternation = "|".join(re.escape(role) for role in sorted(roles))
@@ -104,7 +107,7 @@ def test_feedback_states_are_targeted_bounded_and_cleaned_up() -> None:
     assert "interactionAbortController?.abort()" in motion
     assert "document.addEventListener('pointerdown', rememberActionHost" in motion
     assert "document.addEventListener('keydown', rememberActionHost" in motion
-    for state in ("working", "success", "attention", "error"):
+    for state in ("navigation", "working", "success", "attention", "error"):
         assert re.search(rf"['\"]{state}['\"]", motion)
 
     assert (
@@ -164,7 +167,7 @@ def test_interaction_css_covers_control_and_feedback_states() -> None:
         if "data-sy-feedback-state" in css
         else "data-sy-interaction-state"
     )
-    for state in ("working", "success", "attention", "error"):
+    for state in ("navigation", "working", "success", "attention", "error"):
         assert f'[{state_attribute}="{state}"]' in css
 
     assert "var(--sy-motion-press)" in css
@@ -194,6 +197,22 @@ def test_static_platform_and_team_surfaces_only_animate_their_internal_icons() -
             rf"{re.escape(surface)}:hover\s*(?:,|\{{)",
             css,
         ) is None, f"{surface} is informational and must not lift or move as a clickable surface"
+
+
+def test_platform_operating_map_has_bounded_motion_and_mobile_flow() -> None:
+    css = _read("nicegui_app/assets/css/sing-yin-theme-v1.css")
+    interaction = _read("nicegui_app/assets/css/sing-yin-interaction-v1.css")
+    motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
+    page = _read("nicegui_app/ui/page_routes/showcase.py")
+
+    assert "data-testid=platform-operating-map" in page
+    assert "'.sy-platform-operating-map'" in motion
+    assert ".sy-platform-map-node:hover" in css
+    assert 'content: "arrow_downward"' in css
+    assert ".sy-platform-map-node-icon" in interaction
+    reduced = css.split("@media (prefers-reduced-motion: reduce)")[-1]
+    assert ".sy-platform-map-node:hover" in reduced
+    assert "transform: none" in reduced
 
 
 def test_browser_verifier_waits_for_motion_hydration_before_sampling_static_cards() -> None:

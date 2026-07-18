@@ -357,6 +357,18 @@ def test_history_priority_slider_marks_match_the_nonlinear_numeric_range() -> No
     assert 'abs(actual_x - expected_x) <= 1.0' in verifier
 
 
+def test_history_priority_has_a_live_accessible_explanation_chart() -> None:
+    pages = combined_page_source()
+    theme = combined_theme_source()
+
+    assert 'data-testid=history-priority-chart' in pages
+    assert '"aria": {' in pages
+    assert 'history_priority_chart_aria' in pages
+    assert 'history_priority_chart.update()' in pages
+    assert 'multiplier_by_week.get(selected.isoformat(), 1.0)' in pages
+    assert '.sy-history-priority-chart' in theme
+
+
 def test_semantic_status_badges_do_not_inherit_quasar_primary_background() -> None:
     shared = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_shared.py").read_text(encoding="utf-8")
     theme = combined_theme_source()

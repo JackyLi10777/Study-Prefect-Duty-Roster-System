@@ -25,6 +25,7 @@
     '.sy-reference-index',
     '.sy-engineering-facts',
     '.sy-team-operating-model',
+    '.sy-platform-operating-map',
     '.sy-capability-map',
     '.sy-solutions-portfolio',
     '.sy-service-lifeline',
@@ -62,7 +63,12 @@
     ...['play_arrow', 'play_circle', 'smart_display'].map((name) => [name, 'play']),
     ...['search'].map((name) => [name, 'search']),
     ...['delete_outline', 'logout', 'person_off', 'link_off', 'close', 'event_busy'].map((name) => [name, 'danger']),
-    ...['warning_amber', 'assignment_late', 'gpp_maybe', 'pending_actions'].map((name) => [name, 'attention'])
+    ...['warning_amber', 'assignment_late', 'gpp_maybe', 'pending_actions'].map((name) => [name, 'attention']),
+    ...[
+      'home', 'space_dashboard', 'dashboard', 'view_quilt', 'calendar_month',
+      'calendar_view_week', 'groups', 'handshake', 'database', 'settings',
+      'domain', 'engineering', 'account_tree', 'menu_book', 'help_outline'
+    ].map((name) => [name, 'navigation'])
   ]);
 
   const pointerControllers = new Map();
@@ -231,6 +237,7 @@
     lastActionHost = source;
     lastActionAt = Date.now();
     operationFeedbackHost = null;
+    markFeedbackTarget('navigation', source);
   };
   const resolveFeedbackTarget = (kind) => {
     const active = document.activeElement instanceof HTMLElement

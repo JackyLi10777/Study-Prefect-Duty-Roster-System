@@ -96,6 +96,11 @@ const VIEWER_HTML = `<!doctype html>
   <main id="mainContent" class="page-shell" tabindex="-1">
     <section id="guestState" class="access-portal" aria-labelledby="guestTitle" aria-describedby="guestDescription guestDescriptionEn">
       <div class="portal-story">
+        <div id="portalStoryMedia" class="portal-story-media" aria-hidden="true">
+          <img class="portal-story-image portal-story-image--light" src="/assets/entrance-operations-light-v1.webp" alt="" width="1760" height="941" fetchpriority="high" decoding="async">
+          <img class="portal-story-image portal-story-image--dark" src="/assets/entrance-operations-dark-v1.webp" alt="" width="1760" height="941" fetchpriority="high" decoding="async">
+          <span class="portal-story-veil"></span>
+        </div>
         <div class="portal-kicker">
           <span class="portal-kicker-mark" aria-hidden="true"></span>
           <span>導學風紀值班工作台</span>
@@ -504,9 +509,46 @@ button, input, select, textarea { font: inherit; }
   overflow: hidden;
   overflow: clip;
   color: var(--portal-story-ink);
-  background:
-    linear-gradient(148deg, color-mix(in srgb, var(--portal-story) 88%, var(--surface-raised)) 0%, var(--portal-story) 58%, color-mix(in srgb, var(--brand-soft) 66%, var(--portal-story)) 100%);
+  background: var(--portal-story);
 }
+
+.portal-story > :not(.portal-story-media) { position: relative; z-index: 1; }
+
+.portal-story-media {
+  --story-shift-x: 0px;
+  --story-shift-y: 0px;
+  position: absolute;
+  z-index: -2;
+  inset: -8px;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translate3d(var(--story-shift-x), var(--story-shift-y), 0) scale(1.018);
+  transition: transform 280ms var(--ease-standard);
+}
+
+.portal-story-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 66% center;
+  transition: opacity 260ms var(--ease-standard);
+}
+
+.portal-story-image--light { opacity: 1; }
+.portal-story-image--dark { opacity: 0; }
+
+.portal-story-veil {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--portal-story) 96%, transparent) 0%, color-mix(in srgb, var(--portal-story) 88%, transparent) 52%, color-mix(in srgb, var(--portal-story) 54%, transparent) 100%),
+    linear-gradient(0deg, color-mix(in srgb, var(--portal-story) 72%, transparent), transparent 46%);
+}
+
+:root[data-theme="dark"] .portal-story-image--light { opacity: 0; }
+:root[data-theme="dark"] .portal-story-image--dark { opacity: 1; }
 
 .portal-story::before,
 .portal-story::after {
@@ -564,9 +606,21 @@ button, input, select, textarea { font: inherit; }
 }
 
 .workflow-cue li {
+  position: relative;
   min-width: 0;
   padding-top: 13px;
   border-top: 1px solid color-mix(in srgb, var(--portal-story-ink) 15%, transparent);
+}
+
+.workflow-cue li::before {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--brand);
+  content: "";
+  transition: width 240ms var(--ease-standard);
 }
 
 .workflow-cue li > span { display: block; margin-bottom: 9px; color: var(--brand); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.1em; }
@@ -668,6 +722,7 @@ button, input, select, textarea { font: inherit; }
 .access-panel-icon svg,
 .guest-help-icon svg,
 .login-assurance svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+.access-panel-icon svg { transition: transform 220ms var(--ease-standard); }
 .access-panel h2 { margin: 11px 0 10px; font-size: clamp(1.75rem, 3vw, 2.25rem); letter-spacing: -0.035em; line-height: 1.12; }
 .access-copy { margin: 0; color: var(--ink-muted); font-size: 0.87rem; line-height: 1.62; }
 .access-copy--en { margin-top: 5px; font-size: 0.76rem; }
@@ -749,7 +804,7 @@ button, input, select, textarea { font: inherit; }
 .guest-enter:active { transform: scale(0.985); }
 .guest-enter:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
 .guest-enter-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--brand-soft); color: var(--brand); }
-.guest-enter-icon svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+.guest-enter-icon svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; transition: transform 220ms var(--ease-standard); }
 .guest-enter-copy { display: grid; gap: 1px; min-width: 0; text-align: left; }
 .guest-enter-copy strong { font-size: 0.8rem; }
 .guest-enter-copy span { color: var(--ink-muted); font-size: 0.65rem; font-weight: 560; }
@@ -1257,11 +1312,17 @@ tbody td {
     --shadow: 0 28px 76px rgba(0, 0, 0, 0.36);
     --shadow-raised: 0 28px 72px rgba(0, 0, 0, 0.4);
   }
+
+  :root:not([data-theme="light"]) .portal-story-image--light { opacity: 0; }
+  :root:not([data-theme="light"]) .portal-story-image--dark { opacity: 1; }
 }
 
 @media (hover: hover) and (pointer: fine) {
   .access-panel { transition: border-color 180ms ease, box-shadow 220ms ease, transform 180ms var(--ease-standard); }
   .access-panel:hover { border-color: var(--line-strong); box-shadow: 0 18px 42px rgba(31, 41, 39, 0.12); transform: translateY(-2px); }
+  .access-panel:hover .access-panel-icon svg { transform: scale(1.06) rotate(-3deg); }
+  .workflow-cue li:hover::before { width: 46%; }
+  .guest-enter:hover .guest-enter-icon svg { transform: scale(1.08); }
 }
 
 @media (max-width: 940px) {
@@ -1354,6 +1415,7 @@ tbody td {
     transition-duration: 0.01ms !important;
   }
   .access-panel .admin-login::before { display: none; }
+  .portal-story-media { transform: none !important; }
   .access-panel .admin-login[data-connecting="true"] .admin-login-spinner { animation: none; border-color: currentColor; opacity: .8; }
   .sy-secure-pulse::after { animation: none; opacity: .65; transform: translate(-50%, -50%) scale(1); }
 }
@@ -1406,6 +1468,8 @@ const rosterTable = document.getElementById('rosterTable');
 const themeToggle = document.getElementById('themeToggle');
 const themeLabel = document.getElementById('themeLabel');
 const adminLogin = document.getElementById('adminLogin');
+const portalStory = document.querySelector('.portal-story');
+const portalStoryMedia = document.getElementById('portalStoryMedia');
 const devotionalPrompt = document.querySelector('.devotional-prompt');
 const refreshLandingVerse = document.getElementById('refreshLandingVerse');
 const shareSite = document.getElementById('shareSite');
@@ -1474,6 +1538,26 @@ function applyTheme(value, { persist = false } = {}) {
 }
 
 applyTheme(savedTheme());
+
+const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+function updatePortalStoryDepth(event) {
+  if (!portalStory || !portalStoryMedia || !finePointer.matches || reducedMotion.matches) return;
+  const bounds = portalStory.getBoundingClientRect();
+  const x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 8;
+  const y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 6;
+  portalStoryMedia.style.setProperty('--story-shift-x', x.toFixed(2) + 'px');
+  portalStoryMedia.style.setProperty('--story-shift-y', y.toFixed(2) + 'px');
+}
+
+function resetPortalStoryDepth() {
+  portalStoryMedia?.style.setProperty('--story-shift-x', '0px');
+  portalStoryMedia?.style.setProperty('--story-shift-y', '0px');
+}
+
+portalStory?.addEventListener('pointermove', updatePortalStoryDepth, { passive: true });
+portalStory?.addEventListener('pointerleave', resetPortalStoryDepth);
 
 themeToggle?.addEventListener('click', () => {
   const current = document.documentElement.dataset.theme || 'system';

@@ -74,6 +74,10 @@
   --sy-icon-intent-transform: rotate(-6deg) scale(1.03);
 }
 
+.q-icon[data-sy-icon-motion="navigation"] {
+  --sy-icon-intent-transform: translate3d(1px, -1px, 0) scale(1.06);
+}
+
 body :is(.q-btn, .q-tab, .q-item.q-item--clickable)
   :is(.q-icon[data-sy-icon-motion]) {
   position: relative;
@@ -173,6 +177,16 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
   100% { transform: translate3d(0, 0, 0) scale(1); }
 }
 
+@keyframes sy-icon-navigation {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  48% { transform: translate3d(2px, -1px, 0) scale(1.09); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+
+[data-sy-feedback-state="navigation"] .q-icon[data-sy-icon-motion] {
+  animation: sy-icon-navigation var(--sy-motion-layer) var(--sy-ease) 1;
+}
+
 [data-sy-feedback-state="success"] .q-icon[data-sy-icon-motion] {
   animation: sy-icon-confirm var(--sy-motion-layer) var(--sy-ease) 1;
 }
@@ -206,6 +220,7 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
   .sy-engineering-pillar-icon,
   .sy-architecture-layer-icon,
   .sy-trust-evidence-icon
+  ,.sy-platform-map-node-icon
 ) {
   transform: translate3d(0, 0, 0);
   transform-origin: 50% 50%;
@@ -227,6 +242,7 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
   }
 
   .sy-capability-card:hover .sy-capability-icon,
+  .sy-platform-map-node:hover .sy-platform-map-node-icon,
   .sy-engineering-pillar:hover .sy-engineering-pillar-icon,
   .sy-architecture-layer:hover .sy-architecture-layer-icon,
   .sy-trust-evidence-card:hover .sy-trust-evidence-icon {
@@ -252,6 +268,7 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
     .sy-engineering-pillar-icon,
     .sy-architecture-layer-icon,
     .sy-trust-evidence-icon
+    ,.sy-platform-map-node-icon
   ) {
     animation: none !important;
     transform: none !important;

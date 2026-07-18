@@ -85,6 +85,72 @@ def _music_state_script(state: str) -> str:
     )
 
 
+def _music_continuity_script(context: str) -> str:
+    """Resume the same local track across route changes without permanent storage."""
+    return f"""
+    (() => {{
+      const audio = document.querySelector('audio.sy-page-music-audio');
+      if (!audio || audio.dataset.syContinuityReady === 'true') return;
+      audio.dataset.syContinuityReady = 'true';
+      const storageKey = 'sing-yin:music-continuity:v1';
+      const pageContext = {json.dumps(context)};
+      const normalizedSource = () => {{
+        try {{ return new URL(audio.currentSrc || audio.src, window.location.href).href; }}
+        catch (_) {{ return audio.currentSrc || audio.src || ''; }}
+      }};
+      const readState = () => {{
+        try {{
+          const value = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+          if (!value || typeof value !== 'object') return null;
+          if (!Number.isFinite(Number(value.updatedAt)) || Date.now() - Number(value.updatedAt) > 43_200_000) return null;
+          return value;
+        }} catch (_) {{ return null; }}
+      }};
+      const previous = readState();
+      const sameTrack = previous && previous.source === normalizedSource();
+      audio.dataset.syContinuityPlaying = sameTrack && previous.playing === false ? 'false' : 'true';
+      const restorePosition = () => {{
+        if (!sameTrack) return;
+        const position = Number(previous.position);
+        if (!Number.isFinite(position) || position <= 0) return;
+        const duration = Number(audio.duration);
+        const safePosition = Number.isFinite(duration) && duration > 1
+          ? Math.min(position, Math.max(0, duration - 0.75))
+          : position;
+        try {{ audio.currentTime = safePosition; }} catch (_) {{}}
+      }};
+      if (audio.readyState >= 1) restorePosition();
+      else audio.addEventListener('loadedmetadata', restorePosition, {{once: true}});
+
+      let lastWrittenSecond = -1;
+      const saveState = (playing = !audio.paused) => {{
+        const source = normalizedSource();
+        if (!source) return;
+        const position = Number(audio.currentTime || 0);
+        try {{
+          sessionStorage.setItem(storageKey, JSON.stringify({{
+            source,
+            position: Number.isFinite(position) ? position : 0,
+            playing: Boolean(playing),
+            context: pageContext,
+            updatedAt: Date.now(),
+          }}));
+        }} catch (_) {{}}
+      }};
+      audio.addEventListener('timeupdate', () => {{
+        const second = Math.floor(Number(audio.currentTime || 0));
+        if (second === lastWrittenSecond || second % 2 !== 0) return;
+        lastWrittenSecond = second;
+        saveState(true);
+      }});
+      audio.addEventListener('play', () => saveState(true));
+      audio.addEventListener('pause', () => saveState(false));
+      audio.addEventListener('ended', () => saveState(false));
+      window.addEventListener('pagehide', () => saveState(!audio.paused), {{once: true}});
+    }})();
+    """
+
+
 def render_page_music_control(context: str) -> None:
     """Render one low-volume playlist with an explicit, persisted autoplay preference."""
     guest_mode = current_page_context().principal.mode is AccessMode.GUEST
@@ -256,6 +322,11 @@ def render_page_music_control(context: str) -> None:
                     mode_select.on_value_change(choose_mode)
                     audio.on("ended", advance_playlist)
                     ui.label(t("music_loop_notice")).classes("text-xs leading-5 text-[var(--sy-muted)]")
+                    ui.timer(
+                        0.12,
+                        lambda: ui.run_javascript(_music_continuity_script(context)),
+                        once=True,
+                    )
                 if not guest_mode:
                     render_youtube_panel(context, online_settings)
     panel.set_visibility(False)
@@ -269,6 +340,10 @@ def render_page_music_control(context: str) -> None:
                 "const audio = document.querySelector('audio.sy-page-music-audio');"
                 "if (!audio) return;"
                 f"audio.volume = {preferred_music_volume()!r}; audio.dataset.syBaseVolume = String(audio.volume);"
+                "if (audio.dataset.syContinuityPlaying === 'false') {"
+                f"{_music_state_script('paused')}"
+                "return;"
+                "}"
                 f"audio.play().then(() => {{ {_music_state_script('playing')} }})"
                 f".catch(() => {{ {_music_state_script('blocked')} }});"
                 "})()"

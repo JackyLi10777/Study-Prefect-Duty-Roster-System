@@ -5,6 +5,9 @@
   "compatibility_date": "2026-07-13",
   "workers_dev": true,
   "preview_urls": false,
+  "assets": {
+    "directory": "./public"
+  },
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,

@@ -27,6 +27,7 @@ from nicegui_app.ui.page_shared import (
     _tone_badge,
 )
 from nicegui_app.ui.shell import page_shell
+from nicegui_app.ui.theme import current_theme
 from roster_core import HISTORY_PRIORITY_MULTIPLIER_MAX, HISTORY_PRIORITY_MULTIPLIER_MIN
 from roster_policy import SchoolDay
 
@@ -83,11 +84,12 @@ def rosters_page() -> None:
                         ui.label(t("history_priority_detail")).classes(
                             "text-sm leading-6 text-[var(--sy-muted)] mt-1"
                         )
+                        initial_multiplier = multiplier_by_week.get(initial_week.isoformat(), 1.0)
                         history_priority = ui.slider(
                             min=HISTORY_PRIORITY_MULTIPLIER_MIN,
                             max=HISTORY_PRIORITY_MULTIPLIER_MAX,
                             step=0.1,
-                            value=multiplier_by_week.get(initial_week, 1.0),
+                            value=initial_multiplier,
                         ).props(
                             f'label label-always snap data-testid=history-priority-multiplier '
                             f'aria-label="{t("history_priority_label")}"'
@@ -107,10 +109,96 @@ def rosters_page() -> None:
                                     ui.element("i").classes("sy-history-scale-tick").props("aria-hidden=true")
                             ui.label(t("history_priority_scale_detail")).classes("sy-history-scale-help")
 
+                        chart_dark = current_theme() == "dark"
+                        chart_text = "#F5F5F7" if chart_dark else "#30343A"
+                        chart_muted = "#C5C7CA" if chart_dark else "#59686D"
+                        chart_line = "rgba(235,235,245,.16)" if chart_dark else "rgba(60,60,67,.14)"
+                        chart_action = "#9BC2D2" if chart_dark else "#35647C"
+                        chart_neutral = "#7ED7C4" if chart_dark else "#0F766E"
+                        history_priority_chart = ui.echart(
+                            {
+                                "animationDuration": 220,
+                                "animationDurationUpdate": 180,
+                                "textStyle": {"color": chart_text},
+                                "aria": {
+                                    "enabled": True,
+                                    "label": {
+                                        "description": t(
+                                            "history_priority_chart_aria",
+                                            value=f"{initial_multiplier:.1f}",
+                                        )
+                                    },
+                                },
+                                "grid": {"left": 8, "right": 48, "top": 8, "bottom": 4, "containLabel": True},
+                                "xAxis": {
+                                    "type": "value",
+                                    "min": 0,
+                                    "max": 2.0,
+                                    "axisLabel": {"color": chart_muted, "formatter": "{value}×"},
+                                    "axisLine": {"lineStyle": {"color": chart_line}},
+                                    "splitLine": {"lineStyle": {"color": chart_line}},
+                                },
+                                "yAxis": {
+                                    "type": "category",
+                                    "data": [
+                                        t("history_priority_history_factor"),
+                                        t("history_priority_week_factor"),
+                                    ],
+                                    "axisLabel": {"color": chart_muted},
+                                    "axisLine": {"show": False},
+                                    "axisTick": {"show": False},
+                                },
+                                "series": [
+                                    {
+                                        "type": "bar",
+                                        "barWidth": 18,
+                                        "data": [
+                                            {"value": initial_multiplier, "itemStyle": {"color": chart_action}},
+                                            {"value": 1.0, "itemStyle": {"color": chart_neutral}},
+                                        ],
+                                        "label": {
+                                            "show": True,
+                                            "position": "right",
+                                            "color": chart_text,
+                                            "formatter": "{c}×",
+                                        },
+                                        "itemStyle": {"borderRadius": [0, 7, 7, 0]},
+                                    }
+                                ],
+                            }
+                        ).classes("sy-history-priority-chart w-full").props(
+                            f'role=img aria-label="{t("history_priority_chart")}" '
+                            'data-testid=history-priority-chart'
+                        )
+                        ui.label(t("history_priority_chart_detail")).classes(
+                            "sy-history-priority-chart-note"
+                        )
+
+                    def update_history_priority_chart(value: float) -> None:
+                        normalized = min(
+                            max(float(value), HISTORY_PRIORITY_MULTIPLIER_MIN),
+                            HISTORY_PRIORITY_MULTIPLIER_MAX,
+                        )
+                        history_priority_chart.options["series"][0]["data"][0]["value"] = normalized
+                        history_priority_chart.options["aria"]["label"]["description"] = t(
+                            "history_priority_chart_aria",
+                            value=f"{normalized:.1f}",
+                        )
+                        history_priority_chart.update()
+
+                    history_priority.on_value_change(
+                        lambda event: update_history_priority_chart(float(event.value))
+                    )
+
                     def refresh_history_priority() -> None:
                         selected = selected_week_start()
-                        history_priority.value = multiplier_by_week.get(selected, 1.0) if selected else 1.0
+                        history_priority.value = (
+                            multiplier_by_week.get(selected.isoformat(), 1.0)
+                            if selected
+                            else 1.0
+                        )
                         history_priority.update()
+                        update_history_priority_chart(float(history_priority.value or 1.0))
 
                     def selected_week_start(*, announce_error: bool = False) -> date | None:
                         try:

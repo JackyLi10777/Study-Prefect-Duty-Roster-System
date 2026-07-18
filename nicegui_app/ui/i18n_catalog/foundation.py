@@ -40,7 +40,7 @@ MESSAGES = {'app_name': {'zh-HK': '聖言中學導學風紀值班系統', 'en': 
  'verse_translation_label': {'zh-HK': '繁中：和合本修訂版 2010（神版） · 英文：New King James Version（NKJV）',
                              'en': 'Chinese: Revised Chinese Union Version 2010 (Shen Edition) · English: New King James Version (NKJV)'},
  'devotional_tone_label': {'zh-HK': '經文方向', 'en': 'Devotional direction'},
- 'devotional_tone_auto': {'zh-HK': '按外觀建議', 'en': 'Appearance-based suggestion'},
+ 'devotional_tone_auto': {'zh-HK': '預設設定', 'en': 'Default setting'},
  'devotional_tone_guidance': {'zh-HK': '清晰指引', 'en': 'Clear guidance'},
  'devotional_tone_comfort': {'zh-HK': '安靜安慰', 'en': 'Quiet comfort'},
  'reflection': {'zh-HK': '靈修反思', 'en': 'Devotional reflection'},

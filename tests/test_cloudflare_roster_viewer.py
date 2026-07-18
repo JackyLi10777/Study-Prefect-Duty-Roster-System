@@ -37,6 +37,7 @@ def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
     assert configuration["workers_dev"] is True
     assert configuration["preview_urls"] is False
     assert configuration["main"] == "worker.js"
+    assert configuration["assets"] == {"directory": "./public"}
     assert configuration["observability"] == {
         "enabled": True,
         "head_sampling_rate": 1,
@@ -320,6 +321,12 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
         "和合本修訂版 2010（神版） · NKJV",
         "LANDING_DEVOTIONALS",
         "refreshLandingVerse?.addEventListener",
+        'id="portalStoryMedia"',
+        "/assets/entrance-operations-light-v1.webp",
+        "/assets/entrance-operations-dark-v1.webp",
+        "updatePortalStoryDepth",
+        "prefers-reduced-motion: reduce",
+        ".portal-story-media { transform: none !important; }",
         "@media (forced-colors: active)",
     ):
         assert required in source
@@ -330,6 +337,18 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
     assert "new URL('/', window.location.origin).toString()" in source
     assert "navigator.share" in source
     assert "navigator.clipboard?.writeText" in source
+
+
+def test_guest_entrance_uses_a_local_paired_light_dark_editorial_asset() -> None:
+    public_assets = VIEWER_ROOT / "public" / "assets"
+    light = public_assets / "entrance-operations-light-v1.webp"
+    dark = public_assets / "entrance-operations-dark-v1.webp"
+
+    assert light.is_file() and 20_000 < light.stat().st_size < 500_000
+    assert dark.is_file() and 20_000 < dark.stat().st_size < 500_000
+    assert light.read_bytes()[:4] == b"RIFF"
+    assert dark.read_bytes()[:4] == b"RIFF"
+    assert "data:image" not in _source()
 
 
 def test_guest_entry_uses_a_signed_bounded_session_and_the_same_origin_workbench() -> None:

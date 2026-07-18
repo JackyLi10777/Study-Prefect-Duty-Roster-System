@@ -55,6 +55,14 @@ def platform_page() -> None:
         ("platform_value_responsibility_title", "platform_value_responsibility_body"),
         ("platform_value_continuity_title", "platform_value_continuity_body"),
     )
+    operating_map = (
+        ("touch_app", "platform_map_intent_title", "platform_map_intent_body"),
+        ("space_dashboard", "platform_map_ui_title", "platform_map_ui_body"),
+        ("rule", "platform_map_policy_title", "platform_map_policy_body"),
+        ("receipt_long", "platform_map_workflow_title", "platform_map_workflow_body"),
+        ("database", "platform_map_evidence_title", "platform_map_evidence_body"),
+        ("picture_as_pdf", "platform_map_output_title", "platform_map_output_body"),
+    )
 
     summary = PlatformSummary.unavailable()
     summary_reference = ""
@@ -100,6 +108,7 @@ def platform_page() -> None:
             (
                 ("platform-snapshot-section", "platform_snapshot_title"),
                 ("platform-team-section", "team_operating_model_title"),
+                ("platform-operating-map-section", "platform_operating_map_title"),
                 ("platform-capabilities-section", "capability_map_title"),
                 ("platform-solutions-section", "solutions_portfolio_title"),
                 ("platform-principles-section", "platform_culture_title"),
@@ -156,6 +165,27 @@ def platform_page() -> None:
                                 ui.label(t(function_key)).classes("sy-team-role-function")
                         ui.label(t(body_key)).classes("sy-team-role-copy")
             ui.label(t("team_operating_model_note")).classes("sy-team-operating-model-note")
+
+        with ui.element("section").classes("sy-architecture-section w-full").props(
+            f'id=platform-operating-map-section aria-label="{t("platform_operating_map_title")}"'
+        ):
+            _render_architecture_section_heading(
+                "platform_operating_map_kicker",
+                "platform_operating_map_title",
+                "platform_operating_map_copy",
+            )
+            with ui.element("div").classes("sy-platform-operating-map").props(
+                "data-testid=platform-operating-map role=list"
+            ):
+                for index, (icon, title_key, body_key) in enumerate(operating_map, start=1):
+                    with ui.element("article").classes("sy-platform-map-node").props(
+                        f"role=listitem data-sequence={index}"
+                    ):
+                        with ui.row().classes("sy-platform-map-node-head items-center gap-3 no-wrap"):
+                            ui.icon(icon).classes("sy-platform-map-node-icon").props("aria-hidden=true")
+                            ui.label(t(title_key)).classes("sy-platform-map-node-title")
+                        ui.label(t(body_key)).classes("sy-platform-map-node-copy")
+            ui.label(t("platform_operating_map_note")).classes("sy-platform-operating-map-note")
 
         with ui.element("section").classes("sy-architecture-section w-full").props(
             "id=platform-capabilities-section"

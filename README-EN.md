@@ -15,6 +15,8 @@ PDFs, databases, backups, screenshots, or complete logs.
 **prepare → generate draft → review → publish once → export bilingual PDF →
 adjust published leave → explain fairness → back up, restore, and hand over.**
 
+The public entrance presents one prepared duty desk in paired morning-light and evening-dark versions. An unlabelled ledger, three paper workflow markers, and a restrained teal line convey record keeping, the three-step weekly sequence, and continuous service. Both original WebP assets are local to the project and contain no people, student data, writing, crest, external tracking, or third-party image request; reduced-motion mode remains a fully readable static entrance.
+
 [Traditional Chinese README](README.md) · [Operator guide](docs/OPERATOR_GUIDE.md)
 · [Architecture](docs/NICEGUI_ARCHITECTURE.md) · [Release status](PROJECT_STATUS.md)
 · [Canonical-site access guide](docs/PUBLIC_ROSTER_VIEWER.md)
@@ -111,6 +113,14 @@ For a fully isolated fictional rehearsal, double-click
 `START_PRACTICE_MODE.cmd`. Practice Mode has separate SQLite, backups, logs,
 preferences, port range, persistent bilingual identity, and non-official PDF
 marking. Close it and use `RESET_PRACTICE_MODE.cmd` for a clean rehearsal.
+
+The Dashboard devotional direction offers **Default setting**, **Clear
+guidance**, and **Quiet comfort**. The default follows the current appearance
+as a recommendation only. Local page-context music makes one page-ready attempt
+at a browser-local default of 24% and always exposes pause/off controls. If two
+consecutive routes resolve to the same local track, the current browser session
+continues its position and playing/paused state instead of restarting it; this
+continuity never enters SQLite or permanent browser storage.
 
 At the end of a school year, use **Prepare new school-year directory** from the
 Handover Guide only after the final roster, published-duty adjustments, and

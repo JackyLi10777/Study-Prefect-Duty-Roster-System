@@ -1,9 +1,11 @@
 # Sing Yin Study Prefect Duty Roster System - Project Status
 
-**Last Updated:** 2026-07-17
+**Last Updated:** 2026-07-18
 **Project Root:** `D:\code_v3`  
-**Current Phase:** v1.2 rc6 passed 13／13 formal gates; the Windows origin remains healthy on the schema-compatible rc4 build while the corrected rc6 origin／Worker rollout is in progress
+**Current Phase:** v1.2 rc7 interaction／explanation integration complete in source; formal isolated release verification and controlled Windows／Worker rollout are the remaining gates
 **Primary Theme Color:** `#0F766E`
+
+The 2026-07-18 public-entrance refinement replaces the remaining flat colour field with one original, same-composition light／dark editorial scene stored as local Cloudflare Worker assets. The prepared ledger, three paper workflow markers, teal service line and restrained brass detail carry the weekly-work story without people, text, student data, crest, screen or fake UI. Theme switching changes only the paired image and lighting; a solid veil preserves copy contrast. Fine-pointer movement produces at most an 8×6 px depth response, resets immediately, and becomes fully static under reduced motion. The existing public／Guest／Admin identity routes and Cloudflare Access boundary are unchanged.
 
 **Windows SSH maintenance (2026-07-17):** OpenSSH Server is installed on `LAPTOP-NQ22TI3V` and runs automatically. The hardened service accepts only the `lichu` Ed25519 maintenance key, listens only on `127.0.0.1:22` and `[::1]:22`, disables password and interactive authentication plus all forwarding, and leaves the Windows OpenSSH inbound firewall rule disabled. A real key-only SSH session returned the administrator identity and confirmed official application and database health; a password-only probe was rejected with `Permission denied (publickey)`. Evidence is stored in `logs/windows-ssh-verification.json`. Off-device SSH through a separate Cloudflare private route remains an explicit future step and is not yet claimed.
 
@@ -17,6 +19,9 @@
 This is a fresh, local-first rebuild of the Sing Yin Study Prefect Duty Roster System. The v1.2 candidate keeps one canonical `workers.dev` site and one NiceGUI product. A server-verified `PageContext` resolves `PUBLIC`, `ADMIN`, `GUEST`, or `LOCAL_MAINTENANCE`; Admin uses the official workflow and SQLite, while Guest uses the same routes and components backed only by a bounded in-memory workspace with fictional Chinese names. `/guest` and `/try` become compatibility redirects rather than a second static product. `/view#…` remains the separate encrypted, read-only published-roster capability. Localhost and private WARP remain maintenance fallbacks. It is not a migration of the Streamlit, `demo_code`, or `demo_code2` applications.
 
 ### v1.2 release truth
+
+- The rc7 source adds one shared semantic navigation／operation icon state system, a responsive Platform operating map, and an accessible live chart explaining the history-priority multiplier without changing roster policy. Local page music now defaults to 24% and resumes the same track across route changes within the current browser session. The devotional automatic choice is labelled **Default setting／預設設定**. These are presentation and browser-preference changes; SQLite transactions, eligibility, publication, fairness posting, backup and restore remain owned by their existing layers.
+- Hybrid SQLite／FTS／vector retrieval is deliberately not part of rc7. The application has no large unstructured retrieval job that justifies a vector index; roster, fairness, audit and backup questions remain more accurate and cheaper through the existing structured schema and bounded reports. The useful “prewrite governance” principle is already expressed through command receipts, optimistic versions, transaction validation, backup obligations and audit references rather than a second memory store.
 
 - `SING_YIN_UNIFIED_GUEST` remains disabled by default. A verified Guest principal is rejected by the origin while the flag is `0`.
 - Signed Worker-to-origin principals, deny-by-default capabilities, per-client Guest workspaces, session expiry/revocation monitoring, one-shot `DEMO` downloads, process locking, `/readyz`, v1.2 persistence tables, command receipts, backup obligations and the external-share outbox exist in the source candidate.
