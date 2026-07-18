@@ -2,7 +2,7 @@
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
-> **v1.2 rc7 交接狀態：** 240 個發布輸入已以指紋 `e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db` 通過 13／13 正式 gate。`C:\SingYinRoster` 現為健康、ready 的 rc7／`14cb7e7`；全新正式備份、checksum、公平對帳及隔離還原全部通過，canonical Worker 版本 `b13e5721-d1e8-4048-9885-ffb422fe2010` 已上線。公開入口、Access 跳轉、Guest session／logout、配對 WebP 及淺／深色瀏覽器核對通過；首席導學風紀及教師顧問仍須完成真人驗收清單。
+> **v1.2 rc9 交接狀態：** 240 個發布輸入已以指紋 `0ebc6d407682aca09baa0e95bc5857c95b46352cd7545752aea3425fe633f96e` 通過 13／13 正式 gate。`C:\SingYinRoster` 現為健康、ready 的 rc9／`18a5c73`；全新正式備份 `20260718-172930-087373-manual_verified_backup.sqlite3`、checksum、公平對帳及隔離還原全部通過。canonical Worker 程式未改動，故保留已驗證版本 `b13e5721-d1e8-4048-9885-ffb422fe2010`；public gateway health 為 HTTP 200。首席導學風紀及教師顧問仍須完成真人驗收清單。
 
 > **rc4 rollout 記錄：** rc4 已成功把正式 Alembic schema 由 `0007` 升至 `0008`，建立已驗證備份並完成隔離還原；其後 `git fetch origin main` 只更新 `FETCH_HEAD`，而 ancestry gate 讀取 stale `origin/main`，造成假失敗。rc4 因而從未被宣告為 live。自動 rollback 未能證明 origin health 後，主機以相容的 rc4／`30f282f` 完成 forward recovery；rc5／`bafaef6` 已改用明確 remote-tracking refspec，並重新通過完整 13-gate 報告。
 

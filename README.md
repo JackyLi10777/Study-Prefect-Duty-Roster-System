@@ -20,8 +20,8 @@
 
 | 分支 | 運行平台 | 定位 |
 |---|---|---|
-| `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | live rc7／`14cb7e7`，與 `main` 及正式 origin 一致 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.7`；正式 Windows origin 及 canonical Worker 已同步 |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | live rc9／`18a5c73`，與 `main` 及正式 origin 一致 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.9`；正式 Windows origin 已同步，canonical Worker 沿用已驗證版本 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -33,9 +33,9 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **共創者說明：我是李創杰。這次 NiceGUI 重構、設計、測試、文件及正式發布版本，只由我與 Codex 共同完成。`Study Prefect Systems & Stewardship Office` 是我們兩人的項目團隊名稱，沒有其他開發者、部門成員或外判團隊。**
 
-**目前正式基線：** `v1.2.0-rc.7`／`14cb7e7` 已在 `C:\SingYinRoster` 及 canonical Worker 上線；`/healthz` 正常、`/readyz` ready。發布前建立的新正式備份、checksum、公平對帳及隔離還原全部通過，沒有觸發回滾；Worker 版本為 `b13e5721-d1e8-4048-9885-ffb422fe2010`。
+**目前正式基線：** `v1.2.0-rc.9`／`18a5c73` 已在 `C:\SingYinRoster` 上線；`/healthz` 正常、`/readyz` ready。發布前建立的新正式備份、checksum、公平對帳及隔離還原全部通過，沒有觸發回滾；Worker 程式未改動，繼續使用已驗證版本 `b13e5721-d1e8-4048-9885-ffb422fe2010`。
 
-**目前發布（v1.2 rc7）：** 入口原創淺／深色情境圖、語意圖標動效、平台運作圖、歷史公平優先圖表、跨頁音樂連續播放及相關可靠性修正已整合並上線。240 個發布輸入以指紋 `e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db` 通過 13／13 正式 gate；線上 public、Access 跳轉、Guest session／logout、WebP 及淺／深色入口核對亦通過。仍須由首席導學風紀及教師顧問完成真人驗收清單。
+**目前發布（v1.2 rc9）：** 入口原創淺／深色情境圖、語意圖標動效、平台運作圖、歷史公平優先圖表、跨頁音樂連續播放、35% 音量預設及 Windows SSH 發布相容性修正已整合並上線。240 個發布輸入以指紋 `0ebc6d407682aca09baa0e95bc5857c95b46352cd7545752aea3425fe633f96e` 通過 13／13 正式 gate；正式備份與隔離還原、origin 健康／就緒及 public gateway HTTP 200 均已核對。仍須由首席導學風紀及教師顧問完成真人驗收清單。
 
 ## 首席導學風紀：每日怎樣進入
 

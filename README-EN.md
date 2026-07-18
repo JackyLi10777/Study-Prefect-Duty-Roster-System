@@ -39,8 +39,8 @@ separately authorized operation.
 
 | Branch | Platform | Status |
 |---|---|---|
-| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Live rc7 `14cb7e7`, aligned with `main` and the production origin |
-| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.7`; the Windows origin and canonical Worker match |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Live rc9 `18a5c73`, aligned with `main` and the production origin |
+| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.9`; the Windows origin is current and the unchanged canonical Worker retains its verified version |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
