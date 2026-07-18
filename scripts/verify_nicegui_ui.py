@@ -14,10 +14,15 @@ from urllib.parse import urlsplit
 from openpyxl import Workbook
 from playwright.sync_api import sync_playwright
 
+from nicegui_app.ui.product_identity import PRODUCT_IDENTITY
+
 BASE_URL = os.getenv("SING_YIN_TEST_URL", "http://127.0.0.1:8080")
 YOUTUBE_ENABLED = os.getenv("SING_YIN_YOUTUBE_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-FAVICON_CREST_PATH = PROJECT_ROOT / "nicegui_app" / "assets" / "brand" / "sing-yin-crest-favicon.png"
+FAVICON_PRODUCT_ASSET = PRODUCT_IDENTITY.product_asset(
+    PRODUCT_IDENTITY.delivery["faviconVariant"]
+)
+FAVICON_PRODUCT_PATH = FAVICON_PRODUCT_ASSET.path
 LIGHT_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-dashboard-light.png"
 DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-dashboard-dark.png"
 ROSTER_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-roster-workspace.png"
@@ -454,7 +459,10 @@ def main() -> None:
         page.on("pageerror", lambda error: page_errors.append(str(error)))
         favicon_response = page.request.get(f"{BASE_URL}/favicon.ico")
         assert favicon_response.status == 200
-        assert favicon_response.body() == FAVICON_CREST_PATH.read_bytes(), "favicon did not use the dedicated square crest"
+        assert favicon_response.headers.get("content-type", "").split(";", 1)[0] == "image/png"
+        assert (
+            favicon_response.body() == FAVICON_PRODUCT_PATH.read_bytes()
+        ), "favicon did not match the manifest-selected Service Weave product mark"
         page.goto(BASE_URL, wait_until="domcontentloaded")
         skip_link = page.locator("a.sy-skip-link")
         assert skip_link.count() == 1

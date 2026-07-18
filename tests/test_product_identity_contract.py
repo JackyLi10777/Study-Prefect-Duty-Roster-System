@@ -66,3 +66,14 @@ def test_product_identity_contract_has_no_worker_delivery_drift() -> None:
     assert source["contractVersion"] == "1.0.0"
     assert source["delivery"]["faviconVariant"] == "favicon"
     assert product_identity_drift() == []
+
+
+def test_browser_release_verifier_uses_the_manifest_selected_product_favicon() -> None:
+    verifier = (
+        SOURCE_PATH.parents[1] / "scripts" / "verify_nicegui_ui.py"
+    ).read_text(encoding="utf-8")
+
+    assert "from nicegui_app.ui.product_identity import PRODUCT_IDENTITY" in verifier
+    assert 'PRODUCT_IDENTITY.delivery["faviconVariant"]' in verifier
+    assert "FAVICON_PRODUCT_PATH.read_bytes()" in verifier
+    assert "FAVICON_CREST_PATH" not in verifier
