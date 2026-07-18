@@ -78,8 +78,11 @@ def main() -> None:
         blocked_backup_path.unlink()
         blocked_backup_path.mkdir(parents=True)
         page.get_by_test_id("create-verified-backup-action").click()
-        page.locator(".sy-progress-dialog").wait_for(timeout=10_000)
         page.get_by_text("已驗證", exact=True).first.wait_for(timeout=15_000)
+        # A fast local snapshot can finish between two browser frames. The
+        # durable verified state is the contract; requiring one visible
+        # animation frame makes a healthy operation intermittently fail.
+        page.locator(".sy-progress-dialog").wait_for(state="hidden", timeout=10_000)
 
         snapshots = list(blocked_backup_path.glob("*.sqlite3"))
         assert len(snapshots) == 1
