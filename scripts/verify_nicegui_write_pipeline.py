@@ -289,11 +289,14 @@ def main() -> None:
         page.get_by_role("button", name="匯入風紀").click()
         page.locator(".sy-progress-dialog").wait_for(state="visible", timeout=10_000)
         page.get_by_text("名單管理", exact=True).wait_for(timeout=10_000)
-        page.locator(".sy-responsive-table-desktop:visible td", has_text="虛構驗證風紀").wait_for(
-            timeout=10_000
-        )
+        # The route title can exist before the refreshed table is mounted. Wait
+        # for the honest operation lifecycle to finish before asserting its UI
+        # result, otherwise a healthy import can fail on a render race.
         page.locator(".sy-progress-dialog").wait_for(state="hidden", timeout=20_000)
         page.locator(".sy-progress-dialog").wait_for(state="detached", timeout=10_000)
+        page.locator(".sy-prefect-directory-desktop:visible td", has_text="虛構驗證風紀").wait_for(
+            timeout=15_000
+        )
         workflow = _workflow(database_path, backup_dir)
         assert any(item["nameZh"] == "虛構驗證風紀" for item in workflow.prefects())
 
