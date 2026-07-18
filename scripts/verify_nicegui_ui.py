@@ -9,7 +9,12 @@ import json
 from http.client import HTTPConnection
 from io import BytesIO, StringIO
 from pathlib import Path
+import sys
 from urllib.parse import urlsplit
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from openpyxl import Workbook
 from playwright.sync_api import sync_playwright
@@ -18,7 +23,6 @@ from nicegui_app.ui.product_identity import PRODUCT_IDENTITY
 
 BASE_URL = os.getenv("SING_YIN_TEST_URL", "http://127.0.0.1:8080")
 YOUTUBE_ENABLED = os.getenv("SING_YIN_YOUTUBE_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FAVICON_PRODUCT_ASSET = PRODUCT_IDENTITY.product_asset(
     PRODUCT_IDENTITY.delivery["faviconVariant"]
 )

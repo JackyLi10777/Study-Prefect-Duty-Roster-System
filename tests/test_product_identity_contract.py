@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
+import subprocess
+import sys
 
 from nicegui_app.config import (
     DISPLAY_PRINT_CREST_PATH,
@@ -77,3 +80,26 @@ def test_browser_release_verifier_uses_the_manifest_selected_product_favicon() -
     assert 'PRODUCT_IDENTITY.delivery["faviconVariant"]' in verifier
     assert "FAVICON_PRODUCT_PATH.read_bytes()" in verifier
     assert "FAVICON_CREST_PATH" not in verifier
+
+
+def test_browser_release_verifier_bootstraps_the_project_when_run_by_path(tmp_path: Path) -> None:
+    verifier_path = SOURCE_PATH.parents[1] / "scripts" / "verify_nicegui_ui.py"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-c",
+            (
+                "import runpy; "
+                f"runpy.run_path({str(verifier_path)!r}, run_name='verify_nicegui_ui_import_check')"
+            ),
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=20,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
