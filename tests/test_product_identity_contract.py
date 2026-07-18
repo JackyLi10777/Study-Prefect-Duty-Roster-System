@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+import hashlib
+import json
+
+from nicegui_app.config import (
+    DISPLAY_PRINT_CREST_PATH,
+    DISPLAY_WEB_CREST_PATH,
+    FAVICON_CREST_PATH,
+    NAVIGATION_CREST_PATH,
+    SERVICE_WEAVE_FAVICON_PATH,
+    SERVICE_WEAVE_NAVIGATION_DARK_PATH,
+    SERVICE_WEAVE_NAVIGATION_LIGHT_PATH,
+    SERVICE_WEAVE_WINDOWS_ICON_PATH,
+)
+from nicegui_app.ui.product_identity import (
+    PRODUCT_IDENTITY,
+    SOURCE_PATH,
+    load_product_identity,
+    product_identity_drift,
+)
+
+
+def test_product_identity_exposes_bilingual_names_and_accessible_labels() -> None:
+    identity = load_product_identity()
+
+    assert identity is PRODUCT_IDENTITY
+    assert identity.product_name_zh == "服事經緯"
+    assert identity.product_name_en == "Service Weave"
+    assert identity.functional_name_zh == "聖言中學導學風紀值班表系統"
+    assert identity.functional_name_en == "Sing Yin Study Prefect Duty Roster System"
+    assert identity.accessible_name("productMark", "zh-HK") == "服事經緯軟件標誌"
+    assert identity.accessible_name("productMark", "en") == "Service Weave software mark"
+    assert identity.accessible_name("institutionalCrest", "zh-HK") == "聖言中學校徽"
+    assert identity.accessible_name("institutionalCrest", "en") == "Sing Yin Secondary School crest"
+    assert identity.asset_version == "v1"
+    assert len(identity.digest) == 64
+
+
+def test_product_identity_binds_runtime_assets_to_the_versioned_manifest() -> None:
+    identity = load_product_identity()
+    expected_product_paths = {
+        SERVICE_WEAVE_FAVICON_PATH,
+        SERVICE_WEAVE_NAVIGATION_LIGHT_PATH,
+        SERVICE_WEAVE_NAVIGATION_DARK_PATH,
+        SERVICE_WEAVE_WINDOWS_ICON_PATH,
+    }
+    actual_product_paths = {asset.path for asset in identity.product_mark_variants}
+    assert expected_product_paths <= actual_product_paths
+
+    expected_crest_paths = {
+        FAVICON_CREST_PATH,
+        NAVIGATION_CREST_PATH,
+        DISPLAY_WEB_CREST_PATH,
+        DISPLAY_PRINT_CREST_PATH,
+    }
+    assert {asset.path for asset in identity.institutional_crest_variants} == expected_crest_paths
+
+    for asset in (*identity.product_mark_variants, *identity.institutional_crest_variants):
+        assert asset.path.is_file()
+        assert hashlib.sha256(asset.path.read_bytes()).hexdigest() == asset.sha256
+
+
+def test_product_identity_contract_has_no_worker_delivery_drift() -> None:
+    source = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
+    assert source["contractVersion"] == "1.0.0"
+    assert source["delivery"]["faviconVariant"] == "favicon"
+    assert product_identity_drift() == []

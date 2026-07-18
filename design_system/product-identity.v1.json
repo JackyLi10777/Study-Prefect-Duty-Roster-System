@@ -1,0 +1,131 @@
+{
+  "contractVersion": "1.0.0",
+  "assetVersion": "v1",
+  "productName": {
+    "zh-HK": "服事經緯",
+    "en": "Service Weave"
+  },
+  "functionalName": {
+    "zh-HK": "聖言中學導學風紀值班表系統",
+    "en": "Sing Yin Study Prefect Duty Roster System"
+  },
+  "accessibleNames": {
+    "productMark": {
+      "zh-HK": "服事經緯軟件標誌",
+      "en": "Service Weave software mark"
+    },
+    "institutionalCrest": {
+      "zh-HK": "聖言中學校徽",
+      "en": "Sing Yin Secondary School crest"
+    }
+  },
+  "productMarkVariants": [
+    {
+      "key": "mark-light",
+      "theme": "light",
+      "purpose": "standalone product mark on light surfaces",
+      "relativePath": "nicegui_app/assets/brand/service-weave/service-weave-mark-light-v1.png",
+      "publicUrl": "/assets/brand/service-weave/service-weave-mark-light-v1.png"
+    },
+    {
+      "key": "mark-dark",
+      "theme": "dark",
+      "purpose": "standalone product mark on dark surfaces",
+      "relativePath": "nicegui_app/assets/brand/service-weave/service-weave-mark-dark-v1.png",
+      "publicUrl": "/assets/brand/service-weave/service-weave-mark-dark-v1.png"
+    },
+    {
+      "key": "mark-ink",
+      "theme": "monochrome-dark",
+      "purpose": "single-colour product mark on light surfaces",
+      "relativePath": "nicegui_app/assets/brand/service-weave/service-weave-mark-ink-v1.png",
+      "publicUrl": "/assets/brand/service-weave/service-weave-mark-ink-v1.png"
+    },
+    {
+      "key": "mark-white",
+      "theme": "monochrome-light",
+      "purpose": "single-colour product mark on dark surfaces",
+      "relativePath": "nicegui_app/assets/brand/service-weave/service-weave-mark-white-v1.png",
+      "publicUrl": "/assets/brand/service-weave/service-weave-mark-white-v1.png"
+    },
+    {
+      "key": "app-light",
+      "theme": "light",
+      "purpose": "software application icon for light surfaces",
+      "relativePath": "nicegui_app/assets/brand/service-weave/service-weave-app-light-v1.png",
+      "publicUrl": "/assets/brand/service-weave/service-weave-app-light-v1.png"
+    },
+    {
+      "key": "app-dark",
+      "theme": "dark",
+      "purpose": "software application icon for dark surfaces",
+      "relativePath": "nicegui_app/assets/brand/service-weave/service-weave-app-dark-v1.png",
+      "publicUrl": "/assets/brand/service-weave/service-weave-app-dark-v1.png"
+    },
+    {
+      "key": "favicon",
+      "theme": "adaptive",
+      "purpose": "browser and Cloudflare product icon",
+      "relativePath": "nicegui_app/assets/brand/service-weave/service-weave-favicon-512-v1.png",
+      "publicUrl": "/assets/brand/service-weave/service-weave-favicon-512-v1.png"
+    },
+    {
+      "key": "navigation-light",
+      "theme": "light",
+      "purpose": "compact navigation mark on light surfaces",
+      "relativePath": "nicegui_app/assets/brand/service-weave/service-weave-navigation-light-256-v1.png",
+      "publicUrl": "/assets/brand/service-weave/service-weave-navigation-light-256-v1.png"
+    },
+    {
+      "key": "navigation-dark",
+      "theme": "dark",
+      "purpose": "compact navigation mark on dark surfaces",
+      "relativePath": "nicegui_app/assets/brand/service-weave/service-weave-navigation-dark-256-v1.png",
+      "publicUrl": "/assets/brand/service-weave/service-weave-navigation-dark-256-v1.png"
+    },
+    {
+      "key": "windows",
+      "theme": "adaptive",
+      "purpose": "Windows launcher icon",
+      "relativePath": "nicegui_app/assets/brand/service-weave/service-weave-windows-v1.ico",
+      "publicUrl": null
+    }
+  ],
+  "institutionalCrestVariants": [
+    {
+      "key": "crest-favicon",
+      "theme": "adaptive",
+      "purpose": "legacy institutional favicon and compatibility use",
+      "relativePath": "nicegui_app/assets/brand/sing-yin-crest-favicon.png",
+      "publicUrl": "/assets/brand/sing-yin-crest-favicon.png"
+    },
+    {
+      "key": "crest-navigation",
+      "theme": "adaptive",
+      "purpose": "compact institutional attribution",
+      "relativePath": "nicegui_app/assets/brand/sing-yin-crest-navigation.png",
+      "publicUrl": "/assets/brand/sing-yin-crest-navigation.png"
+    },
+    {
+      "key": "crest-display-web",
+      "theme": "adaptive",
+      "purpose": "institutional attribution on web pages",
+      "relativePath": "nicegui_app/assets/brand/sing-yin-crest-display-web.png",
+      "publicUrl": "/assets/brand/sing-yin-crest-display-web.png"
+    },
+    {
+      "key": "crest-display-print",
+      "theme": "print",
+      "purpose": "institutional attribution on formal documents",
+      "relativePath": "nicegui_app/assets/brand/sing-yin-crest-display-print.png",
+      "publicUrl": "/assets/brand/sing-yin-crest-display-print.png"
+    }
+  ],
+  "delivery": {
+    "faviconVariant": "favicon",
+    "navigationLightVariant": "navigation-light",
+    "navigationDarkVariant": "navigation-dark",
+    "windowsVariant": "windows",
+    "workerGeneratedModule": "cloudflare/roster_viewer/service_weave_brand.generated.js"
+  }
+}

@@ -1,0 +1,91 @@
+/* Service Weave layout layer: reusable editorial and reference-page geometry. */
+
+.sy-document-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  align-items: start;
+  gap: clamp(24px, 4vw, 56px);
+  width: 100%;
+}
+
+.sy-document-main {
+  min-width: 0;
+}
+
+.sy-document-aside {
+  position: sticky;
+  top: 92px;
+  display: grid;
+  gap: 12px;
+}
+
+.sy-evidence-index {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+}
+
+.sy-evidence-index-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr)) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.sy-evidence-toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr)) minmax(210px, auto);
+  align-items: end;
+  gap: 12px;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.sy-evidence-filter,
+.sy-evidence-view-toggle {
+  min-width: 0;
+}
+
+.sy-evidence-results {
+  min-height: 148px;
+  margin-top: 16px;
+}
+
+.sy-evidence-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sy-developer-reference-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.sy-developer-command-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+@media (max-width: 900px) {
+  .sy-document-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sy-document-aside {
+    position: static;
+    order: -1;
+  }
+
+  .sy-evidence-index-controls,
+  .sy-evidence-toolbar,
+  .sy-evidence-summary-grid,
+  .sy-developer-command-grid,
+  .sy-developer-reference-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

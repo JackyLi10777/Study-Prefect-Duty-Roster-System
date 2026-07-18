@@ -1,0 +1,38 @@
+/* Service Weave motion layer: cause-and-effect only; never blocks reading. */
+
+.sy-reference-toc .sy-reference-toc-link,
+.sy-page-engineering .sy-evidence-results,
+.q-expansion-item__content,
+[data-sy-feedback] {
+  transition:
+    opacity var(--sy-motion-state) var(--sy-ease),
+    transform var(--sy-motion-state) var(--sy-ease),
+    border-color var(--sy-motion-state) var(--sy-ease),
+    background-color var(--sy-motion-state) var(--sy-ease);
+}
+
+.sy-reference-toc-link[aria-current="location"] {
+  border-color: var(--sy-role-action);
+  color: var(--sy-ink);
+  background: var(--sy-role-action-soft);
+  box-shadow: inset 3px 0 0 var(--sy-role-action);
+}
+
+.sy-evidence-results--filtering {
+  opacity: .36;
+  transform: translateY(2px);
+}
+
+[data-sy-feedback="success"] {
+  border-color: var(--sy-role-stable) !important;
+  background-color: var(--sy-role-stable-soft) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sy-reference-toc .sy-reference-toc-link,
+  .sy-page-engineering .sy-evidence-results,
+  .q-expansion-item__content,
+  [data-sy-feedback] {
+    transition-duration: .001ms !important;
+  }
+}

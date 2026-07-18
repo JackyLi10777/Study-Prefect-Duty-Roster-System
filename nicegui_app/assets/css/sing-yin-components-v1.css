@@ -1,0 +1,213 @@
+/* Service Weave public component layer.  Every state has text and semantics. */
+
+.sy-action {
+  min-height: 44px;
+}
+
+.sy-action--attention {
+  color: var(--sy-status-attention-fg) !important;
+  border-color: color-mix(in srgb, var(--sy-role-attention) 58%, var(--sy-line)) !important;
+  background: var(--sy-role-attention-soft) !important;
+}
+
+.sy-field {
+  display: grid;
+  gap: 8px;
+}
+
+.sy-field-heading {
+  min-height: 22px;
+}
+
+.sy-field-label {
+  color: var(--sy-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sy-field-optional,
+.sy-field-description {
+  color: var(--sy-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.sy-field-error {
+  color: var(--sy-role-danger);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.sy-field[data-invalid="true"] .q-field__control {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sy-role-danger) 18%, transparent);
+}
+
+.q-badge.sy-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sy-status-badge-icon {
+  font-size: 14px;
+}
+
+.sy-status-badge-label {
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+}
+
+.sy-dialog {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--sy-line);
+  border-radius: 22px;
+  background: var(--sy-surface);
+}
+
+.sy-dialog-title {
+  color: var(--sy-ink);
+  font-size: 21px;
+  font-weight: 760;
+  line-height: 1.3;
+}
+
+.sy-dialog-description,
+.sy-dialog-consequence {
+  color: var(--sy-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.sy-dialog-consequence {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--sy-role-attention) 30%, var(--sy-line));
+  border-radius: 14px;
+  background: var(--sy-role-attention-soft);
+}
+
+.sy-restricted-state,
+.sy-progress-state {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--sy-line);
+  border-radius: 18px;
+  background: var(--sy-surface);
+}
+
+.sy-restricted-state-title,
+.sy-progress-state-title {
+  color: var(--sy-ink);
+  font-size: 16px;
+  font-weight: 730;
+}
+
+.sy-restricted-state-copy,
+.sy-progress-state-copy {
+  max-width: 70ch;
+  color: var(--sy-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.sy-code-sample {
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--sy-line);
+  border-radius: 16px;
+  background: #17263D;
+  color: #F8FAFC;
+}
+
+.sy-code-sample-header {
+  min-height: 52px;
+  padding: 8px 10px 8px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, .14);
+}
+
+.sy-code-sample-label {
+  color: #E2E8F0;
+  font-size: 12px;
+  font-weight: 720;
+  letter-spacing: .04em;
+}
+
+.sy-code-sample .q-btn {
+  color: #F8FAFC !important;
+}
+
+.sy-code-sample-body {
+  overflow-x: auto;
+  padding: 18px;
+  font-family: "Cascadia Code", "SFMono-Regular", monospace;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.sy-code-sample-body pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.sy-developer-reference-card,
+.sy-evidence-record {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--sy-line);
+  border-radius: 16px;
+  background: var(--sy-surface);
+}
+
+.sy-developer-reference-icon,
+.sy-evidence-record-icon {
+  color: var(--sy-role-action);
+  font-size: 22px;
+}
+
+.sy-evidence-record > .q-row:first-child {
+  min-height: 30px;
+}
+
+.sy-developer-reference-title,
+.sy-evidence-record-title {
+  color: var(--sy-ink);
+  font-size: 16px;
+  font-weight: 740;
+  line-height: 1.4;
+}
+
+.sy-developer-reference-copy,
+.sy-evidence-record-copy {
+  color: var(--sy-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.sy-evidence-record-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--sy-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (forced-colors: active) {
+  .sy-dialog,
+  .sy-restricted-state,
+  .sy-progress-state,
+  .sy-code-sample,
+  .sy-developer-reference-card,
+  .sy-evidence-record {
+    border: 1px solid CanvasText;
+  }
+}
