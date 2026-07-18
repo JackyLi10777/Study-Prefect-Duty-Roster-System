@@ -507,6 +507,9 @@ def test_invalid_backup_summary_is_safe_status_copy_not_raw_diagnostics() -> Non
 
 def test_reference_navigation_keeps_touch_targets_and_mobile_table_semantics() -> None:
     theme = combined_theme_source()
+    navigation = (
+        PROJECT_ROOT / "nicegui_app" / "ui" / "reference_navigation.py"
+    ).read_text(encoding="utf-8")
     verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
     engineering_verification = verifier.split(
         'page.goto(f"{BASE_URL}/engineering"', 1
@@ -518,6 +521,7 @@ def test_reference_navigation_keeps_touch_targets_and_mobile_table_semantics() -
     mobile_header_rule = theme.split(".sy-troubleshooting-head { position: absolute;", 1)[1].split("}", 1)[0]
 
     assert "min-height: 44px" in toc_rule
+    assert 'f"data-sy-toc-target={anchor}"' in navigation
     assert "display: none" not in mobile_header_rule
     assert "clip-path: inset(50%)" in mobile_header_rule
     assert "def assert_reference_toc(" in verifier

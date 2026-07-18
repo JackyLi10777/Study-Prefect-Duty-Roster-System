@@ -22,7 +22,9 @@ def render_page_toc(items: Sequence[ReferenceItem]) -> None:
         ui.label(t("reference_on_this_page")).classes("sy-reference-toc-title")
         with ui.element("div").classes("sy-reference-toc-links"):
             for anchor, label_key in items:
-                ui.link(t(label_key), f"#{anchor}").classes("sy-reference-toc-link")
+                ui.link(t(label_key), f"#{anchor}").classes("sy-reference-toc-link").props(
+                    f"data-sy-toc-target={anchor}"
+                )
 
 
 def render_reference_pager(
