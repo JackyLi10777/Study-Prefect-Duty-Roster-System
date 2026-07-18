@@ -456,6 +456,22 @@ def assert_component_grammar(page, screenshot_path: Path) -> None:  # type: igno
         fixture.evaluate("element => element.remove()")
 
 
+def assert_reference_toc(page, *, required_targets: tuple[str, ...]) -> None:  # type: ignore[no-untyped-def]
+    """Verify the rendered reference navigation without freezing its section count."""
+
+    links = page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link")
+    targets = links.evaluate_all(
+        "elements => elements.map(element => element.dataset.syTocTarget || '')"
+    )
+    assert targets, "reference table of contents is empty"
+    assert all(targets), "reference table of contents has a link without a target"
+    assert len(targets) == len(set(targets)), "reference table of contents repeats a target"
+    assert set(required_targets) <= set(targets), "reference table of contents lost a required section"
+    for index, target in enumerate(targets):
+        assert links.nth(index).get_attribute("href") == f"#{target}"
+        assert page.locator(f'[id="{target}"]').count() == 1
+
+
 def main() -> None:
     LIGHT_SCREENSHOT.parent.mkdir(parents=True, exist_ok=True)
     expected_invalid_backups = prepare_invalid_backup_fixture()
@@ -857,7 +873,13 @@ def main() -> None:
         assert page.get_by_role("heading", level=2).count() >= 5
         assert page.get_by_test_id("engineering-pillars").locator(".sy-engineering-pillar").count() == 6
         assert page.get_by_test_id("engineering-evolution").locator(".sy-engineering-evolution-item").count() == 4
-        assert page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link").count() == 6
+        assert_reference_toc(
+            page,
+            required_targets=(
+                "engineering-evidence-index-section",
+                "engineering-resources-section",
+            ),
+        )
         assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 1
         engineering_links = page.locator(".sy-engineering-resources a, .sy-engineering-resources .q-btn")
         assert engineering_links.count() == 3
@@ -874,7 +896,13 @@ def main() -> None:
         assert page.get_by_test_id("service-lifeline").locator(".sy-service-stage").count() == 6
         assert page.get_by_test_id("trust-evidence").locator(".sy-trust-evidence-card").count() == 4
         assert page.get_by_test_id("architecture-faq").locator(".sy-architecture-faq-item").count() == 9
-        assert page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link").count() == 4
+        assert_reference_toc(
+            page,
+            required_targets=(
+                "architecture-developer-section",
+                "architecture-faq-section",
+            ),
+        )
         assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 2
         assert "architecture-lifeline-light-v1.webp" in page.get_by_test_id("architecture-lifeline-visual").evaluate(
             "element => getComputedStyle(element).backgroundImage"

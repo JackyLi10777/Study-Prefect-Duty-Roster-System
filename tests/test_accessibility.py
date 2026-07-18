@@ -507,12 +507,24 @@ def test_invalid_backup_summary_is_safe_status_copy_not_raw_diagnostics() -> Non
 
 def test_reference_navigation_keeps_touch_targets_and_mobile_table_semantics() -> None:
     theme = combined_theme_source()
+    verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
+    engineering_verification = verifier.split(
+        'page.goto(f"{BASE_URL}/engineering"', 1
+    )[1].split('page.goto(f"{BASE_URL}/system-architecture"', 1)[0]
+    architecture_verification = verifier.split(
+        'page.goto(f"{BASE_URL}/system-architecture"', 1
+    )[1].split('page.goto(f"{BASE_URL}/guide"', 1)[0]
     toc_rule = theme.split(".sy-reference-toc-link {", 1)[1].split("}", 1)[0]
     mobile_header_rule = theme.split(".sy-troubleshooting-head { position: absolute;", 1)[1].split("}", 1)[0]
 
     assert "min-height: 44px" in toc_rule
     assert "display: none" not in mobile_header_rule
     assert "clip-path: inset(50%)" in mobile_header_rule
+    assert "def assert_reference_toc(" in verifier
+    assert "len(targets) == len(set(targets))" in verifier
+    assert "architecture-developer-section" in verifier
+    assert '.locator(".sy-reference-toc-link").count()' not in engineering_verification
+    assert '.locator(".sy-reference-toc-link").count()' not in architecture_verification
 
 
 def test_co_creation_identity_media_keeps_link_focus_touch_and_mobile_reflow() -> None:
