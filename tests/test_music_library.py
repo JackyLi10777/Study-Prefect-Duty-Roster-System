@@ -170,6 +170,9 @@ def test_music_ui_has_operator_controlled_autoplay_on_every_workspace_page() -> 
     assert "autoplay=False" in music_ui, "The audio element starts conservatively before the saved preference is applied"
     assert 'DEFAULT_MUSIC_AUTOPLAY = True' in sound_ui
     assert 'DEFAULT_MUSIC_VOLUME = 0.24' in sound_ui
+    assert "element.volume >= 0.22 && element.volume <= 0.26" in (
+        PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py"
+    ).read_text(encoding="utf-8")
     assert 'MUSIC_AUTOPLAY_STORAGE_KEY = "music_autoplay"' in sound_ui
     assert 'app.storage.user.get("music_autoplay"' not in music_ui
     assert music_ui.count("music_autoplay_enabled()") >= 3

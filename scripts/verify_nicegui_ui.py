@@ -624,7 +624,7 @@ def main() -> None:
         else:
             page.get_by_text("YouTube 播放器已由環境設定停用", exact=False).wait_for(timeout=10_000)
         page.wait_for_function(
-            "element => element.volume >= 0.15 && element.volume <= 0.2",
+            "element => element.volume >= 0.22 && element.volume <= 0.26",
             arg=music_audio.element_handle(),
             timeout=10_000,
         )
