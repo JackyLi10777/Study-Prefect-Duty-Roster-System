@@ -26,7 +26,15 @@ REPORT_PATH = ROOT / "data" / "devotional" / "translation-verification-rcuv-bibl
 BIBLEGATEWAY_URL = "https://www.biblegateway.com/passage/"
 
 SPAN_RE = re.compile(r"<span[^>]+class=\"[^\"]*\btext\b[^\"]*\"[^>]*>(.*?)</span>", re.DOTALL)
-SUP_RE = re.compile(r"<sup[^>]*class=\"versenum\"[^>]*>.*?</sup>", re.DOTALL)
+HEADING_RE = re.compile(r"<h[1-6]\b[^>]*>.*?</h[1-6]>", re.DOTALL | re.IGNORECASE)
+CHAPTER_RE = re.compile(
+    r"<span[^>]*class=(?:\"[^\"]*\bchapternum\b[^\"]*\"|'[^']*\bchapternum\b[^']*')[^>]*>.*?</span>",
+    re.DOTALL | re.IGNORECASE,
+)
+SUP_RE = re.compile(
+    r"<sup[^>]*class=(?:\"[^\"]*\bversenum\b[^\"]*\"|'[^']*\bversenum\b[^']*')[^>]*>.*?</sup>",
+    re.DOTALL | re.IGNORECASE,
+)
 TAG_RE = re.compile(r"<[^>]+>")
 SPACE_RE = re.compile(r"\s+")
 PUNCT_RE = re.compile(r"[\s，。；：！？、,.!?;:\"'“”‘’「」『』（）()\[\]{}—–\\-]+")
@@ -81,6 +89,12 @@ def extract_passage_text(page_html: str) -> str:
     elif start != -1:
         page_html = page_html[start:]
 
+    # Bible Gateway renders section headings with the same ``text`` class used
+    # by verses.  At the start of a chapter it also nests a chapter-number span
+    # inside verse 1.  Remove both before matching passage spans; otherwise the
+    # heading and chapter number replace the actual first verse in local data.
+    page_html = HEADING_RE.sub("", page_html)
+    page_html = CHAPTER_RE.sub("", page_html)
     spans = SPAN_RE.findall(page_html)
     cleaned = [normalize_basic(span) for span in spans]
     cleaned = [item for item in cleaned if item]

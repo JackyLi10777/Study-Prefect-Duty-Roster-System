@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-09T17:43:30.957743+00:00",
+  "generatedAt": "2026-07-18T09:31:14.556779+00:00",
   "source": {
     "name": "Bible Gateway",
     "translation": "RCU17TS",
@@ -25,7 +25,7 @@
       "sourceNormalizedLength": 88,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:32.984711+00:00"
+      "checkedAt": "2026-07-18T09:30:31.332714+00:00"
     },
     {
       "id": "dv-0002",
@@ -37,7 +37,7 @@
       "sourceNormalizedLength": 57,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:33.482281+00:00"
+      "checkedAt": "2026-07-18T09:30:31.706610+00:00"
     },
     {
       "id": "dv-0003",
@@ -49,7 +49,7 @@
       "sourceNormalizedLength": 53,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:33.979369+00:00"
+      "checkedAt": "2026-07-18T09:30:32.077949+00:00"
     },
     {
       "id": "dv-0004",
@@ -61,7 +61,7 @@
       "sourceNormalizedLength": 83,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:34.493333+00:00"
+      "checkedAt": "2026-07-18T09:30:32.447486+00:00"
     },
     {
       "id": "dv-0005",
@@ -73,7 +73,7 @@
       "sourceNormalizedLength": 37,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:34.986677+00:00"
+      "checkedAt": "2026-07-18T09:30:32.824029+00:00"
     },
     {
       "id": "dv-0006",
@@ -85,7 +85,7 @@
       "sourceNormalizedLength": 83,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:35.482023+00:00"
+      "checkedAt": "2026-07-18T09:30:33.187119+00:00"
     },
     {
       "id": "dv-0007",
@@ -97,7 +97,7 @@
       "sourceNormalizedLength": 80,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:35.981919+00:00"
+      "checkedAt": "2026-07-18T09:30:33.572973+00:00"
     },
     {
       "id": "dv-0008",
@@ -109,7 +109,7 @@
       "sourceNormalizedLength": 42,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:36.475088+00:00"
+      "checkedAt": "2026-07-18T09:30:33.940600+00:00"
     },
     {
       "id": "dv-0009",
@@ -121,7 +121,7 @@
       "sourceNormalizedLength": 60,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:36.967644+00:00"
+      "checkedAt": "2026-07-18T09:30:34.330776+00:00"
     },
     {
       "id": "dv-0010",
@@ -133,7 +133,7 @@
       "sourceNormalizedLength": 19,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:37.463553+00:00"
+      "checkedAt": "2026-07-18T09:30:34.701983+00:00"
     },
     {
       "id": "dv-0011",
@@ -145,7 +145,7 @@
       "sourceNormalizedLength": 53,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:37.955954+00:00"
+      "checkedAt": "2026-07-18T09:30:35.071041+00:00"
     },
     {
       "id": "dv-0012",
@@ -157,7 +157,7 @@
       "sourceNormalizedLength": 39,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:38.459071+00:00"
+      "checkedAt": "2026-07-18T09:30:35.441331+00:00"
     },
     {
       "id": "dv-0013",
@@ -169,7 +169,7 @@
       "sourceNormalizedLength": 41,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:38.952975+00:00"
+      "checkedAt": "2026-07-18T09:30:35.815213+00:00"
     },
     {
       "id": "dv-0014",
@@ -181,7 +181,7 @@
       "sourceNormalizedLength": 108,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:39.445825+00:00"
+      "checkedAt": "2026-07-18T09:30:36.231966+00:00"
     },
     {
       "id": "dv-0015",
@@ -193,19 +193,19 @@
       "sourceNormalizedLength": 15,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:39.946440+00:00"
+      "checkedAt": "2026-07-18T09:30:36.606170+00:00"
     },
     {
       "id": "dv-0016",
       "reference": "雅各書 3:1",
       "status": "verified-exact",
-      "localNormalizedHash": "346613110da6f04230b8c1739f992f1d116e36b24a4b7d33f4ad3f269a181fad",
-      "sourceNormalizedHash": "346613110da6f04230b8c1739f992f1d116e36b24a4b7d33f4ad3f269a181fad",
-      "localNormalizedLength": 6,
-      "sourceNormalizedLength": 6,
+      "localNormalizedHash": "8ba93acd91b851067a00e689ba089ff7d539a161318a4e34e6d328d79e57ee3c",
+      "sourceNormalizedHash": "8ba93acd91b851067a00e689ba089ff7d539a161318a4e34e6d328d79e57ee3c",
+      "localNormalizedLength": 38,
+      "sourceNormalizedLength": 38,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:40.440560+00:00"
+      "checkedAt": "2026-07-18T09:30:36.963879+00:00"
     },
     {
       "id": "dv-0017",
@@ -217,7 +217,7 @@
       "sourceNormalizedLength": 28,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:40.958153+00:00"
+      "checkedAt": "2026-07-18T09:30:37.401794+00:00"
     },
     {
       "id": "dv-0018",
@@ -229,7 +229,7 @@
       "sourceNormalizedLength": 20,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:41.456818+00:00"
+      "checkedAt": "2026-07-18T09:30:37.821239+00:00"
     },
     {
       "id": "dv-0019",
@@ -241,7 +241,7 @@
       "sourceNormalizedLength": 26,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:41.965885+00:00"
+      "checkedAt": "2026-07-18T09:30:38.191890+00:00"
     },
     {
       "id": "dv-0020",
@@ -253,7 +253,7 @@
       "sourceNormalizedLength": 62,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:42.462249+00:00"
+      "checkedAt": "2026-07-18T09:30:38.549085+00:00"
     },
     {
       "id": "dv-0021",
@@ -265,7 +265,7 @@
       "sourceNormalizedLength": 23,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:42.956337+00:00"
+      "checkedAt": "2026-07-18T09:30:38.907685+00:00"
     },
     {
       "id": "dv-0022",
@@ -277,7 +277,7 @@
       "sourceNormalizedLength": 35,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:43.468342+00:00"
+      "checkedAt": "2026-07-18T09:30:39.279663+00:00"
     },
     {
       "id": "dv-0023",
@@ -289,7 +289,7 @@
       "sourceNormalizedLength": 44,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:43.975032+00:00"
+      "checkedAt": "2026-07-18T09:30:39.657001+00:00"
     },
     {
       "id": "dv-0024",
@@ -301,7 +301,7 @@
       "sourceNormalizedLength": 13,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:44.468828+00:00"
+      "checkedAt": "2026-07-18T09:30:40.029689+00:00"
     },
     {
       "id": "dv-0025",
@@ -313,7 +313,7 @@
       "sourceNormalizedLength": 22,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:44.987978+00:00"
+      "checkedAt": "2026-07-18T09:30:40.401409+00:00"
     },
     {
       "id": "dv-0026",
@@ -325,7 +325,7 @@
       "sourceNormalizedLength": 37,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:45.491725+00:00"
+      "checkedAt": "2026-07-18T09:30:40.777604+00:00"
     },
     {
       "id": "dv-0027",
@@ -337,7 +337,7 @@
       "sourceNormalizedLength": 34,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:45.988906+00:00"
+      "checkedAt": "2026-07-18T09:30:41.137432+00:00"
     },
     {
       "id": "dv-0028",
@@ -349,7 +349,7 @@
       "sourceNormalizedLength": 19,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:46.484181+00:00"
+      "checkedAt": "2026-07-18T09:30:41.521118+00:00"
     },
     {
       "id": "dv-0029",
@@ -361,7 +361,7 @@
       "sourceNormalizedLength": 49,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:46.986378+00:00"
+      "checkedAt": "2026-07-18T09:30:41.885651+00:00"
     },
     {
       "id": "dv-0030",
@@ -373,7 +373,7 @@
       "sourceNormalizedLength": 40,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:47.485293+00:00"
+      "checkedAt": "2026-07-18T09:30:42.264348+00:00"
     },
     {
       "id": "dv-0031",
@@ -385,7 +385,7 @@
       "sourceNormalizedLength": 40,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:47.981414+00:00"
+      "checkedAt": "2026-07-18T09:30:42.622337+00:00"
     },
     {
       "id": "dv-0032",
@@ -397,7 +397,7 @@
       "sourceNormalizedLength": 44,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:48.478135+00:00"
+      "checkedAt": "2026-07-18T09:30:43.008324+00:00"
     },
     {
       "id": "dv-0033",
@@ -409,7 +409,7 @@
       "sourceNormalizedLength": 34,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:48.969930+00:00"
+      "checkedAt": "2026-07-18T09:30:43.376455+00:00"
     },
     {
       "id": "dv-0034",
@@ -421,7 +421,7 @@
       "sourceNormalizedLength": 32,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:49.463011+00:00"
+      "checkedAt": "2026-07-18T09:30:43.749408+00:00"
     },
     {
       "id": "dv-0035",
@@ -433,7 +433,7 @@
       "sourceNormalizedLength": 17,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:49.972224+00:00"
+      "checkedAt": "2026-07-18T09:30:44.108856+00:00"
     },
     {
       "id": "dv-0036",
@@ -445,7 +445,7 @@
       "sourceNormalizedLength": 62,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:50.466462+00:00"
+      "checkedAt": "2026-07-18T09:30:44.482764+00:00"
     },
     {
       "id": "dv-0037",
@@ -457,19 +457,19 @@
       "sourceNormalizedLength": 156,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:50.964024+00:00"
+      "checkedAt": "2026-07-18T09:30:44.853875+00:00"
     },
     {
       "id": "dv-0038",
       "reference": "提摩太前書 3:1-7",
       "status": "verified-exact",
-      "localNormalizedHash": "a7b358b370f025a74460f11113a1b1c5abebd5bc8b4e4a999e1a84cc6a694d18",
-      "sourceNormalizedHash": "a7b358b370f025a74460f11113a1b1c5abebd5bc8b4e4a999e1a84cc6a694d18",
-      "localNormalizedLength": 177,
-      "sourceNormalizedLength": 177,
+      "localNormalizedHash": "4eb4793d0d8b826d75672ffb6545cdeeb977393e8798ca8ff648451d9c4bd95f",
+      "sourceNormalizedHash": "4eb4793d0d8b826d75672ffb6545cdeeb977393e8798ca8ff648451d9c4bd95f",
+      "localNormalizedLength": 200,
+      "sourceNormalizedLength": 200,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:51.458978+00:00"
+      "checkedAt": "2026-07-18T09:30:45.211245+00:00"
     },
     {
       "id": "dv-0039",
@@ -481,7 +481,7 @@
       "sourceNormalizedLength": 97,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:51.972456+00:00"
+      "checkedAt": "2026-07-18T09:30:45.582046+00:00"
     },
     {
       "id": "dv-0040",
@@ -493,7 +493,7 @@
       "sourceNormalizedLength": 44,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:52.471125+00:00"
+      "checkedAt": "2026-07-18T09:30:45.939257+00:00"
     },
     {
       "id": "dv-0041",
@@ -505,7 +505,7 @@
       "sourceNormalizedLength": 16,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:52.964786+00:00"
+      "checkedAt": "2026-07-18T09:30:46.314096+00:00"
     },
     {
       "id": "dv-0042",
@@ -517,7 +517,7 @@
       "sourceNormalizedLength": 98,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:53.458162+00:00"
+      "checkedAt": "2026-07-18T09:30:46.672883+00:00"
     },
     {
       "id": "dv-0043",
@@ -529,7 +529,7 @@
       "sourceNormalizedLength": 48,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:53.955853+00:00"
+      "checkedAt": "2026-07-18T09:30:47.033079+00:00"
     },
     {
       "id": "dv-0044",
@@ -541,7 +541,7 @@
       "sourceNormalizedLength": 27,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:54.454285+00:00"
+      "checkedAt": "2026-07-18T09:30:47.415250+00:00"
     },
     {
       "id": "dv-0045",
@@ -553,19 +553,19 @@
       "sourceNormalizedLength": 43,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:54.952142+00:00"
+      "checkedAt": "2026-07-18T09:30:47.793960+00:00"
     },
     {
       "id": "dv-0046",
       "reference": "羅馬書 13:8-10",
       "status": "verified-exact",
-      "localNormalizedHash": "a4c77d8c19ed89ee4742122b44d494c01e256f080b84d89ed8e42b06931d19a5",
-      "sourceNormalizedHash": "a4c77d8c19ed89ee4742122b44d494c01e256f080b84d89ed8e42b06931d19a5",
-      "localNormalizedLength": 109,
-      "sourceNormalizedLength": 109,
+      "localNormalizedHash": "8b2aec911566c01049e1bc1acf74ed62ed8b4851ba99db1092b3e71296bfb6d9",
+      "sourceNormalizedHash": "8b2aec911566c01049e1bc1acf74ed62ed8b4851ba99db1092b3e71296bfb6d9",
+      "localNormalizedLength": 103,
+      "sourceNormalizedLength": 103,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:55.450864+00:00"
+      "checkedAt": "2026-07-18T09:30:48.162348+00:00"
     },
     {
       "id": "dv-0047",
@@ -577,7 +577,7 @@
       "sourceNormalizedLength": 34,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:55.949592+00:00"
+      "checkedAt": "2026-07-18T09:30:48.531231+00:00"
     },
     {
       "id": "dv-0048",
@@ -589,7 +589,7 @@
       "sourceNormalizedLength": 48,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:56.443663+00:00"
+      "checkedAt": "2026-07-18T09:30:48.907608+00:00"
     },
     {
       "id": "dv-0049",
@@ -601,7 +601,7 @@
       "sourceNormalizedLength": 71,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:56.941301+00:00"
+      "checkedAt": "2026-07-18T09:30:49.279888+00:00"
     },
     {
       "id": "dv-0050",
@@ -613,7 +613,7 @@
       "sourceNormalizedLength": 97,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:57.439036+00:00"
+      "checkedAt": "2026-07-18T09:30:49.654257+00:00"
     },
     {
       "id": "dv-0051",
@@ -625,19 +625,19 @@
       "sourceNormalizedLength": 28,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:57.943317+00:00"
+      "checkedAt": "2026-07-18T09:30:50.026354+00:00"
     },
     {
       "id": "dv-0052",
       "reference": "雅各書 1:19-20",
       "status": "verified-exact",
-      "localNormalizedHash": "32deed31c1eb52f2979c5a04991cb38aae12107b190323d9ac91750d8776b7d7",
-      "sourceNormalizedHash": "32deed31c1eb52f2979c5a04991cb38aae12107b190323d9ac91750d8776b7d7",
-      "localNormalizedLength": 60,
-      "sourceNormalizedLength": 60,
+      "localNormalizedHash": "5b115115341781a730650fccb0e527c9066f6fc2affd1ade91f27bd2795f0a3d",
+      "sourceNormalizedHash": "5b115115341781a730650fccb0e527c9066f6fc2affd1ade91f27bd2795f0a3d",
+      "localNormalizedLength": 54,
+      "sourceNormalizedLength": 54,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:58.452835+00:00"
+      "checkedAt": "2026-07-18T09:30:50.395636+00:00"
     },
     {
       "id": "dv-0053",
@@ -649,19 +649,19 @@
       "sourceNormalizedLength": 19,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:58.951848+00:00"
+      "checkedAt": "2026-07-18T09:30:50.774362+00:00"
     },
     {
       "id": "dv-0054",
       "reference": "馬太福音 18:15",
       "status": "verified-exact",
-      "localNormalizedHash": "bfa09751d444f9cea535867e74d45f5e20fdeab9c17097d1e8e8de460b882332",
-      "sourceNormalizedHash": "bfa09751d444f9cea535867e74d45f5e20fdeab9c17097d1e8e8de460b882332",
-      "localNormalizedLength": 65,
-      "sourceNormalizedLength": 65,
+      "localNormalizedHash": "56e5d8ca35fef689bfa0f8c261db86db7c4b998b867d8000142906cfb72c35cf",
+      "sourceNormalizedHash": "56e5d8ca35fef689bfa0f8c261db86db7c4b998b867d8000142906cfb72c35cf",
+      "localNormalizedLength": 54,
+      "sourceNormalizedLength": 54,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:59.471018+00:00"
+      "checkedAt": "2026-07-18T09:30:51.145214+00:00"
     },
     {
       "id": "dv-0055",
@@ -673,19 +673,19 @@
       "sourceNormalizedLength": 33,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:42:59.970797+00:00"
+      "checkedAt": "2026-07-18T09:30:51.519997+00:00"
     },
     {
       "id": "dv-0056",
       "reference": "箴言 15:1",
       "status": "verified-exact",
-      "localNormalizedHash": "8571c7a05644760c9e4a5e9bdca35b71ff1179009c0c7eb59fc950f26cf46e5d",
-      "sourceNormalizedHash": "8571c7a05644760c9e4a5e9bdca35b71ff1179009c0c7eb59fc950f26cf46e5d",
-      "localNormalizedLength": 13,
-      "sourceNormalizedLength": 13,
+      "localNormalizedHash": "2700271d82e5d8439e089d9b452bb08b81817c9b4992428ccac3480d2ef1fe0f",
+      "sourceNormalizedHash": "2700271d82e5d8439e089d9b452bb08b81817c9b4992428ccac3480d2ef1fe0f",
+      "localNormalizedLength": 21,
+      "sourceNormalizedLength": 21,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:00.473010+00:00"
+      "checkedAt": "2026-07-18T09:30:51.889313+00:00"
     },
     {
       "id": "dv-0057",
@@ -697,7 +697,7 @@
       "sourceNormalizedLength": 35,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:00.967791+00:00"
+      "checkedAt": "2026-07-18T09:30:52.267697+00:00"
     },
     {
       "id": "dv-0058",
@@ -709,7 +709,7 @@
       "sourceNormalizedLength": 25,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:01.464545+00:00"
+      "checkedAt": "2026-07-18T09:30:52.633009+00:00"
     },
     {
       "id": "dv-0059",
@@ -721,7 +721,7 @@
       "sourceNormalizedLength": 60,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:01.963756+00:00"
+      "checkedAt": "2026-07-18T09:30:53.008396+00:00"
     },
     {
       "id": "dv-0060",
@@ -733,7 +733,7 @@
       "sourceNormalizedLength": 49,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:02.459342+00:00"
+      "checkedAt": "2026-07-18T09:30:53.366496+00:00"
     },
     {
       "id": "dv-0061",
@@ -745,7 +745,7 @@
       "sourceNormalizedLength": 76,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:02.974689+00:00"
+      "checkedAt": "2026-07-18T09:30:53.726798+00:00"
     },
     {
       "id": "dv-0062",
@@ -757,7 +757,7 @@
       "sourceNormalizedLength": 22,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:03.469192+00:00"
+      "checkedAt": "2026-07-18T09:30:54.092902+00:00"
     },
     {
       "id": "dv-0063",
@@ -769,7 +769,7 @@
       "sourceNormalizedLength": 141,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:03.966966+00:00"
+      "checkedAt": "2026-07-18T09:30:54.473651+00:00"
     },
     {
       "id": "dv-0064",
@@ -781,7 +781,7 @@
       "sourceNormalizedLength": 67,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:04.460910+00:00"
+      "checkedAt": "2026-07-18T09:30:54.842205+00:00"
     },
     {
       "id": "dv-0065",
@@ -793,7 +793,7 @@
       "sourceNormalizedLength": 24,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:04.956536+00:00"
+      "checkedAt": "2026-07-18T09:30:55.219263+00:00"
     },
     {
       "id": "dv-0066",
@@ -805,7 +805,7 @@
       "sourceNormalizedLength": 22,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:05.450233+00:00"
+      "checkedAt": "2026-07-18T09:30:55.590768+00:00"
     },
     {
       "id": "dv-0067",
@@ -817,7 +817,7 @@
       "sourceNormalizedLength": 27,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:05.947697+00:00"
+      "checkedAt": "2026-07-18T09:30:55.962858+00:00"
     },
     {
       "id": "dv-0068",
@@ -829,7 +829,7 @@
       "sourceNormalizedLength": 46,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:06.440096+00:00"
+      "checkedAt": "2026-07-18T09:30:56.339569+00:00"
     },
     {
       "id": "dv-0069",
@@ -841,7 +841,7 @@
       "sourceNormalizedLength": 55,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:06.936944+00:00"
+      "checkedAt": "2026-07-18T09:30:56.710779+00:00"
     },
     {
       "id": "dv-0070",
@@ -853,7 +853,7 @@
       "sourceNormalizedLength": 24,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:07.428592+00:00"
+      "checkedAt": "2026-07-18T09:30:57.066460+00:00"
     },
     {
       "id": "dv-0071",
@@ -865,7 +865,7 @@
       "sourceNormalizedLength": 33,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:07.921962+00:00"
+      "checkedAt": "2026-07-18T09:30:57.441698+00:00"
     },
     {
       "id": "dv-0072",
@@ -877,19 +877,19 @@
       "sourceNormalizedLength": 51,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:08.418097+00:00"
+      "checkedAt": "2026-07-18T09:30:57.803903+00:00"
     },
     {
       "id": "dv-0073",
       "reference": "雅各書 2:1",
       "status": "verified-exact",
-      "localNormalizedHash": "2cd4a8e12ba2278b8215688064ced219fae19764fd68c17cd29f23858a6d9bcb",
-      "sourceNormalizedHash": "2cd4a8e12ba2278b8215688064ced219fae19764fd68c17cd29f23858a6d9bcb",
-      "localNormalizedLength": 6,
-      "sourceNormalizedLength": 6,
+      "localNormalizedHash": "4b14525f3ad797164acdfd88d74eadc495d9fffcde42e80376fcb82237939e38",
+      "sourceNormalizedHash": "4b14525f3ad797164acdfd88d74eadc495d9fffcde42e80376fcb82237939e38",
+      "localNormalizedLength": 31,
+      "sourceNormalizedLength": 31,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:08.915106+00:00"
+      "checkedAt": "2026-07-18T09:30:58.186859+00:00"
     },
     {
       "id": "dv-0074",
@@ -901,7 +901,7 @@
       "sourceNormalizedLength": 51,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:09.410260+00:00"
+      "checkedAt": "2026-07-18T09:30:58.564677+00:00"
     },
     {
       "id": "dv-0075",
@@ -913,7 +913,7 @@
       "sourceNormalizedLength": 101,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:09.911699+00:00"
+      "checkedAt": "2026-07-18T09:30:58.936874+00:00"
     },
     {
       "id": "dv-0076",
@@ -925,19 +925,19 @@
       "sourceNormalizedLength": 119,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:10.409025+00:00"
+      "checkedAt": "2026-07-18T09:30:59.325775+00:00"
     },
     {
       "id": "dv-0077",
       "reference": "羅馬書 15:1-2",
       "status": "verified-exact",
-      "localNormalizedHash": "1cb9bf1fe0c0c4a5f2d1572864f57ec6ed2f080934e9ddea775f74db72b97cf8",
-      "sourceNormalizedHash": "1cb9bf1fe0c0c4a5f2d1572864f57ec6ed2f080934e9ddea775f74db72b97cf8",
-      "localNormalizedLength": 33,
-      "sourceNormalizedLength": 33,
+      "localNormalizedHash": "59e9907a09c5fcc9ab5f5b68ca0947ca71d315feefd44d76220e9096ff0202aa",
+      "sourceNormalizedHash": "59e9907a09c5fcc9ab5f5b68ca0947ca71d315feefd44d76220e9096ff0202aa",
+      "localNormalizedLength": 51,
+      "sourceNormalizedLength": 51,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:10.929829+00:00"
+      "checkedAt": "2026-07-18T09:30:59.681821+00:00"
     },
     {
       "id": "dv-0078",
@@ -949,7 +949,7 @@
       "sourceNormalizedLength": 56,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:11.425711+00:00"
+      "checkedAt": "2026-07-18T09:31:00.056020+00:00"
     },
     {
       "id": "dv-0079",
@@ -961,7 +961,7 @@
       "sourceNormalizedLength": 27,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:11.925566+00:00"
+      "checkedAt": "2026-07-18T09:31:00.415066+00:00"
     },
     {
       "id": "dv-0080",
@@ -973,7 +973,7 @@
       "sourceNormalizedLength": 65,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:12.421206+00:00"
+      "checkedAt": "2026-07-18T09:31:00.776174+00:00"
     },
     {
       "id": "dv-0081",
@@ -985,7 +985,7 @@
       "sourceNormalizedLength": 27,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:12.421206+00:00"
+      "checkedAt": "2026-07-18T09:31:00.776174+00:00"
     },
     {
       "id": "dv-0082",
@@ -997,7 +997,7 @@
       "sourceNormalizedLength": 53,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:12.947624+00:00"
+      "checkedAt": "2026-07-18T09:31:01.161524+00:00"
     },
     {
       "id": "dv-0083",
@@ -1009,7 +1009,7 @@
       "sourceNormalizedLength": 18,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:13.441451+00:00"
+      "checkedAt": "2026-07-18T09:31:01.549858+00:00"
     },
     {
       "id": "dv-0084",
@@ -1021,7 +1021,7 @@
       "sourceNormalizedLength": 37,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:13.943031+00:00"
+      "checkedAt": "2026-07-18T09:31:01.932439+00:00"
     },
     {
       "id": "dv-0085",
@@ -1033,7 +1033,7 @@
       "sourceNormalizedLength": 32,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:14.435738+00:00"
+      "checkedAt": "2026-07-18T09:31:02.303414+00:00"
     },
     {
       "id": "dv-0086",
@@ -1045,19 +1045,19 @@
       "sourceNormalizedLength": 43,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:14.928121+00:00"
+      "checkedAt": "2026-07-18T09:31:02.679391+00:00"
     },
     {
       "id": "dv-0087",
       "reference": "希伯來書 12:1-2",
       "status": "verified-exact",
-      "localNormalizedHash": "f218e62059c59628999b5d0d2493ff6ffb7bc911b0144765d0540b873eb16c80",
-      "sourceNormalizedHash": "f218e62059c59628999b5d0d2493ff6ffb7bc911b0144765d0540b873eb16c80",
-      "localNormalizedLength": 62,
-      "sourceNormalizedLength": 62,
+      "localNormalizedHash": "1d810eef8afa0087ec4d803aee6bdc612e9ee9f23db2c677299689750cab9980",
+      "sourceNormalizedHash": "1d810eef8afa0087ec4d803aee6bdc612e9ee9f23db2c677299689750cab9980",
+      "localNormalizedLength": 112,
+      "sourceNormalizedLength": 112,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:15.421092+00:00"
+      "checkedAt": "2026-07-18T09:31:03.050854+00:00"
     },
     {
       "id": "dv-0088",
@@ -1069,7 +1069,7 @@
       "sourceNormalizedLength": 35,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:15.923232+00:00"
+      "checkedAt": "2026-07-18T09:31:03.412358+00:00"
     },
     {
       "id": "dv-0089",
@@ -1081,7 +1081,7 @@
       "sourceNormalizedLength": 53,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:16.423600+00:00"
+      "checkedAt": "2026-07-18T09:31:03.788127+00:00"
     },
     {
       "id": "dv-0090",
@@ -1093,7 +1093,7 @@
       "sourceNormalizedLength": 68,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:16.915561+00:00"
+      "checkedAt": "2026-07-18T09:31:04.152862+00:00"
     },
     {
       "id": "dv-0091",
@@ -1105,7 +1105,7 @@
       "sourceNormalizedLength": 42,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:17.409073+00:00"
+      "checkedAt": "2026-07-18T09:31:04.509129+00:00"
     },
     {
       "id": "dv-0092",
@@ -1117,7 +1117,7 @@
       "sourceNormalizedLength": 36,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:17.906066+00:00"
+      "checkedAt": "2026-07-18T09:31:04.885711+00:00"
     },
     {
       "id": "dv-0093",
@@ -1129,7 +1129,7 @@
       "sourceNormalizedLength": 70,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:18.405310+00:00"
+      "checkedAt": "2026-07-18T09:31:05.247466+00:00"
     },
     {
       "id": "dv-0094",
@@ -1141,7 +1141,7 @@
       "sourceNormalizedLength": 48,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:18.405310+00:00"
+      "checkedAt": "2026-07-18T09:31:05.247466+00:00"
     },
     {
       "id": "dv-0095",
@@ -1153,7 +1153,7 @@
       "sourceNormalizedLength": 43,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:18.921114+00:00"
+      "checkedAt": "2026-07-18T09:31:05.621666+00:00"
     },
     {
       "id": "dv-0096",
@@ -1165,19 +1165,19 @@
       "sourceNormalizedLength": 48,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:19.421006+00:00"
+      "checkedAt": "2026-07-18T09:31:05.986723+00:00"
     },
     {
       "id": "dv-0097",
       "reference": "馬太福音 5:13-14",
       "status": "verified-exact",
-      "localNormalizedHash": "7f66c6e0a823e355543d20f0caa2e76ee5cb68f269e375e9e8fa3271dd8768d1",
-      "sourceNormalizedHash": "7f66c6e0a823e355543d20f0caa2e76ee5cb68f269e375e9e8fa3271dd8768d1",
-      "localNormalizedLength": 70,
-      "sourceNormalizedLength": 70,
+      "localNormalizedHash": "09c7e7ee7c85a914124b27fb3c1f1d570b087fc19f41941680865695f9324d8d",
+      "sourceNormalizedHash": "09c7e7ee7c85a914124b27fb3c1f1d570b087fc19f41941680865695f9324d8d",
+      "localNormalizedLength": 63,
+      "sourceNormalizedLength": 63,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:19.919046+00:00"
+      "checkedAt": "2026-07-18T09:31:06.345944+00:00"
     },
     {
       "id": "dv-0098",
@@ -1189,7 +1189,7 @@
       "sourceNormalizedLength": 82,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:20.410971+00:00"
+      "checkedAt": "2026-07-18T09:31:06.717553+00:00"
     },
     {
       "id": "dv-0099",
@@ -1201,7 +1201,7 @@
       "sourceNormalizedLength": 48,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:20.410971+00:00"
+      "checkedAt": "2026-07-18T09:31:06.717553+00:00"
     },
     {
       "id": "dv-0100",
@@ -1213,7 +1213,7 @@
       "sourceNormalizedLength": 39,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:20.904164+00:00"
+      "checkedAt": "2026-07-18T09:31:07.088322+00:00"
     },
     {
       "id": "dv-0101",
@@ -1225,7 +1225,7 @@
       "sourceNormalizedLength": 23,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:21.413002+00:00"
+      "checkedAt": "2026-07-18T09:31:07.461440+00:00"
     },
     {
       "id": "dv-0102",
@@ -1237,7 +1237,7 @@
       "sourceNormalizedLength": 51,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:21.916943+00:00"
+      "checkedAt": "2026-07-18T09:31:07.825261+00:00"
     },
     {
       "id": "dv-0103",
@@ -1249,7 +1249,7 @@
       "sourceNormalizedLength": 52,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:22.432443+00:00"
+      "checkedAt": "2026-07-18T09:31:08.185899+00:00"
     },
     {
       "id": "dv-0104",
@@ -1261,7 +1261,7 @@
       "sourceNormalizedLength": 51,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:22.925386+00:00"
+      "checkedAt": "2026-07-18T09:31:08.547910+00:00"
     },
     {
       "id": "dv-0105",
@@ -1273,31 +1273,31 @@
       "sourceNormalizedLength": 46,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:23.419302+00:00"
+      "checkedAt": "2026-07-18T09:31:08.932778+00:00"
     },
     {
       "id": "dv-0106",
       "reference": "詩篇 27:1",
       "status": "verified-exact",
-      "localNormalizedHash": "a695a85f54d2f1234fd5e85cc191c729155176e8c489633b2b7009987e4499c8",
-      "sourceNormalizedHash": "a695a85f54d2f1234fd5e85cc191c729155176e8c489633b2b7009987e4499c8",
-      "localNormalizedLength": 40,
-      "sourceNormalizedLength": 40,
+      "localNormalizedHash": "9ab08f5be51f208865ad3eaf895f0e5b34527c3922bc6f70e9149a41705bca61",
+      "sourceNormalizedHash": "9ab08f5be51f208865ad3eaf895f0e5b34527c3922bc6f70e9149a41705bca61",
+      "localNormalizedLength": 41,
+      "sourceNormalizedLength": 41,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:23.920185+00:00"
+      "checkedAt": "2026-07-18T09:31:09.309563+00:00"
     },
     {
       "id": "dv-0107",
       "reference": "以弗所書 6:10",
       "status": "verified-exact",
-      "localNormalizedHash": "0f73344fdfd710665e68f521c394f2b31cdc2a0d7d57af80ce6ccfefb146ec68",
-      "sourceNormalizedHash": "0f73344fdfd710665e68f521c394f2b31cdc2a0d7d57af80ce6ccfefb146ec68",
-      "localNormalizedLength": 30,
-      "sourceNormalizedLength": 30,
+      "localNormalizedHash": "59cd3d4771d0f5b3bda8aa64028924cb730fdd1f6391ac1f152829950d4ffcc0",
+      "sourceNormalizedHash": "59cd3d4771d0f5b3bda8aa64028924cb730fdd1f6391ac1f152829950d4ffcc0",
+      "localNormalizedLength": 24,
+      "sourceNormalizedLength": 24,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:24.412853+00:00"
+      "checkedAt": "2026-07-18T09:31:09.689299+00:00"
     },
     {
       "id": "dv-0108",
@@ -1309,7 +1309,7 @@
       "sourceNormalizedLength": 29,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:24.911014+00:00"
+      "checkedAt": "2026-07-18T09:31:10.065958+00:00"
     },
     {
       "id": "dv-0109",
@@ -1321,7 +1321,7 @@
       "sourceNormalizedLength": 24,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:25.411374+00:00"
+      "checkedAt": "2026-07-18T09:31:10.442669+00:00"
     },
     {
       "id": "dv-0110",
@@ -1333,7 +1333,7 @@
       "sourceNormalizedLength": 111,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:25.927356+00:00"
+      "checkedAt": "2026-07-18T09:31:10.826733+00:00"
     },
     {
       "id": "dv-0111",
@@ -1345,7 +1345,7 @@
       "sourceNormalizedLength": 25,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:26.433836+00:00"
+      "checkedAt": "2026-07-18T09:31:11.183729+00:00"
     },
     {
       "id": "dv-0112",
@@ -1357,7 +1357,7 @@
       "sourceNormalizedLength": 44,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:26.934641+00:00"
+      "checkedAt": "2026-07-18T09:31:11.556934+00:00"
     },
     {
       "id": "dv-0113",
@@ -1369,7 +1369,7 @@
       "sourceNormalizedLength": 53,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:27.430870+00:00"
+      "checkedAt": "2026-07-18T09:31:11.931451+00:00"
     },
     {
       "id": "dv-0114",
@@ -1381,7 +1381,7 @@
       "sourceNormalizedLength": 63,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:27.927035+00:00"
+      "checkedAt": "2026-07-18T09:31:12.289966+00:00"
     },
     {
       "id": "dv-0115",
@@ -1393,7 +1393,7 @@
       "sourceNormalizedLength": 24,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:28.434387+00:00"
+      "checkedAt": "2026-07-18T09:31:12.660263+00:00"
     },
     {
       "id": "dv-0116",
@@ -1405,7 +1405,7 @@
       "sourceNormalizedLength": 66,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:28.930820+00:00"
+      "checkedAt": "2026-07-18T09:31:13.034217+00:00"
     },
     {
       "id": "dv-0117",
@@ -1417,7 +1417,7 @@
       "sourceNormalizedLength": 34,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:29.431865+00:00"
+      "checkedAt": "2026-07-18T09:31:13.409076+00:00"
     },
     {
       "id": "dv-0118",
@@ -1429,7 +1429,7 @@
       "sourceNormalizedLength": 39,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:29.941316+00:00"
+      "checkedAt": "2026-07-18T09:31:13.794335+00:00"
     },
     {
       "id": "dv-0119",
@@ -1441,31 +1441,31 @@
       "sourceNormalizedLength": 59,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:30.455856+00:00"
+      "checkedAt": "2026-07-18T09:31:14.163366+00:00"
     },
     {
       "id": "dv-0120",
       "reference": "詩篇 1:1-3",
       "status": "verified-exact",
-      "localNormalizedHash": "d1b6a78f7fd5d60c3448800463a9f5ef12c2902f0adaaefa8a4494e7d1b4f2dc",
-      "sourceNormalizedHash": "d1b6a78f7fd5d60c3448800463a9f5ef12c2902f0adaaefa8a4494e7d1b4f2dc",
-      "localNormalizedLength": 107,
-      "sourceNormalizedLength": 107,
+      "localNormalizedHash": "57c645e5f139bf424c7e0d28b48d0b4599cc1b9dc166c526bd865f426992284f",
+      "sourceNormalizedHash": "57c645e5f139bf424c7e0d28b48d0b4599cc1b9dc166c526bd865f426992284f",
+      "localNormalizedLength": 99,
+      "sourceNormalizedLength": 99,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:30.957743+00:00"
+      "checkedAt": "2026-07-18T09:31:14.556779+00:00"
     },
     {
       "id": "dv-0121",
       "reference": "馬太福音 5:13-14",
       "status": "verified-exact",
-      "localNormalizedHash": "7f66c6e0a823e355543d20f0caa2e76ee5cb68f269e375e9e8fa3271dd8768d1",
-      "sourceNormalizedHash": "7f66c6e0a823e355543d20f0caa2e76ee5cb68f269e375e9e8fa3271dd8768d1",
-      "localNormalizedLength": 70,
-      "sourceNormalizedLength": 70,
+      "localNormalizedHash": "09c7e7ee7c85a914124b27fb3c1f1d570b087fc19f41941680865695f9324d8d",
+      "sourceNormalizedHash": "09c7e7ee7c85a914124b27fb3c1f1d570b087fc19f41941680865695f9324d8d",
+      "localNormalizedLength": 63,
+      "sourceNormalizedLength": 63,
       "source": "Bible Gateway RCU17TS",
       "sourceUrl": "https://www.biblegateway.com/",
-      "checkedAt": "2026-07-09T17:43:30.957743+00:00"
+      "checkedAt": "2026-07-18T09:31:14.556779+00:00"
     }
   ]
 }

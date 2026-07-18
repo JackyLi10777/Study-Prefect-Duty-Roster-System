@@ -52,6 +52,29 @@ data/devotional/validation-report.json
 
 The original converted seed text was not exact against the selected external sources in several places.
 
+### 2026-07-18 chapter-opening extraction repair
+
+A mobile screenshot exposed a literal chapter number in `提摩太前書 3:1-7`.
+It was not an Arabic-script letter: Bible Gateway's section heading and
+chapter-number markup had been mistaken for verse text, which also removed
+verse 1. A complete 121-entry recheck found the same extraction class in 14
+canonical records. The corrected extractor now removes heading, chapter-number
+and verse-number markup before reading passage spans. Those records were
+resynchronized from `RCU17TS`, the full corpus then returned
+`121 verified-exact`, and the local validator found no Arabic-script
+characters in Traditional Chinese Scripture.
+
+The affected references were:
+
+- 雅各書 3:1、2:1、1:19-20
+- 提摩太前書 3:1-7
+- 箴言 15:1
+- 羅馬書 13:8-10、15:1-2
+- 馬太福音 18:15、5:13-14（兩個獨立 devotional records）
+- 希伯來書 12:1-2
+- 以弗所書 6:10
+- 詩篇 27:1、1:1-3
+
 English examples corrected during verification included:
 
 - One wording mismatch in Titus 1:7-9.
@@ -71,7 +94,9 @@ Runtime and future editing should use:
 
 - `daily-verses.seed.json` for canonical records.
 - `daily-verses.expanded.json` when a literal 500-entry export is needed.
-- `translation-checklist.csv` for human review or external audit.
+- `translation-checklist.csv` for human review or external audit. Regenerate
+  it from the canonical seed with
+  `python -X utf8 scripts/devotional/build_translation_checklist.py`.
 
 ## Verification Boundary
 

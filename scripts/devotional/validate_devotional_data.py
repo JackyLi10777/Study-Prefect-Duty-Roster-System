@@ -22,6 +22,8 @@ DEFAULT_REPORT = ROOT / "data" / "devotional" / "validation-report.json"
 
 CJK_RE = re.compile(r"[\u3400-\u9fff]")
 CORRUPTED_PLACEHOLDER_RE = re.compile(r"\?{3,}")
+ARABIC_SCRIPT_RE = re.compile(r"[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]")
+LEADING_CHAPTER_ARTIFACT_RE = re.compile(r"^(?:(?:[^。！？]{1,48})\s+)?\d{1,3}(?:\s+|$)")
 REQUIRED_REFLECTION_FIELDS = ("title", "body", "prayer")
 
 
@@ -107,6 +109,22 @@ def validate(seed_path: Path, legacy_path: Path, expanded_path: Path | None = DE
         for lang in ("zh", "en"):
             if not str(scripture.get(lang, "")).strip():
                 issue("error", "missing-scripture", f"{entry_id}.scripture.{lang}", "Scripture text is blank.")
+
+        scripture_zh = str(scripture.get("zh", "")).strip()
+        if ARABIC_SCRIPT_RE.search(scripture_zh):
+            issue(
+                "error",
+                "arabic-script-in-chinese-scripture",
+                f"{entry_id}.scripture.zh",
+                "Chinese scripture contains Arabic-script characters.",
+            )
+        if LEADING_CHAPTER_ARTIFACT_RE.search(scripture_zh):
+            issue(
+                "error",
+                "leading-chapter-artifact",
+                f"{entry_id}.scripture.zh",
+                "Chinese scripture begins with a scraped section heading or chapter number.",
+            )
 
         if quality.get("status") != "polished":
             issue("warning", "not-polished", entry_id, "Entry is not yet marked polished.")
