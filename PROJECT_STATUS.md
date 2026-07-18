@@ -1,9 +1,11 @@
 # Sing Yin Study Prefect Duty Roster System - Project Status
 
-**Last Updated:** 2026-07-18
+**Last Updated:** 2026-07-19
 **Project Root:** `D:\code_v3`  
 **Current Phase:** v1.2 rc7 is live on the controlled Windows origin and canonical Cloudflare Worker; supervised human acceptance remains
 **Primary Theme Color:** `#0F766E`
+
+**Music refinement prepared on 2026-07-19:** the source default is now 35%. A one-time browser-preference revision upgrades only an absent value or the former exact 24% default; every other operator-selected level remains authoritative. The focused music tests, complete Python suite, and isolated Playwright check all pass, with the rendered audio element reporting `volume=0.35` and `base=0.35`. An `entrance` welcome-playlist brief is ready in `docs/MUSIC_PLAYLIST_CANDIDATES.md`; the Cloudflare entrance player will be wired only after the selected audio assets are supplied, so the live rc7 Worker currently remains silent rather than exposing a missing or placeholder track.
 
 The 2026-07-18 public-entrance refinement replaces the remaining flat colour field with one original, same-composition light／dark editorial scene stored as local Cloudflare Worker assets. The prepared ledger, three paper workflow markers, teal service line and restrained brass detail carry the weekly-work story without people, text, student data, crest, screen or fake UI. Theme switching changes only the paired image and lighting; a solid veil preserves copy contrast. Fine-pointer movement produces at most an 8×6 px depth response, resets immediately, and becomes fully static under reduced motion. The existing public／Guest／Admin identity routes and Cloudflare Access boundary are unchanged.
 
@@ -22,7 +24,7 @@ This is a fresh, local-first rebuild of the Sing Yin Study Prefect Duty Roster S
 
 ### v1.2 release truth
 
-- The rc7 source adds one shared semantic navigation／operation icon state system, a responsive Platform operating map, and an accessible live chart explaining the history-priority multiplier without changing roster policy. Local page music now defaults to 24% and resumes the same track across route changes within the current browser session. The devotional automatic choice is labelled **Default setting／預設設定**. These are presentation and browser-preference changes; SQLite transactions, eligibility, publication, fairness posting, backup and restore remain owned by their existing layers.
+- The current source adds one shared semantic navigation／operation icon state system, a responsive Platform operating map, and an accessible live chart explaining the history-priority multiplier without changing roster policy. Local page music now defaults to 35%, upgrades the former exact 24% default once without overwriting other manual levels, and resumes the same track across route changes within the current browser session. The devotional automatic choice is labelled **Default setting／預設設定**. These are presentation and browser-preference changes; SQLite transactions, eligibility, publication, fairness posting, backup and restore remain owned by their existing layers.
 - Hybrid SQLite／FTS／vector retrieval is deliberately not part of rc7. The application has no large unstructured retrieval job that justifies a vector index; roster, fairness, audit and backup questions remain more accurate and cheaper through the existing structured schema and bounded reports. The useful “prewrite governance” principle is already expressed through command receipts, optimistic versions, transaction validation, backup obligations and audit references rather than a second memory store.
 
 - `SING_YIN_UNIFIED_GUEST` remains disabled by default. A verified Guest principal is rejected by the origin while the flag is `0`.

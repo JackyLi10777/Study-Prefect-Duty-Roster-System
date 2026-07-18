@@ -36,4 +36,21 @@
 - 是否需要排除帶旁白、廣告式開場、突發大音量或超過約十五分鐘的版本；
 - 你實際試聽後認為適合的預設音量。
 
-系統接入時仍須保留：不自動播放、操作者手動開始、順序／隨機模式、獨立音量、頁面情境分類，以及「跟隨外觀」只作首次建議而不強迫改歌。
+系統接入時仍須保留：本機音樂只在頁面準備後嘗試播放一次、瀏覽器攔截時等待操作者手動開始、順序／隨機模式、獨立音量、頁面情境分類，以及「跟隨外觀」只作首次建議而不強迫改歌；第三方 YouTube 播放器仍不可自動播放。
+
+## C. 登入頁迎賓歌單
+
+登入頁需要的是「歡迎回來，先安定下來，再開始服事」的情緒，而不是廣告式開場。它會使用獨立 `entrance` 分類及可見播放／靜音控制；瀏覽器若攔截首次有聲播放，頁面只顯示等待操作，不會反覆搶播。建議順序如下：
+
+1. **Morning Has Broken — Relaxing Piano**：最適合作為淺色入口的第一首；溫暖、清楚，而且已有本機版本。
+2. **Ambre — Nils Frahm**：安靜但不沉重，適合登入及閱讀今日提醒；已有本機版本。
+3. **Near Light — Ólafur Arnalds**：帶少量向前感，適合從入口過渡到工作台；已有本機版本。
+4. **We Move Lightly — Dustin O'Halloran**：節奏克制，適合首次使用及訪客體驗；已有本機版本。
+5. **Canon in D Major (Arr. for Piano) — Music Lab Collective**：熟悉、穩定，適合作為日間迎賓輪播；已有本機版本。
+6. **Be Thou My Vision — piano instrumental**：把品牌精神和服事方向帶入入口，但避免使用帶畫面文字或旁白版本；已有本機版本。
+7. **Song for Sienna — Brian Crain**：建議新增；旋律溫和，適合作為明亮入口的後續曲目。可在 YouTube Music 搜尋 `Brian Crain Song for Sienna`。
+8. **Dawn — Dario Marianelli / Jean-Yves Thibaudet**：建議新增；具有晨光與預備感，但需選擇音量動態不突出的正式音源。可搜尋 `Dario Marianelli Dawn`。
+9. **Opus 23 — Dustin O'Halloran**：建議新增；較適合深色入口及晚間登入。可搜尋 `Dustin O'Halloran Opus 23`。
+10. **I Giorni — Ludovico Einaudi**：建議新增；有前進感但仍然克制，適合登入後轉入每週工作。可搜尋 `Ludovico Einaudi I Giorni`。
+
+下一次只需補充第 7 至 10 首；第 1 至 6 首已在現有本機歌庫，不必重複上傳。新增檔案宜使用 M4A 或 MP3、單檔不超過 25 MB、沒有旁白／突發大音量／廣告式開場，並保留清楚的曲名及演奏者檔名。登入 Worker 的正式靜態資產會另行建立壓縮副本，不直接暴露管理員的本機歌庫。

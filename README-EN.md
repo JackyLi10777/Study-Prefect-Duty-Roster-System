@@ -113,7 +113,9 @@ marking. Close it and use `RESET_PRACTICE_MODE.cmd` for a clean rehearsal.
 The Dashboard devotional direction offers **Default setting**, **Clear
 guidance**, and **Quiet comfort**. The default follows the current appearance
 as a recommendation only. Local page-context music makes one page-ready attempt
-at a browser-local default of 24% and always exposes pause/off controls. If two
+at a browser-local default of 35% and always exposes pause/off controls. Browsers
+still using the former exact 24% default are upgraded once; other manually chosen
+levels are preserved. If two
 consecutive routes resolve to the same local track, the current browser session
 continues its position and playing/paused state instead of restarting it; this
 continuity never enters SQLite or permanent browser storage.
