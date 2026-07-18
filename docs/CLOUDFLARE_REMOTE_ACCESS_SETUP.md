@@ -148,8 +148,17 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 1. 以固定、版本庫內的 Wrangler／lockfile 安裝依賴。
 2. 執行 Worker tests、type check 及 dry run。
 3. 核對所有必需 secret **名稱**存在；不要顯示值。
-4. 建立新 Worker version，但先不要全量。
-5. 在測試流量核對：
+4. 從已推送、屬於 `origin/main`、HEAD 與標籤完全一致的乾淨 annotated tag 執行：
+
+   ```powershell
+   powershell.exe -NoProfile -ExecutionPolicy Bypass `
+     -File scripts\deploy_cloudflare_worker.ps1 `
+     -SourceRoot "<乾淨發布工作樹>" `
+     -ReleaseRef "<next-approved-annotated-tag>"
+   ```
+
+   腳本只使用鎖定的 Wrangler 4.110.0：先保存目前 100% version ID，再上傳新 version，以「舊版 100%／新版 0%」建立 deployment；指定版本標頭的 smoke checks 通過後，才把新版提升至 100%。任何遠端切換開始後的失敗都會精確 rollback 到原 version ID，結果寫入 `logs/cloudflare-worker-deployment-<tag>.json`，不記錄 cookie、token 或 secret 值。
+5. 在新版仍為 0% 時核對：
    - `/` 公開入口；
    - `/auth/admin/start` 正確進入 Access；
    - `POST /auth/guest/start` 建立 Guest session；
@@ -157,7 +166,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
    - `/guest`、`/try` 兼容重定向；
    - `/view#…` Viewer；
    - VPC WebSocket 及 origin `/healthz`。
-6. 保存新舊 version ID，才提高流量。
+6. 只有上述核對及 deployment traffic 查詢全部相符，才提高流量；完成後再用不帶版本標頭的正式網址核對一次。
 
 ## 8. 核對候選的統一 Guest
 

@@ -195,15 +195,14 @@ python -X utf8 -m nicegui_app.main
 
 ### 後續受控發布次序
 
-1. 在來源分支完成 `python -X utf8 -m pytest -q`。
-2. 執行 `python -X utf8 scripts\verify_release_candidate.py`，核對 report 與最終來源 fingerprint 一致。
-3. 在現行正式系統建立新已驗證快照及交接包，並在另一個隔離 SQLite 完成還原。
-4. Gate 及備份證據全通過後，才合併 `main` 並建立**下一個獲批准的 annotated tag**；不可預先重用 rc4–rc7 標籤。保存目前 rc9／`18a5c73` Windows bundle 及 Worker `b13e5721-d1e8-4048-9885-ffb422fe2010` 作回退。
-5. 進入 maintenance，從該不可變 tag 更新 Windows bundle，執行 additive migration；保持現行受保護設定不變，不把切換功能旗標當成略過驗證的捷徑。
-6. 核對 `/healthz`、`/readyz`、管理員本機工作流及備份義務。
-7. 只有 Worker source 或受保護設定確實改變時，才部署該 tag 對應的 Worker；若未改，記錄「刻意不重新部署」及沿用的 verified version ID。
-8. 核對 Public、Admin、Guest、Viewer、WebSocket、登出、到期及跨分頁隔離；所有能力仍須由伺服器拒絕優先，而非依賴隱藏按鈕。
-9. 所有線上證據通過後才宣布候選可供驗收；任一失敗立即恢復現行設定、rc9 主機 bundle 及已驗證 Worker version。
+1. 在最後來源 commit 只執行一次 `python -X utf8 scripts\verify_update.py --release`；它已擁有完整 pytest、瀏覽器、Worker、效能、備份失敗及部署就緒閘門，不要再重複跑同一套檢查。
+2. 核對 `logs/release-candidate-report.json` 的 13 項 gate、來源 fingerprint 與最終 commit 完全一致。
+3. Gate 通過後，才合併 `main` 並建立**下一個獲批准的 annotated tag**；不可預先重用 rc4–rc7 標籤。保存目前 rc9／`18a5c73` Windows bundle 及 Worker `b13e5721-d1e8-4048-9885-ffb422fe2010` 作回退。
+4. 以 `scripts\deploy_windows_release.ps1` 從該乾淨 tag 更新 Windows bundle；腳本會在切換前建立新的正式已驗證快照、完成隔離還原、進入 maintenance、執行 additive migration並在失敗時回復，不需要另跑一套重複備份程序。
+5. 核對 `/healthz`、`/readyz`、管理員本機工作流及備份義務。
+6. 只有 Worker source 或受保護設定確實改變時，才執行 `scripts\deploy_cloudflare_worker.ps1`；它會以舊版 100%／新版 0% staging、版本指定 smoke checks、100% promotion 及精確 rollback 管理遠端切換。若 Worker 未改，則記錄「刻意不重新部署」及沿用的 verified version ID。
+7. 核對 Public、Admin、Guest、Viewer、WebSocket、登出、到期及跨分頁隔離；所有能力仍須由伺服器拒絕優先，而非依賴隱藏按鈕。
+8. 所有線上證據通過後才宣布候選可供驗收；任一失敗立即恢復現行設定、rc9 主機 bundle 及已驗證 Worker version。
 
 ## 正式驗收清單
 
