@@ -4,11 +4,12 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
-> **v1.2 rc7 status:** The 240-input candidate passed all 13 formal gates with
+> **v1.2 rc7 status:** The 240-input release passed all 13 formal gates with
 > fingerprint `e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db`.
-> The Windows origin is healthy／ready on rc6 `0c36af3`; rc7 remains pending until
-> a fresh verified production backup, isolated restore, matching Worker deploy
-> and live Admin／Guest／Viewer／WebSocket acceptance are complete.
+> The Windows origin is healthy／ready on rc7 `14cb7e7`; a fresh verified
+> production backup and isolated restore passed before cutover. Matching Worker
+> version `b13e5721-d1e8-4048-9885-ffb422fe2010` is live. Supervised human
+> acceptance remains required.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 
@@ -315,7 +316,7 @@ verifier and release-candidate orchestrator all passed in the matching rc7
 `e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db` from 240
 inputs between `2026-07-18T19:41:21.506585+08:00` and
 `2026-07-18T19:46:28.277693+08:00`. The running origin remains the healthy／ready
-rc6 release until the controlled rc7 switch. rc7 keeps every failure
+rc7 release after the controlled switch. rc7 keeps every failure
 and every non-`cloudflare_access` warning blocking; only that Worker-dependent
 warning is deferred from local-origin readiness to the matching Worker stage.
 Live Cloudflare acceptance remains mandatory, so this architecture document is

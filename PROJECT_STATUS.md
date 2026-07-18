@@ -2,15 +2,17 @@
 
 **Last Updated:** 2026-07-18
 **Project Root:** `D:\code_v3`  
-**Current Phase:** v1.2 rc7 interaction／explanation integration and 13／13 isolated release verification complete; controlled Windows／Worker rollout is the remaining gate
+**Current Phase:** v1.2 rc7 is live on the controlled Windows origin and canonical Cloudflare Worker; supervised human acceptance remains
 **Primary Theme Color:** `#0F766E`
 
 The 2026-07-18 public-entrance refinement replaces the remaining flat colour field with one original, same-composition light／dark editorial scene stored as local Cloudflare Worker assets. The prepared ledger, three paper workflow markers, teal service line and restrained brass detail carry the weekly-work story without people, text, student data, crest, screen or fake UI. Theme switching changes only the paired image and lighting; a solid veil preserves copy contrast. Fine-pointer movement produces at most an 8×6 px depth response, resets immediately, and becomes fully static under reduced motion. The existing public／Guest／Admin identity routes and Cloudflare Access boundary are unchanged.
 
+**Live rc7 rollout (2026-07-18):** annotated tag `v1.2.0-rc.7`／commit `14cb7e7` is now on `main`, `codex/unified-guest-redesign`, the protected `C:\SingYinRoster` origin and canonical Worker. The origin deployment created `20260718-120825-488567-manual_verified_backup.sqlite3` with checksum `ef7c9c20a84281ae8554de804515ed58f0fe20fc9aa16cabde49e7fedcd733a5`; SQLite integrity, schema, fairness reconciliation, row matching, restore audit and isolated restore all passed. The owned service task is running as `SingYinRosterSvc`, `/healthz` is `ok`, `/readyz` is `ready`, and no rollback was required. Cloudflare Worker version `b13e5721-d1e8-4048-9885-ffb422fe2010` serves the paired entrance assets. Live checks confirmed public mode, exact `/auth/login` redirect, Guest start／same-product shell／logout cleanup, both WebP responses and error-free light／dark browser rendering.
+
 **Windows SSH maintenance (2026-07-17):** OpenSSH Server is installed on `LAPTOP-NQ22TI3V` and runs automatically. The hardened service accepts only the `lichu` Ed25519 maintenance key, listens only on `127.0.0.1:22` and `[::1]:22`, disables password and interactive authentication plus all forwarding, and leaves the Windows OpenSSH inbound firewall rule disabled. A real key-only SSH session returned the administrator identity and confirmed official application and database health; a password-only probe was rejected with `Permission denied (publickey)`. Evidence is stored in `logs/windows-ssh-verification.json`. Off-device SSH through a separate Cloudflare private route remains an explicit future step and is not yet claimed.
 
 **Repository:** `JackyLi10777/Study-Prefect-Duty-Roster-System`  
-**Branches:** `codex/unified-guest-redesign` contains the verified rc7 candidate; `main` will be synchronized before the immutable rc7 switch. The running Windows origin is the healthy／ready `v1.2.0-rc.6` release at `0c36af3` until that controlled rollout. `nicegui-self-hosted` is the platform snapshot and `streamlit-cloud` is the legacy reference.
+**Branches:** `codex/unified-guest-redesign` and `main` both contain live annotated tag `v1.2.0-rc.7` at `14cb7e7`. The protected Windows origin runs that same release. `nicegui-self-hosted` is the platform snapshot and `streamlit-cloud` is the legacy reference.
 
 **Co-creators:** LI Chuangjie Jacky（李創杰）and Codex only. `Study Prefect Systems & Stewardship Office` is their two-member project identity; no additional developer or contractor contributed to this NiceGUI rebuild and formal release.
 
@@ -28,7 +30,7 @@ This is a fresh, local-first rebuild of the Sing Yin Study Prefect Duty Roster S
 - The Guest snapshot codec and browser bridge now exist in the source candidate. Each meaningful revision is pushed only to the connected tab as a signed `sessionStorage` token; restore requires the live connection nonce and exact SID／workspace／tab binding. Duplicate tabs receive new workspaces, while copied, tampered, expired, stale or old-boot tokens are rejected in favour of the safe fixture.
 - The reproducible rc7 source passed 13／13 formal checks with fingerprint `e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db` across 240 release inputs. Evidence covers the complete Python suite, 29 Worker contracts, dependency integrity, desktop/mobile/reduced-motion UI, performance, full write/PDF/fairness/backup/restore flow, readiness, unified Guest isolation, and committed-without-backup recovery. The matching report at `logs/release-candidate-report.json` ran from `2026-07-18T19:41:21.506585+08:00` to `2026-07-18T19:46:28.277693+08:00`; machine verification is no longer a rollout blocker. Text inputs use a documented LF／CRLF-normalized fingerprint contract while release binary assets remain byte-exact, so a clean immutable tag reproduces the verified artifact across Windows worktrees.
 - The 2026-07-17 rc5 origin rollout created a fresh checksum-verified production backup and passed isolated restore before changing the host. It then rolled back safely because strict local readiness treated the intentionally pending `cloudflare_access` live-verification warning as fatal before the matching Worker stage. No data-loss or failed-restore condition occurred.
-- `C:\SingYinRoster` currently runs the schema-compatible rc6 release at `0c36af3`; `/healthz` is healthy and `/readyz` is ready. The rc7 host and Worker stages remain deliberately pending until the immutable tag, verified production backup and live acceptance are complete.
+- `C:\SingYinRoster` and the canonical Worker now run the matching rc7 release; `/healthz` is healthy, `/readyz` is ready, public／Guest gateway checks pass, and the rc6 commit／Worker version remain the rollback pair.
 - rc6 keeps fail-closed readiness for every failure and every warning other than the specifically identified `cloudflare_access` warning. That one warning may be deferred only during the local-origin stage; it must pass after the matching Worker is deployed before the overall release can succeed.
 - Cloudflare Access is now confirmed to protect the exact `/auth/login` destination only. The public root, Guest start/status/logout, and compatibility routes are no longer inside the Access application path scope; this configuration evidence does not by itself claim that the v1.2 origin or Worker is deployed.
 - v1.2 documentation: [Unified guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md), [Canonical site guide](docs/PUBLIC_ROSTER_VIEWER.md), [Cloudflare rollout](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), and [Deployment decision](docs/DEPLOYMENT_DECISION.md).
@@ -66,12 +68,12 @@ The deployment decision remains a dedicated Windows 11 host whose NiceGUI origin
 - Version and command inputs on critical interactive writes; pending backup obligations are repaired on startup or place `/readyz` in degraded state.
 - External share intent is bound to roster version/digest through a durable outbox.
 
-### Controlled rc7 rollout steps still pending
+### Completed rc7 rollout evidence
 
-- Run the protected origin rollout from the rc7 release reference. The deployment must create and record a fresh verified formal backup and isolated restore against the production database rather than reusing rc6 evidence.
-- During the origin stage, block every readiness failure and every warning except the exact `cloudflare_access` warning that depends on the not-yet-deployed matching Worker. Recheck `/healthz`／`/readyz` while retaining rc6 recovery evidence.
-- Cloudflare Access path configuration is complete and screenshot-confirmed at exact `/auth/login`; it must remain unchanged while the origin and Worker are switched.
-- Install matching Guest／origin signing secrets, deploy the matching Worker, then require `cloudflare_access` and live Admin／Guest／Viewer／WebSocket checks to pass before declaring the overall release complete.
+- The protected origin rollout used immutable `v1.2.0-rc.7`, created a fresh verified formal backup and completed isolated restore against the production database before switching the service.
+- Health, readiness, pending backup obligations, task ownership and loopback-only origin checks passed; rollback was not required.
+- Cloudflare Access remains scoped to exact `/auth/login`; Worker version `b13e5721-d1e8-4048-9885-ffb422fe2010` is live with the matching runtime and static assets.
+- Automated and anonymous live checks passed. Exact-email OTP completion, long reconnect, real upload／PDF and teacher-advisor review remain supervised human acceptance items rather than machine-deployment blockers.
 
 ### rc4 rollout interruption and forward recovery
 
@@ -368,7 +370,7 @@ revision; they do not supersede the v1.2 release truth at the top of this file.
 | Localization | Traditional Chinese default; English is a full UI counterpart; direct Scripture quotations use RCUV 2010（神版）and NKJV respectively |
 | Theme | Professional Teal `#0F766E`, restrained gold, light/dark support |
 | Responsive presentation | One URL, login, route set, data and policy engine; desktop and phone use independent arrangements from shared view models, never a second mobile site or user-agent-routed application |
-| External access | v1.2 rc7 verified candidate: one canonical workers.dev hostname; public `/` entrance; signed Guest session → VPC → same NiceGUI routes backed by an in-memory adapter; exact-email One-time PIN → signed Admin session → official workflow; `/guest` and `/try` compatibility redirects; separate encrypted `/view#…` Viewer. The rc6 Windows origin is healthy, ready and loopback-only until the controlled rc7 switchover completes. |
+| External access | v1.2 rc7 live: one canonical workers.dev hostname; public `/` entrance; signed Guest session → VPC → same NiceGUI routes backed by an in-memory adapter; exact-email One-time PIN → signed Admin session → official workflow; `/guest` and `/try` compatibility redirects; separate encrypted `/view#…` Viewer. The matching rc7 Windows origin is healthy, ready and loopback-only. |
 | Optional online music | Visible YouTube public-playlist player; no sign-in/payment/API key for playback, optional local-environment API key for search |
 | PDF export | Local-memory ReportLab generation with a Traditional Chinese CJK font; no public upload |
 

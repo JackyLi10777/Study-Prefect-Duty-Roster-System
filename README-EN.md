@@ -39,8 +39,8 @@ separately authorized operation.
 
 | Branch | Platform | Status |
 |---|---|---|
-| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | rc7 passed all 13 formal gates; controlled origin/Worker rollout in progress |
-| `main` | NiceGUI + SQLite, self-hosted | rc7 will be synchronized before the controlled switch; production remains on healthy/ready rc6 `0c36af3` |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Live rc7 `14cb7e7`, aligned with `main` and the production origin |
+| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.7`; the Windows origin and canonical Worker match |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
@@ -72,9 +72,11 @@ write/PDF, backup, and recovery evidence. The matching report ran from
 `2026-07-18T19:41:21.506585+08:00` to `2026-07-18T19:46:28.277693+08:00`;
 machine verification is complete. Cloudflare Access is screenshot-confirmed to
 protect only the exact `/auth/login` destination. The planned immutable rollout
-reference is `v1.2.0-rc.7`. The running Windows origin is the healthy and ready
-`v1.2.0-rc.6` release at `0c36af3`; rc7 remains pending until the controlled
-host and Worker switch plus the live Admin/Guest/Viewer sequence complete. The
+reference is `v1.2.0-rc.7`. The Windows origin now runs matching commit
+`14cb7e7`; health and readiness pass, the fresh production backup passed
+checksum, fairness reconciliation, and isolated restore, and Worker version
+`b13e5721-d1e8-4048-9885-ffb422fe2010` is live. Public, Access redirect,
+Guest start/logout, paired assets, and light/dark browser checks pass. The
 application has no custom password database.
 
 The commands below prepare a host or maintenance workstation; they are not a

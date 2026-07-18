@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **v1.2 rc7 發布狀態：** 240 個發布輸入已以指紋 `e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db` 通過 13／13 正式 gate。Windows origin 現為健康、ready 的 rc6／`0c36af3`；rc7 會先建立全新已驗證備份並完成隔離還原，再更新 origin 與 Worker。只有具名的跨階段 `cloudflare_access` warning 可在 origin 階段暫留；其他 failure／warning 照常阻擋，Worker 及線上驗收仍是整體發布硬閘門。
+> **v1.2 rc7 發布狀態：** 240 個發布輸入已以指紋 `e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db` 通過 13／13 正式 gate。Windows origin 已更新至健康、ready 的 rc7／`14cb7e7`；全新正式備份、checksum、公平對帳及隔離還原全部通過。canonical Worker 版本 `b13e5721-d1e8-4048-9885-ffb422fe2010` 已上線，公開入口、Access 跳轉、Guest session／logout、配對 WebP 及淺／深色瀏覽器核對通過。真人 Admin／Viewer／長連線驗收仍須依清單完成。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
