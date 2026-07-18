@@ -27,6 +27,12 @@ FAVICON_PRODUCT_ASSET = PRODUCT_IDENTITY.product_asset(
     PRODUCT_IDENTITY.delivery["faviconVariant"]
 )
 FAVICON_PRODUCT_PATH = FAVICON_PRODUCT_ASSET.path
+NAVIGATION_PRODUCT_ASSETS = {
+    appearance: PRODUCT_IDENTITY.product_asset(
+        PRODUCT_IDENTITY.delivery[f"navigation{appearance.title()}Variant"]
+    )
+    for appearance in ("light", "dark")
+}
 LIGHT_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-dashboard-light.png"
 DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-dashboard-dark.png"
 ROSTER_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-roster-workspace.png"
@@ -566,14 +572,27 @@ def main() -> None:
         page.locator(".sy-feedback-pulse--success").wait_for(timeout=2_000, state="detached")
         images_without_alt = page.locator("img:not([alt])").count()
         assert images_without_alt == 0
-        navigation_crest = page.locator(".sy-brand-mark")
-        navigation_crest_image = navigation_crest.locator("img")
-        assert "sing-yin-crest-navigation.png" in (navigation_crest_image.get_attribute("src") or "")
-        page.wait_for_function("element => element.complete && element.naturalWidth > 0", arg=navigation_crest_image.element_handle())
-        assert navigation_crest_image.evaluate("element => element.naturalWidth") == 545
-        assert (navigation_crest.bounding_box() or {"width": 0})["width"] >= 58
-        assert navigation_crest.evaluate("element => getComputedStyle(element).backgroundColor") == "rgba(0, 0, 0, 0)"
-        assert navigation_crest.evaluate("element => getComputedStyle(element).borderTopWidth") == "0px"
+        navigation_mark = page.get_by_test_id("navigation-product-mark")
+        assert navigation_mark.get_attribute("role") == "img"
+        for appearance, asset in NAVIGATION_PRODUCT_ASSETS.items():
+            navigation_image = navigation_mark.locator(
+                f".sy-product-mark-image--{appearance}"
+            )
+            assert (navigation_image.get_attribute("src") or "").endswith(
+                asset.public_url or "__missing_product_mark__"
+            )
+            page.wait_for_function(
+                "element => element.complete && element.naturalWidth > 0",
+                arg=navigation_image.element_handle(),
+            )
+            assert navigation_image.evaluate("element => element.naturalWidth") == 256
+        assert (navigation_mark.bounding_box() or {"width": 0})["width"] >= 58
+        assert navigation_mark.evaluate(
+            "element => getComputedStyle(element).backgroundColor"
+        ) == "rgba(0, 0, 0, 0)"
+        assert navigation_mark.evaluate(
+            "element => getComputedStyle(element).borderTopWidth"
+        ) == "0px"
         assert page.locator(".sy-flow-symbol").count() == 3
         assert page.locator(".sy-flow-step--active .sy-tone-action").evaluate(
             "element => getComputedStyle(element).color"

@@ -80,6 +80,9 @@ def test_browser_release_verifier_uses_the_manifest_selected_product_favicon() -
     assert 'PRODUCT_IDENTITY.delivery["faviconVariant"]' in verifier
     assert "FAVICON_PRODUCT_PATH.read_bytes()" in verifier
     assert "FAVICON_CREST_PATH" not in verifier
+    assert 'page.get_by_test_id("navigation-product-mark")' in verifier
+    assert "NAVIGATION_PRODUCT_ASSETS.items()" in verifier
+    assert 'page.locator(".sy-brand-mark")' not in verifier
 
 
 def test_browser_release_verifier_bootstraps_the_project_when_run_by_path(tmp_path: Path) -> None:
