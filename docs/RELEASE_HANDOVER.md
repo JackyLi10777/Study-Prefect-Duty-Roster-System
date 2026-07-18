@@ -2,11 +2,11 @@
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
-> **v1.2 rc6 交接狀態：** 統一 Admin／Guest runtime `d38813f` 已以指紋 `2a26204a47baaed7fca297de16c301b92b5503f554f202aa3ddcf85ff47c2c34`（238 個發布輸入）通過 13／13 正式 gate。2026-07-17 的 rc5 origin rollout 建立全新已驗證備份並完成隔離還原，之後因 strict local readiness 把刻意留待 Worker 階段核實的 `cloudflare_access` warning 當成致命而安全回滾。`C:\SingYinRoster` 現仍是健康、ready 的 rc4／`30f282f`，live Worker 仍是 pre-v1.2 baseline；這不是 v1.2 已部署聲明。
+> **v1.2 rc7 交接狀態：** 240 個發布輸入已以指紋 `e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db` 通過 13／13 正式 gate。`C:\SingYinRoster` 現為健康、ready 的 rc6／`0c36af3`；rc7 仍須建立全新已驗證備份、完成隔離還原、同步更新 Worker，並完成線上 Admin／Guest／Viewer／WebSocket 驗收。
 
 > **rc4 rollout 記錄：** rc4 已成功把正式 Alembic schema 由 `0007` 升至 `0008`，建立已驗證備份並完成隔離還原；其後 `git fetch origin main` 只更新 `FETCH_HEAD`，而 ancestry gate 讀取 stale `origin/main`，造成假失敗。rc4 因而從未被宣告為 live。自動 rollback 未能證明 origin health 後，主機以相容的 rc4／`30f282f` 完成 forward recovery；rc5／`bafaef6` 已改用明確 remote-tracking refspec，並重新通過完整 13-gate 報告。
 
-> **rc6 分階段規則：** origin 階段仍會阻擋每一個 failure 及所有其他 warning；只有明確依賴尚未部署 Worker 的 `cloudflare_access` 可暫時延後。匹配 Worker 上線後，這項檢查以及 Admin／Guest／Viewer／WebSocket 線上驗收仍必須全部通過，才可結束 maintenance 並交接。
+> **rc7 分階段規則：** origin 階段仍會阻擋每一個 failure 及所有其他 warning；只有明確依賴尚未部署 Worker 的 `cloudflare_access` 可暫時延後。匹配 Worker 上線後，這項檢查以及 Admin／Guest／Viewer／WebSocket 線上驗收仍必須全部通過，才可結束 maintenance 並交接。
 
 ## 運作原則
 
@@ -198,7 +198,7 @@ python -X utf8 -m nicegui_app.main
 1. 在來源分支完成 `python -X utf8 -m pytest -q`。
 2. 執行 `python -X utf8 scripts\verify_release_candidate.py`，核對 report 與最終來源 fingerprint 一致。
 3. 在現行正式系統建立新已驗證快照及交接包，並在另一個隔離 SQLite 完成還原。
-4. Gate 及備份證據全通過後，才合併 `main` 並建立目前發布用的 annotated tag（本次計劃為 `v1.2.0-rc.5`／`bafaef6`）；rc.1／rc.2／rc.3 均在 host mutation 前停止，rc4 則按頁首記錄在 migration／備份／隔離還原後因 stale remote-tracking ref 假失敗而未宣告 live。保存 rc4 Windows bundle 及 pre-v1.2 Worker version ID 作回退。
+4. Gate 及備份證據全通過後，才合併 `main` 並建立目前發布用的 annotated tag（本次為 `v1.2.0-rc.7`）。保存目前 rc6 Windows bundle 及 Worker version ID 作回退。
 5. 進入 maintenance，從該不可變 tag 更新 Windows bundle，執行 additive migration；先以 `SING_YIN_UNIFIED_GUEST=0` 啟動。
 6. 核對 `/healthz`、`/readyz`、管理員本機工作流及備份義務。
 7. staged 部署同一 tag 對應的 Worker，核對 Public、Admin、Guest、Viewer 及 WebSocket。

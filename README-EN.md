@@ -39,8 +39,8 @@ separately authorized operation.
 
 | Branch | Platform | Status |
 |---|---|---|
-| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Verified rc6 source at runtime `d38813f`; controlled origin/Worker rollout in progress |
-| `main` | NiceGUI + SQLite, self-hosted | rc6 will be synchronized before the controlled switch; production remains on rc4 `30f282f` |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | rc7 passed all 13 formal gates; controlled origin/Worker rollout in progress |
+| `main` | NiceGUI + SQLite, self-hosted | rc7 will be synchronized before the controlled switch; production remains on healthy/ready rc6 `0c36af3` |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
@@ -64,23 +64,17 @@ redirects; an explicitly issued `/view#…` link remains the separate encrypted,
 read-only published-roster viewer.
 
 The v1.2 Worker and origin authenticate both modes with server-verified,
-HMAC-signed principals. On 2026-07-17 the reproducible frozen 238-input rc6
-source at runtime commit `d38813f` passed all 13 formal release gates with fingerprint
-`2a26204a47baaed7fca297de16c301b92b5503f554f202aa3ddcf85ff47c2c34`,
-including isolated Admin/Guest browser, mobile, performance, write/PDF, backup,
-and recovery evidence. The matching report ran from
-`2026-07-17T09:07:48.151493+08:00` to `2026-07-17T09:13:10.917021+08:00`; machine
-verification is complete. Cloudflare Access is screenshot-confirmed to protect
-only the exact `/auth/login` destination. The planned immutable rollout
-reference is `v1.2.0-rc.6`; rc.1, rc.2, and rc.3 were never deployed because
-their release gates stopped them before host mutation. The rc4 rollout did
-migrate the official schema from `0007` to `0008` and completed a verified
-backup plus isolated restore, but a stale `origin/main` check caused a false
-failure before rc4 could be declared live. The origin has since been
-forward-recovered to rc4 commit `30f282f`; rc5 commit `bafaef6` explicitly
-refreshes the remote-tracking reference. The Worker remains on its pre-v1.2
-baseline, so `SING_YIN_UNIFIED_GUEST=0` remains the deployment default until
-the controlled rc5 switch and live Admin/Guest/Viewer sequence complete. The
+HMAC-signed principals. On 2026-07-18 the reproducible 240-input rc7 source
+passed all 13 formal release gates with fingerprint
+`e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db`,
+including isolated Admin/Guest browser, mobile, reduced-motion, performance,
+write/PDF, backup, and recovery evidence. The matching report ran from
+`2026-07-18T19:41:21.506585+08:00` to `2026-07-18T19:46:28.277693+08:00`;
+machine verification is complete. Cloudflare Access is screenshot-confirmed to
+protect only the exact `/auth/login` destination. The planned immutable rollout
+reference is `v1.2.0-rc.7`. The running Windows origin is the healthy and ready
+`v1.2.0-rc.6` release at `0c36af3`; rc7 remains pending until the controlled
+host and Worker switch plus the live Admin/Guest/Viewer sequence complete. The
 application has no custom password database.
 
 The commands below prepare a host or maintenance workstation; they are not a

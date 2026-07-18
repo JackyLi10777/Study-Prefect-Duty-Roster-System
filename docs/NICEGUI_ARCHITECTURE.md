@@ -4,13 +4,11 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
-> **v1.2 rc6 status:** This file documents runtime commit `d38813f`; its
-> 238-input source passed all 13 formal gates with fingerprint
-> `2a26204a47baaed7fca297de16c301b92b5503f554f202aa3ddcf85ff47c2c34`. The rc5 origin rollout created a
-> fresh verified backup and passed isolated restore, then rolled back safely
-> because strict local readiness treated the intentionally pending
-> `cloudflare_access` warning as fatal before the Worker stage. The Windows
-> origin is healthy／ready on rc4 `30f282f`; rc6 corrects only this staging rule.
+> **v1.2 rc7 status:** The 240-input candidate passed all 13 formal gates with
+> fingerprint `e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db`.
+> The Windows origin is healthy／ready on rc6 `0c36af3`; rc7 remains pending until
+> a fresh verified production backup, isolated restore, matching Worker deploy
+> and live Admin／Guest／Viewer／WebSocket acceptance are complete.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 
@@ -312,12 +310,12 @@ The only deliberate application-originated external request carrying roster-deri
 - Worker Deno contracts own `/auth/admin/start`, `/auth/guest/start`, `/auth/status`, `/auth/logout`, compatibility redirects, principal signing, forged-header stripping, VPC proxying and Viewer isolation.
 
 The focused browser-snapshot tests, complete Python suite, unified Guest browser
-verifier and release-candidate orchestrator all passed in the matching rc6
-13-gate report. Runtime commit `d38813f` produced fingerprint
-`2a26204a47baaed7fca297de16c301b92b5503f554f202aa3ddcf85ff47c2c34` from 238
-inputs between `2026-07-17T09:07:48.151493+08:00` and
-`2026-07-17T09:13:10.917021+08:00`. The rc5 rollout then completed a fresh formal
-backup and isolated restore before its safe rollback. rc6 keeps every failure
+verifier and release-candidate orchestrator all passed in the matching rc7
+13-gate report. The candidate produced fingerprint
+`e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db` from 240
+inputs between `2026-07-18T19:41:21.506585+08:00` and
+`2026-07-18T19:46:28.277693+08:00`. The running origin remains the healthy／ready
+rc6 release until the controlled rc7 switch. rc7 keeps every failure
 and every non-`cloudflare_access` warning blocking; only that Worker-dependent
 warning is deferred from local-origin readiness to the matching Worker stage.
 Live Cloudflare acceptance remains mandatory, so this architecture document is

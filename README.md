@@ -20,8 +20,8 @@
 
 | 分支 | 運行平台 | 定位 |
 |---|---|---|
-| `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | rc6 已驗證來源（runtime `d38813f`）；受控 origin／Worker 發布進行中 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | rc6 將於受控切換前同步；正式 Windows origin 暫仍使用 rc4／`30f282f` |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | rc7 已通過 13／13 正式驗證；受控 origin／Worker 發布進行中 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | rc7 將於受控切換前同步；正式 Windows origin 現使用健康／ready 的 rc6／`0c36af3` |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -33,9 +33,9 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **共創者說明：我是李創杰。這次 NiceGUI 重構、設計、測試、文件及正式發布版本，只由我與 Codex 共同完成。`Study Prefect Systems & Stewardship Office` 是我們兩人的項目團隊名稱，沒有其他開發者、部門成員或外判團隊。**
 
-**目前正式基線：** `C:\SingYinRoster` 保持在 schema-compatible rc4／`30f282f`，`/healthz` 正常、`/readyz` ready；canonical Worker 亦保留 pre-v1.2 production baseline。2026-07-17 的 rc5 origin rollout 已建立全新已驗證備份並通過隔離還原，之後因本機 strict readiness 把刻意留待 Worker 階段核實的 `cloudflare_access` 警告視為致命而安全回滾，沒有宣告 rc5 上線。
+**目前正式基線：** `C:\SingYinRoster` 使用 schema-compatible rc6／`0c36af3`，`/healthz` 正常、`/readyz` ready；rc7 在建立新的正式備份、完成隔離還原及同步部署 Worker 前不會取代它。
 
-**下一個來源候選（v1.2 rc6）：** runtime `d38813f` 已把 Admin／Guest 統一到同一套 NiceGUI 路由，並以指紋 `2a26204a47baaed7fca297de16c301b92b5503f554f202aa3ddcf85ff47c2c34`（238 個發布輸入）通過 13／13 正式 gate。rc6 只修正分階段 readiness：origin 階段仍會阻擋所有 failure 及其他 warning，但把唯一需要 live Worker 才能證明的 `cloudflare_access` 暫留至下一階段。匹配 Worker 部署後，該檢查及 Admin／Guest／Viewer／WebSocket 線上驗收仍必須全部通過，否則整體發布失敗並回滾。
+**下一個來源候選（v1.2 rc7）：** 入口原創淺／深色情境圖、語意圖標動效、平台運作圖、歷史公平優先圖表、跨頁音樂連續播放及相關可靠性修正已整合。240 個發布輸入以指紋 `e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db` 通過 13／13 正式 gate；報告涵蓋 29 個 Worker 契約、完整 Python 套件、桌面／手機／reduced-motion、寫入／PDF／公平／備份／還原、訪客隔離、效能與部分備份復原。匹配 Worker 部署後，`cloudflare_access` 及 Admin／Guest／Viewer／WebSocket 線上驗收仍必須通過，否則整體發布失敗並回滾。
 
 ## 首席導學風紀：每日怎樣進入
 
@@ -59,13 +59,13 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 - 要重新開始時，先關閉練習模式的黑色視窗，再雙擊 `RESET_PRACTICE_MODE.cmd`；它只會清除 `data/practice/`，然後重新建立虛構練習環境。
 - 正式日常工作使用上述唯一網站。`START_SING_YIN_ROSTER.cmd` 保留給主機維護及 Cloudflare 故障後備；兩個本機啟動器會透過 `/healthz` 的 `applicationMode` 身份辨識服務，不會互相誤開。
 
-### v1.2 rc5 已驗證候選：統一訪客體驗
+### v1.2 rc7 已驗證候選：統一訪客體驗
 
 - `/guest`、`/try` 只保留為兼容入口，會回到同一品牌入口並開始 Guest session；不再維護第二套靜態試用產品。
 - Guest 與 Admin 使用相同的 Dashboard、值班表、風紀及公平、交接、平台、工程、架構、手冊與經文頁；差別由伺服器核實的 `PageContext` 及 adapter 決定，不靠隱藏按鈕。
 - Guest 只獲 `demo_data.read`、`demo_state.modify`、`demo_result.download`、`session_preferences.modify`；AI、匯入、上載、正式備份／還原、Viewer 分享、外部交付及永久寫入均被服務層拒絕。
 - 每分頁取得獨立、有限額、程序記憶體內的虛構工作區。Guest PDF／JSON 標明 `DEMO`，以一次性 `no-store` 下載回傳。
-- HMAC snapshot codec 及瀏覽器橋接已完成：每次有意義修改後，origin 只把最新、已簽署且綁定 SID／workspace／tab／revision 的 token 推送到該分頁 `sessionStorage`；重新整理時必須連同當次連線 nonce 交回伺服器核實。複製分頁會獲得新 workspace；篡改、錯誤綁定、過期、舊 boot 或重播 token 會被拒絕並回到安全虛構 fixture。完整 pytest、隔離 Admin／Guest 瀏覽器、手機、效能、寫入、PDF、備份及復原已納入 rc5 的 13／13 正式候選報告；餘下 gate 是受控 rc5 主機／Cloudflare 發布及真人驗收。
+- HMAC snapshot codec 及瀏覽器橋接已完成：每次有意義修改後，origin 只把最新、已簽署且綁定 SID／workspace／tab／revision 的 token 推送到該分頁 `sessionStorage`；重新整理時必須連同當次連線 nonce 交回伺服器核實。複製分頁會獲得新 workspace；篡改、錯誤綁定、過期、舊 boot 或重播 token 會被拒絕並回到安全虛構 fixture。完整 pytest、隔離 Admin／Guest 瀏覽器、手機、效能、寫入、PDF、備份及復原已納入 rc7 的 13／13 正式候選報告；餘下 gate 是受控 rc7 主機／Cloudflare 發布及真人驗收。
 - 完整安全模型及 gate 見 [統一訪客模式安全模型](docs/UNIFIED_GUEST_SECURITY_MODEL.md)。
 
 日常安全次序：
@@ -288,7 +288,7 @@ Worker 部署除 Viewer 管理所需的 `ADMIN_BEARER_TOKEN` 外，亦必須配�
 不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
 
 **目前可否在校外使用？**
-可以。現有 canonical 網站在受控切換完成前仍由 pre-v1.2 Worker 服務，Windows origin 則已 forward-recover 至健康、ready 的 rc4／`30f282f`。v1.2 rc5／`bafaef6` 已通過 13／13 正式候選 gate，將依「新備份與隔離還原 → rc5 Windows origin → 保持精確 `/auth/login` Access 路徑 → rc5 Worker → Admin／Guest／Viewer 抽查」次序發布。一般使用者毋須安裝 WARP；WARP 只保留作維護後備。
+可以。canonical 網站及 Windows origin 現運行健康、ready 的 rc6／`0c36af3`；rc7 已通過 13／13 正式候選 gate，將依「新備份與隔離還原 → rc7 Windows origin → 保持精確 `/auth/login` Access 路徑 → rc7 Worker → Admin／Guest／Viewer 抽查」次序發布。一般使用者毋須安裝 WARP；WARP 只保留作維護後備。
 
 **別人可否用 Viewer 連結編輯週表？**
 不可。分享連結永遠唯讀；網址參數、瀏覽器標頭或畫面操作都不能把訪客升級為管理員。只有 Access policy 內的管理員身份通過驗證後，Worker 才轉送完整工作台。
@@ -376,7 +376,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The verified v1.2 rc5 candidate uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. Commit `bafaef6` passed all 13 formal gates with fingerprint `c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd`; the Windows origin is healthy on the schema-compatible rc4 forward-recovery build, while the Worker remains pre-v1.2. `SING_YIN_UNIFIED_GUEST` remains off until the controlled rc5 host, Access-path, Worker-secret and live acceptance sequence completes. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
+The verified v1.2 rc7 candidate uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The 240-input candidate passed all 13 formal gates with fingerprint `e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db`; the Windows origin remains healthy and ready on rc6 until the controlled rc7 host, Access-path, Worker and live acceptance sequence completes. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 
