@@ -8,7 +8,7 @@
 
 > **SSH 維護狀態（2026-07-17）：** Windows OpenSSH Server 已以金鑰限定模式運行，只監聽 `127.0.0.1:22` 及 `[::1]:22`；密碼、互動式登入、轉發及 Windows 公開入站規則均停用。安裝、驗證、金鑰輪換及緊急停用程序見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。這是維護入口，不是另一個使用者網站。
 
-> **目前狀態（2026-07-16）：** `C:\SingYinRoster` 已固定於不可變標籤 `v1.1.0-rc.16`，並完成正式資料快照、隔離還原及受控切換。`Sing Yin Roster Host` 現由非管理員 `SingYinRosterSvc` 帳戶運行，唯一 NiceGUI listener 是 `127.0.0.1:8080`；Tunnel、Worker、`/guest`、`/try`、唯讀 Viewer、Access 轉向及 VPC 健康均已核對。管理 API 權杖已完成同步輪換，舊值已失效。尚未完成的是一次有人在場的 Windows 重新開機證明、正式資料受控清理，以及管理員登入／登出、長時間重連、上載與 PDF 的真人驗收。
+> **目前狀態（live rc9）：** `C:\SingYinRoster` 已固定於不可變標籤 `v1.2.0-rc.9`／`18a5c73`，並完成正式資料快照、隔離還原及受控切換。`Sing Yin Roster Host` 由非管理員 `SingYinRosterSvc` 帳戶運行，唯一 NiceGUI listener 是 `127.0.0.1:8080`；canonical Worker 保留已驗證 version `b13e5721-d1e8-4048-9885-ffb422fe2010`。Tunnel、Public、Guest、唯讀 Viewer、Access 轉向及 VPC health 已核對。Service Weave 候選分支 `codex/service-weave-v1-2-editorial` 仍尚未部署，不能沿用 rc9 證據宣稱已更新主機。
 
 ---
 
@@ -17,7 +17,7 @@
 完成本手冊後，運作方式如下：
 
 1. 一部 Windows 電腦長期保存程式、SQLite 資料庫、備份、日誌、PDF 及音樂。
-2. NiceGUI origin 只在這部電腦的 `127.0.0.1:8080` 開放；日常使用者從唯一正式 `workers.dev` 網站進入。目前 Windows origin 已 forward-recover 至健康、ready 的 rc4／`30f282f`，Worker 仍提供 pre-v1.2 靜態 `/guest`／`/try` 基線。已驗證 rc5／`bafaef6` 受控部署後，兩個舊路徑只作兼容重定向，訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace。管理員登入後仍留在同一網址。不要把 rc4 origin health 或 pre-v1.2 Worker 證據當作 rc5 已部署證明。
+2. NiceGUI origin 只在這部電腦的 `127.0.0.1:8080` 開放；日常使用者從唯一正式 `workers.dev` 網站進入。live rc9 訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace；`/guest`、`/try` 只作兼容重定向。管理員登入後仍留在同一網址。未部署候選只有在完成自己的 gate、備份／隔離還原及受控切換後，才可取代 rc9。
 3. 電腦開機後，可由 Windows 工作排程器在背景自動啟動系統。
 4. 初次安裝先驗證 loopback origin，再依 Cloudflare 手冊連接既有 Tunnel、VPC Service、Access 及 Worker；始終不設定路由器轉發或公開 NiceGUI 連接埠。
 5. 即使電腦沒有互聯網，名單、排班、PDF、備份及還原仍可使用；YouTube 音樂除外。
@@ -343,7 +343,7 @@ SING_YIN_LOG_BACKUP_COUNT=5
 
 本機模式第一次啟動會自動建立 `data\runtime\.nicegui-storage-secret`，不需要手動輸入 secret，也不要打開、分享或修改該檔案。
 
-完成本機驗證後，正式啟用程序才會把受保護主機設定切換為 `server` 模式，仍固定監聽 `127.0.0.1:8080`，並啟用 Access、Viewer gateway 與獨立 `SING_YIN_STORAGE_SECRET`。不要手動逐項拼湊正式設定；依本手冊及 [Cloudflare 遠端存取手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 的受控啟用／核對程序一次完成。現行 rc.16 正式主機已處於這個 server-mode／loopback 狀態。
+完成本機驗證後，正式啟用程序才會把受保護主機設定切換為 `server` 模式，仍固定監聽 `127.0.0.1:8080`，並啟用 Access、Viewer gateway 與獨立 `SING_YIN_STORAGE_SECRET`。不要手動逐項拼湊正式設定；依本手冊及 [Cloudflare 遠端存取手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 的受控啟用／核對程序一次完成。現行 rc9 正式主機已處於這個 server-mode／loopback 狀態。
 
 ---
 
@@ -416,7 +416,7 @@ C:\SingYinRoster\logs
 
 ### 8.1 v1.2 Guest 與本機 Practice Mode 不相同
 
-- pre-v1.2 Worker 的 `/try` 靜態試用只屬目前回退基線。v1.2 rc5 啟用後，`/guest`、`/try` 只作兼容重定向；訪客由統一入口建立 30 分鐘 Guest session，再使用同一套 NiceGUI 路由及元件。
+- live rc9 中，`/guest`、`/try` 只作兼容重定向；訪客由統一入口建立 30 分鐘 Guest session，再使用同一套 NiceGUI 路由及元件。
 - v1.2 Guest 只連到固定虛構中文姓名的程序記憶體 adapter。最新 revision 只以已簽署、綁定 session／workspace／tab 的 token 存在該分頁 `sessionStorage`；複製分頁獲得新 workspace，登出、到期、撤權或 origin 重啟後舊 token 失效。
 - Guest 可完成較完整的示範流程，但 AI、匯入、上載、正式分享、永久設定、正式備份／還原及正式資料寫入均由服務層拒絕。PDF／JSON 只在記憶體建立，標示 `DEMO` 並一次性 `no-store` 下載。
 - `START_PRACTICE_MODE.cmd` 才是可持久演練備份及還原的隔離 NiceGUI 環境，會使用自己的 SQLite、審計及備份。Guest、Practice Mode 都不能代替正式名單匯入。
@@ -626,10 +626,10 @@ $PreviousCommit = (git rev-parse HEAD).Trim()
 
 正常情況不會列出程式檔修改。如果看到不明檔案或 `M`、`D`，先停止，不要執行 reset 或刪除，交給維護者檢查。
 
-先向維護者取得本次已通過 GitHub Quality gate 與 CodeQL 的發布標籤；目前正式例子是 `v1.1.0-rc.16`。不要自行猜測 `main` 是否已完成驗證，也不要把例子當作未來永遠固定的版本。確認沒有不明修改後：
+先向維護者取得本次已通過 GitHub Quality gate、CodeQL 及正式候選 gate 的下一個獲批准 annotated tag。不要自行猜測 `main` 是否已完成驗證，也不要把目前 rc9 當作未來固定版本。確認沒有不明修改後：
 
 ```powershell
-$ReleaseRef = "v1.1.0-rc.16"
+$ReleaseRef = "<next-approved-annotated-tag>"
 git fetch --prune --tags origin
 $ReleaseCommit = (git rev-parse "$ReleaseRef^{commit}").Trim()
 git merge-base --is-ancestor $ReleaseCommit origin/main

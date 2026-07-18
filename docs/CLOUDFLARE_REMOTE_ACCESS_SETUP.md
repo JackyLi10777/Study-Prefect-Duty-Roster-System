@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **v1.2 rc7 發布狀態：** 240 個發布輸入已以指紋 `e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db` 通過 13／13 正式 gate。Windows origin 已更新至健康、ready 的 rc7／`14cb7e7`；全新正式備份、checksum、公平對帳及隔離還原全部通過。canonical Worker 版本 `b13e5721-d1e8-4048-9885-ffb422fe2010` 已上線，公開入口、Access 跳轉、Guest session／logout、配對 WebP 及淺／深色瀏覽器核對通過。真人 Admin／Viewer／長連線驗收仍須依清單完成。
+> **目前發布狀態（live rc9）：** Windows origin 正運行健康、ready 的 `v1.2.0-rc.9`／`18a5c73`；其正式備份、checksum、公平對帳及隔離還原均通過。canonical Worker 程式未改動，故保留已驗證 version `b13e5721-d1e8-4048-9885-ffb422fe2010`。Public、Access、Guest、Viewer 及 gateway health 已上線；真人 Admin／Viewer／長連線驗收仍須依清單完成。`codex/service-weave-v1-2-editorial` 是尚未部署的候選，必須產生自己的 gate 與受控部署證據。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
@@ -50,7 +50,7 @@ Worker 是唯一外部前門。Windows 不開放 NiceGUI 公網連接埠，不�
 SING_YIN_DEPLOYMENT_MODE=server
 SING_YIN_HOST=127.0.0.1
 SING_YIN_PORT=8080
-SING_YIN_UNIFIED_GUEST=0
+SING_YIN_UNIFIED_GUEST=1
 SING_YIN_REQUIRE_GATEWAY_PRINCIPAL=1
 ORIGIN_PRINCIPAL_SECRET=<managed-secret>
 ORIGIN_PRINCIPAL_KID=<active-key-id>
@@ -83,7 +83,7 @@ Worker 必須有：
 - 不把管理員加入 Cloudflare Dashboard 成員作為登入前提。
 - 不建立應用內共用密碼。
 
-**目前控制台證據（2026-07-17）：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。這只完成 Access 路徑設定；Windows origin 雖在 rc4 build 上健康、ready，Worker 仍未切換至 v1.2，因此不可把它寫成已部署。rc6 的本機 origin gate 可把 `cloudflare_access` 保留為唯一 pending warning，但 matching Worker 部署後必須立即把它轉為 pass。
+**目前控制台證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。live rc9 origin／Worker 組合已通過 Public、Guest、Access 轉向及 gateway health 核對；這些證據只屬 rc9，不能證明未部署的 Service Weave 候選已通過切換。
 
 ## 4. 來源驗證
 
@@ -129,7 +129,7 @@ python -X utf8 scripts\verify_release_candidate.py
 3. 核對沒有第二個 NiceGUI origin 佔用同一資料庫。
 4. 安裝已驗證 bundle 及 hash-locked dependencies。
 5. 執行 additive Alembic migration。
-6. 保持 `SING_YIN_UNIFIED_GUEST=0` 啟動。
+6. 保持現行受保護設定（live rc9 為 `SING_YIN_UNIFIED_GUEST=1`），不得用切換旗標略過候選驗證。
 7. 核對：
 
 ```powershell
@@ -139,9 +139,9 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 `/healthz` 只證明可讀；`/readyz` 必須顯示 `writeReady=true`、沒有 maintenance／recovery、沒有 pending backup obligation，才可繼續。
 
-**2026-07-17 rc4 incident lesson：** rc4 rollout 的 additive migration `0007` → `0008`、已驗證正式備份及隔離還原均成功；失敗發生在其後的 ancestry gate。`git fetch origin main` 只刷新 `FETCH_HEAD`，但 gate 讀取 stale `origin/main`，因而把有效 commit 誤判為未包含於 `main`。rc4 從未被宣告 live；主機已 forward-recover 至相容的 rc4／`30f282f` 並重獲 healthy／ready。rc5／`bafaef6` 的部署腳本必須以明確 refspec `+refs/heads/main:refs/remotes/origin/main` 刷新 remote-tracking branch，且正式 report 必須與該 commit 及 fingerprint 完全一致。
+**歷史事故記錄 — 2026-07-17 rc4：** rc4 rollout 的 additive migration `0007` → `0008`、已驗證正式備份及隔離還原均成功；失敗發生在其後的 ancestry gate。`git fetch origin main` 只刷新 `FETCH_HEAD`，但 gate 讀取 stale `origin/main`，因而把有效 commit 誤判為未包含於 `main`。rc4 從未被宣告 live；其部署腳本其後改用明確 refspec `+refs/heads/main:refs/remotes/origin/main` 刷新 remote-tracking branch。這是已解決的歷史教訓，不是目前主機狀態或未來標籤指令。
 
-**2026-07-17 rc5 staged-readiness lesson：** rc5 已再次建立全新 checksum-verified backup 並通過 isolated restore；停止原因不是資料或 origin health 失敗，而是 generic strict-warning gate 在 matching Worker 尚未部署時，把 `cloudflare_access` 的預期 pending 狀態當成 fatal。自動回滾恢復並確認 rc4。rc6 的 origin 階段只允許這個具名 warning 暫留；若出現任何 failure 或其他 warning，仍必須立即停止。Worker 部署後若 `cloudflare_access` 或任一線上檢查未通過，整體發布仍告失敗並回滾。
+**歷史事故記錄 — 2026-07-17 rc5 staged readiness：** rc5 再次建立全新 checksum-verified backup 並通過 isolated restore；停止原因不是資料或 origin health 失敗，而是 generic strict-warning gate 在 matching Worker 尚未部署時，把 `cloudflare_access` 的預期 pending 狀態當成 fatal。rc6 修正 staged 次序，rc7 完成後續切換。這是歷史 provenance；未來候選仍須讓每個 failure、未獲明確批准的 warning 及最終線上檢查 fail closed。
 
 ## 7. Worker staged rollout
 
@@ -159,19 +159,19 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
    - VPC WebSocket 及 origin `/healthz`。
 6. 保存新舊 version ID，才提高流量。
 
-## 8. 啟用統一 Guest
+## 8. 核對候選的統一 Guest
 
-只有 staged Worker 及 origin 全部通過後：
+只有候選 origin 及需要變更的 staged Worker 全部通過後：
 
 1. 短暫進入 maintenance。
-2. 把 origin `SING_YIN_UNIFIED_GUEST` 改為 `1`。
+2. 保持 origin 的受保護 `SING_YIN_UNIFIED_GUEST=1` 設定，不重新建立或顯示 secret。
 3. 重新啟動 owned scheduled task。
 4. 核對 `/healthz`、`/readyz`。
 5. 用 InPrivate／虛構資料完成 Guest 流程。
 6. 用獲准身份完成 Admin 登入／登出及隔離寫入流程。
 7. 才結束 maintenance。
 
-若 Guest principal 到達但 flag 仍為 `0`，origin 會拒絕它。這是預期的 fail-closed 行為，不應用臨時繞過修正。
+候選的隔離測試仍須證明 flag 為 `0` 時 Guest fail closed；該測試只使用臨時環境，不可修改 live rc9 設定。
 
 ## 9. 線上驗收
 
@@ -210,9 +210,9 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 任一線上 gate 失敗：
 
 1. 恢復 maintenance；
-2. 把 `SING_YIN_UNIFIED_GUEST` 恢復為 `0`；
-3. 回退上一個 Worker version；
-4. 回復上一個主機 bundle；
+2. 恢復 rc9 已驗證的受保護主機設定；
+3. 回退至 Worker `b13e5721-d1e8-4048-9885-ffb422fe2010`；
+4. 回復 rc9／`18a5c73` 主機 bundle；
 5. 核對 `/healthz`、`/readyz`、Admin、Viewer；
 6. 如資料完整性受疑，使用受控 restore，而非手動覆寫 SQLite。
 
@@ -242,6 +242,6 @@ additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，�
 
 ## English operational summary
 
-The v1.2 rollout keeps one Cloudflare Worker in front of one loopback-only Windows NiceGUI origin. The Worker owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter.
+Live `v1.2.0-rc.9`／`18a5c73` keeps one Cloudflare Worker in front of one loopback-only Windows NiceGUI origin. Verified Worker `b13e5721-d1e8-4048-9885-ffb422fe2010` owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter.
 
-Do not enable `SING_YIN_UNIFIED_GUEST` until the complete release report matches the deployed source, a verified backup passes isolated restore, `/healthz` and `/readyz` are healthy, the staged Worker passes Admin/Guest/Viewer checks, and supervised browser acceptance succeeds. Roll back both the host bundle and Worker version if any gate fails.
+The Service Weave editorial branch remains an undeployed candidate. Preserve the live protected Guest setting while validating the candidate in isolation; require a source-matched report, fresh verified backup, isolated restore, healthy `/healthz` and `/readyz`, a deliberate Worker deployment decision, and supervised browser acceptance. If any gate fails, restore the rc9 host bundle and verified Worker version.

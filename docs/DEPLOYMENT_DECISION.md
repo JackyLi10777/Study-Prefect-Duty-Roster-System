@@ -1,5 +1,7 @@
 # 部署與遠端存取決策指南 / Deployment decision
 
+> **目前基線（live rc9）：** 受控 Windows origin 正運行 `v1.2.0-rc.9`／`18a5c73`；canonical Worker 保留已驗證 version `b13e5721-d1e8-4048-9885-ffb422fe2010`。`codex/service-weave-v1-2-editorial` 是尚未部署的 Service Weave 候選；它必須產生自己的最終來源指紋、完整 gate、正式備份／隔離還原及線上驗收，不能沿用 rc9 證據宣稱已發布。
+
 ## 結論
 
 正式架構維持：
@@ -24,16 +26,16 @@ Windows 11 專用主機：單一 NiceGUI origin
 
 NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另行固定於 `127.0.0.1:22` 及 `[::1]:22`，只接受 Ed25519 金鑰，不開放 LAN、公網、防火牆入站規則或路由器轉發；日後校外 SSH 只能經獨立的 Cloudflare 私有路由進入。
 
-## v1.1 已部署基線與 v1.2 候選
+## Live rc9 基線與 Service Weave 候選
 
 | 層 | 現況 |
 |---|---|
-| `C:\SingYinRoster` | 現有 v1.1 正式 Windows origin；不是本分支 v1.2 |
-| 現有 Cloudflare Worker／Access／Tunnel | 已有可用基線；外部設定及真人驗收仍須以當前 Dashboard 狀態重新核對 |
-| `codex/unified-guest-redesign` | v1.2 來源候選，尚未合併、標籤或正式部署 |
-| `SING_YIN_UNIFIED_GUEST` | 預設 `0`；正式 gate 全通過後才可改為 `1` |
+| `C:\SingYinRoster` | live `v1.2.0-rc.9`／`18a5c73`；健康、ready、loopback-only |
+| Cloudflare Worker／Access／Tunnel | Worker `b13e5721-d1e8-4048-9885-ffb422fe2010` live；Access 精確保護 `/auth/login`；Tunnel／VPC 連到單一 origin |
+| `codex/service-weave-v1-2-editorial` | Service Weave 來源候選；尚未通過自己的最終 gate、標籤或正式部署 |
+| `SING_YIN_UNIFIED_GUEST` | live rc9 的受保護主機設定為 `1`；後續候選不得以切換旗標取代完整驗證 |
 
-任何文件中的既有 Worker version ID、主機 tag 或歷史成功紀錄，只能證明當時的 v1.1 基線，不可當作 v1.2 已部署證據。
+rc4–rc7 或 v1.1 的既有 Worker version ID、主機 tag 及成功紀錄只屬歷史證據；rc9 證據亦不可當作 Service Weave 候選已部署的證明。
 
 既有 **私有 Cloudflare Tunnel + WARP** 路徑仍保留作維護後備。
 交接時要保留並重新核對 **WARP device-enrollment policy**。其歷史狀態
@@ -112,16 +114,16 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 
 只有完整 release report 與來源 fingerprint 一致時，才可：
 
-1. 建立並驗證正式備份；
-2. 在另一隔離資料庫完成還原；
+1. 凍結候選、核對完整 report 與 fingerprint，再把 exact commit 合併至 `main` 並建立 `<next-approved-annotated-tag>`；
+2. 建立並驗證正式備份，在另一隔離資料庫完成還原；
 3. 進入短暫 maintenance；
-4. 更新 Windows bundle，執行 additive migration；
-5. 核對 `/healthz` 及 `/readyz`；
-6. 部署／啟用對應 Worker；
-7. 以虛構資料核對 Admin、Guest、Viewer、PDF、登出及多分頁；
-8. 才把 `SING_YIN_UNIFIED_GUEST` 切為 `1`。
+4. 從該不可變 tag 更新 Windows bundle，執行 additive migration；
+5. 保持現行受保護設定不變，核對 `/healthz` 及 `/readyz`；
+6. 只有 Worker source 或受保護設定確實改變時才部署對應 Worker，否則記錄沿用的 verified version ID；
+7. 以虛構資料核對 Public、Admin、Guest、Viewer、PDF、登出、到期及多分頁隔離；
+8. 完成真人驗收後才結束 maintenance 並宣布候選上線。
 
-任何 gate 失敗，回復上一個主機 bundle 及 Worker version；additive migration 必須讓舊版本仍可讀原有資料。
+任何 gate 失敗，回復 rc9／`18a5c73` 主機 bundle 及 Worker `b13e5721-d1e8-4048-9885-ffb422fe2010`；additive migration 必須讓舊版本仍可讀原有資料。
 
 逐步 Cloudflare 設定、staged rollout、驗收及回退命令見
 [`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)。
@@ -135,6 +137,6 @@ python -X utf8 scripts\verify_release_candidate.py
 
 ## English summary
 
-The selected topology remains one canonical Cloudflare Worker in front of one loopback-only NiceGUI origin on a dedicated Windows host. The Windows machine remains the sole system of record for SQLite, backups, logs, PDFs, and local music. v1.2 unifies administrator and guest pages through a signed `PageContext`, but guest data stays in a bounded in-memory adapter and the feature flag remains off until formal release gates pass.
+The selected topology remains one canonical Cloudflare Worker in front of one loopback-only NiceGUI origin on a dedicated Windows host. The Windows machine remains the sole system of record for SQLite, backups, logs, PDFs, and local music. Live `v1.2.0-rc.9`／`18a5c73` unifies administrator and guest pages through a signed `PageContext`; guest data stays in a bounded in-memory adapter. The verified Worker remains `b13e5721-d1e8-4048-9885-ffb422fe2010`.
 
-The existing v1.1 host and Cloudflare deployment are a baseline, not evidence that v1.2 is live. Deployment requires a verified backup, isolated restore, additive migration, `/healthz` and `/readyz`, complete automated release evidence, and supervised browser acceptance before `SING_YIN_UNIFIED_GUEST=1`.
+The Service Weave editorial branch is an undeployed candidate, not a replacement for the live rc9 baseline. Its release requires its own verified source fingerprint, `<next-approved-annotated-tag>`, fresh backup, isolated restore, additive migration, `/healthz` and `/readyz`, complete automated evidence, controlled origin／Worker decision, and supervised browser acceptance.

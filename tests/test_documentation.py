@@ -162,6 +162,38 @@ def test_release_truth_docs_keep_live_rc9_separate_from_candidate_and_history() 
     assert "只有 `/view#…`" in operator
 
 
+def test_operator_deployment_docs_use_rc9_baseline_and_candidate_bound_next_tag() -> None:
+    quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
+    windows = (PROJECT_ROOT / "docs" / "WINDOWS_DEDICATED_HOST_SETUP.md").read_text(
+        encoding="utf-8"
+    )
+    cloudflare = (PROJECT_ROOT / "docs" / "CLOUDFLARE_REMOTE_ACCESS_SETUP.md").read_text(
+        encoding="utf-8"
+    )
+    viewer = (PROJECT_ROOT / "docs" / "PUBLIC_ROSTER_VIEWER.md").read_text(
+        encoding="utf-8"
+    )
+    decision = (PROJECT_ROOT / "docs" / "DEPLOYMENT_DECISION.md").read_text(
+        encoding="utf-8"
+    )
+
+    for document in (quickstart, windows, cloudflare, viewer, decision):
+        assert "v1.2.0-rc.9" in document
+        assert "18a5c73" in document
+        assert "b13e5721-d1e8-4048-9885-ffb422fe2010" in document
+        assert "Service Weave" in document
+        assert "尚未部署" in document or "undeployed" in document
+
+    assert "schema-compatible rc4" not in quickstart
+    assert "pre-v1.2 baseline" not in quickstart
+    assert "v1.2 rc5 候選狀態" not in viewer
+    assert "v1.2 rc7 發布狀態" not in cloudflare
+    assert "v1.1 已部署基線與 v1.2 候選" not in decision
+    assert '$ReleaseRef = "<next-approved-annotated-tag>"' in windows
+    assert '$ReleaseRef = "v1.1.0-rc.16"' not in windows
+    assert "<next-approved-annotated-tag>" in decision
+
+
 def test_author_facing_documents_use_li_chuangjie_first_person_voice() -> None:
     readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     readme_en = (PROJECT_ROOT / "README-EN.md").read_text(encoding="utf-8")
