@@ -168,6 +168,19 @@ def test_motion_runtime_owns_toc_disclosure_and_cleanup() -> None:
     assert "prefers-reduced-motion" in source
 
 
+def test_motion_runtime_rebuilds_toc_observers_after_dom_replacement() -> None:
+    source = (PROJECT_ROOT / "nicegui_app" / "assets" / "motion" / "sing-yin-motion.js").read_text(
+        encoding="utf-8"
+    )
+
+    assert "if (tocObservers.has(nav)) removeToc(nav);" in source
+    assert "tocObservers.get(nav)?.observer.disconnect();" in source
+    assert "existing.links.every((link, index) => link.isConnected && link === links[index])" in source
+    assert "existing.targets.every((target, index) => target.isConnected && target === targets[index])" in source
+    assert "if (existing || nav.dataset.syTocReady === 'true') removeToc(nav);" in source
+    assert "tocObservers.set(nav, { observer, links, targets });" in source
+
+
 def test_showcase_exposes_filterable_evidence_and_real_developer_reference() -> None:
     source = (UI_ROOT / "page_routes" / "showcase.py").read_text(encoding="utf-8")
 

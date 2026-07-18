@@ -243,7 +243,7 @@
   };
 
   const removeToc = (nav) => {
-    tocObservers.get(nav)?.disconnect();
+    tocObservers.get(nav)?.observer.disconnect();
     tocObservers.delete(nav);
     nav.querySelectorAll('[aria-current="location"]').forEach((link) => link.removeAttribute('aria-current'));
     delete nav.dataset.syTocReady;
@@ -255,10 +255,24 @@
     const pairs = links
       .map((link) => [link, document.getElementById(link.dataset.syTocTarget)])
       .filter((pair) => pair[1]);
-    if (!pairs.length) return;
+    if (!pairs.length) {
+      if (tocObservers.has(nav)) removeToc(nav);
+      return;
+    }
     const signature = pairs.map(([link]) => link.dataset.syTocTarget).join('|');
-    if (nav.dataset.syTocReady === 'true' && nav.dataset.syTocSignature === signature) return;
-    if (nav.dataset.syTocReady === 'true') removeToc(nav);
+    const targets = pairs.map(([, target]) => target);
+    const existing = tocObservers.get(nav);
+    const sameNodes = existing
+      && existing.links.length === links.length
+      && existing.targets.length === targets.length
+      && existing.links.every((link, index) => link.isConnected && link === links[index])
+      && existing.targets.every((target, index) => target.isConnected && target === targets[index]);
+    if (
+      nav.dataset.syTocReady === 'true'
+      && nav.dataset.syTocSignature === signature
+      && sameNodes
+    ) return;
+    if (existing || nav.dataset.syTocReady === 'true') removeToc(nav);
     nav.dataset.syTocReady = 'true';
     nav.dataset.syTocSignature = signature;
     links.forEach((link) => link.removeAttribute('aria-current'));
@@ -273,7 +287,7 @@
       targetToLink.get(visible[0].target)?.setAttribute('aria-current', 'location');
     }, { rootMargin: '-16% 0px -68% 0px', threshold: [0, 0.12, 0.4] });
     pairs.forEach(([, target]) => observer.observe(target));
-    tocObservers.set(nav, observer);
+    tocObservers.set(nav, { observer, links, targets });
   };
 
   const hydrateToc = (root = document) => {
