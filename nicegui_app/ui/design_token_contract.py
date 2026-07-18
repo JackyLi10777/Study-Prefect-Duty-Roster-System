@@ -24,7 +24,7 @@ WORKER_CONTRACT_PATH = (
     PROJECT_ROOT / "cloudflare" / "roster_viewer" / "design-tokens-v1.generated.json"
 )
 THEME_MARKUP_PATH = PROJECT_ROOT / "nicegui_app" / "ui" / "theme_markup.py"
-WORKER_RUNTIME_PATH = PROJECT_ROOT / "cloudflare" / "roster_viewer" / "guest_trial.js"
+WORKER_RUNTIME_PATH = PROJECT_ROOT / "cloudflare" / "roster_viewer" / "worker.js"
 
 _REFERENCE = re.compile(r"^\{(?P<path>[A-Za-z0-9_.-]+)\}$")
 _CSS_VARIABLE = re.compile(r"(?P<name>--[A-Za-z0-9_-]+)\s*:\s*(?P<value>[^;]+);")
@@ -225,22 +225,23 @@ def _css_variables(block: str) -> dict[str, str]:
 def worker_runtime_drift(
     contract: Mapping[str, Any] | None = None,
 ) -> list[str]:
-    """Compare the existing zero-network Worker runtime with its contract."""
+    """Compare the public gateway/viewer runtime with its generated contract."""
 
     active_contract = contract or load_design_token_contract()
     source = WORKER_RUNTIME_PATH.read_text(encoding="utf-8")
-    trial_start = source.index("export const TRIAL_CSS")
-    trial_css = source[trial_start:]
+    viewer_start = source.index("const VIEWER_CSS")
+    viewer_end = source.index("const VIEWER_JS", viewer_start)
+    viewer_css = source[viewer_start:viewer_end]
     selectors = active_contract["platforms"]["worker"]["selectors"]
     expected = {
         "light": resolved_token_map(active_contract, "worker", "light"),
         "dark": resolved_token_map(active_contract, "worker", "dark"),
     }
     actual = {
-        "light": _css_variables(_extract_css_block(trial_css, selectors["light"])),
-        "dark": _css_variables(_extract_css_block(trial_css, selectors["dark"])),
+        "light": _css_variables(_extract_css_block(viewer_css, selectors["light"])),
+        "dark": _css_variables(_extract_css_block(viewer_css, selectors["dark"])),
         "autoDark": _css_variables(
-            _extract_css_block(trial_css, selectors["autoDark"])
+            _extract_css_block(viewer_css, selectors["autoDark"])
         ),
     }
     drift: list[str] = []
@@ -259,8 +260,8 @@ def theme_integration_drift(
 
     active_contract = contract or load_design_token_contract()
     markup = THEME_MARKUP_PATH.read_text(encoding="utf-8")
-    token_href = 'href="/assets/css/sing-yin-tokens-v1.css"'
-    theme_href = 'href="/assets/css/sing-yin-theme-v1.css"'
+    token_href = "/assets/css/sing-yin-tokens-v1.css"
+    theme_href = "/assets/css/sing-yin-theme-v1.css"
     drift: list[str] = []
     if token_href not in markup:
         drift.append("NiceGUI head does not load the generated token CSS")

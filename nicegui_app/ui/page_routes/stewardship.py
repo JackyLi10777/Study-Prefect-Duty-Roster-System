@@ -30,7 +30,7 @@ def handover_page() -> None:
     workflow = get_workflow()
     readiness = workflow.handover_readiness()
     release_evidence = load_release_evidence()
-    with page_shell("handover", "/handover", music_context="handover"):
+    with page_shell("/handover"):
         with ui.element("section").classes("sy-handover-hero w-full").props(f'aria-label="{t("handover")}"'):
             ui.icon("handshake").classes("sy-handover-hero-icon").props("aria-hidden=true")
             ui.label(t("handover")).classes("sy-handover-hero-title")
@@ -235,7 +235,7 @@ def settings_page() -> None:
         if item["verification"].get("valid")
     }
     readiness = workflow.handover_readiness()
-    with page_shell("settings", "/settings", music_context="settings"):
+    with page_shell("/settings"):
         ui.label(t("settings")).classes("text-2xl font-semibold")
         _render_operation_hint("hint_settings", icon="settings_backup_restore")
         if _is_guest_mode():

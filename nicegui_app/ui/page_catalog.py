@@ -51,6 +51,14 @@ class PageDefinition:
     def is_visible_to(self, mode: AccessMode) -> bool:
         return mode in self.visible_access_modes
 
+    def is_accessible_to(self, mode: AccessMode) -> bool:
+        """Return the server-side navigation predicate for this page."""
+
+        return self.is_visible_to(mode) and (
+            self.required_capability is None
+            or CapabilityPolicy.allows(mode, self.required_capability)
+        )
+
 
 PAGE_DEFINITIONS = (
     PageDefinition(
@@ -196,7 +204,7 @@ def navigation_groups_for(
         pages = tuple(
             page
             for page in PAGE_DEFINITIONS
-            if page.navigation_group == group and page.is_visible_to(mode)
+            if page.navigation_group == group and page.is_accessible_to(mode)
         )
         if pages:
             groups.append((group, pages))
@@ -209,7 +217,7 @@ def mobile_navigation_for(mode: AccessMode) -> tuple[PageDefinition, ...]:
     return tuple(
         page
         for page in PAGE_DEFINITIONS
-        if page.mobile_primary and page.is_visible_to(mode)
+        if page.mobile_primary and page.is_accessible_to(mode)
     )
 
 

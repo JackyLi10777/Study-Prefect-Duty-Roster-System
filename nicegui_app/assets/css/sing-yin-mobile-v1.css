@@ -1,5 +1,9 @@
 /* Phone-specific composition. The routes, workflow and data model remain shared. */
 @media (max-width: 900px) {
+  .sy-product-mark--display {
+    width: 142px;
+    height: 142px;
+  }
   :root {
     --sy-mobile-gutter: 16px;
     --sy-mobile-tabbar-height: 72px;

@@ -182,6 +182,9 @@ def test_music_ui_has_operator_controlled_autoplay_on_every_workspace_page() -> 
     music_ui = (PROJECT_ROOT / "nicegui_app" / "ui" / "music.py").read_text(encoding="utf-8")
     sound_ui = (PROJECT_ROOT / "nicegui_app" / "ui" / "sound.py").read_text(encoding="utf-8")
     pages = combined_page_source()
+    page_catalog = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_catalog.py").read_text(
+        encoding="utf-8"
+    )
     main = (PROJECT_ROOT / "nicegui_app" / "main.py").read_text(encoding="utf-8")
 
     assert "autoplay=False" in music_ui, "The audio element starts conservatively before the saved preference is applied"
@@ -205,11 +208,9 @@ def test_music_ui_has_operator_controlled_autoplay_on_every_workspace_page() -> 
     assert 'audio.on("ended", advance_playlist)' in music_ui
     assert '"sequential": t("music_mode_sequential")' in music_ui
     assert '"shuffle": t("music_mode_shuffle")' in music_ui
-    assert 'music_context="devotional"' in pages
-    assert 'music_context="handover"' in pages
-    assert 'music_context="weekly"' in pages
-    assert 'music_context="people"' in pages
-    assert 'music_context="settings"' in pages
+    for context in ("devotional", "handover", "weekly", "people", "settings"):
+        assert f'music_context="{context}"' in page_catalog
+    assert "music_context=" not in pages
     assert 'url_path="/assets/music"' in main
     assert "YoutubeMusicLink" not in music_ui
     assert "add_youtube_link" not in music_ui

@@ -12,8 +12,15 @@ from nicegui_app.access_context import AccessMode
 from nicegui_app.application_mode import current_application_mode
 from nicegui_app.contact import FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL, GITHUB_REPOSITORY_URL
 from nicegui_app.runtime import current_page_context, get_workflow
+from nicegui_app.ui.brand import render_service_weave_mark
 from nicegui_app.ui.i18n import current_locale, t, toggle_locale
 from nicegui_app.ui.music import render_page_music_control
+from nicegui_app.ui.page_catalog import (
+    mobile_navigation_for,
+    navigation_groups_for,
+    navigation_item_tuples_for,
+    page_definition,
+)
 from nicegui_app.ui.sound import play_interface_sound
 from nicegui_app.ui.theme import (
     apply_quasar_palette,
@@ -25,27 +32,25 @@ from nicegui_app.ui.theme import (
 )
 
 
-NAVIGATION_GROUPS = (
-    ("nav_weekly_work", (("/", "dashboard", "space_dashboard"), ("/rosters", "rosters", "calendar_month"))),
-    ("nav_people_fairness", (("/prefects", "prefects", "groups"),)),
-    ("nav_support_system", (("/handover", "handover", "handshake"), ("/access-control", "access_control", "admin_panel_settings"), ("/settings", "settings", "settings"))),
-    ("nav_reference", (("/platform", "platform", "domain"), ("/system-architecture", "system_architecture", "account_tree"), ("/engineering", "engineering", "build_circle"), ("/getting-started", "getting_started", "play_circle"), ("/guide", "operator_guide", "help_outline"), ("/devotional", "devotional", "menu_book"))),
-)
-
-MOBILE_PRIMARY_NAVIGATION = (
-    ("/", "dashboard", "space_dashboard"),
-    ("/rosters", "rosters", "calendar_month"),
-    ("/prefects", "prefects", "groups"),
+# Compatibility tuple views remain available to existing tests and extensions,
+# but both desktop and mobile navigation now project one PageDefinition catalog.
+NAVIGATION_GROUPS = navigation_item_tuples_for(AccessMode.ADMIN)
+MOBILE_PRIMARY_NAVIGATION = tuple(
+    (page.route, page.title_key, page.icon)
+    for page in mobile_navigation_for(AccessMode.ADMIN)
 )
 
 
-def _navigation_context(active_path: str) -> tuple[int, str, str]:
+def _navigation_context(active_path: str, access_mode: AccessMode) -> tuple[int, str, str]:
     """Return the stable narrative chapter, group key and route icon."""
 
-    for chapter, (group_key, items) in enumerate(NAVIGATION_GROUPS, start=1):
-        for path, _key, icon in items:
-            if path == active_path:
-                return chapter, group_key, icon
+    active_page = page_definition(active_path)
+    if active_page is not None:
+        for chapter, (group_key, _pages) in enumerate(
+            navigation_groups_for(access_mode), start=1
+        ):
+            if group_key == active_page.navigation_group:
+                return chapter, group_key, active_page.icon
     return 1, "nav_weekly_work", "space_dashboard"
 
 
@@ -552,19 +557,26 @@ def _render_mobile_drawer_tools(
                 )
 
 
-def _render_mobile_tabbar(drawer, active_path: str) -> None:  # type: ignore[no-untyped-def]
+def _render_mobile_tabbar(
+    drawer,
+    active_path: str,
+    access_mode: AccessMode,
+) -> None:  # type: ignore[no-untyped-def]
     """Expose the three weekly destinations while keeping secondary pages in the drawer."""
-    primary_paths = {path for path, _key, _icon in MOBILE_PRIMARY_NAVIGATION}
+    mobile_pages = mobile_navigation_for(access_mode)
+    primary_paths = {page.route for page in mobile_pages}
     with ui.element("nav").classes("sy-mobile-tabbar").props(
         f'aria-label="{t("mobile_primary_navigation")}" data-testid=mobile-bottom-navigation'
     ):
-        for path, key, icon in MOBILE_PRIMARY_NAVIGATION:
+        for page in mobile_pages:
             button = ui.button(
-                t(key),
-                icon=icon,
-                on_click=lambda target=path: _navigate_with_sound(target),
-            ).props(f'flat no-caps aria-label="{t(key)}"').classes("sy-mobile-tab")
-            if active_path == path:
+                t(page.title_key),
+                icon=page.icon,
+                on_click=lambda target=page.route: _navigate_with_sound(target),
+            ).props(
+                f'flat no-caps aria-label="{t(page.title_key)}"'
+            ).classes("sy-mobile-tab")
+            if active_path == page.route:
                 button.classes("sy-mobile-tab--active").props("aria-current=page")
         more = ui.button(t("mobile_more"), icon="menu", on_click=drawer.toggle).props(
             f'flat no-caps aria-label="{t("mobile_more")}" aria-controls=main-navigation-drawer '
@@ -666,7 +678,7 @@ def _install_mobile_drawer_accessibility() -> None:
 
 
 @contextmanager
-def page_shell(title_key: str, active_path: str, *, music_context: str | None = None) -> Iterator[None]:
+def page_shell(active_path: str) -> Iterator[None]:
     dark_mode = apply_theme()
     document_language = "en" if current_locale() == "en" else "zh-Hant-HK"
     ui.run_javascript(f"document.documentElement.lang = {document_language!r};")
@@ -688,7 +700,17 @@ def page_shell(title_key: str, active_path: str, *, music_context: str | None = 
     application_mode = current_application_mode()
     page_context = current_page_context()
     access_mode = page_context.principal.mode
-    chapter, navigation_group_key, active_icon = _navigation_context(active_path)
+    active_page = page_definition(active_path)
+    if active_page is None:
+        raise RuntimeError(f"Page shell route is missing from PageDefinition: {active_path}")
+    if not active_page.is_visible_to(access_mode):
+        raise PermissionError(f"Page shell route is not visible to {access_mode.value}: {active_path}")
+    if active_page.required_capability is not None:
+        page_context.require(active_page.required_capability)
+    title_key = active_page.title_key
+    chapter, navigation_group_key, active_icon = _navigation_context(active_path, access_mode)
+    page_kind = active_page.page_kind.value
+    resolved_music_context = active_page.music_context
     page_slug = _page_slug(active_path)
     _install_guest_snapshot_bridge(access_mode)
     _install_auth_status_monitor(access_mode, page_context.principal.expires_at)
@@ -700,11 +722,9 @@ def page_shell(title_key: str, active_path: str, *, music_context: str | None = 
     with drawer:
         with ui.column().classes("w-full gap-1 p-4"):
             with ui.row().classes("sy-brand-lockup items-center gap-3 mb-2"):
-                ui.image("/assets/brand/sing-yin-crest-navigation.png").classes("sy-brand-mark").props(
-                    f'alt="{t("school_crest_alt")}" width=545 height=524 fetchpriority=high'
-                )
+                render_service_weave_mark(context="navigation", test_id="navigation-product-mark")
                 with ui.column().classes("sy-brand-copy gap-0 min-w-0"):
-                    ui.label("STUDY PREFECT OPERATIONS").classes("sy-brand-eyebrow")
+                    ui.label(t("service_weave_name")).classes("sy-brand-eyebrow")
                     ui.label(t("app_name")).classes("text-base font-bold leading-tight sy-fg-stable")
             ui.label(t("service_principle")).classes("sy-brand-principle text-xs italic text-[var(--sy-muted)] mb-5")
             _render_mobile_drawer_tools(
@@ -713,13 +733,21 @@ def page_shell(title_key: str, active_path: str, *, music_context: str | None = 
                 theme_controls,
                 sound_controls,
             )
-            for group_index, (group_key, items) in enumerate(NAVIGATION_GROUPS, start=1):
+            for group_index, (group_key, pages) in enumerate(
+                navigation_groups_for(access_mode), start=1
+            ):
                 ui.label(t(group_key)).classes("sy-nav-section").props(
                     f'data-sy-section="{group_index:02d}"'
                 )
-                for path, key, icon in items:
-                    button = ui.button(t(key), icon=icon, on_click=lambda target=path: _navigate_with_sound(target)).props("flat align=left").classes("w-full justify-start").style("color: var(--sy-nav-ink) !important")
-                    if path == active_path:
+                for page in pages:
+                    button = ui.button(
+                        t(page.title_key),
+                        icon=page.icon,
+                        on_click=lambda target=page.route: _navigate_with_sound(target),
+                    ).props("flat align=left").classes(
+                        "sy-nav-control w-full justify-start"
+                    ).style("color: var(--sy-nav-ink) !important")
+                    if page.route == active_path:
                         button.classes("sy-nav-active").props("aria-current=page")
             with ui.element("aside").classes("sy-sidebar-feedback").props(
                 f'aria-label="{t("feedback_channel_title")}" data-testid=sidebar-feedback'
@@ -751,8 +779,8 @@ def page_shell(title_key: str, active_path: str, *, music_context: str | None = 
                     ui.label(f"{chapter:02d} · {t(navigation_group_key)}").classes("sy-header-eyebrow")
                     ui.label(t(title_key)).classes("sy-header-title text-lg font-semibold").props("role=heading aria-level=1")
             with ui.row().classes("sy-header-tools items-center gap-1"):
-                if music_context:
-                    render_page_music_control(music_context)
+                if resolved_music_context:
+                    render_page_music_control(resolved_music_context)
                 with ui.row().classes("sy-desktop-header-controls items-center gap-1"):
                     if access_mode is AccessMode.ADMIN:
                         ui.badge(t("access_admin_signed_in"), color="positive").props(
@@ -835,10 +863,12 @@ def page_shell(title_key: str, active_path: str, *, music_context: str | None = 
                             else t("maintenance_mode_body")
                         ).classes("sy-practice-banner-copy")
     with ui.element("main").props("id=main-content tabindex=-1").props(
-        f'data-sy-page="{page_slug}" data-sy-mode="{access_mode.value}"'
+        f'data-sy-page="{page_slug}" data-sy-page-kind="{page_kind}" '
+        f'data-sy-mode="{access_mode.value}"'
     ).classes(
         f"sy-main sy-page-shell sy-page-{page_slug} "
-        f"sy-page-domain-{chapter:02d} sy-mode-{access_mode.value} w-full gap-6"
+        f"sy-page-kind-{page_kind} sy-page-domain-{chapter:02d} "
+        f"sy-mode-{access_mode.value} w-full gap-6"
     ):
         with ui.element("div").classes("sy-page-context").props("aria-hidden=true"):
             ui.label(f"{chapter:02d}").classes("sy-page-context-index")
@@ -846,5 +876,5 @@ def page_shell(title_key: str, active_path: str, *, music_context: str | None = 
             ui.label(t(navigation_group_key)).classes("sy-page-context-label")
             ui.element("span").classes("sy-page-context-line")
         yield
-    _render_mobile_tabbar(drawer, active_path)
+    _render_mobile_tabbar(drawer, active_path, access_mode)
     _install_mobile_drawer_accessibility()

@@ -10,10 +10,19 @@ from nicegui_app.contact import GITHUB_REPOSITORY_URL
 from nicegui_app.observability import new_operation_reference, record_operator_failure
 from nicegui_app.release_evidence import load_release_evidence
 from nicegui_app.runtime import get_workflow
+from nicegui_app.ui.components import (
+    code_sample,
+    editorial_heading,
+    empty_state,
+    page_toc,
+    reference_pager,
+    responsive_table,
+    status,
+)
+from nicegui_app.ui.brand import render_service_weave_mark
 from nicegui_app.ui.i18n import t
-from nicegui_app.ui.page_shared import _render_co_creation, _render_feedback_channel, _tone_badge
+from nicegui_app.ui.page_shared import _render_co_creation, _render_feedback_channel
 from nicegui_app.ui.platform_summary import PlatformSummary, load_platform_summary
-from nicegui_app.ui.reference_navigation import render_page_toc, render_reference_pager
 from nicegui_app.ui.shell import page_shell
 
 
@@ -94,17 +103,22 @@ def platform_page() -> None:
             total=summary.release_total_checks,
         )
 
-    with page_shell("platform", "/platform", music_context="architecture"):
+    with page_shell("/platform"):
         with ui.element("section").classes("sy-platform-hero w-full").props(
             f'aria-label="{t("platform")}" data-testid=platform-hero'
         ):
             with ui.column().classes("sy-platform-hero-copy gap-2"):
+                with ui.row().classes("sy-platform-brand-lockup items-center gap-3 no-wrap"):
+                    render_service_weave_mark(context="display", test_id="platform-product-mark")
+                    with ui.column().classes("gap-0 min-w-0"):
+                        ui.label(t("service_weave_name")).classes("sy-platform-brand-name")
+                        ui.label(t("app_name")).classes("sy-platform-brand-function")
                 ui.label(t("platform_kicker")).classes("sy-architecture-kicker")
                 ui.html(t("platform"), tag="h2").classes("sy-architecture-title")
                 ui.label(t("platform_intro")).classes("sy-architecture-copy")
                 ui.label(t("platform_principle")).classes("sy-platform-principle")
 
-        render_page_toc(
+        page_toc(
             (
                 ("platform-snapshot-section", "platform_snapshot_title"),
                 ("platform-team-section", "team_operating_model_title"),
@@ -251,7 +265,7 @@ def platform_page() -> None:
 
         _render_feedback_channel()
         _render_co_creation()
-        render_reference_pager(next_=("/system-architecture", "system_architecture"))
+        reference_pager(next_=("/system-architecture", "system_architecture"))
 
 
 @ui.page("/engineering")
@@ -264,19 +278,19 @@ def engineering_page() -> None:
         ("database", "engineering_layer_evidence", "engineering_layer_evidence_body"),
     )
     gates = (
-        ("policy", "engineering_gate_repository"),
-        ("security", "engineering_gate_security"),
-        ("cloud_done", "engineering_gate_cloudflare"),
-        ("science", "engineering_gate_tests"),
-        ("code", "engineering_gate_compile"),
-        ("inventory_2", "engineering_gate_dependencies"),
-        ("web", "engineering_gate_browser"),
-        ("speed", "engineering_gate_runtime"),
-        ("conversion_path", "engineering_gate_workflow"),
-        ("smartphone", "engineering_gate_mobile"),
-        ("dns", "engineering_gate_deployment"),
-        ("verified_user", "engineering_gate_guest"),
-        ("settings_backup_restore", "engineering_gate_recovery"),
+        ("policy", "engineering_gate_repository", "repository"),
+        ("security", "engineering_gate_security", "repository"),
+        ("cloud_done", "engineering_gate_cloudflare", "access"),
+        ("science", "engineering_gate_tests", "quality"),
+        ("code", "engineering_gate_compile", "quality"),
+        ("inventory_2", "engineering_gate_dependencies", "repository"),
+        ("web", "engineering_gate_browser", "quality"),
+        ("speed", "engineering_gate_runtime", "runtime"),
+        ("conversion_path", "engineering_gate_workflow", "quality"),
+        ("smartphone", "engineering_gate_mobile", "quality"),
+        ("dns", "engineering_gate_deployment", "runtime"),
+        ("verified_user", "engineering_gate_guest", "access"),
+        ("settings_backup_restore", "engineering_gate_recovery", "recovery"),
     )
     pillars = (
         ("balance", "engineering_pillar_fairness", "engineering_pillar_fairness_body"),
@@ -319,7 +333,7 @@ def engineering_page() -> None:
         ("02", "translate", "engineering_fact_languages", "engineering_fact_languages_body"),
     )
 
-    with page_shell("engineering", "/engineering", music_context="architecture"):
+    with page_shell("/engineering"):
         with ui.element("section").classes("sy-engineering-hero w-full").props(
             f'aria-label="{t("engineering")}" data-testid=engineering-hero'
         ):
@@ -327,11 +341,12 @@ def engineering_page() -> None:
                 ui.label(t("engineering_kicker")).classes("sy-architecture-kicker")
                 ui.html(t("engineering"), tag="h2").classes("sy-architecture-title")
                 ui.label(t("engineering_intro")).classes("sy-architecture-copy")
-                _tone_badge(t("engineering_badge"), "stable").classes("mt-3 self-start")
+                status(t("engineering_badge"), "stable").classes("mt-3 self-start")
 
-        render_page_toc(
+        page_toc(
             (
                 ("engineering-facts-section", "engineering_facts_title"),
+                ("engineering-evidence-index-section", "engineering_evidence_title"),
                 ("engineering-blueprint-section", "engineering_blueprint_title"),
                 ("engineering-release-section", "engineering_pipeline_title"),
                 ("engineering-pillars-section", "engineering_pillars_title"),
@@ -351,6 +366,151 @@ def engineering_page() -> None:
                         ui.label(t(title_key)).classes("sy-engineering-fact-title")
                         ui.label(t(body_key)).classes("sy-engineering-fact-copy")
 
+        evidence_date = evidence.finished_at.date().isoformat() if evidence.finished_at else "—"
+        evidence_records = [
+            {
+                "id": f"gate-{index}",
+                "item": t(title_key),
+                "type_code": type_code,
+                "type": t(f"engineering_evidence_type_{type_code}"),
+                "state_code": evidence.state,
+                "state": t(release_state_keys.get(evidence.state, "platform_release_unreadable")),
+                "date": evidence_date,
+                "icon": icon,
+            }
+            for index, (icon, title_key, type_code) in enumerate(gates, start=1)
+        ]
+
+        with ui.element("section").classes("sy-architecture-section w-full").props(
+            "id=engineering-evidence-index-section data-testid=engineering-evidence-index"
+        ):
+            editorial_heading(
+                kicker=t("engineering_evidence_kicker"),
+                title=t("engineering_evidence_title"),
+                copy=t("engineering_evidence_copy"),
+                anchor_id="engineering-evidence-title",
+            )
+            type_options = {
+                "all": t("engineering_evidence_all"),
+                **{
+                    code: t(f"engineering_evidence_type_{code}")
+                    for code in ("repository", "access", "quality", "runtime", "recovery")
+                },
+            }
+            state_options = {
+                "all": t("engineering_evidence_all"),
+                **{
+                    state_name: t(release_state_keys[state_name])
+                    for state_name in ("pass", "running", "stale", "fail", "missing", "unreadable")
+                },
+            }
+            with ui.element("div").classes("sy-evidence-toolbar"):
+                type_filter = ui.select(
+                    type_options,
+                    value="all",
+                    label=t("engineering_evidence_type"),
+                ).classes("sy-evidence-filter")
+                state_filter = ui.select(
+                    state_options,
+                    value="all",
+                    label=t("engineering_evidence_status"),
+                ).classes("sy-evidence-filter")
+                date_filter = ui.input(label=t("engineering_evidence_date")).props(
+                    "type=date clearable"
+                ).classes("sy-evidence-filter")
+                view_filter = ui.toggle(
+                    {
+                        "summary": t("engineering_evidence_summary"),
+                        "table": t("engineering_evidence_table"),
+                    },
+                    value="summary",
+                ).props(f'aria-label="{t("engineering_evidence_view")}"').classes(
+                    "sy-evidence-view-toggle"
+                )
+
+            results = ui.element("div").classes("sy-evidence-results w-full").props(
+                "aria-live=polite data-testid=engineering-evidence-results"
+            )
+
+            def render_evidence_results() -> None:
+                results.classes(add="sy-evidence-results--filtering")
+                filtered = [
+                    row
+                    for row in evidence_records
+                    if (type_filter.value == "all" or row["type_code"] == type_filter.value)
+                    and (state_filter.value == "all" or row["state_code"] == state_filter.value)
+                    and (not date_filter.value or row["date"] == date_filter.value)
+                ]
+                results.clear()
+                with results:
+                    if not filtered:
+                        empty_state(
+                            title=t("engineering_evidence_no_results"),
+                            body=t("engineering_evidence_no_results_body"),
+                            icon="filter_alt_off",
+                            test_id="engineering-evidence-empty",
+                        )
+                    elif view_filter.value == "table":
+                        responsive_table(
+                            rows=filtered,
+                            columns=[
+                                {
+                                    "name": "item",
+                                    "label": t("engineering_evidence_col_item"),
+                                    "field": "item",
+                                    "align": "left",
+                                },
+                                {
+                                    "name": "type",
+                                    "label": t("engineering_evidence_col_type"),
+                                    "field": "type",
+                                    "align": "left",
+                                },
+                                {
+                                    "name": "state",
+                                    "label": t("engineering_evidence_col_state"),
+                                    "field": "state",
+                                    "align": "left",
+                                },
+                                {
+                                    "name": "date",
+                                    "label": t("engineering_evidence_col_date"),
+                                    "field": "date",
+                                    "align": "left",
+                                },
+                            ],
+                            row_key="id",
+                            test_id="engineering-evidence-table",
+                        )
+                    else:
+                        with ui.element("div").classes("sy-evidence-summary-grid"):
+                            for row in filtered:
+                                with ui.element("article").classes("sy-evidence-record"):
+                                    with ui.row().classes("items-center justify-between gap-3 no-wrap"):
+                                        ui.icon(str(row["icon"])).classes(
+                                            "sy-evidence-record-icon"
+                                        ).props("aria-hidden=true")
+                                        status(str(row["state"]), evidence_tone)
+                                    ui.label(str(row["item"])).classes("sy-evidence-record-title")
+                                    ui.label(t("engineering_evidence_record_copy")).classes(
+                                        "sy-evidence-record-copy"
+                                    )
+                                    ui.label(f'{row["type"]} · {row["date"]}').classes(
+                                        "sy-evidence-record-meta"
+                                    )
+                ui.run_javascript(
+                    """
+                    requestAnimationFrame(() => requestAnimationFrame(() => {
+                      document.querySelector('[data-testid="engineering-evidence-results"]')
+                        ?.classList.remove('sy-evidence-results--filtering');
+                    }));
+                    """
+                )
+
+            for control in (type_filter, state_filter, date_filter, view_filter):
+                control.on_value_change(lambda _event: render_evidence_results())
+            render_evidence_results()
+
         with ui.element("section").classes("sy-architecture-section w-full").props("id=engineering-blueprint-section"):
             _render_architecture_section_heading(
                 "engineering_blueprint_kicker", "engineering_blueprint_title", "engineering_blueprint_copy"
@@ -368,9 +528,9 @@ def engineering_page() -> None:
             _render_architecture_section_heading(
                 "engineering_pipeline_kicker", "engineering_pipeline_title", "engineering_pipeline_copy", show_kicker=True
             )
-            _tone_badge(evidence_label, evidence_tone).classes("self-start")
+            status(evidence_label, evidence_tone).classes("self-start")
             with ui.element("ol").classes("sy-engineering-gates").props("data-testid=engineering-gates"):
-                for index, (icon, title_key) in enumerate(gates, start=1):
+                for index, (icon, title_key, _type_code) in enumerate(gates, start=1):
                     with ui.element("li").classes("sy-engineering-gate"):
                         ui.label(f"{index:02d}").classes("sy-engineering-gate-index")
                         ui.icon(icon).classes(f"sy-engineering-gate-icon sy-fg-{evidence_tone}").props("aria-hidden=true")
@@ -409,7 +569,7 @@ def engineering_page() -> None:
                 ui.button(
                     t("engineering_open_platform"), icon="domain", on_click=lambda: ui.navigate.to("/platform")
                 ).props("flat")
-        render_reference_pager(previous=("/system-architecture", "system_architecture"))
+        reference_pager(previous=("/system-architecture", "system_architecture"))
 
 
 @ui.page("/system-architecture")
@@ -446,24 +606,25 @@ def system_architecture_page() -> None:
         ("faq_support_q", "faq_support_a"),
         ("faq_music_q", "faq_music_a"),
     )
-    with page_shell("system_architecture", "/system-architecture", music_context="architecture"):
+    with page_shell("/system-architecture"):
         with ui.element("section").classes("sy-architecture-hero w-full").props(f'aria-label="{t("system_architecture")}"'):
             with ui.column().classes("gap-2"):
                 ui.label(t("architecture_kicker")).classes("sy-architecture-kicker")
                 ui.html(t("system_architecture"), tag="h2").classes("sy-architecture-title")
                 ui.label(t("architecture_intro")).classes("sy-architecture-copy")
-                _tone_badge(t("architecture_local_badge"), "stable").classes("mt-3 self-start")
+                status(t("architecture_local_badge"), "stable").classes("mt-3 self-start")
                 ui.label(t("architecture_reading_note")).classes("sy-architecture-reading-note")
                 ui.label(t("architecture_platform_link_note")).classes("sy-architecture-reading-note")
                 ui.button(t("open_platform"), icon="domain", on_click=lambda: ui.navigate.to("/platform")).props(
                     "outline data-testid=architecture-open-platform"
                 ).classes("mt-2 self-start")
 
-        render_page_toc(
+        page_toc(
             (
                 ("architecture-flow-section", "architecture_flow_title"),
                 ("architecture-layers-section", "architecture_layers_title"),
                 ("architecture-evidence-section", "architecture_evidence_title"),
+                ("architecture-developer-section", "developer_reference_title"),
                 ("architecture-faq-section", "architecture_faq_title"),
             )
         )
@@ -508,6 +669,57 @@ def system_architecture_page() -> None:
                         ui.label(t(body_key)).classes("sy-trust-evidence-copy")
                         ui.label(t(label_key)).classes("sy-trust-evidence-label")
 
+        developer_references = (
+            ("view_quilt", "developer_reference_modules_title", "developer_reference_modules_body"),
+            ("policy", "developer_reference_context_title", "developer_reference_context_body"),
+            ("swap_horiz", "developer_reference_adapters_title", "developer_reference_adapters_body"),
+            ("verified_user", "developer_reference_identity_title", "developer_reference_identity_body"),
+            ("cycle", "developer_reference_lifecycle_title", "developer_reference_lifecycle_body"),
+            ("monitor_heart", "developer_reference_health_title", "developer_reference_health_body"),
+            (
+                "settings_backup_restore",
+                "developer_reference_recovery_title",
+                "developer_reference_recovery_body",
+            ),
+            ("rocket_launch", "developer_reference_release_title", "developer_reference_release_body"),
+        )
+        with ui.element("section").classes("sy-architecture-section w-full").props(
+            f'id=architecture-developer-section aria-label="{t("developer_reference_title")}" '
+            "data-testid=developer-reference"
+        ):
+            editorial_heading(
+                kicker=t("developer_reference_kicker"),
+                title=t("developer_reference_title"),
+                copy=t("developer_reference_copy"),
+                anchor_id="developer-reference-title",
+            )
+            with ui.element("div").classes("sy-developer-reference-grid"):
+                for icon, title_key, body_key in developer_references:
+                    with ui.element("article").classes("sy-developer-reference-card"):
+                        ui.icon(icon).classes("sy-developer-reference-icon").props("aria-hidden=true")
+                        ui.label(t(title_key)).classes("sy-developer-reference-title")
+                        ui.label(t(body_key)).classes("sy-developer-reference-copy")
+            with ui.element("div").classes("sy-developer-command-grid"):
+                code_sample(
+                    code=(
+                        "Invoke-RestMethod http://127.0.0.1:8080/healthz\n"
+                        "Invoke-RestMethod http://127.0.0.1:8080/readyz"
+                    ),
+                    label=t("developer_reference_health_command"),
+                    language="powershell",
+                    test_id="developer-health-command",
+                )
+                code_sample(
+                    code=(
+                        "python -X utf8 -m pytest -q\n"
+                        "python -X utf8 scripts/verify_update.py --release\n"
+                        "python -X utf8 scripts/verify_release_candidate.py"
+                    ),
+                    label=t("developer_reference_release_command"),
+                    language="text",
+                    test_id="developer-release-command",
+                )
+
         with ui.element("section").classes("sy-architecture-faq w-full").props(
             f'id=architecture-faq-section aria-label="{t("architecture_faq_title")}" data-testid=architecture-faq'
         ):
@@ -517,7 +729,7 @@ def system_architecture_page() -> None:
                     with ui.expansion(t(question_key), icon="help_outline").classes("sy-architecture-faq-item w-full"):
                         ui.label(t(answer_key)).classes("sy-architecture-faq-answer")
         _render_feedback_channel()
-        render_reference_pager(previous=("/platform", "platform"), next_=("/engineering", "engineering"))
+        reference_pager(previous=("/platform", "platform"), next_=("/engineering", "engineering"))
 
 
 def _render_architecture_section_heading(
@@ -527,10 +739,9 @@ def _render_architecture_section_heading(
     *,
     show_kicker: bool = False,
 ) -> None:
-    with ui.column().classes("sy-architecture-section-heading gap-1"):
-        if show_kicker:
-            ui.label(t(kicker_key)).classes("sy-architecture-section-kicker")
-        ui.html(t(title_key), tag="h2").classes("sy-architecture-section-title").props(
-            f"id={title_key}-heading"
-        )
-        ui.label(t(copy_key)).classes("sy-architecture-section-copy")
+    editorial_heading(
+        title=t(title_key),
+        copy=t(copy_key),
+        kicker=t(kicker_key) if show_kicker else None,
+        anchor_id=f"{title_key}-heading",
+    )

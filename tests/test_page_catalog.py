@@ -59,3 +59,17 @@ def test_desktop_and_mobile_shell_read_the_page_catalog() -> None:
     assert "navigation_groups_for(access_mode)" in shell
     assert "mobile_navigation_for(access_mode)" in shell
     assert "for page in pages:" in shell
+    assert "active_page.is_visible_to(access_mode)" in shell
+    assert "page_context.require(active_page.required_capability)" in shell
+    assert "title_key = active_page.title_key" in shell
+    assert "active_page.page_kind.value" in shell
+    assert "active_page.music_context" in shell
+    assert 'data-sy-page-kind="{page_kind}"' in shell
+    assert "sy-page-kind-{page_kind}" in shell
+
+    route_sources = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (PROJECT_ROOT / "nicegui_app" / "ui" / "page_routes").glob("*.py")
+    )
+    assert "music_context=" not in route_sources
+    assert 'page_shell("dashboard", "/")' not in route_sources

@@ -4,9 +4,9 @@
 
 > **v1.2 rc9 交接狀態：** 240 個發布輸入已以指紋 `0ebc6d407682aca09baa0e95bc5857c95b46352cd7545752aea3425fe633f96e` 通過 13／13 正式 gate。`C:\SingYinRoster` 現為健康、ready 的 rc9／`18a5c73`；全新正式備份 `20260718-172930-087373-manual_verified_backup.sqlite3`、checksum、公平對帳及隔離還原全部通過。canonical Worker 程式未改動，故保留已驗證版本 `b13e5721-d1e8-4048-9885-ffb422fe2010`；public gateway health 為 HTTP 200。首席導學風紀及教師顧問仍須完成真人驗收清單。
 
-> **rc4 rollout 記錄：** rc4 已成功把正式 Alembic schema 由 `0007` 升至 `0008`，建立已驗證備份並完成隔離還原；其後 `git fetch origin main` 只更新 `FETCH_HEAD`，而 ancestry gate 讀取 stale `origin/main`，造成假失敗。rc4 因而從未被宣告為 live。自動 rollback 未能證明 origin health 後，主機以相容的 rc4／`30f282f` 完成 forward recovery；rc5／`bafaef6` 已改用明確 remote-tracking refspec，並重新通過完整 13-gate 報告。
+> **歷史 rc4 rollout 記錄（不可作現行步驟）：** rc4 已成功把正式 Alembic schema 由 `0007` 升至 `0008`，建立已驗證備份並完成隔離還原；其後 `git fetch origin main` 只更新 `FETCH_HEAD`，而 ancestry gate 讀取 stale `origin/main`，造成假失敗。rc4 因而從未被宣告為 live。自動 rollback 未能證明 origin health 後，主機以相容的 rc4／`30f282f` 完成 forward recovery；rc5／`bafaef6` 已改用明確 remote-tracking refspec，並重新通過完整 13-gate 報告。
 
-> **rc7 分階段規則：** origin 階段仍會阻擋每一個 failure 及所有其他 warning；只有明確依賴尚未部署 Worker 的 `cloudflare_access` 可暫時延後。匹配 Worker 上線後，這項檢查以及 Admin／Guest／Viewer／WebSocket 線上驗收仍必須全部通過，才可結束 maintenance 並交接。
+> **歷史 rc7 分階段規則（現已完成）：** origin 階段阻擋每一個 failure 及所有其他 warning；只有明確依賴尚未部署 Worker 的 `cloudflare_access` 可暫時延後。匹配 Worker 上線後，這項檢查以及 Admin／Guest／Viewer／WebSocket 線上驗收全部通過，才結束 maintenance。後續發布須依本文件的通用受控次序重新產生候選專屬證據，不可重用 rc7 標籤或報告。
 
 ## 運作原則
 
@@ -88,7 +88,7 @@ JSON 是唯讀報告證據，不是 SQLite 還原備份。需要交接或復原�
 
 受控技術維護可使用 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。正式設定只接受 Ed25519 金鑰、只監聽 loopback，並拒絕密碼、轉發及公開 TCP 22。`SingYinRosterSvc` 仍是非互動網站執行帳戶，不可用作 SSH 登入；SSH 私鑰亦不可放入 Git、交接備份、日誌或雲端同步資料夾。
 
-需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。v1.2 啟用後，訪客不需輸入電郵或密碼，只按「訪客體驗」建立有限期 Guest session；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 驗證相應 session 後，以獨立 HMAC principal 把 Guest／Admin 送到同一 NiceGUI origin；origin 再分流至虛構記憶體 adapter 或正式 workflow。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
+需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。目前 live rc9 中，訪客不需輸入電郵或密碼，只按「訪客體驗」建立有限期 Guest session；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 驗證相應 session 後，以獨立 HMAC principal 把 Guest／Admin 送到同一 NiceGUI origin；origin 再分流至虛構記憶體 adapter 或正式 workflow。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
 
 ### 交接前練習模式
 
@@ -108,7 +108,7 @@ JSON 是唯讀報告證據，不是 SQLite 還原備份。需要交接或復原�
 
 ### 一次性退休舊示範資料（只供受控 IT 維護）
 
-舊主機如曾以正式路徑載入示範資料，不可在網頁逐項刪除，也不可直接移除 SQLite。不可變發布版本 rc.16 提供 `scripts/reset_official_data.py` 作一次性、明確確認的受控遷移：主機必須先停止；工具先核對資料庫與公平帳本，建立新已驗證快照並在另一隔離資料庫完成還原演練，撤銷並重新核對所有公開 Viewer 連結，再把舊資料及舊備份移入受限 quarantine，最後原子安裝已遷移的空白 SQLite 及唯一一份已驗證空白基線。任何一關失敗均停止；安裝後核對失敗會自動回復原資料，無法證明回復時保留 recovery-review marker。
+舊主機如曾以正式路徑載入示範資料，不可在網頁逐項刪除，也不可直接移除 SQLite。歷史不可變發布版本 `v1.1.0-rc.16` 已提供 `scripts/reset_official_data.py` 作一次性、明確確認的受控遷移：主機必須先停止；工具先核對資料庫與公平帳本，建立新已驗證快照並在另一隔離資料庫完成還原演練，撤銷並重新核對所有公開 Viewer 連結，再把舊資料及舊備份移入受限 quarantine，最後原子安裝已遷移的空白 SQLite 及唯一一份已驗證空白基線。任何一關失敗均停止；安裝後核對失敗會自動回復原資料，無法證明回復時保留 recovery-review marker。
 
 這不是日常「清空」功能，也不會出現在網站。只可使用已通過完整發布閘門的不可變版本，在核對目標路徑、停止並停用正式工作排程後由維護者執行；正式主機是否已完成清除，必須以 sanitized reset report、零筆業務資料表、有效空白基線及重新啟動後 `/healthz` 證據判斷，不可只看空白頁面或口頭聲稱。
 
@@ -193,17 +193,17 @@ python -X utf8 -m nicegui_app.main
 8. 以虛構已發布週表實測同 host `/view#…` 連結的建立、普通瀏覽器直達、到期及撤銷；Guest 不能建立正式 Viewer 連結。
 9. 本機及 WARP 只保留作維護後備。Worker／origin 的 session、principal、Viewer 及 Tunnel secret 值不可出現在版本庫、文件、截圖或交接包。
 
-### v1.2 受控發布次序
+### 後續受控發布次序
 
 1. 在來源分支完成 `python -X utf8 -m pytest -q`。
 2. 執行 `python -X utf8 scripts\verify_release_candidate.py`，核對 report 與最終來源 fingerprint 一致。
 3. 在現行正式系統建立新已驗證快照及交接包，並在另一個隔離 SQLite 完成還原。
-4. Gate 及備份證據全通過後，才合併 `main` 並建立目前發布用的 annotated tag（本次為 `v1.2.0-rc.7`）。保存目前 rc6 Windows bundle 及 Worker version ID 作回退。
-5. 進入 maintenance，從該不可變 tag 更新 Windows bundle，執行 additive migration；先以 `SING_YIN_UNIFIED_GUEST=0` 啟動。
+4. Gate 及備份證據全通過後，才合併 `main` 並建立**下一個獲批准的 annotated tag**；不可預先重用 rc4–rc7 標籤。保存目前 rc9／`18a5c73` Windows bundle 及 Worker `b13e5721-d1e8-4048-9885-ffb422fe2010` 作回退。
+5. 進入 maintenance，從該不可變 tag 更新 Windows bundle，執行 additive migration；保持現行受保護設定不變，不把切換功能旗標當成略過驗證的捷徑。
 6. 核對 `/healthz`、`/readyz`、管理員本機工作流及備份義務。
-7. staged 部署同一 tag 對應的 Worker，核對 Public、Admin、Guest、Viewer 及 WebSocket。
-8. 才把 `SING_YIN_UNIFIED_GUEST=1`，重新啟動 origin 並完成線上 Guest／Admin 隔離驗收。
-9. 所有線上證據通過後才宣布 v1.2 可供驗收；任一失敗立即恢復 flag、主機 bundle 及 Worker version。
+7. 只有 Worker source 或受保護設定確實改變時，才部署該 tag 對應的 Worker；若未改，記錄「刻意不重新部署」及沿用的 verified version ID。
+8. 核對 Public、Admin、Guest、Viewer、WebSocket、登出、到期及跨分頁隔離；所有能力仍須由伺服器拒絕優先，而非依賴隱藏按鈕。
+9. 所有線上證據通過後才宣布候選可供驗收；任一失敗立即恢復現行設定、rc9 主機 bundle 及已驗證 Worker version。
 
 ## 正式驗收清單
 

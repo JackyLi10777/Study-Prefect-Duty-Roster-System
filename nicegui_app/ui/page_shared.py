@@ -25,6 +25,12 @@ from nicegui_app.services.roster_workflow import (
     WorkflowConflictError,
 )
 from nicegui_app.ui.i18n import day_label, post_label, role_label, t
+from nicegui_app.ui.components import (
+    empty_state as render_empty_state_component,
+    responsive_table as render_responsive_table_component,
+    status as render_status_component,
+    workflow_step as render_workflow_step_component,
+)
 from nicegui_app.ui.downloads import deliver_generated_download
 from nicegui_app.ui.operation_gate import claim_durable_operation, release_durable_operation
 from nicegui_app.ui.page_access import is_demo_export
@@ -553,14 +559,8 @@ def _open_roster_export_dialog(roster_week_id: int) -> None:
 
 
 def _tone_badge(text: str, tone: str, *, props: str = ""):
-    """Render one status vocabulary whose colour meaning is stable across pages."""
-    # NiceGUI otherwise adds Quasar's ``bg-primary`` class.  Leaving that
-    # default in place makes its ``background`` shorthand win over the
-    # semantic tone token in some browsers, producing amber-on-blue pills.
-    badge = ui.badge(text, color=None).classes(f"sy-status-badge sy-tone-{tone}")
-    if props:
-        badge.props(props)
-    return badge
+    """Compatibility wrapper for the public semantic status component."""
+    return render_status_component(text, tone, props=props)
 
 
 def _render_responsive_table(
@@ -571,20 +571,14 @@ def _render_responsive_table(
     classes: str = "",
     test_id: str | None = None,
 ) -> None:
-    """Render one data model as a desktop table and a labelled phone card grid.
-
-    Quasar's ``$q.screen`` binding is not available while NiceGUI converts
-    dynamic props.  Two presentation-only QTables avoid console errors without
-    branching routes, persistence, policy, or localized display data.
-    """
-    props = f"data-testid={test_id}" if test_id else ""
-    with ui.element("div").classes(f"sy-responsive-table w-full {classes}".strip()).props(props):
-        ui.table(rows=rows, columns=columns, row_key=row_key).classes(
-            "sy-table sy-responsive-table-desktop w-full"
-        )
-        ui.table(rows=rows, columns=columns, row_key=row_key).props("grid hide-header").classes(
-            "sy-table sy-responsive-table-mobile w-full"
-        )
+    """Compatibility wrapper for the public responsive table component."""
+    render_responsive_table_component(
+        rows=rows,
+        columns=columns,
+        row_key=row_key,
+        classes=classes,
+        test_id=test_id,
+    )
 
 
 def _render_flow_step(
@@ -598,19 +592,17 @@ def _render_flow_step(
     action_key: str | None = None,
     action=None,  # type: ignore[no-untyped-def]
 ) -> None:
-    """Render one ordered stage of the operator's weekly workflow."""
-    with ui.element("li").classes(f"sy-flow-step sy-flow-step--{state}"):
-        with ui.row().classes("w-full items-start justify-between gap-3"):
-            ui.label(f"{number:02d}").classes("sy-flow-index")
-            ui.icon(icon).classes("sy-flow-symbol").props("aria-hidden=true")
-            _tone_badge(t(state_key), {"active": "action", "done": "stable"}.get(state, "neutral"))
-        ui.label(t(title_key)).classes("sy-flow-title mt-5")
-        ui.label(t(detail_key)).classes("sy-flow-copy mt-2")
-        if action_key and action:
-            props = "color=primary" if state == "active" else "outline color=primary"
-            ui.button(t(action_key), icon="arrow_forward", on_click=action).props(props).classes("sy-flow-action mt-5")
-        elif state == "pending":
-            ui.label(t("flow_unavailable")).classes("sy-flow-disabled mt-5")
+    """Compatibility wrapper for the public workflow-step component."""
+    render_workflow_step_component(
+        number=number,
+        title=t(title_key),
+        detail=t(detail_key),
+        state=state,
+        state_text=t(state_key),
+        icon=icon,
+        action_text=t(action_key) if action_key else None,
+        on_action=action,
+    )
 
 
 def _render_storage_lifecycle(workflow) -> None:  # type: ignore[no-untyped-def]
@@ -660,15 +652,39 @@ def _render_empty_state(
     action_props: str = "outline color=primary",
     illustrated: bool = False,
 ) -> None:
-    """Turn an empty result into one clear next action; reserve imagery for orientation moments."""
-    variant = " sy-empty-state--illustrated" if illustrated else ""
-    with ui.element("section").classes(f"sy-empty-state{variant} w-full").props(f'aria-label="{t(title_key)}"'):
-        ui.icon(icon).classes("sy-empty-state-icon").props("aria-hidden=true")
-        with ui.column().classes("items-center gap-1 max-w-lg"):
-            ui.label(t(title_key)).classes("sy-empty-state-title")
-            ui.label(t(body_key)).classes("sy-empty-state-copy")
-        if action_key and action:
-            ui.button(t(action_key), icon="arrow_forward", on_click=action).props(action_props).classes("mt-2")
+    """Compatibility wrapper for the public empty-state component.
+
+    The legacy ``action_props`` argument is translated deliberately so existing
+    browser selectors and destructive-action semantics survive the migration.
+    """
+    action_test_id = next(
+        (
+            token.split("=", 1)[1].strip('"\'')
+            for token in action_props.split()
+            if token.startswith("data-testid=")
+        ),
+        None,
+    )
+    if "color=negative" in action_props:
+        action_variant = "danger"
+    elif "color=warning" in action_props or "color=attention" in action_props:
+        action_variant = "attention"
+    elif "flat" in action_props:
+        action_variant = "quiet"
+    elif "color=primary" in action_props and "outline" not in action_props:
+        action_variant = "primary"
+    else:
+        action_variant = "secondary"
+    render_empty_state_component(
+        title=t(title_key),
+        body=t(body_key),
+        icon=icon,
+        action_text=t(action_key) if action_key else None,
+        on_action=action,
+        action_variant=action_variant,
+        action_test_id=action_test_id,
+        illustrated=illustrated,
+    )
 
 
 def _render_roster_route_state(

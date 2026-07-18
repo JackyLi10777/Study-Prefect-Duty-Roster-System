@@ -21,24 +21,30 @@ The public entrance presents one prepared duty desk in paired morning-light and 
 · [Architecture](docs/NICEGUI_ARCHITECTURE.md) · [Release status](PROJECT_STATUS.md)
 · [Canonical-site access guide](docs/PUBLIC_ROSTER_VIEWER.md)
 
-**Current pre-v1.2 deployment (2026-07-17):** `C:\SingYinRoster` has been
-forward-recovered to the schema-compatible rc4 source at commit `30f282f`;
-`/healthz` is healthy and `/readyz` is ready. NiceGUI remains loopback-only on
-`127.0.0.1:8080`. The canonical Worker deliberately remains on the pre-v1.2
-production baseline. The rc5 origin rollout created a fresh verified backup and
-passed isolated restore, then rolled back safely because strict local readiness
-treated the intentionally pending `cloudflare_access` warning as fatal before
-the matching Worker stage. This remains the documented **v1.1 rollback** baseline while the rc6 correction defers only that warning to the
-Worker stage; every failure and every other warning remains blocking, and live
-acceptance is still mandatory. A
-supervised Windows reboot, administrator login/logout, long reconnect, upload
-and PDF acceptance remain outstanding; official-data cleanup remains a
-separately authorized operation.
+**Current formal baseline:** `v1.2.0-rc.9`／`18a5c73` is live at
+`C:\SingYinRoster`. `/healthz` is healthy and `/readyz` is ready. The rollout
+created a fresh verified backup and passed checksum, fairness reconciliation,
+restore audit, and isolated restore. The canonical Worker source did not change,
+so its already verified version `b13e5721-d1e8-4048-9885-ffb422fe2010` remains
+live. Supervised administrator, advisor, and real-device acceptance remains a
+human responsibility rather than an automated deployment claim.
+
+The retained **v1.1 rollback** record is historical recovery evidence only; it
+does not replace the current rc9 baseline or prove this editorial candidate.
+
+**Current source candidate—not deployed:** `codex/service-weave-v1-2-editorial`
+is integrating the versioned Service Weave `ProductIdentity`, central
+`PageDefinition` catalogue, public NiceGUI component API, explicit CSS ownership,
+a filterable Engineering evidence index, and an internal Developer Reference.
+It must receive its own final source fingerprint and pass every formal gate,
+backup／isolated restore, controlled origin rollout, matching Worker decision,
+and live acceptance before it can supersede rc9.
 
 ## Repository editions
 
 | Branch | Platform | Status |
 |---|---|---|
+| `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite, development and isolated verification | Service Weave v1.2 editorial candidate; not deployed and not a new formal release |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Live rc9 `18a5c73`, aligned with `main` and the production origin |
 | `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.9`; the Windows origin is current and the unchanged canonical Worker retains its verified version |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
@@ -53,31 +59,21 @@ the Streamlit page handlers: policy remains in `roster_policy`, generation in
 The only URL distributed to users is
 <https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>.
 
-The pre-v1.2 Worker still serves its data-free tour and browser-only fictional
-trial. The v1.2 rc5 source candidate replaces those two
-separate products with one NiceGUI product: a visitor selects **Guest
-experience** to receive a bounded 30-minute fictional workspace, while an
-approved operator selects **Admin login**, enters an exact allowlisted email
-address and the one-time code sent by Cloudflare Access, and receives the
-official workflow at the same routes. `/guest` and `/try` become compatibility
-redirects; an explicitly issued `/view#…` link remains the separate encrypted,
-read-only published-roster viewer.
+The live v1.2 product uses one NiceGUI renderer for both identities: a visitor
+selects **Guest experience** to receive a bounded 30-minute fictional workspace,
+while an approved operator selects **Admin login**, enters an exact allowlisted
+email address and the one-time code sent by Cloudflare Access, and receives the
+official workflow at the same routes. `/guest` and `/try` are compatibility
+redirects, not a static tour or second trial product. An explicitly issued
+`/view#…` link remains the separate encrypted, read-only published-roster viewer.
 
-The v1.2 Worker and origin authenticate both modes with server-verified,
-HMAC-signed principals. On 2026-07-18 the reproducible 240-input rc7 source
-passed all 13 formal release gates with fingerprint
-`e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db`,
-including isolated Admin/Guest browser, mobile, reduced-motion, performance,
-write/PDF, backup, and recovery evidence. The matching report ran from
-`2026-07-18T19:41:21.506585+08:00` to `2026-07-18T19:46:28.277693+08:00`;
-machine verification is complete. Cloudflare Access is screenshot-confirmed to
-protect only the exact `/auth/login` destination. The planned immutable rollout
-reference is `v1.2.0-rc.7`. The Windows origin now runs matching commit
-`14cb7e7`; health and readiness pass, the fresh production backup passed
-checksum, fairness reconciliation, and isolated restore, and Worker version
-`b13e5721-d1e8-4048-9885-ffb422fe2010` is live. Public, Access redirect,
-Guest start/logout, paired assets, and light/dark browser checks pass. The
-application has no custom password database.
+The Worker and origin authenticate both modes with server-verified, HMAC-signed
+principals. The live rc9 release passed 13／13 formal gates against its own
+240-input fingerprint, including isolated Admin/Guest browser, mobile,
+reduced-motion, performance, write/PDF, backup, and recovery evidence. The
+Service Weave editorial branch changes release-sensitive source and therefore
+must be verified again; rc9 evidence is retained as live history, not reused as
+proof for the new candidate. The application has no custom password database.
 
 The commands below prepare a host or maintenance workstation; they are not a
 second normal entry point.
@@ -136,7 +132,7 @@ still requires Viewer-link revocation and the separately authorised controlled
 reset before an empty official-data state may be claimed; the rc5 application
 rollout does not perform that data-clearing operation.
 
-### v1.2 rc5 candidate: one Guest and Admin product
+### v1.2 formal baseline: one Guest and Admin product
 
 Guest and Admin use the same NiceGUI routes, navigation, components, and weekly
 sequence. A server-verified `PageContext` resolves either the official
@@ -155,11 +151,11 @@ safe fictional fixture. Sign-out, expiry, revocation, and cross-tab session
 termination clear temporary state. Guest PDF/JSON downloads are memory-only,
 one-shot, `DEMO`-marked, and `Cache-Control: no-store`.
 
-Focused snapshot-bridge tests and the matching 13-gate rc5 report now pass, but
-the report is not a claim that rc5 is already deployed. The controlled rc5 host
-procedure must still create its fresh verified backup and isolated restore,
-switch the origin and Worker, and complete live acceptance. Exact commands are
-documented in
+The live rc9 release passed its matching 13-gate report, fresh verified backup,
+isolated restore, origin rollout, and gateway health checks. The current Service
+Weave editorial branch changes release-sensitive inputs, so it must complete a
+new report and controlled rollout before its interface and documentation can be
+described as live. Exact operating commands are documented in
 [`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and
 [`WINDOWS_DEDICATED_HOST_SETUP.md`](docs/WINDOWS_DEDICATED_HOST_SETUP.md). The
 complete risk matrix is in [`UPDATE_WORKFLOW.md`](docs/UPDATE_WORKFLOW.md).

@@ -113,7 +113,7 @@ def test_capacity_state_has_a_keyboard_focus_and_reduced_motion_safe_surface() -
         Path(runtime.__file__).parent
         / "assets"
         / "css"
-        / "sing-yin-narrative-v1.css"
+        / "sing-yin-components-v1.css"
     ).read_text(encoding="utf-8")
 
     assert "setAttribute('role', 'alert')" in runtime_source

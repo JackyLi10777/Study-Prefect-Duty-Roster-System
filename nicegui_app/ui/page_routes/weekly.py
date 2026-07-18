@@ -36,7 +36,7 @@ def rosters_page() -> None:
     workflow = get_workflow()
     weeks = workflow.roster_weeks()
     prefects = workflow.prefects()
-    with page_shell("rosters", "/rosters", music_context="weekly"):
+    with page_shell("/rosters"):
         with ui.row().classes("sy-page-lead w-full items-center justify-between"):
             ui.html(t("rosters"), tag="h2").classes("text-2xl font-semibold")
             ui.label(t("persistence_notice")).classes("text-sm text-[var(--sy-muted)]")
@@ -443,7 +443,7 @@ def generate_roster_page() -> None:
 @ui.page("/rosters/{roster_week_id}")
 def roster_detail_page(roster_week_id: int) -> None:
     workflow = get_workflow()
-    with page_shell("rosters", "/rosters", music_context="weekly"):
+    with page_shell("/rosters"):
         try:
             week = workflow.roster_week(roster_week_id)
         except WorkflowError:
@@ -642,7 +642,7 @@ def adjustments_page() -> None:
 @ui.page("/rosters/{roster_week_id}/adjustments")
 def adjustment_detail_page(roster_week_id: int) -> None:
     workflow = get_workflow()
-    with page_shell("adjustments", "/rosters", music_context="weekly"):
+    with page_shell("/rosters"):
         ui.label(t("adjustments")).classes("text-2xl font-semibold")
         _render_operation_hint("hint_leave_adjustment", icon="swap_horiz")
         try:

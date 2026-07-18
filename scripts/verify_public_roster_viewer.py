@@ -8,7 +8,6 @@ import shutil
 import sys
 import tempfile
 from typing import Final
-from urllib.parse import urlparse
 
 from playwright.sync_api import Page, sync_playwright
 
@@ -145,66 +144,6 @@ def _assert_guest_landing(page: Page, *, label: str) -> None:
     _assert_document_fits_viewport(page, label=label)
 
 
-def _assert_guest_tour(
-    page: Page,
-    *,
-    label: str,
-    navigation_requests: list[tuple[str, str, str]],
-) -> None:
-    page.locator("main#main").wait_for(state="visible")
-    _assert_page_identity(page, label=label)
-    if urlparse(page.url).path != "/guest":
-        raise RuntimeError(f"{label} did not remain on the edge-only /guest route: {page.url!r}")
-
-    copy = page.locator("body").inner_text()
-    for required in (
-        "虛構資料",
-        "The guest tour contains no official roster data.",
-        "不包含任何正式值班資料",
-        "零伺服器寫入",
-    ):
-        if required not in copy:
-            raise RuntimeError(f"{label} is missing the safety explanation {required!r}.")
-
-    editable_controls = page.locator(
-        "form, input, textarea, select, [contenteditable='true']"
-    )
-    if editable_controls.count() != 0:
-        raise RuntimeError(
-            f"{label} unexpectedly exposes {editable_controls.count()} form or write controls."
-        )
-    if page.locator("#adminLogin").count() and page.locator("#adminLogin").is_visible():
-        raise RuntimeError(f"{label} unexpectedly exposes the administrator CTA inside the guest tour.")
-    if page.locator("button").count() != 2:
-        raise RuntimeError(f"{label} should expose only language and appearance controls.")
-    exit_link = page.locator('a.text-link[href="/"]')
-    if exit_link.count() != 1 or not exit_link.is_visible():
-        raise RuntimeError(f"{label} does not provide a clear route back to the entrance.")
-
-    allowed_paths = {"/guest", "/guest.js", "/trial.css", "/favicon.svg"}
-    unsafe_requests = []
-    for request_url, method, resource_type in navigation_requests:
-        parsed = urlparse(request_url)
-        if resource_type == "websocket" or method not in {"GET", "HEAD"}:
-            unsafe_requests.append((request_url, method, resource_type))
-        elif parsed.path.startswith("/api/") or parsed.path not in allowed_paths:
-            unsafe_requests.append((request_url, method, resource_type))
-    if unsafe_requests:
-        raise RuntimeError(f"{label} issued a non-static or write-capable request: {unsafe_requests}")
-    _assert_document_fits_viewport(page, label=label)
-
-
-def _set_guest_theme_reliably(page: Page, expected: str) -> None:
-    if expected not in {"auto", "light", "dark"}:
-        raise ValueError(f"Unsupported guest theme state: {expected}")
-    for _ in range(3):
-        current = str(page.evaluate("() => document.documentElement.dataset.theme || 'auto'"))
-        if current == expected:
-            return
-        page.locator("#guestThemeToggle").click()
-    raise RuntimeError(f"Guest appearance control did not reach {expected!r}.")
-
-
 def _assert_theme_cycle(page: Page) -> None:
     _set_theme_reliably(page, "system")
     for expected in ("light", "dark", "system"):
@@ -238,8 +177,7 @@ def _assert_reduced_motion(page: Page) -> None:
             });
             const nodes = [...document.querySelectorAll(
                 '.access-portal, .portal-story, .access-panel, .devotional-prompt, .admin-login, ' +
-                '.guest-enter, .guest-portal, .guest-portal-header, .guest-mode-band, ' +
-                '.guest-tour-card, .guest-exit, .platform-hero, .hero-system, ' +
+                '.guest-enter, .platform-hero, .hero-system, ' +
                 '.platform-page .button, .platform-page .control-button, .capability-grid article, .trust-layout'
             )];
             const durations = nodes.flatMap(node => {
@@ -325,13 +263,6 @@ def main() -> int:
                 color_scheme="light",
             )
             page = desktop.new_page()
-            guest_navigation_requests: list[tuple[str, str, str]] = []
-            page.on(
-                "request",
-                lambda request: guest_navigation_requests.append(
-                    (request.url, request.method, request.resource_type)
-                ),
-            )
             _attach_error_collectors(
                 page,
                 label="desktop",
@@ -345,26 +276,6 @@ def main() -> int:
 
             _set_theme_reliably(page, "light")
             page.screenshot(path=str(GATEWAY_EVIDENCE_DIR / "desktop-light.png"), full_page=True)
-            guest_navigation_requests.clear()
-            page.locator("#guestEnter").click()
-            page.wait_for_load_state("networkidle")
-            _assert_guest_tour(
-                page,
-                label="desktop edge-only guest tour",
-                navigation_requests=guest_navigation_requests,
-            )
-            _set_guest_theme_reliably(page, "light")
-            page.wait_for_timeout(500)
-            page.screenshot(
-                path=str(GATEWAY_EVIDENCE_DIR / "guest-desktop-light.png"),
-                full_page=True,
-            )
-            _set_guest_theme_reliably(page, "dark")
-            page.wait_for_timeout(250)
-            page.screenshot(
-                path=str(GATEWAY_EVIDENCE_DIR / "guest-desktop-dark.png"),
-                full_page=True,
-            )
 
             page.goto(settings.base_url, wait_until="networkidle")
             _assert_guest_landing(page, label="desktop dark guest landing")
@@ -381,13 +292,6 @@ def main() -> int:
 
             mobile = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="light")
             mobile_page = mobile.new_page()
-            mobile_guest_requests: list[tuple[str, str, str]] = []
-            mobile_page.on(
-                "request",
-                lambda request: mobile_guest_requests.append(
-                    (request.url, request.method, request.resource_type)
-                ),
-            )
             _attach_error_collectors(
                 mobile_page,
                 label="mobile-390",
@@ -398,20 +302,6 @@ def main() -> int:
             _assert_guest_landing(mobile_page, label="390px guest landing")
             _set_theme_reliably(mobile_page, "light")
             mobile_page.screenshot(path=str(GATEWAY_EVIDENCE_DIR / "mobile-light.png"), full_page=True)
-            mobile_guest_requests.clear()
-            mobile_page.locator("#guestEnter").click()
-            mobile_page.wait_for_load_state("networkidle")
-            _assert_guest_tour(
-                mobile_page,
-                label="390px edge-only guest tour",
-                navigation_requests=mobile_guest_requests,
-            )
-            _set_guest_theme_reliably(mobile_page, "light")
-            mobile_page.wait_for_timeout(500)
-            mobile_page.screenshot(
-                path=str(GATEWAY_EVIDENCE_DIR / "guest-mobile-light.png"),
-                full_page=True,
-            )
 
             mobile_page.goto(receipt.share_url, wait_until="networkidle")
             _assert_read_only_roster(
@@ -428,13 +318,6 @@ def main() -> int:
                 reduced_motion="reduce",
             )
             compact_page = compact.new_page()
-            compact_guest_requests: list[tuple[str, str, str]] = []
-            compact_page.on(
-                "request",
-                lambda request: compact_guest_requests.append(
-                    (request.url, request.method, request.resource_type)
-                ),
-            )
             _attach_error_collectors(
                 compact_page,
                 label="mobile-320-reduced",
@@ -447,21 +330,6 @@ def main() -> int:
             _assert_reduced_motion(compact_page)
             compact_page.screenshot(
                 path=str(GATEWAY_EVIDENCE_DIR / "mobile-320-dark-reduced.png"),
-                full_page=True,
-            )
-            compact_guest_requests.clear()
-            compact_page.locator("#guestEnter").click()
-            compact_page.wait_for_load_state("networkidle")
-            _assert_guest_tour(
-                compact_page,
-                label="320px reduced-motion edge-only guest tour",
-                navigation_requests=compact_guest_requests,
-            )
-            _set_guest_theme_reliably(compact_page, "dark")
-            _assert_reduced_motion(compact_page)
-            compact_page.wait_for_timeout(50)
-            compact_page.screenshot(
-                path=str(GATEWAY_EVIDENCE_DIR / "guest-mobile-320-dark-reduced.png"),
                 full_page=True,
             )
 
@@ -487,9 +355,10 @@ def main() -> int:
         service.revoke_share(receipt.share_id)
         receipt = None
         print(
-            "PASS unified gateway: guest/read-only share flow, system/light/dark themes, "
-            "edge-only guest tour, manual verse refresh, 48px CTAs, reduced motion, "
-            "no page overflow, no guest write/API/WebSocket requests, and no browser errors."
+            "PASS public gateway: entrance/read-only share flow, system/light/dark themes, "
+            "manual verse refresh, 48px CTAs, reduced motion, no page overflow, and no "
+            "browser errors. Unified Guest behavior is verified separately by "
+            "scripts/verify_unified_guest_ui.py."
         )
         print(f"Gateway evidence: {GATEWAY_EVIDENCE_DIR}")
         print(f"Viewer evidence: {EVIDENCE_DIR}")

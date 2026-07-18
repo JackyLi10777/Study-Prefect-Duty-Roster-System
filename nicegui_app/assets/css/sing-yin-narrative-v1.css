@@ -9,14 +9,14 @@
 
 /* ---------- Shared canvas and chapter spine ---------- */
 
-body {
+body:has(.sy-page-shell) {
   background:
     radial-gradient(circle at 14% -8%, color-mix(in srgb, var(--sy-action-soft) 68%, transparent), transparent 34rem),
     radial-gradient(circle at 94% 12%, color-mix(in srgb, var(--sy-role-stable-soft) 34%, transparent), transparent 30rem),
     var(--sy-ground);
 }
 
-.body--dark {
+body.body--dark:has(.sy-page-shell) {
   background:
     radial-gradient(circle at 13% -10%, color-mix(in srgb, var(--sy-action-soft) 42%, transparent), transparent 32rem),
     radial-gradient(circle at 94% 9%, color-mix(in srgb, var(--sy-role-stable-soft) 26%, transparent), transparent 28rem),
@@ -115,7 +115,7 @@ body {
   line-height: 1.55;
 }
 
-.sy-nav-section {
+.sy-sidebar .sy-nav-section {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -132,7 +132,7 @@ body {
   letter-spacing: .02em;
 }
 
-.sy-sidebar .q-btn {
+.sy-sidebar .q-btn.sy-nav-control {
   border: 1px solid transparent;
 }
 
@@ -144,7 +144,7 @@ body {
   background: color-mix(in srgb, var(--sy-surface) 28%, transparent);
 }
 
-.sy-sidebar-feedback {
+.sy-sidebar .sy-sidebar-feedback {
   position: relative;
   overflow: hidden;
 }
@@ -183,11 +183,11 @@ body {
   white-space: nowrap;
 }
 
-.sy-header-title {
+.sy-header-leading .sy-header-title {
   line-height: 1.22;
 }
 
-.sy-header-tools {
+.sy-app-header .sy-header-tools {
   box-shadow: inset 0 1px 0 color-mix(in srgb, white 48%, transparent);
 }
 
@@ -197,28 +197,30 @@ body {
 
 /* ---------- Material surfaces without obscuring working data ---------- */
 
-.sy-surface,
-.sy-dashboard-history,
-.sy-devotional-companion,
-.sy-reference-index-card,
-.sy-team-role,
-.sy-capability-card,
-.sy-solution-card,
-.sy-platform-value,
-.sy-platform-resource,
-.sy-architecture-layer,
-.sy-trust-evidence-card {
+.sy-page-shell :is(
+  .sy-surface,
+  .sy-dashboard-history,
+  .sy-devotional-companion,
+  .sy-reference-index-card,
+  .sy-team-role,
+  .sy-capability-card,
+  .sy-solution-card,
+  .sy-platform-value,
+  .sy-platform-resource,
+  .sy-architecture-layer,
+  .sy-trust-evidence-card
+) {
   border-color: color-mix(in srgb, var(--sy-line) 90%, var(--sy-role-neutral-soft));
 }
 
-.sy-surface {
+.sy-page-shell .sy-surface {
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, white 62%, transparent),
     0 1px 2px color-mix(in srgb, var(--sy-ink) 4%, transparent),
     0 12px 30px color-mix(in srgb, var(--sy-ink) 5%, transparent);
 }
 
-.body--dark .sy-surface {
+.body--dark .sy-page-shell .sy-surface {
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, white 7%, transparent),
     0 14px 32px rgba(0, 0, 0, .18);
@@ -226,7 +228,7 @@ body {
 
 /* ---------- Weekly dashboard: from quiet reflection to action to record ---------- */
 
-.sy-page-dashboard .sy-daily-start {
+body .sy-page-dashboard .sy-daily-start {
   margin-top: 2px;
 }
 
@@ -234,7 +236,7 @@ body {
   min-height: 100%;
 }
 
-.sy-dashboard-history {
+.sy-page-dashboard .sy-dashboard-history {
   position: relative;
   overflow: hidden;
 }
@@ -249,11 +251,11 @@ body {
   content: "";
 }
 
-.sy-dashboard-history-list {
+.sy-page-dashboard .sy-dashboard-history-list {
   counter-reset: sy-roster-history;
 }
 
-.sy-dashboard-history-item {
+.sy-page-dashboard .sy-dashboard-history-item {
   position: relative;
   padding-left: 30px;
   counter-increment: sy-roster-history;
@@ -270,7 +272,7 @@ body {
   font-weight: 820;
 }
 
-.sy-dashboard-history-empty {
+.sy-page-dashboard .sy-dashboard-history-empty {
   position: relative;
 }
 
@@ -291,11 +293,11 @@ body {
   content: "";
 }
 
-.sy-devotional-reading-grid {
+.sy-page-devotional .sy-devotional-reading-grid {
   counter-reset: sy-devotional-companion;
 }
 
-.sy-devotional-companion {
+.sy-page-devotional .sy-devotional-companion {
   position: relative;
   overflow: hidden;
   counter-increment: sy-devotional-companion;
@@ -313,17 +315,17 @@ body {
   letter-spacing: .08em;
 }
 
-.sy-devotional-companion--reflection {
+.sy-page-devotional .sy-devotional-companion--reflection {
   background:
     linear-gradient(145deg, color-mix(in srgb, var(--sy-surface) 96%, #F2D393), var(--sy-surface));
 }
 
-.sy-devotional-companion--prayer {
+.sy-page-devotional .sy-devotional-companion--prayer {
   background:
     linear-gradient(145deg, color-mix(in srgb, var(--sy-surface) 88%, #F2D393), var(--sy-surface));
 }
 
-.sy-devotional-companion--action {
+.sy-page-devotional .sy-devotional-companion--action {
   background:
     linear-gradient(145deg, color-mix(in srgb, var(--sy-surface) 94%, var(--sy-action-soft)), var(--sy-surface));
 }
@@ -336,6 +338,23 @@ body {
 }
 
 /* ---------- Reference pages: numbered editorial chapters ---------- */
+
+.sy-platform-brand-lockup {
+  margin-bottom: 16px;
+}
+
+.sy-platform-brand-name {
+  color: var(--sy-ink);
+  font-size: 15px;
+  font-weight: 720;
+  letter-spacing: .06em;
+}
+
+.sy-platform-brand-function {
+  color: var(--sy-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
 
 .sy-page-platform > .sy-architecture-section,
 .sy-page-engineering > .sy-architecture-section,
@@ -362,25 +381,27 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.sy-architecture-section-heading {
+:is(.sy-page-platform, .sy-page-engineering, .sy-page-system-architecture) .sy-architecture-section-heading {
   position: relative;
 }
 
-.sy-architecture-section-title {
+:is(.sy-page-platform, .sy-page-engineering, .sy-page-system-architecture) .sy-architecture-section-title {
   text-wrap: balance;
 }
 
-.sy-architecture-section-copy {
+:is(.sy-page-platform, .sy-page-engineering, .sy-page-system-architecture) .sy-architecture-section-copy {
   text-wrap: pretty;
 }
 
-.sy-team-role,
-.sy-capability-card,
-.sy-solution-card,
-.sy-platform-value,
-.sy-platform-resource,
-.sy-architecture-layer,
-.sy-trust-evidence-card {
+:is(.sy-page-platform, .sy-page-engineering, .sy-page-system-architecture) :is(
+  .sy-team-role,
+  .sy-capability-card,
+  .sy-solution-card,
+  .sy-platform-value,
+  .sy-platform-resource,
+  .sy-architecture-layer,
+  .sy-trust-evidence-card
+) {
   position: relative;
   overflow: hidden;
 }
@@ -402,13 +423,13 @@ body {
   opacity: .72;
 }
 
-.sy-guide-group {
+.sy-page-operator-guide .sy-guide-group {
   position: relative;
   padding-left: clamp(22px, 3vw, 40px);
   border-left: 1px solid color-mix(in srgb, var(--sy-line) 72%, var(--sy-role-neutral));
 }
 
-.sy-reference-index {
+.sy-page-shell .sy-reference-index {
   position: relative;
   overflow: hidden;
 }
@@ -448,107 +469,17 @@ body {
   color: var(--sy-role-stable);
 }
 
-/* ---------- Guest capacity: bounded service, calm failure state ---------- */
-
-#sy-guest-capacity-state {
-  position: fixed;
-  z-index: 10000;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: clamp(20px, 5vw, 64px);
-  color: var(--sy-ink);
-  background:
-    radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--sy-role-stable) 10%, transparent), transparent 32%),
-    color-mix(in srgb, var(--sy-ground) 96%, var(--sy-surface));
-}
-
-.sy-guest-capacity-card {
-  width: min(680px, 100%);
-  padding: clamp(28px, 5vw, 52px);
-  border: 1px solid var(--sy-line);
-  border-radius: 28px;
-  background: var(--sy-surface);
-  box-shadow: var(--sy-hover-shadow);
-}
-
-.sy-guest-capacity-mark {
-  display: grid;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 24px;
-  place-items: center;
-  border-radius: 14px;
-  color: var(--sy-status-attention-fg);
-  background: var(--sy-status-attention-bg);
-  font-weight: 700;
-}
-
-.sy-guest-capacity-kicker {
-  margin: 0 0 10px;
-  color: var(--sy-muted);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .12em;
-}
-
-.sy-guest-capacity-card h1 {
-  margin: 0 0 18px;
-  font-size: clamp(28px, 5vw, 44px);
-  line-height: 1.12;
-  letter-spacing: -.03em;
-}
-
-.sy-guest-capacity-card > p:not(.sy-guest-capacity-kicker) {
-  max-width: 58ch;
-  margin: 8px 0 0;
-  color: var(--sy-muted);
-  line-height: 1.7;
-}
-
-.sy-guest-capacity-card > p[lang="en"] {
-  color: var(--sy-muted);
-}
-
-.sy-guest-capacity-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 28px;
-}
-
-.sy-guest-capacity-actions button {
-  min-height: 44px;
-  padding: 0 18px;
-  border: 1px solid var(--sy-line);
-  border-radius: 999px;
-  color: var(--sy-ink);
-  background: var(--sy-surface);
-  font: inherit;
-  font-weight: 650;
-  cursor: pointer;
-}
-
-#sy-guest-capacity-retry {
-  border-color: var(--sy-button-primary-bg);
-  color: var(--sy-on-action);
-  background: var(--sy-button-primary-bg);
-}
-
-.sy-guest-capacity-actions button:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--sy-button-primary-bg) 34%, transparent);
-  outline-offset: 3px;
-}
-
 /* ---------- Purposeful interaction: only navigable editorial surfaces move ---------- */
 
 @media (hover: hover) and (pointer: fine) {
-  .sy-dashboard-history-item,
-  .sy-reference-index-card,
-  .sy-platform-resource,
-  .sy-solution-card,
-  .sy-architecture-layer,
-  .sy-trust-evidence-card {
+  .sy-page-shell :is(
+    .sy-dashboard-history-item,
+    .sy-reference-index-card,
+    .sy-platform-resource,
+    .sy-solution-card,
+    .sy-architecture-layer,
+    .sy-trust-evidence-card
+  ) {
     transition:
       border-color var(--sy-motion-state) var(--sy-ease),
       box-shadow var(--sy-motion-layer) var(--sy-ease),
@@ -604,7 +535,7 @@ body {
     top: 4px;
   }
 
-  .sy-guide-group {
+  .sy-page-operator-guide .sy-guide-group {
     padding-left: 18px;
   }
 
@@ -624,28 +555,25 @@ body {
     text-overflow: ellipsis;
   }
 
-  .sy-dashboard-history-item {
+  .sy-page-dashboard .sy-dashboard-history-item {
     padding-left: 26px;
   }
 
-  .sy-devotional-companion::after {
+  .sy-page-devotional .sy-devotional-companion::after {
     top: 14px;
     right: 15px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sy-pointer-reactive:hover,
-  .sy-dashboard-history-item,
-  .sy-reference-index-card,
-  .sy-platform-resource,
-  .sy-solution-card,
-  .sy-architecture-layer,
-  .sy-trust-evidence-card {
+  .sy-page-shell :is(
+    .sy-dashboard-history-item,
+    .sy-reference-index-card,
+    .sy-platform-resource,
+    .sy-solution-card,
+    .sy-architecture-layer,
+    .sy-trust-evidence-card
+  ) {
     transform: none !important;
-  }
-
-  .sy-pointer-light {
-    display: none !important;
   }
 }

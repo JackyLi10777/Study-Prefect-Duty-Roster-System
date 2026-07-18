@@ -1,5 +1,37 @@
 /* Service Weave public component layer.  Every state has text and semantics. */
 
+.sy-product-mark {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 60px;
+  height: 60px;
+  border: 0;
+  background: transparent;
+}
+
+.sy-product-mark-image {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: auto;
+  pointer-events: none;
+  transition: opacity var(--sy-motion-state) var(--sy-ease);
+}
+
+.sy-product-mark-image--light { opacity: 1; }
+.sy-product-mark-image--dark { opacity: 0; }
+.body--dark .sy-product-mark-image--light { opacity: 0; }
+.body--dark .sy-product-mark-image--dark { opacity: 1; }
+
+.sy-product-mark--display {
+  width: clamp(132px, 16vw, 190px);
+  height: clamp(132px, 16vw, 190px);
+}
+
 .sy-action {
   min-height: 44px;
 }
@@ -41,6 +73,19 @@
 
 .sy-field[data-invalid="true"] .q-field__control {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--sy-role-danger) 18%, transparent);
+}
+
+.sy-status-badge {
+  width: max-content;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 780;
+  line-height: 1.3;
+  white-space: normal;
 }
 
 .q-badge.sy-status-badge {
@@ -114,6 +159,86 @@
   color: var(--sy-muted);
   font-size: 13px;
   line-height: 1.65;
+}
+
+#sy-guest-capacity-state {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: clamp(20px, 5vw, 64px);
+  background: color-mix(in srgb, var(--sy-ground) 94%, var(--sy-role-action-soft));
+}
+
+.sy-guest-capacity-card {
+  width: min(100%, 680px);
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid var(--sy-line);
+  border-radius: 24px;
+  background: var(--sy-surface);
+  color: var(--sy-ink);
+  box-shadow: var(--sy-hover-shadow);
+}
+
+.sy-guest-capacity-mark {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--sy-role-attention-soft);
+  color: var(--sy-status-attention-fg);
+  font-weight: 800;
+}
+
+.sy-guest-capacity-kicker {
+  margin: 18px 0 8px;
+  color: var(--sy-muted);
+  font-size: 12px;
+  font-weight: 780;
+  letter-spacing: .08em;
+}
+
+.sy-guest-capacity-card h1 {
+  margin: 0 0 16px;
+  font-size: clamp(24px, 4vw, 36px);
+  line-height: 1.25;
+}
+
+.sy-guest-capacity-card p:not(.sy-guest-capacity-kicker) {
+  color: var(--sy-muted);
+  line-height: 1.7;
+}
+
+.sy-guest-capacity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.sy-guest-capacity-actions button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--sy-role-action);
+  border-radius: 12px;
+  background: var(--sy-role-action);
+  color: var(--sy-on-action);
+  font: inherit;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.sy-guest-capacity-actions button + button {
+  background: transparent;
+  color: var(--sy-role-action);
+}
+
+.sy-guest-capacity-actions button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--sy-role-action) 40%, transparent);
+  outline-offset: 3px;
 }
 
 .sy-code-sample {

@@ -14,7 +14,7 @@ from nicegui_app.ui.shell import page_shell
 
 @ui.page("/access-control")
 def access_control_page() -> None:
-    with page_shell("access_control", "/access-control", music_context="settings"):
+    with page_shell("/access-control"):
         ui.label(t("access_control")).classes("text-2xl font-semibold")
         if _is_guest_mode():
             ui.label(t("access_control_intro")).classes(

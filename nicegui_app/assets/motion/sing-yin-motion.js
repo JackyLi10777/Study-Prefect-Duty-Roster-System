@@ -72,6 +72,7 @@
   ]);
 
   const pointerControllers = new Map();
+  const tocObservers = new Map();
   const feedbackTimers = new Map();
   const ACTION_MEMORY_MS = 5 * 60 * 1000;
   let intersectionObserver = null;
@@ -82,6 +83,7 @@
   let lastActionAt = 0;
   let operationFeedbackHost = null;
   let feedbackHandler = null;
+  let disclosureHandler = null;
   let domReadyHandler = null;
   let disposed = false;
 
@@ -239,6 +241,52 @@
     operationFeedbackHost = null;
     markFeedbackTarget('navigation', source);
   };
+
+  const removeToc = (nav) => {
+    tocObservers.get(nav)?.disconnect();
+    tocObservers.delete(nav);
+    nav.querySelectorAll('[aria-current="location"]').forEach((link) => link.removeAttribute('aria-current'));
+    delete nav.dataset.syTocReady;
+    delete nav.dataset.syTocSignature;
+  };
+
+  const enhanceToc = (nav) => {
+    const links = Array.from(nav.querySelectorAll('[data-sy-toc-target]'));
+    const pairs = links
+      .map((link) => [link, document.getElementById(link.dataset.syTocTarget)])
+      .filter((pair) => pair[1]);
+    if (!pairs.length) return;
+    const signature = pairs.map(([link]) => link.dataset.syTocTarget).join('|');
+    if (nav.dataset.syTocReady === 'true' && nav.dataset.syTocSignature === signature) return;
+    if (nav.dataset.syTocReady === 'true') removeToc(nav);
+    nav.dataset.syTocReady = 'true';
+    nav.dataset.syTocSignature = signature;
+    links.forEach((link) => link.removeAttribute('aria-current'));
+    links[0]?.setAttribute('aria-current', 'location');
+    const targetToLink = new Map(pairs.map(([link, target]) => [target, link]));
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((left, right) => right.intersectionRatio - left.intersectionRatio);
+      if (!visible.length) return;
+      links.forEach((link) => link.removeAttribute('aria-current'));
+      targetToLink.get(visible[0].target)?.setAttribute('aria-current', 'location');
+    }, { rootMargin: '-16% 0px -68% 0px', threshold: [0, 0.12, 0.4] });
+    pairs.forEach(([, target]) => observer.observe(target));
+    tocObservers.set(nav, observer);
+  };
+
+  const hydrateToc = (root = document) => {
+    queryWithin(root, '.sy-reference-toc').forEach(enhanceToc);
+  };
+
+  const removeTocWithin = (root) => {
+    if (!(root instanceof Element)) return;
+    if (tocObservers.has(root)) removeToc(root);
+    root.querySelectorAll?.('.sy-reference-toc').forEach((nav) => {
+      if (tocObservers.has(nav)) removeToc(nav);
+    });
+  };
   const resolveFeedbackTarget = (kind) => {
     const active = document.activeElement instanceof HTMLElement
       ? document.activeElement.closest(interactiveIconHostSelector)
@@ -299,9 +347,11 @@
     motionMedia?.revert();
     interactionAbortController?.abort();
     Array.from(pointerControllers.keys()).forEach(removePointerSurface);
+    Array.from(tocObservers.keys()).forEach(removeToc);
     feedbackTimers.forEach((timer) => window.clearTimeout(timer));
     feedbackTimers.clear();
     if (feedbackHandler) window.removeEventListener('sy:feedback', feedbackHandler);
+    if (disclosureHandler) document.removeEventListener('click', disclosureHandler, true);
     if (domReadyHandler) document.removeEventListener('DOMContentLoaded', domReadyHandler);
     document.querySelectorAll('.sy-feedback-pulse').forEach((pulse) => pulse.remove());
     document.querySelectorAll('[data-sy-feedback-state]').forEach((element) => {
@@ -337,6 +387,7 @@
     );
     hydrateMotion();
     hydrateIconMotion();
+    hydrateToc();
     interactionAbortController = new AbortController();
     const interactionListenerOptions = {
       capture: true,
@@ -360,13 +411,17 @@
     mutationObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         mutation.removedNodes.forEach(removePointersWithin);
+        mutation.removedNodes.forEach(removeTocWithin);
         mutation.addedNodes.forEach((node) => {
           if (!(node instanceof Element)) return;
           hydrateMotion(node);
           hydrateIconMotion(node);
+          hydrateToc(node);
           if (!reducedMotion() && window.matchMedia(FINE_POINTER_QUERY).matches) hydratePointers(node);
         });
       });
+      /* A target section can arrive after its TOC in a streamed NiceGUI patch. */
+      hydrateToc();
     });
     mutationObserver.observe(document.body, { childList: true, subtree: true });
     document.fonts?.ready.then(() => {
@@ -379,6 +434,19 @@
       markFeedbackTarget(kind, target);
     };
     window.addEventListener('sy:feedback', feedbackHandler);
+    disclosureHandler = (event) => {
+      const trigger = event.target instanceof Element
+        ? event.target.closest('.q-expansion-item .q-item')
+        : null;
+      if (!trigger) return;
+      const expansion = trigger.closest('.q-expansion-item');
+      if (!expansion) return;
+      expansion.dataset.syFeedback = 'disclosure';
+      window.setTimeout(() => {
+        if (!disposed) delete expansion.dataset.syFeedback;
+      }, 260);
+    };
+    document.addEventListener('click', disclosureHandler, true);
   };
 
   if (document.readyState === 'loading') {

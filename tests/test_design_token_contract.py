@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import re
 
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.ui.design_token_contract import (
     NICEGUI_CSS_PATH,
     SOURCE_PATH,
     WORKER_CONTRACT_PATH,
+    WORKER_RUNTIME_PATH,
     generated_file_drift,
     load_design_token_contract,
     quasar_palette,
@@ -80,8 +82,20 @@ def test_quasar_fill_bridge_resolves_from_the_same_contract() -> None:
 
 def test_cloudflare_inline_tokens_match_generated_contract_without_runtime_imports() -> None:
     assert worker_runtime_drift() == []
+    assert WORKER_RUNTIME_PATH.name == "worker.js"
 
-    worker_runtime = (
-        PROJECT_ROOT / "cloudflare" / "roster_viewer" / "guest_trial.js"
-    ).read_text(encoding="utf-8")
+    worker_runtime = WORKER_RUNTIME_PATH.read_text(encoding="utf-8")
     assert "design-tokens-v1.generated.json" not in worker_runtime
+    assert "const VIEWER_CSS" in worker_runtime
+    assert "export const TRIAL_CSS" not in worker_runtime
+
+
+def test_every_service_weave_custom_property_reference_is_defined() -> None:
+    css_root = PROJECT_ROOT / "nicegui_app" / "assets" / "css"
+    source = "\n".join(
+        path.read_text(encoding="utf-8") for path in sorted(css_root.glob("*.css"))
+    )
+    definitions = set(re.findall(r"(?m)(--sy-[a-z0-9-]+)\s*:", source))
+    references = set(re.findall(r"var\((--sy-[a-z0-9-]+)", source))
+
+    assert references - definitions == set()

@@ -70,6 +70,7 @@ _FULL_ROOT_FILES = {
 _FULL_ROOT_PREFIXES = (
     "data/devotional/",
     "data/demo/",
+    "design_system/",
     "migrations/",
     "music/",
     "nicegui_app/",

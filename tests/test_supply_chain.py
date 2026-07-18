@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.run_security_checks import _SECRET_SCAN_TARGETS, _is_public_pnpm_integrity
+from scripts.run_security_checks import (
+    _SECRET_SCAN_TARGETS,
+    _is_public_pnpm_integrity,
+    _service_weave_delivery_is_current,
+)
 from zoneinfo import ZoneInfo
 
 
@@ -58,8 +62,9 @@ def test_local_secret_scan_includes_the_cloudflare_gateway() -> None:
     security_gate = (ROOT / "scripts" / "run_security_checks.py").read_text(encoding="utf-8")
 
     assert '"cloudflare"' in security_gate
+    assert '"design_system"' in security_gate
     assert '"pnpm-lock.yaml"' not in security_gate
-    assert {"docs", "README.md", "PROJECT_STATUS.md"} <= set(_SECRET_SCAN_TARGETS)
+    assert {"design_system", "docs", "README.md", "PROJECT_STATUS.md"} <= set(_SECRET_SCAN_TARGETS)
 
 
 def test_secret_scan_ignores_only_standard_public_pnpm_integrity_lines() -> None:
@@ -69,3 +74,27 @@ def test_secret_scan_ignores_only_standard_public_pnpm_integrity_lines() -> None
     assert _is_public_pnpm_integrity("cloudflare\\roster_viewer\\pnpm-lock.yaml", integrity_line)
     assert not _is_public_pnpm_integrity("cloudflare/roster_viewer/worker.js", integrity_line)
     assert not _is_public_pnpm_integrity("cloudflare/roster_viewer/pnpm-lock.yaml", 1)
+
+
+def test_secret_scan_excludes_only_the_exact_manifest_generated_brand_payload(
+    tmp_path: Path,
+) -> None:
+    source = ROOT / "nicegui_app" / "assets" / "brand" / "service-weave" / "service-weave-favicon-512-v1.png"
+    generated = ROOT / "cloudflare" / "roster_viewer" / "service_weave_brand.generated.js"
+    manifest = ROOT / "design_system" / "product-identity.v1.json"
+
+    (tmp_path / "nicegui_app" / "assets" / "brand" / "service-weave").mkdir(parents=True)
+    (tmp_path / "cloudflare" / "roster_viewer").mkdir(parents=True)
+    (tmp_path / "design_system").mkdir(parents=True)
+    (tmp_path / source.relative_to(ROOT)).write_bytes(source.read_bytes())
+    (tmp_path / generated.relative_to(ROOT)).write_text(
+        generated.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (tmp_path / manifest.relative_to(ROOT)).write_text(
+        manifest.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+
+    assert _service_weave_delivery_is_current(tmp_path)
+    with (tmp_path / generated.relative_to(ROOT)).open("a", encoding="utf-8") as output:
+        output.write("export const UNREVIEWED_VALUE = 'not-approved';\n")
+    assert not _service_weave_delivery_is_current(tmp_path)

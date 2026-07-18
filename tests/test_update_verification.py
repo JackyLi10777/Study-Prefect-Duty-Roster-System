@@ -24,6 +24,7 @@ from scripts.verify_update import (
         (("nicegui_app/ui/pages.py", "README.md"), "full", True, True),
         (("packages/roster_core/roster_core/generator.py",), "full", True, True),
         (("migrations/versions/9999_change.py",), "full", True, True),
+        (("design_system/product-identity.v1.json",), "full", True, True),
         (("requirements.lock",), "full", True, True),
         (("unexpected/new-source.xyz",), "full", True, True),
     ),

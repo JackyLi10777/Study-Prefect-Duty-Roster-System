@@ -4,6 +4,7 @@ import hashlib
 from pathlib import Path
 
 from nicegui_app.ui.i18n import MESSAGES
+from nicegui_app.ui.page_catalog import PAGE_DEFINITIONS
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -117,6 +118,48 @@ def test_v12_guest_documents_match_the_signed_browser_bridge_and_release_truth()
     assert "still a v1.2 release gate" not in architecture
     assert "瀏覽器 snapshot 橋接" in security
     assert "尚未完成的瀏覽器 snapshot 橋接" not in security
+
+
+def test_release_truth_docs_keep_live_rc9_separate_from_candidate_and_history() -> None:
+    status = (PROJECT_ROOT / "PROJECT_STATUS.md").read_text(encoding="utf-8")
+    architecture = (PROJECT_ROOT / "docs" / "NICEGUI_ARCHITECTURE.md").read_text(
+        encoding="utf-8"
+    )
+    security = (PROJECT_ROOT / "docs" / "UNIFIED_GUEST_SECURITY_MODEL.md").read_text(
+        encoding="utf-8"
+    )
+    handover = (PROJECT_ROOT / "docs" / "RELEASE_HANDOVER.md").read_text(
+        encoding="utf-8"
+    )
+    operator = (PROJECT_ROOT / "docs" / "OPERATOR_GUIDE.md").read_text(encoding="utf-8")
+
+    for document in (status, architecture, security, handover):
+        assert "18a5c73" in document
+        assert "b13e5721-d1e8-4048-9885-ffb422fe2010" in document
+
+    assert "Service Weave editorial candidate" in status
+    assert "No rc9 gate result is reused as candidate evidence" in status
+    assert "remains disabled by default" not in status
+    assert "now run the matching rc7 release" not in status
+    assert "Windows origin remains healthy／ready on rc4" not in security
+    assert "This document does not claim that v1.2 is deployed" not in security
+
+    next_steps = status.split("## Next Steps", 1)[1].split(
+        "## Key Decisions and Architecture", 1
+    )[0]
+    assert "next approved annotated tag" in next_steps
+    assert "v1.2.0-rc.5" not in next_steps
+
+    release_sequence = handover.split("### 後續受控發布次序", 1)[1].split(
+        "## 正式驗收清單", 1
+    )[0]
+    assert "下一個獲批准的 annotated tag" in release_sequence
+    assert "本次為 `v1.2.0-rc.7`" not in release_sequence
+    assert "v1.1.0-rc.16" in handover
+
+    assert "訪客體驗 / Try as guest" in operator
+    assert "互動示範工作區" in operator
+    assert "只有 `/view#…`" in operator
 
 
 def test_author_facing_documents_use_li_chuangjie_first_person_voice() -> None:
@@ -365,11 +408,14 @@ def test_co_creation_profile_uses_local_identity_media_and_canonical_instagram_l
 
 def test_engineering_showcase_turns_documented_quality_into_verifiable_ui_evidence() -> None:
     pages = combined_page_source()
-    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
     messages = combined_i18n_source()
 
     assert '@ui.page("/engineering")' in pages
-    assert '("/engineering", "engineering", "build_circle")' in shell
+    engineering_definition = next(page for page in PAGE_DEFINITIONS if page.route == "/engineering")
+    assert (engineering_definition.title_key, engineering_definition.icon) == (
+        "engineering",
+        "build_circle",
+    )
     for test_id in (
         "engineering-facts",
         "engineering-blueprint",
@@ -520,7 +566,6 @@ def test_pdf_font_setup_documents_the_bundled_three_weight_contract() -> None:
 
 def test_reference_pages_form_two_clear_reading_lanes_without_duplicate_docs_route() -> None:
     pages = combined_page_source()
-    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
     navigation = (PROJECT_ROOT / "nicegui_app" / "ui" / "reference_navigation.py").read_text(encoding="utf-8")
     design = (PROJECT_ROOT / "Professional_Design_System.md").read_text(encoding="utf-8")
 
@@ -534,9 +579,14 @@ def test_reference_pages_form_two_clear_reading_lanes_without_duplicate_docs_rou
     assert 'next_=("/system-architecture", "system_architecture")' in pages
     assert 'previous=("/platform", "platform")' in pages
     assert 'next_=("/engineering", "engineering")' in pages
-    assert shell.index('(\"/platform\", \"platform\", \"domain\")') < shell.index(
-        '(\"/system-architecture\", \"system_architecture\", \"account_tree\")'
-    ) < shell.index('(\"/engineering\", \"engineering\", \"build_circle\")')
+    reference_routes = [
+        page.route
+        for page in PAGE_DEFINITIONS
+        if page.navigation_group == "nav_reference"
+    ]
+    assert reference_routes.index("/platform") < reference_routes.index(
+        "/system-architecture"
+    ) < reference_routes.index("/engineering")
     assert '("verified_user", "start_reference_trust_title", "start_reference_trust_body", "platform", "/platform")' in pages
     for anchor in (
         "platform-snapshot-section",

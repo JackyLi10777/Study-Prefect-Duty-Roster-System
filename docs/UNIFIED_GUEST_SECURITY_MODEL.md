@@ -1,6 +1,6 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
-> **文件狀態（v1.2 rc6 待發布）：** 本文件描述已驗證 runtime commit `d38813f` 的程式契約；其 238 個發布輸入以指紋 `2a26204a47baaed7fca297de16c301b92b5503f554f202aa3ddcf85ff47c2c34` 通過 13／13 正式 gate。2026-07-17 rc5 origin rollout 建立全新已驗證備份並完成隔離還原，然後因 strict local readiness 把預期留待 Worker 階段核實的 `cloudflare_access` warning 當成 fatal 而安全回滾。Windows origin 仍是健康、ready 的 rc4／`30f282f`，Worker 仍是 pre-v1.2 baseline，統一 Guest 仍關閉。rc6 只延後這一項具名 warning；其他 failure／warning 及最終線上驗收仍全部 fail closed。
+> **文件狀態（live v1.2 rc9）：** 受控 Windows origin 現正運行 annotated tag `v1.2.0-rc.9`／commit `18a5c73`。其 240 個發布輸入以指紋 `0ebc6d407682aca09baa0e95bc5857c95b46352cd7545752aea3425fe633f96e` 通過 13／13 正式 gate；全新正式備份、checksum、公平對帳及隔離還原均通過。canonical Worker 程式未改動，故保留已驗證 live version `b13e5721-d1e8-4048-9885-ffb422fe2010`。目前 Service Weave editorial branch 是尚未部署的候選；它必須產生自己的最終來源指紋、完整 gate、備份／隔離還原及線上驗收證據，不能沿用 rc9 證據宣稱已發布。
 
 ## 1. 目的
 
@@ -74,7 +74,7 @@ Cloudflare Worker 會：
 - 篡改、錯誤 SID、錯誤 workspace／tab、過期、過大、舊 revision、重播或舊 boot token 均被拒絕；頁面繼續使用安全虛構 fixture，並收到新的合法 token；
 - 登出、到期、撤權及跨分頁 session 終止會清除 `sessionStorage`、媒體及待下載票據；origin 重啟後舊 boot token 按設計失效。
 
-`tests/test_guest_snapshot_bridge.py` 聚焦驗證同分頁還原、token 輪換、複製／篡改拒絕、連線 nonce、登出清理及只使用 `sessionStorage` 的前端契約；完整 pytest、隔離瀏覽器及 release verifier 亦已納入 rc5 的 13／13 正式候選報告。rc5 rollout 的新正式備份／隔離還原、origin／Worker 切換及 Cloudflare 線上驗收仍是部署 gate。
+`tests/test_guest_snapshot_bridge.py` 聚焦驗證同分頁還原、token 輪換、複製／篡改拒絕、連線 nonce、登出清理及只使用 `sessionStorage` 的前端契約；完整 pytest、隔離瀏覽器及 release verifier 已納入 live rc9 的 13／13 正式報告。任何後續候選仍須以該候選的最終來源重新執行相同 gate；歷史報告不可代替新的 origin／Worker 決定及線上驗收。
 
 ## 4. 資料與整合限制
 
@@ -103,7 +103,7 @@ Guest adapter 不引用正式 SQLAlchemy、AI、HTTP、備份、上載、分享�
 
 ## 6. 發布 gate
 
-啟用 `SING_YIN_UNIFIED_GUEST=1` 前必須有以下證據：
+每次把涉及統一 Guest 的新候選切換到正式環境前，都必須重新取得以下證據：
 
 - 服務層能力矩陣及 Guest 依賴邊界；
 - snapshot 篡改、到期、重播及分頁隔離；
@@ -116,10 +116,10 @@ Guest adapter 不引用正式 SQLAlchemy、AI、HTTP、備份、上載、分享�
 - `python -X utf8 scripts/verify_release_candidate.py`；
 - 已驗證正式備份及隔離還原。
 
-任何 gate 失敗，功能旗標保持 `0`，Windows origin 及 Worker 不切換。
+任何 gate 失敗，都不得切換候選 Windows origin、Worker 或現行 `SING_YIN_UNIFIED_GUEST` 設定；受控主機繼續使用已驗證的 rc9／Worker 組合。
 
 ## English operational summary
 
-The v1.2 candidate uses the same NiceGUI routes and components for administrators and guests, but resolves a server-verified `PageContext` to either the official workflow or a bounded in-memory guest adapter. Guest capability is deny-by-default and excludes AI, upload/import, persistent storage, external delivery, official backup/restore, and real-data export. Guest exports are one-shot, memory-only, `DEMO`-marked, and `no-store`.
+The live v1.2 product uses the same NiceGUI routes and components for administrators and guests, but resolves a server-verified `PageContext` to either the official workflow or a bounded in-memory guest adapter. Guest capability is deny-by-default and excludes AI, upload/import, persistent storage, external delivery, official backup/restore, and real-data export. Guest exports are one-shot, memory-only, `DEMO`-marked, and `no-store`.
 
-The source contains signed principal verification, a bounded guest registry, per-client workspace IDs, session expiry/revocation monitoring, cross-tab logout cleanup, an HMAC snapshot codec, and the `sessionStorage` browser bridge. Each revision is saved only as a signed, tab-bound token; restore also requires the current live-connection nonce. Duplicate tabs receive new workspaces, while tampered, copied, expired, stale, or old-boot tokens fall back safely to the fictional fixture. On 2026-07-17 the reproducible frozen 238-input rc5 source at commit `bafaef6` passed all 13 formal gates with fingerprint `c10de03174e519f86ac505f3cf883063830717166f2e482e0b0ed8c32f1563fd` and was published as `v1.2.0-rc.5`／`1305a54`. Its origin rollout completed a fresh verified backup and isolated restore, then rolled back safely because `cloudflare_access` was still intentionally pending until the matching Worker stage. The Windows origin remains healthy／ready on rc4 `30f282f`. rc6 will defer only that named warning between the origin and Worker stages; every failure, every other warning, and the final live Admin／Guest／Viewer／WebSocket checks remain blocking. This document does not claim that v1.2 is deployed.
+The source contains signed principal verification, a bounded guest registry, per-client workspace IDs, session expiry/revocation monitoring, cross-tab logout cleanup, an HMAC snapshot codec, and the `sessionStorage` browser bridge. Each revision is saved only as a signed, tab-bound token; restore also requires the current live-connection nonce. Duplicate tabs receive new workspaces, while tampered, copied, expired, stale, or old-boot tokens fall back safely to the fictional fixture. The controlled Windows origin is live on `v1.2.0-rc.9`／`18a5c73`; its 240-input fingerprint `0ebc6d407682aca09baa0e95bc5857c95b46352cd7545752aea3425fe633f96e` passed all 13 formal gates, and the verified Worker remains `b13e5721-d1e8-4048-9885-ffb422fe2010`. The Service Weave editorial branch is a separate, undeployed candidate and must pass fresh candidate-bound verification before any cutover.

@@ -113,3 +113,22 @@ def test_service_weave_white_mark_and_worker_delivery_are_reproducible() -> None
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_cloudflare_entry_and_error_pages_use_the_service_weave_product_mark() -> None:
+    worker = (
+        PROJECT_ROOT / "cloudflare" / "roster_viewer" / "worker.js"
+    ).read_text(encoding="utf-8")
+
+    for export_name in (
+        "SERVICE_WEAVE_FAVICON_BASE64",
+        "SERVICE_WEAVE_FAVICON_BYTE_LENGTH",
+        "SERVICE_WEAVE_FAVICON_SHA256",
+    ):
+        assert export_name in worker
+    assert worker.count('href="/favicon.png" type="image/png"') == 3
+    assert 'src="/favicon.png"' in worker
+    assert "path === '/favicon.png'" in worker
+    assert "'Content-Type': 'image/png'" in worker
+    assert "public, max-age=31536000, immutable" in worker
+    assert "const FAVICON_SVG" not in worker

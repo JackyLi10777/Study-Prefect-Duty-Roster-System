@@ -15,11 +15,16 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 # priority because python-dotenv does not override them by default.
 load_dotenv(PROJECT_ROOT / ".env")
 BRAND_ASSET_DIR = PROJECT_ROOT / "nicegui_app" / "assets" / "brand"
+SERVICE_WEAVE_ASSET_DIR = BRAND_ASSET_DIR / "service-weave"
 MUSIC_DIR = PROJECT_ROOT / "music"
 FAVICON_CREST_PATH = BRAND_ASSET_DIR / "sing-yin-crest-favicon.png"
 NAVIGATION_CREST_PATH = BRAND_ASSET_DIR / "sing-yin-crest-navigation.png"
 DISPLAY_PRINT_CREST_PATH = BRAND_ASSET_DIR / "sing-yin-crest-display-print.png"
 DISPLAY_WEB_CREST_PATH = BRAND_ASSET_DIR / "sing-yin-crest-display-web.png"
+SERVICE_WEAVE_FAVICON_PATH = SERVICE_WEAVE_ASSET_DIR / "service-weave-favicon-512-v1.png"
+SERVICE_WEAVE_NAVIGATION_LIGHT_PATH = SERVICE_WEAVE_ASSET_DIR / "service-weave-navigation-light-256-v1.png"
+SERVICE_WEAVE_NAVIGATION_DARK_PATH = SERVICE_WEAVE_ASSET_DIR / "service-weave-navigation-dark-256-v1.png"
+SERVICE_WEAVE_WINDOWS_ICON_PATH = SERVICE_WEAVE_ASSET_DIR / "service-weave-windows-v1.ico"
 DATA_DIR = PROJECT_ROOT / "data"
 CANONICAL_DATABASE_PATH = DATA_DIR / "runtime" / "sing-yin-roster.sqlite3"
 CANONICAL_BACKUP_DIR = DATA_DIR / "backups"

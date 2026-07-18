@@ -25,7 +25,7 @@ def test_material_layer_is_paired_local_and_loaded_in_the_shared_shell() -> None
     narrative = head.index("sing-yin-narrative-v1.css")
     material = head.index("sing-yin-material-v1.css")
     interaction = head.index("sing-yin-interaction-v1.css")
-    assert narrative < material < interaction
+    assert material < narrative < interaction
 
 
 def test_material_assets_are_exposed_by_the_local_static_server() -> None:

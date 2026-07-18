@@ -4,12 +4,14 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
-> **v1.2 rc7 status:** The 240-input release passed all 13 formal gates with
-> fingerprint `e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db`.
-> The Windows origin is healthy／ready on rc7 `14cb7e7`; a fresh verified
-> production backup and isolated restore passed before cutover. Matching Worker
-> version `b13e5721-d1e8-4048-9885-ffb422fe2010` is live. Supervised human
-> acceptance remains required.
+> **Live v1.2 rc9 status:** The 240-input release passed all 13 formal gates with
+> fingerprint `0ebc6d407682aca09baa0e95bc5857c95b46352cd7545752aea3425fe633f96e`.
+> The Windows origin is healthy／ready on `v1.2.0-rc.9`／`18a5c73`; a fresh
+> verified production backup and isolated restore passed before cutover. The
+> Worker source was unchanged, so verified live version
+> `b13e5721-d1e8-4048-9885-ffb422fe2010` remains in service. Supervised human
+> acceptance remains required. The Service Weave editorial branch is a separate,
+> undeployed candidate and must generate its own release evidence before cutover.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 
@@ -34,10 +36,11 @@ NiceGUI owns the rendering and navigation. The read model introduces no schema, 
 
 ## Canonical entry and local maintenance start
 
-> **v1.2 rc5 source contract:** The unified Guest architecture is feature-gated
-> by `SING_YIN_UNIFIED_GUEST`, which defaults to `0`. This section describes the
-> verified rc5 design and implementation. The recovered rc4 origin remains
-> fail-closed and the Worker remains pre-v1.2 until the controlled rollout.
+> **Unified Guest architecture contract:** The live rc9 host enables this path
+> through its protected `SING_YIN_UNIFIED_GUEST=1` configuration. Any later
+> candidate must preserve the same deny-by-default boundary and pass fresh
+> candidate-bound verification before the origin or Worker is switched; changing
+> source files in `D:\code_v3` does not change the protected live installation.
 
 The only URL distributed to users is
 `https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`.
@@ -311,16 +314,16 @@ The only deliberate application-originated external request carrying roster-deri
 - Worker Deno contracts own `/auth/admin/start`, `/auth/guest/start`, `/auth/status`, `/auth/logout`, compatibility redirects, principal signing, forged-header stripping, VPC proxying and Viewer isolation.
 
 The focused browser-snapshot tests, complete Python suite, unified Guest browser
-verifier and release-candidate orchestrator all passed in the matching rc7
-13-gate report. The candidate produced fingerprint
-`e06732d46588ff65e5771f32c7d40aa9cf5b19867e1f44bd9fce68f93edca5db` from 240
-inputs between `2026-07-18T19:41:21.506585+08:00` and
-`2026-07-18T19:46:28.277693+08:00`. The running origin remains the healthy／ready
-rc7 release after the controlled switch. rc7 keeps every failure
-and every non-`cloudflare_access` warning blocking; only that Worker-dependent
-warning is deferred from local-origin readiness to the matching Worker stage.
-Live Cloudflare acceptance remains mandatory, so this architecture document is
-not deployment evidence.
+verifier and release-candidate orchestrator all passed in the live rc9 13-gate
+report. The immutable release produced fingerprint
+`0ebc6d407682aca09baa0e95bc5857c95b46352cd7545752aea3425fe633f96e` from 240
+inputs. The running origin remains healthy／ready on `v1.2.0-rc.9`／`18a5c73`;
+the unchanged verified Worker remains
+`b13e5721-d1e8-4048-9885-ffb422fe2010`. Earlier rc5／rc6 staging and rc7 cutover
+details are historical rollout evidence, not instructions for a new candidate.
+Every later candidate must regenerate its own fingerprint, report, backup／restore
+and live Cloudflare acceptance before replacing rc9, so this architecture
+document alone is not deployment evidence.
 
 ```powershell
 python -X utf8 -m pytest -q

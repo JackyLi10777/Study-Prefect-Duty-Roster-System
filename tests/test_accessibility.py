@@ -254,13 +254,15 @@ def test_component_colour_roles_are_semantic_and_consistent() -> None:
 
 
 def test_local_and_remote_images_declare_size_and_accessible_alternative() -> None:
-    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+    brand = (PROJECT_ROOT / "nicegui_app" / "ui" / "brand.py").read_text(encoding="utf-8")
     pages = combined_page_source()
     youtube = (PROJECT_ROOT / "nicegui_app" / "ui" / "youtube_music.py").read_text(encoding="utf-8")
 
-    assert "width=545 height=524" in shell
-    assert 'alt="{t("school_crest_alt")}"' in shell
+    assert "width=256 height=256" in brand
+    assert 'role=img aria-label="{accessible_name}"' in brand
+    assert 'alt="" aria-hidden=true' in brand
     assert "width=640 height=615 loading=lazy decoding=async" in pages
+    assert 'alt="{t("school_crest_alt")}"' in pages
     assert "width=320 height=180" in youtube
     assert 'alt="" loading=lazy' in youtube
 
@@ -371,10 +373,12 @@ def test_history_priority_has_a_live_accessible_explanation_chart() -> None:
 
 def test_semantic_status_badges_do_not_inherit_quasar_primary_background() -> None:
     shared = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_shared.py").read_text(encoding="utf-8")
+    components = (PROJECT_ROOT / "nicegui_app" / "ui" / "components.py").read_text(encoding="utf-8")
     theme = combined_theme_source()
     verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
 
-    assert "ui.badge(text, color=None)" in shared
+    assert "ui.badge(color=None)" in components
+    assert "return render_status_component(text, tone, props=props)" in shared
     for tone in ("action", "stable", "attention", "danger", "neutral"):
         selector = f"body .q-badge.sy-status-badge.sy-tone-{tone}"
         assert selector in theme

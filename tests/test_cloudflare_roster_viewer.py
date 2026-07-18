@@ -279,7 +279,8 @@ def test_viewer_is_bilingual_responsive_theme_aware_printable_and_reduced_motion
     assert "textContent" in source
     assert "Swipe horizontally to view every weekday" in source
     assert 'aria-describedby="rosterScrollHint"' in source
-    assert ".guest-tour-card--protected { border-color: var(--line-strong);" in source
+    assert ".guest-enter:focus-visible { outline: 3px solid var(--focus-ring);" in source
+    assert ".guest-tour-card" not in source
 
 
 def test_mobile_public_controls_keep_a_44px_touch_target() -> None:
@@ -485,7 +486,12 @@ def test_authenticated_proxy_is_same_origin_sanitized_and_websocket_transparent(
     assert "kid: originPrincipalKid(env)" in source
     assert "new URL('http://127.0.0.1:8080')" in source
     assert "env.ROSTER_ORIGIN.fetch(originRequest)" in source
-    assert "if (routed && routed.originResponse) return routed.originResponse" in source
+    assert "if (routed && routed.originResponse) return securedWorkbench(routed.originResponse)" in source
+    assert "if (originResponse?.status === 101 || originResponse?.webSocket) return originResponse" in source
+    assert "const WORKBENCH_SECURITY_HEADERS = Object.freeze" in source
+    assert "Content-Security-Policy" not in source.split(
+        "const WORKBENCH_SECURITY_HEADERS = Object.freeze", 1
+    )[1].split("});", 1)[0]
     assert "console.log" not in source
     assert "console.error" not in source
 

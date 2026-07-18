@@ -17,6 +17,7 @@ _IMPORT_EXTENSIONS = {".csv", ".xls", ".xlsx"}
 _RELEASE_SOURCE_DIRECTORIES = {
     ".github",
     "cloudflare",
+    "design_system",
     "docs",
     "migrations",
     "nicegui_app",
@@ -54,6 +55,7 @@ _RELEASE_SOURCE_SUFFIXES = {
     ".cmd",
     ".css",
     ".ini",
+    ".ico",
     ".js",
     ".json",
     ".jsonc",

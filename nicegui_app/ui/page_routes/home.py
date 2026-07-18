@@ -48,7 +48,7 @@ def dashboard_page() -> None:
         next_title_key = "flow_leave"
         next_action_key = "flow_open_adjustment"
         next_action = lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}/adjustments")
-    with page_shell("dashboard", "/", music_context="dashboard"):
+    with page_shell("/"):
         with ui.element("section").classes("sy-daily-start w-full").props(f'aria-label="{t("daily_verse")}"'):
             with ui.row().classes("w-full items-start gap-4 flex-wrap"):
                 ui.icon("menu_book").classes("sy-daily-start-icon").props("aria-hidden=true")
@@ -157,7 +157,7 @@ def dashboard_alias() -> None:
 
 @ui.page("/getting-started")
 def getting_started_page() -> None:
-    with page_shell("getting_started", "/getting-started", music_context="getting_started"):
+    with page_shell("/getting-started"):
         with ui.element("section").classes("sy-onboarding-intro w-full max-w-4xl").props("id=start-intro"):
             with ui.column().classes("gap-2"):
                 ui.label(t("getting_started")).classes("sy-page-title")
@@ -245,7 +245,7 @@ def operator_guide_page() -> None:
         ("guide_issue_session_seen", "guide_issue_session_meaning", "guide_issue_session_next"),
         ("guide_issue_support_seen", "guide_issue_support_meaning", "guide_issue_support_next"),
     )
-    with page_shell("operator_guide", "/guide", music_context="guide"):
+    with page_shell("/guide"):
         with ui.element("section").classes("sy-guide-hero w-full").props(f'aria-label="{t("operator_guide")}"'):
             with ui.column().classes("gap-2 max-w-3xl"):
                 ui.label(t("operator_guide")).classes("sy-page-title")
@@ -303,7 +303,7 @@ def devotional_page() -> None:
     tone_preference = str(preference_get("devotional_tone", "auto"))
     if tone_preference not in {"auto", "guidance", "comfort"}:
         tone_preference = "auto"
-    with page_shell("devotional", "/devotional", music_context="devotional"):
+    with page_shell("/devotional"):
         with ui.element("section").classes("sy-chapel sy-devotional-page w-full").props(
             f'aria-label="{t("daily_verse")}"'
         ):

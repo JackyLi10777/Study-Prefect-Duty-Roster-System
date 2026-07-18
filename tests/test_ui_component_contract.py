@@ -88,9 +88,11 @@ def test_stylesheets_load_in_the_declared_ownership_order() -> None:
         "tokens",
         "base",
         "layout",
-        "compatibility",
+        "compatibility-theme",
+        "compatibility-material",
         "components",
         "narrative",
+        "compatibility-interaction",
         "motion",
         "mobile",
     ]
@@ -110,6 +112,14 @@ def test_non_mobile_layers_never_reown_exact_selectors() -> None:
     for (left_name, left), (right_name, right) in combinations(layer_selectors.items(), 2):
         overlap = left & right
         assert not overlap, f"{left_name} and {right_name} both own: {sorted(overlap)}"
+
+
+def test_status_badge_surface_is_owned_by_the_component_layer() -> None:
+    component_source = (CSS_ROOT / "sing-yin-components-v1.css").read_text(encoding="utf-8")
+    compatibility_source = (CSS_ROOT / "sing-yin-theme-v1.css").read_text(encoding="utf-8")
+
+    assert ".sy-status-badge {" in component_source
+    assert ".sy-status-badge { width:" not in compatibility_source
 
 
 def test_public_components_cover_complete_interaction_states() -> None:
@@ -134,6 +144,17 @@ def test_public_components_cover_complete_interaction_states() -> None:
         "def code_sample(",
     ):
         assert component in source
+
+
+def test_legacy_page_helpers_delegate_to_the_public_component_contract() -> None:
+    source = (UI_ROOT / "page_shared.py").read_text(encoding="utf-8")
+
+    assert "return render_status_component(text, tone, props=props)" in source
+    assert "render_responsive_table_component(" in source
+    assert "render_workflow_step_component(" in source
+    assert "render_empty_state_component(" in source
+    assert "action_test_id=action_test_id" in source
+    assert "emit_interface_feedback" in source
 
 
 def test_motion_runtime_owns_toc_disclosure_and_cleanup() -> None:

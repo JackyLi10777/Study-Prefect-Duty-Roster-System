@@ -74,6 +74,8 @@ def test_current_repository_hygiene_requires_real_history() -> None:
         ("cloudflare/roster_viewer/new_worker.js", True),
         ("cloudflare/roster_viewer/package.json", True),
         ("cloudflare/roster_viewer/wrangler.jsonc", True),
+        ("design_system/product-identity.v1.json", True),
+        ("nicegui_app/assets/brand/service-weave/service-weave-windows-v1.ico", True),
         (".env.example", True),
         ("daily_verses.py", True),
         ("notes/diagnostic.tmp", False),

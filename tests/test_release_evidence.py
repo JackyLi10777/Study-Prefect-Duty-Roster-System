@@ -113,6 +113,7 @@ def test_release_fingerprint_tracks_deployed_artifacts_without_documentation_or_
     assert {
         ".md",
         ".m4a",
+        ".ico",
         ".css",
         ".js",
         ".json",
@@ -126,6 +127,7 @@ def test_release_fingerprint_tracks_deployed_artifacts_without_documentation_or_
     } <= RELEASE_SUFFIXES
     assert not any(path.name in {"docs", "tests", ".github"} for path in RELEASE_SOURCE_ROOTS)
     assert any(path.name == "cloudflare" for path in RELEASE_SOURCE_ROOTS)
+    assert any(path.name == "design_system" for path in RELEASE_SOURCE_ROOTS)
     assert any(path.name == "music" for path in RELEASE_SOURCE_ROOTS)
     tracked_relative_files = {
         path.relative_to(release_evidence.PROJECT_ROOT).as_posix().lower()

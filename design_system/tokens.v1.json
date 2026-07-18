@@ -204,54 +204,85 @@
     "worker": {
       "selectors": {
         "light": ":root",
-        "dark": "html[data-theme=\"dark\"]",
-        "autoDark": "html[data-theme=\"auto\"]"
+        "dark": ":root[data-theme=\"dark\"]",
+        "autoDark": ":root:not([data-theme=\"light\"])"
       },
       "layers": {
         "semantic": {
           "light": {
-            "--paper": "#f5f3ed",
+            "--canvas": "#f3f1ec",
             "--surface": "#fffefa",
-            "--surface-soft": "#eeece5",
-            "--ink": "#182321",
-            "--muted": "#66706c",
-            "--line": "#d8d8d0",
-            "--line-strong": "#b9c0ba",
-            "--brand": "#176b67",
-            "--brand-strong": "#0d514e",
-            "--brand-soft": "#e3f0ec",
-            "--blue": "#245f8f",
-            "--gold": "#987332",
-            "--danger": "#9b3f35",
-            "--focus": "#1f73b7"
+            "--surface-muted": "#f7f5ef",
+            "--surface-raised": "#ffffff",
+            "--ink": "#1f2927",
+            "--ink-muted": "#5d6966",
+            "--line": "#d8ddd9",
+            "--line-strong": "#b9c4bf",
+            "--brand": "#176d68",
+            "--brand-soft": "#e5f0ed",
+            "--action": "#244f62",
+            "--action-hover": "#183f51",
+            "--action-ink": "#ffffff",
+            "--focus-ring": "#075d70",
+            "--gold": "#a87935",
+            "--devotional-surface": "#fff9e8",
+            "--devotional-control": "#fffdf7",
+            "--devotional-ink": "#6f542c",
+            "--devotional-muted": "#7f6030",
+            "--portal-story": "#e9efeb",
+            "--portal-story-ink": "#172523",
+            "--portal-story-muted": "#4c615d",
+            "--ambient-brand": "rgba(23, 109, 104, 0.1)",
+            "--ambient-gold": "rgba(168, 121, 53, 0.08)",
+            "--table-head": "#254d4a",
+            "--vacant-bg": "#fff1d5",
+            "--vacant-ink": "#845b19",
+            "--danger": "#9d3e36",
+            "--danger-soft": "#f9ebe8"
           },
           "dark": {
-            "--paper": "#0d1417",
-            "--surface": "#141d20",
-            "--surface-soft": "#1a2527",
-            "--ink": "#edf3ef",
-            "--muted": "#aab7b1",
-            "--line": "#2c393b",
-            "--line-strong": "#465456",
-            "--brand": "#7fc5bb",
-            "--brand-strong": "#a6dbd2",
-            "--brand-soft": "#183936",
-            "--blue": "#8dbbdd",
-            "--gold": "#d3b16a",
-            "--danger": "#e1a098",
-            "--focus": "#8ec8f2"
+            "--canvas": "#0c1217",
+            "--surface": "#121b21",
+            "--surface-muted": "#172128",
+            "--surface-raised": "#10191f",
+            "--ink": "#edf3f0",
+            "--ink-muted": "#a8b6b1",
+            "--line": "#2b383d",
+            "--line-strong": "#435258",
+            "--brand": "#80c9c0",
+            "--brand-soft": "#173331",
+            "--action": "#91b7c5",
+            "--action-hover": "#a8cbd5",
+            "--action-ink": "#08161b",
+            "--focus-ring": "#b7e4ee",
+            "--gold": "#d0ad68",
+            "--devotional-surface": "#241f18",
+            "--devotional-control": "#2b261e",
+            "--devotional-ink": "#e5c47d",
+            "--devotional-muted": "#c7a55f",
+            "--portal-story": "#16221f",
+            "--portal-story-ink": "#eef4f0",
+            "--portal-story-muted": "#adbbb5",
+            "--ambient-brand": "rgba(128, 201, 192, 0.075)",
+            "--ambient-gold": "rgba(208, 173, 104, 0.055)",
+            "--table-head": "#193b3a",
+            "--vacant-bg": "#4a3719",
+            "--vacant-ink": "#e7c27e",
+            "--danger": "#f0a29a",
+            "--danger-soft": "#412421"
           }
         },
         "component": {
           "light": {
-            "--button-ink": "#ffffff",
-            "--shadow": "0 22px 70px rgba(33, 42, 38, 0.10)",
-            "--radius": "22px",
-            "--font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang HK\", \"Noto Sans HK\", \"Microsoft JhengHei\", sans-serif"
+            "--shadow": "0 24px 64px rgba(31, 41, 39, 0.11)",
+            "--shadow-raised": "0 18px 46px rgba(28, 46, 42, 0.14)",
+            "--radius-large": "24px",
+            "--radius-medium": "14px",
+            "--ease-standard": "cubic-bezier(0.2, 0, 0, 1)"
           },
           "dark": {
-            "--button-ink": "#0b2422",
-            "--shadow": "0 24px 80px rgba(0, 0, 0, 0.30)"
+            "--shadow": "0 28px 76px rgba(0, 0, 0, 0.36)",
+            "--shadow-raised": "0 28px 72px rgba(0, 0, 0, 0.4)"
           }
         }
       }

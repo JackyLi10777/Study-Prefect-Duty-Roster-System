@@ -20,7 +20,7 @@
     inset 0 -1px 0 color-mix(in srgb, var(--sy-ink) 5%, transparent);
 }
 
-.body--dark {
+body.body--dark {
   --sy-material-paper: url("/assets/materials/paper-fibre-dark-v1.svg");
   --sy-material-linen: url("/assets/materials/linen-weave-dark-v1.svg");
   --sy-material-paper-blend: screen;
@@ -35,7 +35,7 @@
 
 /* The ground reads as quiet paper rather than an empty app canvas. */
 
-.sy-main {
+body .sy-main {
   background-color: var(--sy-ground);
   background-image:
     var(--sy-material-paper),
@@ -46,14 +46,14 @@
   background-blend-mode: var(--sy-material-paper-blend), normal, normal;
 }
 
-.body--dark .sy-main {
+body.body--dark .sy-main {
   background-image:
     var(--sy-material-paper),
     radial-gradient(circle at 11% 0%, color-mix(in srgb, var(--sy-role-action-soft) 42%, transparent), transparent 30%),
     linear-gradient(180deg, color-mix(in srgb, var(--sy-ground) 96%, #15202a), var(--sy-ground));
 }
 
-.q-header {
+body .q-header {
   background-image:
     var(--sy-material-paper),
     linear-gradient(180deg, color-mix(in srgb, var(--sy-surface) 98%, white), var(--sy-surface)) !important;
@@ -80,7 +80,7 @@
 
 /* Signature narrative surfaces retain their imagery while gaining touch. */
 
-.sy-workbench {
+.sy-page-shell .sy-workbench {
   background-color: var(--sy-surface);
   background-image:
     var(--sy-material-paper),
@@ -93,7 +93,7 @@
     0 16px 42px color-mix(in srgb, var(--sy-ink) 8%, transparent);
 }
 
-.sy-daily-start {
+.sy-page-shell.sy-page-dashboard .sy-daily-start {
   background-color: #F5EEDC;
   background-image:
     var(--sy-material-paper),
@@ -107,7 +107,7 @@
     0 14px 34px rgba(74, 59, 35, .13);
 }
 
-.body--dark .sy-daily-start {
+body.body--dark .sy-page-dashboard .sy-daily-start {
   background-color: #0F1B2D;
   background-image:
     var(--sy-material-paper),
@@ -119,7 +119,7 @@
     0 16px 38px rgba(0, 0, 0, .28);
 }
 
-.sy-handover-hero {
+.sy-page-handover .sy-handover-hero {
   background-color: #F7F3EA;
   background-image:
     var(--sy-material-paper),
@@ -132,7 +132,7 @@
     0 14px 34px rgba(28, 28, 30, .08);
 }
 
-.body--dark .sy-handover-hero {
+body.body--dark .sy-page-handover .sy-handover-hero {
   background-color: #101820;
   background-image:
     var(--sy-material-paper),
@@ -140,7 +140,7 @@
   background-blend-mode: screen, normal;
 }
 
-.sy-engineering-hero {
+.sy-page-engineering .sy-engineering-hero {
   background-image:
     var(--sy-material-paper),
     linear-gradient(135deg, color-mix(in srgb, var(--sy-surface) 95%, var(--sy-action-soft)), var(--sy-surface));
@@ -238,7 +238,7 @@
   background-blend-mode: var(--sy-material-paper-blend), normal;
 }
 
-.sy-devotional-companion--prayer {
+body .sy-page-devotional .sy-devotional-companion--prayer {
   background-image:
     var(--sy-material-paper),
     linear-gradient(145deg, color-mix(in srgb, var(--sy-surface) 88%, #F2D393), var(--sy-surface));
@@ -261,20 +261,20 @@
     --sy-material-hero-opacity: .22;
   }
 
-  .body--dark {
+  body.body--dark {
     --sy-material-paper-opacity: .22;
     --sy-material-linen-opacity: .17;
     --sy-material-hero-opacity: .16;
   }
 
-  .sy-main {
+  body .sy-main {
     background-size: 192px 192px, 100% 420px, 100% 100%;
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   :root,
-  .body--dark {
+  body.body--dark {
     --sy-material-paper-opacity: .16;
     --sy-material-linen-opacity: .12;
     --sy-material-hero-opacity: .12;

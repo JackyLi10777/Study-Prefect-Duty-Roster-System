@@ -1,6 +1,8 @@
 """Bilingual foundation messages."""
 
 MESSAGES = {'app_name': {'zh-HK': '聖言中學導學風紀值班系統', 'en': 'Sing Yin Study Prefect Duty Roster'},
+ 'service_weave_name': {'zh-HK': '服事經緯 · SERVICE WEAVE', 'en': 'SERVICE WEAVE'},
+ 'service_weave_mark_alt': {'zh-HK': '服事經緯軟件標誌', 'en': 'Service Weave software mark'},
  'school_crest_alt': {'zh-HK': '聖言中學校徽', 'en': 'Sing Yin Secondary School crest'},
  'service_principle': {'zh-HK': '非以役人，乃役於人', 'en': 'Not to be served, but to serve'},
  'dashboard': {'zh-HK': '總覽', 'en': 'Dashboard'},
@@ -61,4 +63,8 @@ MESSAGES.update({
     'reference_continue_reading': {'zh-HK': '繼續閱讀', 'en': 'Continue reading'},
     'reference_previous': {'zh-HK': '上一頁', 'en': 'Previous'},
     'reference_next': {'zh-HK': '下一頁', 'en': 'Next'},
+    'optional': {'zh-HK': '選填', 'en': 'Optional'},
+    'restricted': {'zh-HK': '此模式受限制', 'en': 'Restricted in this mode'},
+    'copy': {'zh-HK': '複製', 'en': 'Copy'},
+    'copied': {'zh-HK': '已複製', 'en': 'Copied'},
 })

@@ -2,16 +2,21 @@ from __future__ import annotations
 
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.ui.i18n import EN, MESSAGES, ZH_HK
+from nicegui_app.ui.page_catalog import PAGE_DEFINITIONS
+from nicegui_app.ui.theme_markup import STYLE_LAYERS
 from tests.ui_source import combined_page_source, combined_theme_source
 
 
 def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
-    head = (PROJECT_ROOT / "nicegui_app" / "ui" / "theme_markup.py").read_text(encoding="utf-8")
     main = (PROJECT_ROOT / "nicegui_app" / "main.py").read_text(encoding="utf-8")
     pages = combined_page_source()
 
-    assert 'href="/assets/css/sing-yin-mobile-v1.css" media="(max-width: 900px)"' in head
+    assert (
+        "mobile",
+        "/assets/css/sing-yin-mobile-v1.css",
+        "(max-width: 900px)",
+    ) in STYLE_LAYERS
     assert "MOBILE_PRIMARY_NAVIGATION" in shell
     assert 'viewport="width=device-width, initial-scale=1, viewport-fit=cover"' in main
     assert 'data-testid=mobile-bottom-navigation' in shell
@@ -29,10 +34,13 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert "window.__syDrawerA11yCleanup?.()" in shell
     assert "controller.abort()" in shell
     assert "show-if-above breakpoint=900" in shell
-    assert shell.index('with ui.element("main")') < shell.index("_render_mobile_tabbar(drawer, active_path)")
+    assert shell.index('with ui.element("main")') < shell.index(
+        "_render_mobile_tabbar(drawer, active_path, access_mode)"
+    )
     assert '@ui.page("/mobile' not in pages
-    for path in ('"/"', '"/rosters"', '"/prefects"'):
-        assert path in shell
+    assert {"/", "/rosters", "/prefects"} <= {
+        page.route for page in PAGE_DEFINITIONS if page.mobile_primary
+    }
 
 
 def test_mobile_navigation_copy_is_complete_in_both_languages() -> None:
@@ -68,10 +76,10 @@ def test_phone_layout_has_safe_areas_touch_targets_and_scrollable_navigation() -
 
 def test_dense_operator_tables_switch_to_mobile_cards() -> None:
     pages = combined_page_source()
-    shared = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_shared.py").read_text(encoding="utf-8")
+    components = (PROJECT_ROOT / "nicegui_app" / "ui" / "components.py").read_text(encoding="utf-8")
 
     assert pages.count("_render_responsive_table(") >= 6
-    assert 'props("grid hide-header")' in shared
+    assert 'props("grid hide-header")' in components
     assert ':grid="$q.screen.lt.md"' not in pages
     assert "sy-fairness-trend-chart" in pages
     assert "sy-page-lead" in pages

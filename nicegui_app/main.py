@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse, Response
 
 from nicegui_app.access_context import AccessMode
 from nicegui_app.application_mode import current_application_mode
-from nicegui_app.config import BRAND_ASSET_DIR, FAVICON_CREST_PATH, MUSIC_DIR, PROJECT_ROOT
+from nicegui_app.config import BRAND_ASSET_DIR, MUSIC_DIR, PROJECT_ROOT
 from nicegui_app.deployment import (
     DeploymentSettings,
     health_snapshot,
@@ -44,6 +44,7 @@ from nicegui_app.services.guest_downloads import (
 )
 from nicegui_app.services.guest_workspace import DEFAULT_MAX_SNAPSHOT_BYTES
 from nicegui_app.ui import pages as _pages  # noqa: F401 - registers @ui.page routes
+from nicegui_app.ui.product_identity import PRODUCT_IDENTITY
 
 
 @app.get("/healthz", include_in_schema=False)
@@ -310,10 +311,16 @@ def run() -> None:
         app.add_static_files(url_path="/assets/motion", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "motion")
         app.add_static_files(url_path="/assets/vendor", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "vendor")
         app.add_static_files(url_path="/assets/music", local_directory=MUSIC_DIR)
+        favicon_asset = PRODUCT_IDENTITY.product_asset(
+            PRODUCT_IDENTITY.delivery["faviconVariant"]
+        )
         ui.run(
-            title="Sing Yin Study Prefect Duty Roster",
+            title=(
+                f"{PRODUCT_IDENTITY.product_name_en} · "
+                f"{PRODUCT_IDENTITY.functional_name_en}"
+            ),
             viewport="width=device-width, initial-scale=1, viewport-fit=cover",
-            favicon=str(FAVICON_CREST_PATH),
+            favicon=str(favicon_asset.path),
             host=deployment.host,
             port=deployment.port,
             reload=False,

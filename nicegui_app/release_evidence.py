@@ -21,6 +21,7 @@ RELEASE_SOURCE_ROOTS = (
     PROJECT_ROOT / "packages",
     PROJECT_ROOT / "migrations",
     PROJECT_ROOT / "cloudflare",
+    PROJECT_ROOT / "design_system",
     PROJECT_ROOT / "music",
 )
 RELEASE_SOURCE_FILES = (
@@ -103,6 +104,7 @@ RELEASE_SUFFIXES = {
     ".jsonc",
     ".md",
     ".m4a",
+    ".ico",
     ".png",
     ".svg",
     ".webp",
@@ -111,7 +113,7 @@ RELEASE_SUFFIXES = {
     ".yml",
     ".yaml",
 }
-RELEASE_BYTE_EXACT_SUFFIXES = {".m4a", ".png", ".webp", ".woff2", ".ttf"}
+RELEASE_BYTE_EXACT_SUFFIXES = {".ico", ".m4a", ".png", ".webp", ".woff2", ".ttf"}
 EvidenceState = Literal["pass", "running", "stale", "fail", "missing", "unreadable"]
 
 

@@ -360,7 +360,6 @@ audio.sy-page-music-audio { display: block; width: 100%; min-height: 44px; borde
 .body--dark .sy-empty-state { background: var(--sy-surface-subtle); }
 .body--dark .sy-empty-state--illustrated { background: var(--sy-empty-ready-veil), var(--sy-image-empty-ready) right center / cover no-repeat; }
 .body--dark .sy-empty-state-icon { color: var(--sy-role-neutral); background: var(--sy-role-neutral-soft); }
-.sy-status-badge { width: max-content; max-width: 100%; min-height: 28px; padding: 5px 10px; border: 1px solid currentColor; border-radius: 999px; font-size: 12px; font-weight: 780; line-height: 1.3; white-space: normal; }
 body .q-badge.sy-status-badge.sy-tone-action { color: var(--sy-status-action-fg) !important; background: var(--sy-status-action-bg) !important; }
 body .q-badge.sy-status-badge.sy-tone-stable { color: var(--sy-status-stable-fg) !important; background: var(--sy-status-stable-bg) !important; }
 body .q-badge.sy-status-badge.sy-tone-attention { color: var(--sy-status-attention-fg) !important; background: var(--sy-status-attention-bg) !important; }
@@ -578,7 +577,7 @@ body .q-badge.sy-status-badge.sy-tone-neutral { color: var(--sy-status-neutral-f
 .sy-team-role-title { color: var(--sy-ink); font-size: 16px; font-weight: 770; line-height: 1.35; }
 .sy-team-role-function { margin-top: 3px; color: var(--sy-muted); font-size: 11px; font-weight: 700; line-height: 1.45; }
 .sy-team-role-copy { margin-top: 17px; color: var(--sy-muted); font-size: 12px; line-height: 1.65; }
-.sy-team-operating-model-note { max-width: 920px; padding-left: 14px; border-left: 3px solid var(--sy-line-strong); color: var(--sy-muted); font-size: 12px; line-height: 1.65; }
+.sy-team-operating-model-note { max-width: 920px; padding-left: 14px; border-left: 3px solid var(--sy-line); color: var(--sy-muted); font-size: 12px; line-height: 1.65; }
 .body--dark .sy-team-operating-model { background: linear-gradient(135deg, color-mix(in srgb, var(--sy-surface) 92%, #132331), var(--sy-surface)); }
 .body--dark .sy-team-role { box-shadow: none; }
 .sy-capability-map { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }

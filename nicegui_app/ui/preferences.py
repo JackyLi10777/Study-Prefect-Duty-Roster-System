@@ -17,10 +17,19 @@ from nicegui_app.runtime import current_page_context
 
 def _store():  # type: ignore[no-untyped-def]
     try:
-        mode = current_page_context().principal.mode
+        context = current_page_context()
     except (RuntimeError, PermissionError):
-        mode = AccessMode.LOCAL_MAINTENANCE
-    return app.storage.client if mode is AccessMode.GUEST else app.storage.user
+        # A late callback after Guest expiry/revocation must never be promoted
+        # to durable administrator storage.  Client storage is the fail-closed
+        # fallback for any page whose verified context is no longer available.
+        return app.storage.client
+    if context.preference_store is not None:
+        return context.preference_store
+    return (
+        app.storage.client
+        if context.principal.mode is AccessMode.GUEST
+        else app.storage.user
+    )
 
 
 def preference_get(key: str, default: Any = None) -> Any:

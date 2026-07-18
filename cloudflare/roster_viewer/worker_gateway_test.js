@@ -638,6 +638,16 @@ Deno.test('legacy guest paths redirect into the unified bootstrap and then proxy
     const legacy = await worker.fetch(new Request(`https://gateway.example${path}`), env, context);
     assertEquals(legacy.status, 302);
     assertEquals(legacy.headers.get('Location'), 'https://gateway.example/?guest=1');
+
+    const legacyHead = await worker.fetch(new Request(`https://gateway.example${path}`, {
+      method: 'HEAD',
+    }), env, context);
+    assertEquals(legacyHead.status, 302);
+    const landingHead = await worker.fetch(new Request(legacyHead.headers.get('Location'), {
+      method: 'HEAD',
+    }), env, context);
+    assertEquals(landingHead.status, 200);
+    assertEquals((await landingHead.arrayBuffer()).byteLength, 0);
   }
   const bootstrap = await worker.fetch(new Request('https://gateway.example/?guest=1'), env, context);
   assertEquals(bootstrap.status, 200);
@@ -668,6 +678,67 @@ Deno.test('legacy guest paths redirect into the unified bootstrap and then proxy
   assertEquals(statusPayload.authenticated, true);
   assertEquals(statusPayload.mode, 'guest');
   assertEquals(statusPayload.origin, 'ok');
+});
+
+Deno.test('proxied HTTP workbench responses gain the workbench-safe header contract', async () => {
+  const env = accessEnvironment('sing-yin-runtime-workbench-headers');
+  const guestCookie = await guestSessionCookiePair(env);
+  env.ROSTER_ORIGIN = {
+    fetch() {
+      return new Response('workbench', {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      });
+    },
+  };
+
+  const result = await worker.fetch(new Request('https://gateway.example/rosters', {
+    headers: { Cookie: guestCookie },
+  }), env, { waitUntil() {} });
+
+  assertEquals(await result.text(), 'workbench');
+  assertEquals(result.headers.get('Strict-Transport-Security'), 'max-age=63072000; includeSubDomains; preload');
+  assertEquals(result.headers.get('Cross-Origin-Opener-Policy'), 'same-origin');
+  assertEquals(result.headers.get('Cross-Origin-Resource-Policy'), 'same-origin');
+  assertEquals(result.headers.get('X-Content-Type-Options'), 'nosniff');
+  assertEquals(result.headers.get('X-Frame-Options'), 'SAMEORIGIN');
+  assertEquals(result.headers.get('Content-Security-Policy'), null);
+});
+
+Deno.test('serves the immutable Service Weave PNG identity and redirects the old SVG path', async () => {
+  const context = { waitUntil() {} };
+  const favicon = await worker.fetch(
+    new Request('https://gateway.example/favicon.png'),
+    {},
+    context,
+  );
+  assertEquals(favicon.status, 200);
+  assertEquals(favicon.headers.get('Content-Type'), 'image/png');
+  assertEquals(favicon.headers.get('Cache-Control'), 'public, max-age=31536000, immutable');
+  assert((favicon.headers.get('ETag') || '').startsWith('"sha256-'));
+  const bytes = new Uint8Array(await favicon.arrayBuffer());
+  assertEquals(bytes.byteLength, Number(favicon.headers.get('Content-Length')));
+  assertEquals(
+    JSON.stringify([...bytes.slice(0, 8)]),
+    JSON.stringify([137, 80, 78, 71, 13, 10, 26, 10]),
+  );
+
+  const head = await worker.fetch(
+    new Request('https://gateway.example/favicon.png', { method: 'HEAD' }),
+    {},
+    context,
+  );
+  assertEquals(head.status, 200);
+  assertEquals((await head.arrayBuffer()).byteLength, 0);
+  assertEquals(head.headers.get('Content-Length'), favicon.headers.get('Content-Length'));
+
+  const legacy = await worker.fetch(
+    new Request('https://gateway.example/favicon.svg'),
+    {},
+    context,
+  );
+  assertEquals(legacy.status, 308);
+  assertEquals(legacy.headers.get('Location'), 'https://gateway.example/favicon.png');
 });
 
 Deno.test('admin principal wins when both valid gateway cookies are present', async () => {

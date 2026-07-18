@@ -1,3 +1,9 @@
+import {
+  SERVICE_WEAVE_FAVICON_BASE64,
+  SERVICE_WEAVE_FAVICON_BYTE_LENGTH,
+  SERVICE_WEAVE_FAVICON_SHA256,
+} from './service_weave_brand.generated.js';
+
 const SHARE_SCHEMA = 'sing-yin-public-roster-v1';
 const SHARE_KEY_PREFIX = 'share:';
 const CONTENT_SHARE_KEY_PREFIX = 'share:v2:';
@@ -61,6 +67,21 @@ const SECURITY_HEADERS = Object.freeze({
   'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',
 });
 
+// NiceGUI needs its own scripts, WebSocket and dynamic style behavior, so the
+// locked-down public-viewer CSP above must never be copied onto the workbench.
+// These transport and embedding headers are safe for ordinary proxied HTTP
+// responses; 101/WebSocket carriers remain byte-for-byte untouched.
+const WORKBENCH_SECURITY_HEADERS = Object.freeze({
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Resource-Policy': 'same-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+  'Referrer-Policy': 'no-referrer',
+  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'SAMEORIGIN',
+  'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',
+});
+
 const VIEWER_HTML = `<!doctype html>
 <html lang="zh-Hant-HK">
 <head>
@@ -70,14 +91,14 @@ const VIEWER_HTML = `<!doctype html>
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
   <title>導學風紀值班表 · Study Prefect Duty Roster</title>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.png" type="image/png">
   <link rel="stylesheet" href="/viewer.css">
 </head>
 <body data-guest-bootstrap="false">
   <a class="skip-link" href="#mainContent">跳到主要內容 · Skip to main content</a>
   <header class="site-header">
     <div class="brand-lockup">
-      <img class="brand-mark" src="/favicon.svg" alt="" width="48" height="48">
+      <img class="brand-mark" src="/favicon.png" alt="" width="48" height="48">
       <div>
       <p class="eyebrow">SING YIN SECONDARY SCHOOL</p>
       <p class="brand-title">導學風紀值班表</p>
@@ -203,70 +224,6 @@ const VIEWER_HTML = `<!doctype html>
         <div class="trust-item"><span aria-hidden="true">02</span><p><strong>管理功能受控登入</strong><small lang="en">Verified administrator access</small></p></div>
         <div class="trust-item"><span aria-hidden="true">03</span><p><strong>登入後仍是同一工作台</strong><small lang="en">One continuous workbench</small></p></div>
       </div>
-    </section>
-
-    <section id="guestPortalState" class="guest-portal" hidden aria-labelledby="guestPortalTitle">
-      <header class="guest-portal-header">
-        <div>
-          <p class="eyebrow">PUBLIC TOUR · READ ONLY</p>
-          <h1 id="guestPortalTitle" tabindex="-1">訪客瀏覽模式</h1>
-          <p>無需帳戶即可了解平台用途、工作流程及公平保障；這個模式不連接任何編輯功能。</p>
-          <p lang="en">Explore the platform purpose, workflow, and fairness safeguards without an account. This mode never connects to editing tools.</p>
-        </div>
-        <a id="guestExit" class="guest-exit" href="/">← 返回入口 <span lang="en">· Back</span></a>
-      </header>
-
-      <div class="guest-mode-band" role="status">
-        <span class="guest-mode-band-icon" aria-hidden="true">閱</span>
-        <p><strong>目前權限：只供查看</strong><span>不能生成、修改、發布、匯出或調整任何學校資料。</span><small lang="en">Current access: view only. No school data can be generated, changed, published, exported, or adjusted.</small></p>
-      </div>
-
-      <div class="guest-portal-grid">
-        <article class="guest-tour-card guest-tour-card--wide">
-          <p class="guest-card-kicker">WEEKLY WORKFLOW</p>
-          <h2>每週值班工作怎樣完成</h2>
-          <ol class="guest-flow">
-            <li><span>01</span><p><strong>生成與核對</strong><small lang="en">Generate & review</small></p></li>
-            <li><span>02</span><p><strong>發布與匯出</strong><small lang="en">Publish & export</small></p></li>
-            <li><span>03</span><p><strong>已發布後請假</strong><small lang="en">Published-duty absence</small></p></li>
-          </ol>
-          <p class="guest-flow-note">每一步完成後都會留下審計與備份證據，支援日後交接。 <span lang="en">Audit and backup evidence supports every step and the eventual handover.</span></p>
-        </article>
-
-        <article class="guest-tour-card">
-          <p class="guest-card-kicker">WHAT YOU CAN VIEW</p>
-          <h2>訪客可查看</h2>
-          <ul>
-            <li>系統用途及僕人領袖精神 <small lang="en">Purpose and servant-leadership principle</small></li>
-            <li>值班流程、公平原則與技術保障 <small lang="en">Workflow, fairness, and technical safeguards</small></li>
-            <li>今日經文與雙語靈修提醒 <small lang="en">Daily verse and bilingual reflection</small></li>
-            <li>持完整分享連結查看指定已發布週表 <small lang="en">A specified published roster with its complete share link</small></li>
-          </ul>
-        </article>
-
-        <article class="guest-tour-card guest-tour-card--protected">
-          <p class="guest-card-kicker">PROTECTED OPERATIONS</p>
-          <h2>訪客不會取得</h2>
-          <ul>
-            <li>名單、請假、公平帳本及歷史資料 <small lang="en">Directory, leave, fairness ledger, or history</small></li>
-            <li>生成、手動修改、發布及替補操作 <small lang="en">Generate, edit, publish, or substitution actions</small></li>
-            <li>備份、還原、設定、日誌或管理權限 <small lang="en">Backups, restore, settings, logs, or administration</small></li>
-            <li>任何可寫入 NiceGUI 工作台的連線 <small lang="en">Any write-capable connection to the NiceGUI workbench</small></li>
-          </ul>
-        </article>
-
-        <article class="guest-tour-card guest-tour-card--wide guest-tour-card--trust">
-          <p class="guest-card-kicker">FAIRNESS & RELIABILITY</p>
-          <h2>公平不是一句口號</h2>
-          <p>排班規則、history_weight、公平帳本、發布一次性、請假調整審計，以及本機備份與受控還原，共同構成可核對的服務紀錄。</p>
-          <p lang="en">Policy rules, history_weight, the fairness ledger, one-time publication, audited leave adjustments, verified local backups, and managed restore create evidence that can be checked.</p>
-        </article>
-      </div>
-
-      <footer class="guest-portal-footer">
-        <p><strong>要查看某一週值班表？</strong> 請開啟首席導學風紀發出的完整 <code>/view#…</code> 分享連結；訪客導覽本身不包含任何值班表。</p>
-        <p lang="en">To view a specific week, open the complete <code>/view#…</code> link issued by the Head Study Prefect. The guest tour contains no roster data.</p>
-      </footer>
     </section>
 
     <noscript>
@@ -869,110 +826,6 @@ button, input, select, textarea { font: inherit; }
 .trust-item strong { font-size: 0.75rem; }
 .trust-item small { margin-top: 3px; color: var(--ink-muted); font-size: 0.63rem; }
 
-.guest-portal[hidden] { display: none; }
-.guest-portal {
-  display: grid;
-  gap: 18px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-large);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-.guest-portal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 28px;
-  padding: 46px 48px 36px;
-  border-bottom: 1px solid var(--line);
-  background: linear-gradient(130deg, var(--portal-story), color-mix(in srgb, var(--portal-story) 86%, var(--canvas)));
-  color: var(--portal-story-ink);
-}
-.guest-portal-header > div { max-width: 50rem; }
-.guest-portal-header h1 { margin: 10px 0 12px; font-size: clamp(2rem, 5vw, 3.45rem); letter-spacing: -0.05em; line-height: 1.04; }
-.guest-portal-header p:not(.eyebrow) { max-width: 45rem; margin: 5px 0 0; color: var(--portal-story-muted); font-size: 0.85rem; line-height: 1.65; }
-.guest-portal-header p[lang="en"] { font-size: 0.74rem; }
-.guest-exit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  min-height: 44px;
-  padding: 9px 14px;
-  border: 1px solid color-mix(in srgb, var(--portal-story-muted) 52%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--portal-story) 78%, transparent);
-  color: var(--portal-story-ink);
-  font-size: 0.72rem;
-  font-weight: 720;
-  text-decoration: none;
-  transition: border-color 140ms ease, background-color 140ms ease, transform 100ms ease;
-}
-.guest-exit:hover { border-color: var(--portal-story-ink); background: color-mix(in srgb, var(--portal-story) 62%, var(--surface)); }
-.guest-exit:active { transform: scale(0.98); }
-.guest-exit:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
-.guest-mode-band {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: start;
-  gap: 13px;
-  margin: 0 30px;
-  padding: 17px 18px;
-  border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--line));
-  border-radius: 15px;
-  background: var(--brand-soft);
-  color: var(--ink);
-}
-.guest-mode-band-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: var(--surface); color: var(--brand); font-weight: 800; }
-.guest-mode-band p { margin: 0; }
-.guest-mode-band strong,
-.guest-mode-band span,
-.guest-mode-band small { display: block; }
-.guest-mode-band strong { font-size: 0.82rem; }
-.guest-mode-band span { margin-top: 3px; color: var(--ink-muted); font-size: 0.72rem; line-height: 1.5; }
-.guest-mode-band small { margin-top: 2px; color: var(--ink-muted); font-size: 0.64rem; line-height: 1.5; }
-.guest-portal-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 15px;
-  padding: 0 30px;
-}
-.guest-tour-card {
-  min-width: 0;
-  padding: 26px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface-muted);
-}
-.guest-tour-card--wide { grid-column: 1 / -1; }
-.guest-tour-card--protected { border-color: var(--line-strong); background: color-mix(in srgb, var(--surface-muted) 76%, var(--surface)); }
-.guest-tour-card--trust { background: var(--surface); }
-.guest-card-kicker { margin: 0 0 8px; color: var(--brand); font-size: 0.61rem; font-weight: 820; letter-spacing: 0.12em; }
-.guest-tour-card h2 { margin: 0; font-size: clamp(1.15rem, 2.4vw, 1.55rem); letter-spacing: -0.025em; }
-.guest-tour-card > p:not(.guest-card-kicker) { margin: 12px 0 0; color: var(--ink-muted); font-size: 0.78rem; line-height: 1.65; }
-.guest-tour-card ul { display: grid; gap: 9px; margin: 16px 0 0; padding: 0; list-style: none; }
-.guest-tour-card ul li { position: relative; padding-left: 17px; color: var(--ink-muted); font-size: 0.76rem; line-height: 1.52; }
-.guest-tour-card ul li::before { content: ""; position: absolute; top: 0.62em; left: 1px; width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
-.guest-tour-card ul li small { display: block; margin-top: 2px; color: var(--ink-muted); font-size: 0.68rem; line-height: 1.45; }
-.guest-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 22px 0 0; padding: 0; list-style: none; }
-.guest-flow li { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 10px; min-width: 0; padding-top: 14px; border-top: 1px solid var(--line); }
-.guest-flow li > span { color: var(--brand); font-size: 0.62rem; font-weight: 820; letter-spacing: 0.08em; }
-.guest-flow p { margin: 0; }
-.guest-flow strong,
-.guest-flow small { display: block; }
-.guest-flow strong { font-size: 0.76rem; line-height: 1.4; }
-.guest-flow small { margin-top: 3px; color: var(--ink-muted); font-size: 0.63rem; line-height: 1.4; }
-.guest-flow-note { margin: 18px 0 0; color: var(--ink-muted); font-size: 0.71rem; line-height: 1.55; }
-.guest-flow-note span { display: block; margin-top: 3px; font-size: 0.65rem; }
-.guest-portal-footer { margin: 0 30px 30px; padding: 20px 22px; border-top: 1px solid var(--line); color: var(--ink-muted); }
-.guest-portal-footer p { margin: 0; font-size: 0.72rem; line-height: 1.6; }
-.guest-portal-footer p + p { margin-top: 4px; font-size: 0.65rem; }
-.guest-portal-footer strong { color: var(--ink); }
-.guest-portal:not([hidden]) .guest-portal-header { animation: portal-story-enter 360ms var(--ease-standard) both; }
-.guest-portal:not([hidden]) .guest-mode-band,
-.guest-portal:not([hidden]) .guest-portal-grid { animation: portal-strip-enter 340ms 80ms var(--ease-standard) both; }
-
 .access-portal:not([hidden]) .portal-story { animation: portal-story-enter 380ms var(--ease-standard) both; }
 .access-portal:not([hidden]) .access-panel { animation: portal-panel-enter 440ms 70ms var(--ease-standard) both; }
 .access-portal:not([hidden]) .trust-strip { animation: portal-strip-enter 340ms 140ms var(--ease-standard) both; }
@@ -1329,7 +1182,6 @@ tbody td {
   .access-portal { grid-template-columns: 1fr; }
   .portal-story { min-height: auto; padding: 46px 42px 40px; }
   .access-panel { margin: 24px; }
-  .guest-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 700px) {
@@ -1343,10 +1195,6 @@ tbody td {
   .portal-story > h1 { margin-top: 21px; font-size: clamp(2rem, 11vw, 3rem); }
   .access-panel { margin: 14px; padding: 30px 24px 27px; }
   .trust-item { padding-inline: 18px; }
-  .guest-portal-header { padding: 36px 26px 30px; }
-  .guest-mode-band { margin-inline: 18px; }
-  .guest-portal-grid { padding-inline: 18px; }
-  .guest-portal-footer { margin: 0 18px 20px; padding-inline: 4px; }
   .roster-heading { display: grid; padding: 26px 22px 22px; }
   .status-chip { justify-self: start; }
   .roster-meta { grid-template-columns: 1fr; }
@@ -1369,11 +1217,6 @@ tbody td {
   .trust-strip { grid-template-columns: 1fr; }
   .trust-item { min-height: 64px; }
   .trust-item + .trust-item { border-top: 1px solid var(--line); border-left: 0; }
-  .guest-portal-header { display: grid; gap: 20px; }
-  .guest-exit { justify-self: start; }
-  .guest-portal-grid { grid-template-columns: 1fr; }
-  .guest-tour-card--wide { grid-column: auto; }
-  .guest-flow { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 900px) {
@@ -1396,10 +1239,6 @@ tbody td {
   .devotional-prompt,
   .admin-login,
   .guest-enter,
-  .guest-portal,
-  .guest-exit,
-  .guest-mode-band,
-  .guest-tour-card,
   .theme-toggle,
   .verse-refresh,
   .site-share-button { border: 1px solid CanvasText; }
@@ -1461,7 +1300,6 @@ const decoder = new TextDecoder('utf-8', { fatal: true });
 
 const loadingState = document.getElementById('loadingState');
 const guestState = document.getElementById('guestState');
-const guestPortalState = document.getElementById('guestPortalState');
 const errorState = document.getElementById('errorState');
 const rosterState = document.getElementById('rosterState');
 const rosterTable = document.getElementById('rosterTable');
@@ -1691,7 +1529,6 @@ window.addEventListener('pageshow', () => {
 
 function showOnly(element) {
   guestState.hidden = element !== guestState;
-  guestPortalState.hidden = element !== guestPortalState;
   loadingState.hidden = element !== loadingState;
   errorState.hidden = element !== errorState;
   rosterState.hidden = element !== rosterState;
@@ -1891,10 +1728,6 @@ async function bootstrapGuestSession() {
 }
 
 async function openSharedRoster() {
-  if (window.location.pathname === '/guest') {
-    showOnly(guestPortalState);
-    return;
-  }
   if (window.location.pathname === '/' && !hasShareToken()) {
     showOnly(guestState);
     return;
@@ -1954,10 +1787,28 @@ void bootstrapGuestSession().then(started => {
 });
 `;
 
-const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-<rect width="64" height="64" rx="16" fill="#176d68"/>
-<path d="M15 17c7-2 13 0 17 4v28c-4-4-10-6-17-4V17Zm34 0c-7-2-13 0-17 4v28c4-4 10-6 17-4V17Z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
-</svg>`;
+let serviceWeaveFaviconBytesCache = null;
+
+function serviceWeaveFaviconBytes() {
+  if (serviceWeaveFaviconBytesCache !== null) return serviceWeaveFaviconBytesCache;
+  const binary = atob(SERVICE_WEAVE_FAVICON_BASE64);
+  const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+  if (bytes.byteLength !== SERVICE_WEAVE_FAVICON_BYTE_LENGTH) {
+    throw new Error('service_weave_favicon_length_mismatch');
+  }
+  serviceWeaveFaviconBytesCache = bytes;
+  return serviceWeaveFaviconBytesCache;
+}
+
+function serviceWeaveFaviconResponse(request) {
+  const bytes = serviceWeaveFaviconBytes();
+  return response(request.method === 'HEAD' ? null : bytes, 200, {
+    'Content-Type': 'image/png',
+    'Content-Length': String(SERVICE_WEAVE_FAVICON_BYTE_LENGTH),
+    'Cache-Control': 'public, max-age=31536000, immutable',
+    ETag: `"sha256-${SERVICE_WEAVE_FAVICON_SHA256}"`,
+  });
+}
 
 const ACCESS_FAILURE_HTML = `<!doctype html>
 <html lang="zh-Hant-HK">
@@ -1968,7 +1819,7 @@ const ACCESS_FAILURE_HTML = `<!doctype html>
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
   <title>管理員登入未完成 · Admin sign-in incomplete</title>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.png" type="image/png">
   <link rel="stylesheet" href="/viewer.css">
 </head>
 <body>
@@ -2001,7 +1852,7 @@ function originFailureResponse(reference) {
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
   <title>工作台暫時未能連接 · Workbench temporarily unavailable</title>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.png" type="image/png">
   <link rel="stylesheet" href="/viewer.css">
 </head>
 <body>
@@ -2744,6 +2595,10 @@ function response(body, status = 200, headers = {}) {
   return new Response(body, { status, headers });
 }
 
+function staticResponse(request, body, status = 200, headers = {}) {
+  return response(request.method === 'HEAD' ? null : body, status, headers);
+}
+
 function jsonResponse(payload, status = 200) {
   return response(JSON.stringify(payload), status, { 'Content-Type': 'application/json; charset=utf-8' });
 }
@@ -2751,6 +2606,15 @@ function jsonResponse(payload, status = 200) {
 function secured(input) {
   const output = new Response(input.body, input);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    if (!output.headers.has(name)) output.headers.set(name, value);
+  }
+  return output;
+}
+
+function securedWorkbench(originResponse) {
+  if (originResponse?.status === 101 || originResponse?.webSocket) return originResponse;
+  const output = new Response(originResponse.body, originResponse);
+  for (const [name, value] of Object.entries(WORKBENCH_SECURITY_HEADERS)) {
     if (!output.headers.has(name)) output.headers.set(name, value);
   }
   return output;
@@ -3192,27 +3056,36 @@ async function route(request, env, context) {
   if (path.startsWith('/try/')) {
     return response('Not found', 404, { 'Content-Type': 'text/plain; charset=utf-8' });
   }
-  if (path === '/view' && request.method === 'GET') {
-    return response(VIEWER_HTML, 200, { 'Content-Type': 'text/html; charset=utf-8' });
+  if (path === '/view') {
+    if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
+    return staticResponse(request, VIEWER_HTML, 200, { 'Content-Type': 'text/html; charset=utf-8' });
   }
-  if (path === '/viewer.css' && request.method === 'GET') {
-    return response(VIEWER_CSS, 200, { 'Content-Type': 'text/css; charset=utf-8' });
+  if (path === '/viewer.css') {
+    if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
+    return staticResponse(request, VIEWER_CSS, 200, { 'Content-Type': 'text/css; charset=utf-8' });
   }
-  if (path === '/viewer.js' && request.method === 'GET') {
-    return response(VIEWER_JS, 200, { 'Content-Type': 'text/javascript; charset=utf-8' });
+  if (path === '/viewer.js') {
+    if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
+    return staticResponse(request, VIEWER_JS, 200, { 'Content-Type': 'text/javascript; charset=utf-8' });
   }
-  if (path === '/favicon.svg' && request.method === 'GET') {
-    return response(FAVICON_SVG, 200, { 'Content-Type': 'image/svg+xml; charset=utf-8' });
+  if (path === '/favicon.png' && ['GET', 'HEAD'].includes(request.method)) {
+    return serviceWeaveFaviconResponse(request);
   }
-  if (path === '/robots.txt' && request.method === 'GET') {
-    return response('User-agent: *\nDisallow: /\n', 200, { 'Content-Type': 'text/plain; charset=utf-8' });
+  if (path === '/favicon.svg' && ['GET', 'HEAD'].includes(request.method)) {
+    return redirectResponse('/favicon.png', request.url, 308);
   }
-  if (path === '/healthz' && request.method === 'GET') {
-    return jsonResponse({
+  if (path === '/robots.txt') {
+    if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
+    return staticResponse(request, 'User-agent: *\nDisallow: /\n', 200, { 'Content-Type': 'text/plain; charset=utf-8' });
+  }
+  if (path === '/healthz') {
+    if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
+    const payload = {
       status: 'ok',
       application: 'sing-yin-roster-gateway',
       capabilities: ['encrypted-public-viewer', 'unified-guest-gateway', 'access-admin-gateway', 'signed-origin-principal', 'private-origin-proxy'],
-    });
+    };
+    return staticResponse(request, JSON.stringify(payload), 200, { 'Content-Type': 'application/json; charset=utf-8' });
   }
   if (path === '/api/view') {
     if (request.method !== 'POST') return methodNotAllowed('POST');
@@ -3308,11 +3181,11 @@ async function route(request, env, context) {
         mode: 'public',
       });
     }
-    if (path === '/' && request.method === 'GET') {
+    if (path === '/' && ['GET', 'HEAD'].includes(request.method)) {
       const landingHtml = url.search === '?guest=1'
         ? VIEWER_HTML.replace('data-guest-bootstrap="false"', 'data-guest-bootstrap="true"')
         : VIEWER_HTML;
-      return response(landingHtml, 200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return staticResponse(request, landingHtml, 200, { 'Content-Type': 'text/html; charset=utf-8' });
     }
     return path.startsWith('/auth/') ? accessFailureResponse() : redirectResponse('/', request.url);
   }
@@ -3364,7 +3237,7 @@ export default {
   async fetch(request, env, context) {
     try {
       const routed = await route(request, env, context);
-      if (routed && routed.originResponse) return routed.originResponse;
+      if (routed && routed.originResponse) return securedWorkbench(routed.originResponse);
       return secured(routed);
     } catch {
       return secured(jsonResponse({ error: 'service_unavailable' }, 503));

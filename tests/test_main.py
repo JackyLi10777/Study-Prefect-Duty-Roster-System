@@ -5,6 +5,7 @@ from PIL import Image
 from nicegui_app.main import open_browser_on_startup
 from nicegui_app.config import DISPLAY_PRINT_CREST_PATH, DISPLAY_WEB_CREST_PATH, FAVICON_CREST_PATH, NAVIGATION_CREST_PATH, PROJECT_ROOT
 from nicegui_app.ui.theme import ATMOSPHERE_THEME_PAIRS
+from nicegui_app.ui.product_identity import PRODUCT_IDENTITY
 from tests.ui_source import combined_theme_source
 
 
@@ -73,6 +74,18 @@ def test_every_enabled_atmosphere_uses_one_shared_slot_with_a_light_dark_pair() 
 def test_nicegui_favicon_is_a_real_local_file() -> None:
     assert FAVICON_CREST_PATH.is_file()
     assert FAVICON_CREST_PATH.stat().st_size > 0
+
+
+def test_nicegui_runtime_uses_the_manifest_selected_product_favicon() -> None:
+    source = (PROJECT_ROOT / "nicegui_app" / "main.py").read_text(encoding="utf-8")
+    favicon = PRODUCT_IDENTITY.product_asset(
+        PRODUCT_IDENTITY.delivery["faviconVariant"]
+    )
+
+    assert favicon.path.is_file()
+    assert "PRODUCT_IDENTITY.delivery[\"faviconVariant\"]" in source
+    assert "favicon=str(favicon_asset.path)" in source
+    assert "SERVICE_WEAVE_FAVICON_PATH" not in source
 
 
 def test_local_hong_kong_font_system_is_complete_and_offline() -> None:

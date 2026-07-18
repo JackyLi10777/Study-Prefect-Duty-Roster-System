@@ -1,16 +1,21 @@
 from __future__ import annotations
 
 from nicegui_app.config import PROJECT_ROOT
+from nicegui_app.ui.page_catalog import page_definition
 from nicegui_app.ui.i18n import EN, MESSAGES, ZH_HK
 from tests.ui_source import combined_page_source
 
 
 def test_access_console_explains_one_site_with_authenticated_editing() -> None:
     source = (PROJECT_ROOT / "nicegui_app" / "ui" / "access_control.py").read_text(encoding="utf-8")
-    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
     routes = combined_page_source()
 
-    assert '("/access-control", "access_control", "admin_panel_settings")' in shell
+    access_page = page_definition("/access-control")
+    assert access_page is not None
+    assert (access_page.title_key, access_page.icon) == (
+        "access_control",
+        "admin_panel_settings",
+    )
     assert '@ui.page("/access-control")' in routes
     assert "data-testid=operator-access-card" in source
     assert "data-testid=viewer-access-card" in source
