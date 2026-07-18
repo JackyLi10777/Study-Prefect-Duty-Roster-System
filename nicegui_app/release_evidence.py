@@ -7,6 +7,7 @@ from datetime import datetime
 from functools import lru_cache
 import hashlib
 import json
+import os
 from pathlib import Path, PurePosixPath
 from typing import Iterable, Literal
 
@@ -145,18 +146,40 @@ def _release_fingerprint_payload(path: Path) -> bytes:
     return payload.replace(b"\r\n", b"\n")
 
 
+def _iter_release_source_paths(root: Path) -> Iterable[Path]:
+    """Yield release files without entering ignored dependency mount points."""
+
+    def raise_walk_error(error: OSError) -> None:
+        raise error
+
+    for directory_name, child_directories, filenames in os.walk(
+        root,
+        topdown=True,
+        onerror=raise_walk_error,
+        followlinks=False,
+    ):
+        directory = Path(directory_name)
+        child_directories[:] = [
+            name
+            for name in child_directories
+            if name.lower() not in RELEASE_EXCLUDED_DIRECTORY_NAMES
+            and not _is_excluded_release_path(directory / name)
+        ]
+        for filename in filenames:
+            path = directory / filename
+            if (
+                path.suffix.lower() in RELEASE_SUFFIXES
+                and not _is_excluded_release_path(path)
+            ):
+                yield path
+
+
 def _calculate_release_source_fingerprint(paths: Iterable[Path] | None = None) -> tuple[str, int]:
     candidates = [
         path
         for root in RELEASE_SOURCE_ROOTS
         if root.is_dir()
-        for path in root.rglob("*")
-        if (
-            path.is_file()
-            and path.suffix.lower() in RELEASE_SUFFIXES
-            and not RELEASE_EXCLUDED_DIRECTORY_NAMES.intersection(path.parts)
-            and not _is_excluded_release_path(path)
-        )
+        for path in _iter_release_source_paths(root)
     ] if paths is None else [Path(path) for path in paths if Path(path).is_file()]
     if paths is None:
         candidates.extend(path for path in RELEASE_SOURCE_FILES if path.is_file())

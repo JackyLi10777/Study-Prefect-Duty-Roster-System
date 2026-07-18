@@ -196,6 +196,14 @@ def test_release_fingerprint_tracks_package_manifest_but_not_dependency_cache(mo
     dependency_manifest.write_text('{"version":"private-cache"}\n', encoding="utf-8")
     monkeypatch.setattr(release_evidence, "RELEASE_SOURCE_ROOTS", (tmp_path / "cloudflare",))
     monkeypatch.setattr(release_evidence, "RELEASE_SOURCE_FILES", ())
+    original_is_file = Path.is_file
+
+    def guarded_is_file(path: Path) -> bool:
+        if "node_modules" in path.parts:
+            raise OSError("excluded dependency mount must not be inspected")
+        return original_is_file(path)
+
+    monkeypatch.setattr(Path, "is_file", guarded_is_file)
 
     original, count = release_evidence._calculate_release_source_fingerprint()
     manifest.write_text('{"version":"2"}\n', encoding="utf-8")
