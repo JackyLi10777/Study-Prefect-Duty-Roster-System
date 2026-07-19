@@ -8,9 +8,10 @@ from uuid import uuid4
 from nicegui import ui
 
 from nicegui_app.runtime import get_workflow
+from nicegui_app.services.roster_presentation import roster_display_label
 from nicegui_app.services.roster_workflow import WorkflowError
 from nicegui_app.ui.access_control import render_roster_share_action, revoke_withdrawn_roster_shares
-from nicegui_app.ui.i18n import day_label, post_label, t
+from nicegui_app.ui.i18n import day_label, t
 from nicegui_app.ui.page_shared import (
     _OPERATION_FAILED,
     _navigate_with_feedback,
@@ -28,8 +29,119 @@ from nicegui_app.ui.page_shared import (
 )
 from nicegui_app.ui.shell import page_shell
 from nicegui_app.ui.theme import current_theme
+from nicegui_app.ui.workflow_navigation import (
+    WorkflowStep,
+    render_back_action,
+    render_route_trail,
+    render_workflow_navigation,
+)
 from roster_core import HISTORY_PRIORITY_MULTIPLIER_MAX, HISTORY_PRIORITY_MULTIPLIER_MIN
 from roster_policy import SchoolDay
+
+
+def _roster_workflow_steps(
+    *,
+    roster_week_id: int | None = None,
+    status: str | None = None,
+) -> tuple[WorkflowStep, ...]:
+    detail_route = f"/rosters/{roster_week_id}" if roster_week_id is not None else "/rosters"
+    adjustment_route = (
+        f"/rosters/{roster_week_id}/adjustments"
+        if roster_week_id is not None and status == "published"
+        else detail_route
+    )
+    return (
+        WorkflowStep(t("roster_workflow_generate"), "/rosters", "edit_calendar"),
+        WorkflowStep(
+            t("roster_workflow_review"),
+            detail_route,
+            "fact_check",
+            "available" if roster_week_id is not None else "locked",
+        ),
+        WorkflowStep(
+            t("roster_workflow_adjust"),
+            adjustment_route,
+            "event_busy",
+            "available" if roster_week_id is not None and status == "published" else "locked",
+        ),
+        WorkflowStep(t("roster_workflow_history"), "/rosters", "history"),
+    )
+
+
+def _render_withdraw_action(workflow, week: dict[str, object], roster_week_id: int) -> None:
+    """Render the same audited withdrawal action wherever a published week appears."""
+
+    reviewed_version = int(week["version"])
+    withdrawal_command_id = f"roster-withdraw-ui:{uuid4().hex}"
+    with ui.dialog().props("persistent") as withdraw_dialog, ui.card().classes(
+        "sy-surface w-full max-w-lg p-6"
+    ):
+        with ui.row().classes("items-start gap-3 no-wrap"):
+            ui.icon("warning_amber").classes("sy-fg-danger text-2xl").props("aria-hidden=true")
+            with ui.column().classes("gap-1 min-w-0"):
+                ui.label(t("withdraw_roster_title")).classes("text-xl font-semibold")
+                ui.label(t("withdraw_roster_body")).classes("text-sm leading-6 text-[var(--sy-muted)]")
+        with ui.element("section").classes("sy-surface-subtle w-full p-4 mt-4"):
+            for key in (
+                "withdraw_roster_consequence_fairness",
+                "withdraw_roster_consequence_share",
+                "withdraw_roster_consequence_audit",
+            ):
+                with ui.row().classes("items-start gap-2 no-wrap"):
+                    ui.icon("check_circle_outline").classes("sy-fg-attention mt-1").props("aria-hidden=true")
+                    ui.label(t(key)).classes("text-sm leading-6")
+        withdraw_reason = ui.textarea(label=t("withdraw_roster_reason")).props(
+            "name=withdraw-roster-reason autocomplete=off data-testid=withdraw-roster-reason"
+        ).classes("w-full mt-4")
+        withdraw_week = ui.input(
+            label=t("withdraw_roster_confirm_week", week=week["weekStart"])
+        ).props("autocomplete=off data-testid=withdraw-roster-week-confirmation").classes("w-full")
+
+        async def withdraw_roster() -> None:
+            reason = str(withdraw_reason.value or "").strip()
+            confirmation = str(withdraw_week.value or "").strip()
+            if confirmation != str(week["weekStart"]):
+                ui.notify(t("withdraw_roster_week_required", week=week["weekStart"]), type="warning")
+                withdraw_week.run_method("focus")
+                return
+            withdraw_dialog.close()
+            result = await _run_with_progress(
+                lambda: workflow.withdraw_published_roster(
+                    roster_week_id=roster_week_id,
+                    expected_version=reviewed_version,
+                    reason=reason,
+                    command_id=withdrawal_command_id,
+                ),
+                title_key="progress_withdraw_title",
+                working_key="progress_withdraw_working",
+                icon="undo",
+            )
+            if result is _OPERATION_FAILED:
+                return
+            if result.share_ids_to_revoke:
+                revocation = await _run_with_progress(
+                    lambda: revoke_withdrawn_roster_shares(workflow, result.share_ids_to_revoke),
+                    title_key="progress_share_revoke_title",
+                    working_key="progress_share_revoke_working",
+                    icon="link_off",
+                )
+                if revocation is _OPERATION_FAILED or revocation[1]:
+                    ui.notify(t("withdraw_roster_share_pending"), type="warning")
+            ui.notify(t("withdraw_roster_success"), type="positive")
+            ui.navigate.reload()
+
+        with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
+            ui.button(t("cancel"), icon="close", on_click=withdraw_dialog.close).props("flat")
+            ui.button(
+                t("withdraw_roster_confirm_action"),
+                icon="undo",
+                on_click=withdraw_roster,
+            ).props("color=negative data-testid=confirm-withdraw-roster")
+    ui.button(
+        t("withdraw_roster_action"),
+        icon="undo",
+        on_click=withdraw_dialog.open,
+    ).props("outline color=negative data-testid=withdraw-published-roster")
 
 @ui.page("/rosters")
 def rosters_page() -> None:
@@ -56,12 +168,21 @@ def rosters_page() -> None:
                 ).props("color=primary data-testid=roster-open-prefects")
             return
         _render_storage_lifecycle(workflow)
+        latest_week = weeks[0] if weeks else None
+        render_workflow_navigation(
+            _roster_workflow_steps(
+                roster_week_id=int(latest_week["id"]) if latest_week else None,
+                status=str(latest_week["status"]) if latest_week else None,
+            ),
+            current_index=1,
+            label=t("roster_workflow_label"),
+        )
         with ui.tabs().classes("w-full sy-fg-action") as tabs:
             generate_tab = ui.tab("generate_view", label=t("generate_view"), icon="calendar_month")
             adjust_tab = ui.tab("adjust_edit", label=t("adjust_edit"), icon="edit_calendar")
         with ui.tab_panels(tabs, value="generate_view", animated=False, keep_alive=False).classes("w-full bg-transparent"):
             with ui.tab_panel("generate_view").classes("px-0"):
-                with ui.card().classes("sy-surface sy-operational-workspace w-full p-6"):
+                with ui.card().classes("sy-surface sy-operations-panel w-full p-6"):
                     ui.html(t("generate_roster"), tag="h2").classes("text-lg font-semibold")
                     _render_operation_hint("hint_generate_roster", icon="calendar_month")
                     week_input = ui.input(label=t("week_start"), value=_next_monday().isoformat()).props(
@@ -235,7 +356,10 @@ def rosters_page() -> None:
                                     {
                                         "id": index,
                                         "day": day_label(item["day"]),
-                                        "post": post_label(item["postCode"]),
+                                        "post": roster_display_label(
+                                            str(item["postCode"]),
+                                            int(item.get("slotIndex", 1)),
+                                        ),
                                         "slot": item["slotIndex"],
                                         "eligible": item["eligibleCount"],
                                         "status": t("vacancy_risk") if item["hasVacancyRisk"] else t("awaiting_generation"),
@@ -434,7 +558,9 @@ def rosters_page() -> None:
                         with ui.column().classes("gap-0"):
                             ui.label(str(week["weekStart"])).classes("text-lg font-semibold")
                             ui.label(f"{t('version')} {week['version']}").classes("text-sm text-[var(--sy-muted)]")
-                        ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}/adjustments")).props("outline color=primary")
+                        with ui.row().classes("sy-mobile-actions gap-2"):
+                            ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}/adjustments")).props("outline color=primary")
+                            _render_withdraw_action(workflow, week, int(week["id"]))
 
 
 @ui.page("/rosters/new")
@@ -460,6 +586,19 @@ def roster_detail_page(roster_week_id: int) -> None:
                 secondary_path="/settings",
             )
             return
+        render_back_action(t("back_to_roster_hub"), "/rosters", test_id="back-to-roster-hub")
+        render_route_trail(
+            (
+                (t("rosters"), "/rosters"),
+                (f"{t('roster_week_detail')} · {week['weekStart']}", None),
+            ),
+            label=t("roster_route_hierarchy"),
+        )
+        render_workflow_navigation(
+            _roster_workflow_steps(roster_week_id=roster_week_id, status=str(week["status"])),
+            current_index=4 if week["status"] == "withdrawn" else 2,
+            label=t("roster_workflow_label"),
+        )
         with ui.row().classes("sy-roster-detail-head w-full items-start justify-between gap-4"):
             with ui.column().classes("gap-1"):
                 ui.label(str(week["weekStart"])).classes("text-2xl font-semibold")
@@ -521,86 +660,7 @@ def roster_detail_page(roster_week_id: int) -> None:
                     ui.button(t("publish"), icon="publish", on_click=publish_dialog.open).props("color=primary")
                 elif week["status"] == "published":
                     ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda: ui.navigate.to(f"/rosters/{roster_week_id}/adjustments")).props("outline color=primary")
-                    reviewed_version = int(week["version"])
-                    withdrawal_command_id = f"roster-withdraw-ui:{uuid4().hex}"
-                    with ui.dialog().props("persistent") as withdraw_dialog, ui.card().classes(
-                        "sy-surface w-full max-w-lg p-6"
-                    ):
-                        with ui.row().classes("items-start gap-3 no-wrap"):
-                            ui.icon("warning_amber").classes("sy-fg-danger text-2xl").props("aria-hidden=true")
-                            with ui.column().classes("gap-1 min-w-0"):
-                                ui.label(t("withdraw_roster_title")).classes("text-xl font-semibold")
-                                ui.label(t("withdraw_roster_body")).classes(
-                                    "text-sm leading-6 text-[var(--sy-muted)]"
-                                )
-                        with ui.element("section").classes("sy-surface-subtle w-full p-4 mt-4"):
-                            for key in (
-                                "withdraw_roster_consequence_fairness",
-                                "withdraw_roster_consequence_share",
-                                "withdraw_roster_consequence_audit",
-                            ):
-                                with ui.row().classes("items-start gap-2 no-wrap"):
-                                    ui.icon("check_circle_outline").classes("sy-fg-attention mt-1").props("aria-hidden=true")
-                                    ui.label(t(key)).classes("text-sm leading-6")
-                        withdraw_reason = ui.textarea(label=t("withdraw_roster_reason")).props(
-                            "name=withdraw-roster-reason autocomplete=off data-testid=withdraw-roster-reason"
-                        ).classes("w-full mt-4")
-                        withdraw_week = ui.input(
-                            label=t("withdraw_roster_confirm_week", week=week["weekStart"])
-                        ).props("autocomplete=off data-testid=withdraw-roster-week-confirmation").classes("w-full")
-
-                        async def withdraw_roster() -> None:
-                            reason = str(withdraw_reason.value or "").strip()
-                            confirmation = str(withdraw_week.value or "").strip()
-                            if not reason:
-                                ui.notify(t("withdraw_roster_reason_required"), type="warning")
-                                withdraw_reason.run_method("focus")
-                                return
-                            if confirmation != str(week["weekStart"]):
-                                ui.notify(t("withdraw_roster_week_required", week=week["weekStart"]), type="warning")
-                                withdraw_week.run_method("focus")
-                                return
-                            withdraw_dialog.close()
-                            result = await _run_with_progress(
-                                lambda: workflow.withdraw_published_roster(
-                                    roster_week_id=roster_week_id,
-                                    expected_version=reviewed_version,
-                                    reason=reason,
-                                    command_id=withdrawal_command_id,
-                                ),
-                                title_key="progress_withdraw_title",
-                                working_key="progress_withdraw_working",
-                                icon="undo",
-                            )
-                            if result is _OPERATION_FAILED:
-                                return
-                            if result.share_ids_to_revoke:
-                                revocation = await _run_with_progress(
-                                    lambda: revoke_withdrawn_roster_shares(
-                                        workflow,
-                                        result.share_ids_to_revoke,
-                                    ),
-                                    title_key="progress_share_revoke_title",
-                                    working_key="progress_share_revoke_working",
-                                    icon="link_off",
-                                )
-                                if revocation is _OPERATION_FAILED or revocation[1]:
-                                    ui.notify(t("withdraw_roster_share_pending"), type="warning")
-                            ui.notify(t("withdraw_roster_success"), type="positive")
-                            ui.navigate.reload()
-
-                        with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
-                            ui.button(t("cancel"), icon="close", on_click=withdraw_dialog.close).props("flat")
-                            ui.button(
-                                t("withdraw_roster_confirm_action"),
-                                icon="undo",
-                                on_click=withdraw_roster,
-                            ).props("color=negative data-testid=confirm-withdraw-roster")
-                    ui.button(
-                        t("withdraw_roster_action"),
-                        icon="undo",
-                        on_click=withdraw_dialog.open,
-                    ).props("outline color=negative data-testid=withdraw-published-roster")
+                    _render_withdraw_action(workflow, week, roster_week_id)
                 if week["status"] != "withdrawn":
                     ui.button(t("export_pdf"), icon="picture_as_pdf", on_click=lambda: _open_roster_export_dialog(roster_week_id)).props("outline color=primary")
         if week["status"] == "draft":
@@ -612,11 +672,15 @@ def roster_detail_page(roster_week_id: int) -> None:
             ui.label(t("draft_preview_notice")).classes("text-sm text-[var(--sy-muted)]")
             draft_assignments = workflow.assignments(roster_week_id)
             assignment_options = {
-                str(item["id"]): f"{day_label(item['day'])} | {post_label(item['postCode'])} | {item['prefectName']}"
+                str(item["id"]): (
+                    f"{day_label(item['day'])} | "
+                    f"{roster_display_label(str(item['postCode']), int(item.get('slotIndex', 1)))} | "
+                    f"{item['prefectName']}"
+                )
                 for item in draft_assignments
                 if item["status"] == "active"
             }
-            with ui.card().classes("sy-surface w-full max-w-3xl p-6"):
+            with ui.card().classes("sy-surface sy-operations-panel w-full p-6"):
                 ui.label(t("manual_draft_change")).classes("text-lg font-semibold")
                 _render_operation_hint("hint_draft_change", icon="edit_note")
                 ui.label(t("manual_draft_change_notice")).classes("text-sm text-[var(--sy-muted)] mt-3")
@@ -673,10 +737,6 @@ def roster_detail_page(roster_week_id: int) -> None:
                         candidate_select.run_method("focus")
                         return
                     reason = str(reason_input.value or "").strip()
-                    if not reason:
-                        ui.notify(t("draft_change_reason_required"), type="warning")
-                        reason_input.run_method("focus")
-                        return
                     assignment_id = int(assignment_select.value)
                     replacement_prefect_id = str(candidate_select.value)
                     draft_change_command_id = f"draft-change-ui:{uuid4().hex}"
@@ -702,19 +762,22 @@ def roster_detail_page(roster_week_id: int) -> None:
                     ui.button(t("load_draft_candidates"), icon="group_add", on_click=load_draft_candidates).props("outline color=primary")
                     ui.button(t("save_draft_change"), icon="save", on_click=save_draft_change).props("color=primary")
         elif week["status"] == "published":
-            with ui.card().classes("sy-surface sy-border-attention w-full max-w-3xl border-l-4 p-6"):
+            with ui.card().classes("sy-surface sy-border-attention sy-operations-panel w-full border-l-4 p-6"):
                 ui.label(t("post_publication_leave")).classes("text-lg font-semibold")
                 ui.label(t("post_publication_leave_notice")).classes("text-sm text-[var(--sy-muted)] mt-1")
                 ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda: ui.navigate.to(f"/rosters/{roster_week_id}/adjustments")).props("color=primary").classes("mt-4")
             render_roster_share_action(workflow, roster_week_id)
         else:
-            with ui.card().classes("sy-surface sy-border-attention w-full max-w-3xl border-l-4 p-6"):
+            with ui.card().classes("sy-surface sy-border-attention sy-operations-panel w-full border-l-4 p-6"):
                 ui.label(t("withdrawn_roster_history_title")).classes("text-lg font-semibold")
                 ui.label(t("withdrawn_roster_history_body")).classes(
                     "text-sm leading-6 text-[var(--sy-muted)] mt-1"
                 )
                 ui.label(
-                    t("withdrawn_roster_reason", reason=str(week.get("withdrawalReason") or "—"))
+                    t(
+                        "withdrawn_roster_reason",
+                        reason=str(week.get("withdrawalReason") or t("withdraw_reason_not_provided")),
+                    )
                 ).classes("text-sm font-medium mt-3")
         declarations = workflow.pre_generation_leaves(week["weekStart"])
         if declarations:
@@ -736,8 +799,6 @@ def adjustments_page() -> None:
 def adjustment_detail_page(roster_week_id: int) -> None:
     workflow = get_workflow()
     with page_shell("/rosters"):
-        ui.label(t("adjustments")).classes("text-2xl font-semibold")
-        _render_operation_hint("hint_leave_adjustment", icon="swap_horiz")
         try:
             week = workflow.roster_week(roster_week_id)
         except WorkflowError:
@@ -765,10 +826,34 @@ def adjustment_detail_page(roster_week_id: int) -> None:
                 secondary_icon="format_list_bulleted",
             )
             return
+        render_back_action(
+            t("back_to_week_detail"),
+            f"/rosters/{roster_week_id}",
+            test_id="back-to-roster-detail",
+        )
+        render_route_trail(
+            (
+                (t("rosters"), "/rosters"),
+                (str(week["weekStart"]), f"/rosters/{roster_week_id}"),
+                (t("roster_adjustment_detail"), None),
+            ),
+            label=t("roster_route_hierarchy"),
+        )
+        render_workflow_navigation(
+            _roster_workflow_steps(roster_week_id=roster_week_id, status=str(week["status"])),
+            current_index=3,
+            label=t("roster_workflow_label"),
+        )
+        ui.label(t("adjustments")).classes("text-2xl font-semibold")
+        _render_operation_hint("hint_leave_adjustment", icon="swap_horiz")
         adjustment_command_id = f"leave-ui:{uuid4().hex}"
         active_assignments = [item for item in workflow.assignments(roster_week_id) if item["status"] == "active"]
         options = {
-            str(item["id"]): f"{day_label(item['day'])} | {post_label(item['postCode'])} | {item['prefectName']}"
+            str(item["id"]): (
+                f"{day_label(item['day'])} | "
+                f"{roster_display_label(str(item['postCode']), int(item.get('slotIndex', 1)))} | "
+                f"{item['prefectName']}"
+            )
             for item in active_assignments
         }
         if not options:
@@ -780,7 +865,7 @@ def adjustment_detail_page(roster_week_id: int) -> None:
                 action=lambda: ui.navigate.to("/rosters"),
             )
             return
-        with ui.card().classes("sy-surface sy-adjustment-form w-full max-w-2xl p-6"):
+        with ui.card().classes("sy-surface sy-adjustment-form sy-operations-panel w-full p-6"):
             with ui.element("section").classes("sy-adjustment-step"):
                 ui.label(t("adjustment_step_assignment")).classes("sy-adjustment-step-title")
                 assignment_select = ui.select(
@@ -850,10 +935,6 @@ def adjustment_detail_page(roster_week_id: int) -> None:
 
             async def apply_adjustment() -> None:
                 reason = str(reason_input.value or "").strip()
-                if not reason:
-                    ui.notify(t("reason_required"), type="negative")
-                    reason_input.run_method("focus")
-                    return
                 assignment_id = int(assignment_select.value)
                 replacement_id = None if replacement_select.value == "__vacant__" else str(replacement_select.value)
                 result = await _run_with_progress(

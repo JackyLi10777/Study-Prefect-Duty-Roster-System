@@ -34,8 +34,17 @@ DAY_TEXT: dict[SchoolDay, tuple[str, str]] = {
 class RosterRowSpec:
     post: DutyPost
     slot_index: int
-    label_zh: str
-    label_en: str
+    display_label: str
+
+    @property
+    def label_zh(self) -> str:
+        """Compatibility alias: duty-post names intentionally remain English."""
+
+        return self.display_label
+
+    @property
+    def label_en(self) -> str:
+        return self.display_label
 
     @property
     def opening_time(self) -> tuple[str, str]:
@@ -43,13 +52,29 @@ class RosterRowSpec:
 
 
 ROSTER_ROWS: tuple[RosterRowSpec, ...] = (
-    RosterRowSpec(DutyPost.ASSIST_IN_CHARGE, 1, "助理首席導學風紀當值", "Assist. in charge"),
-    RosterRowSpec(DutyPost.ROOM_302, 1, "302 室（自修室）", "Room 302 (Study Room)"),
-    RosterRowSpec(DutyPost.ROOM_303, 1, "303 室（功課完成）－1", "Room 303 (HW Completion) - 1"),
-    RosterRowSpec(DutyPost.ROOM_303, 2, "303 室（功課完成）－2", "Room 303 (HW Completion) - 2"),
-    RosterRowSpec(DutyPost.ROOM_202, 1, "202 室（中一自修小組）－1", "Room 202 (F1 Study Group) - 1"),
-    RosterRowSpec(DutyPost.ROOM_202, 2, "202 室（中一自修小組）－2", "Room 202 (F1 Study Group) - 2"),
+    RosterRowSpec(DutyPost.ASSIST_IN_CHARGE, 1, "Assist. in charge"),
+    RosterRowSpec(DutyPost.ROOM_302, 1, "Room 302 Study Room"),
+    RosterRowSpec(DutyPost.ROOM_303, 1, "Homework Completion Room - 1"),
+    RosterRowSpec(DutyPost.ROOM_303, 2, "Homework Completion Room - 2"),
+    RosterRowSpec(DutyPost.ROOM_202, 1, "Room 202 F1 Study Group - 1"),
+    RosterRowSpec(DutyPost.ROOM_202, 2, "Room 202 F1 Study Group - 2"),
 )
+
+
+def roster_row_spec(post: DutyPost, slot_index: int) -> RosterRowSpec:
+    """Return the canonical presentation row for one policy post and slot."""
+
+    for spec in ROSTER_ROWS:
+        if spec.post == post and spec.slot_index == slot_index:
+            return spec
+    raise KeyError((post, slot_index))
+
+
+def roster_display_label(post_code: str | DutyPost, slot_index: int = 1) -> str:
+    """Resolve an assignment read model to its canonical duty-post label."""
+
+    post = post_code if isinstance(post_code, DutyPost) else DutyPost[str(post_code)]
+    return roster_row_spec(post, int(slot_index)).display_label
 
 
 @dataclass(frozen=True)
@@ -112,4 +137,6 @@ __all__ = [
     "RosterScheduleCell",
     "RosterScheduleRow",
     "build_roster_schedule",
+    "roster_display_label",
+    "roster_row_spec",
 ]

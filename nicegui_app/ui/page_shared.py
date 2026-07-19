@@ -20,12 +20,12 @@ from nicegui_app.observability import (
     record_operator_partial_failure,
 )
 from nicegui_app.services.roster_export import RosterPdfExport, build_fairness_audit_pdf, build_roster_pdf
-from nicegui_app.services.roster_presentation import DAY_ORDER, build_roster_schedule
+from nicegui_app.services.roster_presentation import DAY_ORDER, build_roster_schedule, roster_display_label
 from nicegui_app.services.roster_workflow import (
     CommittedWriteBackupError,
     WorkflowConflictError,
 )
-from nicegui_app.ui.i18n import EN, current_locale, day_label, post_label, role_label, t
+from nicegui_app.ui.i18n import EN, current_locale, day_label, role_label, t
 from nicegui_app.ui.components import (
     empty_state as render_empty_state_component,
     responsive_table as render_responsive_table_component,
@@ -260,7 +260,10 @@ def _roster_display_rows(assignments: list[dict[str, object]]) -> list[dict[str,
             {
                 "dayCode": assignment["day"],
                 "day": day_label(assignment["day"]),
-                "post": post_label(assignment["postCode"]),
+                "post": roster_display_label(
+                    str(assignment["postCode"]),
+                    int(assignment.get("slotIndex", 1)),
+                ),
                 "time": f"{start}-{end}",
                 "prefect": assignment["prefectName"] if assignment["status"] == "active" else t("vacant"),
                 "weight": assignment["weight"],
@@ -363,7 +366,7 @@ def _render_roster_table(roster_week_id: int) -> None:
         start, end = schedule_row.spec.opening_time
         rows.append(
             {
-                "post": schedule_row.spec.label_en if use_english else schedule_row.spec.label_zh,
+                "post": schedule_row.spec.display_label,
                 "time": f"{start}–{end}",
                 **{
                     cell.day.name.lower(): cell_text(cell)
@@ -409,7 +412,7 @@ def _render_roster_table(roster_week_id: int) -> None:
                 for schedule_row in schedule:
                     cell = schedule_row.cells[day_index]
                     start, end = schedule_row.spec.opening_time
-                    label = schedule_row.spec.label_en if use_english else schedule_row.spec.label_zh
+                    label = schedule_row.spec.display_label
                     with ui.element("article").classes(
                         f"sy-roster-mobile-card sy-roster-mobile-card--{cell.status}"
                     ).props('data-testid="mobile-roster-card"'):

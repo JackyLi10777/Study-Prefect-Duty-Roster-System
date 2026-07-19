@@ -36,6 +36,7 @@ from roster_policy import (
 )
 
 from nicegui_app.services.workflow_types import WorkflowError
+from nicegui_app.services.roster_presentation import roster_row_spec
 
 
 SNAPSHOT_SCHEMA_VERSION = "sing-yin-public-roster-v1"
@@ -59,12 +60,6 @@ _DAY_LABELS: Mapping[SchoolDay, tuple[str, str]] = {
     SchoolDay.WEDNESDAY: ("星期三", "Wednesday"),
     SchoolDay.THURSDAY: ("星期四", "Thursday"),
     SchoolDay.FRIDAY: ("星期五", "Friday"),
-}
-_POST_LABELS: Mapping[DutyPost, tuple[str, str]] = {
-    DutyPost.ASSIST_IN_CHARGE: ("助理首席導學風紀當值", "Assist. in charge"),
-    DutyPost.ROOM_302: ("302 室（溫習室）", "Room 302 (Study Room)"),
-    DutyPost.ROOM_303: ("303 室（功課輔導）", "Room 303 (HW Completion)"),
-    DutyPost.ROOM_202: ("202 室（中一溫習小組）", "Room 202 (F1 Study Group)"),
 }
 _ROW_LAYOUT: tuple[tuple[DutyPost, int], ...] = (
     (DutyPost.ASSIST_IN_CHARGE, 1),
@@ -639,8 +634,10 @@ class PublicRosterShareService:
                 {
                     "postCode": post.name,
                     "slotIndex": slot_index,
-                    "labelZh": _POST_LABELS[post][0],
-                    "labelEn": _POST_LABELS[post][1],
+                    # The viewer schema keeps both fields for compatibility,
+                    # but operational duty names are intentionally English.
+                    "labelZh": roster_row_spec(post, slot_index).display_label,
+                    "labelEn": roster_row_spec(post, slot_index).display_label,
                     "dutyTime": {"start": start_time, "end": end_time},
                     "cells": cells,
                 }

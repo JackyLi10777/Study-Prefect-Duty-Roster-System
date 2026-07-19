@@ -214,6 +214,10 @@ def _assert_mobile_page(page: Page, route: str, *, label: str) -> None:
 
 def _open_mobile_drawer(page: Page) -> Locator:
     more = page.get_by_test_id("mobile-more")
+    page.wait_for_function(
+        "document.querySelector('[data-testid=mobile-more]')?.dataset.syDrawerA11y === 'ready'",
+        timeout=10_000,
+    )
     if more.get_attribute("aria-expanded") != "false":
         raise AssertionError("Mobile More must expose its initial collapsed state.")
     more.click()

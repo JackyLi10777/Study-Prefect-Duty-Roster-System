@@ -51,7 +51,7 @@ def test_schedule_pdf_uses_single_page_weekly_grid_and_keeps_chinese_names(tmp_p
     assert "MONDAY" in extracted_text
     assert "07 SEP" in extracted_text
     assert "11 SEP" in extracted_text
-    assert "Room 303 (HW Completion) - 1" in extracted_text
+    assert "Homework Completion Room - 1" in extracted_text
     assert "15:40–18:30" in extracted_text
     assert "15:40–17:00" in extracted_text
     assert workflow.assignments(draft.id)[0]["prefectName"] in extracted_text
@@ -152,9 +152,19 @@ def test_bilingual_published_schedule_pdfs_expose_every_operator_check(tmp_path)
     for name in authoritative_names:
         assert name in chinese_text
         assert name in english_text
-    for label in ("星期一", "星期二", "星期三", "星期四", "星期五", "已發布", "302 室", "303 室", "202 室"):
+    for label in ("星期一", "星期二", "星期三", "星期四", "星期五", "已發布"):
         assert label in chinese_text
-    for label in ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "Published", "Room 302", "Room 303", "Room 202"):
+    for label in ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "Published"):
+        assert label in english_text
+    for label in (
+        "Assist. in charge",
+        "Room 302 Study Room",
+        "Homework Completion Room - 1",
+        "Homework Completion Room - 2",
+        "Room 202 F1 Study Group - 1",
+        "Room 202 F1 Study Group - 2",
+    ):
+        assert label in chinese_text
         assert label in english_text
     for date_label in ("07 SEP", "08 SEP", "09 SEP", "10 SEP", "11 SEP"):
         assert date_label in english_text
@@ -169,7 +179,7 @@ def test_bilingual_published_schedule_pdfs_expose_every_operator_check(tmp_path)
     assert english_text.count("Closed") == 4
 
 
-def test_chinese_schedule_pdf_uses_the_full_assistant_head_study_prefect_duty_term(tmp_path) -> None:
+def test_chinese_schedule_pdf_keeps_duty_post_names_in_authoritative_english(tmp_path) -> None:
     workflow = RosterWorkflow(
         database_path=tmp_path / "live.sqlite3",
         backup_dir=tmp_path / "backups",
@@ -181,7 +191,8 @@ def test_chinese_schedule_pdf_uses_the_full_assistant_head_study_prefect_duty_te
     export = build_roster_pdf(workflow, draft.id, language="zh")
     extracted_text = "\n".join(page.extract_text() for page in PdfReader(BytesIO(export.content)).pages)
 
-    assert "助理首席導學風紀當值" in extracted_text
+    assert "Assist. in charge" in extracted_text
+    assert "助理首席導學風紀當值" not in extracted_text
 
 
 def test_pdf_export_escapes_a_prefect_name_without_breaking_the_document(tmp_path) -> None:

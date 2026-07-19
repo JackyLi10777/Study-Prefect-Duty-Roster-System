@@ -246,6 +246,15 @@ def test_bilingual_allocation_statement_lists_dates_room_times_and_calculated_ho
     assert contribution.allocations[0].start_time in english_text
     assert "當值時間" in chinese_text
     assert "Duty time" in english_text
+    duty_labels = {
+        "ASSIST_IN_CHARGE": "Assist. in charge",
+        "ROOM_302": "Room 302 Study Room",
+        "ROOM_303": "Homework Completion Room",
+        "ROOM_202": "Room 202 F1 Study Group",
+    }
+    for post_code in {item.post_code for item in contribution.allocations}:
+        assert duty_labels[post_code] in chinese_text
+        assert duty_labels[post_code] in english_text
     assert "18:30" not in chinese_text
     assert "18:30" not in english_text
     assert "核對實際出席" in chinese_text

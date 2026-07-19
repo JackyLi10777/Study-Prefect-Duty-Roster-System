@@ -7,6 +7,7 @@ import worker, {
   createOriginPrincipalToken,
   guestSessionCookieNameForTest,
   landingDevotionalsForTest,
+  welcomeTracksForTest,
   normalizeAccessConfiguration,
   originRequestBinding,
   proxyToRosterOrigin,
@@ -20,6 +21,7 @@ import devotionalSeed from '../../data/devotional/daily-verses.seed.json' with {
 const ADMIN_SESSION_COOKIE_NAME = adminSessionCookieNameForTest();
 const GUEST_SESSION_COOKIE_NAME = guestSessionCookieNameForTest();
 const LANDING_DEVOTIONALS = landingDevotionalsForTest();
+const WELCOME_TRACKS = welcomeTracksForTest();
 
 function assert(condition, message = 'assertion failed') {
   if (!condition) throw new Error(message);
@@ -409,6 +411,70 @@ Deno.test('strips Access and gateway session credentials but preserves the NiceG
   assertEquals(sanitized.get('X-Sing-Yin-Origin-Principal'), null);
   assertEquals(sanitized.get('X-Forwarded-Host'), null);
   assertEquals(sanitized.get('Cookie'), 'session=nicegui-session; preference=zh-HK');
+});
+
+Deno.test('landing welcome playlists use paired instrumental tracks and a 25 percent default volume', async () => {
+  assertEquals(Object.keys(WELCOME_TRACKS).sort().join(','), 'bright,quiet');
+  for (const profile of ['bright', 'quiet']) {
+    assertEquals(WELCOME_TRACKS[profile].length, 5);
+    assert(WELCOME_TRACKS[profile].every(track => track.arrangement === 'instrumental'));
+    assertEquals(new Set(WELCOME_TRACKS[profile].map(track => track.id)).size, 5);
+  }
+
+  const env = accessEnvironment('sing-yin-welcome-player');
+  const context = { waitUntil() {} };
+  const home = await worker.fetch(new Request('https://gateway.example/'), env, context);
+  const html = await home.text();
+  assert(html.includes('id="welcomeAudioPlayer"'));
+  assert((home.headers.get('Content-Security-Policy') || '').includes("media-src 'self'"));
+
+  const scriptResponse = await worker.fetch(new Request('https://gateway.example/viewer.js'), env, context);
+  const script = await scriptResponse.text();
+  assert(script.includes('const DEFAULT_WELCOME_VOLUME = 0.25'));
+  assert(script.includes("sing-yin:welcome-audio-volume:v1"));
+  assert(script.includes('welcomeAudio.play()'));
+  assert(script.includes("addEventListener('ended'"));
+});
+
+Deno.test('public welcome audio proxies only an exact allowlisted recording and preserves byte ranges', async () => {
+  const env = accessEnvironment('sing-yin-welcome-audio-route');
+  const context = { waitUntil() {} };
+  let originRequest;
+  env.ROSTER_ORIGIN = {
+    async fetch(request) {
+      originRequest = request;
+      return new Response(new Uint8Array([1, 2, 3, 4]), {
+        status: 206,
+        headers: {
+          'Content-Type': 'audio/mp4',
+          'Content-Range': 'bytes 0-3/100',
+          'Accept-Ranges': 'bytes',
+        },
+      });
+    },
+  };
+
+  const allowed = await worker.fetch(new Request(
+    'https://gateway.example/welcome-audio/morning-has-broken',
+    { headers: { Range: 'bytes=0-3', Cookie: 'private=value' } },
+  ), env, context);
+  assertEquals(allowed.status, 206);
+  assertEquals(allowed.headers.get('Content-Range'), 'bytes 0-3/100');
+  assert(originRequest);
+  assertEquals(originRequest.headers.get('Range'), 'bytes=0-3');
+  assertEquals(originRequest.headers.get('Cookie'), null);
+  assert(decodeURIComponent(new URL(originRequest.url).pathname).endsWith(
+    '/assets/music/Relaxing Piano - Topic - Morning ⧸ Morning Has Broken.m4a',
+  ));
+
+  originRequest = null;
+  const unknown = await worker.fetch(
+    new Request('https://gateway.example/welcome-audio/not-allowlisted'),
+    env,
+    context,
+  );
+  assertEquals(unknown.status, 404);
+  assertEquals(originRequest, null);
 });
 
 Deno.test('enforces same-origin unsafe requests and WebSocket upgrades', () => {

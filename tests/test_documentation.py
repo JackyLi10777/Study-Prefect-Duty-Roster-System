@@ -120,7 +120,7 @@ def test_v12_guest_documents_match_the_signed_browser_bridge_and_release_truth()
     assert "尚未完成的瀏覽器 snapshot 橋接" not in security
 
 
-def test_release_truth_docs_keep_live_rc9_separate_from_candidate_and_history() -> None:
+def test_release_truth_docs_keep_live_rc11_separate_from_candidate_and_history() -> None:
     status = (PROJECT_ROOT / "PROJECT_STATUS.md").read_text(encoding="utf-8")
     architecture = (PROJECT_ROOT / "docs" / "NICEGUI_ARCHITECTURE.md").read_text(
         encoding="utf-8"
@@ -134,11 +134,10 @@ def test_release_truth_docs_keep_live_rc9_separate_from_candidate_and_history() 
     operator = (PROJECT_ROOT / "docs" / "OPERATOR_GUIDE.md").read_text(encoding="utf-8")
 
     for document in (status, architecture, security, handover):
-        assert "18a5c73" in document
-        assert "b13e5721-d1e8-4048-9885-ffb422fe2010" in document
+        assert "7aff468" in document
+        assert "1cba4784-e265-4d87-a04d-5759b79a7530" in document
 
-    assert "Service Weave editorial candidate" in status
-    assert "No rc9 gate result is reused as candidate evidence" in status
+    assert "Service Weave v1.2 rc11 live rollout" in status
     assert "remains disabled by default" not in status
     assert "now run the matching rc7 release" not in status
     assert "Windows origin remains healthy／ready on rc4" not in security
@@ -147,7 +146,7 @@ def test_release_truth_docs_keep_live_rc9_separate_from_candidate_and_history() 
     next_steps = status.split("## Next Steps", 1)[1].split(
         "## Key Decisions and Architecture", 1
     )[0]
-    assert "next approved annotated tag" in next_steps
+    assert "new immutable candidate" in next_steps
     assert "v1.2.0-rc.5" not in next_steps
 
     release_sequence = handover.split("### 後續受控發布次序", 1)[1].split(
@@ -162,7 +161,7 @@ def test_release_truth_docs_keep_live_rc9_separate_from_candidate_and_history() 
     assert "只有 `/view#…`" in operator
 
 
-def test_operator_deployment_docs_use_rc9_baseline_and_candidate_bound_next_tag() -> None:
+def test_operator_deployment_docs_use_live_rc11_and_candidate_bound_next_tag() -> None:
     quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
     windows = (PROJECT_ROOT / "docs" / "WINDOWS_DEDICATED_HOST_SETUP.md").read_text(
         encoding="utf-8"
@@ -178,11 +177,9 @@ def test_operator_deployment_docs_use_rc9_baseline_and_candidate_bound_next_tag(
     )
 
     for document in (quickstart, windows, cloudflare, viewer, decision):
-        assert "v1.2.0-rc.9" in document
-        assert "18a5c73" in document
-        assert "b13e5721-d1e8-4048-9885-ffb422fe2010" in document
-        assert "Service Weave" in document
-        assert "尚未部署" in document or "undeployed" in document
+        assert "v1.2.0-rc.11" in document
+        assert "7aff468" in document
+        assert "1cba4784-e265-4d87-a04d-5759b79a7530" in document
 
     assert "schema-compatible rc4" not in quickstart
     assert "pre-v1.2 baseline" not in quickstart

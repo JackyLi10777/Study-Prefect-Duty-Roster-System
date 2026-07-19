@@ -335,11 +335,11 @@ def test_roster_forms_repair_predictable_input_before_background_work() -> None:
 
     for key in ("leave_prefect_required", "leave_day_required"):
         assert leave_handler.index(key) < leave_handler.index("_run_with_progress")
-    for key in ("draft_assignment_required", "draft_candidate_required", "draft_change_reason_required"):
+    for key in ("draft_assignment_required", "draft_candidate_required"):
         assert draft_handler.index(key) < draft_handler.index("_run_with_progress")
     assert "workflow.validate_week_start(selected)" in pages
     assert leave_handler.count('run_method("focus")') == 2
-    assert draft_handler.count('run_method("focus")') == 3
+    assert draft_handler.count('run_method("focus")') == 2
 
 
 def test_history_priority_slider_marks_match_the_nonlinear_numeric_range() -> None:

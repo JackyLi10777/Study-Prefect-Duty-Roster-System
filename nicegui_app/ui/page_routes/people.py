@@ -716,7 +716,7 @@ def prefects_page() -> None:
                     on_click=lambda: ui.download(prefect_import_template_csv(), "sing-yin-prefect-import-template.csv"),
                 ).props("outline color=primary").classes("mt-3")
 
-                with ui.card().classes("sy-surface sy-operational-workspace w-full p-5 mt-5"):
+                with ui.card().classes("sy-surface sy-operations-panel w-full p-5 mt-5"):
                     ui.label(t("file_import_title")).classes("text-lg font-semibold")
                     ui.label(t("file_import_intro")).classes("text-sm leading-6 text-[var(--sy-muted)] mt-1")
                     file_state: dict[str, object | None] = {
@@ -1058,7 +1058,7 @@ def prefects_page() -> None:
                 ui.label(t("paste_import_fallback_detail")).classes("text-sm text-[var(--sy-muted)]")
                 import_text = ui.textarea(label=t("ai_import_input")).props(
                     "name=prefect-import autocomplete=off data-testid=paste-prefect-import-input"
-                ).classes("w-full max-w-3xl")
+                ).classes("w-full")
                 if not _allows(Capability.CLIPBOARD_INGEST):
                     import_text.disable()
                 preview_state: dict[str, ImportPreview | None] = {"value": None}

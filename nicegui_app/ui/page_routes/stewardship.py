@@ -43,13 +43,13 @@ def handover_page() -> None:
                 ("handover-acceptance-section", "acceptance_title"),
             )
         )
-        with ui.card().classes("sy-surface w-full max-w-3xl p-6").props(
+        with ui.card().classes("sy-surface sy-operations-panel w-full p-6").props(
             f'id=handover-steps-section aria-label="{t("handover_steps_title")}"'
         ):
             for key in ("handover_step_one", "handover_step_two", "handover_step_three", "handover_step_four"):
                 ui.label(t(key)).classes("text-sm leading-6")
 
-        with ui.element("section").classes("sy-school-year-rollover w-full max-w-3xl").props(
+        with ui.element("section").classes("sy-school-year-rollover sy-operations-panel w-full").props(
             f'id=handover-rollover-section aria-label="{t("school_year_rollover_title")}" data-testid=school-year-rollover'
         ):
             with ui.row().classes("w-full items-start gap-4 no-wrap"):
@@ -243,7 +243,7 @@ def settings_page() -> None:
             _render_restricted_capability(icon="library_music")
         else:
             render_music_library_settings()
-        with ui.card().classes("sy-surface w-full max-w-3xl p-6"):
+        with ui.card().classes("sy-surface sy-operations-panel w-full p-6"):
             with ui.row().classes("w-full items-center justify-between gap-4 flex-wrap"):
                 with ui.column().classes("gap-1"):
                     ui.label(t("handover")).classes("text-lg font-semibold")
@@ -261,7 +261,7 @@ def settings_page() -> None:
                         ui.icon("check_circle" if ready else "priority_high").classes(
                             "sy-fg-stable" if ready else "sy-fg-attention"
                         ).props("aria-hidden=true")
-        with ui.card().classes("sy-surface w-full max-w-3xl p-6"):
+        with ui.card().classes("sy-surface sy-operations-panel w-full p-6"):
             ui.label(t("persistence_notice")).classes("text-lg font-semibold")
             ui.label(f"{t('database')}: {status['databasePath']}").classes("sy-path-value text-sm text-[var(--sy-muted)] mt-3")
             ui.label(f"{t('backup_directory')}: {status['backupDirectory']}").classes("sy-path-value text-sm text-[var(--sy-muted)]")
@@ -311,7 +311,7 @@ def settings_page() -> None:
                 ui.notify(t("verified_backup_created"), type="positive")
                 ui.navigate.reload()
 
-        with ui.card().classes("sy-surface w-full max-w-3xl p-6"):
+        with ui.card().classes("sy-surface sy-operations-panel w-full p-6"):
             ui.label(t("handover_backup_package")).classes("text-lg font-semibold")
             ui.label(t("handover_backup_package_notice")).classes("text-sm text-[var(--sy-muted)] mt-1")
             if backup_options:
@@ -355,7 +355,7 @@ def settings_page() -> None:
                     "outline disable aria-disabled=true data-testid=handover-package-disabled-no-backup"
                 ).classes("mt-3")
 
-        with ui.card().classes("sy-surface w-full max-w-3xl p-6"):
+        with ui.card().classes("sy-surface sy-operations-panel w-full p-6"):
             ui.label(t("backup_restore")).classes("text-lg font-semibold")
             ui.label(t("restore_warning")).classes("text-sm text-[var(--sy-muted)] mt-1")
             ui.label(t("create_verified_backup_notice")).classes("text-sm leading-6 text-[var(--sy-muted)] mt-3")

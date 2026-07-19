@@ -66,7 +66,16 @@ def test_official_hong_kong_role_terms_are_consistent_in_the_interface() -> None
     assert OFFICIAL_ROLE_TERMS["head_study_prefect"] == {ZH_HK: "首席導學風紀", EN: "Head Study Prefect"}
     assert ROLE_LABELS["assistant_head"] == {ZH_HK: "助理首席導學風紀", EN: "Assistant Head Study Prefect"}
     assert ROLE_LABELS["study_prefect"] == {ZH_HK: "導學風紀", EN: "Study Prefect"}
-    assert POST_LABELS[DutyPost.ASSIST_IN_CHARGE][ZH_HK] == "助理首席導學風紀當值"
+    assert POST_LABELS[DutyPost.ASSIST_IN_CHARGE] == {ZH_HK: "Assist. in charge", EN: "Assist. in charge"}
+    assert POST_LABELS[DutyPost.ROOM_302] == {ZH_HK: "Room 302 Study Room", EN: "Room 302 Study Room"}
+    assert POST_LABELS[DutyPost.ROOM_303] == {
+        ZH_HK: "Homework Completion Room",
+        EN: "Homework Completion Room",
+    }
+    assert POST_LABELS[DutyPost.ROOM_202] == {
+        ZH_HK: "Room 202 F1 Study Group",
+        EN: "Room 202 F1 Study Group",
+    }
 
 
 def test_each_core_operator_moment_has_a_bilingual_usage_hint() -> None:
@@ -308,7 +317,6 @@ def test_roster_preflight_repairs_are_complete_in_both_languages() -> None:
         "leave_reason_not_provided",
         "draft_assignment_required",
         "draft_candidate_required",
-        "draft_change_reason_required",
     ):
         assert MESSAGES[key][ZH_HK].strip()
         assert MESSAGES[key][EN].strip()
@@ -408,13 +416,18 @@ def test_roster_display_rows_keep_chinese_prefect_names_for_both_responsive_pres
 
     monkeypatch.setattr(pages, "t", lambda key, **_values: MESSAGES[key][ZH_HK])
     monkeypatch.setattr(pages, "day_label", lambda code: str(code))
-    monkeypatch.setattr(pages, "post_label", lambda code: str(code))
     rows = pages._roster_display_rows(assignments)
 
     assert len(rows) == len(assignments) == 26
     assert [row["prefect"] for row in rows] == [assignment["prefectName"] for assignment in assignments]
     assert all(str(row["prefect"]).strip() for row in rows)
     assert {row["dayCode"] for row in rows} == {assignment["day"] for assignment in assignments}
+    assert {str(row["post"]) for row in rows} >= {
+        "Assist. in charge",
+        "Room 302 Study Room",
+        "Homework Completion Room - 1",
+        "Room 202 F1 Study Group - 1",
+    }
 
 
 def test_prefect_directory_rows_keep_chinese_names_for_table_and_phone_cards(monkeypatch, tmp_path) -> None:

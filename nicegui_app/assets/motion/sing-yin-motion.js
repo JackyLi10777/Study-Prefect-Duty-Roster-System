@@ -71,6 +71,33 @@
       'domain', 'engineering', 'account_tree', 'menu_book', 'help_outline'
     ].map((name) => [name, 'navigation'])
   ]);
+  /* A selected set of familiar controls tells a short visual story by
+   * changing into a second, semantically related glyph. This is deliberately
+   * more than translation: calendar -> confirmed calendar, closed book ->
+   * open book, question -> illuminated idea, and grid -> rearranged grid. */
+  const iconStoryGlyphs = new Map([
+    ['menu', 'arrow_back'],
+    ['space_dashboard', 'dashboard_customize'],
+    ['dashboard', 'view_quilt'],
+    ['calendar_month', 'event_available'],
+    ['calendar_view_week', 'event_note'],
+    ['groups', 'diversity_3'],
+    ['handshake', 'sync_alt'],
+    ['admin_panel_settings', 'verified_user'],
+    ['settings', 'settings_suggest'],
+    ['domain', 'apartment'],
+    ['account_tree', 'hub'],
+    ['build_circle', 'construction'],
+    ['play_circle', 'rocket_launch'],
+    ['help_outline', 'lightbulb'],
+    ['menu_book', 'auto_stories'],
+    ['edit_calendar', 'calendar_month'],
+    ['edit_note', 'fact_check'],
+    ['save', 'task_alt'],
+    ['picture_as_pdf', 'file_download'],
+    ['volume_off', 'volume_up'],
+    ['dark_mode', 'light_mode']
+  ]);
 
   const pointerControllers = new Map();
   const tocObservers = new Map();
@@ -217,7 +244,67 @@
       const role = iconMotionRoles.get(name) || 'signal';
       icon.dataset.syIconMotion = role;
       icon.dataset.syIconName = name;
+      const storyGlyph = iconStoryGlyphs.get(name);
+      if (storyGlyph) {
+        icon.dataset.syIconStoryFrom = name;
+        icon.dataset.syIconStoryTo = storyGlyph;
+      }
     });
+  };
+  const animateIconStory = (host, active) => {
+    if (
+      reducedMotion()
+      || !window.matchMedia(FINE_POINTER_QUERY).matches
+      || host.matches('.disabled,[aria-disabled="true"],[aria-busy="true"]')
+    ) return;
+    const icon = host.querySelector(`${interactiveIconSelector}[data-sy-icon-story-to]`);
+    if (!(icon instanceof HTMLElement)) return;
+    const next = active ? icon.dataset.syIconStoryTo : icon.dataset.syIconStoryFrom;
+    if (!next || icon.textContent?.trim() === next) return;
+    window.gsap.killTweensOf(icon);
+    window.gsap.timeline({ defaults: { overwrite: 'auto' } })
+      .to(icon, {
+        autoAlpha: 0,
+        scale: 0.42,
+        rotate: active ? -18 : 18,
+        duration: 0.11,
+        ease: 'power2.in',
+        onComplete: () => {
+          icon.textContent = next;
+          icon.dataset.syIconName = next;
+          icon.dataset.syIconStoryActive = active ? 'true' : 'false';
+        }
+      })
+      .fromTo(
+        icon,
+        { autoAlpha: 0, scale: 0.58, rotate: active ? 16 : -16 },
+        {
+          autoAlpha: 1,
+          scale: 1,
+          rotate: 0,
+          duration: 0.28,
+          ease: 'back.out(1.8)',
+          clearProps: 'opacity,visibility,scale,rotate,transform'
+        }
+      );
+  };
+  const iconStoryHost = (event) => event.target instanceof Element
+    ? event.target.closest(interactiveIconHostSelector)
+    : null;
+  const onIconStoryEnter = (event) => {
+    const host = iconStoryHost(event);
+    if (!(host instanceof HTMLElement)) return;
+    const related = event.relatedTarget;
+    if (event.type === 'pointerover' && related instanceof Node && host.contains(related)) return;
+    animateIconStory(host, true);
+  };
+  const onIconStoryLeave = (event) => {
+    const host = iconStoryHost(event);
+    if (!(host instanceof HTMLElement)) return;
+    const related = event.relatedTarget;
+    if (event.type === 'pointerout' && related instanceof Node && host.contains(related)) return;
+    if (event.type === 'focusout' && related instanceof Node && host.contains(related)) return;
+    animateIconStory(host, false);
   };
   const hydratePointers = (root = document) => {
     queryWithin(root, pointerSurfaceSelector).forEach(enhancePointerSurface);
@@ -410,6 +497,10 @@
     };
     document.addEventListener('pointerdown', rememberActionHost, interactionListenerOptions);
     document.addEventListener('keydown', rememberActionHost, interactionListenerOptions);
+    document.addEventListener('pointerover', onIconStoryEnter, interactionListenerOptions);
+    document.addEventListener('pointerout', onIconStoryLeave, interactionListenerOptions);
+    document.addEventListener('focusin', onIconStoryEnter, interactionListenerOptions);
+    document.addEventListener('focusout', onIconStoryLeave, interactionListenerOptions);
 
     motionMedia = window.gsap.matchMedia();
     motionMedia.add(

@@ -123,6 +123,8 @@
   ],
   "delivery": {
     "faviconVariant": "favicon",
+    "workerLandingLightVariant": "mark-light",
+    "workerLandingDarkVariant": "mark-dark",
     "navigationLightVariant": "navigation-light",
     "navigationDarkVariant": "navigation-dark",
     "windowsVariant": "windows",

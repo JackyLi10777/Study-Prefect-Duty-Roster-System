@@ -91,6 +91,7 @@ MESSAGES = {'workbench_title': {'zh-HK': '本週值班工作台', 'en': "This we
  'remove_music_item_notice': {'zh-HK': '本機歌曲會同時從所屬的 music/custom 或 music/youtube-imports 刪除；內建歌曲不受影響。此操作不會改動任何排班或公平紀錄。',
                               'en': 'A local track is also removed from its music/custom or music/youtube-imports folder; built-in tracks are unaffected. This action does not change roster or fairness records.'},
  'music_item_removed': {'zh-HK': '音樂項目已移除。', 'en': 'Music item removed.'},
+ 'music_context_welcome': {'zh-HK': '登入歡迎 · 明亮或安靜迎接', 'en': 'Welcome · A bright or quiet arrival'},
  'music_context_dashboard': {'zh-HK': '總覽 · 安靜開始本週工作', 'en': 'Dashboard · A calm start to weekly work'},
  'music_context_weekly': {'zh-HK': '值班表 · 專注核對與發布', 'en': 'Rosters · Focused review and publishing'},
  'music_context_people': {'zh-HK': '名單與公平 · 清晰整理', 'en': 'People and fairness · Clear stewardship'},

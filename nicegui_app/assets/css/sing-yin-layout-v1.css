@@ -1,5 +1,131 @@
 /* Service Weave layout layer: reusable editorial and reference-page geometry. */
 
+/* Operational pages use the full content canvas. Reading measure belongs to
+ * inner copy and fields, not to the outer task surface. This prevents every
+ * route from inventing a different max-width and leaving accidental voids. */
+.sy-operations-workspace,
+.sy-operations-panel,
+.sy-operational-workspace {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.sy-operations-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+  align-items: start;
+  gap: clamp(18px, 2.4vw, 32px);
+  width: 100%;
+}
+
+.sy-form-measure {
+  width: 100%;
+  max-width: 760px;
+  min-width: 0;
+}
+
+.sy-reading-measure {
+  max-width: 72ch;
+}
+
+.sy-route-trail,
+.sy-workflow-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sy-route-trail {
+  flex-wrap: wrap;
+  color: var(--sy-muted);
+  font-size: 13px;
+}
+
+.sy-route-trail-link {
+  color: var(--sy-role-action);
+  font-weight: 680;
+  text-decoration: none;
+}
+
+.sy-route-trail-link:hover,
+.sy-route-trail-link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.sy-route-trail-current {
+  color: var(--sy-ink);
+  font-weight: 700;
+}
+
+.sy-route-trail-separator {
+  color: var(--sy-muted);
+  font-size: 17px;
+}
+
+.sy-back-action {
+  align-self: flex-start;
+  margin-left: -10px;
+  color: var(--sy-role-action) !important;
+  font-weight: 720;
+}
+
+.sy-workflow-navigation {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 6px;
+  border: 1px solid var(--sy-line);
+  border-radius: 18px;
+  background: var(--sy-surface-subtle);
+}
+
+.sy-workflow-navigation-step {
+  width: 100%;
+  min-height: 58px;
+  padding: 8px 10px !important;
+  color: var(--sy-muted) !important;
+  border: 1px solid transparent;
+  border-radius: 13px !important;
+}
+
+.sy-workflow-navigation-step .q-btn__content {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.sy-workflow-navigation-step.is-current {
+  color: var(--sy-ink) !important;
+  border-color: color-mix(in srgb, var(--sy-line) 64%, var(--sy-role-action));
+  background: var(--sy-surface);
+  box-shadow: 0 5px 14px rgba(28, 28, 30, .06);
+}
+
+.sy-workflow-navigation-index {
+  color: var(--sy-muted);
+  font-size: 11px;
+  font-weight: 780;
+  letter-spacing: .05em;
+}
+
+.sy-workflow-navigation-icon {
+  color: var(--sy-role-action);
+  font-size: 21px;
+}
+
+.sy-workflow-navigation-label {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sy-document-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
@@ -72,6 +198,15 @@
 }
 
 @media (max-width: 900px) {
+  .sy-operations-grid,
+  .sy-workflow-navigation {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sy-workflow-navigation-step {
+    min-height: 48px;
+  }
+
   .sy-document-layout {
     grid-template-columns: minmax(0, 1fr);
   }

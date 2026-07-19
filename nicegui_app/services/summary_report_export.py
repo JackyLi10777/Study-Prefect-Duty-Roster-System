@@ -300,9 +300,9 @@ def _allocation_table(
     }
     post_names = {
         "ASSIST_IN_CHARGE": ("Assist. in charge", "Assist. in charge"),
-        "ROOM_302": ("302 室（自修室）", "Room 302 (Study Room)"),
-        "ROOM_303": ("303 室（功課完成）", "Room 303 (HW Completion)"),
-        "ROOM_202": ("202 室（中一溫習小組）", "Room 202 (F.1 Study Group)"),
+        "ROOM_302": ("Room 302 Study Room", "Room 302 Study Room"),
+        "ROOM_303": ("Homework Completion Room", "Homework Completion Room"),
+        "ROOM_202": ("Room 202 F1 Study Group", "Room 202 F1 Study Group"),
     }
     index = 0 if language == "zh" else 1
     for row in contribution.allocations:

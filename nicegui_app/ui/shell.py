@@ -813,7 +813,15 @@ def page_shell(active_path: str) -> Iterator[None]:
                         ).props(
                             f'flat round aria-label="{t("access_admin_logout")}" data-testid=guest-logout'
                         ).classes("sy-admin-logout").tooltip(t("access_admin_logout"))
-                    ui.button("EN" if current_locale() != "en" else "中", on_click=lambda: _reload_after_preference_change(toggle_locale)).props("flat dense").classes("sy-language-control").style("color: var(--sy-nav-ink) !important")
+                    language_label = (
+                        t("switch_to_english") if current_locale() != "en" else t("switch_to_chinese")
+                    )
+                    ui.button(
+                        "EN" if current_locale() != "en" else "中",
+                        on_click=lambda: _reload_after_preference_change(toggle_locale),
+                    ).props(
+                        f'flat dense no-caps data-testid=language-control aria-label="{language_label}"'
+                    ).classes("sy-language-control").style("color: var(--sy-nav-ink) !important")
                     sound_icon = "volume_up" if sound_feedback_enabled() else "volume_off"
                     sound_tooltip = (
                         t("disable_sound_feedback")

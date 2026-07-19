@@ -141,6 +141,16 @@ def _assert_guest_landing(page: Page, *, label: str) -> None:
     translation = page.locator(".translation-label").inner_text()
     if "2010" not in translation or "NKJV" not in translation:
         raise RuntimeError(f"{label} does not identify the approved Chinese and English Bible versions.")
+
+    welcome_player = page.locator("#welcomeAudioPlayer")
+    if welcome_player.count() != 1 or not welcome_player.is_visible():
+        raise RuntimeError(f"{label} does not expose the welcome-music control.")
+    if page.locator("#welcomeAudioVolume").input_value() != "25":
+        raise RuntimeError(f"{label} does not start from the documented 25% welcome volume.")
+    for selector in ("#welcomeAudioToggle", "#welcomeAudioNext"):
+        control_box = page.locator(selector).bounding_box()
+        if control_box is None or control_box["width"] < 43.5 or control_box["height"] < 43.5:
+            raise RuntimeError(f"{label} welcome-music control is smaller than the 44 CSS pixel target: {control_box}")
     _assert_document_fits_viewport(page, label=label)
 
 
@@ -150,6 +160,30 @@ def _assert_theme_cycle(page: Page) -> None:
         _set_theme_reliably(page, expected)
         if _current_theme(page) != expected:
             raise RuntimeError(f"Appearance control failed to enter {expected!r} mode.")
+        if expected in {"light", "dark"}:
+            mark_opacity = page.evaluate(
+                """theme => ({
+                    light: getComputedStyle(document.querySelector('.brand-mark-image--light')).opacity,
+                    dark: getComputedStyle(document.querySelector('.brand-mark-image--dark')).opacity,
+                    expected: theme,
+                })""",
+                expected,
+            )
+            expected_opacity = (
+                {"light": "1", "dark": "0"}
+                if expected == "light"
+                else {"light": "0", "dark": "1"}
+            )
+            if any(mark_opacity[key] != value for key, value in expected_opacity.items()):
+                raise RuntimeError(
+                    f"Entrance brand mark did not follow {expected!r} mode: {mark_opacity}"
+                )
+        expected_track = {"light": "Morning Has Broken", "dark": "Ubi caritas"}.get(expected)
+        if expected_track:
+            page.wait_for_function(
+                "title => document.querySelector('#welcomeTrackTitle')?.textContent === title",
+                arg=expected_track,
+            )
 
 
 def _assert_manual_verse_refresh(page: Page) -> None:

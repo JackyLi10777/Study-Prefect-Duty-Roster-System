@@ -217,7 +217,9 @@ def _schedule_grid(
         spec = schedule_row.spec
         post = spec.post
         start_time, end_time = spec.opening_time
-        post_label = xml_escape(spec.label_zh if language == "zh" else spec.label_en)
+        # Duty-post names are operational identifiers and remain English in
+        # both PDF languages; headings, weekdays and guidance still localise.
+        post_label = xml_escape(spec.display_label)
         row = [
             Paragraph(
                 f'{post_label}<br/><font size="8.1">{start_time}–{end_time}</font>',

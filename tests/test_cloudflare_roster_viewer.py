@@ -83,7 +83,7 @@ def test_worker_deployment_toolchain_is_project_pinned() -> None:
     workspace = (VIEWER_ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
 
     assert package["private"] is True
-    assert package["version"] == "1.2.0-rc.11"
+    assert package["version"] == "1.2.0-rc.12"
     assert package["packageManager"] == "pnpm@11.7.0"
     assert package["engines"] == {"node": ">=22"}
     assert package["devDependencies"] == {"wrangler": "4.110.0"}
@@ -326,6 +326,8 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
         'id="portalStoryMedia"',
         "/assets/entrance-operations-light-v1.webp",
         "/assets/entrance-operations-dark-v1.webp",
+        "/assets/service-weave-mark-light-v1.png",
+        "/assets/service-weave-mark-dark-v1.png",
         "updatePortalStoryDepth",
         "prefers-reduced-motion: reduce",
         ".portal-story-media { transform: none !important; }",
@@ -351,6 +353,22 @@ def test_guest_entrance_uses_a_local_paired_light_dark_editorial_asset() -> None
     assert light.read_bytes()[:4] == b"RIFF"
     assert dark.read_bytes()[:4] == b"RIFF"
     assert "data:image" not in _source()
+
+
+def test_guest_entrance_uses_paired_transparent_product_marks() -> None:
+    public_assets = VIEWER_ROOT / "public" / "assets"
+    for filename in (
+        "service-weave-mark-light-v1.png",
+        "service-weave-mark-dark-v1.png",
+    ):
+        asset = public_assets / filename
+        assert asset.is_file()
+        assert asset.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+
+    source = _source()
+    assert '.brand-mark-image--dark { opacity: 0; }' in source
+    assert ':root[data-theme="dark"] .brand-mark-image--dark { opacity: 1; }' in source
+    assert ':root:not([data-theme="light"]) .brand-mark-image--dark { opacity: 1; }' in source
 
 
 def test_guest_entry_uses_a_signed_bounded_session_and_the_same_origin_workbench() -> None:

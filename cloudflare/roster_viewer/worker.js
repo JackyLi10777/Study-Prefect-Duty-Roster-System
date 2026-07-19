@@ -41,6 +41,34 @@ const LANDING_DEVOTIONALS = Object.freeze([
   Object.freeze({ id: 'dv-0109', referenceZh: '詩篇 31:24', referenceEn: 'Psalm 31:24', scriptureZh: '凡仰望耶和華的人， 你們都要壯膽，堅固你們的心！', scriptureEn: 'Be of good courage, And He shall strengthen your heart, All you who hope in the LORD.', reflectionZh: '仰望耶和華的人當剛強', reflectionEn: 'Take Courage as You Hope in the Lord', prayerZh: '主啊，堅固我的心，使我在等候中仍有勇氣。', prayerEn: 'Lord, strengthen my heart and give me courage as I wait for You.' }),
 ]);
 
+const WELCOME_TRACKS = Object.freeze({
+  bright: Object.freeze([
+    Object.freeze({ id: 'morning-has-broken', title: 'Morning Has Broken', artist: 'Relaxing Piano', arrangement: 'instrumental', filename: 'Relaxing Piano - Topic - Morning ⧸ Morning Has Broken.m4a' }),
+    Object.freeze({ id: 'come-fill-hearts', title: 'Come and Fill Our Hearts', artist: 'Hymns Made Fresh', arrangement: 'instrumental', filename: 'Hymns Made Fresh - Come and Fill Our Hearts - Taize PIANO Instrumental KARAOKE.m4a' }),
+    Object.freeze({ id: 'in-lord-thankful', title: "In the Lord I'll Be Ever Thankful", artist: 'Emmaus Music', arrangement: 'instrumental', filename: "Emmaus Music - In The Lord I'll be Ever Thankful (Taize)  ｜  Instrumental Version.m4a" }),
+    Object.freeze({ id: 'kingdom-of-god', title: 'The Kingdom of God', artist: 'Taizé', arrangement: 'instrumental', filename: 'Taizé - Topic - The Kingdom of God (Accompaniment).m4a' }),
+    Object.freeze({ id: 'tui-amoris-ignem', title: 'Tui amoris ignem', artist: 'Taizé', arrangement: 'instrumental', filename: 'Taizé - Topic - Tui amoris ignem (Accompaniment).m4a' }),
+  ]),
+  quiet: Object.freeze([
+    Object.freeze({ id: 'ubi-caritas', title: 'Ubi caritas', artist: 'Taizé', arrangement: 'instrumental', filename: 'Taizé - Topic - Ubi caritas (Accompaniment).m4a' }),
+    Object.freeze({ id: 'nada-te-turbe', title: 'Nada te turbe', artist: 'Taizé', arrangement: 'instrumental', filename: 'Taizé - Topic - Nada te turbe (Accompaniment).m4a' }),
+    Object.freeze({ id: 'mon-ame-se-repose', title: 'Mon âme se repose', artist: 'Taizé', arrangement: 'instrumental', filename: 'Taizé - Topic - Mon âme se repose (Accompaniment).m4a' }),
+    Object.freeze({ id: 'dona-la-pace', title: 'Dona la pace', artist: 'Taizé', arrangement: 'instrumental', filename: 'Taizé - Topic - Dona la pace (Accompaniment).m4a' }),
+    Object.freeze({ id: 'da-pacem-cordium-violin', title: 'Da pacem cordium', artist: 'Violin De Noche', arrangement: 'instrumental', filename: 'Violin De Noche - Taizé Instrumental - Da Pacem Cordium (Violin).m4a' }),
+  ]),
+});
+
+const WELCOME_TRACK_BY_ID = new Map(
+  Object.values(WELCOME_TRACKS).flat().map(track => [track.id, track]),
+);
+
+const WELCOME_PUBLIC_TRACKS = Object.freeze(Object.fromEntries(
+  Object.entries(WELCOME_TRACKS).map(([profile, tracks]) => [
+    profile,
+    tracks.map(({ filename: _filename, ...track }) => track),
+  ]),
+));
+
 const SECURITY_HEADERS = Object.freeze({
   'Cache-Control': 'no-store, max-age=0',
   'Content-Security-Policy': [
@@ -49,6 +77,7 @@ const SECURITY_HEADERS = Object.freeze({
     "style-src 'self'",
     "connect-src 'self'",
     "img-src 'self' data:",
+    "media-src 'self'",
     "font-src 'none'",
     "base-uri 'none'",
     "form-action 'none'",
@@ -98,7 +127,10 @@ const VIEWER_HTML = `<!doctype html>
   <a class="skip-link" href="#mainContent">跳到主要內容 · Skip to main content</a>
   <header class="site-header">
     <div class="brand-lockup">
-      <img class="brand-mark" src="/favicon.png" alt="" width="48" height="48">
+      <span class="brand-mark" aria-hidden="true">
+        <img class="brand-mark-image brand-mark-image--light" src="/assets/service-weave-mark-light-v1.png" alt="" width="1024" height="1024" decoding="async">
+        <img class="brand-mark-image brand-mark-image--dark" src="/assets/service-weave-mark-dark-v1.png" alt="" width="1024" height="1024" decoding="async">
+      </span>
       <div>
       <p class="eyebrow">SING YIN SECONDARY SCHOOL</p>
       <p class="brand-title">導學風紀值班表</p>
@@ -197,6 +229,35 @@ const VIEWER_HTML = `<!doctype html>
           <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15"><path d="M8 11V8a4 4 0 0 1 8 0v3"></path><rect x="5" y="11" width="14" height="10" rx="2"></rect></svg>
           <span>由受控身份服務安全連接 · Secured sign-in</span>
         </p>
+
+        <section id="welcomeAudioPlayer" class="welcome-audio-player" aria-labelledby="welcomeAudioHeading">
+          <audio id="welcomeAudio" preload="metadata" playsinline></audio>
+          <div class="welcome-audio-main">
+            <span class="welcome-audio-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="19" height="19"><path d="M9 18V5l10-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="16" cy="16" r="3"></circle></svg>
+            </span>
+            <div class="welcome-audio-copy">
+              <span id="welcomeAudioHeading">歡迎音樂 · Welcome music</span>
+              <strong id="welcomeTrackTitle">正在準備歌單…</strong>
+              <small id="welcomeTrackMeta">純音樂 · Instrumental</small>
+            </div>
+            <div class="welcome-audio-actions">
+              <button id="welcomeAudioToggle" class="welcome-audio-button" type="button" aria-label="播放歡迎音樂 · Play welcome music" aria-pressed="false">
+                <svg class="welcome-audio-play" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="m8 5 11 7-11 7V5Z"></path></svg>
+                <svg class="welcome-audio-pause" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M8 5v14M16 5v14"></path></svg>
+              </button>
+              <button id="welcomeAudioNext" class="welcome-audio-button" type="button" aria-label="下一首歡迎音樂 · Next welcome track">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="m5 5 10 7-10 7V5ZM18 5v14"></path></svg>
+              </button>
+            </div>
+          </div>
+          <div class="welcome-audio-volume">
+            <label for="welcomeAudioVolume">音量 · Volume</label>
+            <input id="welcomeAudioVolume" type="range" min="0" max="100" step="1" value="25">
+            <output id="welcomeAudioVolumeValue" for="welcomeAudioVolume">25%</output>
+          </div>
+          <p id="welcomeAudioStatus" class="welcome-audio-status" aria-live="polite">預設音量 25%；如瀏覽器阻止自動播放，按播放鍵即可。 · Default 25%; press play if autoplay is blocked.</p>
+        </section>
 
         <div class="access-divider" aria-hidden="true"><span></span></div>
         <div class="guest-help">
@@ -382,12 +443,26 @@ button, input, select, textarea { font: inherit; }
 }
 
 .brand-mark {
+  position: relative;
+  flex: 0 0 auto;
   display: block;
   width: 48px;
   height: 48px;
-  border-radius: 15px;
-  box-shadow: 0 8px 22px rgba(31, 41, 39, 0.08);
 }
+
+.brand-mark-image {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity 180ms ease;
+}
+
+.brand-mark-image--dark { opacity: 0; }
+:root[data-theme="dark"] .brand-mark-image--light { opacity: 0; }
+:root[data-theme="dark"] .brand-mark-image--dark { opacity: 1; }
 
 .theme-toggle {
   display: inline-flex;
@@ -767,6 +842,50 @@ button, input, select, textarea { font: inherit; }
 .guest-enter-copy span { color: var(--ink-muted); font-size: 0.65rem; font-weight: 560; }
 
 .login-assurance { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 10px 0 0; color: var(--ink-muted); font-size: 0.66rem; line-height: 1.4; }
+.welcome-audio-player {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-muted) 82%, var(--surface));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 36%, transparent);
+}
+.welcome-audio-main { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 11px; }
+.welcome-audio-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--brand-soft); color: var(--brand); }
+.welcome-audio-mark svg,
+.welcome-audio-button svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.welcome-audio-copy { display: grid; min-width: 0; gap: 1px; }
+.welcome-audio-copy > span { color: var(--ink-muted); font-size: 0.61rem; font-weight: 720; letter-spacing: 0.04em; text-transform: uppercase; }
+.welcome-audio-copy strong { overflow: hidden; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
+.welcome-audio-copy small { overflow: hidden; color: var(--ink-muted); font-size: 0.62rem; text-overflow: ellipsis; white-space: nowrap; }
+.welcome-audio-actions { display: flex; gap: 6px; }
+.welcome-audio-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  background: var(--surface);
+  color: var(--action);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease, transform 100ms ease, box-shadow 160ms ease;
+}
+.welcome-audio-button:hover { border-color: var(--action); background: color-mix(in srgb, var(--action-soft) 65%, var(--surface)); box-shadow: 0 7px 16px color-mix(in srgb, var(--action) 12%, transparent); }
+.welcome-audio-button:active { transform: scale(0.96); }
+.welcome-audio-button:focus-visible,
+.welcome-audio-volume input:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+.welcome-audio-pause { display: none; }
+.welcome-audio-player[data-playing="true"] .welcome-audio-play { display: none; }
+.welcome-audio-player[data-playing="true"] .welcome-audio-pause { display: block; }
+.welcome-audio-volume { display: grid; grid-template-columns: auto minmax(70px, 1fr) 34px; align-items: center; gap: 9px; margin-top: 12px; }
+.welcome-audio-volume label,
+.welcome-audio-volume output { color: var(--ink-muted); font-size: 0.61rem; font-weight: 650; }
+.welcome-audio-volume output { text-align: right; font-variant-numeric: tabular-nums; }
+.welcome-audio-volume input { width: 100%; height: 22px; margin: 0; accent-color: var(--action); cursor: pointer; }
+.welcome-audio-status { margin: 7px 0 0; color: var(--ink-muted); font-size: 0.59rem; line-height: 1.45; }
 .access-divider { display: flex; align-items: center; margin: 26px 0 22px; }
 .access-divider::before,
 .access-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
@@ -1168,6 +1287,8 @@ tbody td {
 
   :root:not([data-theme="light"]) .portal-story-image--light { opacity: 0; }
   :root:not([data-theme="light"]) .portal-story-image--dark { opacity: 1; }
+  :root:not([data-theme="light"]) .brand-mark-image--light { opacity: 0; }
+  :root:not([data-theme="light"]) .brand-mark-image--dark { opacity: 1; }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1205,7 +1326,7 @@ tbody td {
 
 @media (max-width: 560px) {
   .site-header { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
-  .brand-mark { width: 44px; height: 44px; border-radius: 14px; }
+  .brand-mark { width: 44px; height: 44px; }
   .theme-toggle { margin-left: auto; padding-inline: 11px; }
   .theme-toggle span { white-space: nowrap; }
   .workflow-cue { grid-template-columns: 1fr; gap: 9px; margin-top: 25px; }
@@ -1228,6 +1349,9 @@ tbody td {
   .portal-story { padding-inline: 20px; }
   .portal-story > h1 { font-size: 2rem; }
   .access-panel { padding-inline: 20px; }
+  .welcome-audio-main { grid-template-columns: auto minmax(0, 1fr); }
+  .welcome-audio-actions { grid-column: 2; justify-content: flex-end; }
+  .welcome-audio-copy strong { white-space: normal; }
   .devotional-prompt-heading { align-items: center; }
   .verse-refresh span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
   .verse-refresh { width: 44px; padding-inline: 0; }
@@ -1241,7 +1365,9 @@ tbody td {
   .guest-enter,
   .theme-toggle,
   .verse-refresh,
-  .site-share-button { border: 1px solid CanvasText; }
+  .site-share-button,
+  .welcome-audio-button,
+  .welcome-audio-player { border: 1px solid CanvasText; }
   .access-panel .admin-login { background: ButtonFace; color: ButtonText; }
   :focus-visible { outline: 3px solid Highlight !important; outline-offset: 3px; }
 }
@@ -1255,6 +1381,7 @@ tbody td {
   }
   .access-panel .admin-login::before { display: none; }
   .portal-story-media { transform: none !important; }
+  .brand-mark-image { transition: none !important; }
   .access-panel .admin-login[data-connecting="true"] .admin-login-spinner { animation: none; border-color: currentColor; opacity: .8; }
   .sy-secure-pulse::after { animation: none; opacity: .65; transform: translate(-50%, -50%) scale(1); }
 }
@@ -1295,6 +1422,10 @@ const SESSION_TOKEN_KEY = 'sing-yin-roster-viewer-token-v1';
 const THEME_KEY = 'sing-yin-roster-viewer-theme-v1';
 const THEME_STATES = ['system', 'light', 'dark'];
 const LANDING_DEVOTIONALS = ${JSON.stringify(LANDING_DEVOTIONALS)};
+const WELCOME_TRACKS = ${JSON.stringify(WELCOME_PUBLIC_TRACKS)};
+const DEFAULT_WELCOME_VOLUME = 0.25;
+const WELCOME_VOLUME_KEY = 'sing-yin:welcome-audio-volume:v1';
+const WELCOME_ENABLED_KEY = 'sing-yin:welcome-audio-enabled:v1';
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
 
@@ -1310,6 +1441,15 @@ const portalStory = document.querySelector('.portal-story');
 const portalStoryMedia = document.getElementById('portalStoryMedia');
 const devotionalPrompt = document.querySelector('.devotional-prompt');
 const refreshLandingVerse = document.getElementById('refreshLandingVerse');
+const welcomeAudioPlayer = document.getElementById('welcomeAudioPlayer');
+const welcomeAudio = document.getElementById('welcomeAudio');
+const welcomeAudioToggle = document.getElementById('welcomeAudioToggle');
+const welcomeAudioNext = document.getElementById('welcomeAudioNext');
+const welcomeAudioVolume = document.getElementById('welcomeAudioVolume');
+const welcomeAudioVolumeValue = document.getElementById('welcomeAudioVolumeValue');
+const welcomeAudioStatus = document.getElementById('welcomeAudioStatus');
+const welcomeTrackTitle = document.getElementById('welcomeTrackTitle');
+const welcomeTrackMeta = document.getElementById('welcomeTrackMeta');
 const shareSite = document.getElementById('shareSite');
 const shareSiteStatus = document.getElementById('shareSiteStatus');
 const errorTitle = document.getElementById('errorTitle');
@@ -1401,6 +1541,162 @@ themeToggle?.addEventListener('click', () => {
   const current = document.documentElement.dataset.theme || 'system';
   const next = THEME_STATES[(THEME_STATES.indexOf(current) + 1) % THEME_STATES.length];
   applyTheme(next, { persist: true });
+  syncWelcomePlaylist();
+});
+
+const systemDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+let welcomeProfile = '';
+let welcomeTrackIndex = 0;
+let welcomeDesiredEnabled = true;
+
+function welcomeLandingActive() {
+  return window.location.pathname === '/'
+    && document.body?.dataset.guestBootstrap !== 'true'
+    && !hasShareToken();
+}
+
+function resolvedWelcomeProfile() {
+  const selected = document.documentElement.dataset.theme;
+  if (selected === 'dark') return 'quiet';
+  if (selected === 'light') return 'bright';
+  return systemDarkScheme.matches ? 'quiet' : 'bright';
+}
+
+function storedWelcomeVolume() {
+  try {
+    const stored = localStorage.getItem(WELCOME_VOLUME_KEY);
+    if (stored === null) return DEFAULT_WELCOME_VOLUME;
+    const value = Number(stored);
+    if (Number.isFinite(value) && value >= 0 && value <= 1) return value;
+  } catch {
+    // A private browser may refuse storage; the safe default still applies.
+  }
+  return DEFAULT_WELCOME_VOLUME;
+}
+
+function storedWelcomeEnabled() {
+  try {
+    const value = localStorage.getItem(WELCOME_ENABLED_KEY);
+    return value === null ? true : value === 'true';
+  } catch {
+    return true;
+  }
+}
+
+function storeWelcomePreference(key, value) {
+  try { localStorage.setItem(key, String(value)); } catch {
+    // Playback remains usable for this visit when persistent storage is unavailable.
+  }
+}
+
+function currentWelcomeTrack() {
+  const tracks = WELCOME_TRACKS[welcomeProfile] || [];
+  return tracks[welcomeTrackIndex % Math.max(1, tracks.length)] || null;
+}
+
+function renderWelcomeTrack() {
+  if (!welcomeAudio) return;
+  const track = currentWelcomeTrack();
+  if (!track) return;
+  welcomeAudio.src = '/welcome-audio/' + encodeURIComponent(track.id);
+  if (welcomeTrackTitle) welcomeTrackTitle.textContent = track.title;
+  if (welcomeTrackMeta) welcomeTrackMeta.textContent = track.artist + ' · 純音樂 · Instrumental';
+}
+
+function setWelcomePlayingState(playing) {
+  if (welcomeAudioPlayer) welcomeAudioPlayer.dataset.playing = playing ? 'true' : 'false';
+  if (welcomeAudioToggle) {
+    welcomeAudioToggle.setAttribute('aria-pressed', playing ? 'true' : 'false');
+    welcomeAudioToggle.setAttribute(
+      'aria-label',
+      playing ? '暫停歡迎音樂 · Pause welcome music' : '播放歡迎音樂 · Play welcome music',
+    );
+  }
+}
+
+async function playWelcomeAudio({ remember = true } = {}) {
+  if (!welcomeAudio || !welcomeLandingActive()) return;
+  if (!welcomeAudio.src) renderWelcomeTrack();
+  const targetVolume = storedWelcomeVolume();
+  welcomeAudio.volume = targetVolume;
+  try {
+    await welcomeAudio.play();
+    welcomeDesiredEnabled = true;
+    if (remember) storeWelcomePreference(WELCOME_ENABLED_KEY, true);
+    setWelcomePlayingState(true);
+    if (welcomeAudioStatus) welcomeAudioStatus.textContent = '正在以 ' + Math.round(targetVolume * 100) + '% 音量播放。 · Playing at ' + Math.round(targetVolume * 100) + '% volume.';
+  } catch {
+    setWelcomePlayingState(false);
+    if (welcomeAudioStatus) welcomeAudioStatus.textContent = '瀏覽器已暫停自動播放；按播放鍵即可開始。 · Autoplay paused; press play to begin.';
+  }
+}
+
+function pauseWelcomeAudio({ remember = true } = {}) {
+  if (!welcomeAudio) return;
+  cancelWelcomeFade();
+  welcomeAudio.pause();
+  welcomeDesiredEnabled = false;
+  if (remember) storeWelcomePreference(WELCOME_ENABLED_KEY, false);
+  setWelcomePlayingState(false);
+  if (welcomeAudioStatus) welcomeAudioStatus.textContent = '歡迎音樂已暫停。 · Welcome music paused.';
+}
+
+function advanceWelcomeTrack({ play = false } = {}) {
+  const tracks = WELCOME_TRACKS[welcomeProfile] || [];
+  if (!tracks.length) return;
+  welcomeTrackIndex = (welcomeTrackIndex + 1) % tracks.length;
+  renderWelcomeTrack();
+  if (play) void playWelcomeAudio({ remember: false });
+}
+
+function syncWelcomePlaylist() {
+  if (!welcomeAudio || !welcomeLandingActive()) return;
+  const nextProfile = resolvedWelcomeProfile();
+  if (nextProfile === welcomeProfile) return;
+  const shouldResume = !welcomeAudio.paused;
+  cancelWelcomeFade();
+  welcomeAudio.pause();
+  welcomeProfile = nextProfile;
+  welcomeTrackIndex = 0;
+  renderWelcomeTrack();
+  if (shouldResume) void playWelcomeAudio({ remember: false });
+}
+
+function initialiseWelcomeAudio() {
+  if (!welcomeAudio || !welcomeAudioPlayer || !welcomeLandingActive()) return;
+  const volume = storedWelcomeVolume();
+  welcomeDesiredEnabled = storedWelcomeEnabled();
+  if (welcomeAudioVolume) welcomeAudioVolume.value = String(Math.round(volume * 100));
+  if (welcomeAudioVolumeValue) welcomeAudioVolumeValue.textContent = Math.round(volume * 100) + '%';
+  syncWelcomePlaylist();
+
+  welcomeAudioToggle?.addEventListener('click', () => {
+    if (welcomeAudio.paused) void playWelcomeAudio();
+    else pauseWelcomeAudio();
+  });
+  welcomeAudioNext?.addEventListener('click', () => {
+    advanceWelcomeTrack({ play: welcomeDesiredEnabled || !welcomeAudio.paused });
+  });
+  welcomeAudioVolume?.addEventListener('input', event => {
+    const volumeValue = Math.max(0, Math.min(100, Number(event.target.value) || 0));
+    const normalised = volumeValue / 100;
+    cancelWelcomeFade();
+    welcomeAudio.volume = normalised;
+    storeWelcomePreference(WELCOME_VOLUME_KEY, normalised);
+    if (welcomeAudioVolumeValue) welcomeAudioVolumeValue.textContent = Math.round(volumeValue) + '%';
+    if (welcomeAudioStatus && !welcomeAudio.paused) welcomeAudioStatus.textContent = '正在以 ' + Math.round(volumeValue) + '% 音量播放。 · Playing at ' + Math.round(volumeValue) + '% volume.';
+  });
+  welcomeAudio.addEventListener('ended', () => advanceWelcomeTrack({ play: true }));
+  welcomeAudio.addEventListener('error', () => {
+    setWelcomePlayingState(false);
+    if (welcomeAudioStatus) welcomeAudioStatus.textContent = '這首音樂暫時未能載入，請按下一首。 · This track could not load; choose the next track.';
+  });
+  if (welcomeDesiredEnabled) void playWelcomeAudio({ remember: false });
+  else setWelcomePlayingState(false);
+}
+
+systemDarkScheme.addEventListener('change', () => {
+  if (!document.documentElement.dataset.theme) syncWelcomePlaylist();
 });
 
 const landingVerseElements = {
@@ -1782,6 +2078,7 @@ async function openSharedRoster() {
 }
 
 retryShare?.addEventListener('click', () => { void openSharedRoster(); });
+initialiseWelcomeAudio();
 void bootstrapGuestSession().then(started => {
   if (!started) void openSharedRoster();
 });
@@ -1808,6 +2105,43 @@ function serviceWeaveFaviconResponse(request) {
     'Cache-Control': 'public, max-age=31536000, immutable',
     ETag: `"sha256-${SERVICE_WEAVE_FAVICON_SHA256}"`,
   });
+}
+
+async function welcomeAudioResponse(request, env, trackId) {
+  if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
+  const track = WELCOME_TRACK_BY_ID.get(trackId);
+  if (!track) return response('Not found', 404, { 'Content-Type': 'text/plain; charset=utf-8' });
+  if (!env.ROSTER_ORIGIN || typeof env.ROSTER_ORIGIN.fetch !== 'function') {
+    return response('Service unavailable', 503, { 'Content-Type': 'text/plain; charset=utf-8' });
+  }
+
+  const originUrl = new URL('http://127.0.0.1:8080');
+  originUrl.pathname = '/assets/music/' + track.filename.split('/').map(encodeURIComponent).join('/');
+  const headers = new Headers();
+  for (const name of ['Accept', 'Range', 'If-Range', 'If-None-Match', 'If-Modified-Since']) {
+    const value = request.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+  const upstream = await env.ROSTER_ORIGIN.fetch(new Request(originUrl.toString(), {
+    method: request.method,
+    headers,
+    redirect: 'manual',
+  }));
+  if (![200, 206, 304, 416].includes(upstream.status)) {
+    return response('Not found', upstream.status === 404 ? 404 : 503, { 'Content-Type': 'text/plain; charset=utf-8' });
+  }
+  const contentType = upstream.headers.get('Content-Type') || '';
+  if (![304, 416].includes(upstream.status) && !/^audio\//i.test(contentType) && contentType !== 'application/octet-stream') {
+    return response('Service unavailable', 503, { 'Content-Type': 'text/plain; charset=utf-8' });
+  }
+  const outputHeaders = new Headers(upstream.headers);
+  outputHeaders.delete('Set-Cookie');
+  outputHeaders.delete('Server');
+  outputHeaders.set('Cache-Control', 'public, max-age=3600');
+  outputHeaders.set('Content-Disposition', 'inline');
+  outputHeaders.set('X-Content-Type-Options', 'nosniff');
+  const body = request.method === 'HEAD' || [304, 416].includes(upstream.status) ? null : upstream.body;
+  return new Response(body, { status: upstream.status, headers: outputHeaders });
 }
 
 const ACCESS_FAILURE_HTML = `<!doctype html>
@@ -3068,6 +3402,13 @@ async function route(request, env, context) {
     if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
     return staticResponse(request, VIEWER_JS, 200, { 'Content-Type': 'text/javascript; charset=utf-8' });
   }
+  if (path.startsWith('/welcome-audio/')) {
+    const trackId = path.slice('/welcome-audio/'.length);
+    if (!/^[a-z0-9-]{3,64}$/.test(trackId)) {
+      return response('Not found', 404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    }
+    return await welcomeAudioResponse(request, env, trackId);
+  }
   if (path === '/favicon.png' && ['GET', 'HEAD'].includes(request.method)) {
     return serviceWeaveFaviconResponse(request);
   }
@@ -3251,6 +3592,10 @@ export default {
 // same entry module without exporting constants that make deployment fail.
 export function landingDevotionalsForTest() {
   return LANDING_DEVOTIONALS;
+}
+
+export function welcomeTracksForTest() {
+  return WELCOME_PUBLIC_TRACKS;
 }
 
 export function adminSessionCookieNameForTest() {

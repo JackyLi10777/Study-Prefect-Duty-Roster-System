@@ -67,6 +67,25 @@ def test_material_icon_names_map_to_stable_semantic_motion_roles() -> None:
     assert "hydrateIconMotion(node)" in added_node_scope
 
 
+def test_story_icons_change_glyphs_instead_of_only_translating() -> None:
+    motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
+
+    expected_stories = {
+        "menu": "arrow_back",
+        "space_dashboard": "dashboard_customize",
+        "calendar_month": "event_available",
+        "help_outline": "lightbulb",
+        "menu_book": "auto_stories",
+        "save": "task_alt",
+    }
+    for source, destination in expected_stories.items():
+        assert f"['{source}', '{destination}']" in motion
+    assert "const animateIconStory" in motion
+    assert "icon.textContent = next" in motion
+    assert "prefers-reduced-motion: reduce" in motion
+    assert "new AbortController()" in motion
+
+
 def test_icon_hydration_uses_observation_and_delegation_not_per_button_listeners() -> None:
     motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
 

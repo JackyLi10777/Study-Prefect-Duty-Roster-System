@@ -112,7 +112,7 @@ All future generated assets must be reviewed against this checklist before use: 
 
 ### Official school-crest assets
 
-The school crest is an official identity asset, not generated atmosphere artwork. User-supplied PNG masters remain at project root; semantic delivery copies are retained under `nicegui_app/assets/brand/` and selected by context rather than by an ambiguous `logo.png` filename:
+The school crest is an official identity asset, not generated atmosphere artwork. User-supplied PNG masters remain at project root; semantic delivery copies are retained under `nicegui_app/assets/brand/` and selected by context rather than by an ambiguous `logo.png` filename. The public entrance uses the transparent Service Weave `mark-light`／`mark-dark` pair and switches it from the same explicit theme state as the page; the fixed app-icon surface is reserved for favicon and operating-system contexts:
 
 - `sing-yin-crest-favicon.png` — a 512×512 delivery copy for the browser favicon.
 - `sing-yin-crest-navigation.png` — the purpose-sized 545×524 source for the 60×58 sidebar identity mark; using the supplied small master avoids repeated extreme downscaling.
@@ -393,6 +393,8 @@ Music is page-context-aware and makes one low-volume autoplay attempt after a pa
 - **Quiet reflection:** slower pacing, reassurance, patience, prayer, and handover; suitable for dark-mode default recommendation without implying sadness.
 
 Appearance selects only the recommendation when the operator has not chosen a profile. A saved profile overrides appearance until reset. Both profiles contain several page-specific tracks, support sequential/shuffle playback, and remain subordinate to page context, saved volume and the visible pause/off control. Vocal and instrumental editions use separate stable arrangement codes and visible bilingual labels; byte-identical duplicate files do not become repeated catalogue entries. A bounded link import may add authorised audio to `music/youtube-imports/`, but it remains an explicit Settings action with an honest waiting state and never runs on page load or appearance change. YouTube embeds remain separately user-started; local context autoplay must not silently initiate third-party playback.
+
+The public login entrance has a narrower welcome-music contract. It uses five allowlisted **instrumental** tracks for each appearance profile, starts from a separate browser-local default of **25%**, and exposes play／pause, next-track and volume controls beside the identity choices. It may attempt autoplay once, then must show the browser-blocked state without retrying or opening a modal. Light mode begins with `Morning Has Broken`; dark mode begins with `Ubi caritas`, while subsequent tracks rotate without using vocal recordings. Changing appearance switches the paired playlist but never changes authentication, Guest state or roster data. Only exact stable track IDs are available through `/welcome-audio/<id>`; filenames, arbitrary origin paths and the music directory are not browser inputs. The encrypted `/view#…` roster surface remains silent.
 
 ### 6.2 Roster workspace
 
@@ -794,6 +796,16 @@ No phase may weaken roster policy, persistent fairness, backup verification, pri
 7. The Guest reference lane retains the six non-sensitive orientation destinations—Platform & Team, Engineering & Quality, System Architecture & Trust, Getting Started, Operator Guide and Daily Verse—alongside the same fictional weekly-work routes used by Admin. These pages may explain the product and demonstrate bounded operations, but they never expose official names, rosters, backup paths or audit payloads.
 8. Contextual audio is a persistent operator preference, not a page-completion signal. Every supported page context and light/dark recommendation must resolve to at least one local track, while browser verification waits for semantic DOM／URL／workflow results rather than `networkidle` after audio has been unlocked.
 9. Daily Verse is a distinct sacred reading sequence—read, reflect, pray, return to service—not a decorative dashboard card. Its gold／indigo language, paired theme imagery and spacious typography remain subordinate to Scripture and must support reduced motion.
+
+### Phase G — operational hierarchy and semantic continuity
+
+1. Every operational domain has one stable hub. Child routes must render a route trail, an explicit destination-based return action and the same ordered workflow model; browser history is never the only way back.
+2. The roster sequence is generate → review／export → published-duty adjustment → history. The current step uses text, geometry and `aria-current`, not colour alone; unavailable future steps remain visible but non-interactive so the operator understands what comes next.
+3. Operational surfaces use the full available content workspace. Constrain inner text or form measures for readability, not the outer card; a wide empty field beside a narrow action card is a layout defect unless the space has an explicit secondary purpose.
+4. Header utilities share one surface grammar. Language, appearance, sound, music and logout each retain a visible container, 44px practical target, keyboard focus and bilingual accessible name.
+5. A semantic icon animation must tell a short state story: menu → back, calendar → confirmed event, manual edit → verified change, book → open reading, help → illuminated idea. It may swap a framework glyph through an opacity／scale transition, but must not depend only on translation, must not loop, and must resolve instantly under reduced motion, touch or forced colours.
+6. Browser matrix, public Viewer and PDF use one duty-position presentation source. Duty names remain canonical English in both locales; prefect names remain Chinese. Translation text must never become a policy or database key.
+7. Reasons are optional explanatory context. Leaving one blank must not remove version checks, command receipts, audit, fairness reconciliation, backup obligations or destructive-action confirmation.
 
 ---
 

@@ -214,24 +214,26 @@ def test_withdrawal_reverses_post_publication_substitute_transfer(
     assert workflow.reconcile_fairness().balanced
 
 
-def test_withdrawal_rejects_stale_version_and_requires_reason(
+def test_withdrawal_rejects_stale_version_and_allows_an_optional_reason(
     workflow: RosterWorkflow,
 ) -> None:
     draft = workflow.generate_and_save_draft(WEEK_START)
     published = workflow.publish(draft.id, expected_week_version=draft.version)
 
-    with pytest.raises(WorkflowError, match="requires a reason"):
-        workflow.withdraw_published_roster(
-            draft.id,
-            expected_version=published.version,
-            reason="  ",
-        )
     with pytest.raises(WorkflowConflictError, match="changed in another browser"):
         workflow.withdraw_published_roster(
             draft.id,
             expected_version=published.version + 1,
             reason="Stale browser",
         )
+    result = workflow.withdraw_published_roster(
+        draft.id,
+        expected_version=published.version,
+        reason="  ",
+        command_id="withdraw-without-reason",
+    )
+    assert result.status == "withdrawn"
+    assert workflow.roster_week(draft.id)["withdrawalReason"] == ""
 
 
 def test_concurrent_publish_attempts_have_one_database_level_winner(workflow: RosterWorkflow, tmp_path) -> None:
@@ -305,7 +307,7 @@ def test_published_leave_adjustment_transfers_weight_and_keeps_audit_trail(workf
         roster_week_id=draft.id,
         assignment_id=assignment["id"],
         replacement_prefect_id=replacement["id"],
-        reason="Approved school activity",
+        reason="",
         command_id="test-adjustment-transfer",
         expected_week_version=int(workflow.roster_week(draft.id)["version"]),
     )
@@ -484,7 +486,7 @@ def test_manual_draft_change_stays_policy_valid_auditable_and_does_not_post_fair
         roster_week_id=draft.id,
         assignment_id=int(assignment["id"]),
         replacement_prefect_id=str(replacement["id"]),
-        reason="Approved manual correction after roster review",
+        reason="",
         expected_week_version=draft.version,
     )
     changed = next(item for item in workflow.assignments(draft.id) if item["id"] == assignment["id"])

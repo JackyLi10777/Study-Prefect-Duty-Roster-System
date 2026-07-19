@@ -30,6 +30,15 @@ SOURCE = _variant_path(DELIVERY["faviconVariant"])
 LIGHT_MARK = _variant_path("mark-light")
 WHITE_MARK = _variant_path("mark-white")
 OUTPUT = PROJECT_ROOT / DELIVERY["workerGeneratedModule"]
+WORKER_PUBLIC_ASSET_DIR = PROJECT_ROOT / "cloudflare" / "roster_viewer" / "public" / "assets"
+WORKER_LANDING_ASSETS = {
+    "service-weave-mark-light-v1.png": _variant_path(
+        DELIVERY["workerLandingLightVariant"]
+    ),
+    "service-weave-mark-dark-v1.png": _variant_path(
+        DELIVERY["workerLandingDarkVariant"]
+    ),
+}
 
 
 def render_module(payload: bytes) -> str:
@@ -76,9 +85,18 @@ def main() -> int:
             )
         if not OUTPUT.is_file() or OUTPUT.read_text(encoding="utf-8") != expected:
             raise SystemExit("Service Weave Cloudflare delivery module is stale; regenerate it.")
+        for filename, source in WORKER_LANDING_ASSETS.items():
+            delivered = WORKER_PUBLIC_ASSET_DIR / filename
+            if not delivered.is_file() or delivered.read_bytes() != source.read_bytes():
+                raise SystemExit(
+                    f"Service Weave Cloudflare landing asset is stale: {filename}"
+                )
         return 0
     WHITE_MARK.write_bytes(expected_white_mark)
     OUTPUT.write_text(expected, encoding="utf-8", newline="\n")
+    WORKER_PUBLIC_ASSET_DIR.mkdir(parents=True, exist_ok=True)
+    for filename, source in WORKER_LANDING_ASSETS.items():
+        (WORKER_PUBLIC_ASSET_DIR / filename).write_bytes(source.read_bytes())
     return 0
 
 

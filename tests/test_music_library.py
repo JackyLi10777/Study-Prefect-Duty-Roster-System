@@ -39,9 +39,9 @@ def test_music_volume_default_upgrade_preserves_an_explicit_operator_choice(
 
 
 def test_builtin_music_catalog_is_complete_local_and_page_categorised() -> None:
-    assert len(BUILTIN_TRACKS) == 32
-    assert len({track.id for track in BUILTIN_TRACKS}) == 32
-    assert len({track.filename for track in BUILTIN_TRACKS}) == 32
+    assert len(BUILTIN_TRACKS) == 48
+    assert len({track.id for track in BUILTIN_TRACKS}) == 48
+    assert len({track.filename for track in BUILTIN_TRACKS}) == 48
     assert all((MUSIC_DIR / track.filename).is_file() for track in BUILTIN_TRACKS)
     assert all((MUSIC_DIR / track.filename).stat().st_size > 0 for track in BUILTIN_TRACKS)
     assert all("(1)" not in track.filename for track in BUILTIN_TRACKS)
@@ -55,6 +55,36 @@ def test_builtin_music_catalog_is_complete_local_and_page_categorised() -> None:
                 f"{context} must keep a local {profile} playlist so appearance-based autoplay "
                 "never removes the page music control"
             )
+
+
+def test_new_welcome_recordings_are_classified_without_ambiguous_duplicate_files() -> None:
+    tracks = {track.id: track for track in BUILTIN_TRACKS}
+    expected_arrangements = {
+        "come-fill-hearts": "instrumental",
+        "in-lord-thankful": "instrumental",
+        "in-lord-thankful-vocal": "vocal",
+        "kingdom-of-god": "instrumental",
+        "kingdom-of-god-vocal": "vocal",
+        "tui-amoris-ignem": "instrumental",
+        "tui-amoris-ignem-vocal": "vocal",
+        "nada-te-turbe": "instrumental",
+        "nada-te-turbe-vocal": "vocal",
+        "mon-ame-se-repose": "instrumental",
+        "mon-ame-se-repose-vocal": "vocal",
+        "dona-la-pace": "instrumental",
+        "dona-la-pace-vocal": "vocal",
+        "da-pacem-cordium-violin": "instrumental",
+        "da-pacem-cordium-vocal": "vocal",
+        "el-senyor": "instrumental",
+    }
+
+    assert {track_id: tracks[track_id].arrangement for track_id in expected_arrangements} == expected_arrangements
+    assert all("welcome" in tracks[track_id].contexts for track_id in expected_arrangements)
+    assert not any(
+        track.filename.endswith("The Kingdom of God (1).m4a")
+        or track.filename.endswith("The kingdom of God (2).m4a")
+        for track in BUILTIN_TRACKS
+    )
 
 
 def test_local_music_import_is_validated_and_kept_inside_custom_directory(tmp_path: Path) -> None:

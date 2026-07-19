@@ -21,10 +21,10 @@ DAY_LABELS = {
 }
 
 POST_LABELS = {
-    DutyPost.ASSIST_IN_CHARGE: {ZH_HK: "助理首席導學風紀當值", EN: "Assist. in charge"},
-    DutyPost.ROOM_302: {ZH_HK: "302 室", EN: "Room 302"},
-    DutyPost.ROOM_303: {ZH_HK: "303 室", EN: "Room 303"},
-    DutyPost.ROOM_202: {ZH_HK: "202 室", EN: "Room 202"},
+    DutyPost.ASSIST_IN_CHARGE: {ZH_HK: "Assist. in charge", EN: "Assist. in charge"},
+    DutyPost.ROOM_302: {ZH_HK: "Room 302 Study Room", EN: "Room 302 Study Room"},
+    DutyPost.ROOM_303: {ZH_HK: "Homework Completion Room", EN: "Homework Completion Room"},
+    DutyPost.ROOM_202: {ZH_HK: "Room 202 F1 Study Group", EN: "Room 202 F1 Study Group"},
 }
 
 OFFICIAL_ROLE_TERMS = {

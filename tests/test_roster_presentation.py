@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from nicegui_app.services.roster_presentation import DAY_ORDER, ROSTER_ROWS, build_roster_schedule
+from nicegui_app.services.roster_presentation import (
+    DAY_ORDER,
+    ROSTER_ROWS,
+    build_roster_schedule,
+    roster_display_label,
+)
 from roster_policy import DutyPost, SchoolDay
 
 
@@ -36,3 +41,16 @@ def test_schedule_keeps_stable_pdf_row_and_weekday_order_with_chinese_names() ->
     cell = _cell(schedule, DutyPost.ROOM_302, 1, SchoolDay.MONDAY)
     assert cell.status == "active"
     assert cell.prefect_name == "測試風紀"
+
+
+def test_schedule_uses_the_same_authoritative_english_duty_post_names_in_every_locale() -> None:
+    assert tuple(row.display_label for row in ROSTER_ROWS) == (
+        "Assist. in charge",
+        "Room 302 Study Room",
+        "Homework Completion Room - 1",
+        "Homework Completion Room - 2",
+        "Room 202 F1 Study Group - 1",
+        "Room 202 F1 Study Group - 2",
+    )
+    assert all(row.label_zh == row.label_en == row.display_label for row in ROSTER_ROWS)
+    assert roster_display_label("ROOM_303", 2) == "Homework Completion Room - 2"

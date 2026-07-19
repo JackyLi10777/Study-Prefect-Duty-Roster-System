@@ -157,7 +157,7 @@ def test_complete_guest_roster_path_uses_real_policy_but_only_demo_fairness() ->
         roster_week_id=draft.id,
         assignment_id=int(target["id"]),
         replacement_prefect_id=str(candidates[0]["id"]),
-        reason="示範手動核對",
+        reason="",
         expected_week_version=draft.version,
     )
     with pytest.raises(WorkflowConflictError):
@@ -203,7 +203,7 @@ def test_guest_post_publication_adjustment_is_policy_checked_and_idempotent() ->
         roster_week_id=draft.id,
         assignment_id=int(assignment["id"]),
         replacement_prefect_id=str(candidates[0]["id"]),
-        reason="虛構臨時請假",
+        reason="",
         command_id="guest-adjustment-1",
         expected_week_version=published.version,
     )
@@ -211,7 +211,7 @@ def test_guest_post_publication_adjustment_is_policy_checked_and_idempotent() ->
         roster_week_id=draft.id,
         assignment_id=int(assignment["id"]),
         replacement_prefect_id=str(candidates[0]["id"]),
-        reason="虛構臨時請假",
+        reason="",
         command_id="guest-adjustment-1",
         expected_week_version=published.version,
     )
@@ -252,13 +252,13 @@ def test_guest_withdrawal_is_memory_only_idempotent_and_reverses_fairness() -> N
     result = adapter.withdraw_published_roster(
         draft.id,
         expected_version=published.version,
-        reason="虛構錯誤發布",
+        reason="",
         command_id="guest-withdraw-1",
     )
     replay = adapter.withdraw_published_roster(
         draft.id,
         expected_version=published.version,
-        reason="虛構錯誤發布",
+        reason="",
         command_id="guest-withdraw-1",
     )
 
@@ -269,7 +269,7 @@ def test_guest_withdrawal_is_memory_only_idempotent_and_reverses_fairness() -> N
         str(row["id"]): (float(row["historyWeight"]), int(row["historyDuties"]))
         for row in adapter.fairness_rows()
     } == baseline
-    assert adapter.roster_week(draft.id)["withdrawalReason"] == "虛構錯誤發布"
+    assert adapter.roster_week(draft.id)["withdrawalReason"] == ""
     replacement = adapter.generate_and_save_draft(WEEK_START, expected_week_version=0)
     assert replacement.id != draft.id
 

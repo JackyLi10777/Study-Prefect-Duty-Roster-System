@@ -18,6 +18,7 @@ from nicegui_app.services.json_catalog import locked_json_catalog, write_json_at
 
 
 MUSIC_CONTEXTS = (
+    "welcome",
     "dashboard",
     "weekly",
     "people",
@@ -83,6 +84,14 @@ BUILTIN_TRACKS = (
     MusicTrack("laudate-omnes-gentes", "Taizé - Topic - Laudate omnes gentes (Accompaniment).m4a", "Laudate omnes gentes", "Taizé", "3:34", ("devotional", "getting_started"), ("bright",), "instrumental"),
     MusicTrack("laudate-omnes-gentes-vocal", "Taizé - Topic - Laudate omnes gentes (Sung Quickly).m4a", "Laudate omnes gentes", "Taizé", "", ("devotional", "getting_started"), ("bright",), "vocal"),
     MusicTrack("jubilate-deo", "The Cambridge Singers - Topic - Jubilate Deo.m4a", "Jubilate Deo", "The Cambridge Singers", "", ("devotional", "getting_started"), ("bright",), "vocal"),
+    MusicTrack("come-fill-hearts", "Hymns Made Fresh - Come and Fill Our Hearts - Taize PIANO Instrumental KARAOKE.m4a", "Come and Fill Our Hearts", "Hymns Made Fresh", "", ("welcome", "devotional", "getting_started"), ("bright",), "instrumental"),
+    MusicTrack("in-lord-thankful", "Emmaus Music - In The Lord I'll be Ever Thankful (Taize)  ｜  Instrumental Version.m4a", "In the Lord I'll Be Ever Thankful", "Emmaus Music", "", ("welcome", "devotional", "getting_started"), ("bright",), "instrumental"),
+    MusicTrack("in-lord-thankful-vocal", "The London Fox Taize Choir - In the Lord I'll Be Ever Thankful.m4a", "In the Lord I'll Be Ever Thankful", "The London Fox Taizé Choir", "", ("welcome", "devotional", "getting_started"), ("bright",), "vocal"),
+    MusicTrack("kingdom-of-god", "Taizé - Topic - The Kingdom of God (Accompaniment).m4a", "The Kingdom of God", "Taizé", "", ("welcome", "devotional", "getting_started"), ("bright",), "instrumental"),
+    MusicTrack("kingdom-of-god-vocal", "Taizé - Topic - The Kingdom of God.m4a", "The Kingdom of God", "Taizé", "", ("welcome", "devotional", "getting_started"), ("bright",), "vocal"),
+    MusicTrack("tui-amoris-ignem", "Taizé - Topic - Tui amoris ignem (Accompaniment).m4a", "Tui amoris ignem", "Taizé", "", ("welcome", "devotional"), ("bright",), "instrumental"),
+    MusicTrack("tui-amoris-ignem-vocal", "Taizé - Topic - Tui amoris ignem.m4a", "Tui amoris ignem", "Taizé", "", ("welcome", "devotional"), ("bright",), "vocal"),
+    MusicTrack("el-senyor", "Taizé - Topic - El Senyor (Accompaniment).m4a", "El Senyor", "Taizé", "", ("welcome", "devotional", "getting_started"), ("bright",), "instrumental"),
     # Quiet reflection: slower, prayerful and reassuring material for reading and handover.
     MusicTrack("good-night-day", "Hildur Guðnadóttir - Jóhannsson： Good Night, Day.m4a", "Good Night, Day", "Hildur Guðnadóttir & Jóhann Jóhannsson", "", ("dashboard", "handover"), ("quiet",)),
     MusicTrack("fur-alina", "Jürgen Kruse - Topic - Für Alina, for Piano Solo.m4a", "Für Alina", "Jürgen Kruse", "", ("devotional", "guide", "people"), ("quiet",)),
@@ -100,6 +109,14 @@ BUILTIN_TRACKS = (
     MusicTrack("in-manus-tuas-vocal", "Taizé - Topic - In manus tuas, Pater.m4a", "In manus tuas, Pater", "Taizé", "", ("devotional", "handover"), ("quiet",), "vocal"),
     MusicTrack("it-is-well", "bHp Music - It Is Well with My Soul ｜ Piano Instrumental with Lyrics.m4a", "It Is Well with My Soul", "bHp Music", "4:34", ("devotional", "handover"), ("quiet",)),
     MusicTrack("abide-with-me", "Kaleb Brasee - Abide with Me - piano instrumental hymn with lyrics.m4a", "Abide with Me", "Kaleb Brasee", "4:21", ("devotional", "handover"), ("quiet",)),
+    MusicTrack("nada-te-turbe", "Taizé - Topic - Nada te turbe (Accompaniment).m4a", "Nada te turbe", "Taizé", "", ("welcome", "devotional", "handover"), ("quiet",), "instrumental"),
+    MusicTrack("nada-te-turbe-vocal", "Taizé - Topic - Nada te turbe.m4a", "Nada te turbe", "Taizé", "", ("welcome", "devotional", "handover"), ("quiet",), "vocal"),
+    MusicTrack("mon-ame-se-repose", "Taizé - Topic - Mon âme se repose (Accompaniment).m4a", "Mon âme se repose", "Taizé", "", ("welcome", "devotional", "handover"), ("quiet",), "instrumental"),
+    MusicTrack("mon-ame-se-repose-vocal", "Taizé - Topic - Mon âme se repose.m4a", "Mon âme se repose", "Taizé", "", ("welcome", "devotional", "handover"), ("quiet",), "vocal"),
+    MusicTrack("dona-la-pace", "Taizé - Topic - Dona la pace (Accompaniment).m4a", "Dona la pace", "Taizé", "", ("welcome", "devotional", "handover"), ("quiet",), "instrumental"),
+    MusicTrack("dona-la-pace-vocal", "Taizé - Topic - Dona la pace.m4a", "Dona la pace", "Taizé", "", ("welcome", "devotional", "handover"), ("quiet",), "vocal"),
+    MusicTrack("da-pacem-cordium-violin", "Violin De Noche - Taizé Instrumental - Da Pacem Cordium (Violin).m4a", "Da pacem cordium", "Violin De Noche", "", ("welcome", "devotional", "handover"), ("quiet",), "instrumental"),
+    MusicTrack("da-pacem-cordium-vocal", "Taizé - Topic - Da pacem cordium.m4a", "Da pacem cordium", "Taizé", "", ("welcome", "devotional", "handover"), ("quiet",), "vocal"),
 )
 
 

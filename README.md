@@ -10,7 +10,7 @@
 
 我把公平、清晰、責任、耐心與關顧定為這個系統的原則。v1.2 的方向是讓所有人只需記住同一個網站及同一套 NiceGUI 產品：訪客以固定虛構中文姓名完成臨時示範，獲准管理員經 Cloudflare Access 使用正式工作台，收到完整 `/view#…` 連結的人只可查看我明確分享的已發布週表。正式名單、請假原因、公平帳本、PDF、備份及完整操作資料仍留在受控 Windows 主機；Guest workspace 只在 origin 記憶體及受限的瀏覽器 session 範圍運作，不會寫入正式 SQLite、備份或公平帳本。
 
-公開入口以同一張「已準備好的值班工作桌」在淺色清晨與深色夜間呈現：值班簿、三個流程紙標及 teal 線分別呼應記錄、三步工作及持續服事。兩張原創 WebP 都在專案本機，不含人物、學生資料、文字、校徽、外部追蹤或第三方圖片請求；停用動效時仍是完全可讀的靜態入口。
+公開入口以同一張「已準備好的值班工作桌」在淺色清晨與深色夜間呈現：值班簿、三個流程紙標及 teal 線分別呼應記錄、三步工作及持續服事。兩張原創 WebP 都在專案本機，不含人物、學生資料、文字、校徽、外部追蹤或第三方圖片請求；停用動效時仍是完全可讀的靜態入口。頁首使用透明的 Service Weave 淺／深標誌配對，跟隨同一個自動／淺色／深色外觀狀態；帶固定深靛底面的 app icon 只用於瀏覽器 favicon 及作業系統圖標。
 
 [English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)
 
@@ -364,6 +364,8 @@ The optional YouTube control window plays public playlists for free without sign
 3. At `/auth/login`, the Worker validates the Access JWT and creates a separate HMAC-signed `__Host-SingYinAdminSession` cookie. That HttpOnly, Secure, SameSite=Lax session lasts no longer than eight hours or the Access token expiry, and the exact allowlist is checked again on every workbench request. Select **Log out** when finished.
 4. Read the Daily Verse. Its direction can follow appearance or be fixed to Clear guidance or Quiet comfort; appearance is only a default recommendation. Then follow the highlighted step in the weekly roster desk.
 5. Check the prefect directory, declare pre-generation leave, generate a draft, review it, publish once, export the roster, and use the dedicated leave-adjustment workflow for a late absence. If browser-direct viewing is needed, explicitly create a same-host read-only `/view#…` link; after a late adjustment, create a fresh link and revoke the old one.
+
+The **Rosters** page is the weekly-work hub. Roster detail and published-duty adjustment pages always show the same generate → review/export → adjust → history sequence and an explicit return action; they never rely on browser history. Draft-change, leave-adjustment, withdrawal, and pre-generation leave reasons are optional context, while version checks, audit, fairness reconciliation, backup obligations, and withdrawal week confirmation remain mandatory. Duty-position labels stay in canonical English in both interface languages and both PDFs; prefect names always remain Chinese.
 
 `START_SING_YIN_ROSTER.cmd`, localhost, and the enrolled private-WARP address remain maintenance and outage fallbacks, not additional URLs to distribute.
 

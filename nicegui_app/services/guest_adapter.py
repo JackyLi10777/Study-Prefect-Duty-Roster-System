@@ -556,13 +556,13 @@ class GuestWorkspaceAdapter:
         roster_week_id: int,
         assignment_id: int,
         replacement_prefect_id: str,
-        reason: str,
+        reason: str | None = None,
         expected_week_version: int | None = None,
         command_id: str | None = None,
     ) -> DraftAssignmentUpdateResult:
         self._require_modify()
-        if not reason.strip():
-            raise WorkflowError("A demo manual draft change requires a reason.")
+        # The demo mirrors production: an operator may leave the explanatory
+        # note blank, while the versioned command remains fully auditable.
         view = self._view()
         state = view.state
         week = self._week_record(state, roster_week_id)
@@ -650,15 +650,13 @@ class GuestWorkspaceAdapter:
         roster_week_id: int,
         *,
         expected_version: int,
-        reason: str,
+        reason: str | None = None,
         command_id: str | None = None,
     ) -> RosterWithdrawalResult:
         """Run the same auditable-withdrawal semantics inside demo memory only."""
 
         self._require_modify()
-        normalized_reason = reason.strip()
-        if not normalized_reason:
-            raise WorkflowError("A demo published-roster withdrawal requires a reason.")
+        normalized_reason = (reason or "").strip()
         operation_id = command_id or f"demo-withdraw:{secrets.token_hex(12)}"
         if not operation_id.strip() or len(operation_id) > 64:
             raise WorkflowError("Demo withdrawal command ID is invalid.")
@@ -772,14 +770,12 @@ class GuestWorkspaceAdapter:
         roster_week_id: int,
         assignment_id: int,
         replacement_prefect_id: str | None,
-        reason: str,
+        reason: str | None = None,
         command_id: str | None = None,
         expected_week_version: int | None = None,
     ) -> LeaveAdjustmentResult:
         self._require_modify()
-        normalized_reason = reason.strip()
-        if not normalized_reason:
-            raise WorkflowError("A demo leave adjustment requires a reason.")
+        normalized_reason = (reason or "").strip()
         operation_id = command_id or f"demo-leave:{secrets.token_hex(12)}"
         if len(operation_id) > 64 or not operation_id.strip():
             raise WorkflowError("Demo leave adjustment command ID is invalid.")

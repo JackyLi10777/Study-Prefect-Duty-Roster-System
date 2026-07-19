@@ -256,7 +256,7 @@ class RosterLifecycleMixin:
         roster_week_id: int,
         *,
         expected_version: int,
-        reason: str,
+        reason: str | None = None,
         command_id: str | None = None,
     ) -> RosterWithdrawalResult:
         """Withdraw one published roster while preserving evidence and fairness truth.
@@ -268,9 +268,7 @@ class RosterLifecycleMixin:
         published roster may already contain one or more substitute transfers.
         """
 
-        normalized_reason = reason.strip()
-        if not normalized_reason:
-            raise WorkflowError("Withdrawing a published roster requires a reason.")
+        normalized_reason = (reason or "").strip()
         if expected_version < 1:
             raise WorkflowError("The reviewed roster version is invalid. Refresh before withdrawing it.")
 
@@ -454,13 +452,12 @@ class RosterLifecycleMixin:
         roster_week_id: int,
         assignment_id: int,
         replacement_prefect_id: str,
-        reason: str,
+        reason: str | None = None,
         expected_week_version: int | None = None,
         command_id: str | None = None,
     ) -> DraftAssignmentUpdateResult:
         """Apply an auditable, policy-validated manual draft change without posting fairness weight."""
-        if not reason.strip():
-            raise WorkflowError("A manual draft change requires a reason.")
+        normalized_reason = (reason or "").strip()
         operation_type = "draft_assignment_changed"
         command_key = self._operation_command_id(operation_type, command_id)
         receipt: dict[str, object] | None = None
@@ -474,7 +471,7 @@ class RosterLifecycleMixin:
                     "rosterWeekId": roster_week_id,
                     "assignmentId": assignment_id,
                     "replacementPrefectId": replacement_prefect_id,
-                    "reason": reason.strip(),
+                    "reason": normalized_reason,
                     "expectedWeekVersion": expected_week_version,
                 },
             )
@@ -534,7 +531,7 @@ class RosterLifecycleMixin:
                         "fromPrefectName": original_name,
                         "toPrefectId": replacement.id,
                         "toPrefectName": replacement.name_zh,
-                        "reason": reason.strip(),
+                        "reason": normalized_reason,
                         "version": week.version,
                     },
                 )
@@ -560,13 +557,11 @@ class RosterLifecycleMixin:
         roster_week_id: int,
         assignment_id: int,
         replacement_prefect_id: str | None,
-        reason: str,
+        reason: str | None = None,
         command_id: str | None = None,
         expected_week_version: int | None = None,
     ) -> LeaveAdjustmentResult:
-        normalized_reason = reason.strip()
-        if not normalized_reason:
-            raise WorkflowError("A leave adjustment requires a reason.")
+        normalized_reason = (reason or "").strip()
         operation_type = "leave_adjusted"
         operation_id = self._operation_command_id(operation_type, command_id)
         request_fingerprint = self._leave_adjustment_request_fingerprint(

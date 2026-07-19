@@ -115,6 +115,20 @@ def test_service_weave_white_mark_and_worker_delivery_are_reproducible() -> None
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_cloudflare_landing_receives_the_manifest_selected_theme_marks() -> None:
+    public_assets = PROJECT_ROOT / "cloudflare" / "roster_viewer" / "public" / "assets"
+    expected = {
+        "service-weave-mark-light-v1.png": SERVICE_WEAVE_ASSET_DIR
+        / "service-weave-mark-light-v1.png",
+        "service-weave-mark-dark-v1.png": SERVICE_WEAVE_ASSET_DIR
+        / "service-weave-mark-dark-v1.png",
+    }
+    for filename, source in expected.items():
+        delivered = public_assets / filename
+        assert delivered.is_file()
+        assert delivered.read_bytes() == source.read_bytes()
+
+
 def test_cloudflare_entry_and_error_pages_use_the_service_weave_product_mark() -> None:
     worker = (
         PROJECT_ROOT / "cloudflare" / "roster_viewer" / "worker.js"
@@ -127,7 +141,11 @@ def test_cloudflare_entry_and_error_pages_use_the_service_weave_product_mark() -
     ):
         assert export_name in worker
     assert worker.count('href="/favicon.png" type="image/png"') == 3
-    assert 'src="/favicon.png"' in worker
+    assert 'src="/favicon.png"' not in worker
+    assert 'src="/assets/service-weave-mark-light-v1.png"' in worker
+    assert 'src="/assets/service-weave-mark-dark-v1.png"' in worker
+    assert ':root[data-theme="dark"] .brand-mark-image--dark { opacity: 1; }' in worker
+    assert ':root:not([data-theme="light"]) .brand-mark-image--dark { opacity: 1; }' in worker
     assert "path === '/favicon.png'" in worker
     assert "'Content-Type': 'image/png'" in worker
     assert "public, max-age=31536000, immutable" in worker

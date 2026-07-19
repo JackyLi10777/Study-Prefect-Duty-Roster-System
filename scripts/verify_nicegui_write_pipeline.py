@@ -219,10 +219,10 @@ def _assignment_label(assignment: dict[str, object]) -> str:
         "FRIDAY": "星期五",
     }
     post_labels = {
-        "ASSIST_IN_CHARGE": "助理首席導學風紀當值",
-        "ROOM_302": "302 室（自修室）",
-        "ROOM_303": "303 室（功課完成室）",
-        "ROOM_202": "202 室（F.1 自修小組）",
+        "ASSIST_IN_CHARGE": "Assist. in charge",
+        "ROOM_302": "Room 302 Study Room",
+        "ROOM_303": "Homework Completion Room",
+        "ROOM_202": "Room 202 F1 Study Group",
     }
     return f"{day_labels[str(assignment['day'])]} | {post_labels[str(assignment['postCode'])]} | {assignment['prefectName']}"
 
@@ -399,13 +399,6 @@ def main() -> None:
         page.get_by_role("button", name="載入合資格人選").click()
         page.locator(".q-notification").filter(has_text="合資格替補").last.wait_for(timeout=10_000)
         _select_option(page, "替補風紀", _candidate_label(manual_candidate))
-        page.get_by_role("button", name="儲存草稿修改").click()
-        page.get_by_text("請先填寫草稿修改原因。", exact=True).wait_for(timeout=10_000)
-        assert page.locator(".sy-progress-dialog").count() == 0
-        log_content = (log_dir / "app.log").read_text(encoding="utf-8")
-        assert "progress_draft_change_working" not in log_content
-
-        page.get_by_label("修改原因（必填）").fill("虛構草稿核對修正")
         with page.expect_navigation(wait_until="domcontentloaded", timeout=20_000):
             page.get_by_role("button", name="儲存草稿修改").click()
         page.get_by_text("草稿預覽", exact=True).wait_for(timeout=10_000)
@@ -415,8 +408,7 @@ def main() -> None:
         assert workflow.prefect_loads() == before_publish_loads
         log_content = (log_dir / "app.log").read_text(encoding="utf-8")
         assert "progress_draft_change_working" in log_content
-        assert "虛構草稿核對修正" not in log_content
-        print("[4/8] Rejected a missing manual-change reason, then saved an auditable correction", flush=True)
+        print("[4/8] Saved a reason-optional, versioned, auditable draft correction", flush=True)
 
         page.goto(f"{BASE_URL}/rosters/{roster_week_id}/adjustments", wait_until="domcontentloaded")
         premature_adjustment = page.get_by_test_id("adjustment-unavailable-state")
@@ -489,9 +481,6 @@ def main() -> None:
         page.get_by_role("button", name="載入合資格替補").click()
         page.locator(".q-notification").filter(has_text="合資格替補").last.wait_for(timeout=10_000)
         _select_option(page, "替補風紀", _candidate_label(replacement))
-        page.get_by_role("button", name="儲存請假調整").click()
-        page.get_by_text("請先填寫調整原因", exact=False).wait_for(timeout=10_000)
-        page.get_by_label("調整原因").fill("虛構已發布後請假")
         page.get_by_role("button", name="儲存請假調整").click()
         page.get_by_text("請假調整已完成", exact=True).wait_for(timeout=20_000)
         page.get_by_text("先前下載或已發出的 PDF 不會自行更新", exact=False).wait_for(timeout=10_000)

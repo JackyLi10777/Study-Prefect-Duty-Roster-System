@@ -612,7 +612,9 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
     ).click()
     draft_selects = page.locator("main#main-content .q-select:visible")
     chosen_draft_candidate = _select_option(page, draft_selects.nth(1))
-    page.locator("textarea[name='draft-change-reason']").fill("示範核對後調整")
+    draft_reason = page.locator("textarea[name='draft-change-reason']")
+    if draft_reason.input_value() != "":
+        raise UnifiedGuestVerificationError("The optional draft-change reason did not start blank.")
     page.get_by_role(
         "button",
         name=re.compile(r"儲存草稿修改|Save draft change"),
@@ -645,7 +647,9 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
         adjustment_selects.nth(1),
         exclude=re.compile(r"保留空缺|Keep vacancy|Vacant", re.IGNORECASE),
     )
-    page.locator("textarea[name='leave-adjustment-reason']").fill("示範已發布後請假")
+    adjustment_reason = page.locator("textarea[name='leave-adjustment-reason']")
+    if adjustment_reason.input_value() != "":
+        raise UnifiedGuestVerificationError("The optional leave-adjustment reason did not start blank.")
     page.get_by_role(
         "button",
         name=re.compile(r"儲存請假調整|Save leave adjustment"),
@@ -669,7 +673,7 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
         "rosterWeekId": roster_week_id,
         "preGenerationLeave": True,
         "manualDraftChange": {
-            "reasonRequired": True,
+            "reasonOptional": True,
             "candidate": chosen_draft_candidate,
         },
         "demoPublish": True,
@@ -677,6 +681,7 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
         "publishedDutyAdjustment": {
             "original": original_name,
             "replacement": replacement_name,
+            "reasonOptional": True,
             "fairnessTransferReceipt": True,
         },
     }

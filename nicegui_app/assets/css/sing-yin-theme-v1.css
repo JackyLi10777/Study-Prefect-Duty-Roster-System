@@ -51,7 +51,6 @@ button, [role="button"], a, input, textarea, select { touch-action: manipulation
 .sy-table { border-radius: 16px; overflow: hidden; border: 1px solid var(--sy-line); background: var(--sy-surface); }
 .sy-roster-mobile { display: none; }
 .sy-prefect-mobile { display: none; }
-.sy-operational-workspace { max-width: none; }
 .sy-roster-matrix { margin-top: 20px; overflow-x: auto; }
 .sy-roster-matrix .q-table { table-layout: fixed; min-width: 880px; }
 .sy-roster-matrix .q-table th, .sy-roster-matrix .q-table td { padding: 13px 12px; white-space: normal; line-height: 1.45; }
@@ -77,7 +76,20 @@ button, [role="button"], a, input, textarea, select { touch-action: manipulation
 .sy-header-tools { flex: 0 0 auto; min-height: 50px; padding: 3px; border: 1px solid var(--sy-line); border-radius: 16px; background: var(--sy-surface-subtle); }
 .sy-header-tools .q-btn, .sy-icon-control, .sy-language-control { min-width: 44px !important; min-height: 44px !important; color: var(--sy-nav-ink) !important; border-radius: 12px !important; }
 .sy-header-tools .q-icon, .sy-header-tools .q-btn__content { color: var(--sy-nav-ink) !important; }
-.sy-language-control { padding-inline: 12px !important; font-weight: 720; }
+.sy-language-control {
+  min-width: 50px !important;
+  padding-inline: 12px !important;
+  border: 1px solid color-mix(in srgb, var(--sy-line) 84%, var(--sy-role-action)) !important;
+  background: var(--sy-surface) !important;
+  box-shadow: 0 2px 8px rgba(28, 28, 30, .055);
+  font-weight: 760;
+}
+.sy-language-control:hover,
+.sy-language-control:focus-visible {
+  border-color: var(--sy-role-action) !important;
+  background: var(--sy-role-action-soft) !important;
+}
+.body--dark .sy-language-control { box-shadow: none; }
 .sy-admin-logout { min-width: 44px !important; min-height: 44px !important; color: var(--sy-nav-ink) !important; border-radius: 12px !important; }
 .sy-main { color: var(--sy-ink); }
 .sy-page-title, .sy-main > .q-label.text-2xl.font-semibold { color: var(--sy-ink); font-size: clamp(25px, 2.3vw, 31px); font-weight: 750; letter-spacing: -.03em; line-height: 1.25; }
@@ -736,7 +748,7 @@ body .q-badge.sy-status-badge.sy-tone-neutral { color: var(--sy-status-neutral-f
 .body--dark .sy-practice-banner-copy { color: #E4D4A8; }
 .sy-maintenance-banner { position: relative; display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 58px; padding: 10px clamp(16px, 3vw, 32px); border-bottom: 1px solid var(--sy-role-attention); color: #4A3200; background: var(--sy-role-attention-soft); box-shadow: 0 5px 18px rgba(83,58,12,.10); }
 .body--dark .sy-maintenance-banner { color: #FFF1C7; background: #342A18; border-bottom-color: #876A30; box-shadow: 0 7px 22px rgba(0,0,0,.28); }
-@media (max-width: 900px) { .sy-status-stack { position: relative; } .sy-practice-banner { align-items: flex-start; } .sy-header-title { max-width: 27vw; font-size: 15px !important; } .sy-header-tools { border-color: transparent; background: transparent; } .sy-header-tools .q-btn, .sy-icon-control, .sy-language-control { min-width: 44px !important; } .sy-header-tools > .sy-status-badge { display: none !important; } }
+@media (max-width: 900px) { .sy-status-stack { position: relative; } .sy-practice-banner { align-items: flex-start; } .sy-header-title { max-width: 27vw; font-size: 15px !important; } .sy-header-tools { border-color: transparent; background: transparent; } .sy-header-tools .q-btn, .sy-icon-control { min-width: 44px !important; } .sy-language-control { min-width: 50px !important; } .sy-header-tools > .sy-status-badge { display: none !important; } }
 @keyframes sy-current-step { from { opacity: .45; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { *, *:before, *:after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } .q-btn:hover, .sy-sidebar .q-btn:hover, .q-expansion-item .q-item:hover, .sy-pointer-reactive:hover, .sy-co-creation-social:hover { transform: none !important; } .sy-pointer-light, .sy-feedback-pulse { display: none !important; } }
 @media (hover: none), (pointer: coarse) { .q-tooltip { display: none !important; } }
