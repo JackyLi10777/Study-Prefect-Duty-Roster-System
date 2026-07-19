@@ -4,17 +4,12 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
-> **Live v1.2 rc14 status:** the controlled Windows origin and canonical Worker
-> use the same release line. The entrance selects the transparent Service Weave
-> light／dark product mark from the product-identity contract, and its welcome
-> audio controller contains no reference to the retired fade hook. The rc11
-> evidence below is retained as historical release provenance.
-
-> **Live v1.2 rc11 status:** The 264-input release passed all 13 formal gates with
-> fingerprint `8423b0d41666e6dcd342195967d97362c091b920dd2c51081a77c34ac93dc41f`.
-> The Windows origin is healthy／ready on `v1.2.0-rc.11`／`7aff468`; a fresh
-> verified production backup and isolated restore passed before cutover.
-> Worker version `1cba4784-e265-4d87-a04d-5759b79a7530` passed staged-version and
+> **Live v1.2 rc15 status:** the controlled Windows origin and canonical Worker
+> use `v1.2.0-rc.15`／`17a1cf9`. The 284-input release passed all 13 formal gates
+> with fingerprint `f9b64dbc8fbbafc45e7d3819a8421fcb202bae252f086804f4a1f52d8ac8a54f`.
+> A fresh production backup, checksum, fairness reconciliation and isolated
+> restore passed before cutover. Worker version
+> `f8ea712c-6b64-4d32-8f62-3405bc313e24` passed staged-version and
 > canonical health／entrance／viewer checks before receiving 100% traffic.
 > Supervised human acceptance remains required.
 
@@ -41,7 +36,7 @@ NiceGUI owns the rendering and navigation. The read model introduces no schema, 
 
 ## Canonical entry and local maintenance start
 
-> **Unified Guest architecture contract:** The live rc11 host enables this path
+> **Unified Guest architecture contract:** The live rc15 host enables this path
 > through its protected `SING_YIN_UNIFIED_GUEST=1` configuration. Any later
 > candidate must preserve the same deny-by-default boundary and pass fresh
 > candidate-bound verification before the origin or Worker is switched; changing
@@ -337,15 +332,15 @@ The only deliberate application-originated external request carrying roster-deri
 - Worker Deno contracts own `/auth/admin/start`, `/auth/guest/start`, `/auth/status`, `/auth/logout`, compatibility redirects, principal signing, forged-header stripping, VPC proxying and Viewer isolation.
 
 The focused browser-snapshot tests, complete Python suite, unified Guest browser
-verifier and release-candidate orchestrator all passed in the live rc11 13-gate
+verifier and release-candidate orchestrator all passed in the live rc15 13-gate
 report. The immutable release produced fingerprint
-`8423b0d41666e6dcd342195967d97362c091b920dd2c51081a77c34ac93dc41f` from 264
-inputs. The running origin remains healthy／ready on `v1.2.0-rc.11`／`7aff468`;
+`f9b64dbc8fbbafc45e7d3819a8421fcb202bae252f086804f4a1f52d8ac8a54f` from 284
+inputs. The running origin remains healthy／ready on `v1.2.0-rc.15`／`17a1cf9`;
 the verified matching Worker is
-`1cba4784-e265-4d87-a04d-5759b79a7530`. Earlier rc5／rc6 staging and rc7 cutover
+`f8ea712c-6b64-4d32-8f62-3405bc313e24`. Earlier rc5／rc6 staging and rc7 cutover
 details are historical rollout evidence, not instructions for a new candidate.
 Every later candidate must regenerate its own fingerprint, report, backup／restore
-and live Cloudflare acceptance before replacing rc11, so this architecture
+and live Cloudflare acceptance before replacing rc15, so this architecture
 document alone is not deployment evidence.
 
 ```powershell

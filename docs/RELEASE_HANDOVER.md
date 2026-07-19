@@ -2,9 +2,7 @@
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
-> **v1.2 rc14 現行交接狀態：**正式入口的 Service Weave 標誌會跟隨淺色、深色及系統外觀切換；歡迎音樂控制器亦已移除對舊 fade hook 的無效呼叫。每次更新仍須以同一 annotated tag 同步 Windows origin 與 canonical Worker，並完成正式 gate、已驗證備份、隔離還原及線上入口檢查。下列 rc11 數值保留作歷史發布證據，不是要求下一任回退使用的版本。
-
-> **v1.2 rc11 交接狀態：** 264 個發布輸入已以指紋 `8423b0d41666e6dcd342195967d97362c091b920dd2c51081a77c34ac93dc41f` 通過 13／13 正式 gate。`C:\SingYinRoster` 現為健康、ready 的 rc11／`7aff468`；正式備份 `20260719-112322-850398-manual_verified_backup.sqlite3`、SHA-256 `47e30f9a02da9bb5680fb64009ad7d0f10078b4de8ee85ed50846fca84c02882`、公平對帳、行數核對、還原審計及隔離還原全部通過。canonical Worker version `1cba4784-e265-4d87-a04d-5759b79a7530` 已通過 0% 候選及 100% 正式 smoke checks；public gateway health 為 HTTP 200。首席導學風紀及教師顧問仍須完成真人驗收清單。
+> **v1.2 rc15 現行交接狀態：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.15`／commit `17a1cf9`。284 個發布輸入以指紋 `f9b64dbc8fbbafc45e7d3819a8421fcb202bae252f086804f4a1f52d8ac8a54f` 通過 13／13 正式 gate；正式備份 `20260719-161113-105684-manual_verified_backup.sqlite3`、SHA-256 `b0a18ed51a60a455d8197c6cc3468f8e7fb3a723d1222171f34ddb07a8bd56b4`、公平對帳、行數核對、還原審計及隔離還原全部通過。canonical Worker version `f8ea712c-6b64-4d32-8f62-3405bc313e24` 已通過 0% 候選及 100% 正式 smoke checks；origin 健康、ready，沒有待處理備份義務。rc14／`22a17c9` 與 Worker `e6ba405a-4d7a-4529-b3d8-d5d4df2a9479` 是即時回退組合；rc11 及更早數值只屬歷史發布證據。首席導學風紀及教師顧問仍須完成真人驗收清單。
 
 > **歷史 rc4 rollout 記錄（不可作現行步驟）：** rc4 已成功把正式 Alembic schema 由 `0007` 升至 `0008`，建立已驗證備份並完成隔離還原；其後 `git fetch origin main` 只更新 `FETCH_HEAD`，而 ancestry gate 讀取 stale `origin/main`，造成假失敗。rc4 因而從未被宣告為 live。自動 rollback 未能證明 origin health 後，主機以相容的 rc4／`30f282f` 完成 forward recovery；rc5／`bafaef6` 已改用明確 remote-tracking refspec，並重新通過完整 13-gate 報告。
 
@@ -90,7 +88,7 @@ JSON 是唯讀報告證據，不是 SQLite 還原備份。需要交接或復原�
 
 受控技術維護可使用 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。正式設定只接受 Ed25519 金鑰、只監聽 loopback，並拒絕密碼、轉發及公開 TCP 22。`SingYinRosterSvc` 仍是非互動網站執行帳戶，不可用作 SSH 登入；SSH 私鑰亦不可放入 Git、交接備份、日誌或雲端同步資料夾。
 
-需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。目前 live rc11 中，訪客不需輸入電郵或密碼，只按「訪客體驗」建立有限期 Guest session；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 驗證相應 session 後，以獨立 HMAC principal 把 Guest／Admin 送到同一 NiceGUI origin；origin 再分流至虛構記憶體 adapter 或正式 workflow。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
+需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。目前 live rc15 中，訪客不需輸入電郵或密碼，只按「訪客體驗」建立有限期 Guest session；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 驗證相應 session 後，以獨立 HMAC principal 把 Guest／Admin 送到同一 NiceGUI origin；origin 再分流至虛構記憶體 adapter 或正式 workflow。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
 
 ### 交接前練習模式
 
@@ -205,7 +203,7 @@ python -X utf8 -m nicegui_app.main
 
 1. 在最後來源 commit 只執行一次 `python -X utf8 scripts\verify_update.py --release`；它已擁有完整 pytest、瀏覽器、Worker、效能、備份失敗及部署就緒閘門，不要再重複跑同一套檢查。
 2. 核對 `logs/release-candidate-report.json` 的 13 項 gate、來源 fingerprint 與最終 commit 完全一致。
-3. Gate 通過後，才合併 `main` 並建立**下一個獲批准的 annotated tag**；不可預先重用任何既有標籤。保存目前 rc11／`7aff468` 作現行不可變版本，並保留 rc9／`18a5c73` Windows bundle 及 Worker `b13e5721-d1e8-4048-9885-ffb422fe2010` 作已記錄回退組合。
+3. Gate 通過後，才合併 `main` 並建立**下一個獲批准的 annotated tag**；不可預先重用任何既有標籤。保存目前 rc15／`17a1cf9` 作現行不可變版本，並保留 rc14／`22a17c9` Windows bundle 及 Worker `e6ba405a-4d7a-4529-b3d8-d5d4df2a9479` 作已記錄回退組合。
 4. 以 `scripts\deploy_windows_release.ps1` 從該乾淨 tag 更新 Windows bundle；腳本會在切換前建立新的正式已驗證快照、完成隔離還原、進入 maintenance、執行 additive migration並在失敗時回復，不需要另跑一套重複備份程序。
 5. 核對 `/healthz`、`/readyz`、管理員本機工作流及備份義務。
 6. 只有 Worker source 或受保護設定確實改變時，才執行 `scripts\deploy_cloudflare_worker.ps1`；它會以舊版 100%／新版 0% staging、版本指定 smoke checks、100% promotion 及精確 rollback 管理遠端切換。若 Worker 未改，則記錄「刻意不重新部署」及沿用的 verified version ID。

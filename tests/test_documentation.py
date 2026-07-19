@@ -120,7 +120,7 @@ def test_v12_guest_documents_match_the_signed_browser_bridge_and_release_truth()
     assert "尚未完成的瀏覽器 snapshot 橋接" not in security
 
 
-def test_release_truth_docs_keep_live_rc11_separate_from_candidate_and_history() -> None:
+def test_release_truth_docs_keep_live_rc15_separate_from_history() -> None:
     status = (PROJECT_ROOT / "PROJECT_STATUS.md").read_text(encoding="utf-8")
     architecture = (PROJECT_ROOT / "docs" / "NICEGUI_ARCHITECTURE.md").read_text(
         encoding="utf-8"
@@ -134,17 +134,19 @@ def test_release_truth_docs_keep_live_rc11_separate_from_candidate_and_history()
     operator = (PROJECT_ROOT / "docs" / "OPERATOR_GUIDE.md").read_text(encoding="utf-8")
 
     for document in (status, architecture, security, handover):
-        assert "7aff468" in document
-        assert "1cba4784-e265-4d87-a04d-5759b79a7530" in document
+        assert "v1.2.0-rc.15" in document
+        assert "17a1cf9" in document
+        assert "f8ea712c-6b64-4d32-8f62-3405bc313e24" in document
 
-    assert "Service Weave v1.2 rc11 live rollout" in status
-    assert "v1.2 rc14 is the current controlled Windows origin" in status
+    assert "Service Weave v1.2 rc15 controlled rollout" in status
+    assert "v1.2 rc15 is the current controlled Windows origin" in status
+    assert "Historical Service Weave v1.2 rc11 rollout" in status
     readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     assert "## 程式審查、邊界與擴展預期" in readme
     assert "SING_YIN_PORT" in readme
     assert "一百倍" in readme
     assert "cancelWelcomeFade is not defined" in status
-    assert "目前發布（v1.2 rc14）" in (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "目前發布（v1.2 rc15）" in (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     assert "remains disabled by default" not in status
     assert "now run the matching rc7 release" not in status
     assert "Windows origin remains healthy／ready on rc4" not in security
@@ -168,7 +170,7 @@ def test_release_truth_docs_keep_live_rc11_separate_from_candidate_and_history()
     assert "只有 `/view#…`" in operator
 
 
-def test_operator_deployment_docs_use_live_rc11_and_candidate_bound_next_tag() -> None:
+def test_operator_deployment_docs_use_live_rc15_and_candidate_bound_next_tag() -> None:
     quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
     windows = (PROJECT_ROOT / "docs" / "WINDOWS_DEDICATED_HOST_SETUP.md").read_text(
         encoding="utf-8"
@@ -184,9 +186,9 @@ def test_operator_deployment_docs_use_live_rc11_and_candidate_bound_next_tag() -
     )
 
     for document in (quickstart, windows, cloudflare, viewer, decision):
-        assert "v1.2.0-rc.11" in document
-        assert "7aff468" in document
-        assert "1cba4784-e265-4d87-a04d-5759b79a7530" in document
+        assert "v1.2.0-rc.15" in document
+        assert "17a1cf9" in document
+        assert "f8ea712c-6b64-4d32-8f62-3405bc313e24" in document
 
     assert "schema-compatible rc4" not in quickstart
     assert "pre-v1.2 baseline" not in quickstart
