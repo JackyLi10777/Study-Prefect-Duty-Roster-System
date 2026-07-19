@@ -142,7 +142,7 @@ def test_deployment_script_fences_data_and_preserves_the_protected_environment()
     assert source.index("Stop-ScheduledTask -TaskName $TaskName") < source.index(
         "Disable-ScheduledTask -TaskName $TaskName"
     )
-    assert "Wait-PortReleased -Port 8080" in source
+    assert "Wait-PortReleased -Port $deploymentPort" in source
     assert "scripts\\verify_formal_backup_restore.py" in source
     for proof in (
         "isolatedRestore",
@@ -230,8 +230,14 @@ def test_deployment_script_switches_locked_host_and_requires_write_readiness() -
     assert "Get-SingYinTaskInspection" in source
     assert "Enable-ScheduledTask -TaskName $TaskName" in source
     assert "Start-ScheduledTask -TaskName $TaskName" in source
-    assert "http://127.0.0.1:8080/healthz" in source
-    assert "http://127.0.0.1:8080/readyz" in source
+    assert "Get-SingYinConfiguredEndpoint -EnvironmentPath $environmentPath" in source
+    assert '$deploymentPort = [int]$configuredEndpoint.Port' in source
+    assert '"http://127.0.0.1:$Port/healthz"' in source
+    assert '"http://127.0.0.1:$Port/readyz"' in source
+    assert "Wait-LoopbackHealth -Port $deploymentPort" in source
+    assert "Wait-LoopbackReadiness -Port $deploymentPort" in source
+    assert 'port = $deploymentPort' in source
+    assert "http://127.0.0.1:8080/healthz" not in source
     assert '$ready.status -ceq "ready"' in source
     assert "$ready.writeReady -eq $true" in source
     assert "$ready.maintenance -eq $false" in source

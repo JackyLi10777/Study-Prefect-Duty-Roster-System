@@ -139,6 +139,10 @@ def test_release_truth_docs_keep_live_rc11_separate_from_candidate_and_history()
 
     assert "Service Weave v1.2 rc11 live rollout" in status
     assert "v1.2 rc14 is the current controlled Windows origin" in status
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "## 程式審查、邊界與擴展預期" in readme
+    assert "SING_YIN_PORT" in readme
+    assert "一百倍" in readme
     assert "cancelWelcomeFade is not defined" in status
     assert "目前發布（v1.2 rc14）" in (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     assert "remains disabled by default" not in status

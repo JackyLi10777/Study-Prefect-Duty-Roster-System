@@ -394,11 +394,11 @@ function Wait-PortReleased([int]$Port, [int]$TimeoutSeconds = 30) {
     throw "Port $Port is still in use after the owned startup task was stopped."
 }
 
-function Wait-LoopbackHealth([int]$TimeoutSeconds = 90) {
+function Wait-LoopbackHealth([Parameter(Mandatory = $true)][int]$Port, [int]$TimeoutSeconds = 90) {
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $deadline) {
         try {
-            $health = Invoke-RestMethod -Uri "http://127.0.0.1:8080/healthz" -TimeoutSec 3
+            $health = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/healthz" -TimeoutSec 3
             if (
                 $health.application -ceq "sing-yin-roster" -and
                 $health.applicationMode -ceq "official" -and
@@ -415,11 +415,11 @@ function Wait-LoopbackHealth([int]$TimeoutSeconds = 90) {
     throw "The official origin did not become healthy within $TimeoutSeconds seconds."
 }
 
-function Wait-LoopbackReadiness([int]$TimeoutSeconds = 90) {
+function Wait-LoopbackReadiness([Parameter(Mandatory = $true)][int]$Port, [int]$TimeoutSeconds = 90) {
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $deadline) {
         try {
-            $ready = Invoke-RestMethod -Uri "http://127.0.0.1:8080/readyz" -TimeoutSec 3
+            $ready = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/readyz" -TimeoutSec 3
             if (
                 $ready.status -ceq "ready" -and
                 $ready.writeReady -eq $true -and
@@ -539,6 +539,7 @@ try {
     $taskStopped = $false
     $switchedHost = $false
     $environmentPath = Join-Path $HostRoot ".env"
+    $deploymentPort = 8080
     $environmentBytes = $null
     $environmentHash = $null
     $environmentOverlayApplied = $false
@@ -679,6 +680,8 @@ try {
     $processEnvironmentCaptured = $true
     $environmentValues = Import-HostEnvironment -EnvironmentPath $environmentPath
     Assert-UnifiedGuestHostSettings -Values $environmentValues
+    $configuredEndpoint = Get-SingYinConfiguredEndpoint -EnvironmentPath $environmentPath
+    $deploymentPort = [int]$configuredEndpoint.Port
 
     $hostStatus = Get-GitValue -Repository $HostRoot -Arguments @(
         "status",
@@ -690,13 +693,13 @@ try {
     }
     $previousCommit = Get-GitValue -Repository $HostRoot -Arguments @("rev-parse", "HEAD")
 
-    Write-Step "Stopping the owned task and fencing port 8080"
+    Write-Step "Stopping the owned task and fencing port $deploymentPort"
     if ([string]$task.State -ceq "Running") {
         Stop-ScheduledTask -TaskName $TaskName
     }
     Disable-ScheduledTask -TaskName $TaskName | Out-Null
     $taskStopped = $true
-    Wait-PortReleased -Port 8080 -TimeoutSeconds 30
+    Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 30
 
     Write-Step "Creating a fresh verified backup and isolated restore proof"
     $env:SING_YIN_APP_MODE = "official"
@@ -812,8 +815,8 @@ try {
     Write-Step "Starting the official origin and enforcing health and write-readiness"
     Enable-ScheduledTask -TaskName $TaskName | Out-Null
     Start-ScheduledTask -TaskName $TaskName
-    $health = Wait-LoopbackHealth
-    $readiness = Wait-LoopbackReadiness
+    $health = Wait-LoopbackHealth -Port $deploymentPort
+    $readiness = Wait-LoopbackReadiness -Port $deploymentPort
     Invoke-Native -Executable $hostPython -Arguments @(
         "-X",
         "utf8",
@@ -841,6 +844,10 @@ try {
         rowCountsMatched = [bool]$backupReport.rowCountsMatched
         restoreAuditAppended = [bool]$backupReport.restoreAuditAppended
         environmentProtected = $true
+        endpoint = [ordered]@{
+            host = "127.0.0.1"
+            port = $deploymentPort
+        }
         environmentOverlayApplied = $environmentOverlayApplied
         taskName = $TaskName
         taskState = [string]$task.State
@@ -907,7 +914,7 @@ try {
                 }
                 if ($taskInitiallyRunning) {
                     Start-ScheduledTask -TaskName $TaskName
-                    $null = Wait-LoopbackHealth -TimeoutSeconds 90
+                    $null = Wait-LoopbackHealth -Port $deploymentPort -TimeoutSeconds 90
                 }
             }
             $rollbackSucceeded = $true
