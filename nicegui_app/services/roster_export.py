@@ -26,29 +26,19 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from nicegui_app.config import DISPLAY_PRINT_CREST_PATH, PROJECT_ROOT
-from roster_policy import ROOM_OPENING_TIME_WINDOWS, DutyPost, SchoolDay
+from nicegui_app.services.roster_presentation import (
+    DAY_ORDER,
+    DAY_TEXT,
+    ROSTER_ROWS,
+    build_roster_schedule,
+)
+from roster_policy import DutyPost, SchoolDay
 
 if TYPE_CHECKING:
     from nicegui_app.services.roster_workflow import RosterWorkflow
 
 
 ExportLanguage = Literal["zh", "en"]
-
-DAY_ORDER = (
-    SchoolDay.MONDAY,
-    SchoolDay.TUESDAY,
-    SchoolDay.WEDNESDAY,
-    SchoolDay.THURSDAY,
-    SchoolDay.FRIDAY,
-)
-
-DAY_TEXT: dict[SchoolDay, tuple[str, str]] = {
-    SchoolDay.MONDAY: ("星期一", "MONDAY"),
-    SchoolDay.TUESDAY: ("星期二", "TUESDAY"),
-    SchoolDay.WEDNESDAY: ("星期三", "WEDNESDAY"),
-    SchoolDay.THURSDAY: ("星期四", "THURSDAY"),
-    SchoolDay.FRIDAY: ("星期五", "FRIDAY"),
-}
 
 ENGLISH_MONTH_ABBREVIATIONS = (
     "JAN",
@@ -63,15 +53,6 @@ ENGLISH_MONTH_ABBREVIATIONS = (
     "OCT",
     "NOV",
     "DEC",
-)
-
-POST_ROWS: tuple[tuple[DutyPost, int, tuple[str, str]], ...] = (
-    (DutyPost.ASSIST_IN_CHARGE, 1, ("助理首席導學風紀當值", "Assist. in charge")),
-    (DutyPost.ROOM_302, 1, ("302 室（自修室）", "Room 302 (Study Room)")),
-    (DutyPost.ROOM_303, 1, ("303 室（功課完成）－1", "Room 303 (HW Completion) - 1")),
-    (DutyPost.ROOM_303, 2, ("303 室（功課完成）－2", "Room 303 (HW Completion) - 2")),
-    (DutyPost.ROOM_202, 1, ("202 室（中一自修小組）－1", "Room 202 (F1 Study Group) - 1")),
-    (DutyPost.ROOM_202, 2, ("202 室（中一自修小組）－2", "Room 202 (F1 Study Group) - 2")),
 )
 
 ROW_BACKGROUNDS = {
@@ -225,36 +206,34 @@ def _schedule_grid(
     *,
     landscape_mode: bool,
 ) -> Table:
-    by_slot = {
-        (str(item["day"]), str(item["postCode"]), int(item["slotIndex"])): item
-        for item in assignments
-    }
+    schedule = build_roster_schedule(assignments)
     heading = "值班位置" if language == "zh" else "Duty Position"
     rows: list[list[Paragraph]] = [[Paragraph(heading, styles["grid_heading"])] + [
         Paragraph(_dated_day_heading(week_start, day, language), styles["grid_heading"])
         for day in DAY_ORDER
     ]]
     cell_backgrounds: list[tuple[int, int, colors.Color]] = []
-    for row_index, (post, slot_index, label) in enumerate(POST_ROWS, start=1):
-        start_time, end_time = ROOM_OPENING_TIME_WINDOWS[post]
-        post_label = xml_escape(label[0 if language == "zh" else 1])
+    for row_index, schedule_row in enumerate(schedule, start=1):
+        spec = schedule_row.spec
+        post = spec.post
+        start_time, end_time = spec.opening_time
+        post_label = xml_escape(spec.label_zh if language == "zh" else spec.label_en)
         row = [
             Paragraph(
                 f'{post_label}<br/><font size="8.1">{start_time}–{end_time}</font>',
                 styles["post_cell"],
             )
         ]
-        for column_index, day in enumerate(DAY_ORDER, start=1):
-            item = by_slot.get((day.name, post.name, slot_index))
-            if item is None and post is DutyPost.ROOM_202:
+        for column_index, cell in enumerate(schedule_row.cells, start=1):
+            if cell.status == "closed":
                 row.append(Paragraph("不開放" if language == "zh" else "Closed", styles["closed_cell"]))
                 cell_backgrounds.append((column_index, row_index, CLOSED))
                 continue
-            if item is None or item["status"] != "active":
+            if cell.status != "active":
                 row.append(Paragraph("空缺" if language == "zh" else "Vacant", styles["vacant_cell"]))
                 cell_backgrounds.append((column_index, row_index, ROW_BACKGROUNDS[post]))
                 continue
-            row.append(Paragraph(xml_escape(str(item["prefectName"])), styles["name_cell"]))
+            row.append(Paragraph(xml_escape(cell.prefect_name or ""), styles["name_cell"]))
             cell_backgrounds.append((column_index, row_index, ROW_BACKGROUNDS[post]))
         rows.append(row)
     if landscape_mode:
@@ -356,11 +335,22 @@ def _schedule_subtitle(language: ExportLanguage) -> str:
 
 
 def _week_line(week_start: object, status: str, language: ExportLanguage) -> str:
-    is_published = status == "published"
     if language == "zh":
-        state = "已發布" if is_published else "草稿－只供核對，不可派發"
+        state = (
+            "已發布"
+            if status == "published"
+            else "已撤回－只供審計，不可派發"
+            if status == "withdrawn"
+            else "草稿－只供核對，不可派發"
+        )
         return f"報告日期：{week_start} ｜ {state}"
-    state = "Published" if is_published else "Draft — check only; do not distribute"
+    state = (
+        "Published"
+        if status == "published"
+        else "Withdrawn — audit only; do not distribute"
+        if status == "withdrawn"
+        else "Draft — check only; do not distribute"
+    )
     return f"Week commencing: {week_start} | {state}"
 
 
@@ -379,7 +369,10 @@ def _audit_title(language: ExportLanguage) -> str:
 
 
 def _audit_summary(week_start: object, status: str, active_count: int, language: ExportLanguage) -> str:
-    state = ("已發布" if status == "published" else "草稿") if language == "zh" else ("Published" if status == "published" else "Draft")
+    if language == "zh":
+        state = "已發布" if status == "published" else "已撤回" if status == "withdrawn" else "草稿"
+    else:
+        state = "Published" if status == "published" else "Withdrawn" if status == "withdrawn" else "Draft"
     if language == "zh":
         return f"週次：{week_start} ｜ 狀態：{state} ｜ 本週有效崗位：{active_count}"
     return f"Week commencing: {week_start} | Status: {state} | Active assignments: {active_count}"

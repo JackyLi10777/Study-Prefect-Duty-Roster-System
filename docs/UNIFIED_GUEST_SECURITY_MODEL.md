@@ -61,6 +61,8 @@ Cloudflare Worker 會：
 
 每個 NiceGUI client 取得獨立 `workspace_id`。狀態不寫入正式 SQLite、`app.storage.user`、備份、檔案、KV、Redis、`localStorage`、IndexedDB、Cache Storage、分析或內容日誌。Guest PDF／JSON 只在記憶體建立，標明 `DEMO`，以一次性 session-bound 下載票據回傳，並使用 `Cache-Control: no-store`。
 
+Guest 的語言、外觀、音樂及音效由獨立的有限期 origin-memory preference registry 保存；它只接受已核實 Guest session、限制鍵值及數值範圍，並與工作區一同在登出、到期、撤權或程序重啟時清除。這修正重新整理後語言回復的問題，但不把 Guest 偏好提升為永久資料。下載端點以同一 `GeneratedFile` 契約服務 Admin／Guest，仍須重新核對 principal、能力、一次性票證、大小及 `no-store`；前端帶同 cookie 取得 blob，不能靠隱藏按鈕或可猜網址繞過限制。
+
 登出、session 到期、撤權、分頁斷線及 origin 重啟會作冪等清理；前端以 `BroadcastChannel` 通知同 session 分頁清除狀態、媒體及下載票據。
 
 ### 已實作的瀏覽器 snapshot 橋接

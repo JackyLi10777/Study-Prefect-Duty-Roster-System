@@ -27,6 +27,7 @@ from nicegui_app.ui.theme import (
     apply_theme,
     current_theme,
     sound_feedback_enabled,
+    theme_preference,
     toggle_sound_feedback,
     toggle_theme,
 )
@@ -505,15 +506,25 @@ async def _toggle_sound_feedback_with_preview(controls) -> None:  # type: ignore
 def _toggle_theme_in_place(dark_mode, controls) -> None:  # type: ignore[no-untyped-def]
     """Switch appearance without discarding unfinished operator input."""
     toggle_theme()
+    appearance = theme_preference()
     is_dark = current_theme() == "dark"
-    dark_mode.set_value(is_dark)
+    dark_mode.set_value(None if appearance == "system" else is_dark)
     apply_quasar_palette(is_dark)
-    label = t("light_mode") if is_dark else t("dark_mode")
+    icon, label = _next_theme_control()
     _sync_preference_controls(
         controls,
-        icon="light_mode" if is_dark else "dark_mode",
+        icon=icon,
         label=label,
     )
+
+
+def _next_theme_control() -> tuple[str, str]:
+    appearance = theme_preference()
+    if appearance == "system":
+        return "dark_mode", t("theme_system_to_dark")
+    if appearance == "dark":
+        return "light_mode", t("light_mode")
+    return "brightness_auto", t("follow_system_mode")
 
 
 def _render_mobile_drawer_tools(
@@ -540,10 +551,10 @@ def _render_mobile_drawer_tools(
                 on_click=lambda: _toggle_sound_feedback_with_preview(sound_controls),
             ).props("flat no-caps").classes("sy-mobile-drawer-tool")
             sound_controls.append((sound_button, True, None))
-            dark_target = current_theme() == "light"
+            theme_icon, theme_label = _next_theme_control()
             theme_button = ui.button(
-                t("dark_mode") if dark_target else t("light_mode"),
-                icon="dark_mode" if dark_target else "light_mode",
+                theme_label,
+                icon=theme_icon,
                 on_click=lambda: _toggle_theme_in_place(dark_mode, theme_controls),
             ).props("flat no-caps").classes("sy-mobile-drawer-tool")
             theme_controls.append((theme_button, True, None))
@@ -818,8 +829,7 @@ def page_shell(active_path: str) -> Iterator[None]:
                     with sound_button:
                         sound_tooltip_element = ui.tooltip(sound_tooltip)
                     sound_controls.append((sound_button, False, sound_tooltip_element))
-                    theme_icon = "dark_mode" if current_theme() == "light" else "light_mode"
-                    tooltip = t("dark_mode") if current_theme() == "light" else t("light_mode")
+                    theme_icon, tooltip = _next_theme_control()
                     theme_button = ui.button(
                         icon=theme_icon,
                         on_click=lambda: _toggle_theme_in_place(dark_mode, theme_controls),

@@ -158,6 +158,31 @@ def render_roster_share_action(workflow, roster_week_id: int) -> None:  # type: 
         ).props("color=primary data-testid=create-public-share").classes("mt-4")
 
 
+def revoke_withdrawn_roster_shares(workflow, share_ids: tuple[str, ...]) -> tuple[int, int]:  # type: ignore[no-untyped-def]
+    """Deliver durable revocation work after a roster withdrawal transaction."""
+
+    if not share_ids:
+        return (0, 0)
+    current_page_context().require(Capability.EXTERNAL_DELIVERY)
+    settings = PublicRosterShareSettings.from_environment()
+    service = _public_share_service(workflow, settings=settings)
+    completed = 0
+    failed = 0
+    for share_id in share_ids:
+        try:
+            service.revoke_share(share_id)
+            workflow.complete_external_share_revocation(share_id)
+        except Exception as error:  # keep the durable outbox pending for a safe retry
+            workflow.fail_external_share_revocation(
+                share_id,
+                error_code=type(error).__name__,
+            )
+            failed += 1
+        else:
+            completed += 1
+    return completed, failed
+
+
 def _render_active_shares(
     area,
     service: PublicRosterShareService,

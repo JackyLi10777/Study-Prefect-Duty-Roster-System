@@ -20,11 +20,12 @@ from nicegui_app.observability import (
     record_operator_partial_failure,
 )
 from nicegui_app.services.roster_export import RosterPdfExport, build_fairness_audit_pdf, build_roster_pdf
+from nicegui_app.services.roster_presentation import DAY_ORDER, build_roster_schedule
 from nicegui_app.services.roster_workflow import (
     CommittedWriteBackupError,
     WorkflowConflictError,
 )
-from nicegui_app.ui.i18n import day_label, post_label, role_label, t
+from nicegui_app.ui.i18n import EN, current_locale, day_label, post_label, role_label, t
 from nicegui_app.ui.components import (
     empty_state as render_empty_state_component,
     responsive_table as render_responsive_table_component,
@@ -344,18 +345,80 @@ def _render_mobile_prefect_cards(rows: list[dict[str, object]]) -> None:
 
 
 def _render_roster_table(roster_week_id: int) -> None:
+    """Render the same post-by-week verification model used by the PDF."""
+
     workflow = get_workflow()
-    rows = _roster_display_rows(workflow.assignments(roster_week_id))
+    schedule = build_roster_schedule(workflow.assignments(roster_week_id))
+    use_english = current_locale() == EN
+
+    def cell_text(cell) -> str:  # type: ignore[no-untyped-def]
+        if cell.status == "closed":
+            return t("closed")
+        if cell.status == "vacant":
+            return t("vacant")
+        return cell.prefect_name or t("vacant")
+
+    rows: list[dict[str, object]] = []
+    for schedule_row in schedule:
+        start, end = schedule_row.spec.opening_time
+        rows.append(
+            {
+                "post": schedule_row.spec.label_en if use_english else schedule_row.spec.label_zh,
+                "time": f"{start}–{end}",
+                **{
+                    cell.day.name.lower(): cell_text(cell)
+                    for cell in schedule_row.cells
+                },
+            }
+        )
     columns = [
-        {"name": "day", "label": t("day"), "field": "day", "align": "left"},
-        {"name": "post", "label": t("post"), "field": "post", "align": "left"},
-        {"name": "time", "label": t("time"), "field": "time", "align": "left"},
-        {"name": "prefect", "label": t("prefect"), "field": "prefect", "align": "left"},
-        {"name": "weight", "label": t("weight"), "field": "weight", "align": "right"},
-        {"name": "status", "label": t("status"), "field": "status", "align": "left"},
+        {
+            "name": "post",
+            "label": t("duty_position"),
+            "field": "post",
+            "align": "left",
+            "classes": "sy-roster-matrix-post",
+            "headerClasses": "sy-roster-matrix-post",
+        },
+        *[
+            {
+                "name": day.name.lower(),
+                "label": day_label(day),
+                "field": day.name.lower(),
+                "align": "center",
+            }
+            for day in DAY_ORDER
+        ],
     ]
-    ui.table(rows=rows, columns=columns, row_key="day").classes("sy-table sy-roster-desktop w-full")
-    _render_mobile_roster_cards(rows)
+    with ui.element("section").classes("sy-roster-matrix sy-roster-desktop w-full").props(
+        f'aria-label="{t("week_roster")}" data-testid=roster-schedule-matrix'
+    ):
+        ui.table(rows=rows, columns=columns, row_key="post").classes("sy-table w-full").props(
+            "flat bordered hide-bottom separator=cell"
+        )
+
+    with ui.element("section").classes("sy-roster-mobile").props(
+        f'aria-label="{t("week_roster")}"'
+    ):
+        ui.label(t("mobile_roster_notice")).classes("sy-roster-mobile-notice")
+        for day_index, day in enumerate(DAY_ORDER):
+            with ui.element("section").classes("sy-roster-mobile-day").props(
+                f'aria-label="{day_label(day)}"'
+            ):
+                ui.label(day_label(day)).classes("sy-roster-mobile-day-title")
+                for schedule_row in schedule:
+                    cell = schedule_row.cells[day_index]
+                    start, end = schedule_row.spec.opening_time
+                    label = schedule_row.spec.label_en if use_english else schedule_row.spec.label_zh
+                    with ui.element("article").classes(
+                        f"sy-roster-mobile-card sy-roster-mobile-card--{cell.status}"
+                    ).props('data-testid="mobile-roster-card"'):
+                        with ui.row().classes("w-full items-start justify-between gap-3 no-wrap"):
+                            with ui.column().classes("gap-1 min-w-0"):
+                                ui.label(label).classes("sy-roster-mobile-post")
+                                ui.label(f"{start}–{end}").classes("sy-roster-mobile-time")
+                            ui.label(t(cell.status)).classes("sy-roster-mobile-status")
+                        ui.label(cell_text(cell)).classes("sy-roster-mobile-prefect")
 
 
 async def _prepare_roster_pdf(

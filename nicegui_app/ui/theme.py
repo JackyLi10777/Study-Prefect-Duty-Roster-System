@@ -30,12 +30,26 @@ QUASAR_LIGHT_PALETTE = quasar_palette(mode="light")
 QUASAR_DARK_PALETTE = quasar_palette(mode="dark")
 
 
+def theme_preference() -> str:
+    """Return the operator's stable appearance choice.
+
+    A missing or invalid preference follows the client operating system.
+    Server-rendered theme-dependent content uses dark as the deterministic
+    fallback until Quasar resolves the browser media query.
+    """
+
+    value = str(preference_get("theme", "system"))
+    return value if value in {"system", "light", "dark"} else "system"
+
+
 def current_theme() -> str:
-    return str(preference_get("theme", "light"))
+    value = theme_preference()
+    return value if value in {"light", "dark"} else "dark"
 
 
 def toggle_theme() -> None:
-    preference_set("theme", "dark" if current_theme() == "light" else "light")
+    next_value = {"system": "dark", "dark": "light", "light": "system"}
+    preference_set("theme", next_value[theme_preference()])
 
 
 def sound_feedback_enabled() -> bool:
@@ -59,8 +73,9 @@ def apply_quasar_palette(is_dark: bool) -> None:
 
 def apply_theme():  # type: ignore[no-untyped-def]
     """Inject one restrained theme system for every page before content renders."""
+    appearance = theme_preference()
     is_dark = current_theme() == "dark"
-    dark_mode = ui.dark_mode(value=is_dark)
+    dark_mode = ui.dark_mode(value=None if appearance == "system" else is_dark)
     # Quasar utilities and the CSS tokens must share every semantic role;
     # otherwise framework defaults can leak into danger and dark-mode controls.
     apply_quasar_palette(is_dark)

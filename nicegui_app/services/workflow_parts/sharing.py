@@ -203,6 +203,16 @@ class ExternalShareOutboxMixin:
                     )
                     if command is None or outbox is None:
                         raise WorkflowError("The public-share outbox receipt was not found.")
+                    week = session.get(RosterWeekRecord, outbox.roster_week_id)
+                    if (
+                        week is None
+                        or week.status != "published"
+                        or week.version != outbox.roster_version
+                        or outbox.status in ("cancelled", "revocation_pending", "revoked")
+                    ):
+                        raise WorkflowConflictError(
+                            "This roster share is no longer current and cannot be delivered."
+                        )
                     saved = self._decode_share_command(command.result_json)
                     if command.status == "committed" or outbox.status == "delivered":
                         return {
@@ -255,6 +265,16 @@ class ExternalShareOutboxMixin:
                         )
                     if command.status == "committed" and outbox.status == "delivered":
                         return self._decode_share_command(command.result_json)
+                    week = session.get(RosterWeekRecord, outbox.roster_week_id)
+                    if (
+                        week is None
+                        or week.status != "published"
+                        or week.version != outbox.roster_version
+                        or outbox.status != "delivering"
+                    ):
+                        raise WorkflowConflictError(
+                            "This roster was changed or withdrawn before share delivery completed."
+                        )
 
                     durable_receipt = {
                         "status": "delivered",
@@ -341,6 +361,75 @@ class ExternalShareOutboxMixin:
                 "error": outbox.error,
                 "deliveredAt": outbox.delivered_at,
             }
+
+    def pending_external_share_revocations(self) -> list[dict[str, object]]:
+        """Return durable revocation work without exposing roster content."""
+
+        with self._session() as session:
+            rows = session.scalars(
+                select(ExternalShareOutboxRecord)
+                .where(ExternalShareOutboxRecord.status == "revocation_pending")
+                .order_by(ExternalShareOutboxRecord.updated_at, ExternalShareOutboxRecord.id)
+            ).all()
+            return [
+                {
+                    "shareId": row.share_id,
+                    "rosterWeekId": row.roster_week_id,
+                    "attempts": row.attempts,
+                }
+                for row in rows
+            ]
+
+    def complete_external_share_revocation(self, share_id: str) -> None:
+        normalized = share_id.strip()
+        if not normalized:
+            raise WorkflowError("The public share identifier is invalid.")
+        with self._session() as session:
+            self._begin_serialized_write(session)
+            row = session.scalar(
+                select(ExternalShareOutboxRecord).where(
+                    ExternalShareOutboxRecord.share_id == normalized
+                )
+            )
+            if row is None:
+                raise WorkflowError("The public-share outbox receipt was not found.")
+            if row.status == "revoked":
+                session.rollback()
+                return
+            if row.status != "revocation_pending":
+                raise WorkflowConflictError("This public share is not awaiting revocation.")
+            row.status = "revoked"
+            row.error = None
+            row.updated_at = self._now()
+            self._audit(
+                session,
+                "external_share_revoked",
+                row.roster_week_id,
+                {"shareIdSuffix": row.share_id[-8:]},
+            )
+            session.commit()
+
+    def fail_external_share_revocation(self, share_id: str, *, error_code: str) -> None:
+        normalized = share_id.strip()
+        if not normalized:
+            raise WorkflowError("The public share identifier is invalid.")
+        safe_error = (error_code or "revocation_failed").strip()[:160]
+        with self._session() as session:
+            self._begin_serialized_write(session)
+            row = session.scalar(
+                select(ExternalShareOutboxRecord).where(
+                    ExternalShareOutboxRecord.share_id == normalized
+                )
+            )
+            if row is None:
+                raise WorkflowError("The public-share outbox receipt was not found.")
+            if row.status != "revocation_pending":
+                session.rollback()
+                return
+            row.attempts += 1
+            row.error = safe_error
+            row.updated_at = self._now()
+            session.commit()
 
     @staticmethod
     def _decode_share_command(raw: str) -> dict[str, object]:

@@ -88,6 +88,22 @@ workspace ID. Guest data does not enter SQLAlchemy, official SQLite, backups,
 files, KV, AI, upload, external delivery, or background jobs. Guest exports are
 memory-only, `DEMO`-marked, single-use, and `Cache-Control: no-store`.
 
+`nicegui_app.services.guest_preferences.GuestPreferenceRegistry` is a separate,
+bounded, origin-memory store keyed only by the Worker-verified Guest session.
+It retains locale, appearance, music and sound across reconnects without using
+SQLite, user storage or browser persistence, and is cleared with the Guest
+session. `nicegui_app.ui.downloads.GeneratedFile` defines filename, media type,
+content, access mode, cache policy and support reference for both Admin and
+Guest. The browser uses a credentialed fetch, validates status and MIME, then
+creates and revokes a short-lived object URL.
+
+`nicegui_app.services.roster_presentation.RosterSchedulePresentation` is the
+shared read model for the browser matrix and bilingual PDF. It owns display
+ordering only; eligibility and generation policy remain in `roster_policy` and
+`roster_core`. Published-week withdrawal remains a `RosterWorkflow` transaction:
+optimistic version, idempotent command receipt, inverse net ledger entries,
+audit, backup obligation and external-share revocation outbox.
+
 The HMAC snapshot codec and browser bridge are implemented. After each
 meaningful Guest mutation, the adapter publishes the latest signed revision to
 the exact connected tab, whose bridge stores only that token in

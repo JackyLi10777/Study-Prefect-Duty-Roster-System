@@ -596,8 +596,14 @@ def main() -> None:
         page.set_viewport_size({"width": 390, "height": 844})
         page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="domcontentloaded")
         page.get_by_text("已發布後有人請假？", exact=True).wait_for(timeout=10_000)
+        mobile_days = page.locator(".sy-roster-mobile-day")
         mobile_cards = page.locator('[data-testid="mobile-roster-card"]')
-        assert mobile_cards.count() == 26
+        assert mobile_days.count() == 5
+        assert mobile_cards.count() == 30
+        assert all(
+            mobile_days.nth(index).locator('[data-testid="mobile-roster-card"]').count() == 6
+            for index in range(5)
+        )
         assert not page.locator(".sy-roster-desktop").is_visible()
         # A valid substitute may also be rostered on a non-consecutive day, so
         # require the persisted Chinese name to be visible without assuming it
@@ -608,7 +614,8 @@ def main() -> None:
         page.wait_for_load_state("domcontentloaded")
         page.get_by_text("Phone view:", exact=False).wait_for(timeout=10_000)
         english_mobile_cards = page.locator('[data-testid="mobile-roster-card"]')
-        assert english_mobile_cards.count() == 26
+        assert page.locator(".sy-roster-mobile-day").count() == 5
+        assert english_mobile_cards.count() == 30
         assert english_mobile_cards.filter(has_text=str(adjusted["prefectName"])).count() >= 1
 
         _click_mobile_drawer_tool(page, 0)

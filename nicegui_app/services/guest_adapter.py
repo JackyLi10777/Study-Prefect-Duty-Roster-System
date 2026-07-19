@@ -39,6 +39,7 @@ from nicegui_app.services.workflow_types import (
     PrefectPeriodContribution,
     ReportRosterSource,
     RosterWeekResult,
+    RosterWithdrawalResult,
     WorkflowConflictError,
     WorkflowError,
 )
@@ -644,6 +645,115 @@ class GuestWorkspaceAdapter:
             history_priority_multiplier=float(week["historyPriorityMultiplier"]),
         )
 
+    def withdraw_published_roster(
+        self,
+        roster_week_id: int,
+        *,
+        expected_version: int,
+        reason: str,
+        command_id: str | None = None,
+    ) -> RosterWithdrawalResult:
+        """Run the same auditable-withdrawal semantics inside demo memory only."""
+
+        self._require_modify()
+        normalized_reason = reason.strip()
+        if not normalized_reason:
+            raise WorkflowError("A demo published-roster withdrawal requires a reason.")
+        operation_id = command_id or f"demo-withdraw:{secrets.token_hex(12)}"
+        if not operation_id.strip() or len(operation_id) > 64:
+            raise WorkflowError("Demo withdrawal command ID is invalid.")
+        fingerprint = hashlib.sha256(
+            json.dumps(
+                {
+                    "rosterWeekId": roster_week_id,
+                    "expectedVersion": expected_version,
+                    "reason": normalized_reason,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        view = self._view()
+        state = view.state
+        saved = state.setdefault("withdrawalReceipts", {}).get(operation_id)
+        if saved is not None:
+            if saved.get("fingerprint") != fingerprint:
+                raise WorkflowConflictError(
+                    "This demo withdrawal command ID was reused for a different request."
+                )
+            return RosterWithdrawalResult(
+                roster_week_id=int(saved["rosterWeekId"]),
+                week_start=date.fromisoformat(str(saved["weekStart"])),
+                status=str(saved["status"]),
+                version=int(saved["version"]),
+                reason=str(saved["reason"]),
+                backup_path=None,
+                idempotent=True,
+            )
+
+        week = self._week_record(state, roster_week_id)
+        if week["status"] != "published":
+            raise WorkflowError("Only a published demo roster can be withdrawn.")
+        if int(week["version"]) != expected_version:
+            raise WorkflowConflictError("This demo roster changed in another tab.")
+
+        prefects = {str(row["id"]): row for row in state.get("prefects", [])}
+        net_by_entry: dict[tuple[str, int], list[float | int]] = defaultdict(lambda: [0.0, 0])
+        for event in state.get("fairnessEvents", []):
+            if int(event.get("weekId", -1)) != roster_week_id:
+                continue
+            key = (str(event["prefectId"]), int(event["assignmentId"]))
+            total = net_by_entry[key]
+            total[0] = float(total[0]) + float(event["delta"])
+            total[1] = int(total[1]) + int(event["dutyDelta"])
+
+        events = state.setdefault("fairnessEvents", [])
+        for (prefect_id, assignment_id), (net_weight, net_duties) in net_by_entry.items():
+            weight_delta = round(float(net_weight), 4)
+            duty_delta = int(net_duties)
+            if abs(weight_delta) <= 0.0001 and duty_delta == 0:
+                continue
+            prefect = prefects.get(prefect_id)
+            if prefect is None:
+                raise WorkflowError("A demo fairness prefect no longer exists.")
+            self._ensure_history_anchor(prefect, state)
+            prefect["historyWeight"] = round(float(prefect["historyWeight"]) - weight_delta, 4)
+            prefect["historyDuties"] = int(prefect["historyDuties"]) - duty_delta
+            events.append(
+                {
+                    "weekId": roster_week_id,
+                    "assignmentId": assignment_id,
+                    "prefectId": prefect_id,
+                    "delta": -weight_delta,
+                    "dutyDelta": -duty_delta,
+                    "eventType": "demo_roster_withdrawn",
+                }
+            )
+
+        week["status"] = "withdrawn"
+        week["version"] = expected_version + 1
+        week["withdrawnAt"] = _datetime_text(_now())
+        week["withdrawalReason"] = normalized_reason
+        receipt = {
+            "fingerprint": fingerprint,
+            "rosterWeekId": roster_week_id,
+            "weekStart": week["weekStart"],
+            "status": week["status"],
+            "version": week["version"],
+            "reason": normalized_reason,
+        }
+        state["withdrawalReceipts"][operation_id] = receipt
+        self._commit(view, state, f"roster-withdraw:{operation_id}")
+        return RosterWithdrawalResult(
+            roster_week_id=roster_week_id,
+            week_start=date.fromisoformat(str(week["weekStart"])),
+            status="withdrawn",
+            version=int(week["version"]),
+            reason=normalized_reason,
+            backup_path=None,
+        )
+
     def recommend_substitutes(
         self,
         roster_week_id: int,
@@ -1231,6 +1341,8 @@ class GuestWorkspaceAdapter:
             "historyPriorityMultiplier": float(week["historyPriorityMultiplier"]),
             "generatedAt": _parse_datetime(week.get("generatedAt")),
             "publishedAt": _parse_datetime(week.get("publishedAt")),
+            "withdrawnAt": _parse_datetime(week.get("withdrawnAt")),
+            "withdrawalReason": week.get("withdrawalReason"),
         }
 
     @staticmethod
@@ -1260,6 +1372,7 @@ class GuestWorkspaceAdapter:
                 row
                 for row in state.get("weeks", [])
                 if str(row["weekStart"]) == week_start.isoformat()
+                and str(row.get("status")) in {"draft", "published"}
             ),
             None,
         )

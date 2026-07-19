@@ -240,6 +240,40 @@ def test_guest_post_publication_adjustment_is_policy_checked_and_idempotent() ->
         )
 
 
+def test_guest_withdrawal_is_memory_only_idempotent_and_reverses_fairness() -> None:
+    adapter = _adapter()
+    baseline = {
+        str(row["id"]): (float(row["historyWeight"]), int(row["historyDuties"]))
+        for row in adapter.fairness_rows()
+    }
+    draft = adapter.generate_and_save_draft(WEEK_START)
+    published = adapter.publish(draft.id, expected_week_version=draft.version)
+
+    result = adapter.withdraw_published_roster(
+        draft.id,
+        expected_version=published.version,
+        reason="虛構錯誤發布",
+        command_id="guest-withdraw-1",
+    )
+    replay = adapter.withdraw_published_roster(
+        draft.id,
+        expected_version=published.version,
+        reason="虛構錯誤發布",
+        command_id="guest-withdraw-1",
+    )
+
+    assert result.status == "withdrawn"
+    assert replay.idempotent is True
+    assert adapter.reconcile_fairness().balanced
+    assert {
+        str(row["id"]): (float(row["historyWeight"]), int(row["historyDuties"]))
+        for row in adapter.fairness_rows()
+    } == baseline
+    assert adapter.roster_week(draft.id)["withdrawalReason"] == "虛構錯誤發布"
+    replacement = adapter.generate_and_save_draft(WEEK_START, expected_week_version=0)
+    assert replacement.id != draft.id
+
+
 def test_guest_directory_crud_is_chinese_name_first_and_import_is_denied() -> None:
     adapter = _adapter()
     created = adapter.create_prefect(

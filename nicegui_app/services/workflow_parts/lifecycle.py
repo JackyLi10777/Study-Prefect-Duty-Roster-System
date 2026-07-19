@@ -40,7 +40,10 @@ class RosterLifecycleMixin:
                 session.rollback()
             else:
                 existing_week = session.scalar(
-                    select(RosterWeekRecord).where(RosterWeekRecord.week_start == week_start)
+                    select(RosterWeekRecord).where(
+                        RosterWeekRecord.week_start == week_start,
+                        RosterWeekRecord.status.in_(("draft", "published")),
+                    )
                 )
                 current_version = existing_week.version if existing_week is not None else 0
                 if expected_week_version is not None and current_version != expected_week_version:
@@ -245,6 +248,179 @@ class RosterLifecycleMixin:
             assignment_count=int(receipt["assignmentCount"]),
             backup_path=self._fulfill_backup_obligation(command_key),
             history_priority_multiplier=float(receipt["historyPriorityMultiplier"]),
+        )
+
+    @fenced_workflow_write
+    def withdraw_published_roster(
+        self,
+        roster_week_id: int,
+        *,
+        expected_version: int,
+        reason: str,
+        command_id: str | None = None,
+    ) -> RosterWithdrawalResult:
+        """Withdraw one published roster while preserving evidence and fairness truth.
+
+        This is deliberately not a delete.  The roster, assignments, leave
+        adjustments, publication evidence, and audit trail remain available;
+        only the active publication state and its net fairness effect are
+        reversed.  Grouping the existing ledger is essential because a
+        published roster may already contain one or more substitute transfers.
+        """
+
+        normalized_reason = reason.strip()
+        if not normalized_reason:
+            raise WorkflowError("Withdrawing a published roster requires a reason.")
+        if expected_version < 1:
+            raise WorkflowError("The reviewed roster version is invalid. Refresh before withdrawing it.")
+
+        operation_type = "roster_withdrawn"
+        command_key = self._operation_command_id(operation_type, command_id)
+        receipt: dict[str, object] | None = None
+        idempotent = False
+        with self._session() as session:
+            self._begin_serialized_write(session)
+            command, receipt = self._claim_operation_command(
+                session,
+                operation_type=operation_type,
+                command_id=command_key,
+                payload={
+                    "rosterWeekId": roster_week_id,
+                    "expectedVersion": expected_version,
+                    "reason": normalized_reason,
+                },
+            )
+            if receipt is not None:
+                idempotent = True
+                session.rollback()
+            else:
+                now = self._now()
+                claim = session.execute(
+                    update(RosterWeekRecord)
+                    .where(
+                        RosterWeekRecord.id == roster_week_id,
+                        RosterWeekRecord.status == "published",
+                        RosterWeekRecord.version == expected_version,
+                    )
+                    .values(
+                        status="withdrawn",
+                        version=expected_version + 1,
+                        withdrawn_at=now,
+                        withdrawal_reason=normalized_reason,
+                        updated_at=now,
+                    )
+                )
+                if claim.rowcount != 1:
+                    current = session.get(RosterWeekRecord, roster_week_id)
+                    if current is None:
+                        raise WorkflowError("Roster week was not found.")
+                    if current.status == "withdrawn":
+                        raise WorkflowError("This published roster has already been withdrawn.")
+                    if current.status != "published":
+                        raise WorkflowError("Only a published roster can be withdrawn.")
+                    raise WorkflowConflictError(
+                        "This roster changed in another browser. Reload and review the latest version before withdrawing it."
+                    )
+
+                week = self._week_or_error(session, roster_week_id)
+                ledger_totals = session.execute(
+                    select(
+                        FairnessLedgerRecord.prefect_id,
+                        FairnessLedgerRecord.assignment_id,
+                        func.coalesce(func.sum(FairnessLedgerRecord.delta), 0.0),
+                        func.coalesce(func.sum(FairnessLedgerRecord.duty_delta), 0),
+                    )
+                    .where(FairnessLedgerRecord.roster_week_id == roster_week_id)
+                    .group_by(
+                        FairnessLedgerRecord.prefect_id,
+                        FairnessLedgerRecord.assignment_id,
+                    )
+                ).all()
+                compensation_count = 0
+                ledger_operation_id = f"roster-withdraw:{week.id}"
+                for prefect_id, assignment_id, net_weight, net_duties in ledger_totals:
+                    weight_delta = round(float(net_weight), 4)
+                    duty_delta = int(net_duties)
+                    if abs(weight_delta) <= 0.0001 and duty_delta == 0:
+                        continue
+                    prefect = session.get(PrefectRecord, prefect_id)
+                    if prefect is None:
+                        raise WorkflowError("A fairness-ledger prefect no longer exists; withdrawal was rolled back.")
+                    prefect.history_weight = round(prefect.history_weight - weight_delta, 4)
+                    prefect.history_duties -= duty_delta
+                    prefect.updated_at = now
+                    session.add(
+                        FairnessLedgerRecord(
+                            prefect_id=prefect.id,
+                            roster_week_id=week.id,
+                            assignment_id=assignment_id,
+                            delta=-weight_delta,
+                            duty_delta=-duty_delta,
+                            event_type=operation_type,
+                            source_type="roster_withdrawal",
+                            source_id=str(week.id),
+                            operation_id=ledger_operation_id,
+                            reason=normalized_reason,
+                            created_at=now,
+                        )
+                    )
+                    compensation_count += 1
+
+                share_ids_to_revoke: list[str] = []
+                share_rows = session.scalars(
+                    select(ExternalShareOutboxRecord).where(
+                        ExternalShareOutboxRecord.roster_week_id == roster_week_id
+                    )
+                ).all()
+                for share in share_rows:
+                    if share.status == "delivered":
+                        share.status = "revocation_pending"
+                        share.error = None
+                        share.updated_at = now
+                        share_ids_to_revoke.append(share.share_id)
+                    elif share.status in ("pending", "delivering"):
+                        share.status = "cancelled"
+                        share.error = "roster_withdrawn"
+                        share.updated_at = now
+
+                receipt = {
+                    "rosterWeekId": week.id,
+                    "weekStart": week.week_start.isoformat(),
+                    "status": week.status,
+                    "version": week.version,
+                    "reason": normalized_reason,
+                    "shareIdsToRevoke": share_ids_to_revoke,
+                }
+                self._audit(
+                    session,
+                    operation_type,
+                    week.id,
+                    {
+                        "reason": normalized_reason,
+                        "version": week.version,
+                        "compensationEntryCount": compensation_count,
+                        "shareRevocationCount": len(share_ids_to_revoke),
+                    },
+                )
+                self._assert_fairness_reconciled(session)
+                self._commit_operation_command(
+                    session,
+                    record=command,
+                    result=receipt,
+                    roster_week_id=week.id,
+                )
+                session.commit()
+
+        assert receipt is not None
+        return RosterWithdrawalResult(
+            roster_week_id=int(receipt["rosterWeekId"]),
+            week_start=date.fromisoformat(str(receipt["weekStart"])),
+            status=str(receipt["status"]),
+            version=int(receipt["version"]),
+            reason=str(receipt["reason"]),
+            backup_path=self._fulfill_backup_obligation(command_key),
+            idempotent=idempotent,
+            share_ids_to_revoke=tuple(str(value) for value in receipt.get("shareIdsToRevoke", [])),
         )
 
     def recommend_substitutes(self, roster_week_id: int, assignment_id: int) -> list[dict[str, object]]:
@@ -678,6 +854,8 @@ class RosterLifecycleMixin:
                     "historyPriorityMultiplier": row.history_priority_multiplier,
                     "generatedAt": row.generated_at,
                     "publishedAt": row.published_at,
+                    "withdrawnAt": row.withdrawn_at,
+                    "withdrawalReason": row.withdrawal_reason,
                 }
                 for row in rows
             ]
@@ -693,6 +871,8 @@ class RosterLifecycleMixin:
                 "historyPriorityMultiplier": row.history_priority_multiplier,
                 "generatedAt": row.generated_at,
                 "publishedAt": row.published_at,
+                "withdrawnAt": row.withdrawn_at,
+                "withdrawalReason": row.withdrawal_reason,
             }
 
     def assignments(self, roster_week_id: int) -> list[dict[str, object]]:

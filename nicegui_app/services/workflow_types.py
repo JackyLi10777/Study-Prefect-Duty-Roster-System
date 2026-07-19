@@ -56,6 +56,18 @@ class RosterWeekResult:
 
 
 @dataclass(frozen=True)
+class RosterWithdrawalResult:
+    roster_week_id: int
+    week_start: date
+    status: str
+    version: int
+    reason: str
+    backup_path: Path | None
+    idempotent: bool = False
+    share_ids_to_revoke: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class LeaveAdjustmentResult:
     roster_week_id: int
     assignment_id: int

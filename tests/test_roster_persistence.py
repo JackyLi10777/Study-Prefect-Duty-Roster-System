@@ -150,6 +150,90 @@ def test_publishing_posts_each_assignment_weight_once(workflow: RosterWorkflow) 
     assert workflow.prefect_loads() == after_first_publish
 
 
+def test_withdrawal_reverses_net_fairness_and_allows_a_new_active_week(
+    workflow: RosterWorkflow,
+) -> None:
+    before = workflow.prefect_loads()
+    draft = workflow.generate_and_save_draft(WEEK_START)
+    published = workflow.publish(draft.id, expected_week_version=draft.version)
+
+    result = workflow.withdraw_published_roster(
+        draft.id,
+        expected_version=published.version,
+        reason="Published the wrong reviewed week",
+        command_id="withdraw-published-week",
+    )
+    replay = workflow.withdraw_published_roster(
+        draft.id,
+        expected_version=published.version,
+        reason="Published the wrong reviewed week",
+        command_id="withdraw-published-week",
+    )
+
+    assert result.status == "withdrawn"
+    assert result.version == published.version + 1
+    assert result.backup_path is not None and result.backup_path.exists()
+    assert replay.idempotent is True
+    assert replay.version == result.version
+    assert workflow.prefect_loads() == before
+    assert workflow.reconcile_fairness().balanced
+    withdrawn = workflow.roster_week(draft.id)
+    assert withdrawn["withdrawalReason"] == "Published the wrong reviewed week"
+    replacement = workflow.generate_and_save_draft(WEEK_START, expected_week_version=0)
+    assert replacement.id != draft.id
+    assert replacement.status == "draft"
+
+
+def test_withdrawal_reverses_post_publication_substitute_transfer(
+    workflow: RosterWorkflow,
+) -> None:
+    before = workflow.prefect_loads()
+    draft = workflow.generate_and_save_draft(WEEK_START)
+    workflow.publish(draft.id, expected_week_version=draft.version)
+    assignment = next(
+        item for item in workflow.assignments(draft.id) if item["postCode"] == "ROOM_302"
+    )
+    replacement = workflow.recommend_substitutes(draft.id, int(assignment["id"]))[0]
+    adjustment = workflow.apply_leave_adjustment(
+        roster_week_id=draft.id,
+        assignment_id=int(assignment["id"]),
+        replacement_prefect_id=str(replacement["id"]),
+        reason="Approved absence",
+        command_id="withdrawal-adjustment",
+        expected_week_version=int(workflow.roster_week(draft.id)["version"]),
+    )
+
+    workflow.withdraw_published_roster(
+        draft.id,
+        expected_version=adjustment.version,
+        reason="The published week was incorrect",
+        command_id="withdraw-after-adjustment",
+    )
+
+    assert workflow.prefect_loads() == before
+    assert workflow.reconcile_fairness().balanced
+
+
+def test_withdrawal_rejects_stale_version_and_requires_reason(
+    workflow: RosterWorkflow,
+) -> None:
+    draft = workflow.generate_and_save_draft(WEEK_START)
+    published = workflow.publish(draft.id, expected_week_version=draft.version)
+
+    with pytest.raises(WorkflowError, match="requires a reason"):
+        workflow.withdraw_published_roster(
+            draft.id,
+            expected_version=published.version,
+            reason="  ",
+        )
+    with pytest.raises(WorkflowConflictError, match="changed in another browser"):
+        workflow.withdraw_published_roster(
+            draft.id,
+            expected_version=published.version + 1,
+            reason="Stale browser",
+        )
+
+
 def test_concurrent_publish_attempts_have_one_database_level_winner(workflow: RosterWorkflow, tmp_path) -> None:
     draft = workflow.generate_and_save_draft(WEEK_START)
     contender = RosterWorkflow(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import json
 
 from nicegui import ui
@@ -9,20 +10,48 @@ from nicegui import ui
 from nicegui_app.access_context import AccessMode, Capability
 from nicegui_app.runtime import current_page_context
 from nicegui_app.services.guest_downloads import guest_download_registry
+from nicegui_app.ui.i18n import t
 
 
-def single_use_download_script(url: str) -> str:
-    """Trigger one same-origin download without putting file bytes in browser storage."""
+@dataclass(frozen=True)
+class GeneratedFile:
+    """One generated file with explicit delivery metadata."""
+
+    filename: str
+    media_type: str
+    content: bytes
+    access_mode: AccessMode
+    cache_policy: str = "no-store"
+    support_reference: str = ""
+
+
+def single_use_download_script(url: str, filename: str, failure_message: str) -> str:
+    """Fetch one authenticated file, validate it, and surface delivery errors."""
 
     return (
-        "(() => {"
+        "(async() => {"
+        "let objectUrl='';"
+        "try {"
+        f"const response=await fetch({json.dumps(url)},{{credentials:'same-origin',cache:'no-store',headers:{{'Accept':'application/pdf, application/json, application/zip, application/octet-stream'}}}});"
+        "if(!response.ok){let detail={};try{detail=await response.json();}catch{};"
+        "const reference=detail.reference||response.headers.get('X-Request-ID')||'';"
+        "throw new Error(reference?`REFERENCE:${reference}`:`HTTP:${response.status}`);}"
+        "const blob=await response.blob();"
+        "if(!blob.size)throw new Error('EMPTY');"
+        "objectUrl=URL.createObjectURL(blob);"
         "const anchor=document.createElement('a');"
-        f"anchor.href={json.dumps(url)};"
-        "anchor.rel='noopener';"
-        "anchor.style.display='none';"
-        "document.body.appendChild(anchor);"
-        "anchor.click();"
-        "anchor.remove();"
+        "anchor.href=objectUrl;"
+        f"anchor.download={json.dumps(filename)};"
+        "anchor.rel='noopener';anchor.style.display='none';"
+        "document.body.appendChild(anchor);anchor.click();anchor.remove();"
+        "document.body.dataset.syDownload='completed';"
+        "}catch(error){"
+        "document.body.dataset.syDownload='failed';"
+        "const reference=String(error?.message||'').startsWith('REFERENCE:')?String(error.message).slice(10):'';"
+        f"const base={json.dumps(failure_message)};"
+        "const message=reference?`${base}\n${reference}`:base;"
+        "if(window.Quasar?.Notify?.create){window.Quasar.Notify.create({type:'negative',message,timeout:7000,actions:[{icon:'close',color:'white'}]});}else{window.alert(message);}"
+        "}finally{if(objectUrl)window.setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);}"
         "})();"
     )
 
@@ -36,22 +65,35 @@ def deliver_generated_download(
     """Use a single-use no-store endpoint for guests; preserve normal admin delivery."""
 
     context = current_page_context()
-    if context.principal.mode is AccessMode.GUEST:
-        context.require(Capability.DEMO_RESULT_DOWNLOAD)
-        session_id = context.principal.session_id
-        if not session_id:  # defensive: verified guest principals always carry one
-            raise PermissionError("guest download session is unavailable")
+    capability = (
+        Capability.DEMO_RESULT_DOWNLOAD
+        if context.principal.mode is AccessMode.GUEST
+        else Capability.REAL_EXPORT
+    )
+    context.require(capability)
+    session_id = context.principal.session_id
+    if session_id and context.principal.mode in {AccessMode.GUEST, AccessMode.ADMIN}:
+        generated = GeneratedFile(
+            filename=filename,
+            media_type=media_type,
+            content=content,
+            access_mode=context.principal.mode,
+        )
         ticket = guest_download_registry().issue(
             session_id=session_id,
-            filename=filename,
-            content=content,
-            media_type=media_type,
+            filename=generated.filename,
+            content=generated.content,
+            media_type=generated.media_type,
         )
         ui.run_javascript(
-            single_use_download_script(f"/api/guest/download/{ticket.token}")
+            single_use_download_script(
+                f"/api/generated-download/{ticket.token}",
+                generated.filename,
+                t("download_delivery_failed"),
+            )
         )
         return
     ui.download(content, filename, media_type=media_type)
 
 
-__all__ = ["deliver_generated_download", "single_use_download_script"]
+__all__ = ["GeneratedFile", "deliver_generated_download", "single_use_download_script"]

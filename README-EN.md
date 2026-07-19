@@ -151,6 +151,20 @@ safe fictional fixture. Sign-out, expiry, revocation, and cross-tab session
 termination clear temporary state. Guest PDF/JSON downloads are memory-only,
 one-shot, `DEMO`-marked, and `Cache-Control: no-store`.
 
+Guest language, appearance, music, and sound preferences are retained only in
+a bounded origin-memory store for the verified session, so refresh and route
+changes remain coherent without creating permanent Guest data. Sign-out,
+expiry, revocation, or origin restart clears them. Admin keeps its user-level
+preference store. Both identities use one credentialed generated-file delivery
+path which checks HTTP status and media type before creating a temporary browser
+download; failures expose a bilingual recovery action and support reference.
+
+An incorrectly published week is not physically deleted. **Withdraw published
+roster** requires a reason, expected version, and idempotent command. The same
+transaction preserves the original evidence, posts the inverse of the version's
+net fairness effect, creates audit and backup obligations, and requests
+revocation of existing shares before a corrected week can be generated.
+
 The live rc9 release passed its matching 13-gate report, fresh verified backup,
 isolated restore, origin rollout, and gateway health checks. The current Service
 Weave editorial branch changes release-sensitive inputs, so it must complete a

@@ -557,16 +557,27 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
             ui.notify(t("summary_export_ready"), type="positive")
 
     preview_button.on_click(refresh_report)
-    with ui.row().classes("sy-mobile-actions w-full gap-3 flex-wrap mt-4"):
-        ui.button(t("download_summary_zh_pdf"), icon="picture_as_pdf", on_click=lambda: download_report("zh")).props(
-            "outline color=primary data-testid=download-summary-zh"
-        )
-        ui.button(t("download_summary_en_pdf"), icon="picture_as_pdf", on_click=lambda: download_report("en")).props(
-            "outline color=primary data-testid=download-summary-en"
-        )
-        ui.button(t("download_report_evidence_json"), icon="data_object", on_click=lambda: download_report("json")).props(
-            "outline color=primary data-testid=download-summary-json"
-        )
+    ui.label(t("summary_downloads_title")).classes("text-lg font-semibold mt-5")
+    ui.label(t("summary_downloads_intro")).classes("text-sm leading-6 text-[var(--sy-muted)] mt-1")
+    download_options = (
+        ("zh", "picture_as_pdf", "download_summary_zh_pdf", "summary_zh_pdf_detail", "download-summary-zh"),
+        ("en", "picture_as_pdf", "download_summary_en_pdf", "summary_en_pdf_detail", "download-summary-en"),
+        ("json", "data_object", "download_report_evidence_json", "summary_json_detail", "download-summary-json"),
+    )
+    with ui.element("section").classes("sy-download-options w-full mt-4").props(
+        f'aria-label="{t("summary_downloads_title")}"'
+    ):
+        for kind, icon, title_key, detail_key, test_id in download_options:
+            with ui.element("article").classes("sy-surface-subtle sy-download-option"):
+                ui.icon(icon).classes("sy-download-option-icon").props("aria-hidden=true")
+                ui.label(t(title_key)).classes("sy-download-option-title")
+                ui.label(t(detail_key)).classes("sy-download-option-copy")
+                ui.label(t("summary_download_scope")).classes("sy-download-option-scope")
+                ui.button(
+                    t(title_key),
+                    icon="download",
+                    on_click=lambda selected=kind: download_report(selected),
+                ).props(f"outline color=primary data-testid={test_id}").classes("mt-auto")
     with ui.card().classes("sy-surface sy-border-attention w-full border-l-4 p-5 mt-4"):
         ui.label(t("report_evidence_not_backup")).classes("font-semibold")
         ui.label(t("report_evidence_not_backup_detail")).classes("text-sm leading-6 text-[var(--sy-muted)] mt-1")
@@ -705,7 +716,7 @@ def prefects_page() -> None:
                     on_click=lambda: ui.download(prefect_import_template_csv(), "sing-yin-prefect-import-template.csv"),
                 ).props("outline color=primary").classes("mt-3")
 
-                with ui.card().classes("sy-surface w-full max-w-4xl p-5 mt-5"):
+                with ui.card().classes("sy-surface sy-operational-workspace w-full p-5 mt-5"):
                     ui.label(t("file_import_title")).classes("text-lg font-semibold")
                     ui.label(t("file_import_intro")).classes("text-sm leading-6 text-[var(--sy-muted)] mt-1")
                     file_state: dict[str, object | None] = {
@@ -1038,7 +1049,7 @@ def prefects_page() -> None:
                         on_upload=upload_prefect_file,
                         on_rejected=reject_prefect_file,
                         auto_upload=True,
-                    ).props("accept=.csv,.xlsx data-testid=prefect-file-upload").classes("w-full max-w-2xl mt-3")
+                    ).props("accept=.csv,.xlsx data-testid=prefect-file-upload").classes("w-full mt-3")
                     if not import_allowed:
                         upload_control.disable()
 
@@ -1053,7 +1064,7 @@ def prefects_page() -> None:
                 preview_state: dict[str, ImportPreview | None] = {"value": None}
                 preview_fingerprint: dict[str, str | None] = {"value": None}
                 text_import_button_state: dict[str, object | None] = {"value": None}
-                preview_area = ui.column().classes("w-full max-w-4xl gap-3 mt-4")
+                preview_area = ui.column().classes("w-full gap-3 mt-4")
 
                 def set_text_import_enabled(enabled: bool) -> None:
                     button = text_import_button_state["value"]

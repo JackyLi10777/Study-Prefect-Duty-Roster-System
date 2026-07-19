@@ -10,6 +10,8 @@
 
 > **目前狀態（live rc9）：** `C:\SingYinRoster` 已固定於不可變標籤 `v1.2.0-rc.9`／`18a5c73`，並完成正式資料快照、隔離還原及受控切換。`Sing Yin Roster Host` 由非管理員 `SingYinRosterSvc` 帳戶運行，唯一 NiceGUI listener 是 `127.0.0.1:8080`；canonical Worker 保留已驗證 version `b13e5721-d1e8-4048-9885-ffb422fe2010`。Tunnel、Public、Guest、唯讀 Viewer、Access 轉向及 VPC health 已核對。Service Weave 候選分支 `codex/service-weave-v1-2-editorial` 仍尚未部署，不能沿用 rc9 證據宣稱已更新主機。
 
+> **候選更新提示：** rc11 source candidate includes the shared credentialed PDF／JSON delivery path, memory-only Guest preferences, browser／PDF roster matrix parity and safe published-roster withdrawal. Do not copy individual files into `C:\SingYinRoster`; deploy only the exact immutable candidate after its own backup, isolated restore and release verification, then update this paragraph with the actual tag, commit, fingerprint and Worker version.
+
 ---
 
 ## 0. 先理解這個方案

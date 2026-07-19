@@ -72,16 +72,28 @@ class RosterWeekRecord(Base):
             "history_priority_multiplier >= 0.8 AND history_priority_multiplier <= 2.0",
             name="ck_roster_week_history_priority_multiplier",
         ),
+        CheckConstraint(
+            "status IN ('draft', 'published', 'withdrawn')",
+            name="ck_roster_week_status",
+        ),
+        Index(
+            "uq_roster_weeks_active_week_start",
+            "week_start",
+            unique=True,
+            sqlite_where=text("status IN ('draft', 'published')"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    week_start: Mapped[date] = mapped_column(Date, unique=True)
+    week_start: Mapped[date] = mapped_column(Date)
     status: Mapped[str] = mapped_column(String(16), default="draft")
     version: Mapped[int] = mapped_column(Integer, default=1)
     policy_version: Mapped[str] = mapped_column(String(32))
     history_priority_multiplier: Mapped[float] = mapped_column(Float, default=1.0, server_default="1.0")
     generated_at: Mapped[datetime] = mapped_column(DateTime)
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    withdrawal_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime)
     updated_at: Mapped[datetime] = mapped_column(DateTime)
 

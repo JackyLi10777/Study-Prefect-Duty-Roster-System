@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from nicegui import ui
 
+from nicegui_app.config import CANONICAL_PUBLIC_URL
+
 from nicegui_app.runtime import get_workflow
 from nicegui_app.ui.devotional import (
     dashboard_verse as _dashboard_verse,
@@ -36,7 +38,7 @@ def dashboard_page() -> None:
         next_title_key = "flow_directory"
         next_action_key = "open_prefects"
         next_action = lambda: _navigate_with_feedback("/prefects")
-    elif latest is None:
+    elif latest is None or latest["status"] == "withdrawn":
         next_title_key = "flow_generate"
         next_action_key = "create_draft"
         next_action = lambda: _navigate_with_feedback("/rosters")
@@ -93,6 +95,8 @@ def dashboard_page() -> None:
                         _tone_badge(t("flow_no_roster"), "action")
                     elif latest["status"] == "draft":
                         _tone_badge(t("flow_draft_ready"), "action")
+                    elif latest["status"] == "withdrawn":
+                        _tone_badge(t("withdrawn"), "attention")
                     else:
                         _tone_badge(t("flow_published_ready"), "stable")
                 with ui.element("ol").classes("sy-flow mt-7").props(f'aria-label="{t("workbench_title")}"'):
@@ -100,7 +104,7 @@ def dashboard_page() -> None:
                         _render_flow_step(number=1, title_key="flow_directory", detail_key="flow_directory_detail", state="active", state_key="flow_current", icon="group_add", action_key="open_prefects", action=lambda: _navigate_with_feedback("/prefects"))
                         _render_flow_step(number=2, title_key="flow_generate", detail_key="flow_generate_detail", state="pending", state_key="flow_waiting", icon="edit_calendar")
                         _render_flow_step(number=3, title_key="flow_review", detail_key="flow_review_detail", state="pending", state_key="flow_waiting", icon="fact_check")
-                    elif latest is None:
+                    elif latest is None or latest["status"] == "withdrawn":
                         _render_flow_step(number=1, title_key="flow_generate", detail_key="flow_generate_detail", state="active", state_key="flow_current", icon="edit_calendar", action_key="create_draft", action=lambda: _navigate_with_feedback("/rosters"))
                         _render_flow_step(number=2, title_key="flow_review", detail_key="flow_review_detail", state="pending", state_key="flow_waiting", icon="fact_check")
                         _render_flow_step(number=3, title_key="flow_leave", detail_key="flow_leave_detail", state="pending", state_key="flow_waiting", icon="event_busy")
@@ -139,9 +143,10 @@ def dashboard_page() -> None:
                                     with ui.column().classes("gap-1 min-w-0"):
                                         ui.label(str(week["weekStart"])).classes("sy-dashboard-history-week")
                                         ui.label(f"{t('version')} {week['version']}").classes("sy-dashboard-history-meta")
+                                    status = str(week["status"])
                                     _tone_badge(
-                                        t("published") if week["status"] == "published" else t("draft"),
-                                        "stable" if week["status"] == "published" else "action",
+                                        t("published") if status == "published" else t("withdrawn") if status == "withdrawn" else t("draft"),
+                                        "stable" if status == "published" else "attention" if status == "withdrawn" else "action",
                                     )
                                 ui.button(
                                     t("view"),
@@ -182,7 +187,9 @@ def getting_started_page() -> None:
                     ui.label(t(title_key)).classes("text-lg font-semibold")
                     ui.label(t(detail_key)).classes("text-sm text-[var(--sy-muted)] mt-1")
                     if title_key == "new_user_step_start":
-                        ui.label(f"{t('local_address_label')}: http://127.0.0.1:8080").classes("font-mono text-sm font-semibold mt-3")
+                        ui.label(f"{t('public_address_label')}: {CANONICAL_PUBLIC_URL}").classes(
+                            "font-mono text-sm font-semibold mt-3 break-all"
+                        )
             with ui.row().classes("gap-3 flex-wrap"):
                 ui.button(t("open_prefects"), icon="groups", on_click=lambda: ui.navigate.to("/prefects")).props("outline color=primary")
                 ui.button(t("open_rosters"), icon="calendar_month", on_click=lambda: ui.navigate.to("/rosters")).props("color=primary")

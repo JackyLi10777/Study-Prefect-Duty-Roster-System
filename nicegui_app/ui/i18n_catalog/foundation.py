@@ -38,6 +38,8 @@ MESSAGES = {'app_name': {'zh-HK': '聖言中學導學風紀值班系統', 'en': 
  'settings': {'zh-HK': '系統設定', 'en': 'Settings'},
  'light_mode': {'zh-HK': '切換淺色模式', 'en': 'Switch to light mode'},
  'dark_mode': {'zh-HK': '切換深色模式', 'en': 'Switch to dark mode'},
+ 'follow_system_mode': {'zh-HK': '跟隨電腦外觀', 'en': 'Follow system appearance'},
+ 'theme_system_to_dark': {'zh-HK': '目前跟隨電腦；切換深色模式', 'en': 'Following system; switch to dark mode'},
  'daily_verse': {'zh-HK': '今日經文', 'en': 'Daily verse'},
  'verse_translation_label': {'zh-HK': '繁中：和合本修訂版 2010（神版） · 英文：New King James Version（NKJV）',
                              'en': 'Chinese: Revised Chinese Union Version 2010 (Shen Edition) · English: New King James Version (NKJV)'},
@@ -67,4 +69,8 @@ MESSAGES.update({
     'restricted': {'zh-HK': '此模式受限制', 'en': 'Restricted in this mode'},
     'copy': {'zh-HK': '複製', 'en': 'Copy'},
     'copied': {'zh-HK': '已複製', 'en': 'Copied'},
+    'download_delivery_failed': {
+        'zh-HK': '下載未完成。請重試；如問題持續，請保留以下支援編號。',
+        'en': 'The download did not complete. Retry, and keep the support reference if the problem continues.'
+    },
 })

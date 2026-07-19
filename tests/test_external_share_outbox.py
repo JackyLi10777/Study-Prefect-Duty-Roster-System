@@ -196,6 +196,35 @@ def test_replaying_delivered_command_never_creates_a_second_external_share(tmp_p
     assert len(gateway.created) == 1
 
 
+def test_withdrawing_a_delivered_share_creates_durable_revocation_work(tmp_path) -> None:
+    workflow, roster_id = _workflow(tmp_path)
+    gateway = RecordingGateway()
+    service = PublicRosterShareService(
+        workflow,
+        settings=_settings(),
+        gateway=gateway,
+        now=lambda: FIXED_NOW,
+    )
+    service.create_share(roster_id, command_id="public-share-withdrawal-test")
+    share_id = str(gateway.created[0]["shareId"])
+    current = workflow.roster_week(roster_id)
+
+    result = workflow.withdraw_published_roster(
+        roster_id,
+        expected_version=int(current["version"]),
+        reason="Published the wrong reviewed roster",
+        command_id="withdraw-public-share-test",
+    )
+
+    assert result.share_ids_to_revoke == (share_id,)
+    assert workflow.pending_external_share_revocations() == [
+        {"shareId": share_id, "rosterWeekId": roster_id, "attempts": 1}
+    ]
+    workflow.complete_external_share_revocation(share_id)
+    assert workflow.pending_external_share_revocations() == []
+    assert workflow.external_share_outbox("public-share-withdrawal-test")["status"] == "revoked"
+
+
 def test_two_admin_tabs_replay_one_exact_share_command_concurrently(tmp_path) -> None:
     workflow, roster_id = _workflow(tmp_path)
     gateway = ConcurrentIdempotentGateway()

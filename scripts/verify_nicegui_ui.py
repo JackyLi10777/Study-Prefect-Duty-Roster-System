@@ -913,7 +913,7 @@ def main() -> None:
         assert static_layer.locator(".sy-pointer-light").count() == 0
         static_layer.hover(position={"x": 86, "y": 74})
         assert "architecture-stewardship-light-v1.webp" in page.locator(".sy-architecture-hero").evaluate("element => getComputedStyle(element, '::before').backgroundImage")
-        assert "sidebar-stewardship-light-v1.webp" in page.locator(".sy-sidebar").evaluate("element => getComputedStyle(element, '::before').backgroundImage")
+        assert "sidebar-stewardship-light-v1.webp" in page.locator(".sy-sidebar").evaluate("element => getComputedStyle(element).backgroundImage")
         page.screenshot(path=str(ARCHITECTURE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/guide", wait_until="domcontentloaded")
         assert "guide-handbook-light-v1.webp" in page.locator(".sy-guide-hero").evaluate(
@@ -1265,7 +1265,7 @@ def main() -> None:
         assert "architecture-lifeline-dark-v1.webp" in page.get_by_test_id("architecture-lifeline-visual").evaluate(
             "element => getComputedStyle(element).backgroundImage"
         )
-        assert "sidebar-stewardship-dark-v1.webp" in page.locator(".sy-sidebar").evaluate("element => getComputedStyle(element, '::before').backgroundImage")
+        assert "sidebar-stewardship-dark-v1.webp" in page.locator(".sy-sidebar").evaluate("element => getComputedStyle(element).backgroundImage")
         page.screenshot(path=str(ARCHITECTURE_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/guide", wait_until="domcontentloaded")
         assert "guide-handbook-dark-v1.webp" in page.locator(".sy-guide-hero").evaluate(

@@ -126,3 +126,25 @@ def test_global_control_skin_reduced_motion_is_static_and_non_decorative() -> No
         r"(?:button|btn)\.addEventListener\(",
     ):
         assert re.search(per_button_listener, motion, re.I) is None
+
+
+def test_semantic_icon_motion_is_clear_without_becoming_a_looping_effect() -> None:
+    interaction = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-interaction-v1.css"
+    ).read_text(encoding="utf-8")
+    theme = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-theme-v1.css"
+    ).read_text(encoding="utf-8")
+    runtime = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "motion" / "sing-yin-motion.js"
+    ).read_text(encoding="utf-8")
+
+    assert 'data-sy-icon-motion="menu"' in interaction
+    assert "rotate(90deg) scale(.9)" in interaction
+    assert 'data-sy-icon-motion="refresh"' in interaction
+    assert "rotate(52deg) scale(1.1)" in interaction
+    assert "translateX(5px) scale(1.015)" in theme
+    assert "border-radius: 50%" in interaction
+    assert "new AbortController()" in runtime
+    assert "repeat: -1" not in runtime
+    assert "prefers-reduced-motion: reduce" in theme

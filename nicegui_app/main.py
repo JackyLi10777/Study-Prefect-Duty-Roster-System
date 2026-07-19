@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from fastapi import Request
 from fastapi.responses import JSONResponse, Response
 
-from nicegui_app.access_context import AccessMode
+from nicegui_app.access_context import AccessMode, Capability, CapabilityPolicy
 from nicegui_app.application_mode import current_application_mode
 from nicegui_app.config import BRAND_ASSET_DIR, MUSIC_DIR, PROJECT_ROOT
 from nicegui_app.deployment import (
@@ -27,6 +27,7 @@ from nicegui_app.observability import (
     install_exception_hooks,
     install_request_tracing,
     logger,
+    current_request_reference,
 )
 from nicegui_app.process_lock import acquire_origin_process_lock
 from nicegui_app.gateway_identity import OriginPrincipalError, principal_from_request
@@ -183,20 +184,56 @@ async def restore_guest_snapshot(request: Request) -> Response:
 def guest_download(token: str, request: Request) -> Response:
     """Consume one session-bound in-memory guest export exactly once."""
 
+    return _consume_generated_download(token, request, guest_only=True)
+
+
+@app.get("/api/generated-download/{token}", include_in_schema=False)
+def generated_download(token: str, request: Request) -> Response:
+    """Consume one authenticated, session-bound generated file exactly once."""
+
+    return _consume_generated_download(token, request, guest_only=False)
+
+
+def _consume_generated_download(
+    token: str,
+    request: Request,
+    *,
+    guest_only: bool,
+) -> Response:
+
     try:
         principal = principal_from_request(request)
         require_runtime_principal_active(principal)
     except (OriginPrincipalError, PermissionError):
         return _guest_download_not_found()
-    if principal.mode is not AccessMode.GUEST or not principal.session_id:
+    allowed_modes = {AccessMode.GUEST} if guest_only else {AccessMode.GUEST, AccessMode.ADMIN}
+    if principal.mode not in allowed_modes or not principal.session_id:
         return _guest_download_not_found()
+    CapabilityPolicy.require(
+        principal.mode,
+        Capability.DEMO_RESULT_DOWNLOAD
+        if principal.mode is AccessMode.GUEST
+        else Capability.REAL_EXPORT,
+    )
     try:
         payload = guest_download_registry().consume(
             token=token,
             session_id=principal.session_id,
         )
     except GuestDownloadError:
-        return _guest_download_not_found()
+        if guest_only:
+            return _guest_download_not_found()
+        reference = current_request_reference() or "DL-UNAVAILABLE"
+        logger().warning(
+            "generated download was unavailable mode=%s reference=%s",
+            principal.mode.value,
+            reference,
+        )
+        return JSONResponse(
+            {"error": "download_unavailable", "reference": reference},
+            status_code=410,
+            headers={"Cache-Control": "no-store, max-age=0"},
+        )
     extension = payload.filename.rsplit(".", 1)[-1].lower()
     fallback = (
         f"SYSS_DEMO_download.{extension}"
@@ -260,8 +297,8 @@ def revoke_origin_session(request: Request) -> Response:
     ):
         return _guest_download_not_found()
     revoke_authenticated_session(principal)
+    guest_download_registry().cleanup_session(principal.session_id)
     if principal.mode is AccessMode.GUEST:
-        guest_download_registry().cleanup_session(principal.session_id)
         cleanup_guest_session(principal.session_id)
     return Response(
         status_code=204,

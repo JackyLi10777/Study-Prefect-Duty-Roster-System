@@ -36,6 +36,27 @@ MESSAGES = {
     "download_summary_zh_pdf": {"zh-HK": "下載繁中 PDF", "en": "Download Chinese PDF"},
     "download_summary_en_pdf": {"zh-HK": "下載專業英文 PDF", "en": "Download professional English PDF"},
     "download_report_evidence_json": {"zh-HK": "下載 JSON 證據包", "en": "Download JSON evidence"},
+    "summary_downloads_title": {"zh-HK": "公平與服務總結報告", "en": "Fairness and service summary downloads"},
+    "summary_downloads_intro": {
+        "zh-HK": "三種檔案均來自上方同一份已核對預覽；只改變語言或檔案格式，不會改動名單、公平帳本或任何值班資料。",
+        "en": "All three files come from the same reviewed preview above. Only the language or file format changes; the directory, fairness ledger, and roster data remain untouched.",
+    },
+    "summary_zh_pdf_detail": {
+        "zh-HK": "繁體中文標題及說明的服務與公平摘要，適合團隊內部審查；所有導學風紀姓名保持中文。",
+        "en": "A Traditional-Chinese service and fairness summary for internal team review; every prefect name remains Chinese.",
+    },
+    "summary_en_pdf_detail": {
+        "zh-HK": "相同資料的專業英文版本，適合顧問或對外交流；所有導學風紀姓名仍保持中文。",
+        "en": "A professional-English presentation of the same data for advisors or external communication; every prefect name remains Chinese.",
+    },
+    "summary_json_detail": {
+        "zh-HK": "機器可讀的來源週表、摘要指標及內容雜湊，供存檔、交接或技術核對；不是 SQLite 還原備份。",
+        "en": "Machine-readable source rosters, summary metrics, and content digest for archiving, handover, or technical review; it is not a SQLite restore backup.",
+    },
+    "summary_download_scope": {
+        "zh-HK": "涵蓋期間：以上方首週及末週為準；沒有已發布週表時仍會產生清楚標示為空的報告。",
+        "en": "Coverage: the first and last weeks selected above. If no published roster exists, the report is generated with an explicit empty state.",
+    },
     "report_evidence_not_backup": {
         "zh-HK": "JSON 是報告證據，不是還原備份",
         "en": "JSON is report evidence, not a restore backup",

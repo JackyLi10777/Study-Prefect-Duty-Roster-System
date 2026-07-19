@@ -444,10 +444,10 @@ MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服
  'faq_restore_a': {'zh-HK': '不可以。必須在「系統設定」選擇已驗證快照；系統會先建立還原前安全快照，再原子替換資料庫並留下審計紀錄。',
                    'en': 'No. Choose a verified snapshot in Settings; the system first creates a pre-restore safety snapshot, then '
                          'atomically replaces the database and records an audit event.'},
- 'faq_remote_q': {'zh-HK': '現在可以把系統公開到互聯網嗎？', 'en': 'Can the system be made public on the internet now?'},
- 'faq_remote_a': {'zh-HK': '不可以。現時批准模式是 localhost。日後只有在專用主機、Cloudflare Access、允許名單及顧問老師安全決定完成後，才可測試受控遠端存取。',
-                  'en': 'No. The approved mode is localhost. Controlled remote access may be tested only after a dedicated host, '
-                        "Cloudflare Access, an allow-list, and the teacher advisor's security decision are complete."},
+ 'faq_remote_q': {'zh-HK': '現在應從哪個網址進入系統？', 'en': 'Which address should be used to enter the system?'},
+ 'faq_remote_a': {'zh-HK': '日常只使用正式 Cloudflare 網址。訪客及獲准管理員進入同一網站；localhost 只供 Windows 主機維護及故障診斷。',
+                  'en': 'Use only the canonical Cloudflare address for daily work. Guests and approved administrators enter the same site; '
+                        'localhost is reserved for Windows-host maintenance and fault diagnosis.'},
  'faq_support_q': {'zh-HK': '畫面顯示 OP 支援編號時應怎樣做？', 'en': 'What should I do when an OP support reference appears?'},
  'faq_support_a': {'zh-HK': '先按提示核對資料並安全重試一次。問題持續時，只把 OP 編號交給顧問老師或 IT；維護者可用本機查詢工具定位事件，毋須傳送整份日誌。',
                    'en': 'Follow the guidance, check the data, and retry safely once. If it continues, give only the OP reference to the '

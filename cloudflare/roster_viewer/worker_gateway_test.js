@@ -705,6 +705,43 @@ Deno.test('proxied HTTP workbench responses gain the workbench-safe header contr
   assertEquals(result.headers.get('Content-Security-Policy'), null);
 });
 
+Deno.test('generated PDF downloads preserve binary bytes and delivery headers through the gateway', async () => {
+  const env = accessEnvironment('sing-yin-runtime-generated-download');
+  const guestCookie = await guestSessionCookiePair(env);
+  const expected = new Uint8Array([37, 80, 68, 70, 45, 49, 46, 55, 10, 37, 255, 255]);
+  let originRequest;
+  env.ROSTER_ORIGIN = {
+    fetch(request) {
+      originRequest = request;
+      return new Response(expected, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': 'attachment; filename="SYSS_Roster_DEMO_EN.pdf"',
+          'Cache-Control': 'no-store',
+          'X-Sing-Yin-Support-Reference': 'DL-TEST-001',
+        },
+      });
+    },
+  };
+
+  const result = await worker.fetch(new Request(
+    'https://gateway.example/api/generated-download/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    { headers: { Cookie: guestCookie } },
+  ), env, { waitUntil() {} });
+
+  assertEquals(originRequest.url, 'http://127.0.0.1:8080/api/generated-download/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+  assertEquals(result.status, 200);
+  assertEquals(result.headers.get('Content-Type'), 'application/pdf');
+  assertEquals(result.headers.get('Content-Disposition'), 'attachment; filename="SYSS_Roster_DEMO_EN.pdf"');
+  assertEquals(result.headers.get('Cache-Control'), 'no-store');
+  assertEquals(result.headers.get('X-Sing-Yin-Support-Reference'), 'DL-TEST-001');
+  assertEquals(
+    JSON.stringify([...new Uint8Array(await result.arrayBuffer())]),
+    JSON.stringify([...expected]),
+  );
+});
+
 Deno.test('serves the immutable Service Weave PNG identity and redirects the old SVG path', async () => {
   const context = { waitUntil() {} };
   const favicon = await worker.fetch(

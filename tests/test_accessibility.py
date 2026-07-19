@@ -248,7 +248,7 @@ def test_component_colour_roles_are_semantic_and_consistent() -> None:
     assert "--sy-image-empty-ready:" in theme
     assert "var(--sy-empty-ready-veil), var(--sy-image-empty-ready)" in theme
     assert "def _tone_badge" in pages_source
-    assert '"stable" if week["status"] == "published" else "action"' in pages_source
+    assert '"stable" if status == "published" else "attention" if status == "withdrawn" else "action"' in pages_source
     for ad_hoc_status_colour in ("color=amber-8", "color=amber-9", "color=blue-7", "color=teal-8"):
         assert ad_hoc_status_colour not in pages_source
 
@@ -548,4 +548,6 @@ def test_co_creation_identity_media_keeps_link_focus_touch_and_mobile_reflow() -
     assert ".sy-co-creation-profile { grid-template-columns: 70px minmax(0, 1fr);" in mobile_scope
     assert ".sy-co-creation-social { width: 100%; justify-content: center;" in mobile_scope
     assert ".sy-co-creation-crest { display: none;" in mobile_scope
-    assert "object-fit: cover !important" in _css_declarations(theme, ".sy-co-creation-banner .q-img__image")
+    banner_rule = _css_declarations(theme, ".sy-co-creation-banner .q-img__image")
+    assert "object-fit: contain !important" in banner_rule
+    assert "object-position: center !important" in banner_rule

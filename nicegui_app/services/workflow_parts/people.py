@@ -459,7 +459,10 @@ class PeopleWorkflowMixin:
                 if prefect is None or not prefect.active:
                     raise WorkflowError("The selected prefect is not active.")
                 existing_week = session.scalar(
-                    select(RosterWeekRecord).where(RosterWeekRecord.week_start == week_start)
+                    select(RosterWeekRecord).where(
+                        RosterWeekRecord.week_start == week_start,
+                        RosterWeekRecord.status.in_(("draft", "published")),
+                    )
                 )
                 roster_week_id = existing_week.id if existing_week else None
                 if existing_week is not None and existing_week.status == "published":
@@ -583,7 +586,8 @@ class PeopleWorkflowMixin:
                     )
                 week = session.scalar(
                     select(RosterWeekRecord).where(
-                        RosterWeekRecord.week_start == declaration.week_start
+                        RosterWeekRecord.week_start == declaration.week_start,
+                        RosterWeekRecord.status.in_(("draft", "published")),
                     )
                 )
                 if week is not None and week.status == "published":

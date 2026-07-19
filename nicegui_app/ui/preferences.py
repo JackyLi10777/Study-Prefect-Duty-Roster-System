@@ -1,8 +1,8 @@
 """Access-aware UI preferences.
 
 Administrator preferences retain NiceGUI's encrypted user storage. Guest
-preferences are deliberately connection-local and never enter the persistent
-``storage-user`` files.
+preferences use a bounded session-scoped in-memory store and never enter the
+persistent ``storage-user`` files.
 """
 
 from __future__ import annotations

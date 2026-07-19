@@ -23,6 +23,7 @@ from nicegui_app.gateway_identity import (
     principal_from_request,
 )
 from nicegui_app.observability import current_request_reference
+from nicegui_app.services.guest_preferences import GuestPreferenceRegistry
 from nicegui_app.services.guest_workspace import (
     GuestCapacityError,
     GuestSnapshotError,
@@ -35,6 +36,7 @@ from nicegui_app.services.roster_workflow import RosterWorkflow
 
 _workflow: RosterWorkflow | None = None
 _guest_registry: GuestWorkspaceRegistry | None = None
+_guest_preference_registry = GuestPreferenceRegistry()
 _guest_adapters: dict[tuple[str, str], Any] = {}
 _client_guest_adapters: dict[str, Any] = {}
 _active_guest_client_by_workspace: dict[tuple[str, str], str] = {}
@@ -519,6 +521,7 @@ def cleanup_guest_session(session_id: str) -> None:
             ):
                 _client_guest_adapters.pop(client_id, None)
     get_guest_registry().cleanup_session(session_id)
+    _guest_preference_registry.cleanup_session(session_id)
 
 
 def _cleanup_client_context(client_id: str) -> None:
@@ -584,6 +587,11 @@ def current_page_context() -> PageContext:
     context = PageContext.create(
         principal,
         workspace=workspace,
+        preference_store=(
+            _guest_preference_registry.store_for(principal.session_id)
+            if principal.mode is AccessMode.GUEST and principal.session_id
+            else None
+        ),
         request_reference=current_request_reference(),
         metadata=metadata,
     )

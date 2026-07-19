@@ -175,6 +175,8 @@ def test_guest_generated_file_uses_single_use_server_endpoint(
         }
     ]
     assert len(scripts) == 1
-    assert "/api/guest/download/" + ("A" * 43) in scripts[0]
-    assert "new Blob" not in scripts[0]
-    assert "fetch(" not in scripts[0]
+    assert "/api/generated-download/" + ("A" * 43) in scripts[0]
+    assert "response.blob()" in scripts[0]
+    assert "fetch(" in scripts[0]
+    assert "credentials:'same-origin'" in scripts[0]
+    assert "URL.revokeObjectURL" in scripts[0]
