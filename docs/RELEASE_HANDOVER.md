@@ -2,6 +2,8 @@
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
+> **v1.2 rc14 現行交接狀態：**正式入口的 Service Weave 標誌會跟隨淺色、深色及系統外觀切換；歡迎音樂控制器亦已移除對舊 fade hook 的無效呼叫。每次更新仍須以同一 annotated tag 同步 Windows origin 與 canonical Worker，並完成正式 gate、已驗證備份、隔離還原及線上入口檢查。下列 rc11 數值保留作歷史發布證據，不是要求下一任回退使用的版本。
+
 > **v1.2 rc11 交接狀態：** 264 個發布輸入已以指紋 `8423b0d41666e6dcd342195967d97362c091b920dd2c51081a77c34ac93dc41f` 通過 13／13 正式 gate。`C:\SingYinRoster` 現為健康、ready 的 rc11／`7aff468`；正式備份 `20260719-112322-850398-manual_verified_backup.sqlite3`、SHA-256 `47e30f9a02da9bb5680fb64009ad7d0f10078b4de8ee85ed50846fca84c02882`、公平對帳、行數核對、還原審計及隔離還原全部通過。canonical Worker version `1cba4784-e265-4d87-a04d-5759b79a7530` 已通過 0% 候選及 100% 正式 smoke checks；public gateway health 為 HTTP 200。首席導學風紀及教師顧問仍須完成真人驗收清單。
 
 > **歷史 rc4 rollout 記錄（不可作現行步驟）：** rc4 已成功把正式 Alembic schema 由 `0007` 升至 `0008`，建立已驗證備份並完成隔離還原；其後 `git fetch origin main` 只更新 `FETCH_HEAD`，而 ancestry gate 讀取 stale `origin/main`，造成假失敗。rc4 因而從未被宣告為 live。自動 rollback 未能證明 origin health 後，主機以相容的 rc4／`30f282f` 完成 forward recovery；rc5／`bafaef6` 已改用明確 remote-tracking refspec，並重新通過完整 13-gate 報告。

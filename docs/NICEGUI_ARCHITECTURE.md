@@ -4,6 +4,12 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
+> **Live v1.2 rc14 status:** the controlled Windows origin and canonical Worker
+> use the same release line. The entrance selects the transparent Service Weave
+> light／dark product mark from the product-identity contract, and its welcome
+> audio controller contains no reference to the retired fade hook. The rc11
+> evidence below is retained as historical release provenance.
+
 > **Live v1.2 rc11 status:** The 264-input release passed all 13 formal gates with
 > fingerprint `8423b0d41666e6dcd342195967d97362c091b920dd2c51081a77c34ac93dc41f`.
 > The Windows origin is healthy／ready on `v1.2.0-rc.11`／`7aff468`; a fresh

@@ -434,6 +434,7 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 25 per
   assert(script.includes("sing-yin:welcome-audio-volume:v1"));
   assert(script.includes('welcomeAudio.play()'));
   assert(script.includes("addEventListener('ended'"));
+  assert(!script.includes('cancelWelcomeFade'));
 });
 
 Deno.test('public welcome audio proxies only an exact allowlisted recording and preserves byte ranges', async () => {

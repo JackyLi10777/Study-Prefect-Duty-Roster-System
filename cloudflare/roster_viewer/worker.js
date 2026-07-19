@@ -1633,7 +1633,6 @@ async function playWelcomeAudio({ remember = true } = {}) {
 
 function pauseWelcomeAudio({ remember = true } = {}) {
   if (!welcomeAudio) return;
-  cancelWelcomeFade();
   welcomeAudio.pause();
   welcomeDesiredEnabled = false;
   if (remember) storeWelcomePreference(WELCOME_ENABLED_KEY, false);
@@ -1654,7 +1653,6 @@ function syncWelcomePlaylist() {
   const nextProfile = resolvedWelcomeProfile();
   if (nextProfile === welcomeProfile) return;
   const shouldResume = !welcomeAudio.paused;
-  cancelWelcomeFade();
   welcomeAudio.pause();
   welcomeProfile = nextProfile;
   welcomeTrackIndex = 0;
@@ -1680,7 +1678,6 @@ function initialiseWelcomeAudio() {
   welcomeAudioVolume?.addEventListener('input', event => {
     const volumeValue = Math.max(0, Math.min(100, Number(event.target.value) || 0));
     const normalised = volumeValue / 100;
-    cancelWelcomeFade();
     welcomeAudio.volume = normalised;
     storeWelcomePreference(WELCOME_VOLUME_KEY, normalised);
     if (welcomeAudioVolumeValue) welcomeAudioVolumeValue.textContent = Math.round(volumeValue) + '%';

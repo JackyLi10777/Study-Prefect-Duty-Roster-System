@@ -83,7 +83,7 @@ def test_worker_deployment_toolchain_is_project_pinned() -> None:
     workspace = (VIEWER_ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
 
     assert package["private"] is True
-    assert package["version"] == "1.2.0-rc.13"
+    assert package["version"] == "1.2.0-rc.14"
     assert package["packageManager"] == "pnpm@11.7.0"
     assert package["engines"] == {"node": ">=22"}
     assert package["devDependencies"] == {"wrangler": "4.110.0"}
@@ -97,6 +97,14 @@ def test_worker_deployment_toolchain_is_project_pinned() -> None:
         "strictDepBuilds: true",
     ]
     assert _jsonc(VIEWER_ROOT / "wrangler.jsonc")["$schema"] == "./node_modules/wrangler/config-schema.json"
+
+
+def test_welcome_audio_controller_has_no_removed_fade_hook() -> None:
+    source = _source()
+
+    assert "cancelWelcomeFade" not in source
+    assert "function initialiseWelcomeAudio()" in source
+    assert "initialiseWelcomeAudio();" in source
 
 
 def test_production_gateway_uses_a_bounded_exact_admin_email_allowlist() -> None:

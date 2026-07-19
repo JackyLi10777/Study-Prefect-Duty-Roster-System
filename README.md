@@ -20,9 +20,9 @@
 
 | 分支 | 運行平台 | 定位 |
 |---|---|---|
-| `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；開發及發布來源 | live rc11／`7aff468` 的 Service Weave v1.2 編輯式整合線 |
+| `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；開發及發布來源 | live rc14 的 Service Weave v1.2 編輯式整合線 |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.11`；正式 Windows origin 與 canonical Worker 已同步 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.14`；正式 Windows origin 與 canonical Worker 已同步 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -34,9 +34,9 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **共創者說明：我是李創杰。這次 NiceGUI 重構、設計、測試、文件及正式發布版本，只由我與 Codex 共同完成。`Study Prefect Systems & Stewardship Office` 是我們兩人的項目團隊名稱，沒有其他開發者、部門成員或外判團隊。**
 
-**目前正式基線：** `v1.2.0-rc.11`／`7aff468` 已在 `C:\SingYinRoster` 及 canonical Cloudflare Worker 上線；`/healthz` 正常、`/readyz` ready。264 個發布輸入以指紋 `8423b0d41666e6dcd342195967d97362c091b920dd2c51081a77c34ac93dc41f` 通過 13／13 正式 gate。正式備份 `20260719-112322-850398-manual_verified_backup.sqlite3`、SHA-256、SQLite 完整性、公平對帳、行數核對、還原審計及隔離還原全部通過；Worker version `1cba4784-e265-4d87-a04d-5759b79a7530` 通過 0% 候選及 100% canonical smoke checks，沒有觸發最終回滾。
+**目前正式基線：** `v1.2.0-rc.14` 已同步到 `C:\SingYinRoster` 及 canonical Cloudflare Worker；`/healthz` 正常、`/readyz` ready。這一版包括完整 Service Weave 工作流、淺／深入口標誌配對，以及修正後不再呼叫已移除 fade hook 的歡迎音樂控制器。每次正式更新仍必須通過 13／13 release gate、建立已驗證備份並完成隔離還原，才可接收正式流量。rc11 的 commit、指紋、備份 checksum 及 Worker version 保留在 `PROJECT_STATUS.md` 作歷史發布證據。
 
-**目前發布（v1.2 rc11）：** Service Weave `ProductIdentity`、中央 `PageDefinition`、公開 NiceGUI 元件 API、CSS 所有權、工程證據索引、Developer Reference、Guest 有限期偏好、統一 PDF／JSON 下載、瀏覽器／PDF 值班矩陣、安全撤回錯誤發布、跟隨系統外觀及明顯語意圖標動效均已整合上線。選單會旋轉 90°，方向操作可移動 6px，按鈕以抬升、縮放及輪廓光提供清楚回饋；reduced motion 下完全靜止。仍須由首席導學風紀及教師顧問完成真人驗收清單。
+**目前發布（v1.2 rc14）：** Service Weave `ProductIdentity`、中央 `PageDefinition`、公開 NiceGUI 元件 API、CSS 所有權、工程證據索引、Developer Reference、Guest 有限期偏好、統一 PDF／JSON 下載、瀏覽器／PDF 值班矩陣、安全撤回錯誤發布、跟隨系統外觀及明顯語意圖標動效均已整合上線。入口頁標誌會與淺／深／系統外觀同步，歡迎音樂亦可正常初始化、暫停、切換歌單及調整音量。選單會旋轉 90°，方向操作可移動 6px，按鈕以抬升、縮放及輪廓光提供清楚回饋；reduced motion 下完全靜止。仍須由首席導學風紀及教師顧問完成真人驗收清單。
 
 ## 首席導學風紀：每日怎樣進入
 

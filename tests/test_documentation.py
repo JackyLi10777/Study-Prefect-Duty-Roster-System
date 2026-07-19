@@ -138,6 +138,9 @@ def test_release_truth_docs_keep_live_rc11_separate_from_candidate_and_history()
         assert "1cba4784-e265-4d87-a04d-5759b79a7530" in document
 
     assert "Service Weave v1.2 rc11 live rollout" in status
+    assert "v1.2 rc14 is the current controlled Windows origin" in status
+    assert "cancelWelcomeFade is not defined" in status
+    assert "目前發布（v1.2 rc14）" in (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     assert "remains disabled by default" not in status
     assert "now run the matching rc7 release" not in status
     assert "Windows origin remains healthy／ready on rc4" not in security

@@ -1,5 +1,7 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
+> **文件狀態（live v1.2 rc14）：** Admin、Guest 與公開 Viewer 繼續使用同一 canonical Worker 身份邊界；本次入口標誌與歡迎音樂修正沒有擴大 Guest 能力、資料保存位置或正式 SQLite 存取。下列 rc11 數值保留作歷史發布證據。
+
 > **文件狀態（live v1.2 rc11）：** 受控 Windows origin 現正運行 annotated tag `v1.2.0-rc.11`／commit `7aff468`。其 264 個發布輸入以指紋 `8423b0d41666e6dcd342195967d97362c091b920dd2c51081a77c34ac93dc41f` 通過 13／13 正式 gate；全新正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原均通過。canonical Worker version `1cba4784-e265-4d87-a04d-5759b79a7530` 已通過候選指定及正式網址 smoke checks，正承接 100% 流量。
 
 ## 1. 目的
