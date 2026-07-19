@@ -1,6 +1,6 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
-> **文件狀態（live v1.2 rc9）：** 受控 Windows origin 現正運行 annotated tag `v1.2.0-rc.9`／commit `18a5c73`。其 240 個發布輸入以指紋 `0ebc6d407682aca09baa0e95bc5857c95b46352cd7545752aea3425fe633f96e` 通過 13／13 正式 gate；全新正式備份、checksum、公平對帳及隔離還原均通過。canonical Worker 程式未改動，故保留已驗證 live version `b13e5721-d1e8-4048-9885-ffb422fe2010`。目前 Service Weave editorial branch 是尚未部署的候選；它必須產生自己的最終來源指紋、完整 gate、備份／隔離還原及線上驗收證據，不能沿用 rc9 證據宣稱已發布。
+> **文件狀態（live v1.2 rc11）：** 受控 Windows origin 現正運行 annotated tag `v1.2.0-rc.11`／commit `7aff468`。其 264 個發布輸入以指紋 `8423b0d41666e6dcd342195967d97362c091b920dd2c51081a77c34ac93dc41f` 通過 13／13 正式 gate；全新正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原均通過。canonical Worker version `1cba4784-e265-4d87-a04d-5759b79a7530` 已通過候選指定及正式網址 smoke checks，正承接 100% 流量。
 
 ## 1. 目的
 
@@ -76,7 +76,7 @@ Guest 的語言、外觀、音樂及音效由獨立的有限期 origin-memory pr
 - 篡改、錯誤 SID、錯誤 workspace／tab、過期、過大、舊 revision、重播或舊 boot token 均被拒絕；頁面繼續使用安全虛構 fixture，並收到新的合法 token；
 - 登出、到期、撤權及跨分頁 session 終止會清除 `sessionStorage`、媒體及待下載票據；origin 重啟後舊 boot token 按設計失效。
 
-`tests/test_guest_snapshot_bridge.py` 聚焦驗證同分頁還原、token 輪換、複製／篡改拒絕、連線 nonce、登出清理及只使用 `sessionStorage` 的前端契約；完整 pytest、隔離瀏覽器及 release verifier 已納入 live rc9 的 13／13 正式報告。任何後續候選仍須以該候選的最終來源重新執行相同 gate；歷史報告不可代替新的 origin／Worker 決定及線上驗收。
+`tests/test_guest_snapshot_bridge.py` 聚焦驗證同分頁還原、token 輪換、複製／篡改拒絕、連線 nonce、登出清理及只使用 `sessionStorage` 的前端契約；完整 pytest、隔離瀏覽器及 release verifier 已納入 live rc11 的 13／13 正式報告。任何後續候選仍須以該候選的最終來源重新執行相同 gate；歷史報告不可代替新的 origin／Worker 決定及線上驗收。
 
 ## 4. 資料與整合限制
 
@@ -118,10 +118,10 @@ Guest adapter 不引用正式 SQLAlchemy、AI、HTTP、備份、上載、分享�
 - `python -X utf8 scripts/verify_release_candidate.py`；
 - 已驗證正式備份及隔離還原。
 
-任何 gate 失敗，都不得切換候選 Windows origin、Worker 或現行 `SING_YIN_UNIFIED_GUEST` 設定；受控主機繼續使用已驗證的 rc9／Worker 組合。
+任何 gate 失敗，都不得切換候選 Windows origin、Worker 或現行 `SING_YIN_UNIFIED_GUEST` 設定；受控主機繼續使用最近一組已驗證的 origin／Worker 組合。
 
 ## English operational summary
 
 The live v1.2 product uses the same NiceGUI routes and components for administrators and guests, but resolves a server-verified `PageContext` to either the official workflow or a bounded in-memory guest adapter. Guest capability is deny-by-default and excludes AI, upload/import, persistent storage, external delivery, official backup/restore, and real-data export. Guest exports are one-shot, memory-only, `DEMO`-marked, and `no-store`.
 
-The source contains signed principal verification, a bounded guest registry, per-client workspace IDs, session expiry/revocation monitoring, cross-tab logout cleanup, an HMAC snapshot codec, and the `sessionStorage` browser bridge. Each revision is saved only as a signed, tab-bound token; restore also requires the current live-connection nonce. Duplicate tabs receive new workspaces, while tampered, copied, expired, stale, or old-boot tokens fall back safely to the fictional fixture. The controlled Windows origin is live on `v1.2.0-rc.9`／`18a5c73`; its 240-input fingerprint `0ebc6d407682aca09baa0e95bc5857c95b46352cd7545752aea3425fe633f96e` passed all 13 formal gates, and the verified Worker remains `b13e5721-d1e8-4048-9885-ffb422fe2010`. The Service Weave editorial branch is a separate, undeployed candidate and must pass fresh candidate-bound verification before any cutover.
+The source contains signed principal verification, a bounded guest registry, per-client workspace IDs, session expiry/revocation monitoring, cross-tab logout cleanup, an HMAC snapshot codec, and the `sessionStorage` browser bridge. Each revision is saved only as a signed, tab-bound token; restore also requires the current live-connection nonce. Duplicate tabs receive new workspaces, while tampered, copied, expired, stale, or old-boot tokens fall back safely to the fictional fixture. The controlled Windows origin is live on `v1.2.0-rc.11`／`7aff468`; its 264-input fingerprint `8423b0d41666e6dcd342195967d97362c091b920dd2c51081a77c34ac93dc41f` passed all 13 formal gates, and verified Worker `1cba4784-e265-4d87-a04d-5759b79a7530` serves the canonical site.

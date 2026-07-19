@@ -229,7 +229,11 @@ function Invoke-SmokeChecks {
         throw "The Worker health response is not the expected gateway."
     }
     $entrance = Invoke-WebRequest -UseBasicParsing -Uri "$base/" -Headers $headers -Method Get -TimeoutSec 20
-    if ([int]$entrance.StatusCode -ne 200 -or $entrance.Content -notmatch 'Service Weave') {
+    if (
+        [int]$entrance.StatusCode -ne 200 -or
+        $entrance.Content -notmatch 'data-guest-bootstrap=' -or
+        $entrance.Content -notmatch 'Study Prefect Duty Roster'
+    ) {
         throw "The public entrance smoke check failed."
     }
     $viewer = Invoke-WebRequest -UseBasicParsing -Uri "$base/view" -Headers $headers -Method Get -TimeoutSec 20

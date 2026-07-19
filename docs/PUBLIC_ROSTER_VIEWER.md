@@ -1,6 +1,6 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **目前狀態（live rc9）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.9`／`18a5c73`；canonical Worker 保留已驗證 version `b13e5721-d1e8-4048-9885-ffb422fe2010`。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供。`codex/service-weave-v1-2-editorial` 仍是尚未部署的候選，必須取得自己的最終 gate、備份／隔離還原及受控部署證據才可取代 rc9。
+> **目前狀態（live rc11）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.11`／`7aff468`；canonical Worker version `1cba4784-e265-4d87-a04d-5759b79a7530` 正承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；rc11 的候選綁定 gate、正式備份、隔離還原、origin 及 Worker 線上核對已完成。
 
 我是李創杰。我希望所有使用者只需記住同一個網站，但同一個網址不代表相同權限。v1.2 把入口、完整 Guest 體驗及管理員工作台統一到同一套 NiceGUI 路由和元件；只有已發布週表的 `/view#…` 保留為獨立、只讀、可分享的能力連結。
 
@@ -92,7 +92,7 @@ Cloudflare 暫時不可用時，只有維護者才使用 localhost 或已核准 
 
 ## 發布前核對
 
-- [ ] 候選以隔離環境證明 `SING_YIN_UNIFIED_GUEST=0` 時 Guest fail closed；不得改動 live rc9 設定作測試。
+- [ ] 候選以隔離環境證明 `SING_YIN_UNIFIED_GUEST=0` 時 Guest fail closed；不得改動目前 live 設定作測試。
 - [ ] `SING_YIN_UNIFIED_GUEST=1` 的隔離測試使用臨時 SQLite、備份及日誌路徑，並重新證明 Guest／Admin 邊界。
 - [ ] Guest 與 Admin 每一正式路由有相同頁面骨架及清楚能力狀態。
 - [ ] Guest adapter 不引用正式 SQLAlchemy、AI、HTTP、備份、上載、分享或背景工作。
@@ -105,6 +105,6 @@ Cloudflare 暫時不可用時，只有維護者才使用 localhost 或已核准 
 
 ## English quick guide
 
-Live `v1.2.0-rc.9`／`18a5c73`, with verified Worker `b13e5721-d1e8-4048-9885-ffb422fe2010`, uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
+Live `v1.2.0-rc.11`／`7aff468`, with verified Worker `1cba4784-e265-4d87-a04d-5759b79a7530`, uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
 
-`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The Service Weave editorial branch is an undeployed candidate; it must pass candidate-bound verification and controlled deployment before it can replace the live rc9 product.
+`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The Service Weave editorial integration is part of the live rc11 product.

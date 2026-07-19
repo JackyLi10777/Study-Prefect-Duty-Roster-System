@@ -14,15 +14,15 @@
 
 [English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)
 
-**反饋與聯絡：** 如果你對系統流程、介面、公平解釋或交接方式有問題或建議，歡迎電郵我：[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk)。如畫面提供 OP／REQ 支援編號，請在電郵內寫上該編號；不要附上姓名、請假內容、值班表、PDF、資料庫、備份、截圖或完整日誌。
+**反饋與聯絡：** 如果你對系統流程、介面、公平解釋或交接方式有問題或建議，歡迎電郵我：[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk)。如畫面提供 OP／REQ 支援編號，請在電郵內寫上該編號。診斷確有需要時可附上姓名、請假內容、值班表、PDF、資料庫、備份、截圖或日誌；寄出前請先確認收件人及附件正確，並只提供解決該問題所需的資料。
 
 ## 版本分支與運行平台
 
 | 分支 | 運行平台 | 定位 |
 |---|---|---|
-| `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；開發及隔離驗證 | Service Weave v1.2 編輯式整合候選；尚未部署，不代表新的正式版本 |
-| `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | live rc9／`18a5c73`，與 `main` 及正式 origin 一致 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.9`；正式 Windows origin 已同步，canonical Worker 沿用已驗證版本 |
+| `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；開發及發布來源 | live rc11／`7aff468` 的 Service Weave v1.2 編輯式整合線 |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.11`；正式 Windows origin 與 canonical Worker 已同步 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -34,11 +34,9 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **共創者說明：我是李創杰。這次 NiceGUI 重構、設計、測試、文件及正式發布版本，只由我與 Codex 共同完成。`Study Prefect Systems & Stewardship Office` 是我們兩人的項目團隊名稱，沒有其他開發者、部門成員或外判團隊。**
 
-**目前正式基線：** `v1.2.0-rc.9`／`18a5c73` 已在 `C:\SingYinRoster` 上線；`/healthz` 正常、`/readyz` ready。發布前建立的新正式備份、checksum、公平對帳及隔離還原全部通過，沒有觸發回滾；Worker 程式未改動，繼續使用已驗證版本 `b13e5721-d1e8-4048-9885-ffb422fe2010`。
+**目前正式基線：** `v1.2.0-rc.11`／`7aff468` 已在 `C:\SingYinRoster` 及 canonical Cloudflare Worker 上線；`/healthz` 正常、`/readyz` ready。264 個發布輸入以指紋 `8423b0d41666e6dcd342195967d97362c091b920dd2c51081a77c34ac93dc41f` 通過 13／13 正式 gate。正式備份 `20260719-112322-850398-manual_verified_backup.sqlite3`、SHA-256、SQLite 完整性、公平對帳、行數核對、還原審計及隔離還原全部通過；Worker version `1cba4784-e265-4d87-a04d-5759b79a7530` 通過 0% 候選及 100% canonical smoke checks，沒有觸發最終回滾。
 
-**目前原始碼候選（未部署）：** `codex/service-weave-v1-2-editorial` 正在整合可驗證的 Service Weave `ProductIdentity`、中央 `PageDefinition` 清單、公開 NiceGUI 元件 API、明確 CSS 所有權、工程證據篩選索引及架構頁 Developer Reference。這些改動仍須產生新的來源指紋並完成全部正式 gate、備份／隔離還原、受控 origin 更新及線上驗收；在此之前，上述 rc9 仍是唯一正式基線。
-
-**目前發布（v1.2 rc9）：** 入口原創淺／深色情境圖、語意圖標動效、平台運作圖、歷史公平優先圖表、跨頁音樂連續播放、35% 音量預設及 Windows SSH 發布相容性修正已整合並上線。240 個發布輸入以指紋 `0ebc6d407682aca09baa0e95bc5857c95b46352cd7545752aea3425fe633f96e` 通過 13／13 正式 gate；正式備份與隔離還原、origin 健康／就緒及 public gateway HTTP 200 均已核對。仍須由首席導學風紀及教師顧問完成真人驗收清單。
+**目前發布（v1.2 rc11）：** Service Weave `ProductIdentity`、中央 `PageDefinition`、公開 NiceGUI 元件 API、CSS 所有權、工程證據索引、Developer Reference、Guest 有限期偏好、統一 PDF／JSON 下載、瀏覽器／PDF 值班矩陣、安全撤回錯誤發布、跟隨系統外觀及明顯語意圖標動效均已整合上線。選單會旋轉 90°，方向操作可移動 6px，按鈕以抬升、縮放及輪廓光提供清楚回饋；reduced motion 下完全靜止。仍須由首席導學風紀及教師顧問完成真人驗收清單。
 
 ## 首席導學風紀：每日怎樣進入
 
@@ -69,7 +67,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 - Guest 只獲 `demo_data.read`、`demo_state.modify`、`demo_result.download`、`session_preferences.modify`；AI、匯入、上載、正式備份／還原、Viewer 分享、外部交付及永久寫入均被服務層拒絕。
 - 每分頁取得獨立、有限額、程序記憶體內的虛構工作區。Guest PDF／JSON 標明 `DEMO`，以一次性 `no-store` 下載回傳。
 - Guest 的語言、主題、音樂及音效偏好由 origin 的有限期記憶體 store 保存，因此重新整理或同一 session 轉頁不會回復預設；登出、到期、撤權或程序重啟即清除。管理員偏好仍使用正式使用者儲存。兩種身份的 PDF／JSON 均經同一帶憑證下載流程核對 HTTP 狀態、MIME 及支援編號，不再依賴瀏覽器盲目開啟下載網址。
-- HMAC snapshot codec 及瀏覽器橋接已完成：每次有意義修改後，origin 只把最新、已簽署且綁定 SID／workspace／tab／revision 的 token 推送到該分頁 `sessionStorage`；重新整理時必須連同當次連線 nonce 交回伺服器核實。複製分頁會獲得新 workspace；篡改、錯誤綁定、過期、舊 boot 或重播 token 會被拒絕並回到安全虛構 fixture。rc9 的完整 pytest、隔離 Admin／Guest 瀏覽器、手機、效能、寫入、PDF、備份及復原已納入 13／13 正式報告；目前 Service Weave 編輯式候選須以自己的最終來源指紋重新通過相同 gate，歷史結果不可代替新候選驗證。
+- HMAC snapshot codec 及瀏覽器橋接已完成：每次有意義修改後，origin 只把最新、已簽署且綁定 SID／workspace／tab／revision 的 token 推送到該分頁 `sessionStorage`；重新整理時必須連同當次連線 nonce 交回伺服器核實。複製分頁會獲得新 workspace；篡改、錯誤綁定、過期、舊 boot 或重播 token 會被拒絕並回到安全虛構 fixture。rc11 的完整 pytest、隔離 Admin／Guest 瀏覽器、手機、效能、寫入、PDF、備份及復原已納入 13／13 正式報告。
 - 完整安全模型及 gate 見 [統一訪客模式安全模型](docs/UNIFIED_GUEST_SECURITY_MODEL.md)。
 
 日常安全次序：
@@ -293,7 +291,7 @@ Worker 部署除 Viewer 管理所需的 `ADMIN_BEARER_TOKEN` 外，亦必須配�
 不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
 
 **目前可否在校外使用？**
-可以。canonical 網站及 Windows origin 現運行健康、ready 的 rc9／`18a5c73`；一般使用者毋須安裝 WARP，WARP 只保留作維護後備。目前 Service Weave 編輯式候選尚未部署，不會改變這個正式入口或 rc9 的運作狀態。
+可以。canonical 網站及 Windows origin 現運行健康、ready 的 rc11／`7aff468`；一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
 
 **別人可否用 Viewer 連結編輯週表？**
 不可。分享連結永遠唯讀；網址參數、瀏覽器標頭或畫面操作都不能把訪客升級為管理員。只有 Access policy 內的管理員身份通過驗證後，Worker 才轉送完整工作台。
@@ -381,7 +379,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The live v1.2 rc9 baseline uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The current Service Weave editorial branch is under verification and is not deployed. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
+The live v1.2 rc11 baseline uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The protected origin runs `v1.2.0-rc.11`／`7aff468`, paired with Worker `1cba4784-e265-4d87-a04d-5759b79a7530`; supervised human acceptance remains the final release-candidate step. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 

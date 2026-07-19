@@ -4,14 +4,13 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
-> **Live v1.2 rc9 status:** The 240-input release passed all 13 formal gates with
-> fingerprint `0ebc6d407682aca09baa0e95bc5857c95b46352cd7545752aea3425fe633f96e`.
-> The Windows origin is healthy／ready on `v1.2.0-rc.9`／`18a5c73`; a fresh
-> verified production backup and isolated restore passed before cutover. The
-> Worker source was unchanged, so verified live version
-> `b13e5721-d1e8-4048-9885-ffb422fe2010` remains in service. Supervised human
-> acceptance remains required. The Service Weave editorial branch is a separate,
-> undeployed candidate and must generate its own release evidence before cutover.
+> **Live v1.2 rc11 status:** The 264-input release passed all 13 formal gates with
+> fingerprint `8423b0d41666e6dcd342195967d97362c091b920dd2c51081a77c34ac93dc41f`.
+> The Windows origin is healthy／ready on `v1.2.0-rc.11`／`7aff468`; a fresh
+> verified production backup and isolated restore passed before cutover.
+> Worker version `1cba4784-e265-4d87-a04d-5759b79a7530` passed staged-version and
+> canonical health／entrance／viewer checks before receiving 100% traffic.
+> Supervised human acceptance remains required.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 
@@ -36,7 +35,7 @@ NiceGUI owns the rendering and navigation. The read model introduces no schema, 
 
 ## Canonical entry and local maintenance start
 
-> **Unified Guest architecture contract:** The live rc9 host enables this path
+> **Unified Guest architecture contract:** The live rc11 host enables this path
 > through its protected `SING_YIN_UNIFIED_GUEST=1` configuration. Any later
 > candidate must preserve the same deny-by-default boundary and pass fresh
 > candidate-bound verification before the origin or Worker is switched; changing
@@ -330,15 +329,15 @@ The only deliberate application-originated external request carrying roster-deri
 - Worker Deno contracts own `/auth/admin/start`, `/auth/guest/start`, `/auth/status`, `/auth/logout`, compatibility redirects, principal signing, forged-header stripping, VPC proxying and Viewer isolation.
 
 The focused browser-snapshot tests, complete Python suite, unified Guest browser
-verifier and release-candidate orchestrator all passed in the live rc9 13-gate
+verifier and release-candidate orchestrator all passed in the live rc11 13-gate
 report. The immutable release produced fingerprint
-`0ebc6d407682aca09baa0e95bc5857c95b46352cd7545752aea3425fe633f96e` from 240
-inputs. The running origin remains healthy／ready on `v1.2.0-rc.9`／`18a5c73`;
-the unchanged verified Worker remains
-`b13e5721-d1e8-4048-9885-ffb422fe2010`. Earlier rc5／rc6 staging and rc7 cutover
+`8423b0d41666e6dcd342195967d97362c091b920dd2c51081a77c34ac93dc41f` from 264
+inputs. The running origin remains healthy／ready on `v1.2.0-rc.11`／`7aff468`;
+the verified matching Worker is
+`1cba4784-e265-4d87-a04d-5759b79a7530`. Earlier rc5／rc6 staging and rc7 cutover
 details are historical rollout evidence, not instructions for a new candidate.
 Every later candidate must regenerate its own fingerprint, report, backup／restore
-and live Cloudflare acceptance before replacing rc9, so this architecture
+and live Cloudflare acceptance before replacing rc11, so this architecture
 document alone is not deployment evidence.
 
 ```powershell

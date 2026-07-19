@@ -9,8 +9,10 @@ that future Head Study Prefects can inherit a safe and understandable weekly pro
 **Feedback and contact:** Questions or suggestions about the workflow, interface,
 fairness explanation, or handover are welcome at
 [`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk). Include an OP/REQ support
-reference when one is shown, but do not attach names, leave details, rosters,
-PDFs, databases, backups, screenshots, or complete logs.
+reference when one is shown. When diagnostic evidence is genuinely needed,
+names, leave details, rosters, PDFs, databases, backups, screenshots, or logs
+may be attached after confirming the recipient and limiting the material to
+what the investigation needs.
 
 **prepare → generate draft → review → publish once → export bilingual PDF →
 adjust published leave → explain fairness → back up, restore, and hand over.**
@@ -21,32 +23,31 @@ The public entrance presents one prepared duty desk in paired morning-light and 
 · [Architecture](docs/NICEGUI_ARCHITECTURE.md) · [Release status](PROJECT_STATUS.md)
 · [Canonical-site access guide](docs/PUBLIC_ROSTER_VIEWER.md)
 
-**Current formal baseline:** `v1.2.0-rc.9`／`18a5c73` is live at
+**Current formal baseline:** `v1.2.0-rc.11`／`7aff468` is live at
 `C:\SingYinRoster`. `/healthz` is healthy and `/readyz` is ready. The rollout
-created a fresh verified backup and passed checksum, fairness reconciliation,
-restore audit, and isolated restore. The canonical Worker source did not change,
-so its already verified version `b13e5721-d1e8-4048-9885-ffb422fe2010` remains
-live. Supervised administrator, advisor, and real-device acceptance remains a
-human responsibility rather than an automated deployment claim.
+created `20260719-112322-850398-manual_verified_backup.sqlite3` and passed its
+SHA-256 checksum, database integrity, fairness reconciliation, row matching,
+restore audit, and isolated restore. Worker version
+`1cba4784-e265-4d87-a04d-5759b79a7530` passed zero-traffic staged and canonical
+health／entrance／viewer checks before receiving 100% traffic. Supervised
+administrator, advisor, and real-device acceptance remains a human responsibility.
 
 The retained **v1.1 rollback** record is historical recovery evidence only; it
-does not replace the current rc9 baseline or prove this editorial candidate.
+does not replace the current rc11 baseline.
 
-**Current source candidate—not deployed:** `codex/service-weave-v1-2-editorial`
-is integrating the versioned Service Weave `ProductIdentity`, central
-`PageDefinition` catalogue, public NiceGUI component API, explicit CSS ownership,
-a filterable Engineering evidence index, and an internal Developer Reference.
-It must receive its own final source fingerprint and pass every formal gate,
-backup／isolated restore, controlled origin rollout, matching Worker decision,
-and live acceptance before it can supersede rc9.
+The live rc11 product includes the versioned Service Weave `ProductIdentity`,
+central `PageDefinition` catalogue, public NiceGUI component API, explicit CSS
+ownership, filterable Engineering evidence index, internal Developer Reference,
+bounded Guest preferences, unified generated-file delivery, the browser／PDF
+roster matrix, and auditable published-roster withdrawal.
 
 ## Repository editions
 
 | Branch | Platform | Status |
 |---|---|---|
-| `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite, development and isolated verification | Service Weave v1.2 editorial candidate; not deployed and not a new formal release |
-| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Live rc9 `18a5c73`, aligned with `main` and the production origin |
-| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.9`; the Windows origin is current and the unchanged canonical Worker retains its verified version |
+| `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite, release source | Live rc11 `7aff468` Service Weave integration line |
+| `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Previous unified-guest architecture line; no longer the formal baseline |
+| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.11`; Windows origin and canonical Worker are synchronized |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
@@ -68,12 +69,10 @@ redirects, not a static tour or second trial product. An explicitly issued
 `/view#…` link remains the separate encrypted, read-only published-roster viewer.
 
 The Worker and origin authenticate both modes with server-verified, HMAC-signed
-principals. The live rc9 release passed 13／13 formal gates against its own
-240-input fingerprint, including isolated Admin/Guest browser, mobile,
-reduced-motion, performance, write/PDF, backup, and recovery evidence. The
-Service Weave editorial branch changes release-sensitive source and therefore
-must be verified again; rc9 evidence is retained as live history, not reused as
-proof for the new candidate. The application has no custom password database.
+principals. The live rc11 release passed 13／13 formal gates against its own
+264-input fingerprint `8423b0d41666e6dcd342195967d97362c091b920dd2c51081a77c34ac93dc41f`,
+including isolated Admin/Guest browser, mobile, reduced-motion, performance,
+write/PDF, backup, and recovery evidence. The application has no custom password database.
 
 The commands below prepare a host or maintenance workstation; they are not a
 second normal entry point.
@@ -165,11 +164,9 @@ transaction preserves the original evidence, posts the inverse of the version's
 net fairness effect, creates audit and backup obligations, and requests
 revocation of existing shares before a corrected week can be generated.
 
-The live rc9 release passed its matching 13-gate report, fresh verified backup,
-isolated restore, origin rollout, and gateway health checks. The current Service
-Weave editorial branch changes release-sensitive inputs, so it must complete a
-new report and controlled rollout before its interface and documentation can be
-described as live. Exact operating commands are documented in
+The live rc11 release passed its matching 13-gate report, fresh verified backup,
+isolated restore, origin rollout, staged Worker check, and canonical gateway
+health checks. Exact operating commands are documented in
 [`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and
 [`WINDOWS_DEDICATED_HOST_SETUP.md`](docs/WINDOWS_DEDICATED_HOST_SETUP.md). The
 complete risk matrix is in [`UPDATE_WORKFLOW.md`](docs/UPDATE_WORKFLOW.md).

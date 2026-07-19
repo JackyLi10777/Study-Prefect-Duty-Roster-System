@@ -1,6 +1,6 @@
 # 部署與遠端存取決策指南 / Deployment decision
 
-> **目前基線（live rc9）：** 受控 Windows origin 正運行 `v1.2.0-rc.9`／`18a5c73`；canonical Worker 保留已驗證 version `b13e5721-d1e8-4048-9885-ffb422fe2010`。`codex/service-weave-v1-2-editorial` 是尚未部署的 Service Weave 候選；它必須產生自己的最終來源指紋、完整 gate、正式備份／隔離還原及線上驗收，不能沿用 rc9 證據宣稱已發布。
+> **目前基線（live rc11）：** 受控 Windows origin 正運行 `v1.2.0-rc.11`／`7aff468`；canonical Worker 正運行已驗證 version `1cba4784-e265-4d87-a04d-5759b79a7530`。正式備份、隔離還原、13 項 release gate 及 staged Worker rollout 均已完成；Head Study Prefect／teacher-advisor 真人驗收仍待簽署。rc9 主機／Worker 組合只作已記錄回退基線。
 
 ## 結論
 
@@ -26,16 +26,16 @@ Windows 11 專用主機：單一 NiceGUI origin
 
 NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另行固定於 `127.0.0.1:22` 及 `[::1]:22`，只接受 Ed25519 金鑰，不開放 LAN、公網、防火牆入站規則或路由器轉發；日後校外 SSH 只能經獨立的 Cloudflare 私有路由進入。
 
-## Live rc9 基線與 Service Weave 候選
+## Live rc11 基線與回退組合
 
 | 層 | 現況 |
 |---|---|
-| `C:\SingYinRoster` | live `v1.2.0-rc.9`／`18a5c73`；健康、ready、loopback-only |
-| Cloudflare Worker／Access／Tunnel | Worker `b13e5721-d1e8-4048-9885-ffb422fe2010` live；Access 精確保護 `/auth/login`；Tunnel／VPC 連到單一 origin |
-| `codex/service-weave-v1-2-editorial` | Service Weave 來源候選；尚未通過自己的最終 gate、標籤或正式部署 |
-| `SING_YIN_UNIFIED_GUEST` | live rc9 的受保護主機設定為 `1`；後續候選不得以切換旗標取代完整驗證 |
+| `C:\SingYinRoster` | live `v1.2.0-rc.11`／`7aff468`；健康、ready、loopback-only |
+| Cloudflare Worker／Access／Tunnel | Worker `1cba4784-e265-4d87-a04d-5759b79a7530` live；Access 精確保護 `/auth/login`；Tunnel／VPC 連到單一 origin |
+| `codex/service-weave-v1-2-editorial` | rc11 來源分支；13 項 gate、標籤、Windows bundle 及 Worker staged rollout 已完成 |
+| `SING_YIN_UNIFIED_GUEST` | live rc11 的受保護主機設定為 `1`；後續候選不得以切換旗標取代完整驗證 |
 
-rc4–rc7 或 v1.1 的既有 Worker version ID、主機 tag 及成功紀錄只屬歷史證據；rc9 證據亦不可當作 Service Weave 候選已部署的證明。
+rc4–rc9 或 v1.1 的既有 Worker version ID、主機 tag 及成功紀錄只屬歷史／回退證據；它們不可代替 rc11 或後續候選自己的來源指紋與發布證據。
 
 既有 **私有 Cloudflare Tunnel + WARP** 路徑仍保留作維護後備。
 交接時要保留並重新核對 **WARP device-enrollment policy**。其歷史狀態
@@ -137,6 +137,6 @@ python -X utf8 scripts\verify_release_candidate.py
 
 ## English summary
 
-The selected topology remains one canonical Cloudflare Worker in front of one loopback-only NiceGUI origin on a dedicated Windows host. The Windows machine remains the sole system of record for SQLite, backups, logs, PDFs, and local music. Live `v1.2.0-rc.9`／`18a5c73` unifies administrator and guest pages through a signed `PageContext`; guest data stays in a bounded in-memory adapter. The verified Worker remains `b13e5721-d1e8-4048-9885-ffb422fe2010`.
+The selected topology remains one canonical Cloudflare Worker in front of one loopback-only NiceGUI origin on a dedicated Windows host. The Windows machine remains the sole system of record for SQLite, backups, logs, PDFs, and local music. Live `v1.2.0-rc.11`／`7aff468` unifies administrator and guest pages through a signed `PageContext`; guest data stays in a bounded in-memory adapter. The verified Worker is `1cba4784-e265-4d87-a04d-5759b79a7530`.
 
-The Service Weave editorial branch is an undeployed candidate, not a replacement for the live rc9 baseline. Its release requires its own verified source fingerprint, `<next-approved-annotated-tag>`, fresh backup, isolated restore, additive migration, `/healthz` and `/readyz`, complete automated evidence, controlled origin／Worker decision, and supervised browser acceptance.
+Service Weave rc11 is the deployed release candidate, while supervised human acceptance remains outstanding. Every later candidate requires its own verified source fingerprint, `<next-approved-annotated-tag>`, fresh backup, isolated restore, additive migration, `/healthz` and `/readyz`, complete automated evidence, controlled origin／Worker decision, and supervised browser acceptance.

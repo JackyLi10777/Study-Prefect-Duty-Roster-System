@@ -49,6 +49,13 @@ def test_worker_deployment_stages_tests_promotes_and_rolls_back() -> None:
     assert 'rollbackCompleted = $rollbackCompleted' in source
 
 
+def test_worker_deployment_smoke_uses_the_unified_entrance_contract() -> None:
+    source = _source()
+    assert "$entrance.Content -notmatch 'data-guest-bootstrap='" in source
+    assert "$entrance.Content -notmatch 'Study Prefect Duty Roster'" in source
+    assert "$entrance.Content -notmatch 'Service Weave'" not in source
+
+
 def test_worker_deployment_report_avoids_credentials_and_cleans_temp_output() -> None:
     source = _source()
     assert "Protect-Text" in source
