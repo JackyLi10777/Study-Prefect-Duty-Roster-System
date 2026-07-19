@@ -1,6 +1,6 @@
 {
   "name": "@sing-yin/roster-viewer-worker",
-  "version": "1.2.0-rc.12",
+  "version": "1.2.0-rc.13",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.7.0",
