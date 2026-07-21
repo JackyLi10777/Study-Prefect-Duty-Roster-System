@@ -117,6 +117,7 @@ class RosterAssignmentRecord(Base):
 class FairnessLedgerRecord(Base):
     __tablename__ = "fairness_ledger"
     __table_args__ = (
+        Index("ix_fairness_ledger_prefect_id", "prefect_id"),
         UniqueConstraint(
             "operation_id",
             "assignment_id",

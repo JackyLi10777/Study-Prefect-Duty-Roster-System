@@ -62,12 +62,13 @@ def test_deployment_script_refreshes_origin_main_before_ancestor_checks() -> Non
     assert '"origin",\n        "main"' not in source
 
 
-def test_deployment_script_requires_the_current_thirteen_gate_fingerprint() -> None:
+def test_deployment_script_requires_the_current_release_gate_fingerprint() -> None:
     source = _source()
     required_checks = (
         "repository_hygiene",
         "security_gates",
         "cloudflare_gateway_tests",
+        "motion_state_machine_tests",
         "automated_test_suite",
         "python_compile",
         "dependency_integrity",
@@ -82,8 +83,10 @@ def test_deployment_script_requires_the_current_thirteen_gate_fingerprint() -> N
 
     for check in required_checks:
         assert f'"{check}"' in source
-    assert "$reportChecks.Count -ne 13" in source
-    assert "$passedNames.Count -ne 13" in source
+    assert "$requiredCheckCount = $requiredChecks.Count" in source
+    assert "$reportChecks.Count -ne $requiredCheckCount" in source
+    assert "$passedNames.Count -ne $requiredCheckCount" in source
+    assert "releaseChecksPassed = $requiredCheckCount" in source
     assert "release_source_fingerprint" in source
     assert "json.dumps({'fingerprint': fingerprint, 'fileCount': file_count})" in source
     assert 'json.dumps({"fingerprint": fingerprint, "fileCount": file_count})' not in source
@@ -92,6 +95,16 @@ def test_deployment_script_requires_the_current_thirteen_gate_fingerprint() -> N
     assert "The release report fingerprint does not match the immutable release source." in source
     assert "checks.Count -ne 12" not in source
     assert "twelve-gate" not in source.lower()
+
+
+def test_deployment_script_requires_worker_and_host_origin_ports_to_match() -> None:
+    source = _source()
+
+    assert "function Get-WorkerOriginPort" in source
+    assert '"ORIGIN_PORT"\\s*:\\s*(\\d+)' in source
+    assert '$workerOriginPort -ne $deploymentPort' in source
+    assert "does not match" in source
+    assert "workerOriginPort = $workerOriginPort" in source
 
 
 def test_deployment_fingerprint_snippet_executes_in_windows_powershell_51() -> None:
@@ -236,6 +249,8 @@ def test_deployment_script_switches_locked_host_and_requires_write_readiness() -
     assert '"http://127.0.0.1:$Port/readyz"' in source
     assert "Wait-LoopbackHealth -Port $deploymentPort" in source
     assert "Wait-LoopbackReadiness -Port $deploymentPort" in source
+    assert "Wait-PortReleased -Port $deploymentPort" in source
+    assert "Wait-PortReleased -Port 8080" not in source
     assert 'port = $deploymentPort' in source
     assert "http://127.0.0.1:8080/healthz" not in source
     assert '$ready.status -ceq "ready"' in source

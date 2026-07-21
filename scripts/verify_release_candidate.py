@@ -125,6 +125,20 @@ def _deno_gateway_command() -> list[str]:
     return [executable, "test", "cloudflare/roster_viewer/worker_gateway_test.js"]
 
 
+def _deno_motion_command() -> list[str]:
+    """Return the executable icon-story state-machine test command."""
+    executable = shutil.which("deno")
+    if executable is None:
+        raise ReleaseVerificationError(
+            "Deno is required for the motion state-machine release tests but is not available on PATH."
+        )
+    return [
+        executable,
+        "test",
+        "nicegui_app/assets/motion/sing-yin-icon-story-state_test.js",
+    ]
+
+
 def _start_server(environment: dict[str, str], log_path: Path) -> tuple[subprocess.Popen[str], IO[str]]:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     output = log_path.open("w", encoding="utf-8")
@@ -307,6 +321,12 @@ def main() -> int:
         _run_check(
             "security_gates",
             [sys.executable, "-X", "utf8", "scripts/run_security_checks.py"],
+            base_environment,
+            report,
+        )
+        _run_check(
+            "motion_state_machine_tests",
+            _deno_motion_command(),
             base_environment,
             report,
         )

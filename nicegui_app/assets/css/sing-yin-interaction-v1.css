@@ -8,7 +8,7 @@
  */
 
 :where(.q-btn, .q-tab, .q-item.q-item--clickable) .q-icon[data-sy-icon-motion] {
-  --sy-icon-intent-transform: translate3d(0, -3px, 0) scale(1.12);
+  --sy-icon-intent-transform: translate3d(0, -2px, 0) scale(1.1);
   transform: translate3d(0, 0, 0);
   transform-origin: 50% 50%;
   backface-visibility: hidden;
@@ -47,19 +47,19 @@
 }
 
 .q-icon[data-sy-icon-motion="create"] {
-  --sy-icon-intent-transform: translate3d(0, -3px, 0) rotate(6deg) scale(1.16);
+  --sy-icon-intent-transform: translate3d(0, -3px, 0) scale(1.16);
 }
 
 .q-icon[data-sy-icon-motion="edit"] {
-  --sy-icon-intent-transform: translate3d(3px, -3px, 0) rotate(-12deg) scale(1.1);
+  --sy-icon-intent-transform: translate3d(2px, -2px, 0) scale(1.1);
 }
 
 .q-icon[data-sy-icon-motion="toggle"] {
-  --sy-icon-intent-transform: rotate(22deg) scale(1.12);
+  --sy-icon-intent-transform: scale(1.12);
 }
 
 .q-icon[data-sy-icon-motion="menu"] {
-  --sy-icon-intent-transform: rotate(90deg) scale(.9);
+  --sy-icon-intent-transform: scale(1.1);
 }
 
 .q-icon[data-sy-icon-motion="play"] {
@@ -67,19 +67,24 @@
 }
 
 .q-icon[data-sy-icon-motion="search"] {
-  --sy-icon-intent-transform: rotate(-10deg) scale(1.15);
+  --sy-icon-intent-transform: scale(1.15);
 }
 
 .q-icon[data-sy-icon-motion="danger"] {
-  --sy-icon-intent-transform: rotate(-8deg) scale(.9);
+  --sy-icon-intent-transform: scale(.92);
 }
 
 .q-icon[data-sy-icon-motion="attention"] {
-  --sy-icon-intent-transform: rotate(-12deg) scale(1.12);
+  --sy-icon-intent-transform: scale(1.12);
 }
 
 .q-icon[data-sy-icon-motion="navigation"] {
-  --sy-icon-intent-transform: translate3d(3px, -3px, 0) rotate(-6deg) scale(1.13);
+  --sy-icon-intent-transform: translate3d(0, -2px, 0) scale(1.13);
+}
+
+/* Story icons change shape in place; their host remains a stable click target. */
+.q-icon[data-sy-icon-story-to] {
+  --sy-icon-intent-transform: scale(1.1);
 }
 
 body :is(.q-btn, .q-tab, .q-item.q-item--clickable)
@@ -98,7 +103,7 @@ body :is(.q-btn, .q-tab, .q-item.q-item--clickable)
   background: color-mix(in srgb, currentColor 12%, transparent);
   content: "";
   opacity: 0;
-  transform: scale(.58) rotate(-8deg);
+  transform: scale(.58);
   transition:
     opacity var(--sy-motion-state) var(--sy-ease),
     transform var(--sy-motion-layer) var(--sy-ease),
@@ -114,7 +119,7 @@ body :is(.q-btn, .q-tab, .q-item.q-item--clickable):not(.disabled):not([aria-dis
   .q-icon[data-sy-icon-motion]::after {
   opacity: .72;
   border-radius: 50%;
-  transform: scale(1) rotate(0deg);
+  transform: scale(1);
 }
 
 body :is(.q-btn, .q-tab, .q-item.q-item--clickable):not(.disabled):not([aria-disabled="true"]):not(.q-btn--loading):not([aria-busy="true"]):active
@@ -150,7 +155,7 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
     .q-icon[data-sy-icon-motion]::after {
   opacity: .72;
   border-radius: 50%;
-  transform: scale(1) rotate(0deg);
+  transform: scale(1);
   }
 }
 
@@ -180,8 +185,8 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
 
 @keyframes sy-icon-error {
   0% { transform: translate3d(0, 0, 0) scale(1); }
-  38% { transform: translate3d(-2px, 0, 0) rotate(-4deg) scale(.94); }
-  72% { transform: translate3d(1px, 0, 0) rotate(2deg) scale(.98); }
+  38% { transform: translate3d(-2px, 0, 0) scale(.94); }
+  72% { transform: translate3d(1px, 0, 0) scale(.98); }
   100% { transform: translate3d(0, 0, 0) scale(1); }
 }
 
@@ -254,7 +259,7 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
   .sy-engineering-pillar:hover .sy-engineering-pillar-icon,
   .sy-architecture-layer:hover .sy-architecture-layer-icon,
   .sy-trust-evidence-card:hover .sy-trust-evidence-icon {
-    transform: translate3d(0, -1px, 0) rotate(-3deg) scale(1.03);
+    transform: translate3d(0, -1px, 0) scale(1.03);
   }
 
   .sy-solution-card:hover .sy-solution-icon,

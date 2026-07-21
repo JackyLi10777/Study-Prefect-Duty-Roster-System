@@ -320,6 +320,7 @@ notepad .env
 SING_YIN_DEPLOYMENT_MODE=local
 SING_YIN_HOST=127.0.0.1
 SING_YIN_PORT=8080
+SING_YIN_SQLITE_BUSY_TIMEOUT_MS=10000
 SING_YIN_OPEN_BROWSER=false
 SING_YIN_YOUTUBE_ENABLED=true
 SING_YIN_LOG_DIR=C:\SingYinRoster\logs
@@ -328,6 +329,8 @@ SING_YIN_LOG_CONSOLE=true
 SING_YIN_LOG_MAX_BYTES=2000000
 SING_YIN_LOG_BACKUP_COUNT=5
 ```
+
+`SING_YIN_SQLITE_BUSY_TIMEOUT_MS` 是多分頁／多使用者短暫同時寫入時的等待上限，支援 `1000`–`60000` 毫秒，建議保留 `10000`。它不會取代交易、版本衝突或冪等檢查；只避免另一筆正常短交易仍在提交時立即顯示資料庫忙碌。
 
 按 `Ctrl+S` 儲存，再關閉記事本。
 

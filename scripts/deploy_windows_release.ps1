@@ -195,6 +195,22 @@ function Import-HostEnvironment([string]$EnvironmentPath) {
     return $values
 }
 
+function Get-WorkerOriginPort([string]$ConfigurationPath) {
+    if (-not (Test-Path -LiteralPath $ConfigurationPath -PathType Leaf)) {
+        throw "The Cloudflare Worker configuration is missing."
+    }
+    $source = Get-Content -LiteralPath $ConfigurationPath -Raw -Encoding UTF8
+    $matches = [regex]::Matches($source, '"ORIGIN_PORT"\s*:\s*(\d+)')
+    if ($matches.Count -ne 1) {
+        throw "The Cloudflare Worker configuration must define exactly one numeric ORIGIN_PORT."
+    }
+    $port = [int]$matches[0].Groups[1].Value
+    if ($port -lt 1 -or $port -gt 65535) {
+        throw "The Cloudflare Worker ORIGIN_PORT must be between 1 and 65535."
+    }
+    return $port
+}
+
 function Assert-UnifiedGuestHostSettings([hashtable]$Values) {
     $required = @(
         "SING_YIN_UNIFIED_GUEST",
@@ -519,6 +535,7 @@ try {
         "repository_hygiene",
         "security_gates",
         "cloudflare_gateway_tests",
+        "motion_state_machine_tests",
         "automated_test_suite",
         "python_compile",
         "dependency_integrity",
@@ -530,6 +547,7 @@ try {
         "verify_unified_guest_ui",
         "verify_nicegui_partial_backup"
     )
+    $requiredCheckCount = $requiredChecks.Count
     $startedAt = [DateTimeOffset]::UtcNow
     $releaseCommit = $null
     $previousCommit = $null
@@ -558,7 +576,7 @@ try {
     $rollbackError = $null
 
     try {
-    Write-Step "Validating the immutable release and thirteen-gate evidence"
+    Write-Step "Validating the immutable release and $requiredCheckCount-gate evidence"
     $sourceStatus = Get-GitValue -Repository $SourceRoot -Arguments @(
         "status",
         "--porcelain",
@@ -605,13 +623,13 @@ try {
     $missingNames = @($requiredChecks | Where-Object { $_ -notin $passedNames })
     if (
         $releaseReport.status -cne "pass" -or
-        $reportChecks.Count -ne 13 -or
-        $passedNames.Count -ne 13 -or
-        @($passedNames | Select-Object -Unique).Count -ne 13 -or
+        $reportChecks.Count -ne $requiredCheckCount -or
+        $passedNames.Count -ne $requiredCheckCount -or
+        @($passedNames | Select-Object -Unique).Count -ne $requiredCheckCount -or
         $unexpectedNames.Count -ne 0 -or
         $missingNames.Count -ne 0
     ) {
-        throw "The thirteen-gate source release report is not a complete pass."
+        throw "The $requiredCheckCount-gate source release report is not a complete pass."
     }
     $currentFingerprint = Get-CurrentReleaseFingerprint -Python $sourcePython -Repository $SourceRoot
     if (
@@ -682,6 +700,15 @@ try {
     Assert-UnifiedGuestHostSettings -Values $environmentValues
     $configuredEndpoint = Get-SingYinConfiguredEndpoint -EnvironmentPath $environmentPath
     $deploymentPort = [int]$configuredEndpoint.Port
+    $workerConfigurationPath = Join-Path $SourceRoot "cloudflare\roster_viewer\wrangler.jsonc"
+    $workerOriginPort = Get-WorkerOriginPort -ConfigurationPath $workerConfigurationPath
+    if ($workerOriginPort -ne $deploymentPort) {
+        throw (
+            "The protected host SING_YIN_PORT ($deploymentPort) does not match " +
+            "the Cloudflare Worker ORIGIN_PORT ($workerOriginPort). Update and verify both " +
+            "ends in the same immutable release before deployment."
+        )
+    }
 
     $hostStatus = Get-GitValue -Repository $HostRoot -Arguments @(
         "status",
@@ -836,7 +863,7 @@ try {
         previousCommit = $previousCommit
         sourceFingerprint = [string]$currentFingerprint.fingerprint
         sourceFileCount = [int]$currentFingerprint.fileCount
-        releaseChecksPassed = 13
+        releaseChecksPassed = $requiredCheckCount
         snapshotFile = $snapshotName
         snapshotSha256 = [string]$backupReport.sha256
         isolatedRestore = [bool]$backupReport.isolatedRestore
@@ -847,6 +874,7 @@ try {
         endpoint = [ordered]@{
             host = "127.0.0.1"
             port = $deploymentPort
+            workerOriginPort = $workerOriginPort
         }
         environmentOverlayApplied = $environmentOverlayApplied
         taskName = $TaskName
@@ -883,7 +911,7 @@ try {
         try {
             if ($taskStopped) {
                 Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-                try { Wait-PortReleased -Port 8080 -TimeoutSeconds 15 } catch { }
+                try { Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 15 } catch { }
                 if ($switchedHost -and -not [string]::IsNullOrWhiteSpace($previousCommit)) {
                     Write-Host "Restoring the previous host commit $previousCommit ..." -ForegroundColor Yellow
                     Invoke-Native -Executable "git.exe" -Arguments @(

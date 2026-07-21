@@ -11,6 +11,18 @@ MESSAGES = {
         "zh-HK": "檔案未獲接受；請使用 2 MB 以下的 .csv 或 .xlsx。",
         "en": "The file was not accepted. Use a .csv or .xlsx file below 2 MB.",
     },
+    "prefect_file_read_failed": {
+        "zh-HK": "未能讀取上載檔案；請重新選擇檔案並安全重試。如問題持續，請向支援人員提供編號 {reference}。",
+        "en": "The uploaded file could not be read. Choose it again and retry safely. If the problem continues, give support reference {reference}.",
+    },
+    "prefect_paste_parse_failed": {
+        "zh-HK": "未能預覽貼上的名冊；內容未有寫入。請縮短資料後重試；如問題持續，請向支援人員提供編號 {reference}。",
+        "en": "The pasted directory could not be previewed and nothing was written. Shorten it and retry; if the problem continues, give support reference {reference}.",
+    },
+    "prefect_paste_changed_during_preview": {
+        "zh-HK": "名冊內容在預覽期間已更改；請核對後重新預覽。",
+        "en": "The directory changed while its preview was being prepared. Review it and preview again.",
+    },
     "file_import_detected": {
         "zh-HK": "已讀取 {rows} 筆資料、{columns} 個欄位。",
         "en": "Read {rows} data rows and {columns} columns.",
@@ -69,6 +81,7 @@ MESSAGES = {
     "prefect_file_error_formula_cells": {"zh-HK": "名冊含公式儲存格；請先複製並貼上為純值，再另存普通 .xlsx。", "en": "The directory contains formula cells. Paste them as values and save a plain .xlsx copy."},
     "prefect_file_error_headings_required": {"zh-HK": "第一列必須列出欄名。", "en": "The first row must contain column headings."},
     "prefect_file_error_too_many_columns": {"zh-HK": "檔案超過 50 欄；請移除與名冊無關的欄位。", "en": "The file has more than 50 columns. Remove fields unrelated to the directory."},
+    "prefect_file_error_cell_too_long": {"zh-HK": "有欄名或儲存格超過 4,096 個字元；請縮短內容後重試。", "en": "A heading or cell exceeds 4,096 characters. Shorten it and retry."},
     "prefect_file_error_blank_heading": {"zh-HK": "每一個匯入欄都必須有欄名。", "en": "Every imported column must have a heading."},
     "prefect_file_error_duplicate_headings": {"zh-HK": "欄名不可重複；請為重複欄位改用不同名稱。", "en": "Column headings must be unique. Rename duplicate columns."},
     "prefect_file_error_unsupported_encoding": {"zh-HK": "無法辨識 CSV 編碼；請另存為 UTF-8 CSV。", "en": "The CSV encoding is not supported. Save it as UTF-8 CSV."},

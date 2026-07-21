@@ -10,6 +10,15 @@ import re
 from typing import Any
 
 from nicegui_app.services.roster_workflow import PrefectInput
+from nicegui_app.utils.prefect_import_limits import (
+    PrefectImportLimitError,
+    check_import_bytes,
+    check_import_cell,
+    check_import_column_count,
+    check_import_row_count,
+    check_json_nesting,
+    validate_import_headers,
+)
 from roster_policy import is_chinese_display_name
 
 
@@ -58,12 +67,20 @@ def prefect_import_template_csv() -> bytes:
 
 def parse_prefect_import_text(raw_text: str) -> ImportPreview:
     """Parse an AI-prepared JSON array/object or a header-based CSV without network access."""
+    try:
+        check_import_bytes(raw_text.encode("utf-8"))
+    except (PrefectImportLimitError, UnicodeError) as error:
+        return ImportPreview((), (f"Import format could not be read: {error}",))
     source = raw_text.strip().lstrip("\ufeff")
     if not source:
         return ImportPreview((), ("Import text is empty.",))
     try:
-        raw_rows = _load_json_rows(source) if source.startswith(("[", "{")) else list(csv.DictReader(io.StringIO(source)))
-    except (json.JSONDecodeError, csv.Error, ValueError) as error:
+        if source.startswith(("[", "{")):
+            check_json_nesting(source)
+            raw_rows = _load_json_rows(source)
+        else:
+            raw_rows = _load_csv_rows(source)
+    except (json.JSONDecodeError, csv.Error, PrefectImportLimitError, RecursionError, ValueError) as error:
         return ImportPreview((), (f"Import format could not be read: {error}",))
     return parse_prefect_import_rows(raw_rows)
 
@@ -74,6 +91,10 @@ def parse_prefect_import_rows(
     target_to_source: dict[str, str] | None = None,
 ) -> ImportPreview:
     """Normalize locally parsed rows after an operator-reviewed column mapping."""
+    try:
+        _check_raw_rows(raw_rows)
+    except (PrefectImportLimitError, ValueError) as error:
+        return ImportPreview((), (f"Import format could not be read: {error}",))
     rows: list[PrefectInput] = []
     issues: list[str] = []
     for index, raw_row in enumerate(raw_rows, start=1):
@@ -96,6 +117,40 @@ def _load_json_rows(source: str) -> list[dict[str, Any]]:
     if not isinstance(payload, list) or not all(isinstance(item, dict) for item in payload):
         raise ValueError("JSON must be an array of prefects or an object with a prefects array.")
     return payload
+
+
+def _load_csv_rows(source: str) -> list[dict[str, Any]]:
+    reader = csv.DictReader(io.StringIO(source))
+    raw_headers = reader.fieldnames
+    if not raw_headers:
+        return []
+    headers = validate_import_headers(raw_headers)
+    reader.fieldnames = list(headers)
+    raw_rows: list[dict[str, Any]] = []
+    for index, row in enumerate(reader, start=1):
+        check_import_row_count(index)
+        overflow = row.pop(None, None)
+        if overflow and any(str(value or "").strip() for value in overflow):
+            raise PrefectImportLimitError(
+                "too_many_columns",
+                "A CSV row contains values beyond the 50-column import boundary.",
+            )
+        check_import_column_count(len(row))
+        for value in row.values():
+            check_import_cell(value)
+        raw_rows.append(row)
+    return raw_rows
+
+
+def _check_raw_rows(raw_rows: list[dict[str, Any]]) -> None:
+    check_import_row_count(len(raw_rows))
+    for raw_row in raw_rows:
+        if not isinstance(raw_row, dict):
+            raise ValueError("Every imported row must be an object with named fields.")
+        check_import_column_count(len(raw_row))
+        for key, value in raw_row.items():
+            check_import_cell(key)
+            check_import_cell(value)
 
 
 def _normalize_row(row: dict[str, Any]) -> PrefectInput:

@@ -9,8 +9,13 @@ Guest session or when the origin restarts.
 from __future__ import annotations
 
 from collections.abc import Iterator, MutableMapping
+from dataclasses import dataclass, field
+from datetime import datetime
 from threading import RLock
-from typing import Any
+import time
+from typing import Any, Callable
+
+from nicegui_app.services.guest_workspace import GuestCapacityError
 
 
 _ALLOWED_KEYS = frozenset(
@@ -32,6 +37,14 @@ _ALLOWED_KEYS = frozenset(
 _MUSIC_TRACK_PREFIX = "music_track_"
 _MAX_KEY_LENGTH = 96
 _MAX_STRING_LENGTH = 256
+DEFAULT_GUEST_PREFERENCE_TTL_SECONDS = 30 * 60
+DEFAULT_GUEST_PREFERENCE_MAX_SESSIONS = 24
+
+
+@dataclass
+class _PreferenceRecord:
+    expires_at: int
+    values: dict[str, Any] = field(default_factory=dict)
 
 
 def _allowed_key(key: object) -> bool:
@@ -57,39 +70,74 @@ class GuestPreferenceStore(MutableMapping[str, Any]):
 
     def __getitem__(self, key: str) -> Any:
         with self._registry._lock:
-            return self._registry._sessions[self._session_id][key]
+            return self._registry._values_locked(self._session_id)[key]
 
     def __setitem__(self, key: str, value: Any) -> None:
         if not _allowed_key(key) or not _safe_value(value):
             raise ValueError("guest preference is not an allowed bounded scalar")
         with self._registry._lock:
-            self._registry._sessions.setdefault(self._session_id, {})[key] = value
+            self._registry._values_locked(self._session_id)[key] = value
 
     def __delitem__(self, key: str) -> None:
         with self._registry._lock:
-            del self._registry._sessions[self._session_id][key]
+            del self._registry._values_locked(self._session_id)[key]
 
     def __iter__(self) -> Iterator[str]:
         with self._registry._lock:
-            return iter(tuple(self._registry._sessions.get(self._session_id, {})))
+            try:
+                values = self._registry._values_locked(self._session_id)
+            except KeyError:
+                values = {}
+            return iter(tuple(values))
 
     def __len__(self) -> int:
         with self._registry._lock:
-            return len(self._registry._sessions.get(self._session_id, {}))
+            try:
+                return len(self._registry._values_locked(self._session_id))
+            except KeyError:
+                return 0
 
 
 class GuestPreferenceRegistry:
     """Own session-scoped preferences without files, SQLite, or browser storage."""
 
-    def __init__(self) -> None:
-        self._sessions: dict[str, dict[str, Any]] = {}
+    def __init__(
+        self,
+        *,
+        ttl_seconds: int = DEFAULT_GUEST_PREFERENCE_TTL_SECONDS,
+        max_sessions: int = DEFAULT_GUEST_PREFERENCE_MAX_SESSIONS,
+        clock: Callable[[], int] | None = None,
+    ) -> None:
+        if ttl_seconds <= 0 or max_sessions <= 0:
+            raise ValueError("guest preference limits must be positive")
+        self.ttl_seconds = int(ttl_seconds)
+        self.max_sessions = int(max_sessions)
+        self._clock = clock or (lambda: int(time.time()))
+        self._sessions: dict[str, _PreferenceRecord] = {}
         self._lock = RLock()
 
-    def store_for(self, session_id: str) -> GuestPreferenceStore:
+    def store_for(
+        self,
+        session_id: str,
+        *,
+        expires_at: datetime | int | None = None,
+    ) -> GuestPreferenceStore:
         if not isinstance(session_id, str) or not session_id.strip():
             raise ValueError("guest preference session ID is required")
+        current = self._clock()
+        requested_expiry = self._expiry_epoch(expires_at, current=current)
         with self._lock:
-            self._sessions.setdefault(session_id, {})
+            self._purge_expired_locked(current)
+            record = self._sessions.get(session_id)
+            if record is None:
+                if len(self._sessions) >= self.max_sessions:
+                    # Match the bounded workspace service: an admitted,
+                    # unexpired session keeps its state until cleanup or
+                    # expiry.  A later arrival must never silently evict it.
+                    raise GuestCapacityError("guest session capacity is full")
+                self._sessions[session_id] = _PreferenceRecord(requested_expiry)
+            else:
+                record.expires_at = requested_expiry
         return GuestPreferenceStore(self, session_id)
 
     def cleanup_session(self, session_id: str) -> None:
@@ -99,7 +147,45 @@ class GuestPreferenceRegistry:
     @property
     def active_session_count(self) -> int:
         with self._lock:
+            self._purge_expired_locked(self._clock())
             return len(self._sessions)
 
+    def purge_expired(self, *, now: int | None = None) -> int:
+        with self._lock:
+            return self._purge_expired_locked(self._clock() if now is None else int(now))
 
-__all__ = ["GuestPreferenceRegistry", "GuestPreferenceStore"]
+    def _values_locked(self, session_id: str) -> dict[str, Any]:
+        self._purge_expired_locked(self._clock())
+        record = self._sessions.get(session_id)
+        if record is None:
+            raise KeyError(session_id)
+        return record.values
+
+    def _purge_expired_locked(self, current: int) -> int:
+        expired = [
+            session_id
+            for session_id, record in self._sessions.items()
+            if record.expires_at <= current
+        ]
+        for session_id in expired:
+            del self._sessions[session_id]
+        return len(expired)
+
+    def _expiry_epoch(self, expires_at: datetime | int | None, *, current: int) -> int:
+        if isinstance(expires_at, datetime):
+            requested = int(expires_at.timestamp())
+        elif expires_at is None:
+            requested = current + self.ttl_seconds
+        else:
+            requested = int(expires_at)
+        if requested <= current:
+            raise ValueError("guest preference session has already expired")
+        return min(requested, current + self.ttl_seconds)
+
+
+__all__ = [
+    "DEFAULT_GUEST_PREFERENCE_MAX_SESSIONS",
+    "DEFAULT_GUEST_PREFERENCE_TTL_SECONDS",
+    "GuestPreferenceRegistry",
+    "GuestPreferenceStore",
+]

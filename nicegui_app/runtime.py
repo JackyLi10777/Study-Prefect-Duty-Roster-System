@@ -588,7 +588,10 @@ def current_page_context() -> PageContext:
         principal,
         workspace=workspace,
         preference_store=(
-            _guest_preference_registry.store_for(principal.session_id)
+            _guest_preference_registry.store_for(
+                principal.session_id,
+                expires_at=principal.expires_at,
+            )
             if principal.mode is AccessMode.GUEST and principal.session_id
             else None
         ),

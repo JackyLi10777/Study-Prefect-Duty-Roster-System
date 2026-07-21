@@ -52,6 +52,7 @@ def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
         "ACCESS_TEAM_DOMAIN": "https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
         "ACCESS_AUD": "REPLACE_WITH_ACCESS_APPLICATION_AUD",
         "AUTH_EPOCH": 1,
+        "ORIGIN_PORT": 8080,
         "ORIGIN_PRINCIPAL_KID": "origin-v1",
         "ADMIN_IDENTITY_ALLOWLIST": {"emails": ["REPLACE_WITH_EXACT_ADMIN_EMAIL"]},
     }
@@ -112,6 +113,7 @@ def test_production_gateway_uses_a_bounded_exact_admin_email_allowlist() -> None
     variables = configuration["vars"]
 
     assert variables["ADMIN_IDENTITY_ALLOWLIST"] == {"emails": EXPECTED_ADMIN_EMAILS}
+    assert variables["ORIGIN_PORT"] == 8080
     assert "ADMIN_EMAIL" not in variables
     assert "ADMIN_EMAILS" not in variables
     assert len(set(variables["ADMIN_IDENTITY_ALLOWLIST"]["emails"])) == len(EXPECTED_ADMIN_EMAILS)
@@ -124,6 +126,16 @@ def test_production_gateway_uses_a_bounded_exact_admin_email_allowlist() -> None
         ]
     }
     assert configuration["observability"]["logs"]["persist"] is True
+
+
+def test_worker_origin_port_is_a_validated_configuration_contract() -> None:
+    source = _source()
+
+    assert "http://127.0.0.1:8080" not in source
+    assert "function originPortFromEnvironment(env)" in source
+    assert "rawPort === undefined" in source
+    assert "port < 1024 || port > 65_535" in source
+    assert source.count("originUrlFromEnvironment(env)") == 3
 
 
 def test_admin_login_failures_use_privacy_safe_support_references() -> None:
@@ -511,7 +523,7 @@ def test_authenticated_proxy_is_same_origin_sanitized_and_websocket_transparent(
     assert "request_binding: await originRequestBinding(request)" in source
     assert "auth_epoch: authEpoch(env)" in source
     assert "kid: originPrincipalKid(env)" in source
-    assert "new URL('http://127.0.0.1:8080')" in source
+    assert "const originUrl = originUrlFromEnvironment(env)" in source
     assert "env.ROSTER_ORIGIN.fetch(originRequest)" in source
     assert "if (routed && routed.originResponse) return securedWorkbench(routed.originResponse)" in source
     assert "if (originResponse?.status === 101 || originResponse?.webSocket) return originResponse" in source

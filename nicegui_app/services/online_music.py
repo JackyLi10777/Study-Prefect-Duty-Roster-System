@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 from typing import Any
+from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, quote_plus, urlparse
 from urllib.request import Request, urlopen
 from uuid import uuid4
@@ -19,6 +20,16 @@ from nicegui_app.services.music_library import MUSIC_CONTEXTS, MusicLibraryError
 
 _YOUTUBE_ID = re.compile(r"^[A-Za-z0-9_-]{6,100}$")
 _YOUTUBE_THUMBNAIL_HOSTS = {"i.ytimg.com", "img.youtube.com"}
+YOUTUBE_SEARCH_TIMEOUT_SECONDS = 10
+MAX_YOUTUBE_SEARCH_RESPONSE_BYTES = 256 * 1024
+
+
+class YouTubeSearchError(RuntimeError):
+    """Stable, operator-facing failure classification for remote search."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
 
 
 @dataclass(frozen=True)
@@ -129,7 +140,12 @@ def youtube_embed_url(*, playlist_id: str | None = None, video_id: str | None = 
     return f"https://www.youtube-nocookie.com/embed/{video_id}?controls=1&playsinline=1&rel=0"
 
 
-def search_youtube(term: str, settings: YouTubeSettings) -> list[dict[str, str]]:
+def search_youtube(
+    term: str,
+    settings: YouTubeSettings,
+    *,
+    opener: Any = urlopen,
+) -> list[dict[str, str]]:
     clean_term = " ".join(term.split())[:80]
     if len(clean_term) < 2 or not settings.search_enabled:
         return []
@@ -141,22 +157,59 @@ def search_youtube(term: str, settings: YouTubeSettings) -> list[dict[str, str]]
     if parsed_url.scheme != "https" or parsed_url.hostname != "www.googleapis.com":
         raise MusicLibraryError("youtube_url")
     request = Request(url, headers={"Accept": "application/json", "User-Agent": "Sing-Yin-Roster/1.0"})
-    # The scheme and host are fixed and checked immediately above.
-    with urlopen(request, timeout=10) as response:  # nosec B310
-        payload = json.loads(response.read().decode("utf-8"))
+    try:
+        # The scheme and host are fixed and checked immediately above. Reading is
+        # deliberately capped so a faulty upstream cannot exhaust host memory.
+        with opener(request, timeout=YOUTUBE_SEARCH_TIMEOUT_SECONDS) as response:  # nosec B310
+            content_type = str(response.headers.get("Content-Type", "")).lower()
+            if content_type and "application/json" not in content_type:
+                raise YouTubeSearchError("invalid_response")
+            body = response.read(MAX_YOUTUBE_SEARCH_RESPONSE_BYTES + 1)
+            if len(body) > MAX_YOUTUBE_SEARCH_RESPONSE_BYTES:
+                raise YouTubeSearchError("response_too_large")
+    except YouTubeSearchError:
+        raise
+    except HTTPError as error:
+        if error.code in {401, 403}:
+            code = "unauthorized"
+        elif error.code == 429:
+            code = "rate_limited"
+        elif 500 <= error.code < 600:
+            code = "unavailable"
+        else:
+            code = "request_failed"
+        raise YouTubeSearchError(code) from error
+    except (URLError, TimeoutError, OSError) as error:
+        raise YouTubeSearchError("network") from error
+
+    try:
+        payload = json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise YouTubeSearchError("invalid_response") from error
+    if not isinstance(payload, dict):
+        raise YouTubeSearchError("invalid_response")
     return parse_youtube_search(payload)
 
 
 def parse_youtube_search(payload: dict[str, Any]) -> list[dict[str, str]]:
     results: list[dict[str, str]] = []
-    for item in payload.get("items", []):
+    items = payload.get("items", [])
+    if not isinstance(items, list):
+        raise YouTubeSearchError("invalid_response")
+    for item in items[:8]:
+        if not isinstance(item, dict):
+            continue
         identity = item.get("id", {})
         snippet = item.get("snippet", {})
+        if not isinstance(identity, dict) or not isinstance(snippet, dict):
+            continue
         kind = "playlist" if identity.get("playlistId") else "video"
         item_id = str(identity.get("playlistId") or identity.get("videoId") or "")
         if not _YOUTUBE_ID.fullmatch(item_id):
             continue
-        thumbnail = str(snippet.get("thumbnails", {}).get("medium", {}).get("url", ""))
+        thumbnails = snippet.get("thumbnails", {})
+        medium = thumbnails.get("medium", {}) if isinstance(thumbnails, dict) else {}
+        thumbnail = str(medium.get("url", "")) if isinstance(medium, dict) else ""
         results.append(
             {
                 "kind": kind,

@@ -64,7 +64,7 @@ def _roster_workflow_steps(
             "event_busy",
             "available" if roster_week_id is not None and status == "published" else "locked",
         ),
-        WorkflowStep(t("roster_workflow_history"), "/rosters", "history"),
+        WorkflowStep(t("roster_workflow_history"), "/rosters#roster-history", "history"),
     )
 
 
@@ -504,7 +504,9 @@ def rosters_page() -> None:
                         week_start = selected_week_start(announce_error=True)
                         if week_start is None:
                             return
-                        expected_week_version = version_by_week.get(week_start, 0)
+                        expected_week_version = version_by_week.get(
+                            week_start.isoformat(), 0
+                        )
                         generation_command_id = f"draft-generate-ui:{uuid4().hex}"
                         result = await _run_with_progress(
                             lambda: workflow.generate_and_save_draft(
@@ -522,27 +524,30 @@ def rosters_page() -> None:
                             ui.navigate.to(f"/rosters/{result.id}")
 
                     ui.button(t("create_draft"), icon="edit_calendar", on_click=generate).props("color=primary").classes("mt-4")
-                ui.html(t("current_rosters"), tag="h2").classes("text-xl font-semibold mt-6")
-                if not weeks:
-                    _render_empty_state(
-                        title_key="empty_roster_title",
-                        body_key="empty_roster_detail",
-                        icon="event_note",
-                        illustrated=True,
-                    )
-                for week in weeks:
-                    history_priority_value = f"{float(week.get('historyPriorityMultiplier', 1.0)):.1f}"
-                    with ui.row().classes("sy-surface sy-roster-week-item w-full items-center justify-between px-5 py-4"):
-                        with ui.column().classes("gap-0"):
-                            ui.label(str(week["weekStart"])).classes("text-lg font-semibold")
-                            ui.label(
-                                f"{t('version')} {week['version']}  |  {t('generated_at')}: {week['generatedAt']:%Y-%m-%d %H:%M}  |  "
-                                f"{t('history_priority_used', value=history_priority_value)}"
-                            ).classes("sy-roster-week-meta text-sm text-[var(--sy-muted)]")
-                        status = str(week["status"])
-                        status_tone = "stable" if status == "published" else "attention" if status == "withdrawn" else "action"
-                        _tone_badge(t(status), status_tone)
-                        ui.button(t("view"), icon="arrow_forward", on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}")).props("flat")
+                with ui.element("section").classes("sy-roster-history w-full scroll-mt-6").props(
+                    "id=roster-history data-testid=roster-history"
+                ):
+                    ui.html(t("current_rosters"), tag="h2").classes("text-xl font-semibold mt-6")
+                    if not weeks:
+                        _render_empty_state(
+                            title_key="empty_roster_title",
+                            body_key="empty_roster_detail",
+                            icon="event_note",
+                            illustrated=True,
+                        )
+                    for week in weeks:
+                        history_priority_value = f"{float(week.get('historyPriorityMultiplier', 1.0)):.1f}"
+                        with ui.row().classes("sy-surface sy-roster-week-item w-full items-center justify-between px-5 py-4"):
+                            with ui.column().classes("gap-0"):
+                                ui.label(str(week["weekStart"])).classes("text-lg font-semibold")
+                                ui.label(
+                                    f"{t('version')} {week['version']}  |  {t('generated_at')}: {week['generatedAt']:%Y-%m-%d %H:%M}  |  "
+                                    f"{t('history_priority_used', value=history_priority_value)}"
+                                ).classes("sy-roster-week-meta text-sm text-[var(--sy-muted)]")
+                            status = str(week["status"])
+                            status_tone = "stable" if status == "published" else "attention" if status == "withdrawn" else "action"
+                            _tone_badge(t(status), status_tone)
+                            ui.button(t("view"), icon="arrow_forward", on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}")).props("flat")
             with ui.tab_panel("adjust_edit").classes("px-0"):
                 ui.label(t("adjustments")).classes("text-lg font-semibold")
                 _render_operation_hint("hint_adjust_roster", icon="event_busy")

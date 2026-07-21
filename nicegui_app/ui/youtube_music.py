@@ -9,6 +9,7 @@ from nicegui import events, run, ui
 from nicegui_app.services.music_library import MUSIC_CONTEXTS, MusicLibraryError
 from nicegui_app.services.online_music import (
     YouTubePlaylistLibrary,
+    YouTubeSearchError,
     YouTubeSettings,
     search_youtube,
     youtube_embed_url,
@@ -20,7 +21,7 @@ def render_youtube_settings() -> None:
     settings = YouTubeSettings.from_environment()
     library = YouTubePlaylistLibrary()
     context_options = {context: t(f"music_context_{context}") for context in MUSIC_CONTEXTS}
-    with ui.card().classes("sy-surface sy-settings-section sy-online-music-settings w-full max-w-3xl p-6").props("data-testid=online-music-settings"):
+    with ui.card().classes("sy-surface sy-settings-section sy-online-music-settings sy-operations-panel w-full p-6").props("data-testid=online-music-settings"):
         with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
             with ui.column().classes("gap-1 max-w-2xl"):
                 ui.label(t("youtube_player_title")).classes("text-lg font-semibold")
@@ -133,8 +134,11 @@ def render_youtube_panel(context: str, settings: YouTubeSettings) -> None:
                 search_button.disable()
                 try:
                     items = await run.io_bound(search_youtube, term, settings)
+                except YouTubeSearchError as error:
+                    ui.notify(t(f"youtube_search_error_{error.code}"), type="negative", close_button=True)
+                    return
                 except Exception:
-                    ui.notify(t("youtube_search_error"), type="negative")
+                    ui.notify(t("youtube_search_error"), type="negative", close_button=True)
                     return
                 finally:
                     search_button.enable()

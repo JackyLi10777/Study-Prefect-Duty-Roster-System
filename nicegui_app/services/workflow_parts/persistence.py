@@ -491,15 +491,21 @@ class PersistenceWorkflowMixin:
 
     def _fairness_reconciliation(self, session: Session) -> FairnessReconciliationReport:
         session.flush()
-        records = session.scalars(select(PrefectRecord).order_by(PrefectRecord.id)).all()
+        rows = session.execute(
+            select(
+                PrefectRecord,
+                func.coalesce(func.sum(FairnessLedgerRecord.delta), 0.0),
+                func.coalesce(func.sum(FairnessLedgerRecord.duty_delta), 0),
+            )
+            .outerjoin(
+                FairnessLedgerRecord,
+                FairnessLedgerRecord.prefect_id == PrefectRecord.id,
+            )
+            .group_by(PrefectRecord.id)
+            .order_by(PrefectRecord.id)
+        ).all()
         discrepancies: list[FairnessDiscrepancy] = []
-        for record in records:
-            ledger_weight, ledger_duties = session.execute(
-                select(
-                    func.coalesce(func.sum(FairnessLedgerRecord.delta), 0.0),
-                    func.coalesce(func.sum(FairnessLedgerRecord.duty_delta), 0),
-                ).where(FairnessLedgerRecord.prefect_id == record.id)
-            ).one()
+        for record, ledger_weight, ledger_duties in rows:
             expected_weight = round(record.history_weight_anchor + float(ledger_weight), 4)
             expected_duties = record.history_duties_anchor + int(ledger_duties)
             if abs(expected_weight - record.history_weight) > 0.0001 or expected_duties != record.history_duties:
@@ -512,7 +518,7 @@ class PersistenceWorkflowMixin:
                         actual_duties=record.history_duties,
                     )
                 )
-        return FairnessReconciliationReport(len(records), tuple(discrepancies))
+        return FairnessReconciliationReport(len(rows), tuple(discrepancies))
 
     def _assert_fairness_reconciled(self, session: Session) -> None:
         if not self._fairness_reconciliation(session).balanced:

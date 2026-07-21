@@ -50,6 +50,7 @@ Worker 是唯一外部前門。Windows 不開放 NiceGUI 公網連接埠，不�
 SING_YIN_DEPLOYMENT_MODE=server
 SING_YIN_HOST=127.0.0.1
 SING_YIN_PORT=8080
+SING_YIN_SQLITE_BUSY_TIMEOUT_MS=10000
 SING_YIN_UNIFIED_GUEST=1
 SING_YIN_REQUIRE_GATEWAY_PRINCIPAL=1
 ORIGIN_PRINCIPAL_SECRET=<managed-secret>
@@ -58,7 +59,7 @@ AUTH_EPOCH=<positive-integer>
 SING_YIN_GUEST_SNAPSHOT_SECRET=<managed-secret>
 ```
 
-如程式實際使用的環境變數名稱有變，應以 `.env.example`、Worker 設定及 release verifier 為準，不可照抄舊主機的 secret 值。值只可由受控 secret store／主機設定寫入，不可貼到命令列歷史、文件或 Git。
+如程式實際使用的環境變數名稱有變，應以 `.env.example`、Worker 設定及 release verifier 為準，不可照抄舊主機的 secret 值。值只可由受控 secret store／主機設定寫入，不可貼到命令列歷史、文件或 Git。Worker `wrangler.jsonc` 的 `ORIGIN_PORT` 必須與受保護主機 `.env` 的 `SING_YIN_PORT` 完全相同；Windows 受控部署會在停機前核對兩者並拒絕不一致的候選。
 
 ### Cloudflare Worker
 
@@ -146,7 +147,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 ## 7. Worker staged rollout
 
 1. 以固定、版本庫內的 Wrangler／lockfile 安裝依賴。
-2. 執行 Worker tests、type check 及 dry run。
+2. 執行 Worker tests、type check 及 dry run，並再次確認 `wrangler.jsonc` 的 `ORIGIN_PORT` 等於主機 `SING_YIN_PORT`；兩端必須來自同一不可變候選。
 3. 核對所有必需 secret **名稱**存在；不要顯示值。
 4. 從已推送、屬於 `origin/main`、HEAD 與標籤完全一致的乾淨 annotated tag 執行：
 

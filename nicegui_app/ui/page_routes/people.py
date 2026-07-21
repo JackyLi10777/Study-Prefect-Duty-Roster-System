@@ -7,9 +7,10 @@ from datetime import date
 import hashlib
 import json
 
-from nicegui import events, ui
+from nicegui import events, run, ui
 
 from nicegui_app.access_context import Capability
+from nicegui_app.observability import record_operator_failure
 from nicegui_app.runtime import get_workflow
 from nicegui_app.services.prefect_import_assistant import (
     ImportAssistantError,
@@ -40,8 +41,8 @@ from nicegui_app.ui.page_shared import (
 )
 from nicegui_app.ui.shell import page_shell
 from nicegui_app.ui.theme import current_theme
+from nicegui_app.ui.workflow_navigation import render_back_action, render_route_trail
 from nicegui_app.utils.prefect_file_import import (
-    MAX_IMPORT_BYTES,
     ParsedImportFile,
     PrefectFileImportError,
     TARGET_FIELDS,
@@ -49,6 +50,7 @@ from nicegui_app.utils.prefect_file_import import (
     suggest_local_column_mapping,
     validate_target_mapping,
 )
+from nicegui_app.utils.prefect_import_limits import MAX_IMPORT_BYTES
 from nicegui_app.utils.prefect_import import (
     ImportPreview,
     parse_prefect_import_rows,
@@ -83,6 +85,19 @@ def _prefect_text_preview_fingerprint(text: str) -> str:
     """Bind a pasted-directory preview to the exact text the operator reviewed."""
 
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+async def _parse_pasted_prefects_off_loop(text: str) -> ImportPreview:
+    """Keep bounded paste parsing away from NiceGUI's event loop."""
+
+    return await run.io_bound(parse_prefect_import_text, text)
+
+
+def _prefect_upload_read_failure_text(error: BaseException) -> str:
+    """Log only safe failure metadata and return a retryable support message."""
+
+    reference = record_operator_failure(error, action="prefect_file_upload_read")
+    return t("prefect_file_read_failed", reference=reference)
 
 
 def _show_prefect_dialog(existing: dict[str, object] | None = None) -> None:
@@ -1013,7 +1028,19 @@ def prefects_page() -> None:
                             return
                         revision = reset_file_import_state()
                         try:
-                            content = await event.file.read()
+                            try:
+                                content = await event.file.read()
+                                if isinstance(content, (bytearray, memoryview)):
+                                    content = bytes(content)
+                                if not isinstance(content, bytes):
+                                    raise OSError("Upload reader did not return binary content.")
+                            except Exception as error:
+                                ui.notify(
+                                    _prefect_upload_read_failure_text(error),
+                                    type="negative",
+                                    timeout=8_000,
+                                )
+                                return
                             filename = event.file.name
                             if revision != file_state["revision"]:
                                 return
@@ -1057,7 +1084,8 @@ def prefects_page() -> None:
                 ui.label(t("paste_import_fallback")).classes("font-semibold")
                 ui.label(t("paste_import_fallback_detail")).classes("text-sm text-[var(--sy-muted)]")
                 import_text = ui.textarea(label=t("ai_import_input")).props(
-                    "name=prefect-import autocomplete=off data-testid=paste-prefect-import-input"
+                    f"name=prefect-import autocomplete=off maxlength={MAX_IMPORT_BYTES} "
+                    "data-testid=paste-prefect-import-input"
                 ).classes("w-full")
                 if not _allows(Capability.CLIPBOARD_INGEST):
                     import_text.disable()
@@ -1094,9 +1122,30 @@ def prefects_page() -> None:
 
                 import_text.on_value_change(handle_text_change)
 
-                def preview_import() -> None:
+                async def preview_import() -> None:
                     text = str(import_text.value or "")
-                    preview = parse_prefect_import_text(text)
+                    preview_import_button.disable()
+                    try:
+                        preview = await _parse_pasted_prefects_off_loop(text)
+                    except Exception as error:
+                        reference = record_operator_failure(
+                            error,
+                            action="prefect_paste_preview",
+                        )
+                        invalidate_text_preview()
+                        ui.notify(
+                            t("prefect_paste_parse_failed", reference=reference),
+                            type="negative",
+                            timeout=8_000,
+                        )
+                        return
+                    finally:
+                        if _allows(Capability.CLIPBOARD_INGEST):
+                            preview_import_button.enable()
+                    if text != str(import_text.value or ""):
+                        invalidate_text_preview()
+                        ui.notify(t("prefect_paste_changed_during_preview"), type="warning", timeout=6_000)
+                        return
                     preview_state["value"] = preview
                     preview_fingerprint["value"] = None
                     preview_area.clear()
@@ -1144,13 +1193,8 @@ def prefects_page() -> None:
                         invalidate_text_preview()
                         ui.notify(t("operation_error"), type="negative")
                         return
-                    fresh_preview = parse_prefect_import_text(text)
-                    if fresh_preview.issues or not fresh_preview.rows:
-                        invalidate_text_preview()
-                        ui.notify(t("operation_error"), type="negative")
-                        return
                     result = await _run_with_progress(
-                        lambda: workflow.import_prefects(fresh_preview.rows),
+                        lambda: workflow.import_prefects(preview.rows),
                         title_key="progress_import_title",
                         working_key="progress_import_working",
                         icon="upload_file",
@@ -1176,5 +1220,22 @@ def prefects_page() -> None:
 
 @ui.page("/audit")
 def audit_page() -> None:
-    """Keep former bookmarks valid while moving fairness beside the people directory."""
-    ui.navigate.to("/prefects")
+    """Open fairness evidence directly without losing the caller's intent."""
+
+    workflow = get_workflow()
+    with page_shell("/prefects"):
+        render_back_action(
+            t("back_to_prefect_directory"),
+            "/prefects",
+            test_id="back-to-prefect-directory",
+        )
+        render_route_trail(
+            (
+                (t("prefects"), "/prefects"),
+                (t("audit"), None),
+            ),
+            label=t("people_route_hierarchy"),
+        )
+        with ui.row().classes("sy-page-lead w-full items-center justify-between"):
+            ui.label(t("audit")).classes("text-2xl font-semibold")
+        _render_fairness_panel(workflow)

@@ -12,10 +12,10 @@ SOUND_KINDS = {"navigation", "working", "success", "attention"}
 VISUAL_FEEDBACK_KINDS = SOUND_KINDS | {"error"}
 MUSIC_AUTOPLAY_STORAGE_KEY = "music_autoplay"
 DEFAULT_MUSIC_AUTOPLAY = True
-LEGACY_DEFAULT_MUSIC_VOLUME = 0.24
-DEFAULT_MUSIC_VOLUME = 0.35
+LEGACY_DEFAULT_MUSIC_VOLUMES = (0.24, 0.35)
+DEFAULT_MUSIC_VOLUME = 0.50
 MUSIC_VOLUME_DEFAULT_REVISION_KEY = "music_volume_default_revision"
-MUSIC_VOLUME_DEFAULT_REVISION = 2
+MUSIC_VOLUME_DEFAULT_REVISION = 3
 
 
 def music_autoplay_enabled() -> bool:
@@ -35,7 +35,11 @@ def preferred_music_volume() -> float:
         revision = 0
     parsed = _bounded_float(stored, default=DEFAULT_MUSIC_VOLUME, maximum=0.6)
     if revision < MUSIC_VOLUME_DEFAULT_REVISION:
-        if stored is None or abs(parsed - LEGACY_DEFAULT_MUSIC_VOLUME) < 0.0001:
+        uses_previous_default = stored is None or any(
+            abs(parsed - legacy_default) < 0.0001
+            for legacy_default in LEGACY_DEFAULT_MUSIC_VOLUMES
+        )
+        if uses_previous_default:
             parsed = DEFAULT_MUSIC_VOLUME
             preference_set("music_volume", parsed)
         preference_set(MUSIC_VOLUME_DEFAULT_REVISION_KEY, MUSIC_VOLUME_DEFAULT_REVISION)
@@ -47,6 +51,7 @@ def preferred_sound_volume() -> float:
 
 
 def set_music_volume(value: float) -> None:
+    preference_set(MUSIC_VOLUME_DEFAULT_REVISION_KEY, MUSIC_VOLUME_DEFAULT_REVISION)
     preference_set(
         "music_volume",
         _bounded_float(value, default=DEFAULT_MUSIC_VOLUME, maximum=0.6),

@@ -90,12 +90,17 @@
   border-radius: 13px !important;
 }
 
-.sy-workflow-navigation-step .q-btn__content {
+.sy-workflow-navigation-step .q-btn__content,
+.sy-workflow-navigation-content {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr);
   gap: 8px;
   width: 100%;
   text-align: left;
+}
+
+.sy-workflow-navigation-content {
+  align-items: center;
 }
 
 .sy-workflow-navigation-step.is-current {

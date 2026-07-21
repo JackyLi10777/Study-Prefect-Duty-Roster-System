@@ -276,7 +276,9 @@ def test_windows_and_cloudflare_automation_is_fail_closed_and_documented() -> No
     assert "Python 3.12" in prepare and "-m venv" in prepare and "check_deployment_readiness.py" in prepare
     assert "Get-Command py.exe" in prepare and "Get-Command python.exe" in prepare
     assert "-m playwright install chromium" in prepare
-    assert "New-ScheduledTaskAction" in task and "127.0.0.1:8080/healthz" in task
+    assert "New-ScheduledTaskAction" in task
+    assert "Get-SingYinConfiguredEndpoint" in task
+    assert "$($endpoint.Host):$($endpoint.Port)/healthz" in task
     for required_text in (
         'SING_YIN_HOST" "127.0.0.1',
         "ACCESS READY",
@@ -474,7 +476,7 @@ def test_engineering_showcase_turns_documented_quality_into_verifiable_ui_eviden
     assert "engineering_gate_guest" in messages
 
 
-def test_feedback_channel_is_consistent_bilingual_and_does_not_invite_data_attachments() -> None:
+def test_feedback_channel_is_consistent_bilingual_and_scopes_diagnostic_attachments() -> None:
     contact = (PROJECT_ROOT / "nicegui_app" / "contact.py").read_text(encoding="utf-8")
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
     pages = combined_page_source()
@@ -490,8 +492,10 @@ def test_feedback_channel_is_consistent_bilingual_and_does_not_invite_data_attac
     assert "data-testid=feedback-channel" in pages
     assert "feedback_channel_safe_note" in messages
     assert "github_repository_action" in messages
-    assert "不要附上姓名" in messages
-    assert "do not attach names" in messages
+    assert "診斷確有需要時可附上相關資料" in messages
+    assert "Attach relevant evidence when it is genuinely needed" in messages
+    assert "核對收件人" in messages
+    assert "limiting it to what the investigation requires" in messages
     assert "s10777@syss.edu.hk" in readme and "s10777@syss.edu.hk" in readme_en
 
 

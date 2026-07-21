@@ -13,7 +13,7 @@ from sqlalchemy import Engine, event
 from sqlalchemy.engine import URL, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from nicegui_app.config import PROJECT_ROOT
+from nicegui_app.config import PROJECT_ROOT, SQLITE_BUSY_TIMEOUT_MS
 from nicegui_app.persistence.models import Base
 
 
@@ -44,7 +44,7 @@ def database_readiness(database_path: Path) -> str:
         connection = sqlite3.connect(
             f"file:{database_path.resolve().as_posix()}?mode=ro",
             uri=True,
-            timeout=2,
+            timeout=SQLITE_BUSY_TIMEOUT_MS / 1_000,
         )
         try:
             integrity = connection.execute("PRAGMA quick_check").fetchone()
@@ -81,14 +81,17 @@ def migrate_database(database_path: Path) -> None:
 def create_sqlite_engine(database_path: Path) -> Engine:
     engine = create_engine(
         database_url(database_path),
-        connect_args={"check_same_thread": False, "timeout": 10},
+        connect_args={
+            "check_same_thread": False,
+            "timeout": SQLITE_BUSY_TIMEOUT_MS / 1_000,
+        },
         future=True,
     )
 
     @event.listens_for(engine, "connect")
     def configure_sqlite(connection, _connection_record) -> None:  # type: ignore[no-untyped-def]
         cursor = connection.cursor()
-        cursor.execute("PRAGMA busy_timeout = 10000")
+        cursor.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
         cursor.execute("PRAGMA foreign_keys = ON")
         cursor.close()
 
@@ -100,9 +103,9 @@ def create_session_factory(database_path: Path) -> sessionmaker[Session]:
     # WAL is a persistent database setting rather than a per-connection
     # option. Applying it before the pooled engine opens avoids two concurrent
     # checkouts contending on `PRAGMA journal_mode` during a write.
-    connection = sqlite3.connect(database_path, timeout=10)
+    connection = sqlite3.connect(database_path, timeout=SQLITE_BUSY_TIMEOUT_MS / 1_000)
     try:
-        connection.execute("PRAGMA busy_timeout = 10000")
+        connection.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
         journal_mode = connection.execute("PRAGMA journal_mode = WAL").fetchone()
         if not journal_mode or str(journal_mode[0]).lower() != "wal":
             raise sqlite3.OperationalError("SQLite did not enable WAL journal mode")

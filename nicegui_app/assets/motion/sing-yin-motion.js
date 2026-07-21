@@ -102,6 +102,8 @@
   const pointerControllers = new Map();
   const tocObservers = new Map();
   const feedbackTimers = new Map();
+  const iconStoryTimelines = new Map();
+  const iconStoryState = window.SingYinIconStoryState?.create?.() || null;
   const ACTION_MEMORY_MS = 5 * 60 * 1000;
   let intersectionObserver = null;
   let mutationObserver = null;
@@ -252,21 +254,47 @@
     });
   };
   const animateIconStory = (host, active) => {
+    const icon = host.querySelector(`${interactiveIconSelector}[data-sy-icon-story-to]`);
+    if (!(icon instanceof HTMLElement)) return;
+    const previousTimeline = iconStoryTimelines.get(icon);
+    if (previousTimeline) {
+      previousTimeline.kill();
+      iconStoryTimelines.delete(icon);
+    }
+    window.gsap.killTweensOf(icon);
+    window.gsap.set(icon, { clearProps: 'opacity,visibility,scale,y,transform' });
     if (
       reducedMotion()
       || !window.matchMedia(FINE_POINTER_QUERY).matches
       || host.matches('.disabled,[aria-disabled="true"],[aria-busy="true"]')
-    ) return;
-    const icon = host.querySelector(`${interactiveIconSelector}[data-sy-icon-story-to]`);
-    if (!(icon instanceof HTMLElement)) return;
+    ) {
+      const original = icon.dataset.syIconStoryFrom;
+      if (original) {
+        icon.textContent = original;
+        icon.dataset.syIconName = original;
+      }
+      icon.dataset.syIconStoryActive = 'false';
+      return;
+    }
     const next = active ? icon.dataset.syIconStoryTo : icon.dataset.syIconStoryFrom;
-    if (!next || icon.textContent?.trim() === next) return;
-    window.gsap.killTweensOf(icon);
-    window.gsap.timeline({ defaults: { overwrite: 'auto' } })
+    if (!next) return;
+    if (icon.textContent?.trim() === next) {
+      icon.dataset.syIconName = next;
+      icon.dataset.syIconStoryActive = active ? 'true' : 'false';
+      return;
+    }
+    const timeline = window.gsap.timeline({
+      defaults: { overwrite: 'auto' },
+      onComplete: () => {
+        if (iconStoryTimelines.get(icon) === timeline) iconStoryTimelines.delete(icon);
+      }
+    });
+    iconStoryTimelines.set(icon, timeline);
+    timeline
       .to(icon, {
         autoAlpha: 0,
         scale: 0.42,
-        rotate: active ? -18 : 18,
+        y: active ? -3 : 3,
         duration: 0.11,
         ease: 'power2.in',
         onComplete: () => {
@@ -277,14 +305,14 @@
       })
       .fromTo(
         icon,
-        { autoAlpha: 0, scale: 0.58, rotate: active ? 16 : -16 },
+        { autoAlpha: 0, scale: 0.58, y: active ? 4 : -4 },
         {
           autoAlpha: 1,
           scale: 1,
-          rotate: 0,
-          duration: 0.28,
-          ease: 'back.out(1.8)',
-          clearProps: 'opacity,visibility,scale,rotate,transform'
+          y: 0,
+          duration: 0.26,
+          ease: 'power3.out',
+          clearProps: 'opacity,visibility,scale,y,transform'
         }
       );
   };
@@ -295,16 +323,21 @@
     const host = iconStoryHost(event);
     if (!(host instanceof HTMLElement)) return;
     const related = event.relatedTarget;
-    if (event.type === 'pointerover' && related instanceof Node && host.contains(related)) return;
-    animateIconStory(host, true);
+    if (related instanceof Node && host.contains(related)) return;
+    const input = event.type === 'pointerover' ? 'pointer' : 'focus';
+    const active = iconStoryState?.transition(host, input, true);
+    if (active === null || active === undefined) return;
+    animateIconStory(host, active);
   };
   const onIconStoryLeave = (event) => {
     const host = iconStoryHost(event);
     if (!(host instanceof HTMLElement)) return;
     const related = event.relatedTarget;
-    if (event.type === 'pointerout' && related instanceof Node && host.contains(related)) return;
-    if (event.type === 'focusout' && related instanceof Node && host.contains(related)) return;
-    animateIconStory(host, false);
+    if (related instanceof Node && host.contains(related)) return;
+    const input = event.type === 'pointerout' ? 'pointer' : 'focus';
+    const active = iconStoryState?.transition(host, input, false);
+    if (active === null || active === undefined) return;
+    animateIconStory(host, active);
   };
   const hydratePointers = (root = document) => {
     queryWithin(root, pointerSurfaceSelector).forEach(enhancePointerSurface);
@@ -450,6 +483,11 @@
     interactionAbortController?.abort();
     Array.from(pointerControllers.keys()).forEach(removePointerSurface);
     Array.from(tocObservers.keys()).forEach(removeToc);
+    iconStoryTimelines.forEach((timeline, icon) => {
+      timeline.kill();
+      window.gsap?.set(icon, { clearProps: 'opacity,visibility,scale,y,transform' });
+    });
+    iconStoryTimelines.clear();
     feedbackTimers.forEach((timer) => window.clearTimeout(timer));
     feedbackTimers.clear();
     if (feedbackHandler) window.removeEventListener('sy:feedback', feedbackHandler);

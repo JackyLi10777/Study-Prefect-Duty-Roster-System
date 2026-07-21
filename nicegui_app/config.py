@@ -14,6 +14,32 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 # not silently replaced by their defaults. Explicit process variables retain
 # priority because python-dotenv does not override them by default.
 load_dotenv(PROJECT_ROOT / ".env")
+
+
+def _bounded_int_environment(
+    name: str,
+    *,
+    default: int,
+    minimum: int,
+    maximum: int,
+) -> int:
+    """Read an integer environment setting without allowing unsafe extremes."""
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    try:
+        value = int(raw_value.strip())
+    except (AttributeError, ValueError):
+        return default
+    return min(maximum, max(minimum, value))
+
+
+SQLITE_BUSY_TIMEOUT_MS = _bounded_int_environment(
+    "SING_YIN_SQLITE_BUSY_TIMEOUT_MS",
+    default=10_000,
+    minimum=1_000,
+    maximum=60_000,
+)
 BRAND_ASSET_DIR = PROJECT_ROOT / "nicegui_app" / "assets" / "brand"
 SERVICE_WEAVE_ASSET_DIR = BRAND_ASSET_DIR / "service-weave"
 MUSIC_DIR = PROJECT_ROOT / "music"

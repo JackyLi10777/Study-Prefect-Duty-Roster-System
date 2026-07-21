@@ -29,6 +29,18 @@ def test_runtime_and_verification_dependencies_are_hash_locked() -> None:
     assert "--hash=sha256:" in development
 
 
+def test_direct_web_framework_dependencies_are_owned_and_locked() -> None:
+    runtime_requirements = (
+        (ROOT / "requirements.txt").read_text(encoding="utf-8").lower().splitlines()
+    )
+    runtime_lock = (ROOT / "requirements.lock").read_text(encoding="utf-8").lower()
+
+    assert "fastapi>=0.139,<0.140" in runtime_requirements
+    assert "starlette>=1.3,<1.4" in runtime_requirements
+    assert "fastapi==0.139.0" in runtime_lock
+    assert "starlette==1.3.1" in runtime_lock
+
+
 def test_hong_kong_timezone_data_is_available_and_locked_for_windows() -> None:
     runtime_requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8").lower()
     runtime_lock = (ROOT / "requirements.lock").read_text(encoding="utf-8").lower()

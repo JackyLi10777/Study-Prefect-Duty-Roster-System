@@ -24,13 +24,13 @@ def main() -> None:
         audio = page.locator("audio.sy-page-music-audio")
         audio.wait_for(state="attached", timeout=10_000)
         page.wait_for_function(
-            """document.querySelector('audio.sy-page-music-audio').volume >= 0.33 &&
-            document.querySelector('audio.sy-page-music-audio').volume <= 0.37"""
+            """document.querySelector('audio.sy-page-music-audio').volume >= 0.48 &&
+            document.querySelector('audio.sy-page-music-audio').volume <= 0.52"""
         )
         state = audio.evaluate(
             "element => ({volume: element.volume, base: element.dataset.syBaseVolume})"
         )
-        assert 0.33 <= float(state["volume"]) <= 0.37, state
+        assert 0.48 <= float(state["volume"]) <= 0.52, state
         assert console_errors == [], console_errors
         print(f"music-volume-browser-pass volume={state['volume']} base={state['base']}")
         browser.close()

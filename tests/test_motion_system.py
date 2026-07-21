@@ -50,7 +50,9 @@ def test_motion_assets_are_loaded_from_same_origin_only() -> None:
     main = (PROJECT_ROOT / "nicegui_app" / "main.py").read_text(encoding="utf-8")
 
     assert '/assets/vendor/gsap-3.13.0.min.js' in motion_module
+    assert '/assets/motion/sing-yin-icon-story-state.js' in motion_module
     assert '/assets/motion/sing-yin-motion.js' in motion_module
+    assert motion_module.index('sing-yin-icon-story-state.js') < motion_module.index('sing-yin-motion.js')
     assert "http://" not in motion_module and "https://" not in motion_module
     assert 'url_path="/assets/motion"' in main
     assert 'url_path="/assets/vendor"' in main
@@ -140,10 +142,12 @@ def test_semantic_icon_motion_is_clear_without_becoming_a_looping_effect() -> No
     ).read_text(encoding="utf-8")
 
     assert 'data-sy-icon-motion="menu"' in interaction
-    assert "rotate(90deg) scale(.9)" in interaction
+    menu_scope = interaction.split('data-sy-icon-motion="menu"', 1)[1].split("}", 1)[0]
+    assert "rotate(" not in menu_scope
     assert 'data-sy-icon-motion="refresh"' in interaction
     assert "rotate(52deg) scale(1.1)" in interaction
-    assert "translateX(5px) scale(1.015)" in theme
+    assert "translateX(5px) scale(1.015)" not in theme
+    assert "translateY(-2px) scale(1.015)" not in theme
     assert "border-radius: 50%" in interaction
     assert "new AbortController()" in runtime
     assert "repeat: -1" not in runtime

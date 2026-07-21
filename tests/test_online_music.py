@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from io import BytesIO
 from pathlib import Path
 import subprocess
 import sys
 from threading import Barrier
 from time import monotonic, sleep
+from urllib.error import HTTPError, URLError
 
 import pytest
 
@@ -13,9 +15,11 @@ from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.services.music_library import MusicLibraryError
 from nicegui_app.services.online_music import (
     YouTubePlaylistLibrary,
+    YouTubeSearchError,
     YouTubeSettings,
     extract_youtube_playlist_id,
     parse_youtube_search,
+    search_youtube,
     youtube_embed_url,
 )
 from tests.ui_source import combined_theme_source
@@ -172,6 +176,79 @@ def test_youtube_search_parser_keeps_only_safe_video_and_playlist_ids() -> None:
     assert [item["kind"] for item in results] == ["video", "playlist"]
     assert results[0]["thumbnail"].startswith("https://i.ytimg.com/")
     assert results[1]["thumbnail"] == ""
+
+
+class _SearchResponse:
+    def __init__(self, body: bytes, content_type: str = "application/json; charset=utf-8") -> None:
+        self._body = BytesIO(body)
+        self.headers = {"Content-Type": content_type}
+
+    def __enter__(self):  # type: ignore[no-untyped-def]
+        return self
+
+    def __exit__(self, *_args):  # type: ignore[no-untyped-def]
+        return False
+
+    def read(self, size: int = -1) -> bytes:
+        return self._body.read(size)
+
+
+def test_youtube_search_caps_remote_response_and_parses_valid_json() -> None:
+    settings = YouTubeSettings(enabled=True, api_key="test-key")
+    requested: dict[str, object] = {}
+
+    def opener(request, *, timeout):  # type: ignore[no-untyped-def]
+        requested["url"] = request.full_url
+        requested["timeout"] = timeout
+        return _SearchResponse(
+            b'{"items":[{"id":{"videoId":"video_123"},"snippet":{"title":"Song"}}]}'
+        )
+
+    assert search_youtube("quiet piano", settings, opener=opener)[0]["id"] == "video_123"
+    assert str(requested["url"]).startswith("https://www.googleapis.com/youtube/v3/search?")
+    assert requested["timeout"] == 10
+
+
+@pytest.mark.parametrize(
+    ("failure", "expected"),
+    [
+        (URLError("offline"), "network"),
+        (TimeoutError(), "network"),
+        (HTTPError("https://www.googleapis.com", 403, "forbidden", {}, None), "unauthorized"),
+        (HTTPError("https://www.googleapis.com", 429, "limited", {}, None), "rate_limited"),
+        (HTTPError("https://www.googleapis.com", 503, "down", {}, None), "unavailable"),
+    ],
+)
+def test_youtube_search_normalizes_network_failures(failure: Exception, expected: str) -> None:
+    def opener(_request, *, timeout):  # type: ignore[no-untyped-def]
+        assert timeout == 10
+        raise failure
+
+    with pytest.raises(YouTubeSearchError, match=expected) as raised:
+        search_youtube("quiet piano", YouTubeSettings(True, "test-key"), opener=opener)
+    assert raised.value.code == expected
+
+
+@pytest.mark.parametrize(
+    ("response", "expected"),
+    [
+        (_SearchResponse(b"not-json"), "invalid_response"),
+        (_SearchResponse(b"{}", "text/html"), "invalid_response"),
+        (_SearchResponse(b"x" * (256 * 1024 + 1)), "response_too_large"),
+    ],
+)
+def test_youtube_search_rejects_unsafe_remote_responses(response: _SearchResponse, expected: str) -> None:
+    with pytest.raises(YouTubeSearchError, match=expected):
+        search_youtube(
+            "quiet piano",
+            YouTubeSettings(True, "test-key"),
+            opener=lambda _request, *, timeout: response,
+        )
+
+
+def test_youtube_search_parser_rejects_invalid_items_shape() -> None:
+    with pytest.raises(YouTubeSearchError, match="invalid_response"):
+        parse_youtube_search({"items": {"unexpected": "mapping"}})
 
 
 def test_youtube_ui_is_visible_controlled_and_never_autoplays() -> None:

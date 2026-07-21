@@ -317,6 +317,8 @@ def test_windows_ssh_setup_is_key_only_loopback_only_and_fail_closed() -> None:
     assert 'Get-ScheduledTask -TaskName "Sing Yin Roster Host"' in verification
     assert "safe.directory=C:/SingYinRoster" in verification
     assert "'^[0-9a-f]{40}$'" in verification
-    assert '"http://127.0.0.1:8080/healthz"' in verification
+    assert "Get-SingYinConfiguredEndpoint -EnvironmentPath C:\\SingYinRoster\\.env" in verification
+    assert '"http://$($endpoint.Host):$($endpoint.Port)/healthz"' in verification
+    assert '"http://127.0.0.1:8080/healthz"' not in verification
     assert '$remote.applicationMode -eq "official"' in verification
     assert '$remote.database -eq "ok"' in verification

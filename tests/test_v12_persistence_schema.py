@@ -154,7 +154,7 @@ def test_0007_to_head_preserves_data_and_adds_v12_contracts(tmp_path: Path) -> N
     command.upgrade(config, "head")
 
     with sqlite3.connect(database_path) as connection:
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0009",)
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0010",)
         assert connection.execute(
             "SELECT reason, version FROM leave_declarations WHERE prefect_id = ?",
             ("prefect-existing",),
@@ -190,6 +190,10 @@ def test_0007_to_head_preserves_data_and_adds_v12_contracts(tmp_path: Path) -> N
             row[1] for row in connection.execute("PRAGMA index_list(roster_weeks)")
         }
         assert "uq_roster_weeks_active_week_start" in roster_indexes
+        ledger_indexes = {
+            row[1] for row in connection.execute("PRAGMA index_list(fairness_ledger)")
+        }
+        assert "ix_fairness_ledger_prefect_id" in ledger_indexes
 
 
 def test_active_chinese_name_uniqueness_allows_archived_history(tmp_path: Path) -> None:

@@ -547,6 +547,24 @@ def main() -> None:
         assert primary_flow_icon.evaluate(
             "element => getComputedStyle(element).transform"
         ) != resting_icon_transform
+        story_icon = page.locator("button:visible .q-icon[data-sy-icon-story-to]").first
+        story_icon.wait_for(timeout=5_000)
+        story_host = story_icon.locator("xpath=ancestor::button[1]")
+        story_from = story_icon.get_attribute("data-sy-icon-story-from")
+        story_to = story_icon.get_attribute("data-sy-icon-story-to")
+        assert story_from and story_to and story_from != story_to
+        story_host.hover()
+        story_host.focus()
+        page.mouse.move(1, 1)
+        page.wait_for_timeout(420)
+        assert story_icon.inner_text().strip() == story_to
+        story_host.evaluate("element => element.blur()")
+        page.wait_for_timeout(420)
+        assert story_icon.inner_text().strip() == story_from
+        story_host.hover()
+        page.mouse.move(1, 1)
+        page.wait_for_timeout(420)
+        assert story_icon.inner_text().strip() == story_from
         page.evaluate(
             """() => {
               window.__syVerifiedSoundKinds = [];
@@ -671,7 +689,7 @@ def main() -> None:
         else:
             page.get_by_text("YouTube 播放器已由環境設定停用", exact=False).wait_for(timeout=10_000)
         page.wait_for_function(
-                "element => element.volume >= 0.33 && element.volume <= 0.37",
+                "element => element.volume >= 0.48 && element.volume <= 0.52",
             arg=music_audio.element_handle(),
             timeout=10_000,
         )
@@ -925,9 +943,27 @@ def main() -> None:
         page.screenshot(path=str(GUIDE_SCREENSHOT), full_page=True)
         expansion_header = page.locator(".q-expansion-item .q-item").first
         assert expansion_header.evaluate("element => getComputedStyle(element).cursor") == "pointer"
-        expansion_header.hover()
+        navigation_toggle = page.locator(".sy-desktop-drawer-trigger")
+        navigation_toggle_icon = navigation_toggle.locator(".q-icon[data-sy-icon-story-to]").first
+        assert navigation_toggle.count() == 1
+        assert navigation_toggle_icon.count() == 1
+        static_navigation_toggle_transform = navigation_toggle.evaluate(
+            "element => getComputedStyle(element).transform"
+        )
+        static_navigation_icon_transform = navigation_toggle_icon.evaluate(
+            "element => getComputedStyle(element).transform"
+        )
+        navigation_toggle.hover()
         page.wait_for_timeout(190)
-        assert expansion_header.evaluate("element => getComputedStyle(element).transform") != "none"
+        assert navigation_toggle.evaluate(
+            "element => getComputedStyle(element).transform"
+        ) == static_navigation_toggle_transform
+        assert navigation_toggle_icon.evaluate(
+            "element => getComputedStyle(element).transform"
+        ) != static_navigation_icon_transform
+        assert navigation_toggle_icon.text_content().strip() == navigation_toggle_icon.get_attribute(
+            "data-sy-icon-story-to"
+        )
         page.goto(f"{BASE_URL}/getting-started", wait_until="domcontentloaded")
         page.locator(".sy-onboarding-symbol").wait_for(timeout=10_000)
         assert page.get_by_test_id("reference-index").locator(".sy-reference-index-card").count() == 3

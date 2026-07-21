@@ -156,7 +156,7 @@ python -X utf8 -m nicegui_app.main
 
 3. `SING_YIN_OPEN_BROWSER` 預設為 `true`，令首次開啟更直接；受控或無介面運行可設為 `false`。
 4. 只使用 `http://127.0.0.1:8080`；現時程式刻意只綁定 localhost。
-5. 完成一批更新後先執行 `python -X utf8 scripts\verify_update.py`。它會按 Git 變更自動選擇 `docs`、`tests`、`assurance`、`worker` 或 `full`，並顯示執行及略過理由；未知路徑一律升級，不會靜默少驗證。只有正式 runtime、政策、資料庫、依賴、Worker、Windows 主機或正式證據閘門改動，才需要先安裝 `requirements-dev.lock`、Chromium 及 Deno，再由同一命令啟動完整 `verify_release_candidate.py`。目前完整入口共有 13 道閘門：Git 邊界、安全掃描、Cloudflare Worker Deno 契約、完整 Python 測試、編譯、依賴、桌面 UI、跨頁效能／記憶體、隔離寫入／PDF／還原、手機適應、嚴格部署就緒、統一訪客隔離及備份失敗復原。它自行建立臨時資料庫、備份及日誌，絕不採用正式學校資料路徑；只有 `logs/release-candidate-report.json` 的所有項目均為 `pass` 且 runtime 指紋仍相符，才算機器驗證完成。文件、測試及 CI 改動另有聚焦證據，不會令已證實的 runtime 誤報過期；詳細矩陣見 `docs/UPDATE_WORKFLOW.md`。這不能取代下方的人手驗收。
+5. 完成一批更新後先執行 `python -X utf8 scripts\verify_update.py`。它會按 Git 變更自動選擇 `docs`、`tests`、`assurance`、`worker` 或 `full`，並顯示執行及略過理由；未知路徑一律升級，不會靜默少驗證。只有正式 runtime、政策、資料庫、依賴、Worker、Windows 主機或正式證據閘門改動，才需要先安裝 `requirements-dev.lock`、Chromium 及 Deno，再由同一命令啟動完整 `verify_release_candidate.py`。目前完整入口共有 14 道閘門：Git 邊界、安全掃描、Cloudflare Worker Deno 契約、獨立圖標互動狀態機、完整 Python 測試、編譯、依賴、桌面 UI、跨頁效能／記憶體、隔離寫入／PDF／還原、手機適應、嚴格部署就緒、統一訪客隔離及備份失敗復原。它自行建立臨時資料庫、備份及日誌，絕不採用正式學校資料路徑；只有 `logs/release-candidate-report.json` 的所有項目均為 `pass` 且 runtime 指紋仍相符，才算機器驗證完成。文件、測試及 CI 改動另有聚焦證據，不會令已證實的 runtime 誤報過期；詳細矩陣見 `docs/UPDATE_WORKFLOW.md`。這不能取代下方的人手驗收。
    `D:\code_v3` 是開發及驗證副本，`C:\SingYinRoster` 是目前工作排程器實際執行的安裝副本；修改前者不會自動更新後者。完成驗證後仍須依 Windows 專用主機手冊第 12 節備份、停止、更新、重新啟動及核對，否則瀏覽器會繼續顯示舊版。
 6. 不要在 `verify_update.py` 或完整 verifier 通過後再重跑同一套 hygiene／security；它們已由所選 profile 擁有。只有單獨調查某一道閘門時才直接執行相應腳本。發布前仍須人工閱讀 `git status --short`，不可用未核對的 `git add -A`；沒有真正 commit 歷史、被追蹤的運行資料，或尚未加入 Git 的發布敏感程式／遷移／Cloudflare／設定／交接文件，都會由 repository hygiene 阻擋。
 
@@ -168,11 +168,11 @@ python -X utf8 -m nicegui_app.main
 - 如問題持續，把 OP 或 REQ 編號交給教師顧問或 IT 支援。他們可在系統資料夾執行：`python -X utf8 scripts\inspect_support_log.py --reference OP-XXXXXXXX`；這個工具只讀取最近的匹配本機記錄。不要把整份日誌上載至公開網站或個人雲端。
 - `logs/app.log` 會以 UTF-8 輪替，並在受控終端即時顯示相同的安全記錄。每行只記錄事件、受控操作／路由分類、狀態、耗時、例外類型、程式位置及 OP／REQ 追蹤編號；系統不會寫入姓名、請假原因、表單內容、查詢字串、值班表內容或 PDF 內容。瀏覽器關閉 localhost 連線所產生的 Windows 64／10054 重設只會記為資訊事件；其他未捕捉的異步錯誤仍會保留為嚴重事件並交回系統處理，不能因為「消除紅字」而被隱藏。
 - `.env` 可用 `SING_YIN_LOG_DIR` 指定另一個受控本機資料夾；`SING_YIN_LOG_LEVEL`、`SING_YIN_LOG_CONSOLE`、`SING_YIN_LOG_MAX_BYTES` 及 `SING_YIN_LOG_BACKUP_COUNT` 可調整受控本機診斷行為。不可設定為 OneDrive、Google Drive 或其他未經學校批准的同步位置。
-- 一般使用意見、流程疑問及交接建議可電郵 `s10777@syss.edu.hk`。技術問題請附畫面上的 OP／REQ 編號及簡短描述，不要附上姓名、請假內容、值班表、PDF、資料庫、備份、截圖或完整日誌。
+- 一般使用意見、流程疑問及交接建議可電郵 `s10777@syss.edu.hk`。技術問題先附畫面上的 OP／REQ 編號及簡短描述；診斷確有需要時可附上相關資料，寄出前請核對收件人及附件，並只提供解決問題所需的部分。
 
 ### YouTube 音樂（首席導學風紀自選）
 
-本機情境音樂預設在頁面準備後以 35% 音量作一次播放嘗試。仍停留於舊版精確 24% 預設的瀏覽器會自動升級一次；其他手動選擇不會被覆寫。首席導學風紀可在任何頁面立即暫停，或在耳機控制／設定關閉跨頁自動播放；選擇只保存在目前瀏覽器。同一首本機歌曲如適用於跳轉前後兩頁，系統會在目前瀏覽器 session 延續播放位置及播放／暫停狀態，不會從頭開始；換歌或關閉瀏覽器 session 則不沿用。耳機圖示及控制器會顯示正在播放、已暫停、等待手動播放或已關閉。部分瀏覽器可能在第一次互動前阻擋聲音，此時按一次原生播放器即可，不會在背景反覆重試。這項偏好不影響名單、排班、公平、備份或 PDF。
+本機情境音樂及登入頁歡迎音樂在沒有既有偏好時，預設以 50% 音量作一次播放嘗試。新版工作台偏好結構只會把仍等於舊版精確 24% 或 35% 預設的瀏覽器升級一次；公開入口保留所有已儲存音量，不會把明確選擇的 25% 當成舊預設。首席導學風紀可在任何頁面立即暫停，或在耳機控制／設定關閉跨頁自動播放；選擇只保存在目前瀏覽器。同一首本機歌曲如適用於跳轉前後兩頁，系統會在目前瀏覽器 session 延續播放位置及播放／暫停狀態，不會從頭開始；換歌或關閉瀏覽器 session 則不沿用。耳機圖示及控制器會顯示正在播放、已暫停、等待手動播放或已關閉。部分瀏覽器可能在第一次互動前阻擋聲音，此時按一次原生播放器即可，不會在背景反覆重試。這項偏好不影響名單、排班、公平、備份或 PDF。
 
 1. 公開歌單功能可選使用，無需帳戶、付費或 API key。在「設定」貼上公開 YouTube 歌單連結，填寫不含學生資料的顯示名稱，並選擇適用頁面。
 2. 回到指定頁面按耳機圖示。YouTube 以完整可見控制窗顯示，且不會隨本機情境音樂自動播放；由操作員使用原生控制開始、暫停、調校音量及換歌。
@@ -202,7 +202,7 @@ python -X utf8 -m nicegui_app.main
 ### 後續受控發布次序
 
 1. 在最後來源 commit 只執行一次 `python -X utf8 scripts\verify_update.py --release`；它已擁有完整 pytest、瀏覽器、Worker、效能、備份失敗及部署就緒閘門，不要再重複跑同一套檢查。
-2. 核對 `logs/release-candidate-report.json` 的 13 項 gate、來源 fingerprint 與最終 commit 完全一致。
+2. 核對 `logs/release-candidate-report.json` 的 14 項 gate、來源 fingerprint 與最終 commit 完全一致。
 3. Gate 通過後，才合併 `main` 並建立**下一個獲批准的 annotated tag**；不可預先重用任何既有標籤。保存目前 rc15／`17a1cf9` 作現行不可變版本，並保留 rc14／`22a17c9` Windows bundle 及 Worker `e6ba405a-4d7a-4529-b3d8-d5d4df2a9479` 作已記錄回退組合。
 4. 以 `scripts\deploy_windows_release.ps1` 從該乾淨 tag 更新 Windows bundle；腳本會在切換前建立新的正式已驗證快照、完成隔離還原、進入 maintenance、執行 additive migration並在失敗時回復，不需要另跑一套重複備份程序。
 5. 核對 `/healthz`、`/readyz`、管理員本機工作流及備份義務。

@@ -145,8 +145,8 @@ def _assert_guest_landing(page: Page, *, label: str) -> None:
     welcome_player = page.locator("#welcomeAudioPlayer")
     if welcome_player.count() != 1 or not welcome_player.is_visible():
         raise RuntimeError(f"{label} does not expose the welcome-music control.")
-    if page.locator("#welcomeAudioVolume").input_value() != "25":
-        raise RuntimeError(f"{label} does not start from the documented 25% welcome volume.")
+    if page.locator("#welcomeAudioVolume").input_value() != "50":
+        raise RuntimeError(f"{label} does not start from the documented 50% welcome volume.")
     for selector in ("#welcomeAudioToggle", "#welcomeAudioNext"):
         control_box = page.locator(selector).bounding_box()
         if control_box is None or control_box["width"] < 43.5 or control_box["height"] < 43.5:

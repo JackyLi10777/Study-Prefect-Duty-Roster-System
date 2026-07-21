@@ -56,14 +56,15 @@ def render_workflow_navigation(
                 classes += " is-current"
             if step.state == "locked":
                 classes += " is-locked"
-            state_props = []
             if is_current:
-                state_props.append("aria-current=step")
-            if step.state == "locked":
-                state_props.append("disable")
-            with ui.button(on_click=lambda route=step.route: ui.navigate.to(route)).props(
-                f"flat no-caps {' '.join(state_props)}"
-            ).classes(classes):
+                classes += " sy-workflow-navigation-content"
+                control = ui.element("div").props("aria-current=step")
+            else:
+                state_props = "disable" if step.state == "locked" else ""
+                control = ui.button(on_click=lambda route=step.route: ui.navigate.to(route)).props(
+                    f"flat no-caps {state_props}"
+                )
+            with control.classes(classes):
                 ui.label(f"{index:02d}").classes("sy-workflow-navigation-index")
                 ui.icon(step.icon).classes("sy-workflow-navigation-icon").props("aria-hidden=true")
                 ui.label(step.label).classes("sy-workflow-navigation-label")

@@ -25,17 +25,38 @@ from nicegui_app.services.music_library import (
 def test_music_volume_default_upgrade_preserves_an_explicit_operator_choice(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    store: dict[str, object] = {"music_volume": 0.24}
+    store: dict[str, object] = {}
     monkeypatch.setattr(sound_ui, "preference_get", lambda key, default=None: store.get(key, default))
     monkeypatch.setattr(sound_ui, "preference_set", lambda key, value: store.__setitem__(key, value))
 
-    assert sound_ui.preferred_music_volume() == 0.35
-    assert store["music_volume_default_revision"] == 2
+    store.clear()
+    assert sound_ui.preferred_music_volume() == 0.50
+    assert store["music_volume"] == 0.50
+    assert store["music_volume_default_revision"] == 3
+
+    store.clear()
+    store.update({"music_volume": 0.24})
+    assert sound_ui.preferred_music_volume() == 0.50
+    assert store["music_volume_default_revision"] == 3
+
+    store.clear()
+    store.update({"music_volume": 0.35, "music_volume_default_revision": 2})
+    assert sound_ui.preferred_music_volume() == 0.50
+    assert store["music_volume_default_revision"] == 3
 
     store.clear()
     store.update({"music_volume": 0.42, "music_volume_default_revision": "invalid"})
     assert sound_ui.preferred_music_volume() == 0.42
-    assert store["music_volume_default_revision"] == 2
+    assert store["music_volume_default_revision"] == 3
+
+    store.clear()
+    store.update({"music_volume": 0.35, "music_volume_default_revision": 3})
+    assert sound_ui.preferred_music_volume() == 0.35
+    assert store["music_volume_default_revision"] == 3
+
+    sound_ui.set_music_volume(0.24)
+    assert store["music_volume"] == 0.24
+    assert store["music_volume_default_revision"] == 3
 
 
 def test_builtin_music_catalog_is_complete_local_and_page_categorised() -> None:
@@ -219,9 +240,9 @@ def test_music_ui_has_operator_controlled_autoplay_on_every_workspace_page() -> 
 
     assert "autoplay=False" in music_ui, "The audio element starts conservatively before the saved preference is applied"
     assert 'DEFAULT_MUSIC_AUTOPLAY = True' in sound_ui
-    assert 'DEFAULT_MUSIC_VOLUME = 0.35' in sound_ui
-    assert 'LEGACY_DEFAULT_MUSIC_VOLUME = 0.24' in sound_ui
-    assert "element.volume >= 0.33 && element.volume <= 0.37" in (
+    assert 'DEFAULT_MUSIC_VOLUME = 0.50' in sound_ui
+    assert 'LEGACY_DEFAULT_MUSIC_VOLUMES = (0.24, 0.35)' in sound_ui
+    assert "element.volume >= 0.48 && element.volume <= 0.52" in (
         PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py"
     ).read_text(encoding="utf-8")
     assert 'MUSIC_AUTOPLAY_STORAGE_KEY = "music_autoplay"' in sound_ui

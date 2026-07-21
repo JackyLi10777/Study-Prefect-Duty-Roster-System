@@ -2,6 +2,8 @@
 
 MESSAGES = {'directory': {'zh-HK': '名單管理', 'en': 'Directory'},
  'ai_import': {'zh-HK': '資料匯入', 'en': 'Data import'},
+ 'back_to_prefect_directory': {'zh-HK': '返回導學風紀名單', 'en': 'Back to prefect directory'},
+ 'people_route_hierarchy': {'zh-HK': '名單與公平頁面層次', 'en': 'People and fairness page hierarchy'},
  'empty_prefect_title': {'zh-HK': '由一份乾淨的正式名單開始', 'en': 'Start with a clean official directory'},
  'empty_prefect_detail': {'zh-HK': '目前沒有任何導學風紀資料。你可逐一新增，或到「資料匯入」下載格式範例、核對預覽後一次匯入；建立名單前，系統不會生成值班表。',
                           'en': 'There are no prefect records yet. Add them individually, or open Data import to download the template '

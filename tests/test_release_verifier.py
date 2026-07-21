@@ -12,6 +12,7 @@ from scripts.verify_release_candidate import (
     ReleaseVerificationError,
     _assert_server_console_clean,
     _deno_gateway_command,
+    _deno_motion_command,
     isolated_environment,
 )
 
@@ -112,6 +113,16 @@ def test_release_verifier_builds_the_real_deno_gateway_test_command(monkeypatch)
         "deno-test-runtime",
         "test",
         "cloudflare/roster_viewer/worker_gateway_test.js",
+    ]
+
+
+def test_release_verifier_builds_the_executable_motion_state_machine_test_command(monkeypatch) -> None:
+    monkeypatch.setattr(verify_release_candidate.shutil, "which", lambda _name: "deno-test-runtime")
+
+    assert _deno_motion_command() == [
+        "deno-test-runtime",
+        "test",
+        "nicegui_app/assets/motion/sing-yin-icon-story-state_test.js",
     ]
 
 

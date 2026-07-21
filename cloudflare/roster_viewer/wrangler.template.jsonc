@@ -22,6 +22,7 @@
     "ACCESS_TEAM_DOMAIN": "https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
     "ACCESS_AUD": "REPLACE_WITH_ACCESS_APPLICATION_AUD",
     "AUTH_EPOCH": 1,
+    "ORIGIN_PORT": 8080,
     "ORIGIN_PRINCIPAL_KID": "origin-v1",
     "ADMIN_IDENTITY_ALLOWLIST": {
       "emails": [

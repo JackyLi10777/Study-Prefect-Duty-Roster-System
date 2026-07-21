@@ -41,6 +41,13 @@ ownership, filterable Engineering evidence index, internal Developer Reference,
 bounded Guest preferences, unified generated-file delivery, the browser／PDF
 roster matrix, and auditable published-roster withdrawal.
 
+The rc16 source candidate is not live yet. It adds admission control that rejects
+excess Guest sessions without evicting active users, stronger import and network
+bounds, aggregate fairness reconciliation, explicit return paths, and stable
+button containers whose icons transform internally. Those statements become live
+operating guidance only after its 14-gate report, backup/restore proof, Windows
+origin rollout, and matching Worker rollout all pass.
+
 ## Repository editions
 
 | Branch | Platform | Status |
@@ -107,10 +114,12 @@ marking. Close it and use `RESET_PRACTICE_MODE.cmd` for a clean rehearsal.
 
 The Dashboard devotional direction offers **Default setting**, **Clear
 guidance**, and **Quiet comfort**. The default follows the current appearance
-as a recommendation only. Local page-context music makes one page-ready attempt
-at a browser-local default of 35% and always exposes pause/off controls. Browsers
-still using the former exact 24% default are upgraded once; other manually chosen
-levels are preserved. If two
+as a recommendation only. In the not-yet-live rc16 candidate, local page-context music and entrance welcome music
+make one page-ready attempt at a browser-local default of 50% when no preference
+exists and always expose pause/off controls. A versioned workbench preference
+migration upgrades only an exact former 24% or 35% default. The public entrance
+preserves every stored level and never mistakes an explicitly selected 25% for
+a legacy default. If two
 consecutive routes resolve to the same local track, the current browser session
 continues its position and playing/paused state instead of restarting it; this
 continuity never enters SQLite or permanent browser storage.
@@ -261,7 +270,7 @@ context discoverable without making a daily operator scan one oversized page.
 - Phone-specific roster and prefect cards rather than clipped desktop tables.
 - Keyboard focus, semantic landmarks, 44px actions, reduced-motion support.
 - Dignified Daily Verse reading language separate from the workbench.
-- Local ambience makes one low-volume autoplay attempt after each page is ready.
+- Local ambience makes one autoplay attempt at the 50% browser-local default after each page is ready.
   The operator can pause it or turn cross-page autoplay off at any time, and the
   control exposes playing, paused, browser-blocked, and off states. The separate
   visible YouTube player never autoplays.
@@ -272,6 +281,11 @@ adopts a pattern only when it improves first-use comprehension, task completion,
 recovery, mobile use, or accessibility; it deliberately omits pricing tiers,
 marketing funnels, invented KPIs, and decorative density from the operator
 workbench.
+
+The bilingual [Code acceptance and risk-led review](docs/CODE_ACCEPTANCE_REVIEW.md)
+defines the trust-boundary map, failure-path coverage, configuration and safety
+constants, 10×／100× performance review, dependency ownership, and the different
+evidence required for a minimal local check versus a formal release.
 
 ## Deployment
 
@@ -346,8 +360,9 @@ suite, compilation, dependency integrity, desktop browser smoke, measured
 runtime performance and memory stability, the fictional-data write/PDF and
 restore pipeline, independent mobile adaptation, strict deployment readiness,
 committed-without-backup recovery, and the isolated unified-Guest workflow.
-The formal verifier has thirteen gates; the final matching fingerprint is
-recorded only after the frozen-source rerun. Machine evidence remains separate
+The formal verifier has fourteen gates, including the independent icon-state-machine
+contract; the final matching fingerprint is recorded only after the frozen-source
+rerun. Machine evidence remains separate
 from the final operator/advisor acceptance checklist and from the live
 host/Cloudflare switchover evidence.
 

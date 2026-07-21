@@ -14,6 +14,7 @@ Set-StrictMode -Version Latest
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) { $ProjectRoot = Split-Path -Parent $PSScriptRoot }
 
 $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+$endpoint = Get-SingYinConfiguredEndpoint -EnvironmentPath (Join-Path $ProjectRoot ".env")
 $runtimeAccount = Get-SingYinRuntimeAccount -UserName $RuntimeUser
 $python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 if (-not (Test-Path -LiteralPath $python)) {
@@ -93,5 +94,5 @@ if ($NoStart) {
 } else {
     Start-ScheduledTask -TaskName $TaskName
     Write-Host "Registered and started '$TaskName'." -ForegroundColor Green
-    Write-Host "Check: Invoke-RestMethod http://127.0.0.1:8080/healthz | Format-List"
+    Write-Host "Check: Invoke-RestMethod http://$($endpoint.Host):$($endpoint.Port)/healthz | Format-List"
 }

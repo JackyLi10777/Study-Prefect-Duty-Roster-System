@@ -13,12 +13,19 @@ from zipfile import BadZipFile, LargeZipFile, ZipFile
 from openpyxl import load_workbook
 
 from nicegui_app.utils.prefect_import import FIELD_ALIASES
+from nicegui_app.utils.prefect_import_limits import (
+    MAX_IMPORT_BYTES,
+    MAX_IMPORT_CELL_CHARACTERS,
+    MAX_IMPORT_COLUMNS,
+    MAX_IMPORT_ROWS,
+    PrefectImportLimitError,
+    check_import_bytes,
+    check_import_cell,
+    validate_import_headers,
+)
 from roster_policy import is_chinese_display_name
 
 
-MAX_IMPORT_BYTES = 2 * 1024 * 1024
-MAX_IMPORT_ROWS = 2_000
-MAX_IMPORT_COLUMNS = 50
 MAX_XLSX_ARCHIVE_MEMBERS = 512
 MAX_XLSX_TOTAL_UNCOMPRESSED_BYTES = 64 * 1024 * 1024
 MAX_XLSX_MEMBER_UNCOMPRESSED_BYTES = 32 * 1024 * 1024
@@ -79,8 +86,10 @@ def parse_prefect_file(
 ) -> ParsedImportFile:
     if not content:
         raise PrefectFileImportError("empty_file", "The selected file is empty.")
-    if len(content) > MAX_IMPORT_BYTES:
-        raise PrefectFileImportError("too_large", "The selected file is larger than 2 MB.")
+    try:
+        check_import_bytes(content)
+    except PrefectImportLimitError as error:
+        raise PrefectFileImportError(error.code, str(error)) from error
     suffix = Path(filename).suffix.casefold()
     if suffix == ".csv":
         return _parse_csv(filename, content)
@@ -302,15 +311,10 @@ def _looks_like_day_value(text: str) -> bool:
 
 
 def _validate_headers(headers: tuple[str, ...]) -> tuple[str, ...]:
-    if not headers or not any(headers):
-        raise PrefectFileImportError("headings_required", "The first row must contain column headings.")
-    if len(headers) > MAX_IMPORT_COLUMNS:
-        raise PrefectFileImportError("too_many_columns", "The file contains more than 50 columns.")
-    if any(not header for header in headers):
-        raise PrefectFileImportError("blank_heading", "Every imported column must have a heading.")
-    if len(headers) != len(set(headers)):
-        raise PrefectFileImportError("duplicate_headings", "Column headings must be unique.")
-    return headers
+    try:
+        return validate_import_headers(headers)
+    except PrefectImportLimitError as error:
+        raise PrefectFileImportError(error.code, str(error)) from error
 
 
 def _decode_csv(content: bytes) -> str:
@@ -326,9 +330,12 @@ def _decode_csv(content: bytes) -> str:
 
 
 def _clean_cell(value: Any) -> Any:
-    if isinstance(value, str):
-        return value.strip()
-    return value
+    cleaned = value.strip() if isinstance(value, str) else value
+    try:
+        check_import_cell(cleaned)
+    except PrefectImportLimitError as error:
+        raise PrefectFileImportError(error.code, str(error)) from error
+    return cleaned
 
 
 def _normalize_header(value: str) -> str:
@@ -354,6 +361,7 @@ def _value_kind(value: Any) -> str:
 __all__ = [
     "ColumnProfile",
     "MAX_IMPORT_BYTES",
+    "MAX_IMPORT_CELL_CHARACTERS",
     "MAX_IMPORT_COLUMNS",
     "MAX_IMPORT_ROWS",
     "ParsedImportFile",

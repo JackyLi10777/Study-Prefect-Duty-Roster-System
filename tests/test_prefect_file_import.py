@@ -110,6 +110,20 @@ def test_csv_header_whitespace_is_removed_without_losing_column_values() -> None
     assert preview.rows[0].name_zh == "測試風紀"
 
 
+@pytest.mark.parametrize(
+    ("content", "expected_code"),
+    [
+        ("姓名,,班別,職務,可值班日\n測試甲,F.3,3A,導學風紀,星期一", "blank_heading"),
+        ("姓名,姓名,班別,職務,可值班日\n測試甲,F.3,3A,導學風紀,星期一", "duplicate_headings"),
+    ],
+)
+def test_file_csv_rejects_blank_and_duplicate_headings(content: str, expected_code: str) -> None:
+    with pytest.raises(PrefectFileImportError) as captured:
+        parse_prefect_file("prefects.csv", content.encode("utf-8"))
+
+    assert captured.value.code == expected_code
+
+
 def test_xlsx_uses_a_named_sheet_without_executing_formulas() -> None:
     parsed = parse_prefect_file("prefects.xlsx", _workbook_bytes(), sheet_name="名冊")
     mapping = suggest_local_column_mapping(parsed.headers)
@@ -220,6 +234,27 @@ def test_unsafe_or_unsupported_workbooks_fail_with_a_clear_next_step() -> None:
         parse_prefect_file("prefects.json", b"[]")
     with pytest.raises(PrefectFileImportError, match="larger than 2 MB"):
         parse_prefect_file("large.csv", b"x" * (2 * 1024 * 1024 + 1))
+
+
+def test_csv_and_xlsx_share_the_same_cell_length_boundary() -> None:
+    oversized_cell = "字" * (prefect_file_import.MAX_IMPORT_CELL_CHARACTERS + 1)
+    csv_content = (
+        "姓名,級別,班別,職務,可值班日,備註\n"
+        f"測試甲,F.3,3A,導學風紀,星期一,{oversized_cell}\n"
+    ).encode("utf-8")
+
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.append(["姓名", "級別", "班別", "職務", "可值班日", "備註"])
+    worksheet.append(["測試甲", "F.3", "3A", "導學風紀", "星期一", oversized_cell])
+    output = BytesIO()
+    workbook.save(output)
+    workbook.close()
+
+    for filename, content in (("long.csv", csv_content), ("long.xlsx", output.getvalue())):
+        with pytest.raises(PrefectFileImportError) as captured:
+            parse_prefect_file(filename, content)
+        assert captured.value.code == "cell_too_long"
 
 
 def test_column_profiles_contain_no_row_values() -> None:

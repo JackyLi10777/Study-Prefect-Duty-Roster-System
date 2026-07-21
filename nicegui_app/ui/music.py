@@ -377,7 +377,7 @@ def render_music_library_settings() -> None:
     context_options = {context: music_context_label(context) for context in MUSIC_CONTEXTS}
     render_youtube_settings()
 
-    with ui.card().classes("sy-surface sy-settings-section sy-audio-settings w-full max-w-3xl p-6").props("data-testid=audio-settings"):
+    with ui.card().classes("sy-surface sy-settings-section sy-audio-settings sy-operations-panel w-full p-6").props("data-testid=audio-settings"):
         with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
             with ui.column().classes("gap-1 max-w-2xl"):
                 ui.label(t("audio_preferences")).classes("text-lg font-semibold")
@@ -442,7 +442,7 @@ def render_music_library_settings() -> None:
         music_slider.on_value_change(change_music_volume)
         ui.button(t("test_interface_sound"), icon="volume_up", on_click=lambda: play_interface_sound("success", force=True)).props("outline").classes("mt-3")
 
-    with ui.card().classes("sy-surface sy-settings-section sy-music-settings w-full max-w-3xl p-6").props("data-testid=music-library-settings"):
+    with ui.card().classes("sy-surface sy-settings-section sy-music-settings sy-operations-panel w-full p-6").props("data-testid=music-library-settings"):
         with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
             with ui.column().classes("gap-1 max-w-2xl"):
                 ui.label(t("music_library")).classes("text-lg font-semibold")
@@ -579,7 +579,7 @@ def render_music_library_settings() -> None:
 def render_guest_music_settings() -> None:
     """Expose session-only playback preferences without any guest file or URL input."""
 
-    with ui.card().classes("sy-surface sy-settings-section sy-audio-settings w-full max-w-3xl p-6").props(
+    with ui.card().classes("sy-surface sy-settings-section sy-audio-settings sy-operations-panel w-full p-6").props(
         "data-testid=guest-audio-settings"
     ):
         with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):

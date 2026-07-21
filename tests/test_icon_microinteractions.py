@@ -82,8 +82,52 @@ def test_story_icons_change_glyphs_instead_of_only_translating() -> None:
         assert f"['{source}', '{destination}']" in motion
     assert "const animateIconStory" in motion
     assert "icon.textContent = next" in motion
+    story = motion.split("const animateIconStory", 1)[1].split("const iconStoryHost", 1)[0]
+    assert "rotate:" not in story
+    assert "back.out" not in story
+    assert "power3.out" in story
     assert "prefers-reduced-motion: reduce" in motion
     assert "new AbortController()" in motion
+
+
+def test_story_icon_state_survives_rapid_reversal_and_pointer_focus_overlap() -> None:
+    motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
+    state_machine = _read("nicegui_app/assets/motion/sing-yin-icon-story-state.js")
+    story = motion.split("const animateIconStory", 1)[1].split("const hydratePointers", 1)[0]
+
+    cancel = story.index("const previousTimeline = iconStoryTimelines.get(icon)")
+    decide = story.index("const next = active ?")
+    assert cancel < decide
+    assert "previousTimeline.kill()" in story
+    assert "window.gsap.set(icon, { clearProps:" in story
+    assert "window.SingYinIconStoryState?.create?.()" in motion
+    assert "iconStoryState?.transition(host, input, true)" in story
+    assert "iconStoryState?.transition(host, input, false)" in story
+    assert "const wasActive = state.pointer || state.focus" in state_machine
+    assert "return wasActive === isActive ? null : isActive" in state_machine
+
+
+def test_disabled_or_busy_story_icon_is_restored_without_animating() -> None:
+    motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
+    story = motion.split("const animateIconStory", 1)[1].split("const iconStoryHost", 1)[0]
+
+    icon_lookup = story.index("const icon = host.querySelector")
+    disabled_guard = story.index("host.matches('.disabled")
+    assert icon_lookup < disabled_guard
+    assert "const original = icon.dataset.syIconStoryFrom" in story
+    assert "icon.textContent = original" in story
+    assert "icon.dataset.syIconStoryActive = 'false'" in story
+
+
+def test_isolated_browser_verifier_exercises_story_reversal_and_input_overlap() -> None:
+    verifier = _read("scripts/verify_nicegui_ui.py")
+
+    assert 'data-sy-icon-story-to' in verifier
+    assert "story_host.hover()" in verifier
+    assert "story_host.focus()" in verifier
+    assert 'element => element.blur()' in verifier
+    assert "story_icon.inner_text().strip() == story_to" in verifier
+    assert "story_icon.inner_text().strip() == story_from" in verifier
 
 
 def test_icon_hydration_uses_observation_and_delegation_not_per_button_listeners() -> None:
@@ -199,6 +243,33 @@ def test_interaction_css_covers_control_and_feedback_states() -> None:
     assert "transform: none" in reduced
 
 
+def test_button_hosts_stay_stable_while_icons_tell_the_story() -> None:
+    theme = _read("nicegui_app/assets/css/sing-yin-theme-v1.css")
+    interaction = _read("nicegui_app/assets/css/sing-yin-interaction-v1.css")
+    hover_scope = theme.split("@media (hover: hover) and (pointer: fine)", 1)[1].split(
+        ".sy-flow-symbol",
+        1,
+    )[0]
+
+    assert "translateX(5px)" not in hover_scope
+    assert "scale(1.015)" not in hover_scope
+    for selector in (
+        ".sy-sidebar .q-btn:not(.disabled):hover",
+        ".q-expansion-item > .q-expansion-item__container > .q-item:hover",
+    ):
+        declaration = hover_scope.split(selector, 1)[1].split("}", 1)[0]
+        assert "transform:" not in declaration
+
+    assert '.q-icon[data-sy-icon-motion="refresh"]' in interaction
+    assert "rotate(52deg) scale(1.1)" in interaction
+    for non_rotating_role in ("create", "edit", "toggle", "menu", "search", "danger", "attention", "navigation"):
+        declaration = interaction.split(
+            f'.q-icon[data-sy-icon-motion="{non_rotating_role}"]',
+            1,
+        )[1].split("}", 1)[0]
+        assert "rotate(" not in declaration
+
+
 def test_static_platform_and_team_surfaces_only_animate_their_internal_icons() -> None:
     css = _read("nicegui_app/assets/css/sing-yin-interaction-v1.css")
 
@@ -240,3 +311,13 @@ def test_browser_verifier_waits_for_motion_hydration_before_sampling_static_card
 
     assert "model?.dataset.syMotionComplete === 'true'" in verifier
     assert "getComputedStyle(role).transform === 'none'" in verifier
+
+
+def test_browser_verifier_keeps_navigation_button_stable_while_icon_tells_story() -> None:
+    verifier = _read("scripts/verify_nicegui_ui.py")
+
+    assert 'page.locator(".sy-desktop-drawer-trigger")' in verifier
+    assert 'navigation_toggle.locator(".q-icon[data-sy-icon-story-to]").first' in verifier
+    assert ") == static_navigation_toggle_transform" in verifier
+    assert ") != static_navigation_icon_transform" in verifier
+    assert 'get_attribute("data-sy-icon-story-to")' in verifier

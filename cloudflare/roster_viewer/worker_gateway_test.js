@@ -7,6 +7,7 @@ import worker, {
   createOriginPrincipalToken,
   guestSessionCookieNameForTest,
   landingDevotionalsForTest,
+  welcomeVolumePreferenceForTest,
   welcomeTracksForTest,
   normalizeAccessConfiguration,
   originRequestBinding,
@@ -413,7 +414,7 @@ Deno.test('strips Access and gateway session credentials but preserves the NiceG
   assertEquals(sanitized.get('Cookie'), 'session=nicegui-session; preference=zh-HK');
 });
 
-Deno.test('landing welcome playlists use paired instrumental tracks and a 25 percent default volume', async () => {
+Deno.test('landing welcome playlists use paired instrumental tracks and a 50 percent default volume', async () => {
   assertEquals(Object.keys(WELCOME_TRACKS).sort().join(','), 'bright,quiet');
   for (const profile of ['bright', 'quiet']) {
     assertEquals(WELCOME_TRACKS[profile].length, 5);
@@ -426,15 +427,53 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 25 per
   const home = await worker.fetch(new Request('https://gateway.example/'), env, context);
   const html = await home.text();
   assert(html.includes('id="welcomeAudioPlayer"'));
+  assert(html.includes('id="welcomeAudioVolume" type="range" min="0" max="100" step="1" value="50"'));
+  assert(html.includes('Default 50%; press play if autoplay is blocked.'));
   assert((home.headers.get('Content-Security-Policy') || '').includes("media-src 'self'"));
 
   const scriptResponse = await worker.fetch(new Request('https://gateway.example/viewer.js'), env, context);
   const script = await scriptResponse.text();
-  assert(script.includes('const DEFAULT_WELCOME_VOLUME = 0.25'));
+  assert(script.includes('const DEFAULT_WELCOME_VOLUME = 0.50'));
   assert(script.includes("sing-yin:welcome-audio-volume:v1"));
+  assert(script.includes("sing-yin:welcome-audio-volume-default-revision:v1"));
+  assert(script.includes('const WELCOME_VOLUME_DEFAULT_REVISION = 2'));
+  assert(script.includes('storeWelcomeVolume(normalised)'));
   assert(script.includes('welcomeAudio.play()'));
   assert(script.includes("addEventListener('ended'"));
   assert(!script.includes('cancelWelcomeFade'));
+});
+
+Deno.test('welcome volume defaults only when absent and preserves an explicit 25 percent choice', () => {
+  const createStorage = (initial = {}, { rejectWrites = false } = {}) => {
+    const values = new Map(Object.entries(initial));
+    return {
+      getItem(key) {
+        return values.has(key) ? values.get(key) : null;
+      },
+      setItem(key, value) {
+        if (rejectWrites) throw new Error('storage is read-only');
+        values.set(key, String(value));
+      },
+      value(key) {
+        return values.get(key);
+      },
+    };
+  };
+  const volumeKey = 'sing-yin:welcome-audio-volume:v1';
+  const revisionKey = 'sing-yin:welcome-audio-volume-default-revision:v1';
+
+  const missing = createStorage();
+  assertEquals(welcomeVolumePreferenceForTest(missing), 0.50);
+  assertEquals(missing.value(volumeKey), '0.5');
+  assertEquals(missing.value(revisionKey), '2');
+
+  const explicit = createStorage({ [volumeKey]: '0.25' });
+  assertEquals(welcomeVolumePreferenceForTest(explicit), 0.25);
+  assertEquals(explicit.value(volumeKey), '0.25');
+  assertEquals(explicit.value(revisionKey), '2');
+
+  const readOnlyExplicit = createStorage({ [volumeKey]: '0.25' }, { rejectWrites: true });
+  assertEquals(welcomeVolumePreferenceForTest(readOnlyExplicit), 0.25);
 });
 
 Deno.test('public welcome audio proxies only an exact allowlisted recording and preserves byte ranges', async () => {
@@ -462,6 +501,7 @@ Deno.test('public welcome audio proxies only an exact allowlisted recording and 
   assertEquals(allowed.status, 206);
   assertEquals(allowed.headers.get('Content-Range'), 'bytes 0-3/100');
   assert(originRequest);
+  assertEquals(new URL(originRequest.url).port, '8080');
   assertEquals(originRequest.headers.get('Range'), 'bytes=0-3');
   assertEquals(originRequest.headers.get('Cookie'), null);
   assert(decodeURIComponent(new URL(originRequest.url).pathname).endsWith(
@@ -516,6 +556,7 @@ Deno.test('proxies the exact path, query, body, and session while injecting only
   const sentinel = { status: 101, webSocket: { preserved: true } };
   const env = {
     ...accessEnvironment('sing-yin-runtime-direct-proxy'),
+    ORIGIN_PORT: '9091',
     ROSTER_ORIGIN: {
       fetch(request) {
         capturedRequest = request;
@@ -542,7 +583,7 @@ Deno.test('proxies the exact path, query, body, and session while injecting only
   });
 
   assertEquals(result, sentinel, 'origin response must be returned by identity');
-  assertEquals(capturedRequest.url, 'http://127.0.0.1:8080/op/save?draft=3');
+  assertEquals(capturedRequest.url, 'http://127.0.0.1:9091/op/save?draft=3');
   assertEquals(capturedRequest.headers.get('Cf-Access-Jwt-Assertion'), null);
   assertEquals(capturedRequest.headers.get('Cookie'), 'session=nicegui-session');
   assertEquals(capturedRequest.headers.get('X-Sing-Yin-Access-Email'), null);
@@ -554,6 +595,43 @@ Deno.test('proxies the exact path, query, body, and session while injecting only
   assertEquals(principal.request_binding, await originRequestBinding(incoming));
   assertEquals(capturedRequest.headers.get('X-Forwarded-Host'), 'gateway.example');
   assertEquals(await capturedRequest.text(), JSON.stringify({ confirmed: true }));
+});
+
+Deno.test('rejects invalid configured origin ports before contacting the private origin', async () => {
+  const invalidPorts = [null, '', '8080x', '8080.5', 1_023, 65_536, Number.NaN];
+  const principal = {
+    mode: 'admin',
+    subject: 'admin@syss.edu.hk',
+    sid: base64Url(new Uint8Array(16).fill(6)),
+    exp: Math.floor(Date.now() / 1_000) + 300,
+  };
+
+  for (const invalidPort of invalidPorts) {
+    let originCalls = 0;
+    const env = {
+      ...accessEnvironment('sing-yin-invalid-origin-port'),
+      ORIGIN_PORT: invalidPort,
+      ROSTER_ORIGIN: {
+        fetch() {
+          originCalls += 1;
+          return new Response('unexpected');
+        },
+      },
+    };
+    await expectRejected(
+      () => proxyToRosterOrigin(new Request('https://gateway.example/healthz'), env, principal),
+      `invalid origin port must reject: ${String(invalidPort)}`,
+    );
+    assertEquals(originCalls, 0, `invalid origin port contacted origin: ${String(invalidPort)}`);
+
+    const publicAudio = await worker.fetch(
+      new Request('https://gateway.example/welcome-audio/morning-has-broken'),
+      env,
+      { waitUntil() {} },
+    );
+    assertEquals(publicAudio.status, 503, `invalid origin port did not fail closed: ${String(invalidPort)}`);
+    assertEquals(originCalls, 0, `invalid public audio port contacted origin: ${String(invalidPort)}`);
+  }
 });
 
 Deno.test('serves guest landing, redirects guest app paths, and exposes capability-only health', async () => {

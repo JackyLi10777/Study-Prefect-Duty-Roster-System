@@ -23,7 +23,9 @@ $probeScript = @'
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = New-Object Security.Principal.WindowsPrincipal($identity)
 $isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-$health = Invoke-RestMethod -Uri "http://127.0.0.1:8080/healthz" -TimeoutSec 5
+. C:\SingYinRoster\scripts\windows_host_common.ps1
+$endpoint = Get-SingYinConfiguredEndpoint -EnvironmentPath C:\SingYinRoster\.env
+$health = Invoke-RestMethod -Uri "http://$($endpoint.Host):$($endpoint.Port)/healthz" -TimeoutSec 5
 $sshd = Get-Service -Name "sshd" -ErrorAction Stop
 $rosterTask = Get-ScheduledTask -TaskName "Sing Yin Roster Host" -ErrorAction Stop
 $productionCommit = (
@@ -40,6 +42,7 @@ $productionCommit = (
     websiteStatus = $health.status
     applicationMode = $health.applicationMode
     database = $health.database
+    endpoint = "http://$($endpoint.Host):$($endpoint.Port)"
 } | ConvertTo-Json -Compress
 '@
 $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($probeScript))

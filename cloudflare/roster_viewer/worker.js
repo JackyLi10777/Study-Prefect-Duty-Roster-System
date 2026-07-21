@@ -69,6 +69,43 @@ const WELCOME_PUBLIC_TRACKS = Object.freeze(Object.fromEntries(
   ]),
 ));
 
+function resolveWelcomeVolumePreference(
+  storage,
+  defaultVolume,
+  volumeKey,
+  revisionKey,
+  currentRevision,
+) {
+  let stored;
+  let storedRevision;
+  try {
+    stored = storage.getItem(volumeKey);
+    storedRevision = Number.parseInt(storage.getItem(revisionKey) || '0', 10);
+  } catch {
+    return defaultVolume;
+  }
+
+  const parsed = stored === null ? defaultVolume : Number(stored);
+  const value = Number.isFinite(parsed) && parsed >= 0 && parsed <= 1
+    ? parsed
+    : defaultVolume;
+
+  // A saved numeric value is an operator preference, even when it happens to
+  // equal an earlier default. Only a genuinely absent key receives the new
+  // default; a revision marker must never rewrite an explicit 25% choice.
+  if (stored === null) {
+    try { storage.setItem(volumeKey, String(value)); } catch {
+      // The in-memory value remains usable when private browsing blocks writes.
+    }
+  }
+  if (!Number.isInteger(storedRevision) || storedRevision < currentRevision) {
+    try { storage.setItem(revisionKey, String(currentRevision)); } catch {
+      // Preference reads remain authoritative even when metadata cannot persist.
+    }
+  }
+  return value;
+}
+
 const SECURITY_HEADERS = Object.freeze({
   'Cache-Control': 'no-store, max-age=0',
   'Content-Security-Policy': [
@@ -253,10 +290,10 @@ const VIEWER_HTML = `<!doctype html>
           </div>
           <div class="welcome-audio-volume">
             <label for="welcomeAudioVolume">音量 · Volume</label>
-            <input id="welcomeAudioVolume" type="range" min="0" max="100" step="1" value="25">
-            <output id="welcomeAudioVolumeValue" for="welcomeAudioVolume">25%</output>
+            <input id="welcomeAudioVolume" type="range" min="0" max="100" step="1" value="50">
+            <output id="welcomeAudioVolumeValue" for="welcomeAudioVolume">50%</output>
           </div>
-          <p id="welcomeAudioStatus" class="welcome-audio-status" aria-live="polite">預設音量 25%；如瀏覽器阻止自動播放，按播放鍵即可。 · Default 25%; press play if autoplay is blocked.</p>
+          <p id="welcomeAudioStatus" class="welcome-audio-status" aria-live="polite">預設音量 50%；如瀏覽器阻止自動播放，按播放鍵即可。 · Default 50%; press play if autoplay is blocked.</p>
         </section>
 
         <div class="access-divider" aria-hidden="true"><span></span></div>
@@ -1423,9 +1460,12 @@ const THEME_KEY = 'sing-yin-roster-viewer-theme-v1';
 const THEME_STATES = ['system', 'light', 'dark'];
 const LANDING_DEVOTIONALS = ${JSON.stringify(LANDING_DEVOTIONALS)};
 const WELCOME_TRACKS = ${JSON.stringify(WELCOME_PUBLIC_TRACKS)};
-const DEFAULT_WELCOME_VOLUME = 0.25;
+const DEFAULT_WELCOME_VOLUME = 0.50;
 const WELCOME_VOLUME_KEY = 'sing-yin:welcome-audio-volume:v1';
+const WELCOME_VOLUME_DEFAULT_REVISION_KEY = 'sing-yin:welcome-audio-volume-default-revision:v1';
+const WELCOME_VOLUME_DEFAULT_REVISION = 2;
 const WELCOME_ENABLED_KEY = 'sing-yin:welcome-audio-enabled:v1';
+const resolveWelcomeVolumePreference = ${resolveWelcomeVolumePreference.toString()};
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
 
@@ -1563,15 +1603,18 @@ function resolvedWelcomeProfile() {
 }
 
 function storedWelcomeVolume() {
-  try {
-    const stored = localStorage.getItem(WELCOME_VOLUME_KEY);
-    if (stored === null) return DEFAULT_WELCOME_VOLUME;
-    const value = Number(stored);
-    if (Number.isFinite(value) && value >= 0 && value <= 1) return value;
-  } catch {
-    // A private browser may refuse storage; the safe default still applies.
-  }
-  return DEFAULT_WELCOME_VOLUME;
+  return resolveWelcomeVolumePreference(
+    localStorage,
+    DEFAULT_WELCOME_VOLUME,
+    WELCOME_VOLUME_KEY,
+    WELCOME_VOLUME_DEFAULT_REVISION_KEY,
+    WELCOME_VOLUME_DEFAULT_REVISION,
+  );
+}
+
+function storeWelcomeVolume(value) {
+  storeWelcomePreference(WELCOME_VOLUME_DEFAULT_REVISION_KEY, WELCOME_VOLUME_DEFAULT_REVISION);
+  storeWelcomePreference(WELCOME_VOLUME_KEY, value);
 }
 
 function storedWelcomeEnabled() {
@@ -1679,7 +1722,7 @@ function initialiseWelcomeAudio() {
     const volumeValue = Math.max(0, Math.min(100, Number(event.target.value) || 0));
     const normalised = volumeValue / 100;
     welcomeAudio.volume = normalised;
-    storeWelcomePreference(WELCOME_VOLUME_KEY, normalised);
+    storeWelcomeVolume(normalised);
     if (welcomeAudioVolumeValue) welcomeAudioVolumeValue.textContent = Math.round(volumeValue) + '%';
     if (welcomeAudioStatus && !welcomeAudio.paused) welcomeAudioStatus.textContent = '正在以 ' + Math.round(volumeValue) + '% 音量播放。 · Playing at ' + Math.round(volumeValue) + '% volume.';
   });
@@ -2112,7 +2155,7 @@ async function welcomeAudioResponse(request, env, trackId) {
     return response('Service unavailable', 503, { 'Content-Type': 'text/plain; charset=utf-8' });
   }
 
-  const originUrl = new URL('http://127.0.0.1:8080');
+  const originUrl = originUrlFromEnvironment(env);
   originUrl.pathname = '/assets/music/' + track.filename.split('/').map(encodeURIComponent).join('/');
   const headers = new Headers();
   for (const name of ['Accept', 'Range', 'If-Range', 'If-None-Match', 'If-Modified-Since']) {
@@ -2215,6 +2258,27 @@ class AccessValidationError extends Error {
     this.name = 'AccessValidationError';
     this.reason = reason;
   }
+}
+
+function originPortFromEnvironment(env) {
+  const rawPort = env?.ORIGIN_PORT;
+  if (rawPort === undefined) return 8080;
+  const normalizedPort = typeof rawPort === 'number' ? rawPort : String(rawPort).trim();
+  if (
+    normalizedPort === ''
+    || (typeof normalizedPort === 'string' && !/^\d+$/.test(normalizedPort))
+  ) {
+    throw new AccessValidationError('origin_port_configuration');
+  }
+  const port = Number(normalizedPort);
+  if (!Number.isSafeInteger(port) || port < 1024 || port > 65_535) {
+    throw new AccessValidationError('origin_port_configuration');
+  }
+  return port;
+}
+
+function originUrlFromEnvironment(env) {
+  return new URL(`http://127.0.0.1:${originPortFromEnvironment(env)}`);
 }
 
 function normalizeAccessConfiguration(env) {
@@ -2786,7 +2850,7 @@ function authenticatedProxyRequestAllowed(request) {
 async function proxyToRosterOrigin(request, env, principal) {
   if (!env.ROSTER_ORIGIN || typeof env.ROSTER_ORIGIN.fetch !== 'function') throw new AccessValidationError();
   const publicUrl = new URL(request.url);
-  const originUrl = new URL('http://127.0.0.1:8080');
+  const originUrl = originUrlFromEnvironment(env);
   originUrl.pathname = publicUrl.pathname;
   originUrl.search = publicUrl.search;
   const headers = stripAccessCredentials(request.headers);
@@ -3593,6 +3657,16 @@ export function landingDevotionalsForTest() {
 
 export function welcomeTracksForTest() {
   return WELCOME_PUBLIC_TRACKS;
+}
+
+export function welcomeVolumePreferenceForTest(storage) {
+  return resolveWelcomeVolumePreference(
+    storage,
+    0.50,
+    'sing-yin:welcome-audio-volume:v1',
+    'sing-yin:welcome-audio-volume-default-revision:v1',
+    2,
+  );
 }
 
 export function adminSessionCookieNameForTest() {
