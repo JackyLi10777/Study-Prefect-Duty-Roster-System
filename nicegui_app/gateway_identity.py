@@ -221,6 +221,16 @@ def principal_from_request(
     }
     if require_gateway:
         raise OriginPrincipalError("a verified gateway principal is required")
+    local_maintenance = env.get("SING_YIN_LOCAL_MAINTENANCE", "0").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    if not local_maintenance:
+        raise OriginPrincipalError(
+            "an explicit local-maintenance mode or verified gateway principal is required"
+        )
     return Principal(mode=AccessMode.LOCAL_MAINTENANCE, subject="local-console")
 
 

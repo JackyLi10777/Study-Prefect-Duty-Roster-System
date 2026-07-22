@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$SourceRoot = "D:\code_v3",
+    [string]$SourceRoot = "",
     [Parameter(Mandatory = $true)][string]$ReleaseRef,
     [string]$PublicBaseUrl = "https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/",
     [string]$SecretOverlayPath = ""
@@ -8,6 +8,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+
+if ([string]::IsNullOrWhiteSpace($SourceRoot)) {
+    # Use the immutable checkout containing this script by default. An
+    # explicit -SourceRoot remains available for a separately verified
+    # release worktree.
+    $SourceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
+}
 
 function Write-Step([string]$Message) {
     Write-Host "`n==> $Message" -ForegroundColor Cyan

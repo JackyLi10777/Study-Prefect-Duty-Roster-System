@@ -57,6 +57,18 @@ def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
             "ORIGIN_PRINCIPAL_SECRET",
         ]
     }
+    assert configuration["ratelimits"] == [
+        {
+            "name": "GUEST_START_RATE_LIMITER",
+            "namespace_id": "1077701",
+            "simple": {"limit": 20, "period": 60},
+        },
+        {
+            "name": "PUBLIC_VIEW_RATE_LIMITER",
+            "namespace_id": "1077702",
+            "simple": {"limit": 120, "period": 60},
+        },
+    ]
     assert configuration["kv_namespaces"] == [
         {
             "binding": "ROSTER_SHARES",
@@ -122,7 +134,36 @@ def test_production_gateway_keeps_the_exact_admin_allowlist_out_of_public_config
             "ORIGIN_PRINCIPAL_SECRET",
         ]
     }
+    assert configuration["ratelimits"] == _jsonc(
+        VIEWER_ROOT / "wrangler.template.jsonc"
+    )["ratelimits"]
     assert configuration["observability"]["logs"]["persist"] is True
+
+
+def test_public_entry_rate_limits_use_privacy_safe_hashed_actor_keys() -> None:
+    source = _source()
+
+    for required in (
+        "GUEST_START_RATE_LIMITER",
+        "PUBLIC_VIEW_RATE_LIMITER",
+        "CF-Connecting-IP",
+        "crypto.subtle.sign('HMAC'",
+        "rate_limited",
+        "edge_protection_unavailable",
+        "Retry-After",
+        "no-store, max-age=0",
+        "normalizeRateLimitConfiguration(env)",
+        "edge-rate-limiting",
+    ):
+        assert required in source
+
+    rate_limit_key = re.search(
+        r"async function rateLimitActorKey\(.*?\n\}",
+        source,
+        flags=re.DOTALL,
+    )
+    assert rate_limit_key is not None
+    assert "console." not in rate_limit_key.group(0)
 
 
 def test_worker_origin_port_is_a_validated_configuration_contract() -> None:

@@ -79,8 +79,22 @@ async function signedJwt(payload, header = {}) {
   return `${signingInput}.${base64Url(signature)}`;
 }
 
+function rateLimitEnvironment() {
+  const allowingRateLimiter = {
+    async limit() {
+      return { success: true };
+    },
+  };
+  return {
+    GUEST_SESSION_SECRET: 'test-only-guest-session-secret-with-more-than-32-characters', // pragma: allowlist secret -- deterministic test fixture
+    GUEST_START_RATE_LIMITER: allowingRateLimiter,
+    PUBLIC_VIEW_RATE_LIMITER: allowingRateLimiter,
+  };
+}
+
 function accessEnvironment(teamName) {
   return {
+    ...rateLimitEnvironment(),
     ACCESS_TEAM_DOMAIN: `https://${teamName}.cloudflareaccess.com`,
     ACCESS_AUD: 'expected-access-audience',
     ADMIN_IDENTITY_ALLOWLIST: JSON.stringify({
@@ -91,7 +105,6 @@ function accessEnvironment(teamName) {
       ],
     }),
     ADMIN_SESSION_SECRET: 'test-only-admin-session-secret-with-more-than-32-characters', // pragma: allowlist secret -- deterministic test fixture
-    GUEST_SESSION_SECRET: 'test-only-guest-session-secret-with-more-than-32-characters', // pragma: allowlist secret -- deterministic test fixture
     ORIGIN_PRINCIPAL_SECRET: 'test-only-origin-principal-secret-with-more-than-32-characters', // pragma: allowlist secret -- deterministic test fixture
     AUTH_EPOCH: 7,
     ORIGIN_PRINCIPAL_KID: 'test-origin-v7',
@@ -700,6 +713,23 @@ Deno.test('gateway health fails closed when the private administrator allowlist 
   assert(!body.includes(env.ACCESS_TEAM_DOMAIN));
 });
 
+Deno.test('gateway health fails closed when either edge rate-limit binding is missing', async () => {
+  for (const bindingName of ['GUEST_START_RATE_LIMITER', 'PUBLIC_VIEW_RATE_LIMITER']) {
+    const env = accessEnvironment(`sing-yin-runtime-missing-${bindingName.toLowerCase()}`);
+    delete env[bindingName];
+    const health = await worker.fetch(
+      new Request('https://gateway.example/healthz'),
+      env,
+      { waitUntil() {} },
+    );
+    const body = await health.text();
+    assertEquals(health.status, 503);
+    assert(body.includes('configuration_error'));
+    assert(!body.includes(bindingName));
+    assertEquals(health.headers.get('Cache-Control'), 'no-store, max-age=0');
+  }
+});
+
 Deno.test('admin sessions are bounded and reject tampering, expiry, and removed administrators', async () => {
   const env = accessEnvironment('sing-yin-runtime-session-validation');
   const nowMillis = Date.now();
@@ -775,6 +805,87 @@ Deno.test('creates a bounded guest session only through a same-origin POST', asy
   const validated = await validateGuestSessionToken(token, env);
   assertEquals(validated.exp - validated.iat, 30 * 60);
   assertEquals(validated.epoch, env.AUTH_EPOCH);
+});
+
+Deno.test('rate limits public entry points with stable privacy-safe actor keys', async () => {
+  const env = accessEnvironment('sing-yin-runtime-rate-limits');
+  const guestKeys = [];
+  env.GUEST_START_RATE_LIMITER = {
+    async limit({ key }) {
+      guestKeys.push(key);
+      return { success: false };
+    },
+  };
+  const guestRequest = address => new Request('https://gateway.example/auth/guest/start', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'CF-Connecting-IP': address,
+      Origin: 'https://gateway.example',
+      'Sec-Fetch-Site': 'same-origin',
+    },
+  });
+
+  const first = await worker.fetch(guestRequest('203.0.113.42'), env, { waitUntil() {} });
+  const second = await worker.fetch(guestRequest('203.0.113.42'), env, { waitUntil() {} });
+  await worker.fetch(guestRequest('2001:db8::42'), env, { waitUntil() {} });
+  assertEquals(first.status, 429);
+  assertEquals((await first.json()).error, 'rate_limited');
+  assertEquals(first.headers.get('Retry-After'), '60');
+  assertEquals(first.headers.get('Cache-Control'), 'no-store, max-age=0');
+  assertEquals(first.headers.get('Set-Cookie'), null);
+  assertEquals(second.status, 429);
+  assertEquals(guestKeys.length, 3);
+  assertEquals(guestKeys[0], guestKeys[1]);
+  assert(guestKeys[0] !== guestKeys[2]);
+  assert(!guestKeys.join(' ').includes('203.0.113.42'));
+  assert(!guestKeys.join(' ').includes('2001:db8::42'));
+
+  let viewKey = '';
+  env.PUBLIC_VIEW_RATE_LIMITER = {
+    async limit({ key }) {
+      viewKey = key;
+      return { success: false };
+    },
+  };
+  const view = await worker.fetch(new Request('https://gateway.example/api/view', {
+    method: 'POST',
+    headers: {
+      'CF-Connecting-IP': '203.0.113.42',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ shareId: 'rate_limit_share_identifier_123' }),
+  }), env, { waitUntil() {} });
+  assertEquals(view.status, 429);
+  assertEquals((await view.json()).error, 'rate_limited');
+  assertEquals(view.headers.get('Retry-After'), '60');
+  assertEquals(view.headers.get('Cache-Control'), 'no-store, max-age=0');
+  assert(viewKey.startsWith('rl:v1:public-view:'));
+  assert(!viewKey.includes('203.0.113.42'));
+});
+
+Deno.test('public entry points fail closed when edge protection is unavailable', async () => {
+  const env = accessEnvironment('sing-yin-runtime-rate-limit-failure');
+  env.GUEST_START_RATE_LIMITER = {
+    async limit() {
+      throw new Error('simulated binding failure');
+    },
+  };
+  const unavailable = await worker.fetch(new Request('https://gateway.example/auth/guest/start', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'CF-Connecting-IP': '198.51.100.25',
+      Origin: 'https://gateway.example',
+      'Sec-Fetch-Site': 'same-origin',
+    },
+  }), env, { waitUntil() {} });
+  const payload = await unavailable.json();
+  assertEquals(unavailable.status, 503);
+  assertEquals(payload.error, 'edge_protection_unavailable');
+  assertEquals(unavailable.headers.get('Retry-After'), '15');
+  assertEquals(unavailable.headers.get('Cache-Control'), 'no-store, max-age=0');
+  assert(!JSON.stringify(payload).includes('198.51.100.25'));
 });
 
 Deno.test('rejects guest-session tampering expiry epoch changes and missing secrets', async () => {
@@ -1344,7 +1455,7 @@ Deno.test('concurrent conflicting creates remain immutable and every visible con
     await bothPuts;
     await originalPut(...args);
   };
-  const env = { ADMIN_BEARER_TOKEN: 'b'.repeat(48), ROSTER_SHARES: kv };
+  const env = { ...rateLimitEnvironment(), ADMIN_BEARER_TOKEN: 'b'.repeat(48), ROSTER_SHARES: kv };
   const createdAt = new Date().toISOString();
   const expiresAt = new Date(Date.now() + 3_600_000).toISOString();
   const basePayload = {
@@ -1395,7 +1506,7 @@ Deno.test('concurrent conflicting creates remain immutable and every visible con
 
 Deno.test('reads lists replays and deletes legacy share records without rewriting them', async () => {
   const kv = memoryKv();
-  const env = { ADMIN_BEARER_TOKEN: 'c'.repeat(48), ROSTER_SHARES: kv };
+  const env = { ...rateLimitEnvironment(), ADMIN_BEARER_TOKEN: 'c'.repeat(48), ROSTER_SHARES: kv };
   const shareId = 'legacy_share_identifier_123456';
   const payload = {
     schemaVersion: 'sing-yin-public-roster-v1',

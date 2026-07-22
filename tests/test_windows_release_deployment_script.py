@@ -47,6 +47,17 @@ def test_deployment_script_is_generic_and_requires_an_immutable_published_tag() 
     assert 'if ($sourceHead -cne $releaseCommit)' in source
 
 
+def test_deployment_script_derives_its_default_source_from_its_own_checkout() -> None:
+    source = _source()
+    parameter_block = source.split("$ErrorActionPreference", 1)[0]
+
+    assert '[string]$SourceRoot = ""' in parameter_block
+    assert 'D:\\code_v3' not in parameter_block
+    assert 'if ([string]::IsNullOrWhiteSpace($SourceRoot))' in source
+    assert '$SourceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))' in source
+    assert "Operators may still pass -SourceRoot" in source
+
+
 def test_deployment_script_refreshes_origin_main_before_ancestor_checks() -> None:
     source = _source()
     explicit_refspec = '"+refs/heads/main:refs/remotes/origin/main"'

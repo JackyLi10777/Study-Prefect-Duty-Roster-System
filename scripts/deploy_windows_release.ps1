@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$SourceRoot = "D:\code_v3",
+    [string]$SourceRoot = "",
     [string]$HostRoot = "C:\SingYinRoster",
     [Parameter(Mandatory = $true)][string]$ReleaseRef,
     [string]$TaskName = "Sing Yin Roster Host",
@@ -10,6 +10,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+
+if ([string]::IsNullOrWhiteSpace($SourceRoot)) {
+    # Bind the release to the repository that owns this script instead of a
+    # mutable machine-specific checkout. Operators may still pass -SourceRoot
+    # explicitly when deploying from a separate verified worktree.
+    $SourceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
+}
 
 function Write-Step([string]$Message) {
     Write-Host "`n==> $Message" -ForegroundColor Cyan

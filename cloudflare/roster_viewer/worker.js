@@ -10,6 +10,10 @@ const CONTENT_SHARE_KEY_PREFIX = 'share:v2:';
 const CONTENT_DIGEST_PATTERN = /^[a-f0-9]{64}$/;
 const MAX_ADMIN_BODY_BYTES = 196_608;
 const MAX_VIEW_BODY_BYTES = 2_048;
+const GUEST_START_RATE_LIMIT_BINDING = 'GUEST_START_RATE_LIMITER';
+const PUBLIC_VIEW_RATE_LIMIT_BINDING = 'PUBLIC_VIEW_RATE_LIMITER';
+const RATE_LIMIT_RETRY_AFTER_SECONDS = 60;
+const RATE_LIMIT_FAILURE_RETRY_AFTER_SECONDS = 15;
 const MAX_SHARE_LIFETIME_MS = 31 * 24 * 60 * 60 * 1_000;
 const MIN_SHARE_LIFETIME_MS = 60 * 1_000;
 const MAX_ACCESS_JWT_BYTES = 32_768;
@@ -2514,6 +2518,67 @@ async function originPrincipalHmacKey(env, usage) {
   return await hmacKey(originPrincipalSecret(env), usage);
 }
 
+function rateLimitBinding(env, bindingName) {
+  const binding = env?.[bindingName];
+  if (!binding || typeof binding.limit !== 'function') {
+    throw new AccessValidationError('rate_limit_configuration');
+  }
+  return binding;
+}
+
+function normalizeRateLimitConfiguration(env) {
+  return {
+    guestStart: rateLimitBinding(env, GUEST_START_RATE_LIMIT_BINDING),
+    publicView: rateLimitBinding(env, PUBLIC_VIEW_RATE_LIMIT_BINDING),
+  };
+}
+
+function boundedConnectingAddress(request) {
+  const rawAddress = (request.headers.get('CF-Connecting-IP') || '').trim();
+  if (rawAddress.length < 3 || rawAddress.length > 64 || !/^[0-9A-Fa-f:.]+$/.test(rawAddress)) {
+    return 'unidentified-actor';
+  }
+  return rawAddress.toLowerCase();
+}
+
+async function rateLimitActorKey(request, env, scope) {
+  const key = await guestSessionHmacKey(env, ['sign']);
+  const input = new TextEncoder().encode(`rate-limit-v1\n${scope}\n${boundedConnectingAddress(request)}`);
+  const signature = new Uint8Array(await crypto.subtle.sign('HMAC', key, input));
+  return `rl:v1:${scope}:${encodeBase64Url(signature)}`;
+}
+
+function rateLimitErrorResponse(error, retryAfterSeconds, reference = gatewayReference()) {
+  const headers = new Headers({
+    'Cache-Control': 'no-store, max-age=0',
+    'Content-Type': 'application/json; charset=utf-8',
+    'Retry-After': String(retryAfterSeconds),
+    'X-Sing-Yin-Support-Reference': reference,
+  });
+  return response(JSON.stringify({ error, reference }), error === 'rate_limited' ? 429 : 503, headers);
+}
+
+async function enforcePublicRateLimit(request, env, bindingName, scope) {
+  let binding;
+  let actorKey;
+  try {
+    binding = rateLimitBinding(env, bindingName);
+    actorKey = await rateLimitActorKey(request, env, scope);
+  } catch {
+    return rateLimitErrorResponse('edge_protection_unavailable', RATE_LIMIT_FAILURE_RETRY_AFTER_SECONDS);
+  }
+
+  try {
+    const result = await binding.limit({ key: actorKey });
+    if (!result || result.success !== true) {
+      return rateLimitErrorResponse('rate_limited', RATE_LIMIT_RETRY_AFTER_SECONDS);
+    }
+  } catch {
+    return rateLimitErrorResponse('edge_protection_unavailable', RATE_LIMIT_FAILURE_RETRY_AFTER_SECONDS);
+  }
+  return null;
+}
+
 async function createAdminSessionToken(email, accessExpiresAt, env, options = {}) {
   const configuration = normalizeAccessConfiguration(env);
   const normalizedEmail = typeof email === 'string' ? email.toLowerCase() : '';
@@ -3048,6 +3113,13 @@ async function gatewayPrincipalFromRequest(request, env) {
 
 async function guestStartResponse(request, env) {
   if (!authenticatedProxyRequestAllowed(request)) return accessFailureResponse();
+  const limited = await enforcePublicRateLimit(
+    request,
+    env,
+    GUEST_START_RATE_LIMIT_BINDING,
+    'guest-start',
+  );
+  if (limited) return limited;
   const session = await createGuestSessionToken(env);
   const acceptsJson = (request.headers.get('Accept') || '').toLowerCase().includes('application/json');
   const headers = new Headers({
@@ -3568,6 +3640,7 @@ async function route(request, env, context) {
     if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
     try {
       normalizeAccessConfiguration(env);
+      normalizeRateLimitConfiguration(env);
     } catch {
       return staticResponse(request, JSON.stringify({
         status: 'configuration_error',
@@ -3577,12 +3650,19 @@ async function route(request, env, context) {
     const payload = {
       status: 'ok',
       application: 'sing-yin-roster-gateway',
-      capabilities: ['encrypted-public-viewer', 'unified-guest-gateway', 'access-admin-gateway', 'signed-origin-principal', 'private-origin-proxy'],
+      capabilities: ['encrypted-public-viewer', 'unified-guest-gateway', 'access-admin-gateway', 'signed-origin-principal', 'private-origin-proxy', 'edge-rate-limiting'],
     };
     return staticResponse(request, JSON.stringify(payload), 200, { 'Content-Type': 'application/json; charset=utf-8' });
   }
   if (path === '/api/view') {
     if (request.method !== 'POST') return methodNotAllowed('POST');
+    const limited = await enforcePublicRateLimit(
+      request,
+      env,
+      PUBLIC_VIEW_RATE_LIMIT_BINDING,
+      'public-view',
+    );
+    if (limited) return limited;
     return viewShare(request, env, context);
   }
 
@@ -3777,6 +3857,7 @@ export {
   createOriginPrincipalToken,
   gatewayPrincipalFromRequest,
   normalizeAccessConfiguration,
+  normalizeRateLimitConfiguration,
   originRequestBinding,
   proxyToRosterOrigin,
   storedRecordFrom,

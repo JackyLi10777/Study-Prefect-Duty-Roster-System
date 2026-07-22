@@ -14,6 +14,11 @@ $ReadinessTimeoutSeconds = 30
 $LauncherMutexName = "Local\SingYinStudyPrefectDutyRosterLauncher"
 $ExpectedApplicationMode = if ($env:SING_YIN_APP_MODE -eq "practice") { "practice" } else { "official" }
 
+# This launcher is the explicit local-console entry point.  The controlled
+# Windows service does not use this script and continues to require a signed
+# Cloudflare gateway principal for every application request.
+$env:SING_YIN_LOCAL_MAINTENANCE = "1"
+
 function Get-ConfiguredPort {
     if ($env:SING_YIN_PORT -match "^\d+$") {
         return [int]$env:SING_YIN_PORT
