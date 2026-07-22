@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **目前發布狀態（live rc15）：** Windows origin 正運行健康、ready 的 `v1.2.0-rc.15`／`17a1cf9`；其正式備份、checksum、公平對帳及隔離還原均通過。canonical Worker version `f8ea712c-6b64-4d32-8f62-3405bc313e24` 已以 staged rollout 通過入口、Guest、Viewer 及 gateway health 後提升至 100%。真人 Admin／Viewer／長連線驗收仍須依清單完成；rc14 主機 commit `22a17c9` 與 Worker `e6ba405a-4d7a-4529-b3d8-d5d4df2a9479` 是即時回退組合。
+> **目前發布狀態（live rc17）：** Windows origin 正運行健康、ready 的 `v1.2.0-rc.17`／`99f5816`；288 個發布輸入以指紋 `4d412e6b40efadb8aee55e786f715eff0249fc363b755d938a75a7b1491e694d` 通過 14／14 gate，其中已包括隔離 Guest 流程。正式備份、checksum、公平對帳及隔離還原均通過。canonical Worker version `c85770b2-c626-462c-bc74-5e6bd305c75b` 再以 staged rollout 通過 health、入口及 Viewer smoke checks 後提升至 100%。真人 Admin／Viewer／長連線驗收仍須依清單完成；rc15／`17a1cf9` 與 Worker `f8ea712c-6b64-4d32-8f62-3405bc313e24` 是即時回退組合。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
@@ -84,7 +84,7 @@ Worker 必須有：
 - 不把管理員加入 Cloudflare Dashboard 成員作為登入前提。
 - 不建立應用內共用密碼。
 
-**目前控制台證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。live rc15 origin／Worker 組合已通過 Public、Guest、Access 轉向及 gateway health 核對；任何後續候選仍須產生與來源相符的新證據。
+**目前控制台證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。live rc17 origin／Worker 組合已通過 Public、Guest、Access 轉向及 gateway health 核對；任何後續候選仍須產生與來源相符的新證據。
 
 ## 4. 來源驗證
 
@@ -130,7 +130,7 @@ python -X utf8 scripts\verify_release_candidate.py
 3. 核對沒有第二個 NiceGUI origin 佔用同一資料庫。
 4. 安裝已驗證 bundle 及 hash-locked dependencies。
 5. 執行 additive Alembic migration。
-6. 保持現行受保護設定（live rc15 為 `SING_YIN_UNIFIED_GUEST=1`），不得用切換旗標略過候選驗證。
+6. 保持現行受保護設定（live rc17 為 `SING_YIN_UNIFIED_GUEST=1`），不得用切換旗標略過候選驗證。
 7. 核對：
 
 ```powershell
@@ -181,7 +181,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 6. 用獲准身份完成 Admin 登入／登出及隔離寫入流程。
 7. 才結束 maintenance。
 
-候選的隔離測試仍須證明 flag 為 `0` 時 Guest fail closed；該測試只使用臨時環境，不可修改 live rc15 設定。
+候選的隔離測試仍須證明 flag 為 `0` 時 Guest fail closed；該測試只使用臨時環境，不可修改 live rc17 設定。
 
 ## 9. 線上驗收
 
@@ -221,7 +221,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 1. 恢復 maintenance；
 2. 恢復上一個已驗證的受保護主機設定；
-3. 回退至目前已驗證的 Worker `f8ea712c-6b64-4d32-8f62-3405bc313e24`；
+3. 回退至上一個已驗證的 Worker `f8ea712c-6b64-4d32-8f62-3405bc313e24`；
 4. 回復 rc15／`17a1cf9` 主機 bundle；
 5. 核對 `/healthz`、`/readyz`、Admin、Viewer；
 6. 如資料完整性受疑，使用受控 restore，而非手動覆寫 SQLite。
@@ -252,6 +252,6 @@ additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，�
 
 ## English operational summary
 
-Live `v1.2.0-rc.15`／`17a1cf9` keeps one Cloudflare Worker in front of one loopback-only Windows NiceGUI origin. Verified Worker `f8ea712c-6b64-4d32-8f62-3405bc313e24` owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter.
+Live `v1.2.0-rc.17`／`99f5816` keeps one Cloudflare Worker in front of one loopback-only Windows NiceGUI origin. Verified Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter.
 
-Service Weave rc15 is now the live release candidate. Preserve its protected Guest setting while validating any later candidate in isolation; require a source-matched report, fresh verified backup, isolated restore, healthy `/healthz` and `/readyz`, a deliberate Worker deployment decision, and supervised browser acceptance. If a later rollout fails, restore the recorded rc14 host bundle and Worker version shown in the rollback section.
+Service Weave rc17 is now the live release candidate. Preserve its protected Guest setting while validating any later candidate in isolation; require a source-matched report, fresh verified backup, isolated restore, healthy `/healthz` and `/readyz`, a deliberate Worker deployment decision, and supervised browser acceptance. If a later rollout fails, restore the recorded rc15 host bundle and Worker version shown in the rollback section.

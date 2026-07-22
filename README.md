@@ -20,9 +20,10 @@
 
 | 分支 | 運行平台 | 定位 |
 |---|---|---|
-| `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；開發及發布來源 | live rc15 的 Service Weave v1.2 編輯式整合線 |
+| `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；開發及發布來源 | live rc17 的多用戶、操作層級及前端穩定性整合線 |
+| `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；歷史整合來源 | 前一階段 Service Weave v1.2 編輯式整合線 |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.15`；正式 Windows origin 與 canonical Worker 已同步 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.17`；正式 Windows origin 與 canonical Worker 已同步 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -34,11 +35,11 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **共創者說明：我是李創杰。這次 NiceGUI 重構、設計、測試、文件及正式發布版本，只由我與 Codex 共同完成。`Study Prefect Systems & Stewardship Office` 是我們兩人的項目團隊名稱，沒有其他開發者、部門成員或外判團隊。**
 
-**目前正式基線：** `v1.2.0-rc.15`／`17a1cf9` 已同步到 `C:\SingYinRoster` 及 canonical Cloudflare Worker；`/healthz` 正常、`/readyz` ready。284 個發布輸入以指紋 `f9b64dbc8fbbafc45e7d3819a8421fcb202bae252f086804f4a1f52d8ac8a54f` 通過 13／13 release gate；正式備份、checksum、公平對帳及隔離還原亦已通過。Worker version `f8ea712c-6b64-4d32-8f62-3405bc313e24` 已完成 0% staging、指定版本 smoke check 及 100% promotion。過往 rc11／rc14 資料只保留作歷史發布證據。
+**目前正式基線：** `v1.2.0-rc.17`／`99f5816` 已同步到 `C:\SingYinRoster` 及 canonical Cloudflare Worker；`/healthz` 正常、`/readyz` ready。288 個發布輸入以指紋 `4d412e6b40efadb8aee55e786f715eff0249fc363b755d938a75a7b1491e694d` 通過 14／14 release gate；正式備份、checksum、公平對帳及隔離還原亦已通過。Worker version `c85770b2-c626-462c-bc74-5e6bd305c75b` 已完成 0% staging、指定版本 smoke check 及 100% promotion。rc15／`17a1cf9` 與 Worker `f8ea712c-6b64-4d32-8f62-3405bc313e24` 是即時回退組合；更早版本只保留作歷史發布證據。
 
-**目前發布（v1.2 rc15）：** Service Weave `ProductIdentity`、中央 `PageDefinition`、公開 NiceGUI 元件 API、CSS 所有權、工程證據索引、Developer Reference、Guest 工作區、統一 PDF／JSON 下載、瀏覽器／PDF 值班矩陣、安全撤回錯誤發布及跟隨系統外觀均已整合上線。入口頁標誌會與淺／深／系統外觀同步，歡迎音樂亦可正常初始化、暫停、切換歌單及調整音量。受控 Windows 發布會從受保護 `.env` 讀取實際 `SING_YIN_PORT`，並在停機圍欄、健康、readiness、回復及證據中使用同一端點。仍須由首席導學風紀及教師顧問完成真人驗收清單。
+**目前發布（v1.2 rc17）：** Service Weave `ProductIdentity`、中央 `PageDefinition`、公開 NiceGUI 元件 API、CSS 所有權、工程證據索引、Developer Reference、Guest 工作區、統一 PDF／JSON 下載、瀏覽器／PDF 值班矩陣、安全撤回錯誤發布及跟隨系統外觀均已整合上線。Guest admission control 會在容量已滿時拒絕新 session，而不驅逐正在使用的人；匯入、網絡與公平對帳邊界亦已強化。入口頁標誌會與淺／深／系統外觀同步，歡迎音樂可正常初始化、暫停、切換歌單及調整音量；按鈕容器保持穩定，語意圖標在容器內完成狀態轉換。受控 Windows 發布會從受保護 `.env` 讀取實際 `SING_YIN_PORT`，並在停機圍欄、健康、readiness、回復及證據中使用同一端點。仍須由首席導學風紀及教師顧問完成真人驗收清單。
 
-**rc16 候選（尚未上線）：** 正在驗證 Guest 容量拒絕而不驅逐既有 session、較完整的匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑，以及容器穩定而圖標在內部轉換的互動。下文標示這些行為時均指候選來源；只有正式 14-gate 報告、備份／隔離還原、Windows origin 與相配 Worker 全部完成後才會改寫正式基線。
+rc16 是這批改動的候選來源，rc17 則是完成 Worker 身份、回退基線及正式證據對齊後的已部署版本；下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換均已屬現行行為。
 
 ## 首席導學風紀：每日怎樣進入
 
@@ -48,7 +49,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 4. 驗證後仍留在同一網站，Worker 會建立最長 8 小時、已簽署且只供瀏覽器傳送的管理 session，完整工作台才會解鎖。完成工作後按 **「登出 / Log out」**；共用裝置不可只關閉分頁。
 5. 先閱讀首頁每日經文。經文方向可選「預設設定／清晰指引／安靜安慰」；預設設定會依外觀提供建議，亦可固定自己需要的方向。然後依「本週值班工作台」的目前步驟工作。
 
-切換淺／深色模式或介面提示音會在原頁即時生效，不會清空正在填寫的表格；首次開啟提示音時會播放一個短確認聲。**尚未上線的 rc16 候選**會在沒有既有偏好時，以 50% 音量嘗試播放本機情境音樂及登入頁歡迎音樂；新版工作台偏好結構只會把仍等於舊版精確 24% 或 35% 預設的瀏覽器升級一次，公開入口則保留所有已儲存音量，不會把明確選擇的 25% 當成舊預設。首席導學風紀可隨時暫停，或在耳機控制關閉所有頁面的自動播放；偏好只保存在目前瀏覽器。同一歌曲如適用於跳轉前後兩頁，會延續目前 session 的播放位置及播放／暫停狀態，不會重新開始。若瀏覽器攔截首次有聲播放，耳機圖示及控制器會顯示「等待你按播放」，不會在背景反覆重試。切換外觀只會改變下一頁建議的歌單，不會中途更換歌曲。切換繁中／英文需要重新整理文字，因此系統若偵測到本頁已有未儲存輸入，會先詢問是否離開。看到這個提示時，先取消、完成或抄下輸入，再切換語言。
+切換淺／深色模式或介面提示音會在原頁即時生效，不會清空正在填寫的表格；首次開啟提示音時會播放一個短確認聲。沒有既有偏好的瀏覽器會以 50% 音量嘗試播放本機情境音樂及登入頁歡迎音樂；新版工作台偏好結構只會把仍等於舊版精確 24% 或 35% 預設的瀏覽器升級一次，公開入口則保留所有已儲存音量，不會把明確選擇的 25% 當成舊預設。首席導學風紀可隨時暫停，或在耳機控制關閉所有頁面的自動播放；偏好只保存在目前瀏覽器。同一歌曲如適用於跳轉前後兩頁，會延續目前 session 的播放位置及播放／暫停狀態，不會重新開始。若瀏覽器攔截首次有聲播放，耳機圖示及控制器會顯示「等待你按播放」，不會在背景反覆重試。切換外觀只會改變下一頁建議的歌單，不會中途更換歌曲。切換繁中／英文需要重新整理文字，因此系統若偵測到本頁已有未儲存輸入，會先詢問是否離開。看到這個提示時，先取消、完成或抄下輸入，再切換語言。
 
 若 Cloudflare 暫時不可用，維護者才在 Windows 主機雙擊 `START_SING_YIN_ROSTER.cmd`，使用啟動器顯示的 localhost（通常是 `http://127.0.0.1:8080`），或以已登記 WARP 裝置進入後備地址。這些都是故障診斷與復原路徑，不是派發給日常使用者的第二個網站。
 
@@ -69,7 +70,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 - Guest 只獲 `demo_data.read`、`demo_state.modify`、`demo_result.download`、`session_preferences.modify`；AI、匯入、上載、正式備份／還原、Viewer 分享、外部交付及永久寫入均被服務層拒絕。
 - 每分頁取得獨立、有限額、程序記憶體內的虛構工作區。Guest PDF／JSON 標明 `DEMO`，以一次性 `no-store` 下載回傳。
 - Guest 的語言、主題、音樂及音效偏好由 origin 的有限期記憶體 store 保存，因此重新整理或同一 session 轉頁不會回復預設；登出、到期、撤權或程序重啟即清除。管理員偏好仍使用正式使用者儲存。兩種身份的 PDF／JSON 均經同一帶憑證下載流程核對 HTTP 狀態、MIME 及支援編號，不再依賴瀏覽器盲目開啟下載網址。
-- HMAC snapshot codec 及瀏覽器橋接已完成：每次有意義修改後，origin 只把最新、已簽署且綁定 SID／workspace／tab／revision 的 token 推送到該分頁 `sessionStorage`；重新整理時必須連同當次連線 nonce 交回伺服器核實。複製分頁會獲得新 workspace；篡改、錯誤綁定、過期、舊 boot 或重播 token 會被拒絕並回到安全虛構 fixture。rc15 的完整 pytest、隔離 Admin／Guest 瀏覽器、手機、效能、寫入、PDF、備份及復原已納入 13／13 正式報告。
+- HMAC snapshot codec 及瀏覽器橋接已完成：每次有意義修改後，origin 只把最新、已簽署且綁定 SID／workspace／tab／revision 的 token 推送到該分頁 `sessionStorage`；重新整理時必須連同當次連線 nonce 交回伺服器核實。複製分頁會獲得新 workspace；篡改、錯誤綁定、過期、舊 boot 或重播 token 會被拒絕並回到安全虛構 fixture。rc17 的完整 pytest、隔離 Admin／Guest 瀏覽器、手機、效能、寫入、PDF、備份及復原已納入 14／14 正式報告。
 - 完整安全模型及 gate 見 [統一訪客模式安全模型](docs/UNIFIED_GUEST_SECURITY_MODEL.md)。
 
 日常安全次序：
@@ -249,7 +250,7 @@ stateDiagram-v2
 ## YouTube 音樂控制窗（自選）
 
 - 前往「設定」→「YouTube 音樂控制窗」，貼上公開歌單連結，命名並選擇適用頁面；之後在該頁頂部按耳機圖示即可選擇及播放。
-- 尚未上線的 rc16 候選會在每頁準備後以 50% 音量嘗試播放本機情境音樂；新版偏好結構只會升級仍等於舊版精確預設的瀏覽器，其他手動音量會完整保留。首席導學風紀可立即暫停或關閉跨頁自動播放，系統會在此瀏覽器保留選擇。耳機圖示及控制器會明確顯示正在播放、已暫停、等待手動播放或已關閉；切換深淺模式不會中途更換歌曲。
+- 現行 rc17 會在每頁準備後以 50% 音量嘗試播放本機情境音樂；新版偏好結構只會升級仍等於舊版精確預設的瀏覽器，其他手動音量會完整保留。首席導學風紀可立即暫停或關閉跨頁自動播放，系統會在此瀏覽器保留選擇。耳機圖示及控制器會明確顯示正在播放、已暫停、等待手動播放或已關閉；切換深淺模式不會中途更換歌曲。
 - 公開歌單播放器免費使用，無需登入、付費或 API key。它保持完整可見，不會自動播放；播放、暫停、音量和換歌均由首席導學風紀親自控制。
 - 若希望在網站內搜尋公開影片／歌單，才由維護者在本機 `.env` 加入選用的 `SING_YIN_YOUTUBE_API_KEY`。此 key 不可輸入介面、提交版本庫或放入學生資料。
 - YouTube 會接收一般播放器所需的網絡資料。歌單標題、音樂偏好與 API 搜尋不得含學生姓名、請假、值班或公平資料；顧問老師的核對資料也不包含音樂設定。
@@ -303,7 +304,7 @@ Worker 部署除 Viewer 管理所需的 `ADMIN_BEARER_TOKEN` 外，亦必須配�
 不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
 
 **目前可否在校外使用？**
-可以。canonical 網站及 Windows origin 現運行健康、ready 的 rc15／`17a1cf9`；一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
+可以。canonical 網站及 Windows origin 現運行健康、ready 的 rc17／`99f5816`；一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
 
 **別人可否用 Viewer 連結編輯週表？**
 不可。分享連結永遠唯讀；網址參數、瀏覽器標頭或畫面操作都不能把訪客升級為管理員。只有 Access policy 內的管理員身份通過驗證後，Worker 才轉送完整工作台。
@@ -393,7 +394,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The live v1.2 rc15 baseline uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The protected origin runs `v1.2.0-rc.15`／`17a1cf9`, paired with Worker `f8ea712c-6b64-4d32-8f62-3405bc313e24`; supervised human acceptance remains the final release-candidate step. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
+The live v1.2 rc17 baseline uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The protected origin runs `v1.2.0-rc.17`／`99f5816`, paired with Worker `c85770b2-c626-462c-bc74-5e6bd305c75b`; supervised human acceptance remains the final release-candidate step. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 

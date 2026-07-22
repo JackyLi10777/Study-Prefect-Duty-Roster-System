@@ -1,6 +1,6 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
-> **文件狀態（live v1.2 rc15）：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.15`／commit `17a1cf9`；284 個發布輸入以指紋 `f9b64dbc8fbbafc45e7d3819a8421fcb202bae252f086804f4a1f52d8ac8a54f` 通過 13／13 正式 gate。正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原均通過。canonical Worker version `f8ea712c-6b64-4d32-8f62-3405bc313e24` 已通過候選指定及正式網址 smoke checks並承接 100% 流量。Admin、Guest 與公開 Viewer 繼續使用同一身份邊界；本次發布沒有擴大 Guest 能力、資料保存位置或正式 SQLite 存取。
+> **文件狀態（live v1.2 rc17）：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.17`／commit `99f5816`；288 個發布輸入以指紋 `4d412e6b40efadb8aee55e786f715eff0249fc363b755d938a75a7b1491e694d` 通過 14／14 正式 gate。正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原均通過。canonical Worker version `c85770b2-c626-462c-bc74-5e6bd305c75b` 已通過候選指定及正式網址 smoke checks並承接 100% 流量。Admin、Guest 與公開 Viewer 繼續使用同一身份邊界；本次發布沒有擴大 Guest 能力、資料保存位置或正式 SQLite 存取。
 
 ## 1. 目的
 
@@ -76,7 +76,7 @@ Guest 的語言、外觀、音樂及音效由獨立的有限期 origin-memory pr
 - 篡改、錯誤 SID、錯誤 workspace／tab、過期、過大、舊 revision、重播或舊 boot token 均被拒絕；頁面繼續使用安全虛構 fixture，並收到新的合法 token；
 - 登出、到期、撤權及跨分頁 session 終止會清除 `sessionStorage`、媒體及待下載票據；origin 重啟後舊 boot token 按設計失效。
 
-`tests/test_guest_snapshot_bridge.py` 聚焦驗證同分頁還原、token 輪換、複製／篡改拒絕、連線 nonce、登出清理及只使用 `sessionStorage` 的前端契約；完整 pytest、隔離瀏覽器及 release verifier 已納入 live rc15 的 13／13 正式報告。任何後續候選仍須以該候選的最終來源重新執行相同 gate；歷史報告不可代替新的 origin／Worker 決定及線上驗收。
+`tests/test_guest_snapshot_bridge.py` 聚焦驗證同分頁還原、token 輪換、複製／篡改拒絕、連線 nonce、登出清理及只使用 `sessionStorage` 的前端契約；完整 pytest、隔離瀏覽器及 release verifier 已納入 live rc17 的 14／14 正式報告。任何後續候選仍須以該候選的最終來源重新執行相同 gate；歷史報告不可代替新的 origin／Worker 決定及線上驗收。
 
 ## 4. 資料與整合限制
 
@@ -124,4 +124,4 @@ Guest adapter 不引用正式 SQLAlchemy、AI、HTTP、備份、上載、分享�
 
 The live v1.2 product uses the same NiceGUI routes and components for administrators and guests, but resolves a server-verified `PageContext` to either the official workflow or a bounded in-memory guest adapter. Guest capability is deny-by-default and excludes AI, upload/import, persistent storage, external delivery, official backup/restore, and real-data export. Guest exports are one-shot, memory-only, `DEMO`-marked, and `no-store`.
 
-The source contains signed principal verification, a bounded guest registry, per-client workspace IDs, session expiry/revocation monitoring, cross-tab logout cleanup, an HMAC snapshot codec, and the `sessionStorage` browser bridge. Each revision is saved only as a signed, tab-bound token; restore also requires the current live-connection nonce. Duplicate tabs receive new workspaces, while tampered, copied, expired, stale, or old-boot tokens fall back safely to the fictional fixture. The controlled Windows origin is live on `v1.2.0-rc.15`／`17a1cf9`; its 284-input fingerprint `f9b64dbc8fbbafc45e7d3819a8421fcb202bae252f086804f4a1f52d8ac8a54f` passed all 13 formal gates, and verified Worker `f8ea712c-6b64-4d32-8f62-3405bc313e24` serves the canonical site.
+The source contains signed principal verification, a bounded guest registry, per-client workspace IDs, session expiry/revocation monitoring, cross-tab logout cleanup, an HMAC snapshot codec, and the `sessionStorage` browser bridge. Each revision is saved only as a signed, tab-bound token; restore also requires the current live-connection nonce. Duplicate tabs receive new workspaces, while tampered, copied, expired, stale, or old-boot tokens fall back safely to the fictional fixture. The controlled Windows origin is live on `v1.2.0-rc.17`／`99f5816`; its 288-input fingerprint `4d412e6b40efadb8aee55e786f715eff0249fc363b755d938a75a7b1491e694d` passed all 14 formal gates, and verified Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` serves the canonical site.

@@ -110,9 +110,9 @@ def test_v12_guest_documents_match_the_signed_browser_bridge_and_release_truth()
     assert "per-connection nonce" in architecture
     assert "連線 nonce" in handover
     assert "SING_YIN_UNIFIED_GUEST" in status
-    assert "13／13" in status
+    assert "14／14" in status
     assert "v1.1 rollback" in readme_en
-    assert "13／13" in readme
+    assert "14／14" in readme
     assert "NiceGUI has no guest" not in design
     assert "NiceGUI never presents an anonymous guest role" not in design
     assert "still a v1.2 release gate" not in architecture
@@ -120,7 +120,7 @@ def test_v12_guest_documents_match_the_signed_browser_bridge_and_release_truth()
     assert "尚未完成的瀏覽器 snapshot 橋接" not in security
 
 
-def test_release_truth_docs_keep_live_rc15_separate_from_history() -> None:
+def test_release_truth_docs_keep_live_rc17_separate_from_history() -> None:
     status = (PROJECT_ROOT / "PROJECT_STATUS.md").read_text(encoding="utf-8")
     architecture = (PROJECT_ROOT / "docs" / "NICEGUI_ARCHITECTURE.md").read_text(
         encoding="utf-8"
@@ -134,19 +134,25 @@ def test_release_truth_docs_keep_live_rc15_separate_from_history() -> None:
     operator = (PROJECT_ROOT / "docs" / "OPERATOR_GUIDE.md").read_text(encoding="utf-8")
 
     for document in (status, architecture, security, handover):
-        assert "v1.2.0-rc.15" in document
-        assert "17a1cf9" in document
-        assert "f8ea712c-6b64-4d32-8f62-3405bc313e24" in document
+        assert "v1.2.0-rc.17" in document
+        assert "99f5816" in document
+        assert "c85770b2-c626-462c-bc74-5e6bd305c75b" in document
+        assert "4d412e6b40efadb8aee55e786f715eff0249fc363b755d938a75a7b1491e694d" in document
+        current_header = "\n".join(document.splitlines()[:15])
+        assert "v1.2.0-rc.17" in current_header
+        assert "99f5816" in current_header
+        assert "c85770b2-c626-462c-bc74-5e6bd305c75b" in current_header
 
-    assert "Service Weave v1.2 rc15 controlled rollout" in status
-    assert "v1.2 rc15 is the current controlled Windows origin" in status
+    assert "Service Weave v1.2 rc17 controlled rollout" in status
+    assert "v1.2 rc17 is the current controlled Windows origin" in status
     assert "Historical Service Weave v1.2 rc11 rollout" in status
+    assert "rc15／`17a1cf9` with Worker `f8ea712c-6b64-4d32-8f62-3405bc313e24`" in status
     readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     assert "## 程式審查、邊界與擴展預期" in readme
     assert "SING_YIN_PORT" in readme
     assert "一百倍" in readme
     assert "cancelWelcomeFade is not defined" in status
-    assert "目前發布（v1.2 rc15）" in (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "目前發布（v1.2 rc17）" in (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     assert "remains disabled by default" not in status
     assert "now run the matching rc7 release" not in status
     assert "Windows origin remains healthy／ready on rc4" not in security
@@ -170,7 +176,7 @@ def test_release_truth_docs_keep_live_rc15_separate_from_history() -> None:
     assert "只有 `/view#…`" in operator
 
 
-def test_operator_deployment_docs_use_live_rc15_and_candidate_bound_next_tag() -> None:
+def test_operator_deployment_docs_use_live_rc17_and_candidate_bound_next_tag() -> None:
     quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
     windows = (PROJECT_ROOT / "docs" / "WINDOWS_DEDICATED_HOST_SETUP.md").read_text(
         encoding="utf-8"
@@ -186,9 +192,16 @@ def test_operator_deployment_docs_use_live_rc15_and_candidate_bound_next_tag() -
     )
 
     for document in (quickstart, windows, cloudflare, viewer, decision):
-        assert "v1.2.0-rc.15" in document
-        assert "17a1cf9" in document
-        assert "f8ea712c-6b64-4d32-8f62-3405bc313e24" in document
+        assert "v1.2.0-rc.17" in document
+        assert "99f5816" in document
+        assert "c85770b2-c626-462c-bc74-5e6bd305c75b" in document
+        current_header = "\n".join(document.splitlines()[:15])
+        assert "v1.2.0-rc.17" in current_header
+        assert "99f5816" in current_header
+        assert "c85770b2-c626-462c-bc74-5e6bd305c75b" in current_header
+
+    assert "上一個已驗證的 Worker `f8ea712c-6b64-4d32-8f62-3405bc313e24`" in cloudflare
+    assert "回復 rc15／`17a1cf9` 主機 bundle" in cloudflare
 
     assert "schema-compatible rc4" not in quickstart
     assert "pre-v1.2 baseline" not in quickstart
