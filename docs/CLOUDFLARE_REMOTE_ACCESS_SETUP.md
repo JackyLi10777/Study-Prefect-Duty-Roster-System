@@ -221,8 +221,8 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 1. 恢復 maintenance；
 2. 恢復上一個已驗證的受保護主機設定；
-3. 回退至 Worker `b13e5721-d1e8-4048-9885-ffb422fe2010`；
-4. 回復 rc9／`18a5c73` 主機 bundle；
+3. 回退至目前已驗證的 Worker `f8ea712c-6b64-4d32-8f62-3405bc313e24`；
+4. 回復 rc15／`17a1cf9` 主機 bundle；
 5. 核對 `/healthz`、`/readyz`、Admin、Viewer；
 6. 如資料完整性受疑，使用受控 restore，而非手動覆寫 SQLite。
 
