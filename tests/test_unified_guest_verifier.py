@@ -125,6 +125,7 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         "/readyz",
         "guest-mode-banner",
         "guest-restricted-state",
+        "pre-generation-leave-prefect",
         "pre-generation-leave-reason",
         "draft-change-reason",
         "leave-adjustment-reason",
@@ -134,7 +135,12 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         "main#main-content .q-select:visible",
     ):
         assert contract in source
-    assert source.count('page.locator("main#main-content .q-select:visible")') == 3
+    assert source.count('page.locator("main#main-content .q-select:visible")') == 2
+
+    weekly_source = (
+        Path(__file__).parents[1] / "nicegui_app" / "ui" / "page_routes" / "weekly.py"
+    ).read_text(encoding="utf-8")
+    assert "data-testid=pre-generation-leave-prefect" in weekly_source
 
 
 def test_unified_guest_verifier_accepts_only_explicit_fictional_demo_json() -> None:
