@@ -192,6 +192,10 @@ def test_release_candidate_launches_separate_unified_operator_and_guest_origins(
 
     assert len(captured_environments) == 2
     admin, guest = captured_environments
+    assert admin["SING_YIN_LOCAL_MAINTENANCE"] == "1"
+    assert admin["SING_YIN_REQUIRE_GATEWAY_PRINCIPAL"] == "0"
+    assert guest["SING_YIN_LOCAL_MAINTENANCE"] == "1"
+    assert guest["SING_YIN_REQUIRE_GATEWAY_PRINCIPAL"] == "0"
     assert admin["SING_YIN_UNIFIED_GUEST"] == "1"
     assert guest["SING_YIN_UNIFIED_GUEST"] == "1"
     assert admin["SING_YIN_E2E_ACCESS_MODE"] == ""

@@ -74,6 +74,8 @@ def isolated_environment(root: Path, port: int, *, blocked_backup: bool = False)
         "SING_YIN_E2E_ISOLATED": "1",
         "SING_YIN_E2E_RUN_ID": f"E2E-{uuid4().hex[:12].upper()}",
         "SING_YIN_E2E_ACCESS_MODE": "",
+        "SING_YIN_LOCAL_MAINTENANCE": "1",
+        "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL": "0",
         "SING_YIN_UNIFIED_GUEST": "0",
         "SING_YIN_APP_MODE": "official",
         "SING_YIN_DATABASE_PATH": str(database_path),
