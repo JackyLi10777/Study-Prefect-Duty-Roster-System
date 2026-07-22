@@ -382,7 +382,7 @@ def main() -> None:
         assert page.get_by_label("請假原因（選填）").count() == 1
         page.get_by_role("button", name="登記請假").click()
         _wait_for_progress_cycle(page)
-        page.get_by_text("已登記請假", exact=False).wait_for(timeout=10_000)
+        page.get_by_text("已登記請假", exact=True).wait_for(timeout=10_000)
         page.get_by_role("button", name="生成並儲存草稿").click()
         deadline = time.monotonic() + 20
         generated_weeks: list[dict[str, object]] = []
