@@ -9,8 +9,8 @@
     --sy-mobile-tabbar-height: 72px;
   }
 
-  html, body { min-width: 320px; min-height: 100dvh; }
-  body { overscroll-behavior-y: none; }
+  html, body { width: 100%; max-width: 100%; min-height: 100dvh; }
+  body { overscroll-behavior-y: auto; }
 
   .sy-app-header {
     gap: 0 !important;
@@ -36,7 +36,13 @@
     padding: 18px var(--sy-mobile-gutter) calc(var(--sy-mobile-tabbar-height) + 26px + env(safe-area-inset-bottom));
     scroll-padding-bottom: calc(var(--sy-mobile-tabbar-height) + env(safe-area-inset-bottom));
   }
+  .sy-main :is(.q-field, .q-btn, .q-item, [tabindex], [id]) {
+    scroll-margin-block: 76px calc(var(--sy-mobile-tabbar-height) + 24px + env(safe-area-inset-bottom));
+  }
   .sy-main > * { min-width: 0; max-width: 100%; }
+  .sy-page-footer {
+    padding-bottom: calc(var(--sy-mobile-tabbar-height) + 24px + env(safe-area-inset-bottom));
+  }
   .sy-main .sy-surface.p-6, .sy-main .sy-settings-section.p-6 { padding: 18px !important; }
   .sy-main .sy-surface.p-5 { padding: 16px !important; }
   .sy-page-title, .sy-main > .q-label.text-2xl.font-semibold, .sy-main > .q-row .text-2xl.font-semibold {
@@ -72,6 +78,18 @@
   .sy-mobile-tab .q-icon { font-size: 23px; }
   .sy-mobile-tab--active { color: var(--sy-role-action) !important; background: var(--sy-role-action-soft) !important; }
   .sy-mobile-tab--active .q-btn__content { font-weight: 790; }
+
+  /* The fixed primary navigation must never cover a focused field when the
+   * on-screen keyboard reduces the visual viewport. */
+  .sy-mobile-keyboard-open .sy-mobile-tabbar {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(100%);
+  }
+  .sy-mobile-keyboard-open .sy-main {
+    padding-bottom: 24px;
+    scroll-padding-bottom: 24px;
+  }
 
   .sy-mobile-drawer-tools { display: grid; gap: 8px; margin: 0 0 18px; padding: 12px; border: 1px solid var(--sy-line); border-radius: 16px; background: color-mix(in srgb, var(--sy-surface) 88%, var(--sy-action-soft)); }
   .sy-mobile-drawer-tools-title { color: var(--sy-muted); font-size: 11px; font-weight: 780; letter-spacing: .06em; text-transform: uppercase; }
@@ -163,9 +181,36 @@
   :root { --sy-mobile-gutter: 12px; }
   .sy-main { gap: 16px; }
   .sy-main .sy-surface.p-6, .sy-main .sy-settings-section.p-6 { padding: 16px !important; }
-  .sy-mobile-tab .q-btn__content { font-size: 10px; }
+  .sy-mobile-tab .q-btn__content {
+    max-width: 100%;
+    font-size: 12px;
+    line-height: 1.05;
+    text-align: center;
+    white-space: normal;
+  }
   .sy-table .q-table__grid-item-row { grid-template-columns: 92px minmax(0, 1fr); padding-inline: 12px; }
   [data-testid="summary-report-metrics"] > * { flex-basis: 100%; }
+}
+
+@media (min-width: 640px) and (max-width: 900px) {
+  .sy-table .q-table__grid-content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+/* At 200% zoom the CSS viewport is narrower than the physical phone. The
+ * page continues to reflow; only data regions that explicitly opt in scroll. */
+@media (max-width: 320px) {
+  :root { --sy-mobile-gutter: 8px; --sy-mobile-tabbar-height: 78px; }
+  .sy-header-title { font-size: 15px !important; white-space: normal; }
+  .sy-mobile-tabbar { padding-inline: 2px; }
+  .sy-mobile-tab { min-height: 64px !important; padding-inline: 1px !important; }
+  .sy-mobile-tab .q-icon { font-size: 20px; }
+  .sy-mobile-tab .q-btn__content { font-size: 11px; }
+  .sy-main .sy-surface.p-6,
+  .sy-main .sy-settings-section.p-6,
+  .sy-main .sy-surface.p-5 { padding: 12px !important; }
 }
 
 @media (max-width: 900px) and (orientation: landscape) {
@@ -174,4 +219,25 @@
   .sy-mobile-tab .q-btn__content { flex-direction: row; gap: 6px; }
   .sy-main { padding-top: 14px; }
   .q-dialog__inner > .q-card { max-height: 88dvh; }
+}
+
+@media (forced-colors: active) and (max-width: 900px) {
+  .sy-mobile-tabbar,
+  .sy-mobile-drawer-tools,
+  .sy-mobile-drawer-tool,
+  .sy-table .q-table__grid-item-card {
+    border: 1px solid CanvasText;
+    color: CanvasText !important;
+    background: Canvas !important;
+    box-shadow: none !important;
+  }
+  .sy-mobile-tab--active {
+    outline: 2px solid Highlight;
+    outline-offset: -3px;
+    color: Highlight !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sy-mobile-tabbar { transition: none !important; }
 }

@@ -20,6 +20,11 @@ def test_dashboard_keeps_one_primary_workbench_and_a_compact_review_rail() -> No
     assert "recent_weeks = weeks[:3]" in home
     assert re.search(r"^\s*weeks = weeks\[:3\]$", home, re.MULTILINE) is None
 
+    first_time_action = re.search(r'^(\s*)ui\.button\(t\("first_time_link"\)', home, re.MULTILINE)
+    history_setup = re.search(r"^(\s*)recent_weeks = weeks\[:3\]$", home, re.MULTILINE)
+    assert first_time_action is not None and history_setup is not None
+    assert len(first_time_action.group(1)) > len(history_setup.group(1))
+
     verse_index = home.index('classes("sy-daily-start w-full")')
     workbench_index = home.index('classes("sy-workbench grow min-w-0")')
     history_index = home.index('classes("sy-dashboard-history")')

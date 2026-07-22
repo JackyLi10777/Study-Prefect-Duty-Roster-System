@@ -74,6 +74,136 @@ def test_phone_layout_has_safe_areas_touch_targets_and_scrollable_navigation() -
     assert "@media (max-width: 900px) and (orientation: landscape)" in theme
 
 
+def test_mobile_canvas_reflows_below_320_without_locking_document_scroll() -> None:
+    """Zoomed and narrow viewports must reflow instead of forcing a 320px canvas."""
+
+    mobile = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-mobile-v1.css"
+    ).read_text(encoding="utf-8")
+    theme = combined_theme_source()
+
+    assert "min-width: 320px" not in theme
+    assert "overscroll-behavior-y: none" not in mobile
+    assert "@media (max-width: 320px)" in mobile
+    narrow_scope = mobile.split("@media (max-width: 320px)", 1)[1]
+    assert "--sy-mobile-gutter:" in narrow_scope
+    assert ".sy-main > * { min-width: 0; max-width: 100%; }" in mobile
+    assert "overflow-wrap: anywhere" in mobile
+
+
+def test_mobile_keyboard_uses_visual_viewport_and_disposes_route_listeners() -> None:
+    """The fixed tab bar must not hide fields when a phone keyboard opens."""
+
+    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+
+    assert "window.visualViewport" in shell
+    assert "window.__syMobileViewportCleanup?.()" in shell
+    assert "window.__syMobileViewportCleanup =" in shell
+    assert "visualViewport.addEventListener('resize'" in shell
+    assert "visualViewport.addEventListener('scroll'" in shell
+    assert "const controller = new AbortController()" in shell
+    assert "signal: controller.signal" in shell
+    assert "controller.abort()" in shell
+    assert "sy-mobile-keyboard-open" in shell
+    assert "tabbar.inert = unavailable" in shell
+    assert "tabbar.setAttribute('aria-hidden', 'true')" in shell
+    assert "setTabbarUnavailable(false)" in shell
+    assert "window.clearTimeout(revealTimer)" in shell
+
+
+def test_tablet_keeps_reading_grids_but_operator_workflows_stay_single_column() -> None:
+    """Medium screens can compare evidence while task forms retain one clear path."""
+
+    layout = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-layout-v1.css"
+    ).read_text(encoding="utf-8")
+
+    tablet_marker = "@media (min-width: 640px) and (max-width: 900px)"
+    assert tablet_marker in layout
+    tablet_scope = layout.split(tablet_marker, 1)[1]
+    assert ".sy-evidence-summary-grid" in tablet_scope
+    assert ".sy-developer-reference-grid" in tablet_scope
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in tablet_scope
+
+    mobile_scope = layout.split("@media (max-width: 900px)", 1)[1].split(tablet_marker, 1)[0]
+    operations_rule = mobile_scope.split(".sy-operations-grid", 1)[1].split("}", 1)[0]
+    assert "grid-template-columns: minmax(0, 1fr)" in operations_rule
+
+
+def test_tablet_portrait_cards_and_landscape_desktop_shell_use_intermediate_density() -> None:
+    layout = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-layout-v1.css"
+    ).read_text(encoding="utf-8")
+    mobile = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-mobile-v1.css"
+    ).read_text(encoding="utf-8")
+    theme = combined_theme_source()
+
+    portrait_marker = "@media (min-width: 640px) and (max-width: 900px)"
+    landscape_marker = "@media (min-width: 901px) and (max-width: 1180px)"
+    assert portrait_marker in mobile
+    assert portrait_marker in theme
+    assert landscape_marker in layout
+    assert landscape_marker in theme
+
+    portrait_mobile = mobile.split(portrait_marker, 1)[1]
+    assert ".sy-table .q-table__grid-content" in portrait_mobile
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in portrait_mobile
+    portrait_theme = theme.split(portrait_marker, 1)[1]
+    assert ".sy-roster-mobile" in portrait_theme
+    assert ".sy-prefect-mobile" in portrait_theme
+    assert ".sy-download-options" in portrait_theme
+
+    landscape_layout = layout.split(landscape_marker, 1)[1]
+    assert ".sy-operations-grid" in landscape_layout
+    assert ".sy-document-layout" in landscape_layout
+    assert ".sy-evidence-toolbar" in landscape_layout
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in landscape_layout
+
+
+def test_adaptive_footer_reserves_bottom_navigation_and_safe_area() -> None:
+    mobile = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-mobile-v1.css"
+    ).read_text(encoding="utf-8")
+
+    footer_rule = mobile.split(".sy-page-footer", 1)[1].split("}", 1)[0]
+    assert "--sy-mobile-tabbar-height" in footer_rule
+    assert "env(safe-area-inset-bottom)" in footer_rule
+
+
+def test_coarse_pointer_desktop_shell_retains_touch_sized_links_and_items() -> None:
+    theme = combined_theme_source()
+
+    coarse_scope = theme.split("@media (hover: none) and (pointer: coarse)", 1)[1]
+    assert ".sy-sidebar-feedback-link" in coarse_scope
+    assert "a[href]:not(.sy-skip-link)" in coarse_scope
+    assert ".q-toggle" in coarse_scope
+    assert ".q-checkbox" in coarse_scope
+    assert ".q-radio" in coarse_scope
+    assert ".q-item.q-item--clickable" in coarse_scope
+    assert ".q-expansion-item > .q-expansion-item__container > .q-item" in coarse_scope
+    assert ".q-uploader__header .q-btn" in coarse_scope
+    assert "min-height: 44px" in coarse_scope
+    assert "min-width: 44px" in coarse_scope
+
+
+def test_compact_workflow_navigation_is_a_scroll_snap_sequence() -> None:
+    """Workflow steps remain ordered and reachable without becoming a tall card stack."""
+
+    layout = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-layout-v1.css"
+    ).read_text(encoding="utf-8")
+    mobile_scope = layout.split("@media (max-width: 900px)", 1)[1]
+
+    workflow_rule = mobile_scope.split(".sy-workflow-navigation", 1)[1].split("}", 1)[0]
+    step_rule = mobile_scope.split(".sy-workflow-navigation-step", 1)[1].split("}", 1)[0]
+    assert "grid-template-columns: repeat(4, minmax(" in workflow_rule
+    assert "overflow-x: auto" in workflow_rule
+    assert "scroll-snap-type: x " in workflow_rule
+    assert "overscroll-behavior-x: contain" in workflow_rule
+    assert "scroll-snap-align: start" in step_rule
+
+
 def test_dense_operator_tables_switch_to_mobile_cards() -> None:
     pages = combined_page_source()
     components = (PROJECT_ROOT / "nicegui_app" / "ui" / "components.py").read_text(encoding="utf-8")

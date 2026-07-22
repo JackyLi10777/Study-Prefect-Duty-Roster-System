@@ -13,6 +13,7 @@ from nicegui_app.ui.devotional import (
     set_devotional_tone as _set_devotional_tone,
 )
 from nicegui_app.ui.i18n import ZH_HK, current_locale, t
+from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.page_shared import (
     _navigate_with_feedback,
     _render_feedback_channel,
@@ -116,7 +117,7 @@ def dashboard_page() -> None:
                         _render_flow_step(number=1, title_key="flow_generate", detail_key="flow_generate_detail", state="done", state_key="flow_done", icon="edit_calendar")
                         _render_flow_step(number=2, title_key="flow_review", detail_key="flow_review_detail", state="done", state_key="flow_done", icon="fact_check", action_key="flow_open_published", action=lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}"))
                         _render_flow_step(number=3, title_key="flow_leave", detail_key="flow_leave_detail", state="active", state_key="flow_current", icon="event_busy", action_key="flow_open_adjustment", action=lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}/adjustments"))
-                ui.button(t("first_time_link"), icon="play_circle", on_click=lambda: ui.navigate.to("/getting-started")).props("flat").classes("mt-5")
+                ui.button(t("first_time_link"), icon="play_circle", on_click=lambda: navigate_to("/getting-started")).props("flat").classes("mt-5")
             recent_weeks = weeks[:3]
             with ui.element("aside").classes("sy-dashboard-history").props(
                 "aria-labelledby=dashboard-history-title data-testid=dashboard-history"
@@ -151,13 +152,13 @@ def dashboard_page() -> None:
                                 ui.button(
                                     t("view"),
                                     icon="arrow_forward",
-                                    on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}"),
+                                    on_click=lambda item=week: navigate_to(f"/rosters/{item['id']}"),
                                 ).props("flat").classes("sy-dashboard-history-action")
 
 
 @ui.page("/dashboard")
 def dashboard_alias() -> None:
-    ui.navigate.to("/")
+    navigate_to("/")
 
 
 @ui.page("/getting-started")
@@ -191,10 +192,10 @@ def getting_started_page() -> None:
                             "font-mono text-sm font-semibold mt-3 break-all"
                         )
             with ui.row().classes("gap-3 flex-wrap"):
-                ui.button(t("open_prefects"), icon="groups", on_click=lambda: ui.navigate.to("/prefects")).props("outline color=primary")
-                ui.button(t("open_rosters"), icon="calendar_month", on_click=lambda: ui.navigate.to("/rosters")).props("color=primary")
-                ui.button(t("operator_guide"), icon="help", on_click=lambda: ui.navigate.to("/guide")).props("flat")
-                ui.button(t("open_handover_guide"), icon="handshake", on_click=lambda: ui.navigate.to("/handover")).props("flat")
+                ui.button(t("open_prefects"), icon="groups", on_click=lambda: navigate_to("/prefects")).props("outline color=primary")
+                ui.button(t("open_rosters"), icon="calendar_month", on_click=lambda: navigate_to("/rosters")).props("color=primary")
+                ui.button(t("operator_guide"), icon="help", on_click=lambda: navigate_to("/guide")).props("flat")
+                ui.button(t("open_handover_guide"), icon="handshake", on_click=lambda: navigate_to("/handover")).props("flat")
 
         reference_cards = (
             ("calendar_month", "start_reference_weekly_title", "start_reference_weekly_body", "open_rosters", "/rosters"),
@@ -215,7 +216,7 @@ def getting_started_page() -> None:
                         ui.button(
                             t(action_key),
                             icon="arrow_forward",
-                            on_click=lambda destination=route: ui.navigate.to(destination),
+                            on_click=lambda destination=route: navigate_to(destination),
                         ).props("outline color=primary").classes("sy-reference-index-action")
         render_reference_pager(next_=("/guide", "operator_guide"))
 
@@ -295,7 +296,7 @@ def operator_guide_page() -> None:
                             f'role=cell data-label="{t("guide_issue_next")}"'
                         )
         _render_feedback_channel(compact=True)
-        ui.button(t("open_system_architecture"), icon="account_tree", on_click=lambda: ui.navigate.to("/system-architecture")).props("flat").classes("self-start")
+        ui.button(t("open_system_architecture"), icon="account_tree", on_click=lambda: navigate_to("/system-architecture")).props("flat").classes("self-start")
         render_reference_pager(previous=("/getting-started", "getting_started"), next_=("/handover", "handover"))
 
 

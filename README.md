@@ -16,6 +16,32 @@
 
 **反饋與聯絡：** 如果你對系統流程、介面、公平解釋或交接方式有問題或建議，歡迎電郵我：[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk)。如畫面提供 OP／REQ 支援編號，請在電郵內寫上該編號。診斷確有需要時可附上姓名、請假內容、值班表、PDF、資料庫、備份、截圖或日誌；寄出前請先確認收件人及附件正確，並只提供解決該問題所需的資料。
 
+## 先從這裡開始
+
+這個版本庫同時服務日常操作者、訪客、顧問老師、繼任者及維護者。不要從最長的文件開始；先按你此刻要完成的工作進入：
+
+| 我現在是／我要做 | 第一個入口 | 然後閱讀 |
+|---|---|---|
+| 同學、師兄弟或訪客，想完整試用但不保存資料 | [正式網站](https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/) →「進入訪客示範」 | [單一網站存取手冊](docs/PUBLIC_ROSTER_VIEWER.md) |
+| 首席導學風紀，要處理本週正式值班 | [正式網站](https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/) →「管理員登入」 | [操作手冊](docs/OPERATOR_GUIDE.md) |
+| 顧問老師，要核對發布、公平或交接證據 | [正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md) | [首次發布與交接手冊](docs/RELEASE_HANDOVER.md) |
+| 新任首席導學風紀，要先安全演練 | `START_PRACTICE_MODE.cmd` | [快速啟動](docs/QUICKSTART.md)及[操作手冊](docs/OPERATOR_GUIDE.md) |
+| IT／維護者，要部署、復原或查找 OP 編號 | [完整文件索引](docs/DOCUMENTATION_INDEX.md) | [Windows 主機設定](docs/WINDOWS_DEDICATED_HOST_SETUP.md)及[更新流程](docs/UPDATE_WORKFLOW.md) |
+| 開發者／審查者，要理解程式邊界或提交修改 | [NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) | [程式驗收審查](docs/CODE_ACCEPTANCE_REVIEW.md)及[貢獻指南](CONTRIBUTING.md) |
+
+### 使用模式與資料邊界
+
+| 模式 | 使用的畫面 | 資料來源與保存 | 明確限制 |
+|---|---|---|---|
+| Public entrance | 公開品牌入口 | 不讀取正式名單或週表 | 只提供 Admin、Guest 及已持有分享連結者的入口 |
+| Guest | 與 Admin 相同的 NiceGUI 路由、導航和工作流程 | 每分頁獨立的虛構記憶體 workspace；登出、到期、撤權或重啟後清除 | 禁止 AI、匯入、上載、正式寫入、備份／還原、Viewer 分享及其他昂貴外部操作；只可下載一次性 `DEMO` 結果 |
+| Admin | 完整 NiceGUI 工作台 | 受控 Windows origin 的正式 SQLite、已驗證備份及本機審計 | 必須通過 Cloudflare Access 及已簽署 principal；發布、撤回、還原等高風險操作另有版本、確認、冪等及備份義務 |
+| Viewer | `/view#…` 唯讀週表 | Worker KV 保存密文；解密鑰匙只在 URL fragment | 不能登入、編輯、升級身份或列出其他週表；連結可到期及撤銷 |
+| Practice | 與正式工作台相同的本機練習流程 | `data/practice/` 的獨立虛構 SQLite、備份、日誌及偏好 | 所有輸出標示非正式；永不讀寫正式資料 |
+| Local maintenance | localhost／受控私人 WARP／loopback SSH | 正式主機的受保護資料與維護證據 | 只供故障診斷、復原及部署，不是第二個日常網站 |
+
+完整的文件責任、資料生命週期、設定分類、驗證層級、已知限制及「何時要同步更新哪一份文件」見[完整文件索引](docs/DOCUMENTATION_INDEX.md)。
+
 ## 版本分支與運行平台
 
 | 分支 | 運行平台 | 定位 |
@@ -160,10 +186,11 @@ python -X utf8 -m nicegui_app.main
 | 當前完成內容、測試證據與已知風險 | [Project Status](PROJECT_STATUS.md) |
 | GitHub分支、歷史版本及發布規則 | [Branch Strategy](docs/BRANCH_STRATEGY.md) |
 | 虛構資料、日誌及測試證據封存 | [Public project archive](archive/README.md) |
+| 全部文件的讀者、權威來源、更新時機及覆蓋檢查 | [完整文件索引](docs/DOCUMENTATION_INDEX.md) |
 
 ## 平台與團隊
 
-這套系統的高級感不只來自畫面，而來自每一層都能說明「誰作決定、何時寫入、失敗後怎樣回復」。日常使用毋須理解程式碼；本節供顧問老師、繼任者及維護者核對系統為何值得信任。系統只採納能改善首次理解、任務完成、錯誤復原、手機操作或無障礙的成熟網站模式；不加入價格方案、行銷漏斗、虛假 KPI 或只為顯得像大型 SaaS 的裝飾密度。
+這套系統的高級感不只來自畫面，而來自每一層都能說明「誰作決定、何時寫入、失敗後怎樣回復」。日常使用毋須理解程式碼；本節供顧問老師、繼任者及維護者核對系統為何值得信任。系統只採納能改善首次理解、任務完成、錯誤復原、手機／平板／桌面操作或無障礙的成熟網站模式；不加入價格方案、行銷漏斗、虛假 KPI 或只為顯得像大型 SaaS 的裝飾密度。
 
 網站採用成熟企業常見的資訊層級，但所有名稱均服務於真實校務責任。「平台與團隊」先以匿名即時摘要交代現役人數、值班週脈絡、備份及發布證據，再解釋 Study Prefect Team 營運模型、能力分組、解決方案、營運原則與共創結語。正式校內職銜保持為首席導學風紀、助理首席導學風紀、導學風紀及顧問老師；企業式功能頭銜只協助說明誰負責決策、協調、前線服務與完成後監督。
 
@@ -331,7 +358,9 @@ Cloudflare KV 會在不同節點同步新密文。系統不會提早顯示一條
 
 ## 開發與驗證
 
-目前完整套件收集為 505 項 Python 測試，Worker 另有 23 項 Deno 合約測試。發布驗證把互補證據分開：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、配圖主題切換、校徽、空／錯誤／復原狀態及瀏覽器 `pageerror`；`scripts/verify_runtime_performance.py` 核對冷載、重複開關音樂，以及跨代表頁面後返回首頁的 heap／DOM／listener 增長；`scripts/verify_nicegui_mobile.py` 專門核對 320／390 px 直向及手機橫向排列；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名完成整條排班寫入、雙語 PDF、請假調整、另一資料庫還原，以及確認語句保護的新學年封存與新名單匯入；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。NiceGUI 的長連線及互動後背景音樂令全網絡靜止不是可靠完成訊號，因此測試以 DOM、URL 及真實操作結果判斷就緒；所有瀏覽器階段同時把 console error 及未捕捉頁面錯誤視為失敗。
+目前完整套件收集為 779 項 Python 測試，Worker 另有 36 項 Deno 合約測試。發布驗證把互補證據分開：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、配圖主題切換、校徽、空／錯誤／復原狀態及瀏覽器 `pageerror`；`scripts/verify_runtime_performance.py` 核對冷載、重複開關音樂，以及跨代表頁面後返回首頁的 heap／DOM／listener 增長；`scripts/verify_nicegui_mobile.py` 專門核對 256／320／390px 手機、768×1024 adaptive touch tablet、1024×768 desktop-shell touch tablet 及手機橫向排列；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名完成整條排班寫入、雙語 PDF、請假調整、另一資料庫還原，以及確認語句保護的新學年封存與新名單匯入；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。NiceGUI 的長連線及互動後背景音樂令全網絡靜止不是可靠完成訊號，因此測試以 DOM、URL 及真實操作結果判斷就緒；所有瀏覽器階段同時把 console error 及未捕捉頁面錯誤視為失敗。
+
+rc19 的裝置矩陣把平板列為獨立形態：除 256／320／390px 手機與手機橫向外，`verify_nicegui_mobile.py` 亦核對 768×1024 adaptive touch tablet，以及 1024×768 desktop-shell touch tablet。它同時檢查單一導航 shell、44px 目標、內容寬度、無 document overflow、鍵盤避讓及 console／page errors，避免只用桌面縮放畫面冒充平板證據。
 
 日常修改不再靠人手猜測要跑哪一套檢查。完成一批改動後先執行：
 

@@ -2,6 +2,8 @@
 
 我是李創杰。這份流程是我與 Codex 對正式發布工作的反思結果：更新慢的主因不是 Git 上傳，而是過去把每次文字或測試修改都當成完整 runtime 發布。
 
+> **目前發布界線：** live rc18／`fd504a8` 與 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 仍是正式基線。rc19 mobile/accessibility working tree 只是候選；`--plan`、focused tests、`--staged` 或文件更新都不等於 rc19 已通過 `--release`，更不等於 Windows／Worker 已部署。
+
 最近一份完整候選報告約需 **225 秒**；當中約 95% 用於完整 Python 套件、桌面／手機瀏覽器、寫入／PDF／還原、效能及備份失敗演練。這些證據對政策、資料庫、工作流、部署或正式 runtime 改動很重要，但不應因 README 改一句話而重跑。最近三次沒有 runtime 改動的提交亦在 GitHub Quality 與 CodeQL 合計使用約 18 分鐘。
 
 ## 日常唯一入口：先診斷，再核對 staged commit
@@ -54,6 +56,8 @@ python -X utf8 scripts\verify_update.py --release
 python -X utf8 scripts\verify_update.py --release --plan
 ```
 
+對 rc19，正式 report 必須由最後 commit 重新產生，並將 256px／200% reflow、320px reduced motion、390px phone、768px adaptive touch tablet、1024×768 desktop-shell touch tablet、phone landscape、單一可見 navigation shell、`visualViewport` keyboard clearance、44px standalone targets、route focus、More current-page semantics、touch icon story 無漂移／旋轉、forced colours、paired light／dark parity，以及 public first-viewport Admin／Guest CTA 綁定至同一 source fingerprint。測試檔、局部通過訊息或 screenshot 存在都不是部署證據。其後仍須完成 fresh backup／isolated restore、Windows switch、Worker 0% stage→100% promotion、canonical smoke 及真人裝置核對；任何失敗依 handover／host guide 回復 rc18 exact pair。
+
 ## 風險矩陣
 
 | 最高風險改動 | 自動選擇 | 執行內容 |
@@ -62,7 +66,7 @@ python -X utf8 scripts\verify_update.py --release --plan
 | 只有測試及文件 | `tests` | 被修改的測試；共用 test helper 改動則升級為完整 Python suite；另加 hygiene 及秘密掃描 |
 | GitHub workflow 或快速分類器 | `assurance` | assurance 聚焦測試、完整安全閘門及 hygiene |
 | Cloudflare Worker／登入／Viewer | `worker` | pre-push 跑 Worker 聚焦契約、hygiene 及秘密掃描；正式部署使用 `--release` |
-| NiceGUI、政策、公平、交易、SQLite、遷移、依賴、運行資產、Windows 主機腳本或正式驗證器 | `full` | pre-push 跑完整 Python、安全、Worker 及 hygiene；正式部署使用 `--release` 執行當前完整 gate（2026-07-17 為 13 項） |
+| NiceGUI、政策、公平、交易、SQLite、遷移、依賴、運行資產、Windows 主機腳本或正式驗證器 | `full` | pre-push 跑完整 Python、安全、Worker 及 hygiene；正式部署使用 `--release` 執行當前完整 gate（live rc18 基線為 14 項，後續以 source-matched report 為準） |
 | 未能識別的新路徑或 Git base | `full` | 失敗時向高風險升級，不會靜默略過 |
 
 pre-push profile 內互不寫入的檢查會並行執行。正式候選驗證仍保持受控次序，因為瀏覽器寫入、備份及還原證據不可互相競爭同一個隔離環境。
@@ -99,6 +103,7 @@ pre-push profile 內互不寫入的檢查會並行執行。正式候選驗證仍
 - UAC／服務帳戶憑證、Cloudflare One-time PIN；
 - 正式資料清除、新學年受控重置；
 - 實體手機、WhatsApp 分享、PDF 肉眼核對及重啟後自動恢復。
+- 窄屏／200% zoom、軟鍵盤、route focus、More 語意、forced colours、paired themes、touch targets，以及 public mobile first-viewport CTA 的真人核對和使用者可見 rollback 演練。
 
 ## 每次流程失敗怎樣反思
 

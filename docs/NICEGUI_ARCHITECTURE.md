@@ -4,7 +4,7 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
-> **Live v1.2 rc17 status:** the controlled Windows origin and canonical Worker
+> **Live v1.2 rc18 status:** the controlled Windows origin and canonical Worker
 > use `v1.2.0-rc.18`／`fd504a8`. The 288-input release passed all 14 formal gates
 > with fingerprint `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664`.
 > A fresh production backup, checksum, fairness reconciliation and isolated
@@ -12,6 +12,13 @@
 > `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` passed staged-version and
 > canonical health／entrance／viewer checks before receiving 100% traffic.
 > Supervised human acceptance remains required.
+
+> **rc19 candidate boundary:** the mobile/accessibility source changes are not
+> deployed and do not inherit rc18 evidence. They require their own immutable
+> tag/commit, source fingerprint, release report, production backup/isolated
+> restore, controlled origin and Worker rollout, canonical-site smoke evidence,
+> and supervised device acceptance. Until then rc18／`fd504a8` and Worker
+> `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` remain the live and rollback pair.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 
@@ -298,11 +305,19 @@ The same presentation boundary applies to the prefect directory: one localized d
 
 #### Adaptive shell contract
 
-Mobile is an adaptive presentation of the canonical NiceGUI application, not a second site. Desktop and phone share the same URL, Cloudflare authentication/session, route handlers, SQLite database, workflow transactions, policy rules, audit trail and PDF pipeline. Viewport composition may change substantially, but user-agent detection must never select a different data or authorization path.
+Mobile is an adaptive presentation of the canonical NiceGUI application, not a second site. Desktop, tablet and phone share the same URL, Cloudflare authentication/session, route handlers, SQLite database, workflow transactions, policy rules, audit trail and PDF pipeline. Viewport composition may change substantially, but user-agent detection must never select a different data or authorization path.
 
-Desktop retains the grouped sidebar and full utility row. At adaptive-shell width (`<= 900px`), the Quasar drawer breakpoint, CSS and the rendered shell all change together to a one-line top bar plus persistent `Dashboard / Rosters / Prefects / More` bottom navigation. **More** opens the shared secondary-route and utility groups in a scrollable navigation drawer; safe-area insets and matching content padding prevent navigation from covering the final action. The bottom navigation is rendered after `<main>` in DOM order even though CSS fixes it visually, so keyboard and assistive-technology reading order reaches page content before repeated navigation. Dense table views must offer card or row-detail representations built from the same localized display model as desktop, preserving Chinese names and all decision-relevant fields. Phone landscape remains within this adaptive shell rather than reintroducing the desktop sidebar solely because width increases.
+Desktop retains the grouped sidebar and full utility row. At adaptive-shell width (`<= 900px`), the Quasar drawer breakpoint, CSS and the rendered shell all change together to a one-line top bar plus persistent `Dashboard / Rosters / Prefects / More` bottom navigation. **More** opens the shared secondary-route and utility groups in a scrollable navigation drawer; safe-area insets and matching content padding prevent navigation from covering the final action. A secondary route makes **More** visually active and includes the page title in its accessible label, but the menu trigger does not claim `aria-current=page`; the exact current item in the drawer owns that semantic state. The bottom navigation is rendered after `<main>` in DOM order even though CSS fixes it visually, so keyboard and assistive-technology reading order reaches page content before repeated navigation. Shared-route actions place a bounded `sessionStorage` focus-intent marker before navigation, and the new page focuses `main#main-content` with `preventScroll` after rendering; direct visits, reloads and fragment navigation are not focus-stolen. Dense table views must offer card or row-detail representations built from the same localized display model as desktop, preserving Chinese names and all decision-relevant fields. Phone landscape remains within this adaptive shell rather than reintroducing the desktop sidebar solely because width increases.
 
-The existing roster and prefect card renderers remain the implementation baseline. The adaptive shell is now part of the isolated release gate: 390×844 Traditional Chinese/light, 320×760 English/dark with reduced motion, and 844×390 landscape touch contexts verify shell navigation, scrollable More drawer, phone grid cards, 44px practical touch targets, safe-area clearance, browser errors and unintended horizontal overflow. Physical iPhone Safari and Android Chrome keyboard, rotation and notch/home-indicator checks remain human acceptance evidence rather than a second implementation.
+The document no longer enforces a 320px minimum canvas. A 256 CSS-pixel viewport, including the narrow CSS viewport produced by 200% zoom, reflows the shared header, page, surfaces, footer and bottom navigation without body-level horizontal overflow. Only a deliberately bounded data region or the ordered phone workflow strip may scroll locally. Standalone links, buttons, summaries, bottom-navigation actions and Quasar clickable controls are measured at 44 CSS pixels in both dimensions; inline links inside running text retain the standards-defined exception.
+
+`_install_mobile_viewport_accessibility()` treats the software keyboard as a visual-viewport constraint rather than a layout mode. When `window.visualViewport` indicates a material keyboard reduction, the shell sets `sy-mobile-keyboard-open`, moves the fixed tab bar out of the interaction path and scrolls the newly focused field toward the centre. Resize, visual-viewport scroll, focus and orientation listeners share one `AbortController`; route replacement calls the disposer and removes the temporary class/property. Reduced motion uses immediate field reveal and removes the tab-bar transition.
+
+Medium touch screens are not stretched phones. From 640–900px, consequential operational forms remain one column, workflow navigation becomes a two-column overview, and evidence/developer-reference grids may use two columns. Below 640px, workflow steps retain order through a contained scroll-snap strip. Mobile forced-colour rules use `Canvas`, `CanvasText` and `Highlight`; light and dark appearances retain identical content/control order and state meaning. The motion runtime gives a coarse-pointer press one bounded semantic glyph story and restores the source glyph after 460ms using opacity/scale only—no drift, translation or rotation—and clears all timers on disposal. Busy, disabled and reduced-motion controls remain static.
+
+The rc19 intermediate-density rules distinguish portrait and landscape tablets without user-agent branching. A 768×1024 portrait adaptive shell can use two-column roster, directory, evidence and download cards while forms remain a single decision column. At 901–1180px, including 1024×768 touch landscape, the desktop shell remains visible but `sy-operations-grid` and document layouts collapse before their columns become cramped; evidence indexes, toolbars and download options are capped at two columns. CSS changes composition only—the same semantic DOM, `PageContext`, capability policy and workflow callback remain authoritative.
+
+The existing roster and prefect card renderers remain the implementation baseline. Live rc18 evidence covers 390×844 Traditional Chinese/light, 320×760 English/dark with reduced motion, and 844×390 landscape touch contexts. The rc19 candidate extends the required isolated matrix to 256×700 reflow, 768×1024 adaptive touch tablet and 1024×768 desktop-shell touch tablet, plus proof that only one navigation shell is visible, route-focus transfer, More/current-page semantics, `visualViewport` keyboard clearance, footer/safe-area clearance, comprehensive 44px standalone targets, touch icon stories, forced colours and zero document overflow/console/page errors. These are required checks, not passed rc19 evidence, until the final source-matched release report records them. Physical iPhone Safari and Android Chrome 200% zoom, keyboard, rotation and notch/home-indicator checks remain human acceptance evidence rather than a second implementation.
 
 The same preflight contract covers roster preparation and manual draft correction: a missing candidate or invalid week start is repaired in place. Blank operator reasons are valid and never weaken the durable version, command, audit, fairness, or backup checks. `scripts/verify_nicegui_write_pipeline.py` asserts that invalid states create neither a progress dialog nor a `progress_*_working` log event, while also proving that an optional reason can be omitted safely.
 
@@ -340,7 +355,7 @@ the verified matching Worker is
 `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`. Earlier rc5／rc6 staging and rc7 cutover
 details are historical rollout evidence, not instructions for a new candidate.
 Every later candidate must regenerate its own fingerprint, report, backup／restore
-and live Cloudflare acceptance before replacing rc17, so this architecture
+and live Cloudflare acceptance before replacing rc18, so this architecture
 document alone is not deployment evidence.
 
 ```powershell

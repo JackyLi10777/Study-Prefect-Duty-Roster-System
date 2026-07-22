@@ -102,6 +102,9 @@ def test_mobile_verifier_declares_real_touch_contexts_and_shared_route_matrix() 
     for dimensions in (
         'width=390,\n            height=844',
         'width=320,\n            height=760',
+        'width=256,\n            height=700',
+        'width=768,\n            height=1024',
+        'width=1024,\n            height=768',
         'width=844,\n            height=390',
     ):
         assert dimensions in source
@@ -115,7 +118,7 @@ def test_mobile_verifier_declares_real_touch_contexts_and_shared_route_matrix() 
     assert "tabs.count() != 4" in source
     assert "item.width < 44 || item.height < 44" in source
     for selector in (".q-toggle", ".q-checkbox", ".q-radio", ".q-item--clickable"):
-        assert f'"{selector}"' in source
+        assert selector in source
     assert "drawer.evaluate" in source
     assert 'get_by_test_id("mobile-more")' in source
     assert "Opening mobile navigation must move focus into the drawer" in source
@@ -147,16 +150,19 @@ def test_mobile_verifier_declares_real_touch_contexts_and_shared_route_matrix() 
     assert verify_nicegui_mobile.COMPACT_ROUTES["/handover"] == "Handover guide"
 
 
-def test_mobile_verifier_records_only_three_non_sensitive_layout_screenshots() -> None:
+def test_mobile_verifier_records_only_six_non_sensitive_layout_screenshots() -> None:
     source = (PROJECT_ROOT / "scripts" / "verify_nicegui_mobile.py").read_text(encoding="utf-8")
 
     for filename in (
         "nicegui-mobile-390.png",
         "nicegui-mobile-320-drawer.png",
+        "nicegui-mobile-256-reflow.png",
+        "nicegui-tablet-768.png",
+        "nicegui-tablet-1024x768.png",
         "nicegui-mobile-landscape.png",
     ):
         assert filename in source
-    assert source.count(".screenshot(") == 3
+    assert source.count(".screenshot(") == 6
 
 
 def test_release_candidate_runs_mobile_verification_after_the_write_pipeline() -> None:

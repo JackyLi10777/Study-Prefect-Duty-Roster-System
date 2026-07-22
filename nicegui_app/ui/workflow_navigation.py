@@ -7,6 +7,8 @@ from dataclasses import dataclass
 
 from nicegui import ui
 
+from nicegui_app.ui.navigation import ROUTE_FOCUS_JAVASCRIPT, navigate_to
+
 
 @dataclass(frozen=True, slots=True)
 class WorkflowStep:
@@ -27,7 +29,10 @@ def render_route_trail(items: Iterable[tuple[str, str | None]], *, label: str) -
             if index:
                 ui.icon("chevron_right").classes("sy-route-trail-separator").props("aria-hidden=true")
             if route:
-                ui.link(label, route).classes("sy-route-trail-link")
+                ui.link(label, route).on(
+                    "click",
+                    js_handler=f"() => {{{ROUTE_FOCUS_JAVASCRIPT}}}",
+                ).classes("sy-route-trail-link")
             else:
                 ui.label(label).classes("sy-route-trail-current").props("aria-current=page")
 
@@ -35,7 +40,7 @@ def render_route_trail(items: Iterable[tuple[str, str | None]], *, label: str) -
 def render_back_action(label: str, route: str, *, test_id: str) -> None:
     """Render a predictable return action to the owning page."""
 
-    ui.button(label, icon="arrow_back", on_click=lambda: ui.navigate.to(route)).props(
+    ui.button(label, icon="arrow_back", on_click=lambda: navigate_to(route)).props(
         f"flat no-caps data-testid={test_id}"
     ).classes("sy-back-action")
 
@@ -61,7 +66,7 @@ def render_workflow_navigation(
                 control = ui.element("div").props("aria-current=step")
             else:
                 state_props = "disable" if step.state == "locked" else ""
-                control = ui.button(on_click=lambda route=step.route: ui.navigate.to(route)).props(
+                control = ui.button(on_click=lambda route=step.route: navigate_to(route)).props(
                     f"flat no-caps {state_props}"
                 )
             with control.classes(classes):

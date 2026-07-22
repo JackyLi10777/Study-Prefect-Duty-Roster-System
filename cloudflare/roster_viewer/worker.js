@@ -200,6 +200,18 @@ const VIEWER_HTML = `<!doctype html>
         <p id="guestDescription" class="portal-lead">分享連結可直接查看；登入後可生成、核對、發布、匯出及處理已發布後請假。</p>
         <p id="guestDescriptionEn" class="portal-lead portal-lead--en" lang="en">Open a roster share directly, or sign in to generate, review, publish, export, and handle published-duty absences.</p>
 
+        <nav class="mobile-entry-actions" aria-label="立即進入 · Continue to the workbench">
+          <span class="mobile-entry-label">立即進入 · CONTINUE</span>
+          <a id="mobileAdminLogin" class="mobile-entry-action mobile-entry-action--admin" data-entry-role="admin" href="/auth/login">
+            <span><strong>管理員登入</strong><small lang="en">Administrator sign in</small></span>
+            <span aria-hidden="true">→</span>
+          </a>
+          <a id="mobileGuestEnter" class="mobile-entry-action mobile-entry-action--guest" data-entry-role="guest" href="/guest">
+            <span><strong>進入訪客示範</strong><small lang="en">Try the fictional demo</small></span>
+            <span aria-hidden="true">→</span>
+          </a>
+        </nav>
+
         <ol class="workflow-cue" aria-label="管理員每週流程 · Weekly administrator workflow">
           <li><span>01</span><strong>生成與核對</strong><small lang="en">Generate & review</small></li>
           <li><span>02</span><strong>發布與匯出</strong><small lang="en">Publish & export</small></li>
@@ -245,7 +257,7 @@ const VIEWER_HTML = `<!doctype html>
         <p class="access-copy">完成身份驗證後返回本網站，繼續本週工作。</p>
         <p class="access-copy access-copy--en" lang="en">After verification, return here to continue this week’s roster.</p>
 
-        <a id="adminLogin" class="admin-login" href="/auth/login">
+        <a id="adminLogin" class="admin-login" data-entry-role="admin" href="/auth/login">
           <span class="admin-login-copy">
             <strong>管理員登入</strong>
             <span lang="en">Administrator sign in</span>
@@ -255,7 +267,7 @@ const VIEWER_HTML = `<!doctype html>
             <span class="admin-login-spinner"></span>
           </span>
         </a>
-        <a id="guestEnter" class="guest-enter" href="/guest">
+        <a id="guestEnter" class="guest-enter" data-entry-role="guest" href="/guest">
           <span class="guest-enter-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="19" height="19"><path d="M2.8 12s3.4-6 9.2-6 9.2 6 9.2 6-3.4 6-9.2 6-9.2-6-9.2-6Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>
           </span>
@@ -662,6 +674,38 @@ button, input, select, textarea { font: inherit; }
 }
 
 .portal-lead--en { margin-top: 5px; font-size: 0.84rem; line-height: 1.6; }
+
+.mobile-entry-actions { display: none; }
+
+.mobile-entry-label {
+  color: var(--portal-story-muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.mobile-entry-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 9px 14px;
+  border: 1px solid color-mix(in srgb, var(--portal-story-ink) 24%, transparent);
+  border-radius: 13px;
+  color: var(--portal-story-ink);
+  text-decoration: none;
+  touch-action: manipulation;
+  transition: border-color 140ms ease, background-color 140ms ease, transform 100ms ease;
+}
+
+.mobile-entry-action > span:first-child { display: grid; gap: 1px; }
+.mobile-entry-action strong { font-size: 0.8rem; }
+.mobile-entry-action small { color: inherit; font-size: 0.64rem; font-weight: 560; opacity: 0.76; }
+.mobile-entry-action--admin { border-color: var(--action); background: var(--action); color: var(--action-ink); }
+.mobile-entry-action--guest { background: color-mix(in srgb, var(--surface) 78%, transparent); }
+.mobile-entry-action:active { transform: scale(0.985); }
+.mobile-entry-action:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
 
 .workflow-cue {
   display: grid;
@@ -1348,6 +1392,21 @@ tbody td {
   .brand-mark { width: 44px; height: 44px; }
   .theme-toggle { margin-left: auto; padding-inline: 11px; }
   .theme-toggle span { white-space: nowrap; }
+  .mobile-entry-actions {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 8px;
+    margin-top: 21px;
+    padding: 11px;
+    border: 1px solid color-mix(in srgb, var(--portal-story-ink) 16%, transparent);
+    border-radius: 17px;
+    background: color-mix(in srgb, var(--portal-story) 72%, transparent);
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--portal-story-ink) 8%, transparent);
+    backdrop-filter: blur(12px);
+  }
+  .access-panel > [data-entry-role="admin"],
+  .access-panel > [data-entry-role="guest"] { display: none; }
   .workflow-cue { grid-template-columns: 1fr; gap: 9px; margin-top: 25px; }
   .workflow-cue li { display: grid; grid-template-columns: 28px 1fr; column-gap: 8px; padding-top: 10px; }
   .workflow-cue li > span { grid-row: 1 / 3; margin: 1px 0 0; }
@@ -1368,6 +1427,7 @@ tbody td {
   .welcome-audio-main { grid-template-columns: auto minmax(0, 1fr); }
   .welcome-audio-actions { grid-column: 2; justify-content: flex-end; }
   .welcome-audio-copy strong { white-space: normal; }
+  .mobile-entry-actions { margin-top: 18px; padding: 9px; }
   .devotional-prompt-heading { align-items: center; }
   .verse-refresh span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
   .verse-refresh { width: 44px; padding-inline: 0; }
@@ -1379,6 +1439,8 @@ tbody td {
   .devotional-prompt,
   .admin-login,
   .guest-enter,
+  .mobile-entry-actions,
+  .mobile-entry-action,
   .theme-toggle,
   .verse-refresh,
   .site-share-button,
@@ -1454,7 +1516,7 @@ const rosterState = document.getElementById('rosterState');
 const rosterTable = document.getElementById('rosterTable');
 const themeToggle = document.getElementById('themeToggle');
 const themeLabel = document.getElementById('themeLabel');
-const adminLogin = document.getElementById('adminLogin');
+const adminLoginButtons = Array.from(document.querySelectorAll('[data-entry-role="admin"]'));
 const portalStory = document.querySelector('.portal-story');
 const portalStoryMedia = document.getElementById('portalStoryMedia');
 const devotionalPrompt = document.querySelector('.devotional-prompt');
@@ -1843,29 +1905,35 @@ shareSite?.addEventListener('click', async () => {
   }
 });
 
-adminLogin?.addEventListener('click', (event) => {
-  if (adminLogin.dataset.connecting === 'true') {
+const setAdminLoginState = (connecting) => {
+  adminLoginButtons.forEach((button) => {
+    if (!(button instanceof HTMLAnchorElement)) return;
+    if (connecting) {
+      button.dataset.connecting = 'true';
+      button.setAttribute('aria-busy', 'true');
+      button.setAttribute('aria-disabled', 'true');
+    } else {
+      delete button.dataset.connecting;
+      button.removeAttribute('aria-busy');
+      button.removeAttribute('aria-disabled');
+    }
+    const zh = button.querySelector('strong');
+    const en = button.querySelector('[lang="en"]');
+    if (zh) zh.textContent = connecting ? '正在連接安全登入…' : '管理員登入';
+    if (en) en.textContent = connecting ? 'Connecting securely…' : 'Administrator sign in';
+  });
+};
+
+adminLoginButtons.forEach((button) => button.addEventListener('click', (event) => {
+  if (adminLoginButtons.some((candidate) => candidate.dataset.connecting === 'true')) {
     event.preventDefault();
     return;
   }
-  adminLogin.dataset.connecting = 'true';
-  adminLogin.setAttribute('aria-busy', 'true');
-  adminLogin.setAttribute('aria-disabled', 'true');
-  const zh = adminLogin.querySelector('strong');
-  const en = adminLogin.querySelector('[lang="en"]');
-  if (zh) zh.textContent = '正在連接安全登入…';
-  if (en) en.textContent = 'Connecting securely…';
-});
+  setAdminLoginState(true);
+}));
 
 window.addEventListener('pageshow', () => {
-  if (!adminLogin) return;
-  delete adminLogin.dataset.connecting;
-  adminLogin.removeAttribute('aria-busy');
-  adminLogin.removeAttribute('aria-disabled');
-  const zh = adminLogin.querySelector('strong');
-  const en = adminLogin.querySelector('[lang="en"]');
-  if (zh) zh.textContent = '管理員登入';
-  if (en) en.textContent = 'Administrator sign in';
+  setAdminLoginState(false);
 });
 
 function showOnly(element) {

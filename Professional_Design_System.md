@@ -139,6 +139,8 @@ Keep the supplied bytes and deliberate crop, provide bilingual alternative text 
 
 The active NiceGUI application already has correct policy safeguards, bilingual support, light/dark mode, verified backups, print-ready PDFs, contextual hints, and a three-stage weekly workflow. The adaptive shell now shares one 900px navigation breakpoint, renders repeated mobile navigation after the page content in DOM order, stacks simultaneous global status banners, and applies one dialog-action grammar. Appearance and interface sound update in place; a dirty-form guard protects the only preference which still requires a page reload—language. The theme has a sound foundation—neutral surfaces, teal identity, restrained slate primary actions, rounded controls, and good contrast—but its presentation must continue converging on one composed product rather than a collection of useful cards.
 
+The live design baseline remains rc18. The rc19 mobile/accessibility work described below is an implementation candidate, not deployed or accepted evidence: its exact source still requires a fingerprint-bound release report, controlled Windows/Worker rollout, canonical-site checks and supervised physical-device review before these behaviors can be called live.
+
 ### Head Study Prefect moment
 
 At the start of a busy week, the operator needs to read the daily verse, see what stage the roster is in, make one safe action, and leave with confidence that the result is fair and recoverable. They should never have to scan a dense control panel, guess which color is actionable, or open several pages merely to understand the system state.
@@ -459,7 +461,7 @@ Viewer success is measured by one question: can a recipient open the complete li
 ### 6.4 Responsive rule
 
 - Desktop: content has a readable max width, not a full-width administrative spreadsheet.
-- Tablet: two-column regions collapse only when each column would become too narrow to read.
+- Tablet: at `640–900px`, operational forms retain one clear column while evidence summaries, downloads, developer commands and reference grids may use two readable columns. At `901–1180px`, a landscape touch tablet keeps the compact desktop navigation shell but collapses compressed operation／document layouts and limits evidence or download groups to two columns.
 - Mobile: primary action remains before secondary information; grids become ordered vertical lists. The roster uses day-grouped cards, not a horizontally clipped table, so every Chinese name, duty time, status, and workload is readable in one card.
 
 Phone layout is a deliberate arrangement of the same product, not a compressed desktop canvas and not a second website. Desktop and phone share one canonical URL, login/session, NiceGUI routes, localized view models, SQLite data, workflow and policy engine. Never branch policy, permissions, persistence, audit or PDF behaviour by user agent.
@@ -467,7 +469,11 @@ Phone layout is a deliberate arrangement of the same product, not a compressed d
 - `<= 900px` is the adaptive navigation shell; `> 900px` keeps the desktop drawer and utility row. Tighter content rules may still activate at 600px, but Quasar's drawer breakpoint, CSS navigation swap and bottom-nav visibility must never disagree.
 - The phone top bar stays on one line and contains only page identity plus the optional page-music control. Appearance, language, sound, logout and secondary destinations move to the **More** navigation drawer instead of wrapping the header.
 - A persistent four-item bottom navigation exposes **Dashboard / Rosters / Prefects / More**. It respects `env(safe-area-inset-bottom)`, keeps practical targets at least 44px, identifies the current destination without colour alone, and adds enough content padding that the final control is never hidden underneath it.
-- **More** opens the same semantic navigation drawer used by the shared shell. It must remain vertically scrollable at 320px, support keyboard and screen-reader navigation, dismiss through the platform-standard drawer interaction, and keep destructive or identity-changing actions clearly labelled. When opened, **More** sets `aria-expanded=true`, moves focus to its first available control and contains Tab／Shift+Tab navigation; Escape or backdrop dismissal closes it, restores focus to **More** and returns `aria-expanded=false`.
+- **More** opens the same semantic navigation drawer used by the shared shell. It must remain vertically scrollable at 256px and 320px, support keyboard and screen-reader navigation, dismiss through the platform-standard drawer interaction, and keep destructive or identity-changing actions clearly labelled. When opened, **More** sets `aria-expanded=true`, moves focus to its first available control and contains Tab／Shift+Tab navigation; Escape or backdrop dismissal closes it, restores focus to **More** and returns `aria-expanded=false`.
+- A secondary route keeps **More** visually associated with the current section, but the menu trigger itself must not claim `aria-current=page`; the exact current destination inside the drawer owns that semantic state. Shared-route navigation transfers focus once to `main#main-content`, while reloads and direct visits do not steal focus.
+- The document has no fixed 320px minimum width. At narrow CSS viewports created by 200% zoom, the shared canvas reflows down to 256px without document-level horizontal scrolling; only an explicitly labelled data region may opt into local scrolling.
+- Phone keyboards are treated as a visual-viewport change. While a keyboard materially reduces the viewport, the fixed bottom bar yields, focused fields scroll into a safe central region, and listeners are disposed on route replacement. This adaptation never changes validation, data, or submission semantics.
+- A 640–900px tablet is not a stretched phone: operational forms retain one clear column, while evidence and developer-reference grids may use two readable columns. A 768×1024 portrait tablet proves that adaptive composition; a 1024×768 landscape tablet proves the compact desktop shell with one-column operational decisions and two-column supporting grids. Workflow steps stack at the narrowest zoomed-phone widths, use a contained sequence on phones and return to a two-column overview on tablets.
 - Dense tables use cards, row detail or another scan-safe phone representation generated from the same localized display model. A mobile card may reorder information, but it may not omit names, status, workload, reasons or actions needed for the same decision.
 - Landscape phone layout is a compact phone composition, not an automatic return to the desktop sidebar. Hover is never required; form actions stack in consequence order and touch targets remain separated.
 
@@ -532,8 +538,9 @@ The information architecture may learn from the grouped navigation, page-local c
 - Limit primary navigation to the current operating map; archive old routes only as redirects for bookmarks.
 - Desktop keeps the grouped sidebar and full utility controls. Phone replaces that shell with the one-line top bar and four-item bottom navigation; this is an alternate presentation of the same routes, never a parallel `/mobile` tree.
 - **Dashboard**, **Rosters** and **Prefects** are the three routine phone destinations. **More** owns Handover, Settings, Platform & Team, Engineering & Quality, System Architecture & Trust, Getting Started, Operator Guide, Daily Verse and utility controls in a calm grouped bottom sheet.
-- A route opened from **More** remains visibly identified and keeps **More** as its navigation context. Browser back, deep links and refreshed pages must preserve the same canonical route rather than redirect through a mobile home page.
+- A route opened from **More** remains visibly identified and keeps **More** as its navigation context. **More** is a menu trigger, not the page itself: it does not receive `aria-current`; the current drawer item does. Browser back, deep links and refreshed pages must preserve the same canonical route rather than redirect through a mobile home page.
 - The fixed bottom navigation is visually persistent but appears after `<main>` in DOM order. Keyboard and assistive-technology reading order therefore encounters the unique page content before repeated navigation.
+- A shared-route action records navigation intent before leaving. After the new route renders, focus moves to `main#main-content` without a second scroll jump so keyboard and screen-reader users receive fresh page context; direct visits, ordinary reloads and fragment navigation keep their own focus behavior.
 - Appearance and interface-sound controls update every desktop／mobile instance in place without reloading or discarding form state; enabling sound gives one brief preview. Language remains a full translated-page reload, so trusted edits inside `<main>` must trigger a bilingual leave confirmation before that reload.
 
 ### Buttons
@@ -712,6 +719,7 @@ Shared CSS motion tokens are the only default timing vocabulary: `--sy-motion-pr
 - Buttons and expansion headers use a pointer cursor. Disabled actions use `not-allowed`; static tables, roster cells, names, warnings, and fairness data never gain a pointer cursor or floating transform.
 - Sidebar items and expansion headers remain anchored: they do not drift, tilt or rotate. Responsiveness comes from the internal icon story, surface colour, border and focus ring, so navigation never appears physically unstable.
 - Touch devices do not run hover transforms. Under `prefers-reduced-motion: reduce`, hover translation is removed and the cursor light is not rendered.
+- A coarse-pointer press may run one in-place semantic icon story and restore the source glyph after a bounded delay. It must not rotate, drift, move the button, loop, delay activation, or run when reduced motion is requested.
 - Hover tooltips are suppressed on coarse pointers; the same controls retain their explicit accessible names.
 
 ---
@@ -722,13 +730,14 @@ Every visual refinement must meet all gates:
 
 - Traditional Chinese and English labels are complete; Chinese prefect names remain Chinese.
 - Direct Scripture quotations identify and use Traditional Chinese RCUV 2010（神版）and English NKJV; the canonical validator must block a release on wrong metadata or unverified/missing text.
-- Light and dark mode preserve text, border, chart, and status contrast.
+- Light and dark mode preserve the same content, control order and state meaning as well as text, border, chart, and status contrast; paired-theme treatment may not hide or relocate an action in only one appearance.
 - Keyboard focus is visible on buttons, fields, tabs, and links.
-- Critical actions have 44px or larger practical targets on touch devices.
+- Standalone links, buttons, summaries and Quasar clickable controls have 44px or larger practical targets on touch devices. Inline links inside running text retain the WCAG target-size exception; it is not an excuse for a compact standalone action.
 - Icons have adjacent text or an accessible label; decorative icons are hidden from assistive technology.
 - Colour is never the only carrier of status.
 - Browser smoke captures desktop light, desktop dark, and mobile views after a component-class change.
-- Adaptive-shell automation captures 320px and 390px portrait plus one phone landscape viewport. It verifies the one-line top bar, `Dashboard / Rosters / Prefects / More` bottom navigation, scrollable More drawer, safe-area clearance, card/table information parity, both languages/themes, reduced motion and no unintended horizontal overflow. Formal acceptance repeats keyboard, rotation and safe-area behaviour on physical iPhone Safari and Android Chrome.
+- Adaptive-shell automation for a new candidate captures 256px zoom/reflow, 320px reduced-motion, 390px portrait, 768px adaptive touch-tablet, 1024×768 desktop-shell touch-tablet and one phone-landscape viewport. It verifies that the 900px breakpoint never exposes both navigation shells, then checks the one-line mobile top bar, `Dashboard / Rosters / Prefects / More` bottom navigation, secondary-route semantics, focus transfer, scrollable More drawer, safe-area and `visualViewport` keyboard clearance, 44px standalone targets, card/table information parity, both languages/themes, one-shot touch feedback, reduced motion, forced colours and no unintended document overflow. A script name or screenshot is not pass evidence until the exact source appears in the final release report. Formal acceptance repeats 200% zoom, keyboard, rotation and safe-area behaviour on physical iPhone Safari and Android Chrome.
+- Under `forced-colors: active`, navigation and mobile table-card boundaries use system `Canvas`, `CanvasText` and `Highlight` semantics with no shadow-dependent meaning. Current, focus and disabled states remain distinguishable without project palette colours.
 - Browser evidence fails on either a console error or an uncaught `pageerror`; a visually correct screenshot cannot conceal a broken event handler.
 - PDF remains print-first and is not redesigned by web-only decoration.
 
@@ -809,7 +818,7 @@ No phase may weaken roster policy, persistent fairness, backup verification, pri
 2. The roster sequence is generate → review／export → published-duty adjustment → history. The current step uses text, geometry and `aria-current`, not colour alone; unavailable future steps remain visible but non-interactive so the operator understands what comes next.
 3. Operational surfaces use the full available content workspace. Constrain inner text or form measures for readability, not the outer card; a wide empty field beside a narrow action card is a layout defect unless the space has an explicit secondary purpose.
 4. Header utilities share one surface grammar. Language, appearance, sound, music and logout each retain a visible container, 44px practical target, keyboard focus and bilingual accessible name.
-5. A semantic icon animation must tell a short state story: menu → back, calendar → confirmed event, manual edit → verified change, book → open reading, help → illuminated idea. It may swap a framework glyph through an opacity／scale transition, but must not depend only on translation, must not loop, and must resolve instantly under reduced motion, touch or forced colours.
+5. A semantic icon animation must tell a short state story: menu → back, calendar → confirmed event, manual edit → verified change, book → open reading, help → illuminated idea. It may swap a framework glyph through an opacity／scale transition, but must not depend only on translation, move or rotate its host, or loop. Reduced motion and forced colours resolve to the static meaningful state; touch may play one bounded opacity／scale story and then restore the source glyph.
 6. Browser matrix, public Viewer and PDF use one duty-position presentation source. Duty names remain canonical English in both locales; prefect names remain Chinese. Translation text must never become a policy or database key.
 7. Reasons are optional explanatory context. Leaving one blank must not remove version checks, command receipts, audit, fairness reconciliation, backup obligations or destructive-action confirmation.
 

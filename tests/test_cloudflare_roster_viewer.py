@@ -84,7 +84,7 @@ def test_worker_deployment_toolchain_is_project_pinned() -> None:
     workspace = (VIEWER_ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
 
     assert package["private"] is True
-    assert package["version"] == "1.2.0-rc.18"
+    assert package["version"] == "1.2.0-rc.19"
     assert package["packageManager"] == "pnpm@11.7.0"
     assert package["engines"] == {"node": ">=22"}
     assert package["devDependencies"] == {"wrangler": "4.110.0"}
@@ -322,6 +322,23 @@ def test_mobile_public_controls_keep_a_44px_touch_target() -> None:
     assert ".verse-refresh { width: 44px; padding-inline: 0; }" in compact_mobile.group("body")
 
 
+def test_mobile_entrance_exposes_admin_and_guest_actions_before_supplementary_content() -> None:
+    source = _source()
+    mobile_actions = source.index('class="mobile-entry-actions"')
+    workflow = source.index('class="workflow-cue"')
+    devotional = source.index('class="devotional-prompt"')
+
+    assert mobile_actions < workflow < devotional
+    assert 'id="mobileAdminLogin"' in source
+    assert 'id="mobileGuestEnter"' in source
+    assert len(re.findall(r'<a[^>]+data-entry-role="admin"', source)) == 2
+    assert len(re.findall(r'<a[^>]+data-entry-role="guest"', source)) == 2
+    assert ".mobile-entry-action" in source
+    assert "min-height: 52px" in source
+    assert '.access-panel > [data-entry-role="admin"]' in source
+    assert '.access-panel > [data-entry-role="guest"] { display: none; }' in source
+
+
 def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contract() -> None:
     source = _source()
 
@@ -329,6 +346,8 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
         'href="#mainContent"',
         'id="adminLogin"',
         'id="guestEnter"',
+        'id="mobileAdminLogin"',
+        'id="mobileGuestEnter"',
         'href="/guest"',
         "進入訪客示範",
         "Try the fictional demo",
@@ -595,13 +614,16 @@ def test_gateway_cta_and_share_loading_expose_honest_accessible_states() -> None
         'class="admin-login-indicator"',
         'class="admin-login-spinner"',
         'class="sy-secure-pulse"',
-        "adminLogin.setAttribute('aria-busy', 'true')",
-        "adminLogin.setAttribute('aria-disabled', 'true')",
-        "adminLogin.dataset.connecting === 'true'",
+        "const adminLoginButtons = Array.from(document.querySelectorAll('[data-entry-role=\"admin\"]'))",
+        "adminLoginButtons.forEach((button)",
+        "button.setAttribute('aria-busy', 'true')",
+        "button.setAttribute('aria-disabled', 'true')",
+        "adminLoginButtons.some((candidate) => candidate.dataset.connecting === 'true')",
         "event.preventDefault()",
         "window.addEventListener('pageshow'",
-        "adminLogin.removeAttribute('aria-busy')",
-        "adminLogin.removeAttribute('aria-disabled')",
+        "button.removeAttribute('aria-busy')",
+        "button.removeAttribute('aria-disabled')",
+        "setAdminLoginState(false)",
         "@keyframes secure-pulse",
         "@media (prefers-reduced-motion: reduce)",
         ".sy-secure-pulse::after { animation: none",

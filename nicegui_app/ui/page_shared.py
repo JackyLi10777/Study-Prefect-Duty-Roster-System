@@ -26,6 +26,7 @@ from nicegui_app.services.roster_workflow import (
     WorkflowConflictError,
 )
 from nicegui_app.ui.i18n import EN, current_locale, day_label, role_label, t
+from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.components import (
     empty_state as render_empty_state_component,
     responsive_table as render_responsive_table_component,
@@ -105,13 +106,13 @@ def _show_committed_without_backup(reference: str, *, recovery_required: bool = 
                 ui.button(
                     t("operator_guide"),
                     icon="menu_book",
-                    on_click=lambda: (dialog.close(), ui.navigate.to("/guide")),
+                    on_click=lambda: (dialog.close(), navigate_to("/guide")),
                 ).props("data-testid=partial-recovery-guide-action")
             else:
                 ui.button(
                     t("open_backup_settings"),
                     icon="settings_backup_restore",
-                    on_click=lambda: (dialog.close(), ui.navigate.to("/settings")),
+                    on_click=lambda: (dialog.close(), navigate_to("/settings")),
                 ).props("data-testid=partial-backup-settings-action")
     _delete_dialog_after_close(dialog)
     dialog.open()
@@ -221,7 +222,7 @@ async def _run_with_progress(
 
 def _navigate_with_feedback(path: str) -> None:
     play_interface_sound("navigation")
-    ui.navigate.to(path)
+    navigate_to(path)
 
 
 def _render_feedback_channel(*, compact: bool = False) -> None:
@@ -696,7 +697,7 @@ def _render_storage_lifecycle(workflow) -> None:  # type: ignore[no-untyped-def]
                         ui.label(t(title_key)).classes("sy-storage-step-title")
                         ui.label(t(detail_key)).classes("sy-storage-step-copy")
             ui.label(t("storage_backup_verified") if backup_verified else t("storage_backup_attention")).classes("sy-storage-backup-note")
-            ui.button(t("open_backup_settings"), icon="settings_backup_restore", on_click=lambda: ui.navigate.to("/settings")).props("flat").classes("mt-2")
+            ui.button(t("open_backup_settings"), icon="settings_backup_restore", on_click=lambda: navigate_to("/settings")).props("flat").classes("mt-2")
 
 
 def _render_operation_hint(body_key: str, *, icon: str = "tips_and_updates") -> None:
@@ -777,12 +778,12 @@ def _render_roster_route_state(
             ui.button(
                 t(primary_key),
                 icon="arrow_back",
-                on_click=lambda: ui.navigate.to(primary_path),
+                on_click=lambda: navigate_to(primary_path),
             ).props(f"color=primary data-testid={test_id}-primary")
             ui.button(
                 t(secondary_key),
                 icon=secondary_icon,
-                on_click=lambda: ui.navigate.to(secondary_path),
+                on_click=lambda: navigate_to(secondary_path),
             ).props(f"outline color=primary data-testid={test_id}-secondary")
 
 def _render_co_creation() -> None:

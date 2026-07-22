@@ -203,23 +203,29 @@
 }
 
 @media (max-width: 900px) {
-  .sy-operations-grid,
-  .sy-workflow-navigation {
+  .sy-operations-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sy-workflow-navigation {
+    grid-template-columns: repeat(4, minmax(164px, 1fr));
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: 6px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
   }
 
   .sy-workflow-navigation-step {
     min-height: 48px;
+    scroll-snap-align: start;
   }
 
   .sy-document-layout {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .sy-document-aside {
-    position: static;
-    order: -1;
-  }
+  .sy-document-aside { position: static; }
 
   .sy-evidence-index-controls,
   .sy-evidence-toolbar,
@@ -227,5 +233,48 @@
   .sy-developer-command-grid,
   .sy-developer-reference-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A tablet is not a stretched phone. Operational forms stay single-column,
+ * while evidence and reference material regain a calm two-column rhythm. */
+@media (min-width: 640px) and (max-width: 900px) {
+  .sy-workflow-navigation {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow-x: visible;
+    scroll-snap-type: none;
+  }
+
+  .sy-evidence-summary-grid,
+  .sy-developer-command-grid,
+  .sy-developer-reference-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Landscape tablets use the desktop shell, but not the wide-desktop density.
+ * Give the persistent drawer room without compressing operational decisions. */
+@media (min-width: 901px) and (max-width: 1180px) {
+  .sy-operations-grid,
+  .sy-document-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sy-document-aside { position: static; }
+
+  .sy-evidence-index-controls,
+  .sy-evidence-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* At zoomed-phone and split-screen tablet widths, every workflow step must be
+ * visible without a hidden horizontal starting point. This also gives 256 px
+ * reflow a deterministic reading order. */
+@media (max-width: 360px) {
+  .sy-workflow-navigation {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-x: visible;
+    scroll-snap-type: none;
   }
 }

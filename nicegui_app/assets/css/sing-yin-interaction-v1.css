@@ -8,7 +8,7 @@
  */
 
 :where(.q-btn, .q-tab, .q-item.q-item--clickable) .q-icon[data-sy-icon-motion] {
-  --sy-icon-intent-transform: translate3d(0, -2px, 0) scale(1.1);
+  --sy-icon-intent-transform: scale(1.08);
   transform: translate3d(0, 0, 0);
   transform-origin: 50% 50%;
   backface-visibility: hidden;
@@ -19,39 +19,39 @@
 }
 
 .q-icon[data-sy-icon-motion="forward"] {
-  --sy-icon-intent-transform: translate3d(6px, 0, 0) scale(1.08);
+  --sy-icon-intent-transform: scale(1.08);
 }
 
 .q-icon[data-sy-icon-motion="back"] {
-  --sy-icon-intent-transform: translate3d(-6px, 0, 0) scale(1.08);
+  --sy-icon-intent-transform: scale(1.08);
 }
 
 .q-icon[data-sy-icon-motion="refresh"] {
-  --sy-icon-intent-transform: rotate(52deg) scale(1.1);
+  --sy-icon-intent-transform: scale(1.1);
 }
 
 .q-icon[data-sy-icon-motion="confirm"] {
-  --sy-icon-intent-transform: translate3d(0, -2px, 0) scale(1.16);
+  --sy-icon-intent-transform: scale(1.12);
 }
 
 .q-icon[data-sy-icon-motion="download"] {
-  --sy-icon-intent-transform: translate3d(0, 5px, 0) scale(1.08);
+  --sy-icon-intent-transform: scale(1.08);
 }
 
 .q-icon[data-sy-icon-motion="upload"] {
-  --sy-icon-intent-transform: translate3d(0, -5px, 0) scale(1.08);
+  --sy-icon-intent-transform: scale(1.08);
 }
 
 .q-icon[data-sy-icon-motion="exchange"] {
-  --sy-icon-intent-transform: translate3d(5px, 0, 0) scale(1.1);
+  --sy-icon-intent-transform: scale(1.1);
 }
 
 .q-icon[data-sy-icon-motion="create"] {
-  --sy-icon-intent-transform: translate3d(0, -3px, 0) scale(1.16);
+  --sy-icon-intent-transform: scale(1.12);
 }
 
 .q-icon[data-sy-icon-motion="edit"] {
-  --sy-icon-intent-transform: translate3d(2px, -2px, 0) scale(1.1);
+  --sy-icon-intent-transform: scale(1.1);
 }
 
 .q-icon[data-sy-icon-motion="toggle"] {
@@ -63,7 +63,7 @@
 }
 
 .q-icon[data-sy-icon-motion="play"] {
-  --sy-icon-intent-transform: translate3d(5px, 0, 0) scale(1.13);
+  --sy-icon-intent-transform: scale(1.11);
 }
 
 .q-icon[data-sy-icon-motion="search"] {
@@ -79,7 +79,7 @@
 }
 
 .q-icon[data-sy-icon-motion="navigation"] {
-  --sy-icon-intent-transform: translate3d(0, -2px, 0) scale(1.13);
+  --sy-icon-intent-transform: scale(1.1);
 }
 
 /* Story icons change shape in place; their host remains a stable click target. */
@@ -124,7 +124,7 @@ body :is(.q-btn, .q-tab, .q-item.q-item--clickable):not(.disabled):not([aria-dis
 
 body :is(.q-btn, .q-tab, .q-item.q-item--clickable):not(.disabled):not([aria-disabled="true"]):not(.q-btn--loading):not([aria-busy="true"]):active
   .q-icon[data-sy-icon-motion] {
-  transform: translate3d(0, 1px, 0) scale(.9);
+  transform: scale(.94);
   transition-duration: var(--sy-motion-press);
 }
 
@@ -166,34 +166,32 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
  */
 
 @keyframes sy-icon-confirm {
-  0% { transform: scale(.88); }
-  54% { transform: translate3d(0, -1px, 0) scale(1.14); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
+  0% { transform: scale(.9); }
+  54% { transform: scale(1.12); }
+  100% { transform: scale(1); }
 }
 
 @keyframes sy-icon-working {
-  0% { transform: rotate(0deg) scale(.96); }
-  56% { transform: rotate(24deg) scale(1.05); }
-  100% { transform: rotate(0deg) scale(1); }
+  0% { transform: scale(.94); opacity: .72; }
+  56% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 @keyframes sy-icon-attention {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  35% { transform: translate3d(-2px, 0, 0); }
-  68% { transform: translate3d(2px, 0, 0); }
+  0%, 100% { transform: scale(1); }
+  45% { transform: scale(1.11); }
 }
 
 @keyframes sy-icon-error {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  38% { transform: translate3d(-2px, 0, 0) scale(.94); }
-  72% { transform: translate3d(1px, 0, 0) scale(.98); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
+  0% { transform: scale(1); }
+  42% { transform: scale(.9); }
+  100% { transform: scale(1); }
 }
 
 @keyframes sy-icon-navigation {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  48% { transform: translate3d(2px, -1px, 0) scale(1.09); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
+  0% { transform: scale(1); }
+  48% { transform: scale(1.09); }
+  100% { transform: scale(1); }
 }
 
 [data-sy-feedback-state="navigation"] .q-icon[data-sy-icon-motion] {

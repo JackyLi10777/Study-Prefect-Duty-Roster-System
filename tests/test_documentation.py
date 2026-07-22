@@ -24,8 +24,33 @@ def test_readme_explains_safe_start_and_links_to_operator_documents() -> None:
     assert "docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md" in readme
     assert "START_PRACTICE_MODE.cmd" in readme
     assert "RESET_PRACTICE_MODE.cmd" in readme
+    assert "docs/DOCUMENTATION_INDEX.md" in readme
     assert "nicegui-self-hosted" in readme
     assert "streamlit-cloud" in readme
+
+
+def test_documentation_index_routes_every_markdown_guide_and_defines_ownership() -> None:
+    index = (PROJECT_ROOT / "docs" / "DOCUMENTATION_INDEX.md").read_text(encoding="utf-8")
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    readme_en = (PROJECT_ROOT / "README-EN.md").read_text(encoding="utf-8")
+
+    for document in sorted((PROJECT_ROOT / "docs").glob("*.md")):
+        if document.name != "DOCUMENTATION_INDEX.md":
+            assert document.name in index, f"Documentation index omits {document.name}"
+
+    for required in (
+        "權威來源次序 / Source-of-truth precedence",
+        "文件目錄與責任 / Catalogue and ownership",
+        "使用模式、資料生命週期與成本邊界 / Mode, lifecycle, and cost boundary",
+        "多用戶、可靠性與復原覆蓋 / Concurrency, reliability, and recovery coverage",
+        "驗證層級 / Verification ladder",
+        "已知限制與非目標 / Known limits and non-goals",
+        "文件完整性維護 / Documentation maintenance checklist",
+    ):
+        assert required in index
+
+    assert "docs/DOCUMENTATION_INDEX.md" in readme
+    assert "docs/DOCUMENTATION_INDEX.md" in readme_en
 
 
 def test_windows_ssh_maintenance_guide_preserves_private_key_and_network_boundaries() -> None:

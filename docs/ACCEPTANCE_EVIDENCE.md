@@ -2,6 +2,10 @@
 
 本文件把機器驗證與真人驗收分開。`logs/release-candidate-report.json` 顯示 `pass`，只代表下列自動化證據在隔離虛構資料中通過；它不代表實際名單、學校做法、專用電腦、加密離機位置或外部存取決定已獲真人批准。
 
+> **發布界線（2026-07-22）：** live rc18／`fd504a8` 與 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 仍是現行已部署基線。rc19 mobile/accessibility 只是來源候選；下列新增證據列是它必須產生的驗收契約，不表示其測試、正式 gate、Windows／Worker rollout 或真人驗收已完成。
+
+> **平板證據補充：** rc19 的隔離瀏覽器矩陣必須同時覆蓋 768×1024 adaptive touch tablet 及 1024×768 desktop-shell touch tablet。核對項包括正確導航 shell、至少 44px 的獨立控制、操作表單不被壓縮、支援卡片密度、主內容寬度、零 document overflow、觸控與鍵盤焦點；不得用桌面瀏覽器單一縮放截圖代替兩種平板形態的量測。
+
 ## 使用方法
 
 1. 維護者先執行 `python -X utf8 scripts\verify_release_candidate.py`，確認 JSON 報告目前 14 項檢查均為 `pass`；其中 `repository_hygiene` 必須證明有真正 commit 歷史、無已追蹤敏感檔、無尚未加入 Git 的發布敏感來源，且 ignore 契約完整；`security_gates` 必須通過依賴、靜態程式及 Python／Cloudflare 秘密掃描；`cloudflare_gateway_tests` 必須通過 Deno Worker 契約；`motion_state_machine_tests` 必須驗證快速滑入、滑出、鍵盤焦點及失效狀態最終一致；`verify_runtime_performance` 必須證明字體完成後的冷載、重複元件及跨頁返回後，強制 GC 的 heap／DOM／listener 增長與手機 overflow 均在門檻內；`verify_unified_guest_ui` 必須證明同路由訪客隔離、虛構資料、限制狀態、分頁與下載邊界。桌面、寫入、效能及手機瀏覽器閘門亦會把 console error 或未捕捉 `pageerror` 視為失敗。
@@ -27,11 +31,12 @@
 | H-11 | 繼任者可依交接指引獨立完成 | handover route、雙語內容及狀態由 UI smoke／i18n 測試覆蓋 | 必須由一位未參與開發的人實際演練，不能由開發者代簽 |
 | H-12 | 交接包含 SQLite、manifest、說明 | `test_backup_integrity.py`; write pipeline 建立並檢查 ZIP | 把測試包移到學校批准的加密離機位置，確認可找回 |
 | H-13 | 無快照、無效快照及有效快照並存時行為安全 | UI smoke、backup inventory tests、write pipeline、partial-backup drill | 確認畫面用語不會令人嘗試手動修改備份 |
-| H-14 | 手機適應排列與讀取順序完整 | `verify_nicegui_mobile.py`; `test_mobile_layout.py`; 320／390px portrait、phone landscape、safe-area、44px、零 overflow／console／pageerror | 在實體 iPhone Safari 及 Android Chrome 核對鍵盤、旋轉、瀏海／home indicator；不另建 `/mobile` |
+| H-14 | 同一網站在手機、200% zoom 及 tablet 真正 reflow，讀取／焦點順序完整 | rc19 最終 report 必須包含 `verify_nicegui_mobile.py`、`test_mobile_layout.py`、`test_accessibility.py`、`test_motion_system.py`：256×700 reflow、320px reduced motion、390px phone、768×1024 adaptive touch tablet、1024×768 desktop-shell touch tablet、phone landscape、單一可見 navigation shell、44px standalone controls、route focus、More／drawer current-page semantics、`visualViewport` keyboard clearance、safe-area/footer、touch icon story、forced colours、paired themes、零 document overflow／console／pageerror；目前只列契約，未宣稱 rc19 pass | 在實體 iPhone Safari 及 Android Chrome 核對 200% zoom、軟鍵盤後焦點欄位、跨頁 main focus、More 語意、兩個 themes、reduced motion、forced colours、旋轉、瀏海／home indicator；不另建 `/mobile` |
 | H-15 | 外觀／聲音不清空表單；語言離開前保護未儲存輸入 | `test_interface_sound.py`; `test_accessibility.py`; UI smoke 的 in-place theme／sound 及 dirty-language guard | 在一個未儲存表單親自切換三項偏好，確認提示、一次短聲及鍵盤流程自然 |
 | H-16 | 兩個分頁不能以舊資料覆蓋較新風紀或草稿 | prefect／roster concurrency tests；SQLite `BEGIN IMMEDIATE` 與 version CAS | 以虛構資料完成一次 stale-tab 演練，確認提示要求重新載入及核對 |
 | H-17 | 正式模式從空白名單開始且不自動 seed；Practice Mode 保留隔離虛構 seed | **rc.16 自動化閘門已通過：** `test_official_data_reset.py`、runtime mode tests、reset report 零筆表格／空白基線契約；只有正式主機 sanitized reset report 及重啟 health 才是已完成清除的部署證據 | 正式清除只可在已驗證備份、隔離還原及 Viewer 撤銷後執行；重啟兩個模式並核對正式為零、練習有虛構資料 |
-| H-18 | v1.2 Guest 與 Admin 使用相同 NiceGUI 路由，但 Guest 只操作每分頁隔離的虛構記憶體 workspace；重新整理可還原最新合法 token，複製／篡改／過期／重啟後不可重播 | `verify_unified_guest_ui` 是正式 13 道 gate 之一；配合 `test_guest_workspace.py`、`test_guest_adapter.py`、`test_guest_downloads.py`、`test_guest_snapshot_bridge.py` 驗證相同路由、簽署、綁定、nonce、revision、重播拒絕、下載及 `sessionStorage` 邊界。只有與最終來源 fingerprint 相符的 report 才有效；v1.1 靜態 `/guest`／`/try` 只可作回退紀錄 | v1.2 部署後在實體手機完成訪客請假→生成→修改→示範發布→雙語 PDF／JSON→請假調整；核對中文姓名、`DEMO`、30 分鐘、兩分頁隔離、重新整理、登出及 Network／正式資料邊界 |
+| H-18 | v1.2 Guest 與 Admin 使用相同 NiceGUI 路由，但 Guest 只操作每分頁隔離的虛構記憶體 workspace；重新整理可還原最新合法 token，複製／篡改／過期／重啟後不可重播 | `verify_unified_guest_ui` 是目前正式 14-gate 編排的一部分；配合 `test_guest_workspace.py`、`test_guest_adapter.py`、`test_guest_downloads.py`、`test_guest_snapshot_bridge.py` 驗證相同路由、簽署、綁定、nonce、revision、重播拒絕、下載及 `sessionStorage` 邊界。只有與最終來源 fingerprint 相符的 report 才有效；rc18 evidence 不可代替 rc19 | v1.2 部署後在實體手機完成訪客請假→生成→修改→示範發布→雙語 PDF／JSON→請假調整；核對中文姓名、`DEMO`、30 分鐘、兩分頁隔離、重新整理、登出及 Network／正式資料邊界 |
+| H-19 | 公開入口在手機首屏提供清楚且唯一可見的 Admin／fictional Guest 入口，桌面排列及身份邊界不漂移 | rc19 source-matched release report 先以 `test_cloudflare_roster_viewer.py` 鎖定結構與權限契約；Worker staged deployment 及 canonical smoke 再以 `verify_public_roster_viewer.py` 證明 Admin／Guest 各一個 visible CTA、位於 first viewport、至少 48px（設計值 52px）、在補充 workflow／devotional 前。Desktop access panel 仍存在，mobile 不重複顯示；light／dark、reduced motion、forced colours、console／pageerror 均須核對。這是候選要求，不是目前 live evidence | 以 320px／390px 實體手機先確認兩個入口毋須捲動，再各進入一次並使用返回鍵；核對沒有重複 CTA、錯誤身份、被音樂／鍵盤遮擋或只在單一 theme 可見 |
 
 ## 教師顧問
 
@@ -44,6 +49,6 @@
 
 ## 證據失效規則
 
-- 修改排班政策、交易、備份、PDF、語言、路由復原、Cloudflare Worker／JSONC 或發布驗證器後，必須重新執行當前完整發布候選驗證（2026-07-17 為 13 項）。
+- 修改排班政策、交易、備份、PDF、語言、route focus／mobile reflow、Cloudflare Worker／JSONC 或發布驗證器後，必須重新執行當前完整發布候選驗證。live rc18 的基線是 14 項；後續以最終候選 report 列出的 source-matched gate 集合為準，不可沿用舊日期或舊計數。
 - JSON 報告缺少 `humanAcceptanceRequired: true`、任何檢查不是 `pass`，或報告早於最後程式改動，均不可用作發布證據。
 - 自動化只使用虛構中文姓名；正式姓名、請假原因、PDF、資料庫、備份及日誌不可上載到公開服務。

@@ -23,6 +23,10 @@ CANONICAL_BACKUPS = (PROJECT_ROOT / "data" / "backups").resolve()
 SCREENSHOT_DIR = PROJECT_ROOT / "logs"
 PORTRAIT_SCREENSHOT = SCREENSHOT_DIR / "nicegui-mobile-390.png"
 COMPACT_SCREENSHOT = SCREENSHOT_DIR / "nicegui-mobile-320-drawer.png"
+REFLOW_SCREENSHOT = SCREENSHOT_DIR / "nicegui-mobile-256-reflow.png"
+TABLET_SCREENSHOT = SCREENSHOT_DIR / "nicegui-tablet-768.png"
+TALL_TABLET_SCREENSHOT = SCREENSHOT_DIR / "nicegui-tablet-820x1180.png"
+LANDSCAPE_TABLET_SCREENSHOT = SCREENSHOT_DIR / "nicegui-tablet-1024x768.png"
 LANDSCAPE_SCREENSHOT = SCREENSHOT_DIR / "nicegui-mobile-landscape.png"
 
 PORTRAIT_ROUTES = (
@@ -47,6 +51,9 @@ COMPACT_ROUTES = {
     "/settings": "Settings",
 }
 LANDSCAPE_ROUTES = ("/", "/rosters", "/prefects", "/guide")
+TABLET_ROUTES = ("/", "/rosters", "/prefects", "/settings", "/system-architecture")
+DESKTOP_TOUCH_ROUTES = ("/", "/rosters", "/prefects", "/engineering", "/settings")
+REFLOW_ROUTES = ("/", "/rosters", "/guide")
 
 
 def isolated_paths() -> tuple[Path, Path, Path]:
@@ -115,21 +122,73 @@ def _assert_no_horizontal_overflow(page: Page, *, label: str) -> None:
 
 
 def _assert_touch_targets(page: Page, *, label: str, root: str = "body") -> None:
-    target_selector = ", ".join(
-        f"{root} {selector}:visible"
-        for selector in (".q-btn", ".q-toggle", ".q-checkbox", ".q-radio", ".q-item--clickable")
+    page.evaluate(
+        """async () => {
+          if (document.fonts?.ready) await document.fonts.ready;
+          await new Promise((resolve) => requestAnimationFrame(
+            () => requestAnimationFrame(resolve)
+          ));
+        }"""
     )
-    failures = page.locator(target_selector).evaluate_all(
-        """(elements) => elements
-          .map((element) => {
-            const bounds = element.getBoundingClientRect();
-            return {
-              label: (element.getAttribute('aria-label') || element.textContent || '').trim().slice(0, 80),
-              width: Math.round(bounds.width * 10) / 10,
-              height: Math.round(bounds.height * 10) / 10,
-            };
-          })
-          .filter((item) => item.width < 44 || item.height < 44)"""
+    failures = page.evaluate(
+        r"""({rootSelector}) => {
+          const root = document.querySelector(rootSelector);
+          if (!root) return [{
+            label: `missing root: ${rootSelector}`,
+            className: '',
+            testId: '',
+            width: 0,
+            height: 0,
+          }];
+          const selector = [
+            'a[href]',
+            'button',
+            '[role="button"]',
+            'summary',
+            '.q-toggle',
+            '.q-checkbox',
+            '.q-radio',
+            '.q-item--clickable'
+          ].join(',');
+          const candidates = [...new Set(root.querySelectorAll(selector))];
+          const isNestedDuplicate = (element) => {
+            const ancestor = element.parentElement?.closest?.(selector);
+            return ancestor && root.contains(ancestor);
+          };
+          return candidates
+            .filter((element) => {
+              const style = getComputedStyle(element);
+              const bounds = element.getBoundingClientRect();
+              if (
+                style.display === 'none'
+                || style.visibility === 'hidden'
+                || bounds.width <= 0
+                || bounds.height <= 0
+                || element.matches(':disabled,[aria-disabled="true"],[aria-hidden="true"],[tabindex="-1"]')
+                || element.closest('[inert],[aria-hidden="true"]')
+                || element.matches('.sy-skip-link')
+                || isNestedDuplicate(element)
+              ) return false;
+              /* WCAG explicitly exempts inline links in running text.  Standalone
+               * links, buttons, summaries, and Quasar controls still receive the
+               * product's stronger 44px touch-target guarantee. */
+              if (element.matches('a[href]') && style.display === 'inline') return false;
+              return true;
+            })
+            .map((element) => {
+              const bounds = element.getBoundingClientRect();
+              return {
+                tag: element.tagName.toLowerCase(),
+                label: (element.getAttribute('aria-label') || element.textContent || '').trim().slice(0, 80),
+                className: String(element.className || '').trim().replace(/\\s+/g, ' ').slice(0, 120),
+                testId: element.getAttribute('data-testid') || '',
+                width: Math.round(bounds.width * 10) / 10,
+                height: Math.round(bounds.height * 10) / 10,
+              };
+            })
+            .filter((item) => item.width < 44 || item.height < 44);
+        }""",
+        {"rootSelector": root},
     )
     if failures:
         raise AssertionError(f"{label} has touch targets smaller than 44 CSS pixels: {failures[:8]}")
@@ -142,8 +201,15 @@ def _assert_bottom_navigation(page: Page, *, label: str) -> None:
     if tabs.count() != 4:
         raise AssertionError(f"{label} expected four bottom-navigation actions, found {tabs.count()}.")
     active = navigation.locator('[aria-current="page"]')
-    if active.count() != 1:
-        raise AssertionError(f"{label} expected one current bottom-navigation action, found {active.count()}.")
+    active_tabs = navigation.locator(".sy-mobile-tab--active")
+    if active_tabs.count() != 1:
+        raise AssertionError(f"{label} expected one visually active bottom-navigation action, found {active_tabs.count()}.")
+    active_test_id = active_tabs.first.get_attribute("data-testid")
+    if active_test_id == "mobile-more":
+        if active.count() != 0:
+            raise AssertionError(f"{label} must not describe the More menu trigger as the current page.")
+    elif active.count() != 1:
+        raise AssertionError(f"{label} expected one current primary route, found {active.count()}.")
     for index in range(tabs.count()):
         box = tabs.nth(index).bounding_box()
         if box is None or box["width"] < 44 or box["height"] < 44:
@@ -184,17 +250,28 @@ def _assert_shell_not_obscured(page: Page, *, label: str) -> None:
     bottom_metrics = page.evaluate(
         """() => {
           const main = document.querySelector('main#main-content');
+          const footer = document.querySelector('[data-testid="page-copyright"]');
           const navigation = document.querySelector('[data-testid="mobile-bottom-navigation"]');
           const last = main?.lastElementChild;
-          if (!last || !navigation) return null;
+          if (!last || !footer || !navigation) return null;
+          const footerContentBottom = Math.max(
+            ...[...footer.children].map((element) => element.getBoundingClientRect().bottom),
+            footer.getBoundingClientRect().top
+          );
           return {
             lastBottom: last.getBoundingClientRect().bottom,
+            footerBottom: footer.getBoundingClientRect().bottom,
+            footerContentBottom,
             navigationTop: navigation.getBoundingClientRect().top,
           };
         }"""
     )
-    if bottom_metrics is None or bottom_metrics["lastBottom"] > bottom_metrics["navigationTop"] + 1:
-        raise AssertionError(f"{label} final content is obscured by bottom navigation: {bottom_metrics}")
+    if bottom_metrics is None:
+        raise AssertionError(f"{label} is missing its final content or copyright footer.")
+    if bottom_metrics["lastBottom"] > bottom_metrics["navigationTop"] + 1:
+        raise AssertionError(f"{label} final main content is obscured by bottom navigation: {bottom_metrics}")
+    if bottom_metrics["footerContentBottom"] > bottom_metrics["navigationTop"] + 1:
+        raise AssertionError(f"{label} copyright footer content is obscured by bottom navigation: {bottom_metrics}")
     page.evaluate("window.scrollTo(0, 0)")
 
 
@@ -210,6 +287,55 @@ def _assert_mobile_page(page: Page, route: str, *, label: str) -> None:
     _assert_no_horizontal_overflow(page, label=label)
     _assert_touch_targets(page, label=label)
     _assert_shell_not_obscured(page, label=label)
+
+
+def _assert_desktop_touch_page(page: Page, route: str, *, label: str) -> None:
+    """Verify the >900px desktop shell remains touch-safe on a landscape tablet."""
+
+    response = page.goto(f"{BASE_URL}{route}", wait_until="domcontentloaded")
+    if response is None or response.status != 200:
+        raise AssertionError(f"{label} returned an unexpected response for {route}: {response}")
+    page.locator("main#main-content").wait_for(state="visible", timeout=10_000)
+    page.locator('[role="heading"][aria-level="1"]').wait_for(state="visible", timeout=10_000)
+    if "Sing Yin Study Prefect Duty Roster" not in page.title():
+        raise AssertionError(f"{label} opened an unexpected page title: {page.title()!r}")
+
+    mobile_navigation = page.get_by_test_id("mobile-bottom-navigation")
+    if mobile_navigation.is_visible():
+        raise AssertionError(f"{label} exposed both desktop and mobile navigation shells.")
+    drawer_trigger = page.locator(".sy-desktop-drawer-trigger")
+    drawer_trigger.wait_for(state="visible", timeout=10_000)
+    trigger_box = drawer_trigger.bounding_box()
+    if trigger_box is None or trigger_box["width"] < 44 or trigger_box["height"] < 44:
+        raise AssertionError(f"{label} desktop navigation trigger is not touch-safe: {trigger_box}")
+    page.locator(".sy-desktop-header-controls").wait_for(state="visible", timeout=10_000)
+
+    shell_metrics = page.evaluate(
+        """() => {
+          const header = document.querySelector('.sy-app-header');
+          const main = document.querySelector('main#main-content');
+          if (!header || !main) return null;
+          const headerBounds = header.getBoundingClientRect();
+          const mainBounds = main.getBoundingClientRect();
+          return {
+            viewport: window.innerWidth,
+            headerBottom: headerBounds.bottom,
+            mainTop: mainBounds.top,
+            mainLeft: mainBounds.left,
+            mainRight: mainBounds.right,
+            mainWidth: mainBounds.width,
+          };
+        }"""
+    )
+    if shell_metrics is None:
+        raise AssertionError(f"{label} is missing the desktop touch shell regions.")
+    if shell_metrics["mainTop"] + 1 < shell_metrics["headerBottom"]:
+        raise AssertionError(f"{label} main content is obscured by the desktop header: {shell_metrics}")
+    if shell_metrics["mainWidth"] < 520 or shell_metrics["mainRight"] > shell_metrics["viewport"] + 1:
+        raise AssertionError(f"{label} desktop shell leaves an unusable tablet workspace: {shell_metrics}")
+
+    _assert_no_horizontal_overflow(page, label=label)
+    _assert_touch_targets(page, label=label)
 
 
 def _open_mobile_drawer(page: Page) -> Locator:
@@ -276,15 +402,88 @@ def _assert_drawer_scrolls(page: Page, *, label: str) -> None:
     )
     if page.evaluate("document.activeElement?.getAttribute('data-testid')") != "mobile-more":
         raise AssertionError("Backdrop-closing mobile navigation must restore focus to More.")
-    _open_mobile_drawer(page)
+    escape_drawer = _open_mobile_drawer(page)
     page.keyboard.press("Escape")
-    drawer.wait_for(state="hidden", timeout=5_000)
+    escape_drawer.wait_for(state="hidden", timeout=5_000)
     page.wait_for_function(
         """() => {
           const button = document.querySelector('[data-testid="mobile-more"]');
           return button?.getAttribute('aria-expanded') === 'false' && document.activeElement === button;
         }""",
         timeout=5_000,
+    )
+
+
+def _assert_secondary_route_navigation(page: Page, *, route: str, label: str) -> None:
+    """Keep the More action a menu trigger while the drawer owns route state."""
+
+    _assert_mobile_page(page, route, label=label)
+    more = page.get_by_test_id("mobile-more")
+    if more.get_attribute("aria-current") is not None:
+        raise AssertionError(f"{label} incorrectly exposes More as the current page.")
+    if "sy-mobile-tab--active" not in (more.get_attribute("class") or ""):
+        raise AssertionError(f"{label} does not visually associate the secondary route with More.")
+    drawer = _open_mobile_drawer(page)
+    current = drawer.locator('[aria-current="page"]')
+    if current.count() != 1:
+        raise AssertionError(f"{label} expected one current route in the drawer, found {current.count()}.")
+    if not current.first.is_visible():
+        raise AssertionError(f"{label} current drawer route is not visible.")
+    page.keyboard.press("Escape")
+    drawer.wait_for(state="hidden", timeout=5_000)
+
+
+def _assert_route_focus_transfer(page: Page, *, label: str) -> None:
+    """Shared-route navigation must announce the new page to keyboard and AT users."""
+
+    _assert_mobile_page(page, "/", label=f"{label} focus origin")
+    tabs = page.get_by_test_id("mobile-bottom-navigation").locator(".sy-mobile-tab")
+    tabs.nth(1).click()
+    page.wait_for_url("**/rosters", timeout=10_000)
+    page.wait_for_function(
+        "document.activeElement === document.getElementById('main-content')",
+        timeout=10_000,
+    )
+    if page.locator("main#main-content:focus").count() != 1:
+        raise AssertionError(f"{label} did not transfer focus to the shared main landmark.")
+    tabs = page.get_by_test_id("mobile-bottom-navigation").locator(".sy-mobile-tab")
+    tabs.nth(2).click()
+    page.wait_for_url("**/prefects", timeout=10_000)
+    page.wait_for_function(
+        "document.activeElement === document.getElementById('main-content')",
+        timeout=10_000,
+    )
+    if page.locator("main#main-content:focus").count() != 1:
+        raise AssertionError(f"{label} lost main-landmark focus on the second shared-route navigation.")
+
+
+def _assert_coarse_pointer_icon_story(page: Page, *, label: str) -> None:
+    """A touch press tells one semantic icon story, then restores its source glyph."""
+
+    _assert_mobile_page(page, "/", label=f"{label} icon-story origin")
+    if page.evaluate("matchMedia('(hover: hover) and (pointer: fine)').matches"):
+        raise AssertionError(f"{label} unexpectedly exposes a fine pointer.")
+    icon = page.get_by_test_id("mobile-more").locator('[data-sy-icon-story-to="arrow_back"]')
+    icon.wait_for(state="visible", timeout=10_000)
+    if icon.inner_text().strip() != "menu":
+        raise AssertionError(f"{label} icon story did not start from the menu glyph.")
+    page.get_by_test_id("mobile-more").dispatch_event(
+        "pointerdown",
+        {"pointerType": "touch", "isPrimary": True},
+    )
+    page.wait_for_function(
+        """() => {
+          const icon = document.querySelector('[data-testid="mobile-more"] [data-sy-icon-story-to="arrow_back"]');
+          return icon?.textContent?.trim() === 'arrow_back' && icon?.dataset.syIconStoryActive === 'true';
+        }""",
+        timeout=3_000,
+    )
+    page.wait_for_function(
+        """() => {
+          const icon = document.querySelector('[data-testid="mobile-more"] [data-sy-icon-story-to="arrow_back"]');
+          return icon?.textContent?.trim() === 'menu' && icon?.dataset.syIconStoryActive === 'false';
+        }""",
+        timeout=3_000,
     )
 
 
@@ -354,13 +553,67 @@ def main() -> int:
         _assert_responsive_table_cards(portrait_page)
         _assert_mobile_page(portrait_page, "/", label="390px dashboard screenshot")
         portrait_page.screenshot(path=str(PORTRAIT_SCREENSHOT), full_page=False)
-        # Prove that the real fixed actions navigate to the shared routes rather
-        # than a second mobile-only application.
-        portrait_page.get_by_test_id("mobile-bottom-navigation").locator(".sy-mobile-tab").nth(1).click()
-        portrait_page.wait_for_url("**/rosters", timeout=10_000)
-        portrait_page.get_by_test_id("mobile-bottom-navigation").locator(".sy-mobile-tab").nth(2).click()
-        portrait_page.wait_for_url("**/prefects", timeout=10_000)
+        # Prove that the fixed actions navigate the shared application and
+        # announce each new route through the main landmark.
+        _assert_route_focus_transfer(portrait_page, label="390px shared-route navigation")
+        _assert_coarse_pointer_icon_story(portrait_page, label="390px touch")
         portrait.close()
+
+        tablet_page, tablet = _new_mobile_page(
+            browser,
+            width=768,
+            height=1024,
+            label="tablet-768",
+            console_errors=console_errors,
+            page_errors=page_errors,
+        )
+        for route in TABLET_ROUTES:
+            _assert_mobile_page(tablet_page, route, label=f"768x1024 {route}")
+        _assert_secondary_route_navigation(
+            tablet_page,
+            route="/settings",
+            label="768x1024 secondary Settings route",
+        )
+        _assert_mobile_page(tablet_page, "/", label="768x1024 tablet screenshot")
+        tablet_page.screenshot(path=str(TABLET_SCREENSHOT), full_page=False)
+        tablet.close()
+
+        tall_tablet_page, tall_tablet = _new_mobile_page(
+            browser,
+            width=820,
+            height=1180,
+            label="tablet-820x1180",
+            console_errors=console_errors,
+            page_errors=page_errors,
+        )
+        for route in TABLET_ROUTES:
+            _assert_mobile_page(tall_tablet_page, route, label=f"820x1180 {route}")
+        _assert_secondary_route_navigation(
+            tall_tablet_page,
+            route="/settings",
+            label="820x1180 secondary Settings route",
+        )
+        _assert_mobile_page(tall_tablet_page, "/", label="820x1180 tablet screenshot")
+        tall_tablet_page.screenshot(path=str(TALL_TABLET_SCREENSHOT), full_page=False)
+        tall_tablet.close()
+
+        landscape_tablet_page, landscape_tablet = _new_mobile_page(
+            browser,
+            width=1024,
+            height=768,
+            label="tablet-1024x768",
+            console_errors=console_errors,
+            page_errors=page_errors,
+        )
+        for route in DESKTOP_TOUCH_ROUTES:
+            _assert_desktop_touch_page(landscape_tablet_page, route, label=f"1024x768 {route}")
+        _assert_desktop_touch_page(
+            landscape_tablet_page,
+            "/",
+            label="1024x768 tablet screenshot",
+        )
+        landscape_tablet_page.screenshot(path=str(LANDSCAPE_TABLET_SCREENSHOT), full_page=False)
+        landscape_tablet.close()
 
         compact_page, compact = _new_mobile_page(
             browser,
@@ -406,6 +659,24 @@ def main() -> int:
         compact_page.screenshot(path=str(COMPACT_SCREENSHOT), full_page=False)
         compact.close()
 
+        reflow_page, reflow = _new_mobile_page(
+            browser,
+            width=256,
+            height=700,
+            label="mobile-256-reflow",
+            console_errors=console_errors,
+            page_errors=page_errors,
+        )
+        for route in REFLOW_ROUTES:
+            _assert_mobile_page(reflow_page, route, label=f"256x700 reflow {route}")
+        _assert_secondary_route_navigation(
+            reflow_page,
+            route="/guide",
+            label="256x700 secondary Guide route",
+        )
+        reflow_page.screenshot(path=str(REFLOW_SCREENSHOT), full_page=False)
+        reflow.close()
+
         landscape_page, landscape = _new_mobile_page(
             browser,
             width=844,
@@ -427,8 +698,12 @@ def main() -> int:
             f"Mobile browser errors: console={len(console_errors)} page={len(page_errors)}\n{details}"
         )
     print(
-        "Mobile browser verification passed: 390px, 320px reduced-motion, and 844x390 touch contexts; "
-        f"screenshots: {PORTRAIT_SCREENSHOT}, {COMPACT_SCREENSHOT}, {LANDSCAPE_SCREENSHOT}",
+        "Mobile browser verification passed: 390px phone, 768x1024 and 820x1180 adaptive touch tablets, "
+        "1024x768 desktop-shell touch tablet, "
+        "320px reduced-motion, 256px reflow, and 844x390 landscape contexts; "
+        f"screenshots: {PORTRAIT_SCREENSHOT}, {TABLET_SCREENSHOT}, {TALL_TABLET_SCREENSHOT}, "
+        f"{LANDSCAPE_TABLET_SCREENSHOT}, {COMPACT_SCREENSHOT}, "
+        f"{REFLOW_SCREENSHOT}, {LANDSCAPE_SCREENSHOT}",
         flush=True,
     )
     return 0

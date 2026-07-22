@@ -17,7 +17,8 @@ def test_handover_exposes_a_confirmation_gated_new_school_year_rollover() -> Non
     assert "data-testid=confirm-school-year-rollover" in source
     assert "confirm_rollover.disable()" in source
     assert "confirm_rollover.enable()" in source
-    assert 'ui.navigate.to("/prefects")' in source
+    assert "from nicegui_app.ui.navigation import navigate_to" in source
+    assert 'navigate_to("/prefects")' in source
 
 
 def test_handover_copy_explains_backup_history_and_new_directory_import() -> None:
