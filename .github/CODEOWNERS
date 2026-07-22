@@ -1,0 +1,14 @@
+# Default ownership keeps every change visible to the repository owner.
+* @JackyLi10777
+
+# Security-sensitive boundaries are listed explicitly for review routing.
+/.github/ @JackyLi10777
+/cloudflare/roster_viewer/ @JackyLi10777
+/migrations/ @JackyLi10777
+/nicegui_app/access_context.py @JackyLi10777
+/nicegui_app/gateway_identity.py @JackyLi10777
+/nicegui_app/persistence/ @JackyLi10777
+/nicegui_app/services/ @JackyLi10777
+/scripts/deploy_cloudflare_worker.ps1 @JackyLi10777
+/scripts/deploy_windows_release.ps1 @JackyLi10777
+/scripts/run_security_checks.py @JackyLi10777

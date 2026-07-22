@@ -8,6 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 
@@ -121,6 +122,26 @@ def _run(name: str, arguments: list[str]) -> tuple[bool, str]:
     return result.returncode == 0, (result.stdout + result.stderr).strip()
 
 
+def _run_worker_dependency_audit() -> bool:
+    """Audit the pinned Worker lock without exposing advisory details in public logs."""
+
+    executable = shutil.which("pnpm")
+    command = [executable, "audit"] if executable else [shutil.which("corepack") or "corepack", "pnpm", "audit"]
+    try:
+        result = subprocess.run(
+            [*command, "--audit-level", "high", "--json"],
+            cwd=PROJECT_ROOT / "cloudflare" / "roster_viewer",
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+    except OSError:
+        return False
+    return result.returncode == 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -134,12 +155,21 @@ def main() -> int:
     checks: list[dict[str, object]] = []
 
     if "dependency_audit" in selected:
-        audit_ok, _audit_output = _run("dependency_audit", ["pip_audit", "-r", "requirements.lock", "--disable-pip"])
+        python_audit_ok, _audit_output = _run(
+            "dependency_audit",
+            ["pip_audit", "-r", "requirements.lock", "--disable-pip"],
+        )
+        worker_audit_ok = _run_worker_dependency_audit()
+        audit_ok = python_audit_ok and worker_audit_ok
         checks.append(
             {
                 "name": "dependency_audit",
                 "status": "pass" if audit_ok else "fail",
-                "summary": "No known vulnerabilities found" if audit_ok else "Dependency audit requires review",
+                "summary": (
+                    "No known high/critical Python or Worker dependency vulnerabilities found"
+                    if audit_ok
+                    else "Python or Worker dependency audit requires review"
+                ),
             }
         )
 

@@ -2,7 +2,7 @@
 
 > **目前狀態（live rc18）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.18`／commit `fd504a8`，`/healthz` 正常且 `/readyz` ready；canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 gate，正式備份、checksum、公平對帳及隔離還原亦已通過。
 
-> **rc19 尚未上線：**手機首屏 Admin／Guest CTA、256px／200% reflow、軟鍵盤避讓、route focus、More current-page 語意、tablet grid、觸控 icon story、forced colours 及新增 accessibility 規則仍是候選內容。正式網站在發布／驗證完成前仍以 rc18 行為為準。
+> **rc19 尚未上線：**手機首屏 Admin／Guest CTA、256px／200% reflow、軟鍵盤避讓、route focus、More current-page 語意、tablet／desktop 共存、觸控 icon story、forced colours 及新增 accessibility 規則仍是候選內容。完整 viewport 與驗證責任以[正式驗收證據矩陣](ACCEPTANCE_EVIDENCE.md#rc19-候選裝置矩陣--candidate-device-matrix)為準；正式網站在發布／驗證完成前仍以 rc18 行為為準。
 
 ## 每日使用
 
@@ -20,7 +20,7 @@ Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 sess
 
 ## rc19 上線後的手機快速核對（目前不要當作 live 功能）
 
-只有交接紀錄已列出 rc19 的正式 tag／commit、來源 fingerprint、Worker version 及成功 rollout 後，才執行以下使用者核對：
+只有交接紀錄已列出 rc19 的正式 tag／commit、來源 fingerprint、Worker version 及成功 rollout 後，才執行以下使用者核對；維護者必須另按[完整候選裝置矩陣](ACCEPTANCE_EVIDENCE.md#rc19-候選裝置矩陣--candidate-device-matrix)核對手機、兩種直向平板、橫向觸控平板及 full desktop，不以本節簡表代替矩陣：
 
 1. 以 320px／390px 手機開啟 canonical 網址；毋須捲動已可看見唯一一組「管理員登入」及「進入訪客示範」，每個按鈕容易觸控且不與桌面 access panel 重複。
 2. 把瀏覽器放大至 200%，確認頁面文字、頁首、頁尾及四個底部導航在窄屏內 reflow；只有明確資料區可局部橫向捲動，整頁不可左右漂移。

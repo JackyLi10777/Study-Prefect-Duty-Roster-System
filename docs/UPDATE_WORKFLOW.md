@@ -56,7 +56,7 @@ python -X utf8 scripts\verify_update.py --release
 python -X utf8 scripts\verify_update.py --release --plan
 ```
 
-對 rc19，正式 report 必須由最後 commit 重新產生，並將 256px／200% reflow、320px reduced motion、390px phone、768px adaptive touch tablet、1024×768 desktop-shell touch tablet、phone landscape、單一可見 navigation shell、`visualViewport` keyboard clearance、44px standalone targets、route focus、More current-page semantics、touch icon story 無漂移／旋轉、forced colours、paired light／dark parity，以及 public first-viewport Admin／Guest CTA 綁定至同一 source fingerprint。測試檔、局部通過訊息或 screenshot 存在都不是部署證據。其後仍須完成 fresh backup／isolated restore、Windows switch、Worker 0% stage→100% promotion、canonical smoke 及真人裝置核對；任何失敗依 handover／host guide 回復 rc18 exact pair。
+對 rc19，正式 report 必須由最後 commit 重新產生，並將同一裝置矩陣的 256×700／200% reflow、320×760 reduced motion、390×844 phone、768×1024 與 820×1180 adaptive touch tablet、1024×768 desktop-shell touch tablet、1440×1024 full desktop、844×390 phone landscape、單一可見 navigation shell、`visualViewport` keyboard clearance、44px standalone targets、route focus、More current-page semantics、touch icon story 無漂移／旋轉、forced colours、paired light／dark parity，以及 public first-viewport Admin／Guest CTA 綁定至同一 source fingerprint。`verify_nicegui_mobile.py` 與 `verify_nicegui_ui.py` 提供互補成員，但只有完整矩陣進入同一正式報告才算契約成立。測試檔、局部通過訊息或 screenshot 存在都不是部署證據。其後仍須完成 fresh backup／isolated restore、Windows switch、Worker 0% stage→100% promotion、canonical smoke 及真人裝置核對；任何失敗依 handover／host guide 第一級回復 rc18 exact pair，rc17 只保留作次級已驗證基線。
 
 ## 風險矩陣
 

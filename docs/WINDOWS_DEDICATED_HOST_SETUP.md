@@ -661,7 +661,7 @@ C:\SingYinRoster\.venv\Scripts\python.exe -m pip install --require-hashes -r C:\
 5. 下載一份測試 PDF，確認中文正常顯示。
 6. 在 `C:\SingYinRoster` 執行 `git rev-parse --short HEAD` 並把短版 commit 記入交接紀錄；這個值必須與本次已驗證、已發布的 commit 相同。`/healthz` 正常只證明程式與資料庫可回應，不能證明畫面已更新到最新原始碼。
 
-如本次候選改動手機／accessibility 或 Worker 入口，還要在 canonical 網址核對：320px／390px 首屏唯一 Admin／Guest CTA、200% zoom／256 CSS px reflow、軟鍵盤不遮焦點欄位、route focus、More current-page 語意、44px standalone targets、768px adaptive tablet grid、1024×768 desktop-shell touch tablet 只有一套可見 navigation、touch icon story 無漂移／旋轉，以及 light／dark、reduced motion、forced colours。任何一項失敗都不可只因 `/healthz`／`/readyz` 正常而接受發布。
+如本次候選改動手機／accessibility 或 Worker 入口，還要依[正式驗收證據矩陣](ACCEPTANCE_EVIDENCE.md)在 canonical 網址核對：320×760／390×844 首屏唯一 Admin／Guest CTA、200% zoom／256×700 reflow、軟鍵盤不遮焦點欄位、route focus、More current-page 語意、44px standalone targets，以及同一裝置矩陣中的 768×1024／820×1180 adaptive tablet、1024×768 desktop-shell touch tablet、1440×1024 full desktop；各形態都只可顯示正確 navigation shell，並核對 touch icon story 無漂移／旋轉及 light／dark、reduced motion、forced colours。任何一項失敗都不可只因 `/healthz`／`/readyz` 正常而接受發布。
 
 ### 步驟 12.6：使用者畫面回歸時受控回退
 

@@ -2358,7 +2358,18 @@ function normalizeAccessConfiguration(env) {
   const rawTeamDomain = typeof env.ACCESS_TEAM_DOMAIN === 'string' ? env.ACCESS_TEAM_DOMAIN.trim() : '';
   const rawAudience = typeof env.ACCESS_AUD === 'string' ? env.ACCESS_AUD : '';
   const audience = rawAudience.trim();
-  const rawAdminConfiguration = env.ADMIN_IDENTITY_ALLOWLIST;
+  const encodedAdminConfiguration = typeof env.ADMIN_IDENTITY_ALLOWLIST === 'string'
+    ? env.ADMIN_IDENTITY_ALLOWLIST.trim()
+    : '';
+  if (!encodedAdminConfiguration || encodedAdminConfiguration.length > 8_192) {
+    throw new AccessValidationError('admin_allowlist_configuration');
+  }
+  let rawAdminConfiguration;
+  try {
+    rawAdminConfiguration = JSON.parse(encodedAdminConfiguration);
+  } catch {
+    throw new AccessValidationError('admin_allowlist_configuration');
+  }
   const rawAdminEmails = rawAdminConfiguration?.emails;
   let teamDomain;
   try {
@@ -3555,6 +3566,14 @@ async function route(request, env, context) {
   }
   if (path === '/healthz') {
     if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
+    try {
+      normalizeAccessConfiguration(env);
+    } catch {
+      return staticResponse(request, JSON.stringify({
+        status: 'configuration_error',
+        application: 'sing-yin-roster-gateway',
+      }), 503, { 'Content-Type': 'application/json; charset=utf-8' });
+    }
     const payload = {
       status: 'ok',
       application: 'sing-yin-roster-gateway',

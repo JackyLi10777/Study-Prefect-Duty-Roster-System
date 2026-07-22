@@ -3,3 +3,5 @@ allowBuilds:
   sharp: true
   workerd: true
 strictDepBuilds: true
+overrides:
+  sharp: 0.35.0

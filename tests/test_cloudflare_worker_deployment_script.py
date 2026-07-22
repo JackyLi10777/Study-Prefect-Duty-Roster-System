@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
 import shutil
 import subprocess
-from pathlib import Path
+import tempfile
+import uuid
 
 import pytest
 
@@ -33,6 +36,51 @@ def test_worker_deployment_uses_pinned_wrangler_and_structured_events() -> None:
     assert 'Read-WranglerEvent -Path $uploadOutput -Type "version-upload"' in source
     assert 'Read-WranglerEvent -Path $stageOutput -Type "version-deploy"' in source
     assert '"versions", "upload", "--dry-run", "--strict"' in source
+    assert "function Assert-RequiredWorkerSecrets" in source
+    assert '@("secret", "list", "--format", "json", "--config", $script:ConfigPath)' in source
+    assert "Assert-RequiredWorkerSecrets" in source
+    assert '"--secrets-file", $resolvedSecretOverlayPath' in source
+    assert "Remove-SecretOverlay -Path $secretOverlayPathToDelete" in source
+    assert "Assert-AdminIdentityAllowlistValue" in source
+    assert "sing-yin-worker-secrets-" in source
+
+
+def test_invalid_allowlist_overlay_fails_before_deployment_and_is_deleted() -> None:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production deployment script")
+    overlay = Path(tempfile.gettempdir()) / f"sing-yin-worker-secrets-{uuid.uuid4().hex}.json"
+    overlay.write_text(
+        json.dumps({"ADMIN_IDENTITY_ALLOWLIST": '{"emails":["UPPER@example.com"]}'}),
+        encoding="utf-8",
+    )
+    try:
+        result = subprocess.run(
+            [
+                POWERSHELL,
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(SCRIPT),
+                "-SourceRoot",
+                str(PROJECT_ROOT),
+                "-ReleaseRef",
+                "invalid-test-release",
+                "-SecretOverlayPath",
+                str(overlay),
+            ],
+            cwd=PROJECT_ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        assert result.returncode != 0
+        assert "invalid or duplicate email entry" in result.stdout + result.stderr
+        assert not overlay.exists()
+    finally:
+        overlay.unlink(missing_ok=True)
 
 
 def test_worker_deployment_stages_tests_promotes_and_rolls_back() -> None:
@@ -63,6 +111,9 @@ def test_worker_deployment_report_avoids_credentials_and_cleans_temp_output() ->
     assert "ADMIN_BEARER_TOKEN" not in source
     assert "ADMIN_SESSION_SECRET" not in source
     assert 'Remove-Item -LiteralPath $outputDirectory -Recurse -Force' in source
+    cleanup_index = source.index("Remove-SecretOverlay -Path $secretOverlayPathToDelete")
+    pass_report_index = source.index('status = "pass"')
+    assert cleanup_index < pass_report_index
 
 
 def test_worker_deployment_script_parses_in_windows_powershell_51() -> None:

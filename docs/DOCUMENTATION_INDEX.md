@@ -50,6 +50,7 @@ If prose conflicts with executable policy, transactional behavior, security chec
 |---|---|---|
 | [`PUBLIC_ROSTER_VIEWER.md`](PUBLIC_ROSTER_VIEWER.md) | 單一網站、Guest、Admin、登出、唯讀 `/view#…` 使用方法 | 入口文案、session、分享、Viewer 或公開 URL 改變 |
 | [`UNIFIED_GUEST_SECURITY_MODEL.md`](UNIFIED_GUEST_SECURITY_MODEL.md) | Admin／Guest parity、capability、記憶體 workspace、snapshot、下載與拒絕邊界 | Guest capability、retention、capacity、snapshot 或 download 改變 |
+| [`SECURITY_AND_PRIVACY.md`](SECURITY_AND_PRIVACY.md) | 公開攻擊面、資料分類、secret、完整性、GitHub 治理、事件處理及剩餘風險 | identity、public route、storage、repository permission、security gate、incident 或 recovery contract 改變 |
 | [`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) | Access policy、Worker、VPC Service、secret、staging、smoke、rollback | Cloudflare binding、secret class、route、deployment 或 gateway contract 改變 |
 | [`DEPLOYMENT_DECISION.md`](DEPLOYMENT_DECISION.md) | 本機、單一網站、私有維護與真正雲端遷移的取捨 | hosting assumption、data residency、availability 或 operating model 改變 |
 | [`WINDOWS_SSH_MAINTENANCE.md`](WINDOWS_SSH_MAINTENANCE.md) | loopback-only、key-only SSH 維護通道 | SSH binding、authentication、firewall 或 maintenance account 改變 |

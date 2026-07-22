@@ -104,6 +104,7 @@ def test_mobile_verifier_declares_real_touch_contexts_and_shared_route_matrix() 
         'width=320,\n            height=760',
         'width=256,\n            height=700',
         'width=768,\n            height=1024',
+        'width=820,\n            height=1180',
         'width=1024,\n            height=768',
         'width=844,\n            height=390',
     ):
@@ -150,7 +151,17 @@ def test_mobile_verifier_declares_real_touch_contexts_and_shared_route_matrix() 
     assert verify_nicegui_mobile.COMPACT_ROUTES["/handover"] == "Handover guide"
 
 
-def test_mobile_verifier_records_only_six_non_sensitive_layout_screenshots() -> None:
+def test_touch_target_measurement_waits_for_stable_fonts_and_reports_diagnostics() -> None:
+    source = (PROJECT_ROOT / "scripts" / "verify_nicegui_mobile.py").read_text(encoding="utf-8")
+
+    assert "document.fonts?.ready" in source
+    assert "await document.fonts.ready" in source
+    assert source.count("requestAnimationFrame(") >= 2
+    assert "className: String(element.className" in source
+    assert "testId: element.getAttribute('data-testid')" in source
+
+
+def test_mobile_verifier_records_only_seven_non_sensitive_layout_screenshots() -> None:
     source = (PROJECT_ROOT / "scripts" / "verify_nicegui_mobile.py").read_text(encoding="utf-8")
 
     for filename in (
@@ -158,11 +169,12 @@ def test_mobile_verifier_records_only_six_non_sensitive_layout_screenshots() -> 
         "nicegui-mobile-320-drawer.png",
         "nicegui-mobile-256-reflow.png",
         "nicegui-tablet-768.png",
+        "nicegui-tablet-820x1180.png",
         "nicegui-tablet-1024x768.png",
         "nicegui-mobile-landscape.png",
     ):
         assert filename in source
-    assert source.count(".screenshot(") == 6
+    assert source.count(".screenshot(") == 7
 
 
 def test_release_candidate_runs_mobile_verification_after_the_write_pipeline() -> None:

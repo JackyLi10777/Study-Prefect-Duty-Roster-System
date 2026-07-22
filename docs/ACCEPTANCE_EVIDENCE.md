@@ -4,7 +4,18 @@
 
 > **發布界線（2026-07-22）：** live rc18／`fd504a8` 與 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 仍是現行已部署基線。rc19 mobile/accessibility 只是來源候選；下列新增證據列是它必須產生的驗收契約，不表示其測試、正式 gate、Windows／Worker rollout 或真人驗收已完成。
 
-> **平板證據補充：** rc19 的隔離瀏覽器矩陣必須同時覆蓋 768×1024 adaptive touch tablet 及 1024×768 desktop-shell touch tablet。核對項包括正確導航 shell、至少 44px 的獨立控制、操作表單不被壓縮、支援卡片密度、主內容寬度、零 document overflow、觸控與鍵盤焦點；不得用桌面瀏覽器單一縮放截圖代替兩種平板形態的量測。
+> **單一裝置矩陣：** rc19 的隔離瀏覽器證據必須把手機、兩種直向 adaptive tablet、橫向 desktop-shell touch tablet 及 full desktop 視為同一產品矩陣。768×1024、820×1180、1024×768、1440×1024 必須同時出現在同一份 source-matched 最終報告；不得用桌面瀏覽器單一縮放截圖代替任何裝置形態的實際量測。這是候選契約，不是已通過或已部署結果。
+
+## rc19 候選裝置矩陣 / Candidate device matrix
+
+| 產品形態 | 必須量測的 viewport | 主要自動化證據 | 共存契約 |
+|---|---|---|---|
+| 窄屏／手機 | 256×700、320×760、390×844、844×390 | `scripts/verify_nicegui_mobile.py` | 真正 reflow、單一 adaptive shell、鍵盤／safe-area、44px 目標、零 document overflow |
+| 直向 adaptive touch tablet | 768×1024、820×1180 | `scripts/verify_nicegui_mobile.py` | 操作表單維持一欄；卡片、證據及下載可使用兩個可讀欄 |
+| 橫向 desktop-shell touch tablet | 1024×768 | `scripts/verify_nicegui_mobile.py` | 保留 compact desktop shell；操作／文件區不被壓成狹窄多欄 |
+| Full desktop | 1440×1024 | `scripts/verify_nicegui_ui.py` | 保留完整 desktop shell、閱讀寬度、語言／theme／焦點與錯誤狀態證據 |
+
+所有列共用 canonical URL、身份／session、NiceGUI route、資料 adapter、SQLite／記憶體邊界、排班 policy、審計、PDF 及內容順序。只有與最後 rc19 source fingerprint 相符的正式報告同時收錄整個矩陣，才可宣稱機器驗證通過；真人裝置驗收仍須另外完成。
 
 ## 使用方法
 
@@ -31,7 +42,7 @@
 | H-11 | 繼任者可依交接指引獨立完成 | handover route、雙語內容及狀態由 UI smoke／i18n 測試覆蓋 | 必須由一位未參與開發的人實際演練，不能由開發者代簽 |
 | H-12 | 交接包含 SQLite、manifest、說明 | `test_backup_integrity.py`; write pipeline 建立並檢查 ZIP | 把測試包移到學校批准的加密離機位置，確認可找回 |
 | H-13 | 無快照、無效快照及有效快照並存時行為安全 | UI smoke、backup inventory tests、write pipeline、partial-backup drill | 確認畫面用語不會令人嘗試手動修改備份 |
-| H-14 | 同一網站在手機、200% zoom 及 tablet 真正 reflow，讀取／焦點順序完整 | rc19 最終 report 必須包含 `verify_nicegui_mobile.py`、`test_mobile_layout.py`、`test_accessibility.py`、`test_motion_system.py`：256×700 reflow、320px reduced motion、390px phone、768×1024 adaptive touch tablet、1024×768 desktop-shell touch tablet、phone landscape、單一可見 navigation shell、44px standalone controls、route focus、More／drawer current-page semantics、`visualViewport` keyboard clearance、safe-area/footer、touch icon story、forced colours、paired themes、零 document overflow／console／pageerror；目前只列契約，未宣稱 rc19 pass | 在實體 iPhone Safari 及 Android Chrome 核對 200% zoom、軟鍵盤後焦點欄位、跨頁 main focus、More 語意、兩個 themes、reduced motion、forced colours、旋轉、瀏海／home indicator；不另建 `/mobile` |
+| H-14 | 同一網站在手機、200% zoom、tablet 及 desktop 保持同一產品並真正 reflow，讀取／焦點順序完整 | rc19 最終 report 必須包含 `verify_nicegui_mobile.py`、`verify_nicegui_ui.py`、`test_mobile_layout.py`、`test_accessibility.py`、`test_motion_system.py`，並收錄上方單一裝置矩陣：256×700 reflow、320×760 reduced motion、390×844 phone、768×1024 與 820×1180 adaptive touch tablet、1024×768 desktop-shell touch tablet、1440×1024 full desktop、844×390 phone landscape、單一可見 navigation shell、44px standalone controls、route focus、More／drawer current-page semantics、`visualViewport` keyboard clearance、safe-area/footer、touch icon story、forced colours、paired themes、零 document overflow／console／pageerror；目前只列契約，未宣稱 rc19 pass | 在實體 iPhone Safari 及 Android Chrome 核對 200% zoom、軟鍵盤後焦點欄位、跨頁 main focus、More 語意、兩個 themes、reduced motion、forced colours、旋轉、瀏海／home indicator；另以實際 tablet 及 desktop 抽查 shell／欄位共存，不另建 `/mobile` |
 | H-15 | 外觀／聲音不清空表單；語言離開前保護未儲存輸入 | `test_interface_sound.py`; `test_accessibility.py`; UI smoke 的 in-place theme／sound 及 dirty-language guard | 在一個未儲存表單親自切換三項偏好，確認提示、一次短聲及鍵盤流程自然 |
 | H-16 | 兩個分頁不能以舊資料覆蓋較新風紀或草稿 | prefect／roster concurrency tests；SQLite `BEGIN IMMEDIATE` 與 version CAS | 以虛構資料完成一次 stale-tab 演練，確認提示要求重新載入及核對 |
 | H-17 | 正式模式從空白名單開始且不自動 seed；Practice Mode 保留隔離虛構 seed | **rc.16 自動化閘門已通過：** `test_official_data_reset.py`、runtime mode tests、reset report 零筆表格／空白基線契約；只有正式主機 sanitized reset report 及重啟 health 才是已完成清除的部署證據 | 正式清除只可在已驗證備份、隔離還原及 Viewer 撤銷後執行；重啟兩個模式並核對正式為零、練習有虛構資料 |

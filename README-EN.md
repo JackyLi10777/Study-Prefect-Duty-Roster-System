@@ -36,6 +36,7 @@ longest document:
 | Advisor reviewing publication, fairness, or handover | [Acceptance evidence matrix](docs/ACCEPTANCE_EVIDENCE.md) | [Release and handover guide](docs/RELEASE_HANDOVER.md) |
 | Successor rehearsing before receiving official data | `START_PRACTICE_MODE.cmd` | [Quick start](docs/QUICKSTART.md) and [operator guide](docs/OPERATOR_GUIDE.md) |
 | IT maintainer deploying, recovering, or tracing an OP reference | [Documentation index](docs/DOCUMENTATION_INDEX.md) | [Windows host setup](docs/WINDOWS_DEDICATED_HOST_SETUP.md) and [update workflow](docs/UPDATE_WORKFLOW.md) |
+| Security reviewer or vulnerability reporter | [Security and privacy model](docs/SECURITY_AND_PRIVACY.md) | [Private reporting policy](SECURITY.md) and [branch strategy](docs/BRANCH_STRATEGY.md) |
 | Developer or reviewer changing code | [NiceGUI architecture](docs/NICEGUI_ARCHITECTURE.md) | [Risk-led code review](docs/CODE_ACCEPTANCE_REVIEW.md) and [contributing guide](CONTRIBUTING.md) |
 
 ### Access and data boundary
@@ -63,6 +64,10 @@ restore audit, and isolated restore. Its SHA-256 is
 Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` passed zero-traffic staged and canonical
 health／entrance／viewer checks before receiving 100% traffic. Supervised
 administrator, advisor, and real-device acceptance remains a human responsibility.
+If an rc19 rollout fails, this exact rc18 host／Worker pair is the first-level
+rollback target. rc17／`99f5816` with Worker
+`c85770b2-c626-462c-bc74-5e6bd305c75b` is retained only as a secondary verified
+baseline.
 
 The retained **v1.1 rollback** record is historical recovery evidence only; it
 does not replace the current rc18 baseline.
@@ -77,7 +82,7 @@ ownership, filterable Engineering evidence index, internal Developer Reference,
 bounded Guest preferences, unified generated-file delivery, the browser／PDF
 roster matrix, and auditable published-roster withdrawal.
 
-The rc17 release adds admission control that rejects excess Guest sessions without
+The live rc18 release retains and re-verifies admission control that rejects excess Guest sessions without
 evicting active users, stronger import and network bounds, aggregate fairness
 reconciliation, explicit return paths, and stable button containers whose icons
 transform internally. Its 288-input fingerprint
@@ -324,10 +329,13 @@ marketing funnels, invented KPIs, and decorative density from the operator
 workbench.
 
 The rc19 device contract treats tablets as a third form factor rather than a
-stretched phone. The isolated matrix covers a 768×1024 adaptive touch tablet
-plus a 1024×768 compact desktop-shell tablet, alongside phone
-portrait, narrow zoom reflow and phone landscape. The URL, session, data,
-policy, audit, PDF and content order remain shared across every composition.
+stretched phone. One candidate matrix covers 768×1024 and 820×1180 adaptive
+touch tablets, a 1024×768 compact desktop-shell touch tablet, and a 1440×1024 full desktop,
+alongside phone portrait, narrow zoom reflow and phone landscape.
+The mobile and desktop verifiers contribute complementary evidence to that same
+matrix; the URL, session, data, policy, audit, PDF and content order remain shared
+across every composition. These are candidate requirements, not deployed rc19
+results; see the [acceptance evidence matrix](docs/ACCEPTANCE_EVIDENCE.md).
 
 The bilingual [Code acceptance and risk-led review](docs/CODE_ACCEPTANCE_REVIEW.md)
 defines the trust-boundary map, failure-path coverage, configuration and safety

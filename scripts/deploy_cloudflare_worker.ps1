@@ -2,7 +2,8 @@
 param(
     [string]$SourceRoot = "D:\code_v3",
     [Parameter(Mandatory = $true)][string]$ReleaseRef,
-    [string]$PublicBaseUrl = "https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/"
+    [string]$PublicBaseUrl = "https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/",
+    [string]$SecretOverlayPath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -182,6 +183,90 @@ function Read-WranglerEvent {
     return $match[0]
 }
 
+function Assert-RequiredWorkerSecrets {
+    param([string[]]$AdditionalNames = @())
+    $configurationSource = Get-Content -LiteralPath $script:ConfigPath -Raw -Encoding UTF8
+    $requiredBlock = [regex]::Match(
+        $configurationSource,
+        '"secrets"\s*:\s*\{\s*"required"\s*:\s*\[(?<items>[^\]]*)\]',
+        [Text.RegularExpressions.RegexOptions]::Singleline
+    )
+    if (-not $requiredBlock.Success) {
+        throw "Worker configuration does not declare required secrets."
+    }
+    $requiredNames = @(
+        [regex]::Matches($requiredBlock.Groups["items"].Value, '"(?<name>[A-Z][A-Z0-9_]*)"') |
+            ForEach-Object { $_.Groups["name"].Value } |
+            Select-Object -Unique
+    )
+    if ($requiredNames.Count -eq 0) {
+        throw "Worker configuration declares an empty required-secret set."
+    }
+    $raw = @(Invoke-Wrangler -Arguments @("secret", "list", "--format", "json", "--config", $script:ConfigPath))
+    try { $configuredSecrets = @(($raw | Out-String) | ConvertFrom-Json) } catch {
+        throw "Wrangler secret inventory was not valid JSON."
+    }
+    $configuredNames = @(
+        @($configuredSecrets | ForEach-Object { [string]$_.name }) + @($AdditionalNames) |
+            Select-Object -Unique
+    )
+    $missing = @($requiredNames | Where-Object { $_ -notin $configuredNames })
+    if ($missing.Count -gt 0) {
+        throw "Worker secret inventory is incomplete: $($missing -join ', ')."
+    }
+}
+
+function Assert-AdminIdentityAllowlistValue([string]$Value) {
+    if ([string]::IsNullOrWhiteSpace($Value) -or $Value.Length -gt 8192) {
+        throw "ADMIN_IDENTITY_ALLOWLIST must be a bounded JSON object."
+    }
+    try { $configuration = $Value | ConvertFrom-Json } catch {
+        throw "ADMIN_IDENTITY_ALLOWLIST must be valid JSON."
+    }
+    $properties = @($configuration.PSObject.Properties)
+    if (
+        $null -eq $configuration -or
+        $configuration -is [System.Array] -or
+        $properties.Count -ne 1 -or
+        $properties[0].Name -cne "emails" -or
+        $configuration.emails -isnot [System.Array] -or
+        $configuration.emails.Count -lt 1 -or
+        $configuration.emails.Count -gt 32
+    ) {
+        throw "ADMIN_IDENTITY_ALLOWLIST must contain only an emails array with 1 to 32 entries."
+    }
+    $seen = @{}
+    foreach ($rawEmail in @($configuration.emails)) {
+        if ($rawEmail -isnot [string]) {
+            throw "ADMIN_IDENTITY_ALLOWLIST entries must be strings."
+        }
+        $email = [string]$rawEmail
+        if (
+            $email.Length -gt 320 -or
+            $email -cne $email.Trim() -or
+            $email -cne $email.ToLowerInvariant() -or
+            $email -notmatch '^[^@\s]+@[^@\s]+$' -or
+            $seen.ContainsKey($email)
+        ) {
+            throw "ADMIN_IDENTITY_ALLOWLIST contains an invalid or duplicate email entry."
+        }
+        $seen[$email] = $true
+    }
+}
+
+function Remove-SecretOverlay([string]$Path) {
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path)) { return }
+    $item = Get-Item -LiteralPath $Path -Force
+    if ($item.PSIsContainer) { throw "The Worker secret overlay cleanup target must be a file." }
+    if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0) {
+        [IO.File]::WriteAllBytes($item.FullName, [byte[]]@())
+    }
+    Remove-Item -LiteralPath $item.FullName -Force -ErrorAction Stop
+    if (Test-Path -LiteralPath $item.FullName) {
+        throw "The one-use Worker secret overlay could not be deleted."
+    }
+}
+
 function Get-DeploymentStatus {
     $raw = @(Invoke-Wrangler -Arguments @("deployments", "status", "--json", "--config", $script:ConfigPath))
     try { return (($raw | Out-String) | ConvertFrom-Json) } catch {
@@ -271,8 +356,63 @@ $promoted = $false
 $rollbackCompleted = $false
 $stagedSmoke = $null
 $liveSmoke = $null
+$resolvedSecretOverlayPath = $null
+$secretOverlayPathToDelete = $null
+$secretOverlayNames = @()
+$secretUploadArguments = @()
 
 try {
+    if (-not [string]::IsNullOrWhiteSpace($SecretOverlayPath)) {
+        $resolvedSecretOverlayPath = [IO.Path]::GetFullPath($SecretOverlayPath)
+        $overlayName = [IO.Path]::GetFileName($resolvedSecretOverlayPath)
+        $overlayDirectory = [IO.Path]::GetFullPath(
+            (Split-Path -Parent $resolvedSecretOverlayPath)
+        ).TrimEnd([IO.Path]::DirectorySeparatorChar)
+        $expectedTempDirectory = [IO.Path]::GetFullPath(
+            [IO.Path]::GetTempPath()
+        ).TrimEnd([IO.Path]::DirectorySeparatorChar)
+        if (
+            $overlayName -notmatch '^sing-yin-worker-secrets-[A-Za-z0-9_-]{8,128}\.json$' -or
+            -not [string]::Equals(
+                $overlayDirectory,
+                $expectedTempDirectory,
+                [StringComparison]::OrdinalIgnoreCase
+            )
+        ) {
+            throw "The Worker secret overlay must use the controlled one-use name in the Windows temp directory."
+        }
+        if (-not (Test-Path -LiteralPath $resolvedSecretOverlayPath -PathType Leaf)) {
+            throw "The Worker secret overlay file is missing."
+        }
+        $overlayItem = Get-Item -LiteralPath $resolvedSecretOverlayPath -Force
+        if (($overlayItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "The Worker secret overlay must not be a reparse point."
+        }
+        # Register cleanup as soon as the path itself is proven safe. Parsing or
+        # semantic validation must never strand a one-use file containing secrets.
+        $secretOverlayPathToDelete = $resolvedSecretOverlayPath
+        try { $overlay = Get-Content -LiteralPath $resolvedSecretOverlayPath -Raw -Encoding UTF8 | ConvertFrom-Json } catch {
+            throw "The Worker secret overlay is not valid JSON."
+        }
+        $secretOverlayNames = @($overlay.PSObject.Properties | ForEach-Object { [string]$_.Name })
+        if (
+            $secretOverlayNames.Count -eq 0 -or
+            $secretOverlayNames.Count -gt 32 -or
+            @($secretOverlayNames | Where-Object { $_ -notmatch '^[A-Z][A-Z0-9_]{1,127}$' }).Count -gt 0
+        ) {
+            throw "The Worker secret overlay contains invalid secret names."
+        }
+        foreach ($property in @($overlay.PSObject.Properties)) {
+            if ($property.Value -isnot [string] -or [string]::IsNullOrWhiteSpace($property.Value)) {
+                throw "Every Worker secret overlay value must be a non-empty string."
+            }
+        }
+        $allowlistProperty = @($overlay.PSObject.Properties | Where-Object { $_.Name -ceq "ADMIN_IDENTITY_ALLOWLIST" })
+        if ($allowlistProperty.Count -eq 1) {
+            Assert-AdminIdentityAllowlistValue -Value ([string]$allowlistProperty[0].Value)
+        }
+        $secretUploadArguments = @("--secrets-file", $resolvedSecretOverlayPath)
+    }
     Write-Step "Validating immutable release source and pinned Worker toolchain"
     $releaseCommit = Assert-ImmutableRelease -Repository $SourceRoot -TagName $ReleaseRef
     $script:NodePath = Find-NodeExecutable
@@ -288,7 +428,9 @@ try {
         throw "The active Wrangler executable is not version 4.110.0."
     }
     $null = New-Item -ItemType Directory -Path $outputDirectory -Force
-    Invoke-Wrangler -Arguments @("versions", "upload", "--dry-run", "--strict", "--config", $script:ConfigPath) | Out-Null
+    $dryRunArguments = @("versions", "upload", "--dry-run", "--strict", "--config", $script:ConfigPath) + $secretUploadArguments
+    Invoke-Wrangler -Arguments $dryRunArguments | Out-Null
+    Assert-RequiredWorkerSecrets -AdditionalNames $secretOverlayNames
 
     Write-Step "Capturing the current 100 percent production version"
     $before = Get-DeploymentStatus
@@ -299,10 +441,11 @@ try {
     $previousVersionId = [string]$positiveVersions[0].version_id
 
     Write-Step "Uploading $ReleaseRef as an undeployed Worker version"
-    Invoke-Wrangler -OutputFile $uploadOutput -Arguments @(
+    $uploadArguments = @(
         "versions", "upload", "--strict", "--config", $script:ConfigPath,
         "--tag", $ReleaseRef, "--message", "Service Weave $ReleaseRef"
-    ) | Out-Null
+    ) + $secretUploadArguments
+    Invoke-Wrangler -OutputFile $uploadOutput -Arguments $uploadArguments | Out-Null
     $uploadEvent = Read-WranglerEvent -Path $uploadOutput -Type "version-upload"
     $newVersionId = [string]$uploadEvent.version_id
     if ($newVersionId -notmatch '^[0-9a-f-]{36}$' -or $newVersionId -ceq $previousVersionId) {
@@ -338,6 +481,11 @@ try {
 
     Write-Step "Verifying the live canonical site"
     $liveSmoke = Invoke-SmokeChecks -BaseUrl $PublicBaseUrl
+    # A successful report is only truthful after the one-use secret file has
+    # been securely emptied and removed. Cleanup failure follows the same
+    # rollback path as any other deployment failure.
+    Remove-SecretOverlay -Path $secretOverlayPathToDelete
+    $secretOverlayPathToDelete = $null
     Write-Report -Payload ([ordered]@{
         status = "pass"
         releaseRef = $ReleaseRef
@@ -390,4 +538,5 @@ try {
     if (Test-Path -LiteralPath $outputDirectory) {
         Remove-Item -LiteralPath $outputDirectory -Recurse -Force -ErrorAction SilentlyContinue
     }
+    Remove-SecretOverlay -Path $secretOverlayPathToDelete
 }

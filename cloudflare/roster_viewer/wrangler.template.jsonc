@@ -23,16 +23,12 @@
     "ACCESS_AUD": "REPLACE_WITH_ACCESS_APPLICATION_AUD",
     "AUTH_EPOCH": 1,
     "ORIGIN_PORT": 8080,
-    "ORIGIN_PRINCIPAL_KID": "origin-v1",
-    "ADMIN_IDENTITY_ALLOWLIST": {
-      "emails": [
-        "REPLACE_WITH_EXACT_ADMIN_EMAIL"
-      ]
-    }
+    "ORIGIN_PRINCIPAL_KID": "origin-v1"
   },
   "secrets": {
     "required": [
       "ADMIN_BEARER_TOKEN",
+      "ADMIN_IDENTITY_ALLOWLIST",
       "ADMIN_SESSION_SECRET",
       "GUEST_SESSION_SECRET",
       "ORIGIN_PRINCIPAL_SECRET"

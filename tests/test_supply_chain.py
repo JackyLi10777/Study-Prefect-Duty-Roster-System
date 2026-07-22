@@ -62,12 +62,16 @@ def test_github_quality_gates_use_full_history_and_locked_dependencies() -> None
 
 def test_codeql_and_dependabot_are_configured() -> None:
     codeql = (ROOT / ".github" / "workflows" / "codeql.yml").read_text(encoding="utf-8")
-    assert "nicegui_app/**/*.py" in codeql
-    assert "docs/**" not in codeql
+    assert "pull_request:" in codeql
+    assert "paths:" not in codeql
+    assert "analyze:" in codeql
     assert "cancel-in-progress: true" in codeql
+    assert "languages: python,javascript-typescript" in codeql
     dependabot = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
     assert "package-ecosystem: pip" in dependabot
     assert "package-ecosystem: github-actions" in dependabot
+    assert "package-ecosystem: npm" in dependabot
+    assert 'directory: "/cloudflare/roster_viewer"' in dependabot
 
 
 def test_local_secret_scan_includes_the_cloudflare_gateway() -> None:
@@ -77,6 +81,16 @@ def test_local_secret_scan_includes_the_cloudflare_gateway() -> None:
     assert '"design_system"' in security_gate
     assert '"pnpm-lock.yaml"' not in security_gate
     assert {"design_system", "docs", "README.md", "PROJECT_STATUS.md"} <= set(_SECRET_SCAN_TARGETS)
+
+
+def test_local_dependency_gate_audits_python_and_worker_locks() -> None:
+    security_gate = (ROOT / "scripts" / "run_security_checks.py").read_text(encoding="utf-8")
+
+    assert '"pip_audit", "-r", "requirements.lock"' in security_gate
+    assert "def _run_worker_dependency_audit()" in security_gate
+    assert 'shutil.which("pnpm")' in security_gate
+    assert '"--audit-level", "high", "--json"' in security_gate
+    assert 'cwd=PROJECT_ROOT / "cloudflare" / "roster_viewer"' in security_gate
 
 
 def test_secret_scan_ignores_only_standard_public_pnpm_integrity_lines() -> None:

@@ -83,19 +83,23 @@ function accessEnvironment(teamName) {
   return {
     ACCESS_TEAM_DOMAIN: `https://${teamName}.cloudflareaccess.com`,
     ACCESS_AUD: 'expected-access-audience',
-    ADMIN_IDENTITY_ALLOWLIST: {
+    ADMIN_IDENTITY_ALLOWLIST: JSON.stringify({
       emails: [
         'admin@syss.edu.hk',
         'operator.backup@gmail.com',
         'operator.backup@outlook.com',
       ],
-    },
+    }),
     ADMIN_SESSION_SECRET: 'test-only-admin-session-secret-with-more-than-32-characters', // pragma: allowlist secret -- deterministic test fixture
     GUEST_SESSION_SECRET: 'test-only-guest-session-secret-with-more-than-32-characters', // pragma: allowlist secret -- deterministic test fixture
     ORIGIN_PRINCIPAL_SECRET: 'test-only-origin-principal-secret-with-more-than-32-characters', // pragma: allowlist secret -- deterministic test fixture
     AUTH_EPOCH: 7,
     ORIGIN_PRINCIPAL_KID: 'test-origin-v7',
   };
+}
+
+function configuredAdminEmails(env) {
+  return JSON.parse(env.ADMIN_IDENTITY_ALLOWLIST).emails;
 }
 
 async function adminSessionCookiePair(env, email, accessExpiresAt, options = {}) {
@@ -151,7 +155,7 @@ function memoryKv() {
   };
 }
 
-function validClaims(env, nowSeconds, email = env.ADMIN_IDENTITY_ALLOWLIST.emails[0]) {
+function validClaims(env, nowSeconds, email = configuredAdminEmails(env)[0]) {
   return {
     iss: env.ACCESS_TEAM_DOMAIN,
     aud: [env.ACCESS_AUD],
@@ -199,7 +203,7 @@ Deno.test('validates every exact administrator email against the trusted team JW
   const fixture = await signingFixture();
   const captured = {};
 
-  for (const email of env.ADMIN_IDENTITY_ALLOWLIST.emails) {
+  for (const email of configuredAdminEmails(env)) {
     const token = await signedJwt(validClaims(env, nowSeconds, email));
     const result = await validateAccessJwt(token, env, {
       nowMillis: nowSeconds * 1_000,
@@ -254,7 +258,8 @@ Deno.test('uses Worker-compatible JWKS fetch options for the complete Access cal
 Deno.test('normalizes a bounded exact-email allowlist and rejects malformed configuration', async () => {
   const env = accessEnvironment('sing-yin-runtime-config');
   const configuration = normalizeAccessConfiguration(env);
-  assertEquals(configuration.adminEmails.join(','), env.ADMIN_IDENTITY_ALLOWLIST.emails.join(','));
+  const configuredAllowlist = JSON.parse(env.ADMIN_IDENTITY_ALLOWLIST);
+  assertEquals(configuration.adminEmails.join(','), configuredAllowlist.emails.join(','));
 
   for (const invalidAdminEmails of [
     [],
@@ -266,14 +271,15 @@ Deno.test('normalizes a bounded exact-email allowlist and rejects malformed conf
   ]) {
     await expectRejected(() => Promise.resolve(normalizeAccessConfiguration({
       ...env,
-      ADMIN_IDENTITY_ALLOWLIST: { emails: invalidAdminEmails },
+      ADMIN_IDENTITY_ALLOWLIST: JSON.stringify({ emails: invalidAdminEmails }),
     })));
   }
   for (const invalidAllowlist of [
-    null,
-    [],
-    {},
-    { emails: env.ADMIN_IDENTITY_ALLOWLIST.emails, extra: true },
+    '',
+    'not-json',
+    '[]',
+    '{}',
+    JSON.stringify({ emails: configuredAllowlist.emails, extra: true }),
   ]) {
     await expectRejected(() => Promise.resolve(normalizeAccessConfiguration({
       ...env,
@@ -356,7 +362,7 @@ Deno.test('records a privacy-safe support reference when the Access callback has
   assertEquals(record.assertionPresent, false);
   assertEquals(record.authorizationCookiePresent, false);
   assert(!diagnostic.includes(env.ACCESS_AUD));
-  for (const email of env.ADMIN_IDENTITY_ALLOWLIST.emails) assert(!diagnostic.includes(email));
+  for (const email of configuredAdminEmails(env)) assert(!diagnostic.includes(email));
 });
 
 Deno.test('separates a valid Access JWT from a missing administrator session secret', async () => {
@@ -391,7 +397,7 @@ Deno.test('separates a valid Access JWT from a missing administrator session sec
   assertEquals(record.assertionPresent, true);
   assertEquals(record.authorizationCookiePresent, false);
   assert(!diagnostic.includes(token));
-  for (const email of env.ADMIN_IDENTITY_ALLOWLIST.emails) assert(!diagnostic.includes(email));
+  for (const email of configuredAdminEmails(env)) assert(!diagnostic.includes(email));
 });
 
 Deno.test('strips Access and gateway session credentials but preserves the NiceGUI session cookie', () => {
@@ -675,8 +681,23 @@ Deno.test('serves guest landing, redirects guest app paths, and exposes capabili
   assertEquals(health.status, 200);
   assert(body.includes('private-origin-proxy'));
   assert(!body.includes(env.ACCESS_TEAM_DOMAIN));
-  for (const email of env.ADMIN_IDENTITY_ALLOWLIST.emails) assert(!body.includes(email));
+  for (const email of configuredAdminEmails(env)) assert(!body.includes(email));
   assert(!body.includes(env.ACCESS_AUD));
+});
+
+Deno.test('gateway health fails closed when the private administrator allowlist is invalid', async () => {
+  const env = accessEnvironment('sing-yin-runtime-invalid-health');
+  env.ADMIN_IDENTITY_ALLOWLIST = JSON.stringify({ emails: ['UPPER@example.com'] });
+  const health = await worker.fetch(
+    new Request('https://gateway.example/healthz'),
+    env,
+    { waitUntil() {} },
+  );
+  const body = await health.text();
+  assertEquals(health.status, 503);
+  assert(body.includes('configuration_error'));
+  assert(!body.includes('UPPER@example.com'));
+  assert(!body.includes(env.ACCESS_TEAM_DOMAIN));
 });
 
 Deno.test('admin sessions are bounded and reject tampering, expiry, and removed administrators', async () => {
@@ -684,14 +705,14 @@ Deno.test('admin sessions are bounded and reject tampering, expiry, and removed 
   const nowMillis = Date.now();
   const nowSeconds = Math.floor(nowMillis / 1_000);
   const session = await createAdminSessionToken(
-    env.ADMIN_IDENTITY_ALLOWLIST.emails[0],
+    configuredAdminEmails(env)[0],
     nowSeconds + (24 * 60 * 60),
     env,
     { nowMillis },
   );
   assertEquals(session.payload.exp - session.payload.iat, 8 * 60 * 60);
   const valid = await validateAdminSessionToken(session.token, env, { nowMillis });
-  assertEquals(valid.email, env.ADMIN_IDENTITY_ALLOWLIST.emails[0]);
+  assertEquals(valid.email, configuredAdminEmails(env)[0]);
 
   const [payloadSegment, signatureSegment] = session.token.split('.');
   const tamperedSignature = `${signatureSegment.startsWith('A') ? 'B' : 'A'}${signatureSegment.slice(1)}`;
@@ -709,7 +730,7 @@ Deno.test('admin sessions are bounded and reject tampering, expiry, and removed 
   const oldNowMillis = nowMillis - (9 * 60 * 60 * 1_000);
   const oldNowSeconds = Math.floor(oldNowMillis / 1_000);
   const expired = await createAdminSessionToken(
-    env.ADMIN_IDENTITY_ALLOWLIST.emails[0],
+    configuredAdminEmails(env)[0],
     oldNowSeconds + 300,
     env,
     { nowMillis: oldNowMillis },
@@ -718,7 +739,7 @@ Deno.test('admin sessions are bounded and reject tampering, expiry, and removed 
 
   const changedAllowlist = {
     ...env,
-    ADMIN_IDENTITY_ALLOWLIST: { emails: ['replacement-admin@syss.edu.hk'] },
+    ADMIN_IDENTITY_ALLOWLIST: JSON.stringify({ emails: ['replacement-admin@syss.edu.hk'] }),
   };
   await expectRejected(() => validateAdminSessionToken(session.token, changedAllowlist, { nowMillis }));
 });
@@ -933,7 +954,7 @@ Deno.test('serves the immutable Service Weave PNG identity and redirects the old
 Deno.test('admin principal wins when both valid gateway cookies are present', async () => {
   const env = accessEnvironment('sing-yin-runtime-principal-precedence');
   const nowSeconds = Math.floor(Date.now() / 1_000);
-  const adminCookie = await adminSessionCookiePair(env, env.ADMIN_IDENTITY_ALLOWLIST.emails[0], nowSeconds + 600);
+  const adminCookie = await adminSessionCookiePair(env, configuredAdminEmails(env)[0], nowSeconds + 600);
   const guestCookie = await guestSessionCookiePair(env);
   let originRequest;
   env.ROSTER_ORIGIN = {
@@ -948,7 +969,7 @@ Deno.test('admin principal wins when both valid gateway cookies are present', as
   assertEquals(await result.text(), 'admin');
   const principal = signedPayload(originRequest.headers.get('X-Sing-Yin-Origin-Principal') || '');
   assertEquals(principal.mode, 'admin');
-  assertEquals(principal.subject, env.ADMIN_IDENTITY_ALLOWLIST.emails[0]);
+  assertEquals(principal.subject, configuredAdminEmails(env)[0]);
   assertEquals(originRequest.headers.get('Cookie'), 'session=nicegui-session');
 });
 
@@ -1016,7 +1037,7 @@ Deno.test('authenticated logout revokes admin and guest origin sessions before c
       mode: 'admin',
       cookie: await adminSessionCookiePair(
         env,
-        env.ADMIN_IDENTITY_ALLOWLIST.emails[0],
+        configuredAdminEmails(env)[0],
         nowSeconds + 600,
       ),
     },
@@ -1154,7 +1175,7 @@ Deno.test('authenticated app routes return the VPC response directly without clo
     assertEquals(originRequest.headers.get('X-Sing-Yin-Access-Email'), null);
     const principal = signedPayload(originRequest.headers.get('X-Sing-Yin-Origin-Principal') || '');
     assertEquals(principal.mode, 'admin');
-    assertEquals(principal.subject, env.ADMIN_IDENTITY_ALLOWLIST.emails[0]);
+    assertEquals(principal.subject, configuredAdminEmails(env)[0]);
     assertEquals(principal.exp - principal.iat <= 8 * 60 * 60, true);
 
     const websocketResult = await worker.fetch(new Request('https://gateway.example/_nicegui_ws', {
@@ -1177,7 +1198,7 @@ Deno.test('authenticated status verifies the private origin without exposing ide
   const nowSeconds = Math.floor(Date.now() / 1_000);
   const adminCookie = await adminSessionCookiePair(
     env,
-    env.ADMIN_IDENTITY_ALLOWLIST.emails[0],
+      configuredAdminEmails(env)[0],
     nowSeconds + 300,
   );
   let originRequest;
@@ -1202,7 +1223,7 @@ Deno.test('authenticated status verifies the private origin without exposing ide
   assert(body.includes('"origin":"ok"'));
   assert(body.includes('"mode":"admin"'));
   assert(!body.includes(env.ACCESS_AUD));
-  assert(!body.includes(env.ADMIN_IDENTITY_ALLOWLIST.emails[0]));
+    assert(!body.includes(configuredAdminEmails(env)[0]));
 });
 
 Deno.test('verified administrators receive a guided origin failure with a support reference', async () => {
@@ -1210,7 +1231,7 @@ Deno.test('verified administrators receive a guided origin failure with a suppor
   const nowSeconds = Math.floor(Date.now() / 1_000);
   const adminCookie = await adminSessionCookiePair(
     env,
-    env.ADMIN_IDENTITY_ALLOWLIST.emails[0],
+    configuredAdminEmails(env)[0],
     nowSeconds + 300,
   );
   env.ROSTER_ORIGIN = { fetch() { throw new Error('private origin unavailable'); } };
@@ -1225,7 +1246,7 @@ Deno.test('verified administrators receive a guided origin failure with a suppor
   assert(body.includes('主機暫時未能連接'));
   assert(body.includes('Your administrator identity was verified'));
   assert(!body.includes(adminCookie));
-  assert(!body.includes(env.ADMIN_IDENTITY_ALLOWLIST.emails[0]));
+  assert(!body.includes(configuredAdminEmails(env)[0]));
 });
 
 Deno.test('replays an identical share create safely but rejects a conflicting share id', async () => {
