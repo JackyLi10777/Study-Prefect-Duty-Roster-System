@@ -34,6 +34,24 @@
       "ORIGIN_PRINCIPAL_SECRET"
     ]
   },
+  "ratelimits": [
+    {
+      "name": "GUEST_START_RATE_LIMITER",
+      "namespace_id": "1077701",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    },
+    {
+      "name": "PUBLIC_VIEW_RATE_LIMITER",
+      "namespace_id": "1077702",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    }
+  ],
   "kv_namespaces": [
     {
       "binding": "ROSTER_SHARES",

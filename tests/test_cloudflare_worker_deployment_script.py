@@ -29,6 +29,17 @@ def test_worker_deployment_is_bound_to_an_immutable_published_release() -> None:
     assert "is not contained in origin/main" in source
 
 
+def test_worker_deployment_derives_its_default_source_from_its_own_checkout() -> None:
+    source = _source()
+    parameter_block = source.split("$ErrorActionPreference", 1)[0]
+
+    assert '[string]$SourceRoot = ""' in parameter_block
+    assert 'D:\\code_v3' not in parameter_block
+    assert 'if ([string]::IsNullOrWhiteSpace($SourceRoot))' in source
+    assert '$SourceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))' in source
+    assert "explicit -SourceRoot remains available" in source
+
+
 def test_worker_deployment_uses_pinned_wrangler_and_structured_events() -> None:
     source = _source()
     assert 'package.devDependencies.wrangler -cne "4.110.0"' in source

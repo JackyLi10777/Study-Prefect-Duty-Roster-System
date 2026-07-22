@@ -125,7 +125,7 @@ class _Request:
     url: _URL
 
 
-def test_request_resolution_uses_forwarded_public_host_and_local_fallback() -> None:
+def test_request_resolution_uses_forwarded_public_host_and_explicit_local_mode() -> None:
     payload = _payload()
     token = seal_origin_principal_for_test(payload, environment=ENV)
     request = _Request(
@@ -137,7 +137,12 @@ def test_request_resolution_uses_forwarded_public_host_and_local_fallback() -> N
         url=_URL(netloc="127.0.0.1:8080", path="/rosters", query="week=1"),
     )
     assert principal_from_request(request, environment=ENV, now=10_000).mode is AccessMode.GUEST
-    assert principal_from_request(None, environment=ENV).mode is AccessMode.LOCAL_MAINTENANCE
+    with pytest.raises(OriginPrincipalError, match="explicit local-maintenance"):
+        principal_from_request(None, environment=ENV)
+    assert principal_from_request(
+        None,
+        environment={**ENV, "SING_YIN_LOCAL_MAINTENANCE": "1"},
+    ).mode is AccessMode.LOCAL_MAINTENANCE
     with pytest.raises(OriginPrincipalError, match="required"):
         principal_from_request(
             None,
@@ -167,7 +172,8 @@ def test_isolated_e2e_guest_override_requires_all_three_guards() -> None:
         ("SING_YIN_E2E_ACCESS_MODE", "admin"),
     ):
         rejected = {**environment, key: value}
-        assert principal_from_request(None, environment=rejected).mode is AccessMode.LOCAL_MAINTENANCE
+        with pytest.raises(OriginPrincipalError, match="explicit local-maintenance"):
+            principal_from_request(None, environment=rejected)
 
 
 def test_python_accepts_the_worker_cross_language_principal_vector() -> None:

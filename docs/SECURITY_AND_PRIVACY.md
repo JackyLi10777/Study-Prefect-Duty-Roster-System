@@ -57,6 +57,13 @@ flowchart LR
   identity and viewer responses, and a restrictive CSP for Worker-owned pages;
 - same-origin checks for unsafe methods and WebSocket handshakes;
 - bounded request-body streaming before JSON parsing;
+- Cloudflare Rate Limiting bindings protect Guest session creation and public
+  share retrieval before expensive work. Keys are route-scoped HMAC digests of
+  the edge-provided connecting address, so raw addresses are neither sent to
+  the limiter nor written by application logs. Limited responses return `429`,
+  `Retry-After` and `Cache-Control: no-store`; missing or failed bindings make
+  the endpoint and `/healthz` fail closed instead of silently disabling the
+  protection;
 - cryptographic randomness and constant-work bearer comparison;
 - exact Cloudflare Access issuer, audience, algorithm, JWK, time and secret
   allowlist validation;
@@ -65,6 +72,13 @@ flowchart LR
 - immutable KV content keys plus digest validation and fail-closed collision
   handling because KV does not provide compare-and-swap;
 - required Worker secrets inventoried before any deployment version is uploaded.
+
+Cloudflare's counters are local to an edge location and eventually consistent;
+they are a bounded-abuse control rather than an exact global quota. The Guest
+threshold is intentionally tolerant of shared school or household addresses,
+while the public viewer has a higher read-only allowance. Identity,
+authorization, bounded request bodies and origin capability checks remain the
+authoritative security boundaries.
 
 The exact administrator allowlist is a Cloudflare Secret named
 `ADMIN_IDENTITY_ALLOWLIST`, containing a bounded JSON object such as

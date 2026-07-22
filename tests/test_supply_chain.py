@@ -57,6 +57,8 @@ def test_github_quality_gates_use_full_history_and_locked_dependencies() -> None
     assert "--require-hashes -r requirements-dev.lock" in workflow
     assert "verify_update.py" in workflow
     assert "needs_deno" in workflow
+    assert "deno-version: 2.9.2" in workflow
+    assert "deno-version: v2.x" not in workflow
     assert "cancel-in-progress: true" in workflow
 
 

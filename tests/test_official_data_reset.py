@@ -55,6 +55,7 @@ def _disabled_public_shares() -> PublicRosterShareSettings:
 def test_runtime_bootstraps_official_empty_but_practice_with_fictitious_seed(tmp_path: Path, monkeypatch) -> None:
     original_workflow = runtime._workflow
     try:
+        monkeypatch.setenv("SING_YIN_LOCAL_MAINTENANCE", "1")
         official_profile = ApplicationModeSettings(
             mode="official",
             database_path=tmp_path / "official" / "runtime.sqlite3",
