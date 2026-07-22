@@ -65,10 +65,19 @@ restore audit, and isolated restore. Its SHA-256 is
 Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` passed zero-traffic staged and canonical
 health／entrance／viewer checks before receiving 100% traffic. Supervised
 administrator, advisor, and real-device acceptance remains a human responsibility.
-If an rc19 rollout fails, this exact rc18 host／Worker pair is the first-level
+If an rc20 deployment fails, this exact rc18 host／Worker pair is the first-level
 rollback target. rc17／`99f5816` with Worker
 `c85770b2-c626-462c-bc74-5e6bd305c75b` is retained only as a secondary verified
 baseline.
+
+**Verified but not deployed rc20 candidate:** annotated tag `v1.2.0-rc.20` at
+commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` passed all 14／14 formal gates
+under source fingerprint
+`93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`:
+839 Python tests, 3 motion-runtime contracts, and 40 Worker contracts. This is
+source-matched machine evidence, not a claim that the rc18 Windows origin has
+already switched. Deployment still requires UAC approval, and supervised Head
+Study Prefect and teacher-advisor acceptance remains open.
 
 **Public security and release integrity:** Public browsers reach only the
 Cloudflare Worker; the official NiceGUI origin remains loopback-only. Admin
@@ -107,7 +116,7 @@ passed all 14 formal gates before the controlled origin and Worker rollout.
 | `codex/login-copy-music-rc18` | NiceGUI + SQLite, release source | Live rc18 `fd504a8` entrance, devotional, interaction and release integration line |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite, historical source | Previous Service Weave editorial integration line |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Previous unified-guest architecture line; no longer the formal baseline |
-| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.18`; Windows origin and canonical Worker are synchronized |
+| `main` | NiceGUI + SQLite, self-hosted | Verified `v1.2.0-rc.20` candidate source; the Windows origin remains on rc18 pending UAC-approved deployment |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
@@ -251,12 +260,13 @@ complete risk matrix is in [`UPDATE_WORKFLOW.md`](docs/UPDATE_WORKFLOW.md).
    revocable same-host `/view#…` link for the published roster. After a
    published-duty adjustment, issue a fresh link and revoke the old one.
 
-Fixed-weekday mode keeps each active Assistant Head Study Prefect on the same weekday while the directory and declared availability remain unchanged. A leave replacement covers that duty only and does not silently become the permanent owner. Flexible-weekly mode remains deterministic and auditable, honours declared available days, and avoids repeating the immediately previous Assist weekday when fairness and feasibility permit. See [Assist assignment modes](docs/ROSTER_POLICY_MODES.md).
+Fixed-weekday mode keeps each active Assistant Head Study Prefect on the same weekday while the directory and declared availability remain unchanged. A leave replacement covers that week-local duty only and never changes the permanent weekday owner. Flexible-weekly mode remains deterministic and auditable, uses persistent fairness history as its primary assignment cost, honours declared available days, and avoids repeating the immediately previous Assist weekday when fairness and feasibility permit. Only Assistant Head Study Prefects are eligible for `Assist. in charge`; unchecked availability days are unavailable in both modes. An existing roster week always reopens with its persisted mode. See [Assist assignment modes](docs/ROSTER_POLICY_MODES.md).
 
 ## Policy invariants
 
 - Assistant Head Study Prefects serve only `Assist. in charge`.
 - Fixed-weekday mode preserves the configured Assistant Head Study Prefect weekday; Flexible-weekly mode rotates only among declared available weekdays.
+- Unchecked availability days are unavailable and cannot be overridden by either Assist mode or room scheduling.
 - Pre-generation leave can cause a one-duty replacement, but never rewrites the fixed-weekday owner.
 - Study Prefects serve only Rooms 302, 303, and 202.
 - Room 302: one prefect, Monday–Friday.

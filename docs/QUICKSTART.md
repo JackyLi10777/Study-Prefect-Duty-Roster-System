@@ -2,7 +2,7 @@
 
 > **目前狀態（live rc18）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.18`／commit `fd504a8`，`/healthz` 正常且 `/readyz` ready；canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 gate，正式備份、checksum、公平對帳及隔離還原亦已通過。
 
-> **rc19 尚未上線：**手機首屏 Admin／Guest CTA、256px／200% reflow、軟鍵盤避讓、route focus、More current-page 語意、tablet／desktop 共存、觸控 icon story、forced colours 及新增 accessibility 規則仍是候選內容。完整 viewport 與驗證責任以[正式驗收證據矩陣](ACCEPTANCE_EVIDENCE.md#rc19-候選裝置矩陣--candidate-device-matrix)為準；正式網站在發布／驗證完成前仍以 rc18 行為為準。
+> **rc20 已驗證但尚未上線：** annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` 以 fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式閘門（839 Python、3 motion、40 Worker）。它包括 rc19 的手機／平板／無障礙改進及 Assist. in charge 雙模式，但正式 Windows 主機仍等待 UAC 核准部署；真人驗收亦未完成，所以目前日常操作仍以 rc18 行為為準。
 
 ## 每日使用
 
@@ -14,13 +14,15 @@
 4. 完成後按「登出」，特別是共用裝置；只關閉分頁不等於清除管理員／Guest session 及同 session 的其他分頁狀態。
 5. 如只需查看首席導學風紀發出的週表，直接開啟完整 `/view#…` 連結；不要以 Guest 或 Admin 入口取代分享連結。
 
+rc20 上線後，生成前先在名單核對職務及「可值班日」：只有助理首席導學風紀可當 `Assist. in charge`，未勾選的星期一律視為不方便／不可值班。新週次可選「固定星期模式」或「每週靈活模式」；固定模式保留同一 AHP 的星期擁有權，本週請假只作一次替補；靈活模式按可值班日及長期公平記錄作可重現的每週變化。既有週表會重開其已保存模式。
+
 首次進入會跟隨電腦／手機的深淺模式；如瀏覽器尚未能判定，畫面先以深色安全呈現。按右上角外觀按鈕可依次選擇「跟隨系統 → 深色 → 淺色」。Guest 在同一有效 session 內重新整理仍會保留語言及外觀；登出後按設計回到新 session 預設。
 
 Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 session／workspace／tab 的示範 revision；複製分頁會獲得另一個 workspace。這只是 30 分鐘臨時續接，不是長期儲存；登出、到期、撤權或 origin 重啟後舊 token 會失效。
 
-## rc19 上線後的手機快速核對（目前不要當作 live 功能）
+## rc20 上線後的手機快速核對（目前不要當作 live 功能）
 
-只有交接紀錄已列出 rc19 的正式 tag／commit、來源 fingerprint、Worker version 及成功 rollout 後，才執行以下使用者核對；維護者必須另按[完整候選裝置矩陣](ACCEPTANCE_EVIDENCE.md#rc19-候選裝置矩陣--candidate-device-matrix)核對手機、兩種直向平板、橫向觸控平板及 full desktop，不以本節簡表代替矩陣：
+只有交接紀錄已列出 rc20 的正式 tag／commit、來源 fingerprint、沿用的 Worker version 及成功 origin rollout 後，才執行以下使用者核對；維護者必須另按[完整已驗證候選裝置矩陣](ACCEPTANCE_EVIDENCE.md#rc20-已驗證候選裝置矩陣--verified-candidate-device-matrix)核對手機、兩種直向平板、橫向觸控平板及 full desktop，不以本節簡表代替矩陣：
 
 1. 以 320px／390px 手機開啟 canonical 網址；毋須捲動已可看見唯一一組「管理員登入」及「進入訪客示範」，每個按鈕容易觸控且不與桌面 access panel 重複。
 2. 把瀏覽器放大至 200%，確認頁面文字、頁首、頁尾及四個底部導航在窄屏內 reflow；只有明確資料區可局部橫向捲動，整頁不可左右漂移。
@@ -68,6 +70,6 @@ Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 sess
 
 ## English
 
-The rc19 mobile/accessibility changes are not live yet. Keep using the rc18 behavior until the handover names an exact rc19 tag/commit, source-matched report, Worker version, controlled rollout, and supervised acceptance.
+Candidate `v1.2.0-rc.20` at `e3d84858abfe23714929a87c4bcf76e55999ce7c` passed 14／14 source-matched gates under fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` (839 Python, 3 motion, and 40 Worker contracts), but it is not live while UAC-approved Windows deployment and supervised acceptance remain pending. Keep using rc18 behavior until the handover records the successful switchover.
 
-The live `v1.2.0-rc.18` origin (`fd504a8`) and verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` provide one canonical site with either a time-limited **Guest experience** using fictional in-memory data or **Admin login** through Cloudflare Access. A refresh in the same Guest tab may restore its latest signed revision, but a duplicated tab receives another workspace and logout, expiry, revocation, or origin restart invalidates the temporary token. Select **Log out** when finished because closing one tab does not clear every session state. `/view#…` remains the separate read-only published-roster link. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for HTTP readiness, and only then opens the browser. For a durable fictional rehearsal with backup/restore, use `START_PRACTICE_MODE.cmd`; the remote Guest workspace is intentionally temporary. Check `/readyz`, not only `/healthz`, before accepting official writes.
+The live `v1.2.0-rc.18` origin (`fd504a8`) and verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` provide one canonical site with either a time-limited **Guest experience** using fictional in-memory data or **Admin login** through Cloudflare Access. A refresh in the same Guest tab may restore its latest signed revision, but a duplicated tab receives another workspace and logout, expiry, revocation, or origin restart invalidates the temporary token. Select **Log out** when finished because closing one tab does not clear every session state. `/view#…` remains the separate read-only published-roster link. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for HTTP readiness, and only then opens the browser. For a durable fictional rehearsal with backup/restore, use `START_PRACTICE_MODE.cmd`; the remote Guest workspace is intentionally temporary. Check `/readyz`, not only `/healthz`, before accepting official writes. In rc20, Fixed weekday preserves each AHP's weekday across weeks while a leave substitute remains week-local; Flexible weekly varies deterministically among declared available days with fairness history primary. Unchecked days are never eligible, and an existing week reopens with its saved mode.

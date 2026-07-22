@@ -10,7 +10,7 @@
 
 > **目前狀態（live rc18）：** `C:\SingYinRoster` 已固定於不可變標籤 `v1.2.0-rc.18`／`fd504a8`，並完成正式資料快照、隔離還原及受控切換。`Sing Yin Roster Host` 由非管理員 `SingYinRosterSvc` 帳戶運行；實際 loopback endpoint 由受保護 `.env` 的 `SING_YIN_HOST`／`SING_YIN_PORT` 決定，現為 `127.0.0.1:8080`。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量；Tunnel、Public、Guest、唯讀 Viewer、Access 轉向及 VPC health 已核對。rc18 的停止圍欄、健康、ready 與回復檢查均讀取同一受保護 endpoint；正式備份及隔離還原已通過。
 
-> **rc19 尚未部署：**目前 mobile/accessibility working tree 不是可供本手冊安裝的已批准 release tag。不要把 branch、未提交 source、局部測試或文件中的候選畫面複製到 `C:\SingYinRoster`；先完成 source-matched release report、正式備份／隔離還原、受控 origin／Worker rollout 及 canonical user-facing checks。回退基線仍是 rc18／`fd504a8` 與 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`。
+> **rc20 已驗證但尚未部署：**annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` 已在乾淨候選工作樹以 fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（839 Python＋3 motion＋40 Worker contract）。它包含 Assist. in charge 固定星期／每週靈活兩種模式及 additive migration `0011_assist_assignment_mode`。目前尚未完成需要提升權限的受控 Windows 切換，所以 `C:\SingYinRoster` 仍是 live rc18；不要把 branch、未提交 source 或一般開發樹手動複製進正式主機。rc20 的 Worker source／設定沒有改動，本次不重新部署 Worker，仍沿用 `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`。
 
 ---
 
@@ -608,6 +608,24 @@ C:\SingYinRoster\data\backups
 
 只在沒有進行排班或發布時更新。
 
+### rc20 目前的受控部署命令（尚待執行）
+
+以下命令必須在已提升權限的 PowerShell 執行，因為 `Sing Yin Roster Host` 工作受 Windows ACL 保護：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File C:\Users\lichu\.codex\worktrees\rc20-candidate\scripts\deploy_windows_release.ps1 `
+  -SourceRoot C:\Users\lichu\.codex\worktrees\rc20-candidate `
+  -HostRoot C:\SingYinRoster `
+  -ReleaseRef v1.2.0-rc.20 `
+  -TaskName "Sing Yin Roster Host" `
+  -RuntimeUser SingYinRosterSvc
+```
+
+腳本會核對 annotated tag、`origin/main` ancestry 及正式 fingerprint，建立一份**新的**正式已驗證備份並完成隔離還原，才進入 maintenance 及停止工作；其後安裝 exact bundle、執行 additive migration `0011_assist_assignment_mode`、重新啟動、核對 `/healthz`／`/readyz`，並在失敗時依保存的 previous commit 自動回退。部署完成前不得預先填寫新備份檔名、SHA-256 或切換時間；這些只可由 `logs\windows-release-deployment-v1.2.0-rc.20.json` 的實際結果寫入交接紀錄。
+
+rc20 沒有 Worker source／設定變更，所以 Windows origin 成功後仍**不執行 Worker 部署**；canonical Worker 保持 verified version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`。以下手動步驟保留作安裝者理解及未來經批准候選的核對清單，不可與正在執行的受控腳本同時操作。
+
 ### 步驟 12.1：先建立已驗證離機備份
 
 完成第 11 節全部步驟。
@@ -631,10 +649,10 @@ $PreviousCommit = (git rev-parse HEAD).Trim()
 
 正常情況不會列出程式檔修改。如果看到不明檔案或 `M`、`D`，先停止，不要執行 reset 或刪除，交給維護者檢查。
 
-先向維護者取得本次已通過 GitHub Quality gate、CodeQL 及正式候選 gate 的下一個獲批准 annotated tag。不要自行猜測 `main` 是否已完成驗證，也不要把目前 rc18 當作未來固定版本。確認沒有不明修改後：
+先向維護者取得本次已通過 GitHub Quality gate、CodeQL 及正式候選 gate 的獲批准 annotated tag。rc20 的 exact 值是 `v1.2.0-rc.20`；不要自行猜測 `main` 是否已完成驗證，也不要把目前 rc18 當作未來固定版本。確認沒有不明修改後：
 
 ```powershell
-$ReleaseRef = "<next-approved-annotated-tag>"
+$ReleaseRef = "v1.2.0-rc.20"
 git fetch --prune --tags origin
 $ReleaseCommit = (git rev-parse "$ReleaseRef^{commit}").Trim()
 git merge-base --is-ancestor $ReleaseCommit origin/main
@@ -661,13 +679,13 @@ C:\SingYinRoster\.venv\Scripts\python.exe -m pip install --require-hashes -r C:\
 5. 下載一份測試 PDF，確認中文正常顯示。
 6. 在 `C:\SingYinRoster` 執行 `git rev-parse --short HEAD` 並把短版 commit 記入交接紀錄；這個值必須與本次已驗證、已發布的 commit 相同。`/healthz` 正常只證明程式與資料庫可回應，不能證明畫面已更新到最新原始碼。
 
-如本次候選改動手機／accessibility 或 Worker 入口，還要依[正式驗收證據矩陣](ACCEPTANCE_EVIDENCE.md)在 canonical 網址核對：320×760／390×844 首屏唯一 Admin／Guest CTA、200% zoom／256×700 reflow、軟鍵盤不遮焦點欄位、route focus、More current-page 語意、44px standalone targets，以及同一裝置矩陣中的 768×1024／820×1180 adaptive tablet、1024×768 desktop-shell touch tablet、1440×1024 full desktop；各形態都只可顯示正確 navigation shell，並核對 touch icon story 無漂移／旋轉及 light／dark、reduced motion、forced colours。任何一項失敗都不可只因 `/healthz`／`/readyz` 正常而接受發布。
+rc20 的自動化裝置矩陣已包含手機／平板／桌面與 accessibility，但 origin 切換後仍要依[正式驗收證據矩陣](ACCEPTANCE_EVIDENCE.md)在 canonical 網址核對 Assist 模式、可值班日、320×760／390×844 首屏、200% zoom／256×700 reflow、軟鍵盤、route focus、44px standalone targets、768×1024／820×1180／1024×768／1440×1024、light／dark、reduced motion及 forced colours。任何一項失敗都不可只因 `/healthz`／`/readyz` 正常而接受發布。
 
 ### 步驟 12.6：使用者畫面回歸時受控回退
 
 1. 立即停止接受正式寫入，記錄時間、canonical route、裝置、release tag／commit、Worker version 及非敏感畫面；不要重複提交可能已完成的操作。
 2. 先閱讀 Windows／Worker deployment JSON 的 rollback `attempted`、`succeeded`、previous commit／version。受控腳本已開始回退時，不要同時再跑第二次或手動覆寫檔案。
-3. 若 100% 切換後才發現回歸，由發布維護者以受控程序把 origin 恢復至上一個已驗證 commit；對 rc19 的目前基線是 rc18／`fd504a8`。Worker source 有變時，把精確 previous verified version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 恢復至 100% traffic。禁止 `git reset --hard`、直接複製開發樹或留下新 Worker／舊 origin 的混合版本。
+3. 若 rc20 切換後才發現回歸，由發布維護者先讓受控腳本依 deployment report 回復上一個已驗證 commit；目前 exact 基線是 rc18／`fd504a8`。Worker 本次沒有改動，必須繼續保持 verified version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 的 100% traffic。禁止 `git reset --hard`、直接複製開發樹或留下未經證明的混合版本。
 4. 回退後核對 host commit、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出和 rc18 使用者畫面。
 5. 只有上述結果全部一致才恢復操作；不能證明 rollback 成功時保持 maintenance／唯讀並交由 IT 處理。
 
