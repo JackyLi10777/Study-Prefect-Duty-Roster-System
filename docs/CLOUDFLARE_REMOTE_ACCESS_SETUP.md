@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **目前發布狀態（live rc18）：** Windows origin 正運行健康、ready 的 `v1.2.0-rc.18`／`fd504a8`；288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 gate，其中已包括隔離 Guest 流程。正式備份、checksum、公平對帳及隔離還原均通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 再以 staged rollout 通過 health、入口及 Viewer smoke checks 後提升至 100%。真人 Admin／Viewer／長連線驗收仍須依清單完成。rc19 發布失敗的第一級回退是這個 rc18 exact pair；rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 只作次級已驗證基線。
+> **目前發布狀態：** Windows origin 仍正運行健康、ready 的 live `v1.2.0-rc.18`／`fd504a8`；canonical Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 承接 100% 流量。rc20 是已驗證、尚待提升權限 Windows 切換的候選：annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`／290-file fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 已通過 14／14 gate、839 Python、3 motion 及 40 Worker contract。候選加入 Assist 固定星期／每週靈活模式及 migration `0011_assist_assignment_mode`。Worker source／設定沒有改動，本次不重新部署 Worker；真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。切換失敗時第一級回退是 rc18 exact pair。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
@@ -108,6 +108,8 @@ python -X utf8 scripts\verify_release_candidate.py
 
 只有 `pytest` 綠燈不足以批准部署。
 
+rc20 的正式 report 已固定為 `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`／`93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`，14／14 gate 全部通過。這是候選來源證據，不是 live 部署證據；仍須由 deployment report 記錄新的正式備份、隔離還原、migration 及 origin health／readiness。
+
 來源候選的 `tests/test_guest_snapshot_bridge.py` 已聚焦通過：它驗證同分頁最新 revision 還原、連線 nonce、token 輪換、複製／篡改拒絕、登出清理及只使用 `sessionStorage`。這項結果只關閉 snapshot 橋接的實作缺口，不取代本節列出的完整 release report、正式備份／隔離還原或 Cloudflare 線上驗收。
 
 ## 5. 部署前備份
@@ -123,13 +125,25 @@ python -X utf8 scripts\verify_release_candidate.py
 
 ## 6. Windows origin 更新
 
-由既有受控主機部署腳本完成：
+rc20 由提升權限的 PowerShell 執行既有受控主機部署腳本：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File C:\Users\lichu\.codex\worktrees\rc20-candidate\scripts\deploy_windows_release.ps1 `
+  -SourceRoot C:\Users\lichu\.codex\worktrees\rc20-candidate `
+  -HostRoot C:\SingYinRoster `
+  -ReleaseRef v1.2.0-rc.20 `
+  -TaskName "Sing Yin Roster Host" `
+  -RuntimeUser SingYinRosterSvc
+```
+
+受控次序如下：
 
 1. 進入 maintenance，拒絕新寫入。
 2. 停止 `Sing Yin Roster Host` 工作。
 3. 核對沒有第二個 NiceGUI origin 佔用同一資料庫。
 4. 安裝已驗證 bundle 及 hash-locked dependencies。
-5. 執行 additive Alembic migration。
+5. 執行 additive Alembic migration `0011_assist_assignment_mode`。
 6. 保持現行受保護設定（live rc18 為 `SING_YIN_UNIFIED_GUEST=1`），不得用切換旗標略過候選驗證。
 7. 核對：
 
@@ -145,6 +159,8 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 **歷史事故記錄 — 2026-07-17 rc5 staged readiness：** rc5 再次建立全新 checksum-verified backup 並通過 isolated restore；停止原因不是資料或 origin health 失敗，而是 generic strict-warning gate 在 matching Worker 尚未部署時，把 `cloudflare_access` 的預期 pending 狀態當成 fatal。rc6 修正 staged 次序，rc7 完成後續切換。這是歷史 provenance；未來候選仍須讓每個 failure、未獲明確批准的 warning 及最終線上檢查 fail closed。
 
 ## 7. Worker staged rollout
+
+**rc20 例外決策：**候選的 Worker source／設定沒有改動，故本次跳過本節，不建立新 Worker version；canonical traffic 繼續由已驗證 `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 承接。以下步驟只適用於日後 Worker source 或受保護設定實際改變的候選。
 
 1. 以固定、版本庫內的 Wrangler／lockfile 安裝依賴。
 2. 執行 Worker tests、type check 及 dry run，並再次確認 `wrangler.jsonc` 的 `ORIGIN_PORT` 等於主機 `SING_YIN_PORT`；兩端必須來自同一不可變候選。
@@ -183,7 +199,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 6. 用獲准身份完成 Admin 登入／登出及隔離寫入流程。
 7. 才結束 maintenance。
 
-候選的隔離測試仍須證明 flag 為 `0` 時 Guest fail closed；該測試只使用臨時環境，不可修改 live rc18 設定。
+候選的隔離測試仍須證明 flag 為 `0` 時 Guest fail closed；rc20 的正式 gate 已在臨時環境完成該證據，不可因此修改 live rc18 設定。
 
 ## 9. 線上驗收
 
@@ -219,7 +235,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 ## 10. 回退
 
-任一 rc19 線上 gate 失敗：
+任一 rc20 origin 或線上 gate 失敗：
 
 1. 恢復 maintenance；
 2. 以受控部署報告確認自動 rollback 的 `attempted`／`succeeded`、previous commit 及 previous Worker version；
@@ -257,4 +273,4 @@ additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，�
 
 Live `v1.2.0-rc.18`／`fd504a8` keeps one Cloudflare Worker in front of one loopback-only Windows NiceGUI origin. Verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter.
 
-Service Weave rc18 is the live controlled release; rc19 is an undeployed mobile／tablet／accessibility candidate. Preserve the protected Guest setting while validating rc19 in isolation; require a source-matched report, fresh verified backup, isolated restore, healthy `/healthz` and `/readyz`, a deliberate matching Worker deployment, and supervised browser acceptance. If the rc19 rollout fails, first restore the exact live rc18 host／Worker pair shown in the rollback section. The recorded rc17 pair is only a secondary verified baseline and requires an explicit second-level recovery decision.
+Service Weave rc18 remains the live controlled release. `v1.2.0-rc.20`／`e3d84858…` is a fully verified but not-yet-deployed Windows-origin candidate with source fingerprint `93c6c938…` and migration `0011_assist_assignment_mode`. Its Worker source and configuration are unchanged, so the rollout deliberately retains Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` rather than creating a new version. A fresh verified backup, isolated restore, origin deployment report, canonical smoke checks, and supervised human acceptance are still required. Any failure returns first to the exact rc18 host／Worker pair.

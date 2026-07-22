@@ -49,7 +49,7 @@
 | `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；歷史整合來源 | rc17 的多用戶、操作層級及前端穩定性整合線；現行發布已由 rc18 取代 |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；歷史整合來源 | 前一階段 Service Weave v1.2 編輯式整合線 |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.18`；正式 Windows origin 與 canonical Worker 已同步 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | `v1.2.0-rc.20` 正式候選來源；正式 Windows origin 仍為 rc18，等待 UAC 核准部署 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -63,7 +63,9 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 網站公開入口、分享檢視器及 NiceGUI 工作台共用頁尾署名 `Copyright © 2026 LI Chuangjie`；供群組發布的乾淨值班表 PDF 仍由匯出選項決定是否加入補充頁尾。
 
-**目前正式基線：** `v1.2.0-rc.18`／`fd504a8` 已同步到 `C:\SingYinRoster` 及 canonical Cloudflare Worker；`/healthz` 正常、`/readyz` ready。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 release gate；正式備份、checksum、公平對帳及隔離還原亦已通過。Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 已完成 0% staging、指定版本 smoke check 及 100% promotion。rc19 發布失敗時，第一級回退是上述 rc18 exact pair；rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 只保留作次級已驗證基線，更早版本只屬歷史發布證據。
+**目前正式基線：** `v1.2.0-rc.18`／`fd504a8` 已同步到 `C:\SingYinRoster` 及 canonical Cloudflare Worker；`/healthz` 正常、`/readyz` ready。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 release gate；正式備份、checksum、公平對帳及隔離還原亦已通過。Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 已完成 0% staging、指定版本 smoke check 及 100% promotion。rc20 部署失敗時，第一級回退是上述 rc18 exact pair；rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 只保留作次級已驗證基線，更早版本只屬歷史發布證據。
+
+**已驗證但尚未部署的 rc20：** annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` 已以來源指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式閘門，包括 839 項 Python 測試、3 項 motion runtime 合約及 40 項 Worker 合約。這證明來源候選可進入受控發布，不代表 `C:\SingYinRoster` 已由 rc18 切換；Windows 服務部署仍等待 UAC 核准，首席導學風紀及教師顧問真人驗收亦未完成。
 
 **公開安全及版本完整性：** 公開瀏覽器只接觸 Cloudflare Worker；正式 NiceGUI origin 仍只綁定 loopback，Admin 必須同時通過 Cloudflare Access、私密精確電郵 allowlist、短期 session 及請求綁定的 HMAC principal。GitHub `main` 只接受通過 `test-and-audit` 與 Python／Worker CodeQL 的 pull request，禁止 force-push 和刪除；Actions 引用必須固定完整 SHA，`v*` 發布標籤建立後亦不可更新或刪除。完整威脅模型、資料分類、事件處理及殘餘限制見[公開網站安全與私隱模型](docs/SECURITY_AND_PRIVACY.md)。
 
@@ -115,7 +117,7 @@ rc16 是這批改動的歷史候選來源；rc17 完成 Worker 身份及正式�
 8. 如錯誤發布整個週次，使用「撤回已發布值班表」並填寫原因，不要直接刪除資料。系統會以同一交易補償該版本的淨公平點數、保存原安排及審計、建立備份義務並要求撤銷既有分享；撤回後才可重新生成正確週表。重複提交不會二次扣回。
 9. 新任首席導學風紀可在側邊欄依次查看「開始使用」→「使用手冊」→「平台與團隊」→「系統架構與可信設計」；它們分別說明第一次操作、每週安全流程、團隊責任，以及系統如何保護公平與復原，不需要先懂程式。
 
-新週次在介面預設使用「固定星期模式」：啟用 AHP 名單及可值班日不變時，同一位助理首席導學風紀會在固定星期重複當值；本週請假只會為該次當值改用合資格替補，沒有替補則停止生成並清楚說明空缺。「每週靈活模式」會以週次作可重現輪換，並在其他公平與可值班條件相同時優先避開個人上週相同星期；同一名單、可值班日、請假、上週安排及週次會得到相同結果。重開既有週表時會沿用該週已保存的模式；完整操作與技術契約見 [Assist. in charge 編排模式](docs/ROSTER_POLICY_MODES.md)。
+新週次在介面預設使用「固定星期模式」：啟用 AHP 名單及可值班日不變時，同一位助理首席導學風紀會在固定星期重複當值；本週請假只會為該次當值改用合資格替補，不會改寫固定星期擁有人，沒有替補則停止生成並清楚說明空缺。「每週靈活模式」會以週次作可重現變化，以長期公平記錄為主要考量，並在可行時避開個人上週相同星期；同一名單、可值班日、請假、上週安排及週次會得到相同結果。只有助理首席導學風紀可當 `Assist. in charge`；名單內勾選的「可值班日」才可排班，未勾選日一律視為不方便／不可值班，兩種模式均不可繞過。重開既有週表時會沿用該週已保存的模式；完整操作與技術契約見 [Assist. in charge 編排模式](docs/ROSTER_POLICY_MODES.md)。
 
 名單新增／修改／停用及生成前請假會連同本機快照一起安全處理；進度視窗完成前不要重複點擊。停用只會停止日後選用，不會刪除既有週表、公平帳本或審計紀錄，且必須先經過清楚確認。
 
@@ -364,7 +366,7 @@ Cloudflare KV 會在不同節點同步新密文。系統不會提早顯示一條
 
 ## 開發與驗證
 
-目前完整套件收集為 800 項 Python 測試，Worker 另有 40 項 Deno 合約測試。發布驗證把互補證據分開：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、配圖主題切換、校徽、空／錯誤／復原狀態、1440×1024 full desktop 及瀏覽器 `pageerror`；`scripts/verify_runtime_performance.py` 核對冷載、重複開關音樂，以及跨代表頁面後返回首頁的 heap／DOM／listener 增長；`scripts/verify_nicegui_mobile.py` 專門核對 256／320／390px 手機、768×1024 與 820×1180 adaptive touch tablet、1024×768 desktop-shell touch tablet 及手機橫向排列；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名完成整條排班寫入、雙語 PDF、請假調整、另一資料庫還原，以及確認語句保護的新學年封存與新名單匯入；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。NiceGUI 的長連線及互動後背景音樂令全網絡靜止不是可靠完成訊號，因此測試以 DOM、URL 及真實操作結果判斷就緒；所有瀏覽器階段同時把 console error 及未捕捉頁面錯誤視為失敗。
+rc20 正式候選的完整套件為 839 項 Python 測試、3 項 motion runtime 合約及 40 項 Worker Deno 合約。發布驗證把互補證據分開：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、配圖主題切換、校徽、空／錯誤／復原狀態、1440×1024 full desktop 及瀏覽器 `pageerror`；`scripts/verify_runtime_performance.py` 核對冷載、重複開關音樂，以及跨代表頁面後返回首頁的 heap／DOM／listener 增長；`scripts/verify_nicegui_mobile.py` 專門核對 256／320／390px 手機、768×1024 與 820×1180 adaptive touch tablet、1024×768 desktop-shell touch tablet 及手機橫向排列；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名完成整條排班寫入、雙語 PDF、請假調整、另一資料庫還原，以及確認語句保護的新學年封存與新名單匯入；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。NiceGUI 的長連線及互動後背景音樂令全網絡靜止不是可靠完成訊號，因此測試以 DOM、URL 及真實操作結果判斷就緒；所有瀏覽器階段同時把 console error 及未捕捉頁面錯誤視為失敗。
 
 rc19 的單一裝置矩陣把平板與桌面列為共存形態：除 256／320／390px 手機與手機橫向外，矩陣同時包含 768×1024 及 820×1180 adaptive touch tablet、1024×768 desktop-shell touch tablet，以及 1440×1024 full desktop。`verify_nicegui_mobile.py` 負責手機／平板量測，`verify_nicegui_ui.py` 負責完整桌面證據；兩者共同檢查正確導航 shell、44px 目標、內容寬度、無 document overflow、鍵盤／焦點及 console／page errors。這是 rc19 候選契約，只有來源 fingerprint 相符的最終報告才可宣稱通過；詳見[正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md)。
 
@@ -431,7 +433,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The live v1.2 rc18 baseline uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The protected origin runs `v1.2.0-rc.18`／`fd504a8`, paired with Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`; supervised human acceptance remains the final release-candidate step. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
+The live v1.2 rc18 baseline uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The protected origin runs `v1.2.0-rc.18`／`fd504a8`, paired with Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`. Candidate `v1.2.0-rc.20` at `e3d84858abfe23714929a87c4bcf76e55999ce7c` passed 14／14 source-matched gates under fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` (839 Python, 3 motion and 40 Worker contracts), but is not deployed while the UAC-approved host switchover remains pending. Supervised human acceptance remains open. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 

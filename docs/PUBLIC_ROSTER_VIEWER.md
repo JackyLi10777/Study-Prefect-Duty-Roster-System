@@ -2,7 +2,7 @@
 
 > **目前狀態（live rc18）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.18`／`fd504a8`；canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；rc18 的 14／14 候選綁定 gate、正式備份、隔離還原、origin 及 Worker 線上核對已完成。
 
-> **rc19 公開入口候選（尚未上線）：**手機版擬在 workflow／devotional 補充內容前、第一 viewport 內提供唯一可見的一組「管理員登入」及「進入訪客示範」CTA；每個設計高度 52px，淺／深、reduced motion 及 forced colours 保持相同路由與意思。桌面仍使用原 access panel。這項改動未有 rc19 fingerprint-bound report、部署 Worker version 或 canonical smoke evidence，正式網站目前仍以 rc18 為準。
+> **rc20 候選（機器驗證完成、尚未上線）：** annotated tag `v1.2.0-rc.20` 指向 commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`；290 個來源檔案以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（839 個 Python、3 個 motion、40 個 Worker 測試）。候選加入可切換的 Assist. 固定星期／靈活輪換模式及 migration `0011_assist_assignment_mode`，但受控 Windows origin 尚未完成提升權限的切換，所以正式網站仍以 rc18 為準。Worker 原始碼及設定沒有改動，現行 version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 保持不變，不能把候選測試寫成已部署證據。
 
 我是李創杰。我希望所有使用者只需記住同一個網站，但同一個網址不代表相同權限。v1.2 把入口、完整 Guest 體驗及管理員工作台統一到同一套 NiceGUI 路由和元件；只有已發布週表的 `/view#…` 保留為獨立、只讀、可分享的能力連結。
 
@@ -30,7 +30,7 @@
 - `/guest`、`/try`：兼容舊書籤，重新導向統一入口並開始 Guest session；不再維護第二套靜態產品。
 - `/view#…`：獨立、只讀、加密、到期及可撤銷的已發布週表。
 
-在 rc19 獲正式發布後，`<=560px` 的入口會把 Admin／Guest 兩個操作移到 story 欄的早段，讓兩者在首屏可觸及；原 access panel 的同角色連結只在該 mobile layout 隱藏，DOM 仍保留 desktop 結構。每一 viewport 只能有一個 visible Admin 入口和一個 visible Guest 入口，兩者仍分別前往 `/auth/login` 及 `/guest`，不建立新的身份模式、資料 adapter 或 `/mobile` route。發布前不得把這段候選說明當作 live 操作保證。
+rc20 來源已把 `<=560px` 的 Admin／Guest 操作放到 story 欄早段，讓兩者在首屏可觸及；原 access panel 的同角色連結只在該 mobile layout 隱藏，DOM 仍保留 desktop 結構。每一 viewport 只有一個 visible Admin 入口和一個 visible Guest 入口，兩者仍分別前往 `/auth/login` 及 `/guest`，不建立新的身份模式、資料 adapter 或 `/mobile` route。這項行為已進入 rc20 source-matched 自動化證據，但要待 Windows origin 切換及 canonical smoke 後才可視作 live 操作保證。
 
 ## 訪客怎樣使用
 
@@ -42,6 +42,8 @@
 6. 完成後按 **登出**。共用電腦不可只關閉一個分頁。
 
 訪客可以修改虛構名單、示範請假、草稿、手動調整、示範發布、公平顯示及 `DEMO` PDF／JSON。AI、檔案匯入、上載、剪貼簿、外部音樂網址、正式備份／還原、Viewer 分享、真實資料匯出及永久設定均不可用。
+
+Admin 與 Guest 使用同一個 Assist. 排班模式選擇器及穩定代碼：`legacy_fixed_weekday` 保留 AHP 的固定星期，`flexible_weekly` 只在已選「可值班日」中按週輪換並在可行情況避免重複上週同日。兩種模式均只容許 Assistant Head Study Prefect 任 Assist. in charge，並重新核對請假、同日不重複及不連續當值。Admin 把模式連同週表持久化；Guest 只把相同操作結果留在目前記憶體工作區。
 
 每個分頁有獨立 workspace；一個分頁的示範修改不應覆寫另一個分頁。每次有意義修改後，origin 只把最新、已簽署的 token 推送到該分頁 `sessionStorage`。重新整理時還原必須通過目前 Guest session、workspace、NiceGUI tab、revision、boot ID 及連線 nonce 核對；複製、篡改、過期、舊 revision 或 origin 重啟後的 token 會被拒絕並回到安全虛構 fixture。這不是長期儲存。
 
@@ -115,13 +117,15 @@ Cloudflare 暫時不可用時，只有維護者才使用 localhost 或已核准 
 - [ ] `/view#…` 只接受已發布快照，草稿不能分享。
 - [ ] 管理員登入／登出、長時間重連、上載、PDF 及完整寫入流程完成真人驗收。
 - [ ] `/healthz` 及 `/readyz` 都通過後才開放寫入。
-- [ ] rc19 的 mobile public root 在 320px／390px 首屏各只有一個 visible Admin 及 Guest CTA，至少 48px 高（設計 52px），位於 workflow／devotional 前；desktop access panel、路由及身份邊界不變。
+- [ ] rc20 的 mobile public root 在 320px／390px 首屏各只有一個 visible Admin 及 Guest CTA，至少 48px 高（設計 52px），位於 workflow／devotional 前；desktop access panel、路由及身份邊界不變。
 - [ ] 兩個入口在 light／dark、reduced motion、forced colours、browser back 及 first-viewport checks 均通過，且沒有 console error／`pageerror`；只有最終 source-matched report 及已部署 Worker smoke 才可把它們標為 live。
 
 ## English quick guide
 
-The rc19 first-viewport mobile Admin/Guest actions remain an undeployed candidate. The live public entrance is still rc18 until the exact Worker/source report, staged promotion, canonical smoke checks, and supervised phone acceptance are recorded.
+The exact rc20 candidate (`v1.2.0-rc.20`, commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`) passed all 14 formal gates with source fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`, including 839 Python, 3 motion, and 40 Worker tests. It is not yet deployed to the protected Windows origin, so the live public entrance remains rc18. Worker source is unchanged and the live Worker stays on `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`.
 
 Live `v1.2.0-rc.18`／`fd504a8`, with verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`, uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
 
 `/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The Service Weave editorial integration is part of the live rc18 product.
+
+Admin and Guest share the same stable Assist. mode codes: `legacy_fixed_weekday` keeps the canonical AHP weekday, while `flexible_weekly` rotates only across selected available weekdays and avoids the previous week's day where feasible. Both enforce AHP-only eligibility, leave, same-day uniqueness, and no-consecutive-duty rules. Official rosters persist the selected mode; Guest rosters keep it only in the bounded in-memory workspace.

@@ -1,6 +1,6 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
-> **文件狀態（live v1.2 rc18）：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.18`／commit `fd504a8`；288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 正式 gate。正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原均通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 已通過候選指定及正式網址 smoke checks並承接 100% 流量。Admin、Guest 與公開 Viewer 繼續使用同一身份邊界；本次發布沒有擴大 Guest 能力、資料保存位置或正式 SQLite 存取。
+> **文件狀態（live rc18；rc20 候選已通過機器驗證）：**受控 Windows origin 仍正運行 annotated tag `v1.2.0-rc.18`／commit `fd504a8`；canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 承接正式流量。rc20 annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` 的 290 個來源檔案以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（839 Python、3 motion、40 Worker）。候選尚未切換受控 origin；Worker 來源及設定沒有改動，所以保留現行 version 而不重新部署。Admin、Guest 與公開 Viewer 繼續使用同一身份邊界；候選沒有擴大 Guest 能力、資料保存位置或正式 SQLite 存取。
 
 ## 1. 目的
 
@@ -63,6 +63,8 @@ Cloudflare Worker 會：
 
 Guest 的語言、外觀、音樂及音效由獨立的有限期 origin-memory preference registry 保存；它只接受已核實 Guest session、限制鍵值及數值範圍，並與工作區一同在登出、到期、撤權或程序重啟時清除。這修正重新整理後語言回復的問題，但不把 Guest 偏好提升為永久資料。下載端點以同一 `GeneratedFile` 契約服務 Admin／Guest，仍須重新核對 principal、能力、一次性票證、大小及 `no-store`；前端帶同 cookie 取得 blob，不能靠隱藏按鈕或可猜網址繞過限制。
 
+Assist. 排班模式也維持同頁面、同穩定代碼及同政策驗證：`legacy_fixed_weekday` 保留 AHP 的固定星期，`flexible_weekly` 只在名冊已選「可值班日」內按週輪換並在可行情況避免上週同日。兩者都拒絕非 AHP、請假日、同日重複及不連續規則衝突。Admin 透過 migration `0011_assist_assignment_mode` 把模式保存於週表；Guest 只把相同欄位保存在目前記憶體 workspace，重設或到期後消失。
+
 登出、session 到期、撤權、分頁斷線及 origin 重啟會作冪等清理；前端以 `BroadcastChannel` 通知同 session 分頁清除狀態、媒體及下載票據。
 
 ### 已實作的瀏覽器 snapshot 橋接
@@ -76,7 +78,7 @@ Guest 的語言、外觀、音樂及音效由獨立的有限期 origin-memory pr
 - 篡改、錯誤 SID、錯誤 workspace／tab、過期、過大、舊 revision、重播或舊 boot token 均被拒絕；頁面繼續使用安全虛構 fixture，並收到新的合法 token；
 - 登出、到期、撤權及跨分頁 session 終止會清除 `sessionStorage`、媒體及待下載票據；origin 重啟後舊 boot token 按設計失效。
 
-`tests/test_guest_snapshot_bridge.py` 聚焦驗證同分頁還原、token 輪換、複製／篡改拒絕、連線 nonce、登出清理及只使用 `sessionStorage` 的前端契約；完整 pytest、隔離瀏覽器及 release verifier 已納入 live rc18 的 14／14 正式報告。任何後續候選仍須以該候選的最終來源重新執行相同 gate；歷史報告不可代替新的 origin／Worker 決定及線上驗收。
+`tests/test_guest_snapshot_bridge.py` 聚焦驗證同分頁還原、token 輪換、複製／篡改拒絕、連線 nonce、登出清理及只使用 `sessionStorage` 的前端契約；完整 pytest、隔離瀏覽器及 release verifier 已納入 rc20 的 14／14 source-matched 正式候選報告。這完成候選機器驗證，但歷史或候選報告都不可代替受控 origin 切換、canonical smoke 及真人驗收。
 
 ## 4. 資料與整合限制
 
@@ -124,4 +126,6 @@ Guest adapter 不引用正式 SQLAlchemy、AI、HTTP、備份、上載、分享�
 
 The live v1.2 product uses the same NiceGUI routes and components for administrators and guests, but resolves a server-verified `PageContext` to either the official workflow or a bounded in-memory guest adapter. Guest capability is deny-by-default and excludes AI, upload/import, persistent storage, external delivery, official backup/restore, and real-data export. Guest exports are one-shot, memory-only, `DEMO`-marked, and `no-store`.
 
-The source contains signed principal verification, a bounded guest registry, per-client workspace IDs, session expiry/revocation monitoring, cross-tab logout cleanup, an HMAC snapshot codec, and the `sessionStorage` browser bridge. Each revision is saved only as a signed, tab-bound token; restore also requires the current live-connection nonce. Duplicate tabs receive new workspaces, while tampered, copied, expired, stale, or old-boot tokens fall back safely to the fictional fixture. The controlled Windows origin is live on `v1.2.0-rc.18`／`fd504a8`; its 288-input fingerprint `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` passed all 14 formal gates, and verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` serves the canonical site.
+The source contains signed principal verification, a bounded guest registry, per-client workspace IDs, session expiry/revocation monitoring, cross-tab logout cleanup, an HMAC snapshot codec, and the `sessionStorage` browser bridge. Each revision is saved only as a signed, tab-bound token; restore also requires the current live-connection nonce. Duplicate tabs receive new workspaces, while tampered, copied, expired, stale, or old-boot tokens fall back safely to the fictional fixture. Admin and Guest share the stable Assist. mode codes and policy checks, while only Admin persists the roster mode through migration `0011_assist_assignment_mode`.
+
+The controlled Windows origin remains live on `v1.2.0-rc.18`／`fd504a8`, and Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` serves the canonical site. Exact rc20 tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` passed all 14 formal gates with fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`, but it is not yet deployed. Worker source is unchanged and therefore retains the existing version.

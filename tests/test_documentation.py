@@ -158,18 +158,27 @@ def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
     )
     operator = (PROJECT_ROOT / "docs" / "OPERATOR_GUIDE.md").read_text(encoding="utf-8")
 
-    for document in (status, architecture, security, handover):
+    release_truth_documents = (status, architecture, security, handover)
+    for document in release_truth_documents:
         assert "v1.2.0-rc.18" in document
         assert "fd504a8" in document
         assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in document
-        assert "de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664" in document
+        assert "v1.2.0-rc.20" in document
+        assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in document
+        assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in document
         current_header = "\n".join(document.splitlines()[:15])
         assert "v1.2.0-rc.18" in current_header
         assert "fd504a8" in current_header
         assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in current_header
 
+    # The exact rc18 rollout fingerprint belongs in release/rollback evidence.
+    # The guest security model records the live pair and the exact rc20 candidate,
+    # but intentionally does not duplicate the historical rc18 source digest.
+    for document in (status, architecture, handover):
+        assert "de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664" in document
+
     assert "Service Weave v1.2 rc18 controlled rollout" in status
-    assert "v1.2 rc18 is the current controlled Windows origin" in status
+    assert "v1.2 rc18 remains the current controlled Windows origin" in status
     assert "Historical Service Weave v1.2 rc11 rollout" in status
     assert (
         "rc17／`99f5816` with Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` "
@@ -195,7 +204,10 @@ def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
     release_sequence = handover.split("### 後續受控發布次序", 1)[1].split(
         "## 正式驗收清單", 1
     )[0]
-    assert "下一個獲批准的 annotated tag" in release_sequence
+    assert "v1.2.0-rc.20" in release_sequence
+    assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in release_sequence
+    assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in release_sequence
+    assert "下一個獲批准的 annotated tag" not in release_sequence
     assert "本次為 `v1.2.0-rc.7`" not in release_sequence
     assert "v1.1.0-rc.16" in handover
 
@@ -238,12 +250,16 @@ def test_operator_deployment_docs_use_live_rc18_and_candidate_bound_next_tag() -
     assert "v1.2 rc5 候選狀態" not in viewer
     assert "v1.2 rc7 發布狀態" not in cloudflare
     assert "v1.1 已部署基線與 v1.2 候選" not in decision
-    assert '$ReleaseRef = "<next-approved-annotated-tag>"' in windows
+    assert '$ReleaseRef = "v1.2.0-rc.20"' in windows
+    assert '$ReleaseRef = "<next-approved-annotated-tag>"' not in windows
     assert '$ReleaseRef = "v1.1.0-rc.16"' not in windows
-    assert "<next-approved-annotated-tag>" in decision
+    assert "v1.2.0-rc.20" in decision
+    assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in decision
+    assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in decision
+    assert "<next-approved-annotated-tag>" not in decision
 
 
-def test_rc19_docs_share_one_device_matrix_and_rollback_hierarchy() -> None:
+def test_rc20_docs_share_one_device_matrix_and_rollback_hierarchy() -> None:
     device_viewports = ("768×1024", "820×1180", "1024×768", "1440×1024")
     device_documents = (
         "README.md",
@@ -266,16 +282,20 @@ def test_rc19_docs_share_one_device_matrix_and_rollback_hierarchy() -> None:
         encoding="utf-8"
     )
     candidate_matrix = acceptance.split(
-        "## rc19 候選裝置矩陣 / Candidate device matrix", 1
+        "## rc20 已驗證候選裝置矩陣 / Verified candidate device matrix", 1
     )[1].split("## 使用方法", 1)[0]
     for viewport in device_viewports:
         assert viewport in candidate_matrix
     assert "scripts/verify_nicegui_mobile.py" in candidate_matrix
     assert "scripts/verify_nicegui_ui.py" in candidate_matrix
-    assert "這是候選契約，不是已通過或已部署結果" in acceptance
+    assert "這只完成機器量測，不能代替實體裝置或部署後驗收" in acceptance
+    assert "這是機器驗證完成的候選，不是已部署版本" in acceptance
 
     quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
-    assert "ACCEPTANCE_EVIDENCE.md#rc19-候選裝置矩陣--candidate-device-matrix" in quickstart
+    assert (
+        "ACCEPTANCE_EVIDENCE.md#rc20-已驗證候選裝置矩陣--verified-candidate-device-matrix"
+        in quickstart
+    )
 
     readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     readme_en = (PROJECT_ROOT / "README-EN.md").read_text(encoding="utf-8")
@@ -290,6 +310,10 @@ def test_rc19_docs_share_one_device_matrix_and_rollback_hierarchy() -> None:
 
     for document in (readme, handover, cloudflare, decision):
         assert "第一級回退" in document
+        assert "v1.2.0-rc.18" in document
+        assert "fd504a8" in document
+        assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in document
+    for document in (readme, cloudflare, decision):
         assert "次級已驗證基線" in document
     for document in (readme_en, status):
         normalized_document = " ".join(document.split())

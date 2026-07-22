@@ -2,9 +2,9 @@
 
 我是李創杰。這份流程是我與 Codex 對正式發布工作的反思結果：更新慢的主因不是 Git 上傳，而是過去把每次文字或測試修改都當成完整 runtime 發布。
 
-> **目前發布界線：** live rc18／`fd504a8` 與 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 仍是正式基線。rc19 mobile/accessibility working tree 只是候選；`--plan`、focused tests、`--staged` 或文件更新都不等於 rc19 已通過 `--release`，更不等於 Windows／Worker 已部署。
+> **目前發布界線：** live rc18／`fd504a8` 與 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 仍是正式基線。rc20 annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` 已完成 `--release` 機器驗證，但尚未切換受控 Windows origin；Worker 來源及設定沒有改動，故不會為這次候選製造一個沒有實際差異的新 Worker rollout。`--plan`、focused tests、`--staged` 或文件更新仍不等於部署。
 
-最近一份完整候選報告約需 **225 秒**；當中約 95% 用於完整 Python 套件、桌面／手機瀏覽器、寫入／PDF／還原、效能及備份失敗演練。這些證據對政策、資料庫、工作流、部署或正式 runtime 改動很重要，但不應因 README 改一句話而重跑。最近三次沒有 runtime 改動的提交亦在 GitHub Quality 與 CodeQL 合計使用約 18 分鐘。
+rc20 的完整候選報告約需 **404 秒**；當中主要時間用於完整 Python 套件、桌面／手機瀏覽器、寫入／PDF／還原、效能及備份失敗演練。這些證據對政策、資料庫、工作流、部署或正式 runtime 改動很重要，但不應因 README 改一句話而重跑。最近三次沒有 runtime 改動的提交亦在 GitHub Quality 與 CodeQL 合計使用約 18 分鐘。
 
 ## 日常唯一入口：先診斷，再核對 staged commit
 
@@ -56,7 +56,9 @@ python -X utf8 scripts\verify_update.py --release
 python -X utf8 scripts\verify_update.py --release --plan
 ```
 
-對 rc19，正式 report 必須由最後 commit 重新產生，並將同一裝置矩陣的 256×700／200% reflow、320×760 reduced motion、390×844 phone、768×1024 與 820×1180 adaptive touch tablet、1024×768 desktop-shell touch tablet、1440×1024 full desktop、844×390 phone landscape、單一可見 navigation shell、`visualViewport` keyboard clearance、44px standalone targets、route focus、More current-page semantics、touch icon story 無漂移／旋轉、forced colours、paired light／dark parity，以及 public first-viewport Admin／Guest CTA 綁定至同一 source fingerprint。`verify_nicegui_mobile.py` 與 `verify_nicegui_ui.py` 提供互補成員，但只有完整矩陣進入同一正式報告才算契約成立。測試檔、局部通過訊息或 screenshot 存在都不是部署證據。其後仍須完成 fresh backup／isolated restore、Windows switch、Worker 0% stage→100% promotion、canonical smoke 及真人裝置核對；任何失敗依 handover／host guide 第一級回復 rc18 exact pair，rc17 只保留作次級已驗證基線。
+rc20 的正式 report 已由最後 commit 重新產生，並把同一裝置矩陣的 256×700／200% reflow、320×760 reduced motion、390×844 phone、768×1024 與 820×1180 adaptive touch tablet、1024×768 desktop-shell touch tablet、1440×1024 full desktop、844×390 phone landscape、單一可見 navigation shell、`visualViewport` keyboard clearance、44px standalone targets、route focus、More current-page semantics、touch icon story 無漂移／旋轉、forced colours、paired light／dark parity，以及 public first-viewport Admin／Guest CTA 綁定至同一 source fingerprint。`verify_nicegui_mobile.py` 與 `verify_nicegui_ui.py` 提供互補成員；測試檔、局部通過訊息或 screenshot 本身仍不是部署證據。
+
+rc20 的精確候選證據是：annotated tag `v1.2.0-rc.20`、commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`、290 個來源檔案、fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`、14／14 gates、839 個 Python／3 個 motion／40 個 Worker 測試。下一步仍是 fresh backup／isolated restore、提升權限的 Windows origin switch、canonical smoke 及真人裝置核對。由於 Worker source／configuration 沒有改動，保留已驗證 version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`，不執行無差異 Worker 部署。任何 origin 關鍵項失敗，依 handover／host guide 回復 rc18 exact pair。
 
 ## 風險矩陣
 
@@ -66,7 +68,7 @@ python -X utf8 scripts\verify_update.py --release --plan
 | 只有測試及文件 | `tests` | 被修改的測試；共用 test helper 改動則升級為完整 Python suite；另加 hygiene 及秘密掃描 |
 | GitHub workflow 或快速分類器 | `assurance` | assurance 聚焦測試、完整安全閘門及 hygiene |
 | Cloudflare Worker／登入／Viewer | `worker` | pre-push 跑 Worker 聚焦契約、hygiene 及秘密掃描；正式部署使用 `--release` |
-| NiceGUI、政策、公平、交易、SQLite、遷移、依賴、運行資產、Windows 主機腳本或正式驗證器 | `full` | pre-push 跑完整 Python、安全、Worker 及 hygiene；正式部署使用 `--release` 執行當前完整 gate（live rc18 基線為 14 項，後續以 source-matched report 為準） |
+| NiceGUI、政策、公平、交易、SQLite、遷移、依賴、運行資產、Windows 主機腳本或正式驗證器 | `full` | pre-push 跑完整 Python、安全、Worker 及 hygiene；正式部署使用 `--release` 執行當前完整 gate（rc20 候選基線為 14 項，後續以 source-matched report 為準） |
 | 未能識別的新路徑或 Git base | `full` | 失敗時向高風險升級，不會靜默略過 |
 
 pre-push profile 內互不寫入的檢查會並行執行。正式候選驗證仍保持受控次序，因為瀏覽器寫入、備份及還原證據不可互相競爭同一個隔離環境。
@@ -98,6 +100,7 @@ pre-push profile 內互不寫入的檢查會並行執行。正式候選驗證仍
 以下情況不是一般「上傳更新」；部署前必須使用 `--release`，並保留所列人手確認：
 
 - 正式政策、公平、交易、備份、還原或 migration 改動；
+- Assist. 模式或名冊可值班日契約改動，包括 `legacy_fixed_weekday`／`flexible_weekly`、AHP-only、同日不重複、不連續當值及 migration `0011_assist_assignment_mode`；
 - Worker 身份驗證、管理 session、Viewer 加密或 VPC 邊界改動；
 - Windows 主機切換、依賴更新或正式 release tag；
 - UAC／服務帳戶憑證、Cloudflare One-time PIN；
