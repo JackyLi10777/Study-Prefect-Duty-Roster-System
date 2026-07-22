@@ -5,11 +5,11 @@
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
 > **Live v1.2 rc17 status:** the controlled Windows origin and canonical Worker
-> use `v1.2.0-rc.17`／`99f5816`. The 288-input release passed all 14 formal gates
-> with fingerprint `4d412e6b40efadb8aee55e786f715eff0249fc363b755d938a75a7b1491e694d`.
+> use `v1.2.0-rc.18`／`fd504a8`. The 288-input release passed all 14 formal gates
+> with fingerprint `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664`.
 > A fresh production backup, checksum, fairness reconciliation and isolated
 > restore passed before cutover. Worker version
-> `c85770b2-c626-462c-bc74-5e6bd305c75b` passed staged-version and
+> `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` passed staged-version and
 > canonical health／entrance／viewer checks before receiving 100% traffic.
 > Supervised human acceptance remains required.
 
@@ -36,7 +36,7 @@ NiceGUI owns the rendering and navigation. The read model introduces no schema, 
 
 ## Canonical entry and local maintenance start
 
-> **Unified Guest architecture contract:** The live rc17 host enables this path
+> **Unified Guest architecture contract:** The live rc18 host enables this path
 > through its protected `SING_YIN_UNIFIED_GUEST=1` configuration. Any later
 > candidate must preserve the same deny-by-default boundary and pass fresh
 > candidate-bound verification before the origin or Worker is switched; changing
@@ -332,12 +332,12 @@ The only deliberate application-originated external request carrying roster-deri
 - Worker Deno contracts own `/auth/admin/start`, `/auth/guest/start`, `/auth/status`, `/auth/logout`, compatibility redirects, principal signing, forged-header stripping, VPC proxying and Viewer isolation.
 
 The focused browser-snapshot tests, complete Python suite, unified Guest browser
-verifier and release-candidate orchestrator all passed in the live rc17 14-gate
+verifier and release-candidate orchestrator all passed in the live rc18 14-gate
 report. The immutable release produced fingerprint
-`4d412e6b40efadb8aee55e786f715eff0249fc363b755d938a75a7b1491e694d` from 288
-inputs. The running origin remains healthy／ready on `v1.2.0-rc.17`／`99f5816`;
+`de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` from 288
+inputs. The running origin remains healthy／ready on `v1.2.0-rc.18`／`fd504a8`;
 the verified matching Worker is
-`c85770b2-c626-462c-bc74-5e6bd305c75b`. Earlier rc5／rc6 staging and rc7 cutover
+`f780feb2-671a-4feb-b6f6-b7f9d5b31e89`. Earlier rc5／rc6 staging and rc7 cutover
 details are historical rollout evidence, not instructions for a new candidate.
 Every later candidate must regenerate its own fingerprint, report, backup／restore
 and live Cloudflare acceptance before replacing rc17, so this architecture

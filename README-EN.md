@@ -23,24 +23,24 @@ The public entrance presents one prepared duty desk in paired morning-light and 
 · [Architecture](docs/NICEGUI_ARCHITECTURE.md) · [Release status](PROJECT_STATUS.md)
 · [Canonical-site access guide](docs/PUBLIC_ROSTER_VIEWER.md)
 
-**Current formal baseline:** `v1.2.0-rc.17`／`99f5816` is live at
+**Current formal baseline:** `v1.2.0-rc.18`／`fd504a8` is live at
 `C:\SingYinRoster`. `/healthz` is healthy and `/readyz` is ready. The rollout
- created `20260722-002221-450041-manual_verified_backup.sqlite3` and passed its
+ created `20260722-024349-422389-manual_verified_backup.sqlite3` and passed its
 SHA-256 checksum, database integrity, fairness reconciliation, row matching,
 restore audit, and isolated restore. Its SHA-256 is
-`6c7b9502775decb80739676d43ccfe909fc41b09897c3037713e2f010358bfae`.
-Worker version `c85770b2-c626-462c-bc74-5e6bd305c75b` passed zero-traffic staged and canonical
+`51ad0e42284c0d42363d2f8fd2bc3dc70ae0ce1f79d258016ec2d66bf6741c7f`.
+Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` passed zero-traffic staged and canonical
 health／entrance／viewer checks before receiving 100% traffic. Supervised
 administrator, advisor, and real-device acceptance remains a human responsibility.
 
 The retained **v1.1 rollback** record is historical recovery evidence only; it
-does not replace the current rc17 baseline.
+does not replace the current rc18 baseline.
 
 The public entrance, shared-roster viewer, and NiceGUI workbench use the same
 `Copyright © 2026 LI Chuangjie` page-footer attribution. Clean group-sharing
 roster PDFs retain their explicit supplementary-footer export option.
 
-The live rc17 product includes the versioned Service Weave `ProductIdentity`,
+The live rc18 product includes the versioned Service Weave `ProductIdentity`,
 central `PageDefinition` catalogue, public NiceGUI component API, explicit CSS
 ownership, filterable Engineering evidence index, internal Developer Reference,
 bounded Guest preferences, unified generated-file delivery, the browser／PDF
@@ -50,17 +50,17 @@ The rc17 release adds admission control that rejects excess Guest sessions witho
 evicting active users, stronger import and network bounds, aggregate fairness
 reconciliation, explicit return paths, and stable button containers whose icons
 transform internally. Its 288-input fingerprint
-`4d412e6b40efadb8aee55e786f715eff0249fc363b755d938a75a7b1491e694d`
+`de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664`
 passed all 14 formal gates before the controlled origin and Worker rollout.
 
 ## Repository editions
 
 | Branch | Platform | Status |
 |---|---|---|
-| `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite, release source | Live rc17 `99f5816` multi-user and interaction integration line |
+| `codex/login-copy-music-rc18` | NiceGUI + SQLite, release source | Live rc18 `fd504a8` entrance, devotional, interaction and release integration line |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite, historical source | Previous Service Weave editorial integration line |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Previous unified-guest architecture line; no longer the formal baseline |
-| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.17`; Windows origin and canonical Worker are synchronized |
+| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.18`; Windows origin and canonical Worker are synchronized |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
@@ -82,8 +82,8 @@ redirects, not a static tour or second trial product. An explicitly issued
 `/view#…` link remains the separate encrypted, read-only published-roster viewer.
 
 The Worker and origin authenticate both modes with server-verified, HMAC-signed
-principals. The live rc17 release passed 14／14 formal gates against its own
-288-input fingerprint `4d412e6b40efadb8aee55e786f715eff0249fc363b755d938a75a7b1491e694d`,
+principals. The live rc18 release passed 14／14 formal gates against its own
+288-input fingerprint `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664`,
 including isolated Admin/Guest browser, mobile, reduced-motion, performance,
 write/PDF, backup, and recovery evidence. The application has no custom password database.
 
@@ -181,7 +181,7 @@ transaction preserves the original evidence, posts the inverse of the version's
 net fairness effect, creates audit and backup obligations, and requests
 revocation of existing shares before a corrected week can be generated.
 
-The live rc17 release passed its matching 14-gate report, fresh verified backup,
+The live rc18 release passed its matching 14-gate report, fresh verified backup,
 isolated restore, origin rollout, staged Worker check, and canonical gateway
 health checks. Exact operating commands are documented in
 [`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and

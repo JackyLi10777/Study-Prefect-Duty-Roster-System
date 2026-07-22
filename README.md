@@ -20,10 +20,10 @@
 
 | 分支 | 運行平台 | 定位 |
 |---|---|---|
-| `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；開發及發布來源 | live rc17 的多用戶、操作層級及前端穩定性整合線 |
+| `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；歷史整合來源 | rc17 的多用戶、操作層級及前端穩定性整合線；現行發布已由 rc18 取代 |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；歷史整合來源 | 前一階段 Service Weave v1.2 編輯式整合線 |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.17`；正式 Windows origin 與 canonical Worker 已同步 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.18`；正式 Windows origin 與 canonical Worker 已同步 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -37,9 +37,9 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 網站公開入口、分享檢視器及 NiceGUI 工作台共用頁尾署名 `Copyright © 2026 LI Chuangjie`；供群組發布的乾淨值班表 PDF 仍由匯出選項決定是否加入補充頁尾。
 
-**目前正式基線：** `v1.2.0-rc.17`／`99f5816` 已同步到 `C:\SingYinRoster` 及 canonical Cloudflare Worker；`/healthz` 正常、`/readyz` ready。288 個發布輸入以指紋 `4d412e6b40efadb8aee55e786f715eff0249fc363b755d938a75a7b1491e694d` 通過 14／14 release gate；正式備份、checksum、公平對帳及隔離還原亦已通過。Worker version `c85770b2-c626-462c-bc74-5e6bd305c75b` 已完成 0% staging、指定版本 smoke check 及 100% promotion。rc15／`17a1cf9` 與 Worker `f8ea712c-6b64-4d32-8f62-3405bc313e24` 是即時回退組合；更早版本只保留作歷史發布證據。
+**目前正式基線：** `v1.2.0-rc.18`／`fd504a8` 已同步到 `C:\SingYinRoster` 及 canonical Cloudflare Worker；`/healthz` 正常、`/readyz` ready。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 release gate；正式備份、checksum、公平對帳及隔離還原亦已通過。Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 已完成 0% staging、指定版本 smoke check 及 100% promotion。rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 是即時回退組合；更早版本只保留作歷史發布證據。
 
-**目前發布（v1.2 rc17）：** Service Weave `ProductIdentity`、中央 `PageDefinition`、公開 NiceGUI 元件 API、CSS 所有權、工程證據索引、Developer Reference、Guest 工作區、統一 PDF／JSON 下載、瀏覽器／PDF 值班矩陣、安全撤回錯誤發布及跟隨系統外觀均已整合上線。Guest admission control 會在容量已滿時拒絕新 session，而不驅逐正在使用的人；匯入、網絡與公平對帳邊界亦已強化。入口頁標誌會與淺／深／系統外觀同步，歡迎音樂可正常初始化、暫停、切換歌單及調整音量；按鈕容器保持穩定，語意圖標在容器內完成狀態轉換。受控 Windows 發布會從受保護 `.env` 讀取實際 `SING_YIN_PORT`，並在停機圍欄、健康、readiness、回復及證據中使用同一端點。仍須由首席導學風紀及教師顧問完成真人驗收清單。
+**目前發布（v1.2 rc18）：** Service Weave `ProductIdentity`、中央 `PageDefinition`、公開 NiceGUI 元件 API、CSS 所有權、工程證據索引、Developer Reference、Guest 工作區、統一 PDF／JSON 下載、瀏覽器／PDF 值班矩陣、安全撤回錯誤發布及跟隨系統外觀均已整合上線。Guest admission control 會在容量已滿時拒絕新 session，而不驅逐正在使用的人；匯入、網絡與公平對帳邊界亦已強化。入口頁標誌會與淺／深／系統外觀同步，歡迎音樂可正常初始化、暫停、切換歌單及調整音量；按鈕容器保持穩定，語意圖標在容器內完成狀態轉換。受控 Windows 發布會從受保護 `.env` 讀取實際 `SING_YIN_PORT`，並在停機圍欄、健康、readiness、回復及證據中使用同一端點。仍須由首席導學風紀及教師顧問完成真人驗收清單。
 
 rc16 是這批改動的候選來源，rc17 則是完成 Worker 身份、回退基線及正式證據對齊後的已部署版本；下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換均已屬現行行為。
 
@@ -306,7 +306,7 @@ Worker 部署除 Viewer 管理所需的 `ADMIN_BEARER_TOKEN` 外，亦必須配�
 不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
 
 **目前可否在校外使用？**
-可以。canonical 網站及 Windows origin 現運行健康、ready 的 rc17／`99f5816`；一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
+可以。canonical 網站及 Windows origin 現運行健康、ready 的 rc18／`fd504a8`；一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
 
 **別人可否用 Viewer 連結編輯週表？**
 不可。分享連結永遠唯讀；網址參數、瀏覽器標頭或畫面操作都不能把訪客升級為管理員。只有 Access policy 內的管理員身份通過驗證後，Worker 才轉送完整工作台。
@@ -396,7 +396,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The live v1.2 rc17 baseline uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The protected origin runs `v1.2.0-rc.17`／`99f5816`, paired with Worker `c85770b2-c626-462c-bc74-5e6bd305c75b`; supervised human acceptance remains the final release-candidate step. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
+The live v1.2 rc18 baseline uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The protected origin runs `v1.2.0-rc.18`／`fd504a8`, paired with Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`; supervised human acceptance remains the final release-candidate step. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 

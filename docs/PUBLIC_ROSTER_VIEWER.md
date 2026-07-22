@@ -1,6 +1,6 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **目前狀態（live rc17）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.17`／`99f5816`；canonical Worker version `c85770b2-c626-462c-bc74-5e6bd305c75b` 正承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；rc17 的 14／14 候選綁定 gate、正式備份、隔離還原、origin 及 Worker 線上核對已完成。
+> **目前狀態（live rc18）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.18`／`fd504a8`；canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；rc18 的 14／14 候選綁定 gate、正式備份、隔離還原、origin 及 Worker 線上核對已完成。
 
 我是李創杰。我希望所有使用者只需記住同一個網站，但同一個網址不代表相同權限。v1.2 把入口、完整 Guest 體驗及管理員工作台統一到同一套 NiceGUI 路由和元件；只有已發布週表的 `/view#…` 保留為獨立、只讀、可分享的能力連結。
 
@@ -114,6 +114,6 @@ Cloudflare 暫時不可用時，只有維護者才使用 localhost 或已核准 
 
 ## English quick guide
 
-Live `v1.2.0-rc.17`／`99f5816`, with verified Worker `c85770b2-c626-462c-bc74-5e6bd305c75b`, uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
+Live `v1.2.0-rc.18`／`fd504a8`, with verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`, uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
 
-`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The Service Weave editorial integration is part of the live rc17 product.
+`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The Service Weave editorial integration is part of the live rc18 product.
