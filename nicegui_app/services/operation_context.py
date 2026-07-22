@@ -56,6 +56,13 @@ class PageContextWorkflowAdapter:
     """Attach a verified page identity to every official workflow call."""
 
     def __init__(self, workflow: Any, context: PageContext) -> None:
+        if context.principal.mode not in {
+            AccessMode.ADMIN,
+            AccessMode.LOCAL_MAINTENANCE,
+        }:
+            raise PermissionError(
+                "the official workflow requires an administrative principal"
+            )
         self._workflow = workflow
         self._actor = OperationActor(
             mode=context.principal.mode.value,

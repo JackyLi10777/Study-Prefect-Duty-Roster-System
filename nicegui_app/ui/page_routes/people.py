@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import date
 import hashlib
+import inspect
 import json
 
 from nicegui import events, run, ui
@@ -92,6 +93,46 @@ async def _parse_pasted_prefects_off_loop(text: str) -> ImportPreview:
     """Keep bounded paste parsing away from NiceGUI's event loop."""
 
     return await run.io_bound(parse_prefect_import_text, text)
+
+
+async def _read_prefect_upload_with_limit(upload_file: object) -> bytes:
+    """Reject an oversized upload before allocating its complete byte payload."""
+
+    size_provider = getattr(upload_file, "size", None)
+    if not callable(size_provider):
+        raise OSError("Upload size is unavailable.")
+    reported_size = size_provider()
+    if inspect.isawaitable(reported_size):
+        reported_size = await reported_size
+    if isinstance(reported_size, bool) or not isinstance(reported_size, int) or reported_size < 0:
+        raise OSError("Upload size is invalid.")
+    if reported_size > MAX_IMPORT_BYTES:
+        raise PrefectFileImportError(
+            "too_large",
+            "The import is larger than 2 MB; split it into smaller batches.",
+        )
+
+    content = await upload_file.read()  # type: ignore[attr-defined]
+    if isinstance(content, (bytearray, memoryview)):
+        content = bytes(content)
+    if not isinstance(content, bytes):
+        raise OSError("Upload reader did not return binary content.")
+    if len(content) > MAX_IMPORT_BYTES:
+        raise PrefectFileImportError(
+            "too_large",
+            "The import is larger than 2 MB; split it into smaller batches.",
+        )
+    return content
+
+
+def _require_clipboard_ingest(on_denied: Callable[[], None]) -> bool:
+    """Re-evaluate the active principal before parsing or persisting pasted data."""
+
+    if _allows(Capability.CLIPBOARD_INGEST):
+        return True
+    on_denied()
+    ui.notify(t("access_restricted_title"), type="warning")
+    return False
 
 
 def _prefect_upload_read_failure_text(error: BaseException) -> str:
@@ -1030,11 +1071,10 @@ def prefects_page() -> None:
                         revision = reset_file_import_state()
                         try:
                             try:
-                                content = await event.file.read()
-                                if isinstance(content, (bytearray, memoryview)):
-                                    content = bytes(content)
-                                if not isinstance(content, bytes):
-                                    raise OSError("Upload reader did not return binary content.")
+                                content = await _read_prefect_upload_with_limit(event.file)
+                            except PrefectFileImportError as error:
+                                ui.notify(_prefect_file_error_text(error), type="negative", timeout=8_000)
+                                return
                             except Exception as error:
                                 ui.notify(
                                     _prefect_upload_read_failure_text(error),
@@ -1124,6 +1164,8 @@ def prefects_page() -> None:
                 import_text.on_value_change(handle_text_change)
 
                 async def preview_import() -> None:
+                    if not _require_clipboard_ingest(invalidate_text_preview):
+                        return
                     text = str(import_text.value or "")
                     preview_import_button.disable()
                     try:
@@ -1193,6 +1235,8 @@ def prefects_page() -> None:
                     if fingerprint != preview_fingerprint["value"]:
                         invalidate_text_preview()
                         ui.notify(t("operation_error"), type="negative")
+                        return
+                    if not _require_clipboard_ingest(invalidate_text_preview):
                         return
                     result = await _run_with_progress(
                         lambda: workflow.import_prefects(preview.rows),

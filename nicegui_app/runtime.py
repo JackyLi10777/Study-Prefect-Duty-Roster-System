@@ -612,11 +612,16 @@ def get_workflow() -> Any:
     """Resolve the official workflow or the isolated adapter for this client."""
 
     context = current_page_context()
-    if context.principal.mode is not AccessMode.GUEST:
+    if context.principal.mode in {
+        AccessMode.ADMIN,
+        AccessMode.LOCAL_MAINTENANCE,
+    }:
         return _RuntimeGuardedAdapter(
             PageContextWorkflowAdapter(get_admin_workflow(), context),
             context,
         )
+    if context.principal.mode is AccessMode.PUBLIC:
+        raise OriginPrincipalError("public traffic cannot resolve an application workflow")
     session_id = context.principal.session_id
     workspace_id = context.metadata.get("workspaceId", "")
     if not session_id or not workspace_id:
