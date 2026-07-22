@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 import sqlite3
 
+import pytest
+
 from nicegui_app.access_context import AccessMode, PageContext, Principal
+from nicegui_app.gateway_identity import OriginPrincipalError
+import nicegui_app.runtime as runtime
 from nicegui_app.services.roster_workflow import PrefectInput, RosterWorkflow
 from nicegui_app.services.operation_context import (
     PageContextWorkflowAdapter,
@@ -65,6 +70,43 @@ def test_page_context_adapter_preserves_an_explicit_idempotency_key() -> None:
 
     assert result == "command-123"
     assert workflow.observed.command_id == "command-123"
+
+
+@pytest.mark.parametrize("mode", [AccessMode.PUBLIC, AccessMode.GUEST])
+def test_official_workflow_adapter_rejects_non_administrative_modes(mode) -> None:
+    principal = Principal(
+        mode=mode,
+        subject=f"{mode.value}-principal",
+        session_id="guest-session" if mode is AccessMode.GUEST else None,
+        expires_at=(
+            datetime.now(timezone.utc) + timedelta(minutes=10)
+            if mode is AccessMode.GUEST
+            else None
+        ),
+    )
+
+    with pytest.raises(PermissionError, match="administrative principal"):
+        PageContextWorkflowAdapter(_WorkflowProbe(), PageContext.create(principal))
+
+
+def test_runtime_never_resolves_official_workflow_for_public_traffic(monkeypatch) -> None:
+    context = PageContext.create(
+        Principal(mode=AccessMode.PUBLIC, subject="public-entry")
+    )
+    admin_resolution_attempted = False
+
+    def fail_admin_resolution():
+        nonlocal admin_resolution_attempted
+        admin_resolution_attempted = True
+        raise AssertionError("public traffic must not resolve the official workflow")
+
+    monkeypatch.setattr(runtime, "current_page_context", lambda: context)
+    monkeypatch.setattr(runtime, "get_admin_workflow", fail_admin_resolution)
+
+    with pytest.raises(OriginPrincipalError, match="public traffic"):
+        runtime.get_workflow()
+
+    assert admin_resolution_attempted is False
 
 
 def test_verified_actor_and_command_reference_are_saved_with_audited_write(tmp_path) -> None:

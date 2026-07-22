@@ -96,6 +96,84 @@ def test_pasted_parser_is_dispatched_off_the_ui_event_loop(monkeypatch) -> None:
     assert calls == [(parse_prefect_import_text, (json.dumps([VALID_ROW], ensure_ascii=False),))]
 
 
+def test_upload_rejects_reported_oversize_before_reading_payload() -> None:
+    class OversizedUpload:
+        read_calls = 0
+
+        def size(self) -> int:
+            return MAX_IMPORT_BYTES + 1
+
+        async def read(self) -> bytes:
+            self.read_calls += 1
+            return b"should-not-be-read"
+
+    upload = OversizedUpload()
+
+    try:
+        asyncio.run(people._read_prefect_upload_with_limit(upload))
+    except people.PrefectFileImportError as error:
+        assert error.code == "too_large"
+    else:
+        raise AssertionError("oversized upload should be rejected")
+
+    assert upload.read_calls == 0
+
+
+def test_upload_size_guard_supports_async_size_and_normalizes_binary_payload() -> None:
+    class AsyncSizedUpload:
+        async def size(self) -> int:
+            return 4
+
+        async def read(self) -> bytearray:
+            return bytearray(b"test")
+
+    content = asyncio.run(people._read_prefect_upload_with_limit(AsyncSizedUpload()))
+
+    assert content == b"test"
+    assert isinstance(content, bytes)
+
+
+def test_upload_rechecks_actual_payload_length_after_reported_size() -> None:
+    class InconsistentUpload:
+        def size(self) -> int:
+            return 1
+
+        async def read(self) -> bytes:
+            return b"x" * (MAX_IMPORT_BYTES + 1)
+
+    try:
+        asyncio.run(people._read_prefect_upload_with_limit(InconsistentUpload()))
+    except people.PrefectFileImportError as error:
+        assert error.code == "too_large"
+    else:
+        raise AssertionError("the actual payload must retain the same hard limit")
+
+
+def test_clipboard_capability_is_rechecked_for_every_protected_operation(monkeypatch) -> None:
+    decisions = iter((True, False))
+    checks: list[object] = []
+    denied: list[bool] = []
+    notifications: list[tuple[str, str | None]] = []
+
+    def fake_allows(capability) -> bool:
+        checks.append(capability)
+        return next(decisions)
+
+    monkeypatch.setattr(people, "_allows", fake_allows)
+    monkeypatch.setattr(people, "t", lambda key, **_values: key)
+    monkeypatch.setattr(
+        people.ui,
+        "notify",
+        lambda message, *, type=None, **_values: notifications.append((message, type)),
+    )
+
+    assert people._require_clipboard_ingest(lambda: denied.append(True)) is True
+    assert people._require_clipboard_ingest(lambda: denied.append(True)) is False
+    assert checks == [people.Capability.CLIPBOARD_INGEST, people.Capability.CLIPBOARD_INGEST]
+    assert denied == [True]
+    assert notifications == [("access_restricted_title", "warning")]
+
+
 def test_upload_read_failure_records_a_safe_reference_and_gives_a_retry(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
