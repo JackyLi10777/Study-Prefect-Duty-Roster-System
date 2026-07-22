@@ -32,11 +32,17 @@ def test_release_devotional_scripture_has_no_scraped_chapter_or_arabic_script_ar
     entries = load_devotional_seed()
     arabic_script = re.compile(r"[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]")
     leading_chapter = re.compile(r"^(?:(?:[^。！？]{1,48})\s+)?\d{1,3}(?:\s+|$)")
+    footnote_marker = re.compile(r"\[[a-zA-Z]\]")
 
     assert not {
         entry.id: entry.scripture_zh
         for entry in entries
-        if arabic_script.search(entry.scripture_zh) or leading_chapter.search(entry.scripture_zh)
+        if (
+            arabic_script.search(entry.scripture_zh)
+            or leading_chapter.search(entry.scripture_zh)
+            or footnote_marker.search(entry.scripture_zh)
+            or footnote_marker.search(entry.scripture_en)
+        )
     }
 
 

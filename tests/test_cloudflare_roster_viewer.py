@@ -84,7 +84,7 @@ def test_worker_deployment_toolchain_is_project_pinned() -> None:
     workspace = (VIEWER_ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
 
     assert package["private"] is True
-    assert package["version"] == "1.2.0-rc.17"
+    assert package["version"] == "1.2.0-rc.18"
     assert package["packageManager"] == "pnpm@11.7.0"
     assert package["engines"] == {"node": ">=22"}
     assert package["devDependencies"] == {"wrangler": "4.110.0"}
@@ -330,15 +330,15 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
         'id="adminLogin"',
         'id="guestEnter"',
         'href="/guest"',
-        "訪客導覽及虛構試用",
-        "Explore & try with fictional data",
+        "進入訪客示範",
+        "Try the fictional demo",
         'id="shareSite"',
         'href="/auth/login"',
-        "查看已發布週表，或登入開始工作",
+        "查看已發布週表，或管理本週值班",
         "收到值班表分享連結？",
         "分享網站入口",
         "只會分享首頁，不包含任何值班表或查看密鑰",
-        "正式分享連結只供查看",
+        "登入管理值班表",
         "今日經文與靈修提醒",
         "和合本修訂版 2010（神版） · NKJV",
         "LANDING_DEVOTIONALS",
@@ -348,6 +348,7 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
         "/assets/entrance-operations-dark-v1.webp",
         "/assets/service-weave-mark-light-v1.png",
         "/assets/service-weave-mark-dark-v1.png",
+        "Copyright © 2026 LI Chuangjie",
         "updatePortalStoryDepth",
         "prefers-reduced-motion: reduce",
         ".portal-story-media { transform: none !important; }",
@@ -361,6 +362,23 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
     assert "new URL('/', window.location.origin).toString()" in source
     assert "navigator.share" in source
     assert "navigator.clipboard?.writeText" in source
+    assert "導學風紀值班表生成系統" in source
+    assert "trust-strip" not in source
+
+
+def test_welcome_music_attempts_every_visit_and_recovers_after_browser_block() -> None:
+    source = _source()
+
+    assert "WELCOME_ENABLED_KEY" not in source
+    assert "sing-yin:welcome-audio-enabled:v1" not in source
+    assert "welcomeDesiredEnabled = true" in source
+    assert "armWelcomeAutoplayRecovery" in source
+    assert "recoverWelcomeAudioOnFirstInteraction" in source
+    assert "document.addEventListener('pointerdown', recoverWelcomeAudioOnFirstInteraction, true)" in source
+    assert "document.addEventListener('keydown', recoverWelcomeAudioOnFirstInteraction, true)" in source
+    assert "document.removeEventListener('pointerdown', recoverWelcomeAudioOnFirstInteraction, true)" in source
+    assert "void playWelcomeAudio({ allowRecovery: true });" in source
+    assert "data-autoplay-state=\"starting\"" in source
 
 
 def test_guest_entrance_uses_a_local_paired_light_dark_editorial_asset() -> None:

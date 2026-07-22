@@ -156,7 +156,7 @@ const VIEWER_HTML = `<!doctype html>
   <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
-  <title>導學風紀值班表 · Study Prefect Duty Roster</title>
+  <title>導學風紀值班表生成系統 · Study Prefect Duty Roster System</title>
   <link rel="icon" href="/favicon.png" type="image/png">
   <link rel="stylesheet" href="/viewer.css">
 </head>
@@ -170,8 +170,8 @@ const VIEWER_HTML = `<!doctype html>
       </span>
       <div>
       <p class="eyebrow">SING YIN SECONDARY SCHOOL</p>
-      <p class="brand-title">導學風紀值班表</p>
-      <p class="brand-subtitle" lang="en">Study Prefect Duty Roster</p>
+      <p class="brand-title">導學風紀值班表生成系統</p>
+      <p class="brand-subtitle" lang="en">Study Prefect Duty Roster System</p>
       </div>
     </div>
     <button id="themeToggle" class="theme-toggle" type="button" aria-label="外觀：跟隨系統 · Appearance: System">
@@ -193,12 +193,12 @@ const VIEWER_HTML = `<!doctype html>
         </div>
         <div class="portal-kicker">
           <span class="portal-kicker-mark" aria-hidden="true"></span>
-          <span>導學風紀值班工作台</span>
-          <span lang="en">Study Prefect Operations</span>
+          <span>值班表生成與發布</span>
+          <span lang="en">Roster creation & publishing</span>
         </div>
-        <h1 id="guestTitle">查看已發布週表，或登入開始工作</h1>
-        <p id="guestDescription" class="portal-lead">收到完整分享連結可直接查看；首席導學風紀登入後，可完成生成、核對、發布、匯出及已發布後請假。</p>
-        <p id="guestDescriptionEn" class="portal-lead portal-lead--en" lang="en">Open a complete share link to view a published roster, or sign in to continue the weekly workflow.</p>
+        <h1 id="guestTitle">查看已發布週表，或管理本週值班</h1>
+        <p id="guestDescription" class="portal-lead">分享連結可直接查看；登入後可生成、核對、發布、匯出及處理已發布後請假。</p>
+        <p id="guestDescriptionEn" class="portal-lead portal-lead--en" lang="en">Open a roster share directly, or sign in to generate, review, publish, export, and handle published-duty absences.</p>
 
         <ol class="workflow-cue" aria-label="管理員每週流程 · Weekly administrator workflow">
           <li><span>01</span><strong>生成與核對</strong><small lang="en">Generate & review</small></li>
@@ -240,10 +240,10 @@ const VIEWER_HTML = `<!doctype html>
             <path d="m9 12 2 2 4-4"></path>
           </svg>
         </div>
-        <p class="eyebrow">管理員工作台 · ADMINISTRATOR</p>
-        <h2 id="adminPanelTitle">歡迎回來</h2>
-        <p class="access-copy">首席導學風紀完成受控身份驗證後，會返回同一網站繼續工作。</p>
-        <p class="access-copy access-copy--en" lang="en">Verified administrators return to this same site and continue in the full workbench.</p>
+        <p class="eyebrow">管理員存取 · ADMIN ACCESS</p>
+        <h2 id="adminPanelTitle">登入管理值班表</h2>
+        <p class="access-copy">完成身份驗證後返回本網站，繼續本週工作。</p>
+        <p class="access-copy access-copy--en" lang="en">After verification, return here to continue this week’s roster.</p>
 
         <a id="adminLogin" class="admin-login" href="/auth/login">
           <span class="admin-login-copy">
@@ -259,15 +259,15 @@ const VIEWER_HTML = `<!doctype html>
           <span class="guest-enter-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="19" height="19"><path d="M2.8 12s3.4-6 9.2-6 9.2 6 9.2 6-3.4 6-9.2 6-9.2-6-9.2-6Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>
           </span>
-          <span class="guest-enter-copy"><strong>訪客導覽及虛構試用</strong><span lang="en">Explore & try with fictional data</span></span>
+          <span class="guest-enter-copy"><strong>進入訪客示範</strong><span lang="en">Try the fictional demo</span></span>
           <span aria-hidden="true">→</span>
         </a>
         <p id="loginAssurance" class="login-assurance" aria-live="polite">
           <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15"><path d="M8 11V8a4 4 0 0 1 8 0v3"></path><rect x="5" y="11" width="14" height="10" rx="2"></rect></svg>
-          <span>由受控身份服務安全連接 · Secured sign-in</span>
+          <span>受控身份驗證 · Verified sign-in</span>
         </p>
 
-        <section id="welcomeAudioPlayer" class="welcome-audio-player" aria-labelledby="welcomeAudioHeading">
+        <section id="welcomeAudioPlayer" class="welcome-audio-player" data-autoplay-state="starting" aria-labelledby="welcomeAudioHeading">
           <audio id="welcomeAudio" preload="metadata" playsinline></audio>
           <div class="welcome-audio-main">
             <span class="welcome-audio-mark" aria-hidden="true">
@@ -293,7 +293,7 @@ const VIEWER_HTML = `<!doctype html>
             <input id="welcomeAudioVolume" type="range" min="0" max="100" step="1" value="50">
             <output id="welcomeAudioVolumeValue" for="welcomeAudioVolume">50%</output>
           </div>
-          <p id="welcomeAudioStatus" class="welcome-audio-status" aria-live="polite">預設音量 50%；如瀏覽器阻止自動播放，按播放鍵即可。 · Default 50%; press play if autoplay is blocked.</p>
+          <p id="welcomeAudioStatus" class="welcome-audio-status" aria-live="polite">頁面開啟時自動嘗試播放，首次音量為 50%；如被瀏覽器攔截，首次操作後立即開始。 · Playback starts automatically when possible at an initial 50%; if blocked, it starts after the first interaction.</p>
         </section>
 
         <div class="access-divider" aria-hidden="true"><span></span></div>
@@ -317,11 +317,6 @@ const VIEWER_HTML = `<!doctype html>
         </div>
       </aside>
 
-      <div class="trust-strip" aria-label="平台存取特點 · Access principles">
-        <div class="trust-item"><span aria-hidden="true">01</span><p><strong>正式分享連結只供查看</strong><small lang="en">Official shares stay read-only</small></p></div>
-        <div class="trust-item"><span aria-hidden="true">02</span><p><strong>管理功能受控登入</strong><small lang="en">Verified administrator access</small></p></div>
-        <div class="trust-item"><span aria-hidden="true">03</span><p><strong>登入後仍是同一工作台</strong><small lang="en">One continuous workbench</small></p></div>
-      </div>
     </section>
 
     <noscript>
@@ -390,8 +385,11 @@ const VIEWER_HTML = `<!doctype html>
   </main>
 
   <footer class="site-footer">
-    <span>服務精神 · 非以役人，乃役於人</span>
-    <span lang="en">Service principle · Not to be served, but to serve.</span>
+    <div class="site-footer-principle">
+      <span>服務精神 · 非以役人，乃役於人</span>
+      <span lang="en">Service principle · Not to be served, but to serve.</span>
+    </div>
+    <span class="site-footer-copyright">Copyright © 2026 LI Chuangjie</span>
   </footer>
   <script type="module" src="/viewer.js"></script>
 </body>
@@ -965,26 +963,8 @@ button, input, select, textarea { font: inherit; }
 .site-share-status { margin: 8px 2px 0; color: var(--ink-muted); font-size: 0.62rem; line-height: 1.48; }
 .site-share-status span { display: block; margin-top: 2px; }
 
-.trust-strip {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-top: 1px solid var(--line);
-  background: var(--surface-muted);
-}
-
-.trust-item { display: flex; align-items: center; gap: 12px; min-height: 72px; padding: 14px 24px; }
-.trust-item + .trust-item { border-left: 1px solid var(--line); }
-.trust-item > span { color: var(--brand); font-size: 0.66rem; font-weight: 820; letter-spacing: 0.08em; }
-.trust-item p { margin: 0; }
-.trust-item strong,
-.trust-item small { display: block; }
-.trust-item strong { font-size: 0.75rem; }
-.trust-item small { margin-top: 3px; color: var(--ink-muted); font-size: 0.63rem; }
-
 .access-portal:not([hidden]) .portal-story { animation: portal-story-enter 380ms var(--ease-standard) both; }
 .access-portal:not([hidden]) .access-panel { animation: portal-panel-enter 440ms 70ms var(--ease-standard) both; }
-.access-portal:not([hidden]) .trust-strip { animation: portal-strip-enter 340ms 140ms var(--ease-standard) both; }
 
 .state-card,
 .roster-card {
@@ -1229,6 +1209,8 @@ tbody td {
   color: var(--ink-muted);
   font-size: 0.72rem;
 }
+.site-footer-principle { display: grid; gap: 2px; }
+.site-footer-copyright { align-self: end; white-space: nowrap; font-weight: 650; }
 
 .sr-only {
   position: absolute;
@@ -1372,9 +1354,6 @@ tbody td {
   .devotional-prompt { margin-top: 24px; padding: 18px 17px 17px; }
   .devotional-reflection { grid-template-columns: auto 1fr; }
   .devotional-reflection p[lang="en"] { grid-column: 2; }
-  .trust-strip { grid-template-columns: 1fr; }
-  .trust-item { min-height: 64px; }
-  .trust-item + .trust-item { border-top: 1px solid var(--line); border-left: 0; }
 }
 
 @media (max-width: 900px) {
@@ -1464,7 +1443,6 @@ const DEFAULT_WELCOME_VOLUME = 0.50;
 const WELCOME_VOLUME_KEY = 'sing-yin:welcome-audio-volume:v1';
 const WELCOME_VOLUME_DEFAULT_REVISION_KEY = 'sing-yin:welcome-audio-volume-default-revision:v1';
 const WELCOME_VOLUME_DEFAULT_REVISION = 2;
-const WELCOME_ENABLED_KEY = 'sing-yin:welcome-audio-enabled:v1';
 const resolveWelcomeVolumePreference = ${resolveWelcomeVolumePreference.toString()};
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
@@ -1588,6 +1566,7 @@ const systemDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
 let welcomeProfile = '';
 let welcomeTrackIndex = 0;
 let welcomeDesiredEnabled = true;
+let welcomeAutoplayRecoveryArmed = false;
 
 function welcomeLandingActive() {
   return window.location.pathname === '/'
@@ -1615,15 +1594,6 @@ function storedWelcomeVolume() {
 function storeWelcomeVolume(value) {
   storeWelcomePreference(WELCOME_VOLUME_DEFAULT_REVISION_KEY, WELCOME_VOLUME_DEFAULT_REVISION);
   storeWelcomePreference(WELCOME_VOLUME_KEY, value);
-}
-
-function storedWelcomeEnabled() {
-  try {
-    const value = localStorage.getItem(WELCOME_ENABLED_KEY);
-    return value === null ? true : value === 'true';
-  } catch {
-    return true;
-  }
 }
 
 function storeWelcomePreference(key, value) {
@@ -1657,28 +1627,62 @@ function setWelcomePlayingState(playing) {
   }
 }
 
-async function playWelcomeAudio({ remember = true } = {}) {
+function setWelcomeAutoplayState(state) {
+  if (welcomeAudioPlayer) welcomeAudioPlayer.dataset.autoplayState = state;
+}
+
+function disarmWelcomeAutoplayRecovery() {
+  if (!welcomeAutoplayRecoveryArmed) return;
+  welcomeAutoplayRecoveryArmed = false;
+  document.removeEventListener('pointerdown', recoverWelcomeAudioOnFirstInteraction, true);
+  document.removeEventListener('keydown', recoverWelcomeAudioOnFirstInteraction, true);
+}
+
+function recoverWelcomeAudioOnFirstInteraction(event) {
+  if (!welcomeAutoplayRecoveryArmed) return;
+  if (event.target instanceof Element && event.target.closest('.welcome-audio-player')) return;
+  disarmWelcomeAutoplayRecovery();
+  if (!welcomeDesiredEnabled || !welcomeLandingActive() || !welcomeAudio?.paused) return;
+  void playWelcomeAudio({ allowRecovery: false });
+}
+
+function armWelcomeAutoplayRecovery() {
+  if (welcomeAutoplayRecoveryArmed || !welcomeDesiredEnabled) return;
+  welcomeAutoplayRecoveryArmed = true;
+  document.addEventListener('pointerdown', recoverWelcomeAudioOnFirstInteraction, true);
+  document.addEventListener('keydown', recoverWelcomeAudioOnFirstInteraction, true);
+}
+
+async function playWelcomeAudio({ allowRecovery = true } = {}) {
   if (!welcomeAudio || !welcomeLandingActive()) return;
   if (!welcomeAudio.src) renderWelcomeTrack();
   const targetVolume = storedWelcomeVolume();
   welcomeAudio.volume = targetVolume;
+  welcomeDesiredEnabled = true;
+  setWelcomeAutoplayState('starting');
   try {
     await welcomeAudio.play();
-    welcomeDesiredEnabled = true;
-    if (remember) storeWelcomePreference(WELCOME_ENABLED_KEY, true);
+    disarmWelcomeAutoplayRecovery();
+    setWelcomeAutoplayState('playing');
     setWelcomePlayingState(true);
     if (welcomeAudioStatus) welcomeAudioStatus.textContent = '正在以 ' + Math.round(targetVolume * 100) + '% 音量播放。 · Playing at ' + Math.round(targetVolume * 100) + '% volume.';
-  } catch {
+  } catch (error) {
     setWelcomePlayingState(false);
-    if (welcomeAudioStatus) welcomeAudioStatus.textContent = '瀏覽器已暫停自動播放；按播放鍵即可開始。 · Autoplay paused; press play to begin.';
+    const blocked = error?.name === 'NotAllowedError';
+    setWelcomeAutoplayState(blocked ? 'blocked' : 'error');
+    if (blocked && allowRecovery) armWelcomeAutoplayRecovery();
+    if (welcomeAudioStatus) welcomeAudioStatus.textContent = blocked
+      ? '瀏覽器暫時攔截聲音；首次操作頁面後會立即開始。 · Sound is temporarily blocked and will start after the first interaction.'
+      : '歡迎音樂暫時未能播放；可按播放鍵重試。 · Welcome music could not start; use play to retry.';
   }
 }
 
-function pauseWelcomeAudio({ remember = true } = {}) {
+function pauseWelcomeAudio() {
   if (!welcomeAudio) return;
   welcomeAudio.pause();
   welcomeDesiredEnabled = false;
-  if (remember) storeWelcomePreference(WELCOME_ENABLED_KEY, false);
+  disarmWelcomeAutoplayRecovery();
+  setWelcomeAutoplayState('paused');
   setWelcomePlayingState(false);
   if (welcomeAudioStatus) welcomeAudioStatus.textContent = '歡迎音樂已暫停。 · Welcome music paused.';
 }
@@ -1688,7 +1692,7 @@ function advanceWelcomeTrack({ play = false } = {}) {
   if (!tracks.length) return;
   welcomeTrackIndex = (welcomeTrackIndex + 1) % tracks.length;
   renderWelcomeTrack();
-  if (play) void playWelcomeAudio({ remember: false });
+  if (play) void playWelcomeAudio({ allowRecovery: false });
 }
 
 function syncWelcomePlaylist() {
@@ -1700,13 +1704,13 @@ function syncWelcomePlaylist() {
   welcomeProfile = nextProfile;
   welcomeTrackIndex = 0;
   renderWelcomeTrack();
-  if (shouldResume) void playWelcomeAudio({ remember: false });
+  if (shouldResume) void playWelcomeAudio({ allowRecovery: false });
 }
 
 function initialiseWelcomeAudio() {
   if (!welcomeAudio || !welcomeAudioPlayer || !welcomeLandingActive()) return;
   const volume = storedWelcomeVolume();
-  welcomeDesiredEnabled = storedWelcomeEnabled();
+  welcomeDesiredEnabled = true;
   if (welcomeAudioVolume) welcomeAudioVolume.value = String(Math.round(volume * 100));
   if (welcomeAudioVolumeValue) welcomeAudioVolumeValue.textContent = Math.round(volume * 100) + '%';
   syncWelcomePlaylist();
@@ -1728,11 +1732,12 @@ function initialiseWelcomeAudio() {
   });
   welcomeAudio.addEventListener('ended', () => advanceWelcomeTrack({ play: true }));
   welcomeAudio.addEventListener('error', () => {
+    disarmWelcomeAutoplayRecovery();
+    setWelcomeAutoplayState('error');
     setWelcomePlayingState(false);
     if (welcomeAudioStatus) welcomeAudioStatus.textContent = '這首音樂暫時未能載入，請按下一首。 · This track could not load; choose the next track.';
   });
-  if (welcomeDesiredEnabled) void playWelcomeAudio({ remember: false });
-  else setWelcomePlayingState(false);
+  void playWelcomeAudio({ allowRecovery: true });
 }
 
 systemDarkScheme.addEventListener('change', () => {
@@ -1820,8 +1825,8 @@ shareSite?.addEventListener('click', async () => {
   try {
     if (navigator.share) {
       await navigator.share({
-        title: '聖言中學導學風紀值班表 · Study Prefect Duty Roster',
-        text: '導學風紀值班表網站入口 · Study Prefect Duty Roster entrance',
+        title: '聖言中學導學風紀值班表生成系統 · Sing Yin Study Prefect Duty Roster System',
+        text: '導學風紀值班表生成系統網站入口 · Study Prefect Duty Roster System entrance',
         url,
       });
       shareSiteStatus.textContent = '網站入口已分享；不包含值班表。 · Site entrance shared; no roster was included.';

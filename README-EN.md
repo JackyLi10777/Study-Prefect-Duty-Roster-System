@@ -36,6 +36,10 @@ administrator, advisor, and real-device acceptance remains a human responsibilit
 The retained **v1.1 rollback** record is historical recovery evidence only; it
 does not replace the current rc17 baseline.
 
+The public entrance, shared-roster viewer, and NiceGUI workbench use the same
+`Copyright © 2026 LI Chuangjie` page-footer attribution. Clean group-sharing
+roster PDFs retain their explicit supplementary-footer export option.
+
 The live rc17 product includes the versioned Service Weave `ProductIdentity`,
 central `PageDefinition` catalogue, public NiceGUI component API, explicit CSS
 ownership, filterable Engineering evidence index, internal Developer Reference,
@@ -116,15 +120,17 @@ marking. Close it and use `RESET_PRACTICE_MODE.cmd` for a clean rehearsal.
 
 The Dashboard devotional direction offers **Default setting**, **Clear
 guidance**, and **Quiet comfort**. The default follows the current appearance
-as a recommendation only. In the live rc17 product, local page-context music and entrance welcome music
-make one page-ready attempt at a browser-local default of 50% when no preference
-exists and always expose pause/off controls. A versioned workbench preference
-migration upgrades only an exact former 24% or 35% default. The public entrance
-preserves every stored level and never mistakes an explicitly selected 25% for
-a legacy default. If two
-consecutive routes resolve to the same local track, the current browser session
-continues its position and playing/paused state instead of restarting it; this
-continuity never enters SQLite or permanent browser storage.
+as a recommendation only. The public entrance attempts welcome-music playback
+on every visit, starts new browsers at 50%, and preserves every explicitly
+selected volume, including 25%. If audible autoplay is blocked, the first
+eligible page interaction retries automatically; visible play, pause, next,
+and volume controls remain available, and an explicit pause lasts for the
+current visit. Signed-in page-context music continues to follow the workbench
+cross-page autoplay preference. A versioned preference migration upgrades only
+an exact former 24% or 35% workbench default. If two consecutive routes resolve
+to the same local track, the current browser session continues its position and
+playing/paused state instead of restarting it; this continuity never enters
+SQLite or permanent browser storage.
 
 At the end of a school year, use **Prepare new school-year directory** from the
 Handover Guide only after the final roster, published-duty adjustments, and
@@ -272,10 +278,12 @@ context discoverable without making a daily operator scan one oversized page.
 - Phone-specific roster and prefect cards rather than clipped desktop tables.
 - Keyboard focus, semantic landmarks, 44px actions, reduced-motion support.
 - Dignified Daily Verse reading language separate from the workbench.
-- Local ambience makes one autoplay attempt at the 50% browser-local default after each page is ready.
-  The operator can pause it or turn cross-page autoplay off at any time, and the
-  control exposes playing, paused, browser-blocked, and off states. The separate
-  visible YouTube player never autoplays.
+- Signed-in local ambience makes one autoplay attempt at the 50% browser-local default after each page is ready.
+  The operator can pause it or turn cross-page autoplay off at any time. The
+  public entrance separately attempts playback on every visit and automatically
+  retries after the first eligible interaction if the browser initially blocks
+  sound. Controls expose playing, paused, browser-blocked, and off states. The
+  separate visible YouTube player never autoplays.
 - Privacy-safe `OP-...` and `REQ-...` support references.
 
 Mature SaaS patterns are treated as hypotheses, not a visual target. The system

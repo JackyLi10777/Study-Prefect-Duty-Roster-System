@@ -90,18 +90,49 @@ def _workflow(database_path: Path, backup_dir: Path) -> RosterWorkflow:
     return workflow
 
 
+def _close_open_menus(page: Page) -> None:
+    if page.locator(".q-menu:visible").count() == 0:
+        return
+    page.keyboard.press("Escape")
+    page.wait_for_function(
+        """
+        Array.from(document.querySelectorAll('.q-menu')).every((element) => {
+          const style = getComputedStyle(element);
+          return style.display === 'none'
+            || style.visibility === 'hidden'
+            || element.getClientRects().length === 0;
+        })
+        """,
+        timeout=10_000,
+    )
+
+
 def _select_option(page: Page, label: str, option_text: str) -> None:
+    _close_open_menus(page)
     field = page.locator(".q-field").filter(has_text=label).first
     field.click()
-    page.get_by_text(option_text, exact=True).last.click()
+    visible_menu = page.locator(".q-menu:visible").last
+    visible_menu.wait_for(state="visible", timeout=10_000)
+    visible_menu.get_by_text(option_text, exact=True).click()
+    _close_open_menus(page)
 
 
 def _wait_for_progress_cycle(page: Page) -> None:
-    """Wait for one new operation dialog and its one-shot cleanup."""
+    """Wait for any in-flight operation dialog to finish and be removed.
+
+    A fast local write can complete between two browser frames.  Requiring the
+    progress dialog to be sampled while visible therefore tests animation
+    timing instead of the durable operation.  Every caller separately waits
+    for and asserts the resulting UI or database state; this helper only makes
+    sure a dialog which is still present has completed its one-shot cleanup.
+    """
     dialog = page.locator(".sy-progress-dialog")
-    dialog.wait_for(state="visible", timeout=10_000)
     dialog.wait_for(state="hidden", timeout=20_000)
     dialog.wait_for(state="detached", timeout=10_000)
+    page.wait_for_function(
+        "!document.documentElement.classList.contains('nicegui-dialog-open')",
+        timeout=10_000,
+    )
 
 
 def _click_mobile_drawer_tool(page: Page, index: int, *, expects_navigation: bool = True) -> None:
@@ -287,16 +318,14 @@ def main() -> None:
         page.get_by_role("button", name="驗證與預覽").click()
         page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).wait_for(timeout=10_000)
         page.get_by_role("button", name="匯入風紀").click()
-        page.locator(".sy-progress-dialog").wait_for(state="visible", timeout=10_000)
         page.get_by_text("名單管理", exact=True).wait_for(timeout=10_000)
-        # The route title can exist before the refreshed table is mounted. Wait
-        # for the honest operation lifecycle to finish before asserting its UI
-        # result, otherwise a healthy import can fail on a render race.
-        page.locator(".sy-progress-dialog").wait_for(state="hidden", timeout=20_000)
-        page.locator(".sy-progress-dialog").wait_for(state="detached", timeout=10_000)
+        # The route title can exist before the refreshed table is mounted. The
+        # imported row is the durable completion signal; the progress dialog
+        # can legitimately finish between two browser frames.
         page.locator(".sy-prefect-directory-desktop:visible td", has_text="虛構驗證風紀").wait_for(
             timeout=15_000
         )
+        _wait_for_progress_cycle(page)
         workflow = _workflow(database_path, backup_dir)
         assert any(item["nameZh"] == "虛構驗證風紀" for item in workflow.prefects())
 
@@ -355,7 +384,6 @@ def main() -> None:
         _wait_for_progress_cycle(page)
         page.get_by_text("已登記請假", exact=False).wait_for(timeout=10_000)
         page.get_by_role("button", name="生成並儲存草稿").click()
-        page.locator(".sy-progress-dialog").wait_for(state="visible", timeout=10_000)
         deadline = time.monotonic() + 20
         generated_weeks: list[dict[str, object]] = []
         while time.monotonic() < deadline:
@@ -369,6 +397,7 @@ def main() -> None:
         while time.monotonic() < backup_deadline and not any(backup_dir.glob("*-draft_generated.manifest.json")):
             time.sleep(0.1)
         assert any(backup_dir.glob("*-draft_generated.manifest.json")), "Draft generation did not finish its verified backup."
+        _wait_for_progress_cycle(page)
         page.evaluate("window.stop()")
         browser.close()
         browser = playwright.chromium.launch(headless=True)

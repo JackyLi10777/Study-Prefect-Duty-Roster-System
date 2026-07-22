@@ -5,6 +5,8 @@
 **Status:** Active design source of truth  
 **Primary audience:** 負責日常操作的當任首席導學風紀、主要在完成後核對的顧問老師、未來維護者及實作代理人
 
+**Canonical functional name:** `聖言中學導學風紀值班表生成系統`／`Sing Yin Study Prefect Duty Roster System`. `Service Weave／服事經緯` is the software product identity; shorter labels such as「值班表」只可用於已建立上下文的導航或頁面標題，不可成為另一個產品名稱。
+
 ---
 
 ## 1. Purpose
@@ -16,6 +18,8 @@ The visual direction is inspired by the discipline behind contemporary iOS and A
 ### Design thesis
 
 > **A quiet school operations desk: one clear responsibility at a time, with enough evidence to act confidently.**
+
+Interface copy is part of the operating model. Every sentence must help the reader choose an identity, understand a consequence, complete the current task, recover from failure, or verify evidence. Repeated trust claims, generic welcome language, self-congratulatory quality claims and labels that merely restate the page title are removed. Buttons use concrete actions; supporting copy states what happens next in concise Hong Kong written Chinese with complete English parity.
 
 The signature interaction is **值週節奏 / Weekly Pulse**: the interface makes the current stage, the safe next action, and the durable result visible. It is not an animation for decoration; it is a consistent operational landmark across the dashboard, roster workspace, publication, adjustment, and handover.
 
@@ -394,7 +398,7 @@ Music is page-context-aware and makes one controlled autoplay attempt at the 50%
 
 Appearance selects only the recommendation when the operator has not chosen a profile. A saved profile overrides appearance until reset. Both profiles contain several page-specific tracks, support sequential/shuffle playback, and remain subordinate to page context, saved volume and the visible pause/off control. Vocal and instrumental editions use separate stable arrangement codes and visible bilingual labels; byte-identical duplicate files do not become repeated catalogue entries. A bounded link import may add authorised audio to `music/youtube-imports/`, but it remains an explicit Settings action with an honest waiting state and never runs on page load or appearance change. YouTube embeds remain separately user-started; local context autoplay must not silently initiate third-party playback.
 
-The public login entrance has a narrower welcome-music contract. It uses five allowlisted **instrumental** tracks for each appearance profile, gives browsers without a saved preference the shared default of **50%**, and exposes play／pause, next-track and volume controls beside the identity choices. Every explicitly stored level remains authoritative, including a previously selected 25%; a revision marker must never reinterpret a saved number as an old default. It may attempt autoplay once, then must show the browser-blocked state without retrying or opening a modal. Light mode begins with `Morning Has Broken`; dark mode begins with `Ubi caritas`, while subsequent tracks rotate without using vocal recordings. Changing appearance switches the paired playlist but never changes authentication, Guest state or roster data. Only exact stable track IDs are available through `/welcome-audio/<id>`; filenames, arbitrary origin paths and the music directory are not browser inputs. The encrypted `/view#…` roster surface remains silent.
+The public login entrance has a narrower welcome-music contract. It uses five allowlisted **instrumental** tracks for each appearance profile, gives browsers without a saved preference the shared default of **50%**, and exposes play／pause, next-track and volume controls beside the identity choices. Every explicitly stored level remains authoritative, including a previously selected 25%; a revision marker must never reinterpret a saved number as an old default. Every fresh entrance attempts audible playback. If browser media policy blocks it, the interface shows a browser-blocked state and retries once after the first eligible page interaction; it never loops, opens a modal or overrides an explicit pause during that visit. Light mode begins with `Morning Has Broken`; dark mode begins with `Ubi caritas`, while subsequent tracks rotate without using vocal recordings. Changing appearance switches the paired playlist but never changes authentication, Guest state or roster data. Only exact stable track IDs are available through `/welcome-audio/<id>`; filenames, arbitrary origin paths and the music directory are not browser inputs. The encrypted `/view#…` roster surface remains silent.
 
 ### 6.2 Roster workspace
 
@@ -431,6 +435,8 @@ The canonical workers.dev hostname is one branded system with five clearly disti
 `/guest` and `/try` are compatibility redirects, not separate products. Guest is a real NiceGUI application mode with deny-by-default capabilities, a bounded fictional workspace and the same navigation grammar as Admin. The browser stores only a signed snapshot token in `sessionStorage`; a live connection nonce plus SID／workspace／tab／revision binding is required for restore. Duplicated tabs receive new workspaces, while copied, tampered, expired, stale or old-boot tokens fall back to the safe fixture. The interface must show these consequences without implying that colour or a disabled button is the security boundary.
 
 The platform-story sequence may learn from the information architecture of mature product and documentation sites—clear value statement, capability groups, one guided starting action, trust explanation, FAQ and resource footer—without copying their screen composition, text, visual assets or brand language. [Claude Platform](https://claude.com/platform/api) and [Claude Platform Docs](https://platform.claude.com/docs) are research references for hierarchy only, not templates.
+
+Every web page uses the shared, low-interference authorship footer `Copyright © 2026 LI Chuangjie` beside the servant-leadership principle. The public entrance／viewer and the NiceGUI workbench must render the same wording, preserve contrast in both themes and stack cleanly on narrow screens. This website authorship mark is not forced into the clean roster PDF; PDF footer content remains an explicit export option so group-sharing layout and operator intent stay unchanged.
 
 On a wide screen, the root uses a 58/42 editorial composition: the larger story column explains purpose, the three-stage weekly sequence and a compact sacred reading; the smaller access column explains the current permission state, the one next action and three bounded trust facts. It is not a marketing carousel. Below 700 px the same semantic blocks stack in reading order, and 320 px remains the minimum browser evidence width without horizontal overflow. The root offers **system / light / dark** appearance states; forced-colour mode retains native borders and text, and keyboard users receive a skip link plus visible focus.
 

@@ -428,7 +428,8 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   const html = await home.text();
   assert(html.includes('id="welcomeAudioPlayer"'));
   assert(html.includes('id="welcomeAudioVolume" type="range" min="0" max="100" step="1" value="50"'));
-  assert(html.includes('Default 50%; press play if autoplay is blocked.'));
+  assert(html.includes('Playback starts automatically when possible at an initial 50%; if blocked, it starts after the first interaction.'));
+  assert(html.includes('Copyright © 2026 LI Chuangjie'));
   assert((home.headers.get('Content-Security-Policy') || '').includes("media-src 'self'"));
 
   const scriptResponse = await worker.fetch(new Request('https://gateway.example/viewer.js'), env, context);
@@ -439,6 +440,12 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assert(script.includes('const WELCOME_VOLUME_DEFAULT_REVISION = 2'));
   assert(script.includes('storeWelcomeVolume(normalised)'));
   assert(script.includes('welcomeAudio.play()'));
+  assert(script.includes('armWelcomeAutoplayRecovery'));
+  assert(script.includes("document.addEventListener('pointerdown', recoverWelcomeAudioOnFirstInteraction, true)"));
+  assert(script.includes("document.addEventListener('keydown', recoverWelcomeAudioOnFirstInteraction, true)"));
+  assert(script.includes("void playWelcomeAudio({ allowRecovery: true });"));
+  assert(!script.includes('WELCOME_ENABLED_KEY'));
+  assert(!script.includes('sing-yin:welcome-audio-enabled:v1'));
   assert(script.includes("addEventListener('ended'"));
   assert(!script.includes('cancelWelcomeFade'));
 });

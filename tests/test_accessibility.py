@@ -41,6 +41,11 @@ def test_shared_shell_provides_landmarks_skip_link_and_accessible_icon_controls(
 
     assert 'ui.link(t("skip_to_content"), "#main-content")' in shell
     assert 'ui.element("main").props("id=main-content tabindex=-1")' in shell
+    assert 'ui.element("footer").props("role=contentinfo data-testid=page-copyright")' in shell
+    assert 't("copyright_notice")' in shell
+    assert MESSAGES["copyright_notice"][ZH_HK] == "Copyright © 2026 LI Chuangjie"
+    assert MESSAGES["copyright_notice"][EN] == "Copyright © 2026 LI Chuangjie"
+    assert ".sy-page-footer" in theme
     assert "role=navigation" in shell
     assert "aria-current=page" in shell
     assert "aria-level=1" in shell

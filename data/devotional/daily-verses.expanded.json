@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-18T09:34:15.678549+00:00",
-  "sourceSeed": "D:\\code_v3\\data\\devotional\\daily-verses.seed.json",
-  "sourceLegacy": "D:\\code_v3\\data\\devotional\\daily-verses.legacy.json",
+  "generatedAt": "2026-07-22T01:42:55.927138+00:00",
+  "sourceSeed": "data/devotional/daily-verses.seed.json",
+  "sourceLegacy": "data/devotional/daily-verses.legacy.json",
   "stats": {
     "expandedEntryCount": 500,
     "canonicalSeedEntryCount": 121,
@@ -303,7 +303,7 @@
         }
       },
       "scripture": {
-        "zh": "務要牧養在你們當中 神的羣羊，按着 神的旨意照顧他們[a]，不是出於勉強，而是出於甘心；也不是因為貪財，而是出於樂意。 不要轄制所託付你們的羣羊，而是要作他們的榜樣。",
+        "zh": "務要牧養在你們當中 神的羣羊，按着 神的旨意照顧他們，不是出於勉強，而是出於甘心；也不是因為貪財，而是出於樂意。 不要轄制所託付你們的羣羊，而是要作他們的榜樣。",
         "en": "Shepherd the flock of God which is among you, serving as overseers, not by compulsion but willingly, not for dishonest gain but eagerly; nor as being lords over those entrusted to you, but being examples to the flock; (NKJV)"
       },
       "reflection": {
@@ -1176,7 +1176,7 @@
         }
       },
       "scripture": {
-        "zh": "所以，你們既是 神的選民，聖潔、蒙愛的人，要穿上憐憫、恩慈、謙虛、溫柔和忍耐。 倘若這人與那人有嫌隙，總要彼此容忍，彼此饒恕；主[a]怎樣饒恕了你們，你們也要怎樣饒恕人。 除此以外，還要穿上愛心，因為愛是貫通全德的。",
+        "zh": "所以，你們既是 神的選民，聖潔、蒙愛的人，要穿上憐憫、恩慈、謙虛、溫柔和忍耐。 倘若這人與那人有嫌隙，總要彼此容忍，彼此饒恕；主怎樣饒恕了你們，你們也要怎樣饒恕人。 除此以外，還要穿上愛心，因為愛是貫通全德的。",
         "en": "Therefore, as the elect of God, holy and beloved, put on tender mercies, kindness, humility, meekness, longsuffering; bearing with one another, and forgiving one another, if anyone has a complaint against another; even as Christ forgave you, so you also must do. But above all these things put on love, which is the bond of perfection. (NKJV)"
       },
       "reflection": {
@@ -2200,7 +2200,7 @@
         }
       },
       "scripture": {
-        "zh": "學習行善， 尋求公平， 幫助受欺壓的[a]， 替孤兒伸冤， 為寡婦辯護。」",
+        "zh": "學習行善， 尋求公平， 幫助受欺壓的， 替孤兒伸冤， 為寡婦辯護。」",
         "en": "Learn to do good; Seek justice, Rebuke the oppressor; Defend the fatherless, Plead for the widow. (NKJV)"
       },
       "reflection": {
@@ -3926,7 +3926,7 @@
         }
       },
       "scripture": {
-        "zh": "你們除了彼此相愛，對任何人都不可虧欠甚麼，因為那愛人的就成全了律法。 那不可姦淫，不可殺人，不可偷盜，不可貪婪，或別的誡命，都包括在「愛鄰[a]如己」這一句話之內了。 愛是不對鄰人作惡，所以愛就成全了律法。",
+        "zh": "你們除了彼此相愛，對任何人都不可虧欠甚麼，因為那愛人的就成全了律法。 那不可姦淫，不可殺人，不可偷盜，不可貪婪，或別的誡命，都包括在「愛鄰如己」這一句話之內了。 愛是不對鄰人作惡，所以愛就成全了律法。",
         "en": "Owe no one anything except to love one another, for he who loves another has fulfilled the law. For the commandments, “You shall not commit adultery,” “You shall not murder,” “You shall not steal,” “You shall not bear false witness,” “You shall not covet,” and if there is any other commandment, are all summed up in this saying, namely, “You shall love your neighbor as yourself.” Love does no harm to a neighbor; therefore love is the fulfillment of the law. (NKJV)"
       },
       "reflection": {
@@ -4266,7 +4266,7 @@
         }
       },
       "scripture": {
-        "zh": "你們當以基督耶穌的心為心： 他本有 神的形像， 卻不堅持自己與 神同等[a]； 反倒虛己， 取了奴僕的形像， 成為人的樣式； 既有人的樣子， 就謙卑自己， 存心順服，以至於死， 且死在十字架上。",
+        "zh": "你們當以基督耶穌的心為心： 他本有 神的形像， 卻不堅持自己與 神同等； 反倒虛己， 取了奴僕的形像， 成為人的樣式； 既有人的樣子， 就謙卑自己， 存心順服，以至於死， 且死在十字架上。",
         "en": "Let this mind be in you which was also in Christ Jesus, who, being in the form of God, did not consider it robbery to be equal with God, but made Himself of no reputation, taking the form of a bondservant, and coming in the likeness of men. And being found in appearance as a man, He humbled Himself and became obedient to the point of death, even the death of the cross. (NKJV)"
       },
       "reflection": {
@@ -4356,7 +4356,7 @@
         }
       },
       "scripture": {
-        "zh": "你們各人的重擔要互相擔當，這樣就會成全[a]基督的律法。",
+        "zh": "你們各人的重擔要互相擔當，這樣就會成全基督的律法。",
         "en": "Bear one another’s burdens, and so fulfill the law of Christ. (NKJV)"
       },
       "reflection": {
@@ -4611,7 +4611,7 @@
         }
       },
       "scripture": {
-        "zh": "「若是你的弟兄得罪你[a]，你要去，趁着只有他和你在一起的時候，指出他的錯來。他若聽你，你就贏得了你的弟兄；",
+        "zh": "「若是你的弟兄得罪你，你要去，趁着只有他和你在一起的時候，指出他的錯來。他若聽你，你就贏得了你的弟兄；",
         "en": "“Moreover if your brother sins against you, go and tell him his fault between you and him alone. If he hears you, you have gained your brother. (NKJV)"
       },
       "reflection": {
@@ -5634,7 +5634,7 @@
         }
       },
       "scripture": {
-        "zh": "所以，我們務要追求[a]和平與彼此造就的事。",
+        "zh": "所以，我們務要追求和平與彼此造就的事。",
         "en": "Therefore let us pursue the things which make for peace and the things by which one may edify another. (NKJV)"
       },
       "reflection": {
@@ -6150,7 +6150,7 @@
         }
       },
       "scripture": {
-        "zh": "你們若饒恕人的過犯，你們的天父也必饒恕你們； 你們若不饒恕人[a]，你們的天父也必不饒恕你們的過犯。」",
+        "zh": "你們若饒恕人的過犯，你們的天父也必饒恕你們； 你們若不饒恕人，你們的天父也必不饒恕你們的過犯。」",
         "en": "“For if you forgive men their trespasses, your heavenly Father will also forgive you. But if you do not forgive men their trespasses, neither will your Father forgive your trespasses. (NKJV)"
       },
       "reflection": {
@@ -6322,7 +6322,7 @@
         }
       },
       "scripture": {
-        "zh": "你當為不能自辯的人[a]開口， 為所有孤獨無助者伸冤。 你當開口按公義判斷， 當為困苦和貧窮的人辯護。",
+        "zh": "你當為不能自辯的人開口， 為所有孤獨無助者伸冤。 你當開口按公義判斷， 當為困苦和貧窮的人辯護。",
         "en": "Open your mouth for the speechless, In the cause of all who are appointed to die. Open your mouth, judge righteously, And plead the cause of the poor and needy. (NKJV)"
       },
       "reflection": {
@@ -7942,7 +7942,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -10253,7 +10253,7 @@
         }
       },
       "scripture": {
-        "zh": "不從惡人的計謀， 不站罪人的道路， 不坐傲慢人的座位， 惟喜愛耶和華的律法， 晝夜思想[a]他的律法； 這人便為有福！ 他要像一棵樹栽在溪水旁， 按時候結果子， 葉子也不枯乾。 凡他所做的盡都順利。",
+        "zh": "不從惡人的計謀， 不站罪人的道路， 不坐傲慢人的座位， 惟喜愛耶和華的律法， 晝夜思想他的律法； 這人便為有福！ 他要像一棵樹栽在溪水旁， 按時候結果子， 葉子也不枯乾。 凡他所做的盡都順利。",
         "en": "Blessed is the man Who walks not in the counsel of the ungodly, Nor stands in the path of sinners, Nor sits in the seat of the scornful; But his delight is in the law of the LORD, And in His law he meditates day and night. He shall be like a tree Planted by the rivers of water, That brings forth its fruit in its season, Whose leaf also shall not wither; And whatever he does shall prosper. (NKJV)"
       },
       "reflection": {
@@ -11114,7 +11114,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -11972,7 +11972,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -12830,7 +12830,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -13430,7 +13430,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -14288,7 +14288,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -15146,7 +15146,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -16004,7 +16004,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -16862,7 +16862,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -17718,7 +17718,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -18576,7 +18576,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -19434,7 +19434,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -20292,7 +20292,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -21150,7 +21150,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -22006,7 +22006,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -22864,7 +22864,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -23722,7 +23722,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -24580,7 +24580,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -25438,7 +25438,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -26294,7 +26294,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -27152,7 +27152,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -28010,7 +28010,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -28868,7 +28868,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -29726,7 +29726,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -30582,7 +30582,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -31440,7 +31440,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -32298,7 +32298,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -33156,7 +33156,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -34014,7 +34014,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -34870,7 +34870,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -35728,7 +35728,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -36586,7 +36586,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -37444,7 +37444,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -38302,7 +38302,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -39158,7 +39158,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -40016,7 +40016,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -40874,7 +40874,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -41732,7 +41732,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {
@@ -42590,7 +42590,7 @@
         }
       },
       "scripture": {
-        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安[a]，必在基督耶穌裏，保守你們的心懷意念。",
+        "zh": "應當一無掛慮，只要凡事藉着禱告、祈求和感謝，將你們所要的告訴 神。 神所賜那超越人所能了解的平安，必在基督耶穌裏，保守你們的心懷意念。",
         "en": "Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (NKJV)"
       },
       "reflection": {

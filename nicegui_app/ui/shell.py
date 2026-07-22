@@ -894,5 +894,8 @@ def page_shell(active_path: str) -> Iterator[None]:
             ui.label(t(navigation_group_key)).classes("sy-page-context-label")
             ui.element("span").classes("sy-page-context-line")
         yield
+    with ui.element("footer").props("role=contentinfo data-testid=page-copyright").classes("sy-page-footer"):
+        ui.label(t("service_principle")).classes("sy-page-footer-principle")
+        ui.label(t("copyright_notice")).classes("sy-page-footer-copyright")
     _render_mobile_tabbar(drawer, active_path, access_mode)
     _install_mobile_drawer_accessibility()

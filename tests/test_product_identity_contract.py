@@ -30,7 +30,7 @@ def test_product_identity_exposes_bilingual_names_and_accessible_labels() -> Non
     assert identity is PRODUCT_IDENTITY
     assert identity.product_name_zh == "服事經緯"
     assert identity.product_name_en == "Service Weave"
-    assert identity.functional_name_zh == "聖言中學導學風紀值班表系統"
+    assert identity.functional_name_zh == "聖言中學導學風紀值班表生成系統"
     assert identity.functional_name_en == "Sing Yin Study Prefect Duty Roster System"
     assert identity.accessible_name("productMark", "zh-HK") == "服事經緯軟件標誌"
     assert identity.accessible_name("productMark", "en") == "Service Weave software mark"

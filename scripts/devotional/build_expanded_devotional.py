@@ -61,8 +61,8 @@ def main() -> int:
     output = {
         "schemaVersion": 1,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
-        "sourceSeed": str(SEED_PATH),
-        "sourceLegacy": str(LEGACY_PATH),
+        "sourceSeed": SEED_PATH.relative_to(ROOT).as_posix(),
+        "sourceLegacy": LEGACY_PATH.relative_to(ROOT).as_posix(),
         "stats": {
             "expandedEntryCount": len(expanded_entries),
             "canonicalSeedEntryCount": len(seed["entries"]),

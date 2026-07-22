@@ -807,6 +807,10 @@ def main() -> None:
         team_role = page.get_by_test_id("team-operating-model").locator(".sy-team-role").first
         team_role_icon = team_role.locator(".sy-team-role-icon")
         team_role.scroll_into_view_if_needed()
+        # Scrolling can move the card underneath the pointer left by an earlier
+        # interaction.  Establish a genuinely idle baseline before verifying
+        # the hover-only icon acknowledgement.
+        page.mouse.move(0, 0)
         page.wait_for_function(
             """() => {
               const model = document.querySelector(
@@ -819,20 +823,50 @@ def main() -> None:
             }""",
             timeout=2_000,
         )
+        page.wait_for_function(
+            """
+            element => ['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(
+                getComputedStyle(element).transform
+            )
+            """,
+            arg=team_role_icon.element_handle(),
+            timeout=2_000,
+        )
         static_card_transform = team_role.evaluate(
             "element => getComputedStyle(element).transform"
         )
         static_icon_transform = team_role_icon.evaluate(
             "element => getComputedStyle(element).transform"
         )
+        supports_animated_pointer_hover = page.evaluate(
+            """matchMedia('(hover: hover) and (pointer: fine)').matches
+            && !matchMedia('(prefers-reduced-motion: reduce)').matches"""
+        )
+        team_role_icon.evaluate(
+            "(element, initial) => { element.dataset.syVerifierInitialTransform = initial; }",
+            static_icon_transform,
+        )
         team_role.hover()
-        page.wait_for_timeout(220)
+        if supports_animated_pointer_hover:
+            page.wait_for_function(
+                """
+                element => getComputedStyle(element).transform
+                    !== element.dataset.syVerifierInitialTransform
+                """,
+                arg=team_role_icon.element_handle(),
+                timeout=2_000,
+            )
         assert team_role.evaluate(
             "element => getComputedStyle(element).transform"
         ) == static_card_transform
-        assert team_role_icon.evaluate(
+        hovered_icon_transform = team_role_icon.evaluate(
             "element => getComputedStyle(element).transform"
-        ) != static_icon_transform
+        )
+        if supports_animated_pointer_hover:
+            assert hovered_icon_transform != static_icon_transform
+        else:
+            assert hovered_icon_transform == static_icon_transform
+        team_role_icon.evaluate("element => delete element.dataset.syVerifierInitialTransform")
         assert "platform-stewardship-light-v1.webp" in page.locator(".sy-platform-hero").evaluate(
             "element => getComputedStyle(element, '::before').backgroundImage"
         )

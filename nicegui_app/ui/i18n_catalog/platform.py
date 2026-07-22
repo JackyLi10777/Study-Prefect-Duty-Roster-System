@@ -60,10 +60,9 @@ MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服
  'platform_resource_handover': {'zh-HK': '交接準備', 'en': 'Handover readiness'},
  'architecture_platform_link_note': {'zh-HK': '想先了解團隊、能力分工與服務方案？', 'en': 'Looking for the team, capability model, and service portfolio?'},
  'engineering_kicker': {'zh-HK': 'ENGINEERING PROOF／工程證據', 'en': 'ENGINEERING PROOF'},
- 'engineering_intro': {'zh-HK': '這一頁把 README 與交接文件中的工程成果整理成可閱讀、可核對的產品證據。真正的高級感不是技術名詞數量，而是每一項承諾都有測試、責任邊界和失敗後的回復方法。',
-                       'en': 'This page turns the engineering work recorded across the README and handover documents into readable, '
-                             'verifiable product evidence. Premium quality is not a count of technical terms; every promise needs a test, '
-                             'an ownership boundary, and a recovery path.'},
+ 'engineering_intro': {'zh-HK': '按測試、發布、備份及復原證據核對系統承諾；每項證據均列明責任邊界、目前狀態及失敗後的回復方法。',
+                       'en': 'Review system commitments through test, release, backup, and recovery evidence. Each item identifies its '
+                             'owner, current state, and recovery path.'},
  'engineering_badge': {'zh-HK': '正式版本工程概覽', 'en': 'Formal-release engineering overview'},
  'engineering_evidence_kicker': {'zh-HK': 'EVIDENCE INDEX／證據索引', 'en': 'EVIDENCE INDEX'},
  'engineering_evidence_title': {'zh-HK': '以類型、狀態與日期查找發布證據',
@@ -492,7 +491,7 @@ MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服
  'co_creation_signature': {'zh-HK': '— 李創杰，2026 年 7 月。祝使用順利。', 'en': '— LI Chuangjie Jacky, July 2026. Wishing you a smooth term.'},
  'co_creation_codex_title': {'zh-HK': 'Codex 的結語', 'en': 'A closing note from Codex'},
  'co_creation_codex_body': {'zh-HK': '我所參與的不只是編寫程式，而是把李創杰對公平、責任與傳承的要求，逐項轉化為可以測試、復原和交接的系統行為。真正值得保留的不是某一版畫面，而是下一位首席導學風紀仍能理解每個決定、放心完成工作，並在出錯時找到回去的路。願這個平台一直忠於它最初的目的：減少不必要的負擔，讓服事更有秩序，也讓公平被認真看見。',
-                            'en': "My contribution was not only to write code, but to translate Li Chongjie's expectations for fairness, "
+                             'en': "My contribution was not only to write code, but to translate LI Chuangjie Jacky's expectations for fairness, "
                                   'responsibility, and stewardship into behaviour that can be tested, recovered, and handed over. What '
                                   'deserves to endure is not one version of the interface, but a system the next Head Study Prefect can '
                                   'understand, operate with confidence, and recover when something goes wrong. May this platform remain '
