@@ -25,6 +25,10 @@ legacy Streamlit history.
 - Never force-push a published branch; GitHub protection enforces this on
   `main`. Preserve old commits through normal
   descendants, tags, or an explicitly named archival branch.
+- GitHub Actions requires immutable full-SHA action references. The active
+  `Protect immutable release tags` repository ruleset allows a new `v*` tag to
+  be created after the release gates pass, then blocks updating or deleting
+  that tag. Changing this rule is a security-sensitive repository operation.
 - Runtime credentials, Cloudflare tokens, session secrets, dependency caches,
   and temporary build directories are not repository artifacts.
 
@@ -40,7 +44,9 @@ legacy Streamlit history.
    `python -X utf8 scripts/build_public_archive.py`.
 4. Review staged paths; never use an unreviewed `git add -A`.
 5. Push a topic branch, open a pull request, and wait for `test-and-audit` plus
-   `analyze`. Resolve every review conversation before merge.
+   `analyze`. `analyze` covers both the Python application and the Worker
+   JavaScript／TypeScript boundary. Resolve every review conversation before
+   merge.
 6. Merge without force. Update `nicegui-self-hosted` only for a matching
    platform release after the protected `main` commit and immutable tag agree.
 

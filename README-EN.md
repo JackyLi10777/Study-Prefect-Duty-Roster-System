@@ -69,6 +69,16 @@ rollback target. rc17／`99f5816` with Worker
 `c85770b2-c626-462c-bc74-5e6bd305c75b` is retained only as a secondary verified
 baseline.
 
+**Public security and release integrity:** Public browsers reach only the
+Cloudflare Worker; the official NiceGUI origin remains loopback-only. Admin
+access requires Cloudflare Access, the private exact-email allowlist, a bounded
+session, and a request-bound HMAC principal. GitHub `main` accepts only pull
+requests that pass `test-and-audit` and Python／Worker CodeQL; force-push and
+deletion are blocked, Actions references must use full SHAs, and a created `v*`
+release tag cannot be updated or deleted. See the complete
+[security and privacy model](docs/SECURITY_AND_PRIVACY.md) for threat boundaries,
+data classes, incident response, and residual limits.
+
 The retained **v1.1 rollback** record is historical recovery evidence only; it
 does not replace the current rc18 baseline.
 

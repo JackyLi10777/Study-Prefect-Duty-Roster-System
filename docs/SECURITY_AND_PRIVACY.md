@@ -116,9 +116,13 @@ The expected live controls are:
 - `GITHUB_TOKEN` defaults to read-only and cannot approve pull requests;
 - every `uses:` reference is pinned to a full commit SHA and repository policy
   requires SHA pinning;
+- repository ruleset **Protect immutable release tags** applies to `refs/tags/v*`
+  and denies both update and deletion, so a published release tag cannot be
+  silently retargeted or removed;
 - CODEOWNERS routes every change and explicitly marks identity, persistence,
   deployment and workflow paths;
-- CodeQL and quality checks run for every pull request and every `main` push;
+- CodeQL scans both Python and the JavaScript／TypeScript Worker boundary, while
+  quality checks run for every pull request and every `main` push;
 - Dependabot covers Python, GitHub Actions, and the Worker pnpm lock;
 - vulnerability alerts, automated security updates, secret scanning/push
   protection where GitHub makes them available, and private vulnerability
