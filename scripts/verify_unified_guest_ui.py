@@ -582,12 +582,15 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
     _assert_fixture_directory(page, guest_url)
     _open_route(page, guest_url, "/rosters")
     page.get_by_test_id("history-priority-multiplier").wait_for(state="visible", timeout=10_000)
-    # NiceGUI keeps the page-level music dialog mounted while it is closed.
-    # Its three Quasar selects precede the operational fields in DOM order, so
-    # index-based workflow assertions must be scoped to currently visible
-    # controls rather than accidentally waiting on a hidden dialog control.
-    selects = page.locator("main#main-content .q-select:visible")
-    _select_option(page, selects.nth(0), text=re.compile(r"張樂晴"))
+    # NiceGUI keeps the page-level music dialog mounted while it is closed, and
+    # the Assist assignment mode adds another visible select.  Target the
+    # operational field by its stable contract instead of DOM position.
+    leave_prefect = page.get_by_test_id("pre-generation-leave-prefect")
+    chosen_leave_prefect = _select_option(page, leave_prefect)
+    if not any(name in chosen_leave_prefect for name in FIXTIONAL_PREFECT_NAMES):
+        raise UnifiedGuestVerificationError(
+            "The pre-generation leave selector did not offer a fictional prefect."
+        )
     leave_reason = "示範請假（不會長期儲存）"
     page.locator("input[name='pre-generation-leave-reason']").fill(leave_reason)
     page.get_by_role("button", name=re.compile(r"登記請假|Record leave")).click()

@@ -475,7 +475,9 @@ def rosters_page() -> None:
                             label=t("select_prefect"),
                             options=prefect_options,
                             value=next(iter(prefect_options), None),
-                        ).classes("grow min-w-[220px]")
+                        ).props("data-testid=pre-generation-leave-prefect").classes(
+                            "grow min-w-[220px]"
+                        )
                         leave_day = ui.select(
                             label=t("leave_day"),
                             options={day.name: day_label(day) for day in SchoolDay},
