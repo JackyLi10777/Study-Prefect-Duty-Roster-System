@@ -355,13 +355,15 @@ def test_prefect_form_repairs_expected_omissions_before_starting_a_durable_write
         'with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-4"):', 1
     )[0]
 
-    for key in (
+    required_repairs = (
         "prefect_name_required",
         "prefect_class_required",
         "prefect_availability_required",
-    ):
+        "fixed_assist_day_unavailable",
+    )
+    for key in required_repairs:
         assert save_handler.index(key) < save_handler.index("_run_with_progress")
-    assert save_handler.count('run_method("focus")') == 3
+    assert save_handler.count('run_method("focus")') == len(required_repairs)
 
 
 def test_roster_forms_repair_predictable_input_before_background_work() -> None:

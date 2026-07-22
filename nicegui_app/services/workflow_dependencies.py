@@ -39,7 +39,12 @@ from nicegui_app.persistence.models import (
 from nicegui_app.services.maintenance import MaintenanceModeError, MaintenanceStatus, maintenance_coordinator
 from nicegui_app.services.operation_context import current_operation_actor
 from nicegui_app.services.workflow_types import *
-from roster_core.generator import RosterGenerationError, generate_weekly_roster, validate_assignments
+from roster_core.generator import (
+    RosterGenerationError,
+    generate_weekly_roster,
+    legacy_assist_weekday_mapping,
+    validate_assignments,
+)
 from roster_core.models import Assignment, Prefect, parse_prefect_role
 from roster_policy import (
     DutyPost,

@@ -40,6 +40,7 @@ If prose conflicts with executable policy, transactional behavior, security chec
 |---|---|---|
 | [`QUICKSTART.md`](QUICKSTART.md) | 雙擊啟動、Practice Mode、埠號衝突、最快安全入口 | launcher、port selection、practice identity 或初次啟動改變 |
 | [`OPERATOR_GUIDE.md`](OPERATOR_GUIDE.md) | 每週端到端操作、錯誤復原、名冊、發布、PDF、Viewer、請假、公平 | 任何可見工作流程、按鈕名稱、確認語句或恢復步驟改變 |
+| [`ROSTER_POLICY_MODES.md`](ROSTER_POLICY_MODES.md) | 固定星期／每週靈活 Assist. in charge 模式、固定日維護及相容資料 | mode code、預設模式、輪換、固定星期、可當值日或請假替補規則改變 |
 | [`RELEASE_HANDOVER.md`](RELEASE_HANDOVER.md) | 備份、隔離還原、正式部署、回退、下一任交接 | release gate、tag、backup、restore、deployment 或 rollback 改變 |
 | [`ACCEPTANCE_EVIDENCE.md`](ACCEPTANCE_EVIDENCE.md) | 自動證據與首席導學風紀／顧問老師真人責任的逐項矩陣 | gate、acceptance criterion、證據位置或人手責任改變 |
 | [`PROJECT_STATUS.md`](../PROJECT_STATUS.md) | 現行版本、已完成能力、發布證據、剩餘風險 | 候選建立、部署完成、風險開關或正式狀態改變 |

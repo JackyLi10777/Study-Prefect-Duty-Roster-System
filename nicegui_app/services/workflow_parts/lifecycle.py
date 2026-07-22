@@ -2,8 +2,82 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from nicegui_app.services.workflow_dependencies import *
 from nicegui_app.services.workflow_fencing import fenced_workflow_write
+
+
+def _assist_assignment_mode_code(value: object) -> str:
+    """Normalize an enum or stable code before it crosses the workflow boundary."""
+
+    raw_value = getattr(value, "value", value)
+    normalized = str(raw_value).strip()
+    if normalized not in ASSIST_ASSIGNMENT_MODE_CODES:
+        allowed = ", ".join(sorted(ASSIST_ASSIGNMENT_MODE_CODES))
+        raise WorkflowError(
+            f"Unsupported Assist assignment mode; expected one of: {allowed}."
+        )
+    return normalized
+
+
+def _initialize_legacy_assist_weekdays(
+    session: Session,
+    prefects: list[Prefect],
+    *,
+    now: datetime,
+) -> dict[str, str]:
+    """Persist the first accepted automatic legacy mapping.
+
+    The old policy is person-owned rather than roster-owned: adding a new AHP
+    later must not move everybody else's weekday. Existing explicit mappings
+    are never overwritten, and a person serving more than once in a shortage
+    week cannot be represented by the single legacy weekday field.
+    """
+
+    assist_days = legacy_assist_weekday_mapping(prefects)
+    role_by_id = {prefect.id: prefect.role for prefect in prefects}
+    initialized: dict[str, str] = {}
+    for prefect_id, days in assist_days.items():
+        if role_by_id.get(prefect_id) is not PrefectRole.ASSISTANT_HEAD or len(days) != 1:
+            continue
+        record = session.get(PrefectRecord, prefect_id)
+        if record is None or record.fixed_general_duty != "NONE":
+            continue
+        record.fixed_general_duty = days[0].name
+        record.version += 1
+        record.updated_at = now
+        initialized[prefect_id] = days[0].name
+    return initialized
+
+
+def _previous_assist_weekday_assignments(
+    session: Session,
+    week_start: date,
+) -> dict[SchoolDay, str]:
+    """Return active Assist owners from the immediately preceding school week."""
+
+    previous_week = session.scalar(
+        select(RosterWeekRecord).where(
+            RosterWeekRecord.week_start == week_start - timedelta(days=7),
+            RosterWeekRecord.status.in_(("draft", "published")),
+        )
+    )
+    if previous_week is None:
+        return {}
+    rows = session.scalars(
+        select(RosterAssignmentRecord).where(
+            RosterAssignmentRecord.roster_week_id == previous_week.id,
+            RosterAssignmentRecord.post_code == DutyPost.ASSIST_IN_CHARGE.name,
+            RosterAssignmentRecord.status == "active",
+        )
+    ).all()
+    return {
+        SchoolDay[row.day]: row.prefect_id
+        for row in rows
+        if row.prefect_id is not None and row.day in SchoolDay.__members__
+    }
+
 
 class RosterLifecycleMixin:
     def validate_week_start(self, week_start: date) -> None:
@@ -16,15 +90,18 @@ class RosterLifecycleMixin:
         week_start: date,
         *,
         history_priority_multiplier: float = 1.0,
+        assist_assignment_mode: AssistAssignmentMode | str = LEGACY_FIXED_WEEKDAY,
         expected_week_version: int | None = None,
         command_id: str | None = None,
     ) -> RosterWeekResult:
         self._require_monday(week_start)
+        normalized_assist_mode = _assist_assignment_mode_code(assist_assignment_mode)
         operation_type = "draft_generated"
         operation_id = self._operation_command_id(operation_type, command_id)
         operation_payload = {
             "weekStart": week_start.isoformat(),
             "historyPriorityMultiplier": float(history_priority_multiplier),
+            "assistAssignmentMode": normalized_assist_mode,
             "expectedWeekVersion": expected_week_version,
         }
         receipt: dict[str, object] | None = None
@@ -53,17 +130,33 @@ class RosterLifecycleMixin:
                     )
                 prefects = self._active_prefects(session)
                 leave_days = self._leave_days_for_week(session, week_start)
+                previous_assist_assignments = _previous_assist_weekday_assignments(
+                    session,
+                    week_start,
+                )
                 try:
                     assignments = generate_weekly_roster(
                         prefects,
                         leave_days=leave_days,
                         history_priority_multiplier=history_priority_multiplier,
+                        assist_assignment_mode=normalized_assist_mode,
+                        assist_rotation_key=week_start.isoformat(),
+                        previous_assist_assignments=previous_assist_assignments,
                     )
                 except RosterGenerationError as error:
                     raise WorkflowError(f"Draft generation needs attention: {error}") from error
                 normalized_multiplier = float(history_priority_multiplier)
                 week = existing_week
                 now = self._now()
+                initialized_fixed_weekdays = (
+                    _initialize_legacy_assist_weekdays(
+                        session,
+                        prefects,
+                        now=now,
+                    )
+                    if normalized_assist_mode == LEGACY_FIXED_WEEKDAY
+                    else {}
+                )
                 if week is None:
                     week = RosterWeekRecord(
                         week_start=week_start,
@@ -71,6 +164,7 @@ class RosterLifecycleMixin:
                         version=1,
                         policy_version=POLICY_VERSION,
                         history_priority_multiplier=normalized_multiplier,
+                        assist_assignment_mode=normalized_assist_mode,
                         generated_at=now,
                         created_at=now,
                         updated_at=now,
@@ -82,6 +176,7 @@ class RosterLifecycleMixin:
                 else:
                     week.version += 1
                     week.history_priority_multiplier = normalized_multiplier
+                    week.assist_assignment_mode = normalized_assist_mode
                     week.generated_at = now
                     week.updated_at = now
                     session.execute(delete(RosterAssignmentRecord).where(RosterAssignmentRecord.roster_week_id == week.id))
@@ -95,6 +190,7 @@ class RosterLifecycleMixin:
                     "version": week.version,
                     "assignmentCount": len(assignments),
                     "historyPriorityMultiplier": week.history_priority_multiplier,
+                    "assistAssignmentMode": week.assist_assignment_mode,
                 }
                 self._audit(
                     session,
@@ -104,6 +200,9 @@ class RosterLifecycleMixin:
                         "assignmentCount": len(assignments),
                         "leaveDeclarationCount": sum(len(days) for days in leave_days.values()),
                         "historyPriorityMultiplier": normalized_multiplier,
+                        "assistAssignmentMode": normalized_assist_mode,
+                        "previousAssistWeekdayCount": len(previous_assist_assignments),
+                        "fixedWeekdayAssignmentsInitialized": initialized_fixed_weekdays,
                         "version": week.version,
                     },
                 )
@@ -124,6 +223,9 @@ class RosterLifecycleMixin:
             assignment_count=int(receipt["assignmentCount"]),
             backup_path=backup_path,
             history_priority_multiplier=float(receipt["historyPriorityMultiplier"]),
+            assist_assignment_mode=str(
+                receipt.get("assistAssignmentMode", LEGACY_FIXED_WEEKDAY)
+            ),
         )
         return result
 
@@ -220,6 +322,7 @@ class RosterLifecycleMixin:
                     "version": week.version,
                     "assignmentCount": len(assignment_rows),
                     "historyPriorityMultiplier": week.history_priority_multiplier,
+                    "assistAssignmentMode": week.assist_assignment_mode,
                 }
                 self._audit(
                     session,
@@ -228,6 +331,7 @@ class RosterLifecycleMixin:
                     {
                         "assignmentCount": len(assignment_rows),
                         "historyPriorityMultiplier": week.history_priority_multiplier,
+                        "assistAssignmentMode": week.assist_assignment_mode,
                         "version": week.version,
                     },
                 )
@@ -248,6 +352,9 @@ class RosterLifecycleMixin:
             assignment_count=int(receipt["assignmentCount"]),
             backup_path=self._fulfill_backup_obligation(command_key),
             history_priority_multiplier=float(receipt["historyPriorityMultiplier"]),
+            assist_assignment_mode=str(
+                receipt.get("assistAssignmentMode", LEGACY_FIXED_WEEKDAY)
+            ),
         )
 
     @fenced_workflow_write
@@ -847,6 +954,7 @@ class RosterLifecycleMixin:
                     "status": row.status,
                     "version": row.version,
                     "historyPriorityMultiplier": row.history_priority_multiplier,
+                    "assistAssignmentMode": row.assist_assignment_mode,
                     "generatedAt": row.generated_at,
                     "publishedAt": row.published_at,
                     "withdrawnAt": row.withdrawn_at,
@@ -864,6 +972,7 @@ class RosterLifecycleMixin:
                 "status": row.status,
                 "version": row.version,
                 "historyPriorityMultiplier": row.history_priority_multiplier,
+                "assistAssignmentMode": row.assist_assignment_mode,
                 "generatedAt": row.generated_at,
                 "publishedAt": row.published_at,
                 "withdrawnAt": row.withdrawn_at,
@@ -905,6 +1014,7 @@ class RosterLifecycleMixin:
                     "status": week.status,
                     "version": week.version,
                     "historyPriorityMultiplier": week.history_priority_multiplier,
+                    "assistAssignmentMode": week.assist_assignment_mode,
                     "generatedAt": week.generated_at,
                     "publishedAt": week.published_at,
                 },

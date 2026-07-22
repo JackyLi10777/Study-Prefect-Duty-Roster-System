@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$HostAlias = "sing-yin-roster-host",
+    [string]$HostRoot = "C:\SingYinRoster",
     [string]$ReportPath = ""
 )
 
@@ -19,17 +20,22 @@ function Write-JsonReport {
 }
 
 $ssh = Get-Command "ssh.exe" -ErrorAction Stop
+$hostRootPayload = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($HostRoot))
 $probeScript = @'
+$hostRoot = [Text.Encoding]::Unicode.GetString(
+    [Convert]::FromBase64String("__HOST_ROOT_PAYLOAD__")
+)
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = New-Object Security.Principal.WindowsPrincipal($identity)
 $isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-. C:\SingYinRoster\scripts\windows_host_common.ps1
-$endpoint = Get-SingYinConfiguredEndpoint -EnvironmentPath C:\SingYinRoster\.env
+. (Join-Path $hostRoot "scripts\windows_host_common.ps1")
+$endpoint = Get-SingYinConfiguredEndpoint -EnvironmentPath (Join-Path $hostRoot ".env")
 $health = Invoke-RestMethod -Uri "http://$($endpoint.Host):$($endpoint.Port)/healthz" -TimeoutSec 5
 $sshd = Get-Service -Name "sshd" -ErrorAction Stop
 $rosterTask = Get-ScheduledTask -TaskName "Sing Yin Roster Host" -ErrorAction Stop
+$safeDirectory = $hostRoot.Replace("\", "/")
 $productionCommit = (
-    & git -c safe.directory=C:/SingYinRoster -C C:\SingYinRoster rev-parse HEAD 2>$null |
+    & git -c "safe.directory=$safeDirectory" -C $hostRoot rev-parse HEAD 2>$null |
         Out-String
 ).Trim()
 [ordered]@{
@@ -44,7 +50,7 @@ $productionCommit = (
     database = $health.database
     endpoint = "http://$($endpoint.Host):$($endpoint.Port)"
 } | ConvertTo-Json -Compress
-'@
+'@.Replace("__HOST_ROOT_PAYLOAD__", $hostRootPayload)
 $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($probeScript))
 $output = & $ssh.Source `
     -o BatchMode=yes `

@@ -65,6 +65,51 @@ def test_prefect_can_be_created_updated_and_archived_without_erasing_history(tmp
     assert len(list((tmp_path / "backups").glob("*.sqlite3"))) == 3
 
 
+def test_role_change_preserves_inactive_legacy_assist_metadata_without_blocking_availability(tmp_path) -> None:
+    workflow = _workflow(tmp_path)
+    assistant = next(row for row in workflow.prefects() if row["roleCode"] == "assistant_head")
+    current = workflow.prefect(str(assistant["id"]))
+    fixed_day = str(current["fixedGeneralDuty"])
+    if fixed_day == "NONE":
+        fixed_day = str(current["availableDays"][0])
+        workflow.update_prefect(
+            str(current["id"]),
+            PrefectInput(
+                name_zh=str(current["nameZh"]),
+                name_en=str(current.get("nameEn") or "") or None,
+                form=str(current["form"]),
+                class_name=str(current["className"]),
+                role_code="assistant_head",
+                available_days=tuple(current["availableDays"]),
+                fixed_general_duty=fixed_day,
+            ),
+            expected_version=int(current["version"]),
+        )
+        current = workflow.prefect(str(current["id"]))
+
+    replacement_days = tuple(
+        day for day in ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY")
+        if day != fixed_day
+    )
+    updated = workflow.update_prefect(
+        str(current["id"]),
+        PrefectInput(
+            name_zh=str(current["nameZh"]),
+            name_en=str(current.get("nameEn") or "") or None,
+            form=str(current["form"]),
+            class_name=str(current["className"]),
+            role_code="study_prefect",
+            available_days=replacement_days,
+            fixed_general_duty=fixed_day,
+        ),
+        expected_version=int(current["version"]),
+    )
+
+    assert updated["roleCode"] == "study_prefect"
+    assert updated["fixedGeneralDuty"] == fixed_day
+    assert fixed_day not in updated["availableDays"]
+
+
 def test_prefect_create_command_replays_without_duplicate_or_second_backup(tmp_path) -> None:
     workflow = _workflow(tmp_path)
     prefect_input = PrefectInput(

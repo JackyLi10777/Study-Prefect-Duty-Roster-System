@@ -279,8 +279,45 @@ class PersistenceWorkflowMixin:
             raise WorkflowError("Availability contains duplicate weekdays.")
         if prefect_input.fixed_general_duty != "NONE" and prefect_input.fixed_general_duty not in SchoolDay.__members__:
             raise WorkflowError("Fixed duty contains an invalid weekday.")
+        if (
+            prefect_input.role_code == PrefectRole.ASSISTANT_HEAD.value
+            and prefect_input.fixed_general_duty != "NONE"
+            and prefect_input.fixed_general_duty not in prefect_input.available_days
+        ):
+            raise WorkflowError("Fixed duty must also be an available weekday.")
         if prefect_input.history_weight < 0 or prefect_input.history_duties < 0:
             raise WorkflowError("History values cannot be negative.")
+
+    @staticmethod
+    def _assert_assist_fixed_day_available(
+        session: Session,
+        prefect_input: PrefectInput,
+        *,
+        exclude_prefect_id: str | None = None,
+    ) -> None:
+        """Reject two active Assistant Heads owning the same legacy weekday.
+
+        Callers hold the workflow's serialized SQLite write transaction before
+        reaching this query, so the validation and the following insert/update
+        form one atomic decision rather than a check-then-write race.
+        """
+
+        if (
+            prefect_input.role_code != PrefectRole.ASSISTANT_HEAD.value
+            or prefect_input.fixed_general_duty == "NONE"
+        ):
+            return
+        statement = select(PrefectRecord.id).where(
+            PrefectRecord.active.is_(True),
+            PrefectRecord.role_code == PrefectRole.ASSISTANT_HEAD.value,
+            PrefectRecord.fixed_general_duty == prefect_input.fixed_general_duty,
+        )
+        if exclude_prefect_id is not None:
+            statement = statement.where(PrefectRecord.id != exclude_prefect_id)
+        if session.scalar(statement.limit(1)) is not None:
+            raise WorkflowConflictError(
+                "Another active Assistant Head Study Prefect already owns this fixed weekday."
+            )
 
     def _store_assignments(self, session: Session, roster_week_id: int, assignments: Iterable[Assignment], prefects: list[Prefect]) -> None:
         role_by_id = {prefect.id: prefect.role for prefect in prefects}

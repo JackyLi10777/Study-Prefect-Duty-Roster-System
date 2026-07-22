@@ -126,6 +126,47 @@ def test_each_guest_mutation_publishes_the_new_signed_revision() -> None:
     assert len(published[1].state["prefects"]) == 18
 
 
+def test_guest_role_change_preserves_inactive_legacy_assist_metadata() -> None:
+    adapter = _adapter()
+    assistant = next(row for row in adapter.prefects() if row["roleCode"] == "assistant_head")
+    fixed_day = str(assistant["availableDays"][0])
+    prepared = adapter.update_prefect(
+        str(assistant["id"]),
+        PrefectInput(
+            name_zh=str(assistant["nameZh"]),
+            name_en=str(assistant.get("nameEn") or "") or None,
+            form=str(assistant["form"]),
+            class_name=str(assistant["className"]),
+            role_code="assistant_head",
+            available_days=tuple(assistant["availableDays"]),
+            fixed_general_duty=fixed_day,
+        ),
+        expected_version=int(assistant["version"]),
+    )
+    replacement_days = tuple(
+        day for day in ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY")
+        if day != fixed_day
+    )
+
+    updated = adapter.update_prefect(
+        str(prepared["id"]),
+        PrefectInput(
+            name_zh=str(prepared["nameZh"]),
+            name_en=str(prepared.get("nameEn") or "") or None,
+            form=str(prepared["form"]),
+            class_name=str(prepared["className"]),
+            role_code="study_prefect",
+            available_days=replacement_days,
+            fixed_general_duty=fixed_day,
+        ),
+        expected_version=int(prepared["version"]),
+    )
+
+    assert updated["roleCode"] == "study_prefect"
+    assert updated["fixedGeneralDuty"] == fixed_day
+    assert fixed_day not in updated["availableDays"]
+
+
 def test_complete_guest_roster_path_uses_real_policy_but_only_demo_fairness() -> None:
     adapter = _adapter()
     original = adapter.prefects()

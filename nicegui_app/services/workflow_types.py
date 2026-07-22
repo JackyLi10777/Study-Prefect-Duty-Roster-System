@@ -6,7 +6,12 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
-from roster_policy import PrefectRole
+from roster_policy import AssistAssignmentMode, PrefectRole
+
+
+LEGACY_FIXED_WEEKDAY = AssistAssignmentMode.LEGACY_FIXED_WEEKDAY.value
+FLEXIBLE_WEEKLY = AssistAssignmentMode.FLEXIBLE_WEEKLY.value
+ASSIST_ASSIGNMENT_MODE_CODES = frozenset({LEGACY_FIXED_WEEKDAY, FLEXIBLE_WEEKLY})
 
 
 class WorkflowError(ValueError):
@@ -53,6 +58,7 @@ class RosterWeekResult:
     assignment_count: int
     backup_path: Path
     history_priority_multiplier: float = 1.0
+    assist_assignment_mode: str = LEGACY_FIXED_WEEKDAY
 
 
 @dataclass(frozen=True)
