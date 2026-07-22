@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from itertools import pairwise
 
 import pytest
 
@@ -62,7 +63,7 @@ def _assert_assist_policy(assignments: list, prefects: list[Prefect]) -> None:
     for item in assist:
         assigned_days.setdefault(item.prefect_id, []).append(int(item.day))
     assert all(
-        all(right - left > 1 for left, right in zip(days, days[1:]))
+        all(right - left > 1 for left, right in pairwise(days))
         for days in (sorted(values) for values in assigned_days.values())
     )
 
@@ -243,6 +244,43 @@ def test_flexible_mode_varies_by_week_but_retries_are_reproducible() -> None:
     assert all(following_by_day[day] != first_by_day[day] for day in DAYS)
     _assert_assist_policy(first, prefects)
     _assert_assist_policy(following_week, prefects)
+
+
+def test_flexible_mode_excludes_recorded_leave_and_keeps_later_rotation_valid() -> None:
+    prefects = _directory(assistants=5)
+    baseline = generate_weekly_roster(
+        prefects,
+        assist_assignment_mode=AssistAssignmentMode.FLEXIBLE_WEEKLY,
+        assist_rotation_key="2026-09-07",
+    )
+    baseline_by_day = _assist_by_day(baseline)
+    absent_id = baseline_by_day[SchoolDay.MONDAY]
+
+    leave_week = generate_weekly_roster(
+        prefects,
+        leave_days={absent_id: {SchoolDay.MONDAY}},
+        assist_assignment_mode=AssistAssignmentMode.FLEXIBLE_WEEKLY,
+        assist_rotation_key="2026-09-14",
+        previous_assist_assignments=baseline_by_day,
+    )
+    leave_by_day = _assist_by_day(leave_week)
+    following = generate_weekly_roster(
+        prefects,
+        assist_assignment_mode=AssistAssignmentMode.FLEXIBLE_WEEKLY,
+        assist_rotation_key="2026-09-21",
+        previous_assist_assignments=leave_by_day,
+    )
+    following_retry = generate_weekly_roster(
+        prefects,
+        assist_assignment_mode=AssistAssignmentMode.FLEXIBLE_WEEKLY,
+        assist_rotation_key="2026-09-21",
+        previous_assist_assignments=leave_by_day,
+    )
+
+    assert leave_by_day[SchoolDay.MONDAY] != absent_id
+    assert following_retry == following
+    _assert_assist_policy(leave_week, prefects)
+    _assert_assist_policy(following, prefects)
 
 
 def test_flexible_mode_accepts_unavoidable_same_weekday_repeats_from_availability() -> None:

@@ -72,7 +72,7 @@ def test_0011_backfills_existing_weeks_and_enforces_stable_codes(tmp_path: Path)
         assert connection.execute(
             "SELECT assist_assignment_mode FROM roster_weeks WHERE week_start = ?",
             (WEEK_START.isoformat(),),
-        ).fetchone() == ("flexible_weekly",)
+        ).fetchone() == ("legacy_fixed_weekday",)
         columns = {
             str(row[1]): row
             for row in connection.execute("PRAGMA table_info(roster_weeks)").fetchall()

@@ -21,7 +21,7 @@ def upgrade() -> None:
                 "assist_assignment_mode",
                 sa.String(length=32),
                 nullable=False,
-                server_default="flexible_weekly",
+                server_default="legacy_fixed_weekday",
             )
         )
         batch.create_check_constraint(

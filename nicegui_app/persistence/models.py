@@ -96,8 +96,8 @@ class RosterWeekRecord(Base):
     history_priority_multiplier: Mapped[float] = mapped_column(Float, default=1.0, server_default="1.0")
     assist_assignment_mode: Mapped[str] = mapped_column(
         String(32),
-        default="flexible_weekly",
-        server_default="flexible_weekly",
+        default="legacy_fixed_weekday",
+        server_default="legacy_fixed_weekday",
     )
     generated_at: Mapped[datetime] = mapped_column(DateTime)
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

@@ -224,7 +224,7 @@ class RosterLifecycleMixin:
             backup_path=backup_path,
             history_priority_multiplier=float(receipt["historyPriorityMultiplier"]),
             assist_assignment_mode=str(
-                receipt.get("assistAssignmentMode", FLEXIBLE_WEEKLY)
+                receipt.get("assistAssignmentMode", LEGACY_FIXED_WEEKDAY)
             ),
         )
         return result
@@ -353,7 +353,7 @@ class RosterLifecycleMixin:
             backup_path=self._fulfill_backup_obligation(command_key),
             history_priority_multiplier=float(receipt["historyPriorityMultiplier"]),
             assist_assignment_mode=str(
-                receipt.get("assistAssignmentMode", FLEXIBLE_WEEKLY)
+                receipt.get("assistAssignmentMode", LEGACY_FIXED_WEEKDAY)
             ),
         )
 

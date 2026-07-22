@@ -695,7 +695,7 @@ class GuestWorkspaceAdapter:
             backup_path=None,  # type: ignore[arg-type]
             history_priority_multiplier=float(week["historyPriorityMultiplier"]),
             assist_assignment_mode=str(
-                week.get("assistAssignmentMode", FLEXIBLE_WEEKLY)
+                week.get("assistAssignmentMode", LEGACY_FIXED_WEEKDAY)
             ),
         )
 
@@ -1390,7 +1390,7 @@ class GuestWorkspaceAdapter:
             "version": int(week["version"]),
             "historyPriorityMultiplier": float(week["historyPriorityMultiplier"]),
             "assistAssignmentMode": str(
-                week.get("assistAssignmentMode", FLEXIBLE_WEEKLY)
+                week.get("assistAssignmentMode", LEGACY_FIXED_WEEKDAY)
             ),
             "generatedAt": _parse_datetime(week.get("generatedAt")),
             "publishedAt": _parse_datetime(week.get("publishedAt")),

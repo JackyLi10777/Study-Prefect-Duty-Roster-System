@@ -353,7 +353,7 @@ def _find_nonconsecutive_weekday_schedule(
                 if previous_id == prefect.id:
                     continue
                 total_score = tuple(left + right for left, right in zip(score, step_score, strict=True))
-                candidate_state = (total_score, path_ids + (prefect.id,), path + (prefect,))
+                candidate_state = (total_score, (*path_ids, prefect.id), (*path, prefect))
                 current = next_states.get(prefect.id)
                 if current is None or candidate_state[:2] < current[:2]:
                     next_states[prefect.id] = candidate_state
