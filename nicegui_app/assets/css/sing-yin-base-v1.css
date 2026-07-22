@@ -5,7 +5,8 @@
 }
 
 :where(body) {
-  min-width: 320px;
+  width: 100%;
+  max-width: 100%;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }

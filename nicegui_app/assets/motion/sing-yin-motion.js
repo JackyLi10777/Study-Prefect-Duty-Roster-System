@@ -5,6 +5,7 @@
 
   const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
   const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
+  const COARSE_POINTER_QUERY = '(hover: none), (pointer: coarse)';
   const narrativeSelectors = [
     '.sy-page-context',
     '.sy-daily-start',
@@ -103,6 +104,7 @@
   const tocObservers = new Map();
   const feedbackTimers = new Map();
   const iconStoryTimelines = new Map();
+  const iconStoryTouchTimers = new Map();
   const iconStoryState = window.SingYinIconStoryState?.create?.() || null;
   const ACTION_MEMORY_MS = 5 * 60 * 1000;
   let intersectionObserver = null;
@@ -253,7 +255,7 @@
       }
     });
   };
-  const animateIconStory = (host, active) => {
+  const animateIconStory = (host, active, { allowCoarse = false } = {}) => {
     const icon = host.querySelector(`${interactiveIconSelector}[data-sy-icon-story-to]`);
     if (!(icon instanceof HTMLElement)) return;
     const previousTimeline = iconStoryTimelines.get(icon);
@@ -265,7 +267,7 @@
     window.gsap.set(icon, { clearProps: 'opacity,visibility,scale,y,transform' });
     if (
       reducedMotion()
-      || !window.matchMedia(FINE_POINTER_QUERY).matches
+      || (!allowCoarse && !window.matchMedia(FINE_POINTER_QUERY).matches)
       || host.matches('.disabled,[aria-disabled="true"],[aria-busy="true"]')
     ) {
       const original = icon.dataset.syIconStoryFrom;
@@ -294,7 +296,6 @@
       .to(icon, {
         autoAlpha: 0,
         scale: 0.42,
-        y: active ? -3 : 3,
         duration: 0.11,
         ease: 'power2.in',
         onComplete: () => {
@@ -305,11 +306,10 @@
       })
       .fromTo(
         icon,
-        { autoAlpha: 0, scale: 0.58, y: active ? 4 : -4 },
+        { autoAlpha: 0, scale: 0.58 },
         {
           autoAlpha: 1,
           scale: 1,
-          y: 0,
           duration: 0.26,
           ease: 'power3.out',
           clearProps: 'opacity,visibility,scale,y,transform'
@@ -338,6 +338,45 @@
     const active = iconStoryState?.transition(host, input, false);
     if (active === null || active === undefined) return;
     animateIconStory(host, active);
+  };
+  const onIconStoryPointerDown = (event) => {
+    if (
+      reducedMotion()
+      || window.matchMedia(FINE_POINTER_QUERY).matches
+      || !window.matchMedia(COARSE_POINTER_QUERY).matches
+      || (event.pointerType && event.pointerType === 'mouse')
+    ) return;
+    const host = iconStoryHost(event);
+    if (!(host instanceof HTMLElement) || !host.querySelector('[data-sy-icon-story-to]')) return;
+    if (host.matches('.disabled,[aria-disabled="true"],[aria-busy="true"]')) return;
+    const existing = iconStoryTouchTimers.get(host);
+    if (existing) window.clearTimeout(existing);
+    const icon = host.querySelector(`${interactiveIconSelector}[data-sy-icon-story-to]`);
+    if (!(icon instanceof HTMLElement)) return;
+    const temporaryGlyph = icon.dataset.syIconStoryTo;
+    animateIconStory(host, true, { allowCoarse: true });
+    const timer = window.setTimeout(() => {
+      iconStoryTouchTimers.delete(host);
+      if (!host.isConnected) return;
+      const currentIcon = host.querySelector(interactiveIconSelector);
+      if (!(currentIcon instanceof HTMLElement)) return;
+      /* A real sound, theme, drawer, or disclosure state may have changed while
+       * the touch story was playing. Never restore the old glyph over that new
+       * state; instead, hydrate the new glyph for its next interaction. */
+      if (
+        currentIcon !== icon
+        || currentIcon.textContent?.trim() !== temporaryGlyph
+        || currentIcon.dataset.syIconStoryActive !== 'true'
+      ) {
+        delete currentIcon.dataset.syIconStoryActive;
+        delete currentIcon.dataset.syIconStoryFrom;
+        delete currentIcon.dataset.syIconStoryTo;
+        hydrateIconMotion(currentIcon);
+        return;
+      }
+      animateIconStory(host, false, { allowCoarse: true });
+    }, 460);
+    iconStoryTouchTimers.set(host, timer);
   };
   const hydratePointers = (root = document) => {
     queryWithin(root, pointerSurfaceSelector).forEach(enhancePointerSurface);
@@ -490,6 +529,8 @@
     iconStoryTimelines.clear();
     feedbackTimers.forEach((timer) => window.clearTimeout(timer));
     feedbackTimers.clear();
+    iconStoryTouchTimers.forEach((timer) => window.clearTimeout(timer));
+    iconStoryTouchTimers.clear();
     if (feedbackHandler) window.removeEventListener('sy:feedback', feedbackHandler);
     if (disclosureHandler) document.removeEventListener('click', disclosureHandler, true);
     if (domReadyHandler) document.removeEventListener('DOMContentLoaded', domReadyHandler);
@@ -534,6 +575,7 @@
       signal: interactionAbortController.signal
     };
     document.addEventListener('pointerdown', rememberActionHost, interactionListenerOptions);
+    document.addEventListener('pointerdown', onIconStoryPointerDown, interactionListenerOptions);
     document.addEventListener('keydown', rememberActionHost, interactionListenerOptions);
     document.addEventListener('pointerover', onIconStoryEnter, interactionListenerOptions);
     document.addEventListener('pointerout', onIconStoryLeave, interactionListenerOptions);

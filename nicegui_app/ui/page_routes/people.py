@@ -25,6 +25,7 @@ from nicegui_app.services.summary_report_export import (
 )
 from nicegui_app.ui.downloads import deliver_generated_download
 from nicegui_app.ui.i18n import day_label, role_label, t
+from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.page_access import (
     allows as _allows,
     render_restricted_capability as _render_restricted_capability,
@@ -596,7 +597,7 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
     with ui.card().classes("sy-surface sy-border-attention w-full border-l-4 p-5 mt-4"):
         ui.label(t("report_evidence_not_backup")).classes("font-semibold")
         ui.label(t("report_evidence_not_backup_detail")).classes("text-sm leading-6 text-[var(--sy-muted)] mt-1")
-        ui.button(t("open_handover_backup"), icon="verified_user", on_click=lambda: ui.navigate.to("/handover")).props(
+        ui.button(t("open_handover_backup"), icon="verified_user", on_click=lambda: navigate_to("/handover")).props(
             "flat color=primary"
         ).classes("mt-2")
 

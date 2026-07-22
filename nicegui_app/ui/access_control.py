@@ -17,6 +17,7 @@ from nicegui_app.services.public_roster_share import (
     PublicRosterShareSettings,
 )
 from nicegui_app.ui.i18n import t
+from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.page_shared import _OPERATION_FAILED, _delete_dialog_after_close, _run_with_progress
 
 
@@ -143,7 +144,7 @@ def render_roster_share_action(workflow, roster_week_id: int) -> None:  # type: 
             ui.button(
                 t("access_open_console"),
                 icon="admin_panel_settings",
-                on_click=lambda: ui.navigate.to("/access-control"),
+                on_click=lambda: navigate_to("/access-control"),
             ).props("flat")
         if not settings.configured:
             ui.label(t("public_share_not_configured")).classes(

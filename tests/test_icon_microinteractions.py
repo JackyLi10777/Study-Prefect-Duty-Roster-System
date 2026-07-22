@@ -261,7 +261,12 @@ def test_button_hosts_stay_stable_while_icons_tell_the_story() -> None:
         assert "transform:" not in declaration
 
     assert '.q-icon[data-sy-icon-motion="refresh"]' in interaction
-    assert "rotate(52deg) scale(1.1)" in interaction
+    refresh = interaction.split(
+        '.q-icon[data-sy-icon-motion="refresh"]',
+        1,
+    )[1].split("}", 1)[0]
+    assert "scale(1.1)" in refresh
+    assert "rotate(" not in refresh
     for non_rotating_role in ("create", "edit", "toggle", "menu", "search", "danger", "attention", "navigation"):
         declaration = interaction.split(
             f'.q-icon[data-sy-icon-motion="{non_rotating_role}"]',

@@ -18,7 +18,8 @@ def test_roster_child_routes_have_explicit_hierarchy_and_return_destinations() -
     assert 'test_id="back-to-roster-detail"' in weekly
     assert "render_route_trail(" in weekly
     assert weekly.count("render_workflow_navigation(") >= 3
-    assert "ui.navigate.to(route)" in navigation
+    assert "from nicegui_app.ui.navigation import ROUTE_FOCUS_JAVASCRIPT, navigate_to" in navigation
+    assert "navigate_to(route)" in navigation
     assert "window.history" not in navigation
     assert "aria-current=page" in navigation
     assert 'WorkflowStep(t("roster_workflow_history"), "/rosters#roster-history"' in weekly
@@ -26,6 +27,24 @@ def test_roster_child_routes_have_explicit_hierarchy_and_return_destinations() -
     current_branch = navigation.split("if is_current:", 1)[1].split("else:", 1)[0]
     assert 'ui.element("div").props("aria-current=step")' in current_branch
     assert "ui.button" not in current_branch
+
+
+def test_internal_navigation_uses_one_focus_preserving_gateway() -> None:
+    """Every in-app route transition marks the next main landmark for focus."""
+
+    ui_root = PROJECT_ROOT / "nicegui_app" / "ui"
+    navigation = _read("nicegui_app/ui/navigation.py")
+    assert "sessionStorage.setItem" in navigation
+    assert "ui.navigate.to(route)" in navigation
+
+    direct_calls: list[str] = []
+    for path in ui_root.rglob("*.py"):
+        if path.name == "navigation.py":
+            continue
+        source = path.read_text(encoding="utf-8")
+        if "ui.navigate.to(" in source:
+            direct_calls.append(str(path.relative_to(PROJECT_ROOT)))
+    assert direct_calls == []
 
 
 def test_roster_workflow_copy_is_complete_in_both_languages() -> None:

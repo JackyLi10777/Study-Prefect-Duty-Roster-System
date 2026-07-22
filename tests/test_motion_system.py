@@ -145,10 +145,41 @@ def test_semantic_icon_motion_is_clear_without_becoming_a_looping_effect() -> No
     menu_scope = interaction.split('data-sy-icon-motion="menu"', 1)[1].split("}", 1)[0]
     assert "rotate(" not in menu_scope
     assert 'data-sy-icon-motion="refresh"' in interaction
-    assert "rotate(52deg) scale(1.1)" in interaction
+    refresh_scope = interaction.split('data-sy-icon-motion="refresh"', 1)[1].split("}", 1)[0]
+    assert "scale(1.1)" in refresh_scope
+    assert "rotate(" not in refresh_scope
     assert "translateX(5px) scale(1.015)" not in theme
     assert "translateY(-2px) scale(1.015)" not in theme
     assert "border-radius: 50%" in interaction
     assert "new AbortController()" in runtime
     assert "repeat: -1" not in runtime
     assert "prefers-reduced-motion: reduce" in theme
+
+
+def test_coarse_pointer_gets_one_shot_icon_story_without_rotation_or_drift() -> None:
+    """Touch users receive the same semantic story without hover or button travel."""
+
+    runtime = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "motion" / "sing-yin-motion.js"
+    ).read_text(encoding="utf-8")
+
+    assert "COARSE_POINTER_QUERY" in runtime
+    assert "const onIconStoryPointerDown" in runtime
+    assert "document.addEventListener('pointerdown', onIconStoryPointerDown" in runtime
+    assert "event.pointerType" in runtime
+    assert "window.matchMedia(COARSE_POINTER_QUERY).matches" in runtime
+    assert "iconStoryTouchTimers" in runtime
+    assert "iconStoryTouchTimers.forEach((timer) => window.clearTimeout(timer))" in runtime
+    assert "iconStoryTouchTimers.clear()" in runtime
+
+    touch_scope = runtime.split("const onIconStoryPointerDown", 1)[1].split(
+        "const hydratePointers", 1
+    )[0]
+    assert "animateIconStory" in touch_scope
+    assert "window.setTimeout" in touch_scope
+    assert "const temporaryGlyph = icon.dataset.syIconStoryTo" in touch_scope
+    assert "currentIcon.textContent?.trim() !== temporaryGlyph" in touch_scope
+    assert "hydrateIconMotion(currentIcon)" in touch_scope
+    assert "rotate" not in touch_scope
+    assert "rotation" not in touch_scope
+    assert "translate" not in touch_scope

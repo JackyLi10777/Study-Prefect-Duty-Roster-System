@@ -23,6 +23,38 @@ The public entrance presents one prepared duty desk in paired morning-light and 
 · [Architecture](docs/NICEGUI_ARCHITECTURE.md) · [Release status](PROJECT_STATUS.md)
 · [Canonical-site access guide](docs/PUBLIC_ROSTER_VIEWER.md)
 
+## Start here
+
+The repository serves operators, visitors, advisors, successors, maintainers,
+and reviewers. Start from the job you need to complete rather than from the
+longest document:
+
+| Reader or task | First entry | Continue with |
+|---|---|---|
+| Visitor who wants a complete trial without retained data | [Canonical site](https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/) → **Try the fictional demo** | [Canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md) |
+| Head Study Prefect completing official weekly work | [Canonical site](https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/) → **Administrator sign in** | [Operator guide](docs/OPERATOR_GUIDE.md) |
+| Advisor reviewing publication, fairness, or handover | [Acceptance evidence matrix](docs/ACCEPTANCE_EVIDENCE.md) | [Release and handover guide](docs/RELEASE_HANDOVER.md) |
+| Successor rehearsing before receiving official data | `START_PRACTICE_MODE.cmd` | [Quick start](docs/QUICKSTART.md) and [operator guide](docs/OPERATOR_GUIDE.md) |
+| IT maintainer deploying, recovering, or tracing an OP reference | [Documentation index](docs/DOCUMENTATION_INDEX.md) | [Windows host setup](docs/WINDOWS_DEDICATED_HOST_SETUP.md) and [update workflow](docs/UPDATE_WORKFLOW.md) |
+| Security reviewer or vulnerability reporter | [Security and privacy model](docs/SECURITY_AND_PRIVACY.md) | [Private reporting policy](SECURITY.md) and [branch strategy](docs/BRANCH_STRATEGY.md) |
+| Developer or reviewer changing code | [NiceGUI architecture](docs/NICEGUI_ARCHITECTURE.md) | [Risk-led code review](docs/CODE_ACCEPTANCE_REVIEW.md) and [contributing guide](CONTRIBUTING.md) |
+
+### Access and data boundary
+
+| Mode | Interface | Data and retention | Explicit boundary |
+|---|---|---|---|
+| Public entrance | Public branded gateway | Reads no official directory or roster | Routes only to Admin, Guest, or an already-held share link |
+| Guest | The same NiceGUI routes, navigation, and workflow as Admin | Per-tab fictional in-memory workspace; cleared on sign-out, expiry, revocation, or restart | No AI, import, upload, official persistence, backup/restore, Viewer publication, or costly external operation; only one-shot `DEMO` downloads |
+| Admin | Complete NiceGUI workbench | Official SQLite, verified backups, and local audit on the controlled Windows origin | Requires Cloudflare Access and a signed principal; high-risk writes also require version, confirmation, idempotency, and backup obligations |
+| Viewer | Read-only `/view#…` roster | Ciphertext in Worker KV; the decryption key remains in the URL fragment | Cannot sign in, edit, elevate identity, or enumerate other rosters; expires and can be revoked |
+| Practice | The official local workflow with fictional content | Separate `data/practice/` SQLite, backups, logs, and preferences | Every output is non-official and official data is never read or written |
+| Local maintenance | localhost, controlled private WARP, or loopback SSH | Protected host data and maintenance evidence | Recovery and deployment only; never a second daily site |
+
+The [documentation index](docs/DOCUMENTATION_INDEX.md) records document
+ownership, source-of-truth precedence, configuration classes, data lifecycles,
+verification levels, known limits, and the update triggers that keep the set
+complete.
+
 **Current formal baseline:** `v1.2.0-rc.18`／`fd504a8` is live at
 `C:\SingYinRoster`. `/healthz` is healthy and `/readyz` is ready. The rollout
  created `20260722-024349-422389-manual_verified_backup.sqlite3` and passed its
@@ -32,6 +64,10 @@ restore audit, and isolated restore. Its SHA-256 is
 Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` passed zero-traffic staged and canonical
 health／entrance／viewer checks before receiving 100% traffic. Supervised
 administrator, advisor, and real-device acceptance remains a human responsibility.
+If an rc19 rollout fails, this exact rc18 host／Worker pair is the first-level
+rollback target. rc17／`99f5816` with Worker
+`c85770b2-c626-462c-bc74-5e6bd305c75b` is retained only as a secondary verified
+baseline.
 
 The retained **v1.1 rollback** record is historical recovery evidence only; it
 does not replace the current rc18 baseline.
@@ -46,7 +82,7 @@ ownership, filterable Engineering evidence index, internal Developer Reference,
 bounded Guest preferences, unified generated-file delivery, the browser／PDF
 roster matrix, and auditable published-roster withdrawal.
 
-The rc17 release adds admission control that rejects excess Guest sessions without
+The live rc18 release retains and re-verifies admission control that rejects excess Guest sessions without
 evicting active users, stronger import and network bounds, aggregate fairness
 reconciliation, explicit return paths, and stable button containers whose icons
 transform internally. Its 288-input fingerprint
@@ -288,9 +324,18 @@ context discoverable without making a daily operator scan one oversized page.
 
 Mature SaaS patterns are treated as hypotheses, not a visual target. The system
 adopts a pattern only when it improves first-use comprehension, task completion,
-recovery, mobile use, or accessibility; it deliberately omits pricing tiers,
+recovery, phone／tablet／desktop use, or accessibility; it deliberately omits pricing tiers,
 marketing funnels, invented KPIs, and decorative density from the operator
 workbench.
+
+The rc19 device contract treats tablets as a third form factor rather than a
+stretched phone. One candidate matrix covers 768×1024 and 820×1180 adaptive
+touch tablets, a 1024×768 compact desktop-shell touch tablet, and a 1440×1024 full desktop,
+alongside phone portrait, narrow zoom reflow and phone landscape.
+The mobile and desktop verifiers contribute complementary evidence to that same
+matrix; the URL, session, data, policy, audit, PDF and content order remain shared
+across every composition. These are candidate requirements, not deployed rc19
+results; see the [acceptance evidence matrix](docs/ACCEPTANCE_EVIDENCE.md).
 
 The bilingual [Code acceptance and risk-led review](docs/CODE_ACCEPTANCE_REVIEW.md)
 defines the trust-boundary map, failure-path coverage, configuration and safety

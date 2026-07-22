@@ -24,8 +24,33 @@ def test_readme_explains_safe_start_and_links_to_operator_documents() -> None:
     assert "docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md" in readme
     assert "START_PRACTICE_MODE.cmd" in readme
     assert "RESET_PRACTICE_MODE.cmd" in readme
+    assert "docs/DOCUMENTATION_INDEX.md" in readme
     assert "nicegui-self-hosted" in readme
     assert "streamlit-cloud" in readme
+
+
+def test_documentation_index_routes_every_markdown_guide_and_defines_ownership() -> None:
+    index = (PROJECT_ROOT / "docs" / "DOCUMENTATION_INDEX.md").read_text(encoding="utf-8")
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    readme_en = (PROJECT_ROOT / "README-EN.md").read_text(encoding="utf-8")
+
+    for document in sorted((PROJECT_ROOT / "docs").glob("*.md")):
+        if document.name != "DOCUMENTATION_INDEX.md":
+            assert document.name in index, f"Documentation index omits {document.name}"
+
+    for required in (
+        "權威來源次序 / Source-of-truth precedence",
+        "文件目錄與責任 / Catalogue and ownership",
+        "使用模式、資料生命週期與成本邊界 / Mode, lifecycle, and cost boundary",
+        "多用戶、可靠性與復原覆蓋 / Concurrency, reliability, and recovery coverage",
+        "驗證層級 / Verification ladder",
+        "已知限制與非目標 / Known limits and non-goals",
+        "文件完整性維護 / Documentation maintenance checklist",
+    ):
+        assert required in index
+
+    assert "docs/DOCUMENTATION_INDEX.md" in readme
+    assert "docs/DOCUMENTATION_INDEX.md" in readme_en
 
 
 def test_windows_ssh_maintenance_guide_preserves_private_key_and_network_boundaries() -> None:
@@ -146,7 +171,10 @@ def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
     assert "Service Weave v1.2 rc18 controlled rollout" in status
     assert "v1.2 rc18 is the current controlled Windows origin" in status
     assert "Historical Service Weave v1.2 rc11 rollout" in status
-    assert "rc17／`99f5816` with Worker `c85770b2-c626-462c-bc74-5e6bd305c75b`" in status
+    assert (
+        "rc17／`99f5816` with Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` "
+        "is retained only as a secondary verified baseline"
+    ) in status
     readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     assert "## 程式審查、邊界與擴展預期" in readme
     assert "SING_YIN_PORT" in readme
@@ -200,8 +228,10 @@ def test_operator_deployment_docs_use_live_rc18_and_candidate_bound_next_tag() -
         assert "fd504a8" in current_header
         assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in current_header
 
-    assert "上一個已驗證的 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b`" in cloudflare
-    assert "回復 rc17／`99f5816` 主機 bundle" in cloudflare
+    assert "第一級回退至 live rc18 主機 bundle `v1.2.0-rc.18`／`fd504a8`" in cloudflare
+    assert "第一級回退至 rc18 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`" in cloudflare
+    assert "作次級已驗證基線" in cloudflare
+    assert "restore the recorded rc17 host bundle" not in cloudflare
 
     assert "schema-compatible rc4" not in quickstart
     assert "pre-v1.2 baseline" not in quickstart
@@ -211,6 +241,64 @@ def test_operator_deployment_docs_use_live_rc18_and_candidate_bound_next_tag() -
     assert '$ReleaseRef = "<next-approved-annotated-tag>"' in windows
     assert '$ReleaseRef = "v1.1.0-rc.16"' not in windows
     assert "<next-approved-annotated-tag>" in decision
+
+
+def test_rc19_docs_share_one_device_matrix_and_rollback_hierarchy() -> None:
+    device_viewports = ("768×1024", "820×1180", "1024×768", "1440×1024")
+    device_documents = (
+        "README.md",
+        "README-EN.md",
+        "PROJECT_STATUS.md",
+        "Professional_Design_System.md",
+        "docs/ACCEPTANCE_EVIDENCE.md",
+        "docs/NICEGUI_ARCHITECTURE.md",
+        "docs/RELEASE_HANDOVER.md",
+        "docs/UPDATE_WORKFLOW.md",
+        "docs/WINDOWS_DEDICATED_HOST_SETUP.md",
+    )
+
+    for relative_path in device_documents:
+        document = (PROJECT_ROOT / relative_path).read_text(encoding="utf-8")
+        for viewport in device_viewports:
+            assert viewport in document, f"{relative_path} is missing {viewport}"
+
+    acceptance = (PROJECT_ROOT / "docs" / "ACCEPTANCE_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    candidate_matrix = acceptance.split(
+        "## rc19 候選裝置矩陣 / Candidate device matrix", 1
+    )[1].split("## 使用方法", 1)[0]
+    for viewport in device_viewports:
+        assert viewport in candidate_matrix
+    assert "scripts/verify_nicegui_mobile.py" in candidate_matrix
+    assert "scripts/verify_nicegui_ui.py" in candidate_matrix
+    assert "這是候選契約，不是已通過或已部署結果" in acceptance
+
+    quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
+    assert "ACCEPTANCE_EVIDENCE.md#rc19-候選裝置矩陣--candidate-device-matrix" in quickstart
+
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    readme_en = (PROJECT_ROOT / "README-EN.md").read_text(encoding="utf-8")
+    status = (PROJECT_ROOT / "PROJECT_STATUS.md").read_text(encoding="utf-8")
+    handover = (PROJECT_ROOT / "docs" / "RELEASE_HANDOVER.md").read_text(encoding="utf-8")
+    cloudflare = (PROJECT_ROOT / "docs" / "CLOUDFLARE_REMOTE_ACCESS_SETUP.md").read_text(
+        encoding="utf-8"
+    )
+    decision = (PROJECT_ROOT / "docs" / "DEPLOYMENT_DECISION.md").read_text(
+        encoding="utf-8"
+    )
+
+    for document in (readme, handover, cloudflare, decision):
+        assert "第一級回退" in document
+        assert "次級已驗證基線" in document
+    for document in (readme_en, status):
+        normalized_document = " ".join(document.split())
+        assert "first-level rollback" in normalized_document
+        assert "secondary verified baseline" in normalized_document
+
+    assert "rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 是即時回退組合" not in readme
+    assert "is the immediate rollback pair" not in status
+    assert "Service Weave rc17 is the deployed release candidate" not in decision
 
 
 def test_author_facing_documents_use_li_chuangjie_first_person_voice() -> None:

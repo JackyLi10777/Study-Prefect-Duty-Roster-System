@@ -10,3 +10,8 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 3
+  - package-ecosystem: npm
+    directory: "/cloudflare/roster_viewer"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3

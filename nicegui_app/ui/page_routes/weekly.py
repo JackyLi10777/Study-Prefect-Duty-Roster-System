@@ -12,6 +12,7 @@ from nicegui_app.services.roster_presentation import roster_display_label
 from nicegui_app.services.roster_workflow import WorkflowError
 from nicegui_app.ui.access_control import render_roster_share_action, revoke_withdrawn_roster_shares
 from nicegui_app.ui.i18n import day_label, t
+from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.page_shared import (
     _OPERATION_FAILED,
     _navigate_with_feedback,
@@ -521,7 +522,7 @@ def rosters_page() -> None:
                         )
                         if result is not _OPERATION_FAILED:
                             ui.notify(t("draft_saved"), type="positive")
-                            ui.navigate.to(f"/rosters/{result.id}")
+                            navigate_to(f"/rosters/{result.id}")
 
                     ui.button(t("create_draft"), icon="edit_calendar", on_click=generate).props("color=primary").classes("mt-4")
                 with ui.element("section").classes("sy-roster-history w-full scroll-mt-6").props(
@@ -547,7 +548,7 @@ def rosters_page() -> None:
                             status = str(week["status"])
                             status_tone = "stable" if status == "published" else "attention" if status == "withdrawn" else "action"
                             _tone_badge(t(status), status_tone)
-                            ui.button(t("view"), icon="arrow_forward", on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}")).props("flat")
+                            ui.button(t("view"), icon="arrow_forward", on_click=lambda item=week: navigate_to(f"/rosters/{item['id']}")).props("flat")
             with ui.tab_panel("adjust_edit").classes("px-0"):
                 ui.label(t("adjustments")).classes("text-lg font-semibold")
                 _render_operation_hint("hint_adjust_roster", icon="event_busy")
@@ -564,13 +565,13 @@ def rosters_page() -> None:
                             ui.label(str(week["weekStart"])).classes("text-lg font-semibold")
                             ui.label(f"{t('version')} {week['version']}").classes("text-sm text-[var(--sy-muted)]")
                         with ui.row().classes("sy-mobile-actions gap-2"):
-                            ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda item=week: ui.navigate.to(f"/rosters/{item['id']}/adjustments")).props("outline color=primary")
+                            ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda item=week: navigate_to(f"/rosters/{item['id']}/adjustments")).props("outline color=primary")
                             _render_withdraw_action(workflow, week, int(week["id"]))
 
 
 @ui.page("/rosters/new")
 def generate_roster_page() -> None:
-    ui.navigate.to("/rosters")
+    navigate_to("/rosters")
 
 
 @ui.page("/rosters/{roster_week_id}")
@@ -664,7 +665,7 @@ def roster_detail_page(roster_week_id: int) -> None:
                             ui.button(t("confirm_publish_action"), icon="publish", on_click=publish).props("color=primary")
                     ui.button(t("publish"), icon="publish", on_click=publish_dialog.open).props("color=primary")
                 elif week["status"] == "published":
-                    ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda: ui.navigate.to(f"/rosters/{roster_week_id}/adjustments")).props("outline color=primary")
+                    ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda: navigate_to(f"/rosters/{roster_week_id}/adjustments")).props("outline color=primary")
                     _render_withdraw_action(workflow, week, roster_week_id)
                 if week["status"] != "withdrawn":
                     ui.button(t("export_pdf"), icon="picture_as_pdf", on_click=lambda: _open_roster_export_dialog(roster_week_id)).props("outline color=primary")
@@ -770,7 +771,7 @@ def roster_detail_page(roster_week_id: int) -> None:
             with ui.card().classes("sy-surface sy-border-attention sy-operations-panel w-full border-l-4 p-6"):
                 ui.label(t("post_publication_leave")).classes("text-lg font-semibold")
                 ui.label(t("post_publication_leave_notice")).classes("text-sm text-[var(--sy-muted)] mt-1")
-                ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda: ui.navigate.to(f"/rosters/{roster_week_id}/adjustments")).props("color=primary").classes("mt-4")
+                ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda: navigate_to(f"/rosters/{roster_week_id}/adjustments")).props("color=primary").classes("mt-4")
             render_roster_share_action(workflow, roster_week_id)
         else:
             with ui.card().classes("sy-surface sy-border-attention sy-operations-panel w-full border-l-4 p-6"):
@@ -797,7 +798,7 @@ def roster_detail_page(roster_week_id: int) -> None:
 
 @ui.page("/adjustments")
 def adjustments_page() -> None:
-    ui.navigate.to("/rosters")
+    navigate_to("/rosters")
 
 
 @ui.page("/rosters/{roster_week_id}/adjustments")
@@ -867,7 +868,7 @@ def adjustment_detail_page(roster_week_id: int) -> None:
                 body_key="empty_published_detail",
                 icon="fact_check",
                 action_key="empty_review_action",
-                action=lambda: ui.navigate.to("/rosters"),
+                action=lambda: navigate_to("/rosters"),
             )
             return
         with ui.card().classes("sy-surface sy-adjustment-form sy-operations-panel w-full p-6"):
@@ -926,7 +927,7 @@ def adjustment_detail_page(roster_week_id: int) -> None:
                     ui.button(
                         t("review_updated_roster"),
                         icon="fact_check",
-                        on_click=lambda: ui.navigate.to(f"/rosters/{roster_week_id}"),
+                        on_click=lambda: navigate_to(f"/rosters/{roster_week_id}"),
                     ).props("outline color=primary")
                     ui.button(
                         t("export_share_updated_pdf"),

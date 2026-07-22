@@ -14,6 +14,7 @@ from nicegui_app.contact import FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL, GITHUB_REPO
 from nicegui_app.runtime import current_page_context, get_workflow
 from nicegui_app.ui.brand import render_service_weave_mark
 from nicegui_app.ui.i18n import current_locale, t, toggle_locale
+from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.music import render_page_music_control
 from nicegui_app.ui.page_catalog import (
     mobile_navigation_for,
@@ -474,7 +475,7 @@ async def _reload_after_preference_change(change) -> None:
 
 def _navigate_with_sound(path: str) -> None:
     play_interface_sound("navigation")
-    ui.navigate.to(path)
+    navigate_to(path)
 
 
 def _sync_preference_controls(controls, *, icon: str, label: str) -> None:  # type: ignore[no-untyped-def]
@@ -589,12 +590,16 @@ def _render_mobile_tabbar(
             ).classes("sy-mobile-tab")
             if active_path == page.route:
                 button.classes("sy-mobile-tab--active").props("aria-current=page")
+        active_definition = page_definition(active_path)
+        more_label = t("mobile_more")
+        if active_path not in primary_paths and active_definition is not None:
+            more_label = f'{more_label}: {t(active_definition.title_key)}'
         more = ui.button(t("mobile_more"), icon="menu", on_click=drawer.toggle).props(
-            f'flat no-caps aria-label="{t("mobile_more")}" aria-controls=main-navigation-drawer '
+            f'flat no-caps aria-label="{more_label}" aria-controls=main-navigation-drawer '
             'aria-expanded=false data-testid=mobile-more'
         ).classes("sy-mobile-tab")
         if active_path not in primary_paths:
-            more.classes("sy-mobile-tab--active").props("aria-current=page")
+            more.classes("sy-mobile-tab--active")
 
 
 def _install_mobile_drawer_accessibility() -> None:
@@ -628,6 +633,24 @@ def _install_mobile_drawer_accessibility() -> None:
               'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
             )].filter(element => element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden');
           };
+          const backgroundElements = () => [
+            document.querySelector('.sy-app-header'),
+            document.getElementById('main-content'),
+            document.querySelector('.sy-page-footer'),
+            document.querySelector('.sy-mobile-tabbar'),
+            document.querySelector('.sy-status-stack')
+          ].filter(element => element instanceof HTMLElement && !currentDrawer()?.contains(element));
+          const setBackgroundInert = inert => {
+            backgroundElements().forEach(element => {
+              if (inert) {
+                element.inert = true;
+                element.setAttribute('aria-hidden', 'true');
+              } else {
+                element.inert = false;
+                element.removeAttribute('aria-hidden');
+              }
+            });
+          };
           let observedShell = null;
           const observer = new MutationObserver(() => sync(false));
           const observeShell = () => {
@@ -644,6 +667,7 @@ def _install_mobile_drawer_accessibility() -> None:
             const wasOpen = button.getAttribute('aria-expanded') === 'true';
             const open = isOpen();
             button.setAttribute('aria-expanded', String(open));
+            setBackgroundInert(open);
             if (focusDrawer && open) {
               const first = focusable()[0];
               first?.focus({preventScroll: true});
@@ -680,9 +704,99 @@ def _install_mobile_drawer_accessibility() -> None:
             observer.disconnect();
             observedShell = null;
             controller.abort();
+            setBackgroundInert(false);
             if (window.__syDrawerA11yOwner === button) window.__syDrawerA11yOwner = null;
           };
           requestAnimationFrame(() => sync(false));
+        })();
+        """
+    )
+
+
+def _install_mobile_viewport_accessibility() -> None:
+    """Keep focused mobile fields visible above the on-screen keyboard."""
+
+    ui.run_javascript(
+        """
+        (() => {
+          window.__syMobileViewportCleanup?.();
+          const visualViewport = window.visualViewport;
+          if (!visualViewport) return;
+          const controller = new AbortController();
+          const root = document.documentElement;
+          let revealTimer = 0;
+          const isMobile = () => matchMedia('(max-width: 900px)').matches;
+          const keyboardOpen = () => isMobile() && (window.innerHeight - visualViewport.height) > 132;
+          const activeField = () => {
+            const target = document.activeElement;
+            return target instanceof HTMLElement && target.matches('input, textarea, select, [contenteditable="true"]')
+              ? target
+              : null;
+          };
+          const setTabbarUnavailable = unavailable => {
+            const tabbar = document.querySelector('.sy-mobile-tabbar');
+            if (!(tabbar instanceof HTMLElement)) return;
+            tabbar.inert = unavailable;
+            if (unavailable) tabbar.setAttribute('aria-hidden', 'true');
+            else tabbar.removeAttribute('aria-hidden');
+          };
+          const scheduleReveal = target => {
+            window.clearTimeout(revealTimer);
+            revealTimer = window.setTimeout(() => {
+              if (!keyboardOpen() || !(target instanceof HTMLElement)) return;
+              if (!target.isConnected || document.activeElement !== target) return;
+              target.scrollIntoView({
+                block: 'center',
+                inline: 'nearest',
+                behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+              });
+            }, 120);
+          };
+          const sync = (reveal = false) => {
+            const open = keyboardOpen();
+            root.classList.toggle('sy-mobile-keyboard-open', open);
+            root.style.setProperty('--sy-visual-viewport-height', `${Math.round(visualViewport.height)}px`);
+            setTabbarUnavailable(open);
+            if (open && reveal) scheduleReveal(activeField());
+          };
+          const revealFocusedField = event => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement) || !target.matches('input, textarea, select, [contenteditable="true"]')) return;
+            scheduleReveal(target);
+          };
+          visualViewport.addEventListener('resize', () => sync(true), {passive: true, signal: controller.signal});
+          visualViewport.addEventListener('scroll', () => sync(false), {passive: true, signal: controller.signal});
+          document.addEventListener('focusin', revealFocusedField, {signal: controller.signal});
+          window.addEventListener('orientationchange', () => sync(true), {passive: true, signal: controller.signal});
+          window.__syMobileViewportCleanup = () => {
+            controller.abort();
+            window.clearTimeout(revealTimer);
+            setTabbarUnavailable(false);
+            root.classList.remove('sy-mobile-keyboard-open');
+            root.style.removeProperty('--sy-visual-viewport-height');
+          };
+          sync(false);
+        })();
+        """
+    )
+
+
+def _install_route_focus_management() -> None:
+    """Move keyboard and screen-reader context to the new page after navigation."""
+
+    ui.run_javascript(
+        """
+        (() => {
+          window.__syRouteFocusCleanup?.();
+          const key = 'sy:route-focus';
+          const shouldFocus = sessionStorage.getItem(key) === 'main';
+          sessionStorage.removeItem(key);
+          window.__syRouteFocusCleanup = () => {};
+          if (!shouldFocus || location.hash) return;
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            const main = document.getElementById('main-content');
+            if (main) main.focus({preventScroll: true});
+          }));
         })();
         """
     )
@@ -899,3 +1013,5 @@ def page_shell(active_path: str) -> Iterator[None]:
         ui.label(t("copyright_notice")).classes("sy-page-footer-copyright")
     _render_mobile_tabbar(drawer, active_path, access_mode)
     _install_mobile_drawer_accessibility()
+    _install_mobile_viewport_accessibility()
+    _install_route_focus_management()

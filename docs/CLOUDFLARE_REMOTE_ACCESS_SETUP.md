@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **目前發布狀態（live rc18）：** Windows origin 正運行健康、ready 的 `v1.2.0-rc.18`／`fd504a8`；288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 gate，其中已包括隔離 Guest 流程。正式備份、checksum、公平對帳及隔離還原均通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 再以 staged rollout 通過 health、入口及 Viewer smoke checks 後提升至 100%。真人 Admin／Viewer／長連線驗收仍須依清單完成；rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 是即時回退組合。
+> **目前發布狀態（live rc18）：** Windows origin 正運行健康、ready 的 `v1.2.0-rc.18`／`fd504a8`；288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 gate，其中已包括隔離 Guest 流程。正式備份、checksum、公平對帳及隔離還原均通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 再以 staged rollout 通過 health、入口及 Viewer smoke checks 後提升至 100%。真人 Admin／Viewer／長連線驗收仍須依清單完成。rc19 發布失敗的第一級回退是這個 rc18 exact pair；rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 只作次級已驗證基線。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
@@ -148,7 +148,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 1. 以固定、版本庫內的 Wrangler／lockfile 安裝依賴。
 2. 執行 Worker tests、type check 及 dry run，並再次確認 `wrangler.jsonc` 的 `ORIGIN_PORT` 等於主機 `SING_YIN_PORT`；兩端必須來自同一不可變候選。
-3. 核對所有必需 secret **名稱**存在；不要顯示值。
+3. 核對 `wrangler.jsonc` 的 `secrets.required` 所有名稱存在；不要顯示值。管理員 exact-email 名單屬 `ADMIN_IDENTITY_ALLOWLIST` secret，內容是受限 JSON 物件，不再放在公開 `vars`。Access policy、Worker secret 與 WARP maintenance policy 必須由操作者私下核對為同一組身份。
 4. 從已推送、屬於 `origin/main`、HEAD 與標籤完全一致的乾淨 annotated tag 執行：
 
    ```powershell
@@ -157,6 +157,8 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
      -SourceRoot "<乾淨發布工作樹>" `
      -ReleaseRef "<next-approved-annotated-tag>"
    ```
+
+   由公開 `vars` 首次遷移 allowlist 時，先在 Windows `%TEMP%` 建立只用一次的 `sing-yin-worker-secrets-<random>.json`，只包含 `ADMIN_IDENTITY_ALLOWLIST` 及 secret 字串；再加上 `-SecretOverlayPath "<absolute-temp-path>"`。腳本會把它與新程式放進同一個未分流 version，先以 0% traffic 驗證，再覆寫及刪除臨時檔。不要先用普通 `wrangler secret put` 改動 live binding，否則尚在運行、仍預期物件格式的舊 Worker 會拒絕管理員登入。
 
    腳本只使用鎖定的 Wrangler 4.110.0：先保存目前 100% version ID，再上傳新 version，以「舊版 100%／新版 0%」建立 deployment；指定版本標頭的 smoke checks 通過後，才把新版提升至 100%。任何遠端切換開始後的失敗都會精確 rollback 到原 version ID，結果寫入 `logs/cloudflare-worker-deployment-<tag>.json`，不記錄 cookie、token 或 secret 值。
 5. 在新版仍為 0% 時核對：
@@ -217,14 +219,15 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 ## 10. 回退
 
-任一線上 gate 失敗：
+任一 rc19 線上 gate 失敗：
 
 1. 恢復 maintenance；
-2. 恢復上一個已驗證的受保護主機設定；
-3. 回退至上一個已驗證的 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b`；
-4. 回復 rc17／`99f5816` 主機 bundle；
-5. 核對 `/healthz`、`/readyz`、Admin、Viewer；
-6. 如資料完整性受疑，使用受控 restore，而非手動覆寫 SQLite。
+2. 以受控部署報告確認自動 rollback 的 `attempted`／`succeeded`、previous commit 及 previous Worker version；
+3. 第一級回退至 live rc18 主機 bundle `v1.2.0-rc.18`／`fd504a8`；
+4. 第一級回退至 rc18 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 的 100% traffic，禁止留下新 Worker／舊 origin 的混合版本；
+5. 核對 host commit、`/healthz`、`/readyz`／`writeReady=true`、Admin、Guest、Viewer、WebSocket、登出及資料狀態；
+6. 只有 rc18 exact pair 本身無法安全恢復，且事故負責人明確批准第二級復原時，才可使用 rc17／`99f5816` 主機 bundle與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 作次級已驗證基線；在相容性、資料完整性及完整 user-flow 重新證明前保持 maintenance；
+7. 如資料完整性受疑，使用受控 restore，而非手動覆寫 SQLite。
 
 additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，部署前 gate 應已拒絕該 migration。
 
@@ -254,4 +257,4 @@ additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，�
 
 Live `v1.2.0-rc.18`／`fd504a8` keeps one Cloudflare Worker in front of one loopback-only Windows NiceGUI origin. Verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter.
 
-Service Weave rc17 is now the live release candidate. Preserve its protected Guest setting while validating any later candidate in isolation; require a source-matched report, fresh verified backup, isolated restore, healthy `/healthz` and `/readyz`, a deliberate Worker deployment decision, and supervised browser acceptance. If a later rollout fails, restore the recorded rc15 host bundle and Worker version shown in the rollback section.
+Service Weave rc18 is the live controlled release; rc19 is an undeployed mobile／tablet／accessibility candidate. Preserve the protected Guest setting while validating rc19 in isolation; require a source-matched report, fresh verified backup, isolated restore, healthy `/healthz` and `/readyz`, a deliberate matching Worker deployment, and supervised browser acceptance. If the rc19 rollout fails, first restore the exact live rc18 host／Worker pair shown in the rollback section. The recorded rc17 pair is only a secondary verified baseline and requires an explicit second-level recovery decision.

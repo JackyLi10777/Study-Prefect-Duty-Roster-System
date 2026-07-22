@@ -11,6 +11,7 @@ from nicegui_app.runtime import get_workflow
 from nicegui_app.ui.downloads import deliver_generated_download
 from nicegui_app.ui.i18n import t
 from nicegui_app.ui.music import render_guest_music_settings, render_music_library_settings
+from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.page_access import (
     is_guest_mode as _is_guest_mode,
     render_restricted_capability as _render_restricted_capability,
@@ -89,7 +90,7 @@ def handover_page() -> None:
                                 type="positive",
                                 timeout=7_000,
                             )
-                            ui.navigate.to("/prefects")
+                            navigate_to("/prefects")
 
                     with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
                         ui.button(t("cancel"), icon="close", on_click=rollover_dialog.close).props("flat")
@@ -118,7 +119,7 @@ def handover_page() -> None:
                 ui.button(
                     t("school_year_rollover_empty_action"),
                     icon="upload_file",
-                    on_click=lambda: ui.navigate.to("/prefects"),
+                    on_click=lambda: navigate_to("/prefects"),
                 ).props("outline color=primary data-testid=open-new-directory-import").classes("mt-4")
         checks = (
             ("handover_prefects_ready", f"{readiness['activePrefectCount']}", readiness["activePrefectCount"] > 0),
@@ -212,14 +213,14 @@ def handover_page() -> None:
                 ui.button(
                     t("acceptance_open_guide"),
                     icon="menu_book",
-                    on_click=lambda: ui.navigate.to("/guide"),
+                    on_click=lambda: navigate_to("/guide"),
                 ).props("outline color=primary data-testid=acceptance-open-guide")
                 ui.button(
                     t("open_backup_settings"),
                     icon="settings_backup_restore",
-                    on_click=lambda: ui.navigate.to("/settings"),
+                    on_click=lambda: navigate_to("/settings"),
                 ).props("flat data-testid=acceptance-open-settings")
-        ui.button(t("open_system_architecture"), icon="account_tree", on_click=lambda: ui.navigate.to("/system-architecture")).props("flat").classes("self-start")
+        ui.button(t("open_system_architecture"), icon="account_tree", on_click=lambda: navigate_to("/system-architecture")).props("flat").classes("self-start")
         render_reference_pager(previous=("/guide", "operator_guide"))
 
 
@@ -248,7 +249,7 @@ def settings_page() -> None:
                 with ui.column().classes("gap-1"):
                     ui.label(t("handover")).classes("text-lg font-semibold")
                     ui.label(t("handover_intro")).classes("text-sm text-[var(--sy-muted)]")
-                ui.button(t("open_handover_guide"), icon="handshake", on_click=lambda: ui.navigate.to("/handover")).props("outline color=primary")
+                ui.button(t("open_handover_guide"), icon="handshake", on_click=lambda: navigate_to("/handover")).props("outline color=primary")
             with ui.row().classes("w-full gap-3 flex-wrap mt-4"):
                 for label_key, value, ready in (
                     ("handover_prefects_ready", f"{readiness['activePrefectCount']}", readiness["activePrefectCount"] > 0),

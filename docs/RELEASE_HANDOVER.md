@@ -2,7 +2,11 @@
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
-> **v1.2 rc18 現行交接狀態：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.18`／commit `fd504a8`。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 正式 gate；正式備份 `20260722-024349-422389-manual_verified_backup.sqlite3`、SHA-256 `51ad0e42284c0d42363d2f8fd2bc3dc70ae0ce1f79d258016ec2d66bf6741c7f`、公平對帳、行數核對、還原審計及隔離還原全部通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 已通過 0% 候選及 100% 正式 smoke checks；origin 健康、ready，沒有待處理備份義務。rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 是即時回退組合；rc15、rc14、rc11 及更早數值只屬歷史發布證據。首席導學風紀及教師顧問仍須完成真人驗收清單。
+> **v1.2 rc18 現行交接狀態：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.18`／commit `fd504a8`。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 正式 gate；正式備份 `20260722-024349-422389-manual_verified_backup.sqlite3`、SHA-256 `51ad0e42284c0d42363d2f8fd2bc3dc70ae0ce1f79d258016ec2d66bf6741c7f`、公平對帳、行數核對、還原審計及隔離還原全部通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 已通過 0% 候選及 100% 正式 smoke checks；origin 健康、ready，沒有待處理備份義務。rc19 發布失敗的第一級回退是這個 rc18 exact pair；rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 只作次級已驗證基線，rc15、rc14、rc11 及更早數值只屬歷史發布證據。首席導學風紀及教師顧問仍須完成真人驗收清單。
+
+> **rc19 候選（尚未上線）：**目前 mobile/accessibility 來源候選增加 256px／200% 真正 reflow、`visualViewport` 鍵盤避讓、44px 觸控目標、跨頁 `main` 焦點、正確的 **More** current-page 語意、無位移／旋轉的觸控 icon story、640–900px tablet grid、forced-colours／reduced-motion 與淺／深配對一致性；公開入口候選亦在手機首屏提前提供管理員及虛構訪客兩個 CTA。它的單一裝置矩陣包括 768×1024、820×1180、1024×768 及 1440×1024，另保留手機／zoom／landscape 成員。這些是待驗證要求，不是已通過或已部署證據。rc19 尚未有獲批准 tag／commit、來源 fingerprint、正式 report、新正式備份／隔離還原、Worker version 或 canonical smoke result；在全部完成前，使用者應以 rc18 畫面及上述 live 證據為準。
+
+> **手機／平板／桌面共存規則：**平板不是放大的手機，桌面也不可繼承平板壓縮。768×1024 及 820×1180 直向平板使用 adaptive shell，操作表單維持一欄，支援卡片可使用兩欄；1024×768 橫向觸控平板保留 compact desktop shell，但操作及文件區不得壓成多個狹窄欄，證據與下載最多兩欄；1440×1024 保留 full desktop shell 與閱讀寬度。四個 viewport 屬於同一候選裝置矩陣，並與手機共用同一網址、身份、路由、資料、排班規則、審計、PDF 及返回邏輯。
 
 > **歷史 rc4 rollout 記錄（不可作現行步驟）：** rc4 已成功把正式 Alembic schema 由 `0007` 升至 `0008`，建立已驗證備份並完成隔離還原；其後 `git fetch origin main` 只更新 `FETCH_HEAD`，而 ancestry gate 讀取 stale `origin/main`，造成假失敗。rc4 因而從未被宣告為 live。自動 rollback 未能證明 origin health 後，主機以相容的 rc4／`30f282f` 完成 forward recovery；rc5／`bafaef6` 已改用明確 remote-tracking refspec，並重新通過完整 13-gate 報告。
 
@@ -187,7 +191,7 @@ python -X utf8 -m nicegui_app.main
 
 開始交接前，先閱讀[部署與遠端存取決策指南](DEPLOYMENT_DECISION.md)、[Cloudflare 手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)及[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。只派發 canonical workers.dev 主網址；不另發管理員、WARP、localhost、VPC 或 `/auth/*` 網址。
 
-桌面與手機均使用同一主網址、登入、資料及權限；不要建立或派發 `/mobile`、第二個子網域或另一套登入。在 900px 或以下，手機／窄屏只是同一網站的獨立排列：上方為單行頁首，下方固定顯示 **Dashboard／Rosters／Prefects／More**；語言、深淺模式、聲音、登出及較少使用的頁面由 **More** 導覽抽屜開啟。抽屜必須可捲動到底，底部導航必須避開手機安全區，並不得遮蓋最後一個表單欄位或按鈕；鍵盤及讀屏順序會先讀本頁內容，再到固定底部導航。鍵盤開啟抽屜後，焦點會移到抽屜並在其中以 Tab／Shift+Tab 循環；按 Escape 或背景關閉後，焦點會返回 **More**。
+桌面、tablet 與手機均使用同一主網址、登入、資料及權限；不要建立或派發 `/mobile`、第二個子網域或另一套登入。在 900px 或以下，窄屏只是同一網站的獨立排列：上方為單行頁首，下方固定顯示 **Dashboard／Rosters／Prefects／More**；語言、深淺模式、聲音、登出及較少使用的頁面由 **More** 導覽抽屜開啟。抽屜必須可捲動到底，底部導航必須避開手機安全區，並不得遮蓋最後一個表單欄位、按鈕或頁尾。鍵盤及讀屏順序先讀本頁內容，再到固定底部導航；由共享導航進入新頁時焦點移至 `main`，讀屏不必重新猜測頁面位置。**More** 在次要頁可視覺上保持 active，但它仍是 menu trigger，不可自稱 `aria-current=page`；抽屜內實際頁面才是 current item。鍵盤開啟抽屜後，焦點移到抽屜並在其中以 Tab／Shift+Tab 循環；按 Escape 或背景關閉後，焦點返回 **More**。手機軟鍵盤開啟時，`visualViewport` 邏輯會暫時讓固定底欄退開並把焦點欄位移到安全區；頁面在 256 CSS px／200% zoom 仍須 reflow，只有明確資料區可局部橫向捲動。Tablet 的操作表單保持單欄，證據／參考資料才使用雙欄。
 
 1. 核對主網址未登入時顯示統一品牌入口，不會自動要求所有人登入。
 2. 按「訪客體驗」後，Worker 建立最長 30 分鐘 Guest session；NiceGUI 顯示與管理員相同的路由及元件，但只使用虛構記憶體 workspace。
@@ -202,13 +206,15 @@ python -X utf8 -m nicegui_app.main
 ### 後續受控發布次序
 
 1. 在最後來源 commit 只執行一次 `python -X utf8 scripts\verify_update.py --release`；它已擁有完整 pytest、瀏覽器、Worker、效能、備份失敗及部署就緒閘門，不要再重複跑同一套檢查。
-2. 核對 `logs/release-candidate-report.json` 的 14 項 gate、來源 fingerprint 與最終 commit 完全一致。
-3. Gate 通過後，才合併 `main` 並建立**下一個獲批准的 annotated tag**；不可預先重用任何既有標籤。保存目前 rc18／`fd504a8` 作現行不可變版本，並保留 rc17／`99f5816` Windows bundle 及 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 作已記錄回退組合。
+2. 核對 `logs/release-candidate-report.json` 的 14 項 gate、來源 fingerprint 與最終 commit 完全一致。對 rc19，報告中的單一裝置矩陣必須覆蓋 256×700 reflow／200% zoom 契約、320×760 reduced motion、390×844 phone、768×1024 及 820×1180 adaptive touch tablet、1024×768 desktop-shell touch tablet、1440×1024 full desktop、844×390 phone landscape、單一可見 navigation shell、`visualViewport` keyboard clearance、44px standalone targets、route focus、More current-page semantics、無位移／旋轉的 touch icon story、forced colours及淺／深配對。公開入口的結構契約先由同一 report 內的 Worker tests 鎖定；手機首屏唯一可見的 Admin／Guest CTA 仍須在 Worker staged deployment 及 canonical smoke 以 `verify_public_roster_viewer.py` 實證。檔名、靜態字串或截圖存在本身都不等於通過。
+3. Gate 通過後，才合併 `main` 並建立**下一個獲批准的 annotated tag**；不可預先重用任何既有標籤。保存目前 rc18／`fd504a8` 及 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 作現行不可變版本及 rc19 的第一級回退；rc17／`99f5816` Windows bundle 及 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 只保留作次級已驗證基線。
 4. 以 `scripts\deploy_windows_release.ps1` 從該乾淨 tag 更新 Windows bundle；腳本會在切換前建立新的正式已驗證快照、完成隔離還原、進入 maintenance、執行 additive migration並在失敗時回復，不需要另跑一套重複備份程序。
 5. 核對 `/healthz`、`/readyz`、管理員本機工作流及備份義務。
 6. 只有 Worker source 或受保護設定確實改變時，才執行 `scripts\deploy_cloudflare_worker.ps1`；它會以舊版 100%／新版 0% staging、版本指定 smoke checks、100% promotion 及精確 rollback 管理遠端切換。若 Worker 未改，則記錄「刻意不重新部署」及沿用的 verified version ID。
-7. 核對 Public、Admin、Guest、Viewer、WebSocket、登出、到期及跨分頁隔離；所有能力仍須由伺服器拒絕優先，而非依賴隱藏按鈕。
-8. 所有線上證據通過後才宣布候選可供驗收；任一失敗立即恢復上一個現行設定、已記錄的 rc9 主機 bundle 及已驗證 Worker version。
+7. 在 canonical 網址核對 Public、Admin、Guest、Viewer、WebSocket、登出、到期及跨分頁隔離；所有能力仍須由伺服器拒絕優先，而非依賴隱藏按鈕。另按[正式驗收證據矩陣](ACCEPTANCE_EVIDENCE.md)以真實 touch phone／tablet、1440×1024 desktop 和鍵盤逐項核對 rc19 的首屏 CTA、200% zoom、768×1024／820×1180／1024×768／1440×1024 共存、軟鍵盤、route focus、More 語意、44px 目標、兩個 themes、reduced motion 及 forced colours。
+8. 所有線上證據通過後才宣布候選可供驗收。任何正式切換前的失敗都保持 rc18 不動；Windows 或 Worker 受控腳本在切換後失敗時，先閱讀其 deployment report，確認自動 rollback 的 `attempted`／`succeeded` 及精確 previous commit／version，不要盲目重跑或手動複製檔案。
+9. 如 100% 切換後才發現使用者可見的窄屏、鍵盤、焦點、主題或入口回歸，立即停止接受正式寫入並記錄 canonical URL、時間、裝置、route 及非敏感畫面。由發布維護者透過受控程序把 Windows origin 恢復至 live baseline rc18／`fd504a8`，並把 Worker 精確恢復至 `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 的 100% traffic；不可 `git reset --hard`、直接覆寫 C-host 或留下新 Worker／舊 origin 的混合版本。
+10. 回退後重新核對 host commit、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出。只有 rc18 使用者流程及資料狀態再次一致才恢復日常操作；若不能證明回退完成，保持 maintenance／唯讀並交由 IT 處理。
 
 ## 正式驗收清單
 
@@ -240,8 +246,9 @@ python -X utf8 -m nicegui_app.main
 - [ ] `/healthz` 及 `/readyz` 同時通過；以崩潰注入留下 backup obligation 後，重啟必須先修復，否則保持 degraded／唯讀而不可接受新寫入。
 - [ ] 以虛構已發布週表建立同 host `/view#…` 連結；一般瀏覽器可查看中文姓名週表但不能修改。撤銷後約一分鐘確認舊完整連結不能再載入。
 - [ ] 完成正式瀏覽器的 WebSocket 長連線／重新連線、檔案上載及 PDF 下載驗收；已記錄的 VPC probe 只作傳輸證據。
-- [x] 隔離 Chromium 真觸控模擬已覆蓋 390×844 繁中淺色、320×760 英文深色／reduced motion 及 844×390 橫向：單行頁首、`Dashboard／Rosters／Prefects／More`、可捲動 More 抽屜、`aria-expanded`、開啟後焦點、Tab／Shift+Tab 循環、Escape／背景關閉及焦點恢復、手機資料卡、44px 操作、安全區、零橫向溢出及零 console/page error 均通過。
-- [ ] 在同一 canonical 網址以實體 iPhone Safari 及 Android Chrome 重複手機驗收，集中檢查鍵盤彈出、旋轉、瀏海與 home indicator 安全區；不用另建或測試 `/mobile` 網站。
+- [x] **live rc18 baseline：**隔離 Chromium 真觸控模擬已覆蓋 390×844 繁中淺色、320×760 英文深色／reduced motion 及 844×390 橫向：單行頁首、`Dashboard／Rosters／Prefects／More`、可捲動 More 抽屜、`aria-expanded`、開啟後焦點、Tab／Shift+Tab 循環、Escape／背景關閉及焦點恢復、手機資料卡、44px 操作、安全區、零橫向溢出及零 console/page error 均通過。
+- [ ] **rc19 candidate：**只可在最終 fingerprint-matched report 中勾選同一裝置矩陣的 256×700 true reflow、320×760 reduced motion、390×844 phone、768×1024 與 820×1180 adaptive touch tablet、1024×768 desktop-shell touch tablet、1440×1024 full desktop、844×390 phone landscape、單一可見 navigation shell、route-focus transfer、More／drawer current-page semantics、`visualViewport` keyboard clearance、footer／safe area、44px standalone controls、one-shot touch icon story、forced colours、paired light／dark parity、public mobile Admin／Guest first-viewport CTA，以及零 overflow／console／page error；目前文件不宣稱已通過。
+- [ ] 在同一 canonical 網址以實體 iPhone Safari 及 Android Chrome 重複手機驗收，集中檢查 200% zoom、鍵盤彈出及焦點欄位、跨頁 focus、More 語意、觸控 icon story、兩個 themes、reduced motion、forced colours、旋轉、瀏海與 home indicator 安全區；不用另建或測試 `/mobile` 網站。
 - [ ] 在一個未儲存表單中測試外觀、聲音及語言：外觀／聲音即時切換而不清空輸入，啟用聲音有一次短確認；切換語言前必須先出現離開提示。再以鍵盤確認頁面內容先於底部重複導航。
 - [ ] 內部公平審計 PDF 與群組週表分開；審計檔清楚標示為內部資料，且具名資料沒有被預設發群組。
 - [ ] 以兩個已發布測試週產生一次期間報告，確認草稿被排除、最終請假調整被反映、繁中／英文 PDF 姓名保持中文，而且重複產生報告不改動公平點數。

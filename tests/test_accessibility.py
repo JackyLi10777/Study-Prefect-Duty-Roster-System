@@ -62,6 +62,41 @@ def test_shared_shell_provides_landmarks_skip_link_and_accessible_icon_controls(
     assert "maximum-scale=1" not in theme
 
 
+def test_fixed_mobile_navigation_cannot_obscure_keyboard_focus() -> None:
+    theme = combined_theme_source()
+
+    focus_margin = _css_declarations(theme, ".sy-main :is(")
+    assert "scroll-margin-block:" in focus_margin
+    assert "--sy-mobile-tabbar-height" in focus_margin
+    assert ".sy-mobile-keyboard-open .sy-mobile-tabbar" in theme
+
+
+def test_mobile_navigation_has_explicit_forced_colours_semantics() -> None:
+    theme = combined_theme_source()
+
+    forced_marker = "@media (forced-colors: active)"
+    assert forced_marker in theme
+    forced_scopes = "\n".join(theme.split(forced_marker)[1:])
+    assert ".sy-mobile-tabbar" in forced_scopes
+    assert ".sy-mobile-tab--active" in forced_scopes
+    assert "Canvas" in forced_scopes
+    assert "CanvasText" in forced_scopes
+    assert "Highlight" in forced_scopes
+
+
+def test_shared_navigation_marks_route_focus_without_racing_anchor_navigation() -> None:
+    navigation = (PROJECT_ROOT / "nicegui_app" / "ui" / "navigation.py").read_text(encoding="utf-8")
+    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+    workflow = (PROJECT_ROOT / "nicegui_app" / "ui" / "workflow_navigation.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "ROUTE_FOCUS_JAVASCRIPT" in navigation
+    assert "sessionStorage.setItem('sy:route-focus', 'main')" in navigation
+    assert "navigate_to(path)" in shell
+    assert "js_handler=f\"() => {{{ROUTE_FOCUS_JAVASCRIPT}}}\"" in workflow
+
+
 def test_quiet_precision_shell_uses_semantic_action_and_motion_tokens() -> None:
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
     theme = combined_theme_source()
@@ -534,6 +569,28 @@ def test_reference_navigation_keeps_touch_targets_and_mobile_table_semantics() -
     assert "architecture-developer-section" in verifier
     assert '.locator(".sy-reference-toc-link").count()' not in engineering_verification
     assert '.locator(".sy-reference-toc-link").count()' not in architecture_verification
+
+
+def test_mobile_drawer_traps_focus_and_hides_background_from_assistive_technology() -> None:
+    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+
+    assert "const backgroundElements = () =>" in shell
+    assert "element.inert = true" in shell
+    assert "element.setAttribute('aria-hidden', 'true')" in shell
+    assert "element.inert = false" in shell
+    assert "setBackgroundInert(open)" in shell
+    assert "setBackgroundInert(false)" in shell
+
+
+def test_touch_icon_story_never_restores_over_a_real_control_state_change() -> None:
+    motion = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "motion" / "sing-yin-motion.js"
+    ).read_text(encoding="utf-8")
+
+    assert "const temporaryGlyph = icon.dataset.syIconStoryTo" in motion
+    assert "currentIcon !== icon" in motion
+    assert "currentIcon.textContent?.trim() !== temporaryGlyph" in motion
+    assert "hydrateIconMotion(currentIcon)" in motion
 
 
 def test_co_creation_identity_media_keeps_link_focus_touch_and_mobile_reflow() -> None:

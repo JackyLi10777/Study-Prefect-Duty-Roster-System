@@ -111,14 +111,14 @@ def _assert_guest_landing(page: Page, *, label: str) -> None:
             f"{verse_refresh_box}"
         )
 
-    login_link = page.locator('a[href="/auth/login"]')
+    login_link = page.locator('a[data-entry-role="admin"]:visible')
     if login_link.count() != 1 or not login_link.is_visible():
         raise RuntimeError(f"{label} does not expose exactly one visible administrator login.")
     login_box = login_link.bounding_box()
     if login_box is None or login_box["height"] < 48:
         raise RuntimeError(f"{label} administrator CTA is shorter than 48 CSS pixels: {login_box}")
 
-    guest_link = page.locator('a#guestEnter[href="/guest"]')
+    guest_link = page.locator('a[data-entry-role="guest"]:visible')
     if guest_link.count() != 1 or not guest_link.is_visible():
         raise RuntimeError(f"{label} does not expose exactly one visible guest-tour entrance.")
     guest_box = guest_link.bounding_box()
@@ -152,6 +152,25 @@ def _assert_guest_landing(page: Page, *, label: str) -> None:
         if control_box is None or control_box["width"] < 43.5 or control_box["height"] < 43.5:
             raise RuntimeError(f"{label} welcome-music control is smaller than the 44 CSS pixel target: {control_box}")
     _assert_document_fits_viewport(page, label=label)
+
+
+def _assert_mobile_entry_actions_in_first_viewport(page: Page, *, label: str) -> None:
+    viewport = page.viewport_size or {}
+    viewport_height = int(viewport.get("height", 0))
+    if viewport_height <= 0:
+        raise RuntimeError(f"{label} does not expose a measurable viewport.")
+    for role in ("admin", "guest"):
+        action = page.locator(f'a.mobile-entry-action[data-entry-role="{role}"]:visible')
+        if action.count() != 1:
+            raise RuntimeError(f"{label} does not expose one mobile {role} entry action.")
+        box = action.bounding_box()
+        if box is None or box["height"] < 48:
+            raise RuntimeError(f"{label} mobile {role} action is not a 48px touch target: {box}")
+        if box["y"] < 0 or box["y"] + box["height"] > viewport_height:
+            raise RuntimeError(
+                f"{label} mobile {role} action falls outside the first viewport: "
+                f"{box}, viewport height={viewport_height}"
+            )
 
 
 def _assert_theme_cycle(page: Page) -> None:
@@ -334,6 +353,10 @@ def main() -> int:
             )
             mobile_page.goto(settings.base_url, wait_until="networkidle")
             _assert_guest_landing(mobile_page, label="390px guest landing")
+            _assert_mobile_entry_actions_in_first_viewport(
+                mobile_page,
+                label="390px guest landing",
+            )
             _set_theme_reliably(mobile_page, "light")
             mobile_page.screenshot(path=str(GATEWAY_EVIDENCE_DIR / "mobile-light.png"), full_page=True)
 
@@ -360,6 +383,10 @@ def main() -> int:
             )
             compact_page.goto(settings.base_url, wait_until="networkidle")
             _assert_guest_landing(compact_page, label="320px reduced-motion guest landing")
+            _assert_mobile_entry_actions_in_first_viewport(
+                compact_page,
+                label="320px reduced-motion guest landing",
+            )
             _set_theme_reliably(compact_page, "dark")
             _assert_reduced_motion(compact_page)
             compact_page.screenshot(

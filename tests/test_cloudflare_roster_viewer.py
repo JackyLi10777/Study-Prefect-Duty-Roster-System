@@ -12,13 +12,6 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 VIEWER_ROOT = PROJECT_ROOT / "cloudflare" / "roster_viewer"
 WORKER_SOURCE = VIEWER_ROOT / "worker.js"
-EXPECTED_ADMIN_EMAILS = [
-    "s10777@syss.edu.hk",
-    "lichuangjie0208@gmail.com",
-    "lichuangjie0208@outlook.com",
-]
-
-
 def _source() -> str:
     return WORKER_SOURCE.read_text(encoding="utf-8")
 
@@ -54,11 +47,11 @@ def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
         "AUTH_EPOCH": 1,
         "ORIGIN_PORT": 8080,
         "ORIGIN_PRINCIPAL_KID": "origin-v1",
-        "ADMIN_IDENTITY_ALLOWLIST": {"emails": ["REPLACE_WITH_EXACT_ADMIN_EMAIL"]},
     }
     assert configuration["secrets"] == {
         "required": [
             "ADMIN_BEARER_TOKEN",
+            "ADMIN_IDENTITY_ALLOWLIST",
             "ADMIN_SESSION_SECRET",
             "GUEST_SESSION_SECRET",
             "ORIGIN_PRINCIPAL_SECRET",
@@ -84,18 +77,22 @@ def test_worker_deployment_toolchain_is_project_pinned() -> None:
     workspace = (VIEWER_ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
 
     assert package["private"] is True
-    assert package["version"] == "1.2.0-rc.18"
+    assert package["version"] == "1.2.0-rc.19"
     assert package["packageManager"] == "pnpm@11.7.0"
     assert package["engines"] == {"node": ">=22"}
     assert package["devDependencies"] == {"wrangler": "4.110.0"}
     assert package["scripts"]["deploy:dry-run"].startswith("wrangler deploy --dry-run --strict")
     assert "wrangler@4.110.0" in lock
+    assert "sharp@0.35.0" in lock
+    assert "sharp@0.34.5" not in lock
     assert workspace.splitlines() == [
         "allowBuilds:",
         "  esbuild: true",
         "  sharp: true",
         "  workerd: true",
         "strictDepBuilds: true",
+        "overrides:",
+        "  sharp: 0.35.0",
     ]
     assert _jsonc(VIEWER_ROOT / "wrangler.jsonc")["$schema"] == "./node_modules/wrangler/config-schema.json"
 
@@ -108,18 +105,18 @@ def test_welcome_audio_controller_has_no_removed_fade_hook() -> None:
     assert "initialiseWelcomeAudio();" in source
 
 
-def test_production_gateway_uses_a_bounded_exact_admin_email_allowlist() -> None:
+def test_production_gateway_keeps_the_exact_admin_allowlist_out_of_public_configuration() -> None:
     configuration = _jsonc(VIEWER_ROOT / "wrangler.jsonc")
     variables = configuration["vars"]
 
-    assert variables["ADMIN_IDENTITY_ALLOWLIST"] == {"emails": EXPECTED_ADMIN_EMAILS}
+    assert "ADMIN_IDENTITY_ALLOWLIST" not in variables
     assert variables["ORIGIN_PORT"] == 8080
     assert "ADMIN_EMAIL" not in variables
     assert "ADMIN_EMAILS" not in variables
-    assert len(set(variables["ADMIN_IDENTITY_ALLOWLIST"]["emails"])) == len(EXPECTED_ADMIN_EMAILS)
     assert configuration["secrets"] == {
         "required": [
             "ADMIN_BEARER_TOKEN",
+            "ADMIN_IDENTITY_ALLOWLIST",
             "ADMIN_SESSION_SECRET",
             "GUEST_SESSION_SECRET",
             "ORIGIN_PRINCIPAL_SECRET",
@@ -322,6 +319,23 @@ def test_mobile_public_controls_keep_a_44px_touch_target() -> None:
     assert ".verse-refresh { width: 44px; padding-inline: 0; }" in compact_mobile.group("body")
 
 
+def test_mobile_entrance_exposes_admin_and_guest_actions_before_supplementary_content() -> None:
+    source = _source()
+    mobile_actions = source.index('class="mobile-entry-actions"')
+    workflow = source.index('class="workflow-cue"')
+    devotional = source.index('class="devotional-prompt"')
+
+    assert mobile_actions < workflow < devotional
+    assert 'id="mobileAdminLogin"' in source
+    assert 'id="mobileGuestEnter"' in source
+    assert len(re.findall(r'<a[^>]+data-entry-role="admin"', source)) == 2
+    assert len(re.findall(r'<a[^>]+data-entry-role="guest"', source)) == 2
+    assert ".mobile-entry-action" in source
+    assert "min-height: 52px" in source
+    assert '.access-panel > [data-entry-role="admin"]' in source
+    assert '.access-panel > [data-entry-role="guest"] { display: none; }' in source
+
+
 def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contract() -> None:
     source = _source()
 
@@ -329,6 +343,8 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
         'href="#mainContent"',
         'id="adminLogin"',
         'id="guestEnter"',
+        'id="mobileAdminLogin"',
+        'id="mobileGuestEnter"',
         'href="/guest"',
         "進入訪客示範",
         "Try the fictional demo",
@@ -595,13 +611,16 @@ def test_gateway_cta_and_share_loading_expose_honest_accessible_states() -> None
         'class="admin-login-indicator"',
         'class="admin-login-spinner"',
         'class="sy-secure-pulse"',
-        "adminLogin.setAttribute('aria-busy', 'true')",
-        "adminLogin.setAttribute('aria-disabled', 'true')",
-        "adminLogin.dataset.connecting === 'true'",
+        "const adminLoginButtons = Array.from(document.querySelectorAll('[data-entry-role=\"admin\"]'))",
+        "adminLoginButtons.forEach((button)",
+        "button.setAttribute('aria-busy', 'true')",
+        "button.setAttribute('aria-disabled', 'true')",
+        "adminLoginButtons.some((candidate) => candidate.dataset.connecting === 'true')",
         "event.preventDefault()",
         "window.addEventListener('pageshow'",
-        "adminLogin.removeAttribute('aria-busy')",
-        "adminLogin.removeAttribute('aria-disabled')",
+        "button.removeAttribute('aria-busy')",
+        "button.removeAttribute('aria-disabled')",
+        "setAdminLoginState(false)",
         "@keyframes secure-pulse",
         "@media (prefers-reduced-motion: reduce)",
         ".sy-secure-pulse::after { animation: none",

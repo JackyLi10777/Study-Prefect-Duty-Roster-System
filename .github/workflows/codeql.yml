@@ -3,27 +3,7 @@ name: CodeQL
 on:
   push:
     branches: [main, nicegui-self-hosted]
-    paths:
-      - "nicegui_app/**/*.py"
-      - "packages/**/*.py"
-      - "migrations/**/*.py"
-      - "scripts/**/*.py"
-      - "daily_verses.py"
-      - "requirements*.txt"
-      - "requirements*.lock"
-      - "pyproject.toml"
-      - ".github/workflows/codeql.yml"
   pull_request:
-    paths:
-      - "nicegui_app/**/*.py"
-      - "packages/**/*.py"
-      - "migrations/**/*.py"
-      - "scripts/**/*.py"
-      - "daily_verses.py"
-      - "requirements*.txt"
-      - "requirements*.lock"
-      - "pyproject.toml"
-      - ".github/workflows/codeql.yml"
   schedule:
     - cron: "23 3 * * 1"
   workflow_dispatch:
@@ -39,9 +19,13 @@ permissions:
 jobs:
   analyze:
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      # v4 and v3 tags resolved from their first-party repositories on 2026-07-22.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          languages: python
-      - uses: github/codeql-action/analyze@v3
+          persist-credentials: false
+      - uses: github/codeql-action/init@08d09a53f0f5d694f253bd25732e4429c9e9337f # v3
+        with:
+          languages: python,javascript-typescript
+      - uses: github/codeql-action/analyze@08d09a53f0f5d694f253bd25732e4429c9e9337f # v3

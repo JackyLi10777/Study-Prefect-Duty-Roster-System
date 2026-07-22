@@ -21,6 +21,7 @@ from nicegui_app.ui.components import (
 )
 from nicegui_app.ui.brand import render_service_weave_mark
 from nicegui_app.ui.i18n import t
+from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.page_shared import _render_co_creation, _render_feedback_channel
 from nicegui_app.ui.platform_summary import PlatformSummary, load_platform_summary
 from nicegui_app.ui.shell import page_shell
@@ -230,7 +231,7 @@ def platform_page() -> None:
                         ui.button(
                             t("solution_open_workspace"),
                             icon="arrow_forward",
-                            on_click=lambda destination=route: ui.navigate.to(destination),
+                            on_click=lambda destination=route: navigate_to(destination),
                         ).props("flat").classes("sy-solution-action self-start")
 
         with ui.element("section").classes("sy-architecture-section w-full").props(
@@ -260,7 +261,7 @@ def platform_page() -> None:
                 ):
                     with ui.element("article").classes("sy-platform-resource"):
                         ui.button(
-                            t(label_key), icon=icon, on_click=lambda destination=route: ui.navigate.to(destination)
+                            t(label_key), icon=icon, on_click=lambda destination=route: navigate_to(destination)
                         ).props("flat")
 
         _render_feedback_channel()
@@ -564,10 +565,10 @@ def engineering_page() -> None:
                     'rel="noopener noreferrer"'
                 ).classes("sy-engineering-resource-link")
                 ui.button(
-                    t("engineering_open_architecture"), icon="account_tree", on_click=lambda: ui.navigate.to("/system-architecture")
+                    t("engineering_open_architecture"), icon="account_tree", on_click=lambda: navigate_to("/system-architecture")
                 ).props("outline")
                 ui.button(
-                    t("engineering_open_platform"), icon="domain", on_click=lambda: ui.navigate.to("/platform")
+                    t("engineering_open_platform"), icon="domain", on_click=lambda: navigate_to("/platform")
                 ).props("flat")
         reference_pager(previous=("/system-architecture", "system_architecture"))
 
@@ -615,7 +616,7 @@ def system_architecture_page() -> None:
                 status(t("architecture_local_badge"), "stable").classes("mt-3 self-start")
                 ui.label(t("architecture_reading_note")).classes("sy-architecture-reading-note")
                 ui.label(t("architecture_platform_link_note")).classes("sy-architecture-reading-note")
-                ui.button(t("open_platform"), icon="domain", on_click=lambda: ui.navigate.to("/platform")).props(
+                ui.button(t("open_platform"), icon="domain", on_click=lambda: navigate_to("/platform")).props(
                     "outline data-testid=architecture-open-platform"
                 ).classes("mt-2 self-start")
 
