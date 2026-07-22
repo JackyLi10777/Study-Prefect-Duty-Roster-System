@@ -27,6 +27,7 @@ class PeopleWorkflowMixin:
                     "version": row.version,
                     "availableDays": [day.name for day in sorted(availability.get(row.id, set()))],
                     "needsMentoring": row.needs_mentoring,
+                    "fixedGeneralDuty": row.fixed_general_duty,
                 }
                 for row in self._active_prefect_records(session)
             ]
@@ -74,6 +75,7 @@ class PeopleWorkflowMixin:
                 session.rollback()
             else:
                 self._assert_name_available(session, prefect_input.name_zh)
+                self._assert_assist_fixed_day_available(session, prefect_input)
                 record = self._new_prefect_record(prefect_input)
                 session.add(record)
                 session.flush()
@@ -141,6 +143,11 @@ class PeopleWorkflowMixin:
                         "This prefect record changed in another browser. Refresh and review the latest details before saving."
                     )
                 self._assert_name_available(session, prefect_input.name_zh, exclude_prefect_id=prefect_id)
+                self._assert_assist_fixed_day_available(
+                    session,
+                    prefect_input,
+                    exclude_prefect_id=prefect_id,
+                )
                 claim = session.execute(
                     update(PrefectRecord)
                     .where(
@@ -347,6 +354,18 @@ class PeopleWorkflowMixin:
         normalized_names = [prefect_input.name_zh.strip() for prefect_input in inputs]
         if len(normalized_names) != len(set(normalized_names)):
             raise WorkflowError("Import contains duplicate Chinese names.")
+        fixed_assist_days = [
+            prefect_input.fixed_general_duty
+            for prefect_input in inputs
+            if (
+                prefect_input.role_code == PrefectRole.ASSISTANT_HEAD.value
+                and prefect_input.fixed_general_duty != "NONE"
+            )
+        ]
+        if len(fixed_assist_days) != len(set(fixed_assist_days)):
+            raise WorkflowError(
+                "Import contains duplicate Assistant Head fixed weekdays."
+            )
         operation_type = "prefects_imported"
         operation_id = self._operation_command_id(operation_type, command_id)
         operation_payload = {
@@ -381,6 +400,8 @@ class PeopleWorkflowMixin:
             else:
                 for name in normalized_names:
                     self._assert_name_available(session, name)
+                for prefect_input in inputs:
+                    self._assert_assist_fixed_day_available(session, prefect_input)
                 records: list[PrefectRecord] = []
                 for prefect_input in inputs:
                     record = self._new_prefect_record(prefect_input)

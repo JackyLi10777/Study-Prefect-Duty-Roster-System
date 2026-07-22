@@ -60,7 +60,7 @@ DEFAULT_DATABASE_PATH = Path(os.getenv("SING_YIN_DATABASE_PATH", CANONICAL_DATAB
 DEFAULT_BACKUP_DIR = Path(os.getenv("SING_YIN_BACKUP_DIR", CANONICAL_BACKUP_DIR))
 PREFECT_SEED_PATH = DATA_DIR / "demo" / "prefects.zh-HK.seed.json"
 DEVOTIONAL_SEED_PATH = DATA_DIR / "devotional" / "daily-verses.seed.json"
-POLICY_VERSION = "2026.07.10"
+POLICY_VERSION = "2026.07.22-assist-modes"
 CANONICAL_PUBLIC_URL = os.getenv(
     "SING_YIN_PUBLIC_URL",
     "https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/",

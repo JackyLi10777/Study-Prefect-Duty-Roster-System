@@ -27,12 +27,16 @@ from nicegui_app.services.guest_workspace import (
     demo_fixture,
 )
 from nicegui_app.services.workflow_types import (
+    ASSIST_ASSIGNMENT_MODE_CODES,
+    AssistAssignmentMode,
     DraftAssignmentUpdateResult,
     DutyAllocationEntry,
     FairnessDiscrepancy,
     FairnessReconciliationReport,
     FairnessTrendPoint,
+    FLEXIBLE_WEEKLY,
     HandoverBackupPackage,
+    LEGACY_FIXED_WEEKDAY,
     LeaveAdjustmentResult,
     PeriodSummaryReport,
     PrefectInput,
@@ -43,7 +47,12 @@ from nicegui_app.services.workflow_types import (
     WorkflowConflictError,
     WorkflowError,
 )
-from roster_core.generator import RosterGenerationError, generate_weekly_roster, validate_assignments
+from roster_core.generator import (
+    RosterGenerationError,
+    generate_weekly_roster,
+    legacy_assist_weekday_mapping,
+    validate_assignments,
+)
 from roster_core.models import Assignment, Prefect
 from roster_policy import (
     DUTY_SERVICE_TIME_WINDOWS,
@@ -59,6 +68,17 @@ from roster_policy import (
 
 DEMO_POLICY_VERSION = f"guest-demo-{DEMO_FIXTURE_VERSION}"
 _DEMO_BACKUP_NAME = "DEMO_MEMORY_SNAPSHOT"
+
+
+def _assist_assignment_mode_code(value: object) -> str:
+    raw_value = getattr(value, "value", value)
+    normalized = str(raw_value).strip()
+    if normalized not in ASSIST_ASSIGNMENT_MODE_CODES:
+        allowed = ", ".join(sorted(ASSIST_ASSIGNMENT_MODE_CODES))
+        raise WorkflowError(
+            f"Unsupported Assist assignment mode; expected one of: {allowed}."
+        )
+    return normalized
 
 
 class _DemoMaintenanceStatus:
@@ -220,6 +240,7 @@ class GuestWorkspaceAdapter:
         view = self._view()
         state = view.state
         self._assert_name_available(state, prefect_input.name_zh)
+        self._assert_assist_fixed_day_available(state, prefect_input)
         record = {
             "id": f"demo-prefect-{secrets.token_hex(6)}",
             "nameZh": prefect_input.name_zh.strip(),
@@ -262,6 +283,11 @@ class GuestWorkspaceAdapter:
         if current_version != reviewed_version:
             raise WorkflowConflictError("This demo prefect changed in another tab.")
         self._assert_name_available(state, prefect_input.name_zh, exclude_prefect_id=prefect_id)
+        self._assert_assist_fixed_day_available(
+            state,
+            prefect_input,
+            exclude_prefect_id=prefect_id,
+        )
         record.update(
             {
                 "nameZh": prefect_input.name_zh.strip(),
@@ -439,23 +465,45 @@ class GuestWorkspaceAdapter:
         week_start: date,
         *,
         history_priority_multiplier: float = 1.0,
+        assist_assignment_mode: AssistAssignmentMode | str = LEGACY_FIXED_WEEKDAY,
         expected_week_version: int | None = None,
         command_id: str | None = None,
     ) -> RosterWeekResult:
         self._require_modify()
         self._require_monday(week_start)
+        normalized_assist_mode = _assist_assignment_mode_code(assist_assignment_mode)
         view = self._view()
         state = view.state
         prefects = self._active_prefects(state)
         leave_days = self._leave_days(state, week_start)
+        previous_assist_assignments = self._previous_assist_weekday_assignments(
+            state,
+            week_start,
+        )
         try:
             generated = generate_weekly_roster(
                 prefects,
                 leave_days=leave_days,
                 history_priority_multiplier=history_priority_multiplier,
+                assist_assignment_mode=normalized_assist_mode,
+                assist_rotation_key=week_start.isoformat(),
+                previous_assist_assignments=previous_assist_assignments,
             )
         except RosterGenerationError as error:
             raise WorkflowError(f"Demo draft generation needs attention: {error}") from error
+        if normalized_assist_mode == LEGACY_FIXED_WEEKDAY:
+            assist_days = legacy_assist_weekday_mapping(prefects)
+            for record in state.get("prefects", []):
+                prefect_id = str(record.get("id", ""))
+                assigned_days = assist_days.get(prefect_id, [])
+                if (
+                    str(record.get("roleCode", record.get("role", "")))
+                    == PrefectRole.ASSISTANT_HEAD.value
+                    and str(record.get("fixedGeneralDuty", "NONE")) == "NONE"
+                    and len(assigned_days) == 1
+                ):
+                    record["fixedGeneralDuty"] = assigned_days[0].name
+                    record["version"] = int(record.get("version", 1)) + 1
         weeks = state.setdefault("weeks", [])
         week = self._week_by_start(state, week_start)
         current_version = int(week["version"]) if week is not None else 0
@@ -470,6 +518,7 @@ class GuestWorkspaceAdapter:
                 "version": 1,
                 "policyVersion": DEMO_POLICY_VERSION,
                 "historyPriorityMultiplier": float(history_priority_multiplier),
+                "assistAssignmentMode": normalized_assist_mode,
                 "generatedAt": _datetime_text(now),
                 "publishedAt": None,
                 "assignments": [],
@@ -481,6 +530,7 @@ class GuestWorkspaceAdapter:
         else:
             week["version"] = int(week["version"]) + 1
             week["historyPriorityMultiplier"] = float(history_priority_multiplier)
+            week["assistAssignmentMode"] = normalized_assist_mode
             week["generatedAt"] = _datetime_text(now)
             week["assignments"] = []
         assignment_id = self._next_assignment_id(state)
@@ -510,6 +560,7 @@ class GuestWorkspaceAdapter:
             assignment_count=len(generated),
             backup_path=None,  # type: ignore[arg-type]
             history_priority_multiplier=float(week["historyPriorityMultiplier"]),
+            assist_assignment_mode=str(week["assistAssignmentMode"]),
         )
 
     def roster_weeks(self) -> list[dict[str, object]]:
@@ -643,6 +694,9 @@ class GuestWorkspaceAdapter:
             assignment_count=len(week["assignments"]),
             backup_path=None,  # type: ignore[arg-type]
             history_priority_multiplier=float(week["historyPriorityMultiplier"]),
+            assist_assignment_mode=str(
+                week.get("assistAssignmentMode", FLEXIBLE_WEEKLY)
+            ),
         )
 
     def withdraw_published_roster(
@@ -1335,6 +1389,9 @@ class GuestWorkspaceAdapter:
             "status": str(week["status"]),
             "version": int(week["version"]),
             "historyPriorityMultiplier": float(week["historyPriorityMultiplier"]),
+            "assistAssignmentMode": str(
+                week.get("assistAssignmentMode", FLEXIBLE_WEEKLY)
+            ),
             "generatedAt": _parse_datetime(week.get("generatedAt")),
             "publishedAt": _parse_datetime(week.get("publishedAt")),
             "withdrawnAt": _parse_datetime(week.get("withdrawnAt")),
@@ -1372,6 +1429,26 @@ class GuestWorkspaceAdapter:
             ),
             None,
         )
+
+    @staticmethod
+    def _previous_assist_weekday_assignments(
+        state: Mapping[str, Any],
+        week_start: date,
+    ) -> dict[SchoolDay, str]:
+        previous_week = GuestWorkspaceAdapter._week_by_start(
+            state,
+            week_start - timedelta(days=7),
+        )
+        if previous_week is None:
+            return {}
+        return {
+            SchoolDay[str(row["day"])]: str(row["prefectId"])
+            for row in previous_week.get("assignments", [])
+            if row.get("status") == "active"
+            and row.get("prefectId")
+            and row.get("postCode") == "ASSIST_IN_CHARGE"
+            and str(row.get("day")) in SchoolDay.__members__
+        }
 
     @staticmethod
     def _assignment_record(week: Mapping[str, Any], assignment_id: int) -> dict[str, Any]:
@@ -1443,6 +1520,17 @@ class GuestWorkspaceAdapter:
             raise WorkflowError("Availability contains an invalid weekday.")
         if len(set(prefect_input.available_days)) != len(prefect_input.available_days):
             raise WorkflowError("Availability contains duplicate weekdays.")
+        if (
+            prefect_input.fixed_general_duty != "NONE"
+            and prefect_input.fixed_general_duty not in SchoolDay.__members__
+        ):
+            raise WorkflowError("Fixed duty contains an invalid weekday.")
+        if (
+            prefect_input.role_code == PrefectRole.ASSISTANT_HEAD.value
+            and prefect_input.fixed_general_duty != "NONE"
+            and prefect_input.fixed_general_duty not in prefect_input.available_days
+        ):
+            raise WorkflowError("Fixed duty must also be an available weekday.")
         if prefect_input.history_weight < 0 or prefect_input.history_duties < 0:
             raise WorkflowError("History values cannot be negative.")
 
@@ -1461,6 +1549,31 @@ class GuestWorkspaceAdapter:
             for row in state.get("prefects", [])
         ):
             raise WorkflowError("A demo prefect with this Chinese name already exists.")
+
+    @staticmethod
+    def _assert_assist_fixed_day_available(
+        state: Mapping[str, Any],
+        prefect_input: PrefectInput,
+        *,
+        exclude_prefect_id: str | None = None,
+    ) -> None:
+        if (
+            prefect_input.role_code != PrefectRole.ASSISTANT_HEAD.value
+            or prefect_input.fixed_general_duty == "NONE"
+        ):
+            return
+        if any(
+            row.get("active", True)
+            and str(row.get("roleCode", row.get("role", "")))
+            == PrefectRole.ASSISTANT_HEAD.value
+            and str(row.get("fixedGeneralDuty", "NONE"))
+            == prefect_input.fixed_general_duty
+            and str(row.get("id", "")) != exclude_prefect_id
+            for row in state.get("prefects", [])
+        ):
+            raise WorkflowConflictError(
+                "Another active Assistant Head Study Prefect already owns this fixed weekday."
+            )
 
     @staticmethod
     def _active_prefects(state: Mapping[str, Any]) -> list[Prefect]:

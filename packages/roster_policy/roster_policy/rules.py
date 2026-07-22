@@ -43,6 +43,19 @@ class PrefectRole(str, Enum):
     STUDY_PREFECT = "study_prefect"
 
 
+class AssistAssignmentMode(str, Enum):
+    """Stable policy codes for assigning the weekly Assist. in charge duty.
+
+    ``LEGACY_FIXED_WEEKDAY`` preserves a canonical weekday for each Assistant
+    Head Study Prefect. ``FLEXIBLE_WEEKLY`` deliberately rotates otherwise
+    equivalent candidates between weeks. Human-readable labels belong to the
+    presentation layer and must not be used as policy input.
+    """
+
+    LEGACY_FIXED_WEEKDAY = "legacy_fixed_weekday"
+    FLEXIBLE_WEEKLY = "flexible_weekly"
+
+
 _CHINESE_NAME_PATTERN = re.compile(
     r"^[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\U00020000-\U0002FA1F·・．\- ]+$"
 )

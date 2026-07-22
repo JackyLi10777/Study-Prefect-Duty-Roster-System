@@ -9,7 +9,11 @@ from nicegui import ui
 
 from nicegui_app.runtime import get_workflow
 from nicegui_app.services.roster_presentation import roster_display_label
-from nicegui_app.services.roster_workflow import WorkflowError
+from nicegui_app.services.roster_workflow import (
+    FLEXIBLE_WEEKLY,
+    LEGACY_FIXED_WEEKDAY,
+    WorkflowError,
+)
 from nicegui_app.ui.access_control import render_roster_share_action, revoke_withdrawn_roster_shares
 from nicegui_app.ui.i18n import day_label, t
 from nicegui_app.ui.navigation import navigate_to
@@ -38,6 +42,28 @@ from nicegui_app.ui.workflow_navigation import (
 )
 from roster_core import HISTORY_PRIORITY_MULTIPLIER_MAX, HISTORY_PRIORITY_MULTIPLIER_MIN
 from roster_policy import SchoolDay
+
+
+_ASSIST_MODE_LABEL_KEYS = {
+    LEGACY_FIXED_WEEKDAY: "assist_assignment_mode_legacy",
+    FLEXIBLE_WEEKLY: "assist_assignment_mode_flexible",
+}
+_ASSIST_MODE_DETAIL_KEYS = {
+    LEGACY_FIXED_WEEKDAY: "assist_assignment_mode_legacy_detail",
+    FLEXIBLE_WEEKLY: "assist_assignment_mode_flexible_detail",
+}
+
+
+def _assist_assignment_mode_code(value: object, *, fallback: str) -> str:
+    """Keep stable rule codes separate from their bilingual presentation labels."""
+
+    normalized = str(value or "").strip()
+    return normalized if normalized in _ASSIST_MODE_LABEL_KEYS else fallback
+
+
+def _assist_assignment_mode_label(value: object) -> str:
+    mode = _assist_assignment_mode_code(value, fallback=FLEXIBLE_WEEKLY)
+    return t(_ASSIST_MODE_LABEL_KEYS[mode])
 
 
 def _roster_workflow_steps(
@@ -193,6 +219,13 @@ def rosters_page() -> None:
                         week["weekStart"]: float(week.get("historyPriorityMultiplier", 1.0))
                         for week in weeks
                     }
+                    assist_mode_by_week = {
+                        week["weekStart"]: _assist_assignment_mode_code(
+                            week.get("assistAssignmentMode"),
+                            fallback=FLEXIBLE_WEEKLY,
+                        )
+                        for week in weeks
+                    }
                     version_by_week = {
                         week["weekStart"]: int(week["version"])
                         for week in weeks
@@ -201,6 +234,44 @@ def rosters_page() -> None:
                         initial_week = date.fromisoformat(str(week_input.value))
                     except ValueError:
                         initial_week = _next_monday()
+                    initial_assist_mode = assist_mode_by_week.get(
+                        initial_week.isoformat(),
+                        LEGACY_FIXED_WEEKDAY,
+                    )
+                    with ui.element("section").classes("sy-surface-subtle w-full p-4 mt-4").props(
+                        "data-testid=assist-assignment-mode-panel"
+                    ):
+                        ui.label(t("assist_assignment_mode_title")).classes("font-semibold")
+                        ui.label(t("assist_assignment_mode_detail")).classes(
+                            "text-sm leading-6 text-[var(--sy-muted)] mt-1"
+                        )
+                        assist_assignment_mode = ui.select(
+                            label=t("assist_assignment_mode_label"),
+                            options={
+                                LEGACY_FIXED_WEEKDAY: t("assist_assignment_mode_legacy"),
+                                FLEXIBLE_WEEKLY: t("assist_assignment_mode_flexible"),
+                            },
+                            value=initial_assist_mode,
+                        ).props(
+                            "data-testid=assist-assignment-mode "
+                            "aria-describedby=assist-mode-description"
+                        ).classes("w-full mt-3")
+                        assist_mode_explanation = ui.label(
+                            t(_ASSIST_MODE_DETAIL_KEYS[initial_assist_mode])
+                        ).props(
+                            "id=assist-mode-description aria-live=polite"
+                        ).classes("text-sm leading-6 text-[var(--sy-muted)]")
+                        ui.label(t("assist_assignment_mode_constraints")).classes(
+                            "text-xs leading-5 text-[var(--sy-muted)]"
+                        )
+
+                    def update_assist_mode_explanation(value: object) -> None:
+                        mode = _assist_assignment_mode_code(value, fallback=LEGACY_FIXED_WEEKDAY)
+                        assist_mode_explanation.set_text(t(_ASSIST_MODE_DETAIL_KEYS[mode]))
+
+                    assist_assignment_mode.on_value_change(
+                        lambda event: update_assist_mode_explanation(event.value)
+                    )
                     with ui.element("section").classes("sy-surface-subtle w-full p-4 mt-4"):
                         ui.label(t("history_priority_title")).classes("font-semibold")
                         ui.label(t("history_priority_detail")).classes(
@@ -338,6 +409,17 @@ def rosters_page() -> None:
                                 week_input.run_method("focus")
                             return None
                         return selected
+
+                    def refresh_assist_assignment_mode() -> None:
+                        selected = selected_week_start()
+                        mode = (
+                            assist_mode_by_week.get(selected.isoformat(), LEGACY_FIXED_WEEKDAY)
+                            if selected
+                            else LEGACY_FIXED_WEEKDAY
+                        )
+                        assist_assignment_mode.value = mode
+                        assist_assignment_mode.update()
+                        update_assist_mode_explanation(mode)
 
                     requirements_area = ui.column().classes("w-full gap-2 mt-4")
 
@@ -497,6 +579,7 @@ def rosters_page() -> None:
                             refresh_leave_list(),
                             refresh_requirements(),
                             refresh_history_priority(),
+                            refresh_assist_assignment_mode(),
                         ),
                     )
                     refresh_leave_list()
@@ -513,6 +596,10 @@ def rosters_page() -> None:
                             lambda: workflow.generate_and_save_draft(
                                 week_start,
                                 history_priority_multiplier=float(history_priority.value or 1.0),
+                                assist_assignment_mode=_assist_assignment_mode_code(
+                                    assist_assignment_mode.value,
+                                    fallback=LEGACY_FIXED_WEEKDAY,
+                                ),
                                 expected_week_version=expected_week_version,
                                 command_id=generation_command_id,
                             ),
@@ -543,7 +630,8 @@ def rosters_page() -> None:
                                 ui.label(str(week["weekStart"])).classes("text-lg font-semibold")
                                 ui.label(
                                     f"{t('version')} {week['version']}  |  {t('generated_at')}: {week['generatedAt']:%Y-%m-%d %H:%M}  |  "
-                                    f"{t('history_priority_used', value=history_priority_value)}"
+                                    f"{t('history_priority_used', value=history_priority_value)}  |  "
+                                    f"{t('assist_assignment_mode_used', mode=_assist_assignment_mode_label(week.get('assistAssignmentMode')))}"
                                 ).classes("sy-roster-week-meta text-sm text-[var(--sy-muted)]")
                             status = str(week["status"])
                             status_tone = "stable" if status == "published" else "attention" if status == "withdrawn" else "action"
@@ -613,6 +701,12 @@ def roster_detail_page(roster_week_id: int) -> None:
                     t(
                         "history_priority_used",
                         value=f"{float(week.get('historyPriorityMultiplier', 1.0)):.1f}",
+                    )
+                ).classes("text-sm text-[var(--sy-muted)]")
+                ui.label(
+                    t(
+                        "assist_assignment_mode_used",
+                        mode=_assist_assignment_mode_label(week.get("assistAssignmentMode")),
                     )
                 ).classes("text-sm text-[var(--sy-muted)]")
             with ui.row().classes("sy-mobile-actions sy-roster-detail-actions gap-2"):

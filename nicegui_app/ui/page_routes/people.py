@@ -168,6 +168,30 @@ def _show_prefect_dialog(existing: dict[str, object] | None = None) -> None:
             value=list(existing["availableDays"]) if existing else [],
             multiple=True,
         ).classes("w-full")
+        ui.label(t("availability_assignment_help")).classes(
+            "text-xs leading-5 text-[var(--sy-muted)] -mt-2"
+        )
+        fixed_assist_day = ui.select(
+            label=t("fixed_assist_day"),
+            options={"NONE": t("fixed_assist_day_auto"), **day_options},
+            value=(
+                str(existing.get("fixedGeneralDuty", "NONE") or "NONE")
+                if existing
+                else "NONE"
+            ),
+        ).props("aria-describedby=fixed-assist-day-help").classes("w-full")
+        fixed_assist_help = ui.label(t("fixed_assist_day_help")).classes(
+            "text-xs leading-5 text-[var(--sy-muted)] -mt-2"
+        )
+        fixed_assist_help.props("id=fixed-assist-day-help")
+
+        def refresh_fixed_assist_visibility() -> None:
+            visible = str(role.value) == "assistant_head"
+            fixed_assist_day.set_visibility(visible)
+            fixed_assist_help.set_visibility(visible)
+
+        role.on_value_change(lambda _event: refresh_fixed_assist_visibility())
+        refresh_fixed_assist_visibility()
         mentoring = ui.switch(t("needs_mentoring"), value=bool(existing["needsMentoring"]) if existing else False)
         remarks = ui.textarea(label=t("remarks"), value=existing["remarks"] if existing else "").props(
             "name=prefect-remarks autocomplete=off"
@@ -186,6 +210,15 @@ def _show_prefect_dialog(existing: dict[str, object] | None = None) -> None:
                 ui.notify(t("prefect_availability_required"), type="warning")
                 availability.run_method("focus")
                 return
+            fixed_assist_value = str(fixed_assist_day.value or "NONE")
+            if (
+                str(role.value) == "assistant_head"
+                and fixed_assist_value != "NONE"
+                and fixed_assist_value not in set(availability.value or [])
+            ):
+                ui.notify(t("fixed_assist_day_unavailable"), type="warning")
+                fixed_assist_day.run_method("focus")
+                return
             prefect_input = PrefectInput(
                 name_zh=str(name_zh.value or ""),
                 name_en=str(name_en.value or "") or None,
@@ -194,6 +227,15 @@ def _show_prefect_dialog(existing: dict[str, object] | None = None) -> None:
                 role_code=str(role.value),
                 available_days=tuple(availability.value or []),
                 needs_mentoring=bool(mentoring.value),
+                fixed_general_duty=(
+                    fixed_assist_value
+                    if str(role.value) == "assistant_head"
+                    else (
+                        str(existing.get("fixedGeneralDuty", "NONE") or "NONE")
+                        if existing
+                        else "NONE"
+                    )
+                ),
                 remarks=str(remarks.value or ""),
             )
             save_action = (

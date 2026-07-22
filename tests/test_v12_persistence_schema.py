@@ -154,7 +154,7 @@ def test_0007_to_head_preserves_data_and_adds_v12_contracts(tmp_path: Path) -> N
     command.upgrade(config, "head")
 
     with sqlite3.connect(database_path) as connection:
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0010",)
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0011",)
         assert connection.execute(
             "SELECT reason, version FROM leave_declarations WHERE prefect_id = ?",
             ("prefect-existing",),

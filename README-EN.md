@@ -21,6 +21,7 @@ The public entrance presents one prepared duty desk in paired morning-light and 
 
 [Traditional Chinese README](README.md) · [Operator guide](docs/OPERATOR_GUIDE.md)
 · [Architecture](docs/NICEGUI_ARCHITECTURE.md) · [Release status](PROJECT_STATUS.md)
+· [Assist assignment modes](docs/ROSTER_POLICY_MODES.md)
 · [Canonical-site access guide](docs/PUBLIC_ROSTER_VIEWER.md)
 
 ## Start here
@@ -236,22 +237,27 @@ complete risk matrix is in [`UPDATE_WORKFLOW.md`](docs/UPDATE_WORKFLOW.md).
 
 ## Operator workflow
 
-1. Verify Chinese names, roles, classes, and available days.
-2. Record known pre-generation leave for the correct Monday-based week.
-3. Generate and review the draft. Vacancies remain visible.
-4. Make any manual draft change through the audited reason form.
-5. Publish once. Publication—not draft generation—posts `history_weight`.
-6. Download the Chinese or English landscape A4 schedule; names remain Chinese. The export dialog can hide the crest. The clean sharing version omits the internal-use line, page number, and Scripture hint by default; enable the supplementary footer only for an intentional archival copy.
-7. For a late absence, use the published-duty adjustment workflow rather than
+1. Verify Chinese names, roles, classes, available days, and each Assistant Head Study Prefect's fixed Assist weekday when the legacy mode is required.
+2. Choose **Fixed weekday** or **Flexible weekly** before generating. A new week defaults to Fixed weekday; an existing week reopens with its saved mode.
+3. Record known pre-generation leave for the correct Monday-based week.
+4. Generate and review the draft. Vacancies remain visible.
+5. Make any manual draft change through the audited reason form.
+6. Publish once. Publication—not draft generation—posts `history_weight`.
+7. Download the Chinese or English landscape A4 schedule; names remain Chinese. The export dialog can hide the crest. The clean sharing version omits the internal-use line, page number, and Scripture hint by default; enable the supplementary footer only for an intentional archival copy.
+8. For a late absence, use the published-duty adjustment workflow rather than
    regenerating the week.
-8. Review fairness, verified backups, handover readiness, and recovery evidence.
-9. When recipients need browser-direct viewing, explicitly create an expiring,
+9. Review fairness, verified backups, handover readiness, and recovery evidence.
+10. When recipients need browser-direct viewing, explicitly create an expiring,
    revocable same-host `/view#…` link for the published roster. After a
    published-duty adjustment, issue a fresh link and revoke the old one.
+
+Fixed-weekday mode keeps each active Assistant Head Study Prefect on the same weekday while the directory and declared availability remain unchanged. A leave replacement covers that duty only and does not silently become the permanent owner. Flexible-weekly mode remains deterministic and auditable, honours declared available days, and avoids repeating the immediately previous Assist weekday when fairness and feasibility permit. See [Assist assignment modes](docs/ROSTER_POLICY_MODES.md).
 
 ## Policy invariants
 
 - Assistant Head Study Prefects serve only `Assist. in charge`.
+- Fixed-weekday mode preserves the configured Assistant Head Study Prefect weekday; Flexible-weekly mode rotates only among declared available weekdays.
+- Pre-generation leave can cause a one-duty replacement, but never rewrites the fixed-weekday owner.
 - Study Prefects serve only Rooms 302, 303, and 202.
 - Room 302: one prefect, Monday–Friday.
 - Room 303: two prefects, Monday–Friday.

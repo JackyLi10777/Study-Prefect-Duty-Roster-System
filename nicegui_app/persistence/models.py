@@ -76,6 +76,10 @@ class RosterWeekRecord(Base):
             "status IN ('draft', 'published', 'withdrawn')",
             name="ck_roster_week_status",
         ),
+        CheckConstraint(
+            "assist_assignment_mode IN ('legacy_fixed_weekday', 'flexible_weekly')",
+            name="ck_roster_week_assist_assignment_mode",
+        ),
         Index(
             "uq_roster_weeks_active_week_start",
             "week_start",
@@ -90,6 +94,11 @@ class RosterWeekRecord(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
     policy_version: Mapped[str] = mapped_column(String(32))
     history_priority_multiplier: Mapped[float] = mapped_column(Float, default=1.0, server_default="1.0")
+    assist_assignment_mode: Mapped[str] = mapped_column(
+        String(32),
+        default="flexible_weekly",
+        server_default="flexible_weekly",
+    )
     generated_at: Mapped[datetime] = mapped_column(DateTime)
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
