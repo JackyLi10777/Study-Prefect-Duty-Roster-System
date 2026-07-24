@@ -43,6 +43,14 @@ def test_motion_runtime_is_purposeful_interruptible_and_reduced_motion_safe() ->
     pointer_scope = motion.split("const pointerSurfaceSelector", 1)[1].split("].join", 1)[0]
     for static_surface in (".sy-flow-step", ".sy-architecture-layer", ".sy-storage-lifecycle"):
         assert static_surface not in pointer_scope
+    ambient_scope = motion.split("const ambientPointerSurfaceSelector", 1)[1].split("].join", 1)[0]
+    assert ".sy-team-role" in ambient_scope
+    assert ".sy-devotional-companion" in ambient_scope
+    assert 'data-sy-ambient-light="true"' in ambient_scope
+    for static_surface in (".sy-flow-step", ".sy-architecture-layer", ".sy-storage-lifecycle"):
+        assert static_surface not in ambient_scope
+    assert "sy-pointer-ambient" in motion
+    assert "enhancePointerSurface(surface, 'ambient')" in motion
 
 
 def test_motion_assets_are_loaded_from_same_origin_only() -> None:

@@ -33,7 +33,7 @@
     '.sy-architecture-grid',
     '.sy-trust-evidence-grid'
   ].join(',');
-  /* Pointer light is reserved for real links/actions and editorial showcase surfaces. */
+  /* Pointer light for real links/actions (lift + glow) and calm ambient editorial cards (glow only). */
   const pointerSurfaceSelector = [
     '.sy-dashboard-history-item:has(.q-btn)',
     '.sy-reference-index-card:has(.q-btn)',
@@ -42,6 +42,21 @@
     '.sy-solution-card:has(.q-btn)',
     '.sy-engineering-resource-link',
     '.sy-co-creation'
+  ].join(',');
+  /* Non-interactive paper surfaces may receive a soft follow-light without implying clickability. */
+  const ambientPointerSurfaceSelector = [
+    '.sy-team-role',
+    '.sy-capability-card',
+    '.sy-trust-evidence-card',
+    '.sy-service-stage',
+    '.sy-platform-value',
+    '.sy-devotional-companion',
+    '.sy-platform-map-node',
+    '.sy-adjustment-step',
+    '.sy-acceptance-panel',
+    '.sy-policy-panel',
+    '.sy-surface[data-sy-ambient-light="true"]',
+    '.sy-surface-subtle[data-sy-ambient-light="true"]'
   ].join(',');
   const interactiveIconSelector = [
     '.q-icon.material-icons',
@@ -175,18 +190,25 @@
     controller?.abort();
     pointerControllers.delete(surface);
     surface.querySelector(':scope > .sy-pointer-light')?.remove();
-    surface.classList.remove('sy-pointer-reactive');
+    surface.classList.remove('sy-pointer-reactive', 'sy-pointer-ambient');
     delete surface.dataset.syPointerReady;
+    delete surface.dataset.syPointerMode;
     surface.style.removeProperty('--sy-pointer-x');
     surface.style.removeProperty('--sy-pointer-y');
   };
 
-  const enhancePointerSurface = (surface) => {
+  const enhancePointerSurface = (surface, mode = 'action') => {
     if (surface.dataset.syPointerReady === 'true' || reducedMotion()) return;
+    if (mode === 'ambient' && surface.matches(pointerSurfaceSelector)) {
+      /* Prefer the action treatment only when the surface is already an action card. */
+      mode = 'action';
+    }
     surface.dataset.syPointerReady = 'true';
+    surface.dataset.syPointerMode = mode;
     surface.classList.add('sy-pointer-reactive');
+    if (mode === 'ambient') surface.classList.add('sy-pointer-ambient');
     const light = document.createElement('span');
-    light.className = 'sy-pointer-light';
+    light.className = mode === 'ambient' ? 'sy-pointer-light sy-pointer-light--ambient' : 'sy-pointer-light';
     light.setAttribute('aria-hidden', 'true');
     surface.appendChild(light);
 
@@ -379,7 +401,8 @@
     iconStoryTouchTimers.set(host, timer);
   };
   const hydratePointers = (root = document) => {
-    queryWithin(root, pointerSurfaceSelector).forEach(enhancePointerSurface);
+    queryWithin(root, pointerSurfaceSelector).forEach((surface) => enhancePointerSurface(surface, 'action'));
+    queryWithin(root, ambientPointerSurfaceSelector).forEach((surface) => enhancePointerSurface(surface, 'ambient'));
   };
   const removePointersWithin = (root) => {
     if (!(root instanceof Element)) return;
