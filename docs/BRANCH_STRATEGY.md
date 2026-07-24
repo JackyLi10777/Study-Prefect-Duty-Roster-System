@@ -3,11 +3,25 @@
 This repository keeps deployment generations visible instead of rewriting the
 legacy Streamlit history.
 
-| Branch | Runtime | Purpose |
+## Active branches
+
+| Branch | Role | Operator |
 |---|---|---|
-| `main` | NiceGUI, SQLite, Windows/Linux self-hosted | Current maintained release and handover source |
-| `nicegui-self-hosted` | Same release snapshot as `main` at publication | Platform-labelled deployment branch for a dedicated Windows PC or Linux host |
-| `streamlit-cloud` | Streamlit Cloud reference implementation | Preserved legacy cloud generation, renamed from `ai` without rewriting its commit |
+| `main` | Protected release line | **Codex only** (via PR merge) |
+| `codex/mainline` | Codex primary development line (tracks `main`) | Codex |
+| `collab/agent-workspace` | Other AI agent workspace (forked from `main`) | Other AI agents → PR to `codex/mainline` |
+| `nicegui-self-hosted` | Platform snapshot at release | Codex |
+| `streamlit-cloud` | Historical Streamlit reference | Read-only |
+
+## Worktree layout
+
+| Local path | Branch |
+|---|---|
+| `D:\code_v3` | `codex/mainline` |
+| `D:\code_v3-agent` | `collab/agent-workspace` |
+
+AI agents must follow [`docs/AI_AGENT_GIT_GUIDE.md`](AI_AGENT_GIT_GUIDE.md) for
+commit conventions, branch rules, and the PR workflow.
 
 ## Rules
 
