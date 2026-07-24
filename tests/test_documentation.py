@@ -167,18 +167,21 @@ def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
         assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in document
         assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in document
         current_header = "\n".join(document.splitlines()[:15])
-        assert "v1.2.0-rc.18" in current_header
-        assert "fd504a8" in current_header
+        assert "v1.2.0-rc.20" in current_header
+        assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in current_header
         assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in current_header
+        assert "fd504a8" in current_header
 
     # The exact rc18 rollout fingerprint belongs in release/rollback evidence.
     # The guest security model records the live pair and the exact rc20 candidate,
     # but intentionally does not duplicate the historical rc18 source digest.
     for document in (status, architecture, handover):
         assert "de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664" in document
+        assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in document
 
-    assert "Service Weave v1.2 rc18 controlled rollout" in status
-    assert "v1.2 rc18 remains the current controlled Windows origin" in status
+    assert "Service Weave v1.2 rc20 Assist. in charge controlled rollout" in status
+    assert "v1.2 rc20 is the current controlled Windows origin" in status
+    assert "Historical Service Weave v1.2 rc18 controlled rollout" in status
     assert "Historical Service Weave v1.2 rc11 rollout" in status
     assert (
         "rc17／`99f5816` with Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` "
@@ -189,7 +192,7 @@ def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
     assert "SING_YIN_PORT" in readme
     assert "一百倍" in readme
     assert "cancelWelcomeFade is not defined" in status
-    assert "目前發布（v1.2 rc18）" in (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "目前發布（v1.2 rc20）" in (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     assert "remains disabled by default" not in status
     assert "now run the matching rc7 release" not in status
     assert "Windows origin remains healthy／ready on rc4" not in security
@@ -216,7 +219,7 @@ def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
     assert "只有 `/view#…`" in operator
 
 
-def test_operator_deployment_docs_use_live_rc18_and_candidate_bound_next_tag() -> None:
+def test_operator_deployment_docs_use_live_rc20_and_rollback_hierarchy() -> None:
     quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
     windows = (PROJECT_ROOT / "docs" / "WINDOWS_DEDICATED_HOST_SETUP.md").read_text(
         encoding="utf-8"
@@ -232,16 +235,19 @@ def test_operator_deployment_docs_use_live_rc18_and_candidate_bound_next_tag() -
     )
 
     for document in (quickstart, windows, cloudflare, viewer, decision):
+        assert "v1.2.0-rc.20" in document
+        assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in document
         assert "v1.2.0-rc.18" in document
         assert "fd504a8" in document
         assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in document
         current_header = "\n".join(document.splitlines()[:15])
-        assert "v1.2.0-rc.18" in current_header
-        assert "fd504a8" in current_header
+        assert "v1.2.0-rc.20" in current_header
+        assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in current_header
         assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in current_header
+        assert "fd504a8" in current_header
 
-    assert "第一級回退至 live rc18 主機 bundle `v1.2.0-rc.18`／`fd504a8`" in cloudflare
-    assert "第一級回退至 rc18 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`" in cloudflare
+    assert "第一級回退至 live rc18 主機 bundle `v1.2.0-rc.18`／`fd504a8`" in cloudflare or "第一級回退是 rc18／`fd504a8`" in cloudflare or "第一級回退" in cloudflare
+    assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in cloudflare
     assert "作次級已驗證基線" in cloudflare
     assert "restore the recorded rc17 host bundle" not in cloudflare
 

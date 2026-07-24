@@ -131,6 +131,10 @@ def test_pointer_hover_motion_is_scoped_and_reduced_motion_safe() -> None:
     assert "@media (hover: hover) and (pointer: fine)" in theme
     assert ".sy-pointer-reactive" in theme
     assert ".sy-pointer-light" in theme
+    assert ".sy-pointer-ambient" in theme
+    assert ".sy-pointer-light--ambient" in theme
+    assert ".sy-pointer-reactive.sy-pointer-ambient:hover" in theme
+    assert "transform: none" in theme.split(".sy-pointer-reactive.sy-pointer-ambient:hover", 1)[1][:120]
     assert "--sy-pointer-x" in theme and "--sy-pointer-y" in theme
     assert ".q-expansion-item .q-item { cursor: pointer; }" in theme
     assert "prefers-reduced-motion: reduce" in theme
