@@ -226,6 +226,24 @@ class RequestTracingMiddleware(BaseHTTPMiddleware):
             response.headers["Referrer-Policy"] = "no-referrer"
             response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
             response.headers["X-Frame-Options"] = "SAMEORIGIN"
+            response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+            if category not in {"asset", "nicegui_internal"}:
+                # NiceGUI's page shell injects inline scripts and styles, so
+                # 'unsafe-inline' is required. External script/style hosts stay blocked.
+                response.headers["Content-Security-Policy"] = (
+                    "default-src 'self'; "
+                    "script-src 'self' 'unsafe-inline'; "
+                    "style-src 'self' 'unsafe-inline'; "
+                    "img-src 'self' data:; "
+                    "font-src 'self'; "
+                    "connect-src 'self' ws: wss:; "
+                    "media-src 'self'; "
+                    "frame-src https://www.youtube-nocookie.com; "
+                    "frame-ancestors 'none'; "
+                    "base-uri 'none'; "
+                    "form-action 'self'; "
+                    "object-src 'none'"
+                )
             if category not in {"asset", "nicegui_internal"}:
                 response.headers["Cache-Control"] = "no-store"
             duration_ms = round((perf_counter() - started_at) * 1000)
