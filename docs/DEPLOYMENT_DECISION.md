@@ -1,6 +1,6 @@
 # 部署與遠端存取決策指南 / Deployment decision
 
-> **目前基線與候選：**受控 Windows origin 仍運行 live `v1.2.0-rc.18`／`fd504a8`；canonical Worker 仍是已驗證 version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`。`v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 是尚待提升權限 Windows 切換的已驗證候選：290 個來源檔以 fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 release gate、839 Python、3 motion 及 40 Worker contract。它加入 Assist 固定星期／每週靈活模式與 additive migration `0011_assist_assignment_mode`。Worker source／設定沒有改動，本次沿用既有 Worker，不重新部署。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
+> **目前基線：**受控 Windows origin 運行 live `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；canonical Worker 仍是已驗證 version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`（source／設定未變，刻意不重新部署）。290 個來源檔以 fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 release gate；切換前備份 `20260722-122411-304415-manual_verified_backup.sqlite3`／SHA-256 `9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0` 完成隔離還原與 migration `0011_assist_assignment_mode`。Assist 固定星期／每週靈活模式已上線。第一級回退是 rc18／`fd504a8` 與同一 Worker。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
 
 ## 結論
 
@@ -26,19 +26,19 @@ Windows 11 專用主機：單一 NiceGUI origin
 
 NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另行固定於 `127.0.0.1:22` 及 `[::1]:22`，只接受 Ed25519 金鑰，不開放 LAN、公網、防火牆入站規則或路由器轉發；日後校外 SSH 只能經獨立的 Cloudflare 私有路由進入。
 
-## Live rc18、rc20 候選與回退層級
+## Live rc20 與回退層級
 
 | 層 | 現況 |
 |---|---|
-| `C:\SingYinRoster` | live `v1.2.0-rc.18`／`fd504a8`；健康、ready、loopback-only；endpoint 由受保護設定統一決定 |
-| Cloudflare Worker／Access／Tunnel | Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` live；Access 精確保護 `/auth/login`；Tunnel／VPC 連到單一 origin |
-| rc20 已驗證候選 | `v1.2.0-rc.20`／`e3d84858…`／`93c6c938…`；14／14 gate 已通過，但 Windows deployment report、新正式備份／隔離還原及 canonical smoke 尚未產生 |
-| rc20 第一級回退 | 回復上述 rc18 host／Worker exact pair；先核對 deployment report，再驗證 health、readiness、canonical user flows 及資料狀態 |
+| `C:\SingYinRoster` | live `v1.2.0-rc.20`／`e3d8485`；健康、ready、`writeReady=true`、loopback-only；endpoint 由受保護設定統一決定 |
+| Cloudflare Worker／Access／Tunnel | Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` live（rc20 刻意沿用）；Access 精確保護 `/auth/login`；Tunnel／VPC 連到單一 origin |
+| rc20 來源與部署證據 | `v1.2.0-rc.20`／`e3d84858…`／`93c6c938…`；14／14 gate；備份 `20260722-122411-304415-manual_verified_backup.sqlite3`／`9f0b9c58…` 隔離還原通過 |
+| 第一級回退 | 回復 rc18／`fd504a8` host 與同一 Worker exact pair；先核對 deployment report，再驗證 health、readiness、canonical user flows 及資料狀態 |
 | 次級已驗證基線 | rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b`；只有 rc18 無法安全恢復且事故負責人批准第二級復原時使用 |
 | `codex/frontend-guest-performance-rc16` | rc17 來源分支；14 項 gate、標籤、Windows bundle 及 Worker staged rollout 已完成 |
-| `SING_YIN_UNIFIED_GUEST` | live rc18 的受保護主機設定為 `1`；後續候選不得以切換旗標取代完整驗證 |
+| `SING_YIN_UNIFIED_GUEST` | live rc20 的受保護主機設定為 `1`；後續候選不得以切換旗標取代完整驗證 |
 
-rc4–rc17 或 v1.1 的既有 Worker version ID、主機 tag 及成功紀錄只屬歷史／回退證據；rc17 只屬次級已驗證基線。它們都不可代替 live rc18 或 rc20 自己的來源指紋與部署證據。
+rc4–rc18 或 v1.1 的既有 Worker version ID、主機 tag 及成功紀錄只屬歷史／回退證據；rc18 是第一級回退，rc17 只屬次級已驗證基線。它們都不可代替 live rc20 自己的來源指紋與部署證據。
 
 既有 **私有 Cloudflare Tunnel + WARP** 路徑仍保留作維護後備。
 交接時要保留並重新核對 **WARP device-enrollment policy**。其歷史狀態

@@ -8,9 +8,9 @@
 
 > **SSH 維護狀態（2026-07-17）：** Windows OpenSSH Server 已以金鑰限定模式運行，只監聽 `127.0.0.1:22` 及 `[::1]:22`；密碼、互動式登入、轉發及 Windows 公開入站規則均停用。安裝、驗證、金鑰輪換及緊急停用程序見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。這是維護入口，不是另一個使用者網站。
 
-> **目前狀態（live rc18）：** `C:\SingYinRoster` 已固定於不可變標籤 `v1.2.0-rc.18`／`fd504a8`，並完成正式資料快照、隔離還原及受控切換。`Sing Yin Roster Host` 由非管理員 `SingYinRosterSvc` 帳戶運行；實際 loopback endpoint 由受保護 `.env` 的 `SING_YIN_HOST`／`SING_YIN_PORT` 決定，現為 `127.0.0.1:8080`。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量；Tunnel、Public、Guest、唯讀 Viewer、Access 轉向及 VPC health 已核對。rc18 的停止圍欄、健康、ready 與回復檢查均讀取同一受保護 endpoint；正式備份及隔離還原已通過。
+> **目前狀態（live rc20）：** `C:\SingYinRoster` 已固定於不可變標籤 `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；第一級回退 `v1.2.0-rc.18`／`fd504a8`，並完成正式資料快照、隔離還原及受控切換。`Sing Yin Roster Host` 由非管理員 `SingYinRosterSvc` 帳戶運行；實際 loopback endpoint 由受保護 `.env` 的 `SING_YIN_HOST`／`SING_YIN_PORT` 決定，現為 `127.0.0.1:8080`。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量；Tunnel、Public、Guest、唯讀 Viewer、Access 轉向及 VPC health 已核對。rc18 的停止圍欄、健康、ready 與回復檢查均讀取同一受保護 endpoint；正式備份及隔離還原已通過。
 
-> **rc20 已驗證但尚未部署：**annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` 已在乾淨候選工作樹以 fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（839 Python＋3 motion＋40 Worker contract）。它包含 Assist. in charge 固定星期／每週靈活兩種模式及 additive migration `0011_assist_assignment_mode`。目前尚未完成需要提升權限的受控 Windows 切換，所以 `C:\SingYinRoster` 仍是 live rc18；不要把 branch、未提交 source 或一般開發樹手動複製進正式主機。rc20 的 Worker source／設定沒有改動，本次不重新部署 Worker，仍沿用 `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`。
+> **rc20 已受控部署（真人驗收仍未簽署）：**annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` 已以 fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（839 Python＋3 motion＋40 Worker contract），並完成受控 Windows 切換。它包含 Assist. in charge 固定星期／每週靈活兩種模式及 additive migration `0011_assist_assignment_mode`。切換前備份 `20260722-122411-304415-manual_verified_backup.sqlite3`／SHA-256 `9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0` 已通過隔離還原。不要把 branch、未提交 source 或一般開發樹手動複製進正式主機。rc20 的 Worker source／設定沒有改動，本次不重新部署 Worker，仍沿用 `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`。第一級回退是 rc18／`fd504a8` 與同一 Worker。
 
 ---
 

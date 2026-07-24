@@ -4,25 +4,28 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
-> **Live v1.2 rc18 status:** the controlled Windows origin and canonical Worker
-> use `v1.2.0-rc.18`／`fd504a8`. The 288-input release passed all 14 formal gates
-> with fingerprint `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664`.
+> **Live v1.2 rc20 status:** the controlled Windows origin uses
+> `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`; the canonical Worker remains
+> `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` (intentionally not redeployed). The 290-input release
+> passed all 14 formal gates with fingerprint
+> `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`. First-level rollback is
+> rc18／`fd504a8` with fingerprint `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664`.
 > A fresh production backup, checksum, fairness reconciliation and isolated
 > restore passed before cutover. Worker version
 > `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` passed staged-version and
 > canonical health／entrance／viewer checks before receiving 100% traffic.
 > Supervised human acceptance remains required.
 
-> **rc20 candidate boundary:** annotated tag `v1.2.0-rc.20` points to commit
+> **rc20 live boundary:** annotated tag `v1.2.0-rc.20` points to commit
 > `e3d84858abfe23714929a87c4bcf76e55999ce7c`. Its 290-source-file fingerprint
 > `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`
 > passed all 14 formal gates, including 839 Python, 3 motion, and 40 Worker tests.
-> This is machine-verified candidate evidence, not deployment evidence. The
-> protected Windows origin has not yet switched from rc18; Worker source and
-> configuration are unchanged, so Worker version
+> The protected Windows origin has switched to this exact commit. Pre-switch backup
+> `20260722-122411-304415-manual_verified_backup.sqlite3`／SHA-256
+> `9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0` passed isolated
+> restore. Worker source and configuration are unchanged, so Worker version
 > `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` remains live without a new Worker
-> rollout. Production backup／isolated restore, elevated origin cutover,
-> canonical smoke, and supervised human acceptance remain outstanding.
+> rollout. Supervised human acceptance remains outstanding.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 

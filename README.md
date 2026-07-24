@@ -49,7 +49,7 @@
 | `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；歷史整合來源 | rc17 的多用戶、操作層級及前端穩定性整合線；現行發布已由 rc18 取代 |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；歷史整合來源 | 前一階段 Service Weave v1.2 編輯式整合線 |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | `v1.2.0-rc.20` 正式候選來源；正式 Windows origin 仍為 rc18，等待 UAC 核准部署 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.20` 正式來源；`C:\SingYinRoster` 已切換至同一 annotated tag |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -63,15 +63,13 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 網站公開入口、分享檢視器及 NiceGUI 工作台共用頁尾署名 `Copyright © 2026 LI Chuangjie`；供群組發布的乾淨值班表 PDF 仍由匯出選項決定是否加入補充頁尾。
 
-**目前正式基線：** `v1.2.0-rc.18`／`fd504a8` 已同步到 `C:\SingYinRoster` 及 canonical Cloudflare Worker；`/healthz` 正常、`/readyz` ready。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 release gate；正式備份、checksum、公平對帳及隔離還原亦已通過。Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 已完成 0% staging、指定版本 smoke check 及 100% promotion。rc20 部署失敗時，第一級回退是上述 rc18 exact pair；rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 只保留作次級已驗證基線，更早版本只屬歷史發布證據。
-
-**已驗證但尚未部署的 rc20：** annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` 已以來源指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式閘門，包括 839 項 Python 測試、3 項 motion runtime 合約及 40 項 Worker 合約。這證明來源候選可進入受控發布，不代表 `C:\SingYinRoster` 已由 rc18 切換；Windows 服務部署仍等待 UAC 核准，首席導學風紀及教師顧問真人驗收亦未完成。
+**目前正式基線：** `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 已同步到 `C:\SingYinRoster`；`/healthz` 正常、`/readyz` ready、`writeReady=true`、`policyVersion=2026.07.22-assist-modes`。290 個發布輸入以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 release gate；切換前正式備份 `20260722-122411-304415-manual_verified_backup.sqlite3`、SHA-256 `9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0`、checksum、公平對帳、隔離還原及 migration `0011_assist_assignment_mode` 亦已通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 因 source／設定未變而刻意沿用（不重新部署）。origin 故障時第一級回退是 rc18／`fd504a8` 與同一 Worker exact pair；rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 只保留作次級已驗證基線。首席導學風紀及教師顧問真人驗收仍未完成。
 
 **公開安全及版本完整性：** 公開瀏覽器只接觸 Cloudflare Worker；正式 NiceGUI origin 仍只綁定 loopback，Admin 必須同時通過 Cloudflare Access、私密精確電郵 allowlist、短期 session 及請求綁定的 HMAC principal。GitHub `main` 只接受通過 `test-and-audit` 與 Python／Worker CodeQL 的 pull request，禁止 force-push 和刪除；Actions 引用必須固定完整 SHA，`v*` 發布標籤建立後亦不可更新或刪除。完整威脅模型、資料分類、事件處理及殘餘限制見[公開網站安全與私隱模型](docs/SECURITY_AND_PRIVACY.md)。
 
-**目前發布（v1.2 rc18）：** Service Weave `ProductIdentity`、中央 `PageDefinition`、公開 NiceGUI 元件 API、CSS 所有權、工程證據索引、Developer Reference、Guest 工作區、統一 PDF／JSON 下載、瀏覽器／PDF 值班矩陣、安全撤回錯誤發布及跟隨系統外觀均已整合上線。Guest admission control 會在容量已滿時拒絕新 session，而不驅逐正在使用的人；匯入、網絡與公平對帳邊界亦已強化。入口頁標誌會與淺／深／系統外觀同步，歡迎音樂可正常初始化、暫停、切換歌單及調整音量；按鈕容器保持穩定，語意圖標在容器內完成狀態轉換。受控 Windows 發布會從受保護 `.env` 讀取實際 `SING_YIN_PORT`，並在停機圍欄、健康、readiness、回復及證據中使用同一端點。仍須由首席導學風紀及教師顧問完成真人驗收清單。
+**目前發布（v1.2 rc20）：** 在 rc18 整合基線上，Assist. in charge 新增「固定星期模式」與「每週靈活模式」，並以 additive migration `0011_assist_assignment_mode` 保存週次模式。非互動編輯式卡片在精準滑鼠下可顯示安靜跟隨光暈與 `focus-within` 光環（不抬升、不改游標）；動作卡片仍用原有抬升＋光暈；精簡動態／觸控完全關閉光效。Service Weave `ProductIdentity`、中央 `PageDefinition`、公開 NiceGUI 元件 API、CSS 所有權、工程證據索引、Developer Reference、Guest 工作區、統一 PDF／JSON 下載、瀏覽器／PDF 值班矩陣、安全撤回錯誤發布及跟隨系統外觀均保持上線。Guest admission control 會在容量已滿時拒絕新 session，而不驅逐正在使用的人；匯入、網絡與公平對帳邊界亦已強化。入口頁標誌會與淺／深／系統外觀同步，歡迎音樂可正常初始化、暫停、切換歌單及調整音量；按鈕容器保持穩定，語意圖標在容器內完成狀態轉換。受控 Windows 發布會從受保護 `.env` 讀取實際 `SING_YIN_PORT`，並在停機圍欄、健康、readiness、回復及證據中使用同一端點。仍須由首席導學風紀及教師顧問完成真人驗收清單。
 
-rc16 是這批改動的歷史候選來源；rc17 完成 Worker 身份及正式證據對齊後曾部署，現只保留作次級已驗證基線。下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換均已由 live rc18 承接並重新驗證。
+rc16 是這批改動的歷史候選來源；rc17 只保留作次級已驗證基線；rc18 是 live rc20 的第一級回退 pair。下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換均由 live rc20 承接。
 
 ## 首席導學風紀：每日怎樣進入
 
