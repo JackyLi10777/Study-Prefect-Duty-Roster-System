@@ -25,6 +25,7 @@ from nicegui_app.services.roster_workflow import (
     CommittedWriteBackupError,
     WorkflowConflictError,
 )
+from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import EN, current_locale, day_label, role_label, t
 from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.components import (
@@ -280,15 +281,17 @@ def _render_mobile_roster_cards(rows: list[dict[str, object]]) -> None:
     for row in rows:
         grouped_rows.setdefault(row["dayCode"], []).append(row)
 
-    with ui.element("section").classes("sy-roster-mobile").props(f'aria-label="{t("week_roster")}"'):
+    with ui.element("section").classes("sy-roster-mobile").props(f'aria-label="{attr(t("week_roster"))}"'):
         ui.label(t("mobile_roster_notice")).classes("sy-roster-mobile-notice")
         for day_rows in grouped_rows.values():
-            with ui.element("section").classes("sy-roster-mobile-day").props(f'aria-label="{day_rows[0]["day"]}"'):
+            with ui.element("section").classes("sy-roster-mobile-day").props(
+                f'aria-label="{attr(day_rows[0]["day"])}"'
+            ):
                 ui.label(str(day_rows[0]["day"])).classes("sy-roster-mobile-day-title")
                 for row in day_rows:
                     card_label = f"{row['post']} · {row['time']} · {row['prefect']}"
                     with ui.element("article").classes("sy-roster-mobile-card").props(
-                        f'aria-label="{card_label}" data-testid="mobile-roster-card"'
+                        f'aria-label="{attr(card_label)}" data-testid="mobile-roster-card"'
                     ):
                         with ui.row().classes("w-full items-start justify-between gap-3 no-wrap"):
                             with ui.column().classes("gap-1 min-w-0"):
@@ -329,12 +332,12 @@ def _prefect_support_codes(item: dict[str, object]) -> tuple[str, ...]:
 
 def _render_mobile_prefect_cards(rows: list[dict[str, object]]) -> None:
     """Keep a person's identity and availability readable without clipped columns."""
-    with ui.element("section").classes("sy-prefect-mobile").props(f'aria-label="{t("directory")}"'):
+    with ui.element("section").classes("sy-prefect-mobile").props(f'aria-label="{attr(t("directory"))}"'):
         ui.label(t("mobile_directory_notice")).classes("sy-prefect-mobile-notice")
         for row in rows:
             card_label = f"{row['name']} · {row['form']} {row['class']} · {row['role']}"
             with ui.element("article").classes("sy-prefect-mobile-card").props(
-                f'aria-label="{card_label}" data-testid="mobile-prefect-card"'
+                f'aria-label="{attr(card_label)}" data-testid="mobile-prefect-card"'
             ):
                 with ui.row().classes("w-full items-start justify-between gap-3"):
                     with ui.column().classes("gap-0 min-w-0"):
@@ -395,19 +398,19 @@ def _render_roster_table(roster_week_id: int) -> None:
         ],
     ]
     with ui.element("section").classes("sy-roster-matrix sy-roster-desktop w-full").props(
-        f'aria-label="{t("week_roster")}" data-testid=roster-schedule-matrix'
+        f'aria-label="{attr(t("week_roster"))}" data-testid=roster-schedule-matrix'
     ):
         ui.table(rows=rows, columns=columns, row_key="post").classes("sy-table w-full").props(
             "flat bordered hide-bottom separator=cell"
         )
 
     with ui.element("section").classes("sy-roster-mobile").props(
-        f'aria-label="{t("week_roster")}"'
+        f'aria-label="{attr(t("week_roster"))}"'
     ):
         ui.label(t("mobile_roster_notice")).classes("sy-roster-mobile-notice")
         for day_index, day in enumerate(DAY_ORDER):
             with ui.element("section").classes("sy-roster-mobile-day").props(
-                f'aria-label="{day_label(day)}"'
+                f'aria-label="{attr(day_label(day))}"'
             ):
                 ui.label(day_label(day)).classes("sy-roster-mobile-day-title")
                 for schedule_row in schedule:

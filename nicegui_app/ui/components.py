@@ -10,13 +10,13 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from contextlib import contextmanager
-import html
 from itertools import count
 import json
 from typing import Iterator, Literal, TypeVar
 
 from nicegui import ui
 
+from nicegui_app.ui.html_safety import attr, text
 from nicegui_app.ui.i18n import t
 from nicegui_app.ui.reference_navigation import (
     ReferenceDestination,
@@ -124,7 +124,7 @@ def status(text: str, tone: StatusTone = "neutral", *, props: str = ""):
         "neutral": "info",
     }[tone]
     badge = ui.badge(color=None).classes(f"sy-status-badge sy-tone-{tone}")
-    badge.props(f'role=status aria-label="{text}" {props}'.strip())
+    badge.props(f'role=status aria-label="{attr(text)}" {props}'.strip())
     with badge:
         ui.icon(icon).classes("sy-status-badge-icon").props("aria-hidden=true")
         ui.label(text).classes("sy-status-badge-label")
@@ -171,7 +171,7 @@ def empty_state(
     """Render an empty result with one clear, safe next step."""
 
     variant = " sy-empty-state--illustrated" if illustrated else ""
-    props = f'role=status aria-live=polite aria-label="{title}"'
+    props = f'role=status aria-live=polite aria-label="{attr(title)}"'
     if test_id:
         props += f" data-testid={test_id}"
     with ui.element("section").classes(f"sy-empty-state{variant} w-full").props(props):
@@ -201,7 +201,7 @@ def restricted_state(
     """Explain an unavailable capability without pretending it is broken."""
 
     with ui.element("section").classes("sy-restricted-state w-full").props(
-        f'role=status aria-live=polite aria-label="{title}"'
+        f'role=status aria-live=polite aria-label="{attr(title)}"'
         + (f" data-testid={test_id}" if test_id else "")
     ):
         status(t("restricted"), "attention")
@@ -299,9 +299,9 @@ def editorial_heading(
     with ui.column().classes("sy-architecture-section-heading gap-1"):
         if kicker:
             ui.label(kicker).classes("sy-architecture-section-kicker")
-        title_element = ui.html(title, tag="h2").classes("sy-architecture-section-title")
+        title_element = ui.html(text(title), tag="h2").classes("sy-architecture-section-title")
         if anchor_id:
-            title_element.props(f"id={anchor_id}")
+            title_element.props(f"id={attr(anchor_id)}")
         ui.label(copy).classes("sy-architecture-section-copy")
 
 
@@ -330,7 +330,7 @@ def code_sample(
 ) -> None:
     """Render a read-only command/code sample with accessible copy feedback."""
 
-    props = f'aria-label="{label}"'
+    props = f'aria-label="{attr(label)}"'
     if test_id:
         props += f" data-testid={test_id}"
     payload = json.dumps(code)
@@ -344,7 +344,7 @@ def code_sample(
                 test_id=f"{test_id}-copy" if test_id else None,
             )
         ui.html(
-            f'<pre><code class="language-{html.escape(language, quote=True)}">{html.escape(code)}</code></pre>'
+            f'<pre><code class="language-{attr(language)}">{text(code)}</code></pre>'
         ).classes("sy-code-sample-body")
 
         async def copy_to_clipboard() -> None:

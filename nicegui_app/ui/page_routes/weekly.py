@@ -238,8 +238,10 @@ def rosters_page() -> None:
                         initial_week.isoformat(),
                         LEGACY_FIXED_WEEKDAY,
                     )
-                    with ui.element("section").classes("sy-surface-subtle w-full p-4 mt-4").props(
-                        "data-testid=assist-assignment-mode-panel"
+                    with ui.element("section").classes(
+                        "sy-surface-subtle sy-policy-panel w-full p-4 mt-4"
+                    ).props(
+                        "data-testid=assist-assignment-mode-panel data-sy-ambient-light=true"
                     ):
                         ui.label(t("assist_assignment_mode_title")).classes("font-semibold")
                         ui.label(t("assist_assignment_mode_detail")).classes(
@@ -272,7 +274,9 @@ def rosters_page() -> None:
                     assist_assignment_mode.on_value_change(
                         lambda event: update_assist_mode_explanation(event.value)
                     )
-                    with ui.element("section").classes("sy-surface-subtle w-full p-4 mt-4"):
+                    with ui.element("section").classes(
+                        "sy-surface-subtle sy-policy-panel w-full p-4 mt-4"
+                    ).props("data-sy-ambient-light=true"):
                         ui.label(t("history_priority_title")).classes("font-semibold")
                         ui.label(t("history_priority_detail")).classes(
                             "text-sm leading-6 text-[var(--sy-muted)] mt-1"

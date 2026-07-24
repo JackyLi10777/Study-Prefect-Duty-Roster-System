@@ -14,6 +14,7 @@ from nicegui_app.services.online_music import (
     search_youtube,
     youtube_embed_url,
 )
+from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import t
 
 
@@ -94,7 +95,7 @@ def render_youtube_panel(context: str, settings: YouTubeSettings) -> None:
             player.clear()
             with player:
                 ui.html(
-                    f'<iframe class="sy-youtube-player" src="{source}" title="YouTube" '
+                    f'<iframe class="sy-youtube-player" src="{attr(source)}" title="YouTube" '
                     'allow="encrypted-media; picture-in-picture" allowfullscreen '
                     'loading="lazy" referrerpolicy="no-referrer"></iframe>'
                 ).classes("w-full")

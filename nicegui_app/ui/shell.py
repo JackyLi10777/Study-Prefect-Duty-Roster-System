@@ -13,6 +13,7 @@ from nicegui_app.application_mode import current_application_mode
 from nicegui_app.contact import FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL, GITHUB_REPOSITORY_URL
 from nicegui_app.runtime import current_page_context, get_workflow
 from nicegui_app.ui.brand import render_service_weave_mark
+from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import current_locale, t, toggle_locale
 from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.music import render_page_music_control
@@ -481,7 +482,7 @@ def _navigate_with_sound(path: str) -> None:
 def _sync_preference_controls(controls, *, icon: str, label: str) -> None:  # type: ignore[no-untyped-def]
     for button, show_label, tooltip in controls:
         button.set_text(label if show_label else "")
-        button.props(f'icon={icon} aria-label="{label}"')
+        button.props(f'icon={icon} aria-label="{attr(label)}"')
         if tooltip is not None:
             tooltip.set_text(label)
         button.update()
