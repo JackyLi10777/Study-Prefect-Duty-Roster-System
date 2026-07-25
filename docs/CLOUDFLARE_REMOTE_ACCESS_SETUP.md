@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **目前發布狀態：** Windows origin 正運行健康、ready 的 live `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；canonical Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 承接 100% 流量（rc20 刻意沿用）。第一級回退是 rc18／`fd504a8`。歷史候選描述：annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`／290-file fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 已通過 14／14 gate、839 Python、3 motion 及 40 Worker contract。候選加入 Assist 固定星期／每週靈活模式及 migration `0011_assist_assignment_mode`。Worker source／設定沒有改動，本次不重新部署 Worker；真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。切換失敗時第一級回退是 rc18 exact pair。
+> **目前發布狀態：** Windows origin 正運行健康、ready 的 live `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；其 290-file fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 已通過 14／14 gate（839 Python、3 motion、40 Worker contract），並完成備份、隔離還原及受控切換。canonical Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 因 source／設定沒有改動而刻意沿用並承接 100% 流量。第一級歷史回退是 rc18／`fd504a8` exact pair；真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
@@ -84,7 +84,7 @@ Worker 必須有：
 - 不把管理員加入 Cloudflare Dashboard 成員作為登入前提。
 - 不建立應用內共用密碼。
 
-**目前控制台證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。live rc18 origin／Worker 組合已通過 Public、Guest、Access 轉向及 gateway health 核對；任何後續候選仍須產生與來源相符的新證據。
+**目前控制台證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。live rc20 origin／Worker 組合已通過 Public、Guest、Access 轉向及 gateway health 核對；任何後續候選仍須產生與來源相符的新證據。
 
 ## 4. 來源驗證
 
@@ -144,7 +144,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 3. 核對沒有第二個 NiceGUI origin 佔用同一資料庫。
 4. 安裝已驗證 bundle 及 hash-locked dependencies。
 5. 執行 additive Alembic migration `0011_assist_assignment_mode`。
-6. 保持現行受保護設定（live rc18 為 `SING_YIN_UNIFIED_GUEST=1`），不得用切換旗標略過候選驗證。
+6. 保持 live rc20 的現行受保護設定 `SING_YIN_UNIFIED_GUEST=1`，不得用切換旗標略過候選驗證。
 7. 核對：
 
 ```powershell
@@ -199,7 +199,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 6. 用獲准身份完成 Admin 登入／登出及隔離寫入流程。
 7. 才結束 maintenance。
 
-候選的隔離測試仍須證明 flag 為 `0` 時 Guest fail closed；rc20 的正式 gate 已在臨時環境完成該證據，不可因此修改 live rc18 設定。
+候選的隔離測試仍須證明 flag 為 `0` 時 Guest fail closed；rc20 的正式 gate 已在臨時環境完成該證據，不可因此弱化 live rc20 設定。
 
 ## 9. 線上驗收
 
@@ -239,7 +239,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 1. 恢復 maintenance；
 2. 以受控部署報告確認自動 rollback 的 `attempted`／`succeeded`、previous commit 及 previous Worker version；
-3. 第一級回退至 live rc18 主機 bundle `v1.2.0-rc.18`／`fd504a8`；
+3. 第一級回退至歷史 rc18 主機 bundle `v1.2.0-rc.18`／`fd504a8`；
 4. 第一級回退至 rc18 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 的 100% traffic，禁止留下新 Worker／舊 origin 的混合版本；
 5. 核對 host commit、`/healthz`、`/readyz`／`writeReady=true`、Admin、Guest、Viewer、WebSocket、登出及資料狀態；
 6. 只有 rc18 exact pair 本身無法安全恢復，且事故負責人明確批准第二級復原時，才可使用 rc17／`99f5816` 主機 bundle與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 作次級已驗證基線；在相容性、資料完整性及完整 user-flow 重新證明前保持 maintenance；
@@ -271,6 +271,6 @@ additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，�
 
 ## English operational summary
 
-Live `v1.2.0-rc.18`／`fd504a8` keeps one Cloudflare Worker in front of one loopback-only Windows NiceGUI origin. Verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter.
+Live `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c` keeps one Cloudflare Worker in front of one loopback-only Windows NiceGUI origin. Verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter. rc18／`fd504a8` is retained only as the first historical rollback target.
 
-Service Weave rc20 remains the live controlled release. Historical note: `v1.2.0-rc.20`／`e3d84858…` is a fully verified but not-yet-deployed Windows-origin candidate with source fingerprint `93c6c938…` and migration `0011_assist_assignment_mode`. Its Worker source and configuration are unchanged, so the rollout deliberately retains Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` rather than creating a new version. A fresh verified backup, isolated restore, origin deployment report, canonical smoke checks, and supervised human acceptance are still required. Any failure returns first to the exact rc18 host／Worker pair.
+Service Weave rc20 is the live controlled release. `v1.2.0-rc.20`／`e3d84858…` passed the source-matched `93c6c938…` gate set and completed the Windows-origin switch with migration `0011_assist_assignment_mode`, a fresh verified backup, isolated restore, deployment report, and canonical smoke checks. Its Worker source and configuration were unchanged, so the rollout deliberately retained Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` rather than creating a no-op version. Supervised human acceptance remains open; any runtime failure returns first to the exact historical rc18 host／Worker pair.

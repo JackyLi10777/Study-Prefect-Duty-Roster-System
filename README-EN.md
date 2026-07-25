@@ -99,15 +99,15 @@ roster matrix, and auditable published-roster withdrawal.
 The live rc20 release retains and re-verifies admission control that rejects excess Guest sessions without
 evicting active users, stronger import and network bounds, aggregate fairness
 reconciliation, explicit return paths, and stable button containers whose icons
-transform internally. Its 288-input fingerprint
-`de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664`
+transform internally. Its 290-input fingerprint
+`93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`
 passed all 14 formal gates before the controlled origin and Worker rollout.
 
 ## Repository editions
 
 | Branch | Platform | Status |
 |---|---|---|
-| `codex/login-copy-music-rc18` | NiceGUI + SQLite, release source | Live rc18 `fd504a8` entrance, devotional, interaction and release integration line |
+| `codex/login-copy-music-rc18` | NiceGUI + SQLite, historical release source | Superseded rc18 `fd504a8` entrance, devotional, interaction and rollback line |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite, historical source | Previous Service Weave editorial integration line |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Previous unified-guest architecture line; no longer the formal baseline |
 | `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.20` source; Windows origin matches the annotated tag |
@@ -133,7 +133,7 @@ redirects, not a static tour or second trial product. An explicitly issued
 
 The Worker and origin authenticate both modes with server-verified, HMAC-signed
 principals. The live rc20 release passed 14／14 formal gates against its own
-288-input fingerprint `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664`,
+290-input fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`,
 including isolated Admin/Guest browser, mobile, reduced-motion, performance,
 write/PDF, backup, and recovery evidence. The application has no custom password database.
 

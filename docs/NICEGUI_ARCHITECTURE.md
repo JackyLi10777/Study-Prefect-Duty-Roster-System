@@ -15,7 +15,7 @@
 > `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` passed staged-version and
 > canonical health／entrance／viewer checks before receiving 100% traffic.
 > Supervised human acceptance remains required.
-
+>
 > **rc20 live boundary:** annotated tag `v1.2.0-rc.20` points to commit
 > `e3d84858abfe23714929a87c4bcf76e55999ce7c`. Its 290-source-file fingerprint
 > `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`
@@ -50,7 +50,7 @@ NiceGUI owns the rendering and navigation. The read model introduces no schema, 
 
 ## Canonical entry and local maintenance start
 
-> **Unified Guest architecture contract:** The live rc18 host enables this path
+> **Unified Guest architecture contract:** The live rc20 host enables this path
 > through its protected `SING_YIN_UNIFIED_GUEST=1` configuration. Any later
 > candidate must preserve the same deny-by-default boundary and pass fresh
 > candidate-bound verification before the origin or Worker is switched; changing
@@ -328,7 +328,7 @@ Medium touch screens are not stretched phones. From 640–900px, consequential o
 
 The rc20 intermediate-density rules distinguish portrait and landscape tablets without user-agent branching. Both 768×1024 and 820×1180 portrait adaptive shells can use two-column roster, directory, evidence and download cards while forms remain a single decision column. At 901–1180px, including 1024×768 touch landscape, the desktop shell remains visible but `sy-operations-grid` and document layouts collapse before their columns become cramped; evidence indexes, toolbars and download options are capped at two columns. At 1440×1024 the full desktop shell and reading measure remain intact. CSS changes composition only—the same semantic DOM, `PageContext`, capability policy and workflow callback remain authoritative.
 
-The existing roster and prefect card renderers remain the implementation baseline. Live rc18 evidence covers 390×844 Traditional Chinese/light, 320×760 English/dark with reduced motion, and 844×390 landscape touch contexts. The rc20 source-matched report covers the isolated device matrix containing 256×700 reflow, 320×760 reduced motion, 390×844 phone, 768×1024 and 820×1180 adaptive touch tablets, 1024×768 desktop-shell touch tablet, 1440×1024 full desktop and 844×390 phone landscape. `verify_nicegui_mobile.py` owns the phone／tablet members and `verify_nicegui_ui.py` owns the full-desktop member; together they proved a single visible navigation shell, route-focus transfer, More/current-page semantics, `visualViewport` keyboard clearance, footer/safe-area clearance, comprehensive 44px standalone targets, touch icon stories, forced colours and zero document overflow/console/page errors for the candidate. Physical iPhone Safari and Android Chrome 200% zoom, keyboard, rotation and notch/home-indicator checks remain open human acceptance evidence, and the candidate remains undeployed until controlled origin cutover and canonical smoke succeed.
+The existing roster and prefect card renderers remain the implementation baseline. Historical rc18 evidence covers 390×844 Traditional Chinese/light, 320×760 English/dark with reduced motion, and 844×390 landscape touch contexts. The live rc20 source-matched report covers the isolated device matrix containing 256×700 reflow, 320×760 reduced motion, 390×844 phone, 768×1024 and 820×1180 adaptive touch tablets, 1024×768 desktop-shell touch tablet, 1440×1024 full desktop and 844×390 phone landscape. `verify_nicegui_mobile.py` owns the phone／tablet members and `verify_nicegui_ui.py` owns the full-desktop member; together they proved a single visible navigation shell, route-focus transfer, More/current-page semantics, `visualViewport` keyboard clearance, footer/safe-area clearance, comprehensive 44px standalone targets, touch icon stories, forced colours and zero document overflow/console/page errors for the deployed source. Controlled origin cutover and canonical smoke have succeeded; physical iPhone Safari and Android Chrome 200% zoom, keyboard, rotation and notch/home-indicator checks remain open human acceptance evidence.
 
 The same preflight contract covers roster preparation and manual draft correction: a missing candidate or invalid week start is repaired in place. Blank operator reasons are valid and never weaken the durable version, command, audit, fairness, or backup checks. `scripts/verify_nicegui_write_pipeline.py` asserts that invalid states create neither a progress dialog nor a `progress_*_working` log event, while also proving that an optional reason can be omitted safely.
 
@@ -364,13 +364,13 @@ commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`. The 14／14 report covers
 839 Python, 3 motion, and 40 Worker tests and binds 290 source files to fingerprint
 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`.
 
-The running production origin nevertheless remains healthy／ready on
-`v1.2.0-rc.18`／`fd504a8`; the verified Worker remains
-`f780feb2-671a-4feb-b6f6-b7f9d5b31e89`. rc20 changed no Worker source or
-configuration, so no new Worker rollout is required. A fresh verified production
-backup, isolated restore, elevated Windows cutover, canonical-site smoke, and
-supervised human acceptance are still required before rc20 can replace rc18.
-This architecture document and the candidate report are not deployment evidence.
+The running production origin is healthy／ready on `v1.2.0-rc.20`／`e3d84858`;
+the verified Worker remains `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` because rc20
+changed no Worker source or configuration. The fresh verified production backup,
+isolated restore, elevated Windows cutover and canonical-site smoke are complete.
+Historical `v1.2.0-rc.18`／`fd504a8` is the first-level rollback. Supervised human
+acceptance remains required; architecture text and automated evidence do not
+substitute for that acceptance.
 
 ```powershell
 python -X utf8 -m pytest -q
