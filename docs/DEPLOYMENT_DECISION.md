@@ -1,6 +1,6 @@
 # 部署與遠端存取決策指南 / Deployment decision
 
-> **目前基線：**受控 Windows origin 運行 live `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；canonical Worker 仍是已驗證 version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`（source／設定未變，刻意不重新部署）。290 個來源檔以 fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 release gate；切換前備份 `20260722-122411-304415-manual_verified_backup.sqlite3`／SHA-256 `9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0` 完成隔離還原與 migration `0011_assist_assignment_mode`。Assist 固定星期／每週靈活模式已上線。第一級回退是 rc18／`fd504a8` 與同一 Worker。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
+> **目前基線：**受控 Windows origin 運行 live `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；canonical Worker 仍是已驗證 version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`（source／設定未變，刻意不重新部署）。290 個來源檔以 fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 release gate；切換前備份 `20260722-122411-304415-manual_verified_backup.sqlite3`／SHA-256 `9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0` 完成隔離還原與 migration `0011_assist_assignment_mode`。Assist 固定星期／每週靈活模式已上線。第一級回退是歷史 `v1.2.0-rc.18`／`fd504a8` 與同一 Worker。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
 
 ## 結論
 
@@ -33,7 +33,7 @@ NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另�
 | `C:\SingYinRoster` | live `v1.2.0-rc.20`／`e3d8485`；健康、ready、`writeReady=true`、loopback-only；endpoint 由受保護設定統一決定 |
 | Cloudflare Worker／Access／Tunnel | Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` live（rc20 刻意沿用）；Access 精確保護 `/auth/login`；Tunnel／VPC 連到單一 origin |
 | rc20 來源與部署證據 | `v1.2.0-rc.20`／`e3d84858…`／`93c6c938…`；14／14 gate；備份 `20260722-122411-304415-manual_verified_backup.sqlite3`／`9f0b9c58…` 隔離還原通過 |
-| 第一級回退 | 回復 rc18／`fd504a8` host 與同一 Worker exact pair；先核對 deployment report，再驗證 health、readiness、canonical user flows 及資料狀態 |
+| 第一級回退 | 回復 `v1.2.0-rc.18`／`fd504a8` host 與同一 Worker exact pair；先核對 deployment report，再驗證 health、readiness、canonical user flows 及資料狀態 |
 | 次級已驗證基線 | rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b`；只有 rc18 無法安全恢復且事故負責人批准第二級復原時使用 |
 | `codex/frontend-guest-performance-rc16` | rc17 來源分支；14 項 gate、標籤、Windows bundle 及 Worker staged rollout 已完成 |
 | `SING_YIN_UNIFIED_GUEST` | live rc20 的受保護主機設定為 `1`；後續候選不得以切換旗標取代完整驗證 |
@@ -126,7 +126,7 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 7. 以虛構資料核對 Public、Admin、Guest、Viewer、PDF、登出、到期及多分頁隔離；
 8. 完成真人驗收後才結束 maintenance 並宣布候選上線。
 
-任何 rc20 origin／線上 gate 失敗，依受控 deployment report 回復 live rc18／`fd504a8` 主機 bundle；Worker 保持 `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 的 100% traffic。Additive migration 必須讓舊版本仍可讀原有資料。
+任何 rc20 origin／線上 gate 失敗，依受控 deployment report 回復歷史 rc18／`fd504a8` 回退主機 bundle；Worker 保持 `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 的 100% traffic。Additive migration 必須讓舊版本仍可讀原有資料。
 
 逐步 Cloudflare 設定、staged rollout、驗收及回退命令見
 [`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)。
@@ -140,6 +140,6 @@ python -X utf8 scripts\verify_release_candidate.py
 
 ## English summary
 
-The selected topology remains one canonical Cloudflare Worker in front of one loopback-only NiceGUI origin on a dedicated Windows host. The Windows machine remains the sole system of record for SQLite, backups, logs, PDFs, and local music. Live `v1.2.0-rc.18`／`fd504a8` unifies administrator and guest pages through a signed `PageContext`; guest data stays in a bounded in-memory adapter. The verified Worker is `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`.
+The selected topology remains one canonical Cloudflare Worker in front of one loopback-only NiceGUI origin on a dedicated Windows host. The Windows machine remains the sole system of record for SQLite, backups, logs, PDFs, and local music. Live `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c` unifies administrator and guest pages through a signed `PageContext`; guest data stays in a bounded in-memory adapter. The verified Worker is `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`.
 
-Service Weave rc18 remains the live controlled release and supervised human acceptance remains outstanding. `v1.2.0-rc.20`／`e3d84858…` is a verified but not-yet-deployed Windows-origin candidate with source fingerprint `93c6c938…` and additive migration `0011_assist_assignment_mode`. Its Worker source and configuration are unchanged, so the rollout retains Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`. A deployment failure returns first to the exact rc18 host／Worker pair; a fresh backup, isolated restore, deployment report, canonical smoke checks, and supervised acceptance remain required.
+Service Weave rc20 is the live controlled release and supervised human acceptance remains outstanding. `v1.2.0-rc.20`／`e3d84858…` passed the source fingerprint `93c6c938…` gates and completed the controlled Windows-origin switch with additive migration `0011_assist_assignment_mode`, verified backup, isolated restore, deployment report, and canonical smoke checks. Its Worker source and configuration were unchanged, so the rollout retained Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`. A runtime failure returns first to the exact historical rc18 host／Worker pair.

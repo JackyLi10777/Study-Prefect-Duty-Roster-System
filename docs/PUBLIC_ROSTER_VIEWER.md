@@ -1,8 +1,8 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **目前狀態（live rc20）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；rollback 第一級為 `v1.2.0-rc.18`／`fd504a8`；canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；rc18 的 14／14 候選綁定 gate、正式備份、隔離還原、origin 及 Worker 線上核對已完成。
-
-> **rc20 受控上線（2026-07-22）：** annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` 已切換到 Windows origin；指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`；備份 `20260722-122411-304415-manual_verified_backup.sqlite3`／`9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0`；Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 刻意沿用。真人驗收仍未簽署。**歷史候選描述（已上線）：** annotated tag `v1.2.0-rc.20` 指向 commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`；290 個來源檔案以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（839 個 Python、3 個 motion、40 個 Worker 測試）。候選加入可切換的 Assist. 固定星期／靈活輪換模式及 migration `0011_assist_assignment_mode`，但受控 Windows origin 尚未完成提升權限的切換，所以正式網站仍以 rc18 為準。Worker 原始碼及設定沒有改動，現行 version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 保持不變，不能把候選測試寫成已部署證據。
+> **目前狀態（live rc20）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供。
+>
+> **rc20 受控上線（2026-07-22）：** 290 個來源檔案以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（839 個 Python、3 個 motion、40 個 Worker 測試）；切換前備份 `20260722-122411-304415-manual_verified_backup.sqlite3`／`9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0` 已完成隔離還原。Worker 原始碼及設定沒有改動，故沿用上述已驗證版本。第一級歷史回退是 `v1.2.0-rc.18`／`fd504a8`；真人驗收仍未簽署。
 
 我是李創杰。我希望所有使用者只需記住同一個網站，但同一個網址不代表相同權限。v1.2 把入口、完整 Guest 體驗及管理員工作台統一到同一套 NiceGUI 路由和元件；只有已發布週表的 `/view#…` 保留為獨立、只讀、可分享的能力連結。
 
@@ -30,7 +30,7 @@
 - `/guest`、`/try`：兼容舊書籤，重新導向統一入口並開始 Guest session；不再維護第二套靜態產品。
 - `/view#…`：獨立、只讀、加密、到期及可撤銷的已發布週表。
 
-rc20 來源已把 `<=560px` 的 Admin／Guest 操作放到 story 欄早段，讓兩者在首屏可觸及；原 access panel 的同角色連結只在該 mobile layout 隱藏，DOM 仍保留 desktop 結構。每一 viewport 只有一個 visible Admin 入口和一個 visible Guest 入口，兩者仍分別前往 `/auth/login` 及 `/guest`，不建立新的身份模式、資料 adapter 或 `/mobile` route。這項行為已進入 rc20 source-matched 自動化證據，但要待 Windows origin 切換及 canonical smoke 後才可視作 live 操作保證。
+rc20 已把 `<=560px` 的 Admin／Guest 操作放到 story 欄早段，讓兩者在首屏可觸及；原 access panel 的同角色連結只在該 mobile layout 隱藏，DOM 仍保留 desktop 結構。每一 viewport 只有一個 visible Admin 入口和一個 visible Guest 入口，兩者仍分別前往 `/auth/login` 及 `/guest`，不建立新的身份模式、資料 adapter 或 `/mobile` route。這項行為已通過 rc20 source-matched 自動化及 canonical smoke；真人手機驗收仍須按清單完成。
 
 ## 訪客怎樣使用
 
@@ -122,10 +122,10 @@ Cloudflare 暫時不可用時，只有維護者才使用 localhost 或已核准 
 
 ## English quick guide
 
-The exact rc20 candidate (`v1.2.0-rc.20`, commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`) passed all 14 formal gates with source fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`, including 839 Python, 3 motion, and 40 Worker tests. It is not yet deployed to the protected Windows origin, so the live public entrance remains rc18. Worker source is unchanged and the live Worker stays on `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`.
+The live rc20 origin (`v1.2.0-rc.20`, commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`) passed all 14 formal gates with source fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`, including 839 Python, 3 motion, and 40 Worker tests, before the controlled Windows switch. Worker source was unchanged, so the live Worker remains `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`; rc18／`fd504a8` is the first historical rollback target.
 
 Live `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`, with verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`, uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
 
-`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The Service Weave editorial integration is part of the live rc18 product.
+`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The Service Weave editorial integration is part of the live rc20 product.
 
 Admin and Guest share the same stable Assist. mode codes: `legacy_fixed_weekday` keeps the canonical AHP weekday, while `flexible_weekly` rotates only across selected available weekdays and avoids the previous week's day where feasible. Both enforce AHP-only eligibility, leave, same-day uniqueness, and no-consecutive-duty rules. Official rosters persist the selected mode; Guest rosters keep it only in the bounded in-memory workspace.

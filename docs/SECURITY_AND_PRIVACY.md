@@ -92,11 +92,14 @@ NiceGUI 3.13 workbench has a separate, tested compatibility boundary: its
 framework bootstrap requires inline modules and Vue's runtime template
 compiler requires `unsafe-eval`. Removing only `unsafe-eval` returns HTTP 200
 but prevents the application DOM from rendering. The origin therefore permits
-`unsafe-inline` and `unsafe-eval` for same-origin scripts while continuing to
-block every third-party script and style host. This is framework debt, not a
-general permission for page code to interpolate untrusted markup; dynamic HTML
-attributes must use `nicegui_app.ui.html_safety`, and browser verification must
-exercise the production CSP on representative Admin and Guest routes.
+`unsafe-inline` and `unsafe-eval` as explicit NiceGUI compatibility exceptions
+while continuing to block every third-party script and style host. In
+particular, `unsafe-inline` permits inline script execution; it is not limited
+to same-origin script files, so this policy provides only limited protection
+against script injection. Untrusted data must remain escaped, must never enter
+an executable inline context, and dynamic HTML attributes must use
+`nicegui_app.ui.html_safety`. Browser verification must exercise the production
+CSP on representative Admin and Guest routes.
 
 Image access is limited to local/data assets and the two validated YouTube
 thumbnail hosts used by the optional search panel. YouTube playback itself is

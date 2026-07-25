@@ -1,6 +1,6 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
-> **文件狀態（live rc20）：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`；canonical Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`；第一級回退 `v1.2.0-rc.18`／`fd504a8`；canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 承接正式流量。rc20 annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` 的 290 個來源檔案以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（839 Python、3 motion、40 Worker）。候選尚未切換受控 origin；Worker 來源及設定沒有改動，所以保留現行 version 而不重新部署。Admin、Guest 與公開 Viewer 繼續使用同一身份邊界；候選沒有擴大 Guest 能力、資料保存位置或正式 SQLite 存取。
+> **文件狀態（live rc20）：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`；290 個來源檔案以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（839 Python、3 motion、40 Worker）並完成受控切換。Worker 來源及設定沒有改動，所以 canonical Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 繼續承接正式流量；第一級歷史回退是 `v1.2.0-rc.18`／`fd504a8`。Admin、Guest 與公開 Viewer 使用同一身份邊界；rc20 沒有擴大 Guest 能力、資料保存位置或正式 SQLite 存取。
 
 ## 1. 目的
 

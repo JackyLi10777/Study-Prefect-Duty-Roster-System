@@ -145,7 +145,7 @@ def test_v12_guest_documents_match_the_signed_browser_bridge_and_release_truth()
     assert "尚未完成的瀏覽器 snapshot 橋接" not in security
 
 
-def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
+def test_release_truth_docs_keep_live_rc20_separate_from_history() -> None:
     status = (PROJECT_ROOT / "PROJECT_STATUS.md").read_text(encoding="utf-8")
     architecture = (PROJECT_ROOT / "docs" / "NICEGUI_ARCHITECTURE.md").read_text(
         encoding="utf-8"
@@ -156,9 +156,15 @@ def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
     handover = (PROJECT_ROOT / "docs" / "RELEASE_HANDOVER.md").read_text(
         encoding="utf-8"
     )
+    acceptance = (PROJECT_ROOT / "docs" / "ACCEPTANCE_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    update_workflow = (PROJECT_ROOT / "docs" / "UPDATE_WORKFLOW.md").read_text(
+        encoding="utf-8"
+    )
     operator = (PROJECT_ROOT / "docs" / "OPERATOR_GUIDE.md").read_text(encoding="utf-8")
 
-    release_truth_documents = (status, architecture, security, handover)
+    release_truth_documents = (status, architecture, security, handover, acceptance)
     for document in release_truth_documents:
         assert "v1.2.0-rc.18" in document
         assert "fd504a8" in document
@@ -172,8 +178,8 @@ def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
         assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in current_header
         assert "fd504a8" in current_header
 
-    # The exact rc18 rollout fingerprint belongs in release/rollback evidence.
-    # The guest security model records the live pair and the exact rc20 candidate,
+    # The exact rc18 rollout fingerprint belongs in historical rollback evidence.
+    # The guest security model records the live pair and the exact rc20 release,
     # but intentionally does not duplicate the historical rc18 source digest.
     for document in (status, architecture, handover):
         assert "de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664" in document
@@ -192,11 +198,27 @@ def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
     assert "SING_YIN_PORT" in readme
     assert "一百倍" in readme
     assert "cancelWelcomeFade is not defined" in status
-    assert "目前發布（v1.2 rc20）" in (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "目前發布（v1.2 rc20）" in (  # noqa: RUF001
+        PROJECT_ROOT / "README.md"
+    ).read_text(encoding="utf-8")
     assert "remains disabled by default" not in status
     assert "now run the matching rc7 release" not in status
     assert "Windows origin remains healthy／ready on rc4" not in security
     assert "This document does not claim that v1.2 is deployed" not in security
+
+    stale_release_claims = (
+        "Windows origin 尚未切換",
+        "候選尚未切換受控 origin",
+        "不是已部署版本",
+        "not-yet-deployed Windows-origin candidate",
+        "live public entrance remains rc18",
+        "正式 Windows 主機仍等待 UAC",
+        "目前日常操作仍以 rc18",
+        "Keep using rc18 behavior",
+    )
+    for document in (*release_truth_documents, update_workflow):
+        for stale_claim in stale_release_claims:
+            assert stale_claim not in document
 
     next_steps = status.split("## Next Steps", 1)[1].split(
         "## Key Decisions and Architecture", 1
@@ -246,7 +268,10 @@ def test_operator_deployment_docs_use_live_rc20_and_rollback_hierarchy() -> None
         assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in current_header
         assert "fd504a8" in current_header
 
-    assert "第一級回退至 live rc18 主機 bundle `v1.2.0-rc.18`／`fd504a8`" in cloudflare or "第一級回退是 rc18／`fd504a8`" in cloudflare or "第一級回退" in cloudflare
+    assert (  # noqa: RUF001
+        "第一級回退至歷史 rc18 主機 bundle `v1.2.0-rc.18`／`fd504a8`"
+        in cloudflare
+    )
     assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in cloudflare
     assert "作次級已驗證基線" in cloudflare
     assert "restore the recorded rc17 host bundle" not in cloudflare
@@ -295,7 +320,7 @@ def test_rc20_docs_share_one_device_matrix_and_rollback_hierarchy() -> None:
     assert "scripts/verify_nicegui_mobile.py" in candidate_matrix
     assert "scripts/verify_nicegui_ui.py" in candidate_matrix
     assert "這只完成機器量測，不能代替實體裝置或部署後驗收" in acceptance
-    assert "這是機器驗證完成的候選，不是已部署版本" in acceptance
+    assert "機器與線上證據不能代替真人驗收" in acceptance
 
     quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
     assert (

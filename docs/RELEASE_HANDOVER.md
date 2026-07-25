@@ -3,7 +3,7 @@
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
 > **目前線上基線是 rc20：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`。290 個發布輸入以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（839 Python、3 motion、40 Worker contract）。切換前正式備份 `20260722-122411-304415-manual_verified_backup.sqlite3`、SHA-256 `9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0`、公平對帳、行數核對、還原審計、隔離還原及 additive migration `0011_assist_assignment_mode` 全部通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 因 source／設定未變而刻意沿用（不重新部署）；origin `/healthz` 健康、`/readyz` ready、`writeReady=true`、`policyVersion=2026.07.22-assist-modes`，沒有待處理備份義務。Assist. in charge 支援「固定星期模式」與「每週靈活模式」。第一級回退是 rc18／`fd504a8` 與同一 Worker exact pair。首席導學風紀及教師顧問真人驗收仍未完成。
-
+>
 > **歷史 rc18 受控發布（已由 rc20 取代）：**annotated tag `v1.2.0-rc.18`／commit `fd504a8` 曾是 live origin。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 gate；正式備份 `20260722-024349-422389-manual_verified_backup.sqlite3`、SHA-256 `51ad0e42284c0d42363d2f8fd2bc3dc70ae0ce1f79d258016ec2d66bf6741c7f` 及隔離還原通過。其 host／Worker pair 現為 rc20 第一級回退目標。
 
 > **手機／平板／桌面共存規則：**平板不是放大的手機，桌面也不可繼承平板壓縮。768×1024 及 820×1180 直向平板使用 adaptive shell，操作表單維持一欄，支援卡片可使用兩欄；1024×768 橫向觸控平板保留 compact desktop shell，但操作及文件區不得壓成多個狹窄欄，證據與下載最多兩欄；1440×1024 保留 full desktop shell 與閱讀寬度。四個 viewport 屬於同一候選裝置矩陣，並與手機共用同一網址、身份、路由、資料、排班規則、審計、PDF 及返回邏輯。
@@ -94,7 +94,7 @@ JSON 是唯讀報告證據，不是 SQLite 還原備份。需要交接或復原�
 
 受控技術維護可使用 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。正式設定只接受 Ed25519 金鑰、只監聽 loopback，並拒絕密碼、轉發及公開 TCP 22。`SingYinRosterSvc` 仍是非互動網站執行帳戶，不可用作 SSH 登入；SSH 私鑰亦不可放入 Git、交接備份、日誌或雲端同步資料夾。
 
-需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。目前 live rc18 中，訪客不需輸入電郵或密碼，只按「訪客體驗」建立有限期 Guest session；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 驗證相應 session 後，以獨立 HMAC principal 把 Guest／Admin 送到同一 NiceGUI origin；origin 再分流至虛構記憶體 adapter 或正式 workflow。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
+需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。目前 live rc20 中，訪客不需輸入電郵或密碼，只按「訪客體驗」建立有限期 Guest session；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 驗證相應 session 後，以獨立 HMAC principal 把 Guest／Admin 送到同一 NiceGUI origin；origin 再分流至虛構記憶體 adapter 或正式 workflow。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
 
 ### 交接前練習模式
 
@@ -209,7 +209,7 @@ python -X utf8 -m nicegui_app.main
 
 1. 在最後來源 commit 只執行一次 `python -X utf8 scripts\verify_update.py --release`；它已擁有完整 pytest、瀏覽器、Worker、效能、備份失敗及部署就緒閘門，不要再重複跑同一套檢查。
 2. rc20 的正式候選證據已固定為 tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`／fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`；14／14 gate、839 項 Python、3 項 motion 及 40 項 Worker contract 全部通過。部署前再核對報告仍屬這個 exact commit；任何來源改動都令該證據失效。
-3. 保存目前 rc18／`fd504a8` 及 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 作現行不可變版本及 rc20 的第一級回退；不要把候選通過誤寫成已部署。
+3. 保存目前 rc20／`e3d84858` 及 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 作現行不可變版本；另保留 rc18／`fd504a8` 作第一級回退。後續候選仍須在受控切換及線上核對完成後才可寫成已部署。
 4. 由提升權限的 PowerShell 從乾淨 rc20 候選執行：
 
    ```powershell
@@ -261,7 +261,7 @@ python -X utf8 -m nicegui_app.main
 - [ ] `/healthz` 及 `/readyz` 同時通過；以崩潰注入留下 backup obligation 後，重啟必須先修復，否則保持 degraded／唯讀而不可接受新寫入。
 - [ ] 以虛構已發布週表建立同 host `/view#…` 連結；一般瀏覽器可查看中文姓名週表但不能修改。撤銷後約一分鐘確認舊完整連結不能再載入。
 - [ ] 完成正式瀏覽器的 WebSocket 長連線／重新連線、檔案上載及 PDF 下載驗收；已記錄的 VPC probe 只作傳輸證據。
-- [x] **live rc18 baseline：**隔離 Chromium 真觸控模擬已覆蓋 390×844 繁中淺色、320×760 英文深色／reduced motion 及 844×390 橫向：單行頁首、`Dashboard／Rosters／Prefects／More`、可捲動 More 抽屜、`aria-expanded`、開啟後焦點、Tab／Shift+Tab 循環、Escape／背景關閉及焦點恢復、手機資料卡、44px 操作、安全區、零橫向溢出及零 console/page error 均通過。
+- [x] **歷史 rc18 基線（由 rc20 承接）：**隔離 Chromium 真觸控模擬已覆蓋 390×844 繁中淺色、320×760 英文深色／reduced motion 及 844×390 橫向：單行頁首、`Dashboard／Rosters／Prefects／More`、可捲動 More 抽屜、`aria-expanded`、開啟後焦點、Tab／Shift+Tab 循環、Escape／背景關閉及焦點恢復、手機資料卡、44px 操作、安全區、零橫向溢出及零 console/page error 均通過；live rc20 的擴展裝置矩陣另見 `ACCEPTANCE_EVIDENCE.md`。
 - [x] **rc20 自動化候選證據：**fingerprint-matched 14／14 report 已覆蓋裝置矩陣、reflow、reduced motion、navigation／focus、觸控目標、淺／深模式、Guest／Admin 流程及零 console／page error；來源固定為 `v1.2.0-rc.20`／`e3d84858`／`93c6c938…`。這只代表候選機器證據完成，不代表 Windows 已切換或下列真人手機／平板驗收已簽署。
 - [ ] 在同一 canonical 網址以實體 iPhone Safari 及 Android Chrome 重複手機驗收，集中檢查 200% zoom、鍵盤彈出及焦點欄位、跨頁 focus、More 語意、觸控 icon story、兩個 themes、reduced motion、forced colours、旋轉、瀏海與 home indicator 安全區；不用另建或測試 `/mobile` 網站。
 - [ ] 在一個未儲存表單中測試外觀、聲音及語言：外觀／聲音即時切換而不清空輸入，啟用聲音有一次短確認；切換語言前必須先出現離開提示。再以鍵盤確認頁面內容先於底部重複導航。

@@ -9,7 +9,7 @@
 > **SSH 維護狀態（2026-07-17）：** Windows OpenSSH Server 已以金鑰限定模式運行，只監聽 `127.0.0.1:22` 及 `[::1]:22`；密碼、互動式登入、轉發及 Windows 公開入站規則均停用。安裝、驗證、金鑰輪換及緊急停用程序見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。這是維護入口，不是另一個使用者網站。
 
 > **目前狀態（live rc20）：** `C:\SingYinRoster` 已固定於不可變標籤 `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；第一級回退 `v1.2.0-rc.18`／`fd504a8`，並完成正式資料快照、隔離還原及受控切換。`Sing Yin Roster Host` 由非管理員 `SingYinRosterSvc` 帳戶運行；實際 loopback endpoint 由受保護 `.env` 的 `SING_YIN_HOST`／`SING_YIN_PORT` 決定，現為 `127.0.0.1:8080`。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量；Tunnel、Public、Guest、唯讀 Viewer、Access 轉向及 VPC health 已核對。rc18 的停止圍欄、健康、ready 與回復檢查均讀取同一受保護 endpoint；正式備份及隔離還原已通過。
-
+>
 > **rc20 已受控部署（真人驗收仍未簽署）：**annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` 已以 fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（839 Python＋3 motion＋40 Worker contract），並完成受控 Windows 切換。它包含 Assist. in charge 固定星期／每週靈活兩種模式及 additive migration `0011_assist_assignment_mode`。切換前備份 `20260722-122411-304415-manual_verified_backup.sqlite3`／SHA-256 `9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0` 已通過隔離還原。不要把 branch、未提交 source 或一般開發樹手動複製進正式主機。rc20 的 Worker source／設定沒有改動，本次不重新部署 Worker，仍沿用 `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`。第一級回退是 rc18／`fd504a8` 與同一 Worker。
 
 ---
@@ -19,7 +19,7 @@
 完成本手冊後，運作方式如下：
 
 1. 一部 Windows 電腦長期保存程式、SQLite 資料庫、備份、日誌、PDF 及音樂。
-2. NiceGUI origin 只在這部電腦的受保護 loopback endpoint 開放（目前為 `127.0.0.1:8080`）；日常使用者從唯一正式 `workers.dev` 網站進入。live rc18 訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace；`/guest`、`/try` 只作兼容重定向。管理員登入後仍留在同一網址。
+2. NiceGUI origin 只在這部電腦的受保護 loopback endpoint 開放（目前為 `127.0.0.1:8080`）；日常使用者從唯一正式 `workers.dev` 網站進入。live rc20 訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace；`/guest`、`/try` 只作兼容重定向。管理員登入後仍留在同一網址。
 3. 電腦開機後，可由 Windows 工作排程器在背景自動啟動系統。
 4. 初次安裝先驗證 loopback origin，再依 Cloudflare 手冊連接既有 Tunnel、VPC Service、Access 及 Worker；始終不設定路由器轉發或公開 NiceGUI 連接埠。
 5. 即使電腦沒有互聯網，名單、排班、PDF、備份及還原仍可使用；YouTube 音樂除外。
@@ -421,7 +421,7 @@ C:\SingYinRoster\logs
 
 ### 8.1 v1.2 Guest 與本機 Practice Mode 不相同
 
-- live rc18 中，`/guest`、`/try` 只作兼容重定向；訪客由統一入口建立 30 分鐘 Guest session，再使用同一套 NiceGUI 路由及元件。
+- live rc20 中，`/guest`、`/try` 只作兼容重定向；訪客由統一入口建立 30 分鐘 Guest session，再使用同一套 NiceGUI 路由及元件。
 - v1.2 Guest 只連到固定虛構中文姓名的程序記憶體 adapter。最新 revision 只以已簽署、綁定 session／workspace／tab 的 token 存在該分頁 `sessionStorage`；複製分頁獲得新 workspace，登出、到期、撤權或 origin 重啟後舊 token 失效。
 - Guest 可完成較完整的示範流程，但 AI、匯入、上載、正式分享、永久設定、正式備份／還原及正式資料寫入均由服務層拒絕。PDF／JSON 只在記憶體建立，標示 `DEMO` 並一次性 `no-store` 下載。
 - `START_PRACTICE_MODE.cmd` 才是可持久演練備份及還原的隔離 NiceGUI 環境，會使用自己的 SQLite、審計及備份。Guest、Practice Mode 都不能代替正式名單匯入。

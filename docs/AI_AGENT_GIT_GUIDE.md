@@ -7,7 +7,7 @@
 
 ## 一、專案 Git 架構總覽
 
-```
+```text
 origin/main  ←── codex/mainline  ←── collab/<agent>/<task>
  (GitHub)        (Codex 主線)        (輔助 Agent 任務分支)
   受保護分支       D:\code_v3           每項任務獨立工作樹
@@ -51,7 +51,7 @@ origin/main  ←── codex/mainline  ←── collab/<agent>/<task>
 
 ### 格式要求
 
-```
+```text
 <type>: <簡短中文或英文摘要>
 
 <可選的詳細說明區塊，每行不超過 72 字元>
@@ -159,7 +159,7 @@ gh pr create --base main --head codex/mainline --title "..."
 | `git push --force` 到**任何**遠端分支 | 破壞歷史，GitHub 規則禁止 |
 | 直接推送 `main` | GitHub 分支保護 |
 | `git push --delete` 遠端分支（未經確認） | 遺失協作分支 |
-| 提交 `.env`、`*.sqlite3`、`data/runtime/`、`logs/` 內容 | 機密與本機執行期資料 |
+| 提交 `.env`、正式／執行期 SQLite、`data/runtime/`、`logs/` 或未經審查的資料快照 | 機密與本機執行期資料；只有放在核准測試／封存位置、只含虛構資料並經人工審查的 SQLite fixture 可提交 |
 | `git add -A` 或 `git add .` | 可能夾帶機密或不相關檔案 |
 | `git commit --amend` 已推送的 commit | 改寫已發布歷史 |
 | `git rebase` 任何已推送分支 | 改寫共享歷史 |
@@ -187,14 +187,14 @@ gh pr create --base main --head codex/mainline --title "..."
 - [ ] `git status` 乾淨（沒有忘記 staged 的檔案）
 - [ ] 每個 commit 只做一件事
 - [ ] commit 訊息有正確的前綴
-- [ ] 沒有 `.env`、`*.sqlite3`、`data/runtime/`、`logs/` 在 staged 中
+- [ ] 沒有 `.env`、正式／執行期 SQLite、未核准快照、`data/runtime/` 或 `logs/` 在 staged 中；如包含 SQLite fixture，已證明只含虛構資料且位置及用途已獲審查
 - [ ] 新模組的 commit 先於使用該模組的 commit
 - [ ] `python -X utf8 scripts/verify_update.py` 已執行且通過（如有修改 Python 檔案）
 - [ ] 目標分支正確（Agent → `collab/<agent>/<task>` PR，Codex → `codex/mainline` PR）
 
 ## 九、快速參考卡片
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │  你是                                         推送到          │
 ├─────────────────────────────────────────────────────────┤
