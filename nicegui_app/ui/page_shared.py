@@ -25,6 +25,7 @@ from nicegui_app.services.roster_workflow import (
     CommittedWriteBackupError,
     WorkflowConflictError,
 )
+from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import EN, current_locale, day_label, role_label, t
 from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.components import (
@@ -228,7 +229,7 @@ def _navigate_with_feedback(path: str) -> None:
 def _render_feedback_channel(*, compact: bool = False) -> None:
     classes = "sy-feedback-channel sy-feedback-channel--compact" if compact else "sy-feedback-channel"
     with ui.element("section").classes(classes).props(
-        f'aria-label="{t("feedback_channel_title")}" data-testid=feedback-channel'
+        f'aria-label="{attr(t("feedback_channel_title"))}" data-testid=feedback-channel'
     ):
         ui.icon("alternate_email").classes("sy-feedback-channel-icon").props("aria-hidden=true")
         with ui.column().classes("gap-1 min-w-0"):
@@ -236,11 +237,14 @@ def _render_feedback_channel(*, compact: bool = False) -> None:
             ui.label(t("feedback_channel_body")).classes("sy-feedback-channel-copy")
             with ui.row().classes("sy-feedback-channel-actions gap-4 flex-wrap"):
                 ui.link(t("feedback_email_action"), FEEDBACK_MAILTO_URL).classes("sy-feedback-channel-action").props(
-                    f'aria-label="{t("feedback_email_action")}: {FEEDBACK_EMAIL}"'
+                    f'aria-label="{attr(t("feedback_email_action"))}: {attr(FEEDBACK_EMAIL)}"'
                 )
                 ui.link(t("github_repository_action"), GITHUB_REPOSITORY_URL).classes(
                     "sy-feedback-channel-action"
-                ).props(f'target=_blank rel="noopener noreferrer" aria-label="{t("github_repository_action")}"')
+                ).props(
+                    f'target=_blank rel="noopener noreferrer" '
+                    f'aria-label="{attr(t("github_repository_action"))}"'
+                )
             ui.label(FEEDBACK_EMAIL).classes("sy-feedback-channel-address")
             ui.label(GITHUB_REPOSITORY_URL).classes("sy-feedback-channel-address")
             ui.label(t("feedback_channel_safe_note")).classes("sy-feedback-channel-note")
@@ -280,15 +284,17 @@ def _render_mobile_roster_cards(rows: list[dict[str, object]]) -> None:
     for row in rows:
         grouped_rows.setdefault(row["dayCode"], []).append(row)
 
-    with ui.element("section").classes("sy-roster-mobile").props(f'aria-label="{t("week_roster")}"'):
+    with ui.element("section").classes("sy-roster-mobile").props(f'aria-label="{attr(t("week_roster"))}"'):
         ui.label(t("mobile_roster_notice")).classes("sy-roster-mobile-notice")
         for day_rows in grouped_rows.values():
-            with ui.element("section").classes("sy-roster-mobile-day").props(f'aria-label="{day_rows[0]["day"]}"'):
+            with ui.element("section").classes("sy-roster-mobile-day").props(
+                f'aria-label="{attr(day_rows[0]["day"])}"'
+            ):
                 ui.label(str(day_rows[0]["day"])).classes("sy-roster-mobile-day-title")
                 for row in day_rows:
                     card_label = f"{row['post']} · {row['time']} · {row['prefect']}"
                     with ui.element("article").classes("sy-roster-mobile-card").props(
-                        f'aria-label="{card_label}" data-testid="mobile-roster-card"'
+                        f'aria-label="{attr(card_label)}" data-testid="mobile-roster-card"'
                     ):
                         with ui.row().classes("w-full items-start justify-between gap-3 no-wrap"):
                             with ui.column().classes("gap-1 min-w-0"):
@@ -329,12 +335,12 @@ def _prefect_support_codes(item: dict[str, object]) -> tuple[str, ...]:
 
 def _render_mobile_prefect_cards(rows: list[dict[str, object]]) -> None:
     """Keep a person's identity and availability readable without clipped columns."""
-    with ui.element("section").classes("sy-prefect-mobile").props(f'aria-label="{t("directory")}"'):
+    with ui.element("section").classes("sy-prefect-mobile").props(f'aria-label="{attr(t("directory"))}"'):
         ui.label(t("mobile_directory_notice")).classes("sy-prefect-mobile-notice")
         for row in rows:
             card_label = f"{row['name']} · {row['form']} {row['class']} · {row['role']}"
             with ui.element("article").classes("sy-prefect-mobile-card").props(
-                f'aria-label="{card_label}" data-testid="mobile-prefect-card"'
+                f'aria-label="{attr(card_label)}" data-testid="mobile-prefect-card"'
             ):
                 with ui.row().classes("w-full items-start justify-between gap-3"):
                     with ui.column().classes("gap-0 min-w-0"):
@@ -395,19 +401,19 @@ def _render_roster_table(roster_week_id: int) -> None:
         ],
     ]
     with ui.element("section").classes("sy-roster-matrix sy-roster-desktop w-full").props(
-        f'aria-label="{t("week_roster")}" data-testid=roster-schedule-matrix'
+        f'aria-label="{attr(t("week_roster"))}" data-testid=roster-schedule-matrix'
     ):
         ui.table(rows=rows, columns=columns, row_key="post").classes("sy-table w-full").props(
             "flat bordered hide-bottom separator=cell"
         )
 
     with ui.element("section").classes("sy-roster-mobile").props(
-        f'aria-label="{t("week_roster")}"'
+        f'aria-label="{attr(t("week_roster"))}"'
     ):
         ui.label(t("mobile_roster_notice")).classes("sy-roster-mobile-notice")
         for day_index, day in enumerate(DAY_ORDER):
             with ui.element("section").classes("sy-roster-mobile-day").props(
-                f'aria-label="{day_label(day)}"'
+                f'aria-label="{attr(day_label(day))}"'
             ):
                 ui.label(day_label(day)).classes("sy-roster-mobile-day-title")
                 for schedule_row in schedule:
@@ -677,7 +683,9 @@ def _render_storage_lifecycle(workflow) -> None:  # type: ignore[no-untyped-def]
     status = workflow.backup_status()
     verification = status["latestVerification"]
     backup_verified = bool(verification and verification.get("valid"))
-    with ui.element("section").classes("sy-storage-lifecycle w-full").props(f'aria-label="{t("storage_lifecycle_title")}"'):
+    with ui.element("section").classes("sy-storage-lifecycle w-full").props(
+        f'aria-label="{attr(t("storage_lifecycle_title"))}"'
+    ):
         with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
             with ui.row().classes("items-center gap-3"):
                 ui.icon("database").classes("sy-storage-lifecycle-icon").props("aria-hidden=true")
@@ -702,7 +710,9 @@ def _render_storage_lifecycle(workflow) -> None:  # type: ignore[no-untyped-def]
 
 def _render_operation_hint(body_key: str, *, icon: str = "tips_and_updates") -> None:
     """Place one concise purpose-and-method cue immediately before an operator decision."""
-    with ui.element("aside").classes("sy-operation-hint w-full").props(f'aria-label="{t("operation_hint")}"'):
+    with ui.element("aside").classes("sy-operation-hint w-full").props(
+        f'aria-label="{attr(t("operation_hint"))}"'
+    ):
         ui.icon(icon).classes("sy-operation-hint-icon").props("aria-hidden=true")
         with ui.column().classes("gap-1"):
             ui.label(t("operation_hint")).classes("sy-operation-hint-title")
@@ -768,7 +778,8 @@ def _render_roster_route_state(
 ) -> None:
     """Give stale or premature roster URLs an explicit, safe recovery route."""
     with ui.element("section").classes("sy-empty-state w-full").props(
-        f'role=status aria-live=polite aria-label="{t(title_key)}" data-testid={test_id}'
+        f'role=status aria-live=polite aria-label="{attr(t(title_key))}" '
+        f'data-testid="{attr(test_id)}"'
     ):
         ui.icon(icon).classes("sy-empty-state-icon").props("aria-hidden=true")
         with ui.column().classes("items-center gap-1 max-w-lg"):
@@ -803,7 +814,8 @@ def _render_co_creation() -> None:
                 ui.label(t("co_creation_creator_name")).classes("sy-co-creation-name")
                 ui.label(t("co_creation_creator_role")).classes("sy-co-creation-role")
                 with ui.link(target=INSTAGRAM_PROFILE_URL).classes("sy-co-creation-social").props(
-                    f'target=_blank rel="noopener noreferrer" aria-label="{t("co_creation_instagram_accessible")}"'
+                    f'target=_blank rel="noopener noreferrer" '
+                    f'aria-label="{attr(t("co_creation_instagram_accessible"))}"'
                 ):
                     ui.icon("photo_camera").props("aria-hidden=true")
                     ui.label(t("co_creation_instagram_action"))

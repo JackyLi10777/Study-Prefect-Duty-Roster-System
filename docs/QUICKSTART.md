@@ -1,8 +1,8 @@
 # 快速啟動 / Quick start
 
-> **目前狀態（live rc18）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.18`／commit `fd504a8`，`/healthz` 正常且 `/readyz` ready；canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 gate，正式備份、checksum、公平對帳及隔離還原亦已通過。
-
-> **rc20 已驗證但尚未上線：** annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` 以 fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式閘門（839 Python、3 motion、40 Worker）。它包括 rc19 的手機／平板／無障礙改進及 Assist. in charge 雙模式，但正式 Windows 主機仍等待 UAC 核准部署；真人驗收亦未完成，所以目前日常操作仍以 rc18 行為為準。
+> **目前狀態（live rc20）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`；290 個發布輸入以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 gate，正式備份、checksum、公平對帳及隔離還原亦已通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量；第一級歷史回退是 `v1.2.0-rc.18`／`fd504a8`。
+>
+> **rc20 已上線（真人驗收仍未簽署）：** rc20 包括 rc19 的手機／平板／無障礙改進及 Assist. in charge 雙模式，並已完成受控 Windows 主機切換。日常操作以 rc20 行為為準；機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
 
 ## 每日使用
 
@@ -20,7 +20,7 @@ rc20 上線後，生成前先在名單核對職務及「可值班日」：只有
 
 Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 session／workspace／tab 的示範 revision；複製分頁會獲得另一個 workspace。這只是 30 分鐘臨時續接，不是長期儲存；登出、到期、撤權或 origin 重啟後舊 token 會失效。
 
-## rc20 上線後的手機快速核對（目前不要當作 live 功能）
+## rc20 手機快速核對（live 功能的真人驗收）
 
 只有交接紀錄已列出 rc20 的正式 tag／commit、來源 fingerprint、沿用的 Worker version 及成功 origin rollout 後，才執行以下使用者核對；維護者必須另按[完整已驗證候選裝置矩陣](ACCEPTANCE_EVIDENCE.md#rc20-已驗證候選裝置矩陣--verified-candidate-device-matrix)核對手機、兩種直向平板、橫向觸控平板及 full desktop，不以本節簡表代替矩陣：
 
@@ -70,6 +70,6 @@ Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 sess
 
 ## English
 
-Candidate `v1.2.0-rc.20` at `e3d84858abfe23714929a87c4bcf76e55999ce7c` passed 14／14 source-matched gates under fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` (839 Python, 3 motion, and 40 Worker contracts), but it is not live while UAC-approved Windows deployment and supervised acceptance remain pending. Keep using rc18 behavior until the handover records the successful switchover.
+Live `v1.2.0-rc.20` at `e3d84858abfe23714929a87c4bcf76e55999ce7c` passed 14／14 source-matched gates under fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` (839 Python, 3 motion, and 40 Worker contracts) and completed the controlled Windows deployment. Continue to use rc20 behavior; supervised Head Study Prefect and teacher-advisor acceptance remains pending. rc18／`fd504a8` is the first historical rollback target.
 
-The live `v1.2.0-rc.18` origin (`fd504a8`) and verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` provide one canonical site with either a time-limited **Guest experience** using fictional in-memory data or **Admin login** through Cloudflare Access. A refresh in the same Guest tab may restore its latest signed revision, but a duplicated tab receives another workspace and logout, expiry, revocation, or origin restart invalidates the temporary token. Select **Log out** when finished because closing one tab does not clear every session state. `/view#…` remains the separate read-only published-roster link. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for HTTP readiness, and only then opens the browser. For a durable fictional rehearsal with backup/restore, use `START_PRACTICE_MODE.cmd`; the remote Guest workspace is intentionally temporary. Check `/readyz`, not only `/healthz`, before accepting official writes. In rc20, Fixed weekday preserves each AHP's weekday across weeks while a leave substitute remains week-local; Flexible weekly varies deterministically among declared available days with fairness history primary. Unchecked days are never eligible, and an existing week reopens with its saved mode.
+The live `v1.2.0-rc.20` origin (`e3d84858abfe23714929a87c4bcf76e55999ce7c`) and verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` provide one canonical site with either a time-limited **Guest experience** using fictional in-memory data or **Admin login** through Cloudflare Access. A refresh in the same Guest tab may restore its latest signed revision, but a duplicated tab receives another workspace and logout, expiry, revocation, or origin restart invalidates the temporary token. Select **Log out** when finished because closing one tab does not clear every session state. `/view#…` remains the separate read-only published-roster link. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for HTTP readiness, and only then opens the browser. For a durable fictional rehearsal with backup/restore, use `START_PRACTICE_MODE.cmd`; the remote Guest workspace is intentionally temporary. Check `/readyz`, not only `/healthz`, before accepting official writes. In rc20, Fixed weekday preserves each AHP's weekday across weeks while a leave substitute remains week-local; Flexible weekly varies deterministically among declared available days with fairness history primary. Unchecked days are never eligible, and an existing week reopens with its saved mode.

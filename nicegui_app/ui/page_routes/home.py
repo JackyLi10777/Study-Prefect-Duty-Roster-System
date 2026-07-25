@@ -12,6 +12,7 @@ from nicegui_app.ui.devotional import (
     refresh_dashboard_verse as _refresh_dashboard_verse,
     set_devotional_tone as _set_devotional_tone,
 )
+from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import ZH_HK, current_locale, t
 from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.page_shared import (
@@ -52,7 +53,9 @@ def dashboard_page() -> None:
         next_action_key = "flow_open_adjustment"
         next_action = lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}/adjustments")
     with page_shell("/"):
-        with ui.element("section").classes("sy-daily-start w-full").props(f'aria-label="{t("daily_verse")}"'):
+        with ui.element("section").classes("sy-daily-start w-full").props(
+            f'aria-label="{attr(t("daily_verse"))}"'
+        ):
             with ui.row().classes("w-full items-start gap-4 flex-wrap"):
                 ui.icon("menu_book").classes("sy-daily-start-icon").props("aria-hidden=true")
                 with ui.column().classes("grow min-w-[240px] gap-1"):
@@ -78,7 +81,7 @@ def dashboard_page() -> None:
                 if reflection.get("prayer"):
                     ui.label(f"{t('prayer')}: {reflection['prayer']}").classes("mt-3 text-sm italic text-[var(--sy-muted)]")
         with ui.element("section").classes("sy-mobile-next-action w-full").props(
-            f'aria-label="{t("mobile_next_action_label")}"'
+            f'aria-label="{attr(t("mobile_next_action_label"))}"'
         ):
             with ui.column().classes("gap-0 min-w-0"):
                 ui.label(t("mobile_next_action_label")).classes("sy-mobile-next-action-kicker")
@@ -100,7 +103,9 @@ def dashboard_page() -> None:
                         _tone_badge(t("withdrawn"), "attention")
                     else:
                         _tone_badge(t("flow_published_ready"), "stable")
-                with ui.element("ol").classes("sy-flow mt-7").props(f'aria-label="{t("workbench_title")}"'):
+                with ui.element("ol").classes("sy-flow mt-7").props(
+                    f'aria-label="{attr(t("workbench_title"))}"'
+                ):
                     if not has_prefects:
                         _render_flow_step(number=1, title_key="flow_directory", detail_key="flow_directory_detail", state="active", state_key="flow_current", icon="group_add", action_key="open_prefects", action=lambda: _navigate_with_feedback("/prefects"))
                         _render_flow_step(number=2, title_key="flow_generate", detail_key="flow_generate_detail", state="pending", state_key="flow_waiting", icon="edit_calendar")
@@ -176,7 +181,7 @@ def getting_started_page() -> None:
             )
         )
         with ui.element("section").classes("grid gap-4 w-full").props(
-            f'id=start-first-steps aria-label="{t("start_toc_first_steps")}"'
+            f'id=start-first-steps aria-label="{attr(t("start_toc_first_steps"))}"'
         ):
             steps = (
                 ("new_user_step_start", "new_user_step_start_detail"),
@@ -203,7 +208,7 @@ def getting_started_page() -> None:
             ("verified_user", "start_reference_trust_title", "start_reference_trust_body", "platform", "/platform"),
         )
         with ui.element("section").classes("sy-reference-index w-full max-w-5xl").props(
-            f'id=start-reference-map aria-label="{t("start_reference_title")}" data-testid=reference-index'
+            f'id=start-reference-map aria-label="{attr(t("start_reference_title"))}" data-testid=reference-index'
         ):
             ui.label(t("start_reference_title")).classes("sy-reference-index-title")
             ui.label(t("start_reference_copy")).classes("sy-reference-index-copy")
@@ -254,7 +259,9 @@ def operator_guide_page() -> None:
         ("guide_issue_support_seen", "guide_issue_support_meaning", "guide_issue_support_next"),
     )
     with page_shell("/guide"):
-        with ui.element("section").classes("sy-guide-hero w-full").props(f'aria-label="{t("operator_guide")}"'):
+        with ui.element("section").classes("sy-guide-hero w-full").props(
+            f'aria-label="{attr(t("operator_guide"))}"'
+        ):
             with ui.column().classes("gap-2 max-w-3xl"):
                 ui.label(t("operator_guide")).classes("sy-page-title")
                 ui.label(t("guide_intro")).classes("text-[var(--sy-muted)] leading-7")
@@ -274,12 +281,13 @@ def operator_guide_page() -> None:
                         with ui.expansion(t(title_key), icon="help").classes("sy-surface w-full"):
                             ui.label(t(body_key)).classes("p-4 text-sm leading-6 text-[var(--sy-muted)]")
         with ui.element("section").classes("sy-guide-troubleshooting w-full max-w-5xl").props(
-            f'id=guide-troubleshooting aria-label="{t("guide_troubleshooting_title")}" data-testid=guide-troubleshooting'
+            f'id=guide-troubleshooting aria-label="{attr(t("guide_troubleshooting_title"))}" '
+            'data-testid=guide-troubleshooting'
         ):
             ui.label(t("guide_troubleshooting_title")).classes("sy-guide-group-title")
             ui.label(t("guide_troubleshooting_copy")).classes("sy-reference-index-copy")
             with ui.element("div").classes("sy-troubleshooting-table").props(
-                f'role=table aria-label="{t("guide_troubleshooting_title")}"'
+                f'role=table aria-label="{attr(t("guide_troubleshooting_title"))}"'
             ):
                 with ui.element("div").classes("sy-troubleshooting-row sy-troubleshooting-head").props("role=row"):
                     for heading_key in ("guide_issue_seen", "guide_issue_meaning", "guide_issue_next"):
@@ -313,7 +321,7 @@ def devotional_page() -> None:
         tone_preference = "auto"
     with page_shell("/devotional"):
         with ui.element("section").classes("sy-chapel sy-devotional-page w-full").props(
-            f'aria-label="{t("daily_verse")}"'
+            f'aria-label="{attr(t("daily_verse"))}"'
         ):
             with ui.row().classes("sy-devotional-page-head w-full items-start justify-between gap-5 flex-wrap"):
                 with ui.column().classes("gap-1 max-w-2xl"):
@@ -343,7 +351,7 @@ def devotional_page() -> None:
                 ui.label(t("verse_translation_label")).classes("sy-verse-translation sy-verse-translation--chapel")
 
         with ui.element("section").classes("sy-devotional-reading-grid w-full").props(
-            f'aria-label="{t("reflection")}"'
+            f'aria-label="{attr(t("reflection"))}"'
         ):
             with ui.element("article").classes("sy-devotional-companion sy-devotional-companion--reflection"):
                 ui.icon("menu_book").classes("sy-devotional-companion-icon").props("aria-hidden=true")

@@ -25,6 +25,7 @@ from nicegui_app.services.summary_report_export import (
     build_summary_report_pdf,
 )
 from nicegui_app.ui.downloads import deliver_generated_download
+from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import day_label, role_label, t
 from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.page_access import (
@@ -436,7 +437,9 @@ def _render_period_report(report: PeriodSummaryReport) -> None:
                         },
                     ],
                 }
-            ).classes("sy-fairness-trend-chart w-full h-80 mt-3").props(f'aria-label="{t("fairness_trend")}" data-testid=fairness-trend-chart')
+            ).classes("sy-fairness-trend-chart w-full h-80 mt-3").props(
+                f'aria-label="{attr(t("fairness_trend"))}" data-testid=fairness-trend-chart'
+            )
             with ui.expansion(t("trend_accessible_table"), icon="table_chart").classes("w-full"):
                 _render_responsive_table(
                     rows=[
@@ -664,7 +667,7 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
         ("json", "data_object", "download_report_evidence_json", "summary_json_detail", "download-summary-json"),
     )
     with ui.element("section").classes("sy-download-options w-full mt-4").props(
-        f'aria-label="{t("summary_downloads_title")}"'
+        f'aria-label="{attr(t("summary_downloads_title"))}"'
     ):
         for kind, icon, title_key, detail_key, test_id in download_options:
             with ui.element("article").classes("sy-surface-subtle sy-download-option"):

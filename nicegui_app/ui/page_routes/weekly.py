@@ -15,6 +15,7 @@ from nicegui_app.services.roster_workflow import (
     WorkflowError,
 )
 from nicegui_app.ui.access_control import render_roster_share_action, revoke_withdrawn_roster_shares
+from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import day_label, t
 from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.page_shared import (
@@ -238,8 +239,10 @@ def rosters_page() -> None:
                         initial_week.isoformat(),
                         LEGACY_FIXED_WEEKDAY,
                     )
-                    with ui.element("section").classes("sy-surface-subtle w-full p-4 mt-4").props(
-                        "data-testid=assist-assignment-mode-panel"
+                    with ui.element("section").classes(
+                        "sy-surface-subtle sy-policy-panel w-full p-4 mt-4"
+                    ).props(
+                        "data-testid=assist-assignment-mode-panel data-sy-ambient-light=true"
                     ):
                         ui.label(t("assist_assignment_mode_title")).classes("font-semibold")
                         ui.label(t("assist_assignment_mode_detail")).classes(
@@ -272,7 +275,9 @@ def rosters_page() -> None:
                     assist_assignment_mode.on_value_change(
                         lambda event: update_assist_mode_explanation(event.value)
                     )
-                    with ui.element("section").classes("sy-surface-subtle w-full p-4 mt-4"):
+                    with ui.element("section").classes(
+                        "sy-surface-subtle sy-policy-panel w-full p-4 mt-4"
+                    ).props("data-sy-ambient-light=true"):
                         ui.label(t("history_priority_title")).classes("font-semibold")
                         ui.label(t("history_priority_detail")).classes(
                             "text-sm leading-6 text-[var(--sy-muted)] mt-1"
@@ -285,10 +290,10 @@ def rosters_page() -> None:
                             value=initial_multiplier,
                         ).props(
                             f'label label-always snap data-testid=history-priority-multiplier '
-                            f'aria-label="{t("history_priority_label")}"'
+                            f'aria-label="{attr(t("history_priority_label"))}"'
                         ).classes("w-full mt-3")
                         with ui.element("div").classes("sy-history-scale w-full").props(
-                            f'role=img aria-label="{t("history_priority_scale")}"'
+                            f'role=img aria-label="{attr(t("history_priority_scale"))}"'
                         ):
                             for value, position in (
                                 ("0.8", "0%"),
@@ -360,7 +365,7 @@ def rosters_page() -> None:
                                 ],
                             }
                         ).classes("sy-history-priority-chart w-full").props(
-                            f'role=img aria-label="{t("history_priority_chart")}" '
+                            f'role=img aria-label="{attr(t("history_priority_chart"))}" '
                             'data-testid=history-priority-chart'
                         )
                         ui.label(t("history_priority_chart_detail")).classes(

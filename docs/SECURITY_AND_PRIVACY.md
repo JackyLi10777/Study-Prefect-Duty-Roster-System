@@ -85,6 +85,31 @@ The exact administrator allowlist is a Cloudflare Secret named
 `{"emails":["admin@example.invalid"]}`. Real values must never be added to
 `wrangler.jsonc`, documentation, tests, shell history, or deployment reports.
 
+### NiceGUI origin CSP compatibility boundary
+
+Worker-owned public pages keep a strict precompiled-page CSP. The proxied
+NiceGUI 3.13 workbench has a separate, tested compatibility boundary: its
+framework bootstrap requires inline modules and Vue's runtime template
+compiler requires `unsafe-eval`. Removing only `unsafe-eval` returns HTTP 200
+but prevents the application DOM from rendering. The origin therefore permits
+`unsafe-inline` and `unsafe-eval` as explicit NiceGUI compatibility exceptions
+while continuing to block every third-party script and style host. In
+particular, `unsafe-inline` permits inline script execution; it is not limited
+to same-origin script files, so this policy provides only limited protection
+against script injection. Untrusted data must remain escaped, must never enter
+an executable inline context, and dynamic HTML attributes must use
+`nicegui_app.ui.html_safety`. Browser verification must exercise the production
+CSP on representative Admin and Guest routes.
+
+Image access is limited to local/data assets and the two validated YouTube
+thumbnail hosts used by the optional search panel. YouTube playback itself is
+limited to `www.youtube-nocookie.com` child frames. Parent framing is denied by
+both `frame-ancestors 'none'` and `X-Frame-Options: DENY`. NiceGUI's current
+local-maintenance and public-proxy WebSocket paths still require `ws:`／`wss:`
+scheme sources; replacing those scheme sources with an exact generated host
+allowlist remains a hardening item and must be proven in both environments
+before narrowing.
+
 ## 4. 身份、Guest 及權限 / Identity, Guest, and authorization
 
 - Public has no application capability.

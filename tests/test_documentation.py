@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from pathlib import Path
 
 from nicegui_app.ui.i18n import MESSAGES
@@ -145,7 +146,7 @@ def test_v12_guest_documents_match_the_signed_browser_bridge_and_release_truth()
     assert "尚未完成的瀏覽器 snapshot 橋接" not in security
 
 
-def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
+def test_release_truth_docs_keep_live_rc20_separate_from_history() -> None:
     status = (PROJECT_ROOT / "PROJECT_STATUS.md").read_text(encoding="utf-8")
     architecture = (PROJECT_ROOT / "docs" / "NICEGUI_ARCHITECTURE.md").read_text(
         encoding="utf-8"
@@ -156,9 +157,30 @@ def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
     handover = (PROJECT_ROOT / "docs" / "RELEASE_HANDOVER.md").read_text(
         encoding="utf-8"
     )
+    acceptance = (PROJECT_ROOT / "docs" / "ACCEPTANCE_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    update_workflow = (PROJECT_ROOT / "docs" / "UPDATE_WORKFLOW.md").read_text(
+        encoding="utf-8"
+    )
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    readme_en = (PROJECT_ROOT / "README-EN.md").read_text(encoding="utf-8")
+    quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
+    windows = (PROJECT_ROOT / "docs" / "WINDOWS_DEDICATED_HOST_SETUP.md").read_text(
+        encoding="utf-8"
+    )
+    cloudflare = (PROJECT_ROOT / "docs" / "CLOUDFLARE_REMOTE_ACCESS_SETUP.md").read_text(
+        encoding="utf-8"
+    )
+    viewer = (PROJECT_ROOT / "docs" / "PUBLIC_ROSTER_VIEWER.md").read_text(
+        encoding="utf-8"
+    )
+    decision = (PROJECT_ROOT / "docs" / "DEPLOYMENT_DECISION.md").read_text(
+        encoding="utf-8"
+    )
     operator = (PROJECT_ROOT / "docs" / "OPERATOR_GUIDE.md").read_text(encoding="utf-8")
 
-    release_truth_documents = (status, architecture, security, handover)
+    release_truth_documents = (status, architecture, security, handover, acceptance)
     for document in release_truth_documents:
         assert "v1.2.0-rc.18" in document
         assert "fd504a8" in document
@@ -167,33 +189,82 @@ def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
         assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in document
         assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in document
         current_header = "\n".join(document.splitlines()[:15])
-        assert "v1.2.0-rc.18" in current_header
-        assert "fd504a8" in current_header
+        assert "v1.2.0-rc.20" in current_header
+        assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in current_header
         assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in current_header
+        assert "fd504a8" in current_header
 
-    # The exact rc18 rollout fingerprint belongs in release/rollback evidence.
-    # The guest security model records the live pair and the exact rc20 candidate,
+    # The exact rc18 rollout fingerprint belongs in historical rollback evidence.
+    # The guest security model records the live pair and the exact rc20 release,
     # but intentionally does not duplicate the historical rc18 source digest.
     for document in (status, architecture, handover):
         assert "de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664" in document
+        assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in document
 
-    assert "Service Weave v1.2 rc18 controlled rollout" in status
-    assert "v1.2 rc18 remains the current controlled Windows origin" in status
+    assert "Service Weave v1.2 rc20 Assist. in charge controlled rollout" in status
+    assert "v1.2 rc20 is the current controlled Windows origin" in status
+    assert "Historical Service Weave v1.2 rc18 controlled rollout" in status
     assert "Historical Service Weave v1.2 rc11 rollout" in status
     assert (
         "rc17／`99f5816` with Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` "
         "is retained only as a secondary verified baseline"
     ) in status
-    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     assert "## 程式審查、邊界與擴展預期" in readme
     assert "SING_YIN_PORT" in readme
     assert "一百倍" in readme
     assert "cancelWelcomeFade is not defined" in status
-    assert "目前發布（v1.2 rc18）" in (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "目前發布（v1.2 rc20）" in (  # noqa: RUF001
+        PROJECT_ROOT / "README.md"
+    ).read_text(encoding="utf-8")
     assert "remains disabled by default" not in status
     assert "now run the matching rc7 release" not in status
     assert "Windows origin remains healthy／ready on rc4" not in security
     assert "This document does not claim that v1.2 is deployed" not in security
+
+    operator_release_documents = {
+        "README.md": readme,
+        "README-EN.md": readme_en,
+        "PROJECT_STATUS.md": status,
+        "docs/ACCEPTANCE_EVIDENCE.md": acceptance,
+        "docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md": cloudflare,
+        "docs/DEPLOYMENT_DECISION.md": decision,
+        "docs/NICEGUI_ARCHITECTURE.md": architecture,
+        "docs/PUBLIC_ROSTER_VIEWER.md": viewer,
+        "docs/QUICKSTART.md": quickstart,
+        "docs/RELEASE_HANDOVER.md": handover,
+        "docs/UNIFIED_GUEST_SECURITY_MODEL.md": security,
+        "docs/UPDATE_WORKFLOW.md": update_workflow,
+        "docs/WINDOWS_DEDICATED_HOST_SETUP.md": windows,
+    }
+    stale_release_patterns = (
+        re.compile(
+            r"\brc20\b.{0,240}(?:not deployed|undeployed|not-yet-deployed|"
+            r"pending (?:the )?(?:host |origin )?(?:switch|switchover|cutover)|"
+            r"before rc20 can replace rc18)",
+            re.IGNORECASE | re.DOTALL,
+        ),
+        re.compile(
+            r"rc20.{0,240}(?:尚未(?:部署|切換)|尚待(?:執行|部署|切換)|"
+            r"不代表 Windows 已切換|等待 UAC|"
+            r"下一步仍是.{0,100}(?:origin switch|Windows.*切換))",
+            re.DOTALL,
+        ),
+        re.compile(
+            r"(?:\blive rc18\b|\bcurrent (?:operating )?baseline "
+            r"(?:is|remains|uses) (?:v1\.2\.0-)?rc18\b|"
+            r"\brunning production origin.{0,100}\brc18\b|"
+            r"現行(?:正式主機|發布|基線).{0,12}rc18|"
+            r"目前日常操作仍以 rc18|rc18 正式主機)",
+            re.IGNORECASE | re.DOTALL,
+        ),
+    )
+    for relative_path, document in operator_release_documents.items():
+        for paragraph in re.split(r"\n\s*\n", document):
+            for stale_pattern in stale_release_patterns:
+                assert stale_pattern.search(paragraph) is None, (
+                    f"{relative_path} contains stale release-state wording: "
+                    f"{stale_pattern.pattern}"
+                )
 
     next_steps = status.split("## Next Steps", 1)[1].split(
         "## Key Decisions and Architecture", 1
@@ -201,7 +272,9 @@ def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
     assert "new immutable candidate" in next_steps
     assert "v1.2.0-rc.5" not in next_steps
 
-    release_sequence = handover.split("### 後續受控發布次序", 1)[1].split(
+    release_sequence = handover.split("### rc20 已完成發布紀錄與後續候選次序", 1)[
+        1
+    ].split(
         "## 正式驗收清單", 1
     )[0]
     assert "v1.2.0-rc.20" in release_sequence
@@ -216,7 +289,7 @@ def test_release_truth_docs_keep_live_rc18_separate_from_history() -> None:
     assert "只有 `/view#…`" in operator
 
 
-def test_operator_deployment_docs_use_live_rc18_and_candidate_bound_next_tag() -> None:
+def test_operator_deployment_docs_use_live_rc20_and_rollback_hierarchy() -> None:
     quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
     windows = (PROJECT_ROOT / "docs" / "WINDOWS_DEDICATED_HOST_SETUP.md").read_text(
         encoding="utf-8"
@@ -232,16 +305,22 @@ def test_operator_deployment_docs_use_live_rc18_and_candidate_bound_next_tag() -
     )
 
     for document in (quickstart, windows, cloudflare, viewer, decision):
+        assert "v1.2.0-rc.20" in document
+        assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in document
         assert "v1.2.0-rc.18" in document
         assert "fd504a8" in document
         assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in document
         current_header = "\n".join(document.splitlines()[:15])
-        assert "v1.2.0-rc.18" in current_header
-        assert "fd504a8" in current_header
+        assert "v1.2.0-rc.20" in current_header
+        assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in current_header
         assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in current_header
+        assert "fd504a8" in current_header
 
-    assert "第一級回退至 live rc18 主機 bundle `v1.2.0-rc.18`／`fd504a8`" in cloudflare
-    assert "第一級回退至 rc18 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`" in cloudflare
+    assert (  # noqa: RUF001
+        "第一級回退至歷史 rc18 主機 bundle `v1.2.0-rc.18`／`fd504a8`"
+        in cloudflare
+    )
+    assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in cloudflare
     assert "作次級已驗證基線" in cloudflare
     assert "restore the recorded rc17 host bundle" not in cloudflare
 
@@ -289,7 +368,7 @@ def test_rc20_docs_share_one_device_matrix_and_rollback_hierarchy() -> None:
     assert "scripts/verify_nicegui_mobile.py" in candidate_matrix
     assert "scripts/verify_nicegui_ui.py" in candidate_matrix
     assert "這只完成機器量測，不能代替實體裝置或部署後驗收" in acceptance
-    assert "這是機器驗證完成的候選，不是已部署版本" in acceptance
+    assert "機器與線上證據不能代替真人驗收" in acceptance
 
     quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
     assert (
@@ -770,9 +849,9 @@ def test_reference_pages_form_two_clear_reading_lanes_without_duplicate_docs_rou
         "start-reference-map",
     ):
         assert anchor in pages
-    assert 'role=table aria-label="{t("guide_troubleshooting_title")}"' in pages
-    assert 'id=start-first-steps aria-label="{t("start_toc_first_steps")}"' in pages
-    assert 'id=handover-steps-section aria-label="{t("handover_steps_title")}"' in pages
+    assert 'role=table aria-label="{attr(t("guide_troubleshooting_title"))}"' in pages
+    assert 'id=start-first-steps aria-label="{attr(t("start_toc_first_steps"))}"' in pages
+    assert 'id=handover-steps-section aria-label="{attr(t("handover_steps_title"))}"' in pages
     assert "what you see／what it means／safe next action" in design
     assert "DeepSeek API Docs" in design
 

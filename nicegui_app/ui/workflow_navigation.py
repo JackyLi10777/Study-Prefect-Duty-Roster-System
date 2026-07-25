@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from nicegui import ui
 
+from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.navigation import ROUTE_FOCUS_JAVASCRIPT, navigate_to
 
 
@@ -24,7 +25,7 @@ def render_route_trail(items: Iterable[tuple[str, str | None]], *, label: str) -
     """Render an accessible, explicit route trail without relying on browser history."""
 
     trail = list(items)
-    with ui.element("nav").classes("sy-route-trail w-full").props(f'aria-label="{label}"'):
+    with ui.element("nav").classes("sy-route-trail w-full").props(f'aria-label="{attr(label)}"'):
         for index, (label, route) in enumerate(trail):
             if index:
                 ui.icon("chevron_right").classes("sy-route-trail-separator").props("aria-hidden=true")
@@ -53,7 +54,7 @@ def render_workflow_navigation(
 ) -> None:
     """Show the operator's current location and safe next destinations."""
 
-    with ui.element("nav").classes("sy-workflow-navigation w-full").props(f'aria-label="{label}"'):
+    with ui.element("nav").classes("sy-workflow-navigation w-full").props(f'aria-label="{attr(label)}"'):
         for index, step in enumerate(steps, start=1):
             is_current = index == current_index
             classes = "sy-workflow-navigation-step"

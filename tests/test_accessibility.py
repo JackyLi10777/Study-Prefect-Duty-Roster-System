@@ -49,9 +49,9 @@ def test_shared_shell_provides_landmarks_skip_link_and_accessible_icon_controls(
     assert "role=navigation" in shell
     assert "aria-current=page" in shell
     assert "aria-level=1" in shell
-    assert 'aria-label="{t("open_navigation")}"' in shell
-    assert 'aria-label="{sound_tooltip}"' in shell
-    assert 'aria-label="{tooltip}"' in shell
+    assert 'aria-label="{attr(t("open_navigation"))}"' in shell
+    assert 'aria-label="{attr(sound_tooltip)}"' in shell
+    assert 'aria-label="{attr(tooltip)}"' in shell
     assert "document.documentElement.lang" in shell
     assert '"zh-Hant-HK"' in shell
     assert ".sy-skip-link:focus-visible" in theme
@@ -299,7 +299,7 @@ def test_local_and_remote_images_declare_size_and_accessible_alternative() -> No
     youtube = (PROJECT_ROOT / "nicegui_app" / "ui" / "youtube_music.py").read_text(encoding="utf-8")
 
     assert "width=256 height=256" in brand
-    assert 'role=img aria-label="{accessible_name}"' in brand
+    assert 'role=img aria-label="{attr(accessible_name)}"' in brand
     assert 'alt="" aria-hidden=true' in brand
     assert "width=640 height=615 loading=lazy decoding=async" in pages
     assert 'alt="{t("school_crest_alt")}"' in pages

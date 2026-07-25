@@ -855,3 +855,12 @@ Before implementation, the maintainer should record: the operator moment, the af
 4. Does the product feel calm and precise without blur, excessive teal, or decorative animation?
 5. Can the teacher advisor recognise the same system purpose in the UI, PDF, audit, backup, and handover path?
 6. Does one canonical URL make guest read-only state, Admin login, authenticated editor state, and Log out consequence unambiguous without relying on colour alone?
+
+
+### Ambient pointer light (non-interactive paper)
+
+- Action surfaces keep `.sy-pointer-reactive` with lift + glow.
+- Non-interactive editorial paper uses `.sy-pointer-ambient` + `.sy-pointer-light--ambient`: softer radial follow-light, no translateY, default cursor, and a calm `:focus-within` halo for keyboard users inside policy panels.
+- Opt-in panels use `data-sy-ambient-light="true"` (Assist. mode and history-priority policy panels).
+- Forbidden on workflow static steps (`.sy-flow-step`, `.sy-architecture-layer`, `.sy-storage-lifecycle`) and tables.
+- `prefers-reduced-motion` and coarse pointers still remove the light entirely.

@@ -26,6 +26,7 @@ from nicegui_app.services.youtube_audio_import import (
     youtube_import_ready,
 )
 from nicegui_app.ui.youtube_music import render_youtube_panel, render_youtube_settings
+from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import t
 from nicegui_app.ui.preferences import preference_get, preference_set
 from nicegui_app.ui.sound import (
@@ -173,7 +174,7 @@ def render_page_music_control(context: str) -> None:
         ui.run_javascript("document.querySelector('[data-testid=page-music-button]')?.focus()")
 
     with ui.card().classes("sy-music-dialog w-full max-w-lg p-0").props(
-        f'role=region aria-label="{t("page_music")}" tabindex=-1 data-testid=page-music-dialog'
+        f'role=region aria-label="{attr(t("page_music"))}" tabindex=-1 data-testid=page-music-dialog'
     ) as panel:
         with ui.column().classes("w-full gap-0"):
             with ui.row().classes("sy-music-dialog-header w-full items-start justify-between gap-4"):
@@ -182,7 +183,9 @@ def render_page_music_control(context: str) -> None:
                     with ui.column().classes("gap-0 min-w-0"):
                         ui.label(t("page_music")).classes("sy-music-dialog-title")
                         ui.label(music_context_label(context)).classes("sy-music-dialog-context")
-                ui.button(icon="close", on_click=close_panel).props(f'flat round aria-label="{t("close")}"')
+                ui.button(icon="close", on_click=close_panel).props(
+                    f'flat round aria-label="{attr(t("close"))}"'
+                )
 
             with ui.column().classes("w-full gap-4 p-5"):
                 ui.label(t("music_optional_notice")).classes("text-sm leading-6 text-[var(--sy-muted)]")
@@ -281,7 +284,9 @@ def render_page_music_control(context: str) -> None:
                     ).props("name=music-playback-mode autocomplete=off").classes("sy-music-mode-select w-full")
                     now_playing = ui.label(music_track_label(track_by_id[selected_track_id])).classes("sy-music-now-playing").props("aria-live=polite")
                     audio = ui.audio(track_by_id[selected_track_id].asset_url, controls=True, autoplay=False, muted=False, loop=False)
-                    audio.classes("sy-page-music-audio w-full").props(f'preload=metadata aria-label="{t("page_music")}"')
+                    audio.classes("sy-page-music-audio w-full").props(
+                        f'preload=metadata aria-label="{attr(t("page_music"))}"'
+                    )
 
                     audio.on("play", lambda: ui.run_javascript(_music_state_script("playing")))
                     audio.on(
@@ -366,7 +371,8 @@ def render_page_music_control(context: str) -> None:
 
     initial_trigger_state = "starting" if autoplay_enabled and tracks else "off"
     ui.button(icon="headphones", on_click=open_dialog).props(
-        f'flat round aria-label="{t("page_music")} — {t(f"music_status_{initial_trigger_state}")}" '
+        f'flat round aria-label="{attr(t("page_music"))} — '
+        f'{attr(t(f"music_status_{initial_trigger_state}"))}" '
         f'data-testid=page-music-button data-music-state={initial_trigger_state}'
     ).classes("sy-music-trigger").style("color: var(--sy-nav-ink) !important").tooltip(t("page_music"))
 
@@ -391,11 +397,11 @@ def render_music_library_settings() -> None:
         ).props("name=settings-music-autoplay data-testid=settings-music-autoplay")
         ui.label(t("music_autoplay_hint")).classes("text-xs leading-5 text-[var(--sy-muted)]")
         sound_slider = ui.slider(min=0, max=100, value=round(preferred_sound_volume() * 100)).props(
-            f'label aria-label="{t("interface_sound_volume")}"'
+            f'label aria-label="{attr(t("interface_sound_volume"))}"'
         ).classes("w-full max-w-md")
         ui.label(t("interface_sound_volume")).classes("text-xs text-[var(--sy-muted)]")
         music_slider = ui.slider(min=0, max=60, value=round(preferred_music_volume() * 100)).props(
-            f'label aria-label="{t("music_volume")}"'
+            f'label aria-label="{attr(t("music_volume"))}"'
         ).classes("w-full max-w-md mt-2")
         ui.label(t("music_volume")).classes("text-xs text-[var(--sy-muted)]")
 
@@ -568,7 +574,7 @@ def render_music_library_settings() -> None:
                     )
         else:
             with ui.element("aside").classes("sy-inline-empty w-full mt-5").props(
-                f'role=status aria-label="{t("music_no_custom_tracks_title")}"'
+                f'role=status aria-label="{attr(t("music_no_custom_tracks_title"))}"'
             ):
                 ui.icon("queue_music").classes("sy-inline-empty-icon").props("aria-hidden=true")
                 with ui.column().classes("gap-0 min-w-0"):
@@ -651,4 +657,6 @@ def _render_removable_music_item(*, title: str, context: str, remove) -> None:  
             with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
                 ui.button(t("cancel"), on_click=confirm_dialog.close).props("flat")
                 ui.button(t("remove"), icon="delete_outline", on_click=confirm_remove).props("color=negative")
-        ui.button(icon="delete_outline", on_click=confirm_dialog.open).props(f'flat round color=negative aria-label="{t("remove_music_item")}"')
+        ui.button(icon="delete_outline", on_click=confirm_dialog.open).props(
+            f'flat round color=negative aria-label="{attr(t("remove_music_item"))}"'
+        )

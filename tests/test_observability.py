@@ -100,7 +100,17 @@ def test_request_trace_header_and_log_are_payload_free(tmp_path) -> None:
     assert response.headers["X-Content-Type-Options"] == "nosniff"
     assert response.headers["Referrer-Policy"] == "no-referrer"
     assert response.headers["Permissions-Policy"] == "camera=(), microphone=(), geolocation=()"
-    assert response.headers["X-Frame-Options"] == "SAMEORIGIN"
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert response.headers["Cross-Origin-Opener-Policy"] == "same-origin"
+    csp = response.headers["Content-Security-Policy"]
+    assert "default-src 'self'" in csp
+    assert "script-src 'self' 'unsafe-inline' 'unsafe-eval'" in csp
+    assert "img-src 'self' data: https://i.ytimg.com https://img.youtube.com" in csp
+    assert "connect-src 'self' ws: wss:" in csp
+    assert "frame-src https://www.youtube-nocookie.com" in csp
+    assert "frame-ancestors 'none'" in csp
+    assert "object-src 'none'" in csp
+    assert "base-uri 'none'" in csp
     assert response.headers["Cache-Control"] == "no-store"
     assert "event=http_request method=GET target=other status=200" in content
     assert "測試風紀私隱資料" not in content

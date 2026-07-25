@@ -13,6 +13,7 @@ from nicegui_app.application_mode import current_application_mode
 from nicegui_app.contact import FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL, GITHUB_REPOSITORY_URL
 from nicegui_app.runtime import current_page_context, get_workflow
 from nicegui_app.ui.brand import render_service_weave_mark
+from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import current_locale, t, toggle_locale
 from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.music import render_page_music_control
@@ -481,7 +482,7 @@ def _navigate_with_sound(path: str) -> None:
 def _sync_preference_controls(controls, *, icon: str, label: str) -> None:  # type: ignore[no-untyped-def]
     for button, show_label, tooltip in controls:
         button.set_text(label if show_label else "")
-        button.props(f'icon={icon} aria-label="{label}"')
+        button.props(f'icon={icon} aria-label="{attr(label)}"')
         if tooltip is not None:
             tooltip.set_text(label)
         button.update()
@@ -536,7 +537,7 @@ def _render_mobile_drawer_tools(
 ) -> None:  # type: ignore[no-untyped-def]
     """Keep secondary preferences reachable without crowding the phone header."""
     with ui.element("section").classes("sy-mobile-drawer-tools").props(
-        f'aria-label="{t("mobile_quick_settings")}" data-testid=mobile-drawer-tools'
+        f'aria-label="{attr(t("mobile_quick_settings"))}" data-testid=mobile-drawer-tools'
     ):
         ui.label(t("mobile_quick_settings")).classes("sy-mobile-drawer-tools-title")
         with ui.element("div").classes("sy-mobile-drawer-tools-grid"):
@@ -578,7 +579,7 @@ def _render_mobile_tabbar(
     mobile_pages = mobile_navigation_for(access_mode)
     primary_paths = {page.route for page in mobile_pages}
     with ui.element("nav").classes("sy-mobile-tabbar").props(
-        f'aria-label="{t("mobile_primary_navigation")}" data-testid=mobile-bottom-navigation'
+        f'aria-label="{attr(t("mobile_primary_navigation"))}" data-testid=mobile-bottom-navigation'
     ):
         for page in mobile_pages:
             button = ui.button(
@@ -586,7 +587,7 @@ def _render_mobile_tabbar(
                 icon=page.icon,
                 on_click=lambda target=page.route: _navigate_with_sound(target),
             ).props(
-                f'flat no-caps aria-label="{t(page.title_key)}"'
+                f'flat no-caps aria-label="{attr(t(page.title_key))}"'
             ).classes("sy-mobile-tab")
             if active_path == page.route:
                 button.classes("sy-mobile-tab--active").props("aria-current=page")
@@ -595,7 +596,7 @@ def _render_mobile_tabbar(
         if active_path not in primary_paths and active_definition is not None:
             more_label = f'{more_label}: {t(active_definition.title_key)}'
         more = ui.button(t("mobile_more"), icon="menu", on_click=drawer.toggle).props(
-            f'flat no-caps aria-label="{more_label}" aria-controls=main-navigation-drawer '
+            f'flat no-caps aria-label="{attr(more_label)}" aria-controls=main-navigation-drawer '
             'aria-expanded=false data-testid=mobile-more'
         ).classes("sy-mobile-tab")
         if active_path not in primary_paths:
@@ -842,7 +843,7 @@ def page_shell(active_path: str) -> Iterator[None]:
     theme_controls = []
     sound_controls = []
     drawer = ui.left_drawer(value=False, bordered=False).props(
-        f'show-if-above breakpoint=900 role=navigation id=main-navigation-drawer aria-label="{t("main_navigation")}"'
+        f'show-if-above breakpoint=900 role=navigation id=main-navigation-drawer aria-label="{attr(t("main_navigation"))}"'
     ).classes("sy-sidebar bg-[var(--sy-surface)]")
     with drawer:
         with ui.column().classes("w-full gap-1 p-4"):
@@ -875,17 +876,18 @@ def page_shell(active_path: str) -> Iterator[None]:
                     if page.route == active_path:
                         button.classes("sy-nav-active").props("aria-current=page")
             with ui.element("aside").classes("sy-sidebar-feedback").props(
-                f'aria-label="{t("feedback_channel_title")}" data-testid=sidebar-feedback'
+                f'aria-label="{attr(t("feedback_channel_title"))}" data-testid=sidebar-feedback'
             ):
                 with ui.row().classes("items-center gap-2 no-wrap"):
                     ui.icon("mail_outline").classes("sy-sidebar-feedback-icon").props("aria-hidden=true")
                     ui.label(t("feedback_channel_short")).classes("sy-sidebar-feedback-title")
                 ui.label(t("feedback_channel_sidebar_body")).classes("sy-sidebar-feedback-copy")
+                feedback_email_label = f'{t("feedback_email_action")}: {FEEDBACK_EMAIL}'
                 ui.link(FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL).classes("sy-sidebar-feedback-link").props(
-                    f'aria-label="{t("feedback_email_action")}: {FEEDBACK_EMAIL}"'
+                    f'aria-label="{attr(feedback_email_label)}"'
                 )
                 ui.link(t("github_repository_short"), GITHUB_REPOSITORY_URL).classes("sy-sidebar-feedback-link").props(
-                    f'target=_blank rel="noopener noreferrer" aria-label="{t("github_repository_action")}"'
+                    f'target=_blank rel="noopener noreferrer" aria-label="{attr(t("github_repository_action"))}"'
                 )
     with ui.header(elevated=False).classes("sy-app-header bg-[var(--sy-surface)] border-b border-[var(--sy-line)] px-4"):
         skip_link = ui.link(t("skip_to_content"), "#main-content").classes("sy-skip-link")
@@ -898,7 +900,7 @@ def page_shell(active_path: str) -> Iterator[None]:
         with ui.row().classes("sy-header-bar w-full items-center justify-between"):
             with ui.row().classes("sy-header-leading items-center gap-2"):
                 ui.button(icon="menu", on_click=drawer.toggle).props(
-                    f'flat round aria-label="{t("open_navigation")}" aria-controls=main-navigation-drawer'
+                    f'flat round aria-label="{attr(t("open_navigation"))}" aria-controls=main-navigation-drawer'
                 ).classes("sy-icon-control sy-desktop-drawer-trigger").style("color: var(--sy-nav-ink) !important").tooltip(t("open_navigation"))
                 with ui.column().classes("sy-header-context gap-0 min-w-0"):
                     ui.label(f"{chapter:02d} · {t(navigation_group_key)}").classes("sy-header-eyebrow")
@@ -909,23 +911,23 @@ def page_shell(active_path: str) -> Iterator[None]:
                 with ui.row().classes("sy-desktop-header-controls items-center gap-1"):
                     if access_mode is AccessMode.ADMIN:
                         ui.badge(t("access_admin_signed_in"), color="positive").props(
-                            f'outline aria-label="{t("access_admin_mode")}" data-testid=administrator-mode'
+                            f'outline aria-label="{attr(t("access_admin_mode"))}" data-testid=administrator-mode'
                         ).classes("sy-status-badge")
                         ui.button(
                             icon="logout",
                             on_click=_sign_out,
                         ).props(
-                            f'flat round aria-label="{t("access_admin_logout")}" data-testid=administrator-logout'
+                            f'flat round aria-label="{attr(t("access_admin_logout"))}" data-testid=administrator-logout'
                         ).classes("sy-admin-logout").tooltip(t("access_admin_logout"))
                     elif access_mode is AccessMode.GUEST:
                         ui.badge(t("access_guest_signed_in"), color="warning").props(
-                            f'outline aria-label="{t("access_guest_mode")}" data-testid=guest-mode'
+                            f'outline aria-label="{attr(t("access_guest_mode"))}" data-testid=guest-mode'
                         ).classes("sy-status-badge")
                         ui.button(
                             icon="logout",
                             on_click=_sign_out,
                         ).props(
-                            f'flat round aria-label="{t("access_admin_logout")}" data-testid=guest-logout'
+                            f'flat round aria-label="{attr(t("access_admin_logout"))}" data-testid=guest-logout'
                         ).classes("sy-admin-logout").tooltip(t("access_admin_logout"))
                     language_label = (
                         t("switch_to_english") if current_locale() != "en" else t("switch_to_chinese")
@@ -934,7 +936,7 @@ def page_shell(active_path: str) -> Iterator[None]:
                         "EN" if current_locale() != "en" else "中",
                         on_click=lambda: _reload_after_preference_change(toggle_locale),
                     ).props(
-                        f'flat dense no-caps data-testid=language-control aria-label="{language_label}"'
+                        f'flat dense no-caps data-testid=language-control aria-label="{attr(language_label)}"'
                     ).classes("sy-language-control").style("color: var(--sy-nav-ink) !important")
                     sound_icon = "volume_up" if sound_feedback_enabled() else "volume_off"
                     sound_tooltip = (
@@ -946,7 +948,7 @@ def page_shell(active_path: str) -> Iterator[None]:
                         icon=sound_icon,
                         on_click=lambda: _toggle_sound_feedback_with_preview(sound_controls),
                     ).props(
-                        f'flat round aria-label="{sound_tooltip}"'
+                        f'flat round aria-label="{attr(sound_tooltip)}"'
                     ).classes("sy-icon-control").style("color: var(--sy-nav-ink) !important")
                     with sound_button:
                         sound_tooltip_element = ui.tooltip(sound_tooltip)
@@ -956,7 +958,7 @@ def page_shell(active_path: str) -> Iterator[None]:
                         icon=theme_icon,
                         on_click=lambda: _toggle_theme_in_place(dark_mode, theme_controls),
                     ).props(
-                        f'flat round aria-label="{tooltip}"'
+                        f'flat round aria-label="{attr(tooltip)}"'
                     ).classes("sy-icon-control").style("color: var(--sy-nav-ink) !important")
                     with theme_button:
                         theme_tooltip_element = ui.tooltip(tooltip)
@@ -964,7 +966,7 @@ def page_shell(active_path: str) -> Iterator[None]:
     maintenance = get_workflow().maintenance_status()
     if application_mode.is_practice or access_mode is AccessMode.GUEST or maintenance.active:
         with ui.element("div").classes("sy-status-stack").props(
-            f'role=region aria-label="{t("system_status")}" data-testid=system-status-stack'
+            f'role=region aria-label="{attr(t("system_status"))}" data-testid=system-status-stack'
         ):
             if application_mode.is_practice:
                 with ui.element("section").props(

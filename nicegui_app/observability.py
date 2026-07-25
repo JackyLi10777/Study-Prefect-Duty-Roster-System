@@ -225,7 +225,30 @@ class RequestTracingMiddleware(BaseHTTPMiddleware):
             response.headers["X-Content-Type-Options"] = "nosniff"
             response.headers["Referrer-Policy"] = "no-referrer"
             response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-            response.headers["X-Frame-Options"] = "SAMEORIGIN"
+            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+            if category not in {"asset", "nicegui_internal"}:
+                # NiceGUI 3.13 serves import-map/inline modules and Vue's
+                # runtime template compiler. Removing 'unsafe-eval' leaves the
+                # HTTP shell visible but prevents Vue from rendering any page;
+                # removing 'unsafe-inline' blocks the framework bootstrap.
+                # Keep this explicit framework exception narrow: third-party
+                # script/style hosts remain blocked and dynamic attributes go
+                # through nicegui_app.ui.html_safety.
+                response.headers["Content-Security-Policy"] = (
+                    "default-src 'self'; "
+                    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                    "style-src 'self' 'unsafe-inline'; "
+                    "img-src 'self' data: https://i.ytimg.com https://img.youtube.com; "
+                    "font-src 'self'; "
+                    "connect-src 'self' ws: wss:; "
+                    "media-src 'self'; "
+                    "frame-src https://www.youtube-nocookie.com; "
+                    "frame-ancestors 'none'; "
+                    "base-uri 'none'; "
+                    "form-action 'self'; "
+                    "object-src 'none'"
+                )
             if category not in {"asset", "nicegui_internal"}:
                 response.headers["Cache-Control"] = "no-store"
             duration_ms = round((perf_counter() - started_at) * 1000)

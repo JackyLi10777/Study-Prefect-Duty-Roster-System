@@ -38,7 +38,7 @@ longest document:
 | Successor rehearsing before receiving official data | `START_PRACTICE_MODE.cmd` | [Quick start](docs/QUICKSTART.md) and [operator guide](docs/OPERATOR_GUIDE.md) |
 | IT maintainer deploying, recovering, or tracing an OP reference | [Documentation index](docs/DOCUMENTATION_INDEX.md) | [Windows host setup](docs/WINDOWS_DEDICATED_HOST_SETUP.md) and [update workflow](docs/UPDATE_WORKFLOW.md) |
 | Security reviewer or vulnerability reporter | [Security and privacy model](docs/SECURITY_AND_PRIVACY.md) | [Private reporting policy](SECURITY.md) and [branch strategy](docs/BRANCH_STRATEGY.md) |
-| Developer or reviewer changing code | [NiceGUI architecture](docs/NICEGUI_ARCHITECTURE.md) | [Risk-led code review](docs/CODE_ACCEPTANCE_REVIEW.md) and [contributing guide](CONTRIBUTING.md) |
+| Developer or reviewer changing code | [NiceGUI architecture](docs/NICEGUI_ARCHITECTURE.md) | [Risk-led code review](docs/CODE_ACCEPTANCE_REVIEW.md), [AI Agent worktree guide](docs/AI_AGENT_GIT_GUIDE.md), and [contributing guide](CONTRIBUTING.md) |
 
 ### Access and data boundary
 
@@ -56,28 +56,22 @@ ownership, source-of-truth precedence, configuration classes, data lifecycles,
 verification levels, known limits, and the update triggers that keep the set
 complete.
 
-**Current formal baseline:** `v1.2.0-rc.18`／`fd504a8` is live at
-`C:\SingYinRoster`. `/healthz` is healthy and `/readyz` is ready. The rollout
- created `20260722-024349-422389-manual_verified_backup.sqlite3` and passed its
-SHA-256 checksum, database integrity, fairness reconciliation, row matching,
-restore audit, and isolated restore. Its SHA-256 is
-`51ad0e42284c0d42363d2f8fd2bc3dc70ae0ce1f79d258016ec2d66bf6741c7f`.
-Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` passed zero-traffic staged and canonical
-health／entrance／viewer checks before receiving 100% traffic. Supervised
-administrator, advisor, and real-device acceptance remains a human responsibility.
-If an rc20 deployment fails, this exact rc18 host／Worker pair is the first-level
-rollback target. rc17／`99f5816` with Worker
+**Current formal baseline:** `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`
+is live at `C:\SingYinRoster`. `/healthz` is healthy and `/readyz` is ready with
+`writeReady=true` and `policyVersion=2026.07.22-assist-modes`. The controlled
+switch created `20260722-122411-304415-manual_verified_backup.sqlite3` and passed
+its SHA-256 checksum, database integrity, fairness reconciliation, row matching,
+restore audit, isolated restore, and additive migration
+`0011_assist_assignment_mode`. Its SHA-256 is
+`9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0`. Source
+fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`
+passed all 14／14 formal gates (839 Python, 3 motion, 40 Worker contracts).
+Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` was intentionally retained
+because Worker source／settings did not change. first-level rollback is
+rc18／`fd504a8` with that same Worker. rc17／`99f5816` with Worker
 `c85770b2-c626-462c-bc74-5e6bd305c75b` is retained only as a secondary verified
-baseline.
-
-**Verified but not deployed rc20 candidate:** annotated tag `v1.2.0-rc.20` at
-commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` passed all 14／14 formal gates
-under source fingerprint
-`93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`:
-839 Python tests, 3 motion-runtime contracts, and 40 Worker contracts. This is
-source-matched machine evidence, not a claim that the rc18 Windows origin has
-already switched. Deployment still requires UAC approval, and supervised Head
-Study Prefect and teacher-advisor acceptance remains open.
+baseline. Supervised Head Study Prefect and teacher-advisor acceptance remains
+open.
 
 **Public security and release integrity:** Public browsers reach only the
 Cloudflare Worker; the official NiceGUI origin remains loopback-only. Admin
@@ -90,33 +84,33 @@ release tag cannot be updated or deleted. See the complete
 data classes, incident response, and residual limits.
 
 The retained **v1.1 rollback** record is historical recovery evidence only; it
-does not replace the current rc18 baseline.
+does not replace the current rc20 baseline.
 
 The public entrance, shared-roster viewer, and NiceGUI workbench use the same
 `Copyright © 2026 LI Chuangjie` page-footer attribution. Clean group-sharing
 roster PDFs retain their explicit supplementary-footer export option.
 
-The live rc18 product includes the versioned Service Weave `ProductIdentity`,
+Non-interactive editorial cards gain a quiet fine-pointer ambient follow-light and focus-within halo without lift or cursor change; action cards keep the existing lift + glow. The live rc20 product includes Assist fixed-weekday／flexible-weekly modes plus the versioned Service Weave `ProductIdentity`,
 central `PageDefinition` catalogue, public NiceGUI component API, explicit CSS
 ownership, filterable Engineering evidence index, internal Developer Reference,
 bounded Guest preferences, unified generated-file delivery, the browser／PDF
 roster matrix, and auditable published-roster withdrawal.
 
-The live rc18 release retains and re-verifies admission control that rejects excess Guest sessions without
+The live rc20 release retains and re-verifies admission control that rejects excess Guest sessions without
 evicting active users, stronger import and network bounds, aggregate fairness
 reconciliation, explicit return paths, and stable button containers whose icons
-transform internally. Its 288-input fingerprint
-`de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664`
+transform internally. Its 290-input fingerprint
+`93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`
 passed all 14 formal gates before the controlled origin and Worker rollout.
 
 ## Repository editions
 
 | Branch | Platform | Status |
 |---|---|---|
-| `codex/login-copy-music-rc18` | NiceGUI + SQLite, release source | Live rc18 `fd504a8` entrance, devotional, interaction and release integration line |
+| `codex/login-copy-music-rc18` | NiceGUI + SQLite, historical release source | Superseded rc18 `fd504a8` entrance, devotional, interaction and rollback line |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite, historical source | Previous Service Weave editorial integration line |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Previous unified-guest architecture line; no longer the formal baseline |
-| `main` | NiceGUI + SQLite, self-hosted | Verified `v1.2.0-rc.20` candidate source; the Windows origin remains on rc18 pending UAC-approved deployment |
+| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.20` source; Windows origin matches the annotated tag |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
@@ -138,8 +132,8 @@ redirects, not a static tour or second trial product. An explicitly issued
 `/view#…` link remains the separate encrypted, read-only published-roster viewer.
 
 The Worker and origin authenticate both modes with server-verified, HMAC-signed
-principals. The live rc18 release passed 14／14 formal gates against its own
-288-input fingerprint `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664`,
+principals. The live rc20 release passed 14／14 formal gates against its own
+290-input fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`,
 including isolated Admin/Guest browser, mobile, reduced-motion, performance,
 write/PDF, backup, and recovery evidence. The application has no custom password database.
 
@@ -237,7 +231,7 @@ transaction preserves the original evidence, posts the inverse of the version's
 net fairness effect, creates audit and backup obligations, and requests
 revocation of existing shares before a corrected week can be generated.
 
-The live rc18 release passed its matching 14-gate report, fresh verified backup,
+The live rc20 release passed its matching 14-gate report, fresh verified backup,
 isolated restore, origin rollout, staged Worker check, and canonical gateway
 health checks. Exact operating commands are documented in
 [`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and

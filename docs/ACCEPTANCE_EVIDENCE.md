@@ -2,7 +2,7 @@
 
 本文件把機器驗證與真人驗收分開。`logs/release-candidate-report.json` 顯示 `pass`，只代表下列自動化證據在隔離虛構資料中通過；它不代表實際名單、學校做法、專用電腦、加密離機位置或外部存取決定已獲真人批准。
 
-> **發布界線（2026-07-22）：** live rc18／`fd504a8` 與 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 仍是現行已部署基線。annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` 已以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（290 個來源檔案、839 個 Python、3 個 motion、40 個 Worker 測試），但 Windows origin 尚未切換，故這是機器驗證完成的候選，不是已部署版本。Worker 沒有來源或設定改動，仍保留現行 version；真人驗收保持未完成。
+> **發布界線（2026-07-22）：** live `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 與 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 是現行已部署基線；第一級歷史回退是 `v1.2.0-rc.18`／`fd504a8`。rc20 已以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（290 個來源檔案、839 個 Python、3 個 motion、40 個 Worker 測試），並完成受控 Windows 切換、備份、隔離還原與 canonical smoke。Worker 沒有來源或設定改動，故沿用現行 version；機器與線上證據不能代替真人驗收，後者保持未完成。
 
 > **單一裝置矩陣：** rc20 的 source-matched 隔離瀏覽器證據把手機、兩種直向 adaptive tablet、橫向 desktop-shell touch tablet 及 full desktop 視為同一產品矩陣。768×1024、820×1180、1024×768、1440×1024 已一併進入正式報告；這只完成機器量測，不能代替實體裝置或部署後驗收。
 
@@ -15,7 +15,7 @@
 | 橫向 desktop-shell touch tablet | 1024×768 | `scripts/verify_nicegui_mobile.py` | 保留 compact desktop shell；操作／文件區不被壓成狹窄多欄 |
 | Full desktop | 1440×1024 | `scripts/verify_nicegui_ui.py` | 保留完整 desktop shell、閱讀寬度、語言／theme／焦點與錯誤狀態證據 |
 
-所有列共用 canonical URL、身份／session、NiceGUI route、資料 adapter、SQLite／記憶體邊界、排班 policy、審計、PDF 及內容順序。rc20 的正式報告已把整個矩陣綁定到上述 source fingerprint；真人裝置驗收、受控 origin 切換及 canonical smoke 仍須另外完成。
+所有列共用 canonical URL、身份／session、NiceGUI route、資料 adapter、SQLite／記憶體邊界、排班 policy、審計、PDF 及內容順序。rc20 的正式報告已把整個矩陣綁定到上述 source fingerprint，受控 origin 切換及 canonical smoke 亦已完成；真人裝置驗收仍須另外完成。
 
 ## 使用方法
 

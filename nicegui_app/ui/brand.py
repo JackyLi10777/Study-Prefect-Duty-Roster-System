@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from nicegui import ui
 
+from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import current_locale
 from nicegui_app.ui.product_identity import PRODUCT_IDENTITY
 
@@ -38,7 +39,7 @@ def render_service_weave_mark(*, context: str = "navigation", test_id: str | Non
         "productMark", current_locale()
     )
     with ui.element("span").classes(f"sy-product-mark sy-product-mark--{context}").props(
-        f'role=img aria-label="{accessible_name}"{test_attribute}'
+        f'role=img aria-label="{attr(accessible_name)}"{test_attribute}'
     ):
         for appearance, source in _SERVICE_WEAVE_MARKS:
             if source is None:  # protected by the identity contract
@@ -46,7 +47,7 @@ def render_service_weave_mark(*, context: str = "navigation", test_id: str | Non
             ui.element("img").classes(
                 f"sy-product-mark-image sy-product-mark-image--{appearance}"
             ).props(
-                f'src="{source}" alt="" aria-hidden=true width=256 height=256 '
+                f'src="{attr(source)}" alt="" aria-hidden=true width=256 height=256 '
                 'loading=eager decoding=async draggable=false'
             )
 
