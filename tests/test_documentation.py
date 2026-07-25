@@ -54,6 +54,37 @@ def test_documentation_index_routes_every_markdown_guide_and_defines_ownership()
     assert "docs/DOCUMENTATION_INDEX.md" in readme_en
 
 
+def test_product_research_records_critical_decisions_and_four_product_zones() -> None:
+    research = (PROJECT_ROOT / "docs" / "PRODUCT_RESEARCH_AND_IA_DECISIONS.md").read_text(
+        encoding="utf-8"
+    )
+    design = (PROJECT_ROOT / "Professional_Design_System.md").read_text(encoding="utf-8")
+
+    for zone in (
+        "Public Product Entrance",
+        "Unified Operations Workbench",
+        "Trust & Engineering Hub",
+        "Documentation and Developer Portal",
+    ):
+        assert zone in research
+    for decision in ("**Adopt**", "**Adapt**", "**Reject"):
+        assert decision in research
+    for source in ("Apple Human Interface Guidelines", "Cloudflare Trust Hub", "OWASP"):
+        assert source in research
+    assert "2026-07-26" in research
+    assert "PRODUCT_RESEARCH_AND_IA_DECISIONS.md" in design
+    assert "Site-wide Neumorphism" in research
+    for contract in (
+        "Jobs, audiences and journeys",
+        "Considered alternatives",
+        "Shared component state matrix",
+        "Performance and resource budgets",
+        "6 MiB",
+        "Admin and Guest use the same route definitions and components",
+    ):
+        assert contract in design
+
+
 def test_windows_ssh_maintenance_guide_preserves_private_key_and_network_boundaries() -> None:
     guide = (PROJECT_ROOT / "docs" / "WINDOWS_SSH_MAINTENANCE.md").read_text(
         encoding="utf-8"
@@ -828,7 +859,7 @@ def test_reference_pages_form_two_clear_reading_lanes_without_duplicate_docs_rou
     reference_routes = [
         page.route
         for page in PAGE_DEFINITIONS
-        if page.navigation_group == "nav_reference"
+        if page.navigation_group == "nav_trust_resources"
     ]
     assert reference_routes.index("/platform") < reference_routes.index(
         "/system-architecture"

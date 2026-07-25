@@ -31,6 +31,14 @@ The current Head Study Prefect is the normal write operator. The teacher advisor
 
 ## Product, Organisation, and Solution Architecture
 
+### Canonical page and navigation catalogue
+
+`nicegui_app/ui/page_catalog.py` is the only catalogue for workbench route identity, title key, icon, page kind, music context, minimum capability, visible access modes and mobile-primary status. Desktop and mobile navigation must derive from this catalogue; a page handler must not invent a translated route, a second Guest menu or an independent access rule.
+
+Routine navigation follows the operator's actual work in this order: **Getting Started → Weekly Operations → People & Fairness → Handover & Governance → Administration → Contextual Help**. `/platform`, `/engineering` and `/system-architecture` form a separate **Trust & Documentation** portal. They remain fully available to Admin and Guest, but do not compete with the weekly task sequence. Public entrance and the read-only `/view#…` surface remain outside the workbench shell.
+
+`PageKind` is presentation metadata, not authorization. Every route, callback, service and download must still enforce the server-verified `PageContext` and capability policy. Admin and Guest therefore share page structure without sharing a persistence adapter or write authority.
+
 The presentation is deliberately split across three routes. `/platform` owns the non-sensitive product, organisation, solution, culture, resources, and co-creation story. `/engineering` turns documented release quality into a five-layer blueprint, the fingerprint-bound verification gates, reliability capabilities, and a build narrative. `/system-architecture` owns the service lifecycle, technical ownership, trust evidence, recovery boundaries, and operator FAQ. This is information architecture, not a second business-logic layer, and the ordinary dashboard remains the first route for weekly work.
 
 The Study Prefect Team model preserves official roles while adding explanatory functional titles:

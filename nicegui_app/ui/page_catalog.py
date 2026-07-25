@@ -27,11 +27,14 @@ WORKBENCH_ACCESS_MODES = frozenset(
     {AccessMode.ADMIN, AccessMode.GUEST, AccessMode.LOCAL_MAINTENANCE}
 )
 NAVIGATION_GROUP_ORDER = (
-    "nav_weekly_work",
+    "nav_getting_started",
+    "nav_weekly_operations",
     "nav_people_fairness",
-    "nav_support_system",
-    "nav_reference",
+    "nav_handover_governance",
+    "nav_administration",
+    "nav_contextual_help",
 )
+PORTAL_GROUP = "nav_trust_resources"
 
 
 @dataclass(frozen=True)
@@ -64,7 +67,7 @@ PAGE_DEFINITIONS = (
     PageDefinition(
         route="/",
         title_key="dashboard",
-        navigation_group="nav_weekly_work",
+        navigation_group="nav_weekly_operations",
         icon="space_dashboard",
         page_kind=PageKind.OPERATIONS,
         music_context="dashboard",
@@ -75,7 +78,7 @@ PAGE_DEFINITIONS = (
     PageDefinition(
         route="/rosters",
         title_key="rosters",
-        navigation_group="nav_weekly_work",
+        navigation_group="nav_weekly_operations",
         icon="calendar_month",
         page_kind=PageKind.OPERATIONS,
         music_context="weekly",
@@ -97,7 +100,7 @@ PAGE_DEFINITIONS = (
     PageDefinition(
         route="/handover",
         title_key="handover",
-        navigation_group="nav_support_system",
+        navigation_group="nav_handover_governance",
         icon="handshake",
         page_kind=PageKind.OPERATIONS,
         music_context="handover",
@@ -107,7 +110,7 @@ PAGE_DEFINITIONS = (
     PageDefinition(
         route="/access-control",
         title_key="access_control",
-        navigation_group="nav_support_system",
+        navigation_group="nav_administration",
         icon="admin_panel_settings",
         page_kind=PageKind.OPERATIONS,
         music_context="settings",
@@ -117,7 +120,7 @@ PAGE_DEFINITIONS = (
     PageDefinition(
         route="/settings",
         title_key="settings",
-        navigation_group="nav_support_system",
+        navigation_group="nav_administration",
         icon="settings",
         page_kind=PageKind.OPERATIONS,
         music_context="settings",
@@ -127,7 +130,7 @@ PAGE_DEFINITIONS = (
     PageDefinition(
         route="/platform",
         title_key="platform",
-        navigation_group="nav_reference",
+        navigation_group=PORTAL_GROUP,
         icon="domain",
         page_kind=PageKind.STORY,
         music_context="architecture",
@@ -137,7 +140,7 @@ PAGE_DEFINITIONS = (
     PageDefinition(
         route="/system-architecture",
         title_key="system_architecture",
-        navigation_group="nav_reference",
+        navigation_group=PORTAL_GROUP,
         icon="account_tree",
         page_kind=PageKind.REFERENCE,
         music_context="architecture",
@@ -147,7 +150,7 @@ PAGE_DEFINITIONS = (
     PageDefinition(
         route="/engineering",
         title_key="engineering",
-        navigation_group="nav_reference",
+        navigation_group=PORTAL_GROUP,
         icon="build_circle",
         page_kind=PageKind.EVIDENCE,
         music_context="architecture",
@@ -157,7 +160,7 @@ PAGE_DEFINITIONS = (
     PageDefinition(
         route="/getting-started",
         title_key="getting_started",
-        navigation_group="nav_reference",
+        navigation_group="nav_getting_started",
         icon="play_circle",
         page_kind=PageKind.REFERENCE,
         music_context="getting_started",
@@ -167,7 +170,7 @@ PAGE_DEFINITIONS = (
     PageDefinition(
         route="/guide",
         title_key="operator_guide",
-        navigation_group="nav_reference",
+        navigation_group="nav_contextual_help",
         icon="help_outline",
         page_kind=PageKind.REFERENCE,
         music_context="guide",
@@ -177,7 +180,7 @@ PAGE_DEFINITIONS = (
     PageDefinition(
         route="/devotional",
         title_key="devotional",
-        navigation_group="nav_reference",
+        navigation_group="nav_contextual_help",
         icon="menu_book",
         page_kind=PageKind.SACRED,
         music_context="devotional",
@@ -209,6 +212,16 @@ def navigation_groups_for(
         if pages:
             groups.append((group, pages))
     return tuple(groups)
+
+
+def portal_pages_for(mode: AccessMode) -> tuple[PageDefinition, ...]:
+    """Return evidence and documentation destinations outside routine work."""
+
+    return tuple(
+        page
+        for page in PAGE_DEFINITIONS
+        if page.navigation_group == PORTAL_GROUP and page.is_accessible_to(mode)
+    )
 
 
 def mobile_navigation_for(mode: AccessMode) -> tuple[PageDefinition, ...]:
@@ -246,7 +259,7 @@ def validate_page_catalog() -> list[str]:
     for page in PAGE_DEFINITIONS:
         if not page.route.startswith("/"):
             errors.append(f"Page route must be absolute: {page.route}")
-        if page.navigation_group not in NAVIGATION_GROUP_ORDER:
+        if page.navigation_group not in (*NAVIGATION_GROUP_ORDER, PORTAL_GROUP):
             errors.append(f"Unknown navigation group for {page.route}")
         if not page.title_key or not page.icon or not page.music_context:
             errors.append(f"Incomplete page presentation contract: {page.route}")
@@ -268,6 +281,7 @@ def validate_page_catalog() -> list[str]:
 
 __all__ = (
     "NAVIGATION_GROUP_ORDER",
+    "PORTAL_GROUP",
     "PAGE_DEFINITIONS",
     "PageDefinition",
     "PageKind",
@@ -276,5 +290,6 @@ __all__ = (
     "navigation_groups_for",
     "navigation_item_tuples_for",
     "page_definition",
+    "portal_pages_for",
     "validate_page_catalog",
 )

@@ -56,6 +56,19 @@ ownership, source-of-truth precedence, configuration classes, data lifecycles,
 verification levels, known limits, and the update triggers that keep the set
 complete.
 
+### One product, four distinct zones
+
+These are not four separate sites. They are four reading and operating contexts inside the same **Service Weave** product:
+
+| Zone | First question | Primary content |
+|---|---|---|
+| Public Product Entrance | What is this, and which identity should I use? | Product purpose, Guest demo, Admin sign-in, share links, and a short devotional prelude |
+| Unified Operations Workbench | What is the next safe action? | Devotional, generate, review/export, published-duty absence, prefects, fairness, and handover |
+| Trust & Engineering Hub | Why can this result be trusted? | Mission, engineering evidence, architecture, data lifecycle, recovery, and verification |
+| Documentation & Developer Portal | How does a successor or maintainer find the right procedure? | Getting started, operator guide, handover, technical reference, documentation index, and release procedure |
+
+Admin is the canonical operational product. Guest uses the same routes, navigation, components, and roster experience, while the server switches it to a fictional temporary workspace and denies permanent writes, uploads, AI, backups, shares, and costly external work below the UI. The routine sidebar follows real work; platform story, engineering evidence, and architecture sit in a distinct **Trust & Documentation** portal so institutional narrative never interrupts the weekly roster flow. See [Product research and information-architecture decisions](docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md) for the source review, adopted principles, adaptations, and rejected alternatives.
+
 **Current formal baseline:** `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`
 is live at `C:\SingYinRoster`. `/healthz` is healthy and `/readyz` is ready with
 `writeReady=true` and `policyVersion=2026.07.22-assist-modes`. The controlled

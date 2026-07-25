@@ -1,7 +1,7 @@
 # Professional Design System
 
 **Project:** Sing Yin Study Prefect Duty Roster System  
-**Version:** 1.1 – living design, interaction, and reliability standard  
+**Version:** 1.2 — Quiet Precision institutional product contract
 **Status:** Active design source of truth  
 **Primary audience:** 負責日常操作的當任首席導學風紀、主要在完成後核對的顧問老師、未來維護者及實作代理人
 
@@ -23,6 +23,33 @@ Interface copy is part of the operating model. Every sentence must help the read
 
 The signature interaction is **值週節奏 / Weekly Pulse**: the interface makes the current stage, the safe next action, and the durable result visible. It is not an animation for decoration; it is a consistent operational landmark across the dashboard, roster workspace, publication, adjustment, and handover.
 
+### Jobs, audiences and journeys
+
+| Audience／mode | Functional job | Emotional and social job | Required journey |
+|---|---|---|---|
+| Head Study Prefect／Admin | Prepare, review, publish, export, adjust and hand over a fair weekly roster | Feel in control under time pressure and be able to explain a decision responsibly | Access verification → Daily Verse → next safe weekly action → evidence／recovery → handover |
+| Visitor／Guest | Understand the product and exercise the real workflow with fictional data | Explore confidently without fearing damage to school records | Public entrance → bounded Guest session → same workbench routes → clear DEMO state → expiry／reset |
+| Teacher advisor／Viewer | Review an approved roster and understand the fairness and reliability model | Trust the process without being asked to operate it | Read-only share or public entrance → published roster／Trust & Engineering → no editing controls |
+| Successor／operator | Learn the workflow, verify custody and take over safely | Feel supported rather than dependent on the previous operator | Getting Started → Operator Guide → Handover & Governance → supervised acceptance |
+| Maintainer／developer | Locate architecture, update rules, verification and deployment procedures | Make changes without silently weakening policy or evidence | Documentation entry → architecture／security → update workflow → exact-source release evidence |
+
+The social job is not to make the system look like a large company. It is to make fairness, stewardship and technical responsibility credible to the people who inherit or review the work.
+
+### Four-zone information architecture
+
+1. **Public Product Entrance** explains the product, audience, operating sequence, evidence and safe identity choices. It has no roster capability.
+2. **Unified Operations Workbench** owns Getting Started, Weekly Operations, People & Fairness, Handover & Governance, Administration and contextual help. The weekly next action remains the dominant destination.
+3. **Trust & Engineering Hub** combines architecture, security/privacy, fairness policy evidence, reliability/recovery and release/acceptance evidence. It is outside the routine weekly navigation lane even when reached through the shared shell.
+4. **Documentation and Developer Portal** routes operators and maintainers to the correct guide, contribution workflow, deployment procedure and changelog without pretending the application exposes a public developer API.
+
+Existing deep links remain canonical or receive explicit compatibility redirects. Admin and Guest use the same route definitions and components; only the verified `PageContext`, adapter, capability policy and data source differ.
+
+### Considered alternatives
+
+- **Site-wide soft Neumorphism:** rejected because low-contrast recesses, shadow-heavy hierarchy and press-like static cards weaken affordance and dark-mode reliability. Only the existing restrained token-backed elevation scale remains.
+- **Separate marketing, Guest and Admin applications:** rejected because duplicated route trees, copy and components would drift and create a weaker security review boundary. One product shell with server-enforced adapters is easier to verify.
+- **A single dense enterprise dashboard:** rejected because architecture, evidence and marketing content would compete with the operator's weekly task. Evidence receives dedicated zones and task-appropriate density.
+
 ### Author voice and handover narrative
 
 The system has one human authorial voice: **李創杰，2026–2027 年度首席導學風紀**. Author introductions, motivation, design values, handover letters, project history, and co-creation conclusions must be written in his first person (`我` / `I`). They must not describe him at a distance as though an unrelated corporate narrator owns the project.
@@ -39,18 +66,19 @@ Feedback is distinct from technical evidence. Ordinary suggestions may use email
 
 ### 2026.07 adaptive direction — Quiet Precision / 安靜精準
 
-The next design level is not “more Apple-like” or “more decorated”. It is a synthesis of the most durable ideas in Apple HIG, Material Design 3, Nordic editorial interfaces, Japanese restraint, and mature independent productivity software:
+The next design level is not “more Apple-like”, “more corporate”, or “more decorated”. It is one coherent institutional product whose hierarchy, capability boundaries and evidence remain legible before any visual treatment is noticed. The research evidence, access dates and Adopt／Adapt／Reject decisions are recorded in [`docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md`](docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md); this document owns the resulting executable rules.
 
-1. **Recognition before style:** the operator must recognise the current stage, primary action, and consequence before noticing the visual treatment.
-2. **One geometry grammar:** navigation, controls, cards, sheets, and status markers share a small radius, spacing, icon, and border vocabulary. Similar meaning produces similar shape.
-3. **Quiet action colour:** primary actions use a desaturated slate-blue that remains distinct from teal identity and verified states. Bright electric blue is removed because it dominates warm materials and creates a plastic visual break.
-4. **Solid material hierarchy:** background, quiet group, working surface, and raised decision layer are separated by contrast, border, and restrained shadow. Blur and transparency are unnecessary.
-5. **Motion has three speeds:** 90 ms press acknowledgement, 180 ms state change, and 260 ms layer/entry transition. Exit is faster than entry; motion uses transform/opacity and remains interruptible. “Calm” does not mean imperceptible: the **control container stays geometrically fixed**, while its semantic icon may visibly change glyph, scale, resolve a geometric halo, or—only where the story requires it, such as refresh—rotate in place. The shape change must be obvious enough to confirm affordance, run only in response to interaction, and become completely static under reduced motion.
-6. **Controls form a dock:** page utilities are visually grouped as one compact, solid tool cluster. The current navigation item uses text weight plus a slim position rail, not colour alone.
-7. **Density follows consequence:** routine scanning stays compact; publication, restore, archive, and fairness consequences receive more space and plain-language explanation.
-8. **Calm is not emptiness:** blank space is retained where it separates decisions. Contextual imagery may enrich approved non-sensitive scenes, but it never fills space that should communicate order.
+1. **Recognition before style:** the operator must recognise the current stage, primary action and consequence before noticing the visual treatment.
+2. **One geometry grammar:** navigation, controls, cards, sheets and status markers share a small radius, spacing, icon and border vocabulary. Similar meaning produces similar shape.
+3. **Quiet action colour:** primary actions use desaturated slate-blue; teal remains identity and verified/stable status. Colour never substitutes for text, icon or position.
+4. **Solid material hierarchy:** page ground, quiet group, working surface and raised decision layer are separated by contrast, border and restrained shadow. Site-wide Neumorphism, persistent blur and transparent navigation are rejected.
+5. **Motion has three speeds:** 90 ms press acknowledgement, 180 ms state change and 260 ms layer/entry transition. The **control container stays geometrically fixed** while a semantic icon may tell a short, obvious story—open, refresh, complete or reveal. Containers never drift, tilt or orbit; reduced motion is completely static.
+6. **Controls form a dock:** page utilities are one compact solid cluster. The current navigation item uses text weight plus a position rail, not colour alone.
+7. **Density follows consequence:** routine scanning stays compact; publication, restore, withdrawal and fairness consequences receive more space and plain-language explanation.
+8. **Calm is not emptiness:** blank space separates decisions. Context imagery may enrich approved non-sensitive scenes, but never fills space that should communicate order.
+9. **One product, four zones:** Public Product Entrance, Unified Operations Workbench, Trust & Engineering Hub and Documentation and Developer Portal share identity and tokens while retaining task-appropriate density.
 
-This direction deliberately moves beyond brand imitation. It treats HIG and Material guidance as behavioural evidence, then expresses it through an original Sing Yin operational language.
+This direction treats external design systems as evidence, not templates, and expresses the result through an original Sing Yin operational language.
 
 ### Current design mandate
 
@@ -137,9 +165,9 @@ Keep the supplied bytes and deliberate crop, provide bilingual alternative text 
 
 ### Current state
 
-The active NiceGUI application already has correct policy safeguards, bilingual support, light/dark mode, verified backups, print-ready PDFs, contextual hints, and a three-stage weekly workflow. The adaptive shell now shares one 900px navigation breakpoint, renders repeated mobile navigation after the page content in DOM order, stacks simultaneous global status banners, and applies one dialog-action grammar. Appearance and interface sound update in place; a dirty-form guard protects the only preference which still requires a page reload—language. The theme has a sound foundation—neutral surfaces, teal identity, restrained slate primary actions, rounded controls, and good contrast—but its presentation must continue converging on one composed product rather than a collection of useful cards.
+The active NiceGUI application already has policy safeguards, bilingual support, light/dark mode, verified backups, print-ready PDFs, contextual hints and a three-stage weekly workflow. The adaptive shell shares one 900px navigation breakpoint, renders repeated mobile navigation after the page content in DOM order, stacks simultaneous global status banners and applies one dialog-action grammar. Appearance and interface sound update in place; a dirty-form guard protects the only preference which still requires a page reload—language. The theme has a sound foundation—neutral surfaces, teal identity, restrained slate primary actions, rounded controls and tested contrast—but its information architecture must continue converging on one composed product rather than a collection of useful pages.
 
-The live design baseline remains rc18. The protected rc20 source is now a formally verified but undeployed candidate: annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` passed 14／14 formal gates under fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`, including 839 Python tests, 3 motion-runtime contracts and 40 Worker contracts. The Windows origin has not switched because its protected service still requires UAC-approved deployment; supervised Head Study Prefect and teacher-advisor acceptance remains open. Candidate evidence therefore cannot be presented as a live design result.
+The live public gateway currently identifies the deployed origin as rc20. The active repository has moved beyond that release line, so historical rc20 gate counts prove only that immutable candidate; they are not evidence for the present working tree. A new candidate must pass exact-source verification, controlled Windows deployment, matching Worker deployment and online rendered checks before this document or the interface may describe it as live. Supervised Head Study Prefect and teacher-advisor acceptance remains a separate open decision until recorded.
 
 ### Head Study Prefect moment
 
@@ -185,6 +213,9 @@ The executable owner is the versioned `design_system/tokens.v1.json` contract. I
 - Apple logos, SF symbols copied as product branding, proprietary screenshots, or a literal iOS clone.
 - AI-looking illustration buttons, emoji-led navigation, rainbow gradients, and decorative motion without a task purpose.
 - Teal on every interactive element. Teal is Sing Yin identity and verified/settled status, not a substitute for hierarchy.
+- Site-wide Neumorphism, flat-on-flat controls, glowing twin shadows or recessed fields that reduce contrast or obscure an affordance.
+- Shadow inflation on inactive surfaces, nested raised cards and press styling on non-interactive content. Depth is earned by consequence and ownership, not granted to every rectangle.
+- Generic Tailwind shadow utilities applied outside the token system. Every shadow in the interface originates from `design_system/tokens.v1.json`.
 
 ### Critical adoption of SaaS website patterns
 
@@ -336,12 +367,12 @@ Use a 4px base with a disciplined rhythm: `4, 8, 12, 16, 24, 32, 48`.
 
 | Level | Use | Treatment |
 |---|---|---|
-| 0 | Page ground and tables | Boundary only |
-| 1 | Standard cards | Fine border + soft short shadow |
-| 2 | Current action / open popover | Slightly stronger shadow and blue/teal state treatment |
-| 3 | Confirmation dialog | Clear solid surface, stronger shadow, dimmed background |
+| 0 | Page ground and tables | Boundary and contrast only |
+| 1 | Standard cards and grouped work | Fine border + soft short shadow from the existing component tokens |
+| 2 | Current action / open popover | Slightly stronger existing shadow and semantic blue/teal state treatment |
+| 3 | Confirmation dialog | Clear solid surface, stronger existing shadow and dimmed background |
 
-Do not layer a card inside a card unless there is a real change of task or ownership.
+Do not layer a card inside a card unless there is a real change of task or ownership. Inputs remain solid fields with visible boundaries; they are not made “recessed” through low-contrast shadows. All shadows must resolve from `design_system/tokens.v1.json`; the specification must never name tokens that do not exist in that contract.
 
 ### 5.5 Material and texture
 
@@ -354,6 +385,28 @@ Premium tactility comes from a controlled material stack, not from filling every
 - Texture is prohibited behind forms, fields, tables, roster cards, prefect names, fairness records, warnings, recovery consequences, export controls and PDFs. Those surfaces remain solid and maximally legible.
 - Mobile reduces material opacity and complexity. `prefers-reduced-transparency` receives a quieter fallback even though no glass or blur is used.
 - A new material is a system change: add a paired asset, a named variable, approved placement selectors, both-theme browser evidence, a sensitive-surface exclusion test and this specification in the same revision.
+
+### 5.6 Visual hierarchy framework
+
+Visual hierarchy is the ladder that guides the operator's eye through a page before colour, motion, or decoration can compete. The framework defines five ranked layers; every page element belongs to exactly one layer. Rankings compound through size, weight, colour saturation, and elevation—in that fixed priority—never through a single channel alone.
+
+| Layer | Rank | Role | Typography | Colour | Elevation |
+|---|---|---|---|---|---|
+| **Dominant** | 1 | Page-defining title or the single primary action | 30–34px, 700–750 weight, −0.5px tracking | `--sy-ink` (maximum contrast) | Ground or current-action elevation |
+| **Heading** | 2 | Section title, card group label, decision label | 20–22px, 700 weight | `--sy-ink` | Raised surface header |
+| **Body** | 3 | Instructions, table text, form labels, card body | 15px, 400 weight, 1.6 line-height | `--sy-ink` (body) / `--sy-muted` (metadata) | Ground or raised, without independent elevation |
+| **Supporting** | 4 | Metadata, captions, timestamps, version numbers | 13px, 400 weight, 1.55 line-height | `--sy-muted` exclusively | No independent elevation |
+| **Quiet** | 5 | Legal, secondary navigation footnotes, archival markers | 12–13px, 350–400 weight | `--sy-muted` at reduced opacity | No elevation; background-assimilated |
+
+**Hierarchy rules:**
+
+1. **One dominant per page.** A second bold element competing for the same rank diffuses attention. If the page has a primary action button, its title and the button share the dominant rank but serve complementary functions (orient vs. act).
+2. **Proximity signals grouping.** Elements separated by 8px or less belong to the same conceptual unit. Sections separated by 24px signal a task boundary. The 32px gap indicates a complete change of decision context.
+3. **Weight drops predictably.** Heading → Body → Supporting → Quiet. The ladder never skips a step (no 30px title next to 13px metadata without a 15px bridging line).
+4. **Colour saturation follows rank.** Dominant and heading layers use full-contrast ink. Supporting and quiet layers reduce saturation by 25–40%. Decorative colour never compensates for a missing weight step.
+5. **Elevation amplifies interaction, not decoration.** Only consequential interactive elements receive stronger depth. Static content stays at ground or raised level without press affordance.
+6. **Empty space is a hierarchy signal.** The gap between the dominant layer and the first heading is the largest on the page (40–48px). The gap between a heading and its body is 8–12px. Consistent spacing ratios make the hierarchy predictable without reading every label.
+7. **Mobile preserves the ladder, reorders the layout.** At phone width, the dominant layer stays first in reading order. Below 390px, heading weight may reduce from 700 to 650 to prevent line-wrapped titles from dominating. No layer is omitted; no new decorative element is introduced to fill reflowed space.
 
 ---
 
@@ -534,7 +587,7 @@ The information architecture may learn from the grouped navigation, page-local c
 
 ### Navigation
 
-- Group pages by real work: weekly work, people and fairness, handover and system, guides and devotional.
+- Group routine pages by real work in this order: Getting Started, Weekly Operations, People & Fairness, Handover & Governance, Administration and Contextual Help. Platform story, engineering evidence and developer architecture remain available through a separate Trust & Documentation portal outside the routine task groups.
 - Active navigation has a blue selection field and remains visible in both themes.
 - Icons are one consistent Material outline family, supporting—not replacing—text.
 - Limit primary navigation to the current operating map; archive old routes only as redirects for bookmarks.
@@ -549,11 +602,31 @@ The information architecture may learn from the grouped navigation, page-local c
 
 | Kind | Use | Visual rule |
 |---|---|---|
-| Primary | The one next consequential action | Low-saturation action blue; 1px highlight, inset lower edge and short two-stage shadow; clear verb; minimum 44px target |
-| Secondary | A valid alternative or review path | Warm/dark neutral surface, semantic outline, shallow offset shadow and the same geometry as Primary |
-| Tertiary | Navigation or low-risk discovery | Quiet surface response; no raised CTA shadow; icon only when it clarifies meaning |
-| Attention | A safe recovery or unresolved prerequisite | Amber outline／surface only; never decorative variety and never a substitute for error copy |
-| Destructive | Archive／remove／restore-overwrite action | Warm danger treatment, persistent label, compressed shadow on press and an explicit consequence confirmation |
+| Primary | The one next consequential action | Low-saturation slate-blue fill with white text, existing token-backed control shadow, clear verb and minimum 44px target. |
+| Secondary | A valid alternative or review path | Warm／dark neutral surface, semantic outline and the shared outline shadow. Same geometry as Primary. |
+| Tertiary | Navigation or low-risk discovery | Quiet surface response without independent elevation. Icon only when it clarifies meaning. |
+| Attention | A safe recovery or unresolved prerequisite | Amber outline／surface; never decorative variety and never a substitute for error copy. |
+| Destructive | Archive／remove／restore-overwrite action | Muted-red danger treatment with a persistent label and explicit consequence confirmation. |
+
+**Button interaction contract (all families):**
+
+1. Geometry and label width remain stable in every state; hover cannot move surrounding content.
+2. Fine-pointer hover may deepen the existing token-backed contrast or shadow. Coarse pointers receive the same meaning through press and focus states.
+3. Press acknowledges input within 90ms using a contained change of colour, shadow or at most 1px travel. A narrative icon may change shape, but the button container must not drift, tilt or rotate.
+4. Disabled and busy states expose real `aria-disabled`／`aria-busy` semantics and prevent duplicate activation; visual treatment alone is insufficient.
+5. Dark mode uses the paired semantic tokens. It does not simulate a separate light source or add glowing white edges.
+6. Reduced motion presents the same state changes without transforms or animated icon sequences.
+
+### Shared component state matrix
+
+| State | Required signal | Reliability／accessibility contract |
+|---|---|---|
+| Rest／selected | Stable label, boundary and current-state marker where relevant | Selection uses text, geometry or `aria-current`／checked state as well as colour. |
+| Hover／focus-visible／pressed | Bounded token-backed feedback; focus ring remains visually dominant | No layout shift, no host rotation and no hover-only meaning. |
+| Loading／pending | Real phase label; skeleton only when content shape and a genuine delay are known | Set busy state, prevent duplicate activation and retain the initiating context. |
+| Success／warning／error | Semantic icon, plain-language result and next safe action | Do not expose raw exceptions; success is shown only after the owning transaction finishes. |
+| Disabled／permission-denied | Persistent label plus why and what remains possible | The server and service layer must still deny a direct request. |
+| Empty | Explain whether data is absent, filtered or unavailable and offer one safe action | Never invent example records inside an official workspace. |
 
 Buttons must say what happens: “生成並儲存草稿”, “確認發布並入帳”, “建立交接備份包”. Avoid “提交”, “確定”, or icon-only critical actions.
 
@@ -594,19 +667,19 @@ All members of the family share these rules:
 10. Button labels use sentence case; uppercase is reserved for short kickers and section labels. An uploader is a neutral input surface, never a competing primary CTA. Notifications use the same stable／info／attention／danger fills, icon and plain-language next step as the page that triggered them.
 11. Filled danger is reserved for the last consequential remove／overwrite confirmation. Sign-out, cancel, close and ordinary navigation remain neutral even when they end a session or leave a screen.
 
-Component acceptance requires desktop light, desktop dark, 390px and 320px mobile evidence; keyboard focus; primary／secondary／tertiary／attention／danger／disabled／busy examples; notification and uploader states; no console or page errors; no unintended overlap or horizontal overflow; 44px phone targets for buttons, toggles, checkboxes, radios and clickable rows; rendered label contrast of at least 4.5:1; static reduced-motion behaviour; and bounded DOM, listener and heap evidence. A more dimensional appearance does not waive any of these checks.
+Component acceptance requires desktop light, desktop dark, 390px and 320px mobile evidence; keyboard focus; primary／secondary／tertiary／attention／danger／disabled／busy examples; notification and uploader states; no console or page errors; no unintended overlap or horizontal overflow; 44px phone targets for buttons, toggles, checkboxes, radios and clickable rows; rendered label contrast of at least 4.5:1; static reduced-motion behaviour; and bounded DOM, listener and heap evidence. Shadow values must use the assigned shared tokens rather than page-local values, and pressed controls must return to idle without residual transform. A more dimensional appearance does not waive any of these checks.
 
 The grammar governs the whole interface through component families, not page-by-page decoration:
 
 | Family | Shared contract | Deliberate limit |
 |---|---|---|
-| Actions | Same 12px geometry, 44／48px target, semantic colour, focus, press, busy and disabled states | Only the current primary action receives the strongest depth |
-| Form controls | One field surface, focus halo, labelled checkbox／radio and track-thumb switch language | A placeholder, colour or thumb position never carries meaning alone |
-| Navigation | Common active marker, quiet surface and predictable icon weight | Header, sidebar and phone tabs never imitate raised CTAs |
-| Data | Stable table grid, tab hierarchy, honest progress and Chinese-name authority | No background imagery, ornamental gradients or fabricated percentages |
-| Feedback | Semantic stable／attention／danger／neutral badge and recovery language | Status colour never becomes an arbitrary icon palette |
-| Surfaces | One border, radius and elevation scale for cards, sheets and dialogs | Nested cards require a real change of ownership or task |
-| Sacred reading | Independent scripture typography, indigo／parchment／gold and generous reading rhythm | Its distinct language never leaks into operational controls |
+| Actions | Same 12px geometry, 44／48px target, semantic colour, focus, press, busy and disabled states | Only the current primary action receives the strongest emphasis; no persistent tilt or drift. |
+| Form controls | One field surface, focus halo, labelled checkbox／radio and track-thumb switch language | A placeholder, colour or thumb position never carries meaning alone. |
+| Navigation | Common active marker, quiet surface and predictable icon weight | Header, sidebar and phone tabs never imitate prominent CTAs. |
+| Data | Stable table grid, tab hierarchy, honest progress and Chinese-name authority | No background imagery, ornamental gradients or fabricated percentages. |
+| Feedback | Semantic stable／attention／danger／neutral badge and recovery language | Status colour never becomes an arbitrary icon palette. |
+| Surfaces | One border, radius and elevation scale for cards, sheets and dialogs | Nested cards require a real change of ownership or task; no page-local shadow dialect. |
+| Sacred reading | Independent scripture typography, indigo／parchment／gold and generous reading rhythm | Its distinct language never leaks into operational controls. |
 
 When a new component is introduced, its owner must first assign it to one of these families. If none fits, update this specification and the shared tokens before styling the page. A new Uiverse reference is accepted only when it fills a documented interaction gap and can be rewritten into this grammar without adding a new visual dialect.
 
@@ -728,6 +801,22 @@ Shared CSS motion tokens are the only default timing vocabulary: `--sy-motion-pr
 
 ## 9. Accessibility and quality gates
 
+### 9.0 Performance and resource budgets
+
+The executable budgets are owned by `scripts/verify_runtime_performance.py`; this table mirrors that source and must change in the same commit whenever the script changes.
+
+| Measurement | Maximum |
+|---|---:|
+| Initial transferred resources | 6 MiB |
+| Largest single resource | 3 MiB |
+| Initial resource count | 140 |
+| Forced-GC heap growth after repeated interaction or route cycling | 10 MiB |
+| DOM node growth | 160 |
+| JavaScript listener growth | 100 |
+| Mobile horizontal overflow | 0 px |
+
+Public, Admin and Guest flows are measured separately. A lower synthetic number never justifies removing authorization checks, recovery controls, readable fonts or honest progress. Images reserve intrinsic dimensions, active atmosphere assets remain below 250 KB unless a trace justifies an exception, and route-specific media is not eagerly loaded outside its approved context.
+
 Every visual refinement must meet all gates:
 
 - Traditional Chinese and English labels are complete; Chinese prefect names remain Chinese.
@@ -759,7 +848,7 @@ Design quality includes the behaviour underneath the surface.
 - Browser mutation checks use an explicitly isolated SQLite database and backup directory; no visual test may create a roster or package from a real school database.
 - Before a release candidate is accepted, one browser-driven isolated write pipeline must prove the real sequence: fictional import, declared leave, draft generation, manual correction, single publication, bilingual PDF delivery, published Chinese native-file-share handling with download fallback, published-duty adjustment, authoritative receipt and versioned corrected-PDF delivery, ledger/audit/backup evidence, handover package, and restore into a second isolated database.
 - Final machine evidence is orchestrated by `scripts/verify_release_candidate.py`, which must create its own disposable paths, include Cloudflare Worker Deno contracts, desktop and independent mobile browser gates, the committed-without-backup drill, strict snapshot trust checks, and leave a failed—not partial-pass—report if any gate fails. Release fingerprinting includes `cloudflare/` JavaScript／JSONC, and repository hygiene blocks untracked release-sensitive source from being omitted. This machine report complements rather than replaces Head Study Prefect and teacher-advisor acceptance.
-- The current rc20 design candidate is bound to tag `v1.2.0-rc.20`, commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` and fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`; its 14／14 gates comprise 839 Python tests, 3 motion contracts and 40 Worker contracts. Until the UAC-approved Windows switchover and supervised human checks complete, these counts prove candidate consistency only—not production or acceptance status.
+- The live rc20 baseline is bound to tag `v1.2.0-rc.20`, commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` and fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`; its 14／14 gates comprise 839 Python tests, 3 motion contracts and 40 Worker contracts, and the controlled Windows switchover is complete. Supervised Head Study Prefect and teacher-advisor acceptance remains open. Any source change after rc20 requires a new immutable candidate and exact deployment evidence; rc20 evidence cannot be reused to claim the newer design is live.
 - Runtime performance evidence measures both repeated component use and representative route navigation followed by return to the Dashboard. Heap, DOM-node and listener growth must stay bounded after garbage collection; a single fast first render is insufficient evidence of lifecycle quality.
 - Acceptance evidence must remain legible as responsibility, not vanity metrics: map each requirement to a direct test/browser artifact and a named human decision. A test count, architecture diagram, or `pass` badge must never imply that real names, print legibility, school fairness practice, encrypted custody, or external-access approval were checked by software.
 - Handover readiness uses a compact three-column desktop grid and one-column phone sequence; never render each small status as an oversized full-width card. Machine evidence and human acceptance are visually paired but semantically separate. Pass, running, stale, failed, missing, and unreadable states require icon, heading, explanatory copy, and a safe next action rather than colour alone.
