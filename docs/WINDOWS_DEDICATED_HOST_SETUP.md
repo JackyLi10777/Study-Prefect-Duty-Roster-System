@@ -348,7 +348,7 @@ SING_YIN_LOG_BACKUP_COUNT=5
 
 本機模式第一次啟動會自動建立 `data\runtime\.nicegui-storage-secret`，不需要手動輸入 secret，也不要打開、分享或修改該檔案。
 
-完成本機驗證後，正式啟用程序才會把受保護主機設定切換為 `server` 模式，只監聽由 `SING_YIN_HOST`／`SING_YIN_PORT` 指定的 loopback endpoint，並啟用 Access、Viewer gateway 與獨立 `SING_YIN_STORAGE_SECRET`。不要手動逐項拼湊正式設定；依本手冊及 [Cloudflare 遠端存取手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 的受控啟用／核對程序一次完成。現行 rc18 正式主機已處於這個 server-mode／loopback 狀態。
+完成本機驗證後，正式啟用程序才會把受保護主機設定切換為 `server` 模式，只監聽由 `SING_YIN_HOST`／`SING_YIN_PORT` 指定的 loopback endpoint，並啟用 Access、Viewer gateway 與獨立 `SING_YIN_STORAGE_SECRET`。不要手動逐項拼湊正式設定；依本手冊及 [Cloudflare 遠端存取手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 的受控啟用／核對程序一次完成。現行 rc20 正式主機已處於這個 server-mode／loopback 狀態。
 
 ---
 
@@ -608,9 +608,9 @@ C:\SingYinRoster\data\backups
 
 只在沒有進行排班或發布時更新。
 
-### rc20 目前的受控部署命令（尚待執行）
+### rc20 已完成的受控部署命令（歷史紀錄，請勿重跑）
 
-以下命令必須在已提升權限的 PowerShell 執行，因為 `Sing Yin Roster Host` 工作受 Windows ACL 保護：
+以下命令記錄 rc20 當時使用的受控程序；rc20 已部署，不可重新執行。未來候選必須改用新的獲批准 annotated tag、乾淨工作樹及 source-matched report，並在已提升權限的 PowerShell 執行，因為 `Sing Yin Roster Host` 工作受 Windows ACL 保護：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass `
@@ -622,9 +622,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -RuntimeUser SingYinRosterSvc
 ```
 
-腳本會核對 annotated tag、`origin/main` ancestry 及正式 fingerprint，建立一份**新的**正式已驗證備份並完成隔離還原，才進入 maintenance 及停止工作；其後安裝 exact bundle、執行 additive migration `0011_assist_assignment_mode`、重新啟動、核對 `/healthz`／`/readyz`，並在失敗時依保存的 previous commit 自動回退。部署完成前不得預先填寫新備份檔名、SHA-256 或切換時間；這些只可由 `logs\windows-release-deployment-v1.2.0-rc.20.json` 的實際結果寫入交接紀錄。
+腳本已核對 annotated tag、`origin/main` ancestry 及正式 fingerprint，建立正式已驗證備份並完成隔離還原，才進入 maintenance 及停止工作；其後安裝 exact bundle、執行 additive migration `0011_assist_assignment_mode`、重新啟動並核對 `/healthz`／`/readyz`。實際備份檔名、SHA-256 及切換結果已由 `logs\windows-release-deployment-v1.2.0-rc.20.json` 寫入交接紀錄；本段只保留作可追溯的歷史程序。
 
-rc20 沒有 Worker source／設定變更，所以 Windows origin 成功後仍**不執行 Worker 部署**；canonical Worker 保持 verified version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`。以下手動步驟保留作安裝者理解及未來經批准候選的核對清單，不可與正在執行的受控腳本同時操作。
+rc20 沒有 Worker source／設定變更，所以已完成的 Windows origin 切換沒有執行 Worker 部署；canonical Worker 保持 verified version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`。以下手動步驟只保留作安裝者理解及未來經批准候選的核對清單，不可用來重跑 rc20，也不可與正在執行的受控腳本同時操作。
 
 ### 步驟 12.1：先建立已驗證離機備份
 
@@ -649,7 +649,7 @@ $PreviousCommit = (git rev-parse HEAD).Trim()
 
 正常情況不會列出程式檔修改。如果看到不明檔案或 `M`、`D`，先停止，不要執行 reset 或刪除，交給維護者檢查。
 
-先向維護者取得本次已通過 GitHub Quality gate、CodeQL 及正式候選 gate 的獲批准 annotated tag。rc20 的 exact 值是 `v1.2.0-rc.20`；不要自行猜測 `main` 是否已完成驗證，也不要把目前 rc18 當作未來固定版本。確認沒有不明修改後：
+先向維護者取得本次已通過 GitHub Quality gate、CodeQL 及正式候選 gate 的獲批准 annotated tag。歷史 rc20 的 exact 值是 `v1.2.0-rc.20`；現行主機已是 rc20，未來更新必須使用新的獲批准標籤，不可照抄下方 rc20 值或自行猜測 `main` 是否已完成驗證。確認沒有不明修改後：
 
 ```powershell
 $ReleaseRef = "v1.2.0-rc.20"

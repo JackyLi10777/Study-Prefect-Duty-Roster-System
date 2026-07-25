@@ -58,7 +58,7 @@ python -X utf8 scripts\verify_update.py --release --plan
 
 rc20 的正式 report 已由最後 commit 重新產生，並把同一裝置矩陣的 256×700／200% reflow、320×760 reduced motion、390×844 phone、768×1024 與 820×1180 adaptive touch tablet、1024×768 desktop-shell touch tablet、1440×1024 full desktop、844×390 phone landscape、單一可見 navigation shell、`visualViewport` keyboard clearance、44px standalone targets、route focus、More current-page semantics、touch icon story 無漂移／旋轉、forced colours、paired light／dark parity，以及 public first-viewport Admin／Guest CTA 綁定至同一 source fingerprint。`verify_nicegui_mobile.py` 與 `verify_nicegui_ui.py` 提供互補成員；測試檔、局部通過訊息或 screenshot 本身仍不是部署證據。
 
-rc20 的精確候選證據是：annotated tag `v1.2.0-rc.20`、commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`、290 個來源檔案、fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`、14／14 gates、839 個 Python／3 個 motion／40 個 Worker 測試。下一步仍是 fresh backup／isolated restore、提升權限的 Windows origin switch、canonical smoke 及真人裝置核對。由於 Worker source／configuration 沒有改動，保留已驗證 version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`，不執行無差異 Worker 部署。任何 origin 關鍵項失敗，依 handover／host guide 回復 rc18 exact pair。
+rc20 的精確發布證據是：annotated tag `v1.2.0-rc.20`、commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`、290 個來源檔案、fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`、14／14 gates、839 個 Python／3 個 motion／40 個 Worker 測試。fresh backup／isolated restore、提升權限的 Windows origin switch 及 canonical smoke 已完成；仍待完成的是真人裝置驗收。由於 Worker source／configuration 沒有改動，發布時保留已驗證 version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`，沒有執行無差異 Worker 部署。任何 origin 關鍵項失敗，依 handover／host guide 回復歷史 rc18 exact pair。
 
 ## 風險矩陣
 

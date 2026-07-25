@@ -115,7 +115,7 @@ The rc4 rollout successfully migrated the official database from Alembic `0007` 
 
 ### Historical rc5 staged-readiness stop and safe rollback
 
-On 2026-07-17 rc5 again completed the production backup, checksum／integrity verification and isolated restore, then installed the candidate long enough to reach strict local readiness. The only reported warning was `cloudflare_access`, whose live proof deliberately depended on the matching Worker stage that had not yet run. The generic strict-warning rule treated it as fatal, so the deployment restored the previous host bundle instead of leaving a mixed release. rc6 changed only the staging order, and rc7 later completed that staged rollout. These superseded versions remain historical provenance; current and future release decisions use the rc18 baseline and candidate-bound evidence recorded above.
+On 2026-07-17 rc5 again completed the production backup, checksum／integrity verification and isolated restore, then installed the candidate long enough to reach strict local readiness. The only reported warning was `cloudflare_access`, whose live proof deliberately depended on the matching Worker stage that had not yet run. The generic strict-warning rule treated it as fatal, so the deployment restored the previous host bundle instead of leaving a mixed release. rc6 changed only the staging order, and rc7 later completed that staged rollout. These superseded versions remain historical provenance; current and future release decisions use the live rc20 baseline and release-bound evidence recorded above.
 
 ### Retained v1.1 rollback evidence
 

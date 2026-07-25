@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from pathlib import Path
 
 from nicegui_app.ui.i18n import MESSAGES
@@ -162,6 +163,21 @@ def test_release_truth_docs_keep_live_rc20_separate_from_history() -> None:
     update_workflow = (PROJECT_ROOT / "docs" / "UPDATE_WORKFLOW.md").read_text(
         encoding="utf-8"
     )
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    readme_en = (PROJECT_ROOT / "README-EN.md").read_text(encoding="utf-8")
+    quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
+    windows = (PROJECT_ROOT / "docs" / "WINDOWS_DEDICATED_HOST_SETUP.md").read_text(
+        encoding="utf-8"
+    )
+    cloudflare = (PROJECT_ROOT / "docs" / "CLOUDFLARE_REMOTE_ACCESS_SETUP.md").read_text(
+        encoding="utf-8"
+    )
+    viewer = (PROJECT_ROOT / "docs" / "PUBLIC_ROSTER_VIEWER.md").read_text(
+        encoding="utf-8"
+    )
+    decision = (PROJECT_ROOT / "docs" / "DEPLOYMENT_DECISION.md").read_text(
+        encoding="utf-8"
+    )
     operator = (PROJECT_ROOT / "docs" / "OPERATOR_GUIDE.md").read_text(encoding="utf-8")
 
     release_truth_documents = (status, architecture, security, handover, acceptance)
@@ -193,7 +209,6 @@ def test_release_truth_docs_keep_live_rc20_separate_from_history() -> None:
         "rc17／`99f5816` with Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` "
         "is retained only as a secondary verified baseline"
     ) in status
-    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     assert "## 程式審查、邊界與擴展預期" in readme
     assert "SING_YIN_PORT" in readme
     assert "一百倍" in readme
@@ -206,19 +221,50 @@ def test_release_truth_docs_keep_live_rc20_separate_from_history() -> None:
     assert "Windows origin remains healthy／ready on rc4" not in security
     assert "This document does not claim that v1.2 is deployed" not in security
 
-    stale_release_claims = (
-        "Windows origin 尚未切換",
-        "候選尚未切換受控 origin",
-        "不是已部署版本",
-        "not-yet-deployed Windows-origin candidate",
-        "live public entrance remains rc18",
-        "正式 Windows 主機仍等待 UAC",
-        "目前日常操作仍以 rc18",
-        "Keep using rc18 behavior",
+    operator_release_documents = {
+        "README.md": readme,
+        "README-EN.md": readme_en,
+        "PROJECT_STATUS.md": status,
+        "docs/ACCEPTANCE_EVIDENCE.md": acceptance,
+        "docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md": cloudflare,
+        "docs/DEPLOYMENT_DECISION.md": decision,
+        "docs/NICEGUI_ARCHITECTURE.md": architecture,
+        "docs/PUBLIC_ROSTER_VIEWER.md": viewer,
+        "docs/QUICKSTART.md": quickstart,
+        "docs/RELEASE_HANDOVER.md": handover,
+        "docs/UNIFIED_GUEST_SECURITY_MODEL.md": security,
+        "docs/UPDATE_WORKFLOW.md": update_workflow,
+        "docs/WINDOWS_DEDICATED_HOST_SETUP.md": windows,
+    }
+    stale_release_patterns = (
+        re.compile(
+            r"\brc20\b.{0,240}(?:not deployed|undeployed|not-yet-deployed|"
+            r"pending (?:the )?(?:host |origin )?(?:switch|switchover|cutover)|"
+            r"before rc20 can replace rc18)",
+            re.IGNORECASE | re.DOTALL,
+        ),
+        re.compile(
+            r"rc20.{0,240}(?:尚未(?:部署|切換)|尚待(?:執行|部署|切換)|"
+            r"不代表 Windows 已切換|等待 UAC|"
+            r"下一步仍是.{0,100}(?:origin switch|Windows.*切換))",
+            re.DOTALL,
+        ),
+        re.compile(
+            r"(?:\blive rc18\b|\bcurrent (?:operating )?baseline "
+            r"(?:is|remains|uses) (?:v1\.2\.0-)?rc18\b|"
+            r"\brunning production origin.{0,100}\brc18\b|"
+            r"現行(?:正式主機|發布|基線).{0,12}rc18|"
+            r"目前日常操作仍以 rc18|rc18 正式主機)",
+            re.IGNORECASE | re.DOTALL,
+        ),
     )
-    for document in (*release_truth_documents, update_workflow):
-        for stale_claim in stale_release_claims:
-            assert stale_claim not in document
+    for relative_path, document in operator_release_documents.items():
+        for paragraph in re.split(r"\n\s*\n", document):
+            for stale_pattern in stale_release_patterns:
+                assert stale_pattern.search(paragraph) is None, (
+                    f"{relative_path} contains stale release-state wording: "
+                    f"{stale_pattern.pattern}"
+                )
 
     next_steps = status.split("## Next Steps", 1)[1].split(
         "## Key Decisions and Architecture", 1
@@ -226,7 +272,9 @@ def test_release_truth_docs_keep_live_rc20_separate_from_history() -> None:
     assert "new immutable candidate" in next_steps
     assert "v1.2.0-rc.5" not in next_steps
 
-    release_sequence = handover.split("### 後續受控發布次序", 1)[1].split(
+    release_sequence = handover.split("### rc20 已完成發布紀錄與後續候選次序", 1)[
+        1
+    ].split(
         "## 正式驗收清單", 1
     )[0]
     assert "v1.2.0-rc.20" in release_sequence

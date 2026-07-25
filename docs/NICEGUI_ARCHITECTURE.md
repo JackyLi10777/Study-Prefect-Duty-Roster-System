@@ -364,13 +364,13 @@ commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`. The 14／14 report covers
 839 Python, 3 motion, and 40 Worker tests and binds 290 source files to fingerprint
 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`.
 
-The running production origin nevertheless remains healthy／ready on
-`v1.2.0-rc.18`／`fd504a8`; the verified Worker remains
-`f780feb2-671a-4feb-b6f6-b7f9d5b31e89`. rc20 changed no Worker source or
-configuration, so no new Worker rollout is required. A fresh verified production
-backup, isolated restore, elevated Windows cutover, canonical-site smoke, and
-supervised human acceptance are still required before rc20 can replace rc18.
-This architecture document and the candidate report are not deployment evidence.
+The running production origin is healthy／ready on `v1.2.0-rc.20`／`e3d84858`;
+the verified Worker remains `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` because rc20
+changed no Worker source or configuration. The fresh verified production backup,
+isolated restore, elevated Windows cutover and canonical-site smoke are complete.
+Historical `v1.2.0-rc.18`／`fd504a8` is the first-level rollback. Supervised human
+acceptance remains required; architecture text and automated evidence do not
+substitute for that acceptance.
 
 ```powershell
 python -X utf8 -m pytest -q
