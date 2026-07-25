@@ -1,23 +1,23 @@
 # AI Agent Git／GitHub 操作規則
 
-> **適用對象**：所有在此專案協作的 AI Agent（Codex、其他 Agent）。  
-> **最高原則**：Codex 是 `main` 的最終合併者。其他 Agent 透過 `collab/agent-workspace` 提交。
+> **適用對象**：所有在此專案協作的 AI Agent（Codex、其他 Agent）。
+> **最高原則**：Codex 是 `main` 的最終合併者。其他 Agent 從 `origin/codex/mainline` 建立任務專用的 `collab/<agent>/<task>` 分支，再以 PR 提交給 `codex/mainline`。
 
 ---
 
 ## 一、專案 Git 架構總覽
 
 ```
-origin/main  ←── codex/mainline  ←── collab/agent-workspace
- (GitHub)        (Codex 主線)        (其他 Agent 工作區)
-  受保護分支       D:\code_v3           D:\code_v3-agent
+origin/main  ←── codex/mainline  ←── collab/<agent>/<task>
+ (GitHub)        (Codex 主線)        (輔助 Agent 任務分支)
+  受保護分支       D:\code_v3           每項任務獨立工作樹
 ```
 
 | 分支 | 角色 | 誰操作 | 可否直接推送 |
 |---|---|---|---|
 | `main` | 正式發布線 | **僅 Codex**（透過 PR 合併） | 否（GitHub 保護） |
-| `codex/mainline` | Codex 主開發線 | Codex | 是 |
-| `collab/agent-workspace` | 其他 Agent 工作區 | **所有非 Codex 的 AI Agent** | 是 |
+| `codex/mainline` | Codex 主開發線 | Codex（合併其他 Agent PR） | 只可經 PR |
+| `collab/agent-workspace` | 輔助 Agent 的同步基線，不接受多人直接開發 | Codex 維護 | 否 |
 | `codex/*`（其他） | Codex 輔助分支 | Codex | 是 |
 | `collab/*`（其他） | 擴展協作分支 | 視需要 | 是 |
 
@@ -25,13 +25,14 @@ origin/main  ←── codex/mainline  ←── collab/agent-workspace
 
 | 本機路徑 | 分支 | 用途 |
 |---|---|---|
-| `D:\code_v3` | `codex/mainline` | **Codex 主工作區**：開發、審查、最終合併 |
-| `D:\code_v3-agent` | `collab/agent-workspace` | **其他 Agent 工作區**：獨立開發、提交、發 PR |
+| `D:\code_v3` | 每項 Codex 任務使用 `codex/<task>`，基於 `origin/codex/mainline` | **Codex 主工作區**：開發、審查，再以 PR 進入整合線 |
+| `D:\code_v3-agent` | 每次任務切換至 `collab/<agent>/<task>` | **單一輔助 Agent 任務工作區**：獨立開發、提交、發 PR |
 
 **規則**：
 - 每個 Agent **只能在分配給自己的工作樹內工作**。
 - 不可跨越工作樹直接修改另一個 Agent 的檔案。
 - 不可在同一工作樹內同時開啟多個 Agent session（會造成競爭寫入）。
+- `collab/agent-workspace` 只是一個乾淨同步基線；每項任務必須使用獨立分支。多人並行時，須為每人建立不同工作樹。
 
 ## 三、Commit 訊息規範
 
@@ -76,9 +77,12 @@ origin/main  ←── codex/mainline  ←── collab/agent-workspace
 # 進入 Agent 工作樹
 cd D:\code_v3-agent
 
-# 確保與遠端同步
+# 確保 Codex 主線是最新起點
 git fetch origin
-git rebase origin/collab/agent-workspace
+git switch --detach origin/codex/mainline
+
+# 每項任務建立獨立分支；名稱中的 agent 和 task 必須可辨認
+git switch -c collab/<agent>/<task>
 
 # 確認起點相同
 git log -1 --oneline
@@ -86,23 +90,24 @@ git log -1 --oneline
 
 ### 4.2 開發與提交
 
-1. **不要**建立額外的本機分支；直接在 `collab/agent-workspace` 上工作。
+1. 只在本次分配的 `collab/<agent>/<task>` 分支和工作樹上工作。
 2. 按 [第三節](#三commit-訊息規範) 分組 commit。
 3. 每個 commit 後執行 `git status` 確認乾淨。
 
 ### 4.3 推送與發 PR
 
 ```powershell
-# 先拉取遠端最新（避免衝突）
-git pull --rebase origin collab/agent-workspace
+# 如 Codex 主線已前進，以普通 merge 同步；已推送分支不可 rebase
+git fetch origin
+git merge origin/codex/mainline
 
 # 推送
-git push origin collab/agent-workspace
+git push -u origin collab/<agent>/<task>
 ```
 
 推送後到 GitHub 建立 Pull Request：
 - **Base**: `codex/mainline`
-- **Head**: `collab/agent-workspace`
+- **Head**: `collab/<agent>/<task>`
 - PR 描述需列出所有 commit 摘要及變更模組。
 
 ### 4.4 等待審查
@@ -119,11 +124,11 @@ git push origin collab/agent-workspace
 cd D:\code_v3
 git fetch origin
 
-# 建立審查分支
-git checkout -b review/agent-<日期> origin/collab/agent-workspace
+# 建立符合命名規則的審查分支
+git checkout -b codex/review-<agent>-<日期> origin/collab/<agent>/<task>
 
 # 審查 diff
-git diff origin/codex/mainline..review/agent-<日期>
+git diff origin/codex/mainline..codex/review-<agent>-<日期>
 
 # 執行驗證
 python -X utf8 scripts/verify_update.py
@@ -131,13 +136,12 @@ python -X utf8 scripts/verify_update.py
 
 ### 5.2 合併到 codex/mainline
 
-審查通過後：
+審查通過後，在 GitHub 合併已通過必要檢查的 Agent PR；不要從本機直接推送 `codex/mainline`。之後同步本機：
 
 ```powershell
 git checkout codex/mainline
-git merge review/agent-<日期> --no-ff
-git push origin codex/mainline
-git branch -d review/agent-<日期>
+git pull --ff-only origin codex/mainline
+git branch -d codex/review-<agent>-<日期>
 ```
 
 ### 5.3 合併到 main（發布）
@@ -158,7 +162,7 @@ gh pr create --base main --head codex/mainline --title "..."
 | 提交 `.env`、`*.sqlite3`、`data/runtime/`、`logs/` 內容 | 機密與本機執行期資料 |
 | `git add -A` 或 `git add .` | 可能夾帶機密或不相關檔案 |
 | `git commit --amend` 已推送的 commit | 改寫已發布歷史 |
-| `git rebase` 已推送的分支（codex/mainline 除外） | 改寫共享歷史 |
+| `git rebase` 任何已推送分支 | 改寫共享歷史 |
 | 在工作樹外直接操作檔案 | 跳過 Git 追蹤 |
 | 使用 `git filter-branch` 或 `git rebase -i` 清理歷史 | 需操作者明確授權 |
 | 建立名稱不含 `codex/` 或 `collab/` 前綴的新分支 | 命名混亂 |
@@ -169,6 +173,8 @@ gh pr create --base main --head codex/mainline --title "..."
 | 規則 | 說明 |
 |---|---|
 | `main` 分支保護 | 必須透過 PR，需通過 `test-and-audit` + `analyze` 檢查 |
+| `codex/mainline` 分支保護 | 輔助 Agent 只能以 PR 提交；通過必要檢查後由 Codex 合併 |
+| `collab/agent-workspace` 分支保護 | 只作同步基線；同樣禁止直接推送、force-push 及刪除 |
 | 不可 force-push `main` | 管理者也無法繞過 |
 | `v*` 標籤不可變 | 發布標籤建立後不可刪除或移動 |
 | Dependabot 自動 PR | 限 `pip` 與 `github-actions`，自動建立 |
@@ -184,7 +190,7 @@ gh pr create --base main --head codex/mainline --title "..."
 - [ ] 沒有 `.env`、`*.sqlite3`、`data/runtime/`、`logs/` 在 staged 中
 - [ ] 新模組的 commit 先於使用該模組的 commit
 - [ ] `python -X utf8 scripts/verify_update.py` 已執行且通過（如有修改 Python 檔案）
-- [ ] 目標分支正確（Agent → `collab/agent-workspace`，Codex → `codex/mainline`）
+- [ ] 目標分支正確（Agent → `collab/<agent>/<task>` PR，Codex → `codex/mainline` PR）
 
 ## 九、快速參考卡片
 
@@ -192,8 +198,8 @@ gh pr create --base main --head codex/mainline --title "..."
 ┌─────────────────────────────────────────────────────────┐
 │  你是                                         推送到          │
 ├─────────────────────────────────────────────────────────┤
-│  其他 Agent    →  D:\code_v3-agent  →  collab/agent-workspace │
-│  Codex         →  D:\code_v3       →  codex/mainline         │
+│  其他 Agent    →  任務獨立工作樹     →  collab/<agent>/<task>   │
+│  Codex         →  D:\code_v3       →  codex/<task> PR        │
 │  發布          →  PR to main       →  main（僅 Codex）       │
 └─────────────────────────────────────────────────────────┘
 

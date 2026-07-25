@@ -8,8 +8,9 @@ legacy Streamlit history.
 | Branch | Role | Operator |
 |---|---|---|
 | `main` | Protected release line | **Codex only** (via PR merge) |
-| `codex/mainline` | Codex primary development line (tracks `main`) | Codex |
-| `collab/agent-workspace` | Other AI agent workspace (forked from `main`) | Other AI agents → PR to `codex/mainline` |
+| `codex/mainline` | Protected Codex integration line (tracks `main`) | Codex merges reviewed PRs |
+| `collab/agent-workspace` | Clean synchronization baseline only | Codex maintains; agents do not develop here |
+| `collab/<agent>/<task>` | One isolated auxiliary-agent task | One agent → PR to `codex/mainline` |
 | `nicegui-self-hosted` | Platform snapshot at release | Codex |
 | `streamlit-cloud` | Historical Streamlit reference | Read-only |
 
@@ -17,8 +18,8 @@ legacy Streamlit history.
 
 | Local path | Branch |
 |---|---|
-| `D:\code_v3` | `codex/mainline` |
-| `D:\code_v3-agent` | `collab/agent-workspace` |
+| `D:\code_v3` | one task-scoped `codex/<task>` based on `codex/mainline` |
+| `D:\code_v3-agent` | one assigned `collab/<agent>/<task>` at a time |
 
 AI agents must follow [`docs/AI_AGENT_GIT_GUIDE.md`](AI_AGENT_GIT_GUIDE.md) for
 commit conventions, branch rules, and the PR workflow.
@@ -32,6 +33,11 @@ commit conventions, branch rules, and the PR workflow.
   zero approvals so the owner is not deadlocked by GitHub's self-approval rule.
   Add one required approval and CODEOWNERS review before granting a second human
   or automation account write access.
+- `codex/mainline` is the protected integration queue. Auxiliary agents start
+  from it, submit task-scoped `collab/<agent>/<task>` pull requests, and never
+  share one writable branch or worktree. The baseline
+  `collab/agent-workspace` is protected too and is not an integration
+  destination.
 - `nicegui-self-hosted` records the matching platform edition. Future
   deployment-only changes may be developed there and merged back to `main`.
 - `streamlit-cloud` is retained for historical comparison and recovery. Do not

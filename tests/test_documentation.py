@@ -776,9 +776,9 @@ def test_reference_pages_form_two_clear_reading_lanes_without_duplicate_docs_rou
         "start-reference-map",
     ):
         assert anchor in pages
-    assert 'role=table aria-label="{t("guide_troubleshooting_title")}"' in pages
-    assert 'id=start-first-steps aria-label="{t("start_toc_first_steps")}"' in pages
-    assert 'id=handover-steps-section aria-label="{t("handover_steps_title")}"' in pages
+    assert 'role=table aria-label="{attr(t("guide_troubleshooting_title"))}"' in pages
+    assert 'id=start-first-steps aria-label="{attr(t("start_toc_first_steps"))}"' in pages
+    assert 'id=handover-steps-section aria-label="{attr(t("handover_steps_title"))}"' in pages
     assert "what you see／what it means／safe next action" in design
     assert "DeepSeek API Docs" in design
 

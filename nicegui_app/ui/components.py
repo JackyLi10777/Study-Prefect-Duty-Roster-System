@@ -301,7 +301,7 @@ def editorial_heading(
             ui.label(kicker).classes("sy-architecture-section-kicker")
         title_element = ui.html(text(title), tag="h2").classes("sy-architecture-section-title")
         if anchor_id:
-            title_element.props(f"id={attr(anchor_id)}")
+            title_element.props(f'id="{attr(anchor_id)}"')
         ui.label(copy).classes("sy-architecture-section-copy")
 
 
