@@ -225,16 +225,21 @@ class RequestTracingMiddleware(BaseHTTPMiddleware):
             response.headers["X-Content-Type-Options"] = "nosniff"
             response.headers["Referrer-Policy"] = "no-referrer"
             response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-            response.headers["X-Frame-Options"] = "SAMEORIGIN"
+            response.headers["X-Frame-Options"] = "DENY"
             response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
             if category not in {"asset", "nicegui_internal"}:
-                # NiceGUI's page shell injects inline scripts and styles, so
-                # 'unsafe-inline' is required. External script/style hosts stay blocked.
+                # NiceGUI 3.13 serves import-map/inline modules and Vue's
+                # runtime template compiler. Removing 'unsafe-eval' leaves the
+                # HTTP shell visible but prevents Vue from rendering any page;
+                # removing 'unsafe-inline' blocks the framework bootstrap.
+                # Keep this explicit framework exception narrow: third-party
+                # script/style hosts remain blocked and dynamic attributes go
+                # through nicegui_app.ui.html_safety.
                 response.headers["Content-Security-Policy"] = (
                     "default-src 'self'; "
-                    "script-src 'self' 'unsafe-inline'; "
+                    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
                     "style-src 'self' 'unsafe-inline'; "
-                    "img-src 'self' data:; "
+                    "img-src 'self' data: https://i.ytimg.com https://img.youtube.com; "
                     "font-src 'self'; "
                     "connect-src 'self' ws: wss:; "
                     "media-src 'self'; "

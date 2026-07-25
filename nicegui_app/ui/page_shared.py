@@ -229,7 +229,7 @@ def _navigate_with_feedback(path: str) -> None:
 def _render_feedback_channel(*, compact: bool = False) -> None:
     classes = "sy-feedback-channel sy-feedback-channel--compact" if compact else "sy-feedback-channel"
     with ui.element("section").classes(classes).props(
-        f'aria-label="{t("feedback_channel_title")}" data-testid=feedback-channel'
+        f'aria-label="{attr(t("feedback_channel_title"))}" data-testid=feedback-channel'
     ):
         ui.icon("alternate_email").classes("sy-feedback-channel-icon").props("aria-hidden=true")
         with ui.column().classes("gap-1 min-w-0"):
@@ -237,11 +237,14 @@ def _render_feedback_channel(*, compact: bool = False) -> None:
             ui.label(t("feedback_channel_body")).classes("sy-feedback-channel-copy")
             with ui.row().classes("sy-feedback-channel-actions gap-4 flex-wrap"):
                 ui.link(t("feedback_email_action"), FEEDBACK_MAILTO_URL).classes("sy-feedback-channel-action").props(
-                    f'aria-label="{t("feedback_email_action")}: {FEEDBACK_EMAIL}"'
+                    f'aria-label="{attr(t("feedback_email_action"))}: {attr(FEEDBACK_EMAIL)}"'
                 )
                 ui.link(t("github_repository_action"), GITHUB_REPOSITORY_URL).classes(
                     "sy-feedback-channel-action"
-                ).props(f'target=_blank rel="noopener noreferrer" aria-label="{t("github_repository_action")}"')
+                ).props(
+                    f'target=_blank rel="noopener noreferrer" '
+                    f'aria-label="{attr(t("github_repository_action"))}"'
+                )
             ui.label(FEEDBACK_EMAIL).classes("sy-feedback-channel-address")
             ui.label(GITHUB_REPOSITORY_URL).classes("sy-feedback-channel-address")
             ui.label(t("feedback_channel_safe_note")).classes("sy-feedback-channel-note")
@@ -680,7 +683,9 @@ def _render_storage_lifecycle(workflow) -> None:  # type: ignore[no-untyped-def]
     status = workflow.backup_status()
     verification = status["latestVerification"]
     backup_verified = bool(verification and verification.get("valid"))
-    with ui.element("section").classes("sy-storage-lifecycle w-full").props(f'aria-label="{t("storage_lifecycle_title")}"'):
+    with ui.element("section").classes("sy-storage-lifecycle w-full").props(
+        f'aria-label="{attr(t("storage_lifecycle_title"))}"'
+    ):
         with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
             with ui.row().classes("items-center gap-3"):
                 ui.icon("database").classes("sy-storage-lifecycle-icon").props("aria-hidden=true")
@@ -705,7 +710,9 @@ def _render_storage_lifecycle(workflow) -> None:  # type: ignore[no-untyped-def]
 
 def _render_operation_hint(body_key: str, *, icon: str = "tips_and_updates") -> None:
     """Place one concise purpose-and-method cue immediately before an operator decision."""
-    with ui.element("aside").classes("sy-operation-hint w-full").props(f'aria-label="{t("operation_hint")}"'):
+    with ui.element("aside").classes("sy-operation-hint w-full").props(
+        f'aria-label="{attr(t("operation_hint"))}"'
+    ):
         ui.icon(icon).classes("sy-operation-hint-icon").props("aria-hidden=true")
         with ui.column().classes("gap-1"):
             ui.label(t("operation_hint")).classes("sy-operation-hint-title")
@@ -771,7 +778,8 @@ def _render_roster_route_state(
 ) -> None:
     """Give stale or premature roster URLs an explicit, safe recovery route."""
     with ui.element("section").classes("sy-empty-state w-full").props(
-        f'role=status aria-live=polite aria-label="{t(title_key)}" data-testid={test_id}'
+        f'role=status aria-live=polite aria-label="{attr(t(title_key))}" '
+        f'data-testid="{attr(test_id)}"'
     ):
         ui.icon(icon).classes("sy-empty-state-icon").props("aria-hidden=true")
         with ui.column().classes("items-center gap-1 max-w-lg"):
@@ -806,7 +814,8 @@ def _render_co_creation() -> None:
                 ui.label(t("co_creation_creator_name")).classes("sy-co-creation-name")
                 ui.label(t("co_creation_creator_role")).classes("sy-co-creation-role")
                 with ui.link(target=INSTAGRAM_PROFILE_URL).classes("sy-co-creation-social").props(
-                    f'target=_blank rel="noopener noreferrer" aria-label="{t("co_creation_instagram_accessible")}"'
+                    f'target=_blank rel="noopener noreferrer" '
+                    f'aria-label="{attr(t("co_creation_instagram_accessible"))}"'
                 ):
                     ui.icon("photo_camera").props("aria-hidden=true")
                     ui.label(t("co_creation_instagram_action"))

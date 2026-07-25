@@ -20,6 +20,7 @@ from nicegui_app.ui.components import (
     status,
 )
 from nicegui_app.ui.brand import render_service_weave_mark
+from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import t
 from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.page_shared import _render_co_creation, _render_feedback_channel
@@ -106,7 +107,7 @@ def platform_page() -> None:
 
     with page_shell("/platform"):
         with ui.element("section").classes("sy-platform-hero w-full").props(
-            f'aria-label="{t("platform")}" data-testid=platform-hero'
+            f'aria-label="{attr(t("platform"))}" data-testid=platform-hero'
         ):
             with ui.column().classes("sy-platform-hero-copy gap-2"):
                 with ui.row().classes("sy-platform-brand-lockup items-center gap-3 no-wrap"):
@@ -165,7 +166,7 @@ def platform_page() -> None:
                         )
 
         with ui.element("section").classes("sy-architecture-section w-full").props(
-            f'id=platform-team-section aria-label="{t("team_operating_model_title")}"'
+            f'id=platform-team-section aria-label="{attr(t("team_operating_model_title"))}"'
         ):
             _render_architecture_section_heading(
                 "team_operating_model_kicker", "team_operating_model_title", "team_operating_model_copy"
@@ -182,7 +183,7 @@ def platform_page() -> None:
             ui.label(t("team_operating_model_note")).classes("sy-team-operating-model-note")
 
         with ui.element("section").classes("sy-architecture-section w-full").props(
-            f'id=platform-operating-map-section aria-label="{t("platform_operating_map_title")}"'
+            f'id=platform-operating-map-section aria-label="{attr(t("platform_operating_map_title"))}"'
         ):
             _render_architecture_section_heading(
                 "platform_operating_map_kicker",
@@ -336,7 +337,7 @@ def engineering_page() -> None:
 
     with page_shell("/engineering"):
         with ui.element("section").classes("sy-engineering-hero w-full").props(
-            f'aria-label="{t("engineering")}" data-testid=engineering-hero'
+            f'aria-label="{attr(t("engineering"))}" data-testid=engineering-hero'
         ):
             with ui.column().classes("gap-2"):
                 ui.label(t("engineering_kicker")).classes("sy-architecture-kicker")
@@ -425,7 +426,7 @@ def engineering_page() -> None:
                         "table": t("engineering_evidence_table"),
                     },
                     value="summary",
-                ).props(f'aria-label="{t("engineering_evidence_view")}"').classes(
+                ).props(f'aria-label="{attr(t("engineering_evidence_view"))}"').classes(
                     "sy-evidence-view-toggle"
                 )
 
@@ -608,7 +609,9 @@ def system_architecture_page() -> None:
         ("faq_music_q", "faq_music_a"),
     )
     with page_shell("/system-architecture"):
-        with ui.element("section").classes("sy-architecture-hero w-full").props(f'aria-label="{t("system_architecture")}"'):
+        with ui.element("section").classes("sy-architecture-hero w-full").props(
+            f'aria-label="{attr(t("system_architecture"))}"'
+        ):
             with ui.column().classes("gap-2"):
                 ui.label(t("architecture_kicker")).classes("sy-architecture-kicker")
                 ui.html(t("system_architecture"), tag="h2").classes("sy-architecture-title")
@@ -631,7 +634,7 @@ def system_architecture_page() -> None:
         )
 
         with ui.element("section").classes("sy-architecture-section w-full").props(
-            f'id=architecture-flow-section aria-label="{t("architecture_flow_title")}"'
+            f'id=architecture-flow-section aria-label="{attr(t("architecture_flow_title"))}"'
         ):
             _render_architecture_section_heading(
                 "architecture_flow_kicker", "architecture_flow_title", "architecture_flow_copy", show_kicker=True
@@ -648,10 +651,12 @@ def system_architecture_page() -> None:
                         ui.label(t(result_key)).classes("sy-service-stage-result")
 
         with ui.element("section").classes("sy-architecture-section w-full").props(
-            f'id=architecture-layers-section aria-label="{t("architecture_layers_title")}"'
+            f'id=architecture-layers-section aria-label="{attr(t("architecture_layers_title"))}"'
         ):
             _render_architecture_section_heading("architecture_layers_kicker", "architecture_layers_title", "architecture_layers_copy")
-        with ui.element("section").classes("sy-architecture-grid w-full").props(f'aria-label="{t("architecture_layers_title")}"'):
+        with ui.element("section").classes("sy-architecture-grid w-full").props(
+            f'aria-label="{attr(t("architecture_layers_title"))}"'
+        ):
             for icon, title_key, body_key in layers:
                 with ui.element("article").classes("sy-architecture-layer"):
                     ui.icon(icon).classes("sy-architecture-layer-icon").props("aria-hidden=true")
@@ -659,7 +664,7 @@ def system_architecture_page() -> None:
                     ui.label(t(body_key)).classes("sy-architecture-layer-copy")
 
         with ui.element("section").classes("sy-architecture-section w-full").props(
-            f'id=architecture-evidence-section aria-label="{t("architecture_evidence_title")}"'
+            f'id=architecture-evidence-section aria-label="{attr(t("architecture_evidence_title"))}"'
         ):
             _render_architecture_section_heading("architecture_evidence_kicker", "architecture_evidence_title", "architecture_evidence_copy")
             with ui.element("div").classes("sy-trust-evidence-grid").props("data-testid=trust-evidence"):
@@ -685,7 +690,7 @@ def system_architecture_page() -> None:
             ("rocket_launch", "developer_reference_release_title", "developer_reference_release_body"),
         )
         with ui.element("section").classes("sy-architecture-section w-full").props(
-            f'id=architecture-developer-section aria-label="{t("developer_reference_title")}" '
+            f'id=architecture-developer-section aria-label="{attr(t("developer_reference_title"))}" '
             "data-testid=developer-reference"
         ):
             editorial_heading(
@@ -722,7 +727,8 @@ def system_architecture_page() -> None:
                 )
 
         with ui.element("section").classes("sy-architecture-faq w-full").props(
-            f'id=architecture-faq-section aria-label="{t("architecture_faq_title")}" data-testid=architecture-faq'
+            f'id=architecture-faq-section aria-label="{attr(t("architecture_faq_title"))}" '
+            'data-testid=architecture-faq'
         ):
             _render_architecture_section_heading("architecture_faq_kicker", "architecture_faq_title", "architecture_faq_copy")
             with ui.column().classes("sy-architecture-faq-list w-full gap-2"):

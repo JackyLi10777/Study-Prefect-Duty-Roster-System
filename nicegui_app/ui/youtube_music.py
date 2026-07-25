@@ -64,10 +64,12 @@ def render_youtube_settings() -> None:
                         ui.button(
                             icon="delete_outline",
                             on_click=lambda playlist_id=playlist.id: _remove_playlist(library, playlist_id),
-                        ).props(f'flat round color=negative aria-label="{t("remove_music_item")}"')
+                        ).props(
+                            f'flat round color=negative aria-label="{attr(t("remove_music_item"))}"'
+                        )
         else:
             with ui.element("aside").classes("sy-inline-empty w-full mt-5").props(
-                f'role=status aria-label="{t("youtube_library_empty_title")}"'
+                f'role=status aria-label="{attr(t("youtube_library_empty_title"))}"'
             ):
                 ui.icon("playlist_add").classes("sy-inline-empty-icon").props("aria-hidden=true")
                 with ui.column().classes("gap-0 min-w-0"):
@@ -166,11 +168,11 @@ def _render_search_result(item: dict[str, Any], show) -> None:  # type: ignore[n
             ui.label(str(item["channel"])).classes("text-xs text-[var(--sy-muted)]")
         if item["kind"] == "playlist":
             ui.button(icon="play_arrow", on_click=lambda: show(playlist_id=str(item["id"]))).props(
-                f'flat round aria-label="{t("youtube_search_action")}"'
+                f'flat round aria-label="{attr(t("youtube_search_action"))}"'
             )
         else:
             ui.button(icon="play_arrow", on_click=lambda: show(video_id=str(item["id"]))).props(
-                f'flat round aria-label="{t("youtube_search_action")}"'
+                f'flat round aria-label="{attr(t("youtube_search_action"))}"'
             )
 
 

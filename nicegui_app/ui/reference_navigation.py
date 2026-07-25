@@ -6,6 +6,7 @@ from collections.abc import Sequence
 
 from nicegui import ui
 
+from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import t
 
 
@@ -17,7 +18,7 @@ def render_page_toc(items: Sequence[ReferenceItem]) -> None:
     """Render a compact page-local contents list without creating another sidebar."""
 
     with ui.element("nav").classes("sy-reference-toc w-full").props(
-        f'aria-label="{t("reference_on_this_page")}" data-testid=reference-toc'
+        f'aria-label="{attr(t("reference_on_this_page"))}" data-testid=reference-toc'
     ):
         ui.label(t("reference_on_this_page")).classes("sy-reference-toc-title")
         with ui.element("div").classes("sy-reference-toc-links"):
@@ -37,7 +38,7 @@ def render_reference_pager(
     if previous is None and next_ is None:
         return
     with ui.element("nav").classes("sy-reference-pager w-full").props(
-        f'aria-label="{t("reference_continue_reading")}" data-testid=reference-pager'
+        f'aria-label="{attr(t("reference_continue_reading"))}" data-testid=reference-pager'
     ):
         if previous is not None:
             route, label_key = previous

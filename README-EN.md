@@ -38,7 +38,7 @@ longest document:
 | Successor rehearsing before receiving official data | `START_PRACTICE_MODE.cmd` | [Quick start](docs/QUICKSTART.md) and [operator guide](docs/OPERATOR_GUIDE.md) |
 | IT maintainer deploying, recovering, or tracing an OP reference | [Documentation index](docs/DOCUMENTATION_INDEX.md) | [Windows host setup](docs/WINDOWS_DEDICATED_HOST_SETUP.md) and [update workflow](docs/UPDATE_WORKFLOW.md) |
 | Security reviewer or vulnerability reporter | [Security and privacy model](docs/SECURITY_AND_PRIVACY.md) | [Private reporting policy](SECURITY.md) and [branch strategy](docs/BRANCH_STRATEGY.md) |
-| Developer or reviewer changing code | [NiceGUI architecture](docs/NICEGUI_ARCHITECTURE.md) | [Risk-led code review](docs/CODE_ACCEPTANCE_REVIEW.md) and [contributing guide](CONTRIBUTING.md) |
+| Developer or reviewer changing code | [NiceGUI architecture](docs/NICEGUI_ARCHITECTURE.md) | [Risk-led code review](docs/CODE_ACCEPTANCE_REVIEW.md), [AI Agent worktree guide](docs/AI_AGENT_GIT_GUIDE.md), and [contributing guide](CONTRIBUTING.md) |
 
 ### Access and data boundary
 

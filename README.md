@@ -27,7 +27,7 @@
 | 顧問老師，要核對發布、公平或交接證據 | [正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md) | [首次發布與交接手冊](docs/RELEASE_HANDOVER.md) |
 | 新任首席導學風紀，要先安全演練 | `START_PRACTICE_MODE.cmd` | [快速啟動](docs/QUICKSTART.md)及[操作手冊](docs/OPERATOR_GUIDE.md) |
 | IT／維護者，要部署、復原或查找 OP 編號 | [完整文件索引](docs/DOCUMENTATION_INDEX.md) | [Windows 主機設定](docs/WINDOWS_DEDICATED_HOST_SETUP.md)及[更新流程](docs/UPDATE_WORKFLOW.md) |
-| 開發者／審查者，要理解程式邊界或提交修改 | [NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) | [程式驗收審查](docs/CODE_ACCEPTANCE_REVIEW.md)及[貢獻指南](CONTRIBUTING.md) |
+| 開發者／審查者，要理解程式邊界或提交修改 | [NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) | [程式驗收審查](docs/CODE_ACCEPTANCE_REVIEW.md)、[AI Agent 工作樹指南](docs/AI_AGENT_GIT_GUIDE.md)及[貢獻指南](CONTRIBUTING.md) |
 
 ### 使用模式與資料邊界
 
@@ -191,6 +191,7 @@ python -X utf8 -m nicegui_app.main
 | 技術如何保障資料、公平和交接脈絡 | 系統內「系統架構與可信設計」頁面，以及 [NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) |
 | 當前完成內容、測試證據與已知風險 | [Project Status](PROJECT_STATUS.md) |
 | GitHub分支、歷史版本及發布規則 | [Branch Strategy](docs/BRANCH_STRATEGY.md) |
+| Codex 與輔助 AI Agent 的獨立工作樹、提交及 PR 路徑 | [AI Agent Git Guide](docs/AI_AGENT_GIT_GUIDE.md) |
 | 虛構資料、日誌及測試證據封存 | [Public project archive](archive/README.md) |
 | 全部文件的讀者、權威來源、更新時機及覆蓋檢查 | [完整文件索引](docs/DOCUMENTATION_INDEX.md) |
 

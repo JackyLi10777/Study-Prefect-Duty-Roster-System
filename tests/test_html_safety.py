@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 from nicegui_app.ui.html_safety import attr, text
 
 
@@ -29,10 +32,21 @@ def test_component_status_and_heading_escape_attribute_and_html_surfaces() -> No
 
 
 def test_mobile_cards_escape_user_visible_aria_labels() -> None:
-    from pathlib import Path
-
     source = (
         Path(__file__).resolve().parents[1] / "nicegui_app" / "ui" / "page_shared.py"
     ).read_text(encoding="utf-8")
     assert 'aria-label="{attr(card_label)}"' in source
     assert 'attr(day_rows[0]["day"])' in source
+
+
+def test_all_interpolated_ui_aria_labels_use_attribute_escaping() -> None:
+    """Keep future translated or record-derived labels inside one safe attribute boundary."""
+
+    ui_root = Path(__file__).resolve().parents[1] / "nicegui_app" / "ui"
+    unsafe: list[str] = []
+    pattern = re.compile(r'aria-label="\{(?!attr\()')
+    for source_path in sorted(ui_root.rglob("*.py")):
+        for line_number, line in enumerate(source_path.read_text(encoding="utf-8").splitlines(), 1):
+            if pattern.search(line):
+                unsafe.append(f"{source_path.relative_to(ui_root)}:{line_number}")
+    assert unsafe == []
