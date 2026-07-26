@@ -12,13 +12,21 @@
     const download = root.querySelector('#sy-support-browser-download');
     const copy = root.querySelector('#sy-support-browser-copy');
     const email = root.querySelector('#sy-support-browser-email');
-    if (!(form instanceof HTMLFormElement) || !(result instanceof HTMLOutputElement)) return false;
+    if (
+      !(form instanceof HTMLFormElement) ||
+      !(result instanceof HTMLOutputElement) ||
+      !(resultActions instanceof HTMLElement) ||
+      !(error instanceof HTMLElement) ||
+      !(download instanceof HTMLButtonElement) ||
+      !(copy instanceof HTMLButtonElement) ||
+      !(email instanceof HTMLButtonElement)
+    ) return false;
     root.dataset.installed = 'true';
     let report = null;
 
     const value = id => String(root.querySelector(`#sy-support-${id}`)?.value || '').trim();
     const setActions = enabled => {
-      if (resultActions instanceof HTMLElement) resultActions.hidden = !enabled;
+      resultActions.hidden = !enabled;
     };
     const incidentId = () => {
       const date = new Date().toISOString().slice(0, 10).replaceAll('-', '');
@@ -66,7 +74,7 @@
       result.textContent = '';
       setActions(false);
     });
-    download?.addEventListener('click', () => {
+    download.addEventListener('click', () => {
       if (!report && !build()) return;
       const blob = new Blob([`${JSON.stringify(report, null, 2)}\n`], {type: 'application/json'});
       const url = URL.createObjectURL(blob);
@@ -76,11 +84,17 @@
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     });
-    copy?.addEventListener('click', async () => {
+    copy.addEventListener('click', async () => {
       if (!report && !build()) return;
-      await navigator.clipboard.writeText(report.temporary_reference);
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+        await navigator.clipboard.writeText(report.temporary_reference);
+        error.textContent = '';
+      } catch {
+        error.textContent = root.dataset.copyFailedMessage || 'Copy failed. Select the temporary reference manually.';
+      }
     });
-    email?.addEventListener('click', () => {
+    email.addEventListener('click', () => {
       if (!report && !build()) return;
       const subject = `Temporary incident ${report.temporary_reference}`;
       const body = `${report.temporary_reference}\nBrowser-only report; attach the downloaded JSON only after reviewing it.`;

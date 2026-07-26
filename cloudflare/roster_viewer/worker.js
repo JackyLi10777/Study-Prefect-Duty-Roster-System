@@ -1403,7 +1403,7 @@ tbody td {
   background: var(--surface);
   box-shadow: var(--shadow);
 }
-.support-safety { padding: 18px 20px; border-color: var(--warning-line); background: var(--warning-soft); box-shadow: none; }
+.support-safety { padding: 18px 20px; border-color: color-mix(in srgb, var(--gold) 48%, var(--line)); background: color-mix(in srgb, var(--devotional-surface) 62%, var(--surface)); box-shadow: none; }
 .support-safety h2,
 .support-result h2 { margin: 0 0 8px; font-size: 1rem; }
 .support-safety p,

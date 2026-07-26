@@ -395,6 +395,8 @@ def test_public_support_keeps_core_fields_visible_and_optional_details_collapsed
     assert "if (path === '/support')" in source
     assert "staticResponse(request, PUBLIC_SUPPORT_HTML" in source
     assert "if (path === '/support-feedback.js')" in source
+    assert "--warning-line" not in source
+    assert "--warning-soft" not in source
     assert "staticResponse(request, PUBLIC_SUPPORT_JS" in source
     support_route = source[source.index("if (path === '/support')"):source.index("if (path === '/view')")]
     assert support_route.count("'Cache-Control': 'no-store'") == 2

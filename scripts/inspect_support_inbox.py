@@ -53,12 +53,12 @@ def inspect(
     for identifier in identifiers:
         try:
             valid.append(_safe_summary(inbox, identifier))
-        except SupportIncidentError:
+        except (SupportIncidentError, OSError):
             invalid_count += 1
             if quarantine_invalid and INCIDENT_ID_PATTERN.fullmatch(identifier):
                 try:
                     inbox.quarantine(identifier, reason_code="inspector_validation_failed")
-                except SupportIncidentError:
+                except (SupportIncidentError, OSError):
                     pass
                 else:
                     quarantined_count += 1
@@ -92,7 +92,7 @@ def main() -> int:
             incident_id=args.incident,
             quarantine_invalid=args.quarantine_invalid,
         )
-    except (IncidentValidationError, SupportIncidentError):
+    except (IncidentValidationError, SupportIncidentError, OSError):
         payload = {
             "status": "fail",
             "valid_incident_count": 0,

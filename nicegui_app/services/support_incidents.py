@@ -750,15 +750,39 @@ class SupportInbox:
                 raise IncidentValidationError("incident attachment metadata does not match its payload")
             indexed_attachments.add(safe_name)
         attachment_dir = bundle / "attachments"
-        if attachment_dir.exists():
+        evidence_dir = bundle / "evidence"
+        try:
             _assert_plain_directory(attachment_dir)
-            actual_attachments = {
-                item.name
-                for item in attachment_dir.iterdir()
-                if item.is_file() and not _is_reparse_point(item)
-            }
-            if actual_attachments != indexed_attachments:
-                raise IncidentValidationError("incident contains an unindexed attachment")
+            _assert_plain_directory(evidence_dir)
+            root_entries = {item.name for item in bundle.iterdir()}
+            evidence_entries = {item.name for item in evidence_dir.iterdir()}
+            attachment_entries = tuple(attachment_dir.iterdir())
+        except (OSError, SupportStorageError) as error:
+            raise IncidentValidationError("incident bundle layout is unreadable or unsafe") from error
+        if root_entries != {
+            "attachments",
+            "environment.json",
+            "evidence",
+            "manifest.json",
+            "report.md",
+            "status.jsonl",
+        }:
+            raise IncidentValidationError("incident contains an unindexed root entry")
+        if evidence_entries != {"events.jsonl"}:
+            raise IncidentValidationError("incident contains unindexed evidence")
+        if any(not item.is_file() or _is_reparse_point(item) for item in attachment_entries):
+            raise IncidentValidationError("incident contains an unsafe attachment entry")
+        actual_attachments = {item.name for item in attachment_entries}
+        if actual_attachments != indexed_attachments:
+            raise IncidentValidationError("incident contains an unindexed attachment")
+        expected_hashes = {
+            "report.md",
+            "environment.json",
+            "evidence/events.jsonl",
+            *(f"attachments/{name}" for name in indexed_attachments),
+        }
+        if set(hashes) != expected_hashes:
+            raise IncidentValidationError("incident integrity index does not match its file set")
         if total_size > MAX_BUNDLE_BYTES:
             raise IncidentValidationError("incident bundle is oversized")
         redactions = manifest.get("redaction_summary")
@@ -903,10 +927,17 @@ class SupportInbox:
             ("resolved", RESOLVED_RETENTION_DAYS * 24 * 60 * 60),
         )
         with self._write_lock:
-            self.initialize()
+            try:
+                self.initialize()
+            except (SupportIncidentError, OSError):
+                return removed
             for bucket, maximum_age in rules:
                 container = self.root / bucket
-                for candidate in tuple(container.iterdir()):
+                try:
+                    candidates = tuple(container.iterdir())
+                except OSError:
+                    continue
+                for candidate in candidates:
                     if not candidate.is_dir() or _is_reparse_point(candidate):
                         continue
                     try:
@@ -930,7 +961,10 @@ class SupportInbox:
                             "rejected",
                         }:
                             continue
-                    shutil.rmtree(candidate, ignore_errors=False)
+                    try:
+                        shutil.rmtree(candidate, ignore_errors=False)
+                    except OSError:
+                        continue
                     removed[bucket] += 1
         return removed
 
