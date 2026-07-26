@@ -1,8 +1,8 @@
 # 快速啟動 / Quick start
 
-> **目前狀態（live rc24）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.24`／commit `8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`；296 個 runtime 發布輸入以指紋 `a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `76a23134-8355-4e25-bbba-abf17c6918c5` 正承接 100% 流量；第一級回退是 `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`，rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 是次級已驗證基線。
+> **目前狀態（live rc26）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.26`／commit `248955cb3300bfbe092b05036632991524d824cd`；296 個 runtime 發布輸入以指紋 `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `76a23134-8355-4e25-bbba-abf17c6918c5` 因 Worker source／設定未變而繼續承接 100% 流量；第一級回退是 `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`。
 >
-> **rc24 已上線（真人驗收仍未簽署）：** rc24 整合內容精煉、本機優先支援回報及完整 Admin／Guest／Public／Viewer 邊界，並修正 `/support` 的身份分流：Public／Viewer 保持瀏覽器暫存，已驗證 Admin／Guest 進入 NiceGUI 工作台。機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
+> **rc26 已上線（真人驗收仍未簽署）：** rc26 保留完整 Admin／Guest／Public／Viewer 邊界及 `/support` 身份分流，並把團隊敘述統一為真實的 `Study Prefect Team／導學風紀組`，移除虛構部門與職級。機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
 
 ## 每日使用
 
@@ -70,6 +70,6 @@ Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 sess
 
 ## English
 
-Live `v1.2.0-rc.20` at `e3d84858abfe23714929a87c4bcf76e55999ce7c` passed 14／14 source-matched gates under fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` (839 Python, 3 motion, and 40 Worker contracts) and completed the controlled Windows deployment. Continue to use rc20 behavior; supervised Head Study Prefect and teacher-advisor acceptance remains pending. rc18／`fd504a8` is the first historical rollback target.
+Live `v1.2.0-rc.26` at `248955cb3300bfbe092b05036632991524d824cd` passed 14／14 source-matched gates under fingerprint `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7` (complete Python suite, 3 motion, and 41 Worker contracts) and completed the controlled Windows deployment. Continue to use rc26 behavior; supervised Head Study Prefect and teacher-advisor acceptance remains pending. rc24／`8d709f9b` is the first rollback target.
 
 The live `v1.2.0-rc.20` origin (`e3d84858abfe23714929a87c4bcf76e55999ce7c`) and verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` provide one canonical site with either a time-limited **Guest experience** using fictional in-memory data or **Admin login** through Cloudflare Access. A refresh in the same Guest tab may restore its latest signed revision, but a duplicated tab receives another workspace and logout, expiry, revocation, or origin restart invalidates the temporary token. Select **Log out** when finished because closing one tab does not clear every session state. `/view#…` remains the separate read-only published-roster link. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for HTTP readiness, and only then opens the browser. For a durable fictional rehearsal with backup/restore, use `START_PRACTICE_MODE.cmd`; the remote Guest workspace is intentionally temporary. Check `/readyz`, not only `/healthz`, before accepting official writes. In rc20, Fixed weekday preserves each AHP's weekday across weeks while a leave substitute remains week-local; Flexible weekly varies deterministically among declared available days with fairness history primary. Unchecked days are never eligible, and an existing week reopens with its saved mode.

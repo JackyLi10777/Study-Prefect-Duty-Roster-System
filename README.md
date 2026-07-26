@@ -64,7 +64,7 @@ Admin 是正式工作的標準版本；Guest 使用同一組路由、導航、�
 
 | 分支 | 運行平台 | 定位 |
 |---|---|---|
-| `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；歷史整合來源 | rc17 的多用戶、操作層級及前端穩定性整合線；現行發布已由 rc20 取代 |
+| `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；歷史整合來源 | rc17 的多用戶、操作層級及前端穩定性整合線；現行發布已由 rc26 取代 |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；歷史整合來源 | 前一階段 Service Weave v1.2 編輯式整合線 |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
 | `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.21` 正式來源；`C:\SingYinRoster` 已切換至同一 annotated tag |
@@ -81,13 +81,13 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 網站公開入口、分享檢視器及 NiceGUI 工作台共用頁尾署名 `Copyright © 2026 LI Chuangjie`；供群組發布的乾淨值班表 PDF 仍由匯出選項決定是否加入補充頁尾。
 
-**目前正式基線：** `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` 已同步到 `C:\SingYinRoster`；`/healthz` 正常、`/readyz` ready、`writeReady=true`。296 個發布輸入以指紋 `a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477` 通過 14／14 release gate；切換前正式備份 `20260726-115559-564249-manual_verified_backup.sqlite3`、SHA-256 `6fffcb99241718bc3ccc8d670d16504b277b8af52207e266257449ea080ac035`、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `76a23134-8355-4e25-bbba-abf17c6918c5` 完成 0% staged smoke、100% promotion 及 canonical Public／Guest／Viewer／support 檢查；桌面及 390px 手機實際瀏覽器 smoke 無 console 或 page error。第一級回退是 rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` exact pair；rc20 是次級已驗證基線。首席導學風紀及教師顧問真人驗收仍未完成。
+**目前正式基線：** `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd` 已同步到 `C:\SingYinRoster`；`/healthz` 正常、`/readyz` ready、`writeReady=true`。296 個發布輸入以指紋 `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7` 通過 14／14 release gate；切換前正式備份 `20260726-134020-201449-manual_verified_backup.sqlite3`、SHA-256 `51d116b4cb4a4ab5c6b713f9070b441c73e30eb6b7a75aaa105a53aaad582117`、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。rc24 至 rc26 的 Worker source／設定沒有差異，故 canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 繼續承接正式流量。canonical 入口及 Guest 平台頁已核對 `Study Prefect Team／導學風紀組`、完整英文切換及零舊虛構部門文案，沒有 console 或 page error。第一級回退是 rc24 exact pair；首席導學風紀及教師顧問真人驗收仍未完成。
 
 **公開安全及版本完整性：** 公開瀏覽器只接觸 Cloudflare Worker；正式 NiceGUI origin 仍只綁定 loopback，Admin 必須同時通過 Cloudflare Access、私密精確電郵 allowlist、短期 session 及請求綁定的 HMAC principal。GitHub `main` 只接受通過 `test-and-audit` 與 Python／Worker CodeQL 的 pull request，禁止 force-push 和刪除；Actions 引用必須固定完整 SHA，`v*` 發布標籤建立後亦不可更新或刪除。完整威脅模型、資料分類、事件處理及殘餘限制見[公開網站安全與私隱模型](docs/SECURITY_AND_PRIVACY.md)。
 
-**目前發布（v1.2 rc24）：** 在 rc21 的四區資訊架構及 rc20 的操作、安全與裝置基線上，rc24 加入內容精煉、本機優先支援流程及正確的 `/support` 身份分流。`Professional_Design_System.md` 及 `docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md` 分別保存可執行的設計契約與參考案例的 Adopt／Adapt／Reject 決策。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。Public／Viewer 支援報告保持瀏覽器暫存，已驗證 Admin／Guest 進入 NiceGUI 支援工作台；首席導學風紀及教師顧問真人驗收仍待完成。
+**目前發布（v1.2 rc26）：** 在 rc24 的內容精煉、本機優先支援及正確 `/support` 身份分流上，rc26 把共創署名及團隊敘述收斂為真實的 `Study Prefect Team／導學風紀組 · Service Weave 系統共創`，移除虛構辦公室、部門與職級，並以穩定語意定位器取代依賴文案的瀏覽器驗證。`Professional_Design_System.md` 及 `docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md` 分別保存可執行的設計契約與參考案例的 Adopt／Adapt／Reject 決策。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。Public／Viewer 支援報告保持瀏覽器暫存，已驗證 Admin／Guest 進入 NiceGUI 支援工作台；首席導學風紀及教師顧問真人驗收仍待完成。
 
-rc16 是這批改動的歷史候選來源；rc17 只保留作次級已驗證基線；rc18 是 live rc20 的第一級回退 pair。下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換均由 live rc20 承接。
+rc16–rc21 是這批能力的歷史來源；rc24 是目前第一級回退 pair。下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換均由 live rc26 承接。
 
 ## 首席導學風紀：每日怎樣進入
 
@@ -118,7 +118,7 @@ rc16 是這批改動的歷史候選來源；rc17 只保留作次級已驗證基�
 - Guest 只獲 `demo_data.read`、`demo_state.modify`、`demo_result.download`、`session_preferences.modify`；AI、匯入、上載、正式備份／還原、Viewer 分享、外部交付及永久寫入均被服務層拒絕。
 - 每分頁取得獨立、有限額、程序記憶體內的虛構工作區。Guest PDF／JSON 標明 `DEMO`，以一次性 `no-store` 下載回傳。
 - Guest 的語言、主題、音樂及音效偏好由 origin 的有限期記憶體 store 保存，因此重新整理或同一 session 轉頁不會回復預設；登出、到期、撤權或程序重啟即清除。管理員偏好仍使用正式使用者儲存。兩種身份的 PDF／JSON 均經同一帶憑證下載流程核對 HTTP 狀態、MIME 及支援編號，不再依賴瀏覽器盲目開啟下載網址。
-- HMAC snapshot codec 及瀏覽器橋接已完成：每次有意義修改後，origin 只把最新、已簽署且綁定 SID／workspace／tab／revision 的 token 推送到該分頁 `sessionStorage`；重新整理時必須連同當次連線 nonce 交回伺服器核實。複製分頁會獲得新 workspace；篡改、錯誤綁定、過期、舊 boot 或重播 token 會被拒絕並回到安全虛構 fixture。live rc20 的完整 pytest、隔離 Admin／Guest 瀏覽器、手機、效能、寫入、PDF、備份及復原已納入其 14／14 正式報告；rc18 證據只保留作第一級回退來源。
+- HMAC snapshot codec 及瀏覽器橋接已完成：每次有意義修改後，origin 只把最新、已簽署且綁定 SID／workspace／tab／revision 的 token 推送到該分頁 `sessionStorage`；重新整理時必須連同當次連線 nonce 交回伺服器核實。複製分頁會獲得新 workspace；篡改、錯誤綁定、過期、舊 boot 或重播 token 會被拒絕並回到安全虛構 fixture。live rc26 的完整 pytest、隔離 Admin／Guest 瀏覽器、手機、效能、寫入、PDF、備份及復原已納入其 14／14 正式報告；rc24 證據保留作第一級回退來源。
 - 完整安全模型及 gate 見 [統一訪客模式安全模型](docs/UNIFIED_GUEST_SECURITY_MODEL.md)。
 
 日常安全次序：
@@ -358,7 +358,7 @@ Worker 部署除 Viewer 管理所需的 `ADMIN_BEARER_TOKEN` 外，亦必須配�
 不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
 
 **目前可否在校外使用？**
-可以。canonical 網站及 Windows origin 現運行健康、ready 的 rc20／`e3d84858`；歷史 rc18／`fd504a8` 只保留作第一級回退。一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
+可以。canonical 網站及 Windows origin 現運行健康、ready 的 rc26／`248955cb`；rc24／`8d709f9b` 是第一級回退，rc21 是次級已驗證基線。一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
 
 **別人可否用 Viewer 連結編輯週表？**
 不可。分享連結永遠唯讀；網址參數、瀏覽器標頭或畫面操作都不能把訪客升級為管理員。只有 Access policy 內的管理員身份通過驗證後，Worker 才轉送完整工作台。
@@ -450,7 +450,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The live v1.2 rc21 baseline uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The protected origin runs `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`, paired with unchanged Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`. This release passed 14／14 source-matched gates under fingerprint `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1`, then completed the controlled host switchover, verified backup, isolated restore and canonical smoke. `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c` is the first-level rollback; historical `v1.2.0-rc.18`／`fd504a8` is a secondary verified baseline. Supervised human acceptance remains open. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
+The live v1.2 rc26 baseline uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The protected origin runs `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`, paired with unchanged Worker `76a23134-8355-4e25-bbba-abf17c6918c5`. This release passed 14／14 source-matched gates under fingerprint `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`, then completed the controlled host switchover, verified backup, isolated restore and canonical smoke. `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` is the first-level rollback; historical `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` is a secondary verified baseline. Supervised human acceptance remains open. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 

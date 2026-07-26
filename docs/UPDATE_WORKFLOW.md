@@ -2,7 +2,7 @@
 
 我是李創杰。這份流程是我與 Codex 對正式發布工作的反思結果：更新慢的主因不是 Git 上傳，而是過去把每次文字或測試修改都當成完整 runtime 發布。
 
-> **目前發布界線：** live rc24 annotated tag `v1.2.0-rc.24`／commit `8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` 與 Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 是正式基線；rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` 是第一級已驗證回退。rc24 已完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換、Worker 分段發布及 canonical Public／Guest／Viewer／support smoke。任何後續 focused tests、`--staged` 或文件更新都不會自動成為新的已部署 runtime；仍須以實際 origin／Worker 報告和線上核對為準。
+> **目前發布界線：** live rc26 annotated tag `v1.2.0-rc.26`／commit `248955cb3300bfbe092b05036632991524d824cd` 與 unchanged Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 是正式基線；rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` 是第一級已驗證回退。rc26 已完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換及 canonical entrance／Guest Platform／language smoke；Worker source／設定沒有改動，因此不作無意義的重新部署。任何後續 focused tests、`--staged` 或文件更新都不會自動成為新的已部署 runtime；仍須以實際 origin／Worker 報告和線上核對為準。
 
 rc20 的完整候選報告約需 **404 秒**；當中主要時間用於完整 Python 套件、桌面／手機瀏覽器、寫入／PDF／還原、效能及備份失敗演練。這些證據對政策、資料庫、工作流、部署或正式 runtime 改動很重要，但不應因 README 改一句話而重跑。最近三次沒有 runtime 改動的提交亦在 GitHub Quality 與 CodeQL 合計使用約 18 分鐘。
 

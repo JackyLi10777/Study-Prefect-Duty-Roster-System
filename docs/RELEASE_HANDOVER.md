@@ -2,11 +2,11 @@
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
-> **目前線上基線是 rc24：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.24`／commit `8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`。296 個 runtime 輸入以指紋 `a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477` 通過 14／14 正式 gate（完整 Python suite、3 motion、41 Worker contract）。切換前正式備份 `20260726-115559-564249-manual_verified_backup.sqlite3`、SHA-256 `6fffcb99241718bc3ccc8d670d16504b277b8af52207e266257449ea080ac035`、公平對帳、行數核對、還原審計及隔離還原全部通過。canonical Worker version `76a23134-8355-4e25-bbba-abf17c6918c5` 已通過 0% staged smoke、100% promotion 及 canonical health／entrance／viewer／support smoke；origin `/healthz` 健康、`/readyz` ready、`writeReady=true`，沒有待處理備份義務。Public／Viewer `/support` 保持瀏覽器暫存，已驗證 Admin／Guest `/support` 進入 NiceGUI 工作台。第一級回退是 rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` exact pair；rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 是次級已驗證基線。首席導學風紀及教師顧問真人驗收仍未完成。
+> **目前線上基線是 rc26：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.26`／commit `248955cb3300bfbe092b05036632991524d824cd`。296 個 runtime 輸入以指紋 `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7` 通過 14／14 正式 gate（完整 Python suite、3 motion、41 Worker contract）。切換前正式備份 `20260726-134020-201449-manual_verified_backup.sqlite3`、SHA-256 `51d116b4cb4a4ab5c6b713f9070b441c73e30eb6b7a75aaa105a53aaad582117`、公平對帳、行數核對、還原審計及隔離還原全部通過。canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 因 rc24 至 rc26 的 Worker source／設定沒有差異而保留；origin `/healthz` 健康、`/readyz` ready、`writeReady=true`，沒有待處理備份義務。canonical 入口及 Guest Platform 已核對真實團隊名稱、完整英文切換及零 console／page error。第一級回退是 `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` exact pair。首席導學風紀及教師顧問真人驗收仍未完成。
 
 > **部署時發現的主機漂移：**切換前 `C:\SingYinRoster` 的 rc20 checkout 有 26 個未提交／未追蹤項目。發布流程沒有把它們混入候選，而是完整保存為 stash commit `56e2f5148f4be1444c45d31c25b81f5a7df1ba03`，再從不可變 rc21 tag 部署；除非先作獨立差異審查，切勿把這份 stash 套回正式主機。
 >
-> **歷史 rc18 受控發布（已由 rc20 取代）：**annotated tag `v1.2.0-rc.18`／commit `fd504a8` 曾是 live origin。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 gate；正式備份 `20260722-024349-422389-manual_verified_backup.sqlite3`、SHA-256 `51ad0e42284c0d42363d2f8fd2bc3dc70ae0ce1f79d258016ec2d66bf6741c7f` 及隔離還原通過。其 host／Worker pair 現為 rc20 第一級回退目標。
+> **歷史 rc18 受控發布（已由 rc20 取代）：**annotated tag `v1.2.0-rc.18`／commit `fd504a8` 曾是 live origin。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 gate；正式備份 `20260722-024349-422389-manual_verified_backup.sqlite3`、SHA-256 `51ad0e42284c0d42363d2f8fd2bc3dc70ae0ce1f79d258016ec2d66bf6741c7f` 及隔離還原通過。這只是歷史回復證據，不是 rc26 的目前回退層級。
 
 > **手機／平板／桌面共存規則：**平板不是放大的手機，桌面也不可繼承平板壓縮。768×1024 及 820×1180 直向平板使用 adaptive shell，操作表單維持一欄，支援卡片可使用兩欄；1024×768 橫向觸控平板保留 compact desktop shell，但操作及文件區不得壓成多個狹窄欄，證據與下載最多兩欄；1440×1024 保留 full desktop shell 與閱讀寬度。四個 viewport 屬於同一候選裝置矩陣，並與手機共用同一網址、身份、路由、資料、排班規則、審計、PDF 及返回邏輯。
 
@@ -117,7 +117,7 @@ token 及完整日誌留在私人受控渠道。完整程序及威脅模型見
 
 受控技術維護可使用 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。正式設定只接受 Ed25519 金鑰、只監聽 loopback，並拒絕密碼、轉發及公開 TCP 22。`SingYinRosterSvc` 仍是非互動網站執行帳戶，不可用作 SSH 登入；SSH 私鑰亦不可放入 Git、交接備份、日誌或雲端同步資料夾。
 
-需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。目前 live rc20 中，訪客不需輸入電郵或密碼，只按「訪客體驗」建立有限期 Guest session；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 驗證相應 session 後，以獨立 HMAC principal 把 Guest／Admin 送到同一 NiceGUI origin；origin 再分流至虛構記憶體 adapter 或正式 workflow。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
+需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。目前 live rc26 中，訪客不需輸入電郵或密碼，只按「訪客體驗」建立有限期 Guest session；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 驗證相應 session 後，以獨立 HMAC principal 把 Guest／Admin 送到同一 NiceGUI origin；origin 再分流至虛構記憶體 adapter 或正式 workflow。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
 
 ### 交接前練習模式
 
@@ -228,13 +228,17 @@ python -X utf8 -m nicegui_app.main
 8. 以虛構已發布週表實測同 host `/view#…` 連結的建立、普通瀏覽器直達、到期及撤銷；Guest 不能建立正式 Viewer 連結。
 9. 本機及 WARP 只保留作維護後備。Worker／origin 的 session、principal、Viewer 及 Tunnel secret 值不可出現在版本庫、文件、截圖或交接包。
 
-### rc21 已完成發布紀錄與後續候選次序
+### rc26 已完成發布紀錄與回退次序
+
+rc26 的正式部署證據固定為 tag `v1.2.0-rc.26`／commit `248955cb3300bfbe092b05036632991524d824cd`／fingerprint `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`。正式備份 `20260726-134020-201449-manual_verified_backup.sqlite3`、SHA-256 `51d116b4cb4a4ab5c6b713f9070b441c73e30eb6b7a75aaa105a53aaad582117` 及其隔離還原已通過；Worker source／設定沒有改動，故仍為 `76a23134-8355-4e25-bbba-abf17c6918c5`。第一級回退是 rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` exact pair。以下 rc21／rc20 內容只保留作歷史程序參考。
+
+### 歷史 rc21／rc20 發布紀錄
 
 rc21 的正式部署證據固定為 tag `v1.2.0-rc.21`／commit `f7df4d0170e6bacd65340cc893992a17b5ed4aed`／fingerprint `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1`。正式備份 `20260726-003841-844011-manual_verified_backup.sqlite3` 及其隔離還原已通過；Worker 沒有改動，仍為 `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`。第一級回退是 rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c`，rc18／`fd504a8` 只作第二級已驗證基線。下列 rc20 命令與證據保留作歷史程序參考，不可當作目前版本重跑。
 
 1. 在最後來源 commit 只執行一次 `python -X utf8 scripts\verify_update.py --release`；它已擁有完整 pytest、瀏覽器、Worker、效能、備份失敗及部署就緒閘門，不要再重複跑同一套檢查。
 2. rc20 的正式發布證據固定為 tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`／fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`；14／14 gate、839 項 Python、3 項 motion 及 40 項 Worker contract 全部通過。受控切換、正式備份、隔離還原及 canonical smoke 已完成；任何來源改動都不能沿用這份證據。
-3. 保存目前 rc20／`e3d84858` 及 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 作現行不可變版本；另保留 rc18／`fd504a8` 作第一級回退。後續候選仍須在受控切換及線上核對完成後才可寫成已部署。
+3. 當時保存 rc20／`e3d84858` 及 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 作不可變版本，另保留 rc18／`fd504a8` 作當時的第一級回退。這是歷史程序；目前必須使用上方 rc26／rc24 層級。
 4. rc20 當時由提升權限的 PowerShell 從乾淨候選工作樹執行下列命令；這是歷史紀錄，**不可重跑**。後續候選須使用新的獲批准標籤與乾淨工作樹：
 
    ```powershell
@@ -252,7 +256,7 @@ rc21 的正式部署證據固定為 tag `v1.2.0-rc.21`／commit `f7df4d0170e6bac
 6. rc20 的 Worker source／設定與歷史 rc18 Worker 完全相同，因此發布時沒有重新部署 Worker，並在紀錄填上「刻意沿用 verified version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`」。只有日後 Worker source 或受保護設定實際改變，才使用 staged Worker rollout。
 7. 在 canonical 網址核對 Public、Admin、Guest、Viewer、WebSocket、登出、到期及跨分頁隔離；所有能力仍須由伺服器拒絕優先，而非依賴隱藏按鈕。另按[正式驗收證據矩陣](ACCEPTANCE_EVIDENCE.md)以真實 touch phone／tablet、1440×1024 desktop 和鍵盤逐項核對 rc20 的 Assist 模式切換、可值班日、首屏 CTA、200% zoom、軟鍵盤、route focus、44px 目標、兩個 themes、reduced motion 及 forced colours。
 8. rc20 的線上證據已通過並可供真人驗收。未來候選在正式切換前失敗時保持當時 live 版本不動；Windows 或 Worker 受控腳本在切換後失敗時，先閱讀其 deployment report，確認自動 rollback 的 `attempted`／`succeeded` 及精確 previous commit／version，不要盲目重跑或手動複製檔案。
-9. 如 live rc20 發現 Assist 模式、可值班日、窄屏、鍵盤、焦點、主題或入口回歸，立即停止接受正式寫入並記錄 canonical URL、時間、裝置、route 及非敏感畫面。由受控腳本把 Windows origin 恢復至第一級回退 rc18／`fd504a8`；Worker 本次未改，應繼續保持 `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 的 100% traffic。不可 `git reset --hard`、直接覆寫 C-host 或留下未經證明的混合版本。
+9. 如 live rc26 發現 Assist 模式、可值班日、窄屏、鍵盤、焦點、主題或入口回歸，立即停止接受正式寫入並記錄 canonical URL、時間、裝置、route 及非敏感畫面。由受控腳本把 Windows origin 恢復至第一級回退 rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`；Worker source／設定未改，應繼續保持 `76a23134-8355-4e25-bbba-abf17c6918c5` 的 100% traffic。不可 `git reset --hard`、直接覆寫 C-host 或留下未經證明的混合版本。
 10. 回退後重新核對 host commit、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出。只有 rc18 使用者流程及資料狀態再次一致才恢復日常操作；若不能證明回退完成，保持 maintenance／唯讀並交由 IT 處理。
 
 ## 正式驗收清單
@@ -286,7 +290,7 @@ rc21 的正式部署證據固定為 tag `v1.2.0-rc.21`／commit `f7df4d0170e6bac
 - [ ] `/healthz` 及 `/readyz` 同時通過；以崩潰注入留下 backup obligation 後，重啟必須先修復，否則保持 degraded／唯讀而不可接受新寫入。
 - [ ] 以虛構已發布週表建立同 host `/view#…` 連結；一般瀏覽器可查看中文姓名週表但不能修改。撤銷後約一分鐘確認舊完整連結不能再載入。
 - [ ] 完成正式瀏覽器的 WebSocket 長連線／重新連線、檔案上載及 PDF 下載驗收；已記錄的 VPC probe 只作傳輸證據。
-- [x] **歷史 rc18 基線（由 rc20 承接）：**隔離 Chromium 真觸控模擬已覆蓋 390×844 繁中淺色、320×760 英文深色／reduced motion 及 844×390 橫向：單行頁首、`Dashboard／Rosters／Prefects／More`、可捲動 More 抽屜、`aria-expanded`、開啟後焦點、Tab／Shift+Tab 循環、Escape／背景關閉及焦點恢復、手機資料卡、44px 操作、安全區、零橫向溢出及零 console/page error 均通過；live rc20 的擴展裝置矩陣另見 `ACCEPTANCE_EVIDENCE.md`。
+- [x] **歷史 rc18 基線（經 rc20 承接，現由 rc26 保留）：**隔離 Chromium 真觸控模擬已覆蓋 390×844 繁中淺色、320×760 英文深色／reduced motion 及 844×390 橫向：單行頁首、`Dashboard／Rosters／Prefects／More`、可捲動 More 抽屜、`aria-expanded`、開啟後焦點、Tab／Shift+Tab 循環、Escape／背景關閉及焦點恢復、手機資料卡、44px 操作、安全區、零橫向溢出及零 console/page error 均通過；live rc26 的擴展裝置矩陣另見 `ACCEPTANCE_EVIDENCE.md`。
 - [x] **rc20 自動化與線上證據：**fingerprint-matched 14／14 report 已覆蓋裝置矩陣、reflow、reduced motion、navigation／focus、觸控目標、淺／深模式、Guest／Admin 流程及零 console／page error；來源固定為 `v1.2.0-rc.20`／`e3d84858`／`93c6c938…`，受控 Windows 切換及 canonical smoke 亦已完成。這些證據不能代替下列真人手機／平板驗收。
 - [ ] 在同一 canonical 網址以實體 iPhone Safari 及 Android Chrome 重複手機驗收，集中檢查 200% zoom、鍵盤彈出及焦點欄位、跨頁 focus、More 語意、觸控 icon story、兩個 themes、reduced motion、forced colours、旋轉、瀏海與 home indicator 安全區；不用另建或測試 `/mobile` 網站。
 - [ ] 在一個未儲存表單中測試外觀、聲音及語言：外觀／聲音即時切換而不清空輸入，啟用聲音有一次短確認；切換語言前必須先出現離開提示。再以鍵盤確認頁面內容先於底部重複導航。

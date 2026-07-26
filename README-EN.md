@@ -1,6 +1,6 @@
 # Sing Yin Study Prefect Duty Roster System
 
-> **Release note (live, 2026-07-26):** the controlled Windows origin runs annotated tag `v1.2.0-rc.24` at commit `8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`; canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` serves 100% of traffic. The 296-file runtime fingerprint `a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477` passed all 14 formal gates, the verified pre-switch backup and isolated restore passed, and live Public, Guest, Viewer, language-switch, desktop and mobile checks completed without console or page errors. Supervised Administrator and Head Study Prefect/teacher-advisor acceptance remains outstanding.
+> **Release note (live, 2026-07-26):** the controlled Windows origin runs annotated tag `v1.2.0-rc.26` at commit `248955cb3300bfbe092b05036632991524d824cd`; canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` serves 100% of traffic. The 296-file runtime fingerprint `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7` passed all 14 formal gates, the verified pre-switch backup and isolated restore passed, and the canonical entrance and Guest Platform route confirmed the real `Study Prefect Team／導學風紀組` identity, complete language switching, and no console or page errors. Worker source and configuration did not change from rc24 to rc26, so the verified Worker was deliberately retained. Supervised Head Study Prefect and teacher-advisor acceptance remains outstanding.
 
 > **Not to be served, but to serve. — Mark 10:45**
 
@@ -90,22 +90,22 @@ These are not four separate sites. They are four reading and operating contexts 
 
 Admin is the canonical operational product. Guest uses the same routes, navigation, components, and roster experience, while the server switches it to a fictional temporary workspace and denies permanent writes, uploads, AI, backups, shares, and costly external work below the UI. The routine sidebar follows real work; platform story, engineering evidence, and architecture sit in a distinct **Trust & Documentation** portal so institutional narrative never interrupts the weekly roster flow. See [Product research and information-architecture decisions](docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md) for the source review, adopted principles, adaptations, and rejected alternatives.
 
-**Current formal baseline:** `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`
+**Current formal baseline:** `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`
 is live at `C:\SingYinRoster`. `/healthz` is healthy and `/readyz` is ready with
 `writeReady=true` and `policyVersion=2026.07.22-assist-modes`. The controlled
-switch created `20260726-003841-844011-manual_verified_backup.sqlite3` and passed
+switch created `20260726-134020-201449-manual_verified_backup.sqlite3` and passed
 its SHA-256 checksum, database integrity, fairness reconciliation, row matching,
 restore audit, and isolated restore. Its SHA-256 is
-`fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777`. Source
-fingerprint `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1`
+`51d116b4cb4a4ab5c6b713f9070b441c73e30eb6b7a75aaa105a53aaad582117`. Source
+fingerprint `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`
 passed all 14／14 formal gates (the complete Python suite, 3 motion contracts,
-and 40 Worker contracts).
-Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` was intentionally retained
-because Worker source／settings did not change. The `cloudflared` Windows service
-was restored to Running／Automatic, after which the canonical desktop and mobile
-Guest／Trust routes passed rendered smoke with no console or page errors. The
-first-level rollback is rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c`
-with that same Worker; rc18／`fd504a8` remains the secondary verified baseline.
+and 41 Worker contracts).
+Worker version `76a23134-8355-4e25-bbba-abf17c6918c5` was intentionally retained
+because Worker source／settings did not change between rc24 and rc26. The canonical
+entrance and Guest Platform route passed rendered smoke with the real team identity,
+complete language switching, and no console or page errors. The first-level rollback
+is rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`; rc21／
+`f7df4d0170e6bacd65340cc893992a17b5ed4aed` remains the secondary verified baseline.
 Supervised Head Study Prefect and teacher-advisor
 acceptance remains open.
 
@@ -120,23 +120,23 @@ release tag cannot be updated or deleted. See the complete
 data classes, incident response, and residual limits.
 
 The retained **v1.1 rollback** record is historical recovery evidence only; it
-does not replace the current rc20 baseline.
+does not replace the current rc26 baseline.
 
 The public entrance, shared-roster viewer, and NiceGUI workbench use the same
 `Copyright © 2026 LI Chuangjie` page-footer attribution. Clean group-sharing
 roster PDFs retain their explicit supplementary-footer export option.
 
-Non-interactive editorial cards gain a quiet fine-pointer ambient follow-light and focus-within halo without lift or cursor change; action cards keep the existing lift + glow. The live rc20 product includes Assist fixed-weekday／flexible-weekly modes plus the versioned Service Weave `ProductIdentity`,
+Non-interactive editorial cards gain a quiet fine-pointer ambient follow-light and focus-within halo without lift or cursor change; action cards keep the existing lift + glow. The live rc26 product includes Assist fixed-weekday／flexible-weekly modes plus the versioned Service Weave `ProductIdentity`,
 central `PageDefinition` catalogue, public NiceGUI component API, explicit CSS
 ownership, filterable Engineering evidence index, internal Developer Reference,
 bounded Guest preferences, unified generated-file delivery, the browser／PDF
 roster matrix, and auditable published-roster withdrawal.
 
-The live rc20 release retains and re-verifies admission control that rejects excess Guest sessions without
+The live rc26 release retains and re-verifies admission control that rejects excess Guest sessions without
 evicting active users, stronger import and network bounds, aggregate fairness
 reconciliation, explicit return paths, and stable button containers whose icons
-transform internally. Its 290-input fingerprint
-`93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`
+transform internally. Its 296-input fingerprint
+`5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`
 passed all 14 formal gates before the controlled origin and Worker rollout.
 
 ## Repository editions
@@ -146,7 +146,7 @@ passed all 14 formal gates before the controlled origin and Worker rollout.
 | `codex/login-copy-music-rc18` | NiceGUI + SQLite, historical release source | Superseded rc18 `fd504a8` entrance, devotional, interaction and rollback line |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite, historical source | Previous Service Weave editorial integration line |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Previous unified-guest architecture line; no longer the formal baseline |
-| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.20` source; Windows origin matches the annotated tag |
+| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.26` source; Windows origin matches the annotated tag |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
@@ -168,8 +168,8 @@ redirects, not a static tour or second trial product. An explicitly issued
 `/view#…` link remains the separate encrypted, read-only published-roster viewer.
 
 The Worker and origin authenticate both modes with server-verified, HMAC-signed
-principals. The live rc20 release passed 14／14 formal gates against its own
-290-input fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`,
+principals. The live rc26 release passed 14／14 formal gates against its own
+296-input fingerprint `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`,
 including isolated Admin/Guest browser, mobile, reduced-motion, performance,
 write/PDF, backup, and recovery evidence. The application has no custom password database.
 
@@ -268,8 +268,8 @@ transaction preserves the original evidence, posts the inverse of the version's
 net fairness effect, creates audit and backup obligations, and requests
 revocation of existing shares before a corrected week can be generated.
 
-The live rc20 release passed its matching 14-gate report, fresh verified backup,
-isolated restore, origin rollout, staged Worker check, and canonical gateway
+The live rc26 release passed its matching 14-gate report, fresh verified backup,
+isolated restore, origin rollout, retained-Worker equivalence check, and canonical gateway
 health checks. Exact operating commands are documented in
 [`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and
 [`WINDOWS_DEDICATED_HOST_SETUP.md`](docs/WINDOWS_DEDICATED_HOST_SETUP.md). The
