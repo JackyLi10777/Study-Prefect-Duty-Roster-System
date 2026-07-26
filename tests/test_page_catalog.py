@@ -3,11 +3,14 @@ from __future__ import annotations
 from nicegui_app.access_context import AccessMode, Capability, CapabilityPolicy
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.ui.page_catalog import (
+    NAVIGATION_GROUP_ORDER,
     PAGE_DEFINITIONS,
+    PORTAL_GROUP,
     PageKind,
     mobile_navigation_for,
     navigation_groups_for,
     page_definition,
+    portal_pages_for,
     validate_page_catalog,
 )
 
@@ -22,7 +25,23 @@ def test_page_catalog_is_complete_unique_and_translation_independent() -> None:
 
 
 def test_admin_guest_and_maintenance_navigation_share_one_ordered_catalog() -> None:
-    expected_routes = [page.route for page in PAGE_DEFINITIONS]
+    assert NAVIGATION_GROUP_ORDER == (
+        "nav_getting_started",
+        "nav_weekly_operations",
+        "nav_people_fairness",
+        "nav_handover_governance",
+        "nav_administration",
+        "nav_contextual_help",
+    )
+    expected_routes = [
+        page.route
+        for group in NAVIGATION_GROUP_ORDER
+        for page in PAGE_DEFINITIONS
+        if page.navigation_group == group
+    ]
+    expected_portals = [
+        page.route for page in PAGE_DEFINITIONS if page.navigation_group == PORTAL_GROUP
+    ]
     for mode in (
         AccessMode.ADMIN,
         AccessMode.GUEST,
@@ -34,6 +53,7 @@ def test_admin_guest_and_maintenance_navigation_share_one_ordered_catalog() -> N
             for page in pages
         ]
         assert grouped_routes == expected_routes
+        assert [page.route for page in portal_pages_for(mode)] == expected_portals
         assert [page.route for page in mobile_navigation_for(mode)] == [
             "/",
             "/rosters",
@@ -41,6 +61,7 @@ def test_admin_guest_and_maintenance_navigation_share_one_ordered_catalog() -> N
         ]
     assert navigation_groups_for(AccessMode.PUBLIC) == ()
     assert mobile_navigation_for(AccessMode.PUBLIC) == ()
+    assert portal_pages_for(AccessMode.PUBLIC) == ()
 
 
 def test_every_visible_page_capability_is_granted_server_side() -> None:
@@ -58,6 +79,7 @@ def test_desktop_and_mobile_shell_read_the_page_catalog() -> None:
     )
     assert "navigation_groups_for(access_mode)" in shell
     assert "mobile_navigation_for(access_mode)" in shell
+    assert "portal_pages_for(access_mode)" in shell
     assert "for page in pages:" in shell
     assert "active_page.is_visible_to(access_mode)" in shell
     assert "page_context.require(active_page.required_capability)" in shell

@@ -144,6 +144,24 @@ body.body--dark:has(.sy-page-shell) {
   background: color-mix(in srgb, var(--sy-surface) 28%, transparent);
 }
 
+.sy-sidebar-portals {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  padding-top: 2px;
+  border-top: 1px solid color-mix(in srgb, var(--sy-line) 72%, transparent);
+}
+
+.sy-sidebar .q-btn.sy-nav-portal:not(.sy-nav-active) {
+  color: var(--sy-muted) !important;
+  background: transparent;
+}
+
+.sy-sidebar .q-btn.sy-nav-portal:not(.sy-nav-active) .q-icon,
+.sy-sidebar .q-btn.sy-nav-portal:not(.sy-nav-active) .q-btn__content {
+  color: inherit !important;
+}
+
 .sy-sidebar .sy-sidebar-feedback {
   position: relative;
   overflow: hidden;

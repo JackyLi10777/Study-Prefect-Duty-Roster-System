@@ -22,6 +22,7 @@ from nicegui_app.ui.page_catalog import (
     navigation_groups_for,
     navigation_item_tuples_for,
     page_definition,
+    portal_pages_for,
 )
 from nicegui_app.ui.sound import play_interface_sound
 from nicegui_app.ui.theme import (
@@ -54,7 +55,9 @@ def _navigation_context(active_path: str, access_mode: AccessMode) -> tuple[int,
         ):
             if group_key == active_page.navigation_group:
                 return chapter, group_key, active_page.icon
-    return 1, "nav_weekly_work", "space_dashboard"
+        if active_page in portal_pages_for(access_mode):
+            return 7, "nav_trust_resources", active_page.icon
+    return 1, "nav_weekly_operations", "space_dashboard"
 
 
 def _page_slug(active_path: str) -> str:
@@ -875,6 +878,24 @@ def page_shell(active_path: str) -> Iterator[None]:
                     ).style("color: var(--sy-nav-ink) !important")
                     if page.route == active_path:
                         button.classes("sy-nav-active").props("aria-current=page")
+            portal_pages = portal_pages_for(access_mode)
+            if portal_pages:
+                with ui.element("aside").classes("sy-sidebar-portals").props(
+                    f'aria-label="{attr(t("nav_trust_resources"))}" data-testid=sidebar-portals'
+                ):
+                    ui.label(t("nav_trust_resources")).classes("sy-nav-section").props(
+                        'data-sy-section="07"'
+                    )
+                    for page in portal_pages:
+                        button = ui.button(
+                            t(page.title_key),
+                            icon=page.icon,
+                            on_click=lambda target=page.route: _navigate_with_sound(target),
+                        ).props("flat align=left").classes(
+                            "sy-nav-control sy-nav-portal w-full justify-start"
+                        ).style("color: var(--sy-nav-ink) !important")
+                        if page.route == active_path:
+                            button.classes("sy-nav-active").props("aria-current=page")
             with ui.element("aside").classes("sy-sidebar-feedback").props(
                 f'aria-label="{attr(t("feedback_channel_title"))}" data-testid=sidebar-feedback'
             ):

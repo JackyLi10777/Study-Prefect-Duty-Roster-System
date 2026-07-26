@@ -802,7 +802,17 @@ def _exercise_handover_reset_restore(page: Page, guest_url: str) -> dict[str, ob
     _open_route(page, guest_url, "/settings")
     page.get_by_test_id("restore-ready-action").wait_for(state="visible", timeout=20_000)
     page.get_by_test_id("restore-ready-action").click()
-    page.get_by_test_id("confirm-restore-action").click()
+    # The handover action already exists before restore, so it cannot be used
+    # as a completion signal. Wait for the intentional settings-page reload;
+    # otherwise a following route change can race the restore callback and be
+    # overwritten by its late ``ui.navigate.reload()``.
+    with page.expect_navigation(
+        url=re.compile(r".*/settings(?:[?#].*)?$"),
+        wait_until="domcontentloaded",
+        timeout=30_000,
+    ):
+        page.get_by_test_id("confirm-restore-action").click()
+    _wait_for_app(page)
     page.get_by_test_id("handover-package-ready-action").wait_for(state="visible", timeout=30_000)
     _assert_fixture_directory(page, guest_url)
     _open_route(page, guest_url, "/")
@@ -906,7 +916,6 @@ def _exercise_broadcast_cleanup(first: Page, second: Page) -> None:
               sessionStorage.setItem('sing-yin-e2e-temporary', 'must-disappear');
               const audio = document.createElement('audio');
               audio.id = 'sing-yin-e2e-audio';
-              audio.src = 'data:audio/wav;base64,UklGRgQAAABXQVZF';
               document.body.appendChild(audio);
             }
             """
@@ -914,7 +923,10 @@ def _exercise_broadcast_cleanup(first: Page, second: Page) -> None:
     first.evaluate("() => { window.__syInvalidateAuthSession?.(); return true; }")
     for page in (first, second):
         page.wait_for_function(
-            "() => sessionStorage.getItem('sing-yin-e2e-temporary') === null",
+            """
+            () => sessionStorage.getItem('sing-yin-e2e-temporary') === null
+              && document.querySelector('#sing-yin-e2e-audio')?.getAttribute('src') === null
+            """,
             timeout=10_000,
         )
 
@@ -924,8 +936,14 @@ def _assert_clean_browser(
     page_errors: list[str],
 ) -> None:
     if console_errors or page_errors:
+        details = [
+            *(f"console: {message}" for message in console_errors[:10]),
+            *(f"page: {message}" for message in page_errors[:10]),
+        ]
         raise UnifiedGuestVerificationError(
-            f"Browser errors detected: console={len(console_errors)}, page={len(page_errors)}"
+            "Browser errors detected: "
+            f"console={len(console_errors)}, page={len(page_errors)}; "
+            + " | ".join(details)
         )
 
 
