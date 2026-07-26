@@ -652,7 +652,7 @@ $PreviousCommit = (git rev-parse HEAD).Trim()
 先向維護者取得本次已通過 GitHub Quality gate、CodeQL 及正式候選 gate 的獲批准 annotated tag。歷史 rc20 的 exact 值是 `v1.2.0-rc.20`；現行主機已是 rc26，未來更新必須使用新的獲批准標籤，不可照抄歷史值或自行猜測 `main` 是否已完成驗證。確認沒有不明修改後：
 
 ```powershell
-$ReleaseRef = "v1.2.0-rc.20"
+$ReleaseRef = "<next-approved-annotated-tag>"
 git fetch --prune --tags origin
 $ReleaseCommit = (git rev-parse "$ReleaseRef^{commit}").Trim()
 git merge-base --is-ancestor $ReleaseCommit origin/main
@@ -686,7 +686,7 @@ rc20 的自動化裝置矩陣已包含手機／平板／桌面與 accessibility�
 1. 立即停止接受正式寫入，記錄時間、canonical route、裝置、release tag／commit、Worker version 及非敏感畫面；不要重複提交可能已完成的操作。
 2. 先閱讀 Windows／Worker deployment JSON 的 rollback `attempted`、`succeeded`、previous commit／version。受控腳本已開始回退時，不要同時再跑第二次或手動覆寫檔案。
 3. 若 rc26 切換後才發現回歸，由發布維護者先讓受控腳本依 deployment report 回復第一級已驗證基線 rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`。Worker source／設定沒有改動，必須繼續保持 verified version `76a23134-8355-4e25-bbba-abf17c6918c5` 的 100% traffic。禁止 `git reset --hard`、直接複製開發樹或留下未經證明的混合版本。
-4. 回退後核對 host commit、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出和 rc18 使用者畫面。
+4. 回退後核對 host commit 確為 rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出和完整 rc24 使用者流程。
 5. 只有上述結果全部一致才恢復操作；不能證明 rollback 成功時保持 maintenance／唯讀並交由 IT 處理。
 
 ### 步驟 12.7：如需輪換管理 API 權杖

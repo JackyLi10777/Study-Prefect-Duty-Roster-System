@@ -257,7 +257,7 @@ rc21 的正式部署證據固定為 tag `v1.2.0-rc.21`／commit `f7df4d0170e6bac
 7. 在 canonical 網址核對 Public、Admin、Guest、Viewer、WebSocket、登出、到期及跨分頁隔離；所有能力仍須由伺服器拒絕優先，而非依賴隱藏按鈕。另按[正式驗收證據矩陣](ACCEPTANCE_EVIDENCE.md)以真實 touch phone／tablet、1440×1024 desktop 和鍵盤逐項核對 rc20 的 Assist 模式切換、可值班日、首屏 CTA、200% zoom、軟鍵盤、route focus、44px 目標、兩個 themes、reduced motion 及 forced colours。
 8. rc20 的線上證據已通過並可供真人驗收。未來候選在正式切換前失敗時保持當時 live 版本不動；Windows 或 Worker 受控腳本在切換後失敗時，先閱讀其 deployment report，確認自動 rollback 的 `attempted`／`succeeded` 及精確 previous commit／version，不要盲目重跑或手動複製檔案。
 9. 如 live rc26 發現 Assist 模式、可值班日、窄屏、鍵盤、焦點、主題或入口回歸，立即停止接受正式寫入並記錄 canonical URL、時間、裝置、route 及非敏感畫面。由受控腳本把 Windows origin 恢復至第一級回退 rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`；Worker source／設定未改，應繼續保持 `76a23134-8355-4e25-bbba-abf17c6918c5` 的 100% traffic。不可 `git reset --hard`、直接覆寫 C-host 或留下未經證明的混合版本。
-10. 回退後重新核對 host commit、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出。只有 rc18 使用者流程及資料狀態再次一致才恢復日常操作；若不能證明回退完成，保持 maintenance／唯讀並交由 IT 處理。
+10. 回退後重新核對 host commit 確為 rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出。只有 rc24 exact pair 的健康、路由、使用者流程及資料狀態全部一致才恢復日常操作；若不能證明回退完成，保持 maintenance／唯讀並交由 IT 處理。
 
 ## 正式驗收清單
 

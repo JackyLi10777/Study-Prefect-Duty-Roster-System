@@ -222,12 +222,14 @@ def test_release_truth_docs_keep_live_rc26_separate_from_history() -> None:
         assert "248955cb3300bfbe092b05036632991524d824cd" in current_header
         assert "76a23134-8355-4e25-bbba-abf17c6918c5" in current_header
 
-    for document in (status, architecture, security, handover):
+    # Detailed historical rc20 provenance belongs in the status and handover
+    # records; current architecture and security guides need not duplicate it.
+    for document in (status, handover):
         assert "v1.2.0-rc.20" in document
         assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in document
         assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in document
 
-    for document in (status, architecture, handover):
+    for document in (status, handover):
         assert "v1.2.0-rc.18" in document
         assert "fd504a8" in document
 
@@ -242,7 +244,7 @@ def test_release_truth_docs_keep_live_rc26_separate_from_history() -> None:
     assert "v1.2 rc26 is the current controlled Windows origin" in status
     assert "Historical Service Weave v1.2 rc18 controlled rollout" in status
     assert "Historical Service Weave v1.2 rc11 rollout" in status
-    assert "rc18 host／Worker pair is now the second-level verified rollback target" in status
+    assert "rc18 host／Worker pair is now the second-level verified rollback target" in status  # noqa: RUF001
     assert "## 程式審查、邊界與擴展預期" in readme
     assert "SING_YIN_PORT" in readme
     assert "一百倍" in readme
@@ -289,6 +291,12 @@ def test_release_truth_docs_keep_live_rc26_separate_from_history() -> None:
             r"\brunning production origin.{0,100}\brc18\b|"
             r"現行(?:正式主機|發布|基線).{0,12}rc18|"
             r"目前日常操作仍以 rc18|rc18 正式主機)",
+            re.IGNORECASE | re.DOTALL,
+        ),
+        re.compile(
+            r"(?:\blive rc(?:20|21)\b|\brunning production origin.{0,100}"
+            r"\brc(?:20|21)\b|\bService Weave v1\.2 rc(?:20|21).{0,80}"
+            r"\((?:live|live origin))",
             re.IGNORECASE | re.DOTALL,
         ),
     )
@@ -350,11 +358,11 @@ def test_operator_deployment_docs_use_live_rc26_and_rollback_hierarchy() -> None
         assert "76a23134-8355-4e25-bbba-abf17c6918c5" in current_header
 
     assert (  # noqa: RUF001
-        "主機 bundle `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`"
+        "主機 bundle `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`"  # noqa: RUF001
         in cloudflare
     )
     assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in cloudflare
-    assert "rc18／`fd504a8`" in cloudflare
+    assert "rc21 is the secondary verified baseline" in cloudflare
     assert "restore the recorded rc17 host bundle" not in cloudflare
 
     assert "schema-compatible rc4" not in quickstart
@@ -362,11 +370,10 @@ def test_operator_deployment_docs_use_live_rc26_and_rollback_hierarchy() -> None
     assert "v1.2 rc5 候選狀態" not in viewer
     assert "v1.2 rc7 發布狀態" not in cloudflare
     assert "v1.1 已部署基線與 v1.2 候選" not in decision
-    assert '$ReleaseRef = "v1.2.0-rc.20"' in windows
-    assert '$ReleaseRef = "<next-approved-annotated-tag>"' not in windows
+    assert '$ReleaseRef = "v1.2.0-rc.20"' not in windows
+    assert '$ReleaseRef = "<next-approved-annotated-tag>"' in windows
     assert '$ReleaseRef = "v1.1.0-rc.16"' not in windows
-    assert "v1.2.0-rc.20" in decision
-    assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in decision
+    assert "rc21 is the secondary verified baseline" in decision
     assert "5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7" in decision
     assert "<next-approved-annotated-tag>" not in decision
 

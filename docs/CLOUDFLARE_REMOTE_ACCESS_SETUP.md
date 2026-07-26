@@ -113,7 +113,7 @@ python -X utf8 scripts\verify_release_candidate.py
 
 只有 `pytest` 綠燈不足以批准部署。
 
-rc20 的正式 report 已固定為 `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`／`93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`，14／14 gate 全部通過。這是候選來源證據，不是 live 部署證據；仍須由 deployment report 記錄新的正式備份、隔離還原、migration 及 origin health／readiness。
+rc26 的正式 report 已固定為 `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`／`5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`，14／14 gate 全部通過。相配的 deployment report 亦已記錄正式備份、隔離還原、migration 及 origin health／readiness；日後候選不可沿用這份 source-matched 證據。
 
 來源候選的 `tests/test_guest_snapshot_bridge.py` 已聚焦通過：它驗證同分頁最新 revision 還原、連線 nonce、token 輪換、複製／篡改拒絕、登出清理及只使用 `sessionStorage`。這項結果只關閉 snapshot 橋接的實作缺口，不取代本節列出的完整 release report、正式備份／隔離還原或 Cloudflare 線上驗收。
 
@@ -130,14 +130,14 @@ rc20 的正式 report 已固定為 `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bc
 
 ## 6. Windows origin 更新
 
-rc20 由提升權限的 PowerShell 執行既有受控主機部署腳本：
+rc26 已由提升權限的 PowerShell 執行既有受控主機部署腳本；以下命令只記錄該次完成的 exact rollout，不可改名後直接重跑：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass `
-  -File C:\Users\lichu\.codex\worktrees\rc20-candidate\scripts\deploy_windows_release.ps1 `
-  -SourceRoot C:\Users\lichu\.codex\worktrees\rc20-candidate `
+  -File C:\Users\lichu\.codex\worktrees\rc26-deploy\scripts\deploy_windows_release.ps1 `
+  -SourceRoot C:\Users\lichu\.codex\worktrees\rc26-candidate `
   -HostRoot C:\SingYinRoster `
-  -ReleaseRef v1.2.0-rc.20 `
+  -ReleaseRef v1.2.0-rc.26 `
   -TaskName "Sing Yin Roster Host" `
   -RuntimeUser SingYinRosterSvc
 ```
@@ -248,14 +248,14 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 ## 10. 回退
 
-任一 rc24 origin 或線上 gate 失敗：
+任一 rc26 origin 或線上 gate 失敗：
 
 1. 恢復 maintenance；
 2. 以受控部署報告確認自動 rollback 的 `attempted`／`succeeded`、previous commit 及 previous Worker version；
 3. 第一級回退至目前已驗證主機／Worker pair：主機 bundle `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`，Worker `76a23134-8355-4e25-bbba-abf17c6918c5`；
 4. 主機與 Worker 必須一起回復，禁止留下未核實的混合版本；
 5. 核對 host commit、`/healthz`、`/readyz`／`writeReady=true`、Admin、Guest、Viewer、WebSocket、登出及資料狀態；
-6. 只有 rc21 無法安全恢復，且事故負責人明確批准第二級復原時，才可使用 rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` exact pair；rc18／`fd504a8` 只保留為更舊的歷史基線，在相容性、資料完整性及完整 user-flow 重新證明前保持 maintenance；
+6. 只有 rc24 無法安全恢復，且事故負責人明確批准第二級復原時，才可使用 rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` 已驗證 pair；rc20／rc18 只保留為更舊的歷史基線，在相容性、資料完整性及完整 user-flow 重新證明前保持 maintenance；
 7. 如資料完整性受疑，使用受控 restore，而非手動覆寫 SQLite。
 
 additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，部署前 gate 應已拒絕該 migration。
@@ -284,6 +284,6 @@ additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，�
 
 ## English operational summary
 
-Live `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c` keeps one Cloudflare Worker in front of one loopback-only Windows NiceGUI origin. Verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter. rc18／`fd504a8` is retained only as the first historical rollback target.
+Live `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd` keeps one Cloudflare Worker in front of one loopback-only Windows NiceGUI origin. Verified Worker `76a23134-8355-4e25-bbba-abf17c6918c5` owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter. rc24／`8d709f9b` is the first rollback pair and rc21 is the secondary verified baseline.
 
-Service Weave rc20 is the live controlled release. `v1.2.0-rc.20`／`e3d84858…` passed the source-matched `93c6c938…` gate set and completed the Windows-origin switch with migration `0011_assist_assignment_mode`, a fresh verified backup, isolated restore, deployment report, and canonical smoke checks. Its Worker source and configuration were unchanged, so the rollout deliberately retained Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` rather than creating a no-op version. Supervised human acceptance remains open; any runtime failure returns first to the exact historical rc18 host／Worker pair.
+Service Weave rc26 is the live controlled release. `v1.2.0-rc.26`／`248955cb…` passed the source-matched `5da90230…` gate set and completed the Windows-origin switch with a fresh verified backup, isolated restore, deployment report, and canonical smoke checks. Its Worker source and configuration were unchanged from rc24, so the rollout deliberately retained Worker `76a23134-8355-4e25-bbba-abf17c6918c5` rather than creating a no-op version. Supervised human acceptance remains open; any runtime failure returns first to the exact rc24 host／Worker pair, with rc21 retained as the secondary verified baseline.

@@ -16,16 +16,16 @@
 > canonical health／entrance／viewer／support checks before receiving 100% traffic.
 > Supervised human acceptance remains required.
 >
-> **rc21 live boundary:** annotated tag `v1.2.0-rc.21` points to commit
+> **Historical rc21 boundary (now the secondary verified baseline):** annotated tag `v1.2.0-rc.21` points to commit
 > `f7df4d0170e6bacd65340cc893992a17b5ed4aed`. Its 291-source-file fingerprint
 > `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1`
 > passed all 14 formal gates, including the complete Python suite, 3 motion, and 40 Worker tests.
-> The protected Windows origin has switched to this exact commit. Pre-switch backup
+> At that rollout, the protected Windows origin switched to this exact commit. Pre-switch backup
 > `20260726-003841-844011-manual_verified_backup.sqlite3`／SHA-256
 > `fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` passed isolated
-> restore. Worker source and configuration are unchanged, so Worker version
-> `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` remains live without a new Worker
-> rollout. Supervised human acceptance remains outstanding.
+> restore. Worker source and configuration were unchanged, so Worker version
+> `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` was retained without a new Worker
+> rollout. rc21 is now a historical secondary recovery baseline; live operation is rc26.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 
@@ -386,18 +386,18 @@ The only deliberate application-originated external request carrying roster-deri
 
 The complete Python suite, motion state-machine tests, Worker contracts, desktop
 and adaptive browser checks, isolated write pipeline, unified Guest verifier,
-backup-failure drill, and release-candidate orchestrator passed for exact rc20
-commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`. The 14／14 report covers
-839 Python, 3 motion, and 40 Worker tests and binds 290 source files to fingerprint
-`93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`.
+backup-failure drill, and release-candidate orchestrator passed for exact rc26
+commit `248955cb3300bfbe092b05036632991524d824cd`. The 14／14 report binds 296
+source files to fingerprint
+`5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`.
 
-The running production origin is healthy／ready on `v1.2.0-rc.20`／`e3d84858`;
-the verified Worker remains `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` because rc20
-changed no Worker source or configuration. The fresh verified production backup,
-isolated restore, elevated Windows cutover and canonical-site smoke are complete.
-Historical `v1.2.0-rc.18`／`fd504a8` is the first-level rollback. Supervised human
-acceptance remains required; architecture text and automated evidence do not
-substitute for that acceptance.
+The running production origin is healthy／ready on `v1.2.0-rc.26`／`248955cb`;
+the verified Worker remains `76a23134-8355-4e25-bbba-abf17c6918c5` because rc24
+through rc26 changed no Worker source or configuration. The fresh verified
+production backup, isolated restore, elevated Windows cutover and canonical-site
+smoke are complete. Historical `v1.2.0-rc.24`／`8d709f9b` is the first rollback
+pair and rc21 is the secondary baseline. Supervised human acceptance remains
+required; architecture text and automated evidence do not substitute for it.
 
 ```powershell
 python -X utf8 -m pytest -q
