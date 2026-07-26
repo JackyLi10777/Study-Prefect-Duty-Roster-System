@@ -13,7 +13,23 @@ from statistics import median, pstdev
 
 from sqlalchemy import select
 
-from nicegui_app.services.workflow_dependencies import *
+from nicegui_app.services.workflow_dependencies import (
+    DutyAllocationEntry,
+    DutyPost,
+    FairnessLedgerRecord,
+    FairnessTrendPoint,
+    LeaveAdjustmentRecord,
+    PeriodSummaryReport,
+    PrefectPeriodContribution,
+    PrefectRecord,
+    PrefectRole,
+    ReportRosterSource,
+    RosterAssignmentRecord,
+    RosterWeekRecord,
+    SchoolDay,
+    Session,
+    WorkflowError,
+)
 from roster_policy import DUTY_SERVICE_TIME_WINDOWS
 
 

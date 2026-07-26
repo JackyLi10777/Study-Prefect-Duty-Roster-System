@@ -2,10 +2,44 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
-
-from nicegui_app.services.workflow_dependencies import *
+from nicegui_app.services.workflow_dependencies import (
+    ASSIST_ASSIGNMENT_MODE_CODES,
+    DraftAssignmentUpdateResult,
+    DutyPost,
+    ExternalShareOutboxRecord,
+    FairnessLedgerRecord,
+    LEGACY_FIXED_WEEKDAY,
+    LeaveAdjustmentRecord,
+    LeaveAdjustmentResult,
+    POLICY_VERSION,
+    Prefect,
+    PrefectRecord,
+    PrefectRole,
+    RosterAssignmentRecord,
+    RosterGenerationError,
+    RosterWeekRecord,
+    RosterWeekResult,
+    RosterWithdrawalResult,
+    SchoolDay,
+    Session,
+    WorkflowConflictError,
+    WorkflowError,
+    can_assign_role,
+    date,
+    datetime,
+    defaultdict,
+    delete,
+    func,
+    generate_weekly_roster,
+    hashlib,
+    json,
+    legacy_assist_weekday_mapping,
+    required_posts_for_day,
+    select,
+    update,
+)
 from nicegui_app.services.workflow_fencing import fenced_workflow_write
+from roster_policy import AssistAssignmentMode
 
 
 def _assist_assignment_mode_code(value: object) -> str:
@@ -55,13 +89,16 @@ def _previous_assist_weekday_assignments(
     session: Session,
     week_start: date,
 ) -> dict[SchoolDay, str]:
-    """Return active Assist owners from the immediately preceding school week."""
+    """Return Assist owners from the latest active roster before this week."""
 
     previous_week = session.scalar(
-        select(RosterWeekRecord).where(
-            RosterWeekRecord.week_start == week_start - timedelta(days=7),
+        select(RosterWeekRecord)
+        .where(
+            RosterWeekRecord.week_start < week_start,
             RosterWeekRecord.status.in_(("draft", "published")),
         )
+        .order_by(RosterWeekRecord.week_start.desc(), RosterWeekRecord.id.desc())
+        .limit(1)
     )
     if previous_week is None:
         return {}

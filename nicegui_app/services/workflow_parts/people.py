@@ -2,8 +2,27 @@
 
 from __future__ import annotations
 
-from nicegui_app.services.workflow_dependencies import *
+from nicegui_app.services.workflow_dependencies import (
+    CommittedWriteBackupError,
+    FairnessReconciliationReport,
+    Iterable,
+    LeaveAdjustmentRecord,
+    LeaveDeclarationRecord,
+    PrefectInput,
+    PrefectRecord,
+    PrefectRole,
+    RosterWeekRecord,
+    SchoolDay,
+    WorkflowConflictError,
+    WorkflowError,
+    date,
+    datetime,
+    func,
+    select,
+    update,
+)
 from nicegui_app.services.workflow_fencing import fenced_workflow_write
+
 
 class PeopleWorkflowMixin:
     def prefect_loads(self) -> dict[str, float]:

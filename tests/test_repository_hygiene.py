@@ -1,13 +1,51 @@
 from __future__ import annotations
 
+import ast
 import json
 from pathlib import Path
 import shutil
 import subprocess
+import tomllib
 
 import pytest
 
 from scripts.check_repository_hygiene import PROJECT_ROOT, audit_repository, is_release_source, sensitive_category
+
+
+def test_pytest_pythonpath_references_only_existing_directories() -> None:
+    configuration = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    configured_paths = configuration["tool"]["pytest"]["ini_options"]["pythonpath"]
+    resolved_root = PROJECT_ROOT.resolve()
+
+    invalid: list[str] = []
+    for path in configured_paths:
+        configured_path = Path(path)
+        candidate = (resolved_root / configured_path).resolve()
+        if (
+            configured_path.is_absolute()
+            or not candidate.is_relative_to(resolved_root)
+            or not candidate.is_dir()
+        ):
+            invalid.append(path)
+
+    assert invalid == []
+
+
+def test_workflow_modules_do_not_use_wildcard_imports() -> None:
+    workflow_modules = [
+        PROJECT_ROOT / "nicegui_app" / "services" / "roster_workflow.py",
+        PROJECT_ROOT / "nicegui_app" / "services" / "workflow_dependencies.py",
+        *(PROJECT_ROOT / "nicegui_app" / "services" / "workflow_parts").glob("*.py"),
+    ]
+
+    wildcard_imports: list[str] = []
+    for module in workflow_modules:
+        tree = ast.parse(module.read_text(encoding="utf-8"), filename=str(module))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and any(alias.name == "*" for alias in node.names):
+                wildcard_imports.append(f"{module.relative_to(PROJECT_ROOT)}:{node.lineno}")
+
+    assert wildcard_imports == []
 
 
 def _git(root: Path, *arguments: str) -> None:

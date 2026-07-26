@@ -409,7 +409,8 @@ def settings_page() -> None:
                     icon="settings_backup_restore",
                     action_key="create_verified_backup",
                     action=create_verified_backup,
-                    action_props="outline color=primary data-testid=create-verified-backup-action",
+                    action_props="outline color=primary",
+                    action_test_id="create-verified-backup-action",
                 )
                 ui.button(t("restore_selected_backup"), icon="restore").props(
                     "outline disable aria-disabled=true data-testid=restore-disabled-no-backup"

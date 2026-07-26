@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
+import shutil
 
 from scripts.run_security_checks import (
     _SECRET_SCAN_TARGETS,
+    _is_public_audit_digest,
     _is_public_pnpm_integrity,
     _service_weave_delivery_is_current,
 )
@@ -102,6 +105,39 @@ def test_secret_scan_ignores_only_standard_public_pnpm_integrity_lines() -> None
     assert _is_public_pnpm_integrity("cloudflare\\roster_viewer\\pnpm-lock.yaml", integrity_line)
     assert not _is_public_pnpm_integrity("cloudflare/roster_viewer/worker.js", integrity_line)
     assert not _is_public_pnpm_integrity("cloudflare/roster_viewer/pnpm-lock.yaml", 1)
+
+
+def test_secret_scan_ignores_only_named_public_audit_digests(tmp_path: Path) -> None:
+    relative_path = Path("docs/audits/CODEBASE_AUDIT_FINDINGS_2026-07-26.json")
+    source = ROOT / relative_path
+    audit = tmp_path / relative_path
+    audit.parent.mkdir(parents=True)
+    shutil.copy2(source, audit)
+    lines = audit.read_text(encoding="utf-8").splitlines()
+    commit_line = next(
+        index for index, line in enumerate(lines, start=1) if '"commit"' in line
+    )
+
+    assert _is_public_audit_digest(str(relative_path), commit_line, tmp_path)
+
+    unknown = audit.with_name("unknown.json")
+    shutil.copy2(audit, unknown)
+    assert not _is_public_audit_digest(
+        "docs/audits/unknown.json", commit_line, tmp_path
+    )
+
+    payload = json.loads(audit.read_text(encoding="utf-8"))
+    payload["nested"] = {"commit": payload["audit_metadata"]["commit"]}
+    audit.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    duplicated_lines = audit.read_text(encoding="utf-8").splitlines()
+    first_commit_line = next(
+        index
+        for index, line in enumerate(duplicated_lines, start=1)
+        if '"commit"' in line
+    )
+    assert not _is_public_audit_digest(
+        str(relative_path), first_commit_line, tmp_path
+    )
 
 
 def test_secret_scan_excludes_only_the_exact_manifest_generated_brand_payload(

@@ -1,0 +1,670 @@
+{
+  "schemaVersion": 2,
+  "audit": {
+    "name": "Repository-Wide Code Audit — R2",
+    "date": "2026-07-26",
+    "repository": "D:\\code_v3",
+    "mode": "read-only audit and report",
+    "baseline": {
+      "branch": "codex/rc26-real-team-verifier",
+      "head": "2afddc7b71eaf28dd504aac3c68562f95469ef2d",
+      "tree": "4df9075ab01d163c028f4047c682852441e23aec",
+      "remoteMain": "248955cb3300bfbe092b05036632991524d824cd",
+      "rc26Tag": "v1.2.0-rc.26",
+      "rc26Commit": "248955cb3300bfbe092b05036632991524d824cd",
+      "rc26Tree": "4df9075ab01d163c028f4047c682852441e23aec",
+      "contentMatchesRc26": true,
+      "trackedFiles": 557,
+      "preExistingTrackedChanges": 0,
+      "preExistingStagedChanges": 0,
+      "preExistingRelevantUntracked": [
+        "docs/audits/CODEBASE_AUDIT_2026-07-26.md",
+        "docs/audits/CODEBASE_AUDIT_FINDINGS_2026-07-26.json"
+      ]
+    },
+    "findingCounts": {
+      "total": 5,
+      "P0": 0,
+      "P1": 0,
+      "P2": 3,
+      "P3": 2
+    },
+    "releaseBoundary": {
+      "sourceCandidateVerified": true,
+      "sourceCandidateGateCount": 14,
+      "deploymentVerifiedByThisAudit": false,
+      "deploymentReportedBySeparateTask": true,
+      "separateTaskReportedOrigin": "v1.2.0-rc.26 / 248955cb3300bfbe092b05036632991524d824cd",
+      "separateTaskReportedWorkerSourceChanged": false,
+      "humanAcceptanceVerified": false,
+      "note": "The separate task reported a successful controlled Windows-origin switch and continued post-baseline documentation cleanup. R2 did not deploy or independently authenticate the protected report."
+    }
+  },
+  "remediation": {
+    "date": "2026-07-27",
+    "branch": "codex/r2-audit-remediation",
+    "baselineHead": "fcb4defee723eb478a92ff052f02329cf9749f21",
+    "state": "release_candidate_not_deployed",
+    "findingStatus": [
+      {
+        "id": "R2-001",
+        "status": "implemented",
+        "evidence": "Formal and Guest cross-gap tests prove selection of the latest earlier active roster."
+      },
+      {
+        "id": "R2-002",
+        "status": "implemented_upstream",
+        "evidence": "PR #32 established rc26 release truth before the remediation branch; the remaining operator-guide gate count is corrected here."
+      },
+      {
+        "id": "R2-003",
+        "status": "implemented",
+        "evidence": "Workflow imports and public exports are explicit, with an AST hygiene regression guard."
+      },
+      {
+        "id": "R2-004",
+        "status": "implemented",
+        "evidence": "A two-obligation regression test proves the later repair completes while the first exception is retained and re-raised."
+      },
+      {
+        "id": "R2-005",
+        "status": "implemented",
+        "evidence": "The nonexistent backend path is removed and configured pytest paths must exist."
+      }
+    ],
+    "supplementalAuditTriage": {
+      "R3": {
+        "disproved": ["R3-001", "R3-002", "R3-003", "R3-007"],
+        "implemented": ["R3-004", "R3-005", "R3-006", "R3-010", "R3-012", "R3-013", "R3-014"],
+        "deferredLowValueOrBoundarySpecific": ["R3-008", "R3-009", "R3-011", "R3-015", "R3-016", "R3-017"]
+      },
+      "R4": {
+        "disprovedOrAlreadyCovered": ["R4-H2", "R4-M2", "R4-M3"],
+        "implemented": ["R4-H1-partial-rc25-entry", "R4-M1", "R4-M7"],
+        "deferredVisualOrLowRisk": ["R4-M4", "R4-M5", "R4-M6", "R4-L1", "R4-L2", "R4-L3", "R4-L4", "R4-L5", "R4-L6", "R4-L7", "R4-L8"]
+      }
+    }
+  },
+  "coverage": {
+    "classifiedTrackedFiles": 557,
+    "classificationComplete": true,
+    "classes": [
+      {
+        "name": "runtime_policy_worker_migrations",
+        "files": 143,
+        "method": "source/AST review, dependency tracing, compile/check, unit, contract and browser tests"
+      },
+      {
+        "name": "tests",
+        "files": 100,
+        "method": "intent review, 884-test collection, full execution and focused concurrency/recovery review"
+      },
+      {
+        "name": "historical_or_generated_evidence",
+        "files": 87,
+        "method": "provenance, tracking and historical/current labeling; not treated as live source"
+      },
+      {
+        "name": "binary_media_fonts",
+        "files": 72,
+        "method": "path/provenance, release inclusion and browser delivery; no meaningless line review"
+      },
+      {
+        "name": "root_config_launchers_misc",
+        "files": 53,
+        "method": "startup, dependencies, environment, version and source-truth checks"
+      },
+      {
+        "name": "automation_ci_deployment",
+        "files": 51,
+        "method": "boundary review, dry runs, fingerprint and release-gate execution without deployment"
+      },
+      {
+        "name": "documentation",
+        "files": 34,
+        "method": "authority, contradictions, operator/recovery/release claims and documentation tests"
+      },
+      {
+        "name": "seed_and_fixture_data",
+        "files": 9,
+        "method": "schema/provenance and fictional-vs-official boundary checks"
+      },
+      {
+        "name": "design_sources",
+        "files": 8,
+        "method": "token/generation contract, asset ownership and UI/browser verification"
+      }
+    ],
+    "excludedCategories": [
+      {
+        "category": ".git objects and logs",
+        "reason": "repository metadata; inspected through Git commands"
+      },
+      {
+        "category": ".venv and node_modules source",
+        "reason": "installed/vendor content; assessed through versions, imports, lockfiles and audits"
+      },
+      {
+        "category": "caches and generated runtime state",
+        "reason": "non-authoritative and reproducible"
+      },
+      {
+        "category": "operator databases, backups, logs, uploads and .env values",
+        "reason": "student/operator data and secrets; verification used disposable fictional paths and key names only"
+      },
+      {
+        "category": "binary payload interiors",
+        "reason": "semantic line review is not meaningful; provenance and delivery were checked"
+      }
+    ]
+  },
+  "findings": [
+    {
+      "id": "R2-001",
+      "priority": "P2",
+      "category": "Correctness / policy contract / test gap",
+      "confidence": "Confirmed",
+      "title": "Flexible Assist rotation does not use the documented previous active week",
+      "locations": [
+        {
+          "file": "nicegui_app/services/workflow_parts/lifecycle.py",
+          "line": 54,
+          "endLine": 66,
+          "symbol": "_previous_assist_weekday_assignments"
+        },
+        {
+          "file": "docs/NICEGUI_ARCHITECTURE.md",
+          "line": 182,
+          "symbol": "Generate architecture contract"
+        }
+      ],
+      "evidence": "The query requires current week_start minus exactly seven days while architecture promises the previous active week. A disposable 2026-09-07 then 2026-09-21 generation retained five earlier active Assist owners but supplied an empty previous-assignment map to the second generator.",
+      "triggerConditions": "Generate a flexible-weekly roster after one or more skipped Monday weeks, such as a school holiday or exam break.",
+      "impact": "The secondary same-weekday anti-repeat input is lost across the gap. Persistent history fairness, eligibility and deterministic generation still apply; this can nevertheless repeat an AHP contrary to the documented rotation behavior.",
+      "rootCause": "The implementation encoded calendar adjacency while documentation later specified previous active week semantics.",
+      "smallestPracticalCorrection": "Obtain a policy decision. If active-week semantics are intended, query the latest draft/published week earlier than the current week with deterministic descending order and limit one. Otherwise revise the documentation and tests to say exact previous calendar week.",
+      "broaderArchitecturalCorrection": "None; retain the existing helper seam.",
+      "regressionRisk": "Medium: post-break flexible assignments can change.",
+      "verificationMethod": "Add Admin and Guest cases for consecutive, one-gap, multi-gap, withdrawn-only and future-week exclusion; rerun Assist, policy, persistence and release-browser gates.",
+      "estimatedEffort": "0.5–1 day",
+      "dependencyRadius": [
+        "workflow lifecycle helper",
+        "Guest adapter behavior",
+        "Assist persistence tests",
+        "architecture/operator wording"
+      ],
+      "uncertainty": "Behavior is confirmed; desired semantics require the policy owner's decision.",
+      "falsePositiveNotes": "Not a P1 data-corruption issue because persistent fairness and eligibility remain enforced.",
+      "releaseImpact": "Resolve or explicitly accept before claiming previous active week behavior."
+    },
+    {
+      "id": "R2-002",
+      "priority": "P2",
+      "category": "Claim integrity / documentation / operations",
+      "confidence": "Confirmed",
+      "title": "Current/live release truth is contradictory inside authoritative documents",
+      "locations": [
+        {
+          "file": "README.md",
+          "line": 70,
+          "symbol": "repository editions table"
+        },
+        {
+          "file": "README.md",
+          "line": 84,
+          "symbol": "current formal baseline"
+        },
+        {
+          "file": "README.md",
+          "line": 453,
+          "symbol": "safety and remote access"
+        },
+        {
+          "file": "README-EN.md",
+          "line": 93,
+          "endLine": 100,
+          "symbol": "current formal baseline"
+        },
+        {
+          "file": "README-EN.md",
+          "line": 149,
+          "symbol": "repository editions table"
+        },
+        {
+          "file": "PROJECT_STATUS.md",
+          "line": 5,
+          "symbol": "Current Phase"
+        },
+        {
+          "file": "PROJECT_STATUS.md",
+          "line": 55,
+          "symbol": "Branches"
+        },
+        {
+          "file": "docs/NICEGUI_ARCHITECTURE.md",
+          "line": 7,
+          "endLine": 17,
+          "symbol": "Live rc24 status"
+        },
+        {
+          "file": "docs/NICEGUI_ARCHITECTURE.md",
+          "line": 394,
+          "endLine": 400,
+          "symbol": "running production origin"
+        }
+      ],
+      "evidence": "The same tree calls rc24 current, rc21 live/current, and rc20 live/current in active wording. The Worker package manifest remains 1.2.0-rc.24 while the exact source tree is tagged rc26.",
+      "triggerConditions": "A successor or incident responder uses a lower section rather than the newest banner to identify source, Worker or rollback truth.",
+      "impact": "Operators can choose the wrong source/host/Worker pair, misunderstand rollback order or repeat stale evidence. This proves documentation ambiguity, not a wrong production deployment.",
+      "rootCause": "Release tuples are copied into many prose sections and newer banners do not mechanically invalidate earlier current/live wording.",
+      "smallestPracticalCorrection": "After the controlled rc26 outcome is known, update every active current/live statement together and label retained older passages historical.",
+      "broaderArchitecturalCorrection": "Use one machine-readable current-release manifest consumed by documentation and verification tests.",
+      "regressionRisk": "Low application risk; medium operator-handover risk if only some copies are corrected.",
+      "verificationMethod": "Reject multiple active current/live tuples in documentation tests and compare the release manifest with tag, deployment report and read-only live evidence.",
+      "estimatedEffort": "1–2 days",
+      "dependencyRadius": [
+        "README and README-EN",
+        "PROJECT_STATUS",
+        "architecture/operator/deployment/remote-access documents",
+        "release evidence tests"
+      ],
+      "uncertainty": "The finding is bound to the audited tree. The separate task later reported rc26 live and began post-baseline documentation correction in an isolated worktree.",
+      "falsePositiveNotes": "Historical evidence can retain old tuples, but it must not call them current or live without a historical qualifier.",
+      "releaseImpact": "Documentation handoff should be corrected with the next confirmed deployment result."
+    },
+    {
+      "id": "R2-003",
+      "priority": "P2",
+      "category": "Architecture / coupling / maintainability",
+      "confidence": "Confirmed",
+      "title": "Dynamic wildcard dependency facade creates an 83-name hidden workflow interface",
+      "locations": [
+        {
+          "file": "nicegui_app/services/workflow_dependencies.py",
+          "line": 41,
+          "symbol": "workflow_types wildcard import"
+        },
+        {
+          "file": "nicegui_app/services/workflow_dependencies.py",
+          "line": 59,
+          "symbol": "dynamic __all__"
+        },
+        {
+          "file": "nicegui_app/services/workflow_types.py",
+          "line": 226,
+          "symbol": "dynamic __all__"
+        },
+        {
+          "file": "nicegui_app/services/workflow_parts/reporting.py",
+          "line": 16,
+          "symbol": "wildcard import after explicit imports"
+        }
+      ],
+      "evidence": "Runtime inspection counted 83 dynamic exports and eight modules in the wildcard chain. reporting.py explicitly imports defaultdict, date, datetime and select before the wildcard import, which rebinds them to currently equivalent objects. Compilation, full tests and cycle analysis found no current runtime failure.",
+      "triggerConditions": "Add a non-underscore global to either facade, change import order, or add a same-named helper in a mixin.",
+      "impact": "Symbol ownership and dependencies are hidden; unrelated changes broaden every mixin namespace and static/refactor tooling loses precision.",
+      "rootCause": "An extraction convenience became a dynamic public interface rather than a fixed compatibility facade.",
+      "smallestPracticalCorrection": "Freeze __all__ to an explicit list, then replace wildcard imports one module at a time with the names actually used.",
+      "broaderArchitecturalCorrection": "Split types, persistence primitives, policy/generator APIs and utilities only if the explicit-import migration demonstrates stable seams.",
+      "regressionRisk": "Medium: missing implicit names may surface on less-used paths.",
+      "verificationMethod": "Compile, AST/static undefined-name checks, import smoke, workflow/persistence/restore/share/report tests and the full release verifier.",
+      "estimatedEffort": "2–4 days",
+      "dependencyRadius": [
+        "workflow dependency/type facades",
+        "RosterWorkflow composition",
+        "six workflow part modules",
+        "workflow tests"
+      ],
+      "uncertainty": "No harmful current collision was found.",
+      "falsePositiveNotes": "This is an interface-burden finding, not proof of current symbol confusion.",
+      "releaseImpact": "Suitable for a separate tested maintainability batch, not an emergency release blocker."
+    },
+    {
+      "id": "R2-004",
+      "priority": "P3",
+      "category": "Recovery / operability / diagnostics",
+      "confidence": "Confirmed",
+      "title": "One record-specific backup repair failure prevents later repair attempts",
+      "locations": [
+        {
+          "file": "nicegui_app/services/workflow_parts/persistence.py",
+          "line": 212,
+          "endLine": 230,
+          "symbol": "repair_pending_backup_obligations"
+        },
+        {
+          "file": "nicegui_app/services/roster_workflow.py",
+          "line": 67,
+          "endLine": 78,
+          "symbol": "bootstrap"
+        }
+      ],
+      "evidence": "A disposable database with two pending obligations and a first-ID-only injected failure called only the first ID and raised. Existing tests prove that a failed startup repair keeps the workflow read-only.",
+      "triggerConditions": "At least two pending obligations and a failure specific to an earlier record rather than a globally unavailable backup device.",
+      "impact": "Later repairable obligations receive no attempt or evidence in the same run. The service remains fail-closed, making this an availability/diagnostic limitation rather than a data-loss or false-safety issue.",
+      "rootCause": "The loop couples attempt-all behavior to the separate rule that writes require every obligation to succeed.",
+      "smallestPracticalCorrection": "Attempt all pending obligations, retain sanitized per-command results/support references, then keep maintenance/read-only state and raise an aggregate error if any remain incomplete.",
+      "broaderArchitecturalCorrection": "None; do not quarantine obligations or re-enable writes automatically.",
+      "regressionRisk": "Medium: extra startup backup I/O and aggregate handling must not clear the fence early.",
+      "verificationMethod": "Multi-obligation first/middle/last and global-device failure tests; verify pending count, readiness, restart and write blocking until zero remain.",
+      "estimatedEffort": "Approximately 1 day",
+      "dependencyRadius": [
+        "backup obligation repair loop",
+        "startup/readiness diagnostics",
+        "backup obligation tests"
+      ],
+      "uncertainty": "If practical backup failures are always device-wide, the availability benefit is limited.",
+      "falsePositiveNotes": "The original permanent-blockage claim and P0 rating were not supported; fail-closed behavior is intentional and safe.",
+      "releaseImpact": "Optional recovery/diagnostic hardening after the current release."
+    },
+    {
+      "id": "R2-005",
+      "priority": "P3",
+      "category": "Configuration / hallucination-like stale path",
+      "confidence": "Confirmed",
+      "title": "Pytest configuration still declares the removed backend runtime tree",
+      "locations": [
+        {
+          "file": "pyproject.toml",
+          "line": 3,
+          "endLine": 7,
+          "symbol": "tool.pytest.ini_options.pythonpath"
+        },
+        {
+          "file": "docs/NICEGUI_ARCHITECTURE.md",
+          "line": 5,
+          "symbol": "active runtime declaration"
+        }
+      ],
+      "evidence": "pytest adds backend to sys.path, no backend directory exists, and architecture explicitly says the obsolete backend runtime is absent. Actual package paths are bootstrapped by nicegui_app/__init__.py.",
+      "triggerConditions": "Every pytest invocation.",
+      "impact": "No current runtime outage; the config misstates topology and could silently make an accidental future backend directory importable only in tests.",
+      "rootCause": "Incomplete cleanup after migration to the NiceGUI-only architecture.",
+      "smallestPracticalCorrection": "Remove backend from the pytest pythonpath list.",
+      "broaderArchitecturalCorrection": "Add a repository-hygiene assertion that retired runtime roots stay absent and out of active import configuration.",
+      "regressionRisk": "Low; any hidden test dependency would correctly fail.",
+      "verificationMethod": "pytest collection/full suite, direct launcher smoke and repository documentation tests.",
+      "estimatedEffort": "Less than 0.5 day",
+      "dependencyRadius": [
+        "pyproject.toml",
+        "optional repository hygiene test"
+      ],
+      "uncertainty": "None about the stale path; no broken current import was found.",
+      "falsePositiveNotes": "Classified P3 because the current suite and runtime pass.",
+      "releaseImpact": "Safe small cleanup; not a release blocker."
+    }
+  ],
+  "originalFindingDisposition": [
+    {
+      "id": "AUDIT-001",
+      "result": "not confirmed",
+      "mapping": null,
+      "reason": "Corrupted-anchor adjustment rolled back on fairness reconciliation; no negative anchor persisted. A clamp would hide corruption."
+    },
+    {
+      "id": "AUDIT-002",
+      "result": "not confirmed",
+      "mapping": null,
+      "reason": "Withdrawal is state/version/receipt guarded and reconciled; corrupted-anchor withdrawal rolled back."
+    },
+    {
+      "id": "AUDIT-003",
+      "result": "confirmed behavior, severity rejected",
+      "mapping": "R2-004",
+      "reason": "Later attempts stop, but the service remains safely read-only."
+    },
+    {
+      "id": "AUDIT-004",
+      "result": "confirmed maintainability issue",
+      "mapping": "R2-003",
+      "reason": "Eight wildcard-chain modules and 83 exports; no harmful current collision."
+    },
+    {
+      "id": "AUDIT-005",
+      "result": "confirmed contract mismatch",
+      "mapping": "R2-001",
+      "reason": "Exact T-7 behavior reproduced across a skipped week."
+    },
+    {
+      "id": "AUDIT-006",
+      "result": "maintenance note",
+      "mapping": "R2-003",
+      "reason": "Duplicate normalizers are currently identical and parity-tested; consolidate during facade work."
+    },
+    {
+      "id": "AUDIT-007",
+      "result": "rejected",
+      "mapping": null,
+      "reason": "The concrete mixin composition facade is intentional; an ABC would not prove completeness."
+    },
+    {
+      "id": "AUDIT-008",
+      "result": "partly true observation, proposed fix rejected",
+      "mapping": "R2-004",
+      "reason": "Raw exception details may leak paths; use sanitized references if diagnostics are expanded."
+    },
+    {
+      "id": "AUDIT-009",
+      "result": "accepted residual risk",
+      "mapping": null,
+      "reason": "Documented NiceGUI 3.13 bootstrap/compiler constraint with scoped external hosts and regression tests."
+    },
+    {
+      "id": "AUDIT-010",
+      "result": "rejected as vulnerability",
+      "mapping": null,
+      "reason": "Server logs contain bounded reason/phase metadata; response is generic and no token/email/assertion content is logged."
+    },
+    {
+      "id": "AUDIT-011",
+      "result": "rejected",
+      "mapping": null,
+      "reason": "The security-critical fallback is deliberately bilingual and independent of i18n runtime failure."
+    },
+    {
+      "id": "AUDIT-012",
+      "result": "rejected",
+      "mapping": null,
+      "reason": "Receipt replay calls backup fulfillment, and the fence blocks new writes while any obligation is pending."
+    },
+    {
+      "id": "AUDIT-013",
+      "result": "low-value duplication note",
+      "mapping": null,
+      "reason": "Invalid-input fallback semantics differ and production forms are validated; no reachable defect found."
+    },
+    {
+      "id": "AUDIT-014",
+      "result": "rejected",
+      "mapping": null,
+      "reason": "The alias is exported and explicitly asserted as compatibility API."
+    },
+    {
+      "id": "AUDIT-015",
+      "result": "residual defense-in-depth note",
+      "mapping": null,
+      "reason": "The public Worker sets CORP and the origin is loopback/private behind the gateway; no leak path was shown."
+    },
+    {
+      "id": "AUDIT-016",
+      "result": "rejected",
+      "mapping": null,
+      "reason": "The key correctly labels the destination language while English is active."
+    }
+  ],
+  "verification": {
+    "summary": {
+      "pythonTestsCollected": 884,
+      "pythonSuitePassed": true,
+      "workerTestsPassed": 41,
+      "motionTestsPassed": 3,
+      "releaseCandidateGatesPassed": 14,
+      "securityGatesPassed": true,
+      "alembicHead": "0011",
+      "wranglerStrictDryRunPassed": true,
+      "deploymentPerformed": false
+    },
+    "commands": [
+      {
+        "command": ".\\.venv\\Scripts\\python.exe -X utf8 scripts\\verify_update.py --plan",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "Repository-selected docs profile identified."
+      },
+      {
+        "command": ".\\.venv\\Scripts\\python.exe -X utf8 scripts\\run_security_checks.py",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "Dependency, static and secret gates passed."
+      },
+      {
+        "command": ".\\.venv\\Scripts\\python.exe -X utf8 -m pytest -q",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "Complete Python suite passed."
+      },
+      {
+        "command": ".\\.venv\\Scripts\\python.exe -X utf8 -m pytest --collect-only -q",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "884 tests collected."
+      },
+      {
+        "command": ".\\.venv\\Scripts\\python.exe -X utf8 -m pytest -q tests\\test_roster_persistence.py tests\\test_backup_obligations.py tests\\test_assist_mode_persistence.py",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "31 focused persistence, recovery and Assist tests passed."
+      },
+      {
+        "command": ".\\.venv\\Scripts\\python.exe -X utf8 -m compileall -q nicegui_app packages migrations scripts",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "Python compilation passed."
+      },
+      {
+        "command": "deno check cloudflare\\roster_viewer\\worker.js",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "Worker check passed."
+      },
+      {
+        "command": "deno test cloudflare\\roster_viewer\\worker_gateway_test.js",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "41/41 Worker contracts passed."
+      },
+      {
+        "command": ".\\.venv\\Scripts\\alembic.exe heads; .\\.venv\\Scripts\\alembic.exe history",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "Single 0011 head and linear 0001–0011 history."
+      },
+      {
+        "command": ".\\.venv\\Scripts\\python.exe -X utf8 scripts\\check_repository_hygiene.py",
+        "exitCode": 1,
+        "status": "ExpectedFail",
+        "evidence": "Exactly two user-owned non-ignored prior audit reports; zero tracked-sensitive and zero missing-ignore findings."
+      },
+      {
+        "command": "<bundled-node>\\node.exe .\\node_modules\\.pnpm\\wrangler@4.110.0\\node_modules\\wrangler\\bin\\wrangler.js deploy --dry-run --strict --config .\\wrangler.jsonc",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "Worker/assets compiled and bindings validated; no upload or deploy."
+      },
+      {
+        "command": "detached clean-worktree: D:\\code_v3\\.venv\\Scripts\\python.exe -X utf8 scripts\\verify_release_candidate.py",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "All 14 gates passed in 386.3 seconds against the exact audited tree with disposable paths."
+      },
+      {
+        "command": "disposable cross-gap Assist probe (inline Python)",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "Five prior active owners existed; both observed previous maps were empty across the gap."
+      },
+      {
+        "command": "disposable two-obligation first-ID failure probe (inline Python)",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "Only the first obligation was attempted."
+      },
+      {
+        "command": "disposable corrupted fairness-anchor adjustment/withdrawal probe (inline Python)",
+        "exitCode": 0,
+        "status": "Pass",
+        "evidence": "Both operations rolled back on fairness reconciliation; no negative persisted."
+      },
+      {
+        "command": "Invoke-WebRequest GET https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/{,healthz,readyz}",
+        "exitCode": 0,
+        "status": "PartialPass",
+        "evidence": "Root 200, healthz 200, readyz 302; public capability health only."
+      }
+    ],
+    "blocked": [
+      "Authenticated Cloudflare Dashboard/Access/KV/VPC state",
+      "Real Admin and Viewer live flows",
+      "Independent authentication of the protected Windows deployment report owned by the separate task",
+      "Supervised Head Study Prefect and teacher-advisor acceptance",
+      "Paid DeepSeek and networked YouTube operations",
+      "Real operator/student database, backups, logs, incidents and uploads"
+    ]
+  },
+  "apiMatrix": [
+    {
+      "interface": "NiceGUI 3.13 ui.* and page runtime",
+      "classification": "Verified locally",
+      "evidence": "46/46 used ui symbols exist; real release browser gates passed"
+    },
+    {
+      "interface": "FastAPI application routes",
+      "classification": "Verified locally",
+      "evidence": "Seven API/health endpoints inventoried and tested"
+    },
+    {
+      "interface": "SQLite, SQLAlchemy and Alembic",
+      "classification": "Verified locally",
+      "evidence": "Transactions, concurrency, one-head migration, restore and corruption probes"
+    },
+    {
+      "interface": "Cloudflare Worker Fetch/Crypto/KV/VPC/Access",
+      "classification": "Contract verified",
+      "evidence": "Deno check, 41 tests, Wrangler strict dry run",
+      "limitation": "Dashboard and credentialed production state not inspected"
+    },
+    {
+      "interface": "DeepSeek Chat Completions",
+      "classification": "Source and official documentation verified",
+      "evidence": "Approved model IDs and fixed endpoint match current official docs",
+      "limitation": "No paid authenticated call"
+    },
+    {
+      "interface": "YouTube/yt-dlp import",
+      "classification": "Configured and locally contract-tested",
+      "evidence": "Allowlisted URLs, quotas and 12 tests",
+      "limitation": "No external download"
+    },
+    {
+      "interface": "Canonical public Worker root and health",
+      "classification": "Verified by safe live GET",
+      "evidence": "200 root and 200 capability-only health",
+      "limitation": "Private readiness redirected and was not claimed"
+    }
+  ],
+  "strengths": [
+    "Fairness anchor and immutable-ledger reconciliation rolls back corruption instead of hiding it.",
+    "Payload-bound idempotency, optimistic versions, database claims and host-wide fencing compose correctly.",
+    "Committed writes create durable backup obligations and force read-only recovery until verified.",
+    "Guest and official storage are separate below a shared UI shape and capability checks are below the UI.",
+    "Worker authentication, principal signing, same-origin enforcement and rate limits fail closed.",
+    "Release verification uses disposable fictional data and real browser/server-console evidence.",
+    "Migrations are additive and linear; restore checks include integrity and fairness reconciliation.",
+    "CI action references are pinned and dependency/static/secret gates passed."
+  ],
+  "recommendedFirstBatch": [
+    "Decide and test previous-active-week semantics before changing the Assist query.",
+    "Create one current-release manifest and reconcile all active live/current documentation after rc26 deployment truth is known.",
+    "Remove the ghost backend pytest path and add a retired-runtime hygiene assertion."
+  ]
+}

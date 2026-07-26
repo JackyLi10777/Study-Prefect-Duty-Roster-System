@@ -430,9 +430,11 @@ def rosters_page() -> None:
                         week_start = selected_week_start()
                         if week_start is None:
                             return
-                        try:
-                            requirements = workflow.generation_requirements(week_start)
-                        except WorkflowError:
+                        requirements = _safe_read_action(
+                            lambda: workflow.generation_requirements(week_start),
+                            action_name="load_generation_requirements",
+                        )
+                        if requirements is None:
                             return
                         with requirements_area:
                             with ui.expansion(t("generation_requirements"), icon="assignment_late").classes("w-full"):
@@ -497,9 +499,11 @@ def rosters_page() -> None:
                         week_start = selected_week_start()
                         if week_start is None:
                             return
-                        try:
-                            declarations = workflow.pre_generation_leaves(week_start)
-                        except WorkflowError:
+                        declarations = _safe_read_action(
+                            lambda: workflow.pre_generation_leaves(week_start),
+                            action_name="load_pre_generation_leaves",
+                        )
+                        if declarations is None:
                             return
                         with leave_list:
                             if declarations:

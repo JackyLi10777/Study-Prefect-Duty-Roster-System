@@ -383,6 +383,18 @@ def test_guest_directory_crud_is_chinese_name_first_and_import_is_denied() -> No
         )
 
 
+def test_guest_import_remains_fail_closed_if_capability_check_returns() -> None:
+    adapter = _adapter()
+    adapter._context = type(
+        "UnexpectedImportContext",
+        (),
+        {"require": staticmethod(lambda _capability: None)},
+    )()
+
+    with pytest.raises(WorkflowError, match="Guest data import remains disabled"):
+        adapter.import_prefects([])
+
+
 def test_guest_sessions_are_isolated_and_backup_restore_is_only_a_memory_simulation() -> None:
     registry = GuestWorkspaceRegistry(SECRET)
     first = _adapter(

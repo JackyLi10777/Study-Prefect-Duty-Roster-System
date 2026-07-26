@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
+import time
 
 import pytest
 
@@ -152,6 +154,38 @@ def test_revoked_cached_context_and_captured_adapter_fail_immediately(
     with pytest.raises(OriginPrincipalError, match="revoked"):
         guarded.write()
     assert calls == ["write"]
+
+
+def test_current_page_context_composes_once_for_concurrent_client_loads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _runtime_environment(monkeypatch)
+    principal = _principal(AccessMode.ADMIN, "admin-session")
+    connect_callbacks: list[object] = []
+    disconnect_callbacks: list[object] = []
+    client = SimpleNamespace(
+        id="concurrent-admin-client",
+        request=object(),
+        on_connect=connect_callbacks.append,
+        on_disconnect=disconnect_callbacks.append,
+    )
+    principal_reads: list[object] = []
+
+    def read_principal(request: object) -> Principal:
+        principal_reads.append(request)
+        time.sleep(0.05)
+        return principal
+
+    monkeypatch.setattr(runtime, "_current_client", lambda: client)
+    monkeypatch.setattr(runtime, "principal_from_request", read_principal)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        contexts = list(executor.map(lambda _index: runtime.current_page_context(), range(2)))
+
+    assert contexts[0] is contexts[1]
+    assert principal_reads == [client.request]
+    assert len(connect_callbacks) == 1
+    assert len(disconnect_callbacks) == 1
 
 
 def test_origin_revocation_endpoint_is_idempotent_and_cleans_guest_state(

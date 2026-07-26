@@ -850,6 +850,44 @@ def test_pdf_font_setup_documents_the_bundled_three_weight_contract() -> None:
     assert "安裝 Noto Sans TC，或設定 `SING_YIN_PDF_FONT`" not in host_setup
 
 
+def test_environment_example_documents_operator_facing_runtime_overrides() -> None:
+    env_example = (PROJECT_ROOT / ".env.example").read_text(encoding="utf-8")
+
+    for variable in (
+        "SING_YIN_APP_MODE",
+        "SING_YIN_DATABASE_PATH",
+        "SING_YIN_BACKUP_DIR",
+        "SING_YIN_PUBLIC_URL",
+        "SING_YIN_SLOW_REQUEST_MS",
+        "SING_YIN_CLOUDFLARE_PRIVATE_WARP",
+        "SING_YIN_CLOUDFLARE_PRIVATE_HOSTNAME",
+    ):
+        assert variable in env_example
+
+
+def test_current_release_history_and_gate_count_are_exact() -> None:
+    changelog = (PROJECT_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    operator_guide = (PROJECT_ROOT / "docs" / "OPERATOR_GUIDE.md").read_text(encoding="utf-8")
+
+    rc27_entry = changelog.split("## v1.2.0-rc.27 — 2026-07-27", 1)[1].split(
+        "## v1.2.0-rc.26", 1
+    )[0]
+    for release_fact in (
+        "latest earlier active roster",
+        "later independent obligations",
+        "explicit imports and exports",
+        "same-client page-context composition atomic",
+        "Deepseek R3/R4 evidence",
+    ):
+        assert release_fact in rc27_entry
+
+    engineering_section = operator_guide.split("## 11. 工程與品質證據", 1)[1].split(
+        "\n## ", 1
+    )[0]
+    assert "十四道發布閘門" in engineering_section
+    assert "八道發布閘門" not in engineering_section
+
+
 def test_reference_pages_form_two_clear_reading_lanes_without_duplicate_docs_route() -> None:
     pages = combined_page_source()
     navigation = (PROJECT_ROOT / "nicegui_app" / "ui" / "reference_navigation.py").read_text(encoding="utf-8")

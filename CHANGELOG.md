@@ -2,11 +2,23 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
+## v1.2.0-rc.27 — 2026-07-27
+
+- Made flexible Assist rotation follow the latest earlier active roster across holiday or skipped-week gaps in both official and browser-only Guest workflows.
+- Preserved fail-closed backup recovery while allowing later independent obligations to repair after one record-specific failure.
+- Replaced the workflow wildcard dependency surface with explicit imports and exports, and removed the retired `backend` pytest path.
+- Made same-client page-context composition atomic, retained an explicit Guest import denial, and surfaced weekly preview read failures through the existing bilingual support-reference boundary.
+- Reconciled R2 findings with Deepseek R3/R4 evidence, documented operator-facing environment overrides, and corrected rc25/rc26 history and the 14-gate operator guide.
+
 ## v1.2.0-rc.26 — 2026-07-26
+
+- Stabilized the release browser verifier on semantic platform-section and test-ID contracts in both languages.
+- Recorded the exact rc26 Windows origin, unchanged rc24 Worker, backup, isolated restore, and canonical smoke evidence without implying supervised human acceptance.
+
+## v1.2.0-rc.25 — 2026-07-26
 
 - Replaced the invented “Study Prefect Systems & Stewardship Office” identity and corporate-style responsibility titles with the real `Study Prefect Team／導學風紀組`, plain work areas, and direct responsibility descriptions.
 - Removed residual “organisation chart” and “capability map” language from current architecture and design documentation so presentation structure cannot be mistaken for a real school department.
-- Replaced the release browser verifier's hard-coded former platform heading with stable semantic section and test-ID contracts in both languages.
 
 ## v1.2.0-rc.24 — 2026-07-26
 
