@@ -276,54 +276,53 @@ MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服
  'platform_fact_languages_body': {'zh-HK': '繁中及英文共用同一流程；姓名永遠保持中文。',
                                   'en': 'Traditional Chinese and English share one workflow; names always remain Chinese.'},
  'team_operating_model_kicker': {'zh-HK': 'OPERATING MODEL／營運模型', 'en': 'OPERATING MODEL'},
- 'team_operating_model_title': {'zh-HK': 'Study Prefect Team：由服事責任建立的團隊架構',
-                                'en': 'Study Prefect Team: an organisation built around service'},
- 'team_operating_model_copy': {'zh-HK': '清楚架構的價值，在於讓決策、協調、前線服務與監督各有明確位置。正式校內職銜保持不變；英文功能稱呼只用來解釋責任。',
-                               'en': 'A clear operating model gives decisions, coordination, frontline service, and oversight a defined '
-                                     'place. Official school roles stay unchanged; functional labels only explain responsibility.'},
+ 'team_operating_model_title': {'zh-HK': 'Study Prefect Team／導學風紀組：清楚分工，彼此服事',
+                                'en': 'Study Prefect Team: clear responsibilities, shared service'},
+ 'team_operating_model_copy': {'zh-HK': '本頁只使用學校現有角色，直接說明每個角色在決策、協調、前線服務與完成後核對中的責任。',
+                               'en': 'This page uses only the school’s existing roles and states their responsibilities for decisions, '
+                                     'coordination, frontline service, and post-completion review.'},
  'team_role_head': {'zh-HK': '首席導學風紀', 'en': 'Head Study Prefect'},
- 'team_role_head_function': {'zh-HK': 'Service Governance Lead／服務管治負責人', 'en': 'Service Governance Lead'},
+ 'team_role_head_function': {'zh-HK': '每週決策、發布與交接', 'en': 'Weekly decisions, publishing, and handover'},
  'team_role_head_body': {'zh-HK': '擁有每週流程、最終發布決定、公平解釋、例外處理與交接責任。',
                          'en': 'Owns the weekly process, final publication decision, fairness explanation, exceptions, and handover.'},
  'team_role_assistant': {'zh-HK': '助理首席導學風紀', 'en': 'Assistant Head Study Prefect'},
- 'team_role_assistant_function': {'zh-HK': 'Duty Coordination Lead／當值協調負責人', 'en': 'Duty Coordination Lead'},
+ 'team_role_assistant_function': {'zh-HK': '當值協調及 Assist. in charge', 'en': 'Duty coordination and Assist. in charge'},
  'team_role_assistant_body': {'zh-HK': '協助現場協調及溝通；排班規則上只可擔任助理首席導學風紀當值。',
                               'en': 'Supports on-site coordination and communication; roster policy limits this role to Assist. in '
                                     'charge.'},
  'team_role_prefect': {'zh-HK': '導學風紀', 'en': 'Study Prefect'},
- 'team_role_prefect_function': {'zh-HK': 'Room Service Steward／溫習室服務幹事', 'en': 'Room Service Steward'},
+ 'team_role_prefect_function': {'zh-HK': '302、303 及 202 室服務', 'en': 'Service in Rooms 302, 303, and 202'},
  'team_role_prefect_body': {'zh-HK': '在 302、303 及開放日的 202 室提供前線服務，按已發布週表承擔清楚崗位。',
                             'en': 'Provides frontline service in Rooms 302, 303, and Room 202 on open days, following the published '
                                   'roster.'},
  'team_role_advisor': {'zh-HK': '顧問老師', 'en': 'Teacher Advisor'},
- 'team_role_advisor_function': {'zh-HK': 'Oversight & Assurance Advisor／監督與保證顧問', 'en': 'Oversight & Assurance Advisor'},
+ 'team_role_advisor_function': {'zh-HK': '完成後核對與建議', 'en': 'Post-completion review and advice'},
  'team_role_advisor_body': {'zh-HK': '主要在完成後檢視已發布週表、公平證據與交接準備，不參與日常排班操作。',
                             'en': 'Reviews published rosters, fairness evidence, and handover readiness after completion rather than '
                                   'operating the daily workflow.'},
- 'team_operating_model_note': {'zh-HK': '功能頭銜是責任說明，不會取代首席導學風紀、助理首席導學風紀、導學風紀及顧問老師的正式名稱。',
-                               'en': 'Functional titles explain accountability; they do not replace the official Head Study Prefect, '
-                                     'Assistant Head Study Prefect, Study Prefect, or Teacher Advisor roles.'},
- 'capability_map_kicker': {'zh-HK': 'CAPABILITY MAP／能力地圖', 'en': 'CAPABILITY MAP'},
- 'capability_map_title': {'zh-HK': '四個工作範疇，組成一套完整服務', 'en': 'Four capabilities, one complete service'},
- 'capability_map_copy': {'zh-HK': '這四項能力涵蓋整個平台，不代表另設部門或額外人員；它們讓下一任知道每種工作由哪一類能力承擔。',
-                         'en': 'These four capabilities cover the platform; they are not additional departments or staff. They show '
-                               'the successor what kind of capability owns each job.'},
- 'capability_operations_title': {'zh-HK': 'Weekly Operations／值週運作', 'en': 'Weekly Operations'},
+ 'team_operating_model_note': {'zh-HK': '正式名稱只有首席導學風紀、助理首席導學風紀、導學風紀及顧問老師；下方文字只描述實際工作，不會取代任何校內職銜。',
+                               'en': 'The official roles are Head Study Prefect, Assistant Head Study Prefect, Study Prefect, and Teacher '
+                                     'Advisor; the descriptions below state actual work only and do not replace any school role.'},
+ 'capability_map_kicker': {'zh-HK': 'WORK AREAS／工作範疇', 'en': 'WORK AREAS'},
+ 'capability_map_title': {'zh-HK': '四段真實工作，連成一套完整流程', 'en': 'Four real work areas, one complete process'},
+ 'capability_map_copy': {'zh-HK': '這四項是系統支援的工作內容，不是部門、辦公室、職級或額外人員。',
+                         'en': 'These are areas of work supported by the system, not departments, offices, ranks, or additional staff.'},
+ 'capability_operations_title': {'zh-HK': '每週排班與發布', 'en': 'Weekly rostering and publishing'},
  'capability_operations_body': {'zh-HK': '管理名單、請假、草稿、核對、發布及中英文週表輸出。',
                                 'en': 'Manages the directory, leave, drafts, review, publication, and bilingual roster output.'},
  'capability_operations_output': {'zh-HK': '核心交付：準確而可執行的每週值班表', 'en': 'Core delivery: an accurate, actionable weekly roster'},
- 'capability_fairness_title': {'zh-HK': 'Fairness Assurance／公平保障', 'en': 'Fairness Assurance'},
+ 'capability_fairness_title': {'zh-HK': '公平核對與解釋', 'en': 'Fairness review and explanation'},
  'capability_fairness_body': {'zh-HK': '集中校規、長期負荷、公平帳本、發布一次性及請假調整驗證。',
                               'en': 'Centralizes policy, long-term load, the fairness ledger, publish-once control, and adjustment '
                                     'validation.'},
  'capability_fairness_output': {'zh-HK': '核心交付：可以說明及追溯的公平決定', 'en': 'Core delivery: explainable and traceable fairness decisions'},
- 'capability_experience_title': {'zh-HK': 'Service Experience／使用體驗', 'en': 'Service Experience'},
+ 'capability_experience_title': {'zh-HK': '使用指引與支援', 'en': 'Guidance and support'},
  'capability_experience_body': {'zh-HK': '負責繁中／英文、操作指引、PDF、可存取性、等待狀態及復原文案。',
                                 'en': 'Owns Traditional Chinese/English, guidance, PDFs, accessibility, waiting states, and recovery '
                                       'copy.'},
  'capability_experience_output': {'zh-HK': '核心交付：下一任無需技術支援也能完成工作',
                                   'en': 'Core delivery: a successor can operate without technical dependence'},
- 'capability_continuity_title': {'zh-HK': 'Systems Continuity／系統延續', 'en': 'Systems Continuity'},
+ 'capability_continuity_title': {'zh-HK': '備份、復原與交接', 'en': 'Backup, recovery, and handover'},
  'capability_continuity_body': {'zh-HK': '負責 SQLite 交易、日誌、校驗備份、受控還原、測試及交接證據。',
                                 'en': 'Owns SQLite transactions, logs, verified backups, managed restore, tests, and handover evidence.'},
  'capability_continuity_output': {'zh-HK': '核心交付：可復原、可驗證、可延續的平台', 'en': 'Core delivery: a recoverable, verifiable, durable platform'},
@@ -477,13 +476,13 @@ MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服
  'co_creation_avatar_alt': {'zh-HK': '李創杰的魚形基督標記社交媒體頭像', 'en': "LI Chuangjie Jacky's Ichthys social profile image"},
  'co_creation_banner_alt': {'zh-HK': '魚形基督標記橫幅；希臘文意為「耶穌基督、神的兒子、救主」',
                             'en': 'Ichthys banner reading “Jesus Christ, Son of God, Saviour” in Greek'},
- 'co_creation_team': {'zh-HK': 'Study Prefect Systems & Stewardship Office／導學風紀系統與傳承組', 'en': 'Study Prefect Systems & Stewardship Office'},
+ 'co_creation_team': {'zh-HK': 'Study Prefect Team／導學風紀組 · Service Weave 系統共創',
+                      'en': 'Study Prefect Team · Service Weave co-creation'},
  'co_creation_body': {'zh-HK': '我是李創杰，2026–2027 年度首席導學風紀。這次 NiceGUI 重構及正式版本只由我與 Codex 兩位共創者完成。Codex '
-                               '是我的共創作者與技術同事，協助我把操作流程、介面、可靠性、測試和交接逐步落實；項目團隊名稱不代表另有開發者或外判團隊。',
+                               '是我的共創作者與技術同事，協助我把操作流程、介面、可靠性、測試和交接逐步落實。',
                       'en': 'I am LI Chuangjie Jacky, Head Study Prefect for 2026–2027. I completed this NiceGUI rebuild and formal '
                             'release with Codex; we are the only two co-creators. Codex is my co-creation partner and technical colleague, '
-                            'helping me turn the operating flow, interface, reliability, testing, and handover into a maintainable system; '
-                            'the project-team name does not represent additional developers or contractors.'},
+                            'helping me turn the operating flow, interface, reliability, testing, and handover into a maintainable system.'},
  'co_creation_quote': {'zh-HK': '做這個系統的過程遠比我想像中複雜，但我從不後悔。我希望它能為未來的首席導學風紀帶來真正的便利，也讓每一位導學風紀感受到：公平確實被認真對待。',
                        'en': 'Building this system was far more complex than I imagined, but I do not regret it. I hope it brings real '
                              'help to future Head Study Prefects and lets every prefect feel that fairness has truly been treated with '

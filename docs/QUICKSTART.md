@@ -1,10 +1,8 @@
 # 快速啟動 / Quick start
 
-> **目前狀態（live rc23）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.23`／commit `3432f1dd5381c4ddd8c2cd605437d290000af228`；296 個 runtime 發布輸入以指紋 `2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `1bf0270d-5c78-462e-822b-f4a88e3956fa` 正承接 100% 流量；第一級回退是 `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`，rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 是次級已驗證基線。
+> **目前狀態（live rc24）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.24`／commit `8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`；296 個 runtime 發布輸入以指紋 `a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `76a23134-8355-4e25-bbba-abf17c6918c5` 正承接 100% 流量；第一級回退是 `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`，rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 是次級已驗證基線。
 >
-> **rc23 已上線（真人驗收仍未簽署）：** rc23 整合內容精煉、本機支援回報及完整 Admin／Guest／Public／Viewer 邊界，並保留 rc21 的資訊架構及 rc20 的裝置／Assist. in charge 基線。日常操作以 rc23 行為為準；rc24 支援路由修補完成配對部署前仍屬候選。機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
-
-> 目前下一個原始碼候選是 rc24 支援路由修補；在正式發布報告及配對部署出現前，不可用候選文件或測試結果取代上述 rc23 線上真相。
+> **rc24 已上線（真人驗收仍未簽署）：** rc24 整合內容精煉、本機優先支援回報及完整 Admin／Guest／Public／Viewer 邊界，並修正 `/support` 的身份分流：Public／Viewer 保持瀏覽器暫存，已驗證 Admin／Guest 進入 NiceGUI 工作台。機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
 
 ## 每日使用
 

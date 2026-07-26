@@ -1,6 +1,6 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **目前狀態（live rc23）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.23`／`3432f1dd5381c4ddd8c2cd605437d290000af228`；canonical Worker version `1bf0270d-5c78-462e-822b-f4a88e3956fa` 正承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；canonical public root、Guest Dashboard、Public support 及 Viewer recovery 的桌面／手機 rendered smoke 已通過。rc24 只修正已驗證 Admin／Guest `/support` 的 origin routing，完成前仍屬候選。
+> **目前狀態（live rc24）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`；canonical Worker version `76a23134-8355-4e25-bbba-abf17c6918c5` 正承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；canonical public root、Guest workbench、Public browser-only support、Guest NiceGUI support、Viewer recovery、英文切換及桌面／手機 rendered smoke 已通過，沒有 console／page error。
 >
 > **rc21 受控上線（2026-07-26）：** 291 個來源檔案以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate；切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／`fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 原始碼及設定沒有改動，故沿用上述已驗證版本。第一級回退是 `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；真人驗收仍未簽署。
 

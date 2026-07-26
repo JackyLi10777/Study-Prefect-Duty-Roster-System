@@ -578,18 +578,18 @@ Brand context and technical evidence use two connected pages instead of one over
 
 1. Begin with the human service thesis and a same-composition light/dark stewardship image; the image remains decorative behind a solid readability veil.
 2. Show only anonymous live evidence: active-prefect count, roster-week count, verified-backup state, and display-safe release checks. Never show names, classes, leave, roster content, audit payload, database paths, or backup paths.
-3. Preserve official school roles and pair them with explanatory responsibility titles. Weekly Operations, Fairness Assurance, Service Experience, and Systems Continuity are capability lanes, not claims of extra departments or headcount.
+3. Preserve official school roles and describe responsibilities in plain language. Group content by real work—weekly rostering and publishing, fairness review and explanation, guidance and support, and backup/recovery/handover—without inventing titles, offices, departments, ranks, or headcount.
 4. Organise features around four operator outcomes with direct routes into the real workspaces. Copy begins with the job and expected result, not technology.
 5. Connect service, fairness, clarity, responsibility, and continuity to concrete system behaviour. End with resources, feedback, and the two-person co-creation narrative.
 6. If the read-only snapshot fails, keep the complete static story visible and show a neutral bilingual support reference; never render the exception.
 
 **System Architecture & Trust (`/system-architecture`)**
 
-1. State local-first, verifiable, handover-ready operation and link to Platform & Team for organisation context.
+1. State local-first, verifiable, handover-ready operation and link to Platform & Team for the real team-responsibility context.
 2. Show the real six-stage week—prepare, draft, publish, export, adjust, hand over—as an ordered semantic list. Desktop uses a connected horizontal rail; tablet uses a readable three-column map; mobile uses one vertical line without horizontal scrolling.
 3. Keep the paired architecture-lifeline image decorative; five ownership cards explain interface, policy/core, workflow, persistence/recovery, and handover.
 4. Four evidence cards name durable proof for policy isolation, publish-once fairness, verified recovery, and privacy boundaries. FAQ answers identify a safe next action.
-5. Do not duplicate the organisation chart, capability map, solution portfolio, or co-creation close on this page.
+5. Do not duplicate the team-responsibility overview, work-area summary, solution portfolio, or co-creation close on this page.
 
 **Engineering & Quality (`/engineering`)**
 
@@ -600,7 +600,7 @@ Brand context and technical evidence use two connected pages instead of one over
 5. Keep the page read-only. It may consume display-safe release evidence but never workflow, roster, leave, fairness, backup path, or audit payloads.
 6. On mobile, facts, blueprint layers, gates, capabilities, and evolution stages become one ordered vertical sequence without horizontal scrolling.
 
-Enterprise references inform information order, not visual imitation. Platform, solutions, trust, resources, and company/team narratives must be translated into the Sing Yin context with original geometry and copy. A generated narrative image may support the non-sensitive operating-model story only when a same-composition light/dark pair is present; organisational meaning must remain in semantic HTML, never inside image text or a fake diagram.
+Enterprise references inform information order, not visual imitation. Platform, solutions, trust, resources, and team narratives must be translated into the Sing Yin context with original geometry and copy. A generated narrative image may support the non-sensitive work story only when a same-composition light/dark pair is present; real responsibilities must remain in semantic HTML, never inside image text or an invented organisation diagram.
 
 ### 6.6 Reference and documentation information architecture
 
@@ -886,7 +886,7 @@ Design quality includes the behaviour underneath the surface.
 - Browser mutation checks use an explicitly isolated SQLite database and backup directory; no visual test may create a roster or package from a real school database.
 - Before a release candidate is accepted, one browser-driven isolated write pipeline must prove the real sequence: fictional import, declared leave, draft generation, manual correction, single publication, bilingual PDF delivery, published Chinese native-file-share handling with download fallback, published-duty adjustment, authoritative receipt and versioned corrected-PDF delivery, ledger/audit/backup evidence, handover package, and restore into a second isolated database.
 - Final machine evidence is orchestrated by `scripts/verify_release_candidate.py`, which must create its own disposable paths, include Cloudflare Worker Deno contracts, desktop and independent mobile browser gates, the committed-without-backup drill, strict snapshot trust checks, and leave a failed—not partial-pass—report if any gate fails. Release fingerprinting includes `cloudflare/` JavaScript／JSONC, and repository hygiene blocks untracked release-sensitive source from being omitted. This machine report complements rather than replaces Head Study Prefect and teacher-advisor acceptance.
-- The current live baseline is bound to tag `v1.2.0-rc.21`, commit `f7df4d0170e6bacd65340cc893992a17b5ed4aed` and the source fingerprint recorded in its immutable deployment report; the verified Worker record is `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`. Supervised Head Study Prefect and teacher-advisor acceptance remains open. Any later source change requires a new immutable candidate and exact deployment evidence; rc21 evidence cannot be reused to claim the newer design is live.
+- The current live baseline is bound to tag `v1.2.0-rc.24`, commit `8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`, runtime fingerprint `a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477`, and Worker `76a23134-8355-4e25-bbba-abf17c6918c5`. Supervised Head Study Prefect and teacher-advisor acceptance remains open. Any later runtime source change requires a new immutable candidate and exact deployment evidence; rc24 evidence cannot be reused to claim newer work is live.
 - Runtime performance evidence measures both repeated component use and representative route navigation followed by return to the Dashboard. Heap, DOM-node and listener growth must stay bounded after garbage collection; a single fast first render is insufficient evidence of lifecycle quality.
 - Acceptance evidence must remain legible as responsibility, not vanity metrics: map each requirement to a direct test/browser artifact and a named human decision. A test count, architecture diagram, or `pass` badge must never imply that real names, print legibility, school fairness practice, encrypted custody, or external-access approval were checked by software.
 - Handover readiness uses a compact three-column desktop grid and one-column phone sequence; never render each small status as an oversized full-width card. Machine evidence and human acceptance are visually paired but semantically separate. Pass, running, stale, failed, missing, and unreadable states require icon, heading, explanatory copy, and a safe next action rather than colour alone.

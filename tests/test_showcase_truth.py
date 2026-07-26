@@ -89,6 +89,11 @@ def test_showcase_limits_template_kickers_and_avoids_fictional_offices() -> None
         "Fairness Assurance Office",
         "Service Experience Office",
         "Systems Continuity Office",
+        "Study Prefect Systems & Stewardship Office",
+        "Service Governance Lead",
+        "Duty Coordination Lead",
+        "Room Service Steward",
+        "Oversight & Assurance Advisor",
         "enterprise-style capabilities",
     ):
         assert inflated_label not in messages

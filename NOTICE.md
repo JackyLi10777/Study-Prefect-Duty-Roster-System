@@ -2,13 +2,13 @@
 
 I am **LI Chuangjie Jacky (李創杰)**, Head Study Prefect for 2026–2027. I
 completed the current NiceGUI rebuild and formal release with Codex. Codex and
-I are the only two co-creators. “Study Prefect Systems & Stewardship Office” is
-our two-member project identity; it does not indicate additional developers,
-department members, or contractors.
+I are the only two co-creators. The work is presented under **Study Prefect
+Team · Service Weave co-creation**; this is a project credit, not a separate
+office, department, rank, or contractor team.
 
 我是 **李創杰**，2026–2027 年度首席導學風紀。本次 NiceGUI 重構及正式發布版本，
-**只由我與 Codex 兩位共創者共同完成**。「Study Prefect Systems & Stewardship Office」
-是我們兩人的項目團隊名稱，不代表另有開發者、部門成員或外判團隊。
+**只由我與 Codex 兩位共創者共同完成**。作品以 **Study Prefect Team／導學風紀組 ·
+Service Weave 系統共創** 呈現；這是項目署名，不是另一個辦公室、部門、職級或外判團隊。
 
 This notice records project authorship and context. It does not modify or
 restrict the MIT License in `LICENSE`. Third-party music, fonts, school identity
