@@ -177,7 +177,7 @@ def test_v12_guest_documents_match_the_signed_browser_bridge_and_release_truth()
     assert "尚未完成的瀏覽器 snapshot 橋接" not in security
 
 
-def test_release_truth_docs_keep_live_rc23_separate_from_history() -> None:
+def test_release_truth_docs_keep_live_rc24_separate_from_history() -> None:
     status = (PROJECT_ROOT / "PROJECT_STATUS.md").read_text(encoding="utf-8")
     architecture = (PROJECT_ROOT / "docs" / "NICEGUI_ARCHITECTURE.md").read_text(
         encoding="utf-8"
@@ -213,14 +213,14 @@ def test_release_truth_docs_keep_live_rc23_separate_from_history() -> None:
 
     release_truth_documents = (status, architecture, security, handover, acceptance)
     for document in release_truth_documents:
-        assert "1bf0270d-5c78-462e-822b-f4a88e3956fa" in document
-        assert "v1.2.0-rc.23" in document
-        assert "3432f1dd5381c4ddd8c2cd605437d290000af228" in document
-        assert "2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b" in document
+        assert "76a23134-8355-4e25-bbba-abf17c6918c5" in document
+        assert "v1.2.0-rc.24" in document
+        assert "8d709f9b0b4e69fe38f7237ef2f473c27ff848fc" in document
+        assert "a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477" in document
         current_header = "\n".join(document.splitlines()[:15])
-        assert "v1.2.0-rc.23" in current_header
-        assert "3432f1dd5381c4ddd8c2cd605437d290000af228" in current_header
-        assert "1bf0270d-5c78-462e-822b-f4a88e3956fa" in current_header
+        assert "v1.2.0-rc.24" in current_header
+        assert "8d709f9b0b4e69fe38f7237ef2f473c27ff848fc" in current_header
+        assert "76a23134-8355-4e25-bbba-abf17c6918c5" in current_header
 
     for document in (status, architecture, security, handover):
         assert "v1.2.0-rc.20" in document
@@ -238,8 +238,8 @@ def test_release_truth_docs_keep_live_rc23_separate_from_history() -> None:
         assert "de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664" in document
         assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in document
 
-    assert "rc23 exact-source and deployment evidence" in status
-    assert "v1.2 rc23 is the current controlled Windows origin" in status
+    assert "rc24 exact-source and deployment evidence" in status
+    assert "v1.2 rc24 is the current controlled Windows origin" in status
     assert "Historical Service Weave v1.2 rc18 controlled rollout" in status
     assert "Historical Service Weave v1.2 rc11 rollout" in status
     assert "rc18 host／Worker pair is now the second-level verified rollback target" in status
@@ -247,7 +247,7 @@ def test_release_truth_docs_keep_live_rc23_separate_from_history() -> None:
     assert "SING_YIN_PORT" in readme
     assert "一百倍" in readme
     assert "cancelWelcomeFade is not defined" in status
-    assert "目前發布（v1.2 rc23）" in (  # noqa: RUF001
+    assert "目前發布（v1.2 rc24）" in (  # noqa: RUF001
         PROJECT_ROOT / "README.md"
     ).read_text(encoding="utf-8")
     assert "remains disabled by default" not in status
@@ -323,7 +323,7 @@ def test_release_truth_docs_keep_live_rc23_separate_from_history() -> None:
     assert "只有 `/view#…`" in operator
 
 
-def test_operator_deployment_docs_use_live_rc23_and_rollback_hierarchy() -> None:
+def test_operator_deployment_docs_use_live_rc24_and_rollback_hierarchy() -> None:
     quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
     windows = (PROJECT_ROOT / "docs" / "WINDOWS_DEDICATED_HOST_SETUP.md").read_text(
         encoding="utf-8"
@@ -339,15 +339,15 @@ def test_operator_deployment_docs_use_live_rc23_and_rollback_hierarchy() -> None
     )
 
     for document in (quickstart, windows, cloudflare, viewer, decision):
-        assert "v1.2.0-rc.23" in document
-        assert "3432f1dd5381c4ddd8c2cd605437d290000af228" in document
+        assert "v1.2.0-rc.24" in document
+        assert "8d709f9b0b4e69fe38f7237ef2f473c27ff848fc" in document
         assert "v1.2.0-rc.20" in document
         assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in document
-        assert "1bf0270d-5c78-462e-822b-f4a88e3956fa" in document
+        assert "76a23134-8355-4e25-bbba-abf17c6918c5" in document
         current_header = "\n".join(document.splitlines()[:15])
-        assert "v1.2.0-rc.23" in current_header
-        assert "3432f1dd5381c4ddd8c2cd605437d290000af228" in current_header
-        assert "1bf0270d-5c78-462e-822b-f4a88e3956fa" in current_header
+        assert "v1.2.0-rc.24" in current_header
+        assert "8d709f9b0b4e69fe38f7237ef2f473c27ff848fc" in current_header
+        assert "76a23134-8355-4e25-bbba-abf17c6918c5" in current_header
 
     assert (  # noqa: RUF001
         "主機 bundle `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`"
@@ -367,7 +367,7 @@ def test_operator_deployment_docs_use_live_rc23_and_rollback_hierarchy() -> None
     assert '$ReleaseRef = "v1.1.0-rc.16"' not in windows
     assert "v1.2.0-rc.20" in decision
     assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in decision
-    assert "2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b" in decision
+    assert "a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477" in decision
     assert "<next-approved-annotated-tag>" not in decision
 
 
@@ -639,7 +639,7 @@ def test_operator_guidance_documents_architecture_and_co_creation_boundaries() -
     assert "Partial success" in design_system
 
 
-def test_platform_showcase_exposes_enterprise_style_operating_model_without_fake_staff() -> None:
+def test_platform_showcase_exposes_real_team_responsibilities_without_invented_structure() -> None:
     pages = combined_page_source()
     messages = combined_i18n_source()
     shared = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_shared.py").read_text(encoding="utf-8")
@@ -652,11 +652,11 @@ def test_platform_showcase_exposes_enterprise_style_operating_model_without_fake
     architecture_page = pages.split('@ui.page("/system-architecture")', 1)[1]
     assert "data-testid=team-operating-model" not in architecture_page
     assert "Study Prefect Team" in messages
-    assert "Service Governance Lead" in messages
-    assert "Duty Coordination Lead" in messages
-    assert "Room Service Steward" in messages
-    assert "four capabilities" in messages
-    assert "not additional departments or staff" in MESSAGES["capability_map_copy"]["en"]
+    assert "Weekly decisions, publishing, and handover" in messages
+    assert "Duty coordination and Assist. in charge" in messages
+    assert "Service in Rooms 302, 303, and 202" in messages
+    assert "Four real work areas" in messages
+    assert "not departments, offices, ranks, or additional staff" in MESSAGES["capability_map_copy"]["en"]
 
 
 def test_co_creation_profile_uses_local_identity_media_and_canonical_instagram_link() -> None:

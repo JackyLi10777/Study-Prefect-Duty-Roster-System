@@ -1,6 +1,6 @@
 # Sing Yin Study Prefect Duty Roster System
 
-> **Release note:** `v1.2.0-rc.23` is the current controlled Windows origin with Worker `1bf0270d-5c78-462e-822b-f4a88e3956fa`. The rc24 candidate only corrects authenticated `/support` routing; it is not live until exact-source gates and the paired origin/Worker rollout complete.
+> **Release note (live, 2026-07-26):** the controlled Windows origin runs annotated tag `v1.2.0-rc.24` at commit `8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`; canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` serves 100% of traffic. The 296-file runtime fingerprint `a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477` passed all 14 formal gates, the verified pre-switch backup and isolated restore passed, and live Public, Guest, Viewer, language-switch, desktop and mobile checks completed without console or page errors. Supervised Administrator and Head Study Prefect/teacher-advisor acceptance remains outstanding.
 
 > **Not to be served, but to serve. — Mark 10:45**
 
@@ -311,17 +311,16 @@ Fixed-weekday mode keeps each active Assistant Head Study Prefect on the same we
 
 The in-app **Platform & team** centre explains why the service exists before
 showing how it is built. It combines an anonymous live readiness snapshot,
-the official Study Prefect Team roles with explanatory responsibility titles,
-four capability groups, four outcome-led solutions, operating principles, and
-the co-creation note. The live strip never exposes names, classes, leave,
+the official Study Prefect Team roles and their real responsibilities, four
+plain work areas, four outcome-led solutions, operating principles, and the
+co-creation note. The live strip never exposes names, classes, leave,
 roster content, backup paths, or audit records.
 
 Official roles remain Head Study Prefect, Assistant Head Study Prefect, Study
-Prefect, and Teacher Advisor. Labels such as Service Governance Lead and Room
-Service Steward explain accountability only; they are not database values or
-replacement school titles. Weekly Operations, Fairness Assurance, Service
-Experience, and Systems Continuity are capability groups, not claims of extra
-staff or headcount.
+Prefect, and Teacher Advisor. The product states each role's real responsibilities
+directly and does not create corporate-style replacement titles. Weekly rostering
+and publishing, fairness review and explanation, guidance and support, and backup,
+recovery and handover are work areas, not departments, offices, or extra staff.
 
 ## Engineering & quality evidence
 
@@ -482,13 +481,13 @@ host/Cloudflare switchover evidence.
 ## Co-creation
 
 I am LI Chuangjie Jacky, Head Study Prefect for 2026–2027. I co-created this
-system with Codex under the Study Prefect Systems & Stewardship Office identity.
+system with Codex, presented as **Study Prefect Team · Service Weave co-creation**.
 
 **Creator profile:** 李創杰 · LI Chuangjie, Jacky · [Instagram @5662jacky](https://www.instagram.com/5662jacky/)
 
 Codex and I are the only two co-creators of this NiceGUI rebuild and formal
-release. The office name is our two-member project identity;
-it does not represent additional developers, contractors, or a separate team.
+release. This is a project credit, not a separate office, department, rank,
+contractor group, or additional team.
 
 I began with a practical scheduling need, but the work grew into a platform that
 treats fairness, responsibility, recovery, and handover seriously. I hope future

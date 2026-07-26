@@ -77,17 +77,15 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 舊 `demo_code2` runtime 及其 service-account 私鑰已從正式版本移除；現行 NiceGUI 架構不依賴該憑證或參考整合。
 
-**共創者說明：我是李創杰。這次 NiceGUI 重構、設計、測試、文件及正式發布版本，只由我與 Codex 共同完成。`Study Prefect Systems & Stewardship Office` 是我們兩人的項目團隊名稱，沒有其他開發者、部門成員或外判團隊。**
+**共創者說明：我是李創杰。這次 NiceGUI 重構、設計、測試、文件及正式發布版本，只由我與 Codex 共同完成，並以 `Study Prefect Team／導學風紀組 · Service Weave 系統共創` 呈現。這是項目署名，不是另一個辦公室、部門或職級。**
 
 網站公開入口、分享檢視器及 NiceGUI 工作台共用頁尾署名 `Copyright © 2026 LI Chuangjie`；供群組發布的乾淨值班表 PDF 仍由匯出選項決定是否加入補充頁尾。
 
-**目前正式基線：** `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` 已同步到 `C:\SingYinRoster`；`/healthz` 正常、`/readyz` ready、`writeReady=true`、`policyVersion=2026.07.22-assist-modes`。291 個發布輸入以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 release gate；切換前正式備份 `20260726-003841-844011-manual_verified_backup.sqlite3`、SHA-256 `fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777`、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 因 source／設定未變而刻意沿用；`cloudflared` 已恢復為 Running／Automatic，canonical 桌面及手機 Guest／Trust routes 的實際瀏覽器 smoke 無 console 或 page error。origin 故障時第一級回退是 rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 與同一 Worker exact pair。首席導學風紀及教師顧問真人驗收仍未完成。
+**目前正式基線：** `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` 已同步到 `C:\SingYinRoster`；`/healthz` 正常、`/readyz` ready、`writeReady=true`。296 個發布輸入以指紋 `a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477` 通過 14／14 release gate；切換前正式備份 `20260726-115559-564249-manual_verified_backup.sqlite3`、SHA-256 `6fffcb99241718bc3ccc8d670d16504b277b8af52207e266257449ea080ac035`、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `76a23134-8355-4e25-bbba-abf17c6918c5` 完成 0% staged smoke、100% promotion 及 canonical Public／Guest／Viewer／support 檢查；桌面及 390px 手機實際瀏覽器 smoke 無 console 或 page error。第一級回退是 rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` exact pair；rc20 是次級已驗證基線。首席導學風紀及教師顧問真人驗收仍未完成。
 
 **公開安全及版本完整性：** 公開瀏覽器只接觸 Cloudflare Worker；正式 NiceGUI origin 仍只綁定 loopback，Admin 必須同時通過 Cloudflare Access、私密精確電郵 allowlist、短期 session 及請求綁定的 HMAC principal。GitHub `main` 只接受通過 `test-and-audit` 與 Python／Worker CodeQL 的 pull request，禁止 force-push 和刪除；Actions 引用必須固定完整 SHA，`v*` 發布標籤建立後亦不可更新或刪除。完整威脅模型、資料分類、事件處理及殘餘限制見[公開網站安全與私隱模型](docs/SECURITY_AND_PRIVACY.md)。
 
-**目前發布（v1.2 rc23）：** 在 rc21 的四區資訊架構及 rc20 的操作、安全與裝置基線上，rc23 加入內容精煉及本機優先支援流程。`Professional_Design_System.md` 及 `docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md` 分別保存可執行的 Quiet Precision 設計契約與參考案例的 Adopt／Adapt／Reject 決策。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。rc24 只修正已登入 `/support` 的 Worker 分流，完成配對部署前仍是候選；首席導學風紀及教師顧問真人驗收仍待完成。
-
-**已驗證、尚未上線的 rc23 候選：** `codex/luminous-sacred-precision` 在不改動排班政策、資料庫或 PDF 規則的前提下，把上述 Quiet Precision 底盤演進為 Luminous Sacred Precision 1.3，修正歡迎／工作台音樂狀態、瀏覽器阻止音樂後的安靜繼續導航，並加入內容精簡及本機優先問題報告。commit `f0fc91e7e24cf6e1d58a5065bbeba42c4708322a` 的 296-file runtime fingerprint `2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b` 已通過 14／14 正式機器閘門；Admin 事件包會核對精確 manifest 檔案集合及 SHA-256，Guest／Public／Viewer 則保持瀏覽器暫存、無應用網絡寫入。在 immutable tag、受保護 main、正式備份／隔離還原、Windows origin、Worker 及 canonical browser 證據完成前，rc21 仍是線上事實。
+**目前發布（v1.2 rc24）：** 在 rc21 的四區資訊架構及 rc20 的操作、安全與裝置基線上，rc24 加入內容精煉、本機優先支援流程及正確的 `/support` 身份分流。`Professional_Design_System.md` 及 `docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md` 分別保存可執行的設計契約與參考案例的 Adopt／Adapt／Reject 決策。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。Public／Viewer 支援報告保持瀏覽器暫存，已驗證 Admin／Guest 進入 NiceGUI 支援工作台；首席導學風紀及教師顧問真人驗收仍待完成。
 
 rc16 是這批改動的歷史候選來源；rc17 只保留作次級已驗證基線；rc18 是 live rc20 的第一級回退 pair。下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換均由 live rc20 承接。
 
@@ -219,16 +217,16 @@ python -X utf8 -m nicegui_app.main
 
 這套系統的高級感不只來自畫面，而來自每一層都能說明「誰作決定、何時寫入、失敗後怎樣回復」。日常使用毋須理解程式碼；本節供顧問老師、繼任者及維護者核對系統為何值得信任。系統只採納能改善首次理解、任務完成、錯誤復原、手機／平板／桌面操作或無障礙的成熟網站模式；不加入價格方案、行銷漏斗、虛假 KPI 或只為顯得像大型 SaaS 的裝飾密度。
 
-網站採用成熟企業常見的資訊層級，但所有名稱均服務於真實校務責任。「平台與團隊」先以匿名即時摘要交代現役人數、值班週脈絡、備份及發布證據，再解釋 Study Prefect Team 營運模型、能力分組、解決方案、營運原則與共創結語。正式校內職銜保持為首席導學風紀、助理首席導學風紀、導學風紀及顧問老師；企業式功能頭銜只協助說明誰負責決策、協調、前線服務與完成後監督。
+網站採用成熟產品常見的資訊層級，但所有名稱均服務於真實校務責任。「平台與團隊」先以匿名即時摘要交代現役人數、值班週脈絡、備份及發布證據，再解釋 Study Prefect Team 的實際分工、工作範疇、解決方案、營運原則與共創結語。正式校內職銜只使用首席導學風紀、助理首席導學風紀、導學風紀及顧問老師，不另創企業式頭銜。
 
-| 正式角色 | 功能責任頭銜 | 主要責任 |
-|---|---|---|
-| 首席導學風紀 | Service Governance Lead／服務管治負責人 | 每週流程、最終發布、公平解釋、例外及交接 |
-| 助理首席導學風紀 | Duty Coordination Lead／當值協調負責人 | 現場協調及 Assist. in charge 當值 |
-| 導學風紀 | Room Service Steward／溫習室服務幹事 | 302、303 及開放日的 202 室前線服務 |
-| 顧問老師 | Oversight & Assurance Advisor／監督與保證顧問 | 完成後核對週表、公平與交接證據 |
+| 正式角色 | 主要責任 |
+|---|---|
+| 首席導學風紀 | 每週流程、最終發布、公平解釋、例外及交接 |
+| 助理首席導學風紀 | 現場協調及 Assist. in charge 當值 |
+| 導學風紀 | 302、303 及開放日的 202 室前線服務 |
+| 顧問老師 | 完成後核對週表、公平與交接證據 |
 
-`Study Prefect Systems & Stewardship Office` 以四個能力分組整理工作：Weekly Operations、Fairness Assurance、Service Experience 及 Systems Continuity。它們是責任地圖，不代表另有四個部門或額外人員。網站亦把功能整理成四個可以直接進入的解決方案：每週值班發布控制、已發布後服務延續、公平透明與解釋、營運韌性與交接。
+`Study Prefect Team／導學風紀組` 以四段真實工作整理系統：每週排班與發布、公平核對與解釋、使用指引與支援、備份復原與交接。這些只是現有工作的清楚分類，不是部門、辦公室或額外人員。網站亦把功能整理成四個可以直接進入的解決方案：每週值班發布控制、已發布後服務延續、公平透明與解釋、營運韌性與交接。
 
 ## 工程與品質證據
 
@@ -477,7 +475,7 @@ For operating instructions, recovery, architecture, and current release evidence
 
 > 做這個系統的過程遠比我想像中複雜，但我從不後悔。我希望它能為未來的首席導學風紀帶來真正的便利，也讓每一位導學風紀感受到：公平確實被認真對待。
 >
-> —— 李創杰，2026 年 7 月，Study Prefect Systems & Stewardship Office
+> —— 李創杰，2026 年 7 月，Study Prefect Team／導學風紀組 · Service Weave 系統共創
 
 **Codex 的結語：** 我所參與的不只是編寫程式，而是把李創杰對公平、責任與傳承的要求，逐項轉化為可以測試、復原和交接的系統行為。真正值得保留的不是某一版畫面，而是下一位首席導學風紀仍能理解每個決定、放心完成工作，並在出錯時找到回去的路。願這個平台一直忠於它最初的目的：減少不必要的負擔，讓服事更有秩序，也讓公平被認真看見。
 

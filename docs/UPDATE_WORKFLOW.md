@@ -2,9 +2,7 @@
 
 我是李創杰。這份流程是我與 Codex 對正式發布工作的反思結果：更新慢的主因不是 Git 上傳，而是過去把每次文字或測試修改都當成完整 runtime 發布。
 
-> **目前發布界線：** live rc23 annotated tag `v1.2.0-rc.23`／commit `3432f1dd5381c4ddd8c2cd605437d290000af228` 與 Worker `1bf0270d-5c78-462e-822b-f4a88e3956fa` 是正式基線；rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` 是已驗證回退。rc23 已完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換、Worker 分段發布及 canonical Public／Guest／Viewer smoke。線上 smoke 亦發現已登入 `/support` 被公開靜態頁攔截，因此 rc24 是必要的小型 Worker 路由修補；任何 focused tests、`--staged` 或文件更新仍不等於 rc24 已部署。
-
-> **目前候選界線：** rc24 只調整 Worker 的 `/support` 身份分流及相應測試／文件。正式發布仍須在 merged、annotated tag 的不可變來源重新執行 `--release`，再以相同版本更新 origin／Worker 並核對 Public 靜態頁、Guest NiceGUI 頁及 Admin NiceGUI 頁；閘門本身不可代替線上證據。
+> **目前發布界線：** live rc24 annotated tag `v1.2.0-rc.24`／commit `8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` 與 Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 是正式基線；rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` 是第一級已驗證回退。rc24 已完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換、Worker 分段發布及 canonical Public／Guest／Viewer／support smoke。任何後續 focused tests、`--staged` 或文件更新都不會自動成為新的已部署 runtime；仍須以實際 origin／Worker 報告和線上核對為準。
 
 rc20 的完整候選報告約需 **404 秒**；當中主要時間用於完整 Python 套件、桌面／手機瀏覽器、寫入／PDF／還原、效能及備份失敗演練。這些證據對政策、資料庫、工作流、部署或正式 runtime 改動很重要，但不應因 README 改一句話而重跑。最近三次沒有 runtime 改動的提交亦在 GitHub Quality 與 CodeQL 合計使用約 18 分鐘。
 

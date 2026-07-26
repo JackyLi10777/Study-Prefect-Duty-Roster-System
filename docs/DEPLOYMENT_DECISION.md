@@ -1,6 +1,6 @@
 # 部署與遠端存取決策指南 / Deployment decision
 
-> **目前基線：**受控 Windows origin 運行 live `v1.2.0-rc.23`／`3432f1dd5381c4ddd8c2cd605437d290000af228`；canonical Worker 是已驗證 version `1bf0270d-5c78-462e-822b-f4a88e3956fa`。296 個 runtime 來源檔以 fingerprint `2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b` 通過 14／14 release gate；切換前備份 `20260726-105111-036455-manual_verified_backup.sqlite3`／SHA-256 `7550d86176cc67a9c1bebf69d5877afb994a09adf03bf98e6e411594e7332f7d` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker staged rollout 及 canonical Public／Guest／Viewer smoke 通過。第一級回退是 `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` exact pair；rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 是次級已驗證基線。rc24 支援路由修補尚未上線；Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
+> **目前基線：**受控 Windows origin 運行 live `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`；canonical Worker 是已驗證 version `76a23134-8355-4e25-bbba-abf17c6918c5`。296 個 runtime 來源檔以 fingerprint `a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477` 通過 14／14 release gate；切換前備份 `20260726-115559-564249-manual_verified_backup.sqlite3`／SHA-256 `6fffcb99241718bc3ccc8d670d16504b277b8af52207e266257449ea080ac035` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker staged rollout 及 canonical Public／Guest／Viewer／support smoke 通過。第一級回退是 `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` exact pair；rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 是次級已驗證基線。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
 
 ## 結論
 
@@ -26,7 +26,7 @@ Windows 11 專用主機：單一 NiceGUI origin
 
 NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另行固定於 `127.0.0.1:22` 及 `[::1]:22`，只接受 Ed25519 金鑰，不開放 LAN、公網、防火牆入站規則或路由器轉發；日後校外 SSH 只能經獨立的 Cloudflare 私有路由進入。
 
-## Live rc23 與回退層級
+## Live rc24 與回退層級
 
 | 層 | 現況 |
 |---|---|

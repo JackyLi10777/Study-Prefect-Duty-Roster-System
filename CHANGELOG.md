@@ -7,6 +7,9 @@ This file records user-visible, operational and release-significant changes. Exa
 - Kept Public and Viewer problem reports browser-only while routing authenticated Admin and Guest `/support` visits to the shared NiceGUI support workspace.
 - Restored the Admin host-local, explicit-consent incident inbox on the canonical remote site without weakening Guest non-persistence or the public no-upload boundary.
 - Added Worker regression coverage for Public, Admin, and Guest support routing through the signed origin-principal boundary.
+- Deployed the immutable rc24 pair to the controlled Windows origin and canonical Worker after 14／14 exact-source gates, a verified backup, and an isolated restore.
+- Verified Public browser-only support, Guest NiceGUI support, Viewer recovery, language switching, desktop and 390px mobile rendering without console or page errors; supervised human acceptance remains separate.
+- Replaced the invented “Study Prefect Systems & Stewardship Office” identity and corporate-style responsibility titles with the real `Study Prefect Team／導學風紀組`, plain work areas, and direct responsibility descriptions.
 
 ## v1.2.0-rc.23 — 2026-07-26
 

@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **目前發布狀態：** Windows origin 正運行健康、ready 的 live `v1.2.0-rc.23`／`3432f1dd5381c4ddd8c2cd605437d290000af228`；其 296-file runtime fingerprint `2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `1bf0270d-5c78-462e-822b-f4a88e3956fa` 已完成 staged rollout 並承接 100% 流量。canonical Public／Guest／Viewer smoke 通過且無 console／page error；其後發現的已登入 `/support` 路由缺口由尚未上線的 rc24 修補。第一級回退是 rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` exact pair；rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 是次級已驗證基線。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
+> **目前發布狀態：** Windows origin 正運行健康、ready 的 live `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`；其 296-file runtime fingerprint `a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 已完成 0% staged smoke、100% promotion 並承接正式流量。canonical Public／Guest／Viewer smoke、Public browser-only support、Guest NiceGUI support、英文切換及 390px 手機檢查通過且無 console／page error。第一級回退是 rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` exact pair；rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 是次級已驗證基線。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 

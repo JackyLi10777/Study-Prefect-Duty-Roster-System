@@ -1,6 +1,6 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
-> **文件狀態（live rc23）：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.23`／commit `3432f1dd5381c4ddd8c2cd605437d290000af228`；296 個 runtime 來源檔案以指紋 `2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b` 通過 14／14 正式 gate 並完成受控切換。canonical Worker `1bf0270d-5c78-462e-822b-f4a88e3956fa` 承接正式流量；第一級回退是 `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`，rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 保留為次級已驗證基線。Admin、Guest 與公開 Viewer 使用同一身份邊界；rc23 沒有擴大 Guest 能力、資料保存位置或正式 SQLite 存取。rc24 只修正已驗證身份的 `/support` 路由，在完成配對發布前仍是候選。
+> **文件狀態（live rc24）：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.24`／commit `8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`；296 個 runtime 來源檔案以指紋 `a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477` 通過 14／14 正式 gate 並完成受控切換。canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 承接正式流量；第一級回退是 `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`，rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 保留為次級已驗證基線。Admin、Guest 與公開 Viewer 使用同一身份邊界；Public `/support` 保持瀏覽器暫存，已驗證 Admin／Guest `/support` 由 Worker 代理到同一 NiceGUI 工作台，沒有擴大 Guest 能力、資料保存位置或正式 SQLite 存取。
 
 ## 1. 目的
 

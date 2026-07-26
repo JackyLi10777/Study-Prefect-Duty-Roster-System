@@ -4,16 +4,16 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
-> **Live v1.2 rc23 status:** the controlled Windows origin uses
-> `v1.2.0-rc.23`／`3432f1dd5381c4ddd8c2cd605437d290000af228`; the canonical Worker is
-> `1bf0270d-5c78-462e-822b-f4a88e3956fa`. The 296-input runtime release passed all 14 formal gates
-> with fingerprint `2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b`.
+> **Live v1.2 rc24 status:** the controlled Windows origin uses
+> `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`; the canonical Worker is
+> `76a23134-8355-4e25-bbba-abf17c6918c5`. The 296-input runtime release passed all 14 formal gates
+> with fingerprint `a6a1f4641f0eafa54fb740eb57f9173febc651ab0f11e3cfefcbe4c6ce38f477`.
 > First-level rollback is rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`; rc20／
 > `e3d84858abfe23714929a87c4bcf76e55999ce7c` remains a secondary verified baseline.
 > A fresh production backup, checksum, fairness reconciliation and isolated
 > restore passed before cutover. Worker version
-> `1bf0270d-5c78-462e-822b-f4a88e3956fa` passed staged-version and
-> canonical health／entrance／viewer checks before receiving 100% traffic.
+> `76a23134-8355-4e25-bbba-abf17c6918c5` passed staged-version and
+> canonical health／entrance／viewer／support checks before receiving 100% traffic.
 > Supervised human acceptance remains required.
 >
 > **rc21 live boundary:** annotated tag `v1.2.0-rc.21` points to commit
@@ -29,7 +29,7 @@
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 
-## Product, Organisation, and Solution Architecture
+## Product, Team Responsibilities, and Solution Architecture
 
 ### Canonical page and navigation catalogue
 
@@ -39,20 +39,20 @@ Routine navigation follows the operator's actual work in this order: **Getting S
 
 `PageKind` is presentation metadata, not authorization. Every route, callback, service and download must still enforce the server-verified `PageContext` and capability policy. Admin and Guest therefore share page structure without sharing a persistence adapter or write authority.
 
-The presentation is deliberately split across three routes. `/platform` owns the non-sensitive product, organisation, solution, culture, resources, and co-creation story. `/engineering` turns documented release quality into a five-layer blueprint, the fingerprint-bound verification gates, reliability capabilities, and a build narrative. `/system-architecture` owns the service lifecycle, technical ownership, trust evidence, recovery boundaries, and operator FAQ. This is information architecture, not a second business-logic layer, and the ordinary dashboard remains the first route for weekly work.
+The presentation is deliberately split across three routes. `/platform` owns the non-sensitive product, real team responsibilities, solution, culture, resources, and co-creation story. `/engineering` turns documented release quality into a five-layer blueprint, the fingerprint-bound verification gates, reliability capabilities, and a build narrative. `/system-architecture` owns the service lifecycle, technical ownership, trust evidence, recovery boundaries, and operator FAQ. This is information architecture, not a second business-logic layer, and the ordinary dashboard remains the first route for weekly work.
 
-The Study Prefect Team model preserves official roles while adding explanatory functional titles:
+The Study Prefect Team model preserves official school roles and describes their real responsibilities directly:
 
-- Head Study Prefect — `Service Governance Lead`;
-- Assistant Head Study Prefect — `Duty Coordination Lead`;
-- Study Prefect — `Room Service Steward`;
-- Teacher Advisor — `Oversight & Assurance Advisor`.
+- Head Study Prefect — weekly decisions, publishing, exceptions, fairness explanation, and handover;
+- Assistant Head Study Prefect — coordination and `Assist. in charge` duty;
+- Study Prefect — service in Rooms 302, 303, and 202 on open days;
+- Teacher Advisor — post-completion review and advice.
 
-These labels never become database values, roster-policy inputs, or replacement school titles. The page also groups platform work into four capability lanes—Weekly Operations, Fairness Assurance, Service Experience, and Systems Continuity—and four outcome-led solutions linked to the real workspaces. The groups do not imply additional staff. Their purpose is to make ownership and handover easier to understand.
+The page groups platform work into four plain work areas—weekly rostering and publishing, fairness review and explanation, guidance and support, and backup/recovery/handover—and four outcome-led solutions linked to the real workspaces. These are content groupings only, not departments, offices, ranks, or additional staff.
 
 The Platform & Team page uses `nicegui_app.ui.platform_summary.load_platform_summary` to combine only the existing `handover_readiness()` counts and display-safe release evidence. Its public interface contains active-prefect count, roster-week count, a verified-backup boolean, and release state/check totals. It deliberately omits names, class, leave, roster content, audit payload, database paths, and backup paths. A read failure is logged through the existing payload-free support reference and produces a neutral bilingual fallback while the rest of the page remains available.
 
-NiceGUI owns the rendering and navigation. The read model introduces no schema, policy, write, backup, or restore change. `/system-architecture` links back to `/platform` rather than duplicating its organisation chart, capability map, solution portfolio, and co-creation close.
+NiceGUI owns the rendering and navigation. The read model introduces no schema, policy, write, backup, or restore change. `/system-architecture` links back to `/platform` rather than duplicating its team-responsibility overview, work-area summary, solution portfolio, and co-creation close.
 
 `/engineering` reads only `load_release_evidence()` and static, version-controlled structural facts. It never opens `RosterWorkflow`, a database session, a backup path, or an audit payload. The report badge may show passed, running, stale, failed, missing, or unreadable evidence; the page does not reinterpret a non-passing state as success. Its gate labels mirror `scripts/verify_release_candidate.py`: repository hygiene, supply-chain security, Cloudflare gateway Deno contracts, the independent icon-interaction state machine, automated Python tests, Python compilation, dependency integrity, desktop browser verification, runtime performance／memory stability, isolated write pipeline, adaptive-phone verification, strict deployment readiness, unified Guest isolation, and committed-without-backup recovery. The visible passed/total ratio comes from the fingerprint-matched report rather than a hard-coded test count.
 
