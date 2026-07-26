@@ -9,6 +9,7 @@
   width: 100%;
   max-width: none;
   min-width: 0;
+  background: var(--sy-material-operational);
 }
 
 .sy-operations-grid {
@@ -76,9 +77,10 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   padding: 6px;
-  border: 1px solid var(--sy-line);
+  border: 1px solid color-mix(in srgb, var(--sy-luminous-edge) 72%, var(--sy-line));
   border-radius: 18px;
-  background: var(--sy-surface-subtle);
+  background: var(--sy-material-transient);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
 }
 
 .sy-workflow-navigation-step {
@@ -106,8 +108,8 @@
 .sy-workflow-navigation-step.is-current {
   color: var(--sy-ink) !important;
   border-color: color-mix(in srgb, var(--sy-line) 64%, var(--sy-role-action));
-  background: var(--sy-surface);
-  box-shadow: 0 5px 14px rgba(28, 28, 30, .06);
+  background: var(--sy-material-operational);
+  box-shadow: inset 0 2px 0 var(--sy-woven-line), 0 5px 14px rgba(28, 28, 30, .06);
 }
 
 .sy-workflow-navigation-index {

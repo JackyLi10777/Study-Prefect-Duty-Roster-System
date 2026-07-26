@@ -129,7 +129,7 @@ const SECURITY_HEADERS = Object.freeze({
   ].join('; '),
   'Cross-Origin-Opener-Policy': 'same-origin',
   'Cross-Origin-Resource-Policy': 'same-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+  'Permissions-Policy': 'autoplay=(self), camera=(), microphone=(), geolocation=(), payment=(), usb=()',
   'Referrer-Policy': 'no-referrer',
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
   'X-Content-Type-Options': 'nosniff',
@@ -144,7 +144,7 @@ const SECURITY_HEADERS = Object.freeze({
 const WORKBENCH_SECURITY_HEADERS = Object.freeze({
   'Cross-Origin-Opener-Policy': 'same-origin',
   'Cross-Origin-Resource-Policy': 'same-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+  'Permissions-Policy': 'autoplay=(self), camera=(), microphone=(), geolocation=(), payment=(), usb=()',
   'Referrer-Policy': 'no-referrer',
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
   'X-Content-Type-Options': 'nosniff',
@@ -309,7 +309,16 @@ const VIEWER_HTML = `<!doctype html>
             <input id="welcomeAudioVolume" type="range" min="0" max="100" step="1" value="50">
             <output id="welcomeAudioVolumeValue" for="welcomeAudioVolume">50%</output>
           </div>
-          <p id="welcomeAudioStatus" class="welcome-audio-status" aria-live="polite">頁面開啟時自動嘗試播放，首次音量為 50%；如被瀏覽器攔截，首次操作後立即開始。 · Playback starts automatically when possible at an initial 50%; if blocked, it starts after the first interaction.</p>
+          <p id="welcomeAudioStatus" class="welcome-audio-status" aria-live="polite">頁面開啟時會以 50% 音量嘗試播放一次；如被瀏覽器攔截，請選擇開啟音樂或安靜繼續。 · Playback is attempted once at 50%; if blocked, choose music or continue quietly.</p>
+          <div id="welcomeAudioRecovery" class="welcome-audio-recovery" role="group" aria-labelledby="welcomeAudioRecoveryTitle" hidden>
+            <strong id="welcomeAudioRecoveryTitle">選擇進入方式 · Choose how to continue</strong>
+            <p>瀏覽器需要一次明確操作才能播放聲音。你可開啟音樂後進入，或安靜繼續。</p>
+            <p lang="en">Your browser requires a direct action before audible playback. Enter with music or continue quietly.</p>
+            <div class="welcome-audio-recovery-actions">
+              <button id="welcomeAudioEnter" class="welcome-audio-recovery-primary" type="button">開啟音樂進入 <span lang="en">· Enter with music</span></button>
+              <button id="welcomeAudioQuiet" class="welcome-audio-recovery-quiet" type="button">安靜繼續 <span lang="en">· Continue quietly</span></button>
+            </div>
+          </div>
         </section>
 
         <div class="access-divider" aria-hidden="true"><span></span></div>
@@ -956,7 +965,7 @@ button, input, select, textarea { font: inherit; }
   touch-action: manipulation;
   transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease, transform 100ms ease, box-shadow 160ms ease;
 }
-.welcome-audio-button:hover { border-color: var(--action); background: color-mix(in srgb, var(--action-soft) 65%, var(--surface)); box-shadow: 0 7px 16px color-mix(in srgb, var(--action) 12%, transparent); }
+.welcome-audio-button:hover { border-color: var(--action); background: color-mix(in srgb, var(--brand-soft) 65%, var(--surface)); box-shadow: 0 7px 16px color-mix(in srgb, var(--action) 12%, transparent); }
 .welcome-audio-button:active { transform: scale(0.96); }
 .welcome-audio-button:focus-visible,
 .welcome-audio-volume input:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
@@ -969,6 +978,15 @@ button, input, select, textarea { font: inherit; }
 .welcome-audio-volume output { text-align: right; font-variant-numeric: tabular-nums; }
 .welcome-audio-volume input { width: 100%; height: 22px; margin: 0; accent-color: var(--action); cursor: pointer; }
 .welcome-audio-status { margin: 7px 0 0; color: var(--ink-muted); font-size: 0.59rem; line-height: 1.45; }
+.welcome-audio-recovery { margin-top: 12px; padding: 12px; border: 1px solid var(--gold); border-radius: 13px; background: var(--devotional-control); color: var(--ink); }
+.welcome-audio-recovery[hidden] { display: none; }
+.welcome-audio-recovery strong { display: block; font-size: 0.72rem; }
+.welcome-audio-recovery p { margin: 5px 0 0; color: var(--ink-muted); font-size: 0.62rem; line-height: 1.45; }
+.welcome-audio-recovery-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.welcome-audio-recovery-actions button { min-height: 44px; padding: 9px 12px; border: 1px solid var(--line-strong); border-radius: 12px; font: inherit; font-size: 0.68rem; font-weight: 720; cursor: pointer; touch-action: manipulation; }
+.welcome-audio-recovery-primary { background: var(--action); color: var(--action-ink); }
+.welcome-audio-recovery-quiet { background: var(--surface); color: var(--ink); }
+.welcome-audio-recovery-actions button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
 .access-divider { display: flex; align-items: center; margin: 26px 0 22px; }
 .access-divider::before,
 .access-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
@@ -1520,6 +1538,7 @@ const rosterState = document.getElementById('rosterState');
 const rosterTable = document.getElementById('rosterTable');
 const themeToggle = document.getElementById('themeToggle');
 const themeLabel = document.getElementById('themeLabel');
+const entryButtons = Array.from(document.querySelectorAll('[data-entry-role]'));
 const adminLoginButtons = Array.from(document.querySelectorAll('[data-entry-role="admin"]'));
 const portalStory = document.querySelector('.portal-story');
 const portalStoryMedia = document.getElementById('portalStoryMedia');
@@ -1532,6 +1551,9 @@ const welcomeAudioNext = document.getElementById('welcomeAudioNext');
 const welcomeAudioVolume = document.getElementById('welcomeAudioVolume');
 const welcomeAudioVolumeValue = document.getElementById('welcomeAudioVolumeValue');
 const welcomeAudioStatus = document.getElementById('welcomeAudioStatus');
+const welcomeAudioRecovery = document.getElementById('welcomeAudioRecovery');
+const welcomeAudioEnter = document.getElementById('welcomeAudioEnter');
+const welcomeAudioQuiet = document.getElementById('welcomeAudioQuiet');
 const welcomeTrackTitle = document.getElementById('welcomeTrackTitle');
 const welcomeTrackMeta = document.getElementById('welcomeTrackMeta');
 const shareSite = document.getElementById('shareSite');
@@ -1632,7 +1654,7 @@ const systemDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
 let welcomeProfile = '';
 let welcomeTrackIndex = 0;
 let welcomeDesiredEnabled = true;
-let welcomeAutoplayRecoveryArmed = false;
+let welcomePendingDestination = '';
 
 function welcomeLandingActive() {
   return window.location.pathname === '/'
@@ -1697,57 +1719,72 @@ function setWelcomeAutoplayState(state) {
   if (welcomeAudioPlayer) welcomeAudioPlayer.dataset.autoplayState = state;
 }
 
-function disarmWelcomeAutoplayRecovery() {
-  if (!welcomeAutoplayRecoveryArmed) return;
-  welcomeAutoplayRecoveryArmed = false;
-  document.removeEventListener('pointerdown', recoverWelcomeAudioOnFirstInteraction, true);
-  document.removeEventListener('keydown', recoverWelcomeAudioOnFirstInteraction, true);
+function classifyWelcomeAudioFailure(error) {
+  if (error?.name === 'NotAllowedError') return 'blocked';
+  if (error?.name === 'NotSupportedError') return 'decoding';
+  if (error?.name === 'AbortError') return 'lifecycle';
+  if (welcomeAudio?.error?.code === 3) return 'decoding';
+  if (welcomeAudio?.error?.code === 4) return 'decoding';
+  if (welcomeAudio?.error?.code === 2) return 'transport';
+  if (welcomeAudio?.networkState === 2 && welcomeAudio?.readyState < 3) return 'loading';
+  return navigator.onLine === false ? 'transport' : 'error';
 }
 
-function recoverWelcomeAudioOnFirstInteraction(event) {
-  if (!welcomeAutoplayRecoveryArmed) return;
-  if (event.target instanceof Element && event.target.closest('.welcome-audio-player')) return;
-  disarmWelcomeAutoplayRecovery();
-  if (!welcomeDesiredEnabled || !welcomeLandingActive() || !welcomeAudio?.paused) return;
-  void playWelcomeAudio({ allowRecovery: false });
+function setWelcomeRecoveryVisible(visible, destination = '') {
+  welcomePendingDestination = visible ? destination : '';
+  if (!welcomeAudioRecovery) return;
+  welcomeAudioRecovery.hidden = !visible;
+  if (visible) welcomeAudioEnter?.focus({ preventScroll: true });
 }
 
-function armWelcomeAutoplayRecovery() {
-  if (welcomeAutoplayRecoveryArmed || !welcomeDesiredEnabled) return;
-  welcomeAutoplayRecoveryArmed = true;
-  document.addEventListener('pointerdown', recoverWelcomeAudioOnFirstInteraction, true);
-  document.addEventListener('keydown', recoverWelcomeAudioOnFirstInteraction, true);
+function navigateAfterWelcomeChoice() {
+  const destination = welcomePendingDestination;
+  setWelcomeRecoveryVisible(false);
+  if (destination) window.location.assign(destination);
 }
 
-async function playWelcomeAudio({ allowRecovery = true } = {}) {
-  if (!welcomeAudio || !welcomeLandingActive()) return;
+function playWelcomeAudio({ revealRecovery = true } = {}) {
+  if (!welcomeAudio || !welcomeLandingActive()) return Promise.resolve(false);
   if (!welcomeAudio.src) renderWelcomeTrack();
   const targetVolume = storedWelcomeVolume();
   welcomeAudio.volume = targetVolume;
   welcomeDesiredEnabled = true;
   setWelcomeAutoplayState('starting');
+  let attempt;
   try {
-    await welcomeAudio.play();
-    disarmWelcomeAutoplayRecovery();
+    attempt = welcomeAudio.play();
+  } catch (error) {
+    attempt = Promise.reject(error);
+  }
+  return Promise.resolve(attempt).then(() => {
     setWelcomeAutoplayState('playing');
     setWelcomePlayingState(true);
+    if (welcomeAudioRecovery) welcomeAudioRecovery.hidden = true;
     if (welcomeAudioStatus) welcomeAudioStatus.textContent = '正在以 ' + Math.round(targetVolume * 100) + '% 音量播放。 · Playing at ' + Math.round(targetVolume * 100) + '% volume.';
-  } catch (error) {
+    return true;
+  }).catch((error) => {
     setWelcomePlayingState(false);
-    const blocked = error?.name === 'NotAllowedError';
-    setWelcomeAutoplayState(blocked ? 'blocked' : 'error');
-    if (blocked && allowRecovery) armWelcomeAutoplayRecovery();
-    if (welcomeAudioStatus) welcomeAudioStatus.textContent = blocked
-      ? '瀏覽器暫時攔截聲音；首次操作頁面後會立即開始。 · Sound is temporarily blocked and will start after the first interaction.'
-      : '歡迎音樂暫時未能播放；可按播放鍵重試。 · Welcome music could not start; use play to retry.';
-  }
+    const failure = classifyWelcomeAudioFailure(error);
+    setWelcomeAutoplayState(failure);
+    if (failure === 'blocked' && revealRecovery) setWelcomeRecoveryVisible(true, welcomePendingDestination);
+    const messages = {
+      blocked: '瀏覽器需要你確認後才可播放聲音。 · Your browser needs a direct action before playing sound.',
+      loading: '音樂仍在載入；請稍候再試。 · Music is still loading; try again shortly.',
+      transport: '網絡中斷或音樂暫時未能傳送；請檢查連線後重試。 · The connection or audio delivery was interrupted; check the network and retry.',
+      decoding: '瀏覽器未能解碼這首音樂；請選擇下一首。 · This track could not be decoded; choose the next track.',
+      lifecycle: '頁面狀態已改變，播放嘗試已停止。 · Playback stopped because the page state changed.',
+      error: '歡迎音樂暫時未能播放；可按播放鍵重試。 · Welcome music could not start; use play to retry.',
+    };
+    if (welcomeAudioStatus) welcomeAudioStatus.textContent = messages[failure] || messages.error;
+    return false;
+  });
 }
 
 function pauseWelcomeAudio() {
   if (!welcomeAudio) return;
   welcomeAudio.pause();
   welcomeDesiredEnabled = false;
-  disarmWelcomeAutoplayRecovery();
+  setWelcomeRecoveryVisible(false);
   setWelcomeAutoplayState('paused');
   setWelcomePlayingState(false);
   if (welcomeAudioStatus) welcomeAudioStatus.textContent = '歡迎音樂已暫停。 · Welcome music paused.';
@@ -1758,7 +1795,7 @@ function advanceWelcomeTrack({ play = false } = {}) {
   if (!tracks.length) return;
   welcomeTrackIndex = (welcomeTrackIndex + 1) % tracks.length;
   renderWelcomeTrack();
-  if (play) void playWelcomeAudio({ allowRecovery: false });
+  if (play) void playWelcomeAudio({ revealRecovery: false });
 }
 
 function syncWelcomePlaylist() {
@@ -1770,7 +1807,7 @@ function syncWelcomePlaylist() {
   welcomeProfile = nextProfile;
   welcomeTrackIndex = 0;
   renderWelcomeTrack();
-  if (shouldResume) void playWelcomeAudio({ allowRecovery: false });
+  if (shouldResume) void playWelcomeAudio({ revealRecovery: false });
 }
 
 function initialiseWelcomeAudio() {
@@ -1785,6 +1822,14 @@ function initialiseWelcomeAudio() {
     if (welcomeAudio.paused) void playWelcomeAudio();
     else pauseWelcomeAudio();
   });
+  welcomeAudioEnter?.addEventListener('click', () => {
+    const playback = playWelcomeAudio({ revealRecovery: true });
+    void playback.then((playing) => { if (playing) navigateAfterWelcomeChoice(); });
+  });
+  welcomeAudioQuiet?.addEventListener('click', () => {
+    pauseWelcomeAudio();
+    navigateAfterWelcomeChoice();
+  });
   welcomeAudioNext?.addEventListener('click', () => {
     advanceWelcomeTrack({ play: welcomeDesiredEnabled || !welcomeAudio.paused });
   });
@@ -1798,12 +1843,14 @@ function initialiseWelcomeAudio() {
   });
   welcomeAudio.addEventListener('ended', () => advanceWelcomeTrack({ play: true }));
   welcomeAudio.addEventListener('error', () => {
-    disarmWelcomeAutoplayRecovery();
-    setWelcomeAutoplayState('error');
+    const failure = classifyWelcomeAudioFailure(welcomeAudio.error);
+    setWelcomeAutoplayState(failure);
     setWelcomePlayingState(false);
-    if (welcomeAudioStatus) welcomeAudioStatus.textContent = '這首音樂暫時未能載入，請按下一首。 · This track could not load; choose the next track.';
+    if (welcomeAudioStatus) welcomeAudioStatus.textContent = failure === 'transport'
+      ? '網絡中斷或音樂暫時未能傳送；請檢查連線後重試。 · The connection or audio delivery was interrupted; check the network and retry.'
+      : '瀏覽器未能解碼這首音樂；請選擇下一首。 · This track could not be decoded; choose the next track.';
   });
-  void playWelcomeAudio({ allowRecovery: true });
+  void playWelcomeAudio({ revealRecovery: true });
 }
 
 systemDarkScheme.addEventListener('change', () => {
@@ -1928,12 +1975,18 @@ const setAdminLoginState = (connecting) => {
   });
 };
 
-adminLoginButtons.forEach((button) => button.addEventListener('click', (event) => {
-  if (adminLoginButtons.some((candidate) => candidate.dataset.connecting === 'true')) {
+entryButtons.forEach((button) => button.addEventListener('click', (event) => {
+  if (!(button instanceof HTMLAnchorElement)) return;
+  if (welcomeAudioPlayer?.dataset.autoplayState === 'blocked') {
+    event.preventDefault();
+    setWelcomeRecoveryVisible(true, button.href);
+    return;
+  }
+  if (button.dataset.entryRole === 'admin' && adminLoginButtons.some((candidate) => candidate.dataset.connecting === 'true')) {
     event.preventDefault();
     return;
   }
-  setAdminLoginState(true);
+  if (button.dataset.entryRole === 'admin') setAdminLoginState(true);
 }));
 
 window.addEventListener('pageshow', () => {

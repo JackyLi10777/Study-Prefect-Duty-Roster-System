@@ -101,6 +101,15 @@ def test_stylesheets_load_in_the_declared_ownership_order() -> None:
     for layer, href, _media in STYLE_LAYERS:
         assert f'data-sy-style-layer="{layer}"' in THEME_HEAD_HTML
         assert (PROJECT_ROOT / "nicegui_app" / href.removeprefix("/")).is_file()
+    assert 'src="/assets/runtime/music/sing-yin-music-controller.js"' in THEME_HEAD_HTML
+    assert 'data-sy-runtime="music-controller"' in THEME_HEAD_HTML
+    assert (
+        PROJECT_ROOT
+        / "nicegui_app"
+        / "assets"
+        / "music"
+        / "sing-yin-music-controller.js"
+    ).is_file()
 
 
 def test_non_mobile_layers_never_reown_exact_selectors() -> None:
@@ -120,6 +129,23 @@ def test_status_badge_surface_is_owned_by_the_component_layer() -> None:
 
     assert ".sy-status-badge {" in component_source
     assert ".sy-status-badge { width:" not in compatibility_source
+
+
+def test_luminous_material_roles_are_connected_to_governed_surfaces() -> None:
+    theme = (CSS_ROOT / "sing-yin-theme-v1.css").read_text(encoding="utf-8")
+    layout = (CSS_ROOT / "sing-yin-layout-v1.css").read_text(encoding="utf-8")
+    components = (CSS_ROOT / "sing-yin-components-v1.css").read_text(encoding="utf-8")
+
+    assert ".sy-header-tools" in theme
+    assert "var(--sy-material-transient)" in theme
+    assert "var(--sy-luminous-edge)" in theme
+    assert ".sy-workflow-navigation" in layout
+    assert "var(--sy-material-transient)" in layout
+    assert "var(--sy-material-operational)" in layout
+    assert "var(--sy-woven-line)" in layout
+    assert ".sy-dialog" in components
+    assert "var(--sy-material-transient)" in components
+    assert "var(--sy-luminous-edge)" in components
 
 
 def test_public_components_cover_complete_interaction_states() -> None:

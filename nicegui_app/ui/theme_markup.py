@@ -37,7 +37,8 @@ THEME_HEAD_HTML = (
     '<link rel="preload" href="/assets/fonts/InterVariable.woff2" '
     'as="font" type="font/woff2" crossorigin>\n'
     + _style_links()
-    + "\n"
+    + '\n<script defer src="/assets/runtime/music/sing-yin-music-controller.js" '
+    'data-sy-runtime="music-controller"></script>\n'
 )
 
 

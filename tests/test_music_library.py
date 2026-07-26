@@ -231,6 +231,9 @@ def test_parallel_local_music_imports_preserve_every_catalog_entry(
 
 def test_music_ui_has_operator_controlled_autoplay_on_every_workspace_page() -> None:
     music_ui = (PROJECT_ROOT / "nicegui_app" / "ui" / "music.py").read_text(encoding="utf-8")
+    controller = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "music" / "sing-yin-music-controller.js"
+    ).read_text(encoding="utf-8")
     sound_ui = (PROJECT_ROOT / "nicegui_app" / "ui" / "sound.py").read_text(encoding="utf-8")
     pages = combined_page_source()
     page_catalog = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_catalog.py").read_text(
@@ -252,9 +255,20 @@ def test_music_ui_has_operator_controlled_autoplay_on_every_workspace_page() -> 
     assert 'data-testid=music-autoplay-switch' in music_ui
     assert 'data-testid=music-playback-status' in music_ui
     assert 'data-music-state=' in music_ui
-    assert "_music_state_script('blocked')" in music_ui
-    assert "audio.play().then" in music_ui
+    assert 'data-testid=music-play-retry' in music_ui
+    assert 'data-testid=music-pause-now' in music_ui
+    assert "js_handler=_music_retry_handler_script" in music_ui
+    assert "window.SingYinMusicController" in music_ui
+    assert "audio.play().then" not in music_ui
     assert "audio.pause()" in music_ui
+    assert "playResult = audio.play()" in controller
+    assert "name === 'NotAllowedError'" in controller
+    assert "name === 'NotSupportedError'" in controller
+    assert "audio?.error?.code === 2" in controller
+    assert "audio?.error?.code === 3 || audio?.error?.code === 4" in controller
+    assert "navigator.onLine === false" in controller
+    assert "const boundAudio = new WeakSet()" in controller
+    assert "setTimeout" not in controller
     assert "loop=False" in music_ui
     assert 'audio.on("ended", advance_playlist)' in music_ui
     assert '"sequential": t("music_mode_sequential")' in music_ui
