@@ -69,22 +69,24 @@ These are not four separate sites. They are four reading and operating contexts 
 
 Admin is the canonical operational product. Guest uses the same routes, navigation, components, and roster experience, while the server switches it to a fictional temporary workspace and denies permanent writes, uploads, AI, backups, shares, and costly external work below the UI. The routine sidebar follows real work; platform story, engineering evidence, and architecture sit in a distinct **Trust & Documentation** portal so institutional narrative never interrupts the weekly roster flow. See [Product research and information-architecture decisions](docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md) for the source review, adopted principles, adaptations, and rejected alternatives.
 
-**Current formal baseline:** `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`
+**Current formal baseline:** `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`
 is live at `C:\SingYinRoster`. `/healthz` is healthy and `/readyz` is ready with
 `writeReady=true` and `policyVersion=2026.07.22-assist-modes`. The controlled
-switch created `20260722-122411-304415-manual_verified_backup.sqlite3` and passed
+switch created `20260726-003841-844011-manual_verified_backup.sqlite3` and passed
 its SHA-256 checksum, database integrity, fairness reconciliation, row matching,
-restore audit, isolated restore, and additive migration
-`0011_assist_assignment_mode`. Its SHA-256 is
-`9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0`. Source
-fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`
-passed all 14／14 formal gates (839 Python, 3 motion, 40 Worker contracts).
+restore audit, and isolated restore. Its SHA-256 is
+`fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777`. Source
+fingerprint `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1`
+passed all 14／14 formal gates (the complete Python suite, 3 motion contracts,
+and 40 Worker contracts).
 Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` was intentionally retained
-because Worker source／settings did not change. first-level rollback is
-rc18／`fd504a8` with that same Worker. rc17／`99f5816` with Worker
-`c85770b2-c626-462c-bc74-5e6bd305c75b` is retained only as a secondary verified
-baseline. Supervised Head Study Prefect and teacher-advisor acceptance remains
-open.
+because Worker source／settings did not change. The `cloudflared` Windows service
+was restored to Running／Automatic, after which the canonical desktop and mobile
+Guest／Trust routes passed rendered smoke with no console or page errors. The
+first-level rollback is rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c`
+with that same Worker; rc18／`fd504a8` remains the secondary verified baseline.
+Supervised Head Study Prefect and teacher-advisor
+acceptance remains open.
 
 **Public security and release integrity:** Public browsers reach only the
 Cloudflare Worker; the official NiceGUI origin remains loopback-only. Admin

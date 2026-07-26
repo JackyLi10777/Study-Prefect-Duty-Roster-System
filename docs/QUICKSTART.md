@@ -1,8 +1,8 @@
 # 快速啟動 / Quick start
 
-> **目前狀態（live rc20）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`；290 個發布輸入以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 gate，正式備份、checksum、公平對帳及隔離還原亦已通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量；第一級歷史回退是 `v1.2.0-rc.18`／`fd504a8`。
+> **目前狀態（live rc21）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.21`／commit `f7df4d0170e6bacd65340cc893992a17b5ed4aed`；291 個發布輸入以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量；第一級回退是 `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`。
 >
-> **rc20 已上線（真人驗收仍未簽署）：** rc20 包括 rc19 的手機／平板／無障礙改進及 Assist. in charge 雙模式，並已完成受控 Windows 主機切換。日常操作以 rc20 行為為準；機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
+> **rc21 已上線（真人驗收仍未簽署）：** rc21 整合四區資訊架構、中央頁面目錄、Trust & Documentation portal 及可執行的 Quiet Precision 設計契約，並保留 rc20 的手機／平板／無障礙及 Assist. in charge 雙模式。日常操作以 rc21 行為為準；機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
 
 ## 每日使用
 

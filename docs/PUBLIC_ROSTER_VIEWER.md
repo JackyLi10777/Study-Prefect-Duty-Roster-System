@@ -1,8 +1,8 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **目前狀態（live rc20）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供。
+> **目前狀態（live rc21）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`；canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 正承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供。Tunnel 服務已恢復為 Running／Automatic；canonical public root、Guest Dashboard 及 Trust routes 的桌面／手機 rendered smoke 已通過。
 >
-> **rc20 受控上線（2026-07-22）：** 290 個來源檔案以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（839 個 Python、3 個 motion、40 個 Worker 測試）；切換前備份 `20260722-122411-304415-manual_verified_backup.sqlite3`／`9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0` 已完成隔離還原。Worker 原始碼及設定沒有改動，故沿用上述已驗證版本。第一級歷史回退是 `v1.2.0-rc.18`／`fd504a8`；真人驗收仍未簽署。
+> **rc21 受控上線（2026-07-26）：** 291 個來源檔案以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate；切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／`fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 原始碼及設定沒有改動，故沿用上述已驗證版本。第一級回退是 `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；真人驗收仍未簽署。
 
 我是李創杰。我希望所有使用者只需記住同一個網站，但同一個網址不代表相同權限。v1.2 把入口、完整 Guest 體驗及管理員工作台統一到同一套 NiceGUI 路由和元件；只有已發布週表的 `/view#…` 保留為獨立、只讀、可分享的能力連結。
 

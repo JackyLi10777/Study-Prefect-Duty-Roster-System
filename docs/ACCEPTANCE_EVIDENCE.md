@@ -2,7 +2,7 @@
 
 本文件把機器驗證與真人驗收分開。`logs/release-candidate-report.json` 顯示 `pass`，只代表下列自動化證據在隔離虛構資料中通過；它不代表實際名單、學校做法、專用電腦、加密離機位置或外部存取決定已獲真人批准。
 
-> **發布界線（2026-07-22）：** live `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 與 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 是現行已部署基線；第一級歷史回退是 `v1.2.0-rc.18`／`fd504a8`。rc20 已以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（290 個來源檔案、839 個 Python、3 個 motion、40 個 Worker 測試），並完成受控 Windows 切換、備份、隔離還原與 canonical smoke。Worker 沒有來源或設定改動，故沿用現行 version；機器與線上證據不能代替真人驗收，後者保持未完成。
+> **發布界線（2026-07-26）：** live `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` 與 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 是現行已部署基線；第一級回退是 `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`。rc21 已以 291-file 指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate，包括完整 Python suite、3 個 motion 及 40 個 Worker contract，並完成受控 Windows 切換、正式備份、隔離還原、Tunnel 服務復原與 canonical 桌面／手機 rendered smoke。Worker 沒有來源或設定改動，故沿用現行 version；機器與線上證據不能代替真人驗收，後者保持未完成。
 
 > **單一裝置矩陣：** rc20 的 source-matched 隔離瀏覽器證據把手機、兩種直向 adaptive tablet、橫向 desktop-shell touch tablet 及 full desktop 視為同一產品矩陣。768×1024、820×1180、1024×768、1440×1024 已一併進入正式報告；這只完成機器量測，不能代替實體裝置或部署後驗收。
 
