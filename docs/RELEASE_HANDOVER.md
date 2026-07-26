@@ -2,7 +2,9 @@
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
-> **目前線上基線是 rc20：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`。290 個發布輸入以指紋 `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a` 通過 14／14 正式 gate（839 Python、3 motion、40 Worker contract）。切換前正式備份 `20260722-122411-304415-manual_verified_backup.sqlite3`、SHA-256 `9f0b9c58ba5e429e24f7a21186349f89120c65de5e31b86f4916f16a08c062e0`、公平對帳、行數核對、還原審計、隔離還原及 additive migration `0011_assist_assignment_mode` 全部通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 因 source／設定未變而刻意沿用（不重新部署）；origin `/healthz` 健康、`/readyz` ready、`writeReady=true`、`policyVersion=2026.07.22-assist-modes`，沒有待處理備份義務。Assist. in charge 支援「固定星期模式」與「每週靈活模式」。第一級回退是 rc18／`fd504a8` 與同一 Worker exact pair。首席導學風紀及教師顧問真人驗收仍未完成。
+> **目前線上基線是 rc21：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.21`／commit `f7df4d0170e6bacd65340cc893992a17b5ed4aed`。291 個發布輸入以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate（完整 Python suite、3 motion、40 Worker contract）。切換前正式備份 `20260726-003841-844011-manual_verified_backup.sqlite3`、SHA-256 `fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777`、公平對帳、行數核對、還原審計及隔離還原全部通過。canonical Worker version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 因 source／設定未變而刻意沿用；origin `/healthz` 健康、`/readyz` ready、`writeReady=true`、`policyVersion=2026.07.22-assist-modes`，沒有待處理備份義務。Windows `cloudflared` 已恢復為 Running／Automatic，canonical public／Guest／Trust routes 的桌面及手機 rendered smoke 通過且無 console／page error。第一級回退是 rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 與同一 Worker exact pair。首席導學風紀及教師顧問真人驗收仍未完成。
+
+> **部署時發現的主機漂移：**切換前 `C:\SingYinRoster` 的 rc20 checkout 有 26 個未提交／未追蹤項目。發布流程沒有把它們混入候選，而是完整保存為 stash commit `56e2f5148f4be1444c45d31c25b81f5a7df1ba03`，再從不可變 rc21 tag 部署；除非先作獨立差異審查，切勿把這份 stash 套回正式主機。
 >
 > **歷史 rc18 受控發布（已由 rc20 取代）：**annotated tag `v1.2.0-rc.18`／commit `fd504a8` 曾是 live origin。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 gate；正式備份 `20260722-024349-422389-manual_verified_backup.sqlite3`、SHA-256 `51ad0e42284c0d42363d2f8fd2bc3dc70ae0ce1f79d258016ec2d66bf6741c7f` 及隔離還原通過。其 host／Worker pair 現為 rc20 第一級回退目標。
 
@@ -205,7 +207,9 @@ python -X utf8 -m nicegui_app.main
 8. 以虛構已發布週表實測同 host `/view#…` 連結的建立、普通瀏覽器直達、到期及撤銷；Guest 不能建立正式 Viewer 連結。
 9. 本機及 WARP 只保留作維護後備。Worker／origin 的 session、principal、Viewer 及 Tunnel secret 值不可出現在版本庫、文件、截圖或交接包。
 
-### rc20 已完成發布紀錄與後續候選次序
+### rc21 已完成發布紀錄與後續候選次序
+
+rc21 的正式部署證據固定為 tag `v1.2.0-rc.21`／commit `f7df4d0170e6bacd65340cc893992a17b5ed4aed`／fingerprint `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1`。正式備份 `20260726-003841-844011-manual_verified_backup.sqlite3` 及其隔離還原已通過；Worker 沒有改動，仍為 `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`。第一級回退是 rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c`，rc18／`fd504a8` 只作第二級已驗證基線。下列 rc20 命令與證據保留作歷史程序參考，不可當作目前版本重跑。
 
 1. 在最後來源 commit 只執行一次 `python -X utf8 scripts\verify_update.py --release`；它已擁有完整 pytest、瀏覽器、Worker、效能、備份失敗及部署就緒閘門，不要再重複跑同一套檢查。
 2. rc20 的正式發布證據固定為 tag `v1.2.0-rc.20`／commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`／fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`；14／14 gate、839 項 Python、3 項 motion 及 40 項 Worker contract 全部通過。受控切換、正式備份、隔離還原及 canonical smoke 已完成；任何來源改動都不能沿用這份證據。
