@@ -1909,8 +1909,7 @@ function setWelcomeRecoveryVisible(visible, destination = '') {
   if (visible) welcomeAudioEnter?.focus({ preventScroll: true });
 }
 
-function navigateAfterWelcomeChoice() {
-  const destination = welcomePendingDestination;
+function navigateAfterWelcomeChoice(destination = welcomePendingDestination) {
   setWelcomeRecoveryVisible(false);
   if (destination) window.location.assign(destination);
 }
@@ -1999,8 +1998,9 @@ function initialiseWelcomeAudio() {
     void playback.then((playing) => { if (playing) navigateAfterWelcomeChoice(); });
   });
   welcomeAudioQuiet?.addEventListener('click', () => {
+    const destination = welcomePendingDestination;
     pauseWelcomeAudio();
-    navigateAfterWelcomeChoice();
+    navigateAfterWelcomeChoice(destination);
   });
   welcomeAudioNext?.addEventListener('click', () => {
     advanceWelcomeTrack({ play: welcomeDesiredEnabled || !welcomeAudio.paused });

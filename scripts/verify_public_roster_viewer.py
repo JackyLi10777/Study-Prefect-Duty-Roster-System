@@ -251,6 +251,22 @@ def _assert_welcome_audio_blocked_recovery(page: Page, *, base_url: str) -> None
         raise RuntimeError("Successful explicit welcome-audio recovery did not close the choice.")
 
 
+def _assert_welcome_audio_quiet_navigation(page: Page, *, base_url: str) -> None:
+    """Prove quiet continuation preserves the intercepted destination."""
+
+    page.goto(base_url, wait_until="networkidle")
+    page.wait_for_function(
+        "() => document.querySelector('#welcomeAudioPlayer')?.dataset.autoplayState === 'blocked'"
+    )
+    page.locator('a[data-entry-role="guest"]:visible').click()
+    recovery = page.locator("#welcomeAudioRecovery")
+    recovery.wait_for(state="visible")
+    page.locator("#welcomeAudioQuiet").click()
+    page.wait_for_url("**/guest", wait_until="domcontentloaded")
+    if page.url.rstrip("/").split("?")[0] != f"{base_url.rstrip('/')}/guest":
+        raise RuntimeError(f"Quiet welcome-audio continuation reached an unexpected URL: {page.url}")
+
+
 def _assert_welcome_audio_allowed(page: Page, *, base_url: str) -> None:
     """Prove the automatic path reports playing only after play() resolves."""
 
@@ -483,6 +499,27 @@ def main() -> int:
             )
             blocked_audio.close()
 
+            quiet_audio = browser.new_context(
+                viewport={"width": 1280, "height": 900},
+                color_scheme="light",
+            )
+            quiet_audio.add_init_script(
+                """(() => {
+                    HTMLMediaElement.prototype.play = function () {
+                        return Promise.reject(new DOMException('fresh profile policy', 'NotAllowedError'));
+                    };
+                })();"""
+            )
+            quiet_page = quiet_audio.new_page()
+            _attach_error_collectors(
+                quiet_page,
+                label="audio-quiet-navigation",
+                console_errors=console_errors,
+                page_errors=page_errors,
+            )
+            _assert_welcome_audio_quiet_navigation(quiet_page, base_url=settings.base_url)
+            quiet_audio.close()
+
             allowed_audio = browser.new_context(
                 viewport={"width": 1280, "height": 900},
                 color_scheme="dark",
@@ -608,7 +645,7 @@ def main() -> int:
         receipt = None
         print(
             "PASS public gateway: browser-only public/viewer support, entrance/read-only share flow, system/light/dark themes, "
-            "manual verse refresh, resolved/blocked welcome-audio paths, one-action recovery, "
+            "manual verse refresh, resolved/blocked welcome-audio paths, one-action recovery, quiet continuation navigation, "
             "48px CTAs, reduced motion, no page overflow, and no browser errors. "
             "Unified Guest behavior is verified separately by "
             "scripts/verify_unified_guest_ui.py."
