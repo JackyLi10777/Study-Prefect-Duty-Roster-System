@@ -459,6 +459,8 @@ def test_welcome_music_attempts_every_visit_and_recovers_after_browser_block() -
     assert "welcomeAudio?.networkState === 2 && welcomeAudio?.readyState < 3" in source
     assert "welcomeAudioEnter?.addEventListener('click'" in source
     assert "const playback = playWelcomeAudio({ revealRecovery: true });" in source
+    assert "navigateAfterWelcomeChoice(destination = welcomePendingDestination)" in source
+    assert "const destination = welcomePendingDestination;\n    pauseWelcomeAudio();\n    navigateAfterWelcomeChoice(destination);" in source
     assert "if (welcomeAudioRecovery) welcomeAudioRecovery.hidden = true;" in source
     assert "setWelcomeRecoveryVisible(false);\n    if (welcomeAudioStatus)" not in source
     assert "document.addEventListener('pointerdown'" not in source
