@@ -22,9 +22,25 @@ _PNPM_PUBLIC_INTEGRITY = re.compile(
     r"^\s*resolution:\s*\{integrity:\s*sha512-[A-Za-z0-9+/]+={0,2}\}\s*$"
 )
 _PUBLIC_AUDIT_DIGEST = re.compile(
-    r'^\s*"(?:commit|head|tree|remoteMain|rc26Commit|rc26Tree|baselineHead)"'
-    r'\s*:\s*"(?:[0-9a-f]{40}|[0-9a-f]{64})"\s*,?\s*$'
+    r'^\s*"(?P<field>[A-Za-z][A-Za-z0-9]*)"\s*:\s*'
+    r'"(?P<digest>[0-9a-f]{40}|[0-9a-f]{64})"\s*,?\s*$'
 )
+_PUBLIC_AUDIT_DIGEST_LOCATIONS = {
+    "docs/audits/CODEBASE_AUDIT_FINDINGS_2026-07-26.json": {
+        ("audit_metadata", "commit"),
+    },
+    "docs/audits/CODEBASE_AUDIT_FINDINGS_2026-07-26_R2.json": {
+        ("audit", "baseline", "head"),
+        ("audit", "baseline", "tree"),
+        ("audit", "baseline", "remoteMain"),
+        ("audit", "baseline", "rc26Commit"),
+        ("audit", "baseline", "rc26Tree"),
+        ("remediation", "baselineHead"),
+    },
+    "docs/audits/CODEBASE_AUDIT_FINDINGS_2026-07-26_R3.json": {
+        ("audit_metadata", "commit"),
+    },
+}
 _CHECK_NAMES = ("dependency_audit", "static_analysis", "secret_scan")
 _SECRET_SCAN_TARGETS = (
     "nicegui_app",
@@ -66,18 +82,47 @@ def _is_public_audit_digest(
     line_number: object,
     root: Path = PROJECT_ROOT,
 ) -> bool:
-    """Recognize named public provenance digests in top-level audit JSON reports."""
+    """Recognize schema-bound public provenance digests in reviewed audit reports."""
 
     normalized = path.replace("\\", "/").lstrip("./")
-    relative_path = Path(normalized)
-    if relative_path.parent.as_posix() != "docs/audits" or relative_path.suffix != ".json":
+    allowed_locations = _PUBLIC_AUDIT_DIGEST_LOCATIONS.get(normalized)
+    if allowed_locations is None:
         return False
+    relative_path = Path(normalized)
     try:
         index = int(line_number) - 1
-        line = (root / relative_path).read_text(encoding="utf-8").splitlines()[index]
-    except (TypeError, ValueError, IndexError, OSError):
+        lines = (root / relative_path).read_text(encoding="utf-8").splitlines()
+        line = lines[index]
+        payload = json.loads("\n".join(lines))
+    except (TypeError, ValueError, IndexError, OSError, json.JSONDecodeError):
         return False
-    return _PUBLIC_AUDIT_DIGEST.fullmatch(line) is not None
+    match = _PUBLIC_AUDIT_DIGEST.fullmatch(line)
+    if match is None:
+        return False
+
+    field = match.group("field")
+    digest = match.group("digest")
+    same_field_count = sum(
+        1
+        for candidate in lines
+        if (candidate_match := _PUBLIC_AUDIT_DIGEST.fullmatch(candidate)) is not None
+        and candidate_match.group("field") == field
+    )
+    if same_field_count != 1:
+        return False
+
+    for location in allowed_locations:
+        if location[-1] != field:
+            continue
+        value: object = payload
+        try:
+            for key in location:
+                value = value[key]  # type: ignore[index]
+        except (KeyError, TypeError):
+            continue
+        if value == digest:
+            return True
+    return False
 
 
 def _render_verified_service_weave_module(payload: bytes) -> str:

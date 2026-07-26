@@ -869,9 +869,23 @@ def test_current_release_history_and_gate_count_are_exact() -> None:
     changelog = (PROJECT_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     operator_guide = (PROJECT_ROOT / "docs" / "OPERATOR_GUIDE.md").read_text(encoding="utf-8")
 
-    assert "## v1.2.0-rc.25" in changelog
-    assert "十四道發布閘門" in operator_guide
-    assert "八道發布閘門" not in operator_guide
+    rc27_entry = changelog.split("## v1.2.0-rc.27 — 2026-07-27", 1)[1].split(
+        "## v1.2.0-rc.26", 1
+    )[0]
+    for release_fact in (
+        "latest earlier active roster",
+        "later independent obligations",
+        "explicit imports and exports",
+        "same-client page-context composition atomic",
+        "Deepseek R3/R4 evidence",
+    ):
+        assert release_fact in rc27_entry
+
+    engineering_section = operator_guide.split("## 11. 工程與品質證據", 1)[1].split(
+        "\n## ", 1
+    )[0]
+    assert "十四道發布閘門" in engineering_section
+    assert "八道發布閘門" not in engineering_section
 
 
 def test_reference_pages_form_two_clear_reading_lanes_without_duplicate_docs_route() -> None:

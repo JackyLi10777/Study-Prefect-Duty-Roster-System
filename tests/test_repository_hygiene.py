@@ -15,10 +15,20 @@ from scripts.check_repository_hygiene import PROJECT_ROOT, audit_repository, is_
 def test_pytest_pythonpath_references_only_existing_directories() -> None:
     configuration = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     configured_paths = configuration["tool"]["pytest"]["ini_options"]["pythonpath"]
+    resolved_root = PROJECT_ROOT.resolve()
 
-    missing = [path for path in configured_paths if not (PROJECT_ROOT / path).is_dir()]
+    invalid: list[str] = []
+    for path in configured_paths:
+        configured_path = Path(path)
+        candidate = (resolved_root / configured_path).resolve()
+        if (
+            configured_path.is_absolute()
+            or not candidate.is_relative_to(resolved_root)
+            or not candidate.is_dir()
+        ):
+            invalid.append(path)
 
-    assert missing == []
+    assert invalid == []
 
 
 def test_workflow_modules_do_not_use_wildcard_imports() -> None:

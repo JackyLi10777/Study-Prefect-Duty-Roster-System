@@ -566,7 +566,7 @@
         "evidence": "Exactly two user-owned non-ignored prior audit reports; zero tracked-sensitive and zero missing-ignore findings."
       },
       {
-        "command": "C:\\Users\\lichu\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe .\\node_modules\\.pnpm\\wrangler@4.110.0\\node_modules\\wrangler\\bin\\wrangler.js deploy --dry-run --strict --config .\\wrangler.jsonc",
+        "command": "<bundled-node>\\node.exe .\\node_modules\\.pnpm\\wrangler@4.110.0\\node_modules\\wrangler\\bin\\wrangler.js deploy --dry-run --strict --config .\\wrangler.jsonc",
         "exitCode": 0,
         "status": "Pass",
         "evidence": "Worker/assets compiled and bindings validated; no upload or deploy."
