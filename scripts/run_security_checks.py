@@ -21,6 +21,10 @@ _SERVICE_WEAVE_GENERATED_RELATIVE_PATH = (
 _PNPM_PUBLIC_INTEGRITY = re.compile(
     r"^\s*resolution:\s*\{integrity:\s*sha512-[A-Za-z0-9+/]+={0,2}\}\s*$"
 )
+_PUBLIC_AUDIT_DIGEST = re.compile(
+    r'^\s*"(?:commit|head|tree|remoteMain|rc26Commit|rc26Tree|baselineHead)"'
+    r'\s*:\s*"(?:[0-9a-f]{40}|[0-9a-f]{64})"\s*,?\s*$'
+)
 _CHECK_NAMES = ("dependency_audit", "static_analysis", "secret_scan")
 _SECRET_SCAN_TARGETS = (
     "nicegui_app",
@@ -55,6 +59,25 @@ def _is_public_pnpm_integrity(path: str, line_number: object) -> bool:
     except (TypeError, ValueError, IndexError, OSError):
         return False
     return _PNPM_PUBLIC_INTEGRITY.fullmatch(line) is not None
+
+
+def _is_public_audit_digest(
+    path: str,
+    line_number: object,
+    root: Path = PROJECT_ROOT,
+) -> bool:
+    """Recognize named public provenance digests in top-level audit JSON reports."""
+
+    normalized = path.replace("\\", "/").lstrip("./")
+    relative_path = Path(normalized)
+    if relative_path.parent.as_posix() != "docs/audits" or relative_path.suffix != ".json":
+        return False
+    try:
+        index = int(line_number) - 1
+        line = (root / relative_path).read_text(encoding="utf-8").splitlines()[index]
+    except (TypeError, ValueError, IndexError, OSError):
+        return False
+    return _PUBLIC_AUDIT_DIGEST.fullmatch(line) is not None
 
 
 def _render_verified_service_weave_module(payload: bytes) -> str:
@@ -211,6 +234,7 @@ def main() -> int:
                     for item in items
                     if not (
                         _is_public_pnpm_integrity(path, item.get("line_number"))
+                        or _is_public_audit_digest(path, item.get("line_number"))
                         or (
                             path.replace("\\", "/").lstrip("./")
                             == _SERVICE_WEAVE_GENERATED_RELATIVE_PATH

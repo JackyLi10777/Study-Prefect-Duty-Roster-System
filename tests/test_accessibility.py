@@ -337,7 +337,7 @@ def test_every_backup_sensitive_ui_write_uses_the_nonblocking_progress_boundary(
     pages = combined_page_source()
 
     assert "def _safe_action" not in pages
-    assert pages.count("_safe_read_action(") == 3  # helper plus two candidate-list reads
+    assert pages.count("_safe_read_action(") == 5  # helper plus four bounded UI reads
     for working_key in (
         "progress_leave_working",
         "progress_leave_cancel_working",

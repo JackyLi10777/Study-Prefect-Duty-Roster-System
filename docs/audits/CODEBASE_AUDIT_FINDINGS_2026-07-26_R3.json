@@ -1,0 +1,217 @@
+{
+  "audit_metadata": {
+    "round": 3,
+    "date": "2026-07-26",
+    "commit": "8d709f9b0b4e69fe38f7237ef2f473c27ff848fc",
+    "branch": "codex/rc24-deployment-truth",
+    "focus": "API hallucination, code quality, architecture, performance — beyond R1/R2 coverage",
+    "finder_count": 47
+  },
+  "findings": [
+    {
+      "id": "R3-001",
+      "priority": "P0",
+      "category": "API / Version",
+      "confidence": "Confirmed",
+      "file": "requirements.txt",
+      "line": 2,
+      "evidence": "Requires fastapi>=0.139,<0.140 but pip shows fastapi 0.138.0 installed",
+      "impact": "pip install -r requirements.txt would reject the installed version or force upgrade. Inconsistent lock.",
+      "recommendation": "Align requirements.txt to >=0.138,<0.139 OR upgrade to 0.139"
+    },
+    {
+      "id": "R3-002",
+      "priority": "P0",
+      "category": "API / Wrangler Config",
+      "confidence": "Probable",
+      "file": "cloudflare/roster_viewer/wrangler.jsonc",
+      "line": 61,
+      "evidence": "vpc_services key does not appear in Wrangler 4.x official config schema. The documented key is services with service binding syntax.",
+      "impact": "The VPC binding may be silently ignored. If never validated with --dry-run --strict, the Worker deploys without origin connectivity.",
+      "recommendation": "Verify with: npx wrangler versions upload --dry-run --strict. Rename to services if needed."
+    },
+    {
+      "id": "R3-003",
+      "priority": "P0",
+      "category": "API / Wrangler Config",
+      "confidence": "Probable",
+      "file": "cloudflare/roster_viewer/wrangler.jsonc",
+      "line": 37,
+      "evidence": "ratelimits key not in Wrangler 4.x top-level config schema. Rate limits are typically Cloudflare Dashboard or API-managed.",
+      "impact": "Rate limiting may be silently non-functional. GUEST_START_RATE_LIMITER and PUBLIC_VIEW_RATE_LIMITER bindings may never be created.",
+      "recommendation": "Verify with wrangler deploy --dry-run. If unsupported, configure via Cloudflare Dashboard WAF rules."
+    },
+    {
+      "id": "R3-004",
+      "priority": "P1",
+      "category": "Quality / Control Flow",
+      "confidence": "Confirmed",
+      "file": "nicegui_app/services/guest_adapter.py",
+      "line": 329,
+      "evidence": "self._context.require(Capability.DATA_IMPORT); raise AssertionError('guest data import capability must remain denied')",
+      "impact": "AssertionError can be stripped with python -O. Should use WorkflowError or CapabilityDeniedError for production safety.",
+      "recommendation": "Replace with raise WorkflowError(...) or raise CapabilityDeniedError(...)"
+    },
+    {
+      "id": "R3-005",
+      "priority": "P1",
+      "category": "Quality / No-op Code",
+      "confidence": "Confirmed",
+      "file": "nicegui_app/services/workflow_parts/persistence.py",
+      "line": 226,
+      "evidence": "except Exception: raise — bare catch-and-re-raise. repaired += 1 at line 229 is unreachable after any exception.",
+      "impact": "repair_pending_backup_obligations loops through command_ids but the first failure aborts the entire loop. repaired += 1 never increments after failure. Either dead debugging code or intended skip-but-continue.",
+      "recommendation": "If intentional fail-fast: remove try/except. If skip-bad: change to except Exception: continue."
+    },
+    {
+      "id": "R3-006",
+      "priority": "P1",
+      "category": "Architecture / Race Condition",
+      "confidence": "Confirmed",
+      "file": "nicegui_app/runtime.py",
+      "line": 562,
+      "evidence": "Cache read at line 562-565 (outside lock), then new-context computation, then write at line 602 (inside lock). Two concurrent loads from same client_id both miss cache, both compute, second write silently replaces first.",
+      "impact": "Double principal extraction per client; minor resource waste. No data corruption — duplicate context computation is idempotent.",
+      "recommendation": "Move cache read inside the lock or use dict.setdefault pattern."
+    },
+    {
+      "id": "R3-007",
+      "priority": "P1",
+      "category": "Performance / DB Query",
+      "confidence": "Confirmed",
+      "file": "nicegui_app/services/workflow_parts/persistence.py",
+      "line": 364,
+      "evidence": "_availability_by_prefect() loads ALL PrefectAvailabilityRecord rows — called 3-4 times within a single generate_and_save_draft(). No per-session caching.",
+      "impact": "Full availability table scan repeated unnecessarily within same operation. For 50 prefects × 5 days = 250 rows, negligible. But called redundantly.",
+      "recommendation": "Cache result per-session via functools.lru_cache or pass preloaded dict between methods."
+    },
+    {
+      "id": "R3-008",
+      "priority": "P2",
+      "category": "Performance / Frontend",
+      "confidence": "Confirmed",
+      "file": "nicegui_app/ui/theme_markup.py",
+      "line": 11,
+      "evidence": "10 CSS <link> tags + 1 font preload + 3-4 JS scripts = 16 HTTP requests per page cold load. No bundling.",
+      "impact": "Noticeable on slow connections. 10 CSS files force 10 separate style recalculations.",
+      "recommendation": "Bundle CSS into 2 files (tokens+theme, components+narrative) at build time. Concatenate motion JS."
+    },
+    {
+      "id": "R3-009",
+      "priority": "P2",
+      "category": "Quality / Duplication",
+      "confidence": "Confirmed",
+      "file": "nicegui_app/services/guest_adapter.py",
+      "line": 73,
+      "evidence": "_assist_assignment_mode_code, _distribution, _duty_minutes, _validate_prefect_input, _assert_name_available, _require_monday, _form_rank — 7 functions duplicated identically between guest_adapter.py and workflow_parts/*.py (~200 LOC)",
+      "impact": "Any change to validation rules must be made in 2 places. Admin and Guest can diverge.",
+      "recommendation": "Extract to services/_shared_validation.py. Import from single source."
+    },
+    {
+      "id": "R3-010",
+      "priority": "P2",
+      "category": "Quality / Missing Comment",
+      "confidence": "Confirmed",
+      "file": "packages/roster_core/roster_core/generator.py",
+      "line": 358,
+      "evidence": "candidate_state[:2] < current[:2] — compares only first 2 elements of 4-element score tuple. Deliberate exclusion of rotation_rank from state comparison. No comment explaining why.",
+      "impact": "Maintainer could 'fix' to full tuple comparison and break algorithm's stability guarantee.",
+      "recommendation": "Comment: Compare only [:2] so rotation-rank acts as tiebreaker for equal-path candidates only."
+    },
+    {
+      "id": "R3-011",
+      "priority": "P2",
+      "category": "Quality / Function Size",
+      "confidence": "Confirmed",
+      "file": "nicegui_app/ui/page_routes/people.py",
+      "line": 329,
+      "evidence": "_render_period_report is 170 lines with 4 inner function definitions, 10+ UI sections. Violates SRP.",
+      "impact": "Hard to test in isolation. Control flow spread across inner functions.",
+      "recommendation": "Split into _render_report_metrics(), _render_trend_chart(), _render_participation_table(), _render_allocation_statement()."
+    },
+    {
+      "id": "R3-012",
+      "priority": "P2",
+      "category": "Quality / Fragile Parsing",
+      "confidence": "Confirmed",
+      "file": "nicegui_app/ui/page_shared.py",
+      "line": 737,
+      "evidence": "Parses action_props string: next(token.split('=',1)[1].strip('\"\\'') for token in action_props.split() if token.startswith('data-testid=')) — mini-parser for CSS-like strings.",
+      "impact": "Fragile string matching. Future values with internal = would silently return None.",
+      "recommendation": "Pass action_test_id as explicit parameter to all 3 callers instead of parsing strings."
+    },
+    {
+      "id": "R3-013",
+      "priority": "P2",
+      "category": "Architecture / Hub Anti-pattern",
+      "confidence": "Confirmed",
+      "file": "nicegui_app/services/workflow_dependencies.py",
+      "line": 1,
+      "evidence": "Imports from ALL layers simultaneously (persistence.models, maintenance, operation_context, workflow_types, roster_core.generator, roster_policy) and re-exports via __all__ globals() dump.",
+      "impact": "Every mixin transitively depends on everything. No clear ownership boundaries.",
+      "recommendation": "Remove star-import pattern; each mixin imports only what it uses."
+    },
+    {
+      "id": "R3-014",
+      "priority": "P3",
+      "category": "API / Docs",
+      "confidence": "Confirmed",
+      "file": ".env.example",
+      "line": 1,
+      "evidence": "SING_YIN_CLOUDFLARE_PRIVATE_WARP, SING_YIN_CLOUDFLARE_PRIVATE_HOSTNAME, SING_YIN_APP_MODE, SING_YIN_DATABASE_PATH, SING_YIN_BACKUP_DIR, SING_YIN_PUBLIC_URL, SING_YIN_SLOW_REQUEST_MS — all referenced in code but absent from .env.example.",
+      "impact": "Operator cannot discover the private WARP deployment mode or database override variables from the documented example.",
+      "recommendation": "Add all code-referenced SING_YIN_* environment variables to .env.example with documentation."
+    },
+    {
+      "id": "R3-015",
+      "priority": "P3",
+      "category": "Quality / Typos",
+      "confidence": "Confirmed",
+      "file": "nicegui_app/ui/page_shared.py",
+      "line": 127,
+      "evidence": "_safe_read_action wraps synchronous callable but name suggests async context. The _safe prefix conflicts with _run_with_progress pattern (which is async).",
+      "impact": "Confusion about whether this function is async-safe. It's purely synchronous with exception handling.",
+      "recommendation": "Rename to _guarded_ui_read or _safe_sync_action."
+    },
+    {
+      "id": "R3-016",
+      "priority": "P3",
+      "category": "Performance / Memory",
+      "confidence": "Confirmed",
+      "file": "nicegui_app/runtime.py",
+      "line": 45,
+      "evidence": "_page_contexts dict grows unbounded — only cleaned on on_disconnect. No TTL, no periodic sweep. Network drops leak entries.",
+      "impact": "Low at school scale. Memory accumulation negligible for ~10 concurrent users.",
+      "recommendation": "Add periodic TTL-based sweep or use weakref.WeakValueDictionary."
+    },
+    {
+      "id": "R3-017",
+      "priority": "P3",
+      "category": "Quality / Lambda Capture",
+      "confidence": "Confirmed",
+      "file": "nicegui_app/ui/page_routes/people.py",
+      "line": 661,
+      "evidence": "Loop: on_click=lambda selected=kind: download_report(selected) — relies on default-arg value capture. Works correctly but fragile.",
+      "impact": "Removing selected=kind default would create classic late-binding bug where all buttons download same format.",
+      "recommendation": "Use functools.partial or a factory function to make bind-time capture explicit."
+    }
+  ],
+  "residual_risks": [
+    "wrangler.jsonc vpc_services and ratelimits not validated with --dry-run --strict (Node.js unavailable)",
+    "CSP unsafe-inline + unsafe-eval is a NiceGUI 3.13 framework constraint (not fixable in this codebase)",
+    "GSAP and motion JS loaded on every page — conditional loading deferred to optimization phase",
+    "No multi-user concurrency stress tests exercised"
+  ],
+  "existing_strengths_confirmed": [
+    "Dependency direction clean: packages → services → ui (no upward violations)",
+    "Guest isolation watertight — zero real-data exposure risk",
+    "No async blocking calls in request paths",
+    "No time.sleep() in hot paths",
+    "No ui.refreshable() abuse found",
+    "Capability system consistently enforced at all boundaries",
+    "access_context.py has zero NiceGUI/persistence imports",
+    "NiceGUI 3.13.0 API fully verified — all imports confirmed present",
+    "DeepSeek model deepseek-v4-flash confirmed in official pricing docs",
+    "Worker JS Deno.test usage verified valid"
+  ]
+}

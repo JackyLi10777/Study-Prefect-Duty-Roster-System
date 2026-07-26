@@ -4,6 +4,7 @@ from pathlib import Path
 
 from scripts.run_security_checks import (
     _SECRET_SCAN_TARGETS,
+    _is_public_audit_digest,
     _is_public_pnpm_integrity,
     _service_weave_delivery_is_current,
 )
@@ -102,6 +103,27 @@ def test_secret_scan_ignores_only_standard_public_pnpm_integrity_lines() -> None
     assert _is_public_pnpm_integrity("cloudflare\\roster_viewer\\pnpm-lock.yaml", integrity_line)
     assert not _is_public_pnpm_integrity("cloudflare/roster_viewer/worker.js", integrity_line)
     assert not _is_public_pnpm_integrity("cloudflare/roster_viewer/pnpm-lock.yaml", 1)
+
+
+def test_secret_scan_ignores_only_named_public_audit_digests(tmp_path: Path) -> None:
+    audit = tmp_path / "docs" / "audits" / "provenance.json"
+    audit.parent.mkdir(parents=True)
+    audit.write_text(
+        "{\n"
+        f'  "commit": "{"a" * 40}",\n'
+        f'  "tree": "{"b" * 40}",\n'
+        f'  "sourceFingerprint": "{"c" * 64}",\n'
+        f'  "token": "{"d" * 40}"\n'
+        "}\n",
+        encoding="utf-8",
+    )
+
+    assert _is_public_audit_digest("docs\\audits\\provenance.json", 2, tmp_path)
+    assert _is_public_audit_digest("docs/audits/provenance.json", 3, tmp_path)
+    assert not _is_public_audit_digest("docs/audits/provenance.json", 4, tmp_path)
+    assert not _is_public_audit_digest("docs/audits/provenance.json", 5, tmp_path)
+    assert not _is_public_audit_digest("docs/provenance.json", 2, tmp_path)
+    assert not _is_public_audit_digest("docs/audits/provenance.md", 2, tmp_path)
 
 
 def test_secret_scan_excludes_only_the_exact_manifest_generated_brand_payload(

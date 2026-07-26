@@ -545,25 +545,7 @@ def _cleanup_client_context(client_id: str) -> None:
             _guest_adapters.pop((session_id, workspace_id), None)
 
 
-def current_page_context() -> PageContext:
-    """Return the verified context for the active NiceGUI page or callback."""
-
-    client = _current_client()
-    try:
-        request = client.request if client is not None else None
-    except RuntimeError:
-        # NiceGUI exposes an auto-index client while tests and startup code run
-        # outside an actual browser request. Treat that composition edge as the
-        # local console rather than caching context on the synthetic client.
-        client = None
-        request = None
-    client_id = str(getattr(client, "id", "")) if client is not None else ""
-    if client_id:
-        cached = _page_contexts.get(client_id)
-        if cached is not None:
-            _cached_context_is_active(cached)
-            return cached
-
+def _compose_page_context(request: Any, client_id: str) -> PageContext:
     principal = principal_from_request(request)
     require_runtime_principal_active(principal)
     workspace = None
@@ -598,14 +580,37 @@ def current_page_context() -> PageContext:
         request_reference=current_request_reference(),
         metadata=metadata,
     )
-    if client_id:
-        with _runtime_lock:
-            _page_contexts[client_id] = context
-            if client_id not in _disconnect_registered:
-                client.on_connect(lambda: _bind_guest_client(client_id, client))
-                client.on_disconnect(lambda: _cleanup_client_context(client_id))
-                _disconnect_registered.add(client_id)
     return context
+
+
+def current_page_context() -> PageContext:
+    """Return the verified context for the active NiceGUI page or callback."""
+
+    client = _current_client()
+    try:
+        request = client.request if client is not None else None
+    except RuntimeError:
+        # NiceGUI exposes an auto-index client while tests and startup code run
+        # outside an actual browser request. Treat that composition edge as the
+        # local console rather than caching context on the synthetic client.
+        client = None
+        request = None
+    client_id = str(getattr(client, "id", "")) if client is not None else ""
+    if not client_id:
+        return _compose_page_context(request, "")
+
+    with _runtime_lock:
+        cached = _page_contexts.get(client_id)
+        if cached is not None:
+            _cached_context_is_active(cached)
+            return cached
+        context = _compose_page_context(request, client_id)
+        _page_contexts[client_id] = context
+        if client_id not in _disconnect_registered:
+            client.on_connect(lambda: _bind_guest_client(client_id, client))
+            client.on_disconnect(lambda: _cleanup_client_context(client_id))
+            _disconnect_registered.add(client_id)
+        return context
 
 
 def get_workflow() -> Any:

@@ -223,4 +223,27 @@ class PrefectInput:
 ROLE_CODES = frozenset(role.value for role in PrefectRole)
 
 
-__all__ = [name for name in globals() if not name.startswith("_")]
+__all__ = [
+    "ASSIST_ASSIGNMENT_MODE_CODES",
+    "BackupResult",
+    "CommittedWriteBackupError",
+    "DraftAssignmentUpdateResult",
+    "DutyAllocationEntry",
+    "FLEXIBLE_WEEKLY",
+    "FairnessDiscrepancy",
+    "FairnessReconciliationReport",
+    "FairnessTrendPoint",
+    "HandoverBackupPackage",
+    "LEGACY_FIXED_WEEKDAY",
+    "LeaveAdjustmentResult",
+    "PeriodSummaryReport",
+    "PrefectInput",
+    "PrefectPeriodContribution",
+    "ROLE_CODES",
+    "ReportRosterSource",
+    "RosterWeekResult",
+    "RosterWithdrawalResult",
+    "WorkflowConflictError",
+    "WorkflowError",
+    "WorkflowMaintenanceError",
+]

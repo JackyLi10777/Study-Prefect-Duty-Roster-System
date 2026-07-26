@@ -326,7 +326,7 @@ class GuestWorkspaceAdapter:
 
         del prefect_inputs
         self._context.require(Capability.DATA_IMPORT)
-        raise AssertionError("guest data import capability must remain denied")
+        raise WorkflowError("Guest data import remains disabled in the browser-only workspace.")
 
     def declare_leave(
         self,
@@ -1435,9 +1435,15 @@ class GuestWorkspaceAdapter:
         state: Mapping[str, Any],
         week_start: date,
     ) -> dict[SchoolDay, str]:
-        previous_week = GuestWorkspaceAdapter._week_by_start(
-            state,
-            week_start - timedelta(days=7),
+        previous_week = max(
+            (
+                row
+                for row in state.get("weeks", [])
+                if str(row.get("status")) in {"draft", "published"}
+                and str(row.get("weekStart", "")) < week_start.isoformat()
+            ),
+            key=lambda row: str(row["weekStart"]),
+            default=None,
         )
         if previous_week is None:
             return {}

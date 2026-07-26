@@ -43,6 +43,7 @@ from roster_policy import ROOM_OPENING_TIME_WINDOWS, DutyPost
 
 _OPERATION_FAILED = object()
 _OperationResult = TypeVar("_OperationResult")
+_ReadResult = TypeVar("_ReadResult")
 _DIALOG_DISMISSAL_SECONDS = 0.35
 
 
@@ -124,19 +125,24 @@ def _next_monday() -> date:
     return today + timedelta(days=(-today.weekday()) % 7)
 
 
-def _safe_read_action(action: Callable[[], None], *, action_name: str = "ui_read_action") -> None:
+def _safe_read_action(
+    action: Callable[[], _ReadResult],
+    *,
+    action_name: str = "ui_read_action",
+) -> _ReadResult | None:
     """Run a short read-only UI action with a support reference on failure."""
     reference = new_operation_reference()
     started_at = perf_counter()
     record_operator_event(action=action_name, outcome="started", reference=reference)
     try:
-        action()
+        result = action()
     except Exception as error:
         record_operator_failure(error, action=action_name, reference=reference, started_at=started_at)
         emit_interface_feedback("error")
         ui.notify(_operation_error_message(reference), type="negative", timeout=8_000)
     else:
         record_operator_event(action=action_name, outcome="completed", reference=reference, started_at=started_at)
+        return result
 
 
 async def _run_with_progress(
@@ -727,6 +733,7 @@ def _render_empty_state(
     action_key: str | None = None,
     action=None,  # type: ignore[no-untyped-def]
     action_props: str = "outline color=primary",
+    action_test_id: str | None = None,
     illustrated: bool = False,
 ) -> None:
     """Compatibility wrapper for the public empty-state component.
@@ -734,14 +741,6 @@ def _render_empty_state(
     The legacy ``action_props`` argument is translated deliberately so existing
     browser selectors and destructive-action semantics survive the migration.
     """
-    action_test_id = next(
-        (
-            token.split("=", 1)[1].strip('"\'')
-            for token in action_props.split()
-            if token.startswith("data-testid=")
-        ),
-        None,
-    )
     if "color=negative" in action_props:
         action_variant = "danger"
     elif "color=warning" in action_props or "color=attention" in action_props:

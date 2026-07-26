@@ -2,7 +2,50 @@
 
 from __future__ import annotations
 
-from nicegui_app.services.workflow_dependencies import *
+from nicegui_app.services.workflow_dependencies import (
+    Assignment,
+    AuditEventRecord,
+    BackupObligationRecord,
+    DutyPost,
+    FairnessDiscrepancy,
+    FairnessLedgerRecord,
+    FairnessReconciliationReport,
+    Iterable,
+    LeaveDeclarationRecord,
+    MaintenanceModeError,
+    OperationCommandRecord,
+    Path,
+    Prefect,
+    PrefectAvailabilityRecord,
+    PrefectInput,
+    PrefectRecord,
+    PrefectRole,
+    ROLE_CODES,
+    RosterAssignmentRecord,
+    RosterWeekRecord,
+    SchoolDay,
+    Session,
+    WorkflowConflictError,
+    WorkflowError,
+    WorkflowMaintenanceError,
+    can_assign_role,
+    contextmanager,
+    current_operation_actor,
+    date,
+    datetime,
+    defaultdict,
+    delete,
+    func,
+    hashlib,
+    is_chinese_display_name,
+    json,
+    parse_prefect_role,
+    select,
+    timezone,
+    uuid4,
+    validate_assignments,
+)
+
 
 class PersistenceWorkflowMixin:
     def _seed_prefects(self, session: Session) -> None:
@@ -210,7 +253,7 @@ class PersistenceWorkflowMixin:
             )
 
     def repair_pending_backup_obligations(self) -> int:
-        """Repair every committed-but-unverified write before enabling service."""
+        """Attempt every pending repair, then fail closed if any repair failed."""
 
         with self._session() as session:
             command_ids = list(
@@ -221,12 +264,17 @@ class PersistenceWorkflowMixin:
                 ).all()
             )
         repaired = 0
+        first_error: Exception | None = None
         for command_id in command_ids:
             try:
                 self._fulfill_backup_obligation(str(command_id))
-            except Exception:
-                raise
-            repaired += 1
+            except Exception as error:
+                if first_error is None:
+                    first_error = error
+            else:
+                repaired += 1
+        if first_error is not None:
+            raise first_error
         return repaired
 
     def _assert_name_available(self, session: Session, name_zh: str, *, exclude_prefect_id: str | None = None) -> None:

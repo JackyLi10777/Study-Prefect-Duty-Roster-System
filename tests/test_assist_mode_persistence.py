@@ -27,6 +27,7 @@ from nicegui_app.services.roster_workflow import (
 
 WEEK_START = date(2026, 9, 7)
 SECOND_WEEK = date(2026, 9, 14)
+THIRD_WEEK = date(2026, 9, 21)
 
 
 def _alembic_config(database_path: Path) -> Config:
@@ -191,7 +192,7 @@ def test_mode_is_part_of_command_identity_and_default_is_legacy(tmp_path: Path) 
     assert {row["weekStart"] for row in workflow.roster_weeks()} == {WEEK_START}
 
 
-def test_formal_workflow_passes_previous_week_assist_owners_to_core(
+def test_formal_workflow_passes_latest_active_week_assist_owners_across_gap(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -223,10 +224,10 @@ def test_formal_workflow_passes_previous_week_assist_owners_to_core(
         if row["postCode"] == "ASSIST_IN_CHARGE" and row["status"] == "active"
     }
     workflow.generate_and_save_draft(
-        SECOND_WEEK,
+        THIRD_WEEK,
         assist_assignment_mode="flexible_weekly",
         expected_week_version=0,
-        command_id="formal-previous-assist-second",
+        command_id="formal-previous-assist-after-gap",
     )
 
     assert observed == [{}, expected_previous]
@@ -288,7 +289,7 @@ def test_legacy_leave_substitute_never_becomes_a_persisted_fixed_owner(tmp_path:
     assert str(restored_monday["prefectId"]) == absent_id
 
 
-def test_guest_mode_is_session_only_and_passes_the_week_rotation_key(monkeypatch) -> None:
+def test_guest_mode_is_session_only_and_uses_latest_active_week_across_gap(monkeypatch) -> None:
     secret = b"assist-mode-guest-secret-is-at-least-32-bytes"
     registry = GuestWorkspaceRegistry(secret)
     context = PageContext.create(
@@ -334,13 +335,13 @@ def test_guest_mode_is_session_only_and_passes_the_week_rotation_key(monkeypatch
         if row["postCode"] == "ASSIST_IN_CHARGE" and row["status"] == "active"
     }
     flexible = adapter.generate_and_save_draft(
-        SECOND_WEEK,
+        THIRD_WEEK,
         assist_assignment_mode="flexible_weekly",
     )
 
     assert observed == [
         ("legacy_fixed_weekday", WEEK_START.isoformat(), {}),
-        ("flexible_weekly", SECOND_WEEK.isoformat(), expected_previous),
+        ("flexible_weekly", THIRD_WEEK.isoformat(), expected_previous),
     ]
     assert legacy.assist_assignment_mode == "legacy_fixed_weekday"
     assert flexible.assist_assignment_mode == "flexible_weekly"
