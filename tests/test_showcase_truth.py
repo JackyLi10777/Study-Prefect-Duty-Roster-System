@@ -81,6 +81,7 @@ def test_developer_reference_exposes_real_health_release_and_extension_boundarie
 def test_showcase_limits_template_kickers_and_avoids_fictional_offices() -> None:
     source = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_routes" / "showcase.py").read_text(encoding="utf-8")
     messages = (PROJECT_ROOT / "nicegui_app" / "ui" / "i18n_catalog" / "platform.py").read_text(encoding="utf-8")
+    browser_verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
 
     assert "show_kicker: bool = False" in source
     assert source.count("show_kicker=True") <= 3
@@ -97,3 +98,7 @@ def test_showcase_limits_template_kickers_and_avoids_fictional_offices() -> None
         "enterprise-style capabilities",
     ):
         assert inflated_label not in messages
+        assert inflated_label not in browser_verifier
+
+    assert 'page.locator("#platform-team-section").wait_for' in browser_verifier
+    assert 'page.get_by_test_id("team-operating-model").wait_for' in browser_verifier
