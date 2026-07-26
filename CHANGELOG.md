@@ -9,6 +9,7 @@ This file records user-visible, operational and release-significant changes. Exa
 - Replaced the workflow wildcard dependency surface with explicit imports and exports, and removed the retired `backend` pytest path.
 - Made same-client page-context composition atomic, retained an explicit Guest import denial, and surfaced weekly preview read failures through the existing bilingual support-reference boundary.
 - Reconciled R2 findings with Deepseek R3/R4 evidence, documented operator-facing environment overrides, and corrected rc25/rc26 history and the 14-gate operator guide.
+- Deployed the immutable rc27 origin after 14／14 source-matched gates, a verified backup and isolated restore; the unchanged rc24 Worker remains canonical and rc26 is the first-level origin rollback.
 
 ## v1.2.0-rc.26 — 2026-07-26
 

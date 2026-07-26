@@ -1,6 +1,6 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
-> **文件狀態（live rc26）：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.26`／commit `248955cb3300bfbe092b05036632991524d824cd`；296 個 runtime 來源檔案以指紋 `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7` 通過 14／14 正式 gate 並完成受控切換。canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 因 source／設定未變而繼續承接正式流量；第一級回退是 `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`。Admin、Guest 與公開 Viewer 使用同一身份邊界；Public `/support` 保持瀏覽器暫存，已驗證 Admin／Guest `/support` 由 Worker 代理到同一 NiceGUI 工作台，沒有擴大 Guest 能力、資料保存位置或正式 SQLite 存取。
+> **文件狀態（live rc27）：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.27`／commit `c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；296 個 runtime 來源檔案以指紋 `71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c` 通過 14／14 正式 gate 並完成受控切換。canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 因 rc24 至 rc27 的 source／設定未變而繼續承接正式流量；第一級 origin 回退是 `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`。Admin、Guest 與公開 Viewer 使用同一身份邊界；本次 deployment report 證實 origin ready 且無 maintenance、recovery 或 pending backup obligation，真人身份與工作流驗收仍保持獨立未完成。
 
 ## 1. 目的
 

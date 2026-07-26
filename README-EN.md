@@ -1,6 +1,6 @@
 # Sing Yin Study Prefect Duty Roster System
 
-> **Release note (live, 2026-07-26):** the controlled Windows origin runs annotated tag `v1.2.0-rc.26` at commit `248955cb3300bfbe092b05036632991524d824cd`; canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` serves 100% of traffic. The 296-file runtime fingerprint `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7` passed all 14 formal gates, the verified pre-switch backup and isolated restore passed, and the canonical entrance and Guest Platform route confirmed the real `Study Prefect Team／導學風紀組` identity, complete language switching, and no console or page errors. Worker source and configuration did not change from rc24 to rc26, so the verified Worker was deliberately retained. Supervised Head Study Prefect and teacher-advisor acceptance remains outstanding.
+> **Release note (live, 2026-07-27):** the controlled Windows origin runs annotated tag `v1.2.0-rc.27` at commit `c4c728aa41c9b0122aaa2c015b3cc38e246db43d`; canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` serves 100% of traffic. The 296-file runtime fingerprint `71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c` passed all 14 formal gates, and verified backup `20260726-202210-704981-manual_verified_backup.sqlite3` with SHA-256 `a700a033159f0a940710d2c48b2fd1e5de869877e21b6c5e592605c613eb16f1` passed isolated restore, fairness, row-count, and restore-audit checks. Origin health/readiness and canonical root/health checks passed. Worker source and configuration did not change from rc24 to rc27, so the verified Worker was deliberately retained. rc26 is the first-level origin rollback; supervised Head Study Prefect and teacher-advisor acceptance remains outstanding.
 
 > **Not to be served, but to serve. — Mark 10:45**
 
@@ -90,22 +90,21 @@ These are not four separate sites. They are four reading and operating contexts 
 
 Admin is the canonical operational product. Guest uses the same routes, navigation, components, and roster experience, while the server switches it to a fictional temporary workspace and denies permanent writes, uploads, AI, backups, shares, and costly external work below the UI. The routine sidebar follows real work; platform story, engineering evidence, and architecture sit in a distinct **Trust & Documentation** portal so institutional narrative never interrupts the weekly roster flow. See [Product research and information-architecture decisions](docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md) for the source review, adopted principles, adaptations, and rejected alternatives.
 
-**Current formal baseline:** `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`
+**Current formal baseline:** `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`
 is live at `C:\SingYinRoster`. `/healthz` is healthy and `/readyz` is ready with
 `writeReady=true` and `policyVersion=2026.07.22-assist-modes`. The controlled
-switch created `20260726-134020-201449-manual_verified_backup.sqlite3` and passed
+switch created `20260726-202210-704981-manual_verified_backup.sqlite3` and passed
 its SHA-256 checksum, database integrity, fairness reconciliation, row matching,
 restore audit, and isolated restore. Its SHA-256 is
-`51d116b4cb4a4ab5c6b713f9070b441c73e30eb6b7a75aaa105a53aaad582117`. Source
-fingerprint `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`
+`a700a033159f0a940710d2c48b2fd1e5de869877e21b6c5e592605c613eb16f1`. Source
+fingerprint `71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c`
 passed all 14／14 formal gates (the complete Python suite, 3 motion contracts,
 and 41 Worker contracts).
 Worker version `76a23134-8355-4e25-bbba-abf17c6918c5` was intentionally retained
-because Worker source／settings did not change between rc24 and rc26. The canonical
-entrance and Guest Platform route passed rendered smoke with the real team identity,
-complete language switching, and no console or page errors. The first-level rollback
-is rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`; rc21／
-`f7df4d0170e6bacd65340cc893992a17b5ed4aed` remains the secondary verified baseline.
+because Worker source／settings did not change between rc24 and rc27. Canonical root
+and capability health returned 200. The first-level origin rollback is rc26／
+`248955cb3300bfbe092b05036632991524d824cd`; rc24／
+`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` remains the secondary verified baseline.
 Supervised Head Study Prefect and teacher-advisor
 acceptance remains open.
 
@@ -120,19 +119,19 @@ release tag cannot be updated or deleted. See the complete
 data classes, incident response, and residual limits.
 
 The retained **v1.1 rollback** record is historical recovery evidence only; it
-does not replace the current rc26 baseline.
+does not replace the current rc27 baseline.
 
 The public entrance, shared-roster viewer, and NiceGUI workbench use the same
 `Copyright © 2026 LI Chuangjie` page-footer attribution. Clean group-sharing
 roster PDFs retain their explicit supplementary-footer export option.
 
-Non-interactive editorial cards gain a quiet fine-pointer ambient follow-light and focus-within halo without lift or cursor change; action cards keep the existing lift + glow. The live rc26 product includes Assist fixed-weekday／flexible-weekly modes plus the versioned Service Weave `ProductIdentity`,
+Non-interactive editorial cards gain a quiet fine-pointer ambient follow-light and focus-within halo without lift or cursor change; action cards keep the existing lift + glow. The live rc27 product includes Assist fixed-weekday／flexible-weekly modes plus the versioned Service Weave `ProductIdentity`,
 central `PageDefinition` catalogue, public NiceGUI component API, explicit CSS
 ownership, filterable Engineering evidence index, internal Developer Reference,
 bounded Guest preferences, unified generated-file delivery, the browser／PDF
 roster matrix, and auditable published-roster withdrawal.
 
-The live rc26 release retains and re-verifies admission control that rejects excess Guest sessions without
+The live rc27 release retains and re-verifies admission control that rejects excess Guest sessions without
 evicting active users, stronger import and network bounds, aggregate fairness
 reconciliation, explicit return paths, and stable button containers whose icons
 transform internally. Its 296-input fingerprint
@@ -146,7 +145,7 @@ passed all 14 formal gates before the controlled origin and Worker rollout.
 | `codex/login-copy-music-rc18` | NiceGUI + SQLite, historical release source | Superseded rc18 `fd504a8` entrance, devotional, interaction and rollback line |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite, historical source | Previous Service Weave editorial integration line |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Previous unified-guest architecture line; no longer the formal baseline |
-| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.26` source; Windows origin matches the annotated tag |
+| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.27` source; Windows origin matches the annotated tag |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
@@ -168,7 +167,7 @@ redirects, not a static tour or second trial product. An explicitly issued
 `/view#…` link remains the separate encrypted, read-only published-roster viewer.
 
 The Worker and origin authenticate both modes with server-verified, HMAC-signed
-principals. The live rc26 release passed 14／14 formal gates against its own
+principals. The live rc27 release passed 14／14 formal gates against its own
 296-input fingerprint `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`,
 including isolated Admin/Guest browser, mobile, reduced-motion, performance,
 write/PDF, backup, and recovery evidence. The application has no custom password database.
@@ -268,7 +267,7 @@ transaction preserves the original evidence, posts the inverse of the version's
 net fairness effect, creates audit and backup obligations, and requests
 revocation of existing shares before a corrected week can be generated.
 
-The live rc26 release passed its matching 14-gate report, fresh verified backup,
+The live rc27 release passed its matching 14-gate report, fresh verified backup,
 isolated restore, origin rollout, retained-Worker equivalence check, and canonical gateway
 health checks. Exact operating commands are documented in
 [`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and

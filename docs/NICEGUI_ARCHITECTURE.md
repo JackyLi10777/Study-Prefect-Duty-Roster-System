@@ -4,16 +4,16 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
-> **Live v1.2 rc26 status:** the controlled Windows origin uses
-> `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`; the canonical Worker is
+> **Live v1.2 rc27 status:** the controlled Windows origin uses
+> `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`; the canonical Worker is
 > `76a23134-8355-4e25-bbba-abf17c6918c5`. The 296-input runtime release passed all 14 formal gates
-> with fingerprint `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`.
-> First-level rollback is rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`; rc21／
-> `f7df4d0170e6bacd65340cc893992a17b5ed4aed` remains a secondary verified baseline.
+> with fingerprint `71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c`.
+> First-level origin rollback is rc26／`248955cb3300bfbe092b05036632991524d824cd`; rc24／
+> `8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` remains a secondary verified baseline.
 > A fresh production backup, checksum, fairness reconciliation and isolated
 > restore passed before cutover. Worker version
-> `76a23134-8355-4e25-bbba-abf17c6918c5` passed staged-version and
-> canonical health／entrance／viewer／support checks before receiving 100% traffic.
+> `76a23134-8355-4e25-bbba-abf17c6918c5` was retained because Worker source and
+> configuration did not change; canonical root and capability health returned 200.
 > Supervised human acceptance remains required.
 >
 > **Historical rc21 boundary (now the secondary verified baseline):** annotated tag `v1.2.0-rc.21` points to commit
@@ -58,7 +58,7 @@ NiceGUI owns the rendering and navigation. The read model introduces no schema, 
 
 ## Canonical entry and local maintenance start
 
-> **Unified Guest architecture contract:** The live rc26 host enables this path
+> **Unified Guest architecture contract:** The live rc27 host enables this path
 > through its protected `SING_YIN_UNIFIED_GUEST=1` configuration. Any later
 > candidate must preserve the same deny-by-default boundary and pass fresh
 > candidate-bound verification before the origin or Worker is switched; changing
@@ -355,7 +355,7 @@ Medium touch screens are not stretched phones. From 640–900px, consequential o
 
 The rc20 intermediate-density rules distinguish portrait and landscape tablets without user-agent branching. Both 768×1024 and 820×1180 portrait adaptive shells can use two-column roster, directory, evidence and download cards while forms remain a single decision column. At 901–1180px, including 1024×768 touch landscape, the desktop shell remains visible but `sy-operations-grid` and document layouts collapse before their columns become cramped; evidence indexes, toolbars and download options are capped at two columns. At 1440×1024 the full desktop shell and reading measure remain intact. CSS changes composition only—the same semantic DOM, `PageContext`, capability policy and workflow callback remain authoritative.
 
-The existing roster and prefect card renderers remain the implementation baseline. Historical rc18 evidence covers 390×844 Traditional Chinese/light, 320×760 English/dark with reduced motion, and 844×390 landscape touch contexts. The live rc26 source-matched report covers the isolated device matrix containing 256×700 reflow, 320×760 reduced motion, 390×844 phone, 768×1024 and 820×1180 adaptive touch tablets, 1024×768 desktop-shell touch tablet, 1440×1024 full desktop and 844×390 phone landscape. `verify_nicegui_mobile.py` owns the phone／tablet members and `verify_nicegui_ui.py` owns the full-desktop member; together they proved a single visible navigation shell, route-focus transfer, More/current-page semantics, `visualViewport` keyboard clearance, footer/safe-area clearance, comprehensive 44px standalone targets, touch icon stories, forced colours and zero document overflow/console/page errors for the deployed source. Controlled origin cutover and canonical smoke have succeeded; physical iPhone Safari and Android Chrome 200% zoom, keyboard, rotation and notch/home-indicator checks remain open human acceptance evidence.
+The existing roster and prefect card renderers remain the implementation baseline. Historical rc18 evidence covers 390×844 Traditional Chinese/light, 320×760 English/dark with reduced motion, and 844×390 landscape touch contexts. The live rc27 source-matched report covers the isolated device matrix containing 256×700 reflow, 320×760 reduced motion, 390×844 phone, 768×1024 and 820×1180 adaptive touch tablets, 1024×768 desktop-shell touch tablet, 1440×1024 full desktop and 844×390 phone landscape. `verify_nicegui_mobile.py` owns the phone／tablet members and `verify_nicegui_ui.py` owns the full-desktop member; together they proved a single visible navigation shell, route-focus transfer, More/current-page semantics, `visualViewport` keyboard clearance, footer/safe-area clearance, comprehensive 44px standalone targets, touch icon stories, forced colours and zero document overflow/console/page errors for the deployed source. Controlled origin cutover and canonical smoke have succeeded; physical iPhone Safari and Android Chrome 200% zoom, keyboard, rotation and notch/home-indicator checks remain open human acceptance evidence.
 
 The same preflight contract covers roster preparation and manual draft correction: a missing candidate or invalid week start is repaired in place. Blank operator reasons are valid and never weaken the durable version, command, audit, fairness, or backup checks. `scripts/verify_nicegui_write_pipeline.py` asserts that invalid states create neither a progress dialog nor a `progress_*_working` log event, while also proving that an optional reason can be omitted safely.
 
