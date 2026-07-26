@@ -87,7 +87,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **目前發布（v1.2 rc21）：** 在 rc20 的操作、安全及裝置基線上，rc21 把產品正式整理成 Public Product Entrance、Unified Operations Workbench、Trust & Engineering Hub 與 Documentation & Developer Portal 四區；例行側欄與 Trust & Documentation portal 各自服務操作和證據閱讀，不再互相爭奪注意力。`Professional_Design_System.md` 及 `docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md` 分別保存可執行的 Quiet Precision 設計契約與參考案例的 Adopt／Adapt／Reject 決策。Admin 與 Guest 仍共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。仍須由首席導學風紀及教師顧問完成真人驗收清單。
 
-**已驗證、尚未上線的 rc23 候選：** `codex/luminous-sacred-precision` 在不改動排班政策、資料庫或 PDF 規則的前提下，把上述 Quiet Precision 底盤演進為 Luminous Sacred Precision 1.3，修正歡迎／工作台音樂狀態、瀏覽器阻止音樂後的安靜繼續導航，並加入內容精簡及本機優先問題報告。commit `4071cb55268c975302307fc40503c0b923562897` 的 296-file runtime fingerprint `a8f4483c32b17d9ef77b6df75968ef791a0a9cc0a8163b13b1b03acd3b3935de` 已通過 14／14 正式機器閘門；在 immutable tag、受保護 main、正式備份／隔離還原、Windows origin、Worker 及 canonical browser 證據完成前，rc21 仍是線上事實。
+**已驗證、尚未上線的 rc23 候選：** `codex/luminous-sacred-precision` 在不改動排班政策、資料庫或 PDF 規則的前提下，把上述 Quiet Precision 底盤演進為 Luminous Sacred Precision 1.3，修正歡迎／工作台音樂狀態、瀏覽器阻止音樂後的安靜繼續導航，並加入內容精簡及本機優先問題報告。commit `f0fc91e7e24cf6e1d58a5065bbeba42c4708322a` 的 296-file runtime fingerprint `2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b` 已通過 14／14 正式機器閘門；Admin 事件包會核對精確 manifest 檔案集合及 SHA-256，Guest／Public／Viewer 則保持瀏覽器暫存、無應用網絡寫入。在 immutable tag、受保護 main、正式備份／隔離還原、Windows origin、Worker 及 canonical browser 證據完成前，rc21 仍是線上事實。
 
 rc16 是這批改動的歷史候選來源；rc17 只保留作次級已驗證基線；rc18 是 live rc20 的第一級回退 pair。下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換均由 live rc20 承接。
 
