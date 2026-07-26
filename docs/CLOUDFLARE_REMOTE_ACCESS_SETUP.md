@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **目前發布狀態：** Windows origin 正運行健康、ready 的 live `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`；其 296-file runtime fingerprint `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 承接正式流量；rc24 至 rc26 的 Worker source／設定沒有差異，故沒有作不必要的重新部署。canonical 入口及 Guest Platform 的真實團隊名稱、英文切換及桌面 rendered smoke 通過且無 console／page error。第一級回退是 rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` exact pair；rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` 是次級已驗證基線。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
+> **目前發布狀態：** Windows origin 正運行健康、ready 的 live `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；其 296-file runtime fingerprint `71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 承接正式流量；rc24 至 rc27 的 Worker source／設定沒有差異，故沒有作不必要的重新部署。canonical root 與 capability health 為 200，private readiness 保持預期 redirect。第一級 origin 回退是 rc26／`248955cb3300bfbe092b05036632991524d824cd`；rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` 是次級已驗證基線。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
@@ -89,7 +89,7 @@ Worker 必須有：
 - 不把管理員加入 Cloudflare Dashboard 成員作為登入前提。
 - 不建立應用內共用密碼。
 
-**目前控制台證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。live rc26 origin／Worker 組合已通過 canonical entrance、Guest Platform、英文切換及 gateway health 核對；任何後續候選仍須產生與來源相符的新證據。
+**目前控制台證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。live rc27 origin／Worker 組合已通過 canonical root 與 gateway health 核對；任何後續候選仍須產生與來源相符的新證據。
 
 ## 4. 來源驗證
 
@@ -149,7 +149,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 3. 核對沒有第二個 NiceGUI origin 佔用同一資料庫。
 4. 安裝已驗證 bundle 及 hash-locked dependencies。
 5. 執行 additive Alembic migration `0011_assist_assignment_mode`。
-6. 保持 live rc26 的現行受保護設定 `SING_YIN_UNIFIED_GUEST=1`，不得用切換旗標略過候選驗證。
+6. 保持 live rc27 的現行受保護設定 `SING_YIN_UNIFIED_GUEST=1`，不得用切換旗標略過候選驗證。
 7. 核對：
 
 ```powershell
@@ -205,7 +205,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 6. 用獲准身份完成 Admin 登入／登出及隔離寫入流程。
 7. 才結束 maintenance。
 
-候選的隔離測試仍須證明 flag 為 `0` 時 Guest fail closed；rc26 的正式 gate 已在臨時環境完成該證據，不可因此弱化 live rc26 設定。
+候選的隔離測試仍須證明 flag 為 `0` 時 Guest fail closed；rc26 的正式 gate 已在臨時環境完成該證據，不可因此弱化 live rc27 設定。
 
 ## 9. 線上驗收
 
@@ -252,8 +252,8 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 1. 恢復 maintenance；
 2. 以受控部署報告確認自動 rollback 的 `attempted`／`succeeded`、previous commit 及 previous Worker version；
-3. 第一級回退至目前已驗證主機／Worker pair：主機 bundle `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`，Worker `76a23134-8355-4e25-bbba-abf17c6918c5`；
-4. 主機與 Worker 必須一起回復，禁止留下未核實的混合版本；
+3. 第一級回退至目前已驗證 origin：主機 bundle `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`；Worker source 未變，繼續使用 `76a23134-8355-4e25-bbba-abf17c6918c5`；
+4. 核對主機與 Worker 的已驗證組合，禁止留下未核實的混合版本；
 5. 核對 host commit、`/healthz`、`/readyz`／`writeReady=true`、Admin、Guest、Viewer、WebSocket、登出及資料狀態；
 6. 只有 rc24 無法安全恢復，且事故負責人明確批准第二級復原時，才可使用 rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` 已驗證 pair；rc20／rc18 只保留為更舊的歷史基線，在相容性、資料完整性及完整 user-flow 重新證明前保持 maintenance；
 7. 如資料完整性受疑，使用受控 restore，而非手動覆寫 SQLite。
@@ -284,6 +284,6 @@ additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，�
 
 ## English operational summary
 
-Live `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd` keeps one Cloudflare Worker in front of one loopback-only Windows NiceGUI origin. Verified Worker `76a23134-8355-4e25-bbba-abf17c6918c5` owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter. rc24／`8d709f9b` is the first rollback pair and rc21 is the secondary verified baseline.
+Live `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` keeps one Cloudflare Worker in front of one loopback-only Windows NiceGUI origin. Verified Worker `76a23134-8355-4e25-bbba-abf17c6918c5` owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter. rc26／`248955cb` is the first-level origin rollback and rc24 is the secondary verified baseline.
 
-Service Weave rc26 is the live controlled release. `v1.2.0-rc.26`／`248955cb…` passed the source-matched `5da90230…` gate set and completed the Windows-origin switch with a fresh verified backup, isolated restore, deployment report, and canonical smoke checks. Its Worker source and configuration were unchanged from rc24, so the rollout deliberately retained Worker `76a23134-8355-4e25-bbba-abf17c6918c5` rather than creating a no-op version. Supervised human acceptance remains open; any runtime failure returns first to the exact rc24 host／Worker pair, with rc21 retained as the secondary verified baseline.
+Service Weave rc27 is the live controlled release. `v1.2.0-rc.27`／`c4c728aa…` passed the source-matched `71c8011c…` gate set and completed the Windows-origin switch with a fresh verified backup, isolated restore, deployment report, and canonical root／health checks. Its Worker source and configuration were unchanged from rc24, so the rollout deliberately retained Worker `76a23134-8355-4e25-bbba-abf17c6918c5` rather than creating a no-op version. Supervised human acceptance remains open; any runtime failure returns first to rc26／`248955cb…`, with rc24 retained as the secondary verified baseline.

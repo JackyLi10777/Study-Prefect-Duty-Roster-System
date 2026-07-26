@@ -177,7 +177,7 @@ def test_v12_guest_documents_match_the_signed_browser_bridge_and_release_truth()
     assert "尚未完成的瀏覽器 snapshot 橋接" not in security
 
 
-def test_release_truth_docs_keep_live_rc26_separate_from_history() -> None:
+def test_release_truth_docs_keep_live_rc27_separate_from_history() -> None:
     status = (PROJECT_ROOT / "PROJECT_STATUS.md").read_text(encoding="utf-8")
     architecture = (PROJECT_ROOT / "docs" / "NICEGUI_ARCHITECTURE.md").read_text(
         encoding="utf-8"
@@ -214,12 +214,12 @@ def test_release_truth_docs_keep_live_rc26_separate_from_history() -> None:
     release_truth_documents = (status, architecture, security, handover, acceptance)
     for document in release_truth_documents:
         assert "76a23134-8355-4e25-bbba-abf17c6918c5" in document
-        assert "v1.2.0-rc.26" in document
-        assert "248955cb3300bfbe092b05036632991524d824cd" in document
-        assert "5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7" in document
+        assert "v1.2.0-rc.27" in document
+        assert "c4c728aa41c9b0122aaa2c015b3cc38e246db43d" in document
+        assert "71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c" in document
         current_header = "\n".join(document.splitlines()[:15])
-        assert "v1.2.0-rc.26" in current_header
-        assert "248955cb3300bfbe092b05036632991524d824cd" in current_header
+        assert "v1.2.0-rc.27" in current_header
+        assert "c4c728aa41c9b0122aaa2c015b3cc38e246db43d" in current_header
         assert "76a23134-8355-4e25-bbba-abf17c6918c5" in current_header
 
     # Detailed historical rc20 provenance belongs in the status and handover
@@ -240,8 +240,8 @@ def test_release_truth_docs_keep_live_rc26_separate_from_history() -> None:
         assert "de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664" in document
         assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in document
 
-    assert "rc26 exact-source and deployment evidence" in status
-    assert "v1.2 rc26 is the current controlled Windows origin" in status
+    assert "rc27 exact-source and deployment evidence" in status
+    assert "v1.2 rc27 is the current controlled Windows origin" in status
     assert "Historical Service Weave v1.2 rc18 controlled rollout" in status
     assert "Historical Service Weave v1.2 rc11 rollout" in status
     assert "rc18 host／Worker pair is now the second-level verified rollback target" in status  # noqa: RUF001
@@ -249,7 +249,7 @@ def test_release_truth_docs_keep_live_rc26_separate_from_history() -> None:
     assert "SING_YIN_PORT" in readme
     assert "一百倍" in readme
     assert "cancelWelcomeFade is not defined" in status
-    assert "目前發布（v1.2 rc26）" in (  # noqa: RUF001
+    assert "目前發布（v1.2 rc27）" in (  # noqa: RUF001
         PROJECT_ROOT / "README.md"
     ).read_text(encoding="utf-8")
     assert "remains disabled by default" not in status
@@ -314,7 +314,7 @@ def test_release_truth_docs_keep_live_rc26_separate_from_history() -> None:
     assert "new immutable candidate" in next_steps
     assert "v1.2.0-rc.5" not in next_steps
 
-    release_sequence = handover.split("### rc26 已完成發布紀錄與回退次序", 1)[
+    release_sequence = handover.split("### rc27 已完成發布紀錄與回退次序", 1)[
         1
     ].split(
         "## 正式驗收清單", 1
@@ -331,7 +331,7 @@ def test_release_truth_docs_keep_live_rc26_separate_from_history() -> None:
     assert "只有 `/view#…`" in operator
 
 
-def test_operator_deployment_docs_use_live_rc26_and_rollback_hierarchy() -> None:
+def test_operator_deployment_docs_use_live_rc27_and_rollback_hierarchy() -> None:
     quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
     windows = (PROJECT_ROOT / "docs" / "WINDOWS_DEDICATED_HOST_SETUP.md").read_text(
         encoding="utf-8"
@@ -347,22 +347,22 @@ def test_operator_deployment_docs_use_live_rc26_and_rollback_hierarchy() -> None
     )
 
     for document in (quickstart, windows, cloudflare, viewer, decision):
+        assert "v1.2.0-rc.27" in document
+        assert "c4c728aa41c9b0122aaa2c015b3cc38e246db43d" in document
         assert "v1.2.0-rc.26" in document
         assert "248955cb3300bfbe092b05036632991524d824cd" in document
-        assert "v1.2.0-rc.24" in document
-        assert "8d709f9b0b4e69fe38f7237ef2f473c27ff848fc" in document
         assert "76a23134-8355-4e25-bbba-abf17c6918c5" in document
         current_header = "\n".join(document.splitlines()[:15])
-        assert "v1.2.0-rc.26" in current_header
-        assert "248955cb3300bfbe092b05036632991524d824cd" in current_header
+        assert "v1.2.0-rc.27" in current_header
+        assert "c4c728aa41c9b0122aaa2c015b3cc38e246db43d" in current_header
         assert "76a23134-8355-4e25-bbba-abf17c6918c5" in current_header
 
     assert (  # noqa: RUF001
-        "主機 bundle `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`"  # noqa: RUF001
+        "主機 bundle `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`"  # noqa: RUF001
         in cloudflare
     )
     assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in cloudflare
-    assert "rc21 is the secondary verified baseline" in cloudflare
+    assert "rc24 is the secondary verified baseline" in cloudflare
     assert "restore the recorded rc17 host bundle" not in cloudflare
 
     assert "schema-compatible rc4" not in quickstart
@@ -373,12 +373,12 @@ def test_operator_deployment_docs_use_live_rc26_and_rollback_hierarchy() -> None
     assert '$ReleaseRef = "v1.2.0-rc.20"' not in windows
     assert '$ReleaseRef = "<next-approved-annotated-tag>"' in windows
     assert '$ReleaseRef = "v1.1.0-rc.16"' not in windows
-    assert "rc21 is the secondary verified baseline" in decision
-    assert "5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7" in decision
+    assert "rc24 is the secondary verified baseline" in decision
+    assert "71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c" in decision
     assert "<next-approved-annotated-tag>" not in decision
 
 
-def test_rc26_docs_share_one_device_matrix_and_rollback_hierarchy() -> None:
+def test_rc27_docs_share_one_device_matrix_and_rollback_hierarchy() -> None:
     device_viewports = ("768×1024", "820×1180", "1024×768", "1440×1024")
     device_documents = (
         "README.md",
@@ -428,15 +428,15 @@ def test_rc26_docs_share_one_device_matrix_and_rollback_hierarchy() -> None:
     )
 
     for document in (readme, handover, cloudflare, decision):
-        assert "第一級回退" in document
-        assert "v1.2.0-rc.24" in document
-        assert "8d709f9b0b4e69fe38f7237ef2f473c27ff848fc" in document
+        assert "第一級" in document and "回退" in document
+        assert "v1.2.0-rc.26" in document
+        assert "248955cb3300bfbe092b05036632991524d824cd" in document
         assert "76a23134-8355-4e25-bbba-abf17c6918c5" in document
     for document in (readme, cloudflare, decision):
         assert "次級已驗證基線" in document
     for document in (readme_en, status):
         normalized_document = " ".join(document.split())
-        assert "first-level rollback" in normalized_document
+        assert "first-level origin rollback" in normalized_document
         assert "secondary verified baseline" in normalized_document
 
     assert "rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 是即時回退組合" not in readme
