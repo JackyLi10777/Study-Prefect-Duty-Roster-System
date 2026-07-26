@@ -1,6 +1,6 @@
 # Sing Yin Study Prefect Duty Roster System
 
-> **Candidate note:** `codex/luminous-sacred-precision` evolves the live rc21 Quiet Precision baseline into the versioned 1.3 visual and audio-state contract without changing roster policy, SQLite rules, or PDF naming. This is source-candidate truth only until exact-source gates, the controlled Windows origin switch, and the matching Worker deployment are verified.
+> **Release note:** `v1.2.0-rc.23` is the current controlled Windows origin with Worker `1bf0270d-5c78-462e-822b-f4a88e3956fa`. The rc24 candidate only corrects authenticated `/support` routing; it is not live until exact-source gates and the paired origin/Worker rollout complete.
 
 > **Not to be served, but to serve. — Mark 10:45**
 
@@ -63,9 +63,11 @@ complete.
 
 ### Local problem reporting and diagnostics
 
-`/support` is the single reporting entry. The first level asks only what
-happened, where it happened, and what was expected; route, action, impact, and
-attachments are progressively disclosed. An Admin must explicitly confirm
+`/support` is the single reporting entry. The Worker serves an entirely
+browser-local form to unauthenticated Public and Viewer visits, while verified
+Admin and Guest visits reach the shared NiceGUI support workspace. The first
+level asks only what happened, where it happened, and what was expected; route,
+action, impact, and attachments are progressively disclosed. An Admin must explicitly confirm
 host-local persistence. Support records never join roster transactions, the
 official SQLite database, the fairness ledger, or roster backups. Guest,
 Public, and Viewer modes can only download or copy a browser-local report.

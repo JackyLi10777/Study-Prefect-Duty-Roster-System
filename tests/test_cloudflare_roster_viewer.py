@@ -89,7 +89,7 @@ def test_worker_deployment_toolchain_is_project_pinned() -> None:
     workspace = (VIEWER_ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
 
     assert package["private"] is True
-    assert package["version"] == "1.2.0-rc.23"
+    assert package["version"] == "1.2.0-rc.24"
     assert package["packageManager"] == "pnpm@11.7.0"
     assert package["engines"] == {"node": ">=22"}
     assert package["devDependencies"] == {"wrangler": "4.110.0"}
@@ -398,8 +398,11 @@ def test_public_support_keeps_core_fields_visible_and_optional_details_collapsed
     assert "--warning-line" not in source
     assert "--warning-soft" not in source
     assert "staticResponse(request, PUBLIC_SUPPORT_JS" in source
-    support_route = source[source.index("if (path === '/support')"):source.index("if (path === '/view')")]
-    assert support_route.count("'Cache-Control': 'no-store'") == 2
+    unauthenticated = source.index("if (!principal)")
+    support_route = source.index("if (path === '/support')", unauthenticated)
+    public_fallback = source.index("return path.startsWith('/auth/')", support_route)
+    assert unauthenticated < support_route < public_fallback
+    assert source[support_route:public_fallback].count("'Cache-Control': 'no-store'") == 1
 
 
 def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contract() -> None:

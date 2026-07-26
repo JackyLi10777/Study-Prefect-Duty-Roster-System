@@ -124,6 +124,7 @@ support/
 
 ## Admin、Guest、Public／Viewer 行為
 
+- **路由邊界**：Worker 先驗證 principal。未登入的 `/support` 留在 Worker 靜態頁，不接觸 origin；已驗證 Admin／Guest 的 `/support` 才代理到共同 NiceGUI 工作台。UI 路由不能取代服務層能力核對。
 - **Admin**：伺服器再次驗證 `PERSISTENT_WRITE`，可預覽 metadata、選擇允許的附件、確認後保存至 Inbox；獲得 Incident ID、下載本機 bundle、複製安全摘要及開啟 mailto。任何寫入失敗只顯示安全原因及 OP reference，不阻斷值班工作。
 - **Guest**：相同資訊架構，但所有輸入和產物只存在當前 browser memory／download；不可上載附件、呼叫持久服務或建立 background job。
 - **Public／Viewer**：只提供瀏覽器內文字模板、copy／download／mailto；不產生 origin incident。

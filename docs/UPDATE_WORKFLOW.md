@@ -2,9 +2,9 @@
 
 我是李創杰。這份流程是我與 Codex 對正式發布工作的反思結果：更新慢的主因不是 Git 上傳，而是過去把每次文字或測試修改都當成完整 runtime 發布。
 
-> **目前發布界線：** live rc21 annotated tag `v1.2.0-rc.21`／commit `f7df4d0170e6bacd65340cc893992a17b5ed4aed` 與 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 是正式基線；rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 是第一級回退。rc21 已完成 `--release`、正式備份、隔離還原、受控 Windows origin 切換、Tunnel 復原及 canonical desktop／mobile smoke。Worker 來源及設定沒有改動，故沒有製造無實際差異的新 Worker rollout。任何後續 `--plan`、focused tests、`--staged` 或文件更新仍不等於部署。
+> **目前發布界線：** live rc23 annotated tag `v1.2.0-rc.23`／commit `3432f1dd5381c4ddd8c2cd605437d290000af228` 與 Worker `1bf0270d-5c78-462e-822b-f4a88e3956fa` 是正式基線；rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` 是已驗證回退。rc23 已完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換、Worker 分段發布及 canonical Public／Guest／Viewer smoke。線上 smoke 亦發現已登入 `/support` 被公開靜態頁攔截，因此 rc24 是必要的小型 Worker 路由修補；任何 focused tests、`--staged` 或文件更新仍不等於 rc24 已部署。
 
-> **目前候選界線：** rc23 runtime commit `f0fc91e7e24cf6e1d58a5065bbeba42c4708322a`／fingerprint `2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b` 已完成 14／14 正式驗證（2026-07-26 18:24–18:30 HKT）。其後只更新候選／線上事實的文件不會改變 runtime fingerprint，但仍須通過 docs／hygiene gate；tag、main、備份／還原、origin、Worker 與 canonical browser 全部完成前不可宣稱 rc23 已上線。
+> **目前候選界線：** rc24 只調整 Worker 的 `/support` 身份分流及相應測試／文件。正式發布仍須在 merged、annotated tag 的不可變來源重新執行 `--release`，再以相同版本更新 origin／Worker 並核對 Public 靜態頁、Guest NiceGUI 頁及 Admin NiceGUI 頁；閘門本身不可代替線上證據。
 
 rc20 的完整候選報告約需 **404 秒**；當中主要時間用於完整 Python 套件、桌面／手機瀏覽器、寫入／PDF／還原、效能及備份失敗演練。這些證據對政策、資料庫、工作流、部署或正式 runtime 改動很重要，但不應因 README 改一句話而重跑。最近三次沒有 runtime 改動的提交亦在 GitHub Quality 與 CodeQL 合計使用約 18 分鐘。
 
@@ -78,6 +78,9 @@ rc20 的精確發布證據是：annotated tag `v1.2.0-rc.20`、commit `e3d84858a
 包含程式、測試及文件；實際 support inbox、staging、quarantine、附件、主機
 摘要輸出、日誌、資料庫及備份必須由 repository hygiene gate 排除。正式部署
 只接受同一不可變來源的 Admin／Guest／Public／Viewer 支援流程證據。
+其中路由回歸必須同時證明：無 principal 的 Public／Viewer `/support` 不到達
+origin；有效 Admin／Guest principal 的同一路徑會到達 NiceGUI，而且下層能力仍
+拒絕 Guest 持久寫入。只測其中一條路徑不構成發布證據。
 
 pre-push profile 內互不寫入的檢查會並行執行。正式候選驗證仍保持受控次序，因為瀏覽器寫入、備份及還原證據不可互相競爭同一個隔離環境。
 
