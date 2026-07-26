@@ -40,6 +40,11 @@ and a redacted support reference if available. Use fictional data. Stop testing
 if it could affect availability, another person's session, Cloudflare resources,
 or the production database.
 
+For ordinary bugs and UX problems, create the report through the application's
+`/support` page first. A public GitHub issue should contain only the resulting
+reference, a redacted technical summary, and fictional reproduction data. Keep
+attachments and host-local incident bundles out of Issues and pull requests.
+
 請提供受影響版本、路由／元件、影響、最小重現步驟及經遮蔽的支援編號；只用
 虛構資料。如測試可能影響服務可用性、他人 session、Cloudflare 資源或正式
 資料庫，請立即停止。
@@ -55,4 +60,7 @@ release. No fixed bounty or response-time guarantee is offered.
 
 The full threat model, privacy boundary, repository governance, incident steps,
 and residual risks are documented in
-[`docs/SECURITY_AND_PRIVACY.md`](docs/SECURITY_AND_PRIVACY.md).
+[`docs/SECURITY_AND_PRIVACY.md`](docs/SECURITY_AND_PRIVACY.md). The ordinary
+support procedure and local inbox threat model are documented in
+[`docs/SUPPORT_AND_INCIDENT_WORKFLOW.md`](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md)
+and [`docs/THREAT_MODEL_SUPPORT_INBOX.md`](docs/THREAT_MODEL_SUPPORT_INBOX.md).

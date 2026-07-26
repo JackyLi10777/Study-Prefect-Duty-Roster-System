@@ -42,6 +42,8 @@ def _initialize_committed_repository(root: Path) -> None:
         ("data/runtime/live.sqlite3", "runtime_database"),
         ("data/backups/snapshot.sqlite3", "backup"),
         ("logs/app.log", "support_log"),
+        ("data/support/inbox/INC-20990101-1234ABCD/manifest.json", "support_incident"),
+        ("support/inbox/INC-20990101-1234ABCD/report.md", "support_incident"),
         ("weekly-roster.pdf", "generated_document"),
         ("handover.zip", "generated_document"),
         ("actual-prefects.csv", "operator_import"),

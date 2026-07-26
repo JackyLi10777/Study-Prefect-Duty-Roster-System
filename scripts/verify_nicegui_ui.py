@@ -794,9 +794,10 @@ def main() -> None:
         assert github_box is not None and github_box["height"] >= 44
         assert github_link.get_attribute("target") == "_blank"
         sidebar_feedback_links = page.get_by_test_id("sidebar-feedback").locator("a")
-        assert sidebar_feedback_links.count() == 2
+        assert sidebar_feedback_links.count() == 3
         assert (sidebar_feedback_links.nth(0).get_attribute("href") or "").startswith("mailto:s10777@syss.edu.hk")
         assert (sidebar_feedback_links.nth(1).get_attribute("href") or "").startswith("https://github.com/JackyLi10777/")
+        assert (sidebar_feedback_links.nth(2).get_attribute("href") or "").startswith("/support?source=")
         assert page.get_by_test_id("platform-live-summary").locator(".sy-platform-metric").count() == 4
         assert page.get_by_test_id("team-operating-model").locator(".sy-team-role").count() == 4
         assert page.get_by_test_id("capability-map").locator(".sy-capability-card").count() == 4
@@ -1194,7 +1195,7 @@ def main() -> None:
         page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
         page.get_by_text("公平審核", exact=True).click()
         page.get_by_text("服務與公平總結報告", exact=True).wait_for(timeout=10_000)
-        page.get_by_text("唯讀・不會重複入帳", exact=True).wait_for(timeout=10_000)
+        page.get_by_test_id("summary-report-metrics").wait_for(timeout=10_000)
         assert page.get_by_test_id("summary-report-metrics").count() == 1
         assert page.get_by_test_id("summary-contribution-table").count() == 1
         assert page.get_by_test_id("download-summary-zh").count() == 1

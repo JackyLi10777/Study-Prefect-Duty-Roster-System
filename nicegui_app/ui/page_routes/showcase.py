@@ -115,10 +115,7 @@ def platform_page() -> None:
                     with ui.column().classes("gap-0 min-w-0"):
                         ui.label(t("service_weave_name")).classes("sy-platform-brand-name")
                         ui.label(t("app_name")).classes("sy-platform-brand-function")
-                ui.label(t("platform_kicker")).classes("sy-architecture-kicker")
-                ui.html(t("platform"), tag="h2").classes("sy-architecture-title")
                 ui.label(t("platform_intro")).classes("sy-architecture-copy")
-                ui.label(t("platform_principle")).classes("sy-platform-principle")
 
         page_toc(
             (
@@ -136,7 +133,7 @@ def platform_page() -> None:
             "id=platform-snapshot-section"
         ):
             _render_architecture_section_heading(
-                "platform_snapshot_kicker", "platform_snapshot_title", "platform_snapshot_copy", show_kicker=True
+                "platform_snapshot_kicker", "platform_snapshot_title", "platform_snapshot_copy"
             )
             if summary.available:
                 metrics = (
@@ -340,10 +337,7 @@ def engineering_page() -> None:
             f'aria-label="{attr(t("engineering"))}" data-testid=engineering-hero'
         ):
             with ui.column().classes("gap-2"):
-                ui.label(t("engineering_kicker")).classes("sy-architecture-kicker")
-                ui.html(t("engineering"), tag="h2").classes("sy-architecture-title")
                 ui.label(t("engineering_intro")).classes("sy-architecture-copy")
-                status(t("engineering_badge"), "stable").classes("mt-3 self-start")
 
         page_toc(
             (
@@ -528,7 +522,7 @@ def engineering_page() -> None:
 
         with ui.element("section").classes("sy-architecture-section w-full").props("id=engineering-release-section"):
             _render_architecture_section_heading(
-                "engineering_pipeline_kicker", "engineering_pipeline_title", "engineering_pipeline_copy", show_kicker=True
+                "engineering_pipeline_kicker", "engineering_pipeline_title", "engineering_pipeline_copy"
             )
             status(evidence_label, evidence_tone).classes("self-start")
             with ui.element("ol").classes("sy-engineering-gates").props("data-testid=engineering-gates"):
@@ -613,12 +607,8 @@ def system_architecture_page() -> None:
             f'aria-label="{attr(t("system_architecture"))}"'
         ):
             with ui.column().classes("gap-2"):
-                ui.label(t("architecture_kicker")).classes("sy-architecture-kicker")
-                ui.html(t("system_architecture"), tag="h2").classes("sy-architecture-title")
                 ui.label(t("architecture_intro")).classes("sy-architecture-copy")
                 status(t("architecture_local_badge"), "stable").classes("mt-3 self-start")
-                ui.label(t("architecture_reading_note")).classes("sy-architecture-reading-note")
-                ui.label(t("architecture_platform_link_note")).classes("sy-architecture-reading-note")
                 ui.button(t("open_platform"), icon="domain", on_click=lambda: navigate_to("/platform")).props(
                     "outline data-testid=architecture-open-platform"
                 ).classes("mt-2 self-start")
@@ -637,7 +627,7 @@ def system_architecture_page() -> None:
             f'id=architecture-flow-section aria-label="{attr(t("architecture_flow_title"))}"'
         ):
             _render_architecture_section_heading(
-                "architecture_flow_kicker", "architecture_flow_title", "architecture_flow_copy", show_kicker=True
+                "architecture_flow_kicker", "architecture_flow_title", "architecture_flow_copy"
             )
             ui.element("div").classes("sy-architecture-lifeline-visual w-full").props("aria-hidden=true data-testid=architecture-lifeline-visual")
             with ui.element("ol").classes("sy-service-lifeline").props("data-testid=service-lifeline"):

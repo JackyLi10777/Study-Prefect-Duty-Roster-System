@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from collections.abc import Iterator
 import json
+from urllib.parse import quote
 
 from nicegui import ui
 
@@ -909,6 +910,10 @@ def page_shell(active_path: str) -> Iterator[None]:
                 )
                 ui.link(t("github_repository_short"), GITHUB_REPOSITORY_URL).classes("sy-sidebar-feedback-link").props(
                     f'target=_blank rel="noopener noreferrer" aria-label="{attr(t("github_repository_action"))}"'
+                )
+                support_href = f"/support?source={quote(active_path, safe='')}"
+                ui.link(t("report_problem"), support_href).classes("sy-sidebar-feedback-link").props(
+                    f'aria-label="{attr(t("report_problem"))}"'
                 )
     with ui.header(elevated=False).classes("sy-app-header bg-[var(--sy-surface)] border-b border-[var(--sy-line)] px-4"):
         skip_link = ui.link(t("skip_to_content"), "#main-content").classes("sy-skip-link")

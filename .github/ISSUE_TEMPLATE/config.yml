@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private security vulnerability report
+    url: https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System/security/advisories/new
+    about: Use this private channel for authentication, authorization, secret, or data-exposure concerns.
+  - name: Operator support procedure
+    url: https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System/blob/main/docs/SUPPORT_AND_INCIDENT_WORKFLOW.md
+    about: Read the local-first support and safe-evidence procedure before opening a public issue.

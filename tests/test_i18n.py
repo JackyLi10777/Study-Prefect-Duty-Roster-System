@@ -10,7 +10,7 @@ from tests.ui_source import combined_theme_source
 
 
 def test_domain_catalog_merge_has_no_duplicate_message_keys() -> None:
-    from nicegui_app.ui.i18n_catalog import foundation, importing, media, people, platform, reporting, sharing, stewardship, weekly
+    from nicegui_app.ui.i18n_catalog import foundation, importing, media, people, platform, reporting, sharing, stewardship, support, weekly
 
     domains = (
         foundation.MESSAGES,
@@ -22,6 +22,7 @@ def test_domain_catalog_merge_has_no_duplicate_message_keys() -> None:
         reporting.MESSAGES,
         importing.MESSAGES,
         sharing.MESSAGES,
+        support.MESSAGES,
     )
     assert len(MESSAGES) == sum(len(domain) for domain in domains)
 

@@ -60,8 +60,10 @@ def isolated_environment(root: Path, port: int, *, blocked_backup: bool = False)
     database_path = (root / "runtime.sqlite3").resolve()
     backup_path = (root / ("blocked-backup-path" if blocked_backup else "backups")).resolve()
     log_dir = (root / "logs").resolve()
+    support_dir = (root / "support").resolve()
     root.mkdir(parents=True, exist_ok=True)
     log_dir.mkdir(parents=True, exist_ok=True)
+    support_dir.mkdir(parents=True, exist_ok=True)
     if blocked_backup:
         backup_path.write_text("deliberately blocks directory creation", encoding="utf-8")
     else:
@@ -81,6 +83,7 @@ def isolated_environment(root: Path, port: int, *, blocked_backup: bool = False)
         "SING_YIN_DATABASE_PATH": str(database_path),
         "SING_YIN_BACKUP_DIR": str(backup_path),
         "SING_YIN_LOG_DIR": str(log_dir),
+        "SING_YIN_SUPPORT_DIR": str(support_dir),
         "SING_YIN_DEPLOYMENT_MODE": "local",
         "SING_YIN_HOST": "127.0.0.1",
         "SING_YIN_PORT": str(port),
@@ -263,6 +266,7 @@ def _run_unified_access_phase(
     guest_environment["SING_YIN_E2E_ACCESS_MODE"] = "guest"
     guest_environment["SING_YIN_ADMIN_TEST_URL"] = admin_environment["SING_YIN_TEST_URL"]
     guest_environment["SING_YIN_GUEST_TEST_URL"] = guest_environment["SING_YIN_TEST_URL"]
+    guest_environment["SING_YIN_ADMIN_SUPPORT_DIR"] = admin_environment["SING_YIN_SUPPORT_DIR"]
     guest_environment["SING_YIN_UNIFIED_GUEST_EVIDENCE_DIR"] = str(
         (PROJECT_ROOT / "logs" / "unified-guest-verification").resolve()
     )

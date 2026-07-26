@@ -177,9 +177,6 @@ def rosters_page() -> None:
     weeks = workflow.roster_weeks()
     prefects = workflow.prefects()
     with page_shell("/rosters"):
-        with ui.row().classes("sy-page-lead w-full items-center justify-between"):
-            ui.html(t("rosters"), tag="h2").classes("text-2xl font-semibold")
-            ui.label(t("persistence_notice")).classes("text-sm text-[var(--sy-muted)]")
         if not prefects:
             with ui.element("section").classes("sy-empty-state sy-empty-state--illustrated w-full").props(
                 "data-testid=roster-requires-directory role=status"

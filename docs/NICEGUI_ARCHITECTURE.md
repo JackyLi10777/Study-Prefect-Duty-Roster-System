@@ -126,6 +126,25 @@ ordering only; eligibility and generation policy remain in `roster_policy` and
 optimistic version, idempotent command receipt, inverse net ledger entries,
 audit, backup obligation and external-share revocation outbox.
 
+### Local support and incident boundary
+
+`/support` is a presentation and diagnostic boundary, not a roster workflow.
+`nicegui_app.services.support_incidents.SupportInbox` accepts untrusted text and
+bounded TXT／JSON／PNG evidence only after an Admin explicitly consents. It
+redacts known secret patterns, enforces quotas and lifecycle limits, hashes the
+stored files, and commits an incident directory through staging plus atomic
+rename. The inbox path is configured outside the official SQLite database,
+fairness ledger, roster backups, generated PDFs, and Git inputs.
+
+Every persistence call rechecks the Admin capability below the UI. Guest uses
+the same `/support` page structure but can only build a browser-local report;
+Public and Viewer use the Worker `/support` route with the same non-persistent
+contract. None of these paths invokes `RosterWorkflow`, retries an operation,
+opens a background queue, or sends content to GitHub. Maintainers inspect the
+host-local inbox with `scripts/inspect_support_inbox.py`; the optional
+`scripts/collect_host_security_summary.ps1` records control presence and status,
+never secret values.
+
 The HMAC snapshot codec and browser bridge are implemented. After each
 meaningful Guest mutation, the adapter publishes the latest signed revision to
 the exact connected tab, whose bridge stores only that token in

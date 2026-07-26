@@ -1,7 +1,7 @@
 # Professional Design System
 
 **Project:** Sing Yin Study Prefect Duty Roster System  
-**Version:** 1.3 — Luminous Sacred Precision institutional product contract
+**Version:** 1.4 — Luminous Sacred Precision and content-design contract
 **Status:** Active design source of truth  
 **Primary audience:** 負責日常操作的當任首席導學風紀、主要在完成後核對的顧問老師、未來維護者及實作代理人
 
@@ -62,7 +62,7 @@ Operational instructions, safety rules, current machine evidence, architecture c
 
 The public project feedback address is `s10777@syss.edu.hk`, and the canonical source/documentation destination is `https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System`. They appear together as a restrained persistent sidebar resource group and as a fully explained panel in the Operator Guide and architecture/co-creation page. Both actions must be available in both languages and keyboard reachable; main-content actions remain at least 44px high. GitHub opens in a new tab with `noopener noreferrer`, while email uses the local mail client.
 
-Feedback is distinct from technical evidence. Ordinary suggestions may use email directly; a failure should first preserve its OP/REQ reference. Copy asks for the reference and a short description only, never names, leave details, rosters, PDFs, databases, backups, screenshots, or complete logs.
+Feedback is distinct from technical evidence. Ordinary suggestions may use email directly; a failure should first preserve its OP/REQ reference. The `/support` flow asks for a short description and the relevant OP／REQ reference, automatically removes common secrets, and accepts only bounded TXT, JSON or PNG evidence after explicit confirmation. Passwords, tokens, cookies and complete databases／backups are never submitted; screenshots and logs are reduced to the portion needed to diagnose the incident.
 
 ### 2026.07 adaptive direction — Quiet Precision / 安靜精準
 
@@ -180,7 +180,7 @@ Keep the supplied bytes and deliberate crop, provide bilingual alternative text 
 
 The active NiceGUI application already has policy safeguards, bilingual support, light/dark mode, verified backups, print-ready PDFs, contextual hints and a three-stage weekly workflow. The adaptive shell shares one 900px navigation breakpoint, renders repeated mobile navigation after the page content in DOM order, stacks simultaneous global status banners and applies one dialog-action grammar. Appearance and interface sound update in place; a dirty-form guard protects the only preference which still requires a page reload—language. The theme has a sound foundation—neutral surfaces, teal identity, restrained slate primary actions, rounded controls and tested contrast—but its information architecture must continue converging on one composed product rather than a collection of useful pages.
 
-The live public gateway currently identifies the deployed origin as rc20. The active repository has moved beyond that release line, so historical rc20 gate counts prove only that immutable candidate; they are not evidence for the present working tree. A new candidate must pass exact-source verification, controlled Windows deployment, matching Worker deployment and online rendered checks before this document or the interface may describe it as live. Supervised Head Study Prefect and teacher-advisor acceptance remains a separate open decision until recorded.
+The live public gateway currently identifies the deployed origin as `v1.2.0-rc.21` at commit `f7df4d0170e6bacd65340cc893992a17b5ed4aed`; its Worker record is `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`. The active repository has moved beyond that release line, so rc21 evidence proves only that immutable candidate; it is not evidence for the present working tree. A new candidate must pass exact-source verification, controlled Windows deployment, matching Worker deployment and online rendered checks before this document or the interface may describe it as live. Supervised Head Study Prefect and teacher-advisor acceptance remains a separate open decision until recorded.
 
 ### Head Study Prefect moment
 
@@ -206,6 +206,31 @@ The executable owner is the versioned `design_system/tokens.v1.json` contract. I
 | Servant leadership | Fairness, explanation, and recovery are visible, not hidden behind admin language. | Can the operator explain why an action is safe and fair? |
 | Bilingual parity | Traditional Chinese is primary; English is complete. Chinese names never change. | Does the same hierarchy survive in both languages? |
 | Accessible by default | Contrast, focus, touch target, and reduced motion are part of the component. | Can the task be completed by keyboard and in dark mode? |
+
+### Executable content-design contract
+
+Visible copy is accepted only when it identifies the current place／state, enables the next action, explains a required input or material consequence, prevents or repairs a likely mistake, states a capability／privacy boundary that changes behaviour, or verifies evidence needed for the present decision. Otherwise it is merged, removed, inferred from trusted context, placed behind progressive disclosure, or moved to owned documentation.
+
+1. **Page hierarchy:** the shell owns the single page-level heading. Routine routes do not repeat that title in a hero, kicker, card and lead. A short lead appears only when it changes the next decision. Each current state normally has one dominant action.
+2. **Language:** Hong Kong Traditional Chinese leads with direct verbs and natural punctuation. English carries the same decision, consequence and action priority without forcing English sentence structure into Chinese. Chinese names and stable technical identifiers remain unchanged.
+3. **Controls:** buttons use `verb + result`; labels name the required value; hints explain format, constraint or consequence only. Placeholders never replace labels. An optional field says「選填」／`optional` in its label.
+4. **Feedback:** a banner reports new, changed, blocking or actionable truth. Empty states explain why and provide one next step. Loading names the real phase only when waiting is material. Errors state the problem, the correction and a support reference when it helps recovery. Success confirms the durable result and the next useful action.
+5. **Consequential actions:** publication, withdrawal, restore, fairness correction and data-loss confirmations retain the material consequence and use an explicit final verb. Required consequences, active errors and recovery steps are never hidden in a tooltip or collapsed region.
+6. **Progressive disclosure:** optional diagnostics, long import guidance, architecture detail and evidence methods may use an expansion, table, filter or documentation link. The primary fields and current action remain visible. Support shows Expected result, Actual result and Reproduction steps first; route and safe metadata are inferred when trustworthy.
+7. **Modes:** Admin and Guest use the same route and component hierarchy. Mode copy appears once where capability changes behaviour; repeated reassurance is removed. Guest restrictions remain enforced below the UI and Guest support remains browser-only.
+8. **Accessibility:** accessible names, field labels, correction text, live-region results, keyboard instructions that change operation and screen-reader-only structure always remain. Tooltips only supplement compact controls.
+9. **Prohibited scaffolding:** no decorative uppercase eyebrow above every heading, non-sequential section number, duplicate trust claim, vague `professional／advanced／safe／complete` claim without evidence, paragraph that describes visible controls, or ornamental content added to replace removed copy.
+10. **Ownership and review:** `nicegui_app/ui/i18n_catalog/` owns application copy, Worker constants own the public entrance／Viewer copy, and documentation owns long procedures. A review records every non-obvious removal in `docs/CONTENT_DESIGN_AUDIT.md`; stable tests check hierarchy and safety contracts rather than punctuation or arbitrary word counts.
+
+| Pattern | Runtime contract |
+|---|---|
+| Page lead | Shell H1; at most one decision-changing sentence |
+| Section | Task／evidence title; optional concise summary; no generic kicker |
+| Primary action | Concrete result, strongest emphasis, one per current state |
+| Hint／status | Constraint or changed truth only; never repeated reassurance |
+| Empty／error | Cause + next action; error also includes repair and useful reference |
+| Confirmation | Material consequence + explicit final action |
+| Support | Three core fields → optional details → preview／build → contextual follow-up actions |
 
 ---
 
@@ -861,7 +886,7 @@ Design quality includes the behaviour underneath the surface.
 - Browser mutation checks use an explicitly isolated SQLite database and backup directory; no visual test may create a roster or package from a real school database.
 - Before a release candidate is accepted, one browser-driven isolated write pipeline must prove the real sequence: fictional import, declared leave, draft generation, manual correction, single publication, bilingual PDF delivery, published Chinese native-file-share handling with download fallback, published-duty adjustment, authoritative receipt and versioned corrected-PDF delivery, ledger/audit/backup evidence, handover package, and restore into a second isolated database.
 - Final machine evidence is orchestrated by `scripts/verify_release_candidate.py`, which must create its own disposable paths, include Cloudflare Worker Deno contracts, desktop and independent mobile browser gates, the committed-without-backup drill, strict snapshot trust checks, and leave a failed—not partial-pass—report if any gate fails. Release fingerprinting includes `cloudflare/` JavaScript／JSONC, and repository hygiene blocks untracked release-sensitive source from being omitted. This machine report complements rather than replaces Head Study Prefect and teacher-advisor acceptance.
-- The live rc20 baseline is bound to tag `v1.2.0-rc.20`, commit `e3d84858abfe23714929a87c4bcf76e55999ce7c` and fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`; its 14／14 gates comprise 839 Python tests, 3 motion contracts and 40 Worker contracts, and the controlled Windows switchover is complete. Supervised Head Study Prefect and teacher-advisor acceptance remains open. Any source change after rc20 requires a new immutable candidate and exact deployment evidence; rc20 evidence cannot be reused to claim the newer design is live.
+- The current live baseline is bound to tag `v1.2.0-rc.21`, commit `f7df4d0170e6bacd65340cc893992a17b5ed4aed` and the source fingerprint recorded in its immutable deployment report; the verified Worker record is `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`. Supervised Head Study Prefect and teacher-advisor acceptance remains open. Any later source change requires a new immutable candidate and exact deployment evidence; rc21 evidence cannot be reused to claim the newer design is live.
 - Runtime performance evidence measures both repeated component use and representative route navigation followed by return to the Dashboard. Heap, DOM-node and listener growth must stay bounded after garbage collection; a single fast first render is insufficient evidence of lifecycle quality.
 - Acceptance evidence must remain legible as responsibility, not vanity metrics: map each requirement to a direct test/browser artifact and a named human decision. A test count, architecture diagram, or `pass` badge must never imply that real names, print legibility, school fairness practice, encrypted custody, or external-access approval were checked by software.
 - Handover readiness uses a compact three-column desktop grid and one-column phone sequence; never render each small status as an oversized full-width card. Machine evidence and human acceptance are visually paired but semantically separate. Pass, running, stale, failed, missing, and unreadable states require icon, heading, explanatory copy, and a safe next action rather than colour alone.

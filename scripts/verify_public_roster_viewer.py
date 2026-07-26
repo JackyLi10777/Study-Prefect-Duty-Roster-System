@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+import json
 from pathlib import Path
 import shutil
 import sys
@@ -152,6 +153,76 @@ def _assert_guest_landing(page: Page, *, label: str) -> None:
         if control_box is None or control_box["width"] < 43.5 or control_box["height"] < 43.5:
             raise RuntimeError(f"{label} welcome-music control is smaller than the 44 CSS pixel target: {control_box}")
     _assert_document_fits_viewport(page, label=label)
+
+
+def _assert_browser_only_support(
+    page: Page,
+    *,
+    base_url: str,
+    source: str,
+    verify_download: bool,
+) -> dict[str, object]:
+    """Exercise the public/viewer report without any network persistence."""
+
+    if source not in {"public", "viewer"}:
+        raise ValueError(f"Unsupported support source: {source}")
+    response = page.goto(f"{base_url.rstrip('/')}/support#{source}", wait_until="networkidle")
+    if response is None or response.status != 200:
+        raise RuntimeError(f"{source} support route did not return HTTP 200.")
+    if response.headers.get("cache-control") != "no-store":
+        raise RuntimeError(f"{source} support route is not protected by Cache-Control: no-store.")
+    form = page.locator("#publicSupportForm")
+    form.wait_for(state="visible")
+    if page.locator(".support-details").get_attribute("open") is not None:
+        raise RuntimeError(f"{source} support optional details were expanded by default.")
+    page.locator("#supportBuild").click()
+    if not page.locator("#supportResult").is_hidden():
+        raise RuntimeError(f"{source} support accepted missing required fields.")
+
+    resources_before = page.evaluate("() => performance.getEntriesByType('resource').length")
+    page.locator("#supportExpected").fill("The shared fictional roster should remain readable.")
+    page.locator("#supportActual").fill("The fictional roster displayed an unexpected empty state.")
+    page.locator("#supportSteps").fill("Open the shared link.\nReview the fictional roster.")
+    page.locator("#supportBuild").click()
+    result = page.locator("#supportResult")
+    result.wait_for(state="visible")
+    incident_id = page.locator("#supportIncidentId").inner_text().strip()
+    if not incident_id.startswith("FB-"):
+        raise RuntimeError(f"{source} support did not create a browser incident reference.")
+    expected_source = "public_viewer" if source == "viewer" else "public_entrance"
+    if verify_download:
+        with page.expect_download() as download_info:
+            page.locator("#supportDownload").click()
+        download = download_info.value
+        payload = json.loads(Path(download.path()).read_text(encoding="utf-8"))
+        if payload.get("source") != expected_source or payload.get("incident_id") != incident_id:
+            raise RuntimeError(f"{source} support download does not identify its browser context.")
+
+    page.wait_for_timeout(150)
+    resources_after = page.evaluate("() => performance.getEntriesByType('resource').length")
+    if resources_after != resources_before:
+        raise RuntimeError(f"{source} support interaction created a network resource.")
+    storage = page.evaluate(
+        """async () => ({
+          local: localStorage.length,
+          session: sessionStorage.length,
+          indexed: typeof indexedDB.databases === 'function' ? (await indexedDB.databases()).length : 0,
+          caches: 'caches' in window ? (await caches.keys()).length : 0,
+        })"""
+    )
+    if any(storage.values()):
+        raise RuntimeError(f"{source} support created persistent browser storage: {storage}")
+
+    page.reload(wait_until="networkidle")
+    if page.locator("#supportExpected").input_value() or not page.locator("#supportResult").is_hidden():
+        raise RuntimeError(f"{source} support state survived reload.")
+    return {
+        "source": expected_source,
+        "incidentReference": incident_id,
+        "browserOnly": True,
+        "downloadVerified": verify_download,
+        "clearedOnReload": True,
+    }
 
 
 def _assert_welcome_audio_blocked_recovery(page: Page, *, base_url: str) -> None:
@@ -345,8 +416,47 @@ def main() -> int:
 
         console_errors: list[str] = []
         page_errors: list[str] = []
+        support_evidence: list[dict[str, object]] = []
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
+
+            support_context = browser.new_context(
+                viewport={"width": 1280, "height": 900},
+                color_scheme="light",
+                accept_downloads=True,
+            )
+            support_page = support_context.new_page()
+            support_websockets: list[str] = []
+            support_page.on("websocket", lambda socket: support_websockets.append(socket.url))
+            _attach_error_collectors(
+                support_page,
+                label="public-support",
+                console_errors=console_errors,
+                page_errors=page_errors,
+            )
+            support_evidence.append(
+                _assert_browser_only_support(
+                    support_page,
+                    base_url=settings.base_url,
+                    source="public",
+                    verify_download=True,
+                )
+            )
+            support_page.screenshot(
+                path=str(GATEWAY_EVIDENCE_DIR / "public-support-browser-only.png"),
+                full_page=True,
+            )
+            support_evidence.append(
+                _assert_browser_only_support(
+                    support_page,
+                    base_url=settings.base_url,
+                    source="viewer",
+                    verify_download=False,
+                )
+            )
+            if support_websockets:
+                raise RuntimeError(f"Browser-only support opened WebSockets: {support_websockets}")
+            support_context.close()
 
             blocked_audio = browser.new_context(
                 viewport={"width": 1280, "height": 900},
@@ -497,7 +607,7 @@ def main() -> int:
         service.revoke_share(receipt.share_id)
         receipt = None
         print(
-            "PASS public gateway: entrance/read-only share flow, system/light/dark themes, "
+            "PASS public gateway: browser-only public/viewer support, entrance/read-only share flow, system/light/dark themes, "
             "manual verse refresh, resolved/blocked welcome-audio paths, one-action recovery, "
             "48px CTAs, reduced motion, no page overflow, and no browser errors. "
             "Unified Guest behavior is verified separately by "
@@ -505,6 +615,7 @@ def main() -> int:
         )
         print(f"Gateway evidence: {GATEWAY_EVIDENCE_DIR}")
         print(f"Viewer evidence: {EVIDENCE_DIR}")
+        print(f"Support evidence: {support_evidence}")
         return 0
     finally:
         if receipt is not None and workflow is not None and service is not None:

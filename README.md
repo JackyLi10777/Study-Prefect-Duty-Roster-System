@@ -14,7 +14,7 @@
 
 [English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)
 
-**反饋與聯絡：** 如果你對系統流程、介面、公平解釋或交接方式有問題或建議，歡迎電郵我：[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk)。如畫面提供 OP／REQ 支援編號，請在電郵內寫上該編號。診斷確有需要時可附上姓名、請假內容、值班表、PDF、資料庫、備份、截圖或日誌；寄出前請先確認收件人及附件正確，並只提供解決該問題所需的資料。
+**反饋與聯絡：** 遇到問題時，先在網站開啟 **「問題回報／Support」**，取得支援編號及已刪減的診斷摘要，再電郵我：[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk)。管理員可在明確同意後，把有限大小的 TXT／JSON／PNG 證據保存到主機本機支援收件匣；Guest、Public 及 Viewer 只會在瀏覽器建立報告，不會上載或長期保存。不要提交密碼、token、cookie、完整資料庫或完整備份；姓名、請假內容、值班表、PDF、截圖或日誌只在確實有助調查時提供最少相關部分。完整程序見[本機問題回報與事故處理](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md)。
 
 ## 先從這裡開始
 
@@ -25,6 +25,7 @@
 | 同學、師兄弟或訪客，想完整試用但不保存資料 | [正式網站](https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/) →「進入訪客示範」 | [單一網站存取手冊](docs/PUBLIC_ROSTER_VIEWER.md) |
 | 首席導學風紀，要處理本週正式值班 | [正式網站](https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/) →「管理員登入」 | [操作手冊](docs/OPERATOR_GUIDE.md) |
 | 顧問老師，要核對發布、公平或交接證據 | [正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md) | [首次發布與交接手冊](docs/RELEASE_HANDOVER.md) |
+| 任何使用者，遇到錯誤、下載失敗或顯示異常 | 正式網站 →「問題回報／Support」 | [本機問題回報與事故處理](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md) |
 | 新任首席導學風紀，要先安全演練 | `START_PRACTICE_MODE.cmd` | [快速啟動](docs/QUICKSTART.md)及[操作手冊](docs/OPERATOR_GUIDE.md) |
 | IT／維護者，要部署、復原或查找 OP 編號 | [完整文件索引](docs/DOCUMENTATION_INDEX.md) | [Windows 主機設定](docs/WINDOWS_DEDICATED_HOST_SETUP.md)及[更新流程](docs/UPDATE_WORKFLOW.md) |
 | 開發者／審查者，要理解程式邊界或提交修改 | [NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) | [程式驗收審查](docs/CODE_ACCEPTANCE_REVIEW.md)、[AI Agent 工作樹指南](docs/AI_AGENT_GIT_GUIDE.md)及[貢獻指南](CONTRIBUTING.md) |
@@ -41,6 +42,10 @@
 | Local maintenance | localhost／受控私人 WARP／loopback SSH | 正式主機的受保護資料與維護證據 | 只供故障診斷、復原及部署，不是第二個日常網站 |
 
 完整的文件責任、資料生命週期、設定分類、驗證層級、已知限制及「何時要同步更新哪一份文件」見[完整文件索引](docs/DOCUMENTATION_INDEX.md)。
+
+### 本機問題回報與診斷
+
+`/support` 是唯一問題回報入口。它把「發生甚麼、在哪一頁、預期甚麼」放在首層；路由、操作、影響及附件只在需要時展開。Admin 提交前必須再次確認本機保存，支援資料不會進入排班交易、正式 SQLite、公平帳本或備份；Guest、Public 及 Viewer 只會下載或複製一份瀏覽器內報告。維護者以 `scripts/inspect_support_inbox.py` 讀取本機收件匣，並可用 `scripts/collect_host_security_summary.ps1` 產生不含秘密值的主機狀態摘要。威脅邊界見[支援收件匣威脅模型](docs/THREAT_MODEL_SUPPORT_INBOX.md)，全站內容取捨及保留規則見[內容設計審計](docs/CONTENT_DESIGN_AUDIT.md)。
 
 ### 一個產品，四個清楚區域
 

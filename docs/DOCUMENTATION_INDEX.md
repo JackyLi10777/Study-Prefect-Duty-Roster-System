@@ -52,6 +52,8 @@ If prose conflicts with executable policy, transactional behavior, security chec
 | [`PUBLIC_ROSTER_VIEWER.md`](PUBLIC_ROSTER_VIEWER.md) | 單一網站、Guest、Admin、登出、唯讀 `/view#…` 使用方法 | 入口文案、session、分享、Viewer 或公開 URL 改變 |
 | [`UNIFIED_GUEST_SECURITY_MODEL.md`](UNIFIED_GUEST_SECURITY_MODEL.md) | Admin／Guest parity、capability、記憶體 workspace、snapshot、下載與拒絕邊界 | Guest capability、retention、capacity、snapshot 或 download 改變 |
 | [`SECURITY_AND_PRIVACY.md`](SECURITY_AND_PRIVACY.md) | 公開攻擊面、資料分類、secret、完整性、GitHub 治理、事件處理及剩餘風險 | identity、public route、storage、repository permission、security gate、incident 或 recovery contract 改變 |
+| [`SUPPORT_AND_INCIDENT_WORKFLOW.md`](SUPPORT_AND_INCIDENT_WORKFLOW.md) | Admin／Guest／Public／Viewer 問題報告、事件包、清理、檢視與安全傳送程序 | support route、incident schema、attachment、retention、inspection 或 escalation 改變 |
+| [`THREAT_MODEL_SUPPORT_INBOX.md`](THREAT_MODEL_SUPPORT_INBOX.md) | 本機支援收件匣的威脅、拒絕邊界、配額、redaction、完整性與隔離假設 | support storage、input validation、quota、redaction 或 trust boundary 改變 |
 | [`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) | Access policy、Worker、VPC Service、secret、staging、smoke、rollback | Cloudflare binding、secret class、route、deployment 或 gateway contract 改變 |
 | [`DEPLOYMENT_DECISION.md`](DEPLOYMENT_DECISION.md) | 本機、單一網站、私有維護與真正雲端遷移的取捨 | hosting assumption、data residency、availability 或 operating model 改變 |
 | [`WINDOWS_SSH_MAINTENANCE.md`](WINDOWS_SSH_MAINTENANCE.md) | loopback-only、key-only SSH 維護通道 | SSH binding、authentication、firewall 或 maintenance account 改變 |
@@ -66,6 +68,7 @@ If prose conflicts with executable policy, transactional behavior, security chec
 | [`BRANCH_STRATEGY.md`](BRANCH_STRATEGY.md) | branch、tag、platform snapshot 及歷史保留規則 | branch purpose、release line 或 archive policy 改變 |
 | [`AI_AGENT_GIT_GUIDE.md`](AI_AGENT_GIT_GUIDE.md) | Codex 與輔助 Agent 的工作樹、分支、提交、審查及禁止操作 | worktree allocation、agent branch、review ownership 或 GitHub protection 改變 |
 | [`../Professional_Design_System.md`](../Professional_Design_System.md) | token、component、responsive、motion、SVG／Lottie、a11y 及驗證規則 | visual token、shared component、motion 或 accessibility contract 改變 |
+| [`CONTENT_DESIGN_AUDIT.md`](CONTENT_DESIGN_AUDIT.md) | 可見文案的用途分類、保留／蒸餾決定、頁面主行動與後果說明 | page hierarchy、visible copy、progressive disclosure、support copy 或 content ownership 改變 |
 | [`PRODUCT_RESEARCH_AND_IA_DECISIONS.md`](PRODUCT_RESEARCH_AND_IA_DECISIONS.md) | 產品研究來源、Adopt／Adapt／Reject 取捨及四區資訊架構 | public entrance、workbench、trust hub、documentation portal 或 reference decision 改變 |
 | [`MUSIC_IMPORT_DECISION.md`](MUSIC_IMPORT_DECISION.md) | 本機音訊匯入的安全及技術決策 | importer、source allowlist、metadata 或 legal/operational boundary 改變 |
 | [`MUSIC_PLAYLIST_CANDIDATES.md`](MUSIC_PLAYLIST_CANDIDATES.md) | 經審核但尚未必納入的音樂候選 | playlist review 或 catalogue decision 改變 |

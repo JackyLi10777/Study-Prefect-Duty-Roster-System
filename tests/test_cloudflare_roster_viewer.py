@@ -89,7 +89,7 @@ def test_worker_deployment_toolchain_is_project_pinned() -> None:
     workspace = (VIEWER_ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
 
     assert package["private"] is True
-    assert package["version"] == "1.2.0-rc.22"
+    assert package["version"] == "1.2.0-rc.23"
     assert package["packageManager"] == "pnpm@11.7.0"
     assert package["engines"] == {"node": ">=22"}
     assert package["devDependencies"] == {"wrangler": "4.110.0"}
@@ -364,10 +364,11 @@ def test_mobile_public_controls_keep_a_44px_touch_target() -> None:
 def test_mobile_entrance_exposes_admin_and_guest_actions_before_supplementary_content() -> None:
     source = _source()
     mobile_actions = source.index('class="mobile-entry-actions"')
-    workflow = source.index('class="workflow-cue"')
     devotional = source.index('class="devotional-prompt"')
 
-    assert mobile_actions < workflow < devotional
+    assert mobile_actions < devotional
+    assert 'class="workflow-cue"' not in source
+    assert 'class="portal-kicker"' not in source
     assert 'id="mobileAdminLogin"' in source
     assert 'id="mobileGuestEnter"' in source
     assert len(re.findall(r'<a[^>]+data-entry-role="admin"', source)) == 2
@@ -376,6 +377,27 @@ def test_mobile_entrance_exposes_admin_and_guest_actions_before_supplementary_co
     assert "min-height: 52px" in source
     assert '.access-panel > [data-entry-role="admin"]' in source
     assert '.access-panel > [data-entry-role="guest"] { display: none; }' in source
+
+
+def test_public_support_keeps_core_fields_visible_and_optional_details_collapsed() -> None:
+    source = _source()
+    expected = source.index('id="supportExpected"')
+    actual = source.index('id="supportActual"')
+    steps = source.index('id="supportSteps"')
+    details = source.index('class="support-details"')
+    category = source.index('id="supportCategory"')
+    impact = source.index('id="supportImpact"')
+    submit = source.index('id="supportBuild"')
+
+    assert expected < actual < steps < details < category < impact < submit
+    assert 'id="supportResult" class="support-result" hidden' in source
+    assert "fetch(" not in source[source.index("const PUBLIC_SUPPORT_JS"):source.index("const VIEWER_CSS")]
+    assert "if (path === '/support')" in source
+    assert "staticResponse(request, PUBLIC_SUPPORT_HTML" in source
+    assert "if (path === '/support-feedback.js')" in source
+    assert "staticResponse(request, PUBLIC_SUPPORT_JS" in source
+    support_route = source[source.index("if (path === '/support')"):source.index("if (path === '/view')")]
+    assert support_route.count("'Cache-Control': 'no-store'") == 2
 
 
 def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contract() -> None:
