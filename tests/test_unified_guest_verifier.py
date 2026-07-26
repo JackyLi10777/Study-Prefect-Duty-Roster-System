@@ -13,6 +13,7 @@ from scripts.verify_unified_guest_ui import (
     FIXTIONAL_PREFECT_NAMES,
     SHARED_ROUTES,
     UnifiedGuestVerificationError,
+    _assert_clean_browser,
     _demo_download_evidence,
     _is_navigation_context_reset,
     isolated_inputs,
@@ -242,6 +243,31 @@ def test_app_wait_retries_only_the_expected_safe_navigation_context_reset() -> N
     source = Path(verify_unified_guest_ui.__file__).read_text(encoding="utf-8")
     assert "for attempt in range(3):" in source
     assert "if not _is_navigation_context_reset(error) or attempt == 2:" in source
+
+
+def test_browser_error_failure_preserves_bounded_diagnostics() -> None:
+    with pytest.raises(UnifiedGuestVerificationError) as captured:
+        _assert_clean_browser(
+            ["asset failed", "websocket closed"],
+            ["uncaught error"],
+        )
+
+    message = str(captured.value)
+    assert "console=2, page=1" in message
+    assert "console: asset failed" in message
+    assert "console: websocket closed" in message
+    assert "page: uncaught error" in message
+
+
+def test_broadcast_cleanup_probe_respects_production_media_csp() -> None:
+    source = Path(verify_unified_guest_ui.__file__).read_text(encoding="utf-8")
+    cleanup = source.split("def _exercise_broadcast_cleanup", 1)[1].split(
+        "def _assert_clean_browser", 1
+    )[0]
+
+    assert "document.createElement('audio')" in cleanup
+    assert "data:audio" not in cleanup
+    assert "getAttribute('src') === null" in cleanup
 
 
 def test_duplicate_isolation_precedes_mobile_disconnect_cleanup_race() -> None:

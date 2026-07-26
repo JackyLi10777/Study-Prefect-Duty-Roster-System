@@ -916,7 +916,6 @@ def _exercise_broadcast_cleanup(first: Page, second: Page) -> None:
               sessionStorage.setItem('sing-yin-e2e-temporary', 'must-disappear');
               const audio = document.createElement('audio');
               audio.id = 'sing-yin-e2e-audio';
-              audio.src = 'data:audio/wav;base64,UklGRgQAAABXQVZF';
               document.body.appendChild(audio);
             }
             """
@@ -924,7 +923,10 @@ def _exercise_broadcast_cleanup(first: Page, second: Page) -> None:
     first.evaluate("() => { window.__syInvalidateAuthSession?.(); return true; }")
     for page in (first, second):
         page.wait_for_function(
-            "() => sessionStorage.getItem('sing-yin-e2e-temporary') === null",
+            """
+            () => sessionStorage.getItem('sing-yin-e2e-temporary') === null
+              && document.querySelector('#sing-yin-e2e-audio')?.getAttribute('src') === null
+            """,
             timeout=10_000,
         )
 
@@ -934,8 +936,14 @@ def _assert_clean_browser(
     page_errors: list[str],
 ) -> None:
     if console_errors or page_errors:
+        details = [
+            *(f"console: {message}" for message in console_errors[:10]),
+            *(f"page: {message}" for message in page_errors[:10]),
+        ]
         raise UnifiedGuestVerificationError(
-            f"Browser errors detected: console={len(console_errors)}, page={len(page_errors)}"
+            "Browser errors detected: "
+            f"console={len(console_errors)}, page={len(page_errors)}; "
+            + " | ".join(details)
         )
 
 
