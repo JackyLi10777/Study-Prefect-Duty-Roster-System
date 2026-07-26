@@ -4,7 +4,7 @@
  */
 @layer sy.tokens {
 :root {
-  --sy-design-contract-version: 1.0.0;
+  --sy-design-contract-version: 1.1.0;
   --sy-role-action: #35647C;
   --sy-role-action-strong: #284C60;
   --sy-role-action-soft: #E8F0F3;
@@ -34,6 +34,10 @@
   --sy-ground: #F2F2F7;
   --sy-line: rgba(60, 60, 67, .18);
   --sy-surface-subtle: #E5E5EA;
+  --sy-luminous-edge: rgba(83, 108, 132, .34);
+  --sy-woven-line: linear-gradient(90deg, rgba(53,100,124,.18), rgba(15,118,110,.72), rgba(194,161,91,.34));
+  --sy-material-transient: rgba(255, 255, 255, .94);
+  --sy-material-operational: #FFFFFF;
   --sy-ease: cubic-bezier(.2, .8, .2, 1);
   --sy-ease-enter: cubic-bezier(.16, 1, .3, 1);
   --sy-ease-exit: cubic-bezier(.4, 0, 1, 1);
@@ -81,7 +85,7 @@
   --sy-platform-veil: linear-gradient(90deg, rgba(250,247,239,.99) 0%, rgba(250,247,239,.95) 46%, rgba(250,247,239,.28) 78%);
 }
 .body--dark {
-  --sy-design-contract-version: 1.0.0;
+  --sy-design-contract-version: 1.1.0;
   --sy-role-action: #9BC2D2;
   --sy-role-action-strong: #47758B;
   --sy-role-action-soft: #1A2B34;
@@ -101,6 +105,10 @@
   --sy-ground: #0D1117;
   --sy-line: rgba(235, 235, 245, .19);
   --sy-surface-subtle: #2C2C2E;
+  --sy-luminous-edge: rgba(155, 194, 210, .40);
+  --sy-woven-line: linear-gradient(90deg, rgba(155,194,210,.18), rgba(114,214,199,.72), rgba(194,161,91,.38));
+  --sy-material-transient: rgba(22, 31, 39, .96);
+  --sy-material-operational: #1C1C1E;
   --sy-accent: var(--sy-role-action);
   --sy-accent-deep: var(--sy-role-action-strong);
   --sy-action-soft: var(--sy-role-action-soft);

@@ -86,6 +86,78 @@ def _music_state_script(state: str) -> str:
     )
 
 
+_MUSIC_PLAYBACK_STATES = (
+    "starting",
+    "loading",
+    "playing",
+    "paused",
+    "blocked",
+    "transport",
+    "decoding",
+    "lifecycle",
+    "error",
+    "off",
+)
+
+
+def _music_state_callback_script() -> str:
+    """Return one localised callback used by the shared browser controller."""
+    labels = {state: t(f"music_status_{state}") for state in _MUSIC_PLAYBACK_STATES}
+    page_music = t("page_music")
+    return (
+        "(state) => {"
+        f"const labels = {json.dumps(labels, ensure_ascii=False)};"
+        f"const pageMusic = {json.dumps(page_music, ensure_ascii=False)};"
+        "const label = labels[state] || labels.error;"
+        "document.body.dataset.syMusicAutoplay = state;"
+        "const trigger = document.querySelector('[data-testid=page-music-button]');"
+        "if (trigger) { trigger.dataset.musicState = state; trigger.setAttribute('aria-label', pageMusic + ' — ' + label); trigger.setAttribute('title', label); }"
+        "const status = document.querySelector('[data-testid=music-playback-status]');"
+        "if (status) { status.dataset.musicState = state; status.textContent = label; }"
+        "}"
+    )
+
+
+def _music_attempt_script(*, volume: float) -> str:
+    callback = _music_state_callback_script()
+    return (
+        "(() => {"
+        "const audio = document.querySelector('audio.sy-page-music-audio');"
+        "const controller = window.SingYinMusicController;"
+        f"const applyState = {callback};"
+        "if (!audio || !controller) { applyState('error'); return; }"
+        "controller.bind(audio, {onState: applyState});"
+        f"void controller.attempt(audio, {{volume: {volume!r}, onState: applyState}});"
+        "})();"
+    )
+
+
+def _music_retry_handler_script(*, volume: float) -> str:
+    callback = _music_state_callback_script()
+    return (
+        "() => {"
+        "const audio = document.querySelector('audio.sy-page-music-audio');"
+        "const controller = window.SingYinMusicController;"
+        f"const applyState = {callback};"
+        "if (!audio || !controller) { applyState('error'); return; }"
+        "controller.bind(audio, {onState: applyState});"
+        f"void controller.attempt(audio, {{volume: {volume!r}, onState: applyState}});"
+        "}"
+    )
+
+
+def _music_pause_handler_script() -> str:
+    callback = _music_state_callback_script()
+    return (
+        "() => {"
+        "const controller = window.SingYinMusicController;"
+        f"const applyState = {callback};"
+        "if (!controller) { applyState('error'); return; }"
+        "controller.pauseAll({onState: applyState, state: 'paused'});"
+        "}"
+    )
+
+
 def _music_continuity_script(context: str) -> str:
     """Resume the same local track across route changes without permanent storage."""
     return f"""
@@ -207,14 +279,7 @@ def render_page_music_control(context: str) -> None:
                     enabled = bool(event.value)
                     set_music_autoplay(enabled)
                     if enabled:
-                        ui.run_javascript(
-                            _music_state_script("starting") +
-                            "document.querySelectorAll('audio.sy-page-music-audio').forEach(audio => {"
-                            f"audio.volume = {preferred_music_volume()!r}; audio.dataset.syBaseVolume = String(audio.volume);"
-                            f"audio.play().then(() => {{ {_music_state_script('playing')} }})"
-                            f".catch(() => {{ {_music_state_script('blocked')} }});"
-                            "});"
-                        )
+                        ui.run_javascript(_music_attempt_script(volume=preferred_music_volume()))
                         ui.notify(t("music_autoplay_on"), type="positive", timeout=2_500)
                     else:
                         ui.run_javascript(
@@ -327,6 +392,18 @@ def render_page_music_control(context: str) -> None:
                     mode_select.on_value_change(choose_mode)
                     audio.on("ended", advance_playlist)
                     ui.label(t("music_loop_notice")).classes("text-xs leading-5 text-[var(--sy-muted)]")
+                    with ui.row().classes("sy-music-recovery-actions w-full gap-3 flex-wrap"):
+                        retry_button = ui.button(t("music_retry_playback"), icon="play_arrow").props(
+                            "outline data-testid=music-play-retry"
+                        )
+                        retry_button.on(
+                            "click",
+                            js_handler=_music_retry_handler_script(volume=preferred_music_volume()),
+                        )
+                        pause_button = ui.button(t("music_pause_now"), icon="pause").props(
+                            "flat data-testid=music-pause-now"
+                        )
+                        pause_button.on("click", js_handler=_music_pause_handler_script())
                     ui.timer(
                         0.12,
                         lambda: ui.run_javascript(_music_continuity_script(context)),
@@ -344,13 +421,11 @@ def render_page_music_control(context: str) -> None:
                 "(() => {"
                 "const audio = document.querySelector('audio.sy-page-music-audio');"
                 "if (!audio) return;"
-                f"audio.volume = {preferred_music_volume()!r}; audio.dataset.syBaseVolume = String(audio.volume);"
                 "if (audio.dataset.syContinuityPlaying === 'false') {"
                 f"{_music_state_script('paused')}"
                 "return;"
                 "}"
-                f"audio.play().then(() => {{ {_music_state_script('playing')} }})"
-                f".catch(() => {{ {_music_state_script('blocked')} }});"
+                f"{_music_attempt_script(volume=preferred_music_volume())}"
                 "})()"
             ),
             once=True,
@@ -422,12 +497,7 @@ def render_music_library_settings() -> None:
             enabled = bool(event.value)
             set_music_autoplay(enabled)
             if enabled:
-                ui.run_javascript(
-                    _music_state_script("starting")
-                    + "document.querySelectorAll('audio.sy-page-music-audio').forEach(audio => "
-                    + f"audio.play().then(() => {{ {_music_state_script('playing')} }})"
-                    + f".catch(() => {{ {_music_state_script('blocked')} }}));"
-                )
+                ui.run_javascript(_music_attempt_script(volume=preferred_music_volume()))
                 ui.notify(t("music_autoplay_on"), type="positive", timeout=2_500)
             else:
                 ui.run_javascript(

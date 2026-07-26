@@ -89,7 +89,7 @@ def test_worker_deployment_toolchain_is_project_pinned() -> None:
     workspace = (VIEWER_ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
 
     assert package["private"] is True
-    assert package["version"] == "1.2.0-rc.19"
+    assert package["version"] == "1.2.0-rc.22"
     assert package["packageManager"] == "pnpm@11.7.0"
     assert package["engines"] == {"node": ">=22"}
     assert package["devDependencies"] == {"wrangler": "4.110.0"}
@@ -286,6 +286,7 @@ def test_viewer_uses_strict_headers_no_store_no_index_and_no_cors() -> None:
         "X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet",
         "Cross-Origin-Opener-Policy': 'same-origin",
         "Cross-Origin-Resource-Policy': 'same-origin",
+        "Permissions-Policy': 'autoplay=(self), camera=(), microphone=(), geolocation=(), payment=(), usb=()",
     )
     for header in required_header_values:
         assert header in source
@@ -429,12 +430,17 @@ def test_welcome_music_attempts_every_visit_and_recovers_after_browser_block() -
     assert "WELCOME_ENABLED_KEY" not in source
     assert "sing-yin:welcome-audio-enabled:v1" not in source
     assert "welcomeDesiredEnabled = true" in source
-    assert "armWelcomeAutoplayRecovery" in source
-    assert "recoverWelcomeAudioOnFirstInteraction" in source
-    assert "document.addEventListener('pointerdown', recoverWelcomeAudioOnFirstInteraction, true)" in source
-    assert "document.addEventListener('keydown', recoverWelcomeAudioOnFirstInteraction, true)" in source
-    assert "document.removeEventListener('pointerdown', recoverWelcomeAudioOnFirstInteraction, true)" in source
-    assert "void playWelcomeAudio({ allowRecovery: true });" in source
+    assert 'id="welcomeAudioRecovery"' in source
+    assert 'id="welcomeAudioEnter"' in source
+    assert 'id="welcomeAudioQuiet"' in source
+    assert "classifyWelcomeAudioFailure" in source
+    assert "welcomeAudio?.networkState === 2 && welcomeAudio?.readyState < 3" in source
+    assert "welcomeAudioEnter?.addEventListener('click'" in source
+    assert "const playback = playWelcomeAudio({ revealRecovery: true });" in source
+    assert "if (welcomeAudioRecovery) welcomeAudioRecovery.hidden = true;" in source
+    assert "setWelcomeRecoveryVisible(false);\n    if (welcomeAudioStatus)" not in source
+    assert "document.addEventListener('pointerdown'" not in source
+    assert "void playWelcomeAudio({ revealRecovery: true });" in source
     assert "data-autoplay-state=\"starting\"" in source
 
 

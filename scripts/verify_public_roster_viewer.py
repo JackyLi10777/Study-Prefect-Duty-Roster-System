@@ -154,6 +154,43 @@ def _assert_guest_landing(page: Page, *, label: str) -> None:
     _assert_document_fits_viewport(page, label=label)
 
 
+def _assert_welcome_audio_blocked_recovery(page: Page, *, base_url: str) -> None:
+    """Prove an honest fresh-profile NotAllowedError and one-action recovery."""
+
+    page.goto(base_url, wait_until="networkidle")
+    page.wait_for_function(
+        "() => document.querySelector('#welcomeAudioPlayer')?.dataset.autoplayState === 'blocked'"
+    )
+    recovery = page.locator("#welcomeAudioRecovery")
+    if not recovery.is_visible():
+        raise RuntimeError("Blocked welcome audio does not expose the recovery choice.")
+    if "direct action" not in recovery.inner_text().lower():
+        raise RuntimeError("Blocked welcome audio does not explain the browser policy.")
+
+    page.evaluate(
+        """() => {
+            HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+        }"""
+    )
+    page.locator("#welcomeAudioEnter").click()
+    page.wait_for_function(
+        "() => document.querySelector('#welcomeAudioPlayer')?.dataset.autoplayState === 'playing'"
+    )
+    if recovery.is_visible():
+        raise RuntimeError("Successful explicit welcome-audio recovery did not close the choice.")
+
+
+def _assert_welcome_audio_allowed(page: Page, *, base_url: str) -> None:
+    """Prove the automatic path reports playing only after play() resolves."""
+
+    page.goto(base_url, wait_until="networkidle")
+    page.wait_for_function(
+        "() => document.querySelector('#welcomeAudioPlayer')?.dataset.autoplayState === 'playing'"
+    )
+    if page.locator("#welcomeAudioRecovery").is_visible():
+        raise RuntimeError("Allowed welcome audio incorrectly exposes blocked recovery.")
+
+
 def _assert_mobile_entry_actions_in_first_viewport(page: Page, *, label: str) -> None:
     viewport = page.viewport_size or {}
     viewport_height = int(viewport.get("height", 0))
@@ -311,6 +348,50 @@ def main() -> int:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
 
+            blocked_audio = browser.new_context(
+                viewport={"width": 1280, "height": 900},
+                color_scheme="light",
+            )
+            blocked_audio.add_init_script(
+                """(() => {
+                    HTMLMediaElement.prototype.play = function () {
+                        return Promise.reject(new DOMException('fresh profile policy', 'NotAllowedError'));
+                    };
+                })();"""
+            )
+            blocked_page = blocked_audio.new_page()
+            _attach_error_collectors(
+                blocked_page,
+                label="audio-blocked",
+                console_errors=console_errors,
+                page_errors=page_errors,
+            )
+            _assert_welcome_audio_blocked_recovery(blocked_page, base_url=settings.base_url)
+            blocked_page.screenshot(
+                path=str(GATEWAY_EVIDENCE_DIR / "welcome-audio-recovered.png"),
+                full_page=True,
+            )
+            blocked_audio.close()
+
+            allowed_audio = browser.new_context(
+                viewport={"width": 1280, "height": 900},
+                color_scheme="dark",
+            )
+            allowed_audio.add_init_script(
+                """(() => {
+                    HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+                })();"""
+            )
+            allowed_page = allowed_audio.new_page()
+            _attach_error_collectors(
+                allowed_page,
+                label="audio-allowed",
+                console_errors=console_errors,
+                page_errors=page_errors,
+            )
+            _assert_welcome_audio_allowed(allowed_page, base_url=settings.base_url)
+            allowed_audio.close()
+
             desktop = browser.new_context(
                 viewport={"width": 1440, "height": 1000},
                 color_scheme="light",
@@ -417,8 +498,9 @@ def main() -> int:
         receipt = None
         print(
             "PASS public gateway: entrance/read-only share flow, system/light/dark themes, "
-            "manual verse refresh, 48px CTAs, reduced motion, no page overflow, and no "
-            "browser errors. Unified Guest behavior is verified separately by "
+            "manual verse refresh, resolved/blocked welcome-audio paths, one-action recovery, "
+            "48px CTAs, reduced motion, no page overflow, and no browser errors. "
+            "Unified Guest behavior is verified separately by "
             "scripts/verify_unified_guest_ui.py."
         )
         print(f"Gateway evidence: {GATEWAY_EVIDENCE_DIR}")

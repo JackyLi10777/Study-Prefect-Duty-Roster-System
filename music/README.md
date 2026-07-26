@@ -2,7 +2,7 @@
 
 This folder contains optional, operator-provided music for the local Sing Yin roster workspace.
 
-- The public login entrance and the authenticated workspace each make one honest autoplay attempt. Browser media policy may pause that attempt; the visible play control is then the only retry. The login entrance defaults to **25%**, while the workspace retains its separately documented **35%** default and operator choice.
+- The public login entrance and authenticated workspace each make one honest playback attempt at a browser-local default of **50%**. Every explicit operator-selected level remains authoritative; only exact legacy workbench defaults of 24%／35% are migrated once. If the browser blocks audible autoplay, the entrance presents **Enter with music** and **Continue quietly**, while the workbench exposes a visible retry／pause state. Generic page interactions never trigger a hidden retry.
 - The curated built-in catalogue now contains 48 unique tracks. Byte-identical `(1)` copies are preserved in the folder but intentionally omitted from the catalogue, so they never play twice merely because Windows created a duplicate filename.
 - Built-in page playlists can run in sequential loop or shuffle loop mode. `Follow appearance` recommends **Bright focus** in light mode and **Quiet reflection** in dark mode; an operator can lock either profile. Appearance changes never autoplay music.
 - Taizé and choral titles with both accompaniment/instrumental and vocal recordings remain separate catalogue items and are labelled **Instrumental** or **Vocal** in both interface languages.

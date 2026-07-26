@@ -447,9 +447,13 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   const html = await home.text();
   assert(html.includes('id="welcomeAudioPlayer"'));
   assert(html.includes('id="welcomeAudioVolume" type="range" min="0" max="100" step="1" value="50"'));
-  assert(html.includes('Playback starts automatically when possible at an initial 50%; if blocked, it starts after the first interaction.'));
+  assert(html.includes('Playback is attempted once at 50%; if blocked, choose music or continue quietly.'));
+  assert(html.includes('id="welcomeAudioRecovery"'));
+  assert(html.includes('id="welcomeAudioEnter"'));
+  assert(html.includes('id="welcomeAudioQuiet"'));
   assert(html.includes('Copyright © 2026 LI Chuangjie'));
   assert((home.headers.get('Content-Security-Policy') || '').includes("media-src 'self'"));
+  assert((home.headers.get('Permissions-Policy') || '').includes('autoplay=(self)'));
 
   const scriptResponse = await worker.fetch(new Request('https://gateway.example/viewer.js'), env, context);
   const script = await scriptResponse.text();
@@ -459,10 +463,14 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assert(script.includes('const WELCOME_VOLUME_DEFAULT_REVISION = 2'));
   assert(script.includes('storeWelcomeVolume(normalised)'));
   assert(script.includes('welcomeAudio.play()'));
-  assert(script.includes('armWelcomeAutoplayRecovery'));
-  assert(script.includes("document.addEventListener('pointerdown', recoverWelcomeAudioOnFirstInteraction, true)"));
-  assert(script.includes("document.addEventListener('keydown', recoverWelcomeAudioOnFirstInteraction, true)"));
-  assert(script.includes("void playWelcomeAudio({ allowRecovery: true });"));
+  assert(script.includes('classifyWelcomeAudioFailure'));
+  assert(script.includes('welcomeAudio?.networkState === 2 && welcomeAudio?.readyState < 3'));
+  assert(script.includes("welcomeAudioEnter?.addEventListener('click'"));
+  assert(script.includes('const playback = playWelcomeAudio({ revealRecovery: true });'));
+  assert(script.includes('if (welcomeAudioRecovery) welcomeAudioRecovery.hidden = true;'));
+  assert(!script.includes("setWelcomeRecoveryVisible(false);\n    if (welcomeAudioStatus)"));
+  assert(!script.includes("document.addEventListener('pointerdown'"));
+  assert(script.includes("void playWelcomeAudio({ revealRecovery: true });"));
   assert(!script.includes('WELCOME_ENABLED_KEY'));
   assert(!script.includes('sing-yin:welcome-audio-enabled:v1'));
   assert(script.includes("addEventListener('ended'"));
@@ -984,6 +992,7 @@ Deno.test('proxied HTTP workbench responses gain the workbench-safe header contr
   assertEquals(result.headers.get('Strict-Transport-Security'), 'max-age=63072000; includeSubDomains; preload');
   assertEquals(result.headers.get('Cross-Origin-Opener-Policy'), 'same-origin');
   assertEquals(result.headers.get('Cross-Origin-Resource-Policy'), 'same-origin');
+  assert((result.headers.get('Permissions-Policy') || '').includes('autoplay=(self)'));
   assertEquals(result.headers.get('X-Content-Type-Options'), 'nosniff');
   assertEquals(result.headers.get('X-Frame-Options'), 'SAMEORIGIN');
   assertEquals(result.headers.get('Content-Security-Policy'), null);

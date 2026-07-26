@@ -346,6 +346,10 @@ def run() -> None:
         app.add_static_files(url_path="/assets/css", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "css")
         app.add_static_files(url_path="/assets/materials", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "materials")
         app.add_static_files(url_path="/assets/motion", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "motion")
+        app.add_static_files(
+            url_path="/assets/runtime/music",
+            local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "music",
+        )
         app.add_static_files(url_path="/assets/vendor", local_directory=PROJECT_ROOT / "nicegui_app" / "assets" / "vendor")
         app.add_static_files(url_path="/assets/music", local_directory=MUSIC_DIR)
         favicon_asset = PRODUCT_IDENTITY.product_asset(

@@ -18,7 +18,15 @@ The product uses one **Institutional Operations Product** with four deliberately
 
 Admin is the canonical product. Guest uses the same routes, page definitions and component grammar, but a bounded fictional-data adapter and server-enforced deny-by-default capabilities. The interface may explain a restriction; it never acts as the security boundary.
 
-The visual direction remains **Quiet Precision／安靜精準**: editorial hierarchy, warm institutional materials, solid accessible surfaces, restrained depth and purposeful motion. Site-wide Neumorphism, persistent blur, animation for decoration and card-heavy dashboard imitation are rejected.
+The visual direction has evolved to **Luminous Sacred Precision／明澈而莊重的精準感**. It retains Quiet Precision's editorial hierarchy, solid accessible operational surfaces and purposeful motion, then adds a narrowly governed luminous edge and Service Weave continuity line to navigation, transient choices and verified progress. Site-wide Neumorphism, persistent blur, glass behind operational data, decorative animation and card-heavy dashboard imitation remain rejected.
+
+### Browser media-policy decision — Adopt／Adapt／Reject
+
+- **Adopt:** treat the resolved `HTMLMediaElement.play()` promise or a trustworthy `playing` event as the only evidence that sound started; classify `NotAllowedError` separately from transport, decode and lifecycle failures.
+- **Adapt:** attempt same-origin welcome music once, then offer **Enter with music** and **Continue quietly** when policy blocks audible playback. The direct retry occurs synchronously in that explicit action before navigation.
+- **Reject:** forced-autoplay claims, muted-start deception, arbitrary first-click capture listeners, repeated hidden retries, third-party autoplay and any server header presented as a way to bypass browser policy.
+
+`Permissions-Policy: autoplay=(self)` documents the intended same-origin boundary but does not override the browser's user-activation policy. The encrypted Viewer remains silent.
 
 ## Research method
 
@@ -42,6 +50,12 @@ Each reference was reviewed for a specific product problem. A pattern is adopted
 | [Worklenz](https://github.com/Worklenz/worklenz) and [Rallly](https://github.com/lukevella/rallly) | 2026-07-26 | Maintained open-source products demonstrate focused workspaces and seeded/resettable development data. | **Observe only** | Use as corroboration for bounded demo fixtures and task-focused workspaces. | No code copying; their React/product/domain/licence choices do not define this NiceGUI system. |
 
 ## Information architecture contract
+
+### Canonical page and state inventory
+
+`nicegui_app/ui/page_catalog.py` is the navigation source of truth. Admin, Guest and Local Maintenance share the same workbench definitions for `/`, `/rosters`, `/prefects`, `/handover`, `/access-control`, `/settings`, `/platform`, `/system-architecture`, `/engineering`, `/getting-started`, `/guide` and `/devotional`; mode-specific adapters and capabilities change behavior, not the page skeleton. Actual handlers additionally retain the compatibility alias `/dashboard` and contextual child routes `/rosters/new`, `/rosters/{roster_week_id}`, `/adjustments`, `/rosters/{roster_week_id}/adjustments` and `/audit`. They stay out of primary navigation because they are entered from a parent workflow and must provide a visible return path.
+
+The Cloudflare edge owns the public entrance, Admin start, Guest start／logout and encrypted `/view#…` viewer. The Viewer is a separate silent read-only state, not a Guest workbench page. Every page must account for loading, empty, restricted, error, conflict and recovery states; consequential Admin actions add confirmation and progress states, while Guest preserves the same explanation and spatial hierarchy with a server-enforced demo／restricted result.
 
 ### Public Product Entrance
 

@@ -4,6 +4,8 @@
 >
 > **rc21 已上線（真人驗收仍未簽署）：** rc21 整合四區資訊架構、中央頁面目錄、Trust & Documentation portal 及可執行的 Quiet Precision 設計契約，並保留 rc20 的手機／平板／無障礙及 Assist. in charge 雙模式。日常操作以 rc21 行為為準；機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
 
+> `codex/luminous-sacred-precision` 是下一個原始碼候選；在正式發布報告出現前，不可用候選文件或測試結果取代上述 rc21 線上真相。
+
 ## 每日使用
 
 1. 確認 Windows 專用主機已開機；背景工作會自動啟動，毋須每日雙擊程式。

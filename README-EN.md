@@ -1,5 +1,7 @@
 # Sing Yin Study Prefect Duty Roster System
 
+> **Candidate note:** `codex/luminous-sacred-precision` evolves the live rc21 Quiet Precision baseline into the versioned 1.3 visual and audio-state contract without changing roster policy, SQLite rules, or PDF naming. This is source-candidate truth only until exact-source gates, the controlled Windows origin switch, and the matching Worker deployment are verified.
+
 > **Not to be served, but to serve. — Mark 10:45**
 
 I am LI Chuangjie Jacky, Head Study Prefect for 2026–2027 at Sing Yin Secondary
@@ -185,12 +187,13 @@ marking. Close it and use `RESET_PRACTICE_MODE.cmd` for a clean rehearsal.
 
 The Dashboard devotional direction offers **Default setting**, **Clear
 guidance**, and **Quiet comfort**. The default follows the current appearance
-as a recommendation only. The public entrance attempts welcome-music playback
+as a recommendation only. The public entrance makes one welcome-music attempt
 on every visit, starts new browsers at 50%, and preserves every explicitly
-selected volume, including 25%. If audible autoplay is blocked, the first
-eligible page interaction retries automatically; visible play, pause, next,
-and volume controls remain available, and an explicit pause lasts for the
-current visit. Signed-in page-context music continues to follow the workbench
+selected volume, including 25%. If audible autoplay is blocked, the entrance
+shows **Enter with music** and **Continue quietly**. Only the first choice
+retries synchronously inside that trusted action; generic page interactions do
+not trigger a hidden retry. Visible play, pause, next, and volume controls remain
+available. Signed-in page-context music continues to follow the workbench
 cross-page autoplay preference. A versioned preference migration upgrades only
 an exact former 24% or 35% workbench default. If two consecutive routes resolve
 to the same local track, the current browser session continues its position and
@@ -351,9 +354,10 @@ context discoverable without making a daily operator scan one oversized page.
 - Dignified Daily Verse reading language separate from the workbench.
 - Signed-in local ambience makes one autoplay attempt at the 50% browser-local default after each page is ready.
   The operator can pause it or turn cross-page autoplay off at any time. The
-  public entrance separately attempts playback on every visit and automatically
-  retries after the first eligible interaction if the browser initially blocks
-  sound. Controls expose playing, paused, browser-blocked, and off states. The
+  public entrance separately attempts playback on every visit and, if the
+  browser blocks sound, presents one explicit **Enter with music** recovery
+  action plus **Continue quietly**. Controls expose playing, paused,
+  browser-blocked, transport, decoding, and off states. The
   separate visible YouTube player never autoplays.
 - Privacy-safe `OP-...` and `REQ-...` support references.
 
