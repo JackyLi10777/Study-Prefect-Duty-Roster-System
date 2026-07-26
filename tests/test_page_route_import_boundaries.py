@@ -127,7 +127,7 @@ def test_route_package_imports_cleanly_in_a_fresh_process() -> None:
                 "import nicegui_app.ui.page_shared as shared; "
                 "import nicegui_app.ui.page_routes as routes; "
                 "assert len(shared.__all__) == 19; "
-                "assert len(routes.__all__) == 6"
+                "assert len(routes.__all__) == 7"
             ),
         ],
         cwd=PROJECT_ROOT,

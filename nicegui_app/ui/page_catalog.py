@@ -187,6 +187,16 @@ PAGE_DEFINITIONS = (
         required_capability=None,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
     ),
+    PageDefinition(
+        route="/support",
+        title_key="report_problem",
+        navigation_group="nav_contextual_help",
+        icon="support_agent",
+        page_kind=PageKind.OPERATIONS,
+        music_context="guide",
+        required_capability=None,
+        visible_access_modes=WORKBENCH_ACCESS_MODES,
+    ),
 )
 
 

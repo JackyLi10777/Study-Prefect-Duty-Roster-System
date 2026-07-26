@@ -68,6 +68,7 @@ SHARED_ROUTES = (
     "/getting-started",
     "/guide",
     "/devotional",
+    "/support",
 )
 
 EDITORIAL_PARITY_ROUTES = (
@@ -101,7 +102,7 @@ class UnifiedGuestVerificationError(RuntimeError):
     """Raised when a unified guest release invariant is not satisfied."""
 
 
-def isolated_inputs() -> tuple[str, str, Path, Path]:
+def isolated_inputs() -> tuple[str, str, Path, Path, Path]:
     """Return validated loopback URLs and disposable evidence/database paths."""
 
     if os.getenv("SING_YIN_E2E_ISOLATED") != "1":
@@ -133,7 +134,10 @@ def isolated_inputs() -> tuple[str, str, Path, Path]:
         os.getenv("SING_YIN_UNIFIED_GUEST_EVIDENCE_DIR", str(DEFAULT_EVIDENCE_DIR))
     ).expanduser().resolve()
     evidence_dir.mkdir(parents=True, exist_ok=True)
-    return admin_url, guest_url, database_path, evidence_dir
+    admin_support_dir = Path(os.getenv("SING_YIN_ADMIN_SUPPORT_DIR", "")).expanduser().resolve()
+    if not admin_support_dir.is_dir() or PROJECT_ROOT in admin_support_dir.parents:
+        raise UnifiedGuestVerificationError("Admin support verification requires an external disposable directory.")
+    return admin_url, guest_url, database_path, evidence_dir, admin_support_dir
 
 
 def _json_value(value: Any) -> Any:
@@ -397,6 +401,92 @@ def _assert_guest_restrictions(page: Page, guest_url: str) -> None:
     page.get_by_test_id("guest-restricted-state").wait_for(state="visible", timeout=10_000)
     if page.get_by_test_id("operator-access-card").count() or page.get_by_test_id("viewer-access-card").count():
         raise UnifiedGuestVerificationError("Guest access-control route exposed operator controls.")
+
+
+def _exercise_support_flows(
+    admin_page: Page,
+    guest_page: Page,
+    admin_url: str,
+    guest_url: str,
+    admin_support_dir: Path,
+) -> dict[str, object]:
+    """Prove opt-in local Admin storage and non-persistent Guest reporting."""
+
+    existing_admin_incidents = set((admin_support_dir / "inbox").glob("INC-*"))
+    _open_route(admin_page, admin_url, "/support?source=/rosters")
+    admin_panel = admin_page.locator(".sy-support-admin")
+    admin_panel.wait_for(state="visible", timeout=10_000)
+    admin_textareas = admin_panel.locator("textarea")
+    if admin_textareas.count() < 3:
+        raise UnifiedGuestVerificationError("Admin support form does not expose its three core fields.")
+    for index, value in enumerate((
+        "The fictional draft should remain visible.",
+        "The fictional draft was not visible.",
+        "Open the roster page.\nGenerate the fictional draft.\nOpen support.",
+    )):
+        admin_textareas.nth(index).fill(value)
+    admin_page.get_by_test_id("preview-support-incident").click()
+    admin_dialog = admin_page.locator(".q-dialog")
+    admin_dialog.wait_for(state="visible", timeout=10_000)
+    admin_dialog.locator(".q-checkbox").click()
+    admin_page.get_by_test_id("save-support-incident").click()
+    incident_node = admin_page.get_by_test_id("support-incident-id")
+    incident_node.wait_for(state="visible", timeout=10_000)
+    admin_incident_id = incident_node.inner_text().strip()
+    incident_path = admin_support_dir / "inbox" / admin_incident_id
+    if not incident_path.is_dir() or not (incident_path / "manifest.json").is_file():
+        raise UnifiedGuestVerificationError("Admin support report was not stored in the isolated host inbox.")
+    if incident_path in existing_admin_incidents:
+        raise UnifiedGuestVerificationError("Admin support verification reused an existing incident bundle.")
+
+    _open_route(guest_page, guest_url, "/support?source=/rosters")
+    guest_root = guest_page.get_by_test_id("guest-browser-only-support")
+    guest_root.wait_for(state="visible", timeout=10_000)
+    if guest_root.locator("input[type=file]").count():
+        raise UnifiedGuestVerificationError("Guest support unexpectedly exposes attachments.")
+    guest_page.evaluate(
+        """() => {
+          window.__sySupportFetchCount = 0;
+          const original = window.fetch.bind(window);
+          window.fetch = (...args) => { window.__sySupportFetchCount += 1; return original(...args); };
+        }"""
+    )
+    guest_root.locator("#sy-support-browser-form button[type=submit]").click()
+    if not guest_root.locator("#sy-support-browser-result-actions").is_hidden():
+        raise UnifiedGuestVerificationError("Guest support produced a report without required fields.")
+    guest_root.locator("#sy-support-expected").fill("The demo roster should remain browser-only.")
+    guest_root.locator("#sy-support-actual").fill("The demo roster displayed a fictional vacancy.")
+    guest_root.locator("#sy-support-steps").fill("Open the demo roster.\nReview the fictional vacancy.")
+    guest_root.locator("#sy-support-browser-form button[type=submit]").click()
+    result_actions = guest_root.locator("#sy-support-browser-result-actions")
+    result_actions.wait_for(state="visible", timeout=10_000)
+    temporary_reference = guest_root.locator("#sy-support-browser-result").inner_text().strip()
+    if not temporary_reference.startswith("GUEST-"):
+        raise UnifiedGuestVerificationError("Guest support did not create a temporary browser reference.")
+    with guest_page.expect_download() as download_info:
+        guest_root.locator("#sy-support-browser-download").click()
+    download = download_info.value
+    payload = json.loads(Path(download.path()).read_text(encoding="utf-8"))
+    if payload.get("persistence") != "browser-only" or payload.get("temporary_reference") != temporary_reference:
+        raise UnifiedGuestVerificationError("Guest support download does not preserve the browser-only contract.")
+    if guest_page.evaluate("() => window.__sySupportFetchCount") != 0:
+        raise UnifiedGuestVerificationError("Guest support transmitted the report through fetch.")
+
+    guest_page.reload(wait_until="networkidle")
+    refreshed_root = guest_page.get_by_test_id("guest-browser-only-support")
+    refreshed_root.wait_for(state="visible", timeout=10_000)
+    if refreshed_root.locator("#sy-support-expected").input_value():
+        raise UnifiedGuestVerificationError("Guest support survived reload instead of clearing browser state.")
+    if not refreshed_root.locator("#sy-support-browser-result-actions").is_hidden():
+        raise UnifiedGuestVerificationError("Guest support result survived reload.")
+    return {
+        "adminHostLocalIncident": admin_incident_id,
+        "adminManifestPresent": True,
+        "guestTemporaryReference": temporary_reference,
+        "guestBrowserOnlyDownload": True,
+        "guestFetchCount": 0,
+        "guestClearedOnReload": True,
+    }
 
 
 def _history_count(page: Page) -> int:
@@ -948,7 +1038,7 @@ def _assert_clean_browser(
 
 
 def main() -> int:
-    admin_url, guest_url, database_path, evidence_dir = isolated_inputs()
+    admin_url, guest_url, database_path, evidence_dir, admin_support_dir = isolated_inputs()
     before_fingerprint, before_counts = logical_database_fingerprint(database_path)
     admin_ready = _assert_ready(admin_url, expected_guest_sessions=0)
     guest_ready = _assert_ready(guest_url, expected_guest_sessions=0)
@@ -960,6 +1050,7 @@ def main() -> int:
     snapshot_evidence: dict[str, object] = {}
     handover_evidence: dict[str, object] = {}
     duplicate_evidence: dict[str, object] = {}
+    support_evidence: dict[str, object] = {}
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
@@ -990,6 +1081,13 @@ def main() -> int:
 
         parity = _assert_route_parity(admin_page, guest_page, admin_url, guest_url)
         _assert_guest_restrictions(guest_page, guest_url)
+        support_evidence = _exercise_support_flows(
+            admin_page,
+            guest_page,
+            admin_url,
+            guest_url,
+            admin_support_dir,
+        )
         workflow_evidence = _exercise_weekly_workflow(guest_page, guest_url)
         summary_evidence = _exercise_summary_downloads(guest_page, guest_url)
         _open_route(guest_page, guest_url, "/")
@@ -1059,6 +1157,7 @@ def main() -> int:
         "fairnessAndReports": summary_evidence,
         "sameTabSnapshotRefresh": snapshot_evidence,
         "handoverResetRestore": handover_evidence,
+        "supportReporting": support_evidence,
         "duplicateTab": duplicate_evidence,
         "crossTabIsolation": bool(duplicate_evidence.get("workspaceIsolated")),
         "tamperedSnapshotFallback": bool(duplicate_evidence.get("safeFixtureRetained")),

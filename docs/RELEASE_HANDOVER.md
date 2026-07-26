@@ -92,6 +92,27 @@ JSON 是唯讀報告證據，不是 SQLite 還原備份。需要交接或復原�
 
 ## 本機設定
 
+### 問題回報與支援收件匣
+
+操作者先由網站 `/support` 建立支援編號及已刪減摘要。Admin 只有在畫面
+再次確認後，才可把有限 TXT／JSON／PNG 證據保存到主機本機收件匣；Guest、
+Public 及 Viewer 一律只在瀏覽器建立報告。支援記錄不屬於排班交易、正式
+SQLite、公平帳本、週表 PDF、備份或 Git 發布輸入。
+
+維護者只使用以下唯讀入口查看摘要，不直接翻找或改名收件匣檔案：
+
+```powershell
+python -X utf8 scripts\inspect_support_inbox.py
+```
+
+如需要主機控制狀態，另執行
+`scripts\collect_host_security_summary.ps1`；輸出只記錄設定是否存在及服務
+狀態，不記錄 secret 值。將摘要交到 GitHub 時，只貼支援編號、版本、可公開
+重現步驟及已刪減技術內容；姓名、請假、週表、完整資料庫／備份、cookie、
+token 及完整日誌留在私人受控渠道。完整程序及威脅模型見
+[本機問題回報與事故處理](SUPPORT_AND_INCIDENT_WORKFLOW.md)及
+[支援收件匣威脅模型](THREAT_MODEL_SUPPORT_INBOX.md)。
+
 正式長期主機採用 Windows 11，並維持 NiceGUI 只監聽 `127.0.0.1`。第一次由空白電腦安裝、設定開機自動啟動、更新、保養或搬機時，先依 [Windows 專用主機完整設定手冊](WINDOWS_DEDICATED_HOST_SETUP.md) 完成，不要從本節零散拼湊指令。
 
 受控技術維護可使用 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。正式設定只接受 Ed25519 金鑰、只監聽 loopback，並拒絕密碼、轉發及公開 TCP 22。`SingYinRosterSvc` 仍是非互動網站執行帳戶，不可用作 SSH 登入；SSH 私鑰亦不可放入 Git、交接備份、日誌或雲端同步資料夾。

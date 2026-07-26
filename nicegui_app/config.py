@@ -55,6 +55,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 CANONICAL_DATABASE_PATH = DATA_DIR / "runtime" / "sing-yin-roster.sqlite3"
 CANONICAL_BACKUP_DIR = DATA_DIR / "backups"
 CANONICAL_LOG_DIR = PROJECT_ROOT / "logs"
+CANONICAL_SUPPORT_DIR = DATA_DIR / "support"
 PRACTICE_DATA_DIR = DATA_DIR / "practice"
 DEFAULT_DATABASE_PATH = Path(os.getenv("SING_YIN_DATABASE_PATH", CANONICAL_DATABASE_PATH))
 DEFAULT_BACKUP_DIR = Path(os.getenv("SING_YIN_BACKUP_DIR", CANONICAL_BACKUP_DIR))
@@ -65,3 +66,15 @@ CANONICAL_PUBLIC_URL = os.getenv(
     "SING_YIN_PUBLIC_URL",
     "https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/",
 ).strip().rstrip("/") + "/"
+
+
+def support_directory() -> Path:
+    """Return the local incident inbox root.
+
+    Unlike database constants this is resolved at call time so isolated tests
+    and recovery tools can safely override it without importing production
+    state first.
+    """
+
+    configured = os.getenv("SING_YIN_SUPPORT_DIR", "").strip()
+    return Path(configured) if configured else CANONICAL_SUPPORT_DIR

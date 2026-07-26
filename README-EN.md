@@ -8,13 +8,15 @@ I am LI Chuangjie Jacky, Head Study Prefect for 2026–2027 at Sing Yin Secondar
 School. I co-created this maintained, local-first roster platform with Codex so
 that future Head Study Prefects can inherit a safe and understandable weekly process:
 
-**Feedback and contact:** Questions or suggestions about the workflow, interface,
-fairness explanation, or handover are welcome at
-[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk). Include an OP/REQ support
-reference when one is shown. When diagnostic evidence is genuinely needed,
-names, leave details, rosters, PDFs, databases, backups, screenshots, or logs
-may be attached after confirming the recipient and limiting the material to
-what the investigation needs.
+**Feedback and contact:** Start from **Problem report / Support** in the website,
+then email the generated support reference and redacted summary to
+[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk). An administrator may explicitly
+consent to saving bounded TXT, JSON, or PNG evidence in the host-local support
+inbox. Guest, Public, and Viewer reports remain browser-only. Never submit
+passwords, tokens, cookies, a complete database, or a complete backup; include
+only the smallest relevant extract of names, leave details, rosters, PDFs,
+screenshots, or logs when it is genuinely necessary. See the
+[local support and incident workflow](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md).
 
 **prepare → generate draft → review → publish once → export bilingual PDF →
 adjust published leave → explain fairness → back up, restore, and hand over.**
@@ -37,6 +39,7 @@ longest document:
 | Visitor who wants a complete trial without retained data | [Canonical site](https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/) → **Try the fictional demo** | [Canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md) |
 | Head Study Prefect completing official weekly work | [Canonical site](https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/) → **Administrator sign in** | [Operator guide](docs/OPERATOR_GUIDE.md) |
 | Advisor reviewing publication, fairness, or handover | [Acceptance evidence matrix](docs/ACCEPTANCE_EVIDENCE.md) | [Release and handover guide](docs/RELEASE_HANDOVER.md) |
+| Any user reporting an error, failed download, or display problem | Canonical site → **Problem report / Support** | [Local support and incident workflow](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md) |
 | Successor rehearsing before receiving official data | `START_PRACTICE_MODE.cmd` | [Quick start](docs/QUICKSTART.md) and [operator guide](docs/OPERATOR_GUIDE.md) |
 | IT maintainer deploying, recovering, or tracing an OP reference | [Documentation index](docs/DOCUMENTATION_INDEX.md) | [Windows host setup](docs/WINDOWS_DEDICATED_HOST_SETUP.md) and [update workflow](docs/UPDATE_WORKFLOW.md) |
 | Security reviewer or vulnerability reporter | [Security and privacy model](docs/SECURITY_AND_PRIVACY.md) | [Private reporting policy](SECURITY.md) and [branch strategy](docs/BRANCH_STRATEGY.md) |
@@ -57,6 +60,20 @@ The [documentation index](docs/DOCUMENTATION_INDEX.md) records document
 ownership, source-of-truth precedence, configuration classes, data lifecycles,
 verification levels, known limits, and the update triggers that keep the set
 complete.
+
+### Local problem reporting and diagnostics
+
+`/support` is the single reporting entry. The first level asks only what
+happened, where it happened, and what was expected; route, action, impact, and
+attachments are progressively disclosed. An Admin must explicitly confirm
+host-local persistence. Support records never join roster transactions, the
+official SQLite database, the fairness ledger, or roster backups. Guest,
+Public, and Viewer modes can only download or copy a browser-local report.
+Maintainers inspect the local inbox with `scripts/inspect_support_inbox.py` and
+can create a secret-free host summary with
+`scripts/collect_host_security_summary.ps1`. See the
+[support-inbox threat model](docs/THREAT_MODEL_SUPPORT_INBOX.md) and the
+[content-design audit](docs/CONTENT_DESIGN_AUDIT.md).
 
 ### One product, four distinct zones
 

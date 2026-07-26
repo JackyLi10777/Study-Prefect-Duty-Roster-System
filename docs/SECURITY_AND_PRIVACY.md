@@ -197,6 +197,17 @@ If compromise is suspected:
 Never paste secrets or full personal-data logs into Issues, pull requests,
 Actions output, screenshots, chat, or incident documents.
 
+The product's `/support` flow is the preferred first report. Admin persistence
+is opt-in, host-local, size-limited, integrity-hashed, and outside roster
+transactions and backups. Guest, Public, and Viewer reports are browser-only.
+The detailed operator steps are in
+[`SUPPORT_AND_INCIDENT_WORKFLOW.md`](SUPPORT_AND_INCIDENT_WORKFLOW.md); attack
+surface, trust assumptions, retention, quarantine, and residual risks are in
+[`THREAT_MODEL_SUPPORT_INBOX.md`](THREAT_MODEL_SUPPORT_INBOX.md). A public
+GitHub report must contain only a support reference and a redacted technical
+summary; attachments with names, leave details, rosters, cookies, tokens,
+databases, backups, or complete logs remain in a private controlled channel.
+
 ## 8. 明確限制 / Residual limits
 
 - No internet-facing service can guarantee that it will never be attacked or

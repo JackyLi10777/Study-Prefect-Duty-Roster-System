@@ -2,6 +2,16 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
+## v1.2.0-rc.23 — 2026-07-26
+
+- Added one progressive `/support` flow for Admin, Guest, Public, and Viewer contexts.
+- Added an explicit-consent, bounded, redacted, integrity-hashed host-local Admin support inbox with lifecycle cleanup and read-only inspection tooling.
+- Kept Guest, Public, and Viewer reports browser-only, non-persistent, and outside roster transactions, official SQLite, fairness, backups, and external queues.
+- Added a redacted Windows host-security summary for maintainers without exposing secret values.
+- Distilled repeated page titles, generic introductions, nested explanations, and permanently visible secondary actions while retaining policy, consequence, recovery, and trust evidence.
+- Added executable content-design, support-threat, repository-hygiene, bilingual, and Worker no-network/no-storage contracts.
+- Updated the operator, architecture, security, Viewer, Guest, Cloudflare, acceptance, handover, and release documentation for the same support boundary.
+
 ## v1.2.0-rc.22 — 2026-07-26
 
 - Versioned the design contract as Luminous Sacred Precision 1.3 while preserving opaque operational, roster, fairness, warning and PDF surfaces.

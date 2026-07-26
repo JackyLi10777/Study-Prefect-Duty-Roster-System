@@ -580,8 +580,6 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
     with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
         with ui.column().classes("gap-1 max-w-3xl"):
             ui.label(t("summary_report_title")).classes("text-xl font-semibold")
-            ui.label(t("summary_report_intro")).classes("text-sm leading-6 text-[var(--sy-muted)]")
-        _tone_badge(t("summary_report_read_only"), "stable")
 
     published_weeks = sorted(
         (week for week in workflow.roster_weeks() if week["status"] == "published"),
@@ -660,7 +658,6 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
 
     preview_button.on_click(refresh_report)
     ui.label(t("summary_downloads_title")).classes("text-lg font-semibold mt-5")
-    ui.label(t("summary_downloads_intro")).classes("text-sm leading-6 text-[var(--sy-muted)] mt-1")
     download_options = (
         ("zh", "picture_as_pdf", "download_summary_zh_pdf", "summary_zh_pdf_detail", "download-summary-zh"),
         ("en", "picture_as_pdf", "download_summary_en_pdf", "summary_en_pdf_detail", "download-summary-en"),
@@ -694,8 +691,7 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
 def prefects_page() -> None:
     workflow = get_workflow()
     with page_shell("/prefects"):
-        with ui.row().classes("sy-page-lead w-full items-center justify-between"):
-            ui.label(t("prefects")).classes("text-2xl font-semibold")
+        with ui.row().classes("sy-page-lead w-full items-center justify-end"):
             ui.button(t("add_prefect"), icon="person_add", on_click=lambda: _show_prefect_dialog()).props("color=primary")
         with ui.tabs().classes("w-full sy-fg-action") as tabs:
             directory_tab = ui.tab("directory", label=t("directory"), icon="groups")

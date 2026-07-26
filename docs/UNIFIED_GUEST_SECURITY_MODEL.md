@@ -82,6 +82,14 @@ Assist. 排班模式也維持同頁面、同穩定代碼及同政策驗證：`le
 
 ## 4. 資料與整合限制
 
+### Guest 問題回報
+
+Guest 的 `/support` 介面與 Admin 使用同一內容結構，但能力政策拒絕本機收件匣
+寫入及附件上載。報告只在目前瀏覽器記憶體組合，使用者可下載 JSON、複製摘要
+或開啟電郵草稿；流程不使用正式 SQLite、`app.storage.user`、session snapshot、
+localStorage、IndexedDB、Cache Storage、備份或背景工作。登出、到期、撤權、
+重新載入或程序重啟均不需要伺服器清理，因為 origin 從未收到報告內容。
+
 訪客可操作同一套畫面，但以下項目只顯示一致的限制狀態：
 
 - 名冊／AI：只用內置 fixture 或預先計算示例；不能上載、貼上或呼叫外部 AI。

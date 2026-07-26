@@ -37,7 +37,6 @@ def handover_page() -> None:
             f'aria-label="{attr(t("handover"))}"'
         ):
             ui.icon("handshake").classes("sy-handover-hero-icon").props("aria-hidden=true")
-            ui.label(t("handover")).classes("sy-handover-hero-title")
             ui.label(t("handover_intro")).classes("sy-handover-hero-copy")
         render_page_toc(
             (
@@ -243,7 +242,6 @@ def settings_page() -> None:
     }
     readiness = workflow.handover_readiness()
     with page_shell("/settings"):
-        ui.label(t("settings")).classes("text-2xl font-semibold")
         _render_operation_hint("hint_settings", icon="settings_backup_restore")
         if _is_guest_mode():
             render_guest_music_settings()
@@ -254,7 +252,6 @@ def settings_page() -> None:
             with ui.row().classes("w-full items-center justify-between gap-4 flex-wrap"):
                 with ui.column().classes("gap-1"):
                     ui.label(t("handover")).classes("text-lg font-semibold")
-                    ui.label(t("handover_intro")).classes("text-sm text-[var(--sy-muted)]")
                 ui.button(t("open_handover_guide"), icon="handshake", on_click=lambda: navigate_to("/handover")).props("outline color=primary")
             with ui.row().classes("w-full gap-3 flex-wrap mt-4"):
                 for label_key, value, ready in (

@@ -195,11 +195,6 @@ const VIEWER_HTML = `<!doctype html>
           <img class="portal-story-image portal-story-image--dark" src="/assets/entrance-operations-dark-v1.webp" alt="" width="1760" height="941" fetchpriority="high" decoding="async">
           <span class="portal-story-veil"></span>
         </div>
-        <div class="portal-kicker">
-          <span class="portal-kicker-mark" aria-hidden="true"></span>
-          <span>值班表生成與發布</span>
-          <span lang="en">Roster creation & publishing</span>
-        </div>
         <h1 id="guestTitle">查看已發布週表，或管理本週值班</h1>
         <p id="guestDescription" class="portal-lead">分享連結可直接查看；登入後可生成、核對、發布、匯出及處理已發布後請假。</p>
         <p id="guestDescriptionEn" class="portal-lead portal-lead--en" lang="en">Open a roster share directly, or sign in to generate, review, publish, export, and handle published-duty absences.</p>
@@ -215,12 +210,6 @@ const VIEWER_HTML = `<!doctype html>
             <span aria-hidden="true">→</span>
           </a>
         </nav>
-
-        <ol class="workflow-cue" aria-label="管理員每週流程 · Weekly administrator workflow">
-          <li><span>01</span><strong>生成與核對</strong><small lang="en">Generate & review</small></li>
-          <li><span>02</span><strong>發布與匯出</strong><small lang="en">Publish & export</small></li>
-          <li><span>03</span><strong>已發布後請假</strong><small lang="en">Published-duty absence</small></li>
-        </ol>
 
         <section class="devotional-prompt" aria-labelledby="landingDevotionalTitle">
           <div class="devotional-prompt-heading">
@@ -256,7 +245,6 @@ const VIEWER_HTML = `<!doctype html>
             <path d="m9 12 2 2 4-4"></path>
           </svg>
         </div>
-        <p class="eyebrow">管理員存取 · ADMIN ACCESS</p>
         <h2 id="adminPanelTitle">登入管理值班表</h2>
         <p class="access-copy">完成身份驗證後返回本網站，繼續本週工作。</p>
         <p class="access-copy access-copy--en" lang="en">After verification, return here to continue this week’s roster.</p>
@@ -340,6 +328,7 @@ const VIEWER_HTML = `<!doctype html>
           </button>
           <p id="shareSiteStatus" class="site-share-status" aria-live="polite">只會分享首頁，不包含任何值班表或查看密鑰。<span lang="en">Shares the entrance only—never a roster or viewing key.</span></p>
         </div>
+        <a class="support-link" href="/support#public">報告網站問題 <span lang="en">· Report a site problem</span></a>
       </aside>
 
     </section>
@@ -405,6 +394,7 @@ const VIEWER_HTML = `<!doctype html>
       <aside class="viewer-note">
         <p>這是唯讀版本。如有更改，請以首席導學風紀最新發布的連結為準。</p>
         <p lang="en">Read-only copy. If duties change, use the latest link issued by the Head Study Prefect.</p>
+        <a class="support-link" href="/support#viewer">報告查看問題 <span lang="en">· Report a viewing problem</span></a>
       </aside>
     </article>
   </main>
@@ -419,6 +409,169 @@ const VIEWER_HTML = `<!doctype html>
   <script type="module" src="/viewer.js"></script>
 </body>
 </html>`;
+
+const PUBLIC_SUPPORT_HTML = `<!doctype html>
+<html lang="zh-Hant-HK">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <title>報告問題 · Report a problem</title>
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <link rel="stylesheet" href="/viewer.css">
+</head>
+<body class="support-page">
+  <main class="page-shell support-shell">
+    <header class="support-heading">
+      <a class="support-back" href="/">← 返回網站入口 <span lang="en">· Return to entrance</span></a>
+      <h1>安全地整理問題資料</h1>
+      <p>這個公開表單只會在你的瀏覽器產生一份經整理的報告，不會上傳、儲存或自動傳送任何內容。</p>
+      <p lang="en">This public form creates a redacted report only in your browser. Nothing is uploaded, stored, or sent automatically.</p>
+    </header>
+
+    <form id="publicSupportForm" class="support-form" novalidate>
+      <label>預期情況 · Expected behaviour
+        <textarea id="supportExpected" maxlength="1200" required></textarea>
+      </label>
+      <label>實際情況 · Actual behaviour
+        <textarea id="supportActual" maxlength="1200" required></textarea>
+      </label>
+      <label>最少重現步驟 · Minimal reproduction steps
+        <textarea id="supportSteps" maxlength="1600" required></textarea>
+      </label>
+      <details class="support-details">
+        <summary>加入分類、影響與安全提示 <span lang="en">· Add category, impact, and safety guidance</span></summary>
+        <div class="support-details-content">
+          <section class="support-safety" aria-labelledby="supportSafetyTitle">
+            <h2 id="supportSafetyTitle">提交前請先移除敏感內容</h2>
+            <p>不要填寫姓名、值班表內容、請假資料、密碼、登入憑證、查看密鑰、完整網址查詢字串或完整日誌。</p>
+            <p lang="en">Do not include names, roster or leave content, passwords, credentials, viewing keys, URL query strings, or complete logs.</p>
+          </section>
+          <label>問題類別 · Category
+            <select id="supportCategory" required>
+              <option value="viewer">值班表查看 · Roster viewing</option>
+              <option value="access">進入網站 · Site access</option>
+              <option value="display">顯示或無障礙 · Display or accessibility</option>
+              <option value="other">其他 · Other</option>
+            </select>
+          </label>
+          <label>影響（選填） · Impact (optional)
+            <textarea id="supportImpact" maxlength="800"></textarea>
+          </label>
+        </div>
+      </details>
+      <div class="support-actions">
+        <button id="supportBuild" class="admin-login" type="submit">產生安全報告 <span lang="en">· Build safe report</span></button>
+        <button id="supportReset" class="guest-enter" type="reset">清除 <span lang="en">· Clear</span></button>
+      </div>
+    </form>
+
+    <section id="supportResult" class="support-result" hidden aria-live="polite">
+      <h2>報告已在瀏覽器準備好</h2>
+      <p>事件編號 · Incident ID: <strong id="supportIncidentId"></strong></p>
+      <p>下載或複製後，由你自行選擇安全的傳送方式；系統不會自動提交。</p>
+      <p lang="en">Download or copy the report, then choose an appropriate channel yourself. The system never submits it automatically.</p>
+      <div class="support-actions">
+        <button id="supportDownload" class="admin-login" type="button">下載 JSON <span lang="en">· Download JSON</span></button>
+        <button id="supportCopy" class="guest-enter" type="button">複製摘要 <span lang="en">· Copy summary</span></button>
+        <a id="supportEmail" class="guest-enter" href="mailto:s10777@syss.edu.hk">開啟電郵 <span lang="en">· Open email</span></a>
+      </div>
+      <p id="supportStatus" class="site-share-status" role="status"></p>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <div class="site-footer-principle"><span>服務精神 · 非以役人，乃役於人</span><span lang="en">Service principle · Not to be served, but to serve.</span></div>
+    <span class="site-footer-copyright">Copyright © 2026 LI Chuangjie</span>
+  </footer>
+  <script type="module" src="/support-feedback.js"></script>
+</body>
+</html>`;
+
+const PUBLIC_SUPPORT_JS = `const form = document.getElementById('publicSupportForm');
+const result = document.getElementById('supportResult');
+const incidentIdNode = document.getElementById('supportIncidentId');
+const statusNode = document.getElementById('supportStatus');
+const downloadButton = document.getElementById('supportDownload');
+const copyButton = document.getElementById('supportCopy');
+const emailLink = document.getElementById('supportEmail');
+let preparedReport = null;
+
+const normalizedText = (id, maximum) => document.getElementById(id).value
+  .replace(/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F]/g, ' ')
+  .replace(/\\r\\n?/g, '\\n')
+  .trim()
+  .slice(0, maximum);
+
+const newIncidentId = () => 'FB-' + crypto.randomUUID().replaceAll('-', '').slice(0, 16).toUpperCase();
+
+const reportSummary = report => [
+  'Incident ID: ' + report.incident_id,
+  'Created (UTC): ' + report.created_at_utc,
+  'Source: ' + report.source,
+  'Category: ' + report.category,
+  '',
+  'Expected:', report.expected_behavior,
+  '',
+  'Actual:', report.actual_behavior,
+  '',
+  'Reproduction steps:', report.reproduction_steps,
+  '',
+  'Impact:', report.impact || '(not supplied)',
+].join('\\n');
+
+form.addEventListener('submit', event => {
+  event.preventDefault();
+  if (!form.reportValidity()) return;
+  const source = location.hash === '#viewer' ? 'public_viewer' : 'public_entrance';
+  preparedReport = Object.freeze({
+    schema_version: 'sing-yin-browser-support-report-v1',
+    incident_id: newIncidentId(),
+    created_at_utc: new Date().toISOString(),
+    source,
+    actor_mode: 'public',
+    category: document.getElementById('supportCategory').value,
+    expected_behavior: normalizedText('supportExpected', 1200),
+    actual_behavior: normalizedText('supportActual', 1200),
+    reproduction_steps: normalizedText('supportSteps', 1600),
+    impact: normalizedText('supportImpact', 800),
+    collection: Object.freeze({ server_persistence: false, attachments: false, automatic_transmission: false }),
+  });
+  incidentIdNode.textContent = preparedReport.incident_id;
+  emailLink.href = 'mailto:s10777@syss.edu.hk?subject=' + encodeURIComponent('Service Weave support ' + preparedReport.incident_id);
+  statusNode.textContent = '';
+  result.hidden = false;
+  result.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
+});
+
+form.addEventListener('reset', () => {
+  preparedReport = null;
+  result.hidden = true;
+  statusNode.textContent = '';
+});
+
+downloadButton.addEventListener('click', () => {
+  if (!preparedReport) return;
+  const blob = new Blob([JSON.stringify(preparedReport, null, 2)], { type: 'application/json' });
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = preparedReport.incident_id + '-redacted-report.json';
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+  statusNode.textContent = '已下載；請先檢查內容再傳送。 · Downloaded; review it before sending.';
+});
+
+copyButton.addEventListener('click', async () => {
+  if (!preparedReport) return;
+  try {
+    await navigator.clipboard.writeText(reportSummary(preparedReport));
+    statusNode.textContent = '已複製安全摘要。 · Safe summary copied.';
+  } catch {
+    statusNode.textContent = '瀏覽器未允許複製；請改用下載。 · Copy was blocked; use download instead.';
+  }
+});`;
 
 const VIEWER_CSS = `:root {
   color-scheme: light dark;
@@ -655,19 +808,6 @@ button, input, select, textarea { font: inherit; }
 .portal-story::before { width: 430px; height: 430px; top: -252px; right: -170px; }
 .portal-story::after { width: 310px; height: 310px; top: -192px; right: -110px; }
 
-.portal-kicker {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 10px;
-  color: var(--portal-story-muted);
-  font-size: 0.7rem;
-  font-weight: 760;
-  letter-spacing: 0.11em;
-}
-
-.portal-kicker-mark { width: 22px; height: 2px; border-radius: 999px; background: var(--brand); }
-
 .portal-story > h1 {
   max-width: 670px;
   margin: 25px 0 16px;
@@ -719,37 +859,6 @@ button, input, select, textarea { font: inherit; }
 .mobile-entry-action--guest { background: color-mix(in srgb, var(--surface) 78%, transparent); }
 .mobile-entry-action:active { transform: scale(0.985); }
 .mobile-entry-action:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
-
-.workflow-cue {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 30px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.workflow-cue li {
-  position: relative;
-  min-width: 0;
-  padding-top: 13px;
-  border-top: 1px solid color-mix(in srgb, var(--portal-story-ink) 15%, transparent);
-}
-
-.workflow-cue li::before {
-  position: absolute;
-  top: -1px;
-  left: 0;
-  width: 0;
-  height: 1px;
-  background: var(--brand);
-  content: "";
-  transition: width 240ms var(--ease-standard);
-}
-
-.workflow-cue li > span { display: block; margin-bottom: 9px; color: var(--brand); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.1em; }
-.workflow-cue strong { display: block; font-size: 0.82rem; line-height: 1.35; }
-.workflow-cue small { display: block; margin-top: 4px; color: var(--portal-story-muted); font-size: 0.68rem; line-height: 1.35; }
 
 .devotional-prompt {
   margin-top: 30px;
@@ -1265,6 +1374,73 @@ tbody td {
 
 .viewer-note p { margin: 0; }
 .viewer-note p + p { margin-top: 3px; }
+.support-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 12px;
+  color: var(--action);
+  font-size: 0.72rem;
+  font-weight: 720;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.support-link:hover { color: var(--brand); }
+.support-link:focus-visible,
+.support-back:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; border-radius: 5px; }
+
+.support-page { align-items: stretch; }
+.support-shell { width: min(100% - 32px, 860px); margin-inline: auto; padding-top: clamp(28px, 7vw, 72px); }
+.support-heading { display: grid; gap: 10px; margin-bottom: 20px; }
+.support-heading h1 { margin: 4px 0 0; font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.06; letter-spacing: -0.035em; }
+.support-heading p { max-width: 720px; margin: 0; color: var(--ink-muted); line-height: 1.65; }
+.support-back { width: fit-content; color: var(--action); font-size: 0.76rem; font-weight: 720; }
+.support-safety,
+.support-form,
+.support-result {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.support-safety { padding: 18px 20px; border-color: var(--warning-line); background: var(--warning-soft); box-shadow: none; }
+.support-safety h2,
+.support-result h2 { margin: 0 0 8px; font-size: 1rem; }
+.support-safety p,
+.support-result p { margin: 4px 0; color: var(--ink-muted); font-size: 0.78rem; line-height: 1.58; }
+.support-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: clamp(20px, 4vw, 30px); }
+.support-form label { display: grid; gap: 7px; color: var(--ink); font-size: 0.76rem; font-weight: 700; }
+.support-form > label { grid-column: 1 / -1; }
+.support-details { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 4px; }
+.support-details summary { min-height: 44px; padding: 12px 2px; color: var(--action); font-size: 0.76rem; font-weight: 720; cursor: pointer; }
+.support-details summary:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; border-radius: 6px; }
+.support-details-content { display: grid; gap: 16px; padding-top: 8px; }
+.support-details-content label { display: grid; gap: 7px; }
+.support-form textarea,
+.support-form select {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 520;
+}
+.support-form select { min-height: 46px; padding: 9px 12px; }
+.support-form textarea { min-height: 108px; padding: 12px; line-height: 1.55; resize: vertical; }
+.support-form textarea:focus-visible,
+.support-form select:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.support-actions { display: flex; flex-wrap: wrap; gap: 10px; grid-column: 1 / -1; }
+.support-actions .admin-login,
+.support-actions .guest-enter { width: auto; min-height: 46px; }
+.support-result { margin-top: 16px; padding: clamp(20px, 4vw, 28px); }
+.support-result .support-actions { margin-top: 16px; }
+
+@media (max-width: 640px) {
+  .support-form { grid-template-columns: 1fr; }
+  .support-form label { grid-column: 1 / -1; }
+  .support-actions > * { width: 100% !important; justify-content: center; }
+}
 
 .site-footer {
   display: flex;
@@ -1380,7 +1556,6 @@ tbody td {
   .access-panel { transition: border-color 180ms ease, box-shadow 220ms ease, transform 180ms var(--ease-standard); }
   .access-panel:hover { border-color: var(--line-strong); box-shadow: 0 18px 42px rgba(31, 41, 39, 0.12); transform: translateY(-2px); }
   .access-panel:hover .access-panel-icon svg { transform: scale(1.06) rotate(-3deg); }
-  .workflow-cue li:hover::before { width: 46%; }
   .guest-enter:hover .guest-enter-icon svg { transform: scale(1.08); }
 }
 
@@ -1429,9 +1604,6 @@ tbody td {
   }
   .access-panel > [data-entry-role="admin"],
   .access-panel > [data-entry-role="guest"] { display: none; }
-  .workflow-cue { grid-template-columns: 1fr; gap: 9px; margin-top: 25px; }
-  .workflow-cue li { display: grid; grid-template-columns: 28px 1fr; column-gap: 8px; padding-top: 10px; }
-  .workflow-cue li > span { grid-row: 1 / 3; margin: 1px 0 0; }
   .devotional-prompt { margin-top: 24px; padding: 18px 17px 17px; }
   .devotional-reflection { grid-template-columns: auto 1fr; }
   .devotional-reflection p[lang="en"] { grid-column: 2; }
@@ -3659,6 +3831,20 @@ async function route(request, env, context) {
   }
   if (path.startsWith('/try/')) {
     return response('Not found', 404, { 'Content-Type': 'text/plain; charset=utf-8' });
+  }
+  if (path === '/support') {
+    if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
+    return staticResponse(request, PUBLIC_SUPPORT_HTML, 200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    });
+  }
+  if (path === '/support-feedback.js') {
+    if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
+    return staticResponse(request, PUBLIC_SUPPORT_JS, 200, {
+      'Content-Type': 'text/javascript; charset=utf-8',
+      'Cache-Control': 'no-store',
+    });
   }
   if (path === '/view') {
     if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');

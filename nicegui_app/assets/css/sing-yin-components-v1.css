@@ -251,6 +251,135 @@
   color: #F8FAFC;
 }
 
+.sy-support-admin,
+.sy-support-browser,
+.sy-support-result {
+  display: grid;
+  gap: 18px;
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid var(--sy-line);
+  border-radius: 22px;
+  background: var(--sy-surface);
+  box-shadow: var(--sy-card-shadow);
+}
+
+.sy-support-browser-status {
+  width: max-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px solid var(--sy-line-strong);
+  border-radius: 999px;
+  color: var(--sy-muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.sy-support-browser-copy {
+  margin: 0;
+}
+
+.sy-support-browser-copy {
+  max-width: 72ch;
+  color: var(--sy-muted);
+  line-height: 1.65;
+}
+
+.sy-support-browser-field {
+  display: grid;
+  gap: 7px;
+  color: var(--sy-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sy-support-browser-field textarea,
+.sy-support-browser-field select {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 12px;
+  border: 1px solid var(--sy-line-strong);
+  border-radius: 13px;
+  background: var(--sy-surface-subtle);
+  color: var(--sy-ink);
+  font: inherit;
+  font-weight: 500;
+}
+
+.sy-support-browser-field textarea {
+  min-height: 104px;
+  resize: vertical;
+}
+
+.sy-support-browser-field textarea:focus-visible,
+.sy-support-browser-field select:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--sy-role-action) 32%, transparent);
+  outline-offset: 2px;
+}
+
+.sy-support-browser-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.sy-support-browser-actions button {
+  min-height: 44px;
+  padding: 9px 15px;
+  border: 1px solid var(--sy-line-strong);
+  border-radius: 12px;
+  background: var(--sy-surface);
+  color: var(--sy-role-action);
+  font: inherit;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.sy-support-browser-actions .sy-support-browser-primary {
+  border-color: var(--sy-role-action);
+  background: var(--sy-role-action);
+  color: var(--sy-on-action);
+}
+
+.sy-support-browser-actions[hidden] { display: none; }
+
+.sy-support-browser-reset {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--sy-muted) !important;
+  box-shadow: none !important;
+}
+
+.sy-support-details {
+  margin-top: 4px;
+  border-top: 1px solid var(--sy-line);
+  border-bottom: 1px solid var(--sy-line);
+  background: transparent;
+}
+
+details.sy-support-details > summary {
+  min-height: 44px;
+  padding: 12px 2px;
+  color: var(--sy-role-action);
+  font-weight: 720;
+  cursor: pointer;
+}
+
+details.sy-support-details[open] > summary { margin-bottom: 14px; }
+
+.sy-support-browser-actions button:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+}
+
+.sy-support-browser output {
+  min-height: 24px;
+  color: var(--sy-role-stable);
+  font-family: "Cascadia Code", "SFMono-Regular", monospace;
+  font-weight: 720;
+}
+
 .sy-code-sample-header {
   min-height: 52px;
   padding: 8px 10px 8px 16px;

@@ -120,6 +120,18 @@ Cloudflare 暫時不可用時，只有維護者才使用 localhost 或已核准 
 - [ ] rc20 的 mobile public root 在 320px／390px 首屏各只有一個 visible Admin 及 Guest CTA，至少 48px 高（設計 52px），位於 workflow／devotional 前；desktop access panel、路由及身份邊界不變。
 - [ ] 兩個入口在 light／dark、reduced motion、forced colours、browser back 及 first-viewport checks 均通過，且沒有 console error／`pageerror`；只有最終 source-matched report 及已部署 Worker smoke 才可把它們標為 live。
 
+## 問題回報／Support
+
+公開入口及 Viewer 可開啟 `/support`，但報告只在目前瀏覽器建立。頁面不會
+呼叫 origin、建立 WebSocket、寫入 Cookie／localStorage／IndexedDB，亦不會
+把 Viewer fragment、週表內容或身份資料加入報告。使用者可下載 JSON、複製
+已刪減摘要，或以預先填好的電郵草稿聯絡支援；離開頁面後網站不會保留內容。
+完整分享連結仍是 bearer capability，不應貼入報告或公開 Issue。
+
+The Public and Viewer support route builds a report entirely in the browser. It
+does not upload, persist, or include a Viewer fragment or roster payload. The
+user may download JSON, copy the redacted summary, or open a prefilled email.
+
 ## English quick guide
 
 The live rc20 origin (`v1.2.0-rc.20`, commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`) passed all 14 formal gates with source fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`, including 839 Python, 3 motion, and 40 Worker tests, before the controlled Windows switch. Worker source was unchanged, so the live Worker remains `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`; rc18／`fd504a8` is the first historical rollback target.

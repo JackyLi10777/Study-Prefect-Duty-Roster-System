@@ -78,6 +78,7 @@ _REQUIRED_IGNORE_PROBES = {
     "runtime_database": ("data/runtime/privacy-probe.sqlite3",),
     "backup": ("data/backups/privacy-probe.sqlite3",),
     "support_log": ("logs/app.log",),
+    "support_incident": ("data/support/inbox/INC-20990101-1234ABCD/manifest.json", "support/inbox/INC-20990101-1234ABCD/manifest.json"),
     "generated_document": ("privacy-probe.pdf", "privacy-probe.zip"),
     "operator_import": ("privacy-probe.csv", "privacy-probe.xlsx"),
     "operator_music": ("music/privacy-probe.mp3", "music/custom/privacy-probe.m4a"),
@@ -126,6 +127,8 @@ def sensitive_category(raw_path: str) -> str | None:
         return "backup"
     if normalized.startswith("logs/"):
         return "support_log"
+    if normalized.startswith("data/support/") or normalized.startswith("support/"):
+        return "support_incident"
     if normalized.startswith(".nicegui/"):
         return "operator_preferences"
     if normalized.startswith(".codex-remote-attachments/"):

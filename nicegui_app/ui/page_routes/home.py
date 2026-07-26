@@ -92,7 +92,6 @@ def dashboard_page() -> None:
                 with ui.row().classes("w-full items-start justify-between gap-5 flex-wrap"):
                     with ui.column().classes("gap-1"):
                         ui.html(t("workbench_title"), tag="h2").classes("sy-workbench-title")
-                        ui.label(t("workbench_intro")).classes("sy-workbench-intro")
                     if not has_prefects:
                         _tone_badge(t("flow_directory_ready"), "attention")
                     elif latest is None:
@@ -132,7 +131,6 @@ def dashboard_page() -> None:
                         ui.html(t("current_rosters"), tag="h2").classes("sy-dashboard-history-title").props(
                             "id=dashboard-history-title"
                         )
-                        ui.label(t("dashboard_history_copy")).classes("sy-dashboard-history-copy")
                     if recent_weeks:
                         _tone_badge(t("dashboard_history_count", count=len(recent_weeks)), "neutral")
                 if not recent_weeks:
@@ -171,7 +169,6 @@ def getting_started_page() -> None:
     with page_shell("/getting-started"):
         with ui.element("section").classes("sy-onboarding-intro w-full max-w-4xl").props("id=start-intro"):
             with ui.column().classes("gap-2"):
-                ui.label(t("getting_started")).classes("sy-page-title")
                 ui.label(t("new_user_intro")).classes("text-[var(--sy-muted)] max-w-2xl")
             ui.icon("calendar_month").classes("sy-onboarding-symbol").props("aria-hidden=true")
         render_page_toc(
@@ -263,7 +260,6 @@ def operator_guide_page() -> None:
             f'aria-label="{attr(t("operator_guide"))}"'
         ):
             with ui.column().classes("gap-2 max-w-3xl"):
-                ui.label(t("operator_guide")).classes("sy-page-title")
                 ui.label(t("guide_intro")).classes("text-[var(--sy-muted)] leading-7")
         render_page_toc(
             (

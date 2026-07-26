@@ -140,7 +140,7 @@ def test_cloudflare_entry_and_error_pages_use_the_service_weave_product_mark() -
         "SERVICE_WEAVE_FAVICON_SHA256",
     ):
         assert export_name in worker
-    assert worker.count('href="/favicon.png" type="image/png"') == 3
+    assert worker.count('href="/favicon.png" type="image/png"') == 4
     assert 'src="/favicon.png"' not in worker
     assert 'src="/assets/service-weave-mark-light-v1.png"' in worker
     assert 'src="/assets/service-weave-mark-dark-v1.png"' in worker

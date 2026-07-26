@@ -34,6 +34,9 @@ def _isolated_guest_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
     monkeypatch.setenv("SING_YIN_GUEST_TEST_URL", "http://127.0.0.1:18102")
     monkeypatch.setenv("SING_YIN_DATABASE_PATH", str(database_path))
     monkeypatch.setenv("SING_YIN_UNIFIED_GUEST_EVIDENCE_DIR", str(tmp_path / "evidence"))
+    support_dir = tmp_path / "admin-support"
+    support_dir.mkdir()
+    monkeypatch.setenv("SING_YIN_ADMIN_SUPPORT_DIR", str(support_dir))
     return database_path
 
 
@@ -43,13 +46,14 @@ def test_unified_guest_verifier_accepts_only_explicit_disposable_inputs(
 ) -> None:
     database_path = _isolated_guest_environment(monkeypatch, tmp_path)
 
-    admin_url, guest_url, resolved_database, evidence_dir = isolated_inputs()
+    admin_url, guest_url, resolved_database, evidence_dir, support_dir = isolated_inputs()
 
     assert admin_url == "http://127.0.0.1:18101"
     assert guest_url == "http://127.0.0.1:18102"
     assert resolved_database == database_path.resolve()
     assert evidence_dir == (tmp_path / "evidence").resolve()
     assert evidence_dir.is_dir()
+    assert support_dir == (tmp_path / "admin-support").resolve()
 
 
 @pytest.mark.parametrize(
@@ -108,6 +112,7 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         "/getting-started",
         "/guide",
         "/devotional",
+        "/support",
     } == set(SHARED_ROUTES)
     assert set(EDITORIAL_PARITY_ROUTES) < set(SHARED_ROUTES)
 
@@ -119,6 +124,7 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         "_exercise_summary_downloads",
         "_reload_and_verify_signed_snapshot",
         "_exercise_handover_reset_restore",
+        "_exercise_support_flows",
         "_exercise_true_duplicate_and_tamper",
         "_demo_download_evidence",
         "_exercise_broadcast_cleanup",

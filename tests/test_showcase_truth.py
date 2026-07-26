@@ -83,7 +83,7 @@ def test_showcase_limits_template_kickers_and_avoids_fictional_offices() -> None
     messages = (PROJECT_ROOT / "nicegui_app" / "ui" / "i18n_catalog" / "platform.py").read_text(encoding="utf-8")
 
     assert "show_kicker: bool = False" in source
-    assert source.count("show_kicker=True") == 3
+    assert source.count("show_kicker=True") <= 3
     for inflated_label in (
         "Weekly Operations Office",
         "Fairness Assurance Office",

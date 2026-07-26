@@ -25,6 +25,8 @@ frontend/.next/
 data/runtime/
 data/backups/
 data/practice/
+data/support/
+support/
 logs/
 *.sqlite3
 *.sqlite3-*
@@ -33,6 +35,7 @@ logs/
 *.csv
 *.xls
 *.xlsx
+incident-*.zip
 
 # Curated built-in .m4a files are versioned so a clean deployment receives the
 # same light/dark listening profiles. Duplicate downloads and operator imports

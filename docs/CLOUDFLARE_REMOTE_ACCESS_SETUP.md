@@ -183,6 +183,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
    - `POST /auth/guest/start` 建立 Guest session；
    - `/auth/status` 正確回報 public／guest／admin；
    - `/guest`、`/try` 兼容重定向；
+   - `/support` Public／Viewer browser-only 報告，以及 Guest origin 頁的非持久化限制；
    - `/view#…` Viewer；
    - VPC WebSocket 及 origin `/healthz`。
 6. 只有上述核對及 deployment traffic 查詢全部相符，才提高流量；完成後再用不帶版本標頭的正式網址核對一次。
@@ -232,6 +233,13 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 - [ ] 只有 published 版本可建立。
 - [ ] 草稿、Guest 結果及真實資料庫不能分享。
 - [ ] 到期、撤銷及修正版重發。
+
+### Support
+
+- [ ] Public／Viewer `/support` 不發出 fetch、XHR、WebSocket 或 storage 寫入。
+- [ ] Guest `/support` 不能呼叫 Admin 收件匣服務或保存附件。
+- [ ] Admin 必須明確同意才建立主機本機 incident；結果不進入排班交易或備份。
+- [ ] Worker、origin、README、操作手冊及威脅模型使用同一資料邊界。
 
 ## 10. 回退
 

@@ -71,6 +71,12 @@ rc20 的精確發布證據是：annotated tag `v1.2.0-rc.20`、commit `e3d84858a
 | NiceGUI、政策、公平、交易、SQLite、遷移、依賴、運行資產、Windows 主機腳本或正式驗證器 | `full` | pre-push 跑完整 Python、安全、Worker 及 hygiene；正式部署使用 `--release` 執行當前完整 gate（rc20 候選基線為 14 項，後續以 source-matched report 為準） |
 | 未能識別的新路徑或 Git base | `full` | 失敗時向高風險升級，不會靜默略過 |
 
+`/support` 頁面、Worker route、`SupportInbox`、redaction／quota、收件匣設定、
+主機安全摘要或支援文件均屬安全敏感的跨層變更，最低使用 `full`。版本控制只
+包含程式、測試及文件；實際 support inbox、staging、quarantine、附件、主機
+摘要輸出、日誌、資料庫及備份必須由 repository hygiene gate 排除。正式部署
+只接受同一不可變來源的 Admin／Guest／Public／Viewer 支援流程證據。
+
 pre-push profile 內互不寫入的檢查會並行執行。正式候選驗證仍保持受控次序，因為瀏覽器寫入、備份及還原證據不可互相競爭同一個隔離環境。
 
 ## 正式證據不再被文字改動誤傷

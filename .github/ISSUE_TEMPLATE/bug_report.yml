@@ -1,0 +1,61 @@
+name: Redacted bug or UX report
+description: Report a reproducible, non-security problem without student or host data.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start from the application's **Problem report / Support** page when possible.
+        Public issues are for redacted technical information only. Suspected security
+        vulnerabilities must use Private vulnerability reporting instead.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed names, leave details, roster content, Viewer links, cookies, tokens, passwords, database or backup files, and complete logs.
+          required: true
+        - label: I used fictional data for reproduction.
+          required: true
+  - type: input
+    id: support_reference
+    attributes:
+      label: Redacted support reference
+      description: OP-, REQ-, or INC- reference only. Do not paste the local incident bundle.
+      placeholder: OP-XXXXXXXX
+  - type: input
+    id: version
+    attributes:
+      label: Version or source fingerprint
+      description: Use the value shown by the application or release status.
+    validations:
+      required: true
+  - type: input
+    id: route
+    attributes:
+      label: Route or component
+      placeholder: /rosters or generated-file download
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened?
+      description: Use a short, redacted description. Do not attach host-local evidence here.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal fictional reproduction
+      description: List only the few steps needed to reproduce with fictional content.
+    validations:
+      required: true
