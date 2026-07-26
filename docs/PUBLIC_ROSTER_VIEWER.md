@@ -1,8 +1,10 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **目前狀態（live rc24）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`；canonical Worker version `76a23134-8355-4e25-bbba-abf17c6918c5` 正承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；canonical public root、Guest workbench、Public browser-only support、Guest NiceGUI support、Viewer recovery、英文切換及桌面／手機 rendered smoke 已通過，沒有 console／page error。
+> **目前狀態（live rc26）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`；canonical Worker version `76a23134-8355-4e25-bbba-abf17c6918c5` 正承接 100% 流量。Worker source／設定自 rc24 至 rc26 沒有差異，故沒有作不必要的重新部署。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；canonical public root、Guest Platform、真實 `Study Prefect Team／導學風紀組` 文案、英文切換及桌面 rendered smoke 已通過，沒有 console／page error。
 >
-> **rc21 受控上線（2026-07-26）：** 291 個來源檔案以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate；切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／`fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 原始碼及設定沒有改動，故沿用上述已驗證版本。第一級回退是 `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；真人驗收仍未簽署。
+> **回退層級：** 第一級回退是 `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` 與同一 Worker exact pair；rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` 是次級已驗證基線。
+>
+> **歷史 rc21 受控上線證據（現為次級已驗證基線）：** 291 個來源檔案以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate；切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／`fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已完成 checksum、公平對帳、行數核對、還原審計及隔離還原。這段只保留歷史來源；目前 live 與回退層級以上方 rc26／rc24 說明為準。
 
 我是李創杰。我希望所有使用者只需記住同一個網站，但同一個網址不代表相同權限。v1.2 把入口、完整 Guest 體驗及管理員工作台統一到同一套 NiceGUI 路由和元件；只有已發布週表的 `/view#…` 保留為獨立、只讀、可分享的能力連結。
 
@@ -134,10 +136,10 @@ user may download JSON, copy the redacted summary, or open a prefilled email.
 
 ## English quick guide
 
-The live rc20 origin (`v1.2.0-rc.20`, commit `e3d84858abfe23714929a87c4bcf76e55999ce7c`) passed all 14 formal gates with source fingerprint `93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a`, including 839 Python, 3 motion, and 40 Worker tests, before the controlled Windows switch. Worker source was unchanged, so the live Worker remains `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`; rc18／`fd504a8` is the first historical rollback target.
+The live rc26 origin (`v1.2.0-rc.26`, commit `248955cb3300bfbe092b05036632991524d824cd`) passed all 14 formal gates with source fingerprint `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`, including the complete Python suite, 3 motion contracts, and 41 Worker contracts, before the controlled Windows switch. Worker source was unchanged from rc24, so the live Worker remains `76a23134-8355-4e25-bbba-abf17c6918c5`; rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` is the first rollback target.
 
-Live `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`, with verified Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`, uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
+Live rc26 uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
 
-`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The Service Weave editorial integration is part of the live rc20 product.
+`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The Service Weave editorial integration is part of the live rc26 product.
 
 Admin and Guest share the same stable Assist. mode codes: `legacy_fixed_weekday` keeps the canonical AHP weekday, while `flexible_weekly` rotates only across selected available weekdays and avoids the previous week's day where feasible. Both enforce AHP-only eligibility, leave, same-day uniqueness, and no-consecutive-duty rules. Official rosters persist the selected mode; Guest rosters keep it only in the bounded in-memory workspace.

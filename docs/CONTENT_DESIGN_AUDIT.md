@@ -4,9 +4,9 @@
 
 **Scope:** Public entrance, unified Admin／Guest workbench, Viewer and support
 
-**Baseline:** live `v1.2.0-rc.21`; candidate source must be verified separately
+**Baseline:** live `v1.2.0-rc.26`; later candidate source must be verified separately
 
-This is the decision record for non-obvious runtime-copy changes. It does not replace the complete Operator Guide, architecture, security or release documentation. Counts below are representative first-render observations from source inspection and the live rc21 desktop／390px evidence; conditional error, confirmation and recovery copy is intentionally excluded until its state is active.
+This is the decision record for non-obvious runtime-copy changes. It does not replace the complete Operator Guide, architecture, security or release documentation. Counts below are representative first-render observations from source inspection and the live rc26 desktop／390px evidence; conditional error, confirmation and recovery copy is intentionally excluded until its state is active.
 
 ## Inventory and disposition
 
