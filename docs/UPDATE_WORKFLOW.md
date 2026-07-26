@@ -4,7 +4,7 @@
 
 > **目前發布界線：** live rc21 annotated tag `v1.2.0-rc.21`／commit `f7df4d0170e6bacd65340cc893992a17b5ed4aed` 與 Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 是正式基線；rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 是第一級回退。rc21 已完成 `--release`、正式備份、隔離還原、受控 Windows origin 切換、Tunnel 復原及 canonical desktop／mobile smoke。Worker 來源及設定沒有改動，故沒有製造無實際差異的新 Worker rollout。任何後續 `--plan`、focused tests、`--staged` 或文件更新仍不等於部署。
 
-> **目前候選界線：** rc23 runtime commit `4071cb55268c975302307fc40503c0b923562897`／fingerprint `a8f4483c32b17d9ef77b6df75968ef791a0a9cc0a8163b13b1b03acd3b3935de` 已完成 14／14 `--release` 等價正式驗證。其後只更新候選／線上事實的文件不會改變 runtime fingerprint，但仍須通過 docs／hygiene gate；tag、main、備份／還原、origin、Worker 與 canonical browser 全部完成前不可宣稱 rc23 已上線。
+> **目前候選界線：** rc23 runtime commit `f0fc91e7e24cf6e1d58a5065bbeba42c4708322a`／fingerprint `2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b` 已完成 14／14 正式驗證（2026-07-26 18:24–18:30 HKT）。其後只更新候選／線上事實的文件不會改變 runtime fingerprint，但仍須通過 docs／hygiene gate；tag、main、備份／還原、origin、Worker 與 canonical browser 全部完成前不可宣稱 rc23 已上線。
 
 rc20 的完整候選報告約需 **404 秒**；當中主要時間用於完整 Python 套件、桌面／手機瀏覽器、寫入／PDF／還原、效能及備份失敗演練。這些證據對政策、資料庫、工作流、部署或正式 runtime 改動很重要，但不應因 README 改一句話而重跑。最近三次沒有 runtime 改動的提交亦在 GitHub Quality 與 CodeQL 合計使用約 18 分鐘。
 
