@@ -3832,13 +3832,6 @@ async function route(request, env, context) {
   if (path.startsWith('/try/')) {
     return response('Not found', 404, { 'Content-Type': 'text/plain; charset=utf-8' });
   }
-  if (path === '/support') {
-    if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
-    return staticResponse(request, PUBLIC_SUPPORT_HTML, 200, {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-store',
-    });
-  }
   if (path === '/support-feedback.js') {
     if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
     return staticResponse(request, PUBLIC_SUPPORT_JS, 200, {
@@ -3999,6 +3992,13 @@ async function route(request, env, context) {
         ? VIEWER_HTML.replace('data-guest-bootstrap="false"', 'data-guest-bootstrap="true"')
         : VIEWER_HTML;
       return staticResponse(request, landingHtml, 200, { 'Content-Type': 'text/html; charset=utf-8' });
+    }
+    if (path === '/support') {
+      if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
+      return staticResponse(request, PUBLIC_SUPPORT_HTML, 200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store',
+      });
     }
     return path.startsWith('/auth/') ? accessFailureResponse() : redirectResponse('/', request.url);
   }

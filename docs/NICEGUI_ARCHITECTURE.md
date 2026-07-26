@@ -4,15 +4,15 @@
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
-> **Live v1.2 rc21 status:** the controlled Windows origin uses
-> `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`; the canonical Worker remains
-> `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` (intentionally not redeployed). The 291-input release
-> passed all 14 formal gates with fingerprint
-> `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1`. First-level rollback is
-> rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c`.
+> **Live v1.2 rc23 status:** the controlled Windows origin uses
+> `v1.2.0-rc.23`／`3432f1dd5381c4ddd8c2cd605437d290000af228`; the canonical Worker is
+> `1bf0270d-5c78-462e-822b-f4a88e3956fa`. The 296-input runtime release passed all 14 formal gates
+> with fingerprint `2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b`.
+> First-level rollback is rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`; rc20／
+> `e3d84858abfe23714929a87c4bcf76e55999ce7c` remains a secondary verified baseline.
 > A fresh production backup, checksum, fairness reconciliation and isolated
 > restore passed before cutover. Worker version
-> `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` passed staged-version and
+> `1bf0270d-5c78-462e-822b-f4a88e3956fa` passed staged-version and
 > canonical health／entrance／viewer checks before receiving 100% traffic.
 > Supervised human acceptance remains required.
 >

@@ -2,6 +2,12 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
+## v1.2.0-rc.24 — 2026-07-26
+
+- Kept Public and Viewer problem reports browser-only while routing authenticated Admin and Guest `/support` visits to the shared NiceGUI support workspace.
+- Restored the Admin host-local, explicit-consent incident inbox on the canonical remote site without weakening Guest non-persistence or the public no-upload boundary.
+- Added Worker regression coverage for Public, Admin, and Guest support routing through the signed origin-principal boundary.
+
 ## v1.2.0-rc.23 — 2026-07-26
 
 - Added one progressive `/support` flow for Admin, Guest, Public, and Viewer contexts.

@@ -1313,6 +1313,65 @@ Deno.test('authenticated app routes return the VPC response directly without clo
   }
 });
 
+Deno.test('public support stays browser-only while authenticated support reaches the workbench', async () => {
+  const env = accessEnvironment('sing-yin-runtime-support-routing');
+  const nowSeconds = Math.floor(Date.now() / 1_000);
+  const credentials = [
+    {
+      mode: 'admin',
+      cookie: await adminSessionCookiePair(
+        env,
+        configuredAdminEmails(env)[0],
+        nowSeconds + 300,
+      ),
+    },
+    {
+      mode: 'guest',
+      cookie: await guestSessionCookiePair(env),
+    },
+  ];
+  const observed = [];
+  env.ROSTER_ORIGIN = {
+    fetch(request) {
+      observed.push({
+        url: request.url,
+        principal: signedPayload(
+          request.headers.get('X-Sing-Yin-Origin-Principal') || '',
+        ),
+      });
+      return new Response('<main>workbench support</main>', {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      });
+    },
+  };
+
+  const publicResponse = await worker.fetch(
+    new Request('https://gateway.example/support'),
+    env,
+    { waitUntil() {} },
+  );
+  const publicBody = await publicResponse.text();
+  assertEquals(publicResponse.status, 200);
+  assert(publicBody.includes('only in your browser'));
+  assertEquals(publicResponse.headers.get('Cache-Control'), 'no-store');
+  assertEquals(observed.length, 0, 'public support must not reach the origin');
+
+  for (const credential of credentials) {
+    const response = await worker.fetch(new Request('https://gateway.example/support', {
+      headers: { Cookie: credential.cookie },
+    }), env, { waitUntil() {} });
+    assertEquals(response.status, 200);
+    assertEquals(await response.text(), '<main>workbench support</main>');
+  }
+
+  assertEquals(observed.length, 2);
+  for (let index = 0; index < observed.length; index += 1) {
+    assertEquals(observed[index].url, 'http://127.0.0.1:8080/support');
+    assertEquals(observed[index].principal.mode, credentials[index].mode);
+  }
+});
+
 Deno.test('authenticated status verifies the private origin without exposing identity or configuration', async () => {
   const env = accessEnvironment('sing-yin-runtime-status');
   const nowSeconds = Math.floor(Date.now() / 1_000);

@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **目前發布狀態：** Windows origin 正運行健康、ready 的 live `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`；其 291-file fingerprint `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 因 source／設定沒有改動而刻意沿用並承接 100% 流量。部署後曾發現 Windows `cloudflared` 服務停止；服務已恢復為 Running／Automatic，canonical public／Guest 桌面及手機 rendered smoke 隨後通過且無 console／page error。第一級回退是 rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` exact pair；真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
+> **目前發布狀態：** Windows origin 正運行健康、ready 的 live `v1.2.0-rc.23`／`3432f1dd5381c4ddd8c2cd605437d290000af228`；其 296-file runtime fingerprint `2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `1bf0270d-5c78-462e-822b-f4a88e3956fa` 已完成 staged rollout 並承接 100% 流量。canonical Public／Guest／Viewer smoke 通過且無 console／page error；其後發現的已登入 `/support` 路由缺口由尚未上線的 rc24 修補。第一級回退是 rc21／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` exact pair；rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` 是次級已驗證基線。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
@@ -39,6 +39,11 @@ Worker 是唯一外部前門。Windows 不開放 NiceGUI 公網連接埠，不�
 **不要在家中路由器開放 3389、8080**，也不要把 RDP 或 NiceGUI
 直接暴露到互聯網。驗收必須明確覆蓋三種結果：**未登入／獲准／未獲准**；
 只有獲准身份可取得相應的 Guest 或 Admin 能力。
+
+`/support` 亦遵守同一身份邊界：Worker 必須先解析並驗證 principal；沒有
+principal 的 Public／Viewer 請求只取得 `Cache-Control: no-store` 的靜態瀏覽器
+表單，不能到達 origin；有效 Admin／Guest 請求才可連同簽署 principal 代理到
+NiceGUI 支援工作台。部署後必須分別核對這兩條路徑，不能只測未登入頁面。
 
 ## 3. v1.2 必需設定
 
@@ -243,14 +248,14 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 ## 10. 回退
 
-任一 rc21 origin 或線上 gate 失敗：
+任一 rc24 origin 或線上 gate 失敗：
 
 1. 恢復 maintenance；
 2. 以受控部署報告確認自動 rollback 的 `attempted`／`succeeded`、previous commit 及 previous Worker version；
-3. 第一級回退至 rc20 主機 bundle `v1.2.0-rc.20`／`e3d84858abfe23714929a87c4bcf76e55999ce7c`；
-4. Worker 沒有改動，繼續維持 `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` 的 100% traffic，禁止留下未核實的混合版本；
+3. 第一級回退至 rc23 前一組已驗證主機／Worker pair：主機 bundle `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed`，Worker `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`；
+4. 主機與 Worker 必須一起回復，禁止留下未核實的混合版本；
 5. 核對 host commit、`/healthz`、`/readyz`／`writeReady=true`、Admin、Guest、Viewer、WebSocket、登出及資料狀態；
-6. 只有 rc20 無法安全恢復，且事故負責人明確批准第二級復原時，才可使用 rc18／`fd504a8` 主機 bundle 與相同 Worker 作次級已驗證基線；在相容性、資料完整性及完整 user-flow 重新證明前保持 maintenance；
+6. 只有 rc21 無法安全恢復，且事故負責人明確批准第二級復原時，才可使用 rc20／`e3d84858abfe23714929a87c4bcf76e55999ce7c` exact pair；rc18／`fd504a8` 只保留為更舊的歷史基線，在相容性、資料完整性及完整 user-flow 重新證明前保持 maintenance；
 7. 如資料完整性受疑，使用受控 restore，而非手動覆寫 SQLite。
 
 additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，部署前 gate 應已拒絕該 migration。

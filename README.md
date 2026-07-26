@@ -45,7 +45,7 @@
 
 ### 本機問題回報與診斷
 
-`/support` 是唯一問題回報入口。它把「發生甚麼、在哪一頁、預期甚麼」放在首層；路由、操作、影響及附件只在需要時展開。Admin 提交前必須再次確認本機保存，支援資料不會進入排班交易、正式 SQLite、公平帳本或備份；Guest、Public 及 Viewer 只會下載或複製一份瀏覽器內報告。維護者以 `scripts/inspect_support_inbox.py` 讀取本機收件匣，並可用 `scripts/collect_host_security_summary.ps1` 產生不含秘密值的主機狀態摘要。威脅邊界見[支援收件匣威脅模型](docs/THREAT_MODEL_SUPPORT_INBOX.md)，全站內容取捨及保留規則見[內容設計審計](docs/CONTENT_DESIGN_AUDIT.md)。
+`/support` 是唯一問題回報入口。未登入的 Public／Viewer 由 Worker 顯示純瀏覽器表單；已驗證的 Admin／Guest 則進入共同 NiceGUI 支援工作台。它把「發生甚麼、在哪一頁、預期甚麼」放在首層；路由、操作、影響及附件只在需要時展開。Admin 提交前必須再次確認本機保存，支援資料不會進入排班交易、正式 SQLite、公平帳本或備份；Guest、Public 及 Viewer 只會下載或複製一份瀏覽器內報告。維護者以 `scripts/inspect_support_inbox.py` 讀取本機收件匣，並可用 `scripts/collect_host_security_summary.ps1` 產生不含秘密值的主機狀態摘要。威脅邊界見[支援收件匣威脅模型](docs/THREAT_MODEL_SUPPORT_INBOX.md)，全站內容取捨及保留規則見[內容設計審計](docs/CONTENT_DESIGN_AUDIT.md)。
 
 ### 一個產品，四個清楚區域
 
@@ -85,7 +85,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **公開安全及版本完整性：** 公開瀏覽器只接觸 Cloudflare Worker；正式 NiceGUI origin 仍只綁定 loopback，Admin 必須同時通過 Cloudflare Access、私密精確電郵 allowlist、短期 session 及請求綁定的 HMAC principal。GitHub `main` 只接受通過 `test-and-audit` 與 Python／Worker CodeQL 的 pull request，禁止 force-push 和刪除；Actions 引用必須固定完整 SHA，`v*` 發布標籤建立後亦不可更新或刪除。完整威脅模型、資料分類、事件處理及殘餘限制見[公開網站安全與私隱模型](docs/SECURITY_AND_PRIVACY.md)。
 
-**目前發布（v1.2 rc21）：** 在 rc20 的操作、安全及裝置基線上，rc21 把產品正式整理成 Public Product Entrance、Unified Operations Workbench、Trust & Engineering Hub 與 Documentation & Developer Portal 四區；例行側欄與 Trust & Documentation portal 各自服務操作和證據閱讀，不再互相爭奪注意力。`Professional_Design_System.md` 及 `docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md` 分別保存可執行的 Quiet Precision 設計契約與參考案例的 Adopt／Adapt／Reject 決策。Admin 與 Guest 仍共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。仍須由首席導學風紀及教師顧問完成真人驗收清單。
+**目前發布（v1.2 rc23）：** 在 rc21 的四區資訊架構及 rc20 的操作、安全與裝置基線上，rc23 加入內容精煉及本機優先支援流程。`Professional_Design_System.md` 及 `docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md` 分別保存可執行的 Quiet Precision 設計契約與參考案例的 Adopt／Adapt／Reject 決策。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。rc24 只修正已登入 `/support` 的 Worker 分流，完成配對部署前仍是候選；首席導學風紀及教師顧問真人驗收仍待完成。
 
 **已驗證、尚未上線的 rc23 候選：** `codex/luminous-sacred-precision` 在不改動排班政策、資料庫或 PDF 規則的前提下，把上述 Quiet Precision 底盤演進為 Luminous Sacred Precision 1.3，修正歡迎／工作台音樂狀態、瀏覽器阻止音樂後的安靜繼續導航，並加入內容精簡及本機優先問題報告。commit `f0fc91e7e24cf6e1d58a5065bbeba42c4708322a` 的 296-file runtime fingerprint `2b9c3f7cb09d0614d71210d8daea16ab3d719c7e8827470a6b2cd1a79e20072b` 已通過 14／14 正式機器閘門；Admin 事件包會核對精確 manifest 檔案集合及 SHA-256，Guest／Public／Viewer 則保持瀏覽器暫存、無應用網絡寫入。在 immutable tag、受保護 main、正式備份／隔離還原、Windows origin、Worker 及 canonical browser 證據完成前，rc21 仍是線上事實。
 
