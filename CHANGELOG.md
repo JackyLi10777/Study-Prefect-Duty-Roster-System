@@ -2,6 +2,12 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
+## v1.2.0-rc.26 — 2026-07-26
+
+- Replaced the invented “Study Prefect Systems & Stewardship Office” identity and corporate-style responsibility titles with the real `Study Prefect Team／導學風紀組`, plain work areas, and direct responsibility descriptions.
+- Removed residual “organisation chart” and “capability map” language from current architecture and design documentation so presentation structure cannot be mistaken for a real school department.
+- Replaced the release browser verifier's hard-coded former platform heading with stable semantic section and test-ID contracts in both languages.
+
 ## v1.2.0-rc.24 — 2026-07-26
 
 - Kept Public and Viewer problem reports browser-only while routing authenticated Admin and Guest `/support` visits to the shared NiceGUI support workspace.
@@ -9,7 +15,6 @@ This file records user-visible, operational and release-significant changes. Exa
 - Added Worker regression coverage for Public, Admin, and Guest support routing through the signed origin-principal boundary.
 - Deployed the immutable rc24 pair to the controlled Windows origin and canonical Worker after 14／14 exact-source gates, a verified backup, and an isolated restore.
 - Verified Public browser-only support, Guest NiceGUI support, Viewer recovery, language switching, desktop and 390px mobile rendering without console or page errors; supervised human acceptance remains separate.
-- Replaced the invented “Study Prefect Systems & Stewardship Office” identity and corporate-style responsibility titles with the real `Study Prefect Team／導學風紀組`, plain work areas, and direct responsibility descriptions.
 
 ## v1.2.0-rc.23 — 2026-07-26
 

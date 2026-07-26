@@ -780,9 +780,8 @@ def main() -> None:
         assert operating_map_link.evaluate("element => element === document.activeElement") is True
         assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 1
         page.get_by_text("共創結語", exact=True).wait_for(timeout=10_000)
-        page.get_by_role(
-            "heading", name="Study Prefect Team：由服事責任建立的團隊架構", exact=True
-        ).wait_for(timeout=10_000)
+        page.locator("#platform-team-section").wait_for(timeout=10_000)
+        page.get_by_test_id("team-operating-model").wait_for(timeout=10_000)
         feedback_links = page.get_by_test_id("feedback-channel").locator("a")
         assert feedback_links.count() == 2
         feedback_link = page.get_by_test_id("feedback-channel").locator('a[href^="mailto:s10777@syss.edu.hk"]')
@@ -1346,9 +1345,8 @@ def main() -> None:
         page.set_viewport_size({"width": 390, "height": 844})
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
         page.get_by_text("A co-creation note", exact=True).wait_for(timeout=10_000)
-        page.get_by_role(
-            "heading", name="Study Prefect Team: an organisation built around service", exact=True
-        ).wait_for(timeout=10_000)
+        page.locator("#platform-team-section").wait_for(timeout=10_000)
+        page.get_by_test_id("team-operating-model").wait_for(timeout=10_000)
         assert page.locator(".sy-platform-metric").count() == 4
         assert page.locator(".sy-team-role").count() == 4
         assert page.locator(".sy-capability-card").count() == 4
