@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 
 import pytest
@@ -254,6 +255,19 @@ def test_unindexed_or_mismatched_attachment_is_rejected(tmp_path: Path) -> None:
         inbox.validate_bundle(summary.incident_id)
 
 
+@pytest.mark.parametrize("relative", ("unexpected.txt", "evidence/unindexed.json"))
+def test_unindexed_bundle_files_are_rejected(tmp_path: Path, relative: str) -> None:
+    inbox = SupportInbox(tmp_path / "support")
+    summary = create(inbox)
+    bundle = inbox.inbox / summary.incident_id
+    target = bundle / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("unexpected", encoding="utf-8")
+
+    with pytest.raises(IncidentValidationError):
+        inbox.validate_bundle(summary.incident_id)
+
+
 def test_cleanup_only_removes_stale_staging_quarantine_and_closed_records(tmp_path: Path) -> None:
     inbox = SupportInbox(tmp_path / "support")
     active = create(inbox)
@@ -274,3 +288,30 @@ def test_cleanup_only_removes_stale_staging_quarantine_and_closed_records(tmp_pa
     removed = inbox.cleanup_expired(now=NOW)
     assert removed == {"staging": 1, "quarantined": 1, "resolved": 1}
     assert (inbox.inbox / active.incident_id).is_dir()
+
+
+def test_cleanup_isolates_removal_failures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    inbox = SupportInbox(tmp_path / "support")
+    inbox.initialize()
+    staging = inbox.root / "staging" / ".stale-synthetic"
+    staging.mkdir()
+    old_timestamp = NOW.timestamp() - (365 * 24 * 60 * 60)
+    os.utime(staging, (old_timestamp, old_timestamp))
+
+    def fail_remove(path: Path, *, ignore_errors: bool) -> None:
+        raise OSError("synthetic cleanup failure")
+
+    monkeypatch.setattr(shutil, "rmtree", fail_remove)
+    assert inbox.cleanup_expired(now=NOW) == {"staging": 0, "quarantined": 0, "resolved": 0}
+    assert staging.is_dir()
+
+
+def test_cleanup_is_best_effort_when_storage_is_unavailable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    inbox = SupportInbox(tmp_path / "support")
+
+    def fail_initialize() -> None:
+        raise OSError("storage unavailable")
+
+    monkeypatch.setattr(inbox, "initialize", fail_initialize)
+
+    assert inbox.cleanup_expired(now=NOW) == {"staging": 0, "quarantined": 0, "resolved": 0}

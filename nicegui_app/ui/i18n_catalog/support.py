@@ -56,6 +56,7 @@ MESSAGES = {
     "support_guest_build": {"zh-HK": "建立臨時報告", "en": "Build temporary report"},
     "support_guest_download": {"zh-HK": "下載臨時 JSON", "en": "Download temporary JSON"},
     "support_guest_copy": {"zh-HK": "複製臨時編號", "en": "Copy temporary reference"},
+    "support_guest_copy_failed": {"zh-HK": "未能複製；請手動選取上方臨時編號。", "en": "Copy failed. Select the temporary reference above manually."},
     "support_guest_reset": {"zh-HK": "清除表單", "en": "Clear form"},
     "support_guest_nonpersistent": {"zh-HK": "只留在目前分頁・關閉即失效", "en": "Browser tab only · cleared when closed"},
     "support_exclusions_title": {"zh-HK": "提交前請移除", "en": "Remove before submitting"},

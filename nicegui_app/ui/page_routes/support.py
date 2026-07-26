@@ -140,6 +140,7 @@ def _guest_report_markup(source_path: str = "") -> str:
     return f"""
     <section class="sy-support-browser" data-testid="guest-browser-only-support"
       data-required-message="{attr(t('support_required_error'))}"
+      data-copy-failed-message="{attr(t('support_guest_copy_failed'))}"
       data-email="{attr(FEEDBACK_EMAIL)}" data-locale="{attr(current_locale())}">
       <p class="sy-support-browser-status">{text(t('support_guest_nonpersistent'))}</p>
       <p class="sy-support-browser-copy">{text(t('support_guest_body'))}</p>
@@ -354,6 +355,8 @@ def _render_admin_support(source_path: str) -> None:
                 return
             preview_dialog.close()
             consent.value = True
+            attachments.clear()
+            attachment_summary.clear()
             ui.notify(t("support_saved"), type="positive")
             result_area.clear()
             with result_area:

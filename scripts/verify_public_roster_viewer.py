@@ -441,35 +441,30 @@ def main() -> int:
                 color_scheme="light",
                 accept_downloads=True,
             )
-            support_page = support_context.new_page()
             support_websockets: list[str] = []
-            support_page.on("websocket", lambda socket: support_websockets.append(socket.url))
-            _attach_error_collectors(
-                support_page,
-                label="public-support",
-                console_errors=console_errors,
-                page_errors=page_errors,
-            )
-            support_evidence.append(
-                _assert_browser_only_support(
+            for source, verify_download in (("public", True), ("viewer", False)):
+                support_page = support_context.new_page()
+                support_page.on("websocket", lambda socket: support_websockets.append(socket.url))
+                _attach_error_collectors(
                     support_page,
-                    base_url=settings.base_url,
-                    source="public",
-                    verify_download=True,
+                    label=f"{source}-support",
+                    console_errors=console_errors,
+                    page_errors=page_errors,
                 )
-            )
-            support_page.screenshot(
-                path=str(GATEWAY_EVIDENCE_DIR / "public-support-browser-only.png"),
-                full_page=True,
-            )
-            support_evidence.append(
-                _assert_browser_only_support(
-                    support_page,
-                    base_url=settings.base_url,
-                    source="viewer",
-                    verify_download=False,
+                support_evidence.append(
+                    _assert_browser_only_support(
+                        support_page,
+                        base_url=settings.base_url,
+                        source=source,
+                        verify_download=verify_download,
+                    )
                 )
-            )
+                if source == "public":
+                    support_page.screenshot(
+                        path=str(GATEWAY_EVIDENCE_DIR / "public-support-browser-only.png"),
+                        full_page=True,
+                    )
+                support_page.close()
             if support_websockets:
                 raise RuntimeError(f"Browser-only support opened WebSockets: {support_websockets}")
             support_context.close()

@@ -49,8 +49,18 @@ def test_guest_feedback_javascript_has_no_network_or_persistent_storage() -> Non
     assert "new Blob" in source
     assert "mailto:" in source
     assert "resultActions.hidden = !enabled" in source
+    assert "navigator.clipboard?.writeText" in source
+    assert "root.dataset.copyFailedMessage" in source
+    assert "catch {" in source
     assert "new MutationObserver" in source
     assert "if (install()) observer.disconnect()" in source
+
+
+def test_admin_support_clears_consumed_attachments_after_save() -> None:
+    source = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_routes" / "support.py").read_text(encoding="utf-8")
+    success = source[source.index("preview_dialog.close()", source.index("async def save_incident")):]
+    assert success.index("attachments.clear()") < success.index('ui.notify(t("support_saved")')
+    assert success.index("attachment_summary.clear()") < success.index('ui.notify(t("support_saved")')
 
 
 def test_support_messages_are_complete_bilingual_copy() -> None:
