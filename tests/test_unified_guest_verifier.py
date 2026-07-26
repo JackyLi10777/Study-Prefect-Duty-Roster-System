@@ -131,6 +131,8 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         "leave-adjustment-reason",
         "download-summary-json",
         "school-year-rollover-confirmation",
+        "page.expect_navigation(",
+        "late ``ui.navigate.reload()``",
         "safe-fixture",
         "main#main-content .q-select:visible",
     ):
