@@ -6,6 +6,8 @@
 
 > **rc28 入口候選（未上線）：** 46 個 Worker contract 已證明四個身份 CTA 共用同一控制器，並覆蓋成功、拒絕、同步例外、逾時、安靜意圖、已播放、重複啟動、`pageshow` 及媒體失敗分類。`scripts/verify_public_entry_music.py` 以真實 Chromium 覆蓋 desktop Admin、desktop Guest、390px mobile Admin／Guest、滑鼠／鍵盤、安靜、已播放、快速雙擊及 silent `/view`，每個身份測試只觀察一次目標請求並在建立真正 session／輸入私人憑證前截停。這些聚焦證據仍不是正式發布：須再由 exact-source release report、0% Worker version smoke、100% promotion 及 canonical live browser smoke 補完；首席導學風紀及教師顧問真人驗收仍保持未完成。
 >
+> **rc29 發布工具候選（未上線）：** rc28 已完成 protected-main、annotated tag 與 14／14 exact-source gates，但受控 Worker 發布在上載前安全中止：Windows PowerShell 5.1 把 Wrangler 的頂層 JSON 陣列包成單一巢狀物件，令部署器誤判五個已存在的 Secret 名稱全部缺失。線上 Worker、流量及 Secret 均未改動。rc29 只修正這個名稱清單解析邊界並加入 Windows PowerShell 5.1 直接回歸測試；仍須完成其自身不可變來源驗證及受控 Worker 分段發布，才可列作線上證據。
+>
 > **單一裝置矩陣：** rc20 的 source-matched 隔離瀏覽器證據把手機、兩種直向 adaptive tablet、橫向 desktop-shell touch tablet 及 full desktop 視為同一產品矩陣。768×1024、820×1180、1024×768、1440×1024 已一併進入正式報告；這只完成機器量測，不能代替實體裝置或部署後驗收。
 
 ## rc20 已驗證候選裝置矩陣 / Verified candidate device matrix

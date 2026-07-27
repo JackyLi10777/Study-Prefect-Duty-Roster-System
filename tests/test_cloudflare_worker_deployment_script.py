@@ -12,6 +12,7 @@ import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = PROJECT_ROOT / "scripts" / "deploy_cloudflare_worker.ps1"
+HELPERS = PROJECT_ROOT / "scripts" / "worker_deployment_helpers.ps1"
 POWERSHELL = shutil.which("powershell.exe") or shutil.which("powershell")
 
 
@@ -54,6 +55,43 @@ def test_worker_deployment_uses_pinned_wrangler_and_structured_events() -> None:
     assert "Remove-SecretOverlay -Path $secretOverlayPathToDelete" in source
     assert "Assert-AdminIdentityAllowlistValue" in source
     assert "sing-yin-worker-secrets-" in source
+
+
+def test_worker_secret_inventory_is_flattened_in_windows_powershell_51(tmp_path: Path) -> None:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production deployment script")
+    inventory = tmp_path / "worker-secrets.json"
+    inventory.write_text(
+        json.dumps(
+            [
+                {"name": "ADMIN_SESSION_SECRET", "type": "secret_text"},
+                {"name": "GUEST_SESSION_SECRET", "type": "secret_text"},
+            ]
+        ),
+        encoding="utf-8",
+    )
+    escaped_helpers = str(HELPERS).replace("'", "''")
+    escaped_inventory = str(inventory).replace("'", "''")
+    command = (
+        f". '{escaped_helpers}'; "
+        f"$json = Get-Content -LiteralPath '{escaped_inventory}' -Raw -Encoding UTF8; "
+        "$names = @(ConvertFrom-WorkerSecretInventory -Json $json); "
+        "if ($names.Count -ne 2 -or "
+        "$names[0] -cne 'ADMIN_SESSION_SECRET' -or "
+        "$names[1] -cne 'GUEST_SESSION_SECRET') { exit 2 }; "
+        "Write-Output ($names -join ',')"
+    )
+    result = subprocess.run(
+        [POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == "ADMIN_SESSION_SECRET,GUEST_SESSION_SECRET"
 
 
 def test_invalid_allowlist_overlay_fails_before_deployment_and_is_deleted() -> None:

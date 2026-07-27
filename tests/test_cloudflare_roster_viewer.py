@@ -89,7 +89,7 @@ def test_worker_deployment_toolchain_is_project_pinned() -> None:
     workspace = (VIEWER_ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
 
     assert package["private"] is True
-    assert package["version"] == "1.2.0-rc.28"
+    assert package["version"] == "1.2.0-rc.29"
     assert package["packageManager"] == "pnpm@11.7.0"
     assert package["engines"] == {"node": ">=22"}
     assert package["devDependencies"] == {"wrangler": "4.110.0"}

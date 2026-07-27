@@ -8,6 +8,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot "worker_deployment_helpers.ps1")
 
 if ([string]::IsNullOrWhiteSpace($SourceRoot)) {
     # Use the immutable checkout containing this script by default. An
@@ -210,11 +211,8 @@ function Assert-RequiredWorkerSecrets {
         throw "Worker configuration declares an empty required-secret set."
     }
     $raw = @(Invoke-Wrangler -Arguments @("secret", "list", "--format", "json", "--config", $script:ConfigPath))
-    try { $configuredSecrets = @(($raw | Out-String) | ConvertFrom-Json) } catch {
-        throw "Wrangler secret inventory was not valid JSON."
-    }
     $configuredNames = @(
-        @($configuredSecrets | ForEach-Object { [string]$_.name }) + @($AdditionalNames) |
+        @(ConvertFrom-WorkerSecretInventory -Json ($raw | Out-String)) + @($AdditionalNames) |
             Select-Object -Unique
     )
     $missing = @($requiredNames | Where-Object { $_ -notin $configuredNames })
