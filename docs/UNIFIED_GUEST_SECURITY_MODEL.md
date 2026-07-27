@@ -1,6 +1,6 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
-> **文件狀態（live rc27 origin＋rc29 Worker）：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.27`／commit `c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；canonical Worker `d7b51f21-7692-418d-866c-034c2c57292d` 承接 100% 正式流量。rc29 exact source 通過 14／14 gate及分段發布，真實 Guest session／logout 證明身份能建立並冪等清除，Admin 入口則只交由 Cloudflare Access 處理。第一級 origin 回退是 rc26；立即 Worker 回退是 `76a23134-8355-4e25-bbba-abf17c6918c5`。真人身份與工作流驗收仍保持獨立未完成。
+> **文件狀態（live rc30）：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 來源檔案以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate 並完成受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量；第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`，Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`。Admin、Guest 與公開 Viewer 使用同一身份邊界；本次 deployment report 證實 origin ready 且無 maintenance、recovery 或 pending backup obligation，真人身份與工作流驗收仍保持獨立未完成。
 
 ## 1. 目的
 

@@ -2,15 +2,16 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
-## v1.2.0-rc.30 — candidate, 2026-07-27
+## v1.2.0-rc.30 — released, 2026-07-27
 
-- Current live topology remains the `v1.2.0-rc.27` Windows origin with Worker `d7b51f21-7692-418d-866c-034c2c57292d` at 100% traffic; rc26 is the origin rollback and Worker `76a23134-8355-4e25-bbba-abf17c6918c5` is the immediate gateway rollback.
+- Current live topology is the `v1.2.0-rc.30` Windows origin with Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` at 100% traffic; rc27 is the origin rollback and Worker `d7b51f21-7692-418d-866c-034c2c57292d` is the immediate gateway rollback.
 - Replaced ambiguous language and appearance toggles with destination-language autonyms and explicit **System／Light／Dark** choices across the NiceGUI workbench and public Worker entrance; desktop uses a labelled menu while narrow screens use a full-width three-choice control.
 - Kept Admin appearance in the encrypted user preference adapter, Guest appearance in the bounded session-only store, and Public／Viewer appearance in browser-local storage; changing appearance remains in-place and does not cross identity or storage boundaries.
 - Added browser contracts for 256／320／390px phone reflow, 44px touch targets, keyboard and screen-reader state, locale／appearance isolation, reduced motion and rendered light／dark states.
 - Added a clearly qualified **≈10B AI tokens processed** creator-level engineering fact, rounded from the supplied 2026-07-27 cross-tool screenshot (9.38B); it is not live product telemetry and does not imply that student data is sent to AI services.
-- Carries the rc29 PowerShell 5.1 deployment-inventory correction and rc28 default-music entry behavior forward unchanged; the live topology remains the rc27 Windows origin with the rc29 Worker until rc30 completes controlled rollout.
+- Carries the rc29 PowerShell 5.1 deployment-inventory correction and rc28 default-music entry behavior forward unchanged.
 - Passed all 14 rc30 candidate gates against the 296-file source fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc`: 894 Python tests, 3 motion contracts, 46 Worker contracts, adaptive browser matrices, isolation, write／PDF／backup／restore and partial-backup recovery.
+- Deployed annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f` to the controlled Windows origin after verified backup `20260727-023041-069097-manual_verified_backup.sqlite3` (SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b`) and isolated restore, then promoted Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` through 0% version smoke to 100% traffic and passed canonical rendered desktop／320px／Guest Engineering checks.
 
 ## v1.2.0-rc.29 — live Worker, 2026-07-27
 

@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **目前發布狀態：** Windows origin 正運行健康、ready 的 live `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；canonical gateway 已獨立更新至 rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d`。rc29 tag `v1.2.0-rc.29`／commit `1fa3dfa85aa9ad6ef577e4c87c298cb11230ba1c`／fingerprint `c015716b9594e0fb3d7cd313a824e5138e11ca389cd7de6f8f8fab8956ccd3bf` 通過 14／14 gate；deployment `e3964ef8-4f86-417d-adb8-eb75cb566cfc` 以 100% traffic 提供服務。canonical health、入口、Guest session／logout、Admin Access handoff 及 Viewer 已核對；舊 Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 是立即 gateway rollback。第一級 origin 回退仍是 rc26。真人管理員完整工作流與顧問驗收仍須依清單完成。
+> **目前發布狀態：** Windows origin 正運行健康、ready 的 live `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；其 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% version smoke 後承接 100% 流量。canonical root、capability health 與 rendered desktop／320px／Guest Engineering checks 通過，private readiness 保持預期 redirect。第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
@@ -89,7 +89,7 @@ Worker 必須有：
 - 不把管理員加入 Cloudflare Dashboard 成員作為登入前提。
 - 不建立應用內共用密碼。
 
-**目前控制台證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。live rc27 origin＋rc29 Worker 組合已通過 canonical root、gateway health、真實 Guest session／logout、Admin Access handoff 及 Viewer 核對；任何後續候選仍須產生與來源相符的新證據。
+**目前控制台證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。live rc30 origin＋Worker 組合已通過 canonical root、gateway health、真實 Guest session／logout、Admin Access handoff、Viewer、desktop／320px theme control 及 Guest Engineering 核對；任何後續候選仍須產生與來源相符的新證據。
 
 ## 4. 來源驗證
 

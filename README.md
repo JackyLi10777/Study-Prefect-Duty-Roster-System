@@ -81,13 +81,13 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 網站公開入口、分享檢視器及 NiceGUI 工作台共用頁尾署名 `Copyright © 2026 LI Chuangjie`；供群組發布的乾淨值班表 PDF 仍由匯出選項決定是否加入補充頁尾。
 
-**目前正式基線：** `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` 是 `C:\SingYinRoster` 的正式 origin；rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d` 承接 canonical 100% 流量。rc29 tag `v1.2.0-rc.29`／commit `1fa3dfa85aa9ad6ef577e4c87c298cb11230ba1c`／fingerprint `c015716b9594e0fb3d7cd313a824e5138e11ca389cd7de6f8f8fab8956ccd3bf` 通過 14／14 release gate，並完成 staged smoke、正式入口、12 組音樂／導流、真實 Guest session／logout、Admin Access handoff 及 silent Viewer 核對。第一級 origin 回退是 rc26；立即 Worker 回退是 `76a23134-8355-4e25-bbba-abf17c6918c5`。首席導學風紀及教師顧問真人驗收仍未完成。
+**目前正式基線：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 已同步到 `C:\SingYinRoster`；`/healthz` 正常、`/readyz` ready、`writeReady=true`。296 個發布輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前正式備份 `20260727-023041-069097-manual_verified_backup.sqlite3`、SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b`、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 已經 0% version smoke 後升至 100% 流量；canonical root／healthz、desktop／320px theme control 及 Guest Engineering ≈10B disclosure 均已核對。第一級 origin 回退是 rc27，Worker 的立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`；首席導學風紀及教師顧問真人驗收仍未完成。
 
 **公開安全及版本完整性：** 公開瀏覽器只接觸 Cloudflare Worker；正式 NiceGUI origin 仍只綁定 loopback，Admin 必須同時通過 Cloudflare Access、私密精確電郵 allowlist、短期 session 及請求綁定的 HMAC principal。GitHub `main` 只接受通過 `test-and-audit` 與 Python／Worker CodeQL 的 pull request，禁止 force-push 和刪除；Actions 引用必須固定完整 SHA，`v*` 發布標籤建立後亦不可更新或刪除。完整威脅模型、資料分類、事件處理及殘餘限制見[公開網站安全與私隱模型](docs/SECURITY_AND_PRIVACY.md)。
 
-**目前發布（rc27 origin＋rc29 Worker）：** 在 rc24 的內容精煉、本機優先支援及正確 `/support` 身份分流上，rc26 把共創署名及團隊敘述收斂為真實的 `Study Prefect Team／導學風紀組 · Service Weave 系統共創`，移除虛構辦公室、部門與職級，並以穩定語意定位器取代依賴文案的瀏覽器驗證。`Professional_Design_System.md` 及 `docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md` 分別保存可執行的設計契約與參考案例的 Adopt／Adapt／Reject 決策。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。Public／Viewer 支援報告保持瀏覽器暫存；rc29 另修正正式 Worker 部署腳本在 Windows PowerShell 5.1 解析 secrets inventory 的相容性，並更新登入入口音樂／導流。首席導學風紀及教師顧問真人驗收仍待完成。
+**目前發布（v1.2 rc30）：** 在 rc27 的已驗證 workflow 與 rc28／rc29 的入口及部署工具修正上，rc30 把語言切換改為目的語言本名，並把外觀改為明確 System／Light／Dark 三選一；Engineering 以有日期及非遙測聲明的 **≈10B** 約數呈現提供截圖所見的跨工具創作者 token 用量。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。Public／Viewer 支援報告保持瀏覽器暫存；首席導學風紀及教師顧問真人驗收仍待完成。
 
-rc16–rc24 是這批能力的歷史來源；rc26 是目前第一級回退 origin。下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換均由 live rc27 承接。
+rc16–rc29 是這批能力的歷史來源；rc27 是目前第一級回退 origin。下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換均由 live rc30 承接。
 
 ## 首席導學風紀：每日怎樣進入
 
@@ -118,7 +118,7 @@ rc16–rc24 是這批能力的歷史來源；rc26 是目前第一級回退 origi
 - Guest 只獲 `demo_data.read`、`demo_state.modify`、`demo_result.download`、`session_preferences.modify`；AI、匯入、上載、正式備份／還原、Viewer 分享、外部交付及永久寫入均被服務層拒絕。
 - 每分頁取得獨立、有限額、程序記憶體內的虛構工作區。Guest PDF／JSON 標明 `DEMO`，以一次性 `no-store` 下載回傳。
 - Guest 的語言、主題、音樂及音效偏好由 origin 的有限期記憶體 store 保存，因此重新整理或同一 session 轉頁不會回復預設；登出、到期、撤權或程序重啟即清除。管理員偏好仍使用正式使用者儲存。兩種身份的 PDF／JSON 均經同一帶憑證下載流程核對 HTTP 狀態、MIME 及支援編號，不再依賴瀏覽器盲目開啟下載網址。
-- HMAC snapshot codec 及瀏覽器橋接已完成：每次有意義修改後，origin 只把最新、已簽署且綁定 SID／workspace／tab／revision 的 token 推送到該分頁 `sessionStorage`；重新整理時必須連同當次連線 nonce 交回伺服器核實。複製分頁會獲得新 workspace；篡改、錯誤綁定、過期、舊 boot 或重播 token 會被拒絕並回到安全虛構 fixture。live rc27 的完整 pytest、隔離 Admin／Guest 瀏覽器、手機、效能、寫入、PDF、備份及復原已納入其 14／14 正式報告；rc24 證據保留作第一級回退來源。
+- HMAC snapshot codec 及瀏覽器橋接已完成：每次有意義修改後，origin 只把最新、已簽署且綁定 SID／workspace／tab／revision 的 token 推送到該分頁 `sessionStorage`；重新整理時必須連同當次連線 nonce 交回伺服器核實。複製分頁會獲得新 workspace；篡改、錯誤綁定、過期、舊 boot 或重播 token 會被拒絕並回到安全虛構 fixture。live rc30 的完整 pytest、隔離 Admin／Guest 瀏覽器、手機、效能、寫入、PDF、備份及復原已納入其 14／14 正式報告；rc27 證據保留作第一級 origin 回退來源。
 - 完整安全模型及 gate 見 [統一訪客模式安全模型](docs/UNIFIED_GUEST_SECURITY_MODEL.md)。
 
 日常安全次序：
@@ -450,7 +450,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The production topology uses one canonical `workers.dev` site and one NiceGUI product. The protected Windows origin runs `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`; the canonical gateway runs rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d` at 100% traffic. Exact rc29 source (`v1.2.0-rc.29`／`1fa3dfa85aa9ad6ef577e4c87c298cb11230ba1c`) passed 14／14 release gates under fingerprint `c015716b9594e0fb3d7cd313a824e5138e11ca389cd7de6f8f8fab8956ccd3bf`, followed by staged version smoke and canonical Public／Guest／Admin handoff／Viewer checks. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal; Guest state remains bounded and memory-only, while `/view#…` links remain separate revocable encrypted snapshots. rc26 is the first-level origin rollback; Worker `76a23134-8355-4e25-bbba-abf17c6918c5` is the immediate gateway rollback. Supervised human acceptance remains open. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
+The live v1.2 rc30 baseline uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The protected origin runs `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`, paired with Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`. This release passed 14／14 source-matched gates under fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc`, then completed the controlled host switchover, verified backup, isolated restore, staged Worker rollout and canonical rendered smoke. `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` is the first-level origin rollback and Worker `d7b51f21-7692-418d-866c-034c2c57292d` is the immediate edge rollback. Supervised human acceptance remains open. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 

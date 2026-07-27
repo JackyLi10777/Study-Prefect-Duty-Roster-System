@@ -1,6 +1,6 @@
 # 部署與遠端存取決策指南 / Deployment decision
 
-> **目前基線：**受控 Windows origin 運行 live `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；canonical gateway 運行 rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d`。rc29 的 296-file fingerprint `c015716b9594e0fb3d7cd313a824e5138e11ca389cd7de6f8f8fab8956ccd3bf` 通過 14／14 release gate，並以 deployment `e3964ef8-4f86-417d-adb8-eb75cb566cfc` 接收 100% traffic；Windows origin runtime 未變，故沒有作不必要的 host 切換或新資料備份。canonical health、Public、Guest session／logout、Admin Access handoff、Viewer 及 12 組入口音樂流程通過。第一級 origin 回退是 rc26；立即 Worker 回退是 `76a23134-8355-4e25-bbba-abf17c6918c5`。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
+> **目前基線：**受控 Windows origin 運行 live `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker 是已驗證 version `11763f08-d40d-46d5-93dc-5ca2599d4154`。296 個 runtime 來源檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前備份 `20260727-023041-069097-manual_verified_backup.sqlite3`／SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 通過 0% version smoke 後升至 100%；origin readiness 與 canonical rendered smoke 通過。第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
 
 ## 結論
 
@@ -26,7 +26,7 @@ Windows 11 專用主機：單一 NiceGUI origin
 
 NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另行固定於 `127.0.0.1:22` 及 `[::1]:22`，只接受 Ed25519 金鑰，不開放 LAN、公網、防火牆入站規則或路由器轉發；日後校外 SSH 只能經獨立的 Cloudflare 私有路由進入。
 
-## Live rc27 origin、rc29 Worker 與回退層級
+## Live rc30 origin、Worker 與回退層級
 
 | 層 | 現況 |
 |---|---|
@@ -118,7 +118,7 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 
 只有完整 release report 與來源 fingerprint 一致時，才可：
 
-1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前 live 證據是 rc27 origin `v1.2.0-rc.27`／`c4c728aa…` 配 rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d`；
+1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前 live 證據是 rc30 origin `v1.2.0-rc.30`／`74b84f4…` 配 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`；
 2. 建立並驗證正式備份，在另一隔離資料庫完成還原；
 3. 進入短暫 maintenance；
 4. 從該不可變 tag 更新 Windows bundle，執行 additive migration `0011_assist_assignment_mode`；
