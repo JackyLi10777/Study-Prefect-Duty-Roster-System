@@ -40,6 +40,8 @@ python -X utf8 scripts\verify_update.py
 
 pre-push 命令只證明「已 staged 的變更適合提交／push 並交給 CI」，不聲稱已可部署。即使分類為 `worker` 或 `full`，它也只執行完整 Python 測試、安全閘門、Worker 契約及 repository hygiene；桌面／手機瀏覽器、寫入／PDF、備份、還原及失敗演練會留待正式發布。
 
+公共入口音樂屬於 Worker 行為，除 Deno 契約外必須執行 `python -X utf8 scripts\verify_public_entry_music.py --base-url <staged-worker-url>`。驗證器會在瀏覽器內模擬成功、拒絕、同步例外及未完成播放，但會攔截 `/auth/login`／`/guest` 目標請求：它不輸入 Access 憑證，也不建立真正 Guest session。正式上線仍須使用版本化 0% Worker、指定版本 smoke、100% promotion 及 canonical smoke；localhost 通過不能代替 Cloudflare 路徑證據。
+
 ## 只有正式發布才使用 `--release`
 
 準備建立 release tag、更新 Windows 正式 bundle 或部署 Worker 時，明確執行：

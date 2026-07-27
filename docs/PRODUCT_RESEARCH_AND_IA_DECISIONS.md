@@ -4,7 +4,7 @@
 
 **Decision version:** 1.0
 
-**Last reviewed:** 2026-07-26
+**Last reviewed:** 2026-07-27
 **Owner:** `Professional_Design_System.md` defines the executable design direction; this document records why that direction was chosen.
 
 ## Decision summary
@@ -23,7 +23,7 @@ The visual direction has evolved to **Luminous Sacred Precision／明澈而莊�
 ### Browser media-policy decision — Adopt／Adapt／Reject
 
 - **Adopt:** treat the resolved `HTMLMediaElement.play()` promise or a trustworthy `playing` event as the only evidence that sound started; classify `NotAllowedError` separately from transport, decode and lifecycle failures.
-- **Adapt:** attempt same-origin welcome music once, then offer **Enter with music** and **Continue quietly** when policy blocks audible playback. The direct retry occurs synchronously in that explicit action before navigation.
+- **Adapt:** attempt same-origin welcome music once. With no explicit entry-sound choice, the Administrator／Guest CTA itself is the trusted default-music retry and calls `play()` synchronously; success, rejection, synchronous failure or a bounded startup timeout all continue exactly once to the selected identity. **Default: Enter with music** and **Continue quietly** are optional preference／recovery controls, not a gate.
 - **Reject:** forced-autoplay claims, muted-start deception, arbitrary first-click capture listeners, repeated hidden retries, third-party autoplay and any server header presented as a way to bypass browser policy.
 
 `Permissions-Policy: autoplay=(self)` documents the intended same-origin boundary but does not override the browser's user-activation policy. The encrypted Viewer remains silent.

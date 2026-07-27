@@ -2,6 +2,8 @@ import worker, {
   accessTokenFromRequest,
   adminSessionCookieNameForTest,
   authenticatedProxyRequestAllowed,
+  createWelcomeEntryController,
+  classifyWelcomeAudioFailureState,
   createAdminSessionToken,
   createGuestSessionToken,
   createOriginPrincipalToken,
@@ -447,10 +449,16 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   const html = await home.text();
   assert(html.includes('id="welcomeAudioPlayer"'));
   assert(html.includes('id="welcomeAudioVolume" type="range" min="0" max="100" step="1" value="50"'));
-  assert(html.includes('Playback is attempted once at 50%; if blocked, choose music or continue quietly.'));
+  assert(html.includes('Playback is attempted at 50%; music never blocks sign-in or the guest demo.'));
   assert(html.includes('id="welcomeAudioRecovery"'));
   assert(html.includes('id="welcomeAudioEnter"'));
   assert(html.includes('id="welcomeAudioQuiet"'));
+  assert(html.includes('Entry sound'));
+  assert(html.includes('id="themeSelect"'));
+  assert(html.includes('data-testid="public-theme-selector"'));
+  assert(html.includes('<option value="system">跟隨系統 · System</option>'));
+  assert(html.includes('<option value="light">淺色 · Light</option>'));
+  assert(html.includes('<option value="dark">深色 · Dark</option>'));
   assert(html.includes('Copyright © 2026 LI Chuangjie'));
   assert((home.headers.get('Content-Security-Policy') || '').includes("media-src 'self'"));
   assert((home.headers.get('Permissions-Policy') || '').includes('autoplay=(self)'));
@@ -464,9 +472,13 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assert(script.includes('storeWelcomeVolume(normalised)'));
   assert(script.includes('welcomeAudio.play()'));
   assert(script.includes('classifyWelcomeAudioFailure'));
-  assert(script.includes('welcomeAudio?.networkState === 2 && welcomeAudio?.readyState < 3'));
+  assert(script.includes('networkState: welcomeAudio?.networkState || 0'));
+  assert(script.includes('classifyWelcomeAudioFailureState({'));
   assert(script.includes("welcomeAudioEnter?.addEventListener('click'"));
-  assert(script.includes('const playback = playWelcomeAudio({ revealRecovery: true });'));
+  assert(script.includes('createWelcomeEntryController({'));
+  assert(script.includes('trustedEntryDestination'));
+  assert(script.includes('welcomeEntryController.enter(destination'));
+  assert(!script.includes("welcomeAudioPlayer?.dataset.autoplayState === 'blocked'"));
   assert(script.includes('if (welcomeAudioRecovery) welcomeAudioRecovery.hidden = true;'));
   assert(!script.includes("setWelcomeRecoveryVisible(false);\n    if (welcomeAudioStatus)"));
   assert(!script.includes("document.addEventListener('pointerdown'"));
@@ -475,9 +487,119 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assert(!script.includes('sing-yin:welcome-audio-enabled:v1'));
   assert(script.includes("addEventListener('ended'"));
   assert(!script.includes('cancelWelcomeFade'));
+  assert(script.includes("themeSelect?.addEventListener('change'"));
+  assert(script.includes("applyTheme(event.currentTarget.value, { persist: true })"));
+  assert(!script.includes('THEME_STATES[(THEME_STATES.indexOf(current) + 1)'));
 });
 
-Deno.test('welcome volume defaults only when absent and preserves an explicit 25 percent choice', () => {
+Deno.test('welcome entry attempts playback inside the activation and navigates once on success or failure', async () => {
+  for (const outcome of ['success', 'rejection', 'throw']) {
+    const events = [];
+    const controller = createWelcomeEntryController({
+      play() {
+        events.push('play');
+        if (outcome === 'throw') throw new Error('synchronous playback failure');
+        return outcome === 'rejection'
+          ? Promise.reject(new DOMException('blocked', 'NotAllowedError'))
+          : Promise.resolve();
+      },
+      navigate(destination) { events.push(`navigate:${destination}`); },
+      onPlaybackStarted() { events.push('playing'); },
+      onPlaybackFailed(error) { events.push(`failed:${error.name}`); },
+    });
+
+    assertEquals(controller.getIntent(), 'unset');
+    assertEquals(controller.enter('/guest', 'guest'), true);
+    assertEquals(events[0], 'play');
+    await Promise.resolve();
+    await Promise.resolve();
+    assertEquals(events.filter(event => event === 'navigate:/guest').length, 1);
+    if (outcome === 'success') assert(events.includes('playing'));
+    else assert(events.some(event => event.startsWith('failed:')));
+  }
+});
+
+Deno.test('welcome entry falls back after bounded latency and ignores late playback settlement', async () => {
+  const events = [];
+  let scheduled;
+  let resolvePlayback;
+  const playback = new Promise(resolve => { resolvePlayback = resolve; });
+  const controller = createWelcomeEntryController({
+    play() { events.push('play'); return playback; },
+    navigate(destination) { events.push(`navigate:${destination}`); },
+    onPlaybackStarted() { events.push('playing'); },
+    onPlaybackTimeout() { events.push('timeout'); },
+    schedule(callback, delay) { scheduled = { callback, delay }; return 7; },
+    cancel() {},
+    timeoutMs: 450,
+  });
+
+  controller.enter('/auth/login', 'admin');
+  assertEquals(scheduled.delay, 450);
+  scheduled.callback();
+  assertEquals(events.join(','), 'play,timeout,navigate:/auth/login');
+  resolvePlayback();
+  await Promise.resolve();
+  await Promise.resolve();
+  assertEquals(events.join(','), 'play,timeout,navigate:/auth/login');
+});
+
+Deno.test('welcome entry honors explicit quiet intent, current playback, duplicate suppression and pageshow reset', async () => {
+  const events = [];
+  const controller = createWelcomeEntryController({
+    play() { events.push('play'); return Promise.resolve(); },
+    navigate(destination) { events.push(`navigate:${destination}`); },
+    isPlaying: () => false,
+    onIntentChange(intent) { events.push(`intent:${intent}`); },
+    onBusyChange(role, busy) { events.push(`busy:${role}:${busy}`); },
+  });
+
+  controller.setIntent('quiet');
+  assertEquals(controller.enter('/guest', 'guest'), true);
+  assertEquals(controller.enter('/guest', 'guest'), false);
+  assert(!events.includes('play'));
+  assertEquals(events.filter(event => event === 'navigate:/guest').length, 1);
+
+  controller.reset();
+  controller.setIntent('music');
+  assertEquals(controller.enter('/auth/login', 'admin'), true);
+  assertEquals(controller.enter('/auth/login', 'admin'), false);
+  await Promise.resolve();
+  await Promise.resolve();
+  assertEquals(events.filter(event => event === 'navigate:/auth/login').length, 1);
+});
+
+Deno.test('welcome entry does not restart audio that is already playing', () => {
+  let playCalls = 0;
+  let navigationCalls = 0;
+  const controller = createWelcomeEntryController({
+    play() { playCalls += 1; return Promise.resolve(); },
+    navigate() { navigationCalls += 1; },
+    isPlaying: () => true,
+  });
+  assertEquals(controller.enter('/guest', 'guest'), true);
+  assertEquals(playCalls, 0);
+  assertEquals(navigationCalls, 1);
+});
+
+Deno.test('welcome audio failure classification remains explicit and deterministic', () => {
+  const cases = [
+    [{ errorName: 'NotAllowedError' }, 'blocked'],
+    [{ errorName: 'NotSupportedError' }, 'decoding'],
+    [{ errorName: 'AbortError' }, 'lifecycle'],
+    [{ mediaErrorCode: 3 }, 'decoding'],
+    [{ mediaErrorCode: 4 }, 'decoding'],
+    [{ mediaErrorCode: 2 }, 'transport'],
+    [{ networkState: 2, readyState: 1 }, 'loading'],
+    [{ online: false }, 'transport'],
+    [{}, 'error'],
+  ];
+  for (const [input, expected] of cases) {
+    assertEquals(classifyWelcomeAudioFailureState(input), expected);
+  }
+});
+
+Deno.test('welcome volume defaults only when absent and preserves explicit zero and 25 percent choices', () => {
   const createStorage = (initial = {}, { rejectWrites = false } = {}) => {
     const values = new Map(Object.entries(initial));
     return {
@@ -505,6 +627,11 @@ Deno.test('welcome volume defaults only when absent and preserves an explicit 25
   assertEquals(welcomeVolumePreferenceForTest(explicit), 0.25);
   assertEquals(explicit.value(volumeKey), '0.25');
   assertEquals(explicit.value(revisionKey), '2');
+
+  const muted = createStorage({ [volumeKey]: '0' });
+  assertEquals(welcomeVolumePreferenceForTest(muted), 0);
+  assertEquals(muted.value(volumeKey), '0');
+  assertEquals(muted.value(revisionKey), '2');
 
   const readOnlyExplicit = createStorage({ [volumeKey]: '0.25' }, { rejectWrites: true });
   assertEquals(welcomeVolumePreferenceForTest(readOnlyExplicit), 0.25);
