@@ -2,6 +2,12 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
+## v1.2.0-rc.29 — candidate, 2026-07-27
+
+- Corrected the controlled Worker deployer for Windows PowerShell 5.1, which represented Wrangler's top-level secret JSON array as one nested object and falsely reported every configured secret as missing.
+- Added a direct Windows PowerShell 5.1 regression test for multi-entry secret inventory parsing. The deployer continues to validate names only and never reads or records secret values.
+- Carries forward the rc28 default-music identity-entry fix unchanged. rc27 remains live until the immutable rc29 release and staged Worker rollout complete.
+
 ## v1.2.0-rc.28 — candidate, 2026-07-27
 
 - Made Administrator and Guest identity buttons the trusted default-music activation when no entry-sound preference was selected; users no longer need to choose a sound option before either route works.
