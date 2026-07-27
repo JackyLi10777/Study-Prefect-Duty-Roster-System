@@ -5,7 +5,7 @@
 > **發布界線（2026-07-27）：** live `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` 與 Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 是現行已部署基線；第一級 origin 回退是 `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`，rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` 是次級已驗證基線。rc27 的 296-file runtime 指紋 `71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c` 通過 14／14 正式 gate，包括 891 項 Python、3 個 motion 及 41 個 Worker contract，並完成受控 Windows 切換、正式備份、隔離還原、origin health／readiness 與 canonical root／health smoke。rc24 至 rc27 的 Worker source／設定沒有差異，因此沿用已驗證 Worker。機器與線上證據不能代替真人驗收，後者保持未完成。
 
 > **rc28 入口候選（未上線）：** 46 個 Worker contract 已證明四個身份 CTA 共用同一控制器，並覆蓋成功、拒絕、同步例外、逾時、安靜意圖、已播放、重複啟動、`pageshow` 及媒體失敗分類。`scripts/verify_public_entry_music.py` 以真實 Chromium 覆蓋 desktop Admin、desktop Guest、390px mobile Admin／Guest、滑鼠／鍵盤、安靜、已播放、快速雙擊及 silent `/view`，每個身份測試只觀察一次目標請求並在建立真正 session／輸入私人憑證前截停。這些聚焦證據仍不是正式發布：須再由 exact-source release report、0% Worker version smoke、100% promotion 及 canonical live browser smoke 補完；首席導學風紀及教師顧問真人驗收仍保持未完成。
-
+>
 > **單一裝置矩陣：** rc20 的 source-matched 隔離瀏覽器證據把手機、兩種直向 adaptive tablet、橫向 desktop-shell touch tablet 及 full desktop 視為同一產品矩陣。768×1024、820×1180、1024×768、1440×1024 已一併進入正式報告；這只完成機器量測，不能代替實體裝置或部署後驗收。
 
 ## rc20 已驗證候選裝置矩陣 / Verified candidate device matrix

@@ -587,10 +587,12 @@ Deno.test('welcome audio failure classification remains explicit and determinist
     [{ errorName: 'NotAllowedError' }, 'blocked'],
     [{ errorName: 'NotSupportedError' }, 'decoding'],
     [{ errorName: 'AbortError' }, 'lifecycle'],
+    [{ errorName: 'NotAllowedError', mediaErrorCode: 2 }, 'blocked'],
     [{ mediaErrorCode: 3 }, 'decoding'],
     [{ mediaErrorCode: 4 }, 'decoding'],
     [{ mediaErrorCode: 2 }, 'transport'],
     [{ networkState: 2, readyState: 1 }, 'loading'],
+    [{ networkState: 2, readyState: 3 }, 'error'],
     [{ online: false }, 'transport'],
     [{}, 'error'],
   ];

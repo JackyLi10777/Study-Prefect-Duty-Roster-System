@@ -134,7 +134,10 @@ def _entry_case(
 
 def _quiet_case(browser: Browser, base_url: str) -> dict[str, object]:
     page, requests, errors, play_events = _new_page(browser, base_url, "reject", {"width": 390, "height": 844})
-    _assert(not page.locator("#welcomeAudioRecovery").get_attribute("hidden"), "blocked recovery was not available")
+    _assert(
+        page.locator("#welcomeAudioRecovery").get_attribute("hidden") is None,
+        "blocked recovery was not available",
+    )
     calls_before = len(play_events)
     page.locator("#welcomeAudioQuiet").click()
     _assert(page.locator("#welcomeAudioPlayer").get_attribute("data-entry-intent") == "quiet", "quiet intent was not recorded")

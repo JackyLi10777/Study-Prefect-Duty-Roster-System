@@ -1882,9 +1882,9 @@ const shareErrorCopy = {
 };
 
 const themeCopy = {
-  system: { label: '自動 · Auto', aria: '外觀：跟隨系統 · Appearance: System' },
-  light: { label: '淺色 · Light', aria: '外觀：淺色 · Appearance: Light' },
-  dark: { label: '深色 · Dark', aria: '外觀：深色 · Appearance: Dark' },
+  system: { aria: '外觀：跟隨系統 · Appearance: System' },
+  light: { aria: '外觀：淺色 · Appearance: Light' },
+  dark: { aria: '外觀：深色 · Appearance: Dark' },
 };
 
 function savedTheme() {
@@ -2326,9 +2326,9 @@ welcomeEntryController = createWelcomeEntryController({
 
 entryButtons.forEach((button) => button.addEventListener('click', (event) => {
   if (!(button instanceof HTMLAnchorElement)) return;
-  event.preventDefault();
   const destination = trustedEntryDestination(button);
   if (!destination) return;
+  event.preventDefault();
   welcomeEntryController.enter(destination, button.dataset.entryRole || '');
 }));
 
