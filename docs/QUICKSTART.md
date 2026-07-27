@@ -1,8 +1,8 @@
 # 快速啟動 / Quick start
 
-> **目前狀態（live rc27 origin＋rc29 Worker）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.27`／commit `c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；canonical gateway 運行 rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d`。rc29 exact source 以指紋 `c015716b9594e0fb3d7cd313a824e5138e11ca389cd7de6f8f8fab8956ccd3bf` 通過 14／14 gate，並完成分段 smoke、100% promotion、真實 Guest session／logout、Admin Access handoff 及 Viewer 檢查。第一級 origin 回退是 rc26；立即 Worker 回退是 `76a23134-8355-4e25-bbba-abf17c6918c5`。
+> **目前狀態（live rc27 origin＋rc29 Worker）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.27`／commit `c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；canonical gateway 運行 rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d`。rc29 exact source 以指紋 `c015716b9594e0fb3d7cd313a824e5138e11ca389cd7de6f8f8fab8956ccd3bf` 通過 14／14 gate，並完成分段 smoke、100% traffic promotion、真實 Guest session／logout、Admin Access handoff 及 Viewer 檢查。第一級 origin rollback 是 rc26；立即 Worker gateway rollback 是 `76a23134-8355-4e25-bbba-abf17c6918c5`。
 >
-> **rc26 已上線（真人驗收仍未簽署）：** rc26 保留完整 Admin／Guest／Public／Viewer 邊界及 `/support` 身份分流，並把團隊敘述統一為真實的 `Study Prefect Team／導學風紀組`，移除虛構部門與職級。機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
+> **rc26 歷史回退基線：** rc26 保留完整 Admin／Guest／Public／Viewer 邊界及 `/support` 身份分流，並把團隊敘述統一為真實的 `Study Prefect Team／導學風紀組`，移除虛構部門與職級。它現只作 rc27 origin 的第一級回退，不是目前上線版本；機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
 
 ## 每日使用
 
@@ -20,7 +20,7 @@
 
 Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 session／workspace／tab 的示範 revision；複製分頁會獲得另一個 workspace。這只是 30 分鐘臨時續接，不是長期儲存；登出、到期、撤權或 origin 重啟後舊 token 會失效。
 
-## rc26 手機快速核對（live 功能的真人驗收）
+## rc27 手機快速核對（live 功能的真人驗收）
 
 只有交接紀錄已列出 rc27 的正式 tag／commit、來源 fingerprint、沿用的 Worker version 及成功 origin rollout 後，才執行以下使用者核對；維護者必須另按[完整已驗證候選裝置矩陣](ACCEPTANCE_EVIDENCE.md#rc20-已驗證候選裝置矩陣--verified-candidate-device-matrix)核對手機、兩種直向平板、橫向觸控平板及 full desktop，不以本節簡表代替矩陣。矩陣最初由 rc20 建立，現行證據以 rc27 report 為準：
 

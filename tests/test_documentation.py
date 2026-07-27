@@ -210,6 +210,8 @@ def test_release_truth_docs_keep_live_origin_and_worker_separate_from_history() 
         encoding="utf-8"
     )
     operator = (PROJECT_ROOT / "docs" / "OPERATOR_GUIDE.md").read_text(encoding="utf-8")
+    changelog = (PROJECT_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    design = (PROJECT_ROOT / "Professional_Design_System.md").read_text(encoding="utf-8")
 
     release_truth_documents = (status, architecture, security, handover, acceptance)
     for document in release_truth_documents:
@@ -222,6 +224,32 @@ def test_release_truth_docs_keep_live_origin_and_worker_separate_from_history() 
         assert "v1.2.0-rc.27" in current_header
         assert "c4c728aa41c9b0122aaa2c015b3cc38e246db43d" in current_header
         assert "d7b51f21-7692-418d-866c-034c2c57292d" in current_header
+
+    supplemental_release_truth_documents = {
+        "README-EN.md": (readme_en, 15),
+        "docs/QUICKSTART.md": (quickstart, 15),
+        "CHANGELOG.md": (changelog, 15),
+        "Professional_Design_System.md": (design, 200),
+    }
+    for relative_path, (document, header_lines) in supplemental_release_truth_documents.items():
+        current_header = "\n".join(document.splitlines()[:header_lines])
+        assert "v1.2.0-rc.27" in current_header, relative_path
+        assert "d7b51f21-7692-418d-866c-034c2c57292d" in current_header, relative_path
+        assert "100% traffic" in current_header, relative_path
+        assert "rc26" in current_header and "origin rollback" in current_header, relative_path
+        assert "76a23134-8355-4e25-bbba-abf17c6918c5" in current_header, relative_path
+        assert "gateway rollback" in current_header, relative_path
+        assert "rc26 is live" not in current_header.lower(), relative_path
+        assert "rc26 已上線" not in current_header, relative_path
+
+    current_release_claims = {
+        "PROJECT_STATUS.md": status.split("**Current Phase:**", 1)[1].splitlines()[0],
+        "README-EN.md": readme_en.splitlines()[2],
+    }
+    for relative_path, current_release_claim in current_release_claims.items():
+        assert "5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7" not in current_release_claim, relative_path
+    for document in (status, readme_en):
+        assert "71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c" in document
 
     # Detailed historical rc20 provenance belongs in the status and handover
     # records; current architecture and security guides need not duplicate it.

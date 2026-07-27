@@ -6,8 +6,8 @@ This file records user-visible, operational and release-significant changes. Exa
 
 - Corrected the controlled Worker deployer for Windows PowerShell 5.1, which represented Wrangler's top-level secret JSON array as one nested object and falsely reported every configured secret as missing.
 - Added a direct Windows PowerShell 5.1 regression test for multi-entry secret inventory parsing. The deployer continues to validate names only and never reads or records secret values.
-- Carries forward the rc28 default-music identity-entry fix unchanged. Worker `d7b51f21-7692-418d-866c-034c2c57292d` passed staged smoke and now serves 100% traffic; the source-identical rc27 Windows origin remains live.
-- Verifies the canonical public entrance, 12-case music／entry matrix, real Guest session and logout, Cloudflare Access Administrator handoff, silent Viewer and non-cacheable health response. Previous Worker `76a23134-8355-4e25-bbba-abf17c6918c5` remains the immediate gateway rollback.
+- Carries forward the rc28 default-music identity-entry fix unchanged. Worker `d7b51f21-7692-418d-866c-034c2c57292d` passed staged smoke and now serves 100% traffic; the source-identical `v1.2.0-rc.27` Windows origin remains live.
+- Verifies the canonical public entrance, 12-case music／entry matrix, real Guest session and logout, Cloudflare Access Administrator handoff, silent Viewer and non-cacheable health response. rc26 is the first-level origin rollback; previous Worker `76a23134-8355-4e25-bbba-abf17c6918c5` remains the immediate gateway rollback.
 
 ## v1.2.0-rc.28 — candidate, 2026-07-27
 

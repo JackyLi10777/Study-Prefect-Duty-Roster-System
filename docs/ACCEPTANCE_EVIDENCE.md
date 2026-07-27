@@ -3,7 +3,6 @@
 本文件把機器驗證與真人驗收分開。`logs/release-candidate-report.json` 顯示 `pass`，只代表下列自動化證據在隔離虛構資料中通過；它不代表實際名單、學校做法、專用電腦、加密離機位置或外部存取決定已獲真人批准。
 
 > **發布界線（2026-07-27）：** live topology 是 rc27 Windows origin（`v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`）配 rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d`。rc29 tag `v1.2.0-rc.29`／commit `1fa3dfa85aa9ad6ef577e4c87c298cb11230ba1c` 的 296-file fingerprint `c015716b9594e0fb3d7cd313a824e5138e11ca389cd7de6f8f8fab8956ccd3bf` 通過 14／14 正式 gate；deployment `e3964ef8-4f86-417d-adb8-eb75cb566cfc` 把 100% traffic 指向該 Worker。正式線上檢查覆蓋 canonical health、12 組入口音樂／導流、真實 Guest session／登出、Cloudflare Access Admin handoff 及 silent `/view`。第一級 origin 回退仍是 rc26；立即 Worker 回退是 `76a23134-8355-4e25-bbba-abf17c6918c5`。機器與線上證據不能代替真人驗收，後者保持未完成。
-
 > **rc28 入口候選（歷史；由 rc29 上線）：** 46 個 Worker contract 已證明四個身份 CTA 共用同一控制器，並覆蓋成功、拒絕、同步例外、逾時、安靜意圖、已播放、重複啟動、`pageshow` 及媒體失敗分類。`scripts/verify_public_entry_music.py` 以真實 Chromium 覆蓋 desktop Admin、desktop Guest、390px mobile Admin／Guest、滑鼠／鍵盤、安靜、已播放、快速雙擊及 silent `/view`。rc29 exact-source gate 重新覆蓋這些行為，並完成 staged Worker rollout 與 canonical live browser verification。
 >
 > **rc29 發布工具與 Worker（已上線）：** Windows PowerShell 5.1 的 Wrangler Secret 清單巢狀陣列問題已由明確 normalization 修正，測試只核對 Secret 名稱，不讀取或改動值。rc29 已完成 protected-main、annotated tag、14／14 exact-source gate、分段 Worker smoke、100% promotion 及 canonical live browser verification。Windows origin 因 runtime source 未變而保持 rc27；真人身份及業務驗收仍須另外完成。
