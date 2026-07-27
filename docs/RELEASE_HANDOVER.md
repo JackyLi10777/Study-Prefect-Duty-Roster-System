@@ -2,7 +2,7 @@
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
-> **目前線上基線是 rc27：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.27`／commit `c4c728aa41c9b0122aaa2c015b3cc38e246db43d`。296 個 runtime 輸入以指紋 `71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c` 通過 14／14 正式 gate（891 Python tests、3 motion、41 Worker contract）。切換前正式備份 `20260726-202210-704981-manual_verified_backup.sqlite3`、SHA-256 `a700a033159f0a940710d2c48b2fd1e5de869877e21b6c5e592605c613eb16f1`、公平對帳、行數核對、還原審計及隔離還原全部通過。canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 因 rc24 至 rc27 的 Worker source／設定沒有差異而保留；origin `/healthz` 健康、`/readyz` ready、`writeReady=true`，沒有待處理備份義務。canonical root／healthz 為 200。第一級 origin 回退是 `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`。首席導學風紀及教師顧問真人驗收仍未完成。
+> **目前線上基線是 rc27 origin＋rc29 Worker：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.27`／commit `c4c728aa41c9b0122aaa2c015b3cc38e246db43d`，origin `/healthz` 健康、`/readyz` ready、`writeReady=true`。canonical gateway 正運行 rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d`；tag `v1.2.0-rc.29`／commit `1fa3dfa85aa9ad6ef577e4c87c298cb11230ba1c`／fingerprint `c015716b9594e0fb3d7cd313a824e5138e11ca389cd7de6f8f8fab8956ccd3bf` 通過 14／14 gate，deployment `e3964ef8-4f86-417d-adb8-eb75cb566cfc` 將 100% traffic 指向該 Worker。第一級 origin 回退是 rc26；立即 Worker 回退是 `76a23134-8355-4e25-bbba-abf17c6918c5`。首席導學風紀及教師顧問真人驗收仍未完成。
 
 > **部署時發現的主機漂移：**切換前 `C:\SingYinRoster` 的 rc20 checkout 有 26 個未提交／未追蹤項目。發布流程沒有把它們混入候選，而是完整保存為 stash commit `56e2f5148f4be1444c45d31c25b81f5a7df1ba03`，再從不可變 rc21 tag 部署；除非先作獨立差異審查，切勿把這份 stash 套回正式主機。
 >
@@ -260,8 +260,8 @@ rc21 的正式部署證據固定為 tag `v1.2.0-rc.21`／commit `f7df4d0170e6bac
 6. rc20 的 Worker source／設定與歷史 rc18 Worker 完全相同，因此發布時沒有重新部署 Worker，並在紀錄填上「刻意沿用 verified version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`」。只有日後 Worker source 或受保護設定實際改變，才使用 staged Worker rollout。
 7. 在 canonical 網址核對 Public、Admin、Guest、Viewer、WebSocket、登出、到期及跨分頁隔離；所有能力仍須由伺服器拒絕優先，而非依賴隱藏按鈕。另按[正式驗收證據矩陣](ACCEPTANCE_EVIDENCE.md)以真實 touch phone／tablet、1440×1024 desktop 和鍵盤逐項核對 rc20 的 Assist 模式切換、可值班日、首屏 CTA、200% zoom、軟鍵盤、route focus、44px 目標、兩個 themes、reduced motion 及 forced colours。
 8. rc20 的線上證據已通過並可供真人驗收。未來候選在正式切換前失敗時保持當時 live 版本不動；Windows 或 Worker 受控腳本在切換後失敗時，先閱讀其 deployment report，確認自動 rollback 的 `attempted`／`succeeded` 及精確 previous commit／version，不要盲目重跑或手動複製檔案。
-9. 如 live rc27 發現 Assist 模式、可值班日、窄屏、鍵盤、焦點、主題或入口回歸，立即停止接受正式寫入並記錄 canonical URL、時間、裝置、route 及非敏感畫面。由受控腳本把 Windows origin 恢復至第一級回退 rc26／`248955cb3300bfbe092b05036632991524d824cd`；Worker source／設定未改，應繼續保持 `76a23134-8355-4e25-bbba-abf17c6918c5` 的 100% traffic。不可 `git reset --hard`、直接覆寫 C-host 或留下未經證明的混合版本。
-10. 回退後重新核對 host commit 確為 rc26／`248955cb3300bfbe092b05036632991524d824cd`、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出。只有 rc26 origin 與既有 Worker 的健康、路由、使用者流程及資料狀態全部一致才恢復日常操作；若不能證明回退完成，保持 maintenance／唯讀並交由 IT 處理。
+9. 如 live rc27 origin 發現 Assist 模式、可值班日、窄屏、鍵盤、焦點或資料工作流回歸，立即停止接受正式寫入並記錄 canonical URL、時間、裝置、route 及非敏感畫面。由受控腳本把 Windows origin 恢復至第一級回退 rc26／`248955cb3300bfbe092b05036632991524d824cd`；除非事故同時指向 gateway，否則保留現行 rc29 Worker。若入口、身份、音樂導流或 Viewer 的 gateway 行為回歸，則把 Worker traffic 恢復至 `76a23134-8355-4e25-bbba-abf17c6918c5`，而不是改動 origin。不可 `git reset --hard`、直接覆寫 C-host 或留下未經證明的混合版本。
+10. 回退後重新核對實際回退層：origin 事故須確認 host commit 為 rc26／`248955cb3300bfbe092b05036632991524d824cd`；gateway 事故須確認 Wrangler deployment 以回退 Worker 承接 100% traffic。再核對工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出。只有 origin、gateway、使用者流程及資料狀態全部一致才恢復日常操作；若不能證明回退完成，保持 maintenance／唯讀並交由 IT 處理。
 
 ## 正式驗收清單
 

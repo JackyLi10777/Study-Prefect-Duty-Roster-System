@@ -1,6 +1,6 @@
 # 快速啟動 / Quick start
 
-> **目前狀態（live rc27）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.27`／commit `c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；296 個 runtime 發布輸入以指紋 `71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `76a23134-8355-4e25-bbba-abf17c6918c5` 因 Worker source／設定未變而繼續承接 100% 流量；第一級 origin 回退是 `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`。
+> **目前狀態（live rc27 origin＋rc29 Worker）：** `C:\SingYinRoster` 正運行 annotated tag `v1.2.0-rc.27`／commit `c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；canonical gateway 運行 rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d`。rc29 exact source 以指紋 `c015716b9594e0fb3d7cd313a824e5138e11ca389cd7de6f8f8fab8956ccd3bf` 通過 14／14 gate，並完成分段 smoke、100% promotion、真實 Guest session／logout、Admin Access handoff 及 Viewer 檢查。第一級 origin 回退是 rc26；立即 Worker 回退是 `76a23134-8355-4e25-bbba-abf17c6918c5`。
 >
 > **rc26 已上線（真人驗收仍未簽署）：** rc26 保留完整 Admin／Guest／Public／Viewer 邊界及 `/support` 身份分流，並把團隊敘述統一為真實的 `Study Prefect Team／導學風紀組`，移除虛構部門與職級。機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
 
@@ -30,7 +30,7 @@ Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 sess
 4. 用鍵盤或讀屏由 Dashboard 轉到 Rosters／Prefects，焦點應到新頁 `main`。開啟次要頁時 **More** 可視覺 active，但 current page 應是抽屜內的實際路由，而不是 More menu trigger。
 5. 在淺色、深色、reduced motion 及 forced-colours 各核對一次。Standalone action 至少 44px；touch icon story 只在原位做一次 opacity／scale 變化，不漂移、不旋轉，且 reduced motion 保持靜止。
 
-任一項失敗都先停止正式寫入、記錄時間／route／裝置及非敏感畫面並登出，不要反覆提交表單。維護者依 [發布與交接手冊](RELEASE_HANDOVER.md) 先證明受控 rollback 至第一級回退 rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` 與 Worker `76a23134-8355-4e25-bbba-abf17c6918c5`；只看到 `/healthz` 200 不足以恢復使用。
+任一項失敗都先停止正式寫入、記錄時間／route／裝置及非敏感畫面並登出，不要反覆提交表單。維護者依 [發布與交接手冊](RELEASE_HANDOVER.md) 判斷事故屬 origin 還是 gateway：第一級 origin 回退是 rc26／`248955cb3300bfbe092b05036632991524d824cd`；立即 gateway 回退是 Worker `76a23134-8355-4e25-bbba-abf17c6918c5`。只看到 `/healthz` 200 不足以恢復使用。
 
 ## 本機維護或 Cloudflare 故障復原
 

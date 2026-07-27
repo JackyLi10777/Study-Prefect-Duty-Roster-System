@@ -1,8 +1,8 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **目前狀態（live rc27）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；canonical Worker version `76a23134-8355-4e25-bbba-abf17c6918c5` 正承接 100% 流量。Worker source／設定自 rc24 至 rc27 沒有差異，故沒有作不必要的重新部署。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；canonical public root 與 capability health 已核對為 200，private readiness 保持預期 redirect。
+> **目前狀態（live rc27 origin＋rc29 Worker）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；canonical Worker `d7b51f21-7692-418d-866c-034c2c57292d` 正承接 100% 流量。Public、真實 Guest session／logout、Cloudflare Access Admin handoff 及獨立 `/view#…` Viewer 已由同一 canonical 網站核對；入口音樂／導流矩陣 12／12 通過，canonical public root 與 capability health 為 200。
 >
-> **回退層級：** 第一級 origin 回退是 `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`；Worker 不變。rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` 是次級已驗證基線。
+> **回退層級：** 第一級 origin 回退是 `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`；立即 Worker 回退是 `76a23134-8355-4e25-bbba-abf17c6918c5`。rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` 是次級已驗證 origin 基線。
 >
 > **歷史 rc21 受控上線證據：** 291 個來源檔案以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate；切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／`fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已完成 checksum、公平對帳、行數核對、還原審計及隔離還原。這段只保留歷史來源；目前 live 與回退層級以上方 rc27／rc26／rc24 說明為準。
 
@@ -136,7 +136,7 @@ user may download JSON, copy the redacted summary, or open a prefilled email.
 
 ## English quick guide
 
-The live rc27 origin (`v1.2.0-rc.27`, commit `c4c728aa41c9b0122aaa2c015b3cc38e246db43d`) passed all 14 formal gates with source fingerprint `71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c`, including 891 Python tests, 3 motion contracts, and 41 Worker contracts, before the controlled Windows switch. Worker source was unchanged from rc24, so the live Worker remains `76a23134-8355-4e25-bbba-abf17c6918c5`; rc26／`248955cb3300bfbe092b05036632991524d824cd` is the first-level origin rollback.
+The controlled Windows origin remains on `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`. The canonical gateway runs rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d` at 100% traffic. Exact rc29 source (`v1.2.0-rc.29`／`1fa3dfa85aa9ad6ef577e4c87c298cb11230ba1c`) passed all 14 formal gates with fingerprint `c015716b9594e0fb3d7cd313a824e5138e11ca389cd7de6f8f8fab8956ccd3bf`, including 891 Python tests, 3 motion contracts, and 46 Worker contracts, before staged version smoke and canonical checks. rc26 is the first-level origin rollback; Worker `76a23134-8355-4e25-bbba-abf17c6918c5` is the immediate gateway rollback.
 
 Live rc27 uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
 
