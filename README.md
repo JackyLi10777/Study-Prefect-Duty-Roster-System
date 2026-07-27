@@ -67,7 +67,7 @@ Admin 是正式工作的標準版本；Guest 使用同一組路由、導航、�
 | `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；歷史整合來源 | rc17 的多用戶、操作層級及前端穩定性整合線；現行發布已由 rc27 取代 |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；歷史整合來源 | 前一階段 Service Weave v1.2 編輯式整合線 |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.27` 正式來源；`C:\SingYinRoster` 已切換至同一 annotated tag |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live rc27 Windows origin＋rc29 Cloudflare Worker 的正式來源 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -81,11 +81,11 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 網站公開入口、分享檢視器及 NiceGUI 工作台共用頁尾署名 `Copyright © 2026 LI Chuangjie`；供群組發布的乾淨值班表 PDF 仍由匯出選項決定是否加入補充頁尾。
 
-**目前正式基線：** `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` 已同步到 `C:\SingYinRoster`；`/healthz` 正常、`/readyz` ready、`writeReady=true`。296 個發布輸入以指紋 `71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c` 通過 14／14 release gate；切換前正式備份 `20260726-202210-704981-manual_verified_backup.sqlite3`、SHA-256 `a700a033159f0a940710d2c48b2fd1e5de869877e21b6c5e592605c613eb16f1`、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。rc24 至 rc27 的 Worker source／設定沒有差異，故 canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 繼續承接正式流量；canonical root／healthz 均為 200。第一級回退是 rc26 exact origin；首席導學風紀及教師顧問真人驗收仍未完成。
+**目前正式基線：** `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` 是 `C:\SingYinRoster` 的正式 origin；rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d` 承接 canonical 100% 流量。rc29 tag `v1.2.0-rc.29`／commit `1fa3dfa85aa9ad6ef577e4c87c298cb11230ba1c`／fingerprint `c015716b9594e0fb3d7cd313a824e5138e11ca389cd7de6f8f8fab8956ccd3bf` 通過 14／14 release gate，並完成 staged smoke、正式入口、12 組音樂／導流、真實 Guest session／logout、Admin Access handoff 及 silent Viewer 核對。第一級 origin 回退是 rc26；立即 Worker 回退是 `76a23134-8355-4e25-bbba-abf17c6918c5`。首席導學風紀及教師顧問真人驗收仍未完成。
 
 **公開安全及版本完整性：** 公開瀏覽器只接觸 Cloudflare Worker；正式 NiceGUI origin 仍只綁定 loopback，Admin 必須同時通過 Cloudflare Access、私密精確電郵 allowlist、短期 session 及請求綁定的 HMAC principal。GitHub `main` 只接受通過 `test-and-audit` 與 Python／Worker CodeQL 的 pull request，禁止 force-push 和刪除；Actions 引用必須固定完整 SHA，`v*` 發布標籤建立後亦不可更新或刪除。完整威脅模型、資料分類、事件處理及殘餘限制見[公開網站安全與私隱模型](docs/SECURITY_AND_PRIVACY.md)。
 
-**目前發布（v1.2 rc27）：** 在 rc24 的內容精煉、本機優先支援及正確 `/support` 身份分流上，rc26 把共創署名及團隊敘述收斂為真實的 `Study Prefect Team／導學風紀組 · Service Weave 系統共創`，移除虛構辦公室、部門與職級，並以穩定語意定位器取代依賴文案的瀏覽器驗證。`Professional_Design_System.md` 及 `docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md` 分別保存可執行的設計契約與參考案例的 Adopt／Adapt／Reject 決策。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。Public／Viewer 支援報告保持瀏覽器暫存，已驗證 Admin／Guest 進入 NiceGUI 支援工作台；首席導學風紀及教師顧問真人驗收仍待完成。
+**目前發布（rc27 origin＋rc29 Worker）：** 在 rc24 的內容精煉、本機優先支援及正確 `/support` 身份分流上，rc26 把共創署名及團隊敘述收斂為真實的 `Study Prefect Team／導學風紀組 · Service Weave 系統共創`，移除虛構辦公室、部門與職級，並以穩定語意定位器取代依賴文案的瀏覽器驗證。`Professional_Design_System.md` 及 `docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md` 分別保存可執行的設計契約與參考案例的 Adopt／Adapt／Reject 決策。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。Public／Viewer 支援報告保持瀏覽器暫存；rc29 另修正正式 Worker 部署腳本在 Windows PowerShell 5.1 解析 secrets inventory 的相容性，並更新登入入口音樂／導流。首席導學風紀及教師顧問真人驗收仍待完成。
 
 rc16–rc24 是這批能力的歷史來源；rc26 是目前第一級回退 origin。下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換均由 live rc27 承接。
 
@@ -450,7 +450,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The live v1.2 rc27 baseline uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The protected origin runs `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`, paired with unchanged Worker `76a23134-8355-4e25-bbba-abf17c6918c5`. This release passed 14／14 source-matched gates under fingerprint `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`, then completed the controlled host switchover, verified backup, isolated restore and canonical smoke. `v1.2.0-rc.24`／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` is the first-level rollback; historical `v1.2.0-rc.21`／`f7df4d0170e6bacd65340cc893992a17b5ed4aed` is a secondary verified baseline. Supervised human acceptance remains open. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
+The production topology uses one canonical `workers.dev` site and one NiceGUI product. The protected Windows origin runs `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`; the canonical gateway runs rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d` at 100% traffic. Exact rc29 source (`v1.2.0-rc.29`／`1fa3dfa85aa9ad6ef577e4c87c298cb11230ba1c`) passed 14／14 release gates under fingerprint `c015716b9594e0fb3d7cd313a824e5138e11ca389cd7de6f8f8fab8956ccd3bf`, followed by staged version smoke and canonical Public／Guest／Admin handoff／Viewer checks. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal; Guest state remains bounded and memory-only, while `/view#…` links remain separate revocable encrypted snapshots. rc26 is the first-level origin rollback; Worker `76a23134-8355-4e25-bbba-abf17c6918c5` is the immediate gateway rollback. Supervised human acceptance remains open. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 

@@ -8,7 +8,7 @@
 
 > **SSH 維護狀態（2026-07-17）：** Windows OpenSSH Server 已以金鑰限定模式運行，只監聽 `127.0.0.1:22` 及 `[::1]:22`；密碼、互動式登入、轉發及 Windows 公開入站規則均停用。安裝、驗證、金鑰輪換及緊急停用程序見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。這是維護入口，不是另一個使用者網站。
 
-> **目前狀態（live rc27）：** `C:\SingYinRoster` 已固定於不可變標籤 `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；第一級 origin 回退 `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`。`Sing Yin Roster Host` 由非管理員 `SingYinRosterSvc` 帳戶運行；實際 loopback endpoint 由受保護 `.env` 的 `SING_YIN_HOST`／`SING_YIN_PORT` 決定，現為 `127.0.0.1:8080`。296 個 runtime 檔以 fingerprint `71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c` 通過 14／14 gate；備份 `20260726-202210-704981-manual_verified_backup.sqlite3` 及隔離還原已通過。canonical Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 因 source／設定未變而繼續承接 100% 流量；origin readiness 與 canonical root／health smoke 已核對。
+> **目前狀態（live rc27 origin＋rc29 Worker）：** `C:\SingYinRoster` 已固定於不可變標籤 `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；第一級 origin 回退是 rc26。`Sing Yin Roster Host` 由非管理員 `SingYinRosterSvc` 帳戶運行，現為 loopback `127.0.0.1:8080`。主機 runtime 沒有在 rc29 改動；canonical gateway 已受控更新至 Worker `d7b51f21-7692-418d-866c-034c2c57292d` 並承接 100% 流量，舊 Worker `76a23134-8355-4e25-bbba-abf17c6918c5` 是立即 gateway rollback。origin readiness 與 canonical health／Guest／Admin handoff／Viewer smoke 已核對。
 >
 > **歷史 rc21 受控部署紀錄：**annotated tag `v1.2.0-rc.21`／commit `f7df4d0170e6bacd65340cc893992a17b5ed4aed` 曾以 fingerprint `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate，並完成受控 Windows 切換。切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／SHA-256 `fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已通過 checksum、公平對帳、行數核對、還原審計及隔離還原。不要把 branch、未提交 source 或一般開發樹手動複製進正式主機；切換前發現的 rc20 主機漂移已封存於 stash commit `56e2f5148f4be1444c45d31c25b81f5a7df1ba03`，不得直接套回 production。這段只保留歷史證據；目前 rc27／rc26／rc24 層級以上方狀態為準。
 
@@ -685,8 +685,8 @@ rc20 的自動化裝置矩陣已包含手機／平板／桌面與 accessibility�
 
 1. 立即停止接受正式寫入，記錄時間、canonical route、裝置、release tag／commit、Worker version 及非敏感畫面；不要重複提交可能已完成的操作。
 2. 先閱讀 Windows／Worker deployment JSON 的 rollback `attempted`、`succeeded`、previous commit／version。受控腳本已開始回退時，不要同時再跑第二次或手動覆寫檔案。
-3. 若 rc26 切換後才發現回歸，由發布維護者先讓受控腳本依 deployment report 回復第一級已驗證基線 rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`。Worker source／設定沒有改動，必須繼續保持 verified version `76a23134-8355-4e25-bbba-abf17c6918c5` 的 100% traffic。禁止 `git reset --hard`、直接複製開發樹或留下未經證明的混合版本。
-4. 回退後核對 host commit 確為 rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc`、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出和完整 rc24 使用者流程。
+3. 若現行 rc27 origin 發現回歸，由發布維護者讓受控腳本依 deployment report 回復第一級 origin 基線 rc26／`248955cb3300bfbe092b05036632991524d824cd`。除非事故同時指向 gateway，否則保留現行 rc29 Worker；純 gateway 事故才把 Worker traffic 恢復至 `76a23134-8355-4e25-bbba-abf17c6918c5`。禁止 `git reset --hard`、直接複製開發樹或留下未經證明的混合版本。
+4. 回退後核對實際回退層、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出和完整使用者流程。
 5. 只有上述結果全部一致才恢復操作；不能證明 rollback 成功時保持 maintenance／唯讀並交由 IT 處理。
 
 ### 步驟 12.7：如需輪換管理 API 權杖

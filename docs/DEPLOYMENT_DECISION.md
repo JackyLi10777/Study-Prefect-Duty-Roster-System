@@ -1,6 +1,6 @@
 # 部署與遠端存取決策指南 / Deployment decision
 
-> **目前基線：**受控 Windows origin 運行 live `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；canonical Worker 是已驗證 version `76a23134-8355-4e25-bbba-abf17c6918c5`。296 個 runtime 來源檔以 fingerprint `71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c` 通過 14／14 release gate；切換前備份 `20260726-202210-704981-manual_verified_backup.sqlite3`／SHA-256 `a700a033159f0a940710d2c48b2fd1e5de869877e21b6c5e592605c613eb16f1` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。rc24 至 rc27 的 Worker source／設定沒有差異，故沿用上述 canonical Worker；origin readiness 與 canonical root／health smoke 通過。第一級 origin 回退是 `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`；rc24 是次級已驗證基線。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
+> **目前基線：**受控 Windows origin 運行 live `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；canonical gateway 運行 rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d`。rc29 的 296-file fingerprint `c015716b9594e0fb3d7cd313a824e5138e11ca389cd7de6f8f8fab8956ccd3bf` 通過 14／14 release gate，並以 deployment `e3964ef8-4f86-417d-adb8-eb75cb566cfc` 接收 100% traffic；Windows origin runtime 未變，故沒有作不必要的 host 切換或新資料備份。canonical health、Public、Guest session／logout、Admin Access handoff、Viewer 及 12 組入口音樂流程通過。第一級 origin 回退是 rc26；立即 Worker 回退是 `76a23134-8355-4e25-bbba-abf17c6918c5`。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
 
 ## 結論
 
@@ -26,14 +26,15 @@ Windows 11 專用主機：單一 NiceGUI origin
 
 NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另行固定於 `127.0.0.1:22` 及 `[::1]:22`，只接受 Ed25519 金鑰，不開放 LAN、公網、防火牆入站規則或路由器轉發；日後校外 SSH 只能經獨立的 Cloudflare 私有路由進入。
 
-## Live rc27 與回退層級
+## Live rc27 origin、rc29 Worker 與回退層級
 
 | 層 | 現況 |
 |---|---|
 | `C:\SingYinRoster` | live `v1.2.0-rc.27`／`c4c728a`；健康、ready、`writeReady=true`、loopback-only；endpoint 由受保護設定統一決定 |
-| Cloudflare Worker／Access／Tunnel | Worker `76a23134-8355-4e25-bbba-abf17c6918c5` live（rc26 因 source／設定未變而刻意沿用）；Access 精確保護 `/auth/login`；Tunnel／VPC 連到單一 origin；`cloudflared` Running／Automatic |
-| rc27 來源與部署證據 | `v1.2.0-rc.27`／`c4c728aa…`／`71c8011c…`；14／14 gate；備份 `20260726-202210-704981-manual_verified_backup.sqlite3`／`a700a033…` 隔離還原通過 |
-| 第一級 origin 回退 | 回復 `v1.2.0-rc.26`／`248955cb` host，保留 Worker `76a23134-8355-4e25-bbba-abf17c6918c5`；先核對 deployment report，再驗證 health、readiness、canonical user flows 及資料狀態 |
+| Cloudflare Worker／Access／Tunnel | rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d` live，deployment `e3964ef8-4f86-417d-adb8-eb75cb566cfc` 以 100% traffic 服務；Access 精確保護 `/auth/login`；Tunnel／VPC 連到單一 origin；`cloudflared` Running／Automatic |
+| rc29 Worker 來源與部署證據 | `v1.2.0-rc.29`／`1fa3dfa8…`／`c015716b…`；14／14 gate；staged version smoke、12／12 音樂／導流、真實 Guest session／logout、Admin Access handoff 及 silent Viewer 通過 |
+| 第一級 origin 回退 | 回復 `v1.2.0-rc.26`／`248955cb` host；除非事故指向 gateway，否則保留現行 rc29 Worker，再驗證 health、readiness、canonical user flows 及資料狀態 |
+| 立即 gateway 回退 | 把 Worker traffic 恢復至 `76a23134-8355-4e25-bbba-abf17c6918c5`；不可把 gateway 回退誤寫成 origin 回退 |
 | 次級已驗證基線 | rc24／`8d709f9b` 與同一 Worker；只有 rc26 無法安全恢復且事故負責人批准第二級復原時使用 |
 | `codex/frontend-guest-performance-rc16` | rc17 來源分支；14 項 gate、標籤、Windows bundle 及 Worker staged rollout 已完成 |
 | `SING_YIN_UNIFIED_GUEST` | live rc27 的受保護主機設定為 `1`；後續候選不得以切換旗標取代完整驗證 |
@@ -117,12 +118,12 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 
 只有完整 release report 與來源 fingerprint 一致時，才可：
 
-1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前已完成的 live 證據是 `v1.2.0-rc.26`／`248955cb…`；
+1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前 live 證據是 rc27 origin `v1.2.0-rc.27`／`c4c728aa…` 配 rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d`；
 2. 建立並驗證正式備份，在另一隔離資料庫完成還原；
 3. 進入短暫 maintenance；
 4. 從該不可變 tag 更新 Windows bundle，執行 additive migration `0011_assist_assignment_mode`；
 5. 保持現行受保護設定不變，核對 `/healthz` 及 `/readyz`；
-6. 比較 Worker source／受保護設定；沒有改動時記錄沿用已驗證版本，有改動時才執行 staged Worker rollout；rc26 因兩者未改而沿用 `76a23134-8355-4e25-bbba-abf17c6918c5`；
+6. 比較 Worker source／受保護設定；沒有改動時記錄沿用已驗證版本，有改動時才執行 staged Worker rollout；目前 rc29 已完成 staged rollout 並接收 100% traffic，`76a23134-8355-4e25-bbba-abf17c6918c5` 只作立即 gateway rollback；
 7. 以虛構資料核對 Public、Admin、Guest、Viewer、PDF、登出、到期及多分頁隔離；
 8. 完成真人驗收後才結束 maintenance 並宣布候選上線。
 
@@ -140,6 +141,6 @@ python -X utf8 scripts\verify_release_candidate.py
 
 ## English summary
 
-The selected topology remains one canonical Cloudflare Worker in front of one loopback-only NiceGUI origin on a dedicated Windows host. The Windows machine remains the sole system of record for SQLite, backups, logs, PDFs, and local music. Live `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` unifies administrator and guest pages through a signed `PageContext`; guest data stays in a bounded in-memory adapter. The verified Worker is `76a23134-8355-4e25-bbba-abf17c6918c5`.
+The selected topology remains one canonical Cloudflare Worker in front of one loopback-only NiceGUI origin on a dedicated Windows host. The Windows machine remains the sole system of record for SQLite, backups, logs, PDFs, and local music. Live origin `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` unifies administrator and guest pages through a signed `PageContext`; guest data stays in a bounded in-memory adapter. The verified canonical gateway is rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d`.
 
-Service Weave rc27 is the live controlled release and supervised human acceptance remains outstanding. `v1.2.0-rc.27`／`c4c728aa…` passed the source fingerprint `71c8011c…` gates and completed the controlled Windows-origin switch, verified backup, isolated restore, deployment report, and canonical root／health checks. Its Worker source and configuration were unchanged from rc24, so the rollout retained Worker `76a23134-8355-4e25-bbba-abf17c6918c5`. A runtime failure returns first to rc26／`248955cb…`; rc24 is the secondary verified baseline.
+The live controlled topology is rc27 on the Windows origin plus rc29 on the Worker, and supervised human acceptance remains outstanding. Exact rc29 source passed the `c015716b…` fingerprint gates, then completed staged Worker smoke, 100% promotion and canonical Public／Guest／Admin handoff／Viewer checks. An origin failure returns first to rc26／`248955cb…`; a gateway failure returns to Worker `76a23134-8355-4e25-bbba-abf17c6918c5`.
