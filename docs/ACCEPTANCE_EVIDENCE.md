@@ -7,6 +7,8 @@
 >
 > **rc29 發布工具與 Worker（已上線）：** Windows PowerShell 5.1 的 Wrangler Secret 清單巢狀陣列問題已由明確 normalization 修正，測試只核對 Secret 名稱，不讀取或改動值。rc29 已完成 protected-main、annotated tag、14／14 exact-source gate、分段 Worker smoke、100% promotion 及 canonical live browser verification。Windows origin 因 runtime source 未變而保持 rc27；真人身份及業務驗收仍須另外完成。
 >
+> **rc30 介面候選（未上線）：** 在 rc29 基線上加入目的語言本名、NiceGUI／Worker 明確 System／Light／Dark 選擇、320px 全寬 radio、44px Worker select、Admin／Guest／browser-local preference isolation，以及有日期與非遙測聲明的 ≈10B 創作者級 AI token 約數。rc30 自身的 296-file fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 已通過 14／14 gates，包括 894 個 Python tests、3 個 motion contracts、46 個 Worker contracts、desktop／phone／tablet／256px reflow、preference／duplicated-tab isolation、write／PDF／backup／restore、runtime leak checks及 partial-backup recovery。它仍須完成 protected-main merge、annotated tag、controlled origin rollout、staged Worker rollout 與 canonical smoke，才可列作線上證據。
+>
 > **單一裝置矩陣：** rc20 的 source-matched 隔離瀏覽器證據把手機、兩種直向 adaptive tablet、橫向 desktop-shell touch tablet 及 full desktop 視為同一產品矩陣。768×1024、820×1180、1024×768、1440×1024 已一併進入正式報告；這只完成機器量測，不能代替實體裝置或部署後驗收。
 
 ## rc20 已驗證候選裝置矩陣 / Verified candidate device matrix

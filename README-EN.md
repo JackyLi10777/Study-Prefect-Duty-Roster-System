@@ -370,7 +370,7 @@ context discoverable without making a daily operator scan one oversized page.
 ## Interface quality
 
 - Traditional Chinese first, complete English counterpart.
-- Light and dark themes with paired atmosphere artwork.
+- An explicit System／Light／Dark appearance selector with paired atmosphere artwork; the language action always names its destination as the autonym English／EN or 繁體中文／繁中.
 - Phone-specific roster and prefect cards rather than clipped desktop tables.
 - Keyboard focus, semantic landmarks, 44px actions, reduced-motion support.
 - Dignified Daily Verse reading language separate from the workbench.

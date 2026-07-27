@@ -105,6 +105,11 @@ MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服
  'engineering_fact_languages': {'zh-HK': '完整介面語言', 'en': 'Complete UI languages'},
  'engineering_fact_languages_body': {'zh-HK': '繁中優先、英文完整，姓名在兩種語言保持中文。',
                                      'en': 'Traditional Chinese first, complete English, and Chinese names in both.'},
+ 'engineering_fact_ai_tokens': {'zh-HK': '創作者累計 AI Token 處理量', 'en': 'Creator aggregate AI token processing'},
+ 'engineering_fact_ai_tokens_body': {
+     'zh-HK': '跨 AI 工具的約值；2026-07-27 提供的截圖為 9.38B。非即時、非本系統遙測，亦不表示學生資料送往 AI。',
+     'en': 'Approximate usage across AI tools; the supplied 2026-07-27 screenshot showed 9.38B. This is not live product telemetry and does not imply student data was sent to AI.',
+ },
  'engineering_blueprint_kicker': {'zh-HK': 'SYSTEM BLUEPRINT／系統藍圖', 'en': 'SYSTEM BLUEPRINT'},
  'engineering_blueprint_title': {'zh-HK': '由操作意圖到可復原證據，每一層只做自己的工作',
                                  'en': 'From operator intent to recoverable evidence, every layer keeps one job'},

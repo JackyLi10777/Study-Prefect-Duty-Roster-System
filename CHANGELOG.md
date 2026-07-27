@@ -2,6 +2,16 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
+## v1.2.0-rc.30 — candidate, 2026-07-27
+
+- Current live topology remains the `v1.2.0-rc.27` Windows origin with Worker `d7b51f21-7692-418d-866c-034c2c57292d` at 100% traffic; rc26 is the origin rollback and Worker `76a23134-8355-4e25-bbba-abf17c6918c5` is the immediate gateway rollback.
+- Replaced ambiguous language and appearance toggles with destination-language autonyms and explicit **System／Light／Dark** choices across the NiceGUI workbench and public Worker entrance; desktop uses a labelled menu while narrow screens use a full-width three-choice control.
+- Kept Admin appearance in the encrypted user preference adapter, Guest appearance in the bounded session-only store, and Public／Viewer appearance in browser-local storage; changing appearance remains in-place and does not cross identity or storage boundaries.
+- Added browser contracts for 256／320／390px phone reflow, 44px touch targets, keyboard and screen-reader state, locale／appearance isolation, reduced motion and rendered light／dark states.
+- Added a clearly qualified **≈10B AI tokens processed** creator-level engineering fact, rounded from the supplied 2026-07-27 cross-tool screenshot (9.38B); it is not live product telemetry and does not imply that student data is sent to AI services.
+- Carries the rc29 PowerShell 5.1 deployment-inventory correction and rc28 default-music entry behavior forward unchanged; the live topology remains the rc27 Windows origin with the rc29 Worker until rc30 completes controlled rollout.
+- Passed all 14 rc30 candidate gates against the 296-file source fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc`: 894 Python tests, 3 motion contracts, 46 Worker contracts, adaptive browser matrices, isolation, write／PDF／backup／restore and partial-backup recovery.
+
 ## v1.2.0-rc.29 — live Worker, 2026-07-27
 
 - Corrected the controlled Worker deployer for Windows PowerShell 5.1, which represented Wrangler's top-level secret JSON array as one nested object and falsely reported every configured secret as missing.

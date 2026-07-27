@@ -10,7 +10,7 @@ def test_theme_follows_system_by_default_and_uses_dark_server_fallback(monkeypat
     assert theme.current_theme() == "dark"
 
 
-def test_theme_choice_cycles_system_dark_light(monkeypatch) -> None:
+def test_theme_choice_is_set_explicitly(monkeypatch) -> None:
     saved: dict[str, str] = {}
 
     monkeypatch.setattr(
@@ -21,12 +21,20 @@ def test_theme_choice_cycles_system_dark_light(monkeypatch) -> None:
     monkeypatch.setattr(theme, "preference_set", lambda key, value: saved.__setitem__(key, value))
 
     assert theme.theme_preference() == "system"
-    theme.toggle_theme()
-    assert saved["theme"] == "dark"
-    theme.toggle_theme()
-    assert saved["theme"] == "light"
-    theme.toggle_theme()
-    assert saved["theme"] == "system"
+    for value in ("light", "dark", "system"):
+        theme.set_theme_preference(value)
+        assert saved["theme"] == value
+
+
+def test_invalid_explicit_theme_choice_is_rejected(monkeypatch) -> None:
+    monkeypatch.setattr(theme, "preference_set", lambda _key, _value: None)
+
+    try:
+        theme.set_theme_preference("sepia")
+    except ValueError as error:
+        assert "theme preference" in str(error)
+    else:  # pragma: no cover - documents the validation boundary
+        raise AssertionError("invalid theme preference was accepted")
 
 
 def test_invalid_theme_choice_fails_closed_to_system(monkeypatch) -> None:

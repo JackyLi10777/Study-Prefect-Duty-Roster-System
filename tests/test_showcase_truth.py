@@ -10,6 +10,8 @@ def test_engineering_showcase_uses_current_release_evidence_instead_of_stale_cou
     assert '("08", "verified"' not in source
     assert "evidence.passed_checks" in source and "evidence.total_checks" in source
     assert "engineering_fact_full_suite" in source
+    assert '"≈10B"' in source
+    assert "engineering_fact_ai_tokens" in source
     assert "engineering_gate_runtime" in source
     assert "engineering_gate_cloudflare" in source
     assert "engineering_gate_mobile" in source

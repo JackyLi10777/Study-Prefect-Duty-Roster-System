@@ -48,21 +48,16 @@ def _current_theme(page: Page) -> str:
 
 
 def _set_theme_reliably(page: Page, expected: str) -> None:
-    """Cycle the public three-state control without relying on internal JS APIs."""
+    """Use the public native selector without relying on internal JS APIs."""
 
     if expected not in THEME_STATES:
         raise ValueError(f"Unsupported theme state: {expected}")
-    for _ in THEME_STATES:
-        current = _current_theme(page)
-        if current == expected:
-            page.wait_for_timeout(250)
-            return
-        page.locator("#themeToggle").click()
-        page.wait_for_function(
-            "previous => (document.documentElement.dataset.theme || 'system') !== previous",
-            arg=current,
-        )
-    raise RuntimeError(f"Theme toggle did not reach {expected!r}.")
+    page.locator("#themeSelect").select_option(expected)
+    page.wait_for_function(
+        "value => (document.documentElement.dataset.theme || 'system') === value",
+        arg=expected,
+    )
+    page.wait_for_timeout(250)
 
 
 def _assert_page_identity(page: Page, *, label: str) -> None:
@@ -297,7 +292,7 @@ def _assert_mobile_entry_actions_in_first_viewport(page: Page, *, label: str) ->
             )
 
 
-def _assert_theme_cycle(page: Page) -> None:
+def _assert_theme_selection(page: Page) -> None:
     _set_theme_reliably(page, "system")
     for expected in ("light", "dark", "system"):
         _set_theme_reliably(page, expected)
@@ -548,7 +543,7 @@ def main() -> int:
             page.goto(settings.base_url, wait_until="networkidle")
             _assert_guest_landing(page, label="desktop guest landing")
             _assert_manual_verse_refresh(page)
-            _assert_theme_cycle(page)
+            _assert_theme_selection(page)
 
             _set_theme_reliably(page, "light")
             page.screenshot(path=str(GATEWAY_EVIDENCE_DIR / "desktop-light.png"), full_page=True)

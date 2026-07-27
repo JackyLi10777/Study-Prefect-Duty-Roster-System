@@ -330,6 +330,7 @@ def engineering_page() -> None:
         (gate_value, "verified", "engineering_fact_gates", "engineering_fact_gates_body"),
         ("05", "layers", "engineering_fact_layers", "engineering_fact_layers_body"),
         ("02", "translate", "engineering_fact_languages", "engineering_fact_languages_body"),
+        ("≈10B", "memory", "engineering_fact_ai_tokens", "engineering_fact_ai_tokens_body"),
     )
 
     with page_shell("/engineering"):
