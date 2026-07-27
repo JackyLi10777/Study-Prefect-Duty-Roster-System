@@ -118,12 +118,12 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 
 只有完整 release report 與來源 fingerprint 一致時，才可：
 
-1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前已完成的 live 證據是 `v1.2.0-rc.26`／`248955cb…`；
+1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前 live 證據是 rc27 origin `v1.2.0-rc.27`／`c4c728aa…` 配 rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d`；
 2. 建立並驗證正式備份，在另一隔離資料庫完成還原；
 3. 進入短暫 maintenance；
 4. 從該不可變 tag 更新 Windows bundle，執行 additive migration `0011_assist_assignment_mode`；
 5. 保持現行受保護設定不變，核對 `/healthz` 及 `/readyz`；
-6. 比較 Worker source／受保護設定；沒有改動時記錄沿用已驗證版本，有改動時才執行 staged Worker rollout；rc26 因兩者未改而沿用 `76a23134-8355-4e25-bbba-abf17c6918c5`；
+6. 比較 Worker source／受保護設定；沒有改動時記錄沿用已驗證版本，有改動時才執行 staged Worker rollout；目前 rc29 已完成 staged rollout 並接收 100% traffic，`76a23134-8355-4e25-bbba-abf17c6918c5` 只作立即 gateway rollback；
 7. 以虛構資料核對 Public、Admin、Guest、Viewer、PDF、登出、到期及多分頁隔離；
 8. 完成真人驗收後才結束 maintenance 並宣布候選上線。
 

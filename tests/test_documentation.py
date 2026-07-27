@@ -245,6 +245,9 @@ def test_release_truth_docs_keep_live_origin_and_worker_separate_from_history() 
     current_release_claims = {
         "PROJECT_STATUS.md": status.split("**Current Phase:**", 1)[1].splitlines()[0],
         "README-EN.md": readme_en.splitlines()[2],
+        "README-EN.md live rc27 section": readme_en.split(
+            "The live rc27 release", 1
+        )[1].split("## Repository editions", 1)[0],
     }
     for relative_path, current_release_claim in current_release_claims.items():
         assert "5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7" not in current_release_claim, relative_path

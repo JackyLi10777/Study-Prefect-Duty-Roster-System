@@ -134,8 +134,9 @@ The live rc27 release retains and re-verifies admission control that rejects exc
 evicting active users, stronger import and network bounds, aggregate fairness
 reconciliation, explicit return paths, and stable button containers whose icons
 transform internally. Its 296-input fingerprint
-`5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`
-passed all 14 formal gates before the controlled origin and Worker rollout.
+`71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c`
+passed all 14 formal gates before the controlled rc27 origin rollout. The later
+rc29 Worker promotion has its separate exact-source evidence above.
 
 ## Repository editions
 
