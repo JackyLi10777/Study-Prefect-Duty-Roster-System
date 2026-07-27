@@ -198,12 +198,16 @@ def test_global_control_skin_excludes_quiet_navigation_and_round_controls() -> N
     assert all(":not(.q-btn--round)" in selectors for selectors in raised_primary_rules)
 
     for selector_fragment in (
-        ".sy-header-tools .q-btn",
+        ".sy-header-tools .q-btn:not(.sy-header-control)",
         ".sy-sidebar .q-btn",
         ".sy-mobile-tab",
     ):
         declarations = _css_declarations(theme, selector_fragment)
         assert "box-shadow: none" in declarations, selector_fragment
+
+    header_control = _css_declarations(theme, ".sy-header-control")
+    assert "border:" in header_control
+    assert "box-shadow:" in header_control
 
     round_control = " ".join(
         declarations

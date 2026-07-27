@@ -34,17 +34,38 @@ def theme_preference() -> str:
     """Return the operator's stable appearance choice.
 
     A missing or invalid preference follows the client operating system.
-    Server-rendered theme-dependent content uses dark as the deterministic
-    fallback until Quasar resolves the browser media query.
+    ``system`` is an unset state; the browser supplies a short resolved hint
+    through the same Admin/Guest preference adapter before theme-dependent
+    server content is kept on screen.
     """
 
     value = str(preference_get("theme", "system"))
     return value if value in {"system", "light", "dark"} else "system"
 
 
+def system_theme_resolution() -> str:
+    """Return the last browser-resolved system appearance for this session.
+
+    A neutral light hint is used only for the first render.  The shell compares
+    it with ``prefers-color-scheme`` and performs one early reload when they do
+    not match, so charts, devotional tone and music all use the browser result.
+    """
+
+    value = str(preference_get("theme_system_resolved", "light"))
+    return value if value in {"light", "dark"} else "light"
+
+
 def current_theme() -> str:
     value = theme_preference()
-    return value if value in {"light", "dark"} else "dark"
+    return value if value in {"light", "dark"} else system_theme_resolution()
+
+
+def set_system_theme_resolution(value: str) -> None:
+    """Remember one verified browser result without changing the preference."""
+
+    if value not in {"light", "dark"}:
+        raise ValueError("system theme resolution must be light or dark")
+    preference_set("theme_system_resolved", value)
 
 
 def set_theme_preference(value: str) -> None:
@@ -53,6 +74,20 @@ def set_theme_preference(value: str) -> None:
     if value not in {"system", "light", "dark"}:
         raise ValueError("theme preference must be system, light, or dark")
     preference_set("theme", value)
+
+
+def next_explicit_theme(resolved_theme: str) -> str:
+    """Return the one-click destination for the binary appearance control.
+
+    ``system`` is deliberately not part of the click cycle.  Callers resolve
+    the browser's current appearance first, then persist the opposite explicit
+    value.  Keeping this small rule here prevents desktop, mobile and public
+    surfaces from inventing different theme cycles.
+    """
+
+    if resolved_theme not in {"light", "dark"}:
+        raise ValueError("resolved theme must be light or dark")
+    return "dark" if resolved_theme == "light" else "light"
 
 
 def sound_feedback_enabled() -> bool:

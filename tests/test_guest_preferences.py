@@ -60,6 +60,23 @@ def test_guest_preferences_reject_unbounded_or_unknown_values() -> None:
         store["music_track_dashboard"] = "x" * 257
     with pytest.raises(ValueError):
         store["locale"] = {"unexpected": "mapping"}
+    with pytest.raises(ValueError):
+        store["theme_system_resolved"] = "system"
+    with pytest.raises(ValueError):
+        store["theme_system_resolved"] = {"unexpected": "mapping"}
+    with pytest.raises(ValueError):
+        store["theme_system_resolved"] = ["dark"]
+
+
+def test_guest_system_theme_resolution_is_session_only_and_domain_bounded() -> None:
+    registry = GuestPreferenceRegistry()
+    first = registry.store_for("guest-theme-a")
+    second = registry.store_for("guest-theme-b")
+
+    first["theme_system_resolved"] = "dark"
+
+    assert registry.store_for("guest-theme-a")["theme_system_resolved"] == "dark"
+    assert second.get("theme_system_resolved") is None
 
 
 def test_guest_preferences_expire_without_durable_cleanup_callbacks() -> None:

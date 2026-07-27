@@ -32,6 +32,7 @@ _ALLOWED_KEYS = frozenset(
         "sound_feedback",
         "sound_volume",
         "theme",
+        "theme_system_resolved",
     }
 )
 _MUSIC_TRACK_PREFIX = "music_track_"
@@ -61,6 +62,14 @@ def _safe_value(value: object) -> bool:
     )
 
 
+def _safe_preference(key: str, value: object) -> bool:
+    """Validate bounded scalars plus the tighter browser-theme hint domain."""
+
+    if key == "theme_system_resolved":
+        return isinstance(value, str) and value in {"light", "dark"}
+    return _safe_value(value)
+
+
 class GuestPreferenceStore(MutableMapping[str, Any]):
     """A mapping view whose reads and writes remain protected by one lock."""
 
@@ -73,7 +82,7 @@ class GuestPreferenceStore(MutableMapping[str, Any]):
             return self._registry._values_locked(self._session_id)[key]
 
     def __setitem__(self, key: str, value: Any) -> None:
-        if not _allowed_key(key) or not _safe_value(value):
+        if not _allowed_key(key) or not _safe_preference(key, value):
             raise ValueError("guest preference is not an allowed bounded scalar")
         with self._registry._lock:
             self._registry._values_locked(self._session_id)[key] = value

@@ -363,6 +363,12 @@ def main() -> int:
             report,
         )
         _run_check("dependency_integrity", [sys.executable, "-m", "pip", "check"], base_environment, report)
+        _run_check(
+            "rc31_theme_control_browser",
+            [sys.executable, "-X", "utf8", "scripts/verify_rc31_theme_controls.py"],
+            base_environment,
+            report,
+        )
         _run_browser_phase(
             root=workspace / "normal",
             blocked_backup=False,

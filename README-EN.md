@@ -1,7 +1,9 @@
 # Sing Yin Study Prefect Duty Roster System
 
 > **Release note (live, 2026-07-27):** the controlled Windows origin runs annotated tag `v1.2.0-rc.30` at commit `74b84f43786b00feb15b51a6270ff71c9430773f`; canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` serves 100% of traffic after a zero-percent version smoke. The 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` passed all 14 formal gates, and verified backup `20260727-023041-069097-manual_verified_backup.sqlite3` with SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` passed isolated restore, fairness, row-count, and restore-audit checks. Origin health/readiness, canonical root/health, rendered desktop/320px theme controls, and the Guest Engineering ≈10B disclosure passed. rc27 is the first-level origin rollback and Worker `d7b51f21-7692-418d-866c-034c2c57292d` is the immediately previous edge version; supervised Head Study Prefect and teacher-advisor acceptance remains outstanding.
-
+>
+> **rc31 source candidate (not deployed):** branch `codex/rc31-unified-theme-controls` replaces the visible three-choice appearance selector with one binary Light／Dark control. `system` remains only as the missing/unset initialization state: an unset session follows the operating system, the first activation stores the opposite of the resolved theme, and later activations alternate explicit Light and Dark. The candidate registers the dedicated browser matrix as the fifteenth fingerprint-bound release gate and has passed local source tests; protected-main identity, the exact-source release fingerprint, formal backup, Worker version, and deployment evidence remain pending. The rc30 origin and Worker remain the live baseline.
+>
 > **Not to be served, but to serve. — Mark 10:45**
 
 I am LI Chuangjie Jacky, Head Study Prefect for 2026–2027 at Sing Yin Secondary
@@ -370,7 +372,7 @@ context discoverable without making a daily operator scan one oversized page.
 ## Interface quality
 
 - Traditional Chinese first, complete English counterpart.
-- An explicit System／Light／Dark appearance selector with paired atmosphere artwork; the language action always names its destination as the autonym English／EN or 繁體中文／繁中.
+- One explicit binary Light／Dark appearance control with paired atmosphere artwork. While the preference is missing or unset, the resolved theme follows the operating system; the first activation stores the opposite resolved mode, and later activations alternate explicit Light and Dark. The language action always names its destination as the autonym English／EN or 繁體中文／繁中.
 - Phone-specific roster and prefect cards rather than clipped desktop tables.
 - Keyboard focus, semantic landmarks, 44px actions, reduced-motion support.
 - Dignified Daily Verse reading language separate from the workbench.

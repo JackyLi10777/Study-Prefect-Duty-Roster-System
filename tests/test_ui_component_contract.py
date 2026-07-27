@@ -54,12 +54,16 @@ def _selectors(path: Path) -> set[str]:
             values.append(value)
         return values
 
-    def walk(rules: list[object]) -> None:
+    def walk(rules: list[object], *, inside_keyframes: bool = False) -> None:
         for rule in rules:
-            if getattr(rule, "type", "") == "qualified-rule":
+            if getattr(rule, "type", "") == "qualified-rule" and not inside_keyframes:
                 selectors.update(split_selector_list(rule.prelude))
             elif getattr(rule, "type", "") == "at-rule" and rule.content is not None:
-                walk(tinycss2.parse_rule_list(rule.content, skip_whitespace=True, skip_comments=True))
+                keyword = str(getattr(rule, "lower_at_keyword", ""))
+                walk(
+                    tinycss2.parse_rule_list(rule.content, skip_whitespace=True, skip_comments=True),
+                    inside_keyframes=inside_keyframes or keyword.endswith("keyframes"),
+                )
 
     walk(
         tinycss2.parse_stylesheet(

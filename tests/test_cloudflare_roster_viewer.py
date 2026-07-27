@@ -89,7 +89,7 @@ def test_worker_deployment_toolchain_is_project_pinned() -> None:
     workspace = (VIEWER_ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
 
     assert package["private"] is True
-    assert package["version"] == "1.2.0-rc.30"
+    assert package["version"] == "1.2.0-rc.31"
     assert package["packageManager"] == "pnpm@11.7.0"
     assert package["engines"] == {"node": ">=22"}
     assert package["devDependencies"] == {"wrangler": "4.110.0"}
@@ -326,16 +326,21 @@ def test_viewer_is_bilingual_responsive_theme_aware_printable_and_reduced_motion
     assert "待補 · Vacancy" in source
     assert "@media (prefers-color-scheme: dark)" in source
     assert ':root[data-theme="dark"]' in source
-    assert "THEME_STATES = ['system', 'light', 'dark']" in source
+    assert "EXPLICIT_THEME_STATES = ['light', 'dark']" in source
     assert "timeZone: 'Asia/Hong_Kong'" in source
     assert "--focus-ring:" in source
     assert "outline: 3px solid var(--focus-ring)" in source
     assert ".translation-label { color: var(--portal-story-muted); font-size: 0.72rem" in source
-    assert ".theme-toggle select { max-width: 156px; white-space: nowrap; }" in source
-    assert 'id="themeSelect"' in source
-    assert 'data-testid="public-theme-selector"' in source
-    assert "themeSelect?.addEventListener('change'" in source
-    assert "THEME_STATES[(THEME_STATES.indexOf(current) + 1)" not in source
+    assert ".theme-toggle-label { min-width: 0; }" in source
+    assert ':root:not([data-theme-ready="true"]) .theme-toggle { visibility: hidden; }' in source
+    assert 'id="themeToggle"' in source
+    assert 'data-testid="public-theme-control"' in source
+    assert "themeToggle?.addEventListener('click'" in source
+    assert "resolvedTheme() === 'dark' ? 'light' : 'dark'" in source
+    assert "window.addEventListener('storage'" in source
+    assert "let runtimeThemePreference = 'system'" in source
+    assert "runtimeThemePreference = theme" in source
+    assert "document.documentElement.dataset.themeReady = 'true'" in source
     assert "@media (prefers-reduced-motion: reduce)" in source
     assert "@media (max-width: 700px)" in source
     assert "@media print" in source
@@ -446,7 +451,11 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
         assert required in source
 
     assert "setInterval(" not in source
-    assert "requestAnimationFrame(" not in source
+    assert source.count("requestAnimationFrame(") == 1
+    assert (
+        "requestAnimationFrame(() => { document.documentElement.dataset.themeReady = 'true'; });"
+        in source
+    )
     assert "https://fonts." not in source
     assert "new URL('/', window.location.origin).toString()" in source
     assert "navigator.share" in source

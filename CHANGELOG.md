@@ -2,6 +2,14 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
+## v1.2.0-rc.31 — source candidate, not deployed, 2026-07-27
+
+- Replaces the primary three-choice appearance selector with one binary **Light／Dark** control across the NiceGUI workbench and public Worker surfaces.
+- Keeps `system` only as the missing／unset initialization state: an unset preference follows the operating system, the first activation stores the opposite resolved mode, and later activations alternate explicit Light and Dark.
+- Uses the same framed header-control grammar at desktop, tablet and phone widths while preserving separate Admin, Guest and browser-local Worker preference adapters.
+- Passes the complete 901-test Python suite and an isolated 8-case Chromium matrix covering Admin／Guest, desktop／mobile and OS-light／OS-dark initialization; the formal release verifier now binds this matrix as its fifteenth gate.
+- Keeps rc30 as the live Windows origin and canonical Worker baseline. Exact rc31 commit, source fingerprint, gate result, tag, verified backup, Worker version and deployment evidence are intentionally pending.
+
 ## v1.2.0-rc.30 — released, 2026-07-27
 
 - Current live topology is the `v1.2.0-rc.30` Windows origin with Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` at 100% traffic; rc27 is the origin rollback and Worker `d7b51f21-7692-418d-866c-034c2c57292d` is the immediate gateway rollback.

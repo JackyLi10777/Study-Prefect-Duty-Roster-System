@@ -85,7 +85,8 @@ def test_live_viewer_verifier_covers_the_release_entry_contract() -> None:
         "_assert_document_fits_viewport",
     ):
         assert helper in source
-    assert 'THEME_STATES: Final = ("system", "light", "dark")' in source
+    assert 'EXPLICIT_THEME_STATES: Final = ("light", "dark")' in source
+    assert 'page.get_by_test_id("public-theme-control")' in source
     assert 'viewport={"width": 1440, "height": 1000}' in source
     assert 'viewport={"width": 390, "height": 844}' in source
     assert 'viewport={"width": 320, "height": 760}' in source

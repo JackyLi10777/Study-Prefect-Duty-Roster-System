@@ -133,6 +133,13 @@ def test_release_verifier_deselects_the_python_deno_wrapper_to_avoid_duplicate_r
     assert "test_worker_runtime_access_crypto_and_proxy_contracts" in source
 
 
+def test_release_verifier_runs_the_isolated_rc31_theme_matrix() -> None:
+    source = Path(verify_release_candidate.__file__).read_text(encoding="utf-8")
+
+    assert '"rc31_theme_control_browser"' in source
+    assert '"scripts/verify_rc31_theme_controls.py"' in source
+
+
 def test_release_verifier_accepts_normal_and_classified_disconnect_console_lines(tmp_path: Path) -> None:
     log_path = tmp_path / "server-console.log"
     log_path.write_text(

@@ -98,18 +98,21 @@ def test_operation_workspaces_fill_available_width_and_collapse_on_mobile() -> N
     assert "sy-online-music-settings w-full max-w-3xl" not in online_music
 
 
-def test_language_control_has_an_independent_visible_surface() -> None:
+def test_header_controls_share_one_visible_surface_contract() -> None:
     shell = _read("nicegui_app/ui/shell.py")
     theme = _read("nicegui_app/assets/css/sing-yin-theme-v1.css")
 
     assert "data-testid=language-control" in shell
-    assert "sy-language-control" in shell
-    control = re.search(r"^\.sy-language-control\s*\{(?P<body>[^}]*)\}", theme, re.MULTILINE)
+    for kind in ("language", "sound", "theme", "logout"):
+        assert f'_header_control_classes("{kind}"' in shell
+    control = re.search(r"^\.sy-header-control\s*\{(?P<body>[^}]*)\}", theme, re.MULTILINE)
     assert control is not None
     declarations = control.group("body")
     assert "background:" in declarations
     assert "border:" in declarations
-    assert "min-width: 50px" in declarations
+    assert "min-width: 44px" in declarations
+    assert ".sy-header-control--language" in theme
+    assert ".sy-header-control--logout:hover" in theme
 
 
 def test_existing_week_generation_uses_the_serialized_week_version_key() -> None:

@@ -289,18 +289,18 @@ const VIEWER_HTML = `<!doctype html>
       <p class="brand-subtitle" lang="en">Study Prefect Duty Roster System</p>
       </div>
     </div>
-    <label class="theme-toggle" for="themeSelect">
-      <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
-        <path d="M12 3a9 9 0 1 0 0 18V3Z"></path>
-        <circle cx="12" cy="12" r="9"></circle>
+    <button id="themeToggle" class="theme-toggle" type="button"
+      aria-label="切換至深色模式 · Switch to Dark mode" aria-pressed="false"
+      title="切換至深色模式 · Switch to Dark mode" data-testid="public-theme-control">
+      <svg class="theme-toggle-icon" aria-hidden="true" viewBox="0 0 24 24" width="19" height="19">
+        <g class="theme-icon theme-icon--sun">
+          <circle cx="12" cy="12" r="3.7"></circle>
+          <path d="M12 2.2v2.1M12 19.7v2.1M2.2 12h2.1M19.7 12h2.1M5.1 5.1l1.5 1.5M17.4 17.4l1.5 1.5M18.9 5.1l-1.5 1.5M6.6 17.4l-1.5 1.5"></path>
+        </g>
+        <path class="theme-icon theme-icon--moon" d="M20 15.4A8.2 8.2 0 0 1 8.6 4a8.4 8.4 0 1 0 11.4 11.4Z"></path>
       </svg>
-      <span class="sr-only">外觀 · Appearance</span>
-      <select id="themeSelect" aria-label="外觀：跟隨系統 · Appearance: System" data-testid="public-theme-selector">
-        <option value="system">跟隨系統 · System</option>
-        <option value="light">淺色 · Light</option>
-        <option value="dark">深色 · Dark</option>
-      </select>
-    </label>
+      <span id="themeToggleLabel" class="theme-toggle-label">淺色 · Light</span>
+    </button>
   </header>
 
   <main id="mainContent" class="page-shell" tabindex="-1">
@@ -744,6 +744,10 @@ body {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  transition: none;
+}
+
+:root[data-theme-ready="true"] body {
   transition: color 220ms var(--ease-standard), background-color 220ms var(--ease-standard);
 }
 
@@ -810,13 +814,26 @@ button, input, select, textarea { font: inherit; }
   transition: color 140ms ease, border-color 140ms ease, background-color 180ms ease, transform 100ms ease;
 }
 
-.theme-toggle svg { fill: color-mix(in srgb, currentColor 48%, transparent); stroke: currentColor; stroke-width: 1.5; }
-.theme-toggle select { min-width: 0; min-height: 44px; padding: 0 22px 0 0; border: 0; color: inherit; background: transparent; font: inherit; font-weight: inherit; cursor: pointer; }
-.theme-toggle select:focus { outline: 0; }
+:root:not([data-theme-ready="true"]) .theme-toggle { visibility: hidden; }
+.theme-toggle { cursor: pointer; }
+.theme-toggle-icon { overflow: visible; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.65; }
+.theme-icon { transform-box: fill-box; transform-origin: center; transition: opacity 180ms var(--ease-standard), transform 180ms var(--ease-standard); }
+.theme-icon--sun { opacity: 1; transform: rotate(0deg) scale(1); }
+.theme-icon--moon { opacity: 0; transform: rotate(24deg) scale(.72); }
+.theme-toggle[data-resolved-theme="dark"] .theme-icon--sun { opacity: 0; transform: rotate(-28deg) scale(.72); }
+.theme-toggle[data-resolved-theme="dark"] .theme-icon--moon { opacity: 1; transform: rotate(0deg) scale(1); }
+.theme-toggle[data-icon-changing="true"] .theme-toggle-icon { animation: theme-icon-state 220ms var(--ease-standard); }
+.theme-toggle-label { min-width: 68px; text-align: left; white-space: nowrap; }
 .theme-toggle:hover { color: var(--ink); border-color: var(--line-strong); background: var(--surface); }
 .theme-toggle:active { transform: scale(0.975); }
-.theme-toggle:focus-within,
+.theme-toggle:focus-visible,
 .skip-link:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+
+@keyframes theme-icon-state {
+  0% { transform: scale(1); }
+  48% { transform: scale(.78); }
+  100% { transform: scale(1); }
+}
 
 .skip-link {
   position: fixed;
@@ -1705,7 +1722,7 @@ tbody td {
   .site-header { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
   .brand-mark { width: 44px; height: 44px; }
   .theme-toggle { margin-left: auto; padding-inline: 11px; }
-  .theme-toggle select { max-width: 156px; white-space: nowrap; }
+  .theme-toggle-label { min-width: 0; }
   .mobile-entry-actions {
     position: relative;
     z-index: 1;
@@ -1809,7 +1826,7 @@ const VIEWER_JS = `const SHARE_SCHEMA = 'sing-yin-public-roster-v1';
 const SHARE_AAD_PREFIX = 'sing-yin-roster-share-v1:';
 const SESSION_TOKEN_KEY = 'sing-yin-roster-viewer-token-v1';
 const THEME_KEY = 'sing-yin-roster-viewer-theme-v1';
-const THEME_STATES = ['system', 'light', 'dark'];
+const EXPLICIT_THEME_STATES = ['light', 'dark'];
 const LANDING_DEVOTIONALS = ${JSON.stringify(LANDING_DEVOTIONALS)};
 const WELCOME_TRACKS = ${JSON.stringify(WELCOME_PUBLIC_TRACKS)};
 const DEFAULT_WELCOME_VOLUME = 0.50;
@@ -1828,7 +1845,8 @@ const guestState = document.getElementById('guestState');
 const errorState = document.getElementById('errorState');
 const rosterState = document.getElementById('rosterState');
 const rosterTable = document.getElementById('rosterTable');
-const themeSelect = document.getElementById('themeSelect');
+const themeToggle = document.getElementById('themeToggle');
+const themeToggleLabel = document.getElementById('themeToggleLabel');
 const entryButtons = Array.from(document.querySelectorAll('[data-entry-role]'));
 const adminLoginButtons = Array.from(document.querySelectorAll('[data-entry-role="admin"]'));
 const portalStory = document.querySelector('.portal-story');
@@ -1881,40 +1899,70 @@ const shareErrorCopy = {
   },
 };
 
+const systemDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+const reducedThemeMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const themeCopy = {
-  system: { aria: '外觀：跟隨系統 · Appearance: System' },
-  light: { aria: '外觀：淺色 · Appearance: Light' },
-  dark: { aria: '外觀：深色 · Appearance: Dark' },
+  light: {
+    current: '淺色 · Light',
+    action: '切換至深色模式 · Switch to Dark mode',
+  },
+  dark: {
+    current: '深色 · Dark',
+    action: '切換至淺色模式 · Switch to Light mode',
+  },
 };
 
 function savedTheme() {
+  if (EXPLICIT_THEME_STATES.includes(runtimeThemePreference)) return runtimeThemePreference;
   try {
     const value = localStorage.getItem(THEME_KEY) || 'system';
-    return THEME_STATES.includes(value) ? value : 'system';
+    return EXPLICIT_THEME_STATES.includes(value) ? value : 'system';
   } catch {
     return 'system';
   }
 }
 
-function applyTheme(value, { persist = false } = {}) {
-  const theme = THEME_STATES.includes(value) ? value : 'system';
+let runtimeThemePreference = 'system';
+runtimeThemePreference = savedTheme();
+
+function resolvedTheme(theme = savedTheme()) {
+  if (EXPLICIT_THEME_STATES.includes(theme)) return theme;
+  return systemDarkScheme.matches ? 'dark' : 'light';
+}
+
+function syncThemeControl({ animate = false } = {}) {
+  if (!themeToggle) return;
+  const resolved = resolvedTheme();
+  const isDark = resolved === 'dark';
+  const copy = themeCopy[resolved];
+  themeToggle.dataset.resolvedTheme = resolved;
+  themeToggle.setAttribute('aria-pressed', String(isDark));
+  themeToggle.setAttribute('aria-label', copy.action);
+  themeToggle.title = copy.action;
+  if (themeToggleLabel) themeToggleLabel.textContent = copy.current;
+  if (animate && !reducedThemeMotion.matches) {
+    themeToggle.dataset.iconChanging = 'true';
+    window.setTimeout(() => delete themeToggle.dataset.iconChanging, 220);
+  }
+}
+
+function applyTheme(value, { persist = false, animate = false } = {}) {
+  const theme = EXPLICIT_THEME_STATES.includes(value) ? value : 'system';
+  runtimeThemePreference = theme;
   if (theme === 'system') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.dataset.theme = theme;
-  if (themeSelect) {
-    themeSelect.value = theme;
-    themeSelect.setAttribute('aria-label', themeCopy[theme].aria);
-  }
   if (persist) {
     try {
-      if (theme === 'system') localStorage.removeItem(THEME_KEY);
-      else localStorage.setItem(THEME_KEY, theme);
+      localStorage.setItem(THEME_KEY, theme);
     } catch {
       // The appearance still changes for this page when storage is unavailable.
     }
   }
+  syncThemeControl({ animate });
 }
 
 applyTheme(savedTheme());
+requestAnimationFrame(() => { document.documentElement.dataset.themeReady = 'true'; });
 
 const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -1936,12 +1984,19 @@ function resetPortalStoryDepth() {
 portalStory?.addEventListener('pointermove', updatePortalStoryDepth, { passive: true });
 portalStory?.addEventListener('pointerleave', resetPortalStoryDepth);
 
-themeSelect?.addEventListener('change', event => {
-  applyTheme(event.currentTarget.value, { persist: true });
+themeToggle?.addEventListener('click', () => {
+  const target = resolvedTheme() === 'dark' ? 'light' : 'dark';
+  applyTheme(target, { persist: true, animate: true });
   syncWelcomePlaylist();
 });
 
-const systemDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+window.addEventListener('storage', event => {
+  if (event.key !== THEME_KEY) return;
+  const theme = EXPLICIT_THEME_STATES.includes(event.newValue) ? event.newValue : 'system';
+  applyTheme(theme, { persist: false, animate: true });
+  syncWelcomePlaylist();
+});
+
 let welcomeProfile = '';
 let welcomeTrackIndex = 0;
 let welcomeDesiredEnabled = true;
@@ -2172,7 +2227,9 @@ function initialiseWelcomeAudio() {
 }
 
 systemDarkScheme.addEventListener('change', () => {
-  if (!document.documentElement.dataset.theme) syncWelcomePlaylist();
+  if (savedTheme() !== 'system') return;
+  applyTheme('system', { persist: false, animate: false });
+  syncWelcomePlaylist();
 });
 
 const landingVerseElements = {
