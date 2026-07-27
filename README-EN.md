@@ -205,13 +205,18 @@ marking. Close it and use `RESET_PRACTICE_MODE.cmd` for a clean rehearsal.
 
 The Dashboard devotional direction offers **Default setting**, **Clear
 guidance**, and **Quiet comfort**. The default follows the current appearance
-as a recommendation only. The public entrance makes one welcome-music attempt
-on every visit, starts new browsers at 50%, and preserves every explicitly
-selected volume, including 25%. If audible autoplay is blocked, the entrance
-shows **Enter with music** and **Continue quietly**. Only the first choice
-retries synchronously inside that trusted action; generic page interactions do
-not trigger a hidden retry. Visible play, pause, next, and volume controls remain
-available. Signed-in page-context music continues to follow the workbench
+as a recommendation only. The public entrance makes one honest welcome-music
+attempt on every visit, starts new browsers at 50%, and preserves every
+explicitly selected volume, including 25%. With no explicit entry-sound choice,
+the Administrator or Guest CTA itself is the trusted “enter with music” action:
+it calls playback synchronously, then reaches exactly the selected identity
+route whether playback succeeds, is rejected, is unsupported, is interrupted,
+or exceeds the short startup budget. Music is never an authentication gate.
+**Default: Enter with music** and **Continue quietly** remain optional preference
+and recovery controls; explicit quiet intent or manual pause wins for the
+current entrance visit. Generic page interactions do not trigger a hidden
+retry, browser media policy remains authoritative, and visible play, pause,
+next, and volume controls remain available. Signed-in page-context music continues to follow the workbench
 cross-page autoplay preference. A versioned preference migration upgrades only
 an exact former 24% or 35% workbench default. If two consecutive routes resolve
 to the same local track, the current browser session continues its position and

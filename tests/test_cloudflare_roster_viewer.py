@@ -89,7 +89,7 @@ def test_worker_deployment_toolchain_is_project_pinned() -> None:
     workspace = (VIEWER_ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
 
     assert package["private"] is True
-    assert package["version"] == "1.2.0-rc.24"
+    assert package["version"] == "1.2.0-rc.28"
     assert package["packageManager"] == "pnpm@11.7.0"
     assert package["engines"] == {"node": ">=22"}
     assert package["devDependencies"] == {"wrangler": "4.110.0"}
@@ -331,7 +331,11 @@ def test_viewer_is_bilingual_responsive_theme_aware_printable_and_reduced_motion
     assert "--focus-ring:" in source
     assert "outline: 3px solid var(--focus-ring)" in source
     assert ".translation-label { color: var(--portal-story-muted); font-size: 0.72rem" in source
-    assert ".theme-toggle span { white-space: nowrap; }" in source
+    assert ".theme-toggle select { max-width: 156px; white-space: nowrap; }" in source
+    assert 'id="themeSelect"' in source
+    assert 'data-testid="public-theme-selector"' in source
+    assert "themeSelect?.addEventListener('change'" in source
+    assert "THEME_STATES[(THEME_STATES.indexOf(current) + 1)" not in source
     assert "@media (prefers-reduced-motion: reduce)" in source
     assert "@media (max-width: 700px)" in source
     assert "@media print" in source
@@ -461,16 +465,20 @@ def test_welcome_music_attempts_every_visit_and_recovers_after_browser_block() -
     assert 'id="welcomeAudioEnter"' in source
     assert 'id="welcomeAudioQuiet"' in source
     assert "classifyWelcomeAudioFailure" in source
-    assert "welcomeAudio?.networkState === 2 && welcomeAudio?.readyState < 3" in source
+    assert "classifyWelcomeAudioFailureState" in source
+    assert "networkState: welcomeAudio?.networkState || 0" in source
     assert "welcomeAudioEnter?.addEventListener('click'" in source
-    assert "const playback = playWelcomeAudio({ revealRecovery: true });" in source
+    assert "welcomeEntryController?.setIntent('music');" in source
+    assert "welcomeEntryController?.enter(destination, '')" in source
     assert "navigateAfterWelcomeChoice(destination = welcomePendingDestination)" in source
     assert "const destination = welcomePendingDestination;\n    pauseWelcomeAudio();\n    navigateAfterWelcomeChoice(destination);" in source
     assert "if (welcomeAudioRecovery) welcomeAudioRecovery.hidden = true;" in source
     assert "setWelcomeRecoveryVisible(false);\n    if (welcomeAudioStatus)" not in source
     assert "document.addEventListener('pointerdown'" not in source
-    assert "void playWelcomeAudio({ revealRecovery: true });" in source
+    assert "else void playWelcomeAudio({ revealRecovery: true });" in source
     assert "data-autoplay-state=\"starting\"" in source
+    assert "data-entry-intent=\"unset\"" in source
+    assert "welcomeAudioPlayer?.dataset.autoplayState === 'blocked'" not in source
 
 
 def test_guest_entrance_uses_a_local_paired_light_dark_editorial_asset() -> None:
@@ -691,12 +699,14 @@ def test_gateway_cta_and_share_loading_expose_honest_accessible_states() -> None
         "adminLoginButtons.forEach((button)",
         "button.setAttribute('aria-busy', 'true')",
         "button.setAttribute('aria-disabled', 'true')",
-        "adminLoginButtons.some((candidate) => candidate.dataset.connecting === 'true')",
+        "createWelcomeEntryController({",
+        "welcomeEntryController.enter(destination, button.dataset.entryRole || '')",
+        "if (typeof destination !== 'string' || destination.length === 0 || busy) return false",
         "event.preventDefault()",
         "window.addEventListener('pageshow'",
         "button.removeAttribute('aria-busy')",
         "button.removeAttribute('aria-disabled')",
-        "setAdminLoginState(false)",
+        "welcomeEntryController.reset()",
         "@keyframes secure-pulse",
         "@media (prefers-reduced-motion: reduce)",
         ".sy-secure-pulse::after { animation: none",

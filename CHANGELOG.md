@@ -2,6 +2,14 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
+## v1.2.0-rc.28 — candidate, 2026-07-27
+
+- Made Administrator and Guest identity buttons the trusted default-music activation when no entry-sound preference was selected; users no longer need to choose a sound option before either route works.
+- Added one shared visit-local `unset | music | quiet` entry controller with duplicate suppression, exact same-origin destinations, 450 ms fallback, truthful failure classification, late-settlement protection and `pageshow` reset.
+- Kept **Default: Enter with music** and **Continue quietly** as optional recovery／preference controls, while preserving explicit volume values, silent encrypted Viewer pages, manual YouTube playback and existing authentication boundaries.
+- Added deterministic Worker contracts and a real Chromium desktop／mobile interaction verifier for playback rejection, synchronous failure, pending startup, keyboard entry, explicit quiet, already-playing audio, rapid double activation and silent Viewer behavior.
+- This entry records a candidate until protected-main release and canonical Worker deployment evidence are complete; rc27 remains the live rollback source during staging.
+
 ## v1.2.0-rc.27 — 2026-07-27
 
 - Made flexible Assist rotation follow the latest earlier active roster across holiday or skipped-week gaps in both official and browser-only Guest workflows.
