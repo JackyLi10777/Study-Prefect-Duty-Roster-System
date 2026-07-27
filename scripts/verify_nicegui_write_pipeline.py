@@ -164,16 +164,18 @@ def _click_mobile_drawer_tool(page: Page, index: int, *, expects_navigation: boo
 
 
 def _select_mobile_theme(page: Page, value: str) -> None:
-    """Select one explicit phone appearance value from the real drawer radio group."""
+    """Reach one explicit phone appearance through the real binary control."""
 
-    assert value in {"system", "light", "dark"}
+    assert value in {"light", "dark"}
     navigation = page.get_by_test_id("mobile-bottom-navigation")
     navigation.locator(".sy-mobile-tab").last.click()
     drawer = page.locator("#main-navigation-drawer")
     drawer.wait_for(state="visible", timeout=10_000)
-    radios = drawer.get_by_test_id("mobile-theme-selector").get_by_role("radio")
-    assert radios.count() == 3
-    radios.nth({"system": 0, "light": 1, "dark": 2}[value]).click()
+    control = drawer.get_by_test_id("mobile-theme-control")
+    assert control.count() == 1
+    wants_dark = value == "dark"
+    if (page.locator("body.body--dark").count() == 1) != wants_dark:
+        control.click()
     page.wait_for_function(
         "expected => expected === 'dark' "
         "? document.body.classList.contains('body--dark') "
@@ -625,8 +627,8 @@ def main() -> None:
         print("[7/8] Applied leave adjustment, built handover package, and restored a separate database", flush=True)
 
         page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="domcontentloaded")
-        page.get_by_test_id("theme-control").click()
-        page.get_by_test_id("desktop-theme-menu").locator('[data-theme-option="dark"]').click()
+        if page.locator("body.body--dark").count() != 1:
+            page.get_by_test_id("theme-control").click()
         page.wait_for_function("document.body.classList.contains('body--dark')")
         page.screenshot(path=str(DARK_SCREENSHOT), full_page=True)
         page.set_viewport_size({"width": 390, "height": 844})

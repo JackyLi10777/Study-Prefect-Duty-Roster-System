@@ -24,7 +24,7 @@ from nicegui_app.services.roster_workflow import RosterWorkflow
 
 EVIDENCE_DIR = PROJECT_ROOT / "test-results" / "public-roster-viewer"
 GATEWAY_EVIDENCE_DIR = PROJECT_ROOT / "test-results" / "unified-access-gateway"
-THEME_STATES: Final = ("system", "light", "dark")
+EXPLICIT_THEME_STATES: Final = ("light", "dark")
 
 
 def _attach_error_collectors(
@@ -44,17 +44,19 @@ def _attach_error_collectors(
 
 
 def _current_theme(page: Page) -> str:
-    return str(page.evaluate("() => document.documentElement.dataset.theme || 'system'"))
+    return str(page.get_by_test_id("public-theme-control").get_attribute("data-resolved-theme"))
 
 
 def _set_theme_reliably(page: Page, expected: str) -> None:
-    """Use the public native selector without relying on internal JS APIs."""
+    """Use the public binary button without relying on internal JS APIs."""
 
-    if expected not in THEME_STATES:
+    if expected not in EXPLICIT_THEME_STATES:
         raise ValueError(f"Unsupported theme state: {expected}")
-    page.locator("#themeSelect").select_option(expected)
+    control = page.get_by_test_id("public-theme-control")
+    if _current_theme(page) != expected:
+        control.click()
     page.wait_for_function(
-        "value => (document.documentElement.dataset.theme || 'system') === value",
+        "value => document.querySelector('[data-testid=public-theme-control]')?.dataset.resolvedTheme === value",
         arg=expected,
     )
     page.wait_for_timeout(250)
@@ -293,29 +295,33 @@ def _assert_mobile_entry_actions_in_first_viewport(page: Page, *, label: str) ->
 
 
 def _assert_theme_selection(page: Page) -> None:
-    _set_theme_reliably(page, "system")
-    for expected in ("light", "dark", "system"):
+    page.evaluate("key => localStorage.removeItem(key)", "sing-yin-roster-viewer-theme-v1")
+    page.reload(wait_until="networkidle")
+    initial = _current_theme(page)
+    if initial not in EXPLICIT_THEME_STATES:
+        raise RuntimeError(f"Appearance did not resolve the browser scheme: {initial!r}")
+    expected_sequence = ("light", "dark") if initial == "dark" else ("dark", "light")
+    for expected in expected_sequence:
         _set_theme_reliably(page, expected)
         if _current_theme(page) != expected:
             raise RuntimeError(f"Appearance control failed to enter {expected!r} mode.")
-        if expected in {"light", "dark"}:
-            mark_opacity = page.evaluate(
-                """theme => ({
-                    light: getComputedStyle(document.querySelector('.brand-mark-image--light')).opacity,
-                    dark: getComputedStyle(document.querySelector('.brand-mark-image--dark')).opacity,
-                    expected: theme,
-                })""",
-                expected,
+        mark_opacity = page.evaluate(
+            """theme => ({
+                light: getComputedStyle(document.querySelector('.brand-mark-image--light')).opacity,
+                dark: getComputedStyle(document.querySelector('.brand-mark-image--dark')).opacity,
+                expected: theme,
+            })""",
+            expected,
+        )
+        expected_opacity = (
+            {"light": "1", "dark": "0"}
+            if expected == "light"
+            else {"light": "0", "dark": "1"}
+        )
+        if any(mark_opacity[key] != value for key, value in expected_opacity.items()):
+            raise RuntimeError(
+                f"Entrance brand mark did not follow {expected!r} mode: {mark_opacity}"
             )
-            expected_opacity = (
-                {"light": "1", "dark": "0"}
-                if expected == "light"
-                else {"light": "0", "dark": "1"}
-            )
-            if any(mark_opacity[key] != value for key, value in expected_opacity.items()):
-                raise RuntimeError(
-                    f"Entrance brand mark did not follow {expected!r} mode: {mark_opacity}"
-                )
         expected_track = {"light": "Morning Has Broken", "dark": "Ubi caritas"}.get(expected)
         if expected_track:
             page.wait_for_function(
@@ -634,7 +640,7 @@ def main() -> int:
         service.revoke_share(receipt.share_id)
         receipt = None
         print(
-            "PASS public gateway: browser-only public/viewer support, entrance/read-only share flow, system/light/dark themes, "
+            "PASS public gateway: browser-only public/viewer support, entrance/read-only share flow, system-resolved binary Light/Dark themes, "
             "manual verse refresh, resolved/blocked welcome-audio paths, one-action recovery, quiet continuation navigation, "
             "48px CTAs, reduced motion, no page overflow, and no browser errors. "
             "Unified Guest behavior is verified separately by "

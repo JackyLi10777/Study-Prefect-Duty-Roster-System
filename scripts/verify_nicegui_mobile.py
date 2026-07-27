@@ -629,8 +629,8 @@ def main() -> int:
         compact_tools = compact_drawer.get_by_test_id("mobile-drawer-tools").locator(".sy-mobile-drawer-tool")
         if compact_tools.count() < 2:
             raise AssertionError("320px drawer does not expose language, sound, and appearance controls.")
-        if compact_drawer.get_by_test_id("mobile-theme-selector").count() != 1:
-            raise AssertionError("320px drawer does not expose the explicit appearance selector.")
+        if compact_drawer.get_by_test_id("mobile-theme-control").count() != 1:
+            raise AssertionError("320px drawer does not expose the binary appearance control.")
         compact_tools.nth(0).click()
         compact_page.wait_for_function(
             """() => {
@@ -646,10 +646,11 @@ def main() -> int:
             timeout=10_000,
         )
         compact_drawer = _open_mobile_drawer(compact_page)
-        compact_theme_radios = compact_drawer.get_by_test_id("mobile-theme-selector").get_by_role("radio")
-        if compact_theme_radios.count() != 3:
-            raise AssertionError("320px appearance selector does not expose System, Light, and Dark.")
-        compact_theme_radios.nth(2).click()
+        compact_theme_control = compact_drawer.get_by_test_id("mobile-theme-control")
+        if compact_theme_control.count() != 1:
+            raise AssertionError("320px appearance control is not unique.")
+        if compact_page.locator("body.body--dark").count() != 1:
+            compact_theme_control.click()
         compact_page.wait_for_function("document.body.classList.contains('body--dark')", timeout=10_000)
         for route, expected_heading in COMPACT_ROUTES.items():
             _assert_mobile_page(compact_page, route, label=f"320px English dark {route}")

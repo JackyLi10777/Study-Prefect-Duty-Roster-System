@@ -49,6 +49,8 @@ MESSAGES = {'app_name': {'zh-HK': '聖言中學導學風紀值班表生成系統
  'theme_light': {'zh-HK': '淺色', 'en': 'Light'},
  'theme_dark': {'zh-HK': '深色', 'en': 'Dark'},
  'theme_current': {'zh-HK': '外觀：{mode}', 'en': 'Appearance: {mode}'},
+ 'theme_switch_to_light': {'zh-HK': '切換至淺色模式', 'en': 'Switch to Light mode'},
+ 'theme_switch_to_dark': {'zh-HK': '切換至深色模式', 'en': 'Switch to Dark mode'},
  'daily_verse': {'zh-HK': '今日經文', 'en': 'Daily verse'},
  'verse_translation_label': {'zh-HK': '繁中：和合本修訂版 2010（神版） · 英文：New King James Version（NKJV）',
                              'en': 'Chinese: Revised Chinese Union Version 2010 (Shen Edition) · English: New King James Version (NKJV)'},

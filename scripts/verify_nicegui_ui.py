@@ -233,30 +233,25 @@ def assert_status_tone_contrast(page) -> None:  # type: ignore[no-untyped-def]
 
 
 def ensure_rendered_theme(page, target: str) -> None:  # type: ignore[no-untyped-def]
-    """Select appearance through the visible desktop menu or phone radio group."""
+    """Reach one explicit appearance through the visible binary control."""
 
     assert target in {"light", "dark"}
     wants_dark = target == "dark"
 
     desktop_trigger = page.get_by_test_id("theme-control")
-    if desktop_trigger.count() and desktop_trigger.is_visible():
-        desktop_trigger.click()
-        option = page.get_by_test_id("desktop-theme-menu").locator(
-            f'[data-theme-option="{target}"]'
-        )
-        option.wait_for(state="visible", timeout=10_000)
-        option.click()
+    if desktop_trigger.count() == 1 and desktop_trigger.is_visible():
+        control = desktop_trigger
     else:
         mobile_navigation = page.get_by_test_id("mobile-bottom-navigation")
         assert mobile_navigation.count() == 1
         mobile_navigation.locator("button").last.click()
         drawer_tools = page.get_by_test_id("mobile-drawer-tools")
         drawer_tools.wait_for(timeout=10_000)
-        radios = drawer_tools.get_by_test_id("mobile-theme-selector").get_by_role("radio")
-        assert radios.count() == 3
-        option = radios.nth({"light": 1, "dark": 2}[target])
-        option.wait_for(state="visible", timeout=10_000)
-        option.click()
+        control = drawer_tools.get_by_test_id("mobile-theme-control")
+        control.wait_for(state="visible", timeout=10_000)
+    is_dark = page.locator("body.body--dark").count() == 1
+    if is_dark != wants_dark:
+        control.click()
     if wants_dark:
         page.locator("body.body--dark").wait_for(timeout=10_000)
     else:
@@ -543,14 +538,11 @@ def main() -> None:
         assert page.get_by_role("button", name="開啟主要導覽").count() == 1
         sound_toggle = page.get_by_role("button", name="開啟提示音")
         assert sound_toggle.count() == 1
-        theme_control = page.get_by_role("button", name="外觀：淺色")
+        theme_control = page.get_by_test_id("theme-control")
         assert theme_control.count() == 1
-        theme_control.click()
-        theme_menu = page.get_by_test_id("desktop-theme-menu")
-        theme_menu.wait_for(state="visible", timeout=10_000)
-        assert theme_menu.locator('[role="menuitemradio"]').count() == 3
-        assert theme_menu.locator('[data-theme-option="light"]').get_attribute("aria-checked") == "true"
-        page.keyboard.press("Escape")
+        assert theme_control.get_attribute("aria-pressed") == "false"
+        assert "深色" in (theme_control.get_attribute("aria-label") or "")
+        assert page.get_by_test_id("desktop-theme-menu").count() == 0
         assert page.get_by_role("link", name="跳至主要內容").count() == 1
         page.wait_for_function("document.documentElement.dataset.syMotion === 'ready'")
         assert page.evaluate("window.gsap?.version") == "3.13.0"

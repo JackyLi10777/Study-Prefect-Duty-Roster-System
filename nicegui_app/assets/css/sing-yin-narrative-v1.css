@@ -205,14 +205,6 @@ body.body--dark:has(.sy-page-shell) {
   line-height: 1.22;
 }
 
-.sy-app-header .sy-header-tools {
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 48%, transparent);
-}
-
-.body--dark .sy-header-tools {
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
-}
-
 /* ---------- Material surfaces without obscuring working data ---------- */
 
 .sy-page-shell :is(

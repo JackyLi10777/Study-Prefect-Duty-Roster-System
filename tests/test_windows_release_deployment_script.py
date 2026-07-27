@@ -90,6 +90,7 @@ def test_deployment_script_requires_the_current_release_gate_fingerprint() -> No
         "strict_deployment_readiness",
         "verify_unified_guest_ui",
         "verify_nicegui_partial_backup",
+        "rc31_theme_control_browser",
     )
 
     for check in required_checks:

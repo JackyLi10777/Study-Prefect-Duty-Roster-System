@@ -552,7 +552,8 @@ try {
         "verify_nicegui_mobile",
         "strict_deployment_readiness",
         "verify_unified_guest_ui",
-        "verify_nicegui_partial_backup"
+        "verify_nicegui_partial_backup",
+        "rc31_theme_control_browser"
     )
     $requiredCheckCount = $requiredChecks.Count
     $startedAt = [DateTimeOffset]::UtcNow

@@ -454,18 +454,17 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assert(html.includes('id="welcomeAudioEnter"'));
   assert(html.includes('id="welcomeAudioQuiet"'));
   assert(html.includes('Entry sound'));
-  assert(html.includes('id="themeSelect"'));
-  assert(html.includes('data-testid="public-theme-selector"'));
-  assert(html.includes('<option value="system">跟隨系統 · System</option>'));
-  assert(html.includes('<option value="light">淺色 · Light</option>'));
-  assert(html.includes('<option value="dark">深色 · Dark</option>'));
+  assert(html.includes('id="themeToggle"'));
+  assert(html.includes('data-testid="public-theme-control"'));
+  assert(html.includes('aria-pressed="false"'));
+  assert(!html.includes('id="themeSelect"'));
   const stylesheet = await worker.fetch(
     new Request('https://gateway.example/viewer.css'),
     env,
     context,
   );
   assertEquals(stylesheet.status, 200);
-  assert((await stylesheet.text()).includes('.theme-toggle select { min-width: 0; min-height: 44px;'));
+  assert((await stylesheet.text()).includes('.theme-toggle-icon { overflow: visible;'));
   assert(html.includes('Copyright © 2026 LI Chuangjie'));
   assert((home.headers.get('Content-Security-Policy') || '').includes("media-src 'self'"));
   assert((home.headers.get('Permissions-Policy') || '').includes('autoplay=(self)'));
@@ -494,9 +493,12 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assert(!script.includes('sing-yin:welcome-audio-enabled:v1'));
   assert(script.includes("addEventListener('ended'"));
   assert(!script.includes('cancelWelcomeFade'));
-  assert(script.includes("themeSelect?.addEventListener('change'"));
-  assert(script.includes("applyTheme(event.currentTarget.value, { persist: true })"));
-  assert(!script.includes('THEME_STATES[(THEME_STATES.indexOf(current) + 1)'));
+  assert(script.includes("themeToggle?.addEventListener('click'"));
+  assert(script.includes("resolvedTheme() === 'dark' ? 'light' : 'dark'"));
+  assert(script.includes("window.addEventListener('storage'"));
+  assert(script.includes("EXPLICIT_THEME_STATES = ['light', 'dark']"));
+  assert(script.includes("let runtimeThemePreference = 'system'"));
+  assert(script.includes('runtimeThemePreference = theme'));
 });
 
 Deno.test('welcome entry attempts playback inside the activation and navigates once on success or failure', async () => {

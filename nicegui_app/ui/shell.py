@@ -30,6 +30,8 @@ from nicegui_app.ui.theme import (
     apply_quasar_palette,
     apply_theme,
     current_theme,
+    next_explicit_theme,
+    set_system_theme_resolution,
     set_theme_preference,
     sound_feedback_enabled,
     theme_preference,
@@ -483,10 +485,15 @@ def _navigate_with_sound(path: str) -> None:
     navigate_to(path)
 
 
-def _sync_preference_controls(controls, *, icon: str, label: str) -> None:  # type: ignore[no-untyped-def]
+def _sync_preference_controls(
+    controls, *, icon: str, label: str, pressed: bool
+) -> None:  # type: ignore[no-untyped-def]
     for button, show_label, tooltip in controls:
         button.set_text(label if show_label else "")
-        button.props(f'icon={icon} aria-label="{attr(label)}"')
+        button.props(
+            f'icon={icon} aria-label="{attr(label)}" title="{attr(label)}" '
+            f'aria-pressed={"true" if pressed else "false"}'
+        )
         if tooltip is not None:
             tooltip.set_text(label)
         button.update()
@@ -501,6 +508,7 @@ async def _toggle_sound_feedback_with_preview(controls) -> None:  # type: ignore
         controls,
         icon="volume_up" if enabled else "volume_off",
         label=label,
+        pressed=enabled,
     )
     if enabled:
         play_interface_sound("success", force=True)
@@ -509,39 +517,180 @@ async def _toggle_sound_feedback_with_preview(controls) -> None:  # type: ignore
         ui.notify(t("sound_feedback_off"), type="info", timeout=2_500)
 
 
-def _theme_choice_label(value: str) -> str:
-    return t(f"theme_{value}")
+def _current_theme_control(resolved_theme: str | None = None) -> tuple[str, str, bool]:
+    """Describe current appearance while naming the button's next action."""
 
-
-def _current_theme_control() -> tuple[str, str]:
-    appearance = theme_preference()
-    icon = {"system": "brightness_auto", "light": "light_mode", "dark": "dark_mode"}[appearance]
-    return icon, t("theme_current", mode=_theme_choice_label(appearance))
+    resolved = resolved_theme if resolved_theme in {"light", "dark"} else current_theme()
+    is_dark = resolved == "dark"
+    return (
+        "dark_mode" if is_dark else "light_mode",
+        t("theme_switch_to_light") if is_dark else t("theme_switch_to_dark"),
+        is_dark,
+    )
 
 
 def _sync_theme_controls(controls) -> None:  # type: ignore[no-untyped-def]
-    appearance = theme_preference()
-    icon, label = _current_theme_control()
-    for button, tooltip in controls["triggers"]:
-        button.props(f'icon={icon} aria-label="{attr(label)}"')
-        tooltip.set_text(label)
+    icon, label, is_dark = _current_theme_control()
+    for button, show_label, tooltip in controls["buttons"]:
+        button.set_text(label if show_label else "")
+        button.props(
+            f'icon={icon} aria-label="{attr(label)}" title="{attr(label)}" '
+            f'aria-pressed={"true" if is_dark else "false"} '
+            f'data-theme-preference={theme_preference()} data-theme-resolved={"dark" if is_dark else "light"}'
+        )
+        if tooltip is not None:
+            tooltip.set_text(label)
         button.update()
-    for value, item in controls["items"]:
-        item.props(f'aria-checked={"true" if value == appearance else "false"}')
-        item.update()
-    for selector in controls["selectors"]:
-        if selector.value != appearance:
-            selector.set_value(appearance)
 
 
-def _set_theme_in_place(value: str, dark_mode, controls) -> None:  # type: ignore[no-untyped-def]
-    """Apply an explicit appearance choice without discarding unfinished input."""
-    set_theme_preference(value)
-    appearance = theme_preference()
-    is_dark = current_theme() == "dark"
-    dark_mode.set_value(None if appearance == "system" else is_dark)
-    apply_quasar_palette(is_dark)
-    _sync_theme_controls(controls)
+def _remember_system_theme_resolution(value: str) -> None:
+    """Accept a browser media-query result only while the preference is unset."""
+
+    if theme_preference() != "system" or value not in {"light", "dark"}:
+        return
+    if current_theme() == value:
+        return
+    set_system_theme_resolution(value)
+    ui.navigate.reload()
+
+
+def _render_system_theme_resolver() -> None:
+    """Expose a hidden, validated bridge from browser resolution to Python."""
+
+    if theme_preference() != "system":
+        return
+    with ui.element("div").classes("hidden").props(
+        f"aria-hidden=true data-sy-theme-resolver data-server-resolved={current_theme()}"
+    ):
+        for value in ("light", "dark"):
+            ui.button(
+                on_click=lambda resolved=value: _remember_system_theme_resolution(resolved)
+            ).props(
+                f"tabindex=-1 aria-hidden=true data-sy-theme-resolve={value}"
+            )
+
+
+async def _toggle_theme_in_place(dark_mode, controls) -> None:  # type: ignore[no-untyped-def]
+    """Persist the opposite of the browser-resolved appearance in one click."""
+
+    if controls["busy"]:
+        return
+    controls["busy"] = True
+    try:
+        try:
+            resolved = await ui.run_javascript(
+                "window.__syThemeControls?.resolved?.() || "
+                "(document.body.classList.contains('body--dark') || "
+                "matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')"
+            )
+        except Exception:  # pragma: no cover - browser disconnect fallback
+            resolved = current_theme()
+        if resolved not in {"light", "dark"}:
+            resolved = current_theme()
+        target = next_explicit_theme(str(resolved))
+        set_theme_preference(target)
+        is_dark = target == "dark"
+        dark_mode.set_value(is_dark)
+        apply_quasar_palette(is_dark)
+        _sync_theme_controls(controls)
+        ui.run_javascript(
+            f"window.__syThemeControls?.applyExplicit?.({json.dumps(target)}, "
+            "{animate:true,broadcast:true});"
+        )
+    finally:
+        controls["busy"] = False
+
+
+def _install_theme_control_runtime() -> None:
+    """Synchronise system resolution, state semantics and open browser tabs."""
+
+    ui.run_javascript(
+        """
+        (() => {
+          window.__syThemeControlsCleanup?.();
+          const controller = new AbortController();
+          const signal = controller.signal;
+          const media = matchMedia('(prefers-color-scheme: dark)');
+          const channel = typeof BroadcastChannel === 'function'
+            ? new BroadcastChannel('sing-yin:appearance:v1') : null;
+          const buttons = () => [...document.querySelectorAll('[data-sy-theme-toggle]')];
+          const resolver = () => document.querySelector('[data-sy-theme-resolver]');
+          const explicitPreference = () => {
+            const value = buttons()[0]?.dataset.themePreference;
+            return value === 'light' || value === 'dark' ? value : 'system';
+          };
+          const resolved = () => (document.body.classList.contains('body--dark') ||
+            document.documentElement.classList.contains('body--dark') ||
+            (explicitPreference() === 'system' && media.matches)) ? 'dark' : 'light';
+          const sync = ({animate = false} = {}) => {
+            const current = resolved();
+            const isDark = current === 'dark';
+            for (const button of buttons()) {
+              const label = isDark ? button.dataset.actionLight : button.dataset.actionDark;
+              button.dataset.themeResolved = current;
+              button.setAttribute('aria-pressed', String(isDark));
+              button.setAttribute('aria-label', label);
+              button.title = label;
+              const icon = button.querySelector('.q-icon');
+              if (icon) icon.textContent = isDark ? 'dark_mode' : 'light_mode';
+              const text = button.dataset.syThemeShowLabel === 'true'
+                ? button.querySelector('.q-btn__content > span:not(.q-icon)') : null;
+              if (text) text.textContent = label;
+              if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                button.dataset.syIconChanging = 'true';
+                setTimeout(() => delete button.dataset.syIconChanging, 220);
+              }
+            }
+          };
+          const reconcileSystemResolution = () => {
+            const host = resolver();
+            if (!host || explicitPreference() !== 'system' || host.dataset.resolving === 'true') return;
+            const browserResolved = media.matches ? 'dark' : 'light';
+            if (host.dataset.serverResolved === browserResolved) return;
+            const trigger = host.querySelector(`[data-sy-theme-resolve="${browserResolved}"]`);
+            if (!trigger) return;
+            host.dataset.resolving = 'true';
+            trigger.click();
+          };
+          const applyExplicit = (theme, {animate = true, broadcast = false} = {}) => {
+            if (theme !== 'light' && theme !== 'dark') return;
+            for (const button of buttons()) button.dataset.themePreference = theme;
+            if (window.Quasar?.Dark) window.Quasar.Dark.set(theme === 'dark');
+            sync({animate});
+            if (broadcast) channel?.postMessage({type: 'appearance', theme});
+          };
+          const observer = new MutationObserver(() => sync());
+          observer.observe(document.body, {attributes: true, attributeFilter: ['class']});
+          media.addEventListener('change', () => {
+            if (explicitPreference() === 'system') {
+              sync();
+              reconcileSystemResolution();
+            }
+          }, {signal});
+          channel?.addEventListener('message', event => {
+            if (event.data?.type === 'appearance') {
+              applyExplicit(event.data.theme, {animate: true, broadcast: false});
+            }
+          }, {signal});
+          window.__syThemeControls = {resolved, sync, applyExplicit, reconcileSystemResolution};
+          window.__syThemeControlsCleanup = () => {
+            observer.disconnect();
+            controller.abort();
+            channel?.close();
+            delete window.__syThemeControls;
+          };
+          sync({animate: false});
+          reconcileSystemResolution();
+        })();
+        """
+    )
+
+
+def _header_control_classes(kind: str, *, mobile: bool = False) -> str:
+    """Return one shared visual anatomy plus a restrained semantic variant."""
+
+    classes = f"sy-header-control sy-header-control--{kind}"
+    return f"{classes} sy-mobile-drawer-tool" if mobile else classes
 
 
 def _render_mobile_drawer_tools(
@@ -562,35 +711,42 @@ def _render_mobile_drawer_tools(
                 icon="translate",
                 on_click=lambda: _reload_after_preference_change(toggle_locale),
             ).props(
-                f'flat no-caps aria-label="{attr(language_action)}" data-testid=mobile-language-control'
-            ).classes("sy-mobile-drawer-tool")
+                f'flat no-caps aria-label="{attr(language_action)}" title="{attr(language_action)}" '
+                'data-testid=mobile-language-control'
+            ).classes(_header_control_classes("language", mobile=True))
             sound_enabled = sound_feedback_enabled()
+            sound_label = t("disable_sound_feedback") if sound_enabled else t("enable_sound_feedback")
             sound_button = ui.button(
-                t("disable_sound_feedback") if sound_enabled else t("enable_sound_feedback"),
+                sound_label,
                 icon="volume_up" if sound_enabled else "volume_off",
                 on_click=lambda: _toggle_sound_feedback_with_preview(sound_controls),
-            ).props("flat no-caps").classes("sy-mobile-drawer-tool")
+            ).props(
+                f'flat no-caps aria-label="{attr(sound_label)}" title="{attr(sound_label)}" '
+                f'aria-pressed={"true" if sound_enabled else "false"} data-testid=mobile-sound-control'
+            ).classes(_header_control_classes("sound", mobile=True))
             sound_controls.append((sound_button, True, None))
-            with ui.element("fieldset").classes("sy-mobile-theme-selector").props(
-                f'aria-label="{attr(t("choose_appearance"))}"'
-            ):
-                ui.html(t("appearance"), tag="legend").classes("sy-mobile-theme-selector-title")
-                theme_selector = ui.radio(
-                    {value: _theme_choice_label(value) for value in ("system", "light", "dark")},
-                    value=theme_preference(),
-                    on_change=lambda event: _set_theme_in_place(
-                        str(event.value), dark_mode, theme_controls
-                    ),
-                ).props("data-testid=mobile-theme-selector")
-                theme_controls["selectors"].append(theme_selector)
+            theme_icon, theme_label, is_dark = _current_theme_control()
+            theme_button = ui.button(
+                theme_label,
+                icon=theme_icon,
+                on_click=lambda: _toggle_theme_in_place(dark_mode, theme_controls),
+            ).props(
+                f'flat no-caps aria-label="{attr(theme_label)}" title="{attr(theme_label)}" '
+                f'aria-pressed={"true" if is_dark else "false"} data-testid=mobile-theme-control '
+                f'data-sy-theme-toggle data-sy-theme-show-label=true data-theme-preference={theme_preference()} '
+                f'data-action-light="{attr(t("theme_switch_to_light"))}" '
+                f'data-action-dark="{attr(t("theme_switch_to_dark"))}"'
+            ).classes(_header_control_classes("theme", mobile=True))
+            theme_controls["buttons"].append((theme_button, True, None))
             if access_mode in {AccessMode.ADMIN, AccessMode.GUEST}:
                 ui.button(
                     t("access_admin_logout"),
                     icon="logout",
                     on_click=_sign_out,
-                ).props("flat no-caps data-testid=mobile-administrator-logout").classes(
-                    "sy-mobile-drawer-tool"
-                )
+                ).props(
+                    f'flat no-caps aria-label="{attr(t("access_admin_logout"))}" '
+                    f'title="{attr(t("access_admin_logout"))}" data-testid=mobile-administrator-logout'
+                ).classes(_header_control_classes("logout", mobile=True))
 
 
 def _render_mobile_tabbar(
@@ -863,7 +1019,7 @@ def page_shell(active_path: str) -> Iterator[None]:
     page_slug = _page_slug(active_path)
     _install_guest_snapshot_bridge(access_mode)
     _install_auth_status_monitor(access_mode, page_context.principal.expires_at)
-    theme_controls = {"triggers": [], "items": [], "selectors": []}
+    theme_controls = {"buttons": [], "busy": False}
     sound_controls = []
     drawer = ui.left_drawer(value=False, bordered=False).props(
         f'show-if-above breakpoint=900 role=navigation id=main-navigation-drawer aria-label="{attr(t("main_navigation"))}"'
@@ -962,8 +1118,9 @@ def page_shell(active_path: str) -> Iterator[None]:
                             icon="logout",
                             on_click=_sign_out,
                         ).props(
-                            f'flat round aria-label="{attr(t("access_admin_logout"))}" data-testid=administrator-logout'
-                        ).classes("sy-admin-logout").tooltip(t("access_admin_logout"))
+                            f'flat round aria-label="{attr(t("access_admin_logout"))}" '
+                            f'title="{attr(t("access_admin_logout"))}" data-testid=administrator-logout'
+                        ).classes(_header_control_classes("logout")).tooltip(t("access_admin_logout"))
                     elif access_mode is AccessMode.GUEST:
                         ui.badge(t("access_guest_signed_in"), color="warning").props(
                             f'outline aria-label="{attr(t("access_guest_mode"))}" data-testid=guest-mode'
@@ -972,15 +1129,17 @@ def page_shell(active_path: str) -> Iterator[None]:
                             icon="logout",
                             on_click=_sign_out,
                         ).props(
-                            f'flat round aria-label="{attr(t("access_admin_logout"))}" data-testid=guest-logout'
-                        ).classes("sy-admin-logout").tooltip(t("access_admin_logout"))
+                            f'flat round aria-label="{attr(t("access_admin_logout"))}" '
+                            f'title="{attr(t("access_admin_logout"))}" data-testid=guest-logout'
+                        ).classes(_header_control_classes("logout")).tooltip(t("access_admin_logout"))
                     language_text, language_action = language_switch_copy(compact=True)
                     ui.button(
                         language_text,
                         on_click=lambda: _reload_after_preference_change(toggle_locale),
                     ).props(
-                        f'flat dense no-caps data-testid=language-control aria-label="{attr(language_action)}"'
-                    ).classes("sy-language-control").style("color: var(--sy-nav-ink) !important")
+                        f'flat dense no-caps data-testid=language-control aria-label="{attr(language_action)}" '
+                        f'title="{attr(language_action)}"'
+                    ).classes(_header_control_classes("language"))
                     sound_icon = "volume_up" if sound_feedback_enabled() else "volume_off"
                     sound_tooltip = (
                         t("disable_sound_feedback")
@@ -991,34 +1150,26 @@ def page_shell(active_path: str) -> Iterator[None]:
                         icon=sound_icon,
                         on_click=lambda: _toggle_sound_feedback_with_preview(sound_controls),
                     ).props(
-                        f'flat round aria-label="{attr(sound_tooltip)}"'
-                    ).classes("sy-icon-control").style("color: var(--sy-nav-ink) !important")
+                        f'flat round aria-label="{attr(sound_tooltip)}" title="{attr(sound_tooltip)}" '
+                        f'aria-pressed={"true" if sound_feedback_enabled() else "false"} data-testid=sound-control'
+                    ).classes(_header_control_classes("sound"))
                     with sound_button:
                         sound_tooltip_element = ui.tooltip(sound_tooltip)
                     sound_controls.append((sound_button, False, sound_tooltip_element))
-                    theme_icon, tooltip = _current_theme_control()
+                    theme_icon, tooltip, is_dark = _current_theme_control()
                     theme_button = ui.button(
                         icon=theme_icon,
+                        on_click=lambda: _toggle_theme_in_place(dark_mode, theme_controls),
                     ).props(
-                        f'flat round aria-label="{attr(tooltip)}" aria-haspopup=menu data-testid=theme-control'
-                    ).classes("sy-icon-control").style("color: var(--sy-nav-ink) !important")
-                    with theme_button:
-                        theme_tooltip_element = ui.tooltip(tooltip)
-                        with ui.menu().props(
-                            f'role=menu aria-label="{attr(t("choose_appearance"))}" data-testid=desktop-theme-menu'
-                        ):
-                            for value in ("system", "light", "dark"):
-                                item = ui.menu_item(
-                                    _theme_choice_label(value),
-                                    on_click=lambda selected=value: _set_theme_in_place(
-                                        selected, dark_mode, theme_controls
-                                    ),
-                                ).classes("sy-theme-option").props(
-                                    f'role=menuitemradio data-theme-option={value} '
-                                    f'aria-checked={"true" if value == theme_preference() else "false"}'
-                                )
-                                theme_controls["items"].append((value, item))
-                    theme_controls["triggers"].append((theme_button, theme_tooltip_element))
+                        f'flat round aria-label="{attr(tooltip)}" title="{attr(tooltip)}" '
+                        f'aria-pressed={"true" if is_dark else "false"} data-testid=theme-control '
+                        f'data-sy-theme-toggle data-theme-preference={theme_preference()} '
+                        f'data-action-light="{attr(t("theme_switch_to_light"))}" '
+                        f'data-action-dark="{attr(t("theme_switch_to_dark"))}"'
+                    ).classes(_header_control_classes("theme"))
+                    theme_controls["buttons"].append((theme_button, False, None))
+    _render_system_theme_resolver()
+    _install_theme_control_runtime()
     maintenance = get_workflow().maintenance_status()
     if application_mode.is_practice or access_mode is AccessMode.GUEST or maintenance.active:
         with ui.element("div").classes("sy-status-stack").props(

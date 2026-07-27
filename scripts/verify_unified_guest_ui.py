@@ -1132,10 +1132,8 @@ def main() -> int:
 
         _open_route(guest_page, guest_url, "/")
         guest_page.screenshot(path=str(evidence_dir / "unified-guest-desktop-light.png"), full_page=True)
-        guest_page.get_by_test_id("theme-control").click()
-        guest_page.get_by_test_id("desktop-theme-menu").locator(
-            '[data-theme-option="dark"]'
-        ).click()
+        if guest_page.locator("body.body--dark").count() != 1:
+            guest_page.get_by_test_id("theme-control").click()
         guest_page.locator("body.body--dark").wait_for(state="attached", timeout=10_000)
         if admin_page.locator("body.body--dark").count():
             raise UnifiedGuestVerificationError("Guest appearance leaked into the Admin browser context.")
