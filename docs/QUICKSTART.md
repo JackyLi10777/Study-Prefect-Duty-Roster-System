@@ -14,15 +14,15 @@
 4. 完成後按「登出」，特別是共用裝置；只關閉分頁不等於清除管理員／Guest session 及同 session 的其他分頁狀態。
 5. 如只需查看首席導學風紀發出的週表，直接開啟完整 `/view#…` 連結；不要以 Guest 或 Admin 入口取代分享連結。
 
-目前 live rc27 中，生成前先在名單核對職務及「可值班日」：只有助理首席導學風紀可當 `Assist. in charge`，未勾選的星期一律視為不方便／不可值班。新週次可選「固定星期模式」或「每週靈活模式」；固定模式保留同一 AHP 的星期擁有權，本週請假只作一次替補；靈活模式按可值班日及長期公平記錄作可重現的每週變化。既有週表會重開其已保存模式。
+目前 live rc30 中，生成前先在名單核對職務及「可值班日」：只有助理首席導學風紀可當 `Assist. in charge`，未勾選的星期一律視為不方便／不可值班。新週次可選「固定星期模式」或「每週靈活模式」；固定模式保留同一 AHP 的星期擁有權，本週請假只作一次替補；靈活模式按可值班日及長期公平記錄作可重現的每週變化。既有週表會重開其已保存模式。
 
 首次進入會跟隨電腦／手機的深淺模式；如瀏覽器尚未能判定，畫面先以深色安全呈現。按右上角外觀按鈕可依次選擇「跟隨系統 → 深色 → 淺色」。Guest 在同一有效 session 內重新整理仍會保留語言及外觀；登出後按設計回到新 session 預設。
 
 Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 session／workspace／tab 的示範 revision；複製分頁會獲得另一個 workspace。這只是 30 分鐘臨時續接，不是長期儲存；登出、到期、撤權或 origin 重啟後舊 token 會失效。
 
-## rc27 手機快速核對（live 功能的真人驗收）
+## rc30 手機快速核對（live 功能的真人驗收）
 
-只有交接紀錄已列出 rc27 的正式 tag／commit、來源 fingerprint、沿用的 Worker version 及成功 origin rollout 後，才執行以下使用者核對；維護者必須另按[完整已驗證候選裝置矩陣](ACCEPTANCE_EVIDENCE.md#rc20-已驗證候選裝置矩陣--verified-candidate-device-matrix)核對手機、兩種直向平板、橫向觸控平板及 full desktop，不以本節簡表代替矩陣。矩陣最初由 rc20 建立，現行證據以 rc27 report 為準：
+只有交接紀錄已列出 rc30 的正式 tag／commit、來源 fingerprint、Worker version 及成功 origin／Worker rollout 後，才執行以下使用者核對；維護者必須另按[完整已驗證候選裝置矩陣](ACCEPTANCE_EVIDENCE.md#rc20-已驗證候選裝置矩陣--verified-candidate-device-matrix)核對手機、兩種直向平板、橫向觸控平板及 full desktop，不以本節簡表代替矩陣。矩陣最初由 rc20 建立，現行證據以 rc30 report 為準：
 
 1. 以 320px／390px 手機開啟 canonical 網址；毋須捲動已可看見唯一一組「管理員登入」及「進入訪客示範」，每個按鈕容易觸控且不與桌面 access panel 重複。
 2. 把瀏覽器放大至 200%，確認頁面文字、頁首、頁尾及四個底部導航在窄屏內 reflow；只有明確資料區可局部橫向捲動，整頁不可左右漂移。
@@ -30,7 +30,7 @@ Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 sess
 4. 用鍵盤或讀屏由 Dashboard 轉到 Rosters／Prefects，焦點應到新頁 `main`。開啟次要頁時 **More** 可視覺 active，但 current page 應是抽屜內的實際路由，而不是 More menu trigger。
 5. 在淺色、深色、reduced motion 及 forced-colours 各核對一次。Standalone action 至少 44px；touch icon story 只在原位做一次 opacity／scale 變化，不漂移、不旋轉，且 reduced motion 保持靜止。
 
-任一項失敗都先停止正式寫入、記錄時間／route／裝置及非敏感畫面並登出，不要反覆提交表單。維護者依 [發布與交接手冊](RELEASE_HANDOVER.md) 判斷事故屬 origin 還是 gateway：第一級 origin 回退是 rc26／`248955cb3300bfbe092b05036632991524d824cd`；立即 gateway 回退是 Worker `76a23134-8355-4e25-bbba-abf17c6918c5`。只看到 `/healthz` 200 不足以恢復使用。
+任一項失敗都先停止正式寫入、記錄時間／route／裝置及非敏感畫面並登出，不要反覆提交表單。維護者依 [發布與交接手冊](RELEASE_HANDOVER.md) 判斷事故屬 origin 還是 gateway：第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；立即 gateway 回退是 Worker `d7b51f21-7692-418d-866c-034c2c57292d`。只看到 `/healthz` 200 不足以恢復使用。
 
 ## 本機維護或 Cloudflare 故障復原
 
@@ -70,6 +70,6 @@ Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 sess
 
 ## English
 
-Live `v1.2.0-rc.27` at `c4c728aa41c9b0122aaa2c015b3cc38e246db43d` passed 14／14 source-matched gates under fingerprint `71c8011c24dd0e05250c94cdc3b424bbc44a66b10ef5364f9f19b54b52c19c9c` (891 Python tests, 3 motion, and 41 Worker contracts) and completed the controlled Windows deployment. Continue to use rc27 behavior; supervised Head Study Prefect and teacher-advisor acceptance remains pending. rc26／`248955cb` is the first-level origin rollback.
+Live `v1.2.0-rc.30` at `74b84f43786b00feb15b51a6270ff71c9430773f` passed 14／14 source-matched gates under fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` (894 Python tests, 3 motion, and 46 Worker contracts) and completed the controlled Windows and Worker deployments. Continue to use rc30 behavior; supervised Head Study Prefect and teacher-advisor acceptance remains pending. rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` is the first-level origin rollback, and Worker `d7b51f21-7692-418d-866c-034c2c57292d` is the immediate edge rollback.
 
 The live rc30 origin and verified Worker identified above provide one canonical site with either a time-limited **Guest experience** using fictional in-memory data or **Admin login** through Cloudflare Access. A refresh in the same Guest tab may restore its latest signed revision, but a duplicated tab receives another workspace and logout, expiry, revocation, or origin restart invalidates the temporary token. Select **Log out** when finished because closing one tab does not clear every session state. `/view#…` remains the separate read-only published-roster link. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for HTTP readiness, and only then opens the browser. For a durable fictional rehearsal with backup/restore, use `START_PRACTICE_MODE.cmd`; the remote Guest workspace is intentionally temporary. Check `/readyz`, not only `/healthz`, before accepting official writes. Fixed weekday preserves each AHP's weekday across weeks while a leave substitute remains week-local; Flexible weekly varies deterministically among declared available days with fairness history primary. Unchecked days are never eligible, and an existing week reopens with its saved mode. These Assist. modes were introduced in historical rc20 and are retained in rc30.

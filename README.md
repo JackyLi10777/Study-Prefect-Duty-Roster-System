@@ -67,7 +67,7 @@ Admin 是正式工作的標準版本；Guest 使用同一組路由、導航、�
 | `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；歷史整合來源 | rc17 的多用戶、操作層級及前端穩定性整合線；現行發布已由 rc27 取代 |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；歷史整合來源 | 前一階段 Service Weave v1.2 編輯式整合線 |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live rc27 Windows origin＋rc29 Cloudflare Worker 的正式來源 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | live `v1.2.0-rc.30` Windows origin＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 的正式來源 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -358,7 +358,7 @@ Worker 部署除 Viewer 管理所需的 `ADMIN_BEARER_TOKEN` 外，亦必須配�
 不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
 
 **目前可否在校外使用？**
-可以。canonical 網站及 Windows origin 現運行健康、ready 的 rc27／`c4c728aa`；rc26／`248955cb` 是第一級 origin 回退，rc24 是次級已驗證基線。一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
+可以。canonical 網站及 Windows origin 現運行健康、ready 的 rc30／`74b84f4`；rc27／`c4c728aa` 是第一級 origin 回退，Worker `d7b51f21-7692-418d-866c-034c2c57292d` 是立即 edge 回退，rc26／`248955cb` 是更深一層的已驗證 origin 基線。一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
 
 **別人可否用 Viewer 連結編輯週表？**
 不可。分享連結永遠唯讀；網址參數、瀏覽器標頭或畫面操作都不能把訪客升級為管理員。只有 Access policy 內的管理員身份通過驗證後，Worker 才轉送完整工作台。

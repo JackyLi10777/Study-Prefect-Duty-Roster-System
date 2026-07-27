@@ -25,8 +25,8 @@
 > `fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` passed isolated
 > restore. Worker source and configuration were unchanged, so Worker version
 > `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` was retained without a new Worker
-> rollout. rc21 is now a historical secondary recovery baseline; rc26 later replaced it
-> and is now the first-level origin rollback beneath the live rc30 origin described above.
+> rollout. rc21 is now a historical secondary recovery baseline; rc26 later replaced it,
+> while rc27 is now the first-level origin rollback beneath the live rc30 origin described above.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 
@@ -59,7 +59,7 @@ NiceGUI owns the rendering and navigation. The read model introduces no schema, 
 
 ## Canonical entry and local maintenance start
 
-> **Unified Guest architecture contract:** The live rc27 host enables this path
+> **Unified Guest architecture contract:** The live rc30 host enables this path
 > through its protected `SING_YIN_UNIFIED_GUEST=1` configuration. Any later
 > candidate must preserve the same deny-by-default boundary and pass fresh
 > candidate-bound verification before the origin or Worker is switched; changing
@@ -356,7 +356,7 @@ Medium touch screens are not stretched phones. From 640–900px, consequential o
 
 The rc20 intermediate-density rules distinguish portrait and landscape tablets without user-agent branching. Both 768×1024 and 820×1180 portrait adaptive shells can use two-column roster, directory, evidence and download cards while forms remain a single decision column. At 901–1180px, including 1024×768 touch landscape, the desktop shell remains visible but `sy-operations-grid` and document layouts collapse before their columns become cramped; evidence indexes, toolbars and download options are capped at two columns. At 1440×1024 the full desktop shell and reading measure remain intact. CSS changes composition only—the same semantic DOM, `PageContext`, capability policy and workflow callback remain authoritative.
 
-The existing roster and prefect card renderers remain the implementation baseline. Historical rc18 evidence covers 390×844 Traditional Chinese/light, 320×760 English/dark with reduced motion, and 844×390 landscape touch contexts. The live rc27 source-matched report covers the isolated device matrix containing 256×700 reflow, 320×760 reduced motion, 390×844 phone, 768×1024 and 820×1180 adaptive touch tablets, 1024×768 desktop-shell touch tablet, 1440×1024 full desktop and 844×390 phone landscape. `verify_nicegui_mobile.py` owns the phone／tablet members and `verify_nicegui_ui.py` owns the full-desktop member; together they proved a single visible navigation shell, route-focus transfer, More/current-page semantics, `visualViewport` keyboard clearance, footer/safe-area clearance, comprehensive 44px standalone targets, touch icon stories, forced colours and zero document overflow/console/page errors for the deployed source. Controlled origin cutover and canonical smoke have succeeded; physical iPhone Safari and Android Chrome 200% zoom, keyboard, rotation and notch/home-indicator checks remain open human acceptance evidence.
+The existing roster and prefect card renderers remain the implementation baseline. Historical rc18 evidence covers 390×844 Traditional Chinese/light, 320×760 English/dark with reduced motion, and 844×390 landscape touch contexts. The live rc30 source-matched report covers the isolated device matrix containing 256×700 reflow, 320×760 reduced motion, 390×844 phone, 768×1024 and 820×1180 adaptive touch tablets, 1024×768 desktop-shell touch tablet, 1440×1024 full desktop and 844×390 phone landscape. `verify_nicegui_mobile.py` owns the phone／tablet members and `verify_nicegui_ui.py` owns the full-desktop member; together they proved a single visible navigation shell, route-focus transfer, More/current-page semantics, `visualViewport` keyboard clearance, footer/safe-area clearance, comprehensive 44px standalone targets, touch icon stories, forced colours and zero document overflow/console/page errors for the deployed source. Controlled origin cutover and canonical smoke have succeeded; physical iPhone Safari and Android Chrome 200% zoom, keyboard, rotation and notch/home-indicator checks remain open human acceptance evidence.
 
 The same preflight contract covers roster preparation and manual draft correction: a missing candidate or invalid week start is repaired in place. Blank operator reasons are valid and never weaken the durable version, command, audit, fairness, or backup checks. `scripts/verify_nicegui_write_pipeline.py` asserts that invalid states create neither a progress dialog nor a `progress_*_working` log event, while also proving that an optional reason can be omitted safely.
 

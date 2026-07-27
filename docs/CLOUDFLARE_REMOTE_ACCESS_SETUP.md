@@ -149,7 +149,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 3. 核對沒有第二個 NiceGUI origin 佔用同一資料庫。
 4. 安裝已驗證 bundle 及 hash-locked dependencies。
 5. 執行 additive Alembic migration `0011_assist_assignment_mode`。
-6. 保持 live rc27 的現行受保護設定 `SING_YIN_UNIFIED_GUEST=1`，不得用切換旗標略過候選驗證。
+6. 保持 live rc30 的現行受保護設定 `SING_YIN_UNIFIED_GUEST=1`，不得用切換旗標略過候選驗證。
 7. 核對：
 
 ```powershell
@@ -205,7 +205,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 6. 用獲准身份完成 Admin 登入／登出及隔離寫入流程。
 7. 才結束 maintenance。
 
-候選的隔離測試仍須證明 flag 為 `0` 時 Guest fail closed；rc26 的正式 gate 已在臨時環境完成該證據，不可因此弱化 live rc27 設定。
+候選的隔離測試仍須證明 flag 為 `0` 時 Guest fail closed；rc30 的正式 gate 已在臨時環境重新完成該證據，不可因此弱化 live rc30 設定。
 
 ## 9. 線上驗收
 
@@ -284,6 +284,6 @@ additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，�
 
 ## English operational summary
 
-Live origin `v1.2.0-rc.27`／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` remains behind rc29 Worker `d7b51f21-7692-418d-866c-034c2c57292d`, which owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter. rc26／`248955cb` is the first-level origin rollback; Worker `76a23134-8355-4e25-bbba-abf17c6918c5` is the immediate gateway rollback.
+Live origin `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` remains behind Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`, which owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter. rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` is the first-level origin rollback; Worker `d7b51f21-7692-418d-866c-034c2c57292d` is the immediate gateway rollback.
 
-The live controlled topology is rc27 on the Windows origin plus rc29 on the Worker. Exact rc29 source passed the `c015716b…` gate set and completed staged smoke, 100% promotion and canonical root／Guest／Admin handoff／Viewer checks. Supervised human acceptance remains open; an origin failure returns first to rc26／`248955cb…`, while a gateway failure returns to Worker `76a23134-8355-4e25-bbba-abf17c6918c5`.
+The live controlled topology is rc30 on both the Windows origin and Worker. Exact rc30 source passed the `15d155d8…` gate set and completed the controlled origin switch, staged smoke, 100% promotion and canonical root／Guest／Admin handoff／Viewer checks. Supervised human acceptance remains open; an origin failure returns first to rc27／`c4c728aa…`, while a gateway failure returns to Worker `d7b51f21-7692-418d-866c-034c2c57292d`.

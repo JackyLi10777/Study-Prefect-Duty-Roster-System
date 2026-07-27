@@ -360,6 +360,19 @@ def test_operator_deployment_docs_use_live_rc30_and_rollback_hierarchy() -> None
         assert "74b84f43786b00feb15b51a6270ff71c9430773f" in current_header
         assert "11763f08-d40d-46d5-93dc-5ca2599d4154" in current_header
 
+    assert "live `v1.2.0-rc.30`" in decision.split("## Live rc30", 1)[1].split(
+        "## ", 1
+    )[0]
+    assert "第一級 origin 回退 | 回復 `v1.2.0-rc.27`" in decision
+    assert (
+        "立即 gateway 回退 | 把 Worker traffic 恢復至 "
+        "`d7b51f21-7692-418d-866c-034c2c57292d`"
+    ) in decision
+    assert "rc30 的正式 tag／commit" in quickstart
+    assert "現行證據以 rc30 report 為準" in quickstart
+    assert "第一級 origin 回退是 rc27" in cloudflare
+    assert "Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`" in cloudflare
+
     assert (  # noqa: RUF001
         "主機 bundle `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`"  # noqa: RUF001
         in cloudflare
@@ -380,7 +393,7 @@ def test_operator_deployment_docs_use_live_rc30_and_rollback_hierarchy() -> None
     assert "<next-approved-annotated-tag>" not in decision
 
 
-def test_rc30_docs_share_one_device_matrix_and_rollback_hierarchy() -> None:
+def test_docs_share_historical_rc20_device_matrix_and_current_rollback_hierarchy() -> None:
     device_viewports = ("768×1024", "820×1180", "1024×768", "1440×1024")
     device_documents = (
         "README.md",
@@ -429,11 +442,39 @@ def test_rc30_docs_share_one_device_matrix_and_rollback_hierarchy() -> None:
         encoding="utf-8"
     )
 
-    for document in (readme, handover, cloudflare, decision):
-        assert "第一級" in document and "回退" in document
-        assert "rc27" in document
-        assert "c4c728aa41c9b0122aaa2c015b3cc38e246db43d" in document
-        assert "d7b51f21-7692-418d-866c-034c2c57292d" in document
+    rollback_contracts = {
+        "README.md": (
+            readme,
+            "**目前正式基線：**",
+            "第一級 origin 回退是 rc27",
+            "Worker 的立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`",
+        ),
+        "docs/RELEASE_HANDOVER.md": (
+            handover,
+            "> **目前線上基線是 rc30：**",
+            "第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`",
+            "Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`",
+        ),
+        "docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md": (
+            cloudflare,
+            "> **目前發布狀態：**",
+            "第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`",
+            "Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`",
+        ),
+        "docs/DEPLOYMENT_DECISION.md": (
+            decision,
+            "> **目前基線：**",
+            "第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`",
+            "Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`",
+        ),
+    }
+    for relative_path, contract in rollback_contracts.items():
+        document, summary_marker, origin_contract, worker_contract = contract
+        current_summary = next(
+            line for line in document.splitlines() if line.startswith(summary_marker)
+        )
+        assert origin_contract in current_summary, relative_path
+        assert worker_contract in current_summary, relative_path
     for document in (readme_en, status):
         normalized_document = " ".join(document.split())
         assert "first-level origin rollback" in normalized_document
