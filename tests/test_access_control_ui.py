@@ -78,7 +78,7 @@ def test_live_viewer_verifier_covers_the_release_entry_contract() -> None:
     for helper in (
         "_assert_page_identity",
         "_assert_guest_landing",
-        "_assert_theme_cycle",
+        "_assert_theme_selection",
         "_assert_manual_verse_refresh",
         "_assert_reduced_motion",
         "_assert_read_only_roster",

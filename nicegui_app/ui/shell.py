@@ -15,7 +15,7 @@ from nicegui_app.contact import FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL, GITHUB_REPO
 from nicegui_app.runtime import current_page_context, get_workflow
 from nicegui_app.ui.brand import render_service_weave_mark
 from nicegui_app.ui.html_safety import attr
-from nicegui_app.ui.i18n import current_locale, t, toggle_locale
+from nicegui_app.ui.i18n import current_locale, language_switch_copy, t, toggle_locale
 from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.music import render_page_music_control
 from nicegui_app.ui.page_catalog import (
@@ -30,10 +30,10 @@ from nicegui_app.ui.theme import (
     apply_quasar_palette,
     apply_theme,
     current_theme,
+    set_theme_preference,
     sound_feedback_enabled,
     theme_preference,
     toggle_sound_feedback,
-    toggle_theme,
 )
 
 
@@ -509,28 +509,39 @@ async def _toggle_sound_feedback_with_preview(controls) -> None:  # type: ignore
         ui.notify(t("sound_feedback_off"), type="info", timeout=2_500)
 
 
-def _toggle_theme_in_place(dark_mode, controls) -> None:  # type: ignore[no-untyped-def]
-    """Switch appearance without discarding unfinished operator input."""
-    toggle_theme()
+def _theme_choice_label(value: str) -> str:
+    return t(f"theme_{value}")
+
+
+def _current_theme_control() -> tuple[str, str]:
+    appearance = theme_preference()
+    icon = {"system": "brightness_auto", "light": "light_mode", "dark": "dark_mode"}[appearance]
+    return icon, t("theme_current", mode=_theme_choice_label(appearance))
+
+
+def _sync_theme_controls(controls) -> None:  # type: ignore[no-untyped-def]
+    appearance = theme_preference()
+    icon, label = _current_theme_control()
+    for button, tooltip in controls["triggers"]:
+        button.props(f'icon={icon} aria-label="{attr(label)}"')
+        tooltip.set_text(label)
+        button.update()
+    for value, item in controls["items"]:
+        item.props(f'aria-checked={"true" if value == appearance else "false"}')
+        item.update()
+    for selector in controls["selectors"]:
+        if selector.value != appearance:
+            selector.set_value(appearance)
+
+
+def _set_theme_in_place(value: str, dark_mode, controls) -> None:  # type: ignore[no-untyped-def]
+    """Apply an explicit appearance choice without discarding unfinished input."""
+    set_theme_preference(value)
     appearance = theme_preference()
     is_dark = current_theme() == "dark"
     dark_mode.set_value(None if appearance == "system" else is_dark)
     apply_quasar_palette(is_dark)
-    icon, label = _next_theme_control()
-    _sync_preference_controls(
-        controls,
-        icon=icon,
-        label=label,
-    )
-
-
-def _next_theme_control() -> tuple[str, str]:
-    appearance = theme_preference()
-    if appearance == "system":
-        return "dark_mode", t("theme_system_to_dark")
-    if appearance == "dark":
-        return "light_mode", t("light_mode")
-    return "brightness_auto", t("follow_system_mode")
+    _sync_theme_controls(controls)
 
 
 def _render_mobile_drawer_tools(
@@ -545,11 +556,14 @@ def _render_mobile_drawer_tools(
     ):
         ui.label(t("mobile_quick_settings")).classes("sy-mobile-drawer-tools-title")
         with ui.element("div").classes("sy-mobile-drawer-tools-grid"):
+            language_text, language_action = language_switch_copy(compact=False)
             ui.button(
-                t("switch_to_english") if current_locale() != "en" else t("switch_to_chinese"),
+                language_text,
                 icon="translate",
                 on_click=lambda: _reload_after_preference_change(toggle_locale),
-            ).props("flat no-caps").classes("sy-mobile-drawer-tool")
+            ).props(
+                f'flat no-caps aria-label="{attr(language_action)}" data-testid=mobile-language-control'
+            ).classes("sy-mobile-drawer-tool")
             sound_enabled = sound_feedback_enabled()
             sound_button = ui.button(
                 t("disable_sound_feedback") if sound_enabled else t("enable_sound_feedback"),
@@ -557,13 +571,18 @@ def _render_mobile_drawer_tools(
                 on_click=lambda: _toggle_sound_feedback_with_preview(sound_controls),
             ).props("flat no-caps").classes("sy-mobile-drawer-tool")
             sound_controls.append((sound_button, True, None))
-            theme_icon, theme_label = _next_theme_control()
-            theme_button = ui.button(
-                theme_label,
-                icon=theme_icon,
-                on_click=lambda: _toggle_theme_in_place(dark_mode, theme_controls),
-            ).props("flat no-caps").classes("sy-mobile-drawer-tool")
-            theme_controls.append((theme_button, True, None))
+            with ui.element("fieldset").classes("sy-mobile-theme-selector").props(
+                f'aria-label="{attr(t("choose_appearance"))}"'
+            ):
+                ui.html(t("appearance"), tag="legend").classes("sy-mobile-theme-selector-title")
+                theme_selector = ui.radio(
+                    {value: _theme_choice_label(value) for value in ("system", "light", "dark")},
+                    value=theme_preference(),
+                    on_change=lambda event: _set_theme_in_place(
+                        str(event.value), dark_mode, theme_controls
+                    ),
+                ).props("data-testid=mobile-theme-selector")
+                theme_controls["selectors"].append(theme_selector)
             if access_mode in {AccessMode.ADMIN, AccessMode.GUEST}:
                 ui.button(
                     t("access_admin_logout"),
@@ -844,7 +863,7 @@ def page_shell(active_path: str) -> Iterator[None]:
     page_slug = _page_slug(active_path)
     _install_guest_snapshot_bridge(access_mode)
     _install_auth_status_monitor(access_mode, page_context.principal.expires_at)
-    theme_controls = []
+    theme_controls = {"triggers": [], "items": [], "selectors": []}
     sound_controls = []
     drawer = ui.left_drawer(value=False, bordered=False).props(
         f'show-if-above breakpoint=900 role=navigation id=main-navigation-drawer aria-label="{attr(t("main_navigation"))}"'
@@ -955,14 +974,12 @@ def page_shell(active_path: str) -> Iterator[None]:
                         ).props(
                             f'flat round aria-label="{attr(t("access_admin_logout"))}" data-testid=guest-logout'
                         ).classes("sy-admin-logout").tooltip(t("access_admin_logout"))
-                    language_label = (
-                        t("switch_to_english") if current_locale() != "en" else t("switch_to_chinese")
-                    )
+                    language_text, language_action = language_switch_copy(compact=True)
                     ui.button(
-                        "EN" if current_locale() != "en" else "中",
+                        language_text,
                         on_click=lambda: _reload_after_preference_change(toggle_locale),
                     ).props(
-                        f'flat dense no-caps data-testid=language-control aria-label="{attr(language_label)}"'
+                        f'flat dense no-caps data-testid=language-control aria-label="{attr(language_action)}"'
                     ).classes("sy-language-control").style("color: var(--sy-nav-ink) !important")
                     sound_icon = "volume_up" if sound_feedback_enabled() else "volume_off"
                     sound_tooltip = (
@@ -979,16 +996,29 @@ def page_shell(active_path: str) -> Iterator[None]:
                     with sound_button:
                         sound_tooltip_element = ui.tooltip(sound_tooltip)
                     sound_controls.append((sound_button, False, sound_tooltip_element))
-                    theme_icon, tooltip = _next_theme_control()
+                    theme_icon, tooltip = _current_theme_control()
                     theme_button = ui.button(
                         icon=theme_icon,
-                        on_click=lambda: _toggle_theme_in_place(dark_mode, theme_controls),
                     ).props(
-                        f'flat round aria-label="{attr(tooltip)}"'
+                        f'flat round aria-label="{attr(tooltip)}" aria-haspopup=menu data-testid=theme-control'
                     ).classes("sy-icon-control").style("color: var(--sy-nav-ink) !important")
                     with theme_button:
                         theme_tooltip_element = ui.tooltip(tooltip)
-                    theme_controls.append((theme_button, False, theme_tooltip_element))
+                        with ui.menu().props(
+                            f'role=menu aria-label="{attr(t("choose_appearance"))}" data-testid=desktop-theme-menu'
+                        ):
+                            for value in ("system", "light", "dark"):
+                                item = ui.menu_item(
+                                    _theme_choice_label(value),
+                                    on_click=lambda selected=value: _set_theme_in_place(
+                                        selected, dark_mode, theme_controls
+                                    ),
+                                ).classes("sy-theme-option").props(
+                                    f'role=menuitemradio data-theme-option={value} '
+                                    f'aria-checked={"true" if value == theme_preference() else "false"}'
+                                )
+                                theme_controls["items"].append((value, item))
+                    theme_controls["triggers"].append((theme_button, theme_tooltip_element))
     maintenance = get_workflow().maintenance_status()
     if application_mode.is_practice or access_mode is AccessMode.GUEST or maintenance.active:
         with ui.element("div").classes("sy-status-stack").props(

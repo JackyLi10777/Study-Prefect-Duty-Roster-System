@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from nicegui_app.ui import page_shared as pages
+from nicegui_app.ui import i18n, page_shared as pages
 from nicegui_app.config import PREFECT_SEED_PATH, PROJECT_ROOT
 from nicegui_app.ui.i18n import EN, MESSAGES, OFFICIAL_ROLE_TERMS, POST_LABELS, ROLE_LABELS, ZH_HK
 from roster_policy import DutyPost
@@ -35,6 +35,17 @@ def test_every_interface_message_has_nonempty_traditional_chinese_and_english_te
     }
 
     assert missing == {}
+
+
+def test_language_destination_uses_autonyms_in_compact_and_full_controls(monkeypatch) -> None:
+    monkeypatch.setattr(i18n, "current_locale", lambda: ZH_HK)
+    assert i18n.language_switch_copy(compact=False) == ("English", "切換至 English")
+    assert i18n.language_switch_copy(compact=True) == ("EN", "切換至 English")
+
+    monkeypatch.setattr(i18n, "current_locale", lambda: EN)
+    assert i18n.language_switch_copy(compact=False) == ("繁體中文", "Switch to 繁體中文")
+    assert i18n.language_switch_copy(compact=True) == ("繁中", "Switch to 繁體中文")
+    assert MESSAGES["switch_to_chinese"][EN] == "繁體中文"
 
 
 def test_public_roster_sharing_copy_explains_scope_and_link_authority() -> None:

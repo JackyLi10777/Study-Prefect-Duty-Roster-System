@@ -233,29 +233,30 @@ def assert_status_tone_contrast(page) -> None:  # type: ignore[no-untyped-def]
 
 
 def ensure_rendered_theme(page, target: str) -> None:  # type: ignore[no-untyped-def]
-    """Switch through the visible UI at desktop or phone width and wait for the real body state."""
+    """Select appearance through the visible desktop menu or phone radio group."""
 
     assert target in {"light", "dark"}
     wants_dark = target == "dark"
-    if (page.locator("body.body--dark").count() == 1) == wants_dark:
-        return
 
-    icon = "dark_mode" if wants_dark else "light_mode"
-    visible_controls = page.locator("button:visible").filter(
-        has=page.locator("i.q-icon", has_text=icon)
-    )
-    if visible_controls.count() == 0:
+    desktop_trigger = page.get_by_test_id("theme-control")
+    if desktop_trigger.count() and desktop_trigger.is_visible():
+        desktop_trigger.click()
+        option = page.get_by_test_id("desktop-theme-menu").locator(
+            f'[data-theme-option="{target}"]'
+        )
+        option.wait_for(state="visible", timeout=10_000)
+        option.click()
+    else:
         mobile_navigation = page.get_by_test_id("mobile-bottom-navigation")
         assert mobile_navigation.count() == 1
         mobile_navigation.locator("button").last.click()
         drawer_tools = page.get_by_test_id("mobile-drawer-tools")
         drawer_tools.wait_for(timeout=10_000)
-        visible_controls = page.locator("button:visible").filter(
-            has=page.locator("i.q-icon", has_text=icon)
-        )
-
-    assert visible_controls.count() >= 1
-    visible_controls.first.click()
+        radios = drawer_tools.get_by_test_id("mobile-theme-selector").get_by_role("radio")
+        assert radios.count() == 3
+        option = radios.nth({"light": 1, "dark": 2}[target])
+        option.wait_for(state="visible", timeout=10_000)
+        option.click()
     if wants_dark:
         page.locator("body.body--dark").wait_for(timeout=10_000)
     else:
@@ -269,6 +270,11 @@ def assert_component_grammar(page, screenshot_path: Path) -> None:  # type: igno
     """Render the production cascade as a temporary, data-free component matrix."""
 
     screenshot_path.parent.mkdir(parents=True, exist_ok=True)
+    if page.evaluate("innerWidth <= 900"):
+        backdrop = page.locator(".q-drawer__backdrop")
+        if backdrop.count() and backdrop.is_visible():
+            page.keyboard.press("Escape")
+            backdrop.wait_for(state="hidden", timeout=10_000)
     page.evaluate(
         """
         () => {
@@ -423,10 +429,25 @@ def assert_component_grammar(page, screenshot_path: Path) -> None:  # type: igno
     finally:
         page.locator("#componentNotificationProbes").evaluate("element => element.remove()")
 
-    page.locator("#componentCheckbox").focus()
-    focus_style = page.locator("#componentCheckbox .q-checkbox__inner").evaluate(
-        "element => ({style:getComputedStyle(element).outlineStyle, width:getComputedStyle(element).outlineWidth})"
+    # The production contract uses :focus-within. Focus the real tabindex=0
+    # host and inspect its visible child ring in one browser turn so a NiceGUI
+    # background update cannot create a false failure between round trips.
+    checkbox = page.locator("#componentCheckbox")
+    focus_style = checkbox.evaluate(
+        """
+        element => {
+          element.focus({preventScroll: true});
+          const inner = element.querySelector('.q-checkbox__inner');
+          const style = getComputedStyle(inner);
+          return {
+            active: element === document.activeElement,
+            style: style.outlineStyle,
+            width: style.outlineWidth,
+          };
+        }
+        """
     )
+    assert focus_style["active"] is True
     assert focus_style["style"] != "none" and float(focus_style["width"].removesuffix("px")) >= 3
     page.locator("#componentCheckbox").evaluate("element => element.blur()")
     page.evaluate(
@@ -497,16 +518,13 @@ def main() -> None:
         page.keyboard.press("Enter")
         page.wait_for_function("document.activeElement?.id === 'main-content'")
         # User storage can retain the previous smoke run's language preference.
-        if page.get_by_role("button", name="中").count():
-            page.get_by_role("button", name="中").click()
+        if page.get_by_test_id("language-control").inner_text().strip() == "繁中":
+            page.get_by_test_id("language-control").click()
             page.wait_for_load_state("domcontentloaded")
         page.get_by_text("第一次使用", exact=False).or_(
             page.get_by_text("First time here", exact=False)
         ).first.wait_for(timeout=10_000)
-        desktop_theme_controls = page.locator(".sy-desktop-header-controls")
-        if desktop_theme_controls.locator("i.q-icon", has_text="light_mode").count():
-            desktop_theme_controls.locator("i.q-icon", has_text="light_mode").click()
-            page.wait_for_load_state("domcontentloaded")
+        ensure_rendered_theme(page, "light")
         page.get_by_text("本週值班工作台", exact=True).wait_for(timeout=10_000)
         assert page.locator(".sy-flow-step--active .q-btn.bg-primary").evaluate(
             "element => getComputedStyle(element).backgroundColor"
@@ -525,7 +543,14 @@ def main() -> None:
         assert page.get_by_role("button", name="開啟主要導覽").count() == 1
         sound_toggle = page.get_by_role("button", name="開啟提示音")
         assert sound_toggle.count() == 1
-        assert page.get_by_role("button", name="切換深色模式").count() == 1
+        theme_control = page.get_by_role("button", name="外觀：淺色")
+        assert theme_control.count() == 1
+        theme_control.click()
+        theme_menu = page.get_by_test_id("desktop-theme-menu")
+        theme_menu.wait_for(state="visible", timeout=10_000)
+        assert theme_menu.locator('[role="menuitemradio"]').count() == 3
+        assert theme_menu.locator('[data-theme-option="light"]').get_attribute("aria-checked") == "true"
+        page.keyboard.press("Escape")
         assert page.get_by_role("link", name="跳至主要內容").count() == 1
         page.wait_for_function("document.documentElement.dataset.syMotion === 'ready'")
         assert page.evaluate("window.gsap?.version") == "3.13.0"
@@ -919,7 +944,10 @@ def main() -> None:
         assert "engineering-workbench-light-v1.webp" in page.locator(".sy-engineering-hero").evaluate(
             "element => getComputedStyle(element, '::after').backgroundImage"
         )
-        assert page.get_by_test_id("engineering-facts").locator(".sy-engineering-fact").count() == 4
+        engineering_facts = page.get_by_test_id("engineering-facts")
+        assert engineering_facts.locator(".sy-engineering-fact").count() == 5
+        assert engineering_facts.get_by_text("≈10B", exact=True).count() == 1
+        assert engineering_facts.get_by_text("非即時、非本系統遙測", exact=False).count() == 1
         assert page.get_by_test_id("engineering-blueprint").locator(".sy-engineering-blueprint-layer").count() == 5
         assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 13
         assert page.get_by_role("heading", level=2).count() >= 5
@@ -1207,6 +1235,17 @@ def main() -> None:
         language_button.click()
         page.wait_for_load_state("domcontentloaded")
         page.get_by_text("Dashboard", exact=True).first.wait_for(timeout=10_000)
+        chinese_button = page.get_by_test_id("language-control")
+        assert chinese_button.inner_text().strip() == "繁中"
+        assert chinese_button.get_attribute("aria-label") == "Switch to 繁體中文"
+        chinese_button.click()
+        page.wait_for_load_state("domcontentloaded")
+        page.get_by_text("總覽", exact=True).first.wait_for(timeout=10_000)
+        page.wait_for_function("document.documentElement.lang === 'zh-Hant-HK'", timeout=10_000)
+        page.get_by_test_id("language-control").click()
+        page.wait_for_load_state("domcontentloaded")
+        page.get_by_text("Dashboard", exact=True).first.wait_for(timeout=10_000)
+        page.wait_for_function("document.documentElement.lang === 'en'", timeout=10_000)
         page.goto(f"{BASE_URL}/rosters/999999", wait_until="domcontentloaded")
         page.get_by_text("This roster is no longer available", exact=True).wait_for(timeout=10_000)
         assert page.get_by_role("button", name="Review current rosters").count() == 1
@@ -1215,12 +1254,7 @@ def main() -> None:
         page.get_by_text("Handover guide", exact=True).first.wait_for(timeout=10_000)
         page.get_by_text("Head Study Prefect and teacher-advisor sign-off still required", exact=True).wait_for(timeout=10_000)
         page.goto(BASE_URL, wait_until="domcontentloaded")
-        desktop_theme_controls = page.locator(".sy-desktop-header-controls")
-        if desktop_theme_controls.locator("i.q-icon", has_text="light_mode").count():
-            desktop_theme_controls.locator("i.q-icon", has_text="light_mode").click()
-            page.wait_for_load_state("domcontentloaded")
-        page.locator(".sy-desktop-header-controls").locator("i.q-icon", has_text="dark_mode").click()
-        page.wait_for_function("document.body.classList.contains('body--dark')")
+        ensure_rendered_theme(page, "dark")
         # Theme variables update immediately while the restrained state/layer
         # transitions can still be settling. Measure the stable rendered state,
         # not an arbitrary frame inside the 260 ms design-system transition.

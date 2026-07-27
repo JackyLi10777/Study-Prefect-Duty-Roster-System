@@ -999,7 +999,28 @@ def _exercise_true_duplicate_and_tamper(
 
 
 def _exercise_broadcast_cleanup(first: Page, second: Page) -> None:
-    for page in (first, second):
+    pages = (first, second)
+    for index, page in enumerate(pages, start=1):
+        try:
+            page.wait_for_function(
+                "typeof window.__syInvalidateAuthSession === 'function' "
+                "&& document.body.dataset.syAuthStatus === 'verified'",
+                timeout=15_000,
+            )
+        except PlaywrightError as error:
+            state = page.evaluate(
+                """
+                () => ({
+                  url: location.href,
+                  lang: document.documentElement.lang,
+                  authStatus: document.body.dataset.syAuthStatus || null,
+                  controller: typeof window.__syInvalidateAuthSession,
+                })
+                """
+            )
+            raise UnifiedGuestVerificationError(
+                f"Guest cleanup controller was not ready in tab {index}: {state}."
+            ) from error
         page.evaluate(
             """
             () => {
@@ -1011,14 +1032,28 @@ def _exercise_broadcast_cleanup(first: Page, second: Page) -> None:
             """
         )
     first.evaluate("() => { window.__syInvalidateAuthSession?.(); return true; }")
-    for page in (first, second):
-        page.wait_for_function(
-            """
-            () => sessionStorage.getItem('sing-yin-e2e-temporary') === null
-              && document.querySelector('#sing-yin-e2e-audio')?.getAttribute('src') === null
-            """,
-            timeout=10_000,
-        )
+    for index, page in enumerate(pages, start=1):
+        try:
+            page.wait_for_function(
+                """
+                () => sessionStorage.getItem('sing-yin-e2e-temporary') === null
+                  && document.querySelector('#sing-yin-e2e-audio')?.getAttribute('src') === null
+                """,
+                timeout=15_000,
+            )
+        except PlaywrightError as error:
+            state = page.evaluate(
+                """
+                () => ({
+                  temporary: sessionStorage.getItem('sing-yin-e2e-temporary'),
+                  authStatus: document.body.dataset.syAuthStatus || null,
+                  controller: typeof window.__syInvalidateAuthSession,
+                })
+                """
+            )
+            raise UnifiedGuestVerificationError(
+                f"Guest broadcast cleanup did not reach tab {index}: {state}."
+            ) from error
 
 
 def _assert_clean_browser(
@@ -1097,9 +1132,29 @@ def main() -> int:
 
         _open_route(guest_page, guest_url, "/")
         guest_page.screenshot(path=str(evidence_dir / "unified-guest-desktop-light.png"), full_page=True)
-        guest_page.locator(".sy-desktop-header-controls .sy-icon-control").last.click()
+        guest_page.get_by_test_id("theme-control").click()
+        guest_page.get_by_test_id("desktop-theme-menu").locator(
+            '[data-theme-option="dark"]'
+        ).click()
         guest_page.locator("body.body--dark").wait_for(state="attached", timeout=10_000)
+        if admin_page.locator("body.body--dark").count():
+            raise UnifiedGuestVerificationError("Guest appearance leaked into the Admin browser context.")
         guest_page.screenshot(path=str(evidence_dir / "unified-guest-desktop-dark.png"), full_page=True)
+
+        with guest_page.expect_navigation(wait_until="domcontentloaded", timeout=15_000):
+            guest_page.get_by_test_id("language-control").click()
+        _open_route(guest_page, guest_url, "/")
+        guest_page.locator(
+            "[data-testid='dashboard-history'] .sy-dashboard-history-item"
+        ).first.wait_for(state="visible", timeout=20_000)
+        guest_page.locator('[role="heading"][aria-level="1"]').filter(has_text="Dashboard").wait_for(
+            state="visible", timeout=10_000
+        )
+        guest_page.wait_for_function("document.documentElement.lang === 'en'", timeout=15_000)
+        if _history_count(guest_page) != 1:
+            raise UnifiedGuestVerificationError("Guest locale switching lost the source workspace.")
+        if admin_page.evaluate("document.documentElement.lang") != "zh-Hant-HK":
+            raise UnifiedGuestVerificationError("Guest locale leaked into the Admin browser context.")
 
         duplicate_guest_page, duplicate_evidence = _exercise_true_duplicate_and_tamper(
             guest_page,

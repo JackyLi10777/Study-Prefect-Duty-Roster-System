@@ -459,6 +459,13 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assert(html.includes('<option value="system">跟隨系統 · System</option>'));
   assert(html.includes('<option value="light">淺色 · Light</option>'));
   assert(html.includes('<option value="dark">深色 · Dark</option>'));
+  const stylesheet = await worker.fetch(
+    new Request('https://gateway.example/viewer.css'),
+    env,
+    context,
+  );
+  assertEquals(stylesheet.status, 200);
+  assert((await stylesheet.text()).includes('.theme-toggle select { min-width: 0; min-height: 44px;'));
   assert(html.includes('Copyright © 2026 LI Chuangjie'));
   assert((home.headers.get('Content-Security-Policy') || '').includes("media-src 'self'"));
   assert((home.headers.get('Permissions-Policy') || '').includes('autoplay=(self)'));

@@ -799,7 +799,7 @@ button, input, select, textarea { font: inherit; }
   justify-content: center;
   gap: 8px;
   min-height: 44px;
-  padding: 9px 13px;
+  padding: 0 13px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
@@ -811,7 +811,7 @@ button, input, select, textarea { font: inherit; }
 }
 
 .theme-toggle svg { fill: color-mix(in srgb, currentColor 48%, transparent); stroke: currentColor; stroke-width: 1.5; }
-.theme-toggle select { min-width: 0; min-height: 24px; padding: 0 22px 0 0; border: 0; color: inherit; background: transparent; font: inherit; font-weight: inherit; cursor: pointer; }
+.theme-toggle select { min-width: 0; min-height: 44px; padding: 0 22px 0 0; border: 0; color: inherit; background: transparent; font: inherit; font-weight: inherit; cursor: pointer; }
 .theme-toggle select:focus { outline: 0; }
 .theme-toggle:hover { color: var(--ink); border-color: var(--line-strong); background: var(--surface); }
 .theme-toggle:active { transform: scale(0.975); }

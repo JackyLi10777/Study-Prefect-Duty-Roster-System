@@ -45,7 +45,7 @@ def test_interface_sound_is_semantic_opt_in_and_ducks_music() -> None:
 def test_shell_previews_and_updates_sound_without_reloading_unfinished_forms() -> None:
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
     handler = shell.split("async def _toggle_sound_feedback_with_preview", 1)[1].split(
-        "def _toggle_theme_in_place", 1
+        "def _theme_choice_label", 1
     )[0]
 
     assert "_sync_preference_controls" in handler

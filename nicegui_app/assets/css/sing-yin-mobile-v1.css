@@ -97,6 +97,12 @@
   .sy-mobile-drawer-tool { min-width: 0 !important; min-height: 48px !important; padding: 7px 8px !important; border: 1px solid color-mix(in srgb, var(--sy-line) 72%, transparent); border-radius: 12px !important; color: var(--sy-nav-ink) !important; background: var(--sy-surface) !important; }
   .sy-mobile-drawer-tool .q-btn__content { flex-wrap: nowrap; gap: 6px; font-size: 12px; line-height: 1.2; }
   .sy-mobile-drawer-tool .q-icon { flex: 0 0 auto; font-size: 19px; }
+  .sy-mobile-theme-selector { grid-column: 1 / -1; min-width: 0; margin: 0; padding: 10px 12px 12px; border: 1px solid color-mix(in srgb, var(--sy-line) 72%, transparent); border-radius: 12px; background: var(--sy-surface); }
+  .sy-mobile-theme-selector-title { padding: 0 4px; color: var(--sy-muted); font-size: 12px; font-weight: 760; }
+  .sy-mobile-theme-selector .q-option-group { display: grid; grid-template-columns: 1fr; gap: 2px; width: 100%; }
+  .sy-mobile-theme-selector .q-radio { min-width: 0; min-height: 44px; margin: 0; padding: 3px 4px; border-radius: 9px; }
+  .sy-mobile-theme-selector .q-radio[aria-checked="true"] { color: var(--sy-role-action); background: var(--sy-role-action-soft); }
+  .sy-mobile-theme-selector .q-radio__label { overflow-wrap: anywhere; font-size: 13px; font-weight: 680; }
 
   .sy-sidebar { padding-bottom: calc(var(--sy-mobile-tabbar-height) + 18px + env(safe-area-inset-bottom)); }
   .sy-sidebar .q-btn { min-height: 48px; }
@@ -225,6 +231,7 @@
   .sy-mobile-tabbar,
   .sy-mobile-drawer-tools,
   .sy-mobile-drawer-tool,
+  .sy-mobile-theme-selector,
   .sy-table .q-table__grid-item-card {
     border: 1px solid CanvasText;
     color: CanvasText !important;
