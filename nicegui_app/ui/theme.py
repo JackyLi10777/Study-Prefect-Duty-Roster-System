@@ -47,9 +47,12 @@ def current_theme() -> str:
     return value if value in {"light", "dark"} else "dark"
 
 
-def toggle_theme() -> None:
-    next_value = {"system": "dark", "dark": "light", "light": "system"}
-    preference_set("theme", next_value[theme_preference()])
+def set_theme_preference(value: str) -> None:
+    """Persist one explicit appearance choice without hidden cycling."""
+
+    if value not in {"system", "light", "dark"}:
+        raise ValueError("theme preference must be system, light, or dark")
+    preference_set("theme", value)
 
 
 def sound_feedback_enabled() -> bool:

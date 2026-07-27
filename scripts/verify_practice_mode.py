@@ -48,7 +48,8 @@ def main() -> None:
         english_banner.get_by_text("Practice Mode", exact=True).wait_for(timeout=10_000)
         assert "fictional names" in english_banner.inner_text()
 
-        page.locator("i.q-icon", has_text="dark_mode").click()
+        page.get_by_test_id("theme-control").click()
+        page.get_by_test_id("desktop-theme-menu").locator('[data-theme-option="dark"]').click()
         page.wait_for_function("document.body.classList.contains('body--dark')")
         dark_banner = page.get_by_test_id("practice-mode-banner")
         dark_colors = dark_banner.evaluate(

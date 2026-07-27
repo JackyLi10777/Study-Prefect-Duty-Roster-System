@@ -249,7 +249,13 @@ def test_validation_errors_use_theme_aware_semantic_danger_color() -> None:
 def test_preferences_preserve_unfinished_forms_and_language_fails_safe() -> None:
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
 
-    assert "_toggle_theme_in_place" in shell
+    assert "_set_theme_in_place" in shell
+    assert "ui.radio(" in shell
+    assert "data-testid=mobile-theme-selector" in shell
+    assert "data-testid=desktop-theme-menu" in shell
+    assert "toggle_theme" not in shell
+    assert '"EN" if current_locale()' not in shell
+    assert 'else "中"' not in shell
     assert "_toggle_sound_feedback_with_preview" in shell
     assert "document.body.dataset.syFormDirty" in shell
     assert "preference_reload_warning" in shell

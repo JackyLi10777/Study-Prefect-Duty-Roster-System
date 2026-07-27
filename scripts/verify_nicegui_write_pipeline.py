@@ -163,6 +163,27 @@ def _click_mobile_drawer_tool(page: Page, index: int, *, expects_navigation: boo
     page.wait_for_load_state("domcontentloaded")
 
 
+def _select_mobile_theme(page: Page, value: str) -> None:
+    """Select one explicit phone appearance value from the real drawer radio group."""
+
+    assert value in {"system", "light", "dark"}
+    navigation = page.get_by_test_id("mobile-bottom-navigation")
+    navigation.locator(".sy-mobile-tab").last.click()
+    drawer = page.locator("#main-navigation-drawer")
+    drawer.wait_for(state="visible", timeout=10_000)
+    radios = drawer.get_by_test_id("mobile-theme-selector").get_by_role("radio")
+    assert radios.count() == 3
+    radios.nth({"system": 0, "light": 1, "dark": 2}[value]).click()
+    page.wait_for_function(
+        "expected => expected === 'dark' "
+        "? document.body.classList.contains('body--dark') "
+        ": !document.body.classList.contains('body--dark')",
+        arg=value,
+    )
+    page.keyboard.press("Escape")
+    drawer.wait_for(state="hidden", timeout=10_000)
+
+
 def _fixture_prefect_items() -> list[dict[str, object]]:
     """Load the version-controlled fictional directory used only by this isolated verifier."""
     return list(json.loads(PREFECT_SEED_PATH.read_text(encoding="utf-8"))["prefects"])
@@ -604,11 +625,8 @@ def main() -> None:
         print("[7/8] Applied leave adjustment, built handover package, and restored a separate database", flush=True)
 
         page.goto(f"{BASE_URL}/rosters/{roster_week_id}", wait_until="domcontentloaded")
-        desktop_theme_controls = page.locator(".sy-desktop-header-controls")
-        if desktop_theme_controls.locator("i.q-icon", has_text="light_mode").count():
-            desktop_theme_controls.locator("i.q-icon", has_text="light_mode").click()
-            page.wait_for_load_state("domcontentloaded")
-        page.locator(".sy-desktop-header-controls").locator("i.q-icon", has_text="dark_mode").click()
+        page.get_by_test_id("theme-control").click()
+        page.get_by_test_id("desktop-theme-menu").locator('[data-theme-option="dark"]').click()
         page.wait_for_function("document.body.classList.contains('body--dark')")
         page.screenshot(path=str(DARK_SCREENSHOT), full_page=True)
         page.set_viewport_size({"width": 390, "height": 844})
@@ -655,7 +673,7 @@ def main() -> None:
             box = button.bounding_box()
             assert box is not None and box["width"] >= 280 and box["height"] >= 44
         page.screenshot(path=str(MOBILE_FORMS_DARK_SCREENSHOT), full_page=True)
-        _click_mobile_drawer_tool(page, 2, expects_navigation=False)
+        _select_mobile_theme(page, "light")
         page.wait_for_function("!document.body.classList.contains('body--dark')")
         page.screenshot(path=str(MOBILE_FORMS_LIGHT_SCREENSHOT), full_page=True)
 
