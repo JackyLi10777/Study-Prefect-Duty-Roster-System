@@ -30,6 +30,10 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert "const focusable = ()" in shell
     assert "const shell = drawer.closest('.q-drawer')" in shell
     assert "observer.observe(shell" in shell
+    assert "const currentBackdrop = ()" in shell
+    assert "const backdropVisible = ()" in shell
+    assert "bounds.right > Math.min(44, bounds.width * .25) && backdropVisible()" in shell
+    assert "observer.observe(backdrop" in shell
     assert "event.target.closest('.q-drawer__backdrop')" in shell
     assert "const settle = (expectedOpen, focusDrawer = false)" in shell
     assert "settleFrame = requestAnimationFrame(tick)" in shell
