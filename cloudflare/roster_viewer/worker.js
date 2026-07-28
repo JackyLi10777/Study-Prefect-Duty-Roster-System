@@ -1943,14 +1943,13 @@ function syncThemeControl({ animate = false } = {}) {
   const preference = savedTheme();
   const resolved = resolvedTheme(preference);
   const isDark = resolved === 'dark';
-  const copy = themeCopy[preference] || themeCopy.system;
   const nextCopy = themeCopy[resolved] || themeCopy.light;
   themeToggle.dataset.resolvedTheme = resolved;
   themeToggle.dataset.themePreference = preference;
   themeToggle.setAttribute('aria-pressed', String(isDark));
   themeToggle.setAttribute('aria-label', nextCopy.next);
   themeToggle.title = nextCopy.next;
-  if (themeToggleLabel) themeToggleLabel.textContent = copy.current;
+  if (themeToggleLabel) themeToggleLabel.textContent = nextCopy.current;
   if (animate && !reducedThemeMotion.matches) {
     themeToggle.dataset.iconChanging = 'true';
     window.setTimeout(() => delete themeToggle.dataset.iconChanging, 220);

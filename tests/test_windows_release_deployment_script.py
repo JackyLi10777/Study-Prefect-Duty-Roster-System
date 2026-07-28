@@ -200,7 +200,6 @@ def test_deployment_script_requires_worker_and_host_gateway_settings_to_match() 
         preflight,
     )
     merge = source.index("Merge-EnvironmentOverlay", preflight)
-    remove = source.index("Remove-EnvironmentOverlay -Path $resolvedOverlayPath", preflight)
     post_apply = source.index(
         "$postApplyGatewayParity = Assert-WorkerHostGatewayParity",
         preflight,
@@ -208,7 +207,7 @@ def test_deployment_script_requires_worker_and_host_gateway_settings_to_match() 
     stop = source.index('Write-Step "Stopping the owned task', preflight)
 
     assert source.count("Assert-WorkerHostGatewayParity `") == 2
-    assert host_clean < preflight < protect < merge < remove < post_apply < stop
+    assert host_clean < preflight < protect < merge < post_apply < stop
     assert source.index(
         'throw "The installed host repository is not clean."',
         host_clean,
@@ -503,9 +502,10 @@ def test_deployment_script_consumes_only_a_protected_one_use_environment_overlay
     assert "$EnvironmentOverlayPath" in source
     assert "Read-EnvironmentOverlay" in source
     assert "Merge-EnvironmentOverlay" in source
-    assert "Remove-EnvironmentOverlay -Path $resolvedOverlayPath" in source
+    assert "Remove-EnvironmentOverlay -Path $resolvedOverlayPath" not in source
     assert "} finally {" in source
     assert "Remove-EnvironmentOverlay -Path $overlayPathToDelete" in source
+    assert "if ($deploymentExitCode -eq 0)" in source
     assert (
         "^sing-yin-release-overlay-[A-Za-z0-9_-]{8,128}\\.env$"
         in source

@@ -368,14 +368,15 @@ def test_operator_deployment_docs_use_observed_drift_and_recovery_hierarchy() ->
     assert "provenance-drifted" in decision
     assert "不可稱為 exact rc30" in current_runtime
     assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in current_runtime
-    assert "第一個已驗證 origin 復原目標" in current_runtime
-    assert "第一個已驗證 gateway 復原目標" in current_runtime
+    assert "第一個已驗證配對復原目標" in current_runtime
+    assert "有條件單側回退" in current_runtime
     assert "受審候選的正式 tag／commit" in quickstart
     assert "現行證據以 rc30 report 為準" not in quickstart
     assert "來源未歸屬" in cloudflare
-    assert "最近已知已驗證 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`" in cloudflare
+    assert "配對驗證的 `11763f08-d40d-46d5-93dc-5ca2599d4154`" in cloudflare
+    assert "不得單側回退而形成未驗證組合" in cloudflare
 
-    assert "保存及歸屬現行主機漂移" in cloudflare
+    assert "保存及歸屬差異" in cloudflare
     assert "依序考慮 rc27、rc26 及 rc24" in cloudflare
     assert "restore the recorded rc17 host bundle" not in cloudflare
 
@@ -463,7 +464,12 @@ def test_docs_share_historical_rc20_device_matrix_and_current_rollback_hierarchy
         assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in current_summary, relative_path
         assert "11763f08-d40d-46d5-93dc-5ca2599d4154" in current_summary, relative_path
         assert "rc30" in current_summary, relative_path
-        assert "未" in current_summary or "不可" in current_summary, relative_path
+        assert "來源未歸屬" in current_summary, relative_path
+        assert (
+            "不可稱為 exact rc30" in current_summary
+            or "不是 exact rc30" in current_summary
+        ), relative_path
+        assert "已驗證" in current_summary, relative_path
     normalized_readme_en = " ".join(readme_en.split())
     assert "immediate known verified edge rollback" in normalized_readme_en
     assert "operational but provenance-drifted origin＋Worker" in status

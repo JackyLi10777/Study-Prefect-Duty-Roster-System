@@ -977,7 +977,6 @@ try {
             -Overlay $environmentOverlay `
             -RuntimeIdentity $runtimeAccount.Name
         $environmentOverlayApplied = $true
-        Remove-EnvironmentOverlay -Path $resolvedOverlayPath
     }
     $deployedEnvironmentBytes = [IO.File]::ReadAllBytes($environmentPath)
     $environmentHash = (
@@ -1275,6 +1274,8 @@ try {
             )
         }
     }
-    Remove-EnvironmentOverlay -Path $overlayPathToDelete
+    if ($deploymentExitCode -eq 0) {
+        Remove-EnvironmentOverlay -Path $overlayPathToDelete
+    }
 }
 exit $deploymentExitCode

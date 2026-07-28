@@ -4,16 +4,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import logging
 
 from nicegui import ui
 
 from nicegui_app.access_context import AccessMode, Capability
+from nicegui_app.observability import new_request_reference
 from nicegui_app.runtime import current_page_context
 from nicegui_app.services.guest_downloads import (
     GuestDownloadCapacityError,
     guest_download_registry,
 )
 from nicegui_app.ui.i18n import t
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -101,7 +106,16 @@ def deliver_generated_download(
                 media_type=generated.media_type,
             )
         except GuestDownloadCapacityError:
-            ui.notify(t("download_delivery_failed"), type="warning")
+            reference = context.request_reference.strip()
+            if not reference.startswith("REQ-"):
+                reference = new_request_reference()
+            logger.warning(
+                "Generated download admission rejected reference=%s mode=%s media_type=%s",
+                reference,
+                generated.access_mode.value,
+                generated.media_type,
+            )
+            ui.notify(f'{t("download_delivery_failed")}\n{reference}', type="warning")
             return False
         ui.run_javascript(
             single_use_download_script(
