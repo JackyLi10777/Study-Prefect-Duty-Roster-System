@@ -1,12 +1,12 @@
 # 更新、驗證與上傳：一個命令完成正確層級
 
-> **線上來源真相（2026-07-28）：**目前 runtime operational，但 Windows host checkout 已由 rc30 漂移（73 tracked＋3 untracked），canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 亦未建立來源歸屬。乾淨 rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是較舊歷史版本。rc31 仍未凍結、未標記、未部署。下文所有「live rc30／唯一線上基線／第一級回退」字樣只保留歷史上下文，均由本段取代。健康閘門不等於來源相符、部署或真人驗收。
+> **線上來源真相（2026-07-29）：**目前 runtime operational，但 Windows host checkout 已由 rc30 漂移（73 tracked＋3 untracked），canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 亦未建立來源歸屬。乾淨 rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是較舊歷史版本。rc31 可部署來源已凍結並以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過 15／15 正式候選閘門，但未合併受保護的 `main`、未標記、未部署。下文所有「live rc30／唯一線上基線／第一級回退」字樣只保留歷史上下文，均由本段取代。健康閘門或候選驗證不等於部署或真人驗收。
 
 我是李創杰。這份流程是我與 Codex 對正式發布工作的反思結果：更新慢的主因不是 Git 上傳，而是過去把每次文字或測試修改都當成完整 runtime 發布。
 
 > **歷史 rc30 乾淨發布界線：** annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 曾是正式乾淨基線，並完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換、0% Worker smoke、100% promotion 及 canonical rendered checks。目前 active pair 已來源漂移，所以該 clean pair 現是第一個已知、已驗證的復原目標；rc27／`c4c728aa…` 與 Worker `d7b51f21…` 只屬更深歷史。任何後續 focused tests、`--staged` 或文件更新都不會自動成為新的已部署 runtime；仍須以實際 origin／Worker 報告和線上核對為準。
 >
-> **目前 rc31 候選界線：** `codex/rc31-unified-theme-controls` 在早期主題切換切片之後，已再修改排程核心、生成檔案交付、手機抽屜、通用寫入 admission、備份／交接／還原、migration guard，以及 Windows→Worker port／epoch／KID 的唯讀 preflight 與套用後二次 parity gate。早期 901 項／8 個瀏覽器情境不是目前工作樹的 exact-source 發布證據。凍結最終來源後，必須由該 fingerprint 的正式 report 給出當時實際 gate 集合與結果；在 commit／tag、正式備份與隔離還原、origin／Worker 部署及 canonical 線上核對完成前，rc30 仍是唯一線上基線。
+> **目前 rc31 候選界線：** `codex/rc31-unified-theme-controls` 在早期主題切換切片之後，已再修改排程核心、生成檔案交付、手機抽屜、通用寫入 admission、備份／交接／還原、migration guard，以及 Windows→Worker port／epoch／KID 的唯讀 preflight 與套用後二次 parity gate。早期 901 項／8 個瀏覽器情境不是目前工作樹的 exact-source 發布證據；凍結的 297 個可部署來源檔案已由正式 report 以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過 15／15 gate。這只證明候選來源；在 protected-main 合併／tag、正式備份與隔離還原、origin／Worker 部署及 canonical 線上核對完成前，rc30 仍是最近完整驗證的乾淨線上基線。
 
 rc20 的完整候選報告約需 **404 秒**；當中主要時間用於完整 Python 套件、桌面／手機瀏覽器、寫入／PDF／還原、效能及備份失敗演練。這些證據對政策、資料庫、工作流、部署或正式 runtime 改動很重要，但不應因 README 改一句話而重跑。最近三次沒有 runtime 改動的提交亦在 GitHub Quality 與 CodeQL 合計使用約 18 分鐘。
 

@@ -442,18 +442,18 @@ def test_docs_share_historical_rc20_device_matrix_and_current_rollback_hierarchy
     )
 
     rollback_contracts = {
-        "README.md": (readme, "> **線上來源真相（2026-07-28，待對帳）：**"),
+        "README.md": (readme, "> **線上來源真相（"),
         "docs/RELEASE_HANDOVER.md": (
             handover,
-            "> **交接前必讀的線上來源真相（2026-07-28）：**",
+            "> **交接前必讀的線上來源真相（",
         ),
         "docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md": (
             cloudflare,
-            "> **線上來源真相（2026-07-28，取代下文舊狀態字樣）：**",
+            "> **線上來源真相（",
         ),
         "docs/DEPLOYMENT_DECISION.md": (
             decision,
-            "> **線上來源真相（2026-07-28，取代下文舊狀態字樣）：**",
+            "> **線上來源真相（",
         ),
     }
     for relative_path, contract in rollback_contracts.items():

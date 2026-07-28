@@ -1,12 +1,12 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **線上來源真相（2026-07-28）：**目前 Windows runtime operational，但其 rc30 checkout 已觀察到 73 tracked 修改及 3 untracked 項目；canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 來源未歸屬。active pair 因此不是 exact rc30／指紋相符。乾淨 rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是較舊歷史版本。rc31 未部署，真人驗收未完成。下文任何「live rc30／目前回退層級」字樣只保留歷史上下文，由本段取代。
+> **線上來源真相（2026-07-29）：**目前 Windows runtime operational，但其 rc30 checkout 已觀察到 73 tracked 修改及 3 untracked 項目；canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 來源未歸屬。active pair 因此不是 exact rc30／指紋相符。乾淨 rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是較舊歷史版本。rc31 可部署來源已凍結並通過 15／15 正式候選閘門，但未合併受保護的 `main`、未標記、未部署；真人驗收未完成。下文任何「live rc30／目前回退層級」字樣只保留歷史上下文，由本段取代。
 >
 > **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 當時承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；canonical public root、capability health、desktop／320px theme control 及 Guest Engineering ≈10B disclosure 已以 live Chromium 核對，private readiness 保持預期 redirect。
 >
 > **復原層級：**先保存並歸屬現有漂移，第一個已知已驗證的 clean pair 是 rc30／`74b84f…` 加 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`。rc27／`c4c728aa…`、rc26／`248955cb…` 及 Worker `d7b51f21…` 只屬更深一層的歷史復原來源。
 >
-> **rc31 來源候選（未上線）：** `codex/rc31-unified-theme-controls` 正把 Public／Viewer 與 NiceGUI 的可見外觀控制統一為單一淺色／深色按鈕。`system` 只保留為未設定的初始化狀態；未設定時跟隨裝置系統，第一次操作儲存目前解析結果的相反模式，其後只在明確淺色與深色間切換。候選已把專用瀏覽器矩陣登記為第 15 個 fingerprint-bound gate，並通過本機來源測試；protected-main 身份、exact-source 指紋、正式備份、Worker 版本及部署證據仍待建立。乾淨 rc30＋`11763f08…` 仍是最近完整驗證的乾淨基線；active pair 來源待對帳。
+> **rc31 來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 已把 Public／Viewer 與 NiceGUI 的可見外觀控制統一為單一淺色／深色按鈕。`system` 只保留為未設定的初始化狀態；未設定時跟隨裝置系統，第一次操作儲存目前解析結果的相反模式，其後只在明確淺色與深色間切換。凍結的 297 個可部署來源檔案已以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過 15／15 正式候選閘門；尚待 protected-main 合併與標籤、正式備份與隔離還原、Worker／origin 部署及 canonical 線上核對。乾淨 rc30＋`11763f08…` 仍是最近完整驗證的乾淨基線；active pair 來源待對帳。
 >
 > **歷史 rc21 受控上線證據：** 291 個來源檔案以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate；切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／`fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已完成 checksum、公平對帳、行數核對、還原審計及隔離還原。這段只保留歷史來源；目前 live 與回退層級以上方 rc30／rc27／rc26 說明為準。
 

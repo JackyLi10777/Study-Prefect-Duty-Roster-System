@@ -1,12 +1,12 @@
 # 快速啟動 / Quick start
 
-> **線上來源真相（2026-07-28）：**目前 Windows runtime operational，但 `C:\SingYinRoster` 的 rc30 checkout 已有 73 tracked 修改及 3 untracked 項目，canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 亦未建立來源歸屬。故 active pair 不是 exact rc30 或指紋相符。乾淨 rc30＋`11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是更早歷史版本。rc31 未凍結、未標記、未部署；真人驗收未完成。下文舊「live rc30／第一級回退」字樣只作歷史說明，由本段取代。
+> **線上來源真相（2026-07-29）：**目前 Windows runtime operational，但 `C:\SingYinRoster` 的 rc30 checkout 已有 73 tracked 修改及 3 untracked 項目，canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 亦未建立來源歸屬。故 active pair 不是 exact rc30 或指紋相符。乾淨 rc30＋`11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是更早歷史版本。rc31 可部署來源已凍結並通過 15／15 正式候選閘門，但未合併受保護的 `main`、未標記、未部署；真人驗收未完成。下文舊「live rc30／第一級回退」字樣只作歷史說明，由本段取代。
 >
 > **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 發布輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量。這組 clean pair 是目前第一個已知、已驗證的復原目標；rc27／`c4c728aa…` 與 Worker `d7b51f21…` 只屬更深歷史。
 >
 > **rc30 歷史乾淨發布證據（真人驗收仍未簽署）：** rc30 保留完整 Admin／Guest／Public／Viewer 邊界及 `/support` 身份分流，並加入目的語言本名、明確 System／Light／Dark 選擇及有日期／非遙測聲明的 ≈10B creator token 約數。機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
 >
-> **rc31 來源候選（未上線）：** `codex/rc31-unified-theme-controls` 把可見外觀控制簡化為單一淺色／深色按鈕；`system` 只作未設定的初始化狀態。候選已把專用瀏覽器矩陣登記為第 15 個 fingerprint-bound gate，並通過本機來源測試；protected-main 身份、exact-source 指紋、正式備份、Worker 版本及部署證據仍待建立。現行 origin／Worker 來源待對帳；乾淨 rc30＋`11763f08…` 是最近完整驗證的復原基線。
+> **rc31 來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 把可見外觀控制簡化為單一淺色／深色按鈕；`system` 只作未設定的初始化狀態。凍結的 297 個可部署來源檔案已以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過 15／15 正式候選閘門；尚待 protected-main 合併與標籤、正式備份與隔離還原、相配 Worker／origin 部署及 canonical 核對。現行 origin／Worker 來源待對帳；乾淨 rc30＋`11763f08…` 是最近完整驗證的復原基線。
 
 ## 每日使用
 

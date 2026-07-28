@@ -1,6 +1,6 @@
 # 聖言中學導學風紀值班表生成系統
 
-> **線上來源真相（2026-07-28，待對帳）：** `C:\SingYinRoster` 的 Git 指向仍是 rc30／`74b84f43786b00feb15b51a6270ff71c9430773f`，但主機工作樹已觀察到 73 個已追蹤修改及 3 個未追蹤項目，且目前程序在漂移後啟動，因此不可稱為 exact rc30、`15d155d8…` 指紋來源或不可變 bundle。canonical Worker 目前為來源未歸屬的 `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed`。乾淨 rc30 origin＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近一組完整驗證的乾淨基線；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是更早歷史版本。rc31 仍未凍結、未標記、未部署；真人驗收仍未完成。下文任何「live rc30／目前正式基線／第一級回退」字樣只保留為 2026-07-27 歷史證據，均由本段取代。
+> **線上來源真相（2026-07-29，待對帳）：** `C:\SingYinRoster` 的 Git 指向仍是 rc30／`74b84f43786b00feb15b51a6270ff71c9430773f`，但主機工作樹已觀察到 73 個已追蹤修改及 3 個未追蹤項目，且目前程序在漂移後啟動，因此不可稱為 exact rc30、`15d155d8…` 指紋來源或不可變 bundle。canonical Worker 目前為來源未歸屬的 `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed`。乾淨 rc30 origin＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近一組完整驗證的乾淨基線；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是更早歷史版本。rc31 可部署來源已凍結並通過 15／15 正式候選閘門，但尚未合併受保護的 `main`、建立標籤或部署；真人驗收仍未完成。下文任何「live rc30／目前正式基線／第一級回退」字樣只保留為 2026-07-27 歷史證據，均由本段取代。
 >
 > **非以役人，乃役於人。**
 > 
@@ -89,7 +89,7 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 **最近乾淨發布（v1.2 rc30）：** 在 rc27 的已驗證 workflow 與 rc28／rc29 的入口及部署工具修正上，rc30 把語言切換改為目的語言本名，並把外觀改為明確 System／Light／Dark 三選一；Engineering 以有日期及非遙測聲明的 **≈10B** 約數呈現提供截圖所見的跨工具創作者 token 用量。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。Public／Viewer 支援報告保持瀏覽器暫存；目前線上來源待對帳，首席導學風紀及教師顧問真人驗收仍待完成。
 
-> **rc31 來源候選（未上線）：** `codex/rc31-unified-theme-controls` 現已包括單一淺色／深色控制、完整週表回溯求解及嚴格崗位／權重驗證、Admin／Guest 隔離而共享的生成檔案交付、依實際渲染狀態同步的手機抽屜、全域業務寫入 admission、recovery marker 下的 diagnostic-only 啟動，以及 exact-byte staged 備份／交接／還原與 migration provenance guard。未設定外觀時跟隨作業系統；只有刻意進入 Admin／Guest 時，公開入口才暫存經 Worker 驗證、最多 120 秒且不承載身份的明確 `light`／`dark` 提示，Worker 再把它放進簽署 session 及 request-bound principal，建立 session 後清除暫存 cookie；既有工作區偏好永遠優先。Guest 單檔上限為 5 MiB，Admin 為 64 MiB；總記憶體上限 128 MiB，當中保留 64 MiB／16 票證予 Admin。較早 901／929 Python 及八個直接 Chromium 情境只屬歷史切片；目前聚焦回歸、48／48 Worker contracts 及 16 個本機渲染 Public→Admin／Guest 主題聯動情境已通過。凍結來源的完整測試、正式 `--release` report、protected-main commit／tag／fingerprint、正式備份與隔離還原、相配部署、canonical 線上核對及真人驗收仍待完成。目前線上來源待對帳；乾淨 rc30＋`11763f08…` 只是最近完整驗證的乾淨基線。
+> **rc31 來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 現已包括單一淺色／深色控制、完整週表回溯求解及嚴格崗位／權重驗證、Admin／Guest 隔離而共享的生成檔案交付、依實際渲染狀態同步的手機抽屜、全域業務寫入 admission、recovery marker 下的 diagnostic-only 啟動，以及 exact-byte staged 備份／交接／還原與 migration provenance guard。未設定外觀時跟隨作業系統；只有刻意進入 Admin／Guest 時，公開入口才暫存經 Worker 驗證、最多 120 秒且不承載身份的明確 `light`／`dark` 提示，Worker 再把它放進簽署 session 及 request-bound principal，建立 session 後清除暫存 cookie；既有工作區偏好永遠優先。Guest 單檔上限為 5 MiB，Admin 為 64 MiB；總記憶體上限 128 MiB，當中保留 64 MiB／16 票證予 Admin。較早 901／929 Python 及八個直接 Chromium 情境只屬歷史切片；凍結的 297 個可部署來源檔案已以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過 15／15 正式 `--release` 閘門，包括完整 Python、48／48 Worker contracts、16 個本機渲染 Public→Admin／Guest 主題聯動情境、桌面／手機／平板、完整寫入／雙語 PDF、備份失敗及隔離還原。尚待完成的是 protected-main 合併與標籤、正式備份與隔離還原、相配 origin／Worker 部署、canonical 線上核對及真人驗收。目前線上來源仍待對帳；乾淨 rc30＋`11763f08…` 只是最近完整驗證的乾淨基線。
 
 rc16–rc29 是這批能力的歷史來源；rc27 是更深的已驗證 origin 歷史回退，不是目前第一層 edge 回退。下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換曾由乾淨 rc30 驗證，並保留在 rc31 候選。
 
