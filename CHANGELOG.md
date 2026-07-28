@@ -2,6 +2,16 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
+## v1.2.0-rc.32 — R5／R6 remediation candidate, not yet released, 2026-07-29
+
+- Resolves OS-theme changes in place so unfinished forms, focus, scroll and dialogs are not discarded by a page reload.
+- Rechecks the verified Admin／Guest principal immediately before every workflow write; an expired long-lived page or WebSocket cannot retain write authority.
+- Bounds Guest idempotency receipts to compact metadata with truthful replay markers and explicit per-workspace／global limits instead of retaining full workspace copies per command.
+- Parses and re-encodes support PNG files with bounded dimensions／pixels／chunks／output, removing nonessential metadata and rejecting malformed, truncated and polyglot payloads.
+- Binds formal release-report schema 2 to clean Git commit／tree／planned annotated tag, exact checks and tool versions; deployment scripts reject stale or source-mismatched reports.
+- Rejects unsupported `::1` NiceGUI origin binding and obvious secret placeholders, makes internal-backup workflow fencing explicit, revalidates staged local music before replacement, and adds manual clipboard recovery.
+- This section describes working source only. It does not become a release or deployment record until protected-main, tag, formal report, backup／restore and paired origin／Worker evidence exist.
+
 ## v1.2.0-rc.31 — formal source candidate, not deployed, 2026-07-29
 
 - Replaces the primary three-choice appearance selector with one binary **Light／Dark** control across the NiceGUI workbench and public Worker surfaces.

@@ -552,7 +552,6 @@ def _remember_system_theme_resolution(value: str) -> None:
     if current_theme() == value:
         return
     set_system_theme_resolution(value)
-    ui.navigate.reload()
 
 
 def _render_system_theme_resolver() -> None:
@@ -654,6 +653,9 @@ def _install_theme_control_runtime() -> None:
             if (!host || explicitPreference() !== 'system' || host.dataset.resolving === 'true') return;
             const browserResolved = media.matches ? 'dark' : 'light';
             if (host.dataset.serverResolved === browserResolved) return;
+            if (window.Quasar?.Dark) window.Quasar.Dark.set(browserResolved === 'dark');
+            host.dataset.serverResolved = browserResolved;
+            sync({animate: true});
             const trigger = host.querySelector(`[data-sy-theme-resolve="${browserResolved}"]`);
             if (!trigger) return;
             host.dataset.resolving = 'true';

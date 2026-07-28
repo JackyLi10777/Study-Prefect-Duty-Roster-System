@@ -9,6 +9,7 @@ from time import sleep
 import pytest
 
 from nicegui_app.config import MUSIC_DIR, PROJECT_ROOT
+from nicegui_app.services import music_library as music_library_module
 from nicegui_app.ui import sound as sound_ui
 from tests.ui_source import combined_page_source
 from nicegui_app.services.music_library import (
@@ -193,6 +194,30 @@ def test_youtube_downloaded_audio_is_kept_in_dedicated_directory_and_deduplicate
             artist="Choir",
             source_id="video_123",
         )
+
+
+def test_downloaded_audio_revalidates_the_copied_file_before_admission(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "download.m4a"
+    source.write_bytes(b"\x00\x00\x00\x18ftypM4A " + b"\x00" * 12)
+    library = MusicLibrary(tmp_path / "music")
+
+    def corrupt_copy(_source: Path, destination: Path) -> None:
+        Path(destination).write_bytes(b"not-an-audio-file")
+
+    monkeypatch.setattr(music_library_module.shutil, "copyfile", corrupt_copy)
+
+    with pytest.raises(MusicLibraryError, match="content"):
+        library.add_downloaded_audio(
+            source_path=source,
+            context="devotional",
+            title="Quiet hymn",
+            artist="Choir",
+            source_id="changed-during-copy",
+        )
+    assert not list((tmp_path / "music" / "youtube-imports").glob("*"))
 
 
 def test_parallel_local_music_imports_preserve_every_catalog_entry(

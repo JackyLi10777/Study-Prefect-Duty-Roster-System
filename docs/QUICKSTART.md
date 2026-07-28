@@ -1,6 +1,6 @@
 # 快速啟動 / Quick start
 
-> **線上來源真相（2026-07-29）：**目前 Windows runtime operational，但 `C:\SingYinRoster` 的 rc30 checkout 已有 73 tracked 修改及 3 untracked 項目，canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 亦未建立來源歸屬。故 active pair 不是 exact rc30 或指紋相符。乾淨 rc30＋`11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是更早歷史版本。rc31 可部署來源已凍結並通過 15／15 正式候選閘門，但未合併受保護的 `main`、未標記、未部署；真人驗收未完成。下文舊「live rc30／第一級回退」字樣只作歷史說明，由本段取代。
+> **線上來源真相（2026-07-29）：** Windows origin 正運行 clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`，canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 承接 100% 流量。R5／R6 修復仍是未審核、未標記、未部署的 rc32 工作候選。rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退；真人驗收未完成。
 >
 > **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 發布輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量。這組 clean pair 是目前第一個已知、已驗證的復原目標；rc27／`c4c728aa…` 與 Worker `d7b51f21…` 只屬更深歷史。
 >

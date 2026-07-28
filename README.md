@@ -1,6 +1,6 @@
 # 聖言中學導學風紀值班表生成系統
 
-> **線上來源真相（2026-07-29，待對帳）：** `C:\SingYinRoster` 的 Git 指向仍是 rc30／`74b84f43786b00feb15b51a6270ff71c9430773f`，但主機工作樹已觀察到 73 個已追蹤修改及 3 個未追蹤項目，且目前程序在漂移後啟動，因此不可稱為 exact rc30、`15d155d8…` 指紋來源或不可變 bundle。canonical Worker 目前為來源未歸屬的 `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed`。乾淨 rc30 origin＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近一組完整驗證的乾淨基線；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是更早歷史版本。rc31 可部署來源已凍結並通過 15／15 正式候選閘門，但尚未合併受保護的 `main`、建立標籤或部署；真人驗收仍未完成。下文任何「live rc30／目前正式基線／第一級回退」字樣只保留為 2026-07-27 歷史證據，均由本段取代。
+> **已核實線上來源（2026-07-29）：** Windows origin 正運行 clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`；canonical Worker version `7816b183-3edb-49ca-b39b-a91091ae794f` 承接 100% 流量。R5／R6 修復分支只是規劃為 rc32 的工作候選，尚未審核、標記或部署。rc30 origin＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退；真人驗收仍未完成。下文較舊的 live／candidate 字樣只保留歷史證據，均由本段取代。
 >
 > **非以役人，乃役於人。**
 > 
@@ -69,7 +69,7 @@ Admin 是正式工作的標準版本；Guest 使用同一組路由、導航、�
 | `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；歷史整合來源 | rc17 的多用戶、操作層級及前端穩定性整合線；現行發布已由 rc27 取代 |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；歷史整合來源 | 前一階段 Service Weave v1.2 編輯式整合線 |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 最近已保護的乾淨來源為 `v1.2.0-rc.30`；目前主機及 Worker 來源待對帳，rc31 候選未部署 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 現行正式來源為 `v1.2.0-rc.31`；主機及 Worker 身份見本頁最上方線上來源摘要 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 

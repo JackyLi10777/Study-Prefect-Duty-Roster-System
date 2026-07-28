@@ -348,9 +348,30 @@ def code_sample(
         ).classes("sy-code-sample-body")
 
         async def copy_to_clipboard() -> None:
-            await ui.run_javascript(f"navigator.clipboard.writeText({payload})")
-            copy_button.props("data-sy-feedback=success")
-            ui.notify(t("copied"), type="positive", timeout=2_000)
+            script = f"""
+                (async () => {{
+                    const value = {payload};
+                    try {{
+                        if (!navigator.clipboard?.writeText) throw new Error('clipboard-unavailable');
+                        await navigator.clipboard.writeText(value);
+                        return 'copied';
+                    }} catch (_error) {{
+                        window.prompt({json.dumps(t('copy_failed_manual'))}, value);
+                        return 'manual';
+                    }}
+                }})()
+            """
+            try:
+                result = await ui.run_javascript(script, timeout=5.0)
+            except Exception:
+                ui.notify(t("copy_failed_manual"), type="warning", timeout=5_000)
+                return
+            if result == "copied":
+                copy_button.props("data-sy-feedback=success")
+                ui.notify(t("copied"), type="positive", timeout=2_000)
+            else:
+                copy_button.props("data-sy-feedback=manual")
+                ui.notify(t("copy_manual_prompt"), type="warning", timeout=5_000)
 
         copy_button.on("click", copy_to_clipboard)
 

@@ -54,6 +54,17 @@ def test_local_deployment_refuses_external_bind(monkeypatch: pytest.MonkeyPatch)
         DeploymentSettings.from_environment()
 
 
+@pytest.mark.parametrize("host", ["::1", "[::1]"])
+def test_ipv6_loopback_fails_fast_before_trusted_host_can_return_universal_400(
+    monkeypatch: pytest.MonkeyPatch,
+    host: str,
+) -> None:
+    monkeypatch.setenv("SING_YIN_DEPLOYMENT_MODE", "local")
+    monkeypatch.setenv("SING_YIN_HOST", host)
+    with pytest.raises(RuntimeError, match="use 127.0.0.1"):
+        DeploymentSettings.from_environment()
+
+
 def test_future_server_mode_fails_closed_until_access_is_complete(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SING_YIN_DEPLOYMENT_MODE", "server")
     monkeypatch.setenv("SING_YIN_HOST", "127.0.0.1")

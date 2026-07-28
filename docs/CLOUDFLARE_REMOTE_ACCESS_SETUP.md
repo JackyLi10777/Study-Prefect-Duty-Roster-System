@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **線上來源真相（2026-07-28，取代下文舊狀態字樣）：** Windows runtime operational，但主機 rc30 checkout 已觀察到 73 個 tracked 修改及 3 個 untracked 項目，故不可稱為 exact rc30／已審核不可變 bundle。canonical Worker 目前為來源未歸屬的 `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed`。乾淨 rc30＋`11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是更早歷史版本。rc31 未部署，真人驗收未完成。任何回退先保存及歸屬主機漂移，禁止盲目 reset／覆寫。
+> **線上來源真相（2026-07-29）：** Windows origin 正運行 clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`，canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 承接 100% 流量。R5／R6 修復仍是 rc32 工作候選，未部署；因 Worker secret placeholder 契約已修改，候選獲批後 origin 與 Worker 必須配對受控部署。rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退。
 >
 > **歷史 rc30 乾淨發布證據：** Windows origin 曾以受控方式運行並驗證健康、ready 的 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；其 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% version smoke 後承接 100% 流量。canonical root、capability health 與 rendered desktop／320px／Guest Engineering checks 通過，private readiness 保持預期 redirect。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前復原先使用較近的乾淨 rc30／`11763f08…`。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
 >
@@ -65,6 +65,8 @@ ORIGIN_PRINCIPAL_KID=<active-key-id>
 AUTH_EPOCH=<positive-integer>
 SING_YIN_GUEST_SNAPSHOT_SECRET=<managed-secret>
 ```
+
+`<managed-secret>` is documentation syntax only. Candidate startup and Worker validation reject documented placeholders and repeated single-character values; generate independent random values through the existing secret setup procedure. `SING_YIN_HOST` must remain `127.0.0.1`; `::1` and `[::1]` are rejected because the installed trusted-host path cannot accept the bracketed IPv6 Host contract.
 
 如程式實際使用的環境變數名稱有變，應以 `.env.example`、Worker 設定及 release verifier 為準，不可照抄舊主機的 secret 值。值只可由受控 secret store／主機設定寫入，不可貼到命令列歷史、文件或 Git。Worker `wrangler.jsonc` 的 `ORIGIN_PORT` 必須與受保護主機 `.env` 的 `SING_YIN_PORT` 完全相同；Windows 受控部署會在停機前核對兩者並拒絕不一致的候選。
 

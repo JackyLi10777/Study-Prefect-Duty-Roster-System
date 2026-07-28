@@ -7,6 +7,7 @@ from pathlib import Path
 from nicegui_app.config import POLICY_VERSION
 from nicegui_app.release_evidence import (
     PROJECT_ID,
+    RELEASE_REPORT_SCHEMA_VERSION,
     RELEASE_BYTE_EXACT_SUFFIXES,
     RELEASE_EXCLUDED_DIRECTORY_NAMES,
     RELEASE_EXCLUDED_RELATIVE_GLOBS,
@@ -22,11 +23,18 @@ from nicegui_app import release_evidence
 
 def _report(*, fingerprint: str, status: str = "pass") -> dict[str, object]:
     return {
-        "schemaVersion": 1,
+        "schemaVersion": RELEASE_REPORT_SCHEMA_VERSION,
         "project": PROJECT_ID,
         "policyVersion": POLICY_VERSION,
         "sourceFingerprint": fingerprint,
         "sourceFileCount": 2,
+        "sourceCommit": "a" * 40,
+        "sourceTree": "b" * 40,
+        "sourceDirty": False,
+        "plannedReleaseTag": "v1.2.0-rc.32",
+        "immutableReleaseReference": "refs/tags/v1.2.0-rc.32",
+        "requiredCheckIdentities": ["tests", "browser"],
+        "toolVersions": {"python": "3.12.10", "git": "git version 2.50.0"},
         "status": status,
         "startedAt": datetime.now(timezone.utc).isoformat(),
         "finishedAt": datetime.now(timezone.utc).isoformat(),
@@ -262,3 +270,29 @@ def test_release_report_rejects_malformed_or_false_human_acceptance_claims(tmp_p
     assert load_release_evidence(tmp_path / "missing.json", current_fingerprint="current").state == "missing"
     assert load_release_evidence(malformed, current_fingerprint="current").state == "unreadable"
     assert load_release_evidence(unsafe, current_fingerprint="current").state == "unreadable"
+
+
+def test_release_report_rejects_dirty_or_mismatched_release_provenance(tmp_path: Path) -> None:
+    report_path = tmp_path / "report.json"
+    payload = _report(fingerprint="current")
+    payload["sourceDirty"] = True
+    report_path.write_text(json.dumps(payload), encoding="utf-8")
+    assert load_release_evidence(report_path, current_fingerprint="current").state == "unreadable"
+
+
+def test_release_report_requires_the_exact_complete_check_identity_sequence(tmp_path: Path) -> None:
+    report_path = tmp_path / "report.json"
+    payload = _report(fingerprint="current")
+    payload["requiredCheckIdentities"].append("security")
+    report_path.write_text(json.dumps(payload), encoding="utf-8")
+    assert load_release_evidence(report_path, current_fingerprint="current").state == "unreadable"
+
+    payload = _report(fingerprint="current")
+    payload["checks"].reverse()
+    report_path.write_text(json.dumps(payload), encoding="utf-8")
+    assert load_release_evidence(report_path, current_fingerprint="current").state == "unreadable"
+
+    payload = _report(fingerprint="current")
+    payload["immutableReleaseReference"] = "refs/tags/v1.2.0-rc.31"
+    report_path.write_text(json.dumps(payload), encoding="utf-8")
+    assert load_release_evidence(report_path, current_fingerprint="current").state == "unreadable"

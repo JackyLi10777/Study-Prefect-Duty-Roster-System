@@ -24,10 +24,34 @@ ADMIN_SESSION_MAX_SECONDS = 8 * 60 * 60
 _SESSION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{22}$")
 _KEY_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 _E2E_RUN_ID_PATTERN = re.compile(r"^E2E-[A-F0-9]{12}$")
+_OBVIOUS_SECRET_PLACEHOLDERS = frozenset(
+    {
+        "changeme",
+        "changemechangemechangemechangeme",
+        "example",
+        "examplesecret",
+        "managedsecret",
+        "notarealsecret",
+        "notarealsecretnotarealsecret",
+        "placeholder",
+        "yoursecret",
+        "yoursecrethere",
+    }
+)
 
 
 class OriginPrincipalError(PermissionError):
     """A principal is missing, malformed, stale, revoked, or forged."""
+
+
+def is_obvious_secret_placeholder(value: str) -> bool:
+    """Reject documented/example secrets without pretending to estimate entropy."""
+
+    normalized = re.sub(r"[^a-z0-9]", "", value.casefold())
+    return (
+        normalized in _OBVIOUS_SECRET_PLACEHOLDERS
+        or (bool(normalized) and len(set(normalized)) == 1)
+    )
 
 
 class _RequestURL(Protocol):
@@ -55,7 +79,12 @@ def _b64decode(value: str) -> bytes:
 
 def _required_secret(environment: Mapping[str, str]) -> bytes:
     secret = environment.get("ORIGIN_PRINCIPAL_SECRET", "")
-    if not isinstance(secret, str) or secret != secret.strip() or not 32 <= len(secret) <= 512:
+    if (
+        not isinstance(secret, str)
+        or secret != secret.strip()
+        or not 32 <= len(secret) <= 512
+        or is_obvious_secret_placeholder(secret)
+    ):
         raise OriginPrincipalError("origin principal secret is not configured safely")
     return secret.encode("utf-8")
 

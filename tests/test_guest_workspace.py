@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 from copy import deepcopy
 from pathlib import Path
+import tracemalloc
 
 import pytest
 
@@ -119,6 +120,8 @@ def test_workspace_state_is_isolated_versioned_idempotent_and_copy_safe() -> Non
     )
 
     assert updated.revision == repeated.revision == 1
+    assert repeated.replayed is True
+    assert repeated.applied_revision == 1
     assert registry.get_workspace(
         session_id="sid-b", workspace_id="work-b", tab_id="tab-b"
     ).state["preferences"]["theme"] == "light"
@@ -147,6 +150,83 @@ def test_workspace_state_is_isolated_versioned_idempotent_and_copy_safe() -> Non
             command_id="command-1",
             state=different,
         )
+
+
+@pytest.mark.parametrize("command_id", [None, 42, "", "   "])
+def test_workspace_rejects_missing_or_non_string_command_ids(command_id: object) -> None:
+    registry = GuestWorkspaceRegistry(SECRET, clock=lambda: 1_000)
+    view = registry.create_workspace(session_id="sid", tab_id="tab", workspace_id="work")
+
+    with pytest.raises(GuestWorkspaceError, match="must not be empty"):
+        registry.replace_state(
+            session_id="sid",
+            workspace_id="work",
+            tab_id="tab",
+            expected_revision=0,
+            command_id=command_id,  # type: ignore[arg-type]
+            state=view.state,
+        )
+
+
+def test_replayed_command_returns_current_state_without_historical_state_copy() -> None:
+    registry = GuestWorkspaceRegistry(
+        SECRET, clock=lambda: 1_000, max_commands_per_minute=200, max_receipts_per_workspace=32
+    )
+    view = registry.create_workspace(session_id="sid", tab_id="tab", workspace_id="work")
+    first_state = deepcopy(view.state)
+    first_state["preferences"]["theme"] = "dark"
+    first = registry.replace_state(
+        session_id="sid", workspace_id="work", tab_id="tab",
+        expected_revision=0, command_id="theme-dark", state=first_state,
+    )
+    second_state = deepcopy(first.state)
+    second_state["preferences"]["musicEnabled"] = True
+    second = registry.replace_state(
+        session_id="sid", workspace_id="work", tab_id="tab",
+        expected_revision=1, command_id="music-on", state=second_state,
+    )
+
+    replay = registry.replace_state(
+        session_id="sid", workspace_id="work", tab_id="tab",
+        expected_revision=0, command_id="theme-dark", state=first_state,
+    )
+
+    assert replay.replayed is True
+    assert replay.applied_revision == 1
+    assert replay.revision == second.revision == 2
+    assert replay.state["preferences"]["musicEnabled"] is True
+
+
+def test_receipt_metadata_has_global_bound_and_near_max_state_does_not_multiply() -> None:
+    registry = GuestWorkspaceRegistry(
+        SECRET,
+        clock=lambda: 1_000,
+        max_sessions=2,
+        max_tabs_per_session=2,
+        max_commands_per_minute=200,
+        max_receipts_per_workspace=20,
+    )
+    assert registry.max_receipts_global == 80
+    assert registry.receipt_memory_upper_bound_bytes == 80 * 384
+    view = registry.create_workspace(session_id="sid", tab_id="tab", workspace_id="work")
+    state = deepcopy(view.state)
+    state["padding"] = "x" * min(100_000, registry.max_state_bytes // 2)
+
+    tracemalloc.start()
+    baseline = tracemalloc.take_snapshot()
+    for index in range(20):
+        state["sequence"] = index
+        view = registry.replace_state(
+            session_id="sid", workspace_id="work", tab_id="tab",
+            expected_revision=view.revision, command_id=f"command-{index}", state=state,
+            now=1_000 + index,
+        )
+    growth = sum(
+        stat.size_diff for stat in tracemalloc.take_snapshot().compare_to(baseline, "filename")
+        if "guest_workspace.py" in str(stat.traceback)
+    )
+    tracemalloc.stop()
+    assert growth < len(state["padding"]) * 4
 
 
 def test_tab_session_capacity_state_bounds_rate_limit_and_cleanup() -> None:

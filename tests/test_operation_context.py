@@ -6,7 +6,7 @@ import sqlite3
 
 import pytest
 
-from nicegui_app.access_context import AccessMode, PageContext, Principal
+from nicegui_app.access_context import AccessMode, PageContext, Principal, PrincipalExpiredError
 from nicegui_app.gateway_identity import OriginPrincipalError
 import nicegui_app.runtime as runtime
 from nicegui_app.services.roster_workflow import PrefectInput, RosterWorkflow
@@ -70,6 +70,33 @@ def test_page_context_adapter_preserves_an_explicit_idempotency_key() -> None:
 
     assert result == "command-123"
     assert workflow.observed.command_id == "command-123"
+
+
+def test_page_context_adapter_rechecks_expiry_at_the_write_boundary() -> None:
+    now = datetime.now(timezone.utc)
+    context = PageContext.create(
+        Principal(
+            mode=AccessMode.ADMIN,
+            subject="verified-head-prefect",
+            session_id="admin-session",
+            expires_at=now - timedelta(seconds=1),
+        )
+    )
+    adapter = PageContextWorkflowAdapter(_WorkflowProbe(), context)
+    with pytest.raises(PrincipalExpiredError, match="expired"):
+        adapter.write("must-not-run")
+
+
+def test_retry_sensitive_write_fails_closed_without_stable_command_id() -> None:
+    class _CommandProbe:
+        def write(self, *, command_id: str) -> str:
+            return command_id
+
+    context = PageContext.create(
+        Principal(mode=AccessMode.LOCAL_MAINTENANCE, subject="local-console")
+    )
+    with pytest.raises(ValueError, match="stable command_id"):
+        PageContextWorkflowAdapter(_CommandProbe(), context).write(command_id="")
 
 
 @pytest.mark.parametrize("mode", [AccessMode.PUBLIC, AccessMode.GUEST])

@@ -56,6 +56,10 @@ python -X utf8 scripts\verify_update.py --release
 
 這會啟動 `scripts/verify_release_candidate.py`，產生正式 `logs/release-candidate-report.json`。即使工作樹沒有新改動，`--release` 仍可重新產生與目前 source fingerprint 對應的正式證據。
 
+R5／R6 起，正式報告使用 schema 2，並記錄 clean source commit／tree、fingerprint／file count、planned annotated tag、required check identities、timestamps、tool versions 及 `humanAcceptanceRequired=true`。正式 report 必須在最終 protected-main commit 上執行一次；部署器會把 report 與 clean HEAD、remote annotated tag 及 `origin/main` 再對照。Staged 或舊 schema report 不能啟動正式切換，正式 gate 亦不能代替 deployment 或真人驗收。
+
+`SING_YIN_HOST` 正式只接受已測試的 IPv4 loopback `127.0.0.1`。不要使用 `::1`／`[::1]`：目前 TrustedHostMiddleware 會拒絕相應 bracketed Host，設定驗證會在啟動前直接報錯，避免形成全站 HTTP 400。
+
 可先檢視正式發布計劃：
 
 ```powershell

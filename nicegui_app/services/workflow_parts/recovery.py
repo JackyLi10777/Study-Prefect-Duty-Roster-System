@@ -578,7 +578,7 @@ class RecoveryWorkflowMixin:
             source_backup_path=source_backup_path,
         )
 
-    @fenced_workflow_write
+    @fenced_workflow_write(internal_backup=True)
     def _create_and_record_backup(self, event_type: str, roster_week_id: int | None) -> BackupResult:
         backup_path: Path | None = None
         try:

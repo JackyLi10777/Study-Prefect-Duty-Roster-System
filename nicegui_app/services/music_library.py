@@ -226,8 +226,19 @@ class MusicLibrary:
         target = self._safe_relative_file(relative_name)
         target.parent.mkdir(parents=True, exist_ok=True)
         temporary = target.with_suffix(f"{target.suffix}.tmp")
-        shutil.copyfile(source, temporary)
-        os.replace(temporary, target)
+        try:
+            shutil.copyfile(source, temporary)
+            copied_size = temporary.stat().st_size
+            with temporary.open("rb") as copied:
+                copied_header = copied.read(16)
+            if copied_size <= 0 or copied_size > MAX_AUDIO_BYTES:
+                raise MusicLibraryError("size")
+            if not _matches_audio_signature(extension, copied_header):
+                raise MusicLibraryError("content")
+            os.replace(temporary, target)
+        except Exception:
+            temporary.unlink(missing_ok=True)
+            raise
         clean_title = _clean_title(title or source.stem)
         clean_artist = _clean_title(artist or "YouTube local import")
         try:

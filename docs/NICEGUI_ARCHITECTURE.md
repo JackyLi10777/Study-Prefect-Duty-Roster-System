@@ -1,6 +1,6 @@
 # NiceGUI Runtime Architecture
 
-> **Observed production truth (2026-07-29):** the Windows runtime is operational, but its rc30 checkout was observed with 73 tracked modifications and 3 untracked items; current Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` is unattributed. The active pair therefore is not exact rc30 or fingerprint-matched. Clean rc30 plus Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` is the last fully verified clean pair; `11763f08…` is the immediate known verified edge rollback and `d7b51f21…` is older history. The rc31 deployable source is frozen and has passed all 15 formal candidate gates with fingerprint `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042`, but it remains unmerged into protected `main`, untagged, and undeployed; human acceptance remains open. Any later “live rc30／current baseline／first-level rollback” wording is historical and superseded by this notice.
+> **Verified production truth (2026-07-29):** Windows runs clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`; canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f` serves 100% traffic. The R5／R6 branch is only a working rc32 source candidate. rc30 plus Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` is the immediate known verified rollback; human acceptance remains open. Older live／candidate wording is historical and superseded by this notice.
 >
 ## Purpose
 
@@ -18,7 +18,7 @@
 > promotion to 100%; canonical root, capability health and rendered checks passed.
 > Supervised human acceptance remains required.
 >
-> **rc31 source candidate (not deployed):** branch `codex/rc31-unified-theme-controls`
+> **Historical rc31 pre-deployment record (not yet deployed at that time):** branch `codex/rc31-unified-theme-controls`
 > now combines the binary Light／Dark control with deterministic complete
 > room-schedule solving and strict coverage／weight validation, bounded
 > access-mode-and-session-bound Admin／Guest generated-file delivery,
@@ -26,11 +26,10 @@
 > admission, diagnostic-only recovery-marker startup, exact-byte staged
 > backup／handover／restore verification, migration-provenance guards, and an
 > Alembic-to-application logging boundary that preserves the privacy-safe logger. Earlier
-> theme-only rc31 results predate these later source changes and are historical,
-> not exact-current-source evidence. The active origin／Worker is provenance-drifted;
-> clean rc30＋`11763f08…` remains the last fully verified recovery baseline.
-> Exact rc31 gates, commit, tag, fingerprint, backup／isolated restore, matching
-> origin／Worker rollout, canonical online checks and supervised acceptance remain pending.
+> theme-only rc31 results predate the final rollout and remain historical rather
+> than current-source evidence. At the time of this record, origin／Worker
+> provenance was still drifted, clean rc30＋`11763f08…` was the last verified
+> recovery baseline, and rc31 rollout plus canonical checks remained pending.
 >
 > **Historical rc21 boundary (now the secondary verified baseline):** annotated tag `v1.2.0-rc.21` points to commit
 > `f7df4d0170e6bacd65340cc893992a17b5ed4aed`. Its 291-source-file fingerprint
@@ -117,6 +116,10 @@ the signature and lifecycle before resolving a workflow.
 Admin and Guest use the same routes, components, and DOM structure. The
 composition root returns a `PageContextWorkflowAdapter` around the official
 workflow for Admin／local maintenance, or a `GuestWorkspaceAdapter` for Guest.
+
+Every official workflow call passes through `PageContextWorkflowAdapter`. The adapter retains the verified principal, rechecks expiry with `require_active()` at the final invocation boundary, binds the request reference and audit actor in concurrency-safe context, and fails closed when a retry-sensitive method exposes `command_id` but the caller did not supply one. The fallback UUID is therefore limited to callables without that durable-write contract.
+
+Guest idempotency stores bounded `_CommandReceipt` metadata rather than a full `GuestWorkspaceView` per command. A duplicate ID with the same request digest does not reapply the mutation and returns the current copy-safe workspace with `replayed=true` plus the original applied revision; a different payload with the same ID is rejected. Per-workspace eviction, global count/metadata bounds, session expiry and tab isolation keep memory proportional to current state plus bounded receipts.
 The capability matrix is deny-by-default; UI disabling is only a presentation
 aid and every service boundary rechecks the capability.
 
@@ -214,6 +217,8 @@ The workflow service is the only supported write path for roster operations:
 `nicegui_app.persistence.database.database_readiness()` remains the schema-readiness contract used by `/healthz`. A SQLite file is healthy only when it opens read-only, passes `PRAGMA quick_check`, contains the complete table set derived from current SQLAlchemy metadata plus `alembic_version`, and reports the current Alembic head. `/readyz` adds runtime admission: real workflow sessions must have initialized, no active maintenance or recovery-required marker may exist, no backup obligation may remain pending, and startup repair must not have failed. Deployment and load admission must check both endpoints; `/healthz` alone is insufficient.
 
 Alembic migration `0011_assist_assignment_mode` adds the roster-level mode field and backfills existing weeks to `legacy_fixed_weekday`, preserving the historical fixed-weekday rule. Every new or regenerated roster stores exactly one stable mode code, so a later UI preference change cannot silently reinterpret an existing draft or published week. Guest uses the same code and validation path through its in-memory adapter; only the persistence destination differs. A downgrade is permitted only while all persisted roster history remains `legacy_fixed_weekday`; the presence of any `flexible_weekly` history blocks downgrade so provenance cannot be silently discarded.
+
+Migration `0011_assist_assignment_mode` is a documented provenance exception: the original rc20 migration identity is retained, the executed upgrade and schema are unchanged, and only the downgrade guard was corrected so any persisted `flexible_weekly` history blocks provenance loss. Future released migrations must not be silently edited; a semantic correction requires an explicit audit record, unchanged-upgrade proof, both downgrade branches, a linear-chain check, and isolated recovery evidence.
 
 Published-duty substitute recommendations and the final leave-adjustment save share the same role, availability, declared-leave, same-day uniqueness, and no-consecutive-duty gates. A previously recorded absence cannot become eligible merely because the adjustment happens after publication.
 
@@ -417,15 +422,14 @@ commit `248955cb3300bfbe092b05036632991524d824cd`. The 14／14 report binds 296
 source files to fingerprint
 `5da902307e2d717a75c93e100ba9860eb7e6dd9c35dc42d4a1477bd3304de5e7`.
 
-The currently running origin and canonical gateway are provenance-drifted as
-recorded at the top of this document. The last fully verified clean pair is
-origin `v1.2.0-rc.30`／`74b84f43…` and Worker
-`11763f08-d40d-46d5-93dc-5ca2599d4154` at 100% traffic. rc27／`c4c728aa…` is the
-first-level origin rollback, and Worker `d7b51f21-7692-418d-866c-034c2c57292d`
-is the immediate edge rollback. rc31 remains an undeployed source candidate;
-architecture text and historical automated evidence do not substitute for an
-exact-current-source release report, matching origin／Worker deployment evidence,
-canonical online checks, or supervised human acceptance.
+This paragraph records the historical state before the rc31 rollout. At that
+time the running origin and canonical gateway were provenance-drifted, clean
+rc30／`11763f08-d40d-46d5-93dc-5ca2599d4154` was the last verified pair, and
+rc31 was an undeployed candidate. The current production identity and immediate
+rollback pair are stated at the top of this document. Architecture text and
+historical automated evidence never substitute for an exact-source release
+report, matching origin／Worker deployment evidence, canonical online checks,
+or supervised human acceptance.
 
 ```powershell
 python -X utf8 -m pytest -q

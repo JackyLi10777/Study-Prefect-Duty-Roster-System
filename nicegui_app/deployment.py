@@ -18,7 +18,7 @@ from nicegui_app.application_mode import current_application_mode
 from nicegui_app.persistence.database import database_readiness
 
 
-LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
+LOCAL_HOSTS = {"127.0.0.1", "localhost"}
 DEVELOPMENT_STORAGE_SECRETS = {
     "",
     "local-sing-yin-development-secret",
@@ -104,6 +104,10 @@ class DeploymentSettings:
     def validate(self) -> None:
         if not 1024 <= self.port <= 65535:
             raise RuntimeError("SING_YIN_PORT must be between 1024 and 65535.")
+        if self.host.lower() in {"::1", "[::1]"}:
+            raise RuntimeError(
+                "SING_YIN_HOST=::1 is unsupported by the installed TrustedHostMiddleware; use 127.0.0.1."
+            )
         if not self.is_loopback:
             raise RuntimeError(
                 "NiceGUI refuses non-loopback hosts. A future Cloudflare Tunnel must connect to 127.0.0.1."

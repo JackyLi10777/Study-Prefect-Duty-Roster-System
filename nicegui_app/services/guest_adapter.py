@@ -385,7 +385,7 @@ class GuestWorkspaceAdapter:
             declaration["active"] = True
             declaration["version"] = current_version + 1
             declaration["updatedAt"] = _datetime_text(now)
-        self._commit(view, state, command_id or "leave-declare")
+        self._commit(view, state, "leave-declare", command_id=command_id)
         return self._leave_output(declaration, prefect)
 
     def cancel_pre_generation_leave(
@@ -417,7 +417,7 @@ class GuestWorkspaceAdapter:
         declaration["active"] = False
         declaration["version"] = current_version + 1
         declaration["updatedAt"] = _datetime_text(_now())
-        self._commit(view, state, command_id or "leave-cancel")
+        self._commit(view, state, "leave-cancel", command_id=command_id)
 
     def pre_generation_leaves(self, week_start: date) -> list[dict[str, object]]:
         self._require_read()
@@ -551,7 +551,7 @@ class GuestWorkspaceAdapter:
                 }
             )
             assignment_id += 1
-        self._commit(view, state, command_id or "draft-generate")
+        self._commit(view, state, "draft-generate", command_id=command_id)
         return RosterWeekResult(
             id=int(week["id"]),
             week_start=week_start,
@@ -637,7 +637,7 @@ class GuestWorkspaceAdapter:
         assignment["status"] = "active"
         week["version"] = current_version + 1
         self._validate_week_assignments(state, week)
-        self._commit(view, state, command_id or "draft-assignment-update")
+        self._commit(view, state, "draft-assignment-update", command_id=command_id)
         return DraftAssignmentUpdateResult(
             roster_week_id=roster_week_id,
             assignment_id=assignment_id,
@@ -685,7 +685,7 @@ class GuestWorkspaceAdapter:
             )
         week["status"] = "published"
         week["publishedAt"] = _datetime_text(_now())
-        self._commit(view, state, command_id or "roster-publish")
+        self._commit(view, state, "roster-publish", command_id=command_id)
         return RosterWeekResult(
             id=roster_week_id,
             week_start=date.fromisoformat(str(week["weekStart"])),
@@ -796,7 +796,7 @@ class GuestWorkspaceAdapter:
             "reason": normalized_reason,
         }
         state["withdrawalReceipts"][operation_id] = receipt
-        self._commit(view, state, f"roster-withdraw:{operation_id}")
+        self._commit(view, state, "roster-withdraw", command_id=operation_id)
         return RosterWithdrawalResult(
             roster_week_id=roster_week_id,
             week_start=date.fromisoformat(str(week["weekStart"])),
@@ -926,7 +926,7 @@ class GuestWorkspaceAdapter:
             "weight": weight,
         }
         state["adjustmentReceipts"][operation_id] = receipt
-        self._commit(view, state, f"leave-adjustment:{operation_id}")
+        self._commit(view, state, "leave-adjustment", command_id=operation_id)
         return self._adjustment_result(receipt, idempotent=False)
 
     def leave_adjustment_count(self, roster_week_id: int) -> int:
@@ -1325,16 +1325,20 @@ class GuestWorkspaceAdapter:
         view: GuestWorkspaceView,
         state: Mapping[str, Any],
         operation: str,
+        *,
+        command_id: str | None = None,
     ) -> GuestWorkspaceView:
         if not self._bound:
             raise WorkflowError("The demo workspace is still connecting. Try the action again.")
         try:
+            stable_command_id = (command_id or "").strip()
+            receipt_id = stable_command_id or f"{operation}:{secrets.token_hex(12)}"
             updated = self._registry.replace_state(
                 session_id=self._session_id,
                 workspace_id=self._workspace_id,
                 tab_id=self._tab_id,
                 expected_revision=view.revision,
-                command_id=f"{operation}:{secrets.token_hex(12)}",
+                command_id=receipt_id,
                 state=state,
             )
             self._initial_view = updated

@@ -1319,6 +1319,10 @@ Deno.test('origin principal vector is deterministic request-bound epoch-aware an
   const noOriginSecret = { ...env };
   delete noOriginSecret.ORIGIN_PRINCIPAL_SECRET;
   await expectRejected(() => createOriginPrincipalToken(request, principal, noOriginSecret, { nowMillis }));
+  await expectRejected(() => createOriginPrincipalToken(request, principal, {
+    ...env,
+    ORIGIN_PRINCIPAL_SECRET: 'not-a-real-secret-not-a-real-secret', // pragma: allowlist secret -- rejected placeholder fixture
+  }, { nowMillis }));
 });
 
 Deno.test('POST logout clears both gateway identities and public status stays data-free', async () => {

@@ -30,6 +30,9 @@ DEFAULT_MAX_WEEKS = 4
 DEFAULT_MAX_SNAPSHOT_BYTES = 256 * 1024
 DEFAULT_MAX_DOWNLOAD_BYTES = 5 * 1024 * 1024
 DEFAULT_MAX_COMMANDS_PER_MINUTE = 60
+DEFAULT_MAX_RECEIPTS_PER_WORKSPACE = 120
+MAX_COMMAND_ID_BYTES = 128
+RECEIPT_METADATA_BUDGET_BYTES = 384
 
 
 class GuestWorkspaceError(ValueError):
@@ -320,6 +323,8 @@ class GuestWorkspaceView:
     revision: int
     expires_at: int
     state: dict[str, Any]
+    replayed: bool = False
+    applied_revision: int | None = None
 
 
 @dataclass(frozen=True)
@@ -333,7 +338,8 @@ class GuestDownload:
 @dataclass
 class _CommandReceipt:
     payload_digest: str
-    view: GuestWorkspaceView
+    applied_revision: int
+    result_digest: str
 
 
 @dataclass
@@ -368,6 +374,7 @@ class GuestWorkspaceRegistry:
         max_snapshot_bytes: int = DEFAULT_MAX_SNAPSHOT_BYTES,
         max_download_bytes: int = DEFAULT_MAX_DOWNLOAD_BYTES,
         max_commands_per_minute: int = DEFAULT_MAX_COMMANDS_PER_MINUTE,
+        max_receipts_per_workspace: int = DEFAULT_MAX_RECEIPTS_PER_WORKSPACE,
         clock: Callable[[], int] = _unix_now,
         boot_id: str | None = None,
     ) -> None:
@@ -380,6 +387,7 @@ class GuestWorkspaceRegistry:
             max_snapshot_bytes,
             max_download_bytes,
             max_commands_per_minute,
+            max_receipts_per_workspace,
         )
         if any(limit <= 0 for limit in limits):
             raise ValueError("guest workspace limits must be positive")
@@ -390,6 +398,11 @@ class GuestWorkspaceRegistry:
         self.max_weeks = max_weeks
         self.max_download_bytes = max_download_bytes
         self.max_commands_per_minute = max_commands_per_minute
+        self.max_receipts_per_workspace = max_receipts_per_workspace
+        self.max_receipts_global = max_sessions * max_tabs_per_session * max_receipts_per_workspace
+        self.receipt_memory_upper_bound_bytes = (
+            self.max_receipts_global * RECEIPT_METADATA_BUDGET_BYTES
+        )
         self._clock = clock
         self.codec = GuestSnapshotCodec(
             secret,
@@ -498,8 +511,11 @@ class GuestWorkspaceRegistry:
         state: Mapping[str, Any],
         now: int | None = None,
     ) -> GuestWorkspaceView:
-        if not command_id.strip():
+        if not isinstance(command_id, str) or not command_id.strip():
             raise GuestWorkspaceError("command_id must not be empty")
+        encoded_command = command_id.encode("utf-8")
+        if len(encoded_command) > MAX_COMMAND_ID_BYTES:
+            raise GuestCapacityError("command_id exceeds the receipt metadata limit")
         current = self._now(now)
         copied_state = _json_copy(dict(state))
         self._validate_state(copied_state)
@@ -510,7 +526,16 @@ class GuestWorkspaceRegistry:
             if receipt is not None:
                 if receipt.payload_digest != digest:
                     raise GuestWorkspaceError("command_id was reused with different content")
-                return self._copy_view(receipt.view)
+                current_view = self._view(session_id, record)
+                return self._copy_view(
+                    GuestWorkspaceView(
+                        **{
+                            **current_view.__dict__,
+                            "replayed": True,
+                            "applied_revision": receipt.applied_revision,
+                        }
+                    )
+                )
             session = self._sessions[session_id]
             self._consume_command_budget(session, current)
             if record.revision != expected_revision:
@@ -520,8 +545,12 @@ class GuestWorkspaceRegistry:
             record.state = copied_state
             record.revision += 1
             view = self._view(session_id, record)
-            record.commands[command_id] = _CommandReceipt(digest, view)
-            if len(record.commands) > self.max_commands_per_minute * 2:
+            record.commands[command_id] = _CommandReceipt(
+                payload_digest=digest,
+                applied_revision=view.revision,
+                result_digest=hashlib.sha256(_canonical_bytes(view.state)).hexdigest(),
+            )
+            if len(record.commands) > self.max_receipts_per_workspace:
                 oldest = next(iter(record.commands))
                 del record.commands[oldest]
             return self._copy_view(view)
@@ -604,7 +633,8 @@ class GuestWorkspaceRegistry:
                 return self._copy_view(self._view(session_id, record)), False
             record.state = _json_copy(snapshot.state)
             record.revision = snapshot.revision
-            record.commands.clear()
+            # Retain bounded command metadata: a browser reconnect must not make
+            # a previously acknowledged user intent eligible for re-application.
             return self._copy_view(self._view(session_id, record)), True
 
     def build_demo_download(
@@ -735,6 +765,8 @@ class GuestWorkspaceRegistry:
             revision=record.revision,
             expires_at=record.expires_at,
             state=deepcopy(record.state),
+            replayed=False,
+            applied_revision=None,
         )
 
     @staticmethod
@@ -746,6 +778,8 @@ class GuestWorkspaceRegistry:
             revision=view.revision,
             expires_at=view.expires_at,
             state=deepcopy(view.state),
+            replayed=view.replayed,
+            applied_revision=view.applied_revision,
         )
 
     def _now(self, now: int | None) -> int:
@@ -756,6 +790,7 @@ __all__ = [
     "DEFAULT_MAX_COMMANDS_PER_MINUTE",
     "DEFAULT_MAX_DOWNLOAD_BYTES",
     "DEFAULT_MAX_PREFECTS",
+    "DEFAULT_MAX_RECEIPTS_PER_WORKSPACE",
     "DEFAULT_MAX_SESSIONS",
     "DEFAULT_MAX_SNAPSHOT_BYTES",
     "DEFAULT_MAX_TABS_PER_SESSION",

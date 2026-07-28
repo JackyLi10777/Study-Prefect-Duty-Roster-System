@@ -873,6 +873,7 @@ try {
     $releaseReport = Get-Content -LiteralPath $releaseReportPath -Raw -Encoding UTF8 |
         ConvertFrom-Json
     $reportChecks = @($releaseReport.checks)
+    $reportRequiredChecks = @($releaseReport.requiredCheckIdentities | ForEach-Object { [string]$_ })
     $passedNames = @(
         $reportChecks |
             Where-Object { $_.status -ceq "pass" } |
@@ -881,6 +882,16 @@ try {
     $unexpectedNames = @($passedNames | Where-Object { $_ -notin $requiredChecks })
     $missingNames = @($requiredChecks | Where-Object { $_ -notin $passedNames })
     if (
+        [int]$releaseReport.schemaVersion -ne 2 -or
+        [string]$releaseReport.sourceCommit -cne $releaseCommit -or
+        [string]$releaseReport.sourceTree -cne (Get-GitValue -Repository $SourceRoot -Arguments @("rev-parse", "$releaseCommit`^{tree}")) -or
+        [bool]$releaseReport.sourceDirty -or
+        [string]$releaseReport.plannedReleaseTag -cne $ReleaseRef -or
+        [string]$releaseReport.immutableReleaseReference -cne "refs/tags/$ReleaseRef" -or
+        [bool]$releaseReport.humanAcceptanceRequired -ne $true -or
+        $null -eq $releaseReport.toolVersions -or
+        $reportRequiredChecks.Count -ne $requiredCheckCount -or
+        (Compare-Object -ReferenceObject $requiredChecks -DifferenceObject $reportRequiredChecks -SyncWindow 0).Count -ne 0 -or
         $releaseReport.status -cne "pass" -or
         $reportChecks.Count -ne $requiredCheckCount -or
         $passedNames.Count -ne $requiredCheckCount -or
