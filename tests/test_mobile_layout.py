@@ -52,11 +52,15 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert 'more = page.get_by_test_id("mobile-more")' in verifier
     assert "dataset.syDrawerA11y === 'ready'" in verifier
     assert "more.click()" in verifier
-    assert "button?.getAttribute('aria-expanded') === 'true'" in verifier
-    assert "drawer?.contains(document.activeElement)" in verifier
     assert "main#main-content')?.inert === true" not in verifier
     assert "main#main-content')?.inert !== true" in verifier
     assert 'mobile_navigation.locator("button").last.click()' not in verifier
+
+    mobile_verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_mobile.py").read_text(
+        encoding="utf-8"
+    )
+    assert "getAttribute('aria-expanded') === 'true'" in mobile_verifier
+    assert "Opening mobile navigation must move focus into the drawer." in mobile_verifier
 
 
 def test_mobile_navigation_copy_is_complete_in_both_languages() -> None:
