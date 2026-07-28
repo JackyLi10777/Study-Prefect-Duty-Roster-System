@@ -9,6 +9,7 @@ from scripts import verify_release_candidate
 from scripts.verify_rc31_theme_controls import (
     _close_mobile_drawer,
     _gateway_test_secrets,
+    _is_expected_gateway_handoff_request_failure,
     _start_worker_harness,
     _worker_harness_source,
 )
@@ -157,6 +158,32 @@ def test_rc31_worker_harness_keeps_one_use_credentials_out_of_generated_source()
     assert all(value not in harness for value in first.values())
     assert "Deno.env.get(name)" in harness
     assert "SING_YIN_TEST_ADMIN_SESSION_SECRET" in harness
+
+
+def test_rc31_gateway_handoff_ignores_only_proven_disposable_transport_noise() -> None:
+    worker_url = "http://localhost:18767"
+    origin_url = "http://127.0.0.1:18768"
+
+    assert _is_expected_gateway_handoff_request_failure(
+        "public: GET https://localhost:18767/: net::ERR_CONNECTION_RESET",
+        worker_url=worker_url,
+        origin_url=origin_url,
+    )
+    assert _is_expected_gateway_handoff_request_failure(
+        "origin: GET http://127.0.0.1:18768/auth/status: net::ERR_ABORTED",
+        worker_url=worker_url,
+        origin_url=origin_url,
+    )
+    assert not _is_expected_gateway_handoff_request_failure(
+        "origin: GET http://127.0.0.1:18768/readyz: net::ERR_CONNECTION_RESET",
+        worker_url=worker_url,
+        origin_url=origin_url,
+    )
+    assert not _is_expected_gateway_handoff_request_failure(
+        "public: POST https://localhost:18767/auth/logout: net::ERR_FAILED",
+        worker_url=worker_url,
+        origin_url=origin_url,
+    )
 
 
 def test_rc31_worker_harness_injects_one_use_credentials_only_through_subprocess_environment(
