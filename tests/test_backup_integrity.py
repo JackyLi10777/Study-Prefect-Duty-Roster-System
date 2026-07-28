@@ -3,6 +3,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from datetime import date
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -182,8 +183,10 @@ def test_automatic_backup_is_verified_and_can_bootstrap_a_fresh_workflow(tmp_pat
 
     verification = workflow.verify_backup(draft.backup_path)
     manifest = json.loads(draft.backup_path.with_suffix(".manifest.json").read_text(encoding="utf-8"))
+    recovered_database = tmp_path / "recovered.sqlite3"
+    recovered_database.write_bytes(draft.backup_path.read_bytes())
     recovered = RosterWorkflow(
-        database_path=draft.backup_path,
+        database_path=recovered_database,
         backup_dir=tmp_path / "recovered-backups",
     )
     recovered.bootstrap()
@@ -191,8 +194,14 @@ def test_automatic_backup_is_verified_and_can_bootstrap_a_fresh_workflow(tmp_pat
     assert verification["valid"] is True
     assert verification["integrity"] == "ok"
     assert manifest["sha256"] == verification["sha256"]
+    with sqlite3.connect(draft.backup_path) as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM backup_obligations WHERE status <> 'completed'"
+        ).fetchone() == (0,)
+    assert recovered.pending_backup_obligation_count() == 0
     assert recovered.roster_week(draft.id)["status"] == "draft"
     assert len(recovered.assignments(draft.id)) == draft.assignment_count
+    assert recovered.generate_and_save_draft(date(2026, 9, 14)).version == 1
 
 
 def test_backup_verification_rejects_a_tampered_manifest_checksum(tmp_path) -> None:
@@ -242,6 +251,31 @@ def test_backup_inventory_counts_safe_invalid_reason_codes(tmp_path) -> None:
         "manifest_missing": 1,
     }
     assert workflow.verify_backup(third)["reasonCode"] == "verified"
+
+
+@pytest.mark.parametrize("manifest_payload", [None, [], "not-an-object"])
+def test_backup_inventory_contains_non_object_manifests_without_crashing(
+    manifest_payload,
+    tmp_path,
+) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    snapshot = workflow.create_verified_backup()
+    snapshot.with_suffix(".manifest.json").write_text(
+        json.dumps(manifest_payload),
+        encoding="utf-8",
+    )
+
+    inventory = workflow.backup_inventory()
+
+    assert inventory["checkedCount"] == 1
+    assert inventory["verifiedCount"] == 0
+    assert inventory["invalidReasonCounts"] == {"manifest_invalid": 1}
+    assert workflow.verify_backup(snapshot)["reasonCode"] == "manifest_invalid"
 
 
 def test_backup_listing_verifies_concurrently_and_preserves_recency_order(monkeypatch, tmp_path) -> None:
@@ -326,6 +360,7 @@ def test_verified_handover_package_contains_only_a_verified_snapshot_and_manifes
 
     package = workflow.build_verified_handover_package()
 
+    extracted_dir = tmp_path / "handover-restore"
     with ZipFile(BytesIO(package.content)) as archive:
         assert set(archive.namelist()) == {
             draft.backup_path.name,
@@ -333,9 +368,17 @@ def test_verified_handover_package_contains_only_a_verified_snapshot_and_manifes
             "README.txt",
         }
         manifest = json.loads(archive.read(draft.backup_path.with_suffix(".manifest.json").name))
+        archive.extract(draft.backup_path.name, extracted_dir)
     assert package.filename.endswith(".zip")
     assert package.source_backup_path == draft.backup_path
     assert manifest["sha256"] == workflow.verify_backup(draft.backup_path)["sha256"]
+    recovered = RosterWorkflow(
+        database_path=extracted_dir / draft.backup_path.name,
+        backup_dir=tmp_path / "handover-recovered-backups",
+    )
+    recovered.bootstrap()
+    assert recovered.pending_backup_obligation_count() == 0
+    assert recovered.generate_and_save_draft(date(2026, 9, 14)).version == 1
 
 
 def test_handover_package_stops_verifying_after_the_latest_valid_snapshot(monkeypatch, tmp_path) -> None:
@@ -356,15 +399,69 @@ def test_handover_package_stops_verifying_after_the_latest_valid_snapshot(monkey
 
     def verify(path: Path) -> dict[str, object]:
         verified_paths.append(path)
-        return {"valid": path != newest, "reasonCode": "verified" if path != newest else "checksum_mismatch"}
+        valid = path != newest
+        manifest_path = path.with_suffix(".manifest.json")
+        return {
+            "valid": valid,
+            "reasonCode": "verified" if valid else "checksum_mismatch",
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "manifestSha256": (
+                hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+                if manifest_path.exists()
+                else ""
+            ),
+        }
 
     monkeypatch.setattr(workflow, "verify_backup", verify)
 
     package = workflow.build_verified_handover_package()
 
     assert package.source_backup_path == selected
-    assert verified_paths == [newest, selected, selected]
+    assert verified_paths[:3] == [newest, selected, selected]
+    assert len(verified_paths) == 4
     assert oldest not in verified_paths
+
+
+def test_handover_package_uses_staged_bytes_if_the_managed_path_is_replaced(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    selected = workflow.create_verified_backup()
+    selected_digest = hashlib.sha256(selected.read_bytes()).hexdigest()
+    workflow.generate_and_save_draft(WEEK_START)
+    replacement = workflow.create_verified_backup()
+    stage_restore_source = workflow._stage_restore_source
+    monkeypatch.setattr(
+        workflow,
+        "_managed_backup_candidates",
+        lambda **_kwargs: [(selected, selected.stat().st_mtime)],
+    )
+
+    def stage_then_replace_managed_path(source_path: Path):
+        staged_path, verification = stage_restore_source(source_path)
+        source_path.write_bytes(replacement.read_bytes())
+        source_path.with_suffix(".manifest.json").write_bytes(
+            replacement.with_suffix(".manifest.json").read_bytes()
+        )
+        return staged_path, verification
+
+    monkeypatch.setattr(workflow, "_stage_restore_source", stage_then_replace_managed_path)
+
+    package = workflow.build_verified_handover_package()
+
+    with ZipFile(BytesIO(package.content)) as archive:
+        packaged_database = archive.read(selected.name)
+        packaged_manifest = json.loads(
+            archive.read(selected.with_suffix(".manifest.json").name)
+        )
+    assert hashlib.sha256(packaged_database).hexdigest() == selected_digest
+    assert packaged_manifest["sha256"] == selected_digest
 
 
 def test_handover_package_requires_a_verified_snapshot(tmp_path) -> None:

@@ -1,6 +1,8 @@
 # 部署與遠端存取決策指南 / Deployment decision
 
-> **目前基線：**受控 Windows origin 運行 live `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker 是已驗證 version `11763f08-d40d-46d5-93dc-5ca2599d4154`。296 個 runtime 來源檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前備份 `20260727-023041-069097-manual_verified_backup.sqlite3`／SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 通過 0% version smoke 後升至 100%；origin readiness 與 canonical rendered smoke 通過。第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
+> **線上來源真相（2026-07-28，取代下文舊狀態字樣）：** Windows runtime 仍可回應，但 `C:\SingYinRoster` 的 rc30 checkout 已有 73 個 tracked 修改及 3 個 untracked 項目，故目前 origin 屬 provenance-drifted，不是 exact rc30／`15d155d8…`。canonical Worker 是來源未歸屬的 `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed`。乾淨 rc30＋`11763f08-d40d-46d5-93dc-5ca2599d4154` 只是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是較舊歷史回退。rc31 未凍結、未標記、未部署，真人驗收未完成。下文所有「live rc30／目前基線／第一級回退」稱呼均按本段重新解讀；任何回復前先保存及歸屬主機差異，不可盲目 reset 或覆寫。
+
+> **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker 是已驗證 version `11763f08-d40d-46d5-93dc-5ca2599d4154`。296 個 runtime 來源檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前備份 `20260727-023041-069097-manual_verified_backup.sqlite3`／SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 通過 0% version smoke 後升至 100%；origin readiness 與 canonical rendered smoke 通過。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；在目前來源漂移狀態下，最近乾淨 rc30＋`11763f08…` 本身才是第一個已知、已驗證的復原目標。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
 
 ## 結論
 
@@ -26,20 +28,20 @@ Windows 11 專用主機：單一 NiceGUI origin
 
 NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另行固定於 `127.0.0.1:22` 及 `[::1]:22`，只接受 Ed25519 金鑰，不開放 LAN、公網、防火牆入站規則或路由器轉發；日後校外 SSH 只能經獨立的 Cloudflare 私有路由進入。
 
-## Live rc30 origin、Worker 與回退層級
+## 目前來源待對帳的 runtime 與已驗證復原層級
 
 | 層 | 現況 |
 |---|---|
-| `C:\SingYinRoster` | live `v1.2.0-rc.30`／`74b84f4`；健康、ready、`writeReady=true`、loopback-only；endpoint 由受保護設定統一決定 |
-| Cloudflare Worker／Access／Tunnel | rc30 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 以 100% traffic 服務；Access 精確保護 `/auth/login`；Tunnel／VPC 連到單一 origin；`cloudflared` Running／Automatic |
+| `C:\SingYinRoster` | runtime 可回應，但 checkout 在 rc30 指標上已有 73 個 tracked 修改及 3 個 untracked 項目；不可稱為 exact rc30、不可變 bundle 或 fingerprint-matched source |
+| Cloudflare Worker／Access／Tunnel | canonical traffic 由來源未歸屬的 Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 服務；Access／Tunnel 拓撲仍存在，但 version 不可由 HTTP 200 推定為受審來源 |
 | rc30 來源與部署證據 | `v1.2.0-rc.30`／`74b84f4…`／`15d155d8…`；14／14 gate；受控 origin 切換、正式備份／隔離還原、staged Worker smoke、100% promotion、canonical rendered checks 通過 |
-| 第一級 origin 回退 | 回復 `v1.2.0-rc.27`／`c4c728aa` host；除非事故指向 gateway，否則保留現行 rc30 Worker，再驗證 health、readiness、canonical user flows 及資料狀態 |
-| 立即 gateway 回退 | 把 Worker traffic 恢復至 `d7b51f21-7692-418d-866c-034c2c57292d`；不可把 gateway 回退誤寫成 origin 回退 |
-| 次級已驗證基線 | rc26／`248955cb` origin；只有 rc27 無法安全恢復且事故負責人批准第二級復原時使用 |
+| 第一個已驗證 origin 復原目標 | 保存並歸屬現有主機差異後，以受控 clean bundle 回復 `v1.2.0-rc.30`／`74b84f4`；再驗證 health、readiness、canonical user flows 及資料狀態 |
+| 第一個已驗證 gateway 復原目標 | 把 Worker traffic 恢復至 `11763f08-d40d-46d5-93dc-5ca2599d4154`；不可把 gateway 回退誤寫成 origin 回退 |
+| 更深歷史復原來源 | rc27／`c4c728aa`、rc26／`248955cb` 及 Worker `d7b51f21…`；只有較近乾淨來源無法安全恢復且事故負責人批准時使用 |
 | `codex/frontend-guest-performance-rc16` | rc17 來源分支；14 項 gate、標籤、Windows bundle 及 Worker staged rollout 已完成 |
-| `SING_YIN_UNIFIED_GUEST` | live rc30 的受保護主機設定為 `1`；後續候選不得以切換旗標取代完整驗證 |
+| `SING_YIN_UNIFIED_GUEST` | 正式環境的受保護設定必須為 `1`；後續候選不得以切換旗標取代完整驗證 |
 
-rc4–rc29 或 v1.1 的既有 Worker version ID、主機 tag 及成功紀錄只屬歷史／回退證據；rc27 是第一級 origin 回退，rc26 只屬更深一層的已驗證基線。它們都不可代替 live rc30 自己的來源指紋與部署證據。
+rc4–rc29 或 v1.1 的既有 Worker version ID、主機 tag 及成功紀錄只屬歷史／更深層復原證據；它們不能代替目前 active pair 的來源歸屬，也不能代替任何新候選自己的來源指紋與部署證據。
 
 既有 **私有 Cloudflare Tunnel + WARP** 路徑仍保留作維護後備。
 交接時要保留並重新核對 **WARP device-enrollment policy**。其歷史狀態
@@ -118,16 +120,16 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 
 只有完整 release report 與來源 fingerprint 一致時，才可：
 
-1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前 live 證據是 rc30 origin `v1.2.0-rc.30`／`74b84f4…` 配 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`；
+1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前 active origin／Worker 來源待對帳，乾淨 rc30 origin `v1.2.0-rc.30`／`74b84f4…` 配 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 只作最近完整驗證的復原證據；
 2. 建立並驗證正式備份，在另一隔離資料庫完成還原；
 3. 進入短暫 maintenance；
 4. 從該不可變 tag 更新 Windows bundle，執行 additive migration `0011_assist_assignment_mode`；
 5. 保持現行受保護設定不變，核對 `/healthz` 及 `/readyz`；
-6. 比較 Worker source／受保護設定；沒有改動時記錄沿用已驗證版本，有改動時才執行 staged Worker rollout；目前 rc30 已完成 staged rollout 並接收 100% traffic，`d7b51f21-7692-418d-866c-034c2c57292d` 只作立即 gateway rollback；
+6. 比較 Worker source／受保護設定；沒有改動時記錄沿用已驗證版本，有改動時才執行 staged Worker rollout；乾淨 rc30 的歷史 rollout 使用 `11763f08…`，它亦是目前最近的已知已驗證 gateway 復原目標，`d7b51f21…` 只屬更早歷史；
 7. 以虛構資料核對 Public、Admin、Guest、Viewer、PDF、登出、到期及多分頁隔離；
 8. 完成真人驗收後才結束 maintenance 並宣布候選上線。
 
-任何 rc30 origin／線上 gate 失敗，依受控 deployment report 先回復 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；只有 rc27 無法安全恢復且事故負責人批准時，才使用 rc26／`248955cb3300bfbe092b05036632991524d824cd` 的更深層已驗證基線。Additive migration 必須讓回退版本仍可讀原有資料。
+任何候選 origin／線上 gate 失敗，先保存及歸屬現有漂移，再依受控 deployment report 回復最近完整驗證的 clean rc30／`74b84f…`＋Worker `11763f08…` pair；只有該 pair 無法安全恢復且事故負責人批准時，才使用 rc27、rc26 或更早的已驗證基線。Additive migration 必須讓回退版本仍可讀原有資料。
 
 逐步 Cloudflare 設定、staged rollout、驗收及回退命令見
 [`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)。
@@ -141,6 +143,6 @@ python -X utf8 scripts\verify_release_candidate.py
 
 ## English summary
 
-The selected topology remains one canonical Cloudflare Worker in front of one loopback-only NiceGUI origin on a dedicated Windows host. The Windows machine remains the sole system of record for SQLite, backups, logs, PDFs, and local music. Live origin `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` unifies administrator and guest pages through a signed `PageContext`; guest data stays in a bounded in-memory adapter. The verified canonical gateway is rc30 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`.
+The selected topology remains one canonical Cloudflare Worker in front of one loopback-only NiceGUI origin on a dedicated Windows host. The Windows machine remains the sole system of record for SQLite, backups, logs, PDFs, and local music. The active origin and Worker are operational but provenance-drifted: the origin checkout is modified and canonical traffic is served by unattributed Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed`. Clean origin `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` plus Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` is the last fully verified clean recovery pair, not a claim about the active runtime.
 
-The live controlled topology is rc30 on both the Windows origin and Worker, and supervised human acceptance remains outstanding. Exact rc30 source passed the `15d155d8…` fingerprint gates, then completed the controlled origin switch, staged Worker smoke, 100% promotion and canonical Public／Guest／Admin handoff／Viewer checks. An origin failure returns first to rc27／`c4c728aa…`; a gateway failure returns to Worker `d7b51f21-7692-418d-866c-034c2c57292d`.
+The active origin and Worker are operational but provenance-drifted, and supervised human acceptance remains outstanding. Historically, exact rc30 source passed the `15d155d8…` fingerprint gates and completed the controlled origin switch, staged Worker smoke, 100% promotion and canonical Public／Guest／Admin handoff／Viewer checks. After preserving and attributing the drift, clean rc30 plus Worker `11763f08…` is the nearest known verified recovery pair; rc27 and `d7b51f21…` are deeper history.

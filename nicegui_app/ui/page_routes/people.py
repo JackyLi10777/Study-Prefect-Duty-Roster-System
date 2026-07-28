@@ -535,11 +535,12 @@ def _render_period_report(report: PeriodSummaryReport) -> None:
                     icon="workspace_premium",
                 )
                 if export is not _OPERATION_FAILED:
-                    deliver_generated_download(
+                    if not deliver_generated_download(
                         export.content,
                         export.filename,
                         media_type=export.media_type,
-                    )
+                    ):
+                        return
                     ui.notify(t("allocation_statement_ready"), type="positive")
 
             with ui.row().classes("w-full gap-3 flex-wrap mt-3"):
@@ -649,11 +650,12 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
             icon="download",
         )
         if export is not _OPERATION_FAILED:
-            deliver_generated_download(
+            if not deliver_generated_download(
                 export.content,
                 export.filename,
                 media_type=export.media_type,
-            )
+            ):
+                return
             ui.notify(t("summary_export_ready"), type="positive")
 
     preview_button.on_click(refresh_report)

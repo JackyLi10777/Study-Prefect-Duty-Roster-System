@@ -177,7 +177,7 @@ def test_v12_guest_documents_match_the_signed_browser_bridge_and_release_truth()
     assert "尚未完成的瀏覽器 snapshot 橋接" not in security
 
 
-def test_release_truth_docs_keep_live_rc30_separate_from_history() -> None:
+def test_release_truth_docs_separate_active_drift_from_verified_history() -> None:
     status = (PROJECT_ROOT / "PROJECT_STATUS.md").read_text(encoding="utf-8")
     architecture = (PROJECT_ROOT / "docs" / "NICEGUI_ARCHITECTURE.md").read_text(
         encoding="utf-8"
@@ -243,7 +243,9 @@ def test_release_truth_docs_keep_live_rc30_separate_from_history() -> None:
         assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in document
 
     assert "rc30 exact-source and deployment evidence" in status
-    assert "v1.2 rc30 is the current controlled Windows origin" in status
+    assert "operational but provenance-drifted origin＋Worker" in status
+    assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in status
+    assert "v1.2 rc30 is the current controlled Windows origin" not in status
     assert "Historical Service Weave v1.2 rc18 controlled rollout" in status
     assert "Historical Service Weave v1.2 rc11 rollout" in status
     assert "rc18 host／Worker pair is now the second-level verified rollback target" in status  # noqa: RUF001
@@ -251,9 +253,10 @@ def test_release_truth_docs_keep_live_rc30_separate_from_history() -> None:
     assert "SING_YIN_PORT" in readme
     assert "一百倍" in readme
     assert "cancelWelcomeFade is not defined" in status
-    assert "目前發布（v1.2 rc30）" in (  # noqa: RUF001
-        PROJECT_ROOT / "README.md"
-    ).read_text(encoding="utf-8")
+    readme_header = "\n".join(readme.splitlines()[:15])
+    assert "線上來源真相" in readme_header
+    assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in readme_header
+    assert "最近一組完整驗證的乾淨基線" in readme_header
     assert "remains disabled by default" not in status
     assert "now run the matching rc7 release" not in status
     assert "Windows origin remains healthy／ready on rc4" not in security
@@ -333,7 +336,7 @@ def test_release_truth_docs_keep_live_rc30_separate_from_history() -> None:
     assert "只有 `/view#…`" in operator
 
 
-def test_operator_deployment_docs_use_live_rc30_and_rollback_hierarchy() -> None:
+def test_operator_deployment_docs_use_observed_drift_and_recovery_hierarchy() -> None:
     quickstart = (PROJECT_ROOT / "docs" / "QUICKSTART.md").read_text(encoding="utf-8")
     windows = (PROJECT_ROOT / "docs" / "WINDOWS_DEDICATED_HOST_SETUP.md").read_text(
         encoding="utf-8"
@@ -351,34 +354,29 @@ def test_operator_deployment_docs_use_live_rc30_and_rollback_hierarchy() -> None
     for document in (quickstart, windows, cloudflare, viewer, decision):
         assert "v1.2.0-rc.30" in document
         assert "74b84f43786b00feb15b51a6270ff71c9430773f" in document
-        assert "v1.2.0-rc.27" in document or "rc27" in document
-        assert "c4c728aa41c9b0122aaa2c015b3cc38e246db43d" in document
         assert "11763f08-d40d-46d5-93dc-5ca2599d4154" in document
-        assert "d7b51f21-7692-418d-866c-034c2c57292d" in document
+        assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in document
         current_header = "\n".join(document.splitlines()[:15])
         assert "v1.2.0-rc.30" in current_header
         assert "74b84f43786b00feb15b51a6270ff71c9430773f" in current_header
         assert "11763f08-d40d-46d5-93dc-5ca2599d4154" in current_header
+        assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in current_header
 
-    assert "live `v1.2.0-rc.30`" in decision.split("## Live rc30", 1)[1].split(
-        "## ", 1
-    )[0]
-    assert "第一級 origin 回退 | 回復 `v1.2.0-rc.27`" in decision
-    assert (
-        "立即 gateway 回退 | 把 Worker traffic 恢復至 "
-        "`d7b51f21-7692-418d-866c-034c2c57292d`"
-    ) in decision
-    assert "rc30 的正式 tag／commit" in quickstart
-    assert "現行證據以 rc30 report 為準" in quickstart
-    assert "第一級 origin 回退是 rc27" in cloudflare
-    assert "Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`" in cloudflare
+    current_runtime = decision.split(
+        "## 目前來源待對帳的 runtime 與已驗證復原層級", 1
+    )[1].split("## ", 1)[0]
+    assert "provenance-drifted" in decision
+    assert "不可稱為 exact rc30" in current_runtime
+    assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in current_runtime
+    assert "第一個已驗證 origin 復原目標" in current_runtime
+    assert "第一個已驗證 gateway 復原目標" in current_runtime
+    assert "受審候選的正式 tag／commit" in quickstart
+    assert "現行證據以 rc30 report 為準" not in quickstart
+    assert "來源未歸屬" in cloudflare
+    assert "最近已知已驗證 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`" in cloudflare
 
-    assert (  # noqa: RUF001
-        "主機 bundle `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`"  # noqa: RUF001
-        in cloudflare
-    )
-    assert "f780feb2-671a-4feb-b6f6-b7f9d5b31e89" in cloudflare
-    assert "rc24" in cloudflare and "第二級復原" in cloudflare
+    assert "保存及歸屬現行主機漂移" in cloudflare
+    assert "依序考慮 rc27、rc26 及 rc24" in cloudflare
     assert "restore the recorded rc17 host bundle" not in cloudflare
 
     assert "schema-compatible rc4" not in quickstart
@@ -443,42 +441,32 @@ def test_docs_share_historical_rc20_device_matrix_and_current_rollback_hierarchy
     )
 
     rollback_contracts = {
-        "README.md": (
-            readme,
-            "**目前正式基線：**",
-            "第一級 origin 回退是 rc27",
-            "Worker 的立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`",
-        ),
+        "README.md": (readme, "> **線上來源真相（2026-07-28，待對帳）：**"),
         "docs/RELEASE_HANDOVER.md": (
             handover,
-            "> **目前線上基線是 rc30：**",
-            "第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`",
-            "Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`",
+            "> **交接前必讀的線上來源真相（2026-07-28）：**",
         ),
         "docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md": (
             cloudflare,
-            "> **目前發布狀態：**",
-            "第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`",
-            "Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`",
+            "> **線上來源真相（2026-07-28，取代下文舊狀態字樣）：**",
         ),
         "docs/DEPLOYMENT_DECISION.md": (
             decision,
-            "> **目前基線：**",
-            "第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`",
-            "Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`",
+            "> **線上來源真相（2026-07-28，取代下文舊狀態字樣）：**",
         ),
     }
     for relative_path, contract in rollback_contracts.items():
-        document, summary_marker, origin_contract, worker_contract = contract
+        document, summary_marker = contract
         current_summary = next(
             line for line in document.splitlines() if line.startswith(summary_marker)
         )
-        assert origin_contract in current_summary, relative_path
-        assert worker_contract in current_summary, relative_path
-    for document in (readme_en, status):
-        normalized_document = " ".join(document.split())
-        assert "first-level origin rollback" in normalized_document
-        assert "immediately previous edge version" in normalized_document
+        assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in current_summary, relative_path
+        assert "11763f08-d40d-46d5-93dc-5ca2599d4154" in current_summary, relative_path
+        assert "rc30" in current_summary, relative_path
+        assert "未" in current_summary or "不可" in current_summary, relative_path
+    normalized_readme_en = " ".join(readme_en.split())
+    assert "immediate known verified edge rollback" in normalized_readme_en
+    assert "operational but provenance-drifted origin＋Worker" in status
 
     assert "rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 是即時回退組合" not in readme
     assert "is the immediate rollback pair" not in status

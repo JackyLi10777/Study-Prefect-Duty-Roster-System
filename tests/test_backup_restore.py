@@ -3,11 +3,15 @@ from __future__ import annotations
 from datetime import date
 import hashlib
 import json
+from pathlib import Path
 import sqlite3
 
+from alembic import command
+from alembic.config import Config
 import pytest
 
-from nicegui_app.config import PREFECT_SEED_PATH
+from nicegui_app.config import PREFECT_SEED_PATH, PROJECT_ROOT
+from nicegui_app.persistence.database import database_url
 from nicegui_app.services.roster_workflow import PrefectInput, RosterWorkflow, WorkflowError
 
 
@@ -131,8 +135,215 @@ def test_failed_post_swap_validation_rolls_back_to_the_original_database(tmp_pat
     assert workflow.maintenance_status().active is False
 
 
+@pytest.mark.parametrize("claimed_revision", ["0008", "0010"])
+def test_backup_verification_rejects_a_mislabeled_revision_missing_its_table(
+    claimed_revision: str,
+    tmp_path,
+) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    snapshot = workflow.create_verified_backup()
+    with sqlite3.connect(snapshot) as connection:
+        connection.execute("DROP TABLE backup_obligations")
+        connection.execute(
+            "UPDATE alembic_version SET version_num = ?",
+            (claimed_revision,),
+        )
+        connection.commit()
+    _refresh_manifest_checksum(snapshot)
+
+    verification = workflow.verify_backup(snapshot)
+
+    assert verification["valid"] is False
+    assert verification["reasonCode"] == "schema_incomplete"
+    assert f"revision {claimed_revision}" in str(verification["error"])
+    assert "backup_obligations" in str(verification["error"])
+
+
+def test_restore_accepts_a_verified_0007_snapshot_then_migrates_before_full_validation(tmp_path) -> None:
+    backup_dir = tmp_path / "backups"
+    backup_dir.mkdir()
+    legacy_snapshot = backup_dir / "legacy-0007.sqlite3"
+    config = Config(str(PROJECT_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(PROJECT_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", database_url(legacy_snapshot))
+    command.upgrade(config, "0007")
+    _write_manifest(legacy_snapshot)
+
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=backup_dir,
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+
+    verification = workflow.verify_backup(legacy_snapshot)
+    assert verification["valid"] is True
+    assert verification["reasonCode"] == "verified_migration_required"
+    assert verification["schemaRevision"] == "0007"
+
+    workflow.restore_backup(legacy_snapshot)
+
+    with sqlite3.connect(workflow.database_path) as connection:
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0011",)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM backup_obligations WHERE status <> 'completed'"
+        ).fetchone() == (0,)
+    created = workflow.create_prefect(
+        PrefectInput(
+            name_zh="遷移後測試",
+            form="F.4",
+            class_name="4B",
+            role_code="study_prefect",
+            available_days=("MONDAY", "WEDNESDAY", "FRIDAY"),
+        )
+    )
+    assert workflow.prefect(str(created["id"]))["nameZh"] == "遷移後測試"
+
+
+def test_restore_rejects_an_unknown_or_future_migration_revision(tmp_path) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    snapshot = workflow.create_verified_backup()
+    with sqlite3.connect(snapshot) as connection:
+        connection.execute("UPDATE alembic_version SET version_num = '9999'")
+        connection.commit()
+    _refresh_manifest_checksum(snapshot)
+
+    verification = workflow.verify_backup(snapshot)
+
+    assert verification["valid"] is False
+    assert verification["reasonCode"] == "migration_unsupported"
+    with pytest.raises(WorkflowError, match="Backup verification failed"):
+        workflow.restore_backup(snapshot)
+
+
+def test_restore_uses_the_exact_staged_bytes_and_audits_their_digest(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    original_snapshot = workflow.create_verified_backup()
+    original_digest = hashlib.sha256(original_snapshot.read_bytes()).hexdigest()
+    workflow.create_prefect(
+        PrefectInput(
+            name_zh="路徑置換測試",
+            form="F.4",
+            class_name="4B",
+            role_code="study_prefect",
+            available_days=("MONDAY", "WEDNESDAY", "FRIDAY"),
+        )
+    )
+    replacement_snapshot = workflow.create_verified_backup()
+    stage_restore_source = workflow._stage_restore_source
+
+    def stage_then_replace_requested_path(source_path: Path):
+        staged_path, verification = stage_restore_source(source_path)
+        source_path.write_bytes(replacement_snapshot.read_bytes())
+        source_path.with_suffix(".manifest.json").write_bytes(
+            replacement_snapshot.with_suffix(".manifest.json").read_bytes()
+        )
+        return staged_path, verification
+
+    monkeypatch.setattr(workflow, "_stage_restore_source", stage_then_replace_requested_path)
+
+    workflow.restore_backup(original_snapshot)
+
+    assert not any(prefect["nameZh"] == "路徑置換測試" for prefect in workflow.prefects())
+    with sqlite3.connect(workflow.database_path) as connection:
+        row = connection.execute(
+            "SELECT metadata_json FROM audit_events "
+            "WHERE event_type = 'backup_restored' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+    assert row is not None
+    assert json.loads(row[0])["sha256"] == original_digest
+
+
+def test_restore_stops_if_the_private_staged_source_changes_after_verification(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    original_snapshot = workflow.create_verified_backup()
+    workflow.create_prefect(
+        PrefectInput(
+            name_zh="暫存置換測試",
+            form="F.4",
+            class_name="4B",
+            role_code="study_prefect",
+            available_days=("MONDAY", "WEDNESDAY", "FRIDAY"),
+        )
+    )
+    replacement_snapshot = workflow.create_verified_backup()
+    stage_restore_source = workflow._stage_restore_source
+
+    def stage_then_replace_staged_bytes(source_path: Path):
+        staged_path, verification = stage_restore_source(source_path)
+        staged_path.write_bytes(replacement_snapshot.read_bytes())
+        return staged_path, verification
+
+    monkeypatch.setattr(workflow, "_stage_restore_source", stage_then_replace_staged_bytes)
+
+    with pytest.raises(WorkflowError, match="changed after verification"):
+        workflow.restore_backup(original_snapshot)
+
+    assert any(prefect["nameZh"] == "暫存置換測試" for prefect in workflow.prefects())
+    assert workflow.maintenance_status().active is False
+
+
+@pytest.mark.parametrize("sidecar_suffix", ["-wal", "-shm", "-journal"])
+def test_backup_verification_rejects_sqlite_sidecars_not_covered_by_the_manifest(
+    sidecar_suffix,
+    tmp_path,
+) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    snapshot = workflow.create_verified_backup()
+    Path(f"{snapshot}{sidecar_suffix}").write_bytes(b"unmanifested journal bytes")
+
+    verification = workflow.verify_backup(snapshot)
+
+    assert verification["valid"] is False
+    assert verification["reasonCode"] == "snapshot_sidecar_present"
+    with pytest.raises(WorkflowError, match="journal sidecars"):
+        workflow.restore_backup(snapshot)
+
+
 def _refresh_manifest_checksum(backup_path) -> None:
     manifest_path = backup_path.with_suffix(".manifest.json")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["sha256"] = hashlib.sha256(backup_path.read_bytes()).hexdigest()
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _write_manifest(backup_path: Path) -> None:
+    backup_path.with_suffix(".manifest.json").write_text(
+        json.dumps(
+            {"sha256": hashlib.sha256(backup_path.read_bytes()).hexdigest()},
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )

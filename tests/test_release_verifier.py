@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 from scripts import verify_release_candidate
+from scripts.verify_rc31_theme_controls import _close_mobile_drawer
 from scripts.verify_release_candidate import (
     CANONICAL_BACKUPS,
     CANONICAL_DATABASE,
@@ -138,6 +139,59 @@ def test_release_verifier_runs_the_isolated_rc31_theme_matrix() -> None:
 
     assert '"rc31_theme_control_browser"' in source
     assert '"scripts/verify_rc31_theme_controls.py"' in source
+
+
+def test_rc31_drawer_close_requires_focus_restoration_only_after_escape() -> None:
+    class FakeButton:
+        def __init__(self, expanded: bool) -> None:
+            self.expanded = expanded
+
+        def get_attribute(self, name: str) -> str:
+            assert name == "aria-expanded"
+            return "true" if self.expanded else "false"
+
+    class FakeKeyboard:
+        def __init__(self) -> None:
+            self.presses: list[str] = []
+
+        def press(self, key: str) -> None:
+            self.presses.append(key)
+
+    class FakeDrawer:
+        def __init__(self) -> None:
+            self.waits: list[dict[str, object]] = []
+
+        def wait_for(self, **kwargs: object) -> None:
+            self.waits.append(kwargs)
+
+    class FakePage:
+        def __init__(self, expanded: bool) -> None:
+            self.button = FakeButton(expanded)
+            self.keyboard = FakeKeyboard()
+            self.drawer = FakeDrawer()
+            self.wait_calls: list[dict[str, object]] = []
+
+        def get_by_test_id(self, test_id: str) -> FakeButton:
+            assert test_id == "mobile-more"
+            return self.button
+
+        def locator(self, selector: str) -> FakeDrawer:
+            assert selector == "#main-navigation-drawer"
+            return self.drawer
+
+        def wait_for_function(self, expression: str, **kwargs: object) -> None:
+            assert "!requireFocus || document.activeElement === button" in expression
+            self.wait_calls.append(kwargs)
+
+    already_closed = FakePage(expanded=False)
+    _close_mobile_drawer(already_closed)  # type: ignore[arg-type]
+    assert already_closed.keyboard.presses == []
+    assert already_closed.wait_calls == [{"arg": False, "timeout": 5_000}]
+
+    closed_by_escape = FakePage(expanded=True)
+    _close_mobile_drawer(closed_by_escape)  # type: ignore[arg-type]
+    assert closed_by_escape.keyboard.presses == ["Escape"]
+    assert closed_by_escape.wait_calls == [{"arg": True, "timeout": 5_000}]
 
 
 def test_release_verifier_accepts_normal_and_classified_disconnect_console_lines(tmp_path: Path) -> None:

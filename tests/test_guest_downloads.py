@@ -8,6 +8,7 @@ from urllib.parse import unquote
 import pytest
 from starlette.requests import Request
 
+from nicegui_app.access_context import AccessMode
 from nicegui_app.gateway_identity import (
     ORIGIN_PRINCIPAL_AUDIENCE,
     ORIGIN_PRINCIPAL_HEADER,
@@ -18,6 +19,7 @@ from nicegui_app.gateway_identity import (
 import nicegui_app.main as main_module
 from nicegui_app.main import (
     cleanup_guest_downloads,
+    generated_download,
     guest_download,
     restore_guest_snapshot,
 )
@@ -39,6 +41,7 @@ def _principal_request(
     path: str,
     *,
     session_id: str,
+    access_mode: AccessMode = AccessMode.GUEST,
     method: str = "GET",
     now: int | None = None,
     body: bytes = b"",
@@ -53,8 +56,8 @@ def _principal_request(
         {
             "v": ORIGIN_PRINCIPAL_VERSION,
             "aud": ORIGIN_PRINCIPAL_AUDIENCE,
-            "mode": "guest",
-            "subject": "guest-demo",
+            "mode": access_mode.value,
+            "subject": "guest-demo" if access_mode is AccessMode.GUEST else "admin-test",
             "sid": session_id,
             "iat": current,
             "exp": current + 600,
@@ -114,8 +117,10 @@ def test_registry_is_session_bound_single_use_and_bounded() -> None:
         max_download_bytes=16,
         max_downloads=2,
         max_downloads_per_session=1,
+        reserved_admin_downloads=1,
     )
     ticket = registry.issue(
+        access_mode=AccessMode.GUEST,
         session_id=SESSION_A,
         filename="SYSS_DEMO.json",
         content=b"demo",
@@ -124,9 +129,15 @@ def test_registry_is_session_bound_single_use_and_bounded() -> None:
     )
 
     with pytest.raises(GuestDownloadError):
-        registry.consume(token=ticket.token, session_id=SESSION_B, now=101)
+        registry.consume(
+            token=ticket.token,
+            access_mode=AccessMode.GUEST,
+            session_id=SESSION_B,
+            now=101,
+        )
     with pytest.raises(GuestDownloadCapacityError):
         registry.issue(
+            access_mode=AccessMode.GUEST,
             session_id=SESSION_A,
             filename="another.json",
             content=b"demo",
@@ -134,15 +145,81 @@ def test_registry_is_session_bound_single_use_and_bounded() -> None:
             now=101,
         )
 
-    payload = registry.consume(token=ticket.token, session_id=SESSION_A, now=101)
+    payload = registry.consume(
+        token=ticket.token,
+        access_mode=AccessMode.GUEST,
+        session_id=SESSION_A,
+        now=101,
+    )
     assert payload.content == b"demo"
     with pytest.raises(GuestDownloadError):
-        registry.consume(token=ticket.token, session_id=SESSION_A, now=101)
+        registry.consume(
+            token=ticket.token,
+            access_mode=AccessMode.GUEST,
+            session_id=SESSION_A,
+            now=101,
+        )
+
+
+def test_guest_capacity_preserves_admin_reserve_and_mode_binding() -> None:
+    registry = GuestDownloadRegistry(
+        ttl_seconds=30,
+        max_download_bytes=16,
+        max_downloads=4,
+        max_downloads_per_session=4,
+        reserved_admin_downloads=1,
+    )
+    guest_tickets = [
+        registry.issue(
+            access_mode=AccessMode.GUEST,
+            session_id=SESSION_A,
+            filename=f"guest-{index}.json",
+            content=b"demo",
+            media_type="application/json",
+            now=100,
+        )
+        for index in range(3)
+    ]
+
+    with pytest.raises(GuestDownloadCapacityError):
+        registry.issue(
+            access_mode=AccessMode.GUEST,
+            session_id=SESSION_A,
+            filename="guest-overflow.json",
+            content=b"demo",
+            media_type="application/json",
+            now=100,
+        )
+
+    admin_ticket = registry.issue(
+        access_mode=AccessMode.ADMIN,
+        session_id=SESSION_A,
+        filename="admin.json",
+        content=b"admin",
+        media_type="application/json",
+        now=100,
+    )
+    with pytest.raises(GuestDownloadError):
+        registry.consume(
+            token=admin_ticket.token,
+            access_mode=AccessMode.GUEST,
+            session_id=SESSION_A,
+            now=101,
+        )
+    admin_payload = registry.consume(
+        token=admin_ticket.token,
+        access_mode=AccessMode.ADMIN,
+        session_id=SESSION_A,
+        now=101,
+    )
+    assert admin_payload.content == b"admin"
+    assert len(guest_tickets) == 3
 
 
 def test_registry_rejects_expiry_oversize_and_unsafe_filename() -> None:
     registry = GuestDownloadRegistry(ttl_seconds=1, max_download_bytes=4)
     ticket = registry.issue(
+        access_mode=AccessMode.GUEST,
         session_id=SESSION_A,
         filename="demo.pdf",
         content=b"%PDF",
@@ -150,9 +227,15 @@ def test_registry_rejects_expiry_oversize_and_unsafe_filename() -> None:
         now=100,
     )
     with pytest.raises(GuestDownloadError):
-        registry.consume(token=ticket.token, session_id=SESSION_A, now=101)
+        registry.consume(
+            token=ticket.token,
+            access_mode=AccessMode.GUEST,
+            session_id=SESSION_A,
+            now=101,
+        )
     with pytest.raises(GuestDownloadCapacityError):
         registry.issue(
+            access_mode=AccessMode.GUEST,
             session_id=SESSION_A,
             filename="demo.pdf",
             content=b"12345",
@@ -161,6 +244,7 @@ def test_registry_rejects_expiry_oversize_and_unsafe_filename() -> None:
         )
     with pytest.raises(GuestDownloadError):
         registry.issue(
+            access_mode=AccessMode.GUEST,
             session_id=SESSION_A,
             filename="../demo.pdf",
             content=b"%PDF",
@@ -169,12 +253,78 @@ def test_registry_rejects_expiry_oversize_and_unsafe_filename() -> None:
         )
 
 
+def test_registry_separates_guest_and_admin_file_and_memory_budgets() -> None:
+    registry = GuestDownloadRegistry(
+        ttl_seconds=30,
+        max_download_bytes=4,
+        max_admin_download_bytes=16,
+        max_total_download_bytes=24,
+        reserved_admin_download_bytes=16,
+        max_downloads=8,
+        max_downloads_per_session=8,
+        reserved_admin_downloads=2,
+    )
+    for index in range(2):
+        registry.issue(
+            access_mode=AccessMode.GUEST,
+            session_id=SESSION_A,
+            filename=f"guest-{index}.json",
+            content=b"demo",
+            media_type="application/json",
+            now=100,
+        )
+    with pytest.raises(GuestDownloadCapacityError):
+        registry.issue(
+            access_mode=AccessMode.GUEST,
+            session_id=SESSION_A,
+            filename="guest-byte-overflow.json",
+            content=b"x",
+            media_type="application/json",
+            now=100,
+        )
+
+    admin_ticket = registry.issue(
+        access_mode=AccessMode.ADMIN,
+        session_id=SESSION_B,
+        filename="handover.zip",
+        content=b"a" * 16,
+        media_type="application/zip",
+        now=100,
+    )
+    assert registry.consume(
+        token=admin_ticket.token,
+        access_mode=AccessMode.ADMIN,
+        session_id=SESSION_B,
+        now=101,
+    ).content == b"a" * 16
+
+
+def test_default_admin_delivery_accepts_handover_larger_than_guest_limit() -> None:
+    registry = GuestDownloadRegistry()
+    content = b"h" * (5 * 1024 * 1024 + 1)
+
+    ticket = registry.issue(
+        access_mode=AccessMode.ADMIN,
+        session_id=SESSION_A,
+        filename="SYSS_Handover_Backup.zip",
+        content=content,
+        media_type="application/zip",
+    )
+
+    assert registry.consume(
+        token=ticket.token,
+        access_mode=AccessMode.ADMIN,
+        session_id=SESSION_A,
+    ).content == content
+
+
 def test_guest_download_endpoint_is_no_store_session_bound_and_single_use(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _configure_gateway(monkeypatch)
     registry = guest_download_registry()
     ticket = registry.issue(
+        access_mode=AccessMode.GUEST,
         session_id=SESSION_A,
         filename="SYSS_DEMO_服務報告.pdf",
         content=b"%PDF-1.4 demo",
@@ -208,12 +358,68 @@ def test_guest_download_endpoint_is_no_store_session_bound_and_single_use(
     assert replay.status_code == 404
 
 
+def test_generated_download_endpoint_rejects_cross_mode_without_consuming_ticket(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _configure_gateway(monkeypatch)
+    registry = guest_download_registry()
+    guest_ticket = registry.issue(
+        access_mode=AccessMode.GUEST,
+        session_id=SESSION_A,
+        filename="SYSS_DEMO.json",
+        content=b'{"mode":"guest"}',
+        media_type="application/json",
+    )
+    guest_path = f"/api/generated-download/{guest_ticket.token}"
+
+    wrong_guest_mode = generated_download(
+        guest_ticket.token,
+        _principal_request(
+            guest_path,
+            session_id=SESSION_A,
+            access_mode=AccessMode.ADMIN,
+        ),
+    )
+    assert wrong_guest_mode.status_code == 410
+    guest_response = generated_download(
+        guest_ticket.token,
+        _principal_request(guest_path, session_id=SESSION_A),
+    )
+    assert guest_response.status_code == 200
+    assert guest_response.body == b'{"mode":"guest"}'
+
+    admin_ticket = registry.issue(
+        access_mode=AccessMode.ADMIN,
+        session_id=SESSION_A,
+        filename="admin.pdf",
+        content=b"%PDF-admin",
+        media_type="application/pdf",
+    )
+    admin_path = f"/api/generated-download/{admin_ticket.token}"
+    wrong_admin_mode = generated_download(
+        admin_ticket.token,
+        _principal_request(admin_path, session_id=SESSION_A),
+    )
+    assert wrong_admin_mode.status_code == 410
+    admin_response = generated_download(
+        admin_ticket.token,
+        _principal_request(
+            admin_path,
+            session_id=SESSION_A,
+            access_mode=AccessMode.ADMIN,
+        ),
+    )
+    assert admin_response.status_code == 200
+    assert admin_response.body == b"%PDF-admin"
+
+
 def test_guest_logout_cleanup_removes_pending_downloads(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _configure_gateway(monkeypatch)
     registry = guest_download_registry()
     ticket = registry.issue(
+        access_mode=AccessMode.GUEST,
         session_id=SESSION_A,
         filename="SYSS_DEMO.json",
         content=b"{}",
@@ -228,7 +434,11 @@ def test_guest_logout_cleanup_removes_pending_downloads(
     assert response.status_code == 204
     assert response.headers["cache-control"] == "no-store, max-age=0"
     with pytest.raises(GuestDownloadError):
-        registry.consume(token=ticket.token, session_id=SESSION_A)
+        registry.consume(
+            token=ticket.token,
+            access_mode=AccessMode.GUEST,
+            session_id=SESSION_A,
+        )
 
 
 def test_guest_snapshot_restore_endpoint_is_bounded_authenticated_and_no_store(

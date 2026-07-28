@@ -31,17 +31,17 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    legacy_weeks = int(
+    incompatible_weeks = int(
         op.get_bind().execute(
             sa.text(
                 "SELECT COUNT(*) FROM roster_weeks "
-                "WHERE assist_assignment_mode = 'legacy_fixed_weekday'"
+                "WHERE assist_assignment_mode != 'legacy_fixed_weekday'"
             )
         ).scalar_one()
     )
-    if legacy_weeks:
+    if incompatible_weeks:
         raise RuntimeError(
-            "Cannot downgrade Assist assignment modes while legacy fixed-weekday roster history exists."
+            "Cannot downgrade Assist assignment modes while flexible-weekly roster history exists."
         )
     with op.batch_alter_table("roster_weeks", recreate="always") as batch:
         batch.drop_constraint(

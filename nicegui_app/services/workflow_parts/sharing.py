@@ -78,6 +78,7 @@ class ExternalShareOutboxMixin:
 
         try:
             with self.maintenance.serialized_operation():
+                self._assert_business_write_admitted("queue_external_share")
                 with self._session() as session:
                     self._begin_serialized_write(session)
                     existing_command = session.get(OperationCommandRecord, operation_id)
@@ -203,6 +204,7 @@ class ExternalShareOutboxMixin:
         operation_id = self._operation_command_id(_OUTBOX_OPERATION, command_id)
         try:
             with self.maintenance.serialized_operation():
+                self._assert_business_write_admitted("begin_external_share_delivery")
                 with self._session() as session:
                     self._begin_serialized_write(session)
                     command = session.get(OperationCommandRecord, operation_id)

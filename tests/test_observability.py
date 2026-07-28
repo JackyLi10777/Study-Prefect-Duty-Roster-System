@@ -6,6 +6,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from nicegui_app.persistence.database import migrate_database
 from nicegui_app.observability import (
     LOGGER_NAME,
     configure_local_logging,
@@ -37,6 +38,21 @@ def test_local_log_is_rotating_utf8_and_contains_no_operator_payload_by_default(
     assert "action=test_action" in content
     assert "error_type=ValueError" in content
     assert sensitive_value not in content
+
+
+def test_migrations_preserve_the_application_logger(tmp_path) -> None:
+    log_path = configure_local_logging(tmp_path / "migration-logging" / "app.log")
+
+    migrate_database(tmp_path / "migration-logging" / "roster.sqlite3")
+    reference = new_operation_reference()
+    record_operator_event(action="migration_check", outcome="completed", reference=reference)
+
+    for handler in logging.getLogger(LOGGER_NAME).handlers:
+        handler.flush()
+    content = log_path.read_text(encoding="utf-8")
+    assert logging.getLogger(LOGGER_NAME).disabled is False
+    assert f"reference={reference}" in content
+    assert "action=migration_check" in content
 
 
 def test_operation_reference_is_short_and_non_identifying() -> None:

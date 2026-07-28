@@ -1,6 +1,8 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **目前發布狀態：** Windows origin 正運行健康、ready 的 live `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；其 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% version smoke 後承接 100% 流量。canonical root、capability health 與 rendered desktop／320px／Guest Engineering checks 通過，private readiness 保持預期 redirect。第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
+> **線上來源真相（2026-07-28，取代下文舊狀態字樣）：** Windows runtime operational，但主機 rc30 checkout 已觀察到 73 個 tracked 修改及 3 個 untracked 項目，故不可稱為 exact rc30／已審核不可變 bundle。canonical Worker 目前為來源未歸屬的 `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed`。乾淨 rc30＋`11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是更早歷史版本。rc31 未部署，真人驗收未完成。任何回退先保存及歸屬主機漂移，禁止盲目 reset／覆寫。
+
+> **歷史 rc30 乾淨發布證據：** Windows origin 曾以受控方式運行並驗證健康、ready 的 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；其 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% version smoke 後承接 100% 流量。canonical root、capability health 與 rendered desktop／320px／Guest Engineering checks 通過，private readiness 保持預期 redirect。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前復原先使用較近的乾淨 rc30／`11763f08…`。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
 
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
@@ -89,7 +91,7 @@ Worker 必須有：
 - 不把管理員加入 Cloudflare Dashboard 成員作為登入前提。
 - 不建立應用內共用密碼。
 
-**目前控制台證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。live rc30 origin＋Worker 組合已通過 canonical root、gateway health、真實 Guest session／logout、Admin Access handoff、Viewer、desktop／320px theme control 及 Guest Engineering 核對；任何後續候選仍須產生與來源相符的新證據。
+**控制台與歷史乾淨證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。乾淨 rc30 origin＋Worker `11763f08…` 組合曾通過 canonical root、gateway health、真實 Guest session／logout、Admin Access handoff、Viewer、desktop／320px theme control 及 Guest Engineering 核對；目前來源漂移的 active pair 及任何後續候選仍須產生與來源相符的新證據。
 
 ## 4. 來源驗證
 
@@ -149,7 +151,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 3. 核對沒有第二個 NiceGUI origin 佔用同一資料庫。
 4. 安裝已驗證 bundle 及 hash-locked dependencies。
 5. 執行 additive Alembic migration `0011_assist_assignment_mode`。
-6. 保持 live rc30 的現行受保護設定 `SING_YIN_UNIFIED_GUEST=1`，不得用切換旗標略過候選驗證。
+6. 保持正式環境的受保護設定 `SING_YIN_UNIFIED_GUEST=1`，不得用切換旗標略過候選驗證。
 7. 核對：
 
 ```powershell
@@ -205,7 +207,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 6. 用獲准身份完成 Admin 登入／登出及隔離寫入流程。
 7. 才結束 maintenance。
 
-候選的隔離測試仍須證明 flag 為 `0` 時 Guest fail closed；rc30 的正式 gate 已在臨時環境重新完成該證據，不可因此弱化 live rc30 設定。
+候選的隔離測試仍須證明 flag 為 `0` 時 Guest fail closed；乾淨 rc30 的歷史正式 gate 已在臨時環境完成該證據，不可因此弱化正式環境的受保護設定。
 
 ## 9. 線上驗收
 
@@ -252,10 +254,10 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 1. 恢復 maintenance；
 2. 以受控部署報告確認自動 rollback 的 `attempted`／`succeeded`、previous commit 及 previous Worker version；
-3. origin 事故：第一級回退至主機 bundle `v1.2.0-rc.26`／`248955cb3300bfbe092b05036632991524d824cd`，除非 gateway 亦受影響，否則保留現行 rc29 Worker；
-4. gateway 事故：把 traffic 恢復至 Worker `76a23134-8355-4e25-bbba-abf17c6918c5`，不要為純 gateway 問題改動 origin；
+3. origin 事故：先保存及歸屬現行主機漂移，再以受控 clean bundle 回復 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；除非 gateway 亦受影響，不要同時改動 Worker；
+4. gateway 事故：把 traffic 恢復至最近已知已驗證 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`，不要為純 gateway 問題改動 origin；
 5. 核對 host commit、`/healthz`、`/readyz`／`writeReady=true`、Admin、Guest、Viewer、WebSocket、登出及資料狀態；
-6. 只有 rc26 origin 無法安全恢復，且事故負責人明確批准第二級復原時，才可使用 rc24／`8d709f9b0b4e69fe38f7237ef2f473c27ff848fc` 已驗證基線；更舊版本只保留為歷史證據；
+6. 只有乾淨 rc30 無法安全恢復，且事故負責人明確批准更深復原時，才依序考慮 rc27、rc26 及 rc24 已驗證歷史；更舊版本只保留為證據；
 7. 如資料完整性受疑，使用受控 restore，而非手動覆寫 SQLite。
 
 additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，部署前 gate 應已拒絕該 migration。
@@ -284,6 +286,6 @@ additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，�
 
 ## English operational summary
 
-Live origin `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` remains behind Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`, which owns public entry, Cloudflare Access handoff, guest session creation, signed origin principals, VPC proxying, and the encrypted Viewer. The origin resolves the same NiceGUI routes to either the official workflow or a bounded guest adapter. rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` is the first-level origin rollback; Worker `d7b51f21-7692-418d-866c-034c2c57292d` is the immediate gateway rollback.
+The active Windows origin and canonical Worker are operational but provenance-drifted. The origin checkout points at rc30 while containing unreviewed modifications, and canonical traffic is served by unattributed Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed`; neither may be described as exact rc30 or fingerprint-matched. The nearest known verified recovery pair is clean `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` plus Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`, after preserving and attributing the active drift. rc27 and Worker `d7b51f21-7692-418d-866c-034c2c57292d` are deeper historical recovery evidence.
 
-The live controlled topology is rc30 on both the Windows origin and Worker. Exact rc30 source passed the `15d155d8…` gate set and completed the controlled origin switch, staged smoke, 100% promotion and canonical root／Guest／Admin handoff／Viewer checks. Supervised human acceptance remains open; an origin failure returns first to rc27／`c4c728aa…`, while a gateway failure returns to Worker `d7b51f21-7692-418d-866c-034c2c57292d`.
+Historically, the clean rc30 pair passed the `15d155d8…` gate set and completed the controlled origin switch, staged smoke, 100% promotion and canonical root／Guest／Admin handoff／Viewer checks. It is recovery evidence, not a description of the current active source. Supervised human acceptance remains open.

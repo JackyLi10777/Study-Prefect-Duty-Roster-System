@@ -492,11 +492,12 @@ async def _download_roster_pdf(
     )
     if export is None:
         return False
-    deliver_generated_download(
+    if not deliver_generated_download(
         export.content,
         export.filename,
         media_type="application/pdf",
-    )
+    ):
+        return False
     ui.notify(t("pdf_ready"), type="positive")
     return True
 
@@ -516,11 +517,12 @@ def _render_pdf_delivery_ready(container, export: RosterPdfExport) -> None:
                     ui.label(t("pdf_delivery_ready_notice")).classes("text-sm text-[var(--sy-muted)]")
 
             def download_again() -> None:
-                deliver_generated_download(
+                if not deliver_generated_download(
                     export.content,
                     export.filename,
                     media_type="application/pdf",
-                )
+                ):
+                    return
                 ui.notify(t("pdf_ready"), type="positive")
 
             def report_share_result(event: events.GenericEventArguments) -> None:

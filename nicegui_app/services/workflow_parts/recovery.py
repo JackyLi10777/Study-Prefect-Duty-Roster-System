@@ -2,6 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from functools import lru_cache
+
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+
+from nicegui_app.config import PROJECT_ROOT
+from nicegui_app.persistence.database import current_migration_heads
 from nicegui_app.services.workflow_dependencies import (
     BackupResult,
     BackupRunRecord,
@@ -34,6 +42,64 @@ from nicegui_app.services.workflow_fencing import fenced_workflow_write
 
 
 _REQUIRED_DATABASE_TABLES = required_database_tables()
+_RESTORABLE_CORE_TABLES = frozenset(
+    {
+        "alembic_version",
+        "prefects",
+        "prefect_availability",
+        "roster_weeks",
+        "roster_assignments",
+        "fairness_ledger",
+        "leave_adjustments",
+        "leave_declarations",
+        "audit_events",
+        "backup_runs",
+    }
+)
+_MINIMUM_RESTORABLE_REVISION = "0007"
+_V12_PERSISTENCE_TABLES = _RESTORABLE_CORE_TABLES | frozenset(
+    {
+        "operation_commands",
+        "backup_obligations",
+        "external_share_outbox",
+    }
+)
+# A backup must satisfy the table contract of the revision it claims to be.
+# Keeping the map explicit forces future table-creating migrations to state
+# which historical revisions legitimately predate the new table.
+_REQUIRED_TABLES_BY_REVISION: dict[str, frozenset[str]] = {
+    "0007": _RESTORABLE_CORE_TABLES,
+    "0008": _V12_PERSISTENCE_TABLES,
+    "0009": _V12_PERSISTENCE_TABLES,
+    "0010": _V12_PERSISTENCE_TABLES,
+    "0011": _V12_PERSISTENCE_TABLES,
+}
+
+
+@lru_cache(maxsize=1)
+def _restorable_migration_revisions() -> frozenset[str]:
+    """Return the supported linear migration chain from the current head to 0007."""
+
+    config = Config(str(PROJECT_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(PROJECT_ROOT / "migrations"))
+    scripts = ScriptDirectory.from_config(config)
+    heads = current_migration_heads()
+    if len(heads) != 1:
+        return frozenset()
+
+    revisions: set[str] = set()
+    revision: str | None = next(iter(heads))
+    while revision is not None:
+        script = scripts.get_revision(revision)
+        if script is None:
+            return frozenset()
+        revisions.add(script.revision)
+        if script.revision == _MINIMUM_RESTORABLE_REVISION:
+            return frozenset(revisions)
+        if not isinstance(script.down_revision, str):
+            return frozenset()
+        revision = script.down_revision
+    return frozenset()
 
 
 class RecoveryWorkflowMixin:
@@ -67,25 +133,48 @@ class RecoveryWorkflowMixin:
             }
 
     def verify_backup(self, backup_path: Path) -> dict[str, object]:
-        """Validate a snapshot without mutating the live database."""
-        required_tables = _REQUIRED_DATABASE_TABLES
+        """Validate a current or supported legacy snapshot without mutating it."""
         if not backup_path.exists() or not backup_path.is_file():
             return {"valid": False, "reasonCode": "missing_file", "error": "Backup file was not found."}
         if backup_path.suffix != ".sqlite3":
             return {"valid": False, "reasonCode": "invalid_extension", "error": "Backup file must use the .sqlite3 extension."}
 
+        sqlite_sidecars = [sidecar for sidecar in self._sqlite_sidecar_paths(backup_path) if sidecar.exists()]
+        if sqlite_sidecars:
+            return {
+                "valid": False,
+                "reasonCode": "snapshot_sidecar_present",
+                "error": "Backup is not self-contained because SQLite journal sidecars are present.",
+            }
+
         try:
-            connection = sqlite3.connect(f"file:{backup_path.resolve().as_posix()}?mode=ro", uri=True)
+            connection = sqlite3.connect(
+                f"file:{backup_path.resolve().as_posix()}?mode=ro&immutable=1",
+                uri=True,
+            )
             try:
                 integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
                 table_rows = connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()
+                table_names = {str(row[0]) for row in table_rows}
+                revision_rows = (
+                    connection.execute("SELECT version_num FROM alembic_version").fetchall()
+                    if "alembic_version" in table_names
+                    else []
+                )
+                pending_obligations = (
+                    int(
+                        connection.execute(
+                            "SELECT COUNT(*) FROM backup_obligations WHERE status <> 'completed'"
+                        ).fetchone()[0]
+                    )
+                    if "backup_obligations" in table_names
+                    else 0
+                )
             finally:
                 connection.close()
         except sqlite3.Error as error:
             return {"valid": False, "reasonCode": "sqlite_unreadable", "error": f"SQLite could not open the backup: {error}"}
 
-        table_names = {row[0] for row in table_rows}
-        missing_tables = sorted(required_tables - table_names)
         try:
             checksum = self._sha256(backup_path)
         except OSError as error:
@@ -105,14 +194,23 @@ class RecoveryWorkflowMixin:
                 "error": "Backup is missing its checksum manifest.",
             }
         try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as error:
+            manifest_bytes = manifest_path.read_bytes()
+            manifest = json.loads(manifest_bytes.decode("utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
             return {
                 "valid": False,
                 "reasonCode": "manifest_unreadable",
                 "integrity": integrity,
                 "sha256": checksum,
                 "error": f"Backup manifest could not be read: {error}",
+            }
+        if not isinstance(manifest, Mapping):
+            return {
+                "valid": False,
+                "reasonCode": "manifest_invalid",
+                "integrity": integrity,
+                "sha256": checksum,
+                "error": "Backup manifest must contain a JSON object.",
             }
         manifest_checksum = manifest.get("sha256")
         if not isinstance(manifest_checksum, str) or manifest_checksum != checksum:
@@ -131,20 +229,64 @@ class RecoveryWorkflowMixin:
                 "sha256": checksum,
                 "error": "SQLite integrity check failed.",
             }
-        if missing_tables:
+        missing_core_tables = sorted(_RESTORABLE_CORE_TABLES - table_names)
+        if missing_core_tables:
             return {
                 "valid": False,
                 "reasonCode": "schema_incomplete",
                 "integrity": integrity,
                 "sha256": checksum,
-                "error": f"Backup is missing required tables: {', '.join(missing_tables)}.",
+                "error": f"Backup is missing required core tables: {', '.join(missing_core_tables)}.",
+            }
+        revisions = {str(row[0]) for row in revision_rows}
+        if len(revisions) != 1 or not revisions.issubset(_restorable_migration_revisions()):
+            return {
+                "valid": False,
+                "reasonCode": "migration_unsupported",
+                "integrity": integrity,
+                "sha256": checksum,
+                "error": "Backup migration revision is missing, unknown, or newer than this release.",
+            }
+        schema_revision = next(iter(revisions))
+        required_revision_tables = _REQUIRED_TABLES_BY_REVISION.get(schema_revision)
+        if required_revision_tables is None:
+            return {
+                "valid": False,
+                "reasonCode": "migration_unsupported",
+                "integrity": integrity,
+                "sha256": checksum,
+                "error": "Backup migration revision has no reviewed schema contract.",
+            }
+        missing_revision_tables = sorted(required_revision_tables - table_names)
+        if missing_revision_tables:
+            return {
+                "valid": False,
+                "reasonCode": "schema_incomplete",
+                "integrity": integrity,
+                "sha256": checksum,
+                "error": (
+                    f"Backup revision {schema_revision} is missing required tables: "
+                    f"{', '.join(missing_revision_tables)}."
+                ),
+            }
+        migration_required = revisions != current_migration_heads()
+        if pending_obligations:
+            return {
+                "valid": False,
+                "reasonCode": "backup_obligations_pending",
+                "integrity": integrity,
+                "sha256": checksum,
+                "error": "Backup contains committed writes without a settled recovery snapshot.",
             }
         return {
             "valid": True,
-            "reasonCode": "verified",
+            "reasonCode": "verified_migration_required" if migration_required else "verified",
             "integrity": integrity,
             "sha256": checksum,
+            "manifestSha256": hashlib.sha256(manifest_bytes).hexdigest(),
             "tableCount": len(table_names),
+            "schemaRevision": schema_revision,
+            "migrationRequired": migration_required,
         }
 
     def restore_backup(self, backup_path: Path) -> dict[str, object]:
@@ -158,62 +300,106 @@ class RecoveryWorkflowMixin:
                 except ValueError as error:
                     raise WorkflowError("Only snapshots in the managed backup directory can be restored.") from error
 
-                verification = self.verify_backup(requested_path)
-                if not verification.get("valid"):
-                    raise WorkflowError(f"Backup verification failed: {verification.get('error', 'unknown error')}")
-
-                prepared_path = self._prepare_restore_candidate(requested_path)
-                pre_restore = self._create_and_record_backup("pre_restore", None)
-                pre_restore_path = self._require_backup(pre_restore)
+                staged_path: Path | None = None
+                prepared_path: Path | None = None
                 try:
-                    self._install_prepared_database(prepared_path)
-                    with self._session() as session:
-                        self._audit(
-                            session,
-                            "backup_restored",
-                            None,
-                            {
-                                "restoredFrom": str(requested_path),
-                                "preRestoreBackup": str(pre_restore_path),
-                                "sha256": verification["sha256"],
-                            },
-                        )
-                        self._assert_fairness_reconciled(session)
-                        session.commit()
-                    restored_backup = self._create_and_record_backup("backup_restored", None)
-                    restored_backup_path = self._require_backup(restored_backup, committed_event="backup_restored")
-                except Exception as error:
-                    prepared_path.unlink(missing_ok=True)
+                    staged_path, verification = self._stage_restore_source(requested_path)
+                    prepared_path = self._prepare_restore_candidate(
+                        staged_path,
+                        expected_sha256=str(verification["sha256"]),
+                    )
+                    pre_restore = self._create_and_record_backup("pre_restore", None)
+                    pre_restore_path = self._require_backup(pre_restore)
                     try:
-                        rollback_path = self._prepare_restore_candidate(pre_restore_path)
-                        self._install_prepared_database(rollback_path)
-                    except Exception as rollback_error:
-                        self.maintenance.require_recovery_review(reason_code="restore_rollback_failed")
+                        self._install_prepared_database(prepared_path)
+                        with self._session() as session:
+                            self._audit(
+                                session,
+                                "backup_restored",
+                                None,
+                                {
+                                    "restoredFrom": str(requested_path),
+                                    "preRestoreBackup": str(pre_restore_path),
+                                    "sha256": verification["sha256"],
+                                    "sourceSchemaRevision": verification["schemaRevision"],
+                                },
+                            )
+                            self._assert_fairness_reconciled(session)
+                            session.commit()
+                        restored_backup = self._create_and_record_backup("backup_restored", None)
+                        restored_backup_path = self._require_backup(restored_backup, committed_event="backup_restored")
+                    except Exception as error:
+                        if prepared_path is not None:
+                            prepared_path.unlink(missing_ok=True)
+                        try:
+                            rollback_verification = self.verify_backup(pre_restore_path)
+                            if not rollback_verification.get("valid"):
+                                raise WorkflowError("The pre-restore recovery snapshot is no longer valid.")
+                            rollback_path = self._prepare_restore_candidate(
+                                pre_restore_path,
+                                expected_sha256=str(rollback_verification["sha256"]),
+                            )
+                            self._install_prepared_database(rollback_path)
+                        except Exception as rollback_error:
+                            self.maintenance.require_recovery_review(reason_code="restore_rollback_failed")
+                            raise WorkflowError(
+                                "Backup restore failed and automatic rollback could not be verified. "
+                                "The system remains locked for recovery review."
+                            ) from rollback_error
                         raise WorkflowError(
-                            "Backup restore failed and automatic rollback could not be verified. "
-                            "The system remains locked for recovery review."
-                        ) from rollback_error
-                    raise WorkflowError(
-                        "Backup restore was not completed; the original database was restored automatically."
-                    ) from error
+                            "Backup restore was not completed; the original database was restored automatically."
+                        ) from error
+                    return {
+                        "restoredFrom": backup_path,
+                        "preRestoreBackup": pre_restore_path,
+                        "restoredBackup": restored_backup_path,
+                    }
                 finally:
-                    prepared_path.unlink(missing_ok=True)
-                return {
-                    "restoredFrom": backup_path,
-                    "preRestoreBackup": pre_restore_path,
-                    "restoredBackup": restored_backup_path,
-                }
+                    if prepared_path is not None:
+                        prepared_path.unlink(missing_ok=True)
+                    if staged_path is not None:
+                        staged_path.unlink(missing_ok=True)
+                        staged_path.with_suffix(".manifest.json").unlink(missing_ok=True)
         except MaintenanceModeError as error:
             raise WorkflowMaintenanceError(str(error)) from error
 
-    def _prepare_restore_candidate(self, source_path: Path) -> Path:
+    def _stage_restore_source(self, source_path: Path) -> tuple[Path, dict[str, object]]:
+        """Copy one immutable source pair, then verify exactly the bytes used for restore."""
+
+        if any(sidecar.exists() for sidecar in self._sqlite_sidecar_paths(source_path)):
+            raise WorkflowError(
+                "Backup verification failed: SQLite journal sidecars are not part of a managed snapshot."
+            )
+        staged_path = self.database_path.with_name(
+            f".{self.database_path.name}.restore-source-{uuid4().hex}.sqlite3"
+        )
+        staged_manifest_path = staged_path.with_suffix(".manifest.json")
+        try:
+            self._copy_file_bytes(source_path, staged_path)
+            self._copy_file_bytes(source_path.with_suffix(".manifest.json"), staged_manifest_path)
+            verification = self.verify_backup(staged_path)
+            if not verification.get("valid"):
+                raise WorkflowError(
+                    f"Backup verification failed: {verification.get('error', 'unknown error')}"
+                )
+            return staged_path, verification
+        except Exception:
+            staged_path.unlink(missing_ok=True)
+            staged_manifest_path.unlink(missing_ok=True)
+            raise
+
+    def _prepare_restore_candidate(self, source_path: Path, *, expected_sha256: str) -> Path:
         """Clone, migrate and reconcile a candidate without touching live data."""
         prepared_path = self.database_path.with_name(
             f".{self.database_path.name}.restore-{uuid4().hex}.tmp.sqlite3"
         )
         sessions: sessionmaker[Session] | None = None
         try:
-            self._copy_sqlite_database(source_path, prepared_path)
+            self._copy_file_bytes(source_path, prepared_path)
+            if self._sha256(prepared_path) != expected_sha256:
+                raise WorkflowError(
+                    "Backup source changed after verification; restore was stopped before migration."
+                )
             sessions = create_session_factory(prepared_path)
             with sessions() as session:
                 table_rows = session.connection().exec_driver_sql(
@@ -225,9 +411,26 @@ class RecoveryWorkflowMixin:
                         "Backup preflight failed: required schema tables are missing: "
                         f"{', '.join(missing_tables)}."
                     )
+                revisions = {
+                    str(row[0])
+                    for row in session.connection().exec_driver_sql(
+                        "SELECT version_num FROM alembic_version"
+                    ).fetchall()
+                }
+                if revisions != current_migration_heads():
+                    raise WorkflowError("Backup preflight failed: migration did not reach the current schema.")
                 foreign_key_errors = session.connection().exec_driver_sql("PRAGMA foreign_key_check").fetchall()
                 if foreign_key_errors:
                     raise WorkflowError("Backup preflight failed: foreign-key integrity is not valid.")
+                pending_obligations = int(
+                    session.connection().exec_driver_sql(
+                        "SELECT COUNT(*) FROM backup_obligations WHERE status <> 'completed'"
+                    ).scalar_one()
+                )
+                if pending_obligations:
+                    raise WorkflowError(
+                        "Backup preflight failed: recovery snapshot obligations are not settled."
+                    )
                 self._assert_fairness_reconciled(session)
             return prepared_path
         except Exception:
@@ -253,20 +456,26 @@ class RecoveryWorkflowMixin:
         self.sessions = create_session_factory(self.database_path)
 
     @staticmethod
-    def _copy_sqlite_database(source_path: Path, destination_path: Path) -> None:
+    def _copy_file_bytes(source_path: Path, destination_path: Path) -> None:
+        """Copy an immutable file through one open handle without reopening its path."""
+
         destination_path.unlink(missing_ok=True)
-        source = sqlite3.connect(str(source_path))
-        destination = sqlite3.connect(str(destination_path))
-        try:
-            source.backup(destination)
-        finally:
-            destination.close()
-            source.close()
+        with source_path.open("rb") as source, destination_path.open("xb") as destination:
+            for block in iter(lambda: source.read(1024 * 1024), b""):
+                destination.write(block)
 
     @staticmethod
     def _remove_sqlite_sidecars(database_path: Path) -> None:
-        for sidecar in (Path(f"{database_path}-wal"), Path(f"{database_path}-shm")):
+        for sidecar in RecoveryWorkflowMixin._sqlite_sidecar_paths(database_path):
             sidecar.unlink(missing_ok=True)
+
+    @staticmethod
+    def _sqlite_sidecar_paths(database_path: Path) -> tuple[Path, Path, Path]:
+        return (
+            Path(f"{database_path}-wal"),
+            Path(f"{database_path}-shm"),
+            Path(f"{database_path}-journal"),
+        )
 
     def backups(self, limit: int = 12) -> list[dict[str, object]]:
         """List recent managed snapshots with current verification evidence."""
@@ -323,8 +532,11 @@ class RecoveryWorkflowMixin:
 
     def create_verified_backup(self) -> Path:
         """Create an operator-requested recovery snapshot without changing roster data."""
-        backup = self._create_and_record_backup("manual_verified_backup", None)
-        return self._require_backup(backup)
+        with self.maintenance.serialized_operation():
+            backup = self._create_and_record_backup("manual_verified_backup", None)
+            backup_path = self._require_backup(backup)
+            self._complete_backup_obligations_with_snapshot(backup_path)
+            return backup_path
 
     def build_verified_handover_package(self) -> HandoverBackupPackage:
         """Package the latest verified managed snapshot for an operator-controlled handover copy."""
@@ -338,12 +550,27 @@ class RecoveryWorkflowMixin:
         verification = self.verify_backup(source_backup_path)
         if not verification.get("valid"):
             raise WorkflowError(f"Backup verification failed: {verification.get('error', 'unknown error')}")
-        manifest_path = source_backup_path.with_suffix(".manifest.json")
-        package = BytesIO()
-        with ZipFile(package, mode="w", compression=ZIP_DEFLATED) as archive:
-            archive.write(source_backup_path, arcname=source_backup_path.name)
-            archive.write(manifest_path, arcname=manifest_path.name)
-            archive.writestr("README.txt", self._handover_package_readme(source_backup_path.name))
+        staged_path: Path | None = None
+        try:
+            staged_path, verification = self._stage_restore_source(source_backup_path)
+            staged_manifest_path = staged_path.with_suffix(".manifest.json")
+            database_content = staged_path.read_bytes()
+            manifest_content = staged_manifest_path.read_bytes()
+            if hashlib.sha256(database_content).hexdigest() != verification["sha256"]:
+                raise WorkflowError("Backup source changed after verification; handover packaging was stopped.")
+            if hashlib.sha256(manifest_content).hexdigest() != verification["manifestSha256"]:
+                raise WorkflowError("Backup manifest changed after verification; handover packaging was stopped.")
+
+            manifest_name = source_backup_path.with_suffix(".manifest.json").name
+            package = BytesIO()
+            with ZipFile(package, mode="w", compression=ZIP_DEFLATED) as archive:
+                archive.writestr(source_backup_path.name, database_content)
+                archive.writestr(manifest_name, manifest_content)
+                archive.writestr("README.txt", self._handover_package_readme(source_backup_path.name))
+        finally:
+            if staged_path is not None:
+                staged_path.unlink(missing_ok=True)
+                staged_path.with_suffix(".manifest.json").unlink(missing_ok=True)
         stamp = self._now().strftime("%Y%m%d-%H%M")
         return HandoverBackupPackage(
             filename=f"SYSS_Handover_Backup_{stamp}.zip",
@@ -366,6 +593,7 @@ class RecoveryWorkflowMixin:
             finally:
                 destination.close()
                 source.close()
+            self._settle_snapshot_backup_obligations(temporary_path, backup_path)
             temporary_path.replace(backup_path)
             manifest_path = backup_path.with_suffix(".manifest.json")
             manifest_path.write_text(
@@ -402,6 +630,42 @@ class RecoveryWorkflowMixin:
                 f"Backup evidence recording failed: {type(error).__name__}",
             )
         return result
+
+    def _settle_snapshot_backup_obligations(self, snapshot_path: Path, recovery_path: Path) -> None:
+        """Make a recovery snapshot independently write-ready without changing live state."""
+
+        connection = sqlite3.connect(str(snapshot_path))
+        normalized = False
+        try:
+            tables = {
+                str(row[0])
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type = 'table'"
+                ).fetchall()
+            }
+            if "backup_obligations" in tables:
+                completed_at = self._now().strftime("%Y-%m-%d %H:%M:%S.%f")
+                connection.execute(
+                    """
+                    UPDATE backup_obligations
+                    SET status = 'completed', backup_path = ?, error = NULL, completed_at = ?
+                    WHERE status <> 'completed'
+                    """,
+                    (str(recovery_path), completed_at),
+                )
+            connection.commit()
+            connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+            journal_mode = connection.execute("PRAGMA journal_mode = DELETE").fetchone()
+            if journal_mode is None or str(journal_mode[0]).lower() != "delete":
+                raise sqlite3.OperationalError(
+                    "Recovery snapshot could not be finalized in DELETE journal mode."
+                )
+            connection.commit()
+            normalized = True
+        finally:
+            connection.close()
+        if normalized:
+            self._remove_sqlite_sidecars(snapshot_path)
 
     def _record_backup_result(self, event_type: str, roster_week_id: int | None, result: BackupResult) -> None:
         """Persist snapshot evidence without allowing this secondary write to hide committed roster state."""

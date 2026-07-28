@@ -9,7 +9,10 @@ from nicegui import ui
 
 from nicegui_app.access_context import AccessMode, Capability
 from nicegui_app.runtime import current_page_context
-from nicegui_app.services.guest_downloads import guest_download_registry
+from nicegui_app.services.guest_downloads import (
+    GuestDownloadCapacityError,
+    guest_download_registry,
+)
 from nicegui_app.ui.i18n import t
 
 
@@ -25,17 +28,27 @@ class GeneratedFile:
     support_reference: str = ""
 
 
-def single_use_download_script(url: str, filename: str, failure_message: str) -> str:
+def single_use_download_script(
+    url: str,
+    filename: str,
+    failure_message: str,
+    *,
+    expected_media_type: str,
+) -> str:
     """Fetch one authenticated file, validate it, and surface delivery errors."""
 
     return (
         "(async() => {"
         "let objectUrl='';"
         "try {"
-        f"const response=await fetch({json.dumps(url)},{{credentials:'same-origin',cache:'no-store',headers:{{'Accept':'application/pdf, application/json, application/zip, application/octet-stream'}}}});"
+        f"const expectedType=String({json.dumps(expected_media_type)}).split(';',1)[0].trim().toLowerCase();"
+        f"const response=await fetch({json.dumps(url)},{{credentials:'same-origin',cache:'no-store',headers:{{'Accept':expectedType}}}});"
+        "const responseReference=response.headers.get('X-Request-ID')||'';"
         "if(!response.ok){let detail={};try{detail=await response.json();}catch{};"
-        "const reference=detail.reference||response.headers.get('X-Request-ID')||'';"
+        "const reference=detail.reference||responseReference;"
         "throw new Error(reference?`REFERENCE:${reference}`:`HTTP:${response.status}`);}"
+        "const actualType=String(response.headers.get('Content-Type')||'').split(';',1)[0].trim().toLowerCase();"
+        "if(!expectedType||actualType!==expectedType)throw new Error(responseReference?`REFERENCE:${responseReference}`:'MEDIA_TYPE');"
         "const blob=await response.blob();"
         "if(!blob.size)throw new Error('EMPTY');"
         "objectUrl=URL.createObjectURL(blob);"
@@ -61,8 +74,8 @@ def deliver_generated_download(
     filename: str,
     *,
     media_type: str = "application/octet-stream",
-) -> None:
-    """Use a single-use no-store endpoint for guests; preserve normal admin delivery."""
+) -> bool:
+    """Queue one generated download and report whether delivery could start."""
 
     context = current_page_context()
     capability = (
@@ -79,21 +92,28 @@ def deliver_generated_download(
             content=content,
             access_mode=context.principal.mode,
         )
-        ticket = guest_download_registry().issue(
-            session_id=session_id,
-            filename=generated.filename,
-            content=generated.content,
-            media_type=generated.media_type,
-        )
+        try:
+            ticket = guest_download_registry().issue(
+                access_mode=generated.access_mode,
+                session_id=session_id,
+                filename=generated.filename,
+                content=generated.content,
+                media_type=generated.media_type,
+            )
+        except GuestDownloadCapacityError:
+            ui.notify(t("download_delivery_failed"), type="warning")
+            return False
         ui.run_javascript(
             single_use_download_script(
                 f"/api/generated-download/{ticket.token}",
                 generated.filename,
                 t("download_delivery_failed"),
+                expected_media_type=generated.media_type,
             )
         )
-        return
+        return True
     ui.download(content, filename, media_type=media_type)
+    return True
 
 
 __all__ = ["GeneratedFile", "deliver_generated_download", "single_use_download_script"]

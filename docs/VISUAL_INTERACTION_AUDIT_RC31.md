@@ -25,14 +25,17 @@ the authority for the final state.
 - Historical rc30 screenshots, deployment reports and evidence remain historical
   and are not rewritten as rc31 proof.
 
-## Source-candidate evidence
+## Historical source-candidate evidence
 
-- `python -X utf8 -m pytest -q`: 901／901 passed.
-- `scripts/verify_rc31_theme_controls.py`: 8／8 isolated Chromium cases passed
+- An earlier `python -X utf8 -m pytest -q` slice passed 901／901 before the
+  later reliability and handoff changes in this branch.
+- An earlier `scripts/verify_rc31_theme_controls.py` run passed 8／8 isolated Chromium cases
   across Admin／Guest, desktop／mobile and OS-light／OS-dark initialization,
   producing 24 temporary screenshots with no console, page or server errors.
-- The Worker contract suite remains 46／46. The rc31 browser matrix is registered
+- That historical Worker contract suite passed 46／46. The rc31 browser matrix is registered
   as the formal release verifier's fifteenth fingerprint-bound gate.
-- These checks prove the working-tree candidate only. They do not claim a
+- These checks describe only that earlier candidate slice. Final frozen-source
+  full-suite, Public→Admin／Guest handoff, reduced-motion／forced-colour browser
+  evidence and exact-source release gates must be rerun. They do not claim a
   protected-main merge, annotated tag, Windows origin deployment, Worker
   promotion or supervised human acceptance.

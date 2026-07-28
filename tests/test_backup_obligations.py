@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+import sqlite3
 
 import pytest
 from sqlalchemy import select
@@ -172,3 +173,47 @@ def test_backup_repair_attempts_later_obligations_before_raising_first_failure(
         command_ids[1]: "completed",
     }
     assert workflow.pending_backup_obligation_count() == 1
+
+
+def test_manual_verified_backup_repairs_pending_obligations_and_allows_the_next_write(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "sing-yin.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    original = workflow._create_and_record_backup
+
+    def fail_once(event_type: str, roster_week_id: int | None) -> BackupResult:
+        monkeypatch.setattr(workflow, "_create_and_record_backup", original)
+        return BackupResult(False, None, "simulated backup interruption")
+
+    monkeypatch.setattr(workflow, "_create_and_record_backup", fail_once)
+    with pytest.raises(CommittedWriteBackupError, match="draft_generated"):
+        workflow.generate_and_save_draft(
+            WEEK_START,
+            expected_week_version=0,
+            command_id="manual-repair-source",
+        )
+
+    assert workflow.pending_backup_obligation_count() == 1
+
+    recovery_snapshot = workflow.create_verified_backup()
+
+    assert workflow.pending_backup_obligation_count() == 0
+    assert workflow.verify_backup(recovery_snapshot)["valid"] is True
+    with sqlite3.connect(recovery_snapshot) as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM backup_obligations WHERE status <> 'completed'"
+        ).fetchone() == (0,)
+
+    next_draft = workflow.generate_and_save_draft(
+        date(2026, 9, 14),
+        expected_week_version=0,
+        command_id="write-after-manual-repair",
+    )
+    assert next_draft.version == 1
+    assert workflow.pending_backup_obligation_count() == 0

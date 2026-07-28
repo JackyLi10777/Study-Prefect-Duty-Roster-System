@@ -278,7 +278,12 @@ class PeopleWorkflowMixin:
         pre-change snapshot, directory archive, audit event, and verified
         post-change snapshot describe one controlled operation.
         """
+        self._assert_business_write_admitted("prepare_new_school_year")
         with self.maintenance.maintenance("school_year_rollover"):
+            # Maintenance drains all fenced write-and-snapshot sequences first.
+            # Recheck afterwards so a failed backup committed while rollover was
+            # waiting cannot be archived into the new school year.
+            self._assert_business_write_admitted("prepare_new_school_year")
             with self._session() as session:
                 active_count = int(
                     session.scalar(

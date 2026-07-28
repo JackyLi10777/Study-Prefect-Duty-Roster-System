@@ -109,6 +109,7 @@ class Principal:
     expires_at: datetime | None = None
     auth_epoch: int = 0
     key_id: str | None = None
+    theme_handoff: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.subject, str) or not self.subject.strip():
@@ -123,6 +124,8 @@ class Principal:
             raise ValueError(f"{self.mode.value} principal requires a session_id")
         if self.mode is AccessMode.GUEST and self.expires_at is None:
             raise ValueError("guest principal requires an expiry")
+        if self.theme_handoff not in {None, "light", "dark"}:
+            raise ValueError("theme handoff must be light, dark, or absent")
 
     def is_expired(self, *, now: datetime | None = None) -> bool:
         return self.expires_at is not None and (now or _utc_now()) >= self.expires_at

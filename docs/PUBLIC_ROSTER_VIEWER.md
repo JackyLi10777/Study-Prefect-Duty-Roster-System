@@ -1,10 +1,12 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **目前狀態（live rc30）：** `C:\SingYinRoster` 正運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 正承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；canonical public root、capability health、desktop／320px theme control 及 Guest Engineering ≈10B disclosure 已以 live Chromium 核對，private readiness 保持預期 redirect。
+> **線上來源真相（2026-07-28）：**目前 Windows runtime operational，但其 rc30 checkout 已觀察到 73 tracked 修改及 3 untracked 項目；canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 來源未歸屬。active pair 因此不是 exact rc30／指紋相符。乾淨 rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是較舊歷史版本。rc31 未部署，真人驗收未完成。下文任何「live rc30／目前回退層級」字樣只保留歷史上下文，由本段取代。
+
+> **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 當時承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；canonical public root、capability health、desktop／320px theme control 及 Guest Engineering ≈10B disclosure 已以 live Chromium 核對，private readiness 保持預期 redirect。
 >
-> **回退層級：** 第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；Worker 的立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`。rc26／`248955cb3300bfbe092b05036632991524d824cd` 保留為更深一層的已驗證 origin 基線。
+> **復原層級：**先保存並歸屬現有漂移，第一個已知已驗證的 clean pair 是 rc30／`74b84f…` 加 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`。rc27／`c4c728aa…`、rc26／`248955cb…` 及 Worker `d7b51f21…` 只屬更深一層的歷史復原來源。
 >
-> **rc31 來源候選（未上線）：** `codex/rc31-unified-theme-controls` 正把 Public／Viewer 與 NiceGUI 的可見外觀控制統一為單一淺色／深色按鈕。`system` 只保留為未設定的初始化狀態；未設定時跟隨裝置系統，第一次操作儲存目前解析結果的相反模式，其後只在明確淺色與深色間切換。候選已把專用瀏覽器矩陣登記為第 15 個 fingerprint-bound gate，並通過本機來源測試；protected-main 身份、exact-source 指紋、正式備份、Worker 版本及部署證據仍待建立。rc30 origin／Worker 仍是現行線上基線。
+> **rc31 來源候選（未上線）：** `codex/rc31-unified-theme-controls` 正把 Public／Viewer 與 NiceGUI 的可見外觀控制統一為單一淺色／深色按鈕。`system` 只保留為未設定的初始化狀態；未設定時跟隨裝置系統，第一次操作儲存目前解析結果的相反模式，其後只在明確淺色與深色間切換。候選已把專用瀏覽器矩陣登記為第 15 個 fingerprint-bound gate，並通過本機來源測試；protected-main 身份、exact-source 指紋、正式備份、Worker 版本及部署證據仍待建立。乾淨 rc30＋`11763f08…` 仍是最近完整驗證的乾淨基線；active pair 來源待對帳。
 >
 > **歷史 rc21 受控上線證據：** 291 個來源檔案以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate；切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／`fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已完成 checksum、公平對帳、行數核對、還原審計及隔離還原。這段只保留歷史來源；目前 live 與回退層級以上方 rc30／rc27／rc26 說明為準。
 
@@ -56,7 +58,7 @@ Admin 與 Guest 使用同一個 Assist. 排班模式選擇器及穩定代碼：`
 - 首頁只播放已核准的本機純音樂；不會在已發布週表的 `/view#…` 頁播放。
 - 每次進入首頁都會立即嘗試播放；尚未儲存音量的瀏覽器以 **50%** 開始，任何已明確儲存的音量都會完整保留，包括 25%。可隨時暫停、播放下一首或調校音量；手動暫停只維持目前這次停留，音量則保存在目前瀏覽器。這些狀態不寫入名單、值班表、審計或備份。
 - 淺色模式使用較明亮的歌單，深色模式使用較安靜的歌單。切換外觀會使用對應歌單，但不會改變登入身份或資料。
-- 公開入口只顯示單一淺色／深色控制，圖標表示目前解析模式，文字替代說明下一個動作。瀏覽器尚未保存偏好時跟隨裝置系統；第一次操作保存目前解析結果的相反模式，其後只在明確淺色與深色間切換。Public／Viewer 偏好只保存在該瀏覽器，不讀寫 Admin 的正式使用者偏好或 Guest 的 session 記憶體偏好。
+- 公開入口只顯示單一淺色／深色控制，圖標表示目前解析模式，文字替代說明下一個動作。瀏覽器尚未保存偏好時跟隨裝置系統；第一次操作保存目前解析結果的相反模式，其後只在明確淺色與深色間切換。Public／Viewer 偏好只保存在該瀏覽器，不會讀取或持續同步 Admin 的正式使用者偏好或 Guest 的 session 記憶體偏好。只有使用者刻意進入 Admin／Guest 時，才可暫存明確 `light`／`dark` 提示，最長 120 秒；Worker 核對後把它放入已簽署 session 及 request-bound principal，建立 session 時清除暫存 cookie。目的地已有偏好時永遠不覆寫。
 - 瀏覽器可能阻止未經互動的有聲播放；此時頁面會顯示「預設：開啟音樂」與「安靜繼續」，但兩者只是可選偏好／復原控制。未作選擇時，管理員或訪客按鈕本身會在該次可信按鍵／點擊內同步重試音樂，再只前往所選身份一次。播放成功、再次被拒、格式不支援、載入過久或傳輸中斷均不會阻擋登入；其他頁面操作也不會暗中開始播放。
 - 人聲版本保留在登入後的每日經文／相關工作頁歌庫，避免在身份選擇時蓋過雙語操作指示。
 
@@ -103,7 +105,7 @@ Guest 和 Admin 共用渲染器，不共用資料 adapter：
 ## 健康、到期及故障
 
 - `/healthz`：程序及資料庫可讀的基本存活狀態。
-- `/readyz`：migration、maintenance、恢復標記及待完成備份義務均正常，才回報可寫。
+- `/readyz`：storage health 正常、`workflowInitialized=true`、沒有 maintenance／恢復標記、沒有待完成備份義務且 startup repair 沒有失敗，才回報可寫；diagnostic-only 固定為 HTTP 503／`writeReady=false`，不能靠手動移除 marker 變成可寫。
 - `/auth/status`：瀏覽器身份、到期、撤權及 origin 可達狀態。
 
 若 Guest session 到期，畫面應清除臨時工作區並返回入口。若 Admin session 到期或撤權，下一次狀態核對、HTTP 請求或回調會被拒絕；未提交輸入不應被靜默寫入。
@@ -139,10 +141,10 @@ user may download JSON, copy the redacted summary, or open a prefilled email.
 
 ## English quick guide
 
-The live rc30 origin (`v1.2.0-rc.30`, commit `74b84f43786b00feb15b51a6270ff71c9430773f`) passed all 14 formal gates with source fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc`, including 894 Python tests, 3 motion contracts, and 46 Worker contracts, before the controlled Windows switch. Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` passed zero-percent version smoke before promotion to 100%; rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` is the first-level origin rollback and Worker `d7b51f21-7692-418d-866c-034c2c57292d` is the immediately previous edge version.
+The last verified clean rc30 origin (`v1.2.0-rc.30`, commit `74b84f43786b00feb15b51a6270ff71c9430773f`) passed all 14 formal gates with source fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc`, including 894 Python tests, 3 motion contracts, and 46 Worker contracts, before the controlled Windows switch. Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` passed zero-percent version smoke before promotion to 100%; rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` is the first-level origin rollback and Worker `d7b51f21-7692-418d-866c-034c2c57292d` is the immediately previous edge version.
 
-Live rc30 uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
+The current product contract uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
 
-`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The Service Weave editorial integration, rc27 audit remediations, and rc30 explicit language／appearance controls are part of the live rc30 product.
+`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The Service Weave editorial integration, rc27 audit remediations, and rc30 explicit language／appearance controls are part of the last verified clean rc30 source.
 
 Admin and Guest share the same stable Assist. mode codes: `legacy_fixed_weekday` keeps the canonical AHP weekday, while `flexible_weekly` rotates only across selected available weekdays and avoids the previous week's day where feasible. Both enforce AHP-only eligibility, leave, same-day uniqueness, and no-consecutive-duty rules. Official rosters persist the selected mode; Guest rosters keep it only in the bounded in-memory workspace.

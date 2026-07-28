@@ -176,7 +176,7 @@ print(json.dumps({'fingerprint': fingerprint, 'fileCount': file_count}))
     }
 }
 
-function Import-HostEnvironment([string]$EnvironmentPath) {
+function Read-HostEnvironmentValues([string]$EnvironmentPath) {
     if (-not (Test-Path -LiteralPath $EnvironmentPath -PathType Leaf)) {
         throw "The protected host environment file is missing."
     }
@@ -197,25 +197,207 @@ function Import-HostEnvironment([string]$EnvironmentPath) {
             $value = $value.Substring(1, $value.Length - 2)
         }
         $values[$name] = $value
-        [Environment]::SetEnvironmentVariable($name, $value, "Process")
     }
     return $values
 }
 
-function Get-WorkerOriginPort([string]$ConfigurationPath) {
+function Import-HostEnvironment([string]$EnvironmentPath) {
+    $values = Read-HostEnvironmentValues -EnvironmentPath $EnvironmentPath
+    foreach ($name in $values.Keys) {
+        [Environment]::SetEnvironmentVariable($name, [string]$values[$name], "Process")
+    }
+    return $values
+}
+
+function Merge-HostEnvironmentValues {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Base,
+        [Parameter(Mandatory = $true)][hashtable]$Overlay
+    )
+    $values = @{}
+    foreach ($name in $Base.Keys) {
+        $values[[string]$name] = [string]$Base[$name]
+    }
+    foreach ($name in $Overlay.Keys) {
+        $values[[string]$name] = [string]$Overlay[$name]
+    }
+    return $values
+}
+
+function Get-WorkerGatewaySettings {
+    param(
+        [Parameter(Mandatory = $true)][string]$ConfigurationPath,
+        [Parameter(Mandatory = $true)][string]$Python
+    )
     if (-not (Test-Path -LiteralPath $ConfigurationPath -PathType Leaf)) {
         throw "The Cloudflare Worker configuration is missing."
     }
-    $source = Get-Content -LiteralPath $ConfigurationPath -Raw -Encoding UTF8
-    $matches = [regex]::Matches($source, '"ORIGIN_PORT"\s*:\s*(\d+)')
-    if ($matches.Count -ne 1) {
-        throw "The Cloudflare Worker configuration must define exactly one numeric ORIGIN_PORT."
+    if (-not (Test-Path -LiteralPath $Python -PathType Leaf)) {
+        throw "The verified source Python environment is missing."
     }
-    $port = [int]$matches[0].Groups[1].Value
-    if ($port -lt 1 -or $port -gt 65535) {
-        throw "The Cloudflare Worker ORIGIN_PORT must be between 1 and 65535."
+    $code = @'
+import json
+from pathlib import Path
+import re
+import sys
+
+
+class BlockCommentError(ValueError):
+    pass
+
+
+class DuplicateKeyError(ValueError):
+    pass
+
+
+def strip_jsonc_line_comments(source: str) -> str:
+    output: list[str] = []
+    in_string = False
+    escaped = False
+    index = 0
+    while index < len(source):
+        character = source[index]
+        following = source[index + 1] if index + 1 < len(source) else ""
+        if in_string:
+            output.append(character)
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                in_string = False
+            index += 1
+            continue
+        if character == '"':
+            in_string = True
+            output.append(character)
+            index += 1
+            continue
+        if character == "/" and following == "/":
+            index += 2
+            while index < len(source) and source[index] not in "\r\n":
+                index += 1
+            continue
+        if (character == "/" and following == "*") or (character == "*" and following == "/"):
+            raise BlockCommentError
+        output.append(character)
+        index += 1
+    return "".join(output)
+
+
+def remove_jsonc_trailing_commas(source: str) -> str:
+    output: list[str] = []
+    in_string = False
+    escaped = False
+    for index, character in enumerate(source):
+        if in_string:
+            output.append(character)
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                in_string = False
+            continue
+        if character == '"':
+            in_string = True
+            output.append(character)
+            continue
+        if character == ",":
+            following = index + 1
+            while following < len(source) and source[following].isspace():
+                following += 1
+            if following < len(source) and source[following] in "}]":
+                continue
+        output.append(character)
+    return "".join(output)
+
+
+def strict_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise DuplicateKeyError(key)
+        result[key] = value
+    return result
+
+
+def fail(message: str) -> None:
+    print(json.dumps({"ok": False, "error": message}, separators=(",", ":")))
+
+
+try:
+    source = Path(sys.argv[1]).read_text(encoding="utf-8-sig")
+    configuration = json.loads(
+        remove_jsonc_trailing_commas(strip_jsonc_line_comments(source)),
+        object_pairs_hook=strict_object,
+    )
+    if not isinstance(configuration, dict):
+        raise ValueError("The Cloudflare Worker configuration root must be an object.")
+    worker_vars = configuration.get("vars")
+    if not isinstance(worker_vars, dict):
+        raise ValueError("The Cloudflare Worker configuration must define exactly one top-level vars object.")
+    if "ORIGIN_PORT" not in worker_vars or type(worker_vars["ORIGIN_PORT"]) is not int:
+        raise ValueError("The Cloudflare Worker top-level vars must define one integer ORIGIN_PORT.")
+    origin_port = worker_vars["ORIGIN_PORT"]
+    if not 1024 <= origin_port <= 65535:
+        raise ValueError("The Cloudflare Worker ORIGIN_PORT must be between 1024 and 65535.")
+    if "AUTH_EPOCH" not in worker_vars or type(worker_vars["AUTH_EPOCH"]) is not int:
+        raise ValueError("The Cloudflare Worker top-level vars must define one integer AUTH_EPOCH.")
+    auth_epoch = worker_vars["AUTH_EPOCH"]
+    if auth_epoch < 0 or auth_epoch > 9223372036854775807:
+        raise ValueError("The Cloudflare Worker AUTH_EPOCH must be between 0 and 9223372036854775807.")
+    origin_principal_kid = worker_vars.get("ORIGIN_PRINCIPAL_KID")
+    if not isinstance(origin_principal_kid, str):
+        raise ValueError("The Cloudflare Worker top-level vars must define one string ORIGIN_PRINCIPAL_KID.")
+    if re.fullmatch(r"[A-Za-z0-9._-]{1,64}", origin_principal_kid) is None:
+        raise ValueError("The Cloudflare Worker ORIGIN_PRINCIPAL_KID contains unsupported characters.")
+except BlockCommentError:
+    fail("The Cloudflare Worker gateway settings do not support block comments.")
+except DuplicateKeyError:
+    fail("The Cloudflare Worker configuration contains duplicate JSON object keys.")
+except json.JSONDecodeError:
+    fail("The Cloudflare Worker configuration is not valid JSONC.")
+except (OSError, UnicodeError):
+    fail("The Cloudflare Worker configuration could not be read safely.")
+except ValueError as exc:
+    fail(str(exc))
+else:
+    print(json.dumps({
+        "ok": True,
+        "originPort": origin_port,
+        "authEpoch": auth_epoch,
+        "originPrincipalKid": origin_principal_kid,
+    }, separators=(",", ":")))
+'@
+    # Windows PowerShell 5.1 rewrites quotes inside a native-process `-c`
+    # argument. Encode the audited parser so Python receives the exact source.
+    $encodedCode = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($code))
+    $bootstrap = "import base64,sys;code=base64.b64decode(sys.argv.pop(1));exec(code)"
+    $previousPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $output = @(& $Python -X utf8 -c $bootstrap $encodedCode $ConfigurationPath 2>&1)
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousPreference
     }
-    return $port
+    if ($exitCode -ne 0 -or $output.Count -ne 1) {
+        throw "The Cloudflare Worker configuration parser failed closed."
+    }
+    try {
+        $payload = [string]$output[0] | ConvertFrom-Json -ErrorAction Stop
+    } catch {
+        throw "The Cloudflare Worker configuration parser returned an invalid result."
+    }
+    if ($payload.ok -ne $true) {
+        throw [string]$payload.error
+    }
+    return [pscustomobject]@{
+        OriginPort = [int]$payload.originPort
+        AuthEpoch = [long]$payload.authEpoch
+        OriginPrincipalKid = [string]$payload.originPrincipalKid
+    }
 }
 
 function Assert-UnifiedGuestHostSettings([hashtable]$Values) {
@@ -240,6 +422,74 @@ function Assert-UnifiedGuestHostSettings([hashtable]$Values) {
     }
     if ([string]$Values["AUTH_EPOCH"] -notmatch '^\d+$') {
         throw "AUTH_EPOCH must be a non-negative integer."
+    }
+    if ([string]$Values["ORIGIN_PRINCIPAL_KID"] -notmatch '^[A-Za-z0-9._-]{1,64}$') {
+        throw "ORIGIN_PRINCIPAL_KID contains unsupported characters."
+    }
+}
+
+function Assert-WorkerHostGatewayParity {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Values,
+        [Parameter(Mandatory = $true)]$WorkerSettings
+    )
+    Assert-UnifiedGuestHostSettings -Values $Values
+
+    $hostName = if ($Values.ContainsKey("SING_YIN_HOST")) {
+        [string]$Values["SING_YIN_HOST"]
+    } else {
+        "127.0.0.1"
+    }
+    if ($hostName -notin @("127.0.0.1", "localhost", "::1")) {
+        throw "The NiceGUI host must remain loopback-only."
+    }
+    $rawPort = if ($Values.ContainsKey("SING_YIN_PORT")) {
+        [string]$Values["SING_YIN_PORT"]
+    } else {
+        "8080"
+    }
+    [int]$hostPort = 0
+    if (-not [int]::TryParse($rawPort, [ref]$hostPort) -or $hostPort -lt 1024 -or $hostPort -gt 65535) {
+        throw "The NiceGUI port must be between 1024 and 65535."
+    }
+    if ([int]$WorkerSettings.OriginPort -ne $hostPort) {
+        throw (
+            "The protected host SING_YIN_PORT ($hostPort) does not match " +
+            "the Cloudflare Worker ORIGIN_PORT ($($WorkerSettings.OriginPort)). Update and verify " +
+            "both ends in the same immutable release before deployment."
+        )
+    }
+
+    [long]$hostAuthEpoch = 0
+    if (-not [long]::TryParse([string]$Values["AUTH_EPOCH"], [ref]$hostAuthEpoch)) {
+        throw "The protected host AUTH_EPOCH exceeds the supported integer range."
+    }
+    if ([long]$WorkerSettings.AuthEpoch -ne $hostAuthEpoch) {
+        throw (
+            "The protected host AUTH_EPOCH ($hostAuthEpoch) does not match " +
+            "the Cloudflare Worker AUTH_EPOCH ($($WorkerSettings.AuthEpoch)). Update and verify " +
+            "both ends in the same immutable release before deployment."
+        )
+    }
+
+    $hostOriginPrincipalKid = [string]$Values["ORIGIN_PRINCIPAL_KID"]
+    if ([string]$WorkerSettings.OriginPrincipalKid -cne $hostOriginPrincipalKid) {
+        throw (
+            "The protected host ORIGIN_PRINCIPAL_KID ($hostOriginPrincipalKid) does not match " +
+            "the Cloudflare Worker ORIGIN_PRINCIPAL_KID ($($WorkerSettings.OriginPrincipalKid)). " +
+            "Update and verify both ends in the same immutable release before deployment."
+        )
+    }
+
+    return [pscustomobject]@{
+        Host = $hostName
+        HostPort = $hostPort
+        WorkerPort = [int]$WorkerSettings.OriginPort
+        HostAuthEpoch = $hostAuthEpoch
+        WorkerAuthEpoch = [long]$WorkerSettings.AuthEpoch
+        HostOriginPrincipalKid = $hostOriginPrincipalKid
+        WorkerOriginPrincipalKid = [string]$WorkerSettings.OriginPrincipalKid
+        Matches = $true
     }
 }
 
@@ -508,7 +758,6 @@ try {
         if (($candidateOverlayItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
             throw "The environment overlay must not be a reparse point."
         }
-        $overlayPathToDelete = $resolvedOverlayPath
     }
     if ($ReleaseRef -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$') {
         throw "ReleaseRef must be a simple immutable release tag name."
@@ -582,6 +831,8 @@ try {
     $rollbackAttempted = $false
     $rollbackSucceeded = $false
     $rollbackError = $null
+    $preflightGatewayParity = $null
+    $postApplyGatewayParity = $null
 
     try {
     Write-Step "Validating the immutable release and $requiredCheckCount-gate evidence"
@@ -647,7 +898,7 @@ try {
         throw "The release report fingerprint does not match the immutable release source."
     }
 
-    Write-Step "Inspecting the owned startup task and protecting host settings"
+    Write-Step "Inspecting the owned startup task"
     $inspection = Get-SingYinTaskInspection `
         -TaskName $TaskName `
         -ProjectRoot $HostRoot `
@@ -665,6 +916,44 @@ try {
     $taskInitiallyRunning = [string]$task.State -ceq "Running"
     $taskInitiallyEnabled = [bool]$task.Settings.Enabled
 
+    # Fail before reading or consuming a one-use environment overlay. A dirty
+    # installed checkout is an attribution problem, not a condition that this
+    # deployer may repair implicitly; preserving the overlay lets the operator
+    # reconcile the host and retry without recreating sensitive settings.
+    $hostStatus = Get-GitValue -Repository $HostRoot -Arguments @(
+        "status",
+        "--porcelain",
+        "--untracked-files=all"
+    )
+    if (-not [string]::IsNullOrWhiteSpace($hostStatus)) {
+        throw "The installed host repository is not clean."
+    }
+    $previousCommit = Get-GitValue -Repository $HostRoot -Arguments @("rev-parse", "HEAD")
+
+    Write-Step "Preflighting host and Worker gateway identity without changing the host"
+    $currentHostEnvironment = Read-HostEnvironmentValues -EnvironmentPath $environmentPath
+    $prospectiveHostEnvironment = $currentHostEnvironment
+    $environmentOverlay = $null
+    if ($null -ne $resolvedOverlayPath) {
+        $environmentOverlay = Read-EnvironmentOverlay -Path $resolvedOverlayPath
+        $prospectiveHostEnvironment = Merge-HostEnvironmentValues `
+            -Base $currentHostEnvironment `
+            -Overlay $environmentOverlay
+    }
+    $workerConfigurationPath = Join-Path $SourceRoot "cloudflare\roster_viewer\wrangler.jsonc"
+    $workerGatewaySettings = Get-WorkerGatewaySettings `
+        -ConfigurationPath $workerConfigurationPath `
+        -Python $sourcePython
+    $preflightGatewayParity = Assert-WorkerHostGatewayParity `
+        -Values $prospectiveHostEnvironment `
+        -WorkerSettings $workerGatewaySettings
+
+    # A one-use overlay is consumed only after the read-only identity preflight
+    # passes. A parity failure therefore leaves both the host and the operator's
+    # proposed overlay untouched for safe correction.
+    $overlayPathToDelete = $resolvedOverlayPath
+
+    Write-Step "Protecting and applying the preflighted host settings"
     Protect-SingYinSensitivePath -Path $environmentPath -RuntimeUser $runtimeAccount.Name
     $aclStatus = Get-SingYinAclStatus `
         -Paths @($environmentPath) `
@@ -683,7 +972,6 @@ try {
         ) {
             throw "The one-use environment overlay must be separate from the protected host environment."
         }
-        $environmentOverlay = Read-EnvironmentOverlay -Path $resolvedOverlayPath
         Merge-EnvironmentOverlay `
             -EnvironmentPath $environmentPath `
             -Overlay $environmentOverlay `
@@ -705,28 +993,19 @@ try {
     }
     $processEnvironmentCaptured = $true
     $environmentValues = Import-HostEnvironment -EnvironmentPath $environmentPath
-    Assert-UnifiedGuestHostSettings -Values $environmentValues
+    $postApplyGatewayParity = Assert-WorkerHostGatewayParity `
+        -Values $environmentValues `
+        -WorkerSettings $workerGatewaySettings
     $configuredEndpoint = Get-SingYinConfiguredEndpoint -EnvironmentPath $environmentPath
     $deploymentPort = [int]$configuredEndpoint.Port
-    $workerConfigurationPath = Join-Path $SourceRoot "cloudflare\roster_viewer\wrangler.jsonc"
-    $workerOriginPort = Get-WorkerOriginPort -ConfigurationPath $workerConfigurationPath
-    if ($workerOriginPort -ne $deploymentPort) {
-        throw (
-            "The protected host SING_YIN_PORT ($deploymentPort) does not match " +
-            "the Cloudflare Worker ORIGIN_PORT ($workerOriginPort). Update and verify both " +
-            "ends in the same immutable release before deployment."
-        )
+    if ($deploymentPort -ne [int]$postApplyGatewayParity.HostPort) {
+        throw "The post-apply endpoint validation disagrees with the gateway parity check."
     }
-
-    $hostStatus = Get-GitValue -Repository $HostRoot -Arguments @(
-        "status",
-        "--porcelain",
-        "--untracked-files=all"
-    )
-    if (-not [string]::IsNullOrWhiteSpace($hostStatus)) {
-        throw "The installed host repository is not clean."
-    }
-    $previousCommit = Get-GitValue -Repository $HostRoot -Arguments @("rev-parse", "HEAD")
+    $workerOriginPort = [int]$postApplyGatewayParity.WorkerPort
+    $hostAuthEpoch = [long]$postApplyGatewayParity.HostAuthEpoch
+    $workerAuthEpoch = [long]$postApplyGatewayParity.WorkerAuthEpoch
+    $hostOriginPrincipalKid = [string]$postApplyGatewayParity.HostOriginPrincipalKid
+    $workerOriginPrincipalKid = [string]$postApplyGatewayParity.WorkerOriginPrincipalKid
 
     Write-Step "Stopping the owned task and fencing port $deploymentPort"
     if ([string]$task.State -ceq "Running") {
@@ -883,6 +1162,14 @@ try {
             host = "127.0.0.1"
             port = $deploymentPort
             workerOriginPort = $workerOriginPort
+        }
+        gatewayIdentity = [ordered]@{
+            hostAuthEpoch = $hostAuthEpoch
+            workerAuthEpoch = $workerAuthEpoch
+            hostOriginPrincipalKid = $hostOriginPrincipalKid
+            workerOriginPrincipalKid = $workerOriginPrincipalKid
+            preflightMatched = [bool]$preflightGatewayParity.Matches
+            postApplyMatched = [bool]$postApplyGatewayParity.Matches
         }
         environmentOverlayApplied = $environmentOverlayApplied
         taskName = $TaskName

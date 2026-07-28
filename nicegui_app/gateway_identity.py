@@ -136,7 +136,10 @@ def verify_origin_principal(
         "kid",
         "request_binding",
     }
-    if not isinstance(payload, dict) or set(payload) != required:
+    if (
+        not isinstance(payload, dict)
+        or frozenset(payload) not in {frozenset(required), frozenset({*required, "theme"})}
+    ):
         raise OriginPrincipalError("origin principal payload shape is invalid")
     current = int(datetime.now(timezone.utc).timestamp()) if now is None else int(now)
     mode_value = payload["mode"]
@@ -165,6 +168,7 @@ def verify_origin_principal(
         or payload["auth_epoch"] != configured_auth_epoch(env)
         or payload["kid"] != configured_key_id(env)
         or not hmac.compare_digest(str(payload["request_binding"]), expected_binding)
+        or ("theme" in payload and payload["theme"] not in {"light", "dark"})
     ):
         raise OriginPrincipalError("origin principal is stale, revoked, or bound to another request")
     return Principal(
@@ -174,6 +178,7 @@ def verify_origin_principal(
         expires_at=datetime.fromtimestamp(payload["exp"], timezone.utc),
         auth_epoch=payload["auth_epoch"],
         key_id=payload["kid"],
+        theme_handoff=payload.get("theme"),
     )
 
 

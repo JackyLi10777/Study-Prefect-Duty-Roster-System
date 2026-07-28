@@ -19,6 +19,7 @@ from nicegui_app.access_context import (
 from nicegui_app.config import PREFECT_SEED_PATH
 from nicegui_app.persistence.models import (
     AuditEventRecord,
+    BackupObligationRecord,
     ExternalShareOutboxRecord,
     OperationCommandRecord,
 )
@@ -28,7 +29,7 @@ from nicegui_app.services.public_roster_share import (
     PublicRosterShareService,
     PublicRosterShareSettings,
 )
-from nicegui_app.services.roster_workflow import RosterWorkflow
+from nicegui_app.services.roster_workflow import RosterWorkflow, WorkflowMaintenanceError
 
 
 WEEK_START = date(2026, 9, 7)
@@ -117,8 +118,57 @@ def _workflow(tmp_path) -> tuple[RosterWorkflow, int]:
     return workflow, draft.id
 
 
+def _add_pending_backup_obligation(workflow: RosterWorkflow, command_id: str) -> None:
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    with workflow._session() as session:
+        session.add(
+            OperationCommandRecord(
+                command_id=command_id,
+                operation_type="test_committed_write",
+                request_fingerprint="0" * 64,
+                status="committed",
+                result_json="{}",
+                created_at=now,
+                completed_at=now,
+            )
+        )
+        session.flush()
+        session.add(
+            BackupObligationRecord(
+                command_id=command_id,
+                operation_type="test_committed_write",
+                roster_week_id=None,
+                status="failed",
+                created_at=now,
+            )
+        )
+        session.commit()
+
+
 def _unpad(value: str) -> bytes:
     return urlsafe_b64decode(value + "=" * (-len(value) % 4))
+
+
+def test_pending_backup_obligation_blocks_new_share_before_gateway_or_outbox(
+    tmp_path,
+) -> None:
+    workflow, roster_id = _workflow(tmp_path)
+    _add_pending_backup_obligation(workflow, "unsafe-share-fence")
+    gateway = RecordingGateway()
+    service = PublicRosterShareService(
+        workflow,
+        settings=_settings(),
+        gateway=gateway,
+        now=lambda: FIXED_NOW,
+    )
+
+    with pytest.raises(WorkflowMaintenanceError, match="read-only"):
+        service.create_share(roster_id, command_id="blocked-public-share")
+
+    assert gateway.created == []
+    with workflow._session() as session:
+        assert session.scalar(select(ExternalShareOutboxRecord)) is None
+        assert session.get(OperationCommandRecord, "blocked-public-share") is None
 
 
 def test_response_loss_replays_exact_durable_envelope_and_erases_key_after_delivery(

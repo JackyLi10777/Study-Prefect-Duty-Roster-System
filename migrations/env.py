@@ -10,7 +10,11 @@ from sqlalchemy import engine_from_config, pool
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # Alembic's default disables every logger that is not named in alembic.ini.
+    # The application configures its privacy-safe rotating logger before running
+    # migrations, so disabling existing loggers here would silently remove all
+    # subsequent operator and request diagnostics.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 
 def run_migrations_offline() -> None:

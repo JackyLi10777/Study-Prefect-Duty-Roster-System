@@ -331,11 +331,12 @@ def settings_page() -> None:
                             icon="archive",
                         )
                         if package is not _OPERATION_FAILED:
-                            deliver_generated_download(
+                            if not deliver_generated_download(
                                 package.content,
                                 package.filename,
                                 media_type="application/zip",
-                            )
+                            ):
+                                return
                             ui.notify(t("handover_backup_package_ready"), type="positive")
                             handover_package_dialog.close()
 

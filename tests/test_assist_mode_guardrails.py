@@ -298,32 +298,60 @@ def test_guest_legacy_auto_initialization_versions_records_and_rejects_stale_edi
         )
 
 
-def test_0011_downgrade_refuses_to_discard_legacy_mode_history(tmp_path: Path) -> None:
-    database_path = tmp_path / "assist-mode-downgrade.sqlite3"
+@pytest.mark.parametrize(
+    ("modes", "should_refuse"),
+    [
+        ((), False),
+        (("legacy_fixed_weekday",), False),
+        (("flexible_weekly",), True),
+        (("legacy_fixed_weekday", "flexible_weekly"), True),
+    ],
+)
+def test_0011_downgrade_preserves_non_legacy_assignment_provenance(
+    tmp_path: Path,
+    modes: tuple[str, ...],
+    should_refuse: bool,
+) -> None:
+    database_path = tmp_path / f"assist-mode-downgrade-{len(modes)}-{should_refuse}.sqlite3"
     config = _alembic_config(database_path)
     command.upgrade(config, "head")
     timestamp = "2026-10-01 12:00:00"
     with sqlite3.connect(database_path) as connection:
-        connection.execute(
-            """
-            INSERT INTO roster_weeks (
-                week_start, status, version, policy_version,
-                history_priority_multiplier, assist_assignment_mode,
-                generated_at, created_at, updated_at
-            ) VALUES (?, 'draft', 1, 'test-policy', 1.0,
-                      'legacy_fixed_weekday', ?, ?, ?)
-            """,
-            (WEEK_START.isoformat(), timestamp, timestamp, timestamp),
-        )
+        for index, mode in enumerate(modes):
+            connection.execute(
+                """
+                INSERT INTO roster_weeks (
+                    week_start, status, version, policy_version,
+                    history_priority_multiplier, assist_assignment_mode,
+                    generated_at, created_at, updated_at
+                ) VALUES (?, 'draft', 1, 'test-policy', 1.0, ?, ?, ?, ?)
+                """,
+                ((WEEK_START + timedelta(days=index * 7)).isoformat(), mode, timestamp, timestamp, timestamp),
+            )
         connection.commit()
 
-    with pytest.raises(RuntimeError, match="Cannot downgrade Assist assignment modes"):
+    if should_refuse:
+        with pytest.raises(RuntimeError, match="Cannot downgrade Assist assignment modes"):
+            command.downgrade(config, "0010")
+    else:
         command.downgrade(config, "0010")
 
     with sqlite3.connect(database_path) as connection:
-        assert connection.execute(
-            "SELECT version_num FROM alembic_version"
-        ).fetchone() == ("0011",)
-        assert connection.execute(
-            "SELECT assist_assignment_mode FROM roster_weeks"
-        ).fetchone() == ("legacy_fixed_weekday",)
+        expected_revision = "0011" if should_refuse else "0010"
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
+            expected_revision,
+        )
+        columns = {
+            str(row[1])
+            for row in connection.execute("PRAGMA table_info(roster_weeks)").fetchall()
+        }
+        if should_refuse:
+            assert "assist_assignment_mode" in columns
+            assert [
+                str(row[0])
+                for row in connection.execute(
+                    "SELECT assist_assignment_mode FROM roster_weeks ORDER BY week_start"
+                ).fetchall()
+            ] == list(modes)
+        else:
+            assert "assist_assignment_mode" not in columns

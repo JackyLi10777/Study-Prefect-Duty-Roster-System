@@ -225,6 +225,12 @@ class PersistenceWorkflowMixin:
                 roster_week_id = obligation.roster_week_id
 
             backup = self._create_and_record_backup(operation_type, roster_week_id)
+            if backup.success and backup.path is not None:
+                self._complete_backup_obligations_with_snapshot(
+                    backup.path,
+                    command_ids=(command_id,),
+                )
+                return backup.path
             with self._session() as session:
                 self._begin_serialized_write(session)
                 obligation = session.scalar(
@@ -234,12 +240,37 @@ class PersistenceWorkflowMixin:
                 )
                 if obligation is None:
                     raise WorkflowError("The operation backup obligation was not found.")
-                obligation.status = "completed" if backup.success and backup.path else "failed"
+                obligation.status = "failed"
                 obligation.backup_path = str(backup.path) if backup.path else None
                 obligation.error = backup.error_message
-                obligation.completed_at = self._now() if backup.success else None
+                obligation.completed_at = None
                 session.commit()
             return self._require_backup(backup, committed_event=operation_type)
+
+    def _complete_backup_obligations_with_snapshot(
+        self,
+        backup_path: Path,
+        *,
+        command_ids: tuple[str, ...] | None = None,
+    ) -> int:
+        """Settle live obligations covered by one already-verified recovery point."""
+
+        with self._session() as session:
+            self._begin_serialized_write(session)
+            statement = select(BackupObligationRecord).where(
+                BackupObligationRecord.status != "completed"
+            )
+            if command_ids is not None:
+                statement = statement.where(BackupObligationRecord.command_id.in_(command_ids))
+            obligations = list(session.scalars(statement.order_by(BackupObligationRecord.id)).all())
+            completed_at = self._now()
+            for obligation in obligations:
+                obligation.status = "completed"
+                obligation.backup_path = str(backup_path)
+                obligation.error = None
+                obligation.completed_at = completed_at
+            session.commit()
+        return len(obligations)
 
     def pending_backup_obligation_count(self) -> int:
         with self._session() as session:

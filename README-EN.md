@@ -1,8 +1,10 @@
 # Sing Yin Study Prefect Duty Roster System
 
-> **Release note (live, 2026-07-27):** the controlled Windows origin runs annotated tag `v1.2.0-rc.30` at commit `74b84f43786b00feb15b51a6270ff71c9430773f`; canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` serves 100% of traffic after a zero-percent version smoke. The 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` passed all 14 formal gates, and verified backup `20260727-023041-069097-manual_verified_backup.sqlite3` with SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` passed isolated restore, fairness, row-count, and restore-audit checks. Origin health/readiness, canonical root/health, rendered desktop/320px theme controls, and the Guest Engineering ≈10B disclosure passed. rc27 is the first-level origin rollback and Worker `d7b51f21-7692-418d-866c-034c2c57292d` is the immediately previous edge version; supervised Head Study Prefect and teacher-advisor acceptance remains outstanding.
+> **Observed production truth (2026-07-28; reconciliation required):** `C:\SingYinRoster` still points to rc30／`74b84f43786b00feb15b51a6270ff71c9430773f`, but the host worktree was observed with 73 tracked modifications and 3 untracked items and the active process started after that drift. It cannot be described as exact rc30, the `15d155d8…` fingerprint, or an immutable reviewed bundle. Canonical traffic is currently served by unattributed Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed`. The clean rc30 origin plus Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` is the last fully verified clean pair; `11763f08…` is the immediate known verified edge rollback and `d7b51f21…` is older history. rc31 remains unfrozen, untagged, and undeployed; supervised acceptance remains open. Any later “live rc30／current baseline／first-level rollback” wording is retained only as 2026-07-27 historical evidence and is superseded by this notice.
+
+> **Historical clean-release evidence (2026-07-27):** the clean controlled Windows origin ran annotated tag `v1.2.0-rc.30` at commit `74b84f43786b00feb15b51a6270ff71c9430773f`; Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` passed zero-percent smoke and then served 100% of traffic. The 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` passed all 14 formal gates, and verified backup `20260727-023041-069097-manual_verified_backup.sqlite3` with SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` passed isolated restore, fairness, row-count, and restore-audit checks. Origin health/readiness, canonical root/health, rendered desktop/320px theme controls, and the Guest Engineering ≈10B disclosure passed. This is the last fully verified clean pair, not a claim about the source-drifted active runtime. rc27 remains a deeper historical origin fallback; `11763f08…` is the immediate known verified edge rollback and `d7b51f21…` is older history. Supervised Head Study Prefect and teacher-advisor acceptance remains outstanding.
 >
-> **rc31 source candidate (not deployed):** branch `codex/rc31-unified-theme-controls` replaces the visible three-choice appearance selector with one binary Light／Dark control. `system` remains only as the missing/unset initialization state: an unset session follows the operating system, the first activation stores the opposite of the resolved theme, and later activations alternate explicit Light and Dark. The candidate registers the dedicated browser matrix as the fifteenth fingerprint-bound release gate and has passed local source tests; protected-main identity, the exact-source release fingerprint, formal backup, Worker version, and deployment evidence remain pending. The rc30 origin and Worker remain the live baseline.
+> **rc31 source candidate (not deployed):** branch `codex/rc31-unified-theme-controls` combines the binary Light／Dark control with complete deterministic room-schedule solving and strict slot/weight validation, bounded Admin／Guest generated-file delivery, rendered-state mobile-drawer focus synchronization, universal business-write admission, diagnostic-only recovery-marker startup, exact-byte staged backup／handover／restore verification, migration-provenance guards, and fail-closed host／Worker identity parity. An unset appearance follows the operating system. Only a deliberate Admin／Guest entry may stage an explicit `light` or `dark` hint for at most 120 seconds. The Worker validates it, carries it inside the signed session and request-bound principal, and clears the staging cookie when the session is minted; an existing destination preference always wins. Guest files remain capped at 5 MiB; Admin files are bounded at 64 MiB, with a 128 MiB total registry and 64 MiB／16 tickets reserved for Admin. Earlier 901／929 Python and eight-case direct Chromium results are historical candidate slices. Current focused regressions, all 48 Worker contracts, and 16 local rendered Public→Admin／Guest theme-continuity cases pass. Frozen-source full-suite evidence, formal `--release`, protected-main commit/tag/fingerprint, verified backup/restore, paired deployment, canonical online checks, and supervised acceptance remain pending. The clean rc30＋`11763f08…` pair remains the last fully verified clean baseline; the active drifted origin／Worker must be reconciled before rc31 deployment.
 >
 > **Not to be served, but to serve. — Mark 10:45**
 
@@ -52,7 +54,7 @@ longest document:
 | Mode | Interface | Data and retention | Explicit boundary |
 |---|---|---|---|
 | Public entrance | Public branded gateway | Reads no official directory or roster | Routes only to Admin, Guest, or an already-held share link |
-| Guest | The same NiceGUI routes, navigation, and workflow as Admin | Per-tab fictional in-memory workspace; cleared on sign-out, expiry, revocation, or restart | No AI, import, upload, official persistence, backup/restore, Viewer publication, or costly external operation; only one-shot `DEMO` downloads |
+| Guest | The same NiceGUI routes, navigation, and workflow as Admin | Per-tab fictional in-memory workspace; cleared on sign-out, expiry, revocation, or restart | No AI, import, upload, official persistence, backup/restore, Viewer publication, or costly external operation; only one-shot `DEMO` downloads bound to the verified Guest mode and session |
 | Admin | Complete NiceGUI workbench | Official SQLite, verified backups, and local audit on the controlled Windows origin | Requires Cloudflare Access and a signed principal; high-risk writes also require version, confirmation, idempotency, and backup obligations |
 | Viewer | Read-only `/view#…` roster | Ciphertext in Worker KV; the decryption key remains in the URL fragment | Cannot sign in, edit, elevate identity, or enumerate other rosters; expires and can be revoked |
 | Practice | The official local workflow with fictional content | Separate `data/practice/` SQLite, backups, logs, and preferences | Every output is non-official and official data is never read or written |
@@ -121,19 +123,20 @@ release tag cannot be updated or deleted. See the complete
 data classes, incident response, and residual limits.
 
 The retained **v1.1 rollback** record is historical recovery evidence only; it
-does not replace the current rc30 baseline.
+does not replace the last fully verified clean rc30 recovery baseline or prove
+the provenance of the active drifted runtime.
 
 The public entrance, shared-roster viewer, and NiceGUI workbench use the same
 `Copyright © 2026 LI Chuangjie` page-footer attribution. Clean group-sharing
 roster PDFs retain their explicit supplementary-footer export option.
 
-Non-interactive editorial cards gain a quiet fine-pointer ambient follow-light and focus-within halo without lift or cursor change; action cards keep the existing lift + glow. The live rc30 product includes Assist fixed-weekday／flexible-weekly modes plus the versioned Service Weave `ProductIdentity`,
+Non-interactive editorial cards gain a quiet fine-pointer ambient follow-light and focus-within halo without lift or cursor change; action cards keep the existing lift + glow. The last verified clean rc30 source includes Assist fixed-weekday／flexible-weekly modes plus the versioned Service Weave `ProductIdentity`,
 central `PageDefinition` catalogue, public NiceGUI component API, explicit CSS
 ownership, filterable Engineering evidence index, internal Developer Reference,
 bounded Guest preferences, unified generated-file delivery, the browser／PDF
 roster matrix, and auditable published-roster withdrawal.
 
-The live rc30 release retains and re-verifies admission control that rejects excess Guest sessions without
+The last verified clean rc30 release retains and re-verifies admission control that rejects excess Guest sessions without
 evicting active users, stronger import and network bounds, aggregate fairness
 reconciliation, explicit return paths, and stable button containers whose icons
 transform internally. Its 296-input fingerprint
@@ -147,7 +150,7 @@ passed all 14 formal gates before the controlled origin and Worker rollout.
 | `codex/login-copy-music-rc18` | NiceGUI + SQLite, historical release source | Superseded rc18 `fd504a8` entrance, devotional, interaction and rollback line |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite, historical source | Previous Service Weave editorial integration line |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Previous unified-guest architecture line; no longer the formal baseline |
-| `main` | NiceGUI + SQLite, self-hosted | Live `v1.2.0-rc.30` source; Windows origin matches the annotated tag |
+| `main` | NiceGUI + SQLite, self-hosted | Last verified clean `v1.2.0-rc.30` source; active origin provenance requires reconciliation |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 
@@ -169,7 +172,7 @@ redirects, not a static tour or second trial product. An explicitly issued
 `/view#…` link remains the separate encrypted, read-only published-roster viewer.
 
 The Worker and origin authenticate both modes with server-verified, HMAC-signed
-principals. The live rc30 release passed 14／14 formal gates against its own
+principals. The last verified clean rc30 release passed 14／14 formal gates against its own
 296-input fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc`,
 including isolated Admin/Guest browser, mobile, reduced-motion, performance,
 write/PDF, backup, and recovery evidence. The application has no custom password database.
@@ -264,9 +267,19 @@ Guest language, appearance, music, and sound preferences are retained only in
 a bounded origin-memory store for the verified session, so refresh and route
 changes remain coherent without creating permanent Guest data. Sign-out,
 expiry, revocation, or origin restart clears them. Admin keeps its user-level
-preference store. Both identities use one credentialed generated-file delivery
+preference store. Public／Viewer does not read or continuously synchronize either
+workspace. Only deliberate Admin／Guest entry may stage a normalized explicit
+`light` or `dark` hint for at most 120 seconds. The Worker validates it, carries
+it inside the signed session and request-bound principal, and clears the staging
+cookie when the session is minted; an existing destination preference always
+wins. Both identities use one credentialed generated-file delivery
 path which checks HTTP status and media type before creating a temporary browser
 download; failures expose a bilingual recovery action and support reference.
+The bounded registry binds every ticket to the verified access mode and session,
+rejects cross-mode replay without consuming the ticket, and reserves capacity
+for Admin so Guest saturation cannot block official generated-file delivery.
+Guest files are capped at 5 MiB and Admin files at 64 MiB; the registry is capped
+at 128 MiB and reserves 64 MiB plus 16 tickets for Admin.
 
 An incorrectly published week is not physically deleted. **Withdraw published
 roster** accepts an optional explanatory reason while still requiring the expected version and idempotent command. The same
@@ -274,7 +287,7 @@ transaction preserves the original evidence, posts the inverse of the version's
 net fairness effect, creates audit and backup obligations, and requests
 revocation of existing shares before a corrected week can be generated.
 
-The live rc30 release passed its matching 14-gate report, fresh verified backup,
+The last verified clean rc30 release passed its matching 14-gate report, fresh verified backup,
 isolated restore, origin rollout, zero-percent Worker smoke, 100% promotion, and canonical
 rendered checks. Exact operating commands are documented in
 [`PUBLIC_ROSTER_VIEWER.md`](docs/PUBLIC_ROSTER_VIEWER.md) and
@@ -298,6 +311,8 @@ complete risk matrix is in [`UPDATE_WORKFLOW.md`](docs/UPDATE_WORKFLOW.md).
    published-duty adjustment, issue a fresh link and revoke the old one.
 
 Fixed-weekday mode keeps each active Assistant Head Study Prefect on the same weekday while the directory and declared availability remain unchanged. A leave replacement covers that week-local duty only and never changes the permanent weekday owner. Flexible-weekly mode remains deterministic and auditable, uses persistent fairness history as its primary assignment cost, honours declared available days, and avoids repeating the immediately previous Assist weekday when fairness and feasibility permit. Only Assistant Head Study Prefects are eligible for `Assist. in charge`; unchecked availability days are unavailable in both modes. An existing roster week always reopens with its persisted mode. See [Assist assignment modes](docs/ROSTER_POLICY_MODES.md).
+
+Ordinary-room assignment uses fairness-ordered deterministic backtracking rather than committing the first locally preferred candidate. Daily matching feasibility and failed-state pruning allow the solver to recover when an early fair choice would block later coverage. The final validator requires a non-empty roster, the exact canonical weekday/seat multiset, and canonical duty weights; if no complete policy-valid schedule exists for the supplied directory, availability, and leave constraints, generation stops with a controlled no-solution result.
 
 ## Policy invariants
 
@@ -360,7 +375,14 @@ flowchart LR
 ```
 
 SQLite writes use WAL, foreign keys, busy timeouts, transactions, online
-snapshots, SHA-256 manifests, integrity checks, and managed restore. A
+snapshots, SHA-256 manifests, integrity checks, and managed restore. Recovery
+snapshots must be self-contained and are rejected if adjacent WAL, SHM, or
+journal sidecars exist. Managed restore stages and re-verifies the exact database
+and JSON-manifest bytes, accepts only the supported migration chain, rejects
+pending backup obligations, and validates the current schema, foreign keys, and
+fairness state before installation. A durable recovery marker starts the runtime
+in diagnostic-only mode before migrations or database sessions; all business
+writes remain fail-closed until controlled recovery succeeds. A
 database-level publication claim prevents two browser tabs from posting the
 same fairness workload twice.
 

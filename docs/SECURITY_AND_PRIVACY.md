@@ -28,6 +28,13 @@ runtime logs, `.env`, tokens, or credentials. The school feedback address is
 public by design; private backup administrator addresses are not configuration
 or documentation data.
 
+The local rotating application log remains payload-free across schema upgrades.
+Alembic must configure its own handlers without disabling existing application
+loggers, and the application logging bootstrap defensively clears a disabled
+state after migration. A migration-then-log regression test protects this
+boundary; it does not relax the prohibition on names, leave reasons, roster
+rows, PDF contents, secrets, or credentials in logs.
+
 ## 2. 信任邊界 / Trust boundaries
 
 ```mermaid
@@ -133,10 +140,31 @@ timeout, unique constraints, conditional updates, transaction-owned audit
 events, and version checks prevent ordinary lost updates and duplicate publish
 effects. A UI success message is not the durability point: commit must complete;
 where the workflow promises recovery, a verified backup must also complete or
-the operator receives the explicit "saved but backup incomplete" state.
+the operator receives the explicit "saved but backup incomplete" state. Every
+business write, including new-school-year rollover and external-share delivery,
+passes one centralized admission guard. A failed post-commit backup leaves a
+durable obligation and keeps all business writes fail-closed until a verified
+snapshot settles it. If a durable recovery marker exists at process start, the
+runtime enters diagnostic-only mode before migrations, SQLAlchemy sessions, or
+SQLite journal mutation; data-free health/readiness remains available, but no
+business write is admitted. `/readyz` additionally requires
+`workflowInitialized=true`, storage health, no maintenance or recovery marker,
+zero pending backup obligations, and no startup-repair failure. Diagnostic-only
+startup deliberately returns HTTP 503 with `workflowInitialized=false` and
+`writeReady=false`; deleting a marker cannot manufacture workflow sessions, so
+controlled recovery and a safe process restart are required before writes can
+resume.
 
-Backups are outside Git, checksum verified, integrity checked, restored into an
-isolated database, and reconciled against row counts and fairness. Windows ACLs
+Backups are outside Git. A trusted recovery point is a self-contained SQLite
+snapshot plus a same-name JSON-object manifest; adjacent WAL, SHM, or journal
+sidecars are rejected. Verification checks the exact database/manifest digests,
+SQLite integrity, a supported migration revision, zero pending obligations, and
+the required schema. Managed restore copies those exact bytes to private staging,
+re-verifies both digests, migrates only the supported legacy chain from revision
+`0007` to the current head in isolation, then validates the current schema,
+foreign keys, row counts, and fairness before installation. Unknown or future
+revisions are rejected. Handover packaging likewise re-stages and re-verifies the
+exact pair immediately before ZIP creation. Windows ACLs
 limit runtime data, backups, logs and `.env` to the dedicated runtime account,
 SYSTEM and administrators. Host compromise by an administrator or loss of the
 physical disk is outside application-level protection; use Windows device
@@ -180,6 +208,15 @@ refer to the same source. Promotion occurs only after health, readiness, entranc
 viewer and authenticated-path smoke checks. Rollback restores both the previous
 origin tag and previous Worker version.
 
+Before the protected environment is mutated, the Windows service is stopped, or
+its source is switched, the controlled deployer read-only merges the prospective
+host settings and requires its loopback port, `AUTH_EPOCH`, and
+`ORIGIN_PRINCIPAL_KID` to match the immutable Worker configuration. It repeats
+the comparison after applying the environment and before stopping the task.
+Either mismatch fails closed. The deployment report may record only the
+non-secret host／Worker identifiers and `preflightMatched`／`postApplyMatched`,
+but never records the shared principal secret.
+
 If compromise is suspected:
 
 1. stop promotion and preserve redacted logs, support references, commit, Worker
@@ -188,8 +225,9 @@ If compromise is suspected:
 3. rotate the smallest affected Cloudflare/host secret and remove unknown GitHub
    sessions, tokens, deploy keys or collaborators;
 4. withdraw exposed shares and assume copied plaintext cannot be recalled;
-5. isolate the host, verify database integrity, restore only from a checksum-
-   verified snapshot, and reconcile audit/fairness state;
+5. isolate the host and restore only from an exact staged database／manifest pair
+   that has no SQLite sidecars or pending obligations, uses a supported schema
+   revision, and passes checksum, integrity, current-schema and fairness checks;
 6. revert to the last verified origin tag and Worker version;
 7. patch through a protected pull request, rerun formal gates, document impact,
    and privately coordinate disclosure.

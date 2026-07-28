@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
+from datetime import date, datetime, timezone
 import sqlite3
-from threading import Barrier
+from threading import Barrier, Event
 
 import pytest
 
 from nicegui_app.config import PREFECT_SEED_PATH
+from nicegui_app.persistence.models import BackupObligationRecord, OperationCommandRecord
 from nicegui_app.services.maintenance import MaintenanceModeError
 from nicegui_app.services.roster_workflow import (
     BackupResult,
@@ -29,6 +30,33 @@ def _workflow(tmp_path) -> RosterWorkflow:
     )
     workflow.bootstrap()
     return workflow
+
+
+def _add_pending_backup_obligation(workflow: RosterWorkflow, command_id: str) -> None:
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    with workflow._session() as session:
+        session.add(
+            OperationCommandRecord(
+                command_id=command_id,
+                operation_type="test_committed_write",
+                request_fingerprint="0" * 64,
+                status="committed",
+                result_json="{}",
+                created_at=now,
+                completed_at=now,
+            )
+        )
+        session.flush()
+        session.add(
+            BackupObligationRecord(
+                command_id=command_id,
+                operation_type="test_committed_write",
+                roster_week_id=None,
+                status="failed",
+                created_at=now,
+            )
+        )
+        session.commit()
 
 
 def test_prefect_can_be_created_updated_and_archived_without_erasing_history(tmp_path) -> None:
@@ -260,6 +288,54 @@ def test_new_school_year_rollover_has_one_winner_across_concurrent_clients(tmp_p
     assert len(backups) == 2
     assert all(first.verify_backup(path)["valid"] is True for path in backups)
     assert not (tmp_path / ".sing-yin.sqlite3.maintenance.json").exists()
+
+
+def test_pending_backup_obligation_blocks_school_year_rollover_without_changes(tmp_path) -> None:
+    workflow = _workflow(tmp_path)
+    _add_pending_backup_obligation(workflow, "unsafe-rollover-fence")
+    before = [(row["id"], row["version"]) for row in workflow.prefects()]
+
+    with pytest.raises(WorkflowMaintenanceError, match="read-only"):
+        workflow.prepare_new_school_year()
+
+    assert [(row["id"], row["version"]) for row in workflow.prefects()] == before
+    with sqlite3.connect(tmp_path / "sing-yin.sqlite3") as connection:
+        audit_count = connection.execute(
+            "SELECT COUNT(*) FROM audit_events WHERE event_type = 'school_year_directory_archived'"
+        ).fetchone()[0]
+    assert audit_count == 0
+    assert not (tmp_path / ".sing-yin.sqlite3.maintenance.json").exists()
+
+
+def test_school_year_rollover_rechecks_admission_after_waiting_for_a_write(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    workflow = _workflow(tmp_path)
+    first_admission_passed = Event()
+    original_admission = workflow._assert_business_write_admitted
+
+    def mark_admission(operation_name: str, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
+        original_admission(operation_name, *args, **kwargs)
+        first_admission_passed.set()
+
+    monkeypatch.setattr(workflow, "_assert_business_write_admitted", mark_admission)
+    before = [(row["id"], row["version"]) for row in workflow.prefects()]
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        with workflow.maintenance.serialized_operation():
+            rollover = executor.submit(workflow.prepare_new_school_year)
+            assert first_admission_passed.wait(timeout=5)
+            _add_pending_backup_obligation(workflow, "rollover-waited-for-failed-backup")
+        with pytest.raises(WorkflowMaintenanceError, match="read-only"):
+            rollover.result(timeout=10)
+
+    assert [(row["id"], row["version"]) for row in workflow.prefects()] == before
+    with sqlite3.connect(tmp_path / "sing-yin.sqlite3") as connection:
+        audit_count = connection.execute(
+            "SELECT COUNT(*) FROM audit_events WHERE event_type = 'school_year_directory_archived'"
+        ).fetchone()[0]
+    assert audit_count == 0
 
 
 def test_new_school_year_rollover_does_not_archive_when_pre_operation_backup_fails(monkeypatch, tmp_path) -> None:

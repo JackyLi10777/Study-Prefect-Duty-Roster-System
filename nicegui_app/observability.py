@@ -92,6 +92,10 @@ def configure_local_logging(log_path: Path | None = None) -> Path:
     destination = (log_path or configured_directory / "app.log").resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)
     logger = logging.getLogger(LOGGER_NAME)
+    # Recover defensively if another library has applied a logging configuration
+    # with ``disable_existing_loggers=True``.  Alembic is configured not to do so,
+    # but this keeps an explicit call to this public setup function authoritative.
+    logger.disabled = False
     logger.setLevel(_configured_log_level())
     logger.propagate = False
     formatter = logging.Formatter(
