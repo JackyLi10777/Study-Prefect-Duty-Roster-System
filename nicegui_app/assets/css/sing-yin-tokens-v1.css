@@ -85,6 +85,13 @@
   --sy-architecture-veil: linear-gradient(90deg, rgba(251,248,239,.985) 0%, rgba(251,248,239,.94) 45%, rgba(251,248,239,.30) 78%);
   --sy-architecture-mobile-veil: linear-gradient(180deg, rgba(251,248,239,.98) 0%, rgba(251,248,239,.90) 60%, rgba(251,248,239,.42) 100%);
   --sy-platform-veil: linear-gradient(90deg, rgba(250,247,239,.99) 0%, rgba(250,247,239,.95) 46%, rgba(250,247,239,.28) 78%);
+  --q-primary: #35647C;
+  --q-secondary: #0F766E;
+  --q-accent: #0F766E;
+  --q-positive: #0F766E;
+  --q-negative: #963C35;
+  --q-info: #35647C;
+  --q-warning: #F0C96A;
 }
 .body--dark {
   --sy-design-contract-version: 1.1.0;
@@ -156,5 +163,14 @@
   --sy-architecture-veil: linear-gradient(90deg, rgba(11,16,23,.985) 0%, rgba(11,16,23,.93) 46%, rgba(11,16,23,.24) 78%);
   --sy-architecture-mobile-veil: linear-gradient(180deg, rgba(11,16,23,.98) 0%, rgba(11,16,23,.90) 60%, rgba(11,16,23,.38) 100%);
   --sy-platform-veil: linear-gradient(90deg, rgba(10,15,22,.99) 0%, rgba(10,15,22,.94) 46%, rgba(10,15,22,.24) 78%);
+  --q-primary: #47758B;
+  --q-secondary: #0F766E;
+  --q-accent: #0F766E;
+  --q-dark: #1C1C1E;
+  --q-dark-page: #0D1117;
+  --q-positive: #0F766E;
+  --q-negative: #9A4A43;
+  --q-info: #35647C;
+  --q-warning: #F0C96A;
 }
 }

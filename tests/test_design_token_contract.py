@@ -80,6 +80,12 @@ def test_quasar_fill_bridge_resolves_from_the_same_contract() -> None:
         "warning": "#F0C96A",
     }
 
+    css = NICEGUI_CSS_PATH.read_text(encoding="utf-8")
+    light_block, dark_block = css.split(".body--dark", maxsplit=1)
+    assert "--q-primary: #35647C;" in light_block
+    assert "--q-primary: #47758B;" in dark_block
+    assert "--q-dark-page: #0D1117;" in dark_block
+
 
 def test_cloudflare_inline_tokens_match_generated_contract_without_runtime_imports() -> None:
     assert worker_runtime_drift() == []
