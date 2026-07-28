@@ -11,10 +11,10 @@
 | 候選分支 | `codex/rc31-unified-theme-controls` | `codex/rc31-unified-theme-controls` |
 | 草稿建立時 base HEAD | `a3c45bae48ef99b3972790c7c0f5df8453a0dd19` | 不可當作最終候選 SHA |
 | 草稿建立時 base tree | `3838f9b70d6aec2481325e07683c850c8829e8be` | 不可當作最終候選 tree |
-| 已審 code-bearing commit SHA | 未建立 | `a52d743f2002c7509f79bc61f11a53ae3ae9d92a` |
-| 已審 code-bearing Git tree SHA | 未建立 | `90d11e47f69446ac731ddba3f3600f05fb97f5c4` |
+| 已審 code-bearing commit SHA | 未建立 | `ea25d25e6ced6f0f25abaf8f9ced39d4b9f3af7a` |
+| 已審 code-bearing Git tree SHA | 未建立 | `f115ce5315988ec644f3f3c1ff3217c5d1b2e046` |
 | 發布標籤 | 未建立 | `v1.2.0-rc.31`（須在 protected main 合併後建立） |
-| source fingerprint | 未從凍結來源產生 | `f1638aae580ba7785c430da7a668c6975a9f5bf40880e0cd0a6c0f6fc8be46ed`（297 runtime files） |
+| source fingerprint | 未從凍結來源產生 | `696e6079a2abe671ad09e73c15353491541cf2c74bbd5f205e4eef17939d1ff0`（297 runtime files） |
 | `requirements.lock` SHA-256 | `8b1961717c9941c3a35813c1141bbf8364fe7fbc95017200e6e933da6997b2de` | 相同，已重核 |
 | `requirements-dev.lock` SHA-256 | `f21c14b128abfddc8206b59dbccb97252d820f617261f1199b844e7eb7a583f1` | 相同，已重核 |
 | 追蹤檔案 | 568 | 570；另有 1 個明確排除的本機 screenshot |
@@ -148,7 +148,7 @@
 | `python -X utf8 -m compileall -q nicegui_app packages tests scripts` | exit 0 | 語法／bytecode 檢查，不代替行為驗證 |
 | `git diff --check` | 沒有 whitespace error；只有既有 Windows LF→CRLF 提示 | 凍結後重跑 |
 
-正式報告：`logs/release-candidate-report.json`；狀態 `pass`，15 checks，297 runtime source files，fingerprint `f1638aae580ba7785c430da7a668c6975a9f5bf40880e0cd0a6c0f6fc8be46ed`。臨時 browser artifacts 只作本機來源驗證，不進入產品 repository，也不描述為部署證據。
+正式報告：`logs/release-candidate-report.json`；狀態 `pass`，15 checks，297 runtime source files，fingerprint `696e6079a2abe671ad09e73c15353491541cf2c74bbd5f205e4eef17939d1ff0`。臨時 browser artifacts 只作本機來源驗證，不進入產品 repository，也不描述為部署證據。GitHub CodeQL 曾指出 gateway 瀏覽器驗證器把固定測試 credential 寫入生成來源；`76788bc` 已改為每個 case 產生一次性 secret，只經受限 subprocess environment 傳入，聚焦測試、靜態／依賴／secret gates 及本次正式報告均通過。
 
 ## 7. 受控部署仍需完成
 
