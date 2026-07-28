@@ -49,7 +49,11 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     }
 
     verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
-    assert 'page.get_by_test_id("mobile-more").click()' in verifier
+    assert 'more = page.get_by_test_id("mobile-more")' in verifier
+    assert "dataset.syDrawerA11y === 'ready'" in verifier
+    assert "more.click()" in verifier
+    assert "main#main-content')?.inert === true" in verifier
+    assert "main#main-content')?.inert !== true" in verifier
     assert 'mobile_navigation.locator("button").last.click()' not in verifier
 
 
