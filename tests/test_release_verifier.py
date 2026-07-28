@@ -6,7 +6,11 @@ import subprocess
 import sys
 
 from scripts import verify_release_candidate
-from scripts.verify_rc31_theme_controls import _close_mobile_drawer
+from scripts.verify_rc31_theme_controls import (
+    _close_mobile_drawer,
+    _gateway_test_secrets,
+    _worker_harness_source,
+)
 from scripts.verify_release_candidate import (
     CANONICAL_BACKUPS,
     CANONICAL_DATABASE,
@@ -139,6 +143,19 @@ def test_release_verifier_runs_the_isolated_rc31_theme_matrix() -> None:
 
     assert '"rc31_theme_control_browser"' in source
     assert '"scripts/verify_rc31_theme_controls.py"' in source
+
+
+def test_rc31_worker_harness_keeps_one_use_credentials_out_of_generated_source() -> None:
+    first = _gateway_test_secrets()
+    second = _gateway_test_secrets()
+    harness = _worker_harness_source(worker_port=18767, origin_port=18768)
+
+    assert first.keys() == {"admin_session", "guest_session", "origin_principal"}
+    assert all(len(value) >= 43 for value in first.values())
+    assert all(first[name] != second[name] for name in first)
+    assert all(value not in harness for value in first.values())
+    assert "Deno.env.get(name)" in harness
+    assert "SING_YIN_TEST_ADMIN_SESSION_SECRET" in harness
 
 
 def test_rc31_drawer_close_requires_focus_restoration_only_after_escape() -> None:
