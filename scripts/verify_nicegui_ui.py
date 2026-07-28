@@ -238,11 +238,14 @@ def ensure_rendered_theme(page, target: str) -> None:  # type: ignore[no-untyped
     assert target in {"light", "dark"}
     wants_dark = target == "dark"
 
+    mobile_viewport = page.evaluate("matchMedia('(max-width: 900px)').matches")
     desktop_trigger = page.get_by_test_id("theme-control")
-    if desktop_trigger.count() == 1 and desktop_trigger.is_visible():
+    if not mobile_viewport:
+        desktop_trigger.wait_for(state="visible", timeout=10_000)
         control = desktop_trigger
     else:
         mobile_navigation = page.get_by_test_id("mobile-bottom-navigation")
+        mobile_navigation.wait_for(state="attached", timeout=10_000)
         assert mobile_navigation.count() == 1
         # Use the semantic trigger rather than DOM position: a translated or
         # re-rendered mobile bar may contain other buttons after the primary
