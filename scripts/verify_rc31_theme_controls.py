@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import secrets
 import shutil
 import subprocess
 import sys
@@ -58,15 +59,6 @@ EXPECTED_PRIMARY = {
     for mode in ("light", "dark")
 }
 
-_GATEWAY_ADMIN_SESSION_SECRET = (
-    "test-only-admin-session-secret-with-more-than-32-characters"
-)
-_GATEWAY_GUEST_SESSION_SECRET = (
-    "test-only-guest-session-secret-with-more-than-32-characters"
-)
-_GATEWAY_ORIGIN_PRINCIPAL_SECRET = (
-    "test-only-origin-principal-secret-with-more-than-32-characters"
-)
 _GATEWAY_AUTH_EPOCH = "31"
 _GATEWAY_ORIGIN_PRINCIPAL_KID = "theme-browser-origin-v31"
 _THEME_HANDOFF_COOKIE = "__Host-SingYinThemeHandoff"
@@ -115,7 +107,21 @@ def _safe_environment(case_root: Path, *, access_mode: AccessMode) -> dict[str, 
     return environment
 
 
-def _gateway_environment(case_root: Path) -> dict[str, str]:
+def _gateway_test_secrets() -> dict[str, str]:
+    """Create one-use credentials without placing them in source or artifacts."""
+
+    return {
+        "admin_session": secrets.token_urlsafe(48),
+        "guest_session": secrets.token_urlsafe(48),
+        "origin_principal": secrets.token_urlsafe(48),
+    }
+
+
+def _gateway_environment(
+    case_root: Path,
+    *,
+    secret_values: dict[str, str],
+) -> dict[str, str]:
     """Return an isolated origin environment that accepts only signed gateway principals."""
 
     environment = _safe_environment(case_root, access_mode="admin")
@@ -125,7 +131,7 @@ def _gateway_environment(case_root: Path) -> dict[str, str]:
             "SING_YIN_LOCAL_MAINTENANCE": "0",
             "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL": "1",
             "SING_YIN_UNIFIED_GUEST": "1",
-            "ORIGIN_PRINCIPAL_SECRET": _GATEWAY_ORIGIN_PRINCIPAL_SECRET,
+            "ORIGIN_PRINCIPAL_SECRET": secret_values["origin_principal"],
             "AUTH_EPOCH": _GATEWAY_AUTH_EPOCH,
             "ORIGIN_PRINCIPAL_KID": _GATEWAY_ORIGIN_PRINCIPAL_KID,
         }
@@ -151,6 +157,11 @@ const ADMIN_COOKIE = {json.dumps(_ADMIN_SESSION_COOKIE)};
 const GUEST_COOKIE = {json.dumps(_GUEST_SESSION_COOKIE)};
 const HANDOFF_COOKIE = {json.dumps(_THEME_HANDOFF_COOKIE)};
 const ADMIN_EMAIL = 'admin@syss.edu.hk';
+const requiredSecret = name => {{
+  const value = Deno.env.get(name);
+  if (!value) throw new Error(`Missing disposable verifier credential: ${{name}}`);
+  return value;
+}};
 
 const rateLimiter = {{ async limit() {{ return {{ success: true }}; }} }};
 const records = new Map();
@@ -165,9 +176,9 @@ const env = {{
   ACCESS_AUD: 'theme-browser-audience',
   ADMIN_IDENTITY_ALLOWLIST: JSON.stringify({{ emails: [ADMIN_EMAIL] }}),
   ADMIN_BEARER_TOKEN: 'theme-browser-admin-token',
-  ADMIN_SESSION_SECRET: {json.dumps(_GATEWAY_ADMIN_SESSION_SECRET)},
-  GUEST_SESSION_SECRET: {json.dumps(_GATEWAY_GUEST_SESSION_SECRET)},
-  ORIGIN_PRINCIPAL_SECRET: {json.dumps(_GATEWAY_ORIGIN_PRINCIPAL_SECRET)},
+  ADMIN_SESSION_SECRET: requiredSecret('SING_YIN_TEST_ADMIN_SESSION_SECRET'),
+  GUEST_SESSION_SECRET: requiredSecret('SING_YIN_TEST_GUEST_SESSION_SECRET'),
+  ORIGIN_PRINCIPAL_SECRET: requiredSecret('SING_YIN_TEST_ORIGIN_PRINCIPAL_SECRET'),
   AUTH_EPOCH: {_GATEWAY_AUTH_EPOCH},
   ORIGIN_PRINCIPAL_KID: {json.dumps(_GATEWAY_ORIGIN_PRINCIPAL_KID)},
   ORIGIN_PORT: {origin_port},
@@ -241,6 +252,7 @@ def _start_worker_harness(
     case_root: Path,
     *,
     origin_port: int,
+    secret_values: dict[str, str],
 ) -> tuple[subprocess.Popen[str], Any, str, Path]:
     deno = shutil.which("deno")
     if deno is None:
@@ -253,9 +265,25 @@ def _start_worker_harness(
     )
     worker_log = case_root / "worker-console.log"
     output = worker_log.open("w", encoding="utf-8")
+    worker_environment = os.environ.copy()
+    worker_environment.update(
+        {
+            "SING_YIN_TEST_ADMIN_SESSION_SECRET": secret_values["admin_session"],
+            "SING_YIN_TEST_GUEST_SESSION_SECRET": secret_values["guest_session"],
+            "SING_YIN_TEST_ORIGIN_PRINCIPAL_SECRET": secret_values["origin_principal"],
+        }
+    )
     process = subprocess.Popen(
-        [deno, "run", "--allow-net=127.0.0.1", "--allow-read", str(harness_path)],
+        [
+            deno,
+            "run",
+            "--allow-net=127.0.0.1",
+            "--allow-read",
+            "--allow-env=SING_YIN_TEST_ADMIN_SESSION_SECRET,SING_YIN_TEST_GUEST_SESSION_SECRET,SING_YIN_TEST_ORIGIN_PRINCIPAL_SECRET",
+            str(harness_path),
+        ],
         cwd=PROJECT_ROOT,
+        env=worker_environment,
         stdout=output,
         stderr=subprocess.STDOUT,
         text=True,
@@ -823,7 +851,8 @@ def _exercise_gateway_handoff_case(
 
     case_id = f"public-to-{access_mode}-os-{colour_scheme}"
     case_root = (evidence_root / "runtime" / case_id).resolve()
-    environment = _gateway_environment(case_root)
+    secret_values = _gateway_test_secrets()
+    environment = _gateway_environment(case_root, secret_values=secret_values)
     origin_log = case_root / "origin-console.log"
     origin_process, origin_output = _start_server(environment, origin_log)
     worker_process: subprocess.Popen[str] | None = None
@@ -850,6 +879,7 @@ def _exercise_gateway_handoff_case(
         worker_process, worker_output, worker_url, worker_log = _start_worker_harness(
             case_root,
             origin_port=int(environment["SING_YIN_PORT"]),
+            secret_values=secret_values,
         )
         context = browser.new_context(
             viewport={"width": 1440, "height": 960},
