@@ -436,6 +436,7 @@ def test_semantic_status_badges_do_not_inherit_quasar_primary_background() -> No
 def test_component_focus_verifier_accepts_native_control_focus_within_host() -> None:
     verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
 
+    assert '<div id="componentCheckbox"' in verifier
     assert "element.matches(':focus-within')" in verifier
     assert "active: element === document.activeElement" not in verifier
 

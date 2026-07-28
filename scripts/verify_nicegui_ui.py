@@ -248,9 +248,15 @@ def ensure_rendered_theme(page, target: str) -> None:  # type: ignore[no-untyped
         # re-rendered mobile bar may contain other buttons after the primary
         # route actions, and clicking "last" can navigate instead of opening
         # the drawer.
-        page.get_by_test_id("mobile-more").click()
+        more = page.get_by_test_id("mobile-more")
+        more.wait_for(state="visible", timeout=10_000)
+        page.wait_for_function(
+            "document.querySelector('[data-testid=mobile-more]')?.dataset.syDrawerA11y === 'ready'"
+        )
+        more.click()
         drawer_tools = page.get_by_test_id("mobile-drawer-tools")
         drawer_tools.wait_for(timeout=10_000)
+        page.wait_for_function("document.querySelector('main#main-content')?.inert === true")
         control = drawer_tools.get_by_test_id("mobile-theme-control")
         control.wait_for(state="visible", timeout=10_000)
     is_dark = page.locator("body.body--dark").count() == 1
@@ -274,6 +280,7 @@ def assert_component_grammar(page, screenshot_path: Path) -> None:  # type: igno
         if backdrop.count() and backdrop.is_visible():
             page.keyboard.press("Escape")
             backdrop.wait_for(state="hidden", timeout=10_000)
+            page.wait_for_function("document.querySelector('main#main-content')?.inert !== true")
     page.evaluate(
         """
         () => {
@@ -305,7 +312,7 @@ def assert_component_grammar(page, screenshot_path: Path) -> None:  # type: igno
               <button id="componentBusy" class="q-btn q-btn-item non-selectable no-outline q-btn--rectangle q-btn--standard bg-primary text-white" aria-busy="true"><span class="q-btn__content">處理中 · Busy</span></button>
             </div>
             <div data-group="forms" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:14px;border:1px solid var(--sy-line);border-radius:16px;background:var(--sy-surface-subtle)">
-              <label id="componentCheckbox" class="q-checkbox cursor-pointer no-outline row inline no-wrap items-center" tabindex="0" role="checkbox" aria-checked="true"><div class="q-checkbox__inner relative-position non-selectable q-checkbox__inner--truthy text-primary" aria-hidden="true"><input class="hidden q-checkbox__native absolute q-ma-none q-pa-none" type="checkbox" checked><div class="q-checkbox__bg absolute"><svg class="q-checkbox__svg fit absolute-full" viewBox="0 0 24 24"><path class="q-checkbox__truthy" fill="none" d="M4.1 12.7 9 17.6 20.3 6.3"></path></svg></div></div><div class="q-checkbox__label q-anchor--skip">已核對</div></label>
+              <div id="componentCheckbox" class="q-checkbox cursor-pointer no-outline row inline no-wrap items-center" tabindex="0" role="checkbox" aria-checked="true"><div class="q-checkbox__inner relative-position non-selectable q-checkbox__inner--truthy text-primary" aria-hidden="true"><input class="hidden q-checkbox__native absolute q-ma-none q-pa-none" type="checkbox" checked><div class="q-checkbox__bg absolute"><svg class="q-checkbox__svg fit absolute-full" viewBox="0 0 24 24"><path class="q-checkbox__truthy" fill="none" d="M4.1 12.7 9 17.6 20.3 6.3"></path></svg></div></div><div class="q-checkbox__label q-anchor--skip">已核對</div></div>
               <label id="componentToggle" class="q-toggle cursor-pointer no-outline row inline no-wrap items-center" tabindex="0" role="switch" aria-checked="true"><div class="q-toggle__inner relative-position non-selectable q-toggle__inner--truthy text-primary" aria-hidden="true"><input class="hidden q-toggle__native absolute q-ma-none q-pa-none" type="checkbox" checked><div class="q-toggle__track"></div><div class="q-toggle__thumb absolute flex flex-center no-wrap"></div></div><div class="q-toggle__label q-anchor--skip">已啟用</div></label>
               <label id="componentRadio" class="q-radio cursor-pointer no-outline row inline no-wrap items-center" tabindex="0" role="radio" aria-checked="true"><div class="q-radio__inner relative-position non-selectable q-radio__inner--truthy text-primary" aria-hidden="true"><input class="hidden q-radio__native absolute q-ma-none q-pa-none" type="radio" checked><div class="q-radio__bg absolute"><svg class="q-radio__svg fit absolute-full" viewBox="0 0 24 24"><path class="q-radio__check" d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"></path></svg></div></div><div class="q-radio__label q-anchor--skip">目前選項</div></label>
               <label id="componentToggleDisabled" class="q-toggle row no-wrap inline items-center disabled" role="switch" aria-checked="false" aria-disabled="true"><div class="q-toggle__inner relative-position non-selectable q-toggle__inner--falsy" aria-hidden="true"><input class="hidden q-toggle__native absolute q-ma-none q-pa-none" type="checkbox" disabled><div class="q-toggle__track"></div><div class="q-toggle__thumb absolute flex flex-center no-wrap"></div></div><div class="q-toggle__label q-anchor--skip">不可用</div></label>
@@ -444,13 +451,19 @@ def assert_component_grammar(page, screenshot_path: Path) -> None:  # type: igno
             // production contract is :focus-within, so verify that semantic
             // state rather than requiring one browser-specific active node.
             active: element.matches(':focus-within'),
+            activeElementId: document.activeElement?.id || '',
+            activeElementTag: document.activeElement?.tagName || '',
+            tabIndex: element.tabIndex,
+            inert: element.inert,
+            mainInert: element.closest('main')?.inert ?? false,
+            mainAriaHidden: element.closest('main')?.getAttribute('aria-hidden') || '',
             style: style.outlineStyle,
             width: style.outlineWidth,
           };
         }
         """
     )
-    assert focus_style["active"] is True
+    assert focus_style["active"] is True, focus_style
     assert focus_style["style"] != "none" and float(focus_style["width"].removesuffix("px")) >= 3
     page.locator("#componentCheckbox").evaluate("element => element.blur()")
     page.evaluate(
