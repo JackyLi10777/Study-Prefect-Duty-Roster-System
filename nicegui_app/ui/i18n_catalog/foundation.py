@@ -43,12 +43,6 @@ MESSAGES = {'app_name': {'zh-HK': '聖言中學導學風紀值班表生成系統
  'handover': {'zh-HK': '交接指引', 'en': 'Handover guide'},
  'devotional': {'zh-HK': '每日經文', 'en': 'Daily verse'},
  'settings': {'zh-HK': '系統設定', 'en': 'Settings'},
- 'appearance': {'zh-HK': '外觀', 'en': 'Appearance'},
- 'choose_appearance': {'zh-HK': '選擇外觀', 'en': 'Choose appearance'},
- 'theme_system': {'zh-HK': '跟隨系統', 'en': 'System'},
- 'theme_light': {'zh-HK': '淺色', 'en': 'Light'},
- 'theme_dark': {'zh-HK': '深色', 'en': 'Dark'},
- 'theme_current': {'zh-HK': '外觀：{mode}', 'en': 'Appearance: {mode}'},
  'theme_switch_to_light': {'zh-HK': '切換至淺色模式', 'en': 'Switch to Light mode'},
  'theme_switch_to_dark': {'zh-HK': '切換至深色模式', 'en': 'Switch to Dark mode'},
  'daily_verse': {'zh-HK': '今日經文', 'en': 'Daily verse'},
@@ -80,6 +74,14 @@ MESSAGES.update({
     'restricted': {'zh-HK': '此模式受限制', 'en': 'Restricted in this mode'},
     'copy': {'zh-HK': '複製', 'en': 'Copy'},
     'copied': {'zh-HK': '已複製', 'en': 'Copied'},
+    'copy_failed_manual': {
+        'zh-HK': '瀏覽器未允許自動複製。請在視窗中手動選取並複製：',
+        'en': 'The browser did not allow automatic copying. Select and copy the value in the dialog:',
+    },
+    'copy_manual_prompt': {
+        'zh-HK': '已顯示可手動選取的內容。',
+        'en': 'The value is ready for manual selection.',
+    },
     'download_delivery_failed': {
         'zh-HK': '下載未完成。請重試；如問題持續，請保留以下支援編號。',
         'en': 'The download did not complete. Retry, and keep the support reference if the problem continues.'

@@ -12,6 +12,8 @@ compromise. Every high-risk operation must fail closed, limit blast radius,
 leave diagnosable evidence, and remain recoverable from verified backups and an
 immutable release.
 
+> **Current boundary (2026-07-29):** production remains clean rc31 at origin commit `ba129a4931d11e844649e8ff356f5bf2ab048459` with Worker `7816b183-3edb-49ca-b39b-a91091ae794f`. The R5／R6 controls described as “candidate” below are not live until rc32 completes the protected paired rollout. rc30 plus Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` is the immediate verified rollback; supervised acceptance is pending.
+
 ## 1. 資產及資料分類 / Assets and data classes
 
 | Class | Examples | Authoritative location | Public exposure |
@@ -119,6 +121,10 @@ before narrowing.
 
 ## 4. 身份、Guest 及權限 / Identity, Guest, and authorization
 
+The candidate `PageContextWorkflowAdapter` retains the verified principal and calls `require_active()` immediately before every workflow invocation. Durable write methods that expose `command_id` must receive the ID created at the user-intent boundary; a retry cannot silently receive a fresh identity. Client polling remains user feedback, never the authorization boundary. Guest receipts retain only bounded request/result digests, operation, revision, and replay metadata; they do not retain full workspace snapshots for every command.
+
+Gateway and snapshot HMAC secrets must be cryptographically generated and must not equal documented placeholders or a repeated single character. This is a deterministic weak-placeholder policy, not a claim that one supplied string's entropy can be measured reliably.
+
 - Public has no application capability.
 - Guest receives only fictional read, in-memory modification, demo download,
   and bounded session preference capabilities.
@@ -200,6 +206,10 @@ recoverable from protected `main`, tags and remote history; operational roster
 data is recoverable from verified host backups, not from GitHub.
 
 ## 7. 發布、偵測與事件處理 / Release, detection, and incident handling
+
+Formal report schema 2 records the exact source commit and tree, clean/dirty state, fingerprint and file count, planned annotated tag, required check identities, start/finish times, tool versions, and `humanAcceptanceRequired`. Origin and Worker deployment scripts compare those fields with the clean tagged `origin/main` source before any switch. A locally editable report is evidence with provenance checks, not a cryptographic attestation; protected GitHub review, immutable annotated tag, controlled deployment, and observed runtime identity remain separate gates.
+
+Admin incident PNG attachments are parsed under compressed-byte, chunk, dimension, decoded-pixel, and sanitized-output limits, converted to RGB/RGBA, and re-encoded without ancillary metadata before their manifest digest is calculated. Signature-only, truncated, malformed, trailing-polyglot, or unsanitizable files fail closed. Guest, Public, and Viewer support remains browser-only.
 
 No security-sensitive candidate is deployed from a dirty tree, unpushed commit,
 mutable branch name, or report from another fingerprint. The formal verifier,

@@ -1,6 +1,6 @@
 # 正式驗收證據矩陣 / Acceptance evidence matrix
 
-> **線上來源真相（2026-07-29）：**目前 Windows runtime operational，但 rc30 checkout 已觀察到 73 tracked 修改及 3 untracked 項目；canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 未建立來源歸屬。故 active pair 不可稱為 exact rc30 或指紋相符。乾淨 rc30＋`11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是更早歷史版本。rc31 可部署來源已凍結並通過 15／15 正式候選閘門，但未合併受保護的 `main`、未標記、未部署；真人驗收仍未完成。下文舊「live／current rc30」標籤是歷史證據名稱，不代表目前來源狀態。
+> **線上來源真相（2026-07-29）：** clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459` 正在 Windows origin 運行；canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 為 100% 流量版本。R5／R6 修復仍是 rc32 工作候選，未完成受保護發布或部署。rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退；真人驗收仍未完成。
 
 本文件把機器驗證與真人驗收分開。`logs/release-candidate-report.json` 顯示 `pass`，只代表下列自動化證據在隔離虛構資料中通過；它不代表實際名單、學校做法、專用電腦、加密離機位置或外部存取決定已獲真人批准。
 

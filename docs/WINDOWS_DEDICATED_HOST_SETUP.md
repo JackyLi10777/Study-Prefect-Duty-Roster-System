@@ -1,12 +1,14 @@
 # Windows 專用主機完整設定手冊
 
-> **主機來源真相（2026-07-28）：**服務仍 operational，但 `C:\SingYinRoster` 雖指向 rc30／`74b84f…`，checkout 已觀察到 73 tracked 修改及 3 untracked 項目，故不再是不可變 exact rc30 bundle。canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 來源未歸屬。乾淨 rc30＋`11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是更早歷史版本。rc31 未部署，真人驗收未完成。下文任何「live rc30／不可變標籤／第一級回退」字樣均由本段取代；先保存及歸屬主機漂移，禁止盲目 reset 或覆寫。
+> **主機來源真相（2026-07-29）：** `C:\SingYinRoster` 正運行 clean annotated `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`；健康及 readiness 均通過。R5／R6 修復是尚未審核、標記或部署的 rc32 工作候選。rc30 是立即已知已驗證 origin 回退；真人驗收未完成。
 
 **適用系統：** Sing Yin Study Prefect Duty Roster System（NiceGUI + SQLite）
 **讀者：** 完全不懂程式、第一次設定電腦的人
 **正式方案：** 一部長期放置的 Windows 11 專用電腦保存資料並在背景運行；使用者只開啟唯一正式 `workers.dev` 網站
 **日常網址：** `https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/`
 **本機維護網址：** `http://127.0.0.1:8080`
+
+> **設定限制：** NiceGUI origin 的 `SING_YIN_HOST` 必須使用 `127.0.0.1`。不要改為 `::1` 或 `[::1]`；候選會在啟動前拒絕該設定，避免 TrustedHostMiddleware 對所有請求回傳 HTTP 400。正式部署器必須在 Windows PowerShell 5.1／提升權限的受控程序內核對根目錄、`.env`、資料、備份、日誌及排程 ACL；PowerShell 7 缺少舊 ACL API 不能視作通過或失敗證據。
 
 > **SSH 維護狀態（2026-07-17）：** Windows OpenSSH Server 已以金鑰限定模式運行，只監聽 `127.0.0.1:22` 及 `[::1]:22`；密碼、互動式登入、轉發及 Windows 公開入站規則均停用。安裝、驗證、金鑰輪換及緊急停用程序見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。這是維護入口，不是另一個使用者網站。
 >

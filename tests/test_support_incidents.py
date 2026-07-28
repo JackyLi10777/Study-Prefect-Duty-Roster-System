@@ -4,11 +4,15 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import json
 import os
+from io import BytesIO
 from pathlib import Path
 import shutil
+import struct
 import subprocess
+import zlib
 
 import pytest
+from PIL import Image, PngImagePlugin
 
 from nicegui_app.access_context import AccessMode, Capability, CapabilityDeniedError, PageContext, Principal
 from nicegui_app.services.support_incidents import (
@@ -24,6 +28,20 @@ from nicegui_app.services.support_incidents import (
 
 
 NOW = datetime(2026, 7, 26, 1, 2, 3, tzinfo=timezone.utc)
+
+
+def _png_bytes(*, metadata: bool = False, size: tuple[int, int] = (2, 2)) -> bytes:
+    output = BytesIO()
+    info = PngImagePlugin.PngInfo()
+    if metadata:
+        info.add_text("Author", "user@example.com")
+        info.add_text("SourcePath", r"C:\Users\student\secret.png")
+    Image.new("RGBA", size, (25, 122, 114, 128)).save(output, format="PNG", pnginfo=info)
+    return output.getvalue()
+
+
+def _png_chunk(kind: bytes, data: bytes) -> bytes:
+    return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
 
 
 def report(**overrides: object) -> IncidentReportInput:
@@ -98,7 +116,7 @@ def test_allowed_text_json_and_png_attachments_are_sanitized(tmp_path: Path) -> 
     attachments = (
         AttachmentInput("notes.txt", "text/plain", b"token=abcdefghijklmnop", "2026-07-26T01:00:00Z"),
         AttachmentInput("context.json", "application/json", b'{"email":"user@example.com"}', "2026-07-26T01:00:00Z"),
-        AttachmentInput("screen.png", "image/png", b"\x89PNG\r\n\x1a\nfictional", "2026-07-26T01:00:00Z"),
+        AttachmentInput("screen.png", "image/png", _png_bytes(metadata=True), "2026-07-26T01:00:00Z"),
     )
     summary = inbox.create_incident(
         report(),
@@ -111,7 +129,37 @@ def test_allowed_text_json_and_png_attachments_are_sanitized(tmp_path: Path) -> 
     bundle = inbox.inbox / summary.incident_id
     assert "abcdefghijklmnop" not in (bundle / "attachments" / "attachment-01.txt").read_text(encoding="utf-8")
     assert "user@example.com" not in (bundle / "attachments" / "attachment-02.json").read_text(encoding="utf-8")
-    assert (bundle / "attachments" / "attachment-03.png").read_bytes().startswith(b"\x89PNG")
+    sanitized_png = (bundle / "attachments" / "attachment-03.png").read_bytes()
+    assert sanitized_png.startswith(b"\x89PNG")
+    assert b"user@example.com" not in sanitized_png
+    assert b"SourcePath" not in sanitized_png
+    with Image.open(BytesIO(sanitized_png)) as image:
+        assert image.mode == "RGBA"
+        assert image.size == (2, 2)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    (
+        b"\x89PNG\r\n\x1a\n",
+        _png_bytes()[:-5],
+        _png_bytes() + b"polyglot-trailer",
+        b"\x89PNG\r\n\x1a\n" + _png_chunk(b"IHDR", b"\x00" * 13) + _png_chunk(b"IEND", b""),
+    ),
+)
+def test_png_parser_rejects_signature_only_truncated_polyglot_and_invalid_images(
+    tmp_path: Path,
+    payload: bytes,
+) -> None:
+    with pytest.raises(IncidentValidationError):
+        SupportInbox(tmp_path / "support").create_incident(
+            report(),
+            application_version="test",
+            source_fingerprint="c" * 64,
+            application_mode="test",
+            attachments=(AttachmentInput("unsafe.png", "image/png", payload, "2026-07-26T01:00:00Z"),),
+            now=NOW,
+        )
 
 
 @pytest.mark.parametrize(

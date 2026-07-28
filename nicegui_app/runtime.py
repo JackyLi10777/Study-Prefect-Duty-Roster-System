@@ -20,6 +20,7 @@ from nicegui_app.gateway_identity import (
     OriginPrincipalError,
     configured_auth_epoch,
     configured_key_id,
+    is_obvious_secret_placeholder,
     principal_from_request,
 )
 from nicegui_app.observability import current_request_reference
@@ -68,8 +69,11 @@ def get_admin_workflow() -> RosterWorkflow:
 def _guest_secret() -> bytes:
     configured = os.getenv("SING_YIN_GUEST_SNAPSHOT_SECRET", "").strip()
     if configured:
-        if len(configured) < 32:
-            raise RuntimeError("SING_YIN_GUEST_SNAPSHOT_SECRET must contain at least 32 characters.")
+        if len(configured) < 32 or is_obvious_secret_placeholder(configured):
+            raise RuntimeError(
+                "SING_YIN_GUEST_SNAPSHOT_SECRET must contain at least 32 characters "
+                "and must not be an obvious placeholder."
+            )
         return configured.encode("utf-8")
     origin_secret = os.getenv("ORIGIN_PRINCIPAL_SECRET", "").strip()
     if len(origin_secret) >= 32:

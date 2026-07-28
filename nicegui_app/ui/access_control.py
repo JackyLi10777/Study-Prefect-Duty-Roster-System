@@ -60,12 +60,28 @@ def _render_external_share_restricted() -> None:
 async def _copy_value(value: str) -> None:
     current_page_context().require(Capability.EXTERNAL_DELIVERY)
     encoded = json.dumps(value, ensure_ascii=False)
+    script = f"""
+        (async () => {{
+            const value = {encoded};
+            try {{
+                if (!navigator.clipboard?.writeText) throw new Error('clipboard-unavailable');
+                await navigator.clipboard.writeText(value);
+                return 'copied';
+            }} catch (_error) {{
+                window.prompt({json.dumps(t('copy_failed_manual'))}, value);
+                return 'manual';
+            }}
+        }})()
+    """
     try:
-        await ui.run_javascript(f"navigator.clipboard.writeText({encoded})", timeout=5.0)
+        result = await ui.run_javascript(script, timeout=5.0)
     except Exception:
-        ui.notify(t("public_share_error"), type="negative")
+        ui.notify(t("copy_failed_manual"), type="warning", timeout=5_000)
     else:
-        ui.notify(t("public_share_copied"), type="positive")
+        if result == "copied":
+            ui.notify(t("public_share_copied"), type="positive")
+        else:
+            ui.notify(t("copy_manual_prompt"), type="warning", timeout=5_000)
 
 
 def _show_share_receipt(receipt) -> None:  # type: ignore[no-untyped-def]

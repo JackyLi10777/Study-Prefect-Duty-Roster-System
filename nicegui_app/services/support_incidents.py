@@ -22,6 +22,10 @@ from typing import Any, Iterable, Mapping, Sequence
 from uuid import uuid4
 import zipfile
 from io import BytesIO
+import warnings
+import zlib
+
+from PIL import Image, UnidentifiedImageError
 
 from nicegui_app.config import support_directory
 
@@ -102,6 +106,9 @@ STALE_STAGING_HOURS = 24
 QUARANTINE_RETENTION_DAYS = 30
 RESOLVED_RETENTION_DAYS = 180
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+MAX_PNG_DIMENSION = 4_096
+MAX_PNG_PIXELS = 16_000_000
+MAX_PNG_CHUNKS = 2_048
 MANIFEST_KEYS = frozenset(
     {
         "schema_version",
@@ -165,6 +172,78 @@ class SupportStorageError(SupportIncidentError):
 
 class IncidentNotFoundError(SupportIncidentError):
     """The requested incident does not exist in the safe inbox."""
+
+
+def _validate_png_container(payload: bytes) -> None:
+    """Reject truncated, corrupt, and polyglot PNG containers before decoding."""
+
+    if not payload.startswith(PNG_SIGNATURE):
+        raise IncidentValidationError("PNG signature is invalid")
+    offset = len(PNG_SIGNATURE)
+    chunks = 0
+    saw_header = False
+    while offset < len(payload):
+        if offset + 12 > len(payload):
+            raise IncidentValidationError("PNG container is truncated")
+        length = int.from_bytes(payload[offset : offset + 4], "big")
+        chunk_type = payload[offset + 4 : offset + 8]
+        end = offset + 12 + length
+        if end > len(payload):
+            raise IncidentValidationError("PNG chunk is truncated")
+        data = payload[offset + 8 : offset + 8 + length]
+        expected_crc = int.from_bytes(payload[offset + 8 + length : end], "big")
+        if zlib.crc32(chunk_type + data) & 0xFFFFFFFF != expected_crc:
+            raise IncidentValidationError("PNG chunk checksum is invalid")
+        chunks += 1
+        if chunks > MAX_PNG_CHUNKS:
+            raise IncidentValidationError("PNG contains too many chunks")
+        if chunks == 1:
+            if chunk_type != b"IHDR" or length != 13:
+                raise IncidentValidationError("PNG header is invalid")
+            saw_header = True
+        if chunk_type == b"IEND":
+            if length != 0 or end != len(payload):
+                raise IncidentValidationError("PNG has trailing or invalid content")
+            if not saw_header:
+                raise IncidentValidationError("PNG header is missing")
+            return
+        offset = end
+    raise IncidentValidationError("PNG end marker is missing")
+
+
+def _sanitize_png(payload: bytes) -> bytes:
+    """Decode and re-encode a bounded PNG without ancillary metadata."""
+
+    _validate_png_container(payload)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(BytesIO(payload)) as source:
+                if source.format != "PNG":
+                    raise IncidentValidationError("attachment is not a PNG image")
+                width, height = source.size
+                if (
+                    width <= 0
+                    or height <= 0
+                    or width > MAX_PNG_DIMENSION
+                    or height > MAX_PNG_DIMENSION
+                    or width * height > MAX_PNG_PIXELS
+                ):
+                    raise IncidentValidationError("PNG dimensions exceed the safe limit")
+                source.load()
+                has_alpha = source.mode in {"RGBA", "LA"} or "transparency" in source.info
+                clean = source.convert("RGBA" if has_alpha else "RGB")
+                output = BytesIO()
+                clean.save(output, format="PNG", optimize=True, compress_level=9)
+    except IncidentValidationError:
+        raise
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError, Image.DecompressionBombWarning) as error:
+        raise IncidentValidationError("PNG could not be safely decoded") from error
+    sanitized = output.getvalue()
+    if len(sanitized) > MAX_ATTACHMENT_BYTES:
+        raise IncidentValidationError("sanitized PNG exceeds the per-file limit")
+    _validate_png_container(sanitized)
+    return sanitized
 
 
 @dataclass(frozen=True)
@@ -420,9 +499,7 @@ class SupportInbox:
             raise IncidentValidationError("attachment exceeds the per-file limit")
         safe_name = f"attachment-{index:02d}{suffix}"
         if media_type == "image/png":
-            if not item.content.startswith(PNG_SIGNATURE):
-                raise IncidentValidationError("PNG signature is invalid")
-            payload = item.content
+            payload = _sanitize_png(item.content)
         else:
             try:
                 decoded = item.content.decode("utf-8")

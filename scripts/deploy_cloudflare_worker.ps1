@@ -420,6 +420,32 @@ try {
     }
     Write-Step "Validating immutable release source and pinned Worker toolchain"
     $releaseCommit = Assert-ImmutableRelease -Repository $SourceRoot -TagName $ReleaseRef
+    $releaseReportPath = Join-Path $SourceRoot "logs\release-candidate-report.json"
+    if (-not (Test-Path -LiteralPath $releaseReportPath -PathType Leaf)) {
+        throw "The source-bound release report is missing."
+    }
+    $releaseReport = Get-Content -LiteralPath $releaseReportPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $releaseTree = Get-GitValue -Repository $SourceRoot -Arguments @("rev-parse", "$releaseCommit`^{tree}")
+    $reportChecks = @($releaseReport.checks)
+    $reportRequiredIdentities = @($releaseReport.requiredCheckIdentities)
+    $reportCheckNames = @($reportChecks | ForEach-Object { [string]$_.name })
+    $reportCheckStatuses = @($reportChecks | ForEach-Object { [string]$_.status })
+    if (
+        [int]$releaseReport.schemaVersion -ne 2 -or
+        [string]$releaseReport.status -cne "pass" -or
+        [string]$releaseReport.sourceCommit -cne $releaseCommit -or
+        [string]$releaseReport.sourceTree -cne $releaseTree -or
+        [bool]$releaseReport.sourceDirty -or
+        [string]$releaseReport.plannedReleaseTag -cne $ReleaseRef -or
+        [string]$releaseReport.immutableReleaseReference -cne "refs/tags/$ReleaseRef" -or
+        [bool]$releaseReport.humanAcceptanceRequired -ne $true -or
+        $reportRequiredIdentities.Count -eq 0 -or
+        $reportChecks.Count -ne $reportRequiredIdentities.Count -or
+        (Compare-Object -ReferenceObject $reportRequiredIdentities -DifferenceObject $reportCheckNames -SyncWindow 0).Count -ne 0 -or
+        @($reportCheckStatuses | Where-Object { $_ -cne "pass" }).Count -ne 0
+    ) {
+        throw "The source-bound release report does not match the immutable Worker release."
+    }
     $script:NodePath = Find-NodeExecutable
     if (-not (Test-Path -LiteralPath $script:WranglerPath -PathType Leaf)) {
         throw "Pinned Wrangler is not installed in the Worker workspace."

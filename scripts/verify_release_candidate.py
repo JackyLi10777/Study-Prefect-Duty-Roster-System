@@ -28,7 +28,11 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from nicegui_app.config import POLICY_VERSION
-from nicegui_app.release_evidence import PROJECT_ID, release_source_fingerprint
+from nicegui_app.release_evidence import (
+    PROJECT_ID,
+    RELEASE_REPORT_SCHEMA_VERSION,
+    release_source_fingerprint,
+)
 
 
 REPORT_PATH = PROJECT_ROOT / "logs" / "release-candidate-report.json"
@@ -43,10 +47,62 @@ _WORKER_RUNTIME_TEST = (
     "tests/test_cloudflare_roster_viewer.py::"
     "test_worker_runtime_access_crypto_and_proxy_contracts"
 )
+REQUIRED_CHECK_IDENTITIES = (
+    "repository_hygiene",
+    "security_gates",
+    "motion_state_machine_tests",
+    "cloudflare_gateway_tests",
+    "automated_test_suite",
+    "python_compile",
+    "dependency_integrity",
+    "rc31_theme_control_browser",
+    "verify_nicegui_ui",
+    "verify_runtime_performance",
+    "verify_nicegui_write_pipeline",
+    "verify_nicegui_mobile",
+    "strict_deployment_readiness",
+    "verify_unified_guest_ui",
+    "verify_nicegui_partial_backup",
+)
 
 
 class ReleaseVerificationError(RuntimeError):
     """Raised when one release gate fails; later gates must not imply success."""
+
+
+def _git_value(*arguments: str) -> str:
+    result = subprocess.run(
+        ["git", *arguments],
+        cwd=PROJECT_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def _planned_release_tag() -> str:
+    configured = os.getenv("SING_YIN_RELEASE_TAG", "").strip()
+    if configured:
+        if not re.fullmatch(r"v1\.2\.0-rc\.\d+", configured):
+            raise ReleaseVerificationError("SING_YIN_RELEASE_TAG is not a valid v1.2.0 release-candidate tag.")
+        return configured
+    existing = _git_value("tag", "--list", "v1.2.0-rc.*").splitlines()
+    numbers = [int(match.group(1)) for tag in existing if (match := re.fullmatch(r"v1\.2\.0-rc\.(\d+)", tag))]
+    return f"v1.2.0-rc.{max(numbers, default=0) + 1}"
+
+
+def _tool_versions() -> dict[str, str]:
+    def version(command: list[str]) -> str:
+        result = subprocess.run(command, cwd=PROJECT_ROOT, check=True, capture_output=True, text=True)
+        return (result.stdout or result.stderr).strip().splitlines()[0]
+
+    return {
+        "python": sys.version.split()[0],
+        "git": version(["git", "--version"]),
+        "pytest": version([sys.executable, "-m", "pytest", "--version"]),
+        "deno": version([shutil.which("deno") or "deno", "--version"]),
+    }
 
 
 def _free_loopback_port() -> int:
@@ -302,12 +358,23 @@ def _run_unified_access_phase(
 def main() -> int:
     workspace = Path(tempfile.mkdtemp(prefix="sing-yin-release-candidate-"))
     source_fingerprint, source_file_count = release_source_fingerprint()
+    source_commit = _git_value("rev-parse", "HEAD")
+    source_tree = _git_value("rev-parse", "HEAD^{tree}")
+    source_dirty = bool(_git_value("status", "--porcelain", "--untracked-files=all"))
+    planned_release_tag = _planned_release_tag()
     report: dict[str, object] = {
-        "schemaVersion": 1,
+        "schemaVersion": RELEASE_REPORT_SCHEMA_VERSION,
         "project": PROJECT_ID,
         "policyVersion": POLICY_VERSION,
         "sourceFingerprint": source_fingerprint,
         "sourceFileCount": source_file_count,
+        "sourceCommit": source_commit,
+        "sourceTree": source_tree,
+        "sourceDirty": source_dirty,
+        "plannedReleaseTag": planned_release_tag,
+        "immutableReleaseReference": f"refs/tags/{planned_release_tag}",
+        "requiredCheckIdentities": list(REQUIRED_CHECK_IDENTITIES),
+        "toolVersions": _tool_versions(),
         "status": "running",
         "startedAt": datetime.now(timezone.utc).isoformat(),
         "humanAcceptanceRequired": True,

@@ -174,6 +174,9 @@ def test_public_components_cover_complete_interaction_states() -> None:
         "def code_sample(",
     ):
         assert component in source
+    assert "navigator.clipboard?.writeText" in source
+    assert "window.prompt" in source
+    assert "copy_failed_manual" in source
 
 
 def test_legacy_page_helpers_delegate_to_the_public_component_contract() -> None:

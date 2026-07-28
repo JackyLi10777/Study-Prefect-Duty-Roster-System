@@ -2945,9 +2945,28 @@ function adminSessionSecret(env) {
   return secret;
 }
 
+const OBVIOUS_SECRET_PLACEHOLDERS = new Set([
+  'changeme',
+  'changemechangemechangemechangeme',
+  'example',
+  'examplesecret',
+  'managedsecret',
+  'notarealsecret',
+  'notarealsecretnotarealsecret',
+  'placeholder',
+  'yoursecret',
+  'yoursecrethere',
+]);
+
+function isObviousSecretPlaceholder(value) {
+  const normalized = value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return OBVIOUS_SECRET_PLACEHOLDERS.has(normalized)
+    || (normalized.length > 0 && new Set(normalized).size === 1);
+}
+
 function guestSessionSecret(env) {
   const secret = typeof env.GUEST_SESSION_SECRET === 'string' ? env.GUEST_SESSION_SECRET : ''; // pragma: allowlist secret -- environment variable name only
-  if (secret.length < 32 || secret.length > 512 || secret !== secret.trim()) {
+  if (secret.length < 32 || secret.length > 512 || secret !== secret.trim() || isObviousSecretPlaceholder(secret)) {
     throw new AccessValidationError('guest_session_secret_configuration');
   }
   return secret;
@@ -2955,7 +2974,7 @@ function guestSessionSecret(env) {
 
 function originPrincipalSecret(env) {
   const secret = typeof env.ORIGIN_PRINCIPAL_SECRET === 'string' ? env.ORIGIN_PRINCIPAL_SECRET : ''; // pragma: allowlist secret -- environment variable name only
-  if (secret.length < 32 || secret.length > 512 || secret !== secret.trim()) {
+  if (secret.length < 32 || secret.length > 512 || secret !== secret.trim() || isObviousSecretPlaceholder(secret)) {
     throw new AccessValidationError('origin_principal_secret_configuration');
   }
   return secret;

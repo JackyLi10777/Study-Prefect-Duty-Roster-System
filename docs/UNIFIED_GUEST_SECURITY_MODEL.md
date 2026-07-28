@@ -1,6 +1,6 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
-> **線上來源真相（2026-07-28）：**目前 Windows runtime operational，但 rc30 checkout 已觀察到 73 tracked 修改及 3 untracked 項目；canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 來源未歸屬。這不改變本文件的 deny-by-default 安全契約，但 active pair 不可稱為 exact rc30 或指紋相符。乾淨 rc30＋`11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是更早歷史版本。rc31 未部署，真人驗收未完成。下文舊 live rc30 標籤只保留歷史證據，由本段取代。
+> **線上來源真相（2026-07-29）：** clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459` 正在 Windows origin 運行，Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 承接 100% 流量。R5／R6 的有限 Guest receipt metadata、真實 replay 標記及弱 secret placeholder 拒絕仍屬 rc32 工作候選，未部署。rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退；真人驗收未完成。
 >
 > **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 來源檔案以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate 並完成受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量。這組 clean pair 是目前第一個已知、已驗證的復原目標；rc27／`c4c728aa…` 與 Worker `d7b51f21…` 是更深歷史。Admin、Guest 與公開 Viewer 使用同一身份邊界；該次 deployment report 證實當時 origin ready 且無 maintenance、recovery 或 pending backup obligation，真人身份與工作流驗收仍保持獨立未完成。
 
@@ -62,6 +62,8 @@ Cloudflare Worker 會：
 | 每分鐘命令 | 60 |
 
 每個 NiceGUI client 取得獨立 `workspace_id`。狀態不寫入正式 SQLite、`app.storage.user`、備份、檔案、KV、Redis、`localStorage`、IndexedDB、Cache Storage、分析或內容日誌。Guest PDF／JSON 只在記憶體建立，標明 `DEMO`，以一次性、同 verified Guest access mode 及 session 綁定的下載票據回傳，並使用 `Cache-Control: no-store`。
+
+冪等命令收據只保存 operation、request digest、applied revision、result digest 及有限 metadata，不保存每次命令的完整 workspace。相同 `command_id`／payload 只執行一次；重播會以 `replayed=true` 回傳目前 copy-safe workspace 並附原 applied revision，避免把過時 snapshot 偽裝成當前狀態。相同 ID 配不同 payload 會被拒絕。每個 workspace 最多 120 項 receipt，另有全域 count／metadata admission 上限；清理、到期及分頁隔離保持冪等。
 
 Guest 的語言、外觀、音樂及音效由獨立的有限期 origin-memory preference registry 保存；它只接受已核實 Guest session、限制鍵值及數值範圍，並與工作區一同在登出、到期、撤權或程序重啟時清除。這修正重新整理後語言回復的問題，但不把 Guest 偏好提升為永久資料。公開入口不會讀取或持續同步工作區偏好；只有刻意進入 Admin／Guest 時，才可暫存已明確選擇的 `light`／`dark` 提示，最長 120 秒。Worker 核對後把它放入已簽署 session 及 request-bound principal，建立 session 時清除暫存 cookie；目的地已有偏好時不覆寫。下載端點以同一有界限 `GeneratedFile` registry 服務 Admin／Guest，仍須重新核對 principal、能力、access mode、session、一次性票證、大小及 `no-store`；Guest 單檔上限為 5 MiB、Admin 為 64 MiB，registry 總內容上限為 128 MiB，並保留 64 MiB／16 票證予 Admin；總票證上限為 128、每 session 為 8、票證 TTL 為 90 秒。跨模式重播會被拒絕而不消耗合法票據，Guest 飽和亦不能阻塞正式檔案交付。前端帶同 cookie 取得 blob，先核對 HTTP status 及精確 MIME，才建立短期 object URL，不能靠隱藏按鈕或可猜網址繞過限制。
 
@@ -139,4 +141,4 @@ The live v1.2 product uses the same NiceGUI routes and components for administra
 
 The source contains signed principal verification, a bounded guest registry, per-client workspace IDs, session expiry/revocation monitoring, cross-tab logout cleanup, an HMAC snapshot codec, and the `sessionStorage` browser bridge. Each revision is saved only as a signed, tab-bound token; restore also requires the current live-connection nonce. Duplicate tabs receive new workspaces, while tampered, copied, expired, stale, or old-boot tokens fall back safely to the fictional fixture. Admin and Guest share the stable Assist. mode codes and policy checks, while only Admin persists the roster mode through migration `0011_assist_assignment_mode`.
 
-The controlled Windows origin remains live on `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`, and Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` serves the canonical site at 100% traffic. Exact rc30 source passed all 14 formal gates with fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc`, then completed the controlled origin switch, staged Worker smoke and canonical Public／Guest／Admin handoff／Viewer checks. rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` is the first-level origin rollback; Worker `d7b51f21-7692-418d-866c-034c2c57292d` is the immediate edge rollback. Supervised human acceptance remains open.
+Production currently runs clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`; Worker `7816b183-3edb-49ca-b39b-a91091ae794f` serves 100% of canonical traffic. The bounded-receipt and write-boundary-expiry changes remain an undeployed rc32 candidate until the protected release completes. rc30 plus Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` is the immediate verified rollback. Supervised human acceptance remains open.

@@ -16,6 +16,7 @@ from nicegui_app.config import POLICY_VERSION, PROJECT_ROOT
 
 REPORT_PATH = PROJECT_ROOT / "logs" / "release-candidate-report.json"
 PROJECT_ID = "sing-yin-study-prefect-duty-roster"
+RELEASE_REPORT_SCHEMA_VERSION = 2
 RELEASE_SOURCE_ROOTS = (
     PROJECT_ROOT / "nicegui_app",
     PROJECT_ROOT / "packages",
@@ -227,9 +228,29 @@ def load_release_evidence(
         return ReleaseEvidence("unreadable")
     if not isinstance(payload, dict):
         return ReleaseEvidence("unreadable")
-    if payload.get("schemaVersion") != 1 or payload.get("project") != PROJECT_ID:
+    if payload.get("schemaVersion") != RELEASE_REPORT_SCHEMA_VERSION or payload.get("project") != PROJECT_ID:
         return ReleaseEvidence("unreadable")
     if payload.get("policyVersion") != POLICY_VERSION or payload.get("humanAcceptanceRequired") is not True:
+        return ReleaseEvidence("unreadable")
+    source_commit = payload.get("sourceCommit")
+    source_tree = payload.get("sourceTree")
+    planned_tag = payload.get("plannedReleaseTag")
+    required_identities = payload.get("requiredCheckIdentities")
+    tool_versions = payload.get("toolVersions")
+    if (
+        not isinstance(source_commit, str)
+        or len(source_commit) != 40
+        or not isinstance(source_tree, str)
+        or len(source_tree) != 40
+        or payload.get("sourceDirty") is not False
+        or not isinstance(planned_tag, str)
+        or payload.get("immutableReleaseReference") != f"refs/tags/{planned_tag}"
+        or not isinstance(required_identities, list)
+        or not required_identities
+        or len(required_identities) != len(set(required_identities))
+        or not isinstance(tool_versions, dict)
+        or not all(isinstance(value, str) and value for value in tool_versions.values())
+    ):
         return ReleaseEvidence("unreadable")
     fingerprint = current_fingerprint or release_source_fingerprint()[0]
     if payload.get("sourceFingerprint") != fingerprint:
@@ -240,6 +261,8 @@ def load_release_evidence(
         return ReleaseEvidence("unreadable")
     passed = sum(1 for item in checks if item.get("status") == "pass")
     total = len(checks)
+    if total != len(required_identities) or [item.get("name") for item in checks] != required_identities:
+        return ReleaseEvidence("unreadable")
     finished_at = None
     raw_finished_at = payload.get("finishedAt")
     if isinstance(raw_finished_at, str):

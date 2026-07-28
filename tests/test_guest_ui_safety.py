@@ -139,6 +139,9 @@ def test_guest_published_roster_renders_restricted_share_state() -> None:
         "def _show_share_receipt", 1
     )[0]
     assert "require(Capability.EXTERNAL_DELIVERY)" in copy_body
+    assert "navigator.clipboard?.writeText" in copy_body
+    assert "window.prompt" in copy_body
+    assert "copy_failed_manual" in copy_body
 
 
 def test_guest_generated_file_uses_single_use_server_endpoint(

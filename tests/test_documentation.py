@@ -215,13 +215,14 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
 
     release_truth_documents = (status, architecture, security, handover, acceptance)
     for document in release_truth_documents:
+        assert "v1.2.0-rc.31" in document
+        assert "ba129a4931d11e844649e8ff356f5bf2ab048459" in document
+        assert "7816b183-3edb-49ca-b39b-a91091ae794f" in document
         assert "11763f08-d40d-46d5-93dc-5ca2599d4154" in document
-        assert "v1.2.0-rc.30" in document
-        assert "74b84f43786b00feb15b51a6270ff71c9430773f" in document
-        assert "15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc" in document
         current_header = "\n".join(document.splitlines()[:15])
-        assert "v1.2.0-rc.30" in current_header
-        assert "74b84f43786b00feb15b51a6270ff71c9430773f" in current_header
+        assert "v1.2.0-rc.31" in current_header
+        assert "ba129a4931d11e844649e8ff356f5bf2ab048459" in current_header
+        assert "7816b183-3edb-49ca-b39b-a91091ae794f" in current_header
         assert "11763f08-d40d-46d5-93dc-5ca2599d4154" in current_header
 
     # Detailed historical rc20 provenance belongs in the status and handover
@@ -243,8 +244,8 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
         assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in document
 
     assert "rc30 exact-source and deployment evidence" in status
-    assert "operational but provenance-drifted origin＋Worker" in status
-    assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in status
+    assert "live Windows origin is the clean annotated `v1.2.0-rc.31`" in status
+    assert "R5／R6 remediation candidate" in status
     assert "v1.2 rc30 is the current controlled Windows origin" not in status
     assert "Historical Service Weave v1.2 rc18 controlled rollout" in status
     assert "Historical Service Weave v1.2 rc11 rollout" in status
@@ -254,9 +255,10 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
     assert "一百倍" in readme
     assert "cancelWelcomeFade is not defined" in status
     readme_header = "\n".join(readme.splitlines()[:15])
-    assert "線上來源真相" in readme_header
-    assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in readme_header
-    assert "最近一組完整驗證的乾淨基線" in readme_header
+    assert "已核實線上來源" in readme_header
+    assert "v1.2.0-rc.31" in readme_header
+    assert "7816b183-3edb-49ca-b39b-a91091ae794f" in readme_header
+    assert "immediate known verified rollback" not in readme_header
     assert "remains disabled by default" not in status
     assert "now run the matching rc7 release" not in status
     assert "Windows origin remains healthy／ready on rc4" not in security
@@ -352,28 +354,22 @@ def test_operator_deployment_docs_use_observed_drift_and_recovery_hierarchy() ->
     )
 
     for document in (quickstart, windows, cloudflare, viewer, decision):
+        assert "v1.2.0-rc.31" in document
+        assert "ba129a4931d11e844649e8ff356f5bf2ab048459" in document
+        current_header = "\n".join(document.splitlines()[:15])
+        assert "v1.2.0-rc.31" in current_header
+        assert "ba129a4931d11e844649e8ff356f5bf2ab048459" in current_header
         assert "v1.2.0-rc.30" in document
         assert "74b84f43786b00feb15b51a6270ff71c9430773f" in document
         assert "11763f08-d40d-46d5-93dc-5ca2599d4154" in document
-        assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in document
-        current_header = "\n".join(document.splitlines()[:15])
-        assert "v1.2.0-rc.30" in current_header
-        assert "74b84f43786b00feb15b51a6270ff71c9430773f" in current_header
         assert "11763f08-d40d-46d5-93dc-5ca2599d4154" in current_header
-        assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in current_header
 
-    current_runtime = decision.split(
-        "## 目前來源待對帳的 runtime 與已驗證復原層級", 1
-    )[1].split("## ", 1)[0]
-    assert "provenance-drifted" in decision
-    assert "不可稱為 exact rc30" in current_runtime
-    assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in current_runtime
-    assert "第一個已驗證配對復原目標" in current_runtime
-    assert "有條件單側回退" in current_runtime
+    assert "Current production identity is recorded in the document header" in decision
+    assert "Historically, before the rc31 rollout" in decision
     assert "受審候選的正式 tag／commit" in quickstart
     assert "現行證據以 rc30 report 為準" not in quickstart
-    assert "來源未歸屬" in cloudflare
-    assert "配對驗證的 `11763f08-d40d-46d5-93dc-5ca2599d4154`" in cloudflare
+    assert "canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f`" in cloudflare
+    assert "rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`" in cloudflare
     assert "不得單側回退而形成未驗證組合" in cloudflare
 
     assert "保存及歸屬差異" in cloudflare
@@ -442,7 +438,7 @@ def test_docs_share_historical_rc20_device_matrix_and_current_rollback_hierarchy
     )
 
     rollback_contracts = {
-        "README.md": (readme, "> **線上來源真相（"),
+        "README.md": (readme, "> **已核實線上來源（"),
         "docs/RELEASE_HANDOVER.md": (
             handover,
             "> **交接前必讀的線上來源真相（",
@@ -461,18 +457,15 @@ def test_docs_share_historical_rc20_device_matrix_and_current_rollback_hierarchy
         current_summary = next(
             line for line in document.splitlines() if line.startswith(summary_marker)
         )
-        assert "a2e3ad14-d191-4ffc-85e4-eda40e42e5ed" in current_summary, relative_path
+        assert "v1.2.0-rc.31" in current_summary, relative_path
+        assert "ba129a4931d11e844649e8ff356f5bf2ab048459" in current_summary, relative_path
+        assert "7816b183-3edb-49ca-b39b-a91091ae794f" in current_summary, relative_path
         assert "11763f08-d40d-46d5-93dc-5ca2599d4154" in current_summary, relative_path
         assert "rc30" in current_summary, relative_path
-        assert "來源未歸屬" in current_summary, relative_path
-        assert (
-            "不可稱為 exact rc30" in current_summary
-            or "不是 exact rc30" in current_summary
-        ), relative_path
         assert "已驗證" in current_summary, relative_path
     normalized_readme_en = " ".join(readme_en.split())
     assert "immediate known verified edge rollback" in normalized_readme_en
-    assert "operational but provenance-drifted origin＋Worker" in status
+    assert "live Windows origin is the clean annotated `v1.2.0-rc.31`" in status
 
     assert "rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 是即時回退組合" not in readme
     assert "is the immediate rollback pair" not in status

@@ -13,6 +13,7 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from dataclasses import replace
 from functools import wraps
+from inspect import signature
 from typing import Any, Callable, Iterator
 from uuid import uuid4
 
@@ -64,6 +65,7 @@ class PageContextWorkflowAdapter:
                 "the official workflow requires an administrative principal"
             )
         self._workflow = workflow
+        self._principal = context.principal
         self._actor = OperationActor(
             mode=context.principal.mode.value,
             subject=context.principal.subject,
@@ -81,9 +83,20 @@ class PageContextWorkflowAdapter:
         if not callable(attribute):
             return attribute
 
+        requires_command = "command_id" in signature(attribute).parameters
+
         @wraps(attribute)
         def invoke(*args: Any, **kwargs: Any) -> Any:
+            # A rendered page or websocket can outlive the verified session.
+            # Re-check at the exact workflow boundary; client polling is only UX.
+            self._principal.require_active()
             supplied_command = kwargs.get("command_id")
+            if requires_command and not (
+                isinstance(supplied_command, str) and supplied_command.strip()
+            ):
+                raise ValueError(
+                    f"{name} requires one stable command_id for the user intent"
+                )
             command_id = (
                 supplied_command.strip()
                 if isinstance(supplied_command, str) and supplied_command.strip()

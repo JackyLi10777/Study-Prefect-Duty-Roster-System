@@ -219,3 +219,22 @@ def test_python_accepts_the_worker_cross_language_principal_vector() -> None:
     )
     assert principal.mode is AccessMode.GUEST
     assert principal.session_id == "BAQEBAQEBAQEBAQEBAQEBA"
+
+
+@pytest.mark.parametrize(
+    "secret",
+    (
+        "change-me-change-me-change-me-change-me",
+        "not-a-real-secret-not-a-real-secret",
+        "x" * 32,
+    ),
+)
+def test_obvious_origin_secret_placeholders_are_rejected(secret: str) -> None:
+    payload = _payload()
+    token = seal_origin_principal_for_test(payload, environment=ENV)
+    with pytest.raises(OriginPrincipalError, match="not configured safely"):
+        verify_origin_principal(
+            token,
+            expected_binding=str(payload["request_binding"]),
+            environment={**ENV, "ORIGIN_PRINCIPAL_SECRET": secret},
+        )
