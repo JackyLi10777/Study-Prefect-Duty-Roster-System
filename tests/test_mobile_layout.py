@@ -48,6 +48,10 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
         page.route for page in PAGE_DEFINITIONS if page.mobile_primary
     }
 
+    verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
+    assert 'page.get_by_test_id("mobile-more").click()' in verifier
+    assert 'mobile_navigation.locator("button").last.click()' not in verifier
+
 
 def test_mobile_navigation_copy_is_complete_in_both_languages() -> None:
     for key in (

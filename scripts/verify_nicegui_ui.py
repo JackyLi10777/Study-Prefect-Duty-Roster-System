@@ -244,7 +244,11 @@ def ensure_rendered_theme(page, target: str) -> None:  # type: ignore[no-untyped
     else:
         mobile_navigation = page.get_by_test_id("mobile-bottom-navigation")
         assert mobile_navigation.count() == 1
-        mobile_navigation.locator("button").last.click()
+        # Use the semantic trigger rather than DOM position: a translated or
+        # re-rendered mobile bar may contain other buttons after the primary
+        # route actions, and clicking "last" can navigate instead of opening
+        # the drawer.
+        page.get_by_test_id("mobile-more").click()
         drawer_tools = page.get_by_test_id("mobile-drawer-tools")
         drawer_tools.wait_for(timeout=10_000)
         control = drawer_tools.get_by_test_id("mobile-theme-control")
