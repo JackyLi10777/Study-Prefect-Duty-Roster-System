@@ -11,10 +11,10 @@
 | 候選分支 | `codex/rc31-unified-theme-controls` | `codex/rc31-unified-theme-controls` |
 | 草稿建立時 base HEAD | `a3c45bae48ef99b3972790c7c0f5df8453a0dd19` | 不可當作最終候選 SHA |
 | 草稿建立時 base tree | `3838f9b70d6aec2481325e07683c850c8829e8be` | 不可當作最終候選 tree |
-| 已審 code-bearing commit SHA | 未建立 | `ea25d25e6ced6f0f25abaf8f9ced39d4b9f3af7a` |
-| 已審 code-bearing Git tree SHA | 未建立 | `f115ce5315988ec644f3f3c1ff3217c5d1b2e046` |
+| 已審 code-bearing commit SHA | 未建立 | `24a9db89424224a2606d28ad094c23da941ae4f5` |
+| 已審 code-bearing Git tree SHA | 未建立 | `c5ad462f02f219e9960c8d76ce8290fce8d63890` |
 | 發布標籤 | 未建立 | `v1.2.0-rc.31`（須在 protected main 合併後建立） |
-| source fingerprint | 未從凍結來源產生 | `696e6079a2abe671ad09e73c15353491541cf2c74bbd5f205e4eef17939d1ff0`（297 runtime files） |
+| source fingerprint | 未從凍結來源產生 | `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042`（297 runtime files） |
 | `requirements.lock` SHA-256 | `8b1961717c9941c3a35813c1141bbf8364fe7fbc95017200e6e933da6997b2de` | 相同，已重核 |
 | `requirements-dev.lock` SHA-256 | `f21c14b128abfddc8206b59dbccb97252d820f617261f1199b844e7eb7a583f1` | 相同，已重核 |
 | 追蹤檔案 | 568 | 570；另有 1 個明確排除的本機 screenshot |
@@ -77,6 +77,8 @@
 | RC31-P2-002 | 架構、快速開始、訪客安全和交接文件仍有靜態 Guest、舊下載限制或錯誤環境變數敘述，可能令下一任操作者作出錯誤設定。 | README、`docs/NICEGUI_ARCHITECTURE.md`、`docs/QUICKSTART.md`、`docs/RELEASE_HANDOVER.md`、`docs/SECURITY_AND_PRIVACY.md`、`docs/UNIFIED_GUEST_SECURITY_MODEL.md`、`docs/PUBLIC_ROSTER_VIEWER.md` 已對照現行實作更新；documentation contract 38 項通過。 | **已修復** |
 | RC31-P2-003 | 早期 Chromium harness 只驗證 Admin／Guest 直接 origin，未穿過 Public 入口、真實身份按鈕、Worker principal 和目的工作台。 | `scripts/verify_rc31_theme_controls.py` 現由實際 Public 控制及 Admin／Guest 入口開始，核對 bounded explicit hint、signed session／request-bound principal、session mint、staging-cookie 清除、既有目的偏好優先、WebSocket callback、重新整理及跨路由持續性；OS Light／Dark、桌面／手機、reduced motion／forced colours 共 16 個情境通過。 | **已修復並取得 rendered evidence** |
 | RC31-P2-004 | Windows 部署器原先在檢查已安裝主機 Git 是否乾淨之前，便套用並刪除一次性環境 overlay；雖然會安全中止服務切換，但操作者要重建敏感設定檔。 | `scripts/deploy_windows_release.ps1` 把 host cleanliness／previous commit 檢查移到讀取或消耗 overlay 之前；`tests/test_windows_release_deployment_script.py` 鎖定 host-clean → preflight → protect／merge／consume → stop 的順序。 | **已修復** |
+| RC31-P2-005 | 行動版抽屜只觀察 drawer shell；Quasar backdrop 已隱藏但 drawer 幾何仍短暫可見時，主內容可能殘留 `inert`。 | `nicegui_app/ui/shell.py` 把 backdrop 可見性納入抽屜開啟判斷，並同時觀察 shell／backdrop、在清理時解除 observer；真實 390px／768px／820px／1024px 流程及焦點契約通過。 | **已修復** |
+| RC31-P2-006 | 瀏覽器驗證器在 DOMContentLoaded 後立即以元件數量推斷桌面／手機，NiceGUI 尚未掛載響應式控制時會產生非產品失敗。 | `scripts/verify_nicegui_ui.py` 先依 viewport media query 選擇分支，再等待正確控制進入 visible／attached 狀態；聚焦契約及完整 release verifier 通過。 | **已修復** |
 
 ### 3.3 P0、其他 P1、P3
 
@@ -148,7 +150,7 @@
 | `python -X utf8 -m compileall -q nicegui_app packages tests scripts` | exit 0 | 語法／bytecode 檢查，不代替行為驗證 |
 | `git diff --check` | 沒有 whitespace error；只有既有 Windows LF→CRLF 提示 | 凍結後重跑 |
 
-正式報告：`logs/release-candidate-report.json`；狀態 `pass`，15 checks，297 runtime source files，fingerprint `696e6079a2abe671ad09e73c15353491541cf2c74bbd5f205e4eef17939d1ff0`。臨時 browser artifacts 只作本機來源驗證，不進入產品 repository，也不描述為部署證據。GitHub CodeQL 曾指出 gateway 瀏覽器驗證器把固定測試 credential 寫入生成來源；`76788bc` 已改為每個 case 產生一次性 secret，只經受限 subprocess environment 傳入，聚焦測試、靜態／依賴／secret gates 及本次正式報告均通過。
+正式報告：`logs/release-candidate-report.json`；狀態 `pass`，15 checks，297 runtime source files，fingerprint `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042`。臨時 browser artifacts 只作本機來源驗證，不進入產品 repository，也不描述為部署證據。GitHub CodeQL 曾指出 gateway 瀏覽器驗證器把固定測試 credential 寫入生成來源；`76788bc` 已改為每個 case 產生一次性 secret，只經受限 subprocess environment 傳入，聚焦測試、靜態／依賴／secret gates 及本次正式報告均通過。
 
 ## 7. 受控部署仍需完成
 

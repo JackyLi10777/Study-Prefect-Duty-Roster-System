@@ -36,7 +36,7 @@ the authority for the final state.
   as the formal release verifier's fifteenth fingerprint-bound gate.
 - These checks describe only that earlier candidate slice.
 - On 2026-07-29 the exact 297-file runtime fingerprint
-  `696e6079a2abe671ad09e73c15353491541cf2c74bbd5f205e4eef17939d1ff0`
+  `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042`
   passed the formal 15-gate release-candidate run. The rendered evidence includes
   16 Public→Admin／Guest continuity cases, desktop Light／Dark component grammar,
   390px phone, 768×1024 and 820×1180 touch tablets, 1024×768 desktop-shell touch,
