@@ -1,10 +1,12 @@
 # 首次發布與交接手冊 / First-release and handover guide
 
+> **交接前必讀的線上來源真相（2026-07-28）：**目前 Windows runtime 可用，但 `C:\SingYinRoster` 雖指向 rc30／`74b84f…`，工作樹已有 73 個 tracked 修改及 3 個 untracked 項目，故不可稱為 exact rc30、指紋相符或不可變 bundle。canonical Worker 是來源未歸屬的 `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed`。乾淨 rc30＋`11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是較舊歷史回退。rc31 未凍結、未標記、未部署；真人驗收未完成。下文較舊的「目前線上 rc30／第一級回退」字樣均由本段取代。保存並歸屬現有漂移後，才可進行受控回復或發布。
+
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 
-> **目前線上基線是 rc30：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`。296 個 runtime 輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate（894 Python tests、3 motion、46 Worker contracts）。切換前正式備份 `20260727-023041-069097-manual_verified_backup.sqlite3`、SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b`、公平對帳、行數核對、還原審計及隔離還原全部通過。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 已通過 0% version smoke 並升至 100%；origin `/healthz` 健康、`/readyz` ready、`writeReady=true`，沒有待處理備份義務。canonical root／healthz 與 rendered desktop／320px／Guest Engineering checks 均通過。第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`，Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`。首席導學風紀及教師顧問真人驗收仍未完成。
+> **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`。296 個 runtime 輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate（894 Python tests、3 motion、46 Worker contracts）。切換前正式備份 `20260727-023041-069097-manual_verified_backup.sqlite3`、SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b`、公平對帳、行數核對、還原審計及隔離還原全部通過。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 已通過 0% version smoke 並升至 100%；origin `/healthz` 健康、`/readyz` ready、`writeReady=true`，沒有待處理備份義務。canonical root／healthz 與 rendered desktop／320px／Guest Engineering checks 均通過。這組 clean pair 是目前第一個已知、已驗證的復原目標；rc27／`c4c728aa…` 與 Worker `d7b51f21…` 是更深歷史。首席導學風紀及教師顧問真人驗收仍未完成。
 >
-> **rc31 來源候選（未上線）：** `codex/rc31-unified-theme-controls` 把 NiceGUI、Public 及 Viewer 的可見三選一外觀控制改為單一淺色／深色按鈕。`system` 只作偏好缺失／未設定時的初始化狀態；首次操作儲存目前解析結果的相反模式，其後只在明確淺色與深色間切換。候選已把專用瀏覽器矩陣登記為第 15 個 fingerprint-bound gate，並通過本機來源測試；protected-main 身份、exact-source 指紋、正式備份、Worker 版本及部署證據仍待建立。rc30 仍是現行線上 origin／Worker，不得據此執行正式切換。
+> **rc31 來源候選（未上線）：** `codex/rc31-unified-theme-controls` 現已包括單一淺色／深色控制、完整週表回溯求解及嚴格覆蓋／權重驗證、Admin／Guest mode-and-session-bound 生成檔案交付、依實際渲染狀態同步的手機抽屜、全域業務寫入 admission、recovery marker 下的 diagnostic-only 啟動、exact-byte staged 備份／交接／還原，以及 migration provenance guard。早期 rc31 主題切換測試結果發生在這些後續來源變更之前，只屬歷史切片，不能作目前候選的正式證據。現行 origin／Worker 來源待對帳；乾淨 rc30＋`11763f08…` 只屬最近完整驗證的復原基線。rc31 exact-current-source gates、protected-main commit／tag／fingerprint、正式備份與隔離還原、origin／Worker 部署、canonical 線上核對及真人驗收仍待完成，不得據此執行正式切換。
 >
 > **部署時發現的主機漂移：**切換前 `C:\SingYinRoster` 的 rc20 checkout 有 26 個未提交／未追蹤項目。發布流程沒有把它們混入候選，而是完整保存為 stash commit `56e2f5148f4be1444c45d31c25b81f5a7df1ba03`，再從不可變 rc21 tag 部署；除非先作獨立差異審查，切勿把這份 stash 套回正式主機。
 >
@@ -78,19 +80,19 @@ JSON 是唯讀報告證據，不是 SQLite 還原備份。需要交接或復原�
 
 ## 備份與復原
 
-- 每次生成、發布、請假、名單修改與還原均會建立可驗證 SQLite 快照。
+- 每次生成、發布、請假、名單修改與還原等受保護寫入都會建立 durable backup obligation；只有完成 manifest、SHA-256、SQLite 完整性及政策核對的自包含快照才會結清該義務。
 - 在「系統設定」只選擇標示為「已驗證」的快照。還原前系統會先建立 `pre_restore` 安全快照。
-- 「已驗證」不只代表檔案可打開：系統會核對 manifest、SHA-256、SQLite 完整性及完整資料表契約。受控還原會先把候選快照複製到隔離位置，在副本上升級至目前 Alembic head，再核對 schema 與公平帳本；任何缺表、migration 或對帳失敗都會停止。正式 live 資料庫完成啟動或還原後必須位於目前 head，否則 `/healthz` 會顯示 degraded，而不是健康。
+- 「已驗證」不只代表檔案可打開：候選必須是 `.sqlite3` 與同名 JSON-object manifest 的自包含配對，沒有相鄰 `-wal`、`-shm` 或 `-journal` sidecar，並通過 manifest／SHA-256、SQLite 完整性、supported migration revision、零 pending obligation 及必要資料表核對。受控還原先把候選兩個檔案的精確 bytes 複製到私人 staging，再重新核對兩個 digest；只支援從 revision `0007` 沿已知線性鏈在隔離副本升級至目前 Alembic head，未知／未來 revision 會停止。升級後仍須通過 current schema、foreign keys 與公平帳本；正式 live 資料庫完成啟動或還原後必須位於目前 head，否則 `/healthz` 會顯示 degraded，而不是健康。
 - 新安裝或尚未完成第一次快照時，交接包與還原按鈕會停用；依空狀態提示按「立即建立已驗證快照」。只有校驗成功並重新載入後，才可選擇還原或建立交接包。不要嘗試以手動放置、改名或未附 manifest 的 SQLite 檔繞過此狀態。
-- 若畫面顯示「最近檢查的快照中，有 N 個未通過驗證」，這些檔案已被隔離於交接／還原選單。分類只用來指出 manifest、checksum、SQLite 或 schema 層級；不要自行修補或刪除證據。先建立新的已驗證快照，若仍失敗，向受控 IT 支援提供 OP／REQ 編號，由支援人員在本機調查。
-- 離機備份時，在「系統設定」按「建立交接備份包」。確認敏感資料提示後，系統只會下載最近一份已驗證快照、對應 SHA-256 manifest 及還原說明；封包在記憶體本機生成，不會自動加密、上載或留下第二份本機副本。
+- 若畫面顯示「最近檢查的快照中，有 N 個未通過驗證」，這些檔案已被隔離於交接／還原選單。分類只用來指出 manifest、checksum、sidecar、SQLite、migration、pending obligation 或 schema 層級；不要自行修補或刪除證據。先建立新的已驗證快照，若仍失敗，向受控 IT 支援提供 OP／REQ 編號，由支援人員在本機調查。
+- 離機備份時，在「系統設定」按「建立交接備份包」。確認敏感資料提示後，系統會把最近一份已驗證快照及 manifest 重新複製到私人 staging，立即核對該 exact pair 的兩個 digest，才把同一份 SQLite、manifest 及還原說明加入 ZIP；封包在記憶體本機生成，不會自動加密、上載或留下第二份本機副本。
 - 立即把下載的 ZIP 儲存在學校批准的加密離機位置。日後需要還原時，解壓 ZIP，把 SQLite 檔案及同名 manifest 一併放回 `data/backups/`，再在「系統設定」選擇顯示為「已驗證」的快照。切勿在程式執行時手動覆寫 `data/runtime/sing-yin-roster.sqlite3`。
 - 每次交接均由繼任者在「交接指引」確認：名單存在、週表歷史可讀、最近備份已驗證。
-- 如畫面顯示「資料已儲存，但備份未完成」，不可重複剛才的生成、發布、調整或名單操作。先按「重新載入並核對」，確認資料庫結果，再到「系統設定」按「立即建立已驗證快照」。只有新快照顯示「已驗證」後才繼續下一項工作。
+- 如畫面顯示「資料已儲存，但備份未完成」，不可重複剛才的生成、發布、調整或名單操作。先按「重新載入並核對」，確認資料庫結果，再到「系統設定」按「立即建立已驗證快照」。只有新快照成功覆蓋並結清 pending obligation、`/readyz` 回復 `writeReady=true` 後才繼續下一項工作；建立失敗時所有業務寫入保持 fail-closed。
 - 還原後，瀏覽器歷史或舊書籤可能指向已不存在的週表。看到「找不到這份值班表」時，不代表目前資料再次損壞；先按「查看現有值班表」核對現有週次，如剛完成還原則再按「核對備份與還原」確認快照。不要修改網址中的週表編號猜測資料。
 - 只有已發布週表可進入「值班後請假調整」。如直接開啟草稿的調整網址，系統會要求返回該週表完成核對及發布，不會顯示可提交表單，也不會改動公平帳本。
 - 每次會改動資料的操作，會把「提交 → 建立快照 → 校驗 → 備份證據入帳」鎖成同一個跨程序序列；另一個分頁或程序必須等待，故操作回傳的版本與恢復點不會錯配。這不是畫面上的重複點擊鎖，而是主機資料層的保護。
-- 還原會先進入全主機 maintenance 狀態。系統以跨程序 operation lease 等候其他分頁／程序的正常工作及其快照完整結束，然後才取得獨佔 marker；期間新操作會被拒絕，頁面會顯示維護狀態。候選快照會先在隔離副本完成 migration、外鍵及公平帳本對帳，再接觸正式資料庫。若交換後的重連或審計失敗，系統會自動裝回 `pre_restore`；只有無法證明回復安全時才保留 recovery-review marker，等待 IT 支援處理。
+- 還原會先進入全主機 maintenance 狀態。系統以跨程序 operation lease 等候其他分頁／程序的正常工作及其快照完整結束，然後才取得獨佔 marker；期間新操作會被拒絕，頁面會顯示維護狀態。候選 exact pair 會先在私人 staging 重新驗證，再於隔離副本完成 supported migration、外鍵及公平帳本對帳，才接觸正式資料庫。若交換後的重連或審計失敗，系統會自動裝回 `pre_restore`；只有無法證明回復安全時才保留 recovery-review marker，等待 IT 支援處理。若程序啟動前 marker 已存在，系統會在 migration、session 建立及 SQLite journal mutation 之前進入 diagnostic-only 狀態：`workflowInitialized=false`、`/readyz` 503、`writeReady=false`，任何業務寫入、學年交接或分享交付均不會執行。切勿手動刪除 marker；即使 marker 消失，現有 diagnostic-only 程序亦不會變成可寫，必須完成受控恢復並安全重啟。
 
 ## 本機設定
 
@@ -119,7 +121,7 @@ token 及完整日誌留在私人受控渠道。完整程序及威脅模型見
 
 受控技術維護可使用 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。正式設定只接受 Ed25519 金鑰、只監聽 loopback，並拒絕密碼、轉發及公開 TCP 22。`SingYinRosterSvc` 仍是非互動網站執行帳戶，不可用作 SSH 登入；SSH 私鑰亦不可放入 Git、交接備份、日誌或雲端同步資料夾。
 
-需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。目前 live rc30 中，訪客不需輸入電郵或密碼，只按「訪客體驗」建立有限期 Guest session；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 驗證相應 session 後，以獨立 HMAC principal 把 Guest／Admin 送到同一 NiceGUI origin；origin 再分流至虛構記憶體 adapter 或正式 workflow。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
+需要從其他裝置工作時，只使用同一正式網站：<https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/>。現行產品契約中，訪客不需輸入電郵或密碼，只按「訪客體驗」建立有限期 Guest session；管理員按同站「管理員登入」，輸入 exact-email policy 列明的電郵及 Cloudflare 寄出的單次驗證碼。Worker 驗證相應 session 後，以獨立 HMAC principal 把 Guest／Admin 送到同一 NiceGUI origin；origin 再分流至虛構記憶體 adapter 或正式 workflow。私人 WARP 及本機 `127.0.0.1` 保留作故障維護後備。完整設定見[Cloudflare 遠端存取完整設定手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)，分享週表見[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。
 
 ### 交接前練習模式
 
@@ -136,8 +138,8 @@ token 及完整日誌留在私人受控渠道。完整程序及威脅模型見
 - v1.2 Guest 不是 Practice Mode，也不是另一套 `/try` 靜態產品。`/guest`、`/try` 只作兼容重定向；Guest 使用同一 NiceGUI 路由，但只連到固定虛構中文姓名的程序記憶體 workspace，30 分鐘後失效。
 - Guest 可示範請假、生成、手動修改、發布、雙語 PDF／JSON、發布後請假調整及公平說明；AI、匯入、上載、正式備份／還原、Viewer 分享及永久設定仍由服務層拒絕。每個分頁的最新狀態只以已簽署、綁定 session／workspace／tab 的 token 放在 `sessionStorage`，還原時須核對當次連線 nonce；它不能寫正式 SQLite、公平帳本、備份或外部整合。
 - Guest 下載是一次性、`DEMO` 標示及 `no-store`；下載檔只因訪客主動保存而存在，不能轉入正式資料或成為公平／服務證據。
-- Guest 的語言、外觀、音樂及音效只在已核實 session 的 origin 記憶體中保留；重新整理可延續，登出、到期、撤權或程序重啟即清除。偏好缺失／未設定時跟隨裝置系統；伺服器首屏只提供中性的淺色提示，瀏覽器會在控制可見前解析系統模式並在需要時完成一次同步，若瀏覽器完全不支援系統色彩查詢才保留淺色。可見控制只有淺色／深色，圖標顯示目前解析模式，輔助文字說明下一個相反動作。第一次操作保存相反模式，其後只在明確淺色與深色間切換。
-- Admin／Guest 的繁中 PDF、英文 PDF 及 JSON 均由同一帶憑證交付流程下載；如失敗，先記下畫面顯示的支援編號再重試，不要把瀏覽器「無法擷取檔案」當成 PDF 內容錯誤。
+- Guest 的語言、外觀、音樂及音效只在已核實 session 的 origin 記憶體中保留；重新整理可延續，登出、到期、撤權或程序重啟即清除。偏好缺失／未設定時跟隨裝置系統；伺服器首屏只提供中性的淺色提示，瀏覽器會在控制可見前解析系統模式並在需要時完成一次同步，若瀏覽器完全不支援系統色彩查詢才保留淺色。可見控制只有淺色／深色，圖標顯示目前解析模式，輔助文字說明下一個相反動作。第一次操作保存相反模式，其後只在明確淺色與深色間切換。Public／Viewer 不讀取或持續同步 Admin／Guest 偏好；只有刻意進入工作區時，明確 `light`／`dark` 才可經已簽署、單次、最長 120 秒的交接帶入，目的地已有偏好時不覆寫。
+- Admin／Guest 的繁中 PDF、英文 PDF 及 JSON 均由同一帶憑證交付流程下載；Guest 單檔上限為 5 MiB，Admin 為 64 MiB，總記憶體上限為 128 MiB，並保留 64 MiB／16 票證予 Admin。如失敗，先記下畫面顯示的支援編號再重試，不要把瀏覽器「無法擷取檔案」當成 PDF 內容錯誤。
 
 ### 發布錯誤時：撤回，不直接刪除
 
@@ -171,7 +173,7 @@ token 及完整日誌留在私人受控渠道。完整程序及威脅模型見
 4. 舊週表、公平帳本、審計及已封存姓名均保留；日常名單變成空白後，才匯入新學年名單。相同中文姓名可在新學年建立新的獨立記錄，不會改寫舊記錄。
 5. 如結果不符預期，不要手動改 SQLite；到「系統設定」依受控還原程序選擇操作前備份。
 
-若封存已提交但操作後備份未能完成，系統會保留 maintenance recovery lock，阻擋所有後續寫入，並顯示 OP 支援編號。不要重複操作、重新開機或自行刪除維護標記；保持主機運行，由受控 IT 支援先驗證操作前備份，再決定受控還原或建立新的已驗證基準。這個鎖定是為了避免新寫入令操作前復原點變得有損。
+若封存已提交但操作後備份未能完成，系統會保留 maintenance recovery lock，阻擋所有後續寫入，並顯示 OP 支援編號。重新啟動只會進入 diagnostic-only 模式，不會嘗試 migration 或建立可寫 session。不要重複操作或自行刪除維護標記；保持主機運行，由受控 IT 支援先驗證操作前備份，再決定受控還原或建立新的已驗證基準。這個鎖定是為了避免新寫入令操作前復原點變得有損。
 
 此功能適合每年交接，不可取代第 8.2 節的一次性舊示範資料退休工具；後者會清理整個未正式啟用的官方資料集及舊備份，只由受控維護者執行。
 
@@ -187,14 +189,15 @@ python -X utf8 -m nicegui_app.main
 
 3. `SING_YIN_OPEN_BROWSER` 預設為 `true`，令首次開啟更直接；受控或無介面運行可設為 `false`。
 4. 只使用 `http://127.0.0.1:8080`；現時程式刻意只綁定 localhost。
-5. 完成一批更新後先執行 `python -X utf8 scripts\verify_update.py`。它會按 Git 變更自動選擇 `docs`、`tests`、`assurance`、`worker` 或 `full`，並顯示執行及略過理由；未知路徑一律升級，不會靜默少驗證。只有正式 runtime、政策、資料庫、依賴、Worker、Windows 主機或正式證據閘門改動，才需要先安裝 `requirements-dev.lock`、Chromium 及 Deno，再由同一命令啟動完整 `verify_release_candidate.py`。目前完整入口共有 14 道閘門：Git 邊界、安全掃描、Cloudflare Worker Deno 契約、獨立圖標互動狀態機、完整 Python 測試、編譯、依賴、桌面 UI、跨頁效能／記憶體、隔離寫入／PDF／還原、手機適應、嚴格部署就緒、統一訪客隔離及備份失敗復原。它自行建立臨時資料庫、備份及日誌，絕不採用正式學校資料路徑；只有 `logs/release-candidate-report.json` 的所有項目均為 `pass` 且 runtime 指紋仍相符，才算機器驗證完成。文件、測試及 CI 改動另有聚焦證據，不會令已證實的 runtime 誤報過期；詳細矩陣見 `docs/UPDATE_WORKFLOW.md`。這不能取代下方的人手驗收。
+5. 完成一批更新後先執行 `python -X utf8 scripts\verify_update.py`。它會按 Git 變更自動選擇 `docs`、`tests`、`assurance`、`worker` 或 `full`，並顯示執行及略過理由；未知路徑一律升級，不會靜默少驗證。只有正式 runtime、政策、資料庫、依賴、Worker、Windows 主機或正式證據閘門改動，才需要先安裝 `requirements-dev.lock`、Chromium 及 Deno，再由同一命令啟動完整 `verify_release_candidate.py`。乾淨 rc30 的歷史 exact-source report 有 14 道閘門；後續候選的實際 gate 數量及結果只可引用該候選凍結來源所產生的 `logs/release-candidate-report.json`，不可沿用 rc30 或早期 rc31 計數。正式 verifier 自行建立臨時資料庫、備份及日誌，絕不採用正式學校資料路徑；只有報告所有項目均為 `pass` 且 runtime 指紋仍相符，才算機器驗證完成。文件、測試及 CI 改動另有聚焦證據，不會令已證實的 runtime 誤報過期；詳細矩陣見 `docs/UPDATE_WORKFLOW.md`。這不能取代下方的人手驗收。
    `D:\code_v3` 是開發及驗證副本，`C:\SingYinRoster` 是目前工作排程器實際執行的安裝副本；修改前者不會自動更新後者。完成驗證後仍須依 Windows 專用主機手冊第 12 節備份、停止、更新、重新啟動及核對，否則瀏覽器會繼續顯示舊版。
 6. 不要在 `verify_update.py` 或完整 verifier 通過後再重跑同一套 hygiene／security；它們已由所選 profile 擁有。只有單獨調查某一道閘門時才直接執行相應腳本。發布前仍須人工閱讀 `git status --short`，不可用未核對的 `git add -A`；沒有真正 commit 歷史、被追蹤的運行資料，或尚未加入 Git 的發布敏感程式／遷移／Cloudflare／設定／交接文件，都會由 repository hygiene 阻擋。
+7. 受控 Windows 部署會先以唯讀方式把受保護主機 `.env` 與一次性 overlay 合併成候選設定；在修改 `.env`、停止排程工作或切換來源前，核對 loopback port、`AUTH_EPOCH` 及 `ORIGIN_PRINCIPAL_KID` 與候選 `wrangler.jsonc` 完全一致。套用後、停機前會再核對一次；任何差異都會 fail closed。成功報告只記錄非秘密的 host／Worker port、epoch、KID 及 `preflightMatched=true`／`postApplyMatched=true`，絕不記錄 principal secret。
 
 ### 操作失敗與本機支援記錄
 
 - 若操作未能完成，畫面會顯示一個 `OP-...` 支援編號。失敗不會自行發布值班表；先檢查輸入、請假及校規限制，再安全重試一次。
-- 「資料已儲存，但備份未完成」不是普通失敗：資料已提交，絕不可重試。系統會以 `event=operator_action_partial` 記錄，不含姓名或表單內容；依畫面先核對已提交結果，再建立手動已驗證快照。
+- 「資料已儲存，但備份未完成」不是普通失敗：資料已提交，絕不可重試。系統會以 `event=operator_action_partial` 記錄，不含姓名或表單內容；依畫面先核對已提交結果，再建立手動已驗證快照。所有業務寫入會保持阻擋，直至該快照成功驗證、結清 pending obligation，且 `/readyz` 回復可寫。
 - 每個正常 HTTP 請求亦會得到 `REQ-...` 追蹤編號（在 `X-Request-ID` 回應標頭）。它讓 IT 支援把「某次開啟／下載／頁面錯誤」與本機日誌連結；首席導學風紀通常只需提供畫面上的 `OP-...`。
 - 如問題持續，把 OP 或 REQ 編號交給教師顧問或 IT 支援。他們可在系統資料夾執行：`python -X utf8 scripts\inspect_support_log.py --reference OP-XXXXXXXX`；這個工具只讀取最近的匹配本機記錄。不要把整份日誌上載至公開網站或個人雲端。
 - `logs/app.log` 會以 UTF-8 輪替，並在受控終端即時顯示相同的安全記錄。每行只記錄事件、受控操作／路由分類、狀態、耗時、例外類型、程式位置及 OP／REQ 追蹤編號；系統不會寫入姓名、請假原因、表單內容、查詢字串、值班表內容或 PDF 內容。瀏覽器關閉 localhost 連線所產生的 Windows 64／10054 重設只會記為資訊事件；其他未捕捉的異步錯誤仍會保留為嚴重事件並交回系統處理，不能因為「消除紅字」而被隱藏。
@@ -218,7 +221,7 @@ python -X utf8 -m nicegui_app.main
 
 開始交接前，先閱讀[部署與遠端存取決策指南](DEPLOYMENT_DECISION.md)、[Cloudflare 手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)及[單一網站存取手冊](PUBLIC_ROSTER_VIEWER.md)。只派發 canonical workers.dev 主網址；不另發管理員、WARP、localhost、VPC 或 `/auth/*` 網址。
 
-桌面、tablet 與手機均使用同一主網址、登入、資料及權限；不要建立或派發 `/mobile`、第二個子網域或另一套登入。在 900px 或以下，窄屏只是同一網站的獨立排列：上方為單行頁首，下方固定顯示 **Dashboard／Rosters／Prefects／More**；語言、外觀、聲音、登出及較少使用的頁面由 **More** 導覽抽屜開啟。320px 手機使用同一個至少 44px 的淺色／深色控制；它顯示目前解析模式並把相反模式寫入可存取名稱，不再呈現 System／Light／Dark 三選一。抽屜必須可捲動到底，底部導航必須避開手機安全區，並不得遮蓋最後一個表單欄位、按鈕或頁尾。鍵盤及讀屏順序先讀本頁內容，再到固定底部導航；由共享導航進入新頁時焦點移至 `main`，讀屏不必重新猜測頁面位置。**More** 在次要頁可視覺上保持 active，但它仍是 menu trigger，不可自稱 `aria-current=page`；抽屜內實際頁面才是 current item。鍵盤開啟抽屜後，焦點移到抽屜並在其中以 Tab／Shift+Tab 循環；按 Escape 或背景關閉後，焦點返回 **More**。手機軟鍵盤開啟時，`visualViewport` 邏輯會暫時讓固定底欄退開並把焦點欄位移到安全區；頁面在 256 CSS px／200% zoom 仍須 reflow，只有明確資料區可局部橫向捲動。Tablet 的操作表單保持單欄，證據／參考資料才使用雙欄。
+桌面、tablet 與手機均使用同一主網址、登入、資料及權限；不要建立或派發 `/mobile`、第二個子網域或另一套登入。在 900px 或以下，窄屏只是同一網站的獨立排列：上方為單行頁首，下方固定顯示 **Dashboard／Rosters／Prefects／More**；語言、外觀、聲音、登出及較少使用的頁面由 **More** 導覽抽屜開啟。320px 手機使用同一個至少 44px 的淺色／深色控制；它顯示目前解析模式並把相反模式寫入可存取名稱，不再呈現 System／Light／Dark 三選一。抽屜必須可捲動到底，底部導航必須避開手機安全區，並不得遮蓋最後一個表單欄位、按鈕或頁尾。鍵盤及讀屏順序先讀本頁內容，再到固定底部導航；由共享導航進入新頁時焦點移至 `main`，讀屏不必重新猜測頁面位置。**More** 在次要頁可視覺上保持 active，但它仍是 menu trigger，不可自稱 `aria-current=page`；抽屜內實際頁面才是 current item。鍵盤開啟抽屜後，焦點移到抽屜並在其中以 Tab／Shift+Tab 循環；按 Escape 或背景關閉後，焦點返回 **More**。`aria-expanded`、背景 inert／`aria-hidden`、進入抽屜的焦點及返回 **More** 的焦點必須等實際 Quasar rendered open／closed state 確認後才同步，不可依固定毫秒數猜測動畫完成；跨頁清理須取消尚未完成的 frame settle 及 listeners。手機軟鍵盤開啟時，`visualViewport` 邏輯會暫時讓固定底欄退開並把焦點欄位移到安全區；頁面在 256 CSS px／200% zoom 仍須 reflow，只有明確資料區可局部橫向捲動。Tablet 的操作表單保持單欄，證據／參考資料才使用雙欄。
 
 1. 核對主網址未登入時顯示統一品牌入口，不會自動要求所有人登入。
 2. 按「訪客體驗」後，Worker 建立最長 30 分鐘 Guest session；NiceGUI 顯示與管理員相同的路由及元件，但只使用虛構記憶體 workspace。
@@ -261,9 +264,9 @@ rc21 的正式部署證據固定為 tag `v1.2.0-rc.21`／commit `f7df4d0170e6bac
 5. 核對 `/healthz`、`/readyz`、管理員本機工作流及備份義務。
 6. rc20 的 Worker source／設定與歷史 rc18 Worker 完全相同，因此發布時沒有重新部署 Worker，並在紀錄填上「刻意沿用 verified version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`」。只有日後 Worker source 或受保護設定實際改變，才使用 staged Worker rollout。
 7. 在 canonical 網址核對 Public、Admin、Guest、Viewer、WebSocket、登出、到期及跨分頁隔離；所有能力仍須由伺服器拒絕優先，而非依賴隱藏按鈕。另按[正式驗收證據矩陣](ACCEPTANCE_EVIDENCE.md)以真實 touch phone／tablet、1440×1024 desktop 和鍵盤逐項核對 rc20 的 Assist 模式切換、可值班日、首屏 CTA、200% zoom、軟鍵盤、route focus、44px 目標、兩個 themes、reduced motion 及 forced colours。
-8. rc20 的線上證據已通過並可供真人驗收。未來候選在正式切換前失敗時保持當時 live 版本不動；Windows 或 Worker 受控腳本在切換後失敗時，先閱讀其 deployment report，確認自動 rollback 的 `attempted`／`succeeded` 及精確 previous commit／version，不要盲目重跑或手動複製檔案。
-9. 如 live rc30 發現 Assist 模式、可值班日、窄屏、鍵盤、焦點、主題或入口回歸，立即停止接受正式寫入並記錄 canonical URL、時間、裝置、route 及非敏感畫面。由受控腳本把 Windows origin 恢復至第一級回退 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`；Worker 以受控 rollback 恢復至 `d7b51f21-7692-418d-866c-034c2c57292d` 的 100% traffic。不可 `git reset --hard`、直接覆寫 C-host 或留下未經證明的混合版本。
-10. 回退後重新核對 host commit 確為 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`、Worker `d7b51f21-7692-418d-866c-034c2c57292d` 承接 100% traffic、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出。只有 rc27 origin 與回退 Worker 的健康、路由、使用者流程及資料狀態全部一致才恢復日常操作；若不能證明回退完成，保持 maintenance／唯讀並交由 IT 處理。
+8. rc20 的線上證據已通過並可供真人驗收。未來候選在正式切換前失敗時保持當時已核實版本不動；Windows 或 Worker 受控腳本在切換後失敗時，先閱讀其 deployment report，確認自動 rollback 的 `attempted`／`succeeded` 及精確 previous commit／version，不要盲目重跑或手動複製檔案。
+9. 如目前 operational 但來源待對帳的 runtime 發現 Assist 模式、可值班日、窄屏、鍵盤、焦點、主題或入口回歸，立即停止接受正式寫入並記錄 canonical URL、時間、裝置、route 及非敏感畫面。先保存並歸屬主機差異，再由受控 clean-bundle 流程把 Windows origin 恢復至最近已驗證 rc30／`74b84f43786b00feb15b51a6270ff71c9430773f`；Worker 以受控 rollback 恢復至 `11763f08-d40d-46d5-93dc-5ca2599d4154` 的 100% traffic。rc27／`c4c728aa…` 與 `d7b51f21…` 只在較近乾淨來源無法安全恢復且事故負責人批准時使用。不可 `git reset --hard`、直接覆寫 C-host 或留下未經證明的混合版本。
+10. 回退後重新核對 host commit 確為 rc30／`74b84f43786b00feb15b51a6270ff71c9430773f`、Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 承接 100% traffic、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出。只有 origin 與回退 Worker 的來源、健康、路由、使用者流程及資料狀態全部一致才恢復日常操作；若不能證明回退完成，保持 maintenance／唯讀並交由 IT 處理。
 
 ## 正式驗收清單
 
@@ -293,10 +296,10 @@ rc21 的正式部署證據固定為 tag `v1.2.0-rc.21`／commit `f7df4d0170e6bac
 - [ ] Guest 可完成示範請假、生成、手動修改、發布、雙語 PDF／JSON、發布後請假調整及公平說明；AI、上載、匯入、外部音樂、正式分享、備份／還原及永久設定在服務層被拒絕。
 - [ ] 同一 Guest 的兩個分頁取得獨立 workspace；複製分頁、重新整理、登出、30 分鐘到期、撤權及 origin 重啟均依安全模型處理，不能重播舊 revision 或交叉取得下載。
 - [ ] 主動登出、管理 session 上限或 Access 較早到期後回到 public；缺少、過期、錯誤 audience／issuer 或非管理員電郵的 JWT 被拒絕，缺少、過期、遭竄改、auth epoch／kid 不符的 session 或 principal 在任何工作台回調均被拒絕。
-- [ ] `/healthz` 及 `/readyz` 同時通過；以崩潰注入留下 backup obligation 後，重啟必須先修復，否則保持 degraded／唯讀而不可接受新寫入。
+- [ ] `/healthz` 及 `/readyz` 同時通過；以崩潰注入留下 backup obligation 後，正常啟動必須先修復，失敗則所有業務寫入保持 fail-closed。另以預先存在的 durable recovery marker 啟動，確認系統在 migration／session／journal mutation 前進入 diagnostic-only、`workflowInitialized=false`、`/readyz` 503，且即使測試中移除 marker，現有程序仍不可寫；受控恢復及安全重啟後才可建立 workflow sessions。學年交接與分享亦不能繞過 admission。
 - [ ] 以虛構已發布週表建立同 host `/view#…` 連結；一般瀏覽器可查看中文姓名週表但不能修改。撤銷後約一分鐘確認舊完整連結不能再載入。
-- [ ] 完成正式瀏覽器的 WebSocket 長連線／重新連線、檔案上載及 PDF 下載驗收；已記錄的 VPC probe 只作傳輸證據。
-- [x] **歷史 rc18 基線（經 rc20 承接，現由 rc26 保留）：**隔離 Chromium 真觸控模擬已覆蓋 390×844 繁中淺色、320×760 英文深色／reduced motion 及 844×390 橫向：單行頁首、`Dashboard／Rosters／Prefects／More`、可捲動 More 抽屜、`aria-expanded`、開啟後焦點、Tab／Shift+Tab 循環、Escape／背景關閉及焦點恢復、手機資料卡、44px 操作、安全區、零橫向溢出及零 console/page error 均通過；live rc30 的擴展裝置矩陣另見 `ACCEPTANCE_EVIDENCE.md`。
+- [ ] 完成正式瀏覽器的 WebSocket 長連線／重新連線、檔案上載及 PDF／JSON 下載驗收；下載必須先核對 HTTP status 及精確 MIME，票據只可在同一 verified access mode／session 使用一次，跨模式／重播被拒絕，Guest 滿載時預留 Admin 容量仍可交付。已記錄的 VPC probe 只作傳輸證據。
+- [x] **歷史 rc18 基線（經 rc20 承接，現由 rc26 保留）：**隔離 Chromium 真觸控模擬已覆蓋 390×844 繁中淺色、320×760 英文深色／reduced motion 及 844×390 橫向：單行頁首、`Dashboard／Rosters／Prefects／More`、可捲動 More 抽屜、`aria-expanded`、開啟後焦點、Tab／Shift+Tab 循環、Escape／背景關閉及焦點恢復、手機資料卡、44px 操作、安全區、零橫向溢出及零 console/page error 均通過；乾淨 rc30 的歷史擴展裝置矩陣另見 `ACCEPTANCE_EVIDENCE.md`。
 - [x] **rc20 自動化與線上證據：**fingerprint-matched 14／14 report 已覆蓋裝置矩陣、reflow、reduced motion、navigation／focus、觸控目標、淺／深模式、Guest／Admin 流程及零 console／page error；來源固定為 `v1.2.0-rc.20`／`e3d84858`／`93c6c938…`，受控 Windows 切換及 canonical smoke 亦已完成。這些證據不能代替下列真人手機／平板驗收。
 - [ ] 在同一 canonical 網址以實體 iPhone Safari 及 Android Chrome 重複手機驗收，集中檢查 200% zoom、鍵盤彈出及焦點欄位、跨頁 focus、More 語意、觸控 icon story、兩個 themes、reduced motion、forced colours、旋轉、瀏海與 home indicator 安全區；不用另建或測試 `/mobile` 網站。
 - [ ] 在一個未儲存表單中測試外觀、聲音及語言：外觀／聲音即時切換而不清空輸入，啟用聲音有一次短確認；切換語言前必須先出現離開提示。再以鍵盤確認頁面內容先於底部重複導航。
@@ -307,6 +310,9 @@ rc21 的正式部署證據固定為 tag `v1.2.0-rc.21`／commit `f7df4d0170e6bac
 - [ ] 在測試資料上建立一次「交接備份包」，確認 ZIP 同時含 SQLite 快照、manifest 和還原說明，並把它移至受控加密位置。
 - [ ] 在沒有任何快照的隔離測試資料上，確認交接包與還原入口停用，且「立即建立已驗證快照」是清楚的唯一下一步；建立後兩個入口才啟用。
 - [ ] 在隔離備份目錄放置一個缺 manifest 的虛構快照，確認頁面只顯示安全分類與數量、不顯示原始錯誤；有效快照仍可建立交接包及受控還原。
+- [ ] 在隔離備份目錄分別放置 manifest 非 JSON object、相鄰 WAL／SHM／journal sidecar、有 pending obligation、未知／未來 revision 的虛構快照，確認全部被安全拒絕；再把 supported revision `0007` 快照還原至 current head，確認 current schema／foreign keys／公平對帳及 `writeReady=true`。
+- [ ] 在候選檔案完成 inventory 後替換原路徑，確認 restore／handover 仍只使用私人 staged 且重新核對的 exact database／manifest bytes；再替換 staged bytes，確認操作停止而不安裝或封包。
+- [ ] 以一個會令 greedy 選擇走入死路但仍存在完整解的虛構週次生成週表，並確認結果完整覆蓋所有必需 weekday／seat、沒有空表、每個崗位使用 canonical weight；缺席位、重複席位或錯誤 weight 均被 validator 拒絕。
 - [ ] 正式名單在首次真實匯入前為零；重啟正式服務不會自動載入示範 seed。Practice Mode 重啟則仍能載入隔離虛構名單。
 - [x] 機器隔離演練已完成「準備新學年名單」：真實瀏覽器確認指定語句、操作前後已驗證備份、啟用名單歸零、舊週表分配／公平帳本總數不變、單一封存審計，以及由空白頁匯入新學年虛構名單；聚焦工作流測試另證明相同中文姓名可建立新學年獨立記錄。正式交接時仍須由首席導學風紀按本節步驟真人核對一次。
 

@@ -23,6 +23,8 @@ const ACCESS_JWKS_MAX_BYTES = 65_536;
 const ACCESS_COOKIE_NAME = 'CF_Authorization';
 const ADMIN_SESSION_COOKIE_NAME = '__Host-SingYinAdminSession';
 const GUEST_SESSION_COOKIE_NAME = '__Host-SingYinGuestSession';
+const THEME_HANDOFF_COOKIE_NAME = '__Host-SingYinThemeHandoff';
+const THEME_HANDOFF_MAX_AGE_SECONDS = 120;
 const ADMIN_SESSION_VERSION = 2;
 const GUEST_SESSION_VERSION = 1;
 const ADMIN_SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
@@ -290,8 +292,8 @@ const VIEWER_HTML = `<!doctype html>
       </div>
     </div>
     <button id="themeToggle" class="theme-toggle" type="button"
-      aria-label="切換至深色模式 · Switch to Dark mode" aria-pressed="false"
-      title="切換至深色模式 · Switch to Dark mode" data-testid="public-theme-control">
+      aria-label="深色模式 · Dark mode" aria-pressed="false"
+      title="深色模式 · Dark mode" data-testid="public-theme-control">
       <svg class="theme-toggle-icon" aria-hidden="true" viewBox="0 0 24 24" width="19" height="19">
         <g class="theme-icon theme-icon--sun">
           <circle cx="12" cy="12" r="3.7"></circle>
@@ -299,7 +301,7 @@ const VIEWER_HTML = `<!doctype html>
         </g>
         <path class="theme-icon theme-icon--moon" d="M20 15.4A8.2 8.2 0 0 1 8.6 4a8.4 8.4 0 1 0 11.4 11.4Z"></path>
       </svg>
-      <span id="themeToggleLabel" class="theme-toggle-label">淺色 · Light</span>
+      <span id="themeToggleLabel" class="theme-toggle-label">自動 · Auto</span>
     </button>
   </header>
 
@@ -823,7 +825,7 @@ button, input, select, textarea { font: inherit; }
 .theme-toggle[data-resolved-theme="dark"] .theme-icon--sun { opacity: 0; transform: rotate(-28deg) scale(.72); }
 .theme-toggle[data-resolved-theme="dark"] .theme-icon--moon { opacity: 1; transform: rotate(0deg) scale(1); }
 .theme-toggle[data-icon-changing="true"] .theme-toggle-icon { animation: theme-icon-state 220ms var(--ease-standard); }
-.theme-toggle-label { min-width: 68px; text-align: left; white-space: nowrap; }
+.theme-toggle-label { min-width: 82px; text-align: left; white-space: nowrap; }
 .theme-toggle:hover { color: var(--ink); border-color: var(--line-strong); background: var(--surface); }
 .theme-toggle:active { transform: scale(0.975); }
 .theme-toggle:focus-visible,
@@ -1826,7 +1828,9 @@ const VIEWER_JS = `const SHARE_SCHEMA = 'sing-yin-public-roster-v1';
 const SHARE_AAD_PREFIX = 'sing-yin-roster-share-v1:';
 const SESSION_TOKEN_KEY = 'sing-yin-roster-viewer-token-v1';
 const THEME_KEY = 'sing-yin-roster-viewer-theme-v1';
-const EXPLICIT_THEME_STATES = ['light', 'dark'];
+const THEME_HANDOFF_COOKIE_NAME = ${JSON.stringify(THEME_HANDOFF_COOKIE_NAME)};
+const THEME_HANDOFF_MAX_AGE_SECONDS = ${THEME_HANDOFF_MAX_AGE_SECONDS};
+const EXPLICIT_THEME_STATES = ['system', 'light', 'dark'];
 const LANDING_DEVOTIONALS = ${JSON.stringify(LANDING_DEVOTIONALS)};
 const WELCOME_TRACKS = ${JSON.stringify(WELCOME_PUBLIC_TRACKS)};
 const DEFAULT_WELCOME_VOLUME = 0.50;
@@ -1902,13 +1906,17 @@ const shareErrorCopy = {
 const systemDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
 const reducedThemeMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const themeCopy = {
+  system: {
+    current: '自動 · Auto',
+    next: '深色模式 · Dark mode',
+  },
   light: {
     current: '淺色 · Light',
-    action: '切換至深色模式 · Switch to Dark mode',
+    next: '深色模式 · Dark mode',
   },
   dark: {
     current: '深色 · Dark',
-    action: '切換至淺色模式 · Switch to Light mode',
+    next: '淺色模式 · Light mode',
   },
 };
 
@@ -1922,23 +1930,26 @@ function savedTheme() {
   }
 }
 
-let runtimeThemePreference = 'system';
+let runtimeThemePreference = null;
 runtimeThemePreference = savedTheme();
 
 function resolvedTheme(theme = savedTheme()) {
-  if (EXPLICIT_THEME_STATES.includes(theme)) return theme;
+  if (theme === 'light' || theme === 'dark') return theme;
   return systemDarkScheme.matches ? 'dark' : 'light';
 }
 
 function syncThemeControl({ animate = false } = {}) {
   if (!themeToggle) return;
-  const resolved = resolvedTheme();
+  const preference = savedTheme();
+  const resolved = resolvedTheme(preference);
   const isDark = resolved === 'dark';
-  const copy = themeCopy[resolved];
+  const copy = themeCopy[preference] || themeCopy.system;
+  const nextCopy = themeCopy[resolved] || themeCopy.light;
   themeToggle.dataset.resolvedTheme = resolved;
+  themeToggle.dataset.themePreference = preference;
   themeToggle.setAttribute('aria-pressed', String(isDark));
-  themeToggle.setAttribute('aria-label', copy.action);
-  themeToggle.title = copy.action;
+  themeToggle.setAttribute('aria-label', nextCopy.next);
+  themeToggle.title = nextCopy.next;
   if (themeToggleLabel) themeToggleLabel.textContent = copy.current;
   if (animate && !reducedThemeMotion.matches) {
     themeToggle.dataset.iconChanging = 'true';
@@ -1985,10 +1996,22 @@ portalStory?.addEventListener('pointermove', updatePortalStoryDepth, { passive: 
 portalStory?.addEventListener('pointerleave', resetPortalStoryDepth);
 
 themeToggle?.addEventListener('click', () => {
-  const target = resolvedTheme() === 'dark' ? 'light' : 'dark';
-  applyTheme(target, { persist: true, animate: true });
+  const next = resolvedTheme() === 'dark' ? 'light' : 'dark';
+  applyTheme(next, { persist: true, animate: true });
   syncWelcomePlaylist();
 });
+
+function stageThemeHandoff() {
+  const preference = savedTheme();
+  const attributes = 'Path=/; Secure; SameSite=Lax';
+  if (preference === 'light' || preference === 'dark') {
+    document.cookie = THEME_HANDOFF_COOKIE_NAME + '=' + preference
+      + '; Max-Age=' + THEME_HANDOFF_MAX_AGE_SECONDS + '; ' + attributes;
+    return;
+  }
+  document.cookie = THEME_HANDOFF_COOKIE_NAME
+    + '=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; ' + attributes;
+}
 
 window.addEventListener('storage', event => {
   if (event.key !== THEME_KEY) return;
@@ -2386,6 +2409,7 @@ entryButtons.forEach((button) => button.addEventListener('click', (event) => {
   const destination = trustedEntryDestination(button);
   if (!destination) return;
   event.preventDefault();
+  stageThemeHandoff();
   welcomeEntryController.enter(destination, button.dataset.entryRole || '');
 }));
 
@@ -2896,6 +2920,18 @@ function cookieValueFromRequest(request, cookieName) {
   return '';
 }
 
+function normalizedThemeHandoff(value) {
+  return value === 'light' || value === 'dark' ? value : '';
+}
+
+function themeHandoffFromRequest(request) {
+  return normalizedThemeHandoff(cookieValueFromRequest(request, THEME_HANDOFF_COOKIE_NAME));
+}
+
+function themeHandoffClearCookie() {
+  return `${THEME_HANDOFF_COOKIE_NAME}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Secure; SameSite=Lax`;
+}
+
 function accessTokenFromRequest(request) {
   const assertion = request.headers.get('Cf-Access-Jwt-Assertion');
   if (assertion && assertion.trim()) return assertion.trim();
@@ -3052,6 +3088,8 @@ async function createAdminSessionToken(email, accessExpiresAt, env, options = {}
     epoch: authEpoch(env),
     nonce: encodeBase64Url(nonceBytes),
   };
+  const themeHandoff = normalizedThemeHandoff(options.themeHandoff);
+  if (themeHandoff) payload.theme = themeHandoff;
   const payloadSegment = encodeBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
   const key = await adminSessionHmacKey(env, ['sign']);
   const signature = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payloadSegment)));
@@ -3087,6 +3125,8 @@ async function createGuestSessionToken(env, options = {}) {
     exp: expiresAt,
     epoch: authEpoch(env),
   };
+  const themeHandoff = normalizedThemeHandoff(options.themeHandoff);
+  if (themeHandoff) payload.theme = themeHandoff;
   const payloadSegment = encodeBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
   const key = await guestSessionHmacKey(env, ['sign']);
   const signature = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payloadSegment)));
@@ -3126,11 +3166,14 @@ async function validateAdminSessionToken(token, env, options = {}) {
   }
   const nowSeconds = Math.floor((options.nowMillis ?? Date.now()) / 1_000);
   const configuration = normalizeAccessConfiguration(env);
+  const payloadShape = payload && typeof payload === 'object' && !Array.isArray(payload)
+    ? Object.keys(payload).sort().join(',')
+    : '';
   if (
     !payload
     || typeof payload !== 'object'
     || Array.isArray(payload)
-    || Object.keys(payload).sort().join(',') !== 'email,epoch,exp,iat,nonce,v'
+    || !['email,epoch,exp,iat,nonce,v', 'email,epoch,exp,iat,nonce,theme,v'].includes(payloadShape)
     || payload.v !== ADMIN_SESSION_VERSION
     || typeof payload.email !== 'string'
     || payload.email !== payload.email.trim()
@@ -3145,6 +3188,7 @@ async function validateAdminSessionToken(token, env, options = {}) {
     || payload.epoch !== authEpoch(env)
     || typeof payload.nonce !== 'string'
     || !/^[A-Za-z0-9_-]{22}$/.test(payload.nonce)
+    || (payload.theme !== undefined && !normalizedThemeHandoff(payload.theme))
   ) {
     throw new AccessValidationError();
   }
@@ -3173,11 +3217,14 @@ async function validateGuestSessionToken(token, env, options = {}) {
     throw new AccessValidationError();
   }
   const nowSeconds = Math.floor((options.nowMillis ?? Date.now()) / 1_000);
+  const payloadShape = payload && typeof payload === 'object' && !Array.isArray(payload)
+    ? Object.keys(payload).sort().join(',')
+    : '';
   if (
     !payload
     || typeof payload !== 'object'
     || Array.isArray(payload)
-    || Object.keys(payload).sort().join(',') !== 'epoch,exp,iat,sid,v'
+    || !['epoch,exp,iat,sid,v', 'epoch,exp,iat,sid,theme,v'].includes(payloadShape)
     || payload.v !== GUEST_SESSION_VERSION
     || typeof payload.sid !== 'string'
     || !/^[A-Za-z0-9_-]{22}$/.test(payload.sid)
@@ -3188,6 +3235,7 @@ async function validateGuestSessionToken(token, env, options = {}) {
     || payload.exp <= payload.iat
     || payload.exp - payload.iat > GUEST_SESSION_MAX_AGE_SECONDS
     || payload.epoch !== authEpoch(env)
+    || (payload.theme !== undefined && !normalizedThemeHandoff(payload.theme))
   ) {
     throw new AccessValidationError();
   }
@@ -3233,6 +3281,8 @@ async function createOriginPrincipalToken(request, principal, env, options = {})
     kid: originPrincipalKid(env),
     request_binding: await originRequestBinding(request),
   };
+  const themeHandoff = normalizedThemeHandoff(principal.themeHandoff);
+  if (themeHandoff) payload.theme = themeHandoff;
   const payloadSegment = encodeBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
   const key = await originPrincipalHmacKey(env, ['sign']);
   const signature = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payloadSegment)));
@@ -3422,7 +3472,8 @@ function stripAccessCredentials(inputHeaders) {
       const name = (separator < 0 ? part : part.slice(0, separator)).trim();
       return name.toLowerCase() !== ACCESS_COOKIE_NAME.toLowerCase()
         && name !== ADMIN_SESSION_COOKIE_NAME
-        && name !== GUEST_SESSION_COOKIE_NAME;
+        && name !== GUEST_SESSION_COOKIE_NAME
+        && name !== THEME_HANDOFF_COOKIE_NAME;
     });
   if (retainedCookies.length) headers.set('Cookie', retainedCookies.join('; '));
   else headers.delete('Cookie');
@@ -3511,6 +3562,7 @@ function logoutResponse(requestUrl) {
   });
   headers.append('Set-Cookie', adminSessionClearCookie());
   headers.append('Set-Cookie', guestSessionClearCookie());
+  headers.append('Set-Cookie', themeHandoffClearCookie());
   return response(null, 302, headers);
 }
 
@@ -3520,6 +3572,7 @@ function authLogoutResponse(requestUrl) {
   });
   headers.append('Set-Cookie', adminSessionClearCookie());
   headers.append('Set-Cookie', guestSessionClearCookie());
+  headers.append('Set-Cookie', themeHandoffClearCookie());
   return response(null, 303, headers);
 }
 
@@ -3538,6 +3591,7 @@ async function gatewayPrincipalFromRequest(request, env) {
         subject: session.email,
         sid: session.nonce,
         exp: session.exp,
+        themeHandoff: session.theme,
       };
     } catch (error) {
       if (isConfigurationError(error)) throw error;
@@ -3554,6 +3608,7 @@ async function gatewayPrincipalFromRequest(request, env) {
         subject: 'guest',
         sid: session.sid,
         exp: session.exp,
+        themeHandoff: session.theme,
       };
     } catch (error) {
       if (isConfigurationError(error)) throw error;
@@ -3573,11 +3628,15 @@ async function guestStartResponse(request, env) {
     'guest-start',
   );
   if (limited) return limited;
-  const session = await createGuestSessionToken(env);
+  const session = await createGuestSessionToken(env, {
+    themeHandoff: themeHandoffFromRequest(request),
+  });
   const acceptsJson = (request.headers.get('Accept') || '').toLowerCase().includes('application/json');
   const headers = new Headers({
     'Set-Cookie': guestSessionSetCookie(session.token, session.payload.exp),
   });
+  headers.append('Set-Cookie', adminSessionClearCookie());
+  headers.append('Set-Cookie', themeHandoffClearCookie());
   if (acceptsJson) {
     headers.set('Content-Type', 'application/json; charset=utf-8');
     return response(JSON.stringify({
@@ -4188,13 +4247,16 @@ async function route(request, env, context) {
     }
     let session;
     try {
-      session = await createAdminSessionToken(access.payload.email, access.payload.exp, env);
+      session = await createAdminSessionToken(access.payload.email, access.payload.exp, env, {
+        themeHandoff: themeHandoffFromRequest(request),
+      });
     } catch (error) {
       return loggedAccessFailure(request, 'admin_session', error);
     }
     const redirect = redirectResponse('/', request.url);
     redirect.headers.append('Set-Cookie', adminSessionSetCookie(session.token, session.payload.exp));
     redirect.headers.append('Set-Cookie', guestSessionClearCookie());
+    redirect.headers.append('Set-Cookie', themeHandoffClearCookie());
     return redirect;
   }
 

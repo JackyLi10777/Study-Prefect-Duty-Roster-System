@@ -74,6 +74,7 @@ def compose_readiness_payload(
 
     ready = (
         health.get("status") == "ok"
+        and bool(runtime.get("workflowInitialized"))
         and not bool(runtime.get("maintenance"))
         and not bool(runtime.get("recoveryRequired"))
         and int(runtime.get("pendingBackupObligations") or 0) == 0
@@ -218,6 +219,7 @@ def _consume_generated_download(
     try:
         payload = guest_download_registry().consume(
             token=token,
+            access_mode=principal.mode,
             session_id=principal.session_id,
         )
     except GuestDownloadError:

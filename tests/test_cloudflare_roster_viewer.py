@@ -326,7 +326,7 @@ def test_viewer_is_bilingual_responsive_theme_aware_printable_and_reduced_motion
     assert "待補 · Vacancy" in source
     assert "@media (prefers-color-scheme: dark)" in source
     assert ':root[data-theme="dark"]' in source
-    assert "EXPLICIT_THEME_STATES = ['light', 'dark']" in source
+    assert "EXPLICIT_THEME_STATES = ['system', 'light', 'dark']" in source
     assert "timeZone: 'Asia/Hong_Kong'" in source
     assert "--focus-ring:" in source
     assert "outline: 3px solid var(--focus-ring)" in source
@@ -337,8 +337,11 @@ def test_viewer_is_bilingual_responsive_theme_aware_printable_and_reduced_motion
     assert 'data-testid="public-theme-control"' in source
     assert "themeToggle?.addEventListener('click'" in source
     assert "resolvedTheme() === 'dark' ? 'light' : 'dark'" in source
+    assert "function stageThemeHandoff()" in source
+    assert "stageThemeHandoff();" in source
+    assert "themeToggle.setAttribute('aria-pressed', String(isDark))" in source
     assert "window.addEventListener('storage'" in source
-    assert "let runtimeThemePreference = 'system'" in source
+    assert "let runtimeThemePreference = null" in source
     assert "runtimeThemePreference = theme" in source
     assert "document.documentElement.dataset.themeReady = 'true'" in source
     assert "@media (prefers-reduced-motion: reduce)" in source
@@ -527,7 +530,7 @@ def test_guest_entry_uses_a_signed_bounded_session_and_the_same_origin_workbench
         "path === '/auth/guest/start'",
         "request.method !== 'POST'",
         "authenticatedProxyRequestAllowed(request)",
-        "createGuestSessionToken(env)",
+        "createGuestSessionToken(env, {",
         "validateGuestSessionToken(guestToken, env)",
         "return redirectResponse('/?guest=1', request.url)",
         'data-guest-bootstrap="true"',

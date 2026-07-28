@@ -50,6 +50,14 @@ def test_no_change_selects_no_work() -> None:
     assert plan.changed_path_count == 0
 
 
+def test_changelog_is_release_documentation_not_an_unknown_source_path() -> None:
+    plan = classify_paths(("CHANGELOG.md",))
+
+    assert plan.profile == "docs"
+    assert plan.changed_path_count == 1
+    assert plan.formal_release_required is False
+
+
 def test_docs_profile_runs_only_documentation_hygiene_and_secret_checks() -> None:
     plan = classify_paths(("README.md",))
     tasks = build_tasks(plan, ("README.md",), ci=False, base=None, head="HEAD", staged=False)

@@ -27,6 +27,7 @@ from nicegui_app.ui.page_catalog import (
 )
 from nicegui_app.ui.sound import play_interface_sound
 from nicegui_app.ui.theme import (
+    adopt_verified_theme_handoff,
     apply_quasar_palette,
     apply_theme,
     current_theme,
@@ -791,9 +792,9 @@ def _install_mobile_drawer_accessibility() -> None:
           const button = document.querySelector('[data-testid="mobile-more"]');
           const currentDrawer = () => document.getElementById('main-navigation-drawer');
           if (!button || !currentDrawer()) return;
-          if (button.dataset.syDrawerA11y === 'ready' && window.__syDrawerA11yOwner === button) return;
           window.__syDrawerA11yCleanup?.();
           const controller = new AbortController();
+          let settleFrame = 0;
           button.dataset.syDrawerA11y = 'ready';
           window.__syDrawerA11yOwner = button;
           const isMobile = () => matchMedia('(max-width: 900px)').matches;
@@ -853,18 +854,35 @@ def _install_mobile_drawer_accessibility() -> None:
               first?.focus({preventScroll: true});
             }
             if (wasOpen && !open) button.focus({preventScroll: true});
+            return open;
           };
-          button.addEventListener('click', () => setTimeout(() => sync(true), 220), {signal: controller.signal});
+          const settle = (expectedOpen, focusDrawer = false) => {
+            if (settleFrame) cancelAnimationFrame(settleFrame);
+            const startedAt = performance.now();
+            const tick = () => {
+              if (controller.signal.aborted) return;
+              const open = sync(focusDrawer && expectedOpen === true);
+              if (expectedOpen === undefined || open === expectedOpen || performance.now() - startedAt >= 3000) {
+                settleFrame = 0;
+                return;
+              }
+              settleFrame = requestAnimationFrame(tick);
+            };
+            settleFrame = requestAnimationFrame(tick);
+          };
+          button.addEventListener('click', () => {
+            const expectedOpen = button.getAttribute('aria-expanded') !== 'true';
+            settle(expectedOpen, expectedOpen);
+          }, {signal: controller.signal});
           document.addEventListener('click', event => {
             if (!(event.target instanceof Element) || !event.target.closest('.q-drawer__backdrop')) return;
-            setTimeout(() => sync(false), 260);
+            settle(false, false);
           }, {capture: true, signal: controller.signal});
           document.addEventListener('keydown', event => {
             if (!isOpen()) return;
             if (event.key === 'Escape') {
               event.preventDefault();
               button.click();
-              setTimeout(() => sync(false), 260);
               return;
             }
             if (event.key !== 'Tab') return;
@@ -881,13 +899,15 @@ def _install_mobile_drawer_accessibility() -> None:
           }, {signal: controller.signal});
           window.addEventListener('resize', () => sync(false), {passive: true, signal: controller.signal});
           window.__syDrawerA11yCleanup = () => {
+            if (settleFrame) cancelAnimationFrame(settleFrame);
+            settleFrame = 0;
             observer.disconnect();
             observedShell = null;
             controller.abort();
             setBackgroundInert(false);
             if (window.__syDrawerA11yOwner === button) window.__syDrawerA11yOwner = null;
           };
-          requestAnimationFrame(() => sync(false));
+          settle(undefined, false);
         })();
         """
     )
@@ -984,6 +1004,8 @@ def _install_route_focus_management() -> None:
 
 @contextmanager
 def page_shell(active_path: str) -> Iterator[None]:
+    page_context = current_page_context()
+    adopt_verified_theme_handoff(page_context)
     dark_mode = apply_theme()
     document_language = "en" if current_locale() == "en" else "zh-Hant-HK"
     ui.run_javascript(f"document.documentElement.lang = {document_language!r};")
@@ -1003,7 +1025,6 @@ def page_shell(active_path: str) -> Iterator[None]:
         """
     )
     application_mode = current_application_mode()
-    page_context = current_page_context()
     access_mode = page_context.principal.mode
     active_page = page_definition(active_path)
     if active_page is None:

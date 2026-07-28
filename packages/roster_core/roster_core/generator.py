@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Mapping
 
 from roster_policy import (
@@ -595,7 +595,7 @@ def _assist_schedule(
     )
 
 
-def _choose_candidate(
+def _candidate_options(
     prefects: list[Prefect],
     *,
     day: SchoolDay,
@@ -605,7 +605,7 @@ def _choose_candidate(
     generated_load: dict[str, float],
     leave_days: Mapping[str, set[SchoolDay]],
     history_priority_multiplier: float,
-) -> Prefect:
+) -> list[Prefect]:
     candidates = [
         prefect
         for prefect in prefects
@@ -615,12 +615,163 @@ def _choose_candidate(
         and can_assign_role(prefect.role, post)
         and not _has_consecutive_assignment(assigned_days[prefect.id], day)
     ]
-    if not candidates:
-        raise RosterGenerationError(f"No eligible candidate for {post.value} on {day.name}.")
-    return min(
+    return sorted(
         candidates,
         key=lambda prefect: _candidate_score(prefect, generated_load, history_priority_multiplier),
     )
+
+
+def _remaining_slots_have_daily_matching(
+    prefects: list[Prefect],
+    *,
+    slots: list[tuple[SchoolDay, DutyPost]],
+    assigned_by_day: Mapping[SchoolDay, set[str]],
+    assigned_days: Mapping[str, set[SchoolDay]],
+    leave_days: Mapping[str, set[SchoolDay]],
+) -> bool:
+    """Return whether every remaining day still has enough distinct candidates.
+
+    This inexpensive forward check deliberately evaluates hard constraints
+    only. Candidate scoring is a preference and must never make a feasible
+    weekly roster look impossible.
+    """
+
+    slots_by_day: dict[SchoolDay, list[DutyPost]] = defaultdict(list)
+    for day, post in slots:
+        slots_by_day[day].append(post)
+
+    for day, posts in slots_by_day.items():
+        used_ids = assigned_by_day.get(day, set())
+        candidate_ids_by_slot = [
+            [
+                prefect.id
+                for prefect in prefects
+                if day in prefect.available_days
+                and day not in leave_days.get(prefect.id, set())
+                and prefect.id not in used_ids
+                and can_assign_role(prefect.role, post)
+                and not _has_consecutive_assignment(assigned_days.get(prefect.id, set()), day)
+            ]
+            for post in posts
+        ]
+        if any(not candidate_ids for candidate_ids in candidate_ids_by_slot):
+            return False
+
+        prefect_to_slot: dict[str, int] = {}
+
+        def claim(slot_index: int, seen_prefect_ids: set[str]) -> bool:
+            for prefect_id in candidate_ids_by_slot[slot_index]:
+                if prefect_id in seen_prefect_ids:
+                    continue
+                seen_prefect_ids.add(prefect_id)
+                occupied_slot = prefect_to_slot.get(prefect_id)
+                if occupied_slot is None or claim(occupied_slot, seen_prefect_ids):
+                    prefect_to_slot[prefect_id] = slot_index
+                    return True
+            return False
+
+        if any(not claim(slot_index, set()) for slot_index in range(len(posts))):
+            return False
+    return True
+
+
+def _solve_regular_schedule(
+    prefects: list[Prefect],
+    *,
+    leave_days: Mapping[str, set[SchoolDay]],
+    history_priority_multiplier: float,
+) -> list[Assignment]:
+    """Find a complete regular-prefect schedule with deterministic backtracking.
+
+    Candidate order preserves the established fairness preference. Unlike the
+    former one-pass greedy selection, a locally attractive choice is undone
+    when it would make a later day impossible. The daily matching check prunes
+    doomed branches before they expand, while the failed-state cache prevents
+    repeated exploration of equivalent hard-constraint states.
+    """
+
+    slots = [
+        (day, post)
+        for day in DAYS
+        for post in required_posts_for_day(day)
+        if post is not DutyPost.ASSIST_IN_CHARGE
+    ]
+    generated_load: dict[str, float] = defaultdict(float)
+    assigned_days: dict[str, set[SchoolDay]] = defaultdict(set)
+    assigned_by_day: dict[SchoolDay, set[str]] = defaultdict(set)
+    selected: list[Assignment | None] = [None] * len(slots)
+    failed_states: set[tuple[int, tuple[tuple[str, int], ...]]] = set()
+
+    def state_key(slot_index: int) -> tuple[int, tuple[tuple[str, int], ...]]:
+        day_masks = tuple(
+            sorted(
+                (
+                    prefect_id,
+                    sum(1 << int(day) for day in days),
+                )
+                for prefect_id, days in assigned_days.items()
+                if days
+            )
+        )
+        return slot_index, day_masks
+
+    def solve(slot_index: int) -> bool:
+        if slot_index == len(slots):
+            return True
+
+        state = state_key(slot_index)
+        if state in failed_states:
+            return False
+        if not _remaining_slots_have_daily_matching(
+            prefects,
+            slots=slots[slot_index:],
+            assigned_by_day=assigned_by_day,
+            assigned_days=assigned_days,
+            leave_days=leave_days,
+        ):
+            failed_states.add(state)
+            return False
+
+        day, post = slots[slot_index]
+        for prefect in _candidate_options(
+            prefects,
+            day=day,
+            post=post,
+            assigned_today=assigned_by_day[day],
+            assigned_days=assigned_days,
+            generated_load=generated_load,
+            leave_days=leave_days,
+            history_priority_multiplier=history_priority_multiplier,
+        ):
+            weight = duty_weight(post)
+            selected[slot_index] = Assignment(
+                day=day,
+                post=post,
+                prefect_id=prefect.id,
+                prefect_name=prefect.name,
+                weight=weight,
+            )
+            assigned_by_day[day].add(prefect.id)
+            assigned_days[prefect.id].add(day)
+            generated_load[prefect.id] += weight
+
+            if solve(slot_index + 1):
+                return True
+
+            generated_load[prefect.id] -= weight
+            assigned_days[prefect.id].remove(day)
+            assigned_by_day[day].remove(prefect.id)
+            selected[slot_index] = None
+
+        failed_states.add(state)
+        return False
+
+    if not solve(0):
+        raise RosterGenerationError(
+            "No complete weekly roster satisfies availability, leave, role, "
+            "same-day and non-consecutive-duty rules."
+        )
+    return [assignment for assignment in selected if assignment is not None]
 
 
 def generate_weekly_roster(
@@ -647,8 +798,6 @@ def generate_weekly_roster(
         )
 
     assignments: list[Assignment] = []
-    generated_load: dict[str, float] = defaultdict(float)
-    assigned_days: dict[str, set[SchoolDay]] = defaultdict(set)
     excluded_days = leave_days or {}
     assist_by_day = _assist_schedule(
         prefects,
@@ -659,35 +808,28 @@ def generate_weekly_roster(
         previous_assist_assignments=previous_assist_assignments or {},
     )
 
+    regular_assignments = iter(
+        _solve_regular_schedule(
+            prefects,
+            leave_days=excluded_days,
+            history_priority_multiplier=normalized_multiplier,
+        )
+    )
+
     for day in DAYS:
-        assigned_today: set[str] = set()
         for post in required_posts_for_day(day):
             if post is DutyPost.ASSIST_IN_CHARGE:
                 prefect = assist_by_day[day]
-            else:
-                prefect = _choose_candidate(
-                    prefects,
-                    day=day,
-                    post=post,
-                    assigned_today=assigned_today,
-                    assigned_days=assigned_days,
-                    generated_load=generated_load,
-                    leave_days=excluded_days,
-                    history_priority_multiplier=normalized_multiplier,
-                )
-            weight = duty_weight(post)
-            assignments.append(
-                Assignment(
+                assignment = Assignment(
                     day=day,
                     post=post,
                     prefect_id=prefect.id,
                     prefect_name=prefect.name,
-                    weight=weight,
+                    weight=duty_weight(post),
                 )
-            )
-            assigned_today.add(prefect.id)
-            assigned_days[prefect.id].add(day)
-            generated_load[prefect.id] += weight
+            else:
+                assignment = next(regular_assignments)
+            assignments.append(assignment)
 
     validate_assignments(assignments, prefects, leave_days=excluded_days)
     return assignments
@@ -704,6 +846,9 @@ def validate_assignments(
     by_prefect: dict[str, set[SchoolDay]] = defaultdict(set)
     excluded_days = leave_days or {}
 
+    if not assignments:
+        raise RosterPolicyError("Roster assignments cannot be empty.")
+
     for assignment in assignments:
         if assignment.prefect_id not in prefect_by_id:
             raise RosterPolicyError(f"Unknown prefect ID: {assignment.prefect_id}")
@@ -716,16 +861,22 @@ def validate_assignments(
             raise RosterPolicyError(f"{prefect.name} is not available on {assignment.day.name}.")
         if assignment.day in excluded_days.get(assignment.prefect_id, set()):
             raise RosterPolicyError(f"{prefect.name} is on leave on {assignment.day.name}.")
+        expected_weight = duty_weight(assignment.post)
+        if assignment.weight != expected_weight:
+            raise RosterPolicyError(
+                f"Incorrect duty weight for {assignment.post.value} on {assignment.day.name}."
+            )
         by_day[assignment.day].append(assignment)
         by_prefect[assignment.prefect_id].add(assignment.day)
 
-    for day, day_assignments in by_day.items():
+    for day in DAYS:
+        day_assignments = by_day.get(day, [])
         assigned_ids = [assignment.prefect_id for assignment in day_assignments]
         if len(assigned_ids) != len(set(assigned_ids)):
             raise RosterPolicyError(f"Duplicate prefect assignment on {day.name}.")
-        actual_posts = [assignment.post for assignment in day_assignments]
-        expected_posts = required_posts_for_day(day)
-        if sorted(post.value for post in actual_posts) != sorted(post.value for post in expected_posts):
+        actual_posts = Counter(assignment.post for assignment in day_assignments)
+        expected_posts = Counter(required_posts_for_day(day))
+        if actual_posts != expected_posts:
             raise RosterPolicyError(f"Incorrect post coverage on {day.name}.")
 
     for prefect_id, days in by_prefect.items():

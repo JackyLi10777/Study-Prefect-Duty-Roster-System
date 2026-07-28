@@ -35,6 +35,7 @@ REPORT_PATH = PROJECT_ROOT / "logs" / "change-verification-report.json"
 PROFILES = ("none", "docs", "tests", "worker", "assurance", "full")
 
 _DOCUMENTATION_ROOT_FILES = {
+    "changelog.md",
     "code_of_conduct.md",
     "codex_prompts.md",
     "contributing.md",

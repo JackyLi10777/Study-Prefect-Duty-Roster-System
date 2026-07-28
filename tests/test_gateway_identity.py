@@ -68,6 +68,27 @@ def test_origin_principal_is_hmac_verified_request_bound_and_session_lived() -> 
         )
 
 
+def test_origin_principal_accepts_only_a_signed_explicit_theme_handoff() -> None:
+    payload = {**_payload(), "theme": "dark"}
+    principal = verify_origin_principal(
+        seal_origin_principal_for_test(payload, environment=ENV),
+        expected_binding=str(payload["request_binding"]),
+        environment=ENV,
+        now=10_000,
+    )
+    assert principal.theme_handoff == "dark"
+
+    for invalid in ("system", "sepia", "", 1, None):
+        rejected = {**_payload(), "theme": invalid}
+        with pytest.raises(OriginPrincipalError):
+            verify_origin_principal(
+                seal_origin_principal_for_test(rejected, environment=ENV),
+                expected_binding=str(rejected["request_binding"]),
+                environment=ENV,
+                now=10_000,
+            )
+
+
 def test_origin_principal_rejects_tamper_stale_epoch_key_and_overlong_session() -> None:
     payload = _payload()
     token = seal_origin_principal_for_test(payload, environment=ENV)

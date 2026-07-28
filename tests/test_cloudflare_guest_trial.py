@@ -49,7 +49,8 @@ def test_worker_contains_no_second_static_guest_product() -> None:
     ):
         assert obsolete not in worker
 
-    assert "createGuestSessionToken(env)" in worker
+    assert "createGuestSessionToken(env, {" in worker
+    assert "themeHandoff: themeHandoffFromRequest(request)" in worker
     assert "validateGuestSessionToken(guestToken, env)" in worker
     assert "proxyToRosterOrigin(request, env, principal)" in worker
 

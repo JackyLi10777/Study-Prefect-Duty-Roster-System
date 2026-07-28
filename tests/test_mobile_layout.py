@@ -31,7 +31,13 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert "const shell = drawer.closest('.q-drawer')" in shell
     assert "observer.observe(shell" in shell
     assert "event.target.closest('.q-drawer__backdrop')" in shell
+    assert "const settle = (expectedOpen, focusDrawer = false)" in shell
+    assert "settleFrame = requestAnimationFrame(tick)" in shell
+    assert "performance.now() - startedAt >= 3000" in shell
+    assert "setTimeout(() => sync(true), 220)" not in shell
+    assert "setTimeout(() => sync(false), 260)" not in shell
     assert "window.__syDrawerA11yCleanup?.()" in shell
+    assert "if (settleFrame) cancelAnimationFrame(settleFrame)" in shell
     assert "controller.abort()" in shell
     assert "show-if-above breakpoint=900" in shell
     assert shell.index('with ui.element("main")') < shell.index(

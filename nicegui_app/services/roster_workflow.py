@@ -5,6 +5,7 @@ from __future__ import annotations
 from nicegui_app.services.workflow_dependencies import (
     DEFAULT_BACKUP_DIR,
     DEFAULT_DATABASE_PATH,
+    MaintenanceModeError,
     MaintenanceStatus,
     Path,
     PrefectRecord,
@@ -72,9 +73,40 @@ class RosterWorkflow(
         self.sessions: sessionmaker[Session] | None = None
         self.maintenance = maintenance_coordinator(database_path)
         self.backup_repair_error: str | None = None
+        self.diagnostic_only = False
 
     def maintenance_status(self) -> MaintenanceStatus:
         return self.maintenance.status()
+
+    def _assert_business_write_admitted(
+        self,
+        operation_name: str,
+        arguments: tuple[object, ...] = (),
+        keyword_arguments: dict[str, object] | None = None,
+    ) -> None:
+        """Fail closed before starting a new business mutation.
+
+        A verified recovery snapshot is the admission boundary for every new
+        business write, not merely methods which happen to use the workflow
+        decorator. Recovery reconciliation and security cleanup use explicit
+        paths and intentionally do not call this guard.
+        """
+
+        if self.sessions is None or self.maintenance.status().recovery_required:
+            raise WorkflowMaintenanceError(
+                "The system is in recovery maintenance mode and cannot accept writes."
+            )
+        if self.pending_backup_obligation_count() == 0:
+            return
+        self._raise_terminal_write_error(
+            operation_name,
+            arguments,
+            keyword_arguments or {},
+        )
+        raise WorkflowMaintenanceError(
+            "A committed operation still needs a verified recovery snapshot. "
+            "The system is read-only until recovery repair succeeds."
+        )
 
     def _raise_terminal_write_error(
         self,
@@ -104,14 +136,34 @@ class RosterWorkflow(
                 raise WorkflowError("This roster is already published.")
 
     def bootstrap(self) -> None:
-        self.sessions = create_session_factory(self.database_path)
-        with self._session() as session:
-            if self.seed_path is not None and session.scalar(select(func.count()).select_from(PrefectRecord)) == 0:
-                self._seed_prefects(session)
-                self._audit(session, "prefects_seeded", None, {"source": str(self.seed_path)})
-                session.commit()
-        try:
-            self.repair_pending_backup_obligations()
+        # Any pre-existing maintenance marker freezes the database exactly as
+        # it is.  A still-live peer may be changing or replacing the database,
+        # while a stale marker requires recovery review; neither state permits
+        # Alembic or SQLite journal mutations during this process's startup.
+        if self.maintenance.status().active:
+            self.sessions = None
+            self.diagnostic_only = True
             self.backup_repair_error = None
-        except Exception as error:  # keep read-only diagnostics available
-            self.backup_repair_error = type(error).__name__
+            return
+        try:
+            # The lease closes the race between the status sample above and
+            # migration startup.  A peer which wins maintenance admission is
+            # observed here; a bootstrap which wins first remains visible to
+            # that peer until migration, seeding, and recovery repair finish.
+            with self.maintenance.operation():
+                self.sessions = create_session_factory(self.database_path)
+                self.diagnostic_only = False
+                with self._session() as session:
+                    if self.seed_path is not None and session.scalar(select(func.count()).select_from(PrefectRecord)) == 0:
+                        self._seed_prefects(session)
+                        self._audit(session, "prefects_seeded", None, {"source": str(self.seed_path)})
+                        session.commit()
+                try:
+                    self.repair_pending_backup_obligations()
+                    self.backup_repair_error = None
+                except Exception as error:  # keep read-only diagnostics available
+                    self.backup_repair_error = type(error).__name__
+        except MaintenanceModeError:
+            self.sessions = None
+            self.diagnostic_only = True
+            self.backup_repair_error = None

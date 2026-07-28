@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
 
 from nicegui_app.ui import theme
+from nicegui_app.access_context import AccessMode, PageContext, Principal
 
 
 def test_theme_follows_system_by_default_and_uses_neutral_first_render(monkeypatch) -> None:
@@ -79,3 +82,37 @@ def test_invalid_theme_choice_fails_closed_to_system(monkeypatch) -> None:
 
     assert theme.theme_preference() == "system"
     assert theme.current_theme() == "light"
+
+
+def test_verified_theme_handoff_initializes_only_an_unset_workspace(monkeypatch) -> None:
+    saved: dict[str, str] = {}
+    monkeypatch.setattr(theme, "preference_get", lambda key, default=None: saved.get(key, default))
+    monkeypatch.setattr(theme, "preference_set", lambda key, value: saved.__setitem__(key, value))
+    context = PageContext.create(
+        Principal(
+            mode=AccessMode.GUEST,
+            subject="guest",
+            session_id="guest-theme-session",
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=30),
+            theme_handoff="dark",
+        )
+    )
+
+    assert theme.adopt_verified_theme_handoff(context) is True
+    assert saved == {"theme": "dark"}
+    saved["theme"] = "light"
+    assert theme.adopt_verified_theme_handoff(context) is False
+    assert saved == {"theme": "light"}
+
+
+def test_missing_theme_handoff_preserves_system_default(monkeypatch) -> None:
+    saved: dict[str, str] = {}
+    monkeypatch.setattr(theme, "preference_get", lambda key, default=None: saved.get(key, default))
+    monkeypatch.setattr(theme, "preference_set", lambda key, value: saved.__setitem__(key, value))
+    context = PageContext.create(
+        Principal(mode=AccessMode.LOCAL_MAINTENANCE, subject="local-console")
+    )
+
+    assert theme.adopt_verified_theme_handoff(context) is False
+    assert saved == {}
+    assert theme.theme_preference() == "system"

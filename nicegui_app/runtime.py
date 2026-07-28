@@ -670,8 +670,14 @@ def runtime_readiness() -> dict[str, object]:
 
     workflow = get_admin_workflow()
     maintenance = workflow.maintenance_status()
-    pending_obligations = workflow.pending_backup_obligation_count()
+    pending_obligations = (
+        0
+        if maintenance.active or workflow.sessions is None
+        else workflow.pending_backup_obligation_count()
+    )
+    workflow_initialized = workflow.sessions is not None and not workflow.diagnostic_only
     return {
+        "workflowInitialized": workflow_initialized,
         "maintenance": maintenance.active,
         "recoveryRequired": maintenance.recovery_required,
         "pendingBackupObligations": pending_obligations,

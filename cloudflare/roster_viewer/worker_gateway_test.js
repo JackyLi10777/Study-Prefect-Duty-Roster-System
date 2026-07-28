@@ -257,7 +257,7 @@ Deno.test('uses Worker-compatible JWKS fetch options for the complete Access cal
     result = await worker.fetch(new Request('https://gateway.example/auth/login', {
       headers: {
         'Cf-Access-Jwt-Assertion': token,
-        Cookie: `CF_Authorization=${token}`,
+        Cookie: `CF_Authorization=${token}; __Host-SingYinThemeHandoff=light`,
       },
     }), env, { waitUntil() {} });
   } finally {
@@ -267,7 +267,11 @@ Deno.test('uses Worker-compatible JWKS fetch options for the complete Access cal
   assertEquals(jwksRequests, 1);
   assertEquals(result.status, 302);
   assertEquals(result.headers.get('Location'), 'https://gateway.example/');
-  assert((result.headers.get('Set-Cookie') || '').startsWith(`${ADMIN_SESSION_COOKIE_NAME}=`));
+  const cookies = result.headers.get('Set-Cookie') || '';
+  assert(cookies.startsWith(`${ADMIN_SESSION_COOKIE_NAME}=`));
+  const adminToken = decodeURIComponent(cookies.split(';', 1)[0].split('=', 2)[1]);
+  assertEquals((await validateAdminSessionToken(adminToken, env)).theme, 'light');
+  assert(cookies.includes('__Host-SingYinThemeHandoff='));
 });
 
 Deno.test('normalizes a bounded exact-email allowlist and rejects malformed configuration', async () => {
@@ -496,8 +500,11 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assert(script.includes("themeToggle?.addEventListener('click'"));
   assert(script.includes("resolvedTheme() === 'dark' ? 'light' : 'dark'"));
   assert(script.includes("window.addEventListener('storage'"));
-  assert(script.includes("EXPLICIT_THEME_STATES = ['light', 'dark']"));
-  assert(script.includes("let runtimeThemePreference = 'system'"));
+  assert(script.includes("EXPLICIT_THEME_STATES = ['system', 'light', 'dark']"));
+  assert(script.includes('function stageThemeHandoff()'));
+  assert(script.includes('stageThemeHandoff();'));
+  assert(script.includes("themeToggle.setAttribute('aria-pressed', String(isDark))"));
+  assert(script.includes('let runtimeThemePreference = null'));
   assert(script.includes('runtimeThemePreference = theme'));
 });
 
@@ -920,6 +927,32 @@ Deno.test('admin sessions are bounded and reject tampering, expiry, and removed 
   await expectRejected(() => validateAdminSessionToken(session.token, changedAllowlist, { nowMillis }));
 });
 
+Deno.test('signed sessions carry only an explicit theme handoff', async () => {
+  const env = accessEnvironment('sing-yin-runtime-theme-handoff');
+  const nowMillis = Date.now();
+  const nowSeconds = Math.floor(nowMillis / 1_000);
+  const admin = await createAdminSessionToken(
+    configuredAdminEmails(env)[0],
+    nowSeconds + 600,
+    env,
+    { nowMillis, themeHandoff: 'dark' },
+  );
+  const guest = await createGuestSessionToken(env, {
+    nowMillis,
+    sidBytes: new Uint8Array(16).fill(7),
+    themeHandoff: 'light',
+  });
+  assertEquals((await validateAdminSessionToken(admin.token, env, { nowMillis })).theme, 'dark');
+  assertEquals((await validateGuestSessionToken(guest.token, env, { nowMillis })).theme, 'light');
+
+  const ignored = await createGuestSessionToken(env, {
+    nowMillis,
+    sidBytes: new Uint8Array(16).fill(8),
+    themeHandoff: 'system',
+  });
+  assertEquals(Object.hasOwn(ignored.payload, 'theme'), false);
+});
+
 Deno.test('creates a bounded guest session only through a same-origin POST', async () => {
   const env = accessEnvironment('sing-yin-runtime-guest-start');
   const context = { waitUntil() {} };
@@ -935,6 +968,7 @@ Deno.test('creates a bounded guest session only through a same-origin POST', asy
       Accept: 'application/json',
       Origin: 'https://gateway.example',
       'Sec-Fetch-Site': 'same-origin',
+      Cookie: '__Host-SingYinThemeHandoff=dark',
     },
   }), env, context);
   assertEquals(started.status, 201);
@@ -951,6 +985,8 @@ Deno.test('creates a bounded guest session only through a same-origin POST', asy
   const validated = await validateGuestSessionToken(token, env);
   assertEquals(validated.exp - validated.iat, 30 * 60);
   assertEquals(validated.epoch, env.AUTH_EPOCH);
+  assertEquals(validated.theme, 'dark');
+  assert(cookie.includes('__Host-SingYinThemeHandoff='));
 });
 
 Deno.test('rate limits public entry points with stable privacy-safe actor keys', async () => {
@@ -1231,6 +1267,20 @@ Deno.test('admin principal wins when both valid gateway cookies are present', as
   assertEquals(originRequest.headers.get('Cookie'), 'session=nicegui-session');
 });
 
+Deno.test('origin principal carries an allowlisted signed theme handoff', async () => {
+  const env = accessEnvironment('sing-yin-runtime-origin-theme');
+  const nowMillis = 2_000_000_000_000;
+  const request = new Request('https://gateway.example/', { method: 'GET' });
+  const signed = await createOriginPrincipalToken(request, {
+    mode: 'guest',
+    subject: 'guest',
+    sid: base64Url(new Uint8Array(16).fill(9)),
+    exp: Math.floor(nowMillis / 1_000) + 1_800,
+    themeHandoff: 'dark',
+  }, env, { nowMillis });
+  assertEquals(signed.payload.theme, 'dark');
+});
+
 Deno.test('origin principal vector is deterministic request-bound epoch-aware and key-rotation-aware', async () => {
   const env = accessEnvironment('sing-yin-runtime-origin-vector');
   const nowMillis = 2_000_000_000_000;
@@ -1284,7 +1334,8 @@ Deno.test('POST logout clears both gateway identities and public status stays da
   const cookies = loggedOut.headers.get('Set-Cookie') || '';
   assert(cookies.includes(`${ADMIN_SESSION_COOKIE_NAME}=`));
   assert(cookies.includes(`${GUEST_SESSION_COOKIE_NAME}=`));
-  assert(cookies.match(/Max-Age=0/g)?.length >= 2);
+  assert(cookies.includes('__Host-SingYinThemeHandoff='));
+  assert(cookies.match(/Max-Age=0/g)?.length >= 3);
 });
 
 Deno.test('authenticated logout revokes admin and guest origin sessions before clearing cookies', async () => {

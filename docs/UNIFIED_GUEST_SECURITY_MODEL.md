@@ -1,6 +1,8 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
-> **文件狀態（live rc30）：**受控 Windows origin 正運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 來源檔案以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate 並完成受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量；第一級 origin 回退是 rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`，Worker 立即回退版本是 `d7b51f21-7692-418d-866c-034c2c57292d`。Admin、Guest 與公開 Viewer 使用同一身份邊界；本次 deployment report 證實 origin ready 且無 maintenance、recovery 或 pending backup obligation，真人身份與工作流驗收仍保持獨立未完成。
+> **線上來源真相（2026-07-28）：**目前 Windows runtime operational，但 rc30 checkout 已觀察到 73 tracked 修改及 3 untracked 項目；canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 來源未歸屬。這不改變本文件的 deny-by-default 安全契約，但 active pair 不可稱為 exact rc30 或指紋相符。乾淨 rc30＋`11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是更早歷史版本。rc31 未部署，真人驗收未完成。下文舊 live rc30 標籤只保留歷史證據，由本段取代。
+
+> **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 來源檔案以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate 並完成受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量。這組 clean pair 是目前第一個已知、已驗證的復原目標；rc27／`c4c728aa…` 與 Worker `d7b51f21…` 是更深歷史。Admin、Guest 與公開 Viewer 使用同一身份邊界；該次 deployment report 證實當時 origin ready 且無 maintenance、recovery 或 pending backup obligation，真人身份與工作流驗收仍保持獨立未完成。
 
 ## 1. 目的
 
@@ -56,12 +58,12 @@ Cloudflare Worker 會：
 | 虛構風紀 | 40 |
 | 示範週次 | 4 |
 | 已簽署 snapshot | 256 KiB |
-| 單次下載 | 5 MiB |
+| Guest 單次下載 | 5 MiB |
 | 每分鐘命令 | 60 |
 
-每個 NiceGUI client 取得獨立 `workspace_id`。狀態不寫入正式 SQLite、`app.storage.user`、備份、檔案、KV、Redis、`localStorage`、IndexedDB、Cache Storage、分析或內容日誌。Guest PDF／JSON 只在記憶體建立，標明 `DEMO`，以一次性 session-bound 下載票據回傳，並使用 `Cache-Control: no-store`。
+每個 NiceGUI client 取得獨立 `workspace_id`。狀態不寫入正式 SQLite、`app.storage.user`、備份、檔案、KV、Redis、`localStorage`、IndexedDB、Cache Storage、分析或內容日誌。Guest PDF／JSON 只在記憶體建立，標明 `DEMO`，以一次性、同 verified Guest access mode 及 session 綁定的下載票據回傳，並使用 `Cache-Control: no-store`。
 
-Guest 的語言、外觀、音樂及音效由獨立的有限期 origin-memory preference registry 保存；它只接受已核實 Guest session、限制鍵值及數值範圍，並與工作區一同在登出、到期、撤權或程序重啟時清除。這修正重新整理後語言回復的問題，但不把 Guest 偏好提升為永久資料。下載端點以同一 `GeneratedFile` 契約服務 Admin／Guest，仍須重新核對 principal、能力、一次性票證、大小及 `no-store`；前端帶同 cookie 取得 blob，不能靠隱藏按鈕或可猜網址繞過限制。
+Guest 的語言、外觀、音樂及音效由獨立的有限期 origin-memory preference registry 保存；它只接受已核實 Guest session、限制鍵值及數值範圍，並與工作區一同在登出、到期、撤權或程序重啟時清除。這修正重新整理後語言回復的問題，但不把 Guest 偏好提升為永久資料。公開入口不會讀取或持續同步工作區偏好；只有刻意進入 Admin／Guest 時，才可暫存已明確選擇的 `light`／`dark` 提示，最長 120 秒。Worker 核對後把它放入已簽署 session 及 request-bound principal，建立 session 時清除暫存 cookie；目的地已有偏好時不覆寫。下載端點以同一有界限 `GeneratedFile` registry 服務 Admin／Guest，仍須重新核對 principal、能力、access mode、session、一次性票證、大小及 `no-store`；Guest 單檔上限為 5 MiB、Admin 為 64 MiB，registry 總內容上限為 128 MiB，並保留 64 MiB／16 票證予 Admin；總票證上限為 128、每 session 為 8、票證 TTL 為 90 秒。跨模式重播會被拒絕而不消耗合法票據，Guest 飽和亦不能阻塞正式檔案交付。前端帶同 cookie 取得 blob，先核對 HTTP status 及精確 MIME，才建立短期 object URL，不能靠隱藏按鈕或可猜網址繞過限制。
 
 Assist. 排班模式也維持同頁面、同穩定代碼及同政策驗證：`legacy_fixed_weekday` 保留 AHP 的固定星期，`flexible_weekly` 只在名冊已選「可值班日」內按週輪換並在可行情況避免上週同日。兩者都拒絕非 AHP、請假日、同日重複及不連續規則衝突。Admin 透過 migration `0011_assist_assignment_mode` 把模式保存於週表；Guest 只把相同欄位保存在目前記憶體 workspace，重設或到期後消失。
 
@@ -108,10 +110,11 @@ Guest adapter 不引用正式 SQLAlchemy、AI、HTTP、備份、上載、分享�
 - 命令收據與冪等重播；
 - 發布單一勝者及公平帳本；
 - 提交後的 `backup_obligations`；
-- 啟動時修復未完成備份，失敗則 `/readyz` 回報 degraded 並阻止新寫入；
+- 正常安全啟動時修復未完成備份，失敗則 `/readyz` 回報 degraded，並由中央 admission guard 阻止所有業務寫入；
+- 如 durable recovery marker 在啟動前已存在，系統在 migration／session／SQLite journal mutation 之前進入 diagnostic-only，只提供不改資料的健康與復原診斷；
 - maintenance lock 下的受控還原。
 
-`/healthz` 只表示程序及資料庫可讀；`/readyz` 才表示 migration、maintenance、恢復標記、備份義務及寫入能力均正常。正式部署及監察不可只看 `/healthz`。
+`/healthz` 只表示程序及資料庫可讀；`/readyz` 只在 storage health 正常、`workflowInitialized=true`、沒有 maintenance／recovery marker、待完成備份義務為零且 startup repair 沒有失敗時，才以 HTTP 200 回報 `writeReady=true`。Diagnostic-only 啟動會固定回報 `workflowInitialized=false`、`writeReady=false` 及 HTTP 503；單獨移除 marker 不會令現有程序變成可寫，必須完成受控恢復並安全重啟以建立真正 workflow sessions。正式部署及監察不可只看 `/healthz`。
 
 ## 6. 發布 gate
 
@@ -119,7 +122,7 @@ Guest adapter 不引用正式 SQLAlchemy、AI、HTTP、備份、上載、分享�
 
 - 服務層能力矩陣及 Guest 依賴邊界；
 - snapshot 篡改、到期、重播及分頁隔離；
-- 管理員／訪客並行及交叉下載隔離；
+- 管理員／訪客並行、票據同 access mode／session 綁定、重播／跨模式拒絕，以及 Guest 飽和時 Admin reserved capacity；
 - 正式寫入衝突、冪等、備份崩潰及隔離還原；
 - 所有正式路由的 Admin／Guest DOM 骨架對應；
 - 繁中／英文、淺／深色、375／768／1280／1440 px、鍵盤、焦點、對比、reduced motion、console；

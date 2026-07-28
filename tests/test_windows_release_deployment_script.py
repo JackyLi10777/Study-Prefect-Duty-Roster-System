@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -17,6 +18,80 @@ POWERSHELL = shutil.which("powershell.exe") or shutil.which("powershell")
 
 def _source() -> str:
     return SCRIPT.read_text(encoding="utf-8")
+
+
+def _powershell_function_source(name: str) -> str:
+    source = _source()
+    marker = f"function {name}"
+    start = source.index(marker)
+    next_function = re.search(
+        r"(?m)^function\s+[A-Za-z0-9_-]+",
+        source[start + len(marker) :],
+    )
+    if next_function is None:
+        return source[start:]
+    return source[start : start + len(marker) + next_function.start()]
+
+
+def _run_worker_gateway_parser(tmp_path: Path, configuration: str) -> dict[str, object]:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production host script")
+    configuration_path = tmp_path / "wrangler.jsonc"
+    configuration_path.write_text(configuration, encoding="utf-8")
+    escaped_path = str(configuration_path).replace("'", "''")
+    function_source = _powershell_function_source("Get-WorkerGatewaySettings")
+    python = str(Path(sys.executable)).replace("'", "''")
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+{function_source}
+try {{
+    $settings = Get-WorkerGatewaySettings -ConfigurationPath '{escaped_path}' -Python '{python}'
+    [ordered]@{{
+        ok = $true
+        originPort = [int]$settings.OriginPort
+        authEpoch = [long]$settings.AuthEpoch
+        originPrincipalKid = [string]$settings.OriginPrincipalKid
+    }} | ConvertTo-Json -Compress
+}} catch {{
+    [ordered]@{{
+        ok = $false
+        error = [string]$_.Exception.Message
+    }} | ConvertTo-Json -Compress
+}}
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8-sig",
+        errors="replace",
+    )
+
+    assert result.returncode == 0, result.stderr
+    json_lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
+    assert json_lines, f"PowerShell parser emitted no JSON payload: {result.stdout!r}"
+    return json.loads(json_lines[-1])
+
+
+def _worker_configuration(
+    *,
+    port: str = "8080",
+    auth_epoch: str = "31",
+    kid: str = '"rc31-origin"',
+    extra_properties: str = "",
+) -> str:
+    return f"""{{
+  // JSONC comments are valid outside active property lines.
+  "vars": {{
+    "ORIGIN_PORT": {port},
+    "AUTH_EPOCH": {auth_epoch},
+    "ORIGIN_PRINCIPAL_KID": {kid}{extra_properties}
+  }}
+}}
+"""
 
 
 def test_deployment_script_is_generic_and_requires_an_immutable_published_tag() -> None:
@@ -109,14 +184,254 @@ def test_deployment_script_requires_the_current_release_gate_fingerprint() -> No
     assert "twelve-gate" not in source.lower()
 
 
-def test_deployment_script_requires_worker_and_host_origin_ports_to_match() -> None:
+def test_deployment_script_requires_worker_and_host_gateway_settings_to_match() -> None:
     source = _source()
 
-    assert "function Get-WorkerOriginPort" in source
-    assert '"ORIGIN_PORT"\\s*:\\s*(\\d+)' in source
-    assert '$workerOriginPort -ne $deploymentPort' in source
-    assert "does not match" in source
+    assert "function Get-WorkerGatewaySettings" in source
+    assert "gateway settings do not support block comments" in source
+    assert "function Assert-WorkerHostGatewayParity" in source
+
+    preflight = source.index("$preflightGatewayParity = Assert-WorkerHostGatewayParity")
+    host_clean = source.index(
+        '$hostStatus = Get-GitValue -Repository $HostRoot -Arguments @(',
+    )
+    protect = source.index(
+        "Protect-SingYinSensitivePath -Path $environmentPath",
+        preflight,
+    )
+    merge = source.index("Merge-EnvironmentOverlay", preflight)
+    remove = source.index("Remove-EnvironmentOverlay -Path $resolvedOverlayPath", preflight)
+    post_apply = source.index(
+        "$postApplyGatewayParity = Assert-WorkerHostGatewayParity",
+        preflight,
+    )
+    stop = source.index('Write-Step "Stopping the owned task', preflight)
+
+    assert source.count("Assert-WorkerHostGatewayParity `") == 2
+    assert host_clean < preflight < protect < merge < remove < post_apply < stop
+    assert source.index(
+        'throw "The installed host repository is not clean."',
+        host_clean,
+    ) < preflight
+    assert source.index("$overlayPathToDelete = $resolvedOverlayPath") > preflight
+    assert source.index("$environmentBytes = [IO.File]::ReadAllBytes", preflight) > preflight
     assert "workerOriginPort = $workerOriginPort" in source
+    assert "hostAuthEpoch = $hostAuthEpoch" in source
+    assert "workerAuthEpoch = $workerAuthEpoch" in source
+    assert "hostOriginPrincipalKid = $hostOriginPrincipalKid" in source
+    assert "workerOriginPrincipalKid = $workerOriginPrincipalKid" in source
+    assert "preflightMatched = [bool]$preflightGatewayParity.Matches" in source
+    assert "postApplyMatched = [bool]$postApplyGatewayParity.Matches" in source
+
+
+def test_worker_gateway_parser_accepts_active_jsonc_and_ignores_line_comments(
+    tmp_path: Path,
+) -> None:
+    payload = _run_worker_gateway_parser(
+        tmp_path,
+        """{
+  "documentation": "https://developers.cloudflare.com/workers/",
+  "vars": {
+    // "ORIGIN_PORT": 9999,
+    "ORIGIN_PORT": 8080, // active origin port
+    // "AUTH_EPOCH": 999,
+    "AUTH_EPOCH": 31,
+    // "ORIGIN_PRINCIPAL_KID": "commented-out",
+    "ORIGIN_PRINCIPAL_KID": "rc31-origin", // active key id
+  },
+}
+""",
+    )
+
+    assert payload == {
+        "ok": True,
+        "originPort": 8080,
+        "authEpoch": 31,
+        "originPrincipalKid": "rc31-origin",
+    }
+
+
+@pytest.mark.parametrize(
+    ("configuration", "message"),
+    (
+        (
+            _worker_configuration(port="80"),
+            "ORIGIN_PORT must be between 1024 and 65535",
+        ),
+        (
+            _worker_configuration(port="999999999999999999999999"),
+            "ORIGIN_PORT must be between 1024 and 65535",
+        ),
+        (
+            _worker_configuration(auth_epoch="999999999999999999999999"),
+            "AUTH_EPOCH must be between 0 and 9223372036854775807",
+        ),
+        (
+            _worker_configuration(port='"8080"'),
+            "top-level vars must define one integer ORIGIN_PORT",
+        ),
+        (
+            _worker_configuration(auth_epoch='"31"'),
+            "top-level vars must define one integer AUTH_EPOCH",
+        ),
+        (
+            _worker_configuration(auth_epoch="-1"),
+            "AUTH_EPOCH must be between 0 and 9223372036854775807",
+        ),
+        (
+            _worker_configuration(kid='"bad kid"'),
+            "ORIGIN_PRINCIPAL_KID contains unsupported characters",
+        ),
+        (
+            _worker_configuration(kid=f'"{"a" * 65}"'),
+            "ORIGIN_PRINCIPAL_KID contains unsupported characters",
+        ),
+        (
+            _worker_configuration(kid='"rc31-origin" trailing-garbage'),
+            "is not valid JSONC",
+        ),
+        (
+            """{
+  "vars": {
+    "ORIGIN_PORT": 8080,
+    "ORIGIN_PORT": 8081,
+    "AUTH_EPOCH": 31,
+    "ORIGIN_PRINCIPAL_KID": "rc31-origin"
+  }
+}
+""",
+            "contains duplicate JSON object keys",
+        ),
+        (
+            """{
+  "vars": {
+    "ORIGIN_PORT": 8080,
+    "AUTH_EPOCH": 31
+  }
+}
+""",
+            "must define one string ORIGIN_PRINCIPAL_KID",
+        ),
+        (
+            """{
+  /* ambiguous block comments are rejected before extracting gateway identity */
+  "vars": {
+    "ORIGIN_PORT": 8080,
+    "AUTH_EPOCH": 31,
+    "ORIGIN_PRINCIPAL_KID": "rc31-origin"
+  }
+}
+""",
+            "do not support block comments",
+        ),
+        (
+            """not-json
+"ORIGIN_PORT": 8080
+"AUTH_EPOCH": 31
+"ORIGIN_PRINCIPAL_KID": "rc31-origin"
+""",
+            "is not valid JSONC",
+        ),
+        (
+            """{
+  "unrelated": {
+    "ORIGIN_PORT": 8080,
+    "AUTH_EPOCH": 31,
+    "ORIGIN_PRINCIPAL_KID": "rc31-origin"
+  },
+  "vars": {"OTHER": "value"}
+}
+""",
+            "top-level vars must define one integer ORIGIN_PORT",
+        ),
+        (
+            """{
+  "vars": "ORIGIN_PORT=8080;AUTH_EPOCH=31;ORIGIN_PRINCIPAL_KID=rc31-origin"
+}
+""",
+            "must define exactly one top-level vars object",
+        ),
+        (
+            """{
+  "other": true
+}
+""",
+            "must define exactly one top-level vars object",
+        ),
+    ),
+)
+def test_worker_gateway_parser_rejects_ambiguous_or_unsafe_values(
+    tmp_path: Path,
+    configuration: str,
+    message: str,
+) -> None:
+    payload = _run_worker_gateway_parser(tmp_path, configuration)
+
+    assert payload["ok"] is False
+    assert message in str(payload["error"])
+
+
+def test_worker_host_gateway_parity_executes_and_rejects_each_mismatch() -> None:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production host script")
+    functions = "\n".join(
+        (
+            _powershell_function_source("Assert-UnifiedGuestHostSettings"),
+            _powershell_function_source("Assert-WorkerHostGatewayParity"),
+        )
+    )
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+{functions}
+$values = @{{
+    SING_YIN_UNIFIED_GUEST = '1'
+    SING_YIN_REQUIRE_GATEWAY_PRINCIPAL = '1'
+    ORIGIN_PRINCIPAL_SECRET = 'not-a-real-secret'
+    ORIGIN_PRINCIPAL_KID = 'rc31-origin'
+    AUTH_EPOCH = '31'
+    SING_YIN_GUEST_SNAPSHOT_SECRET = 'not-a-real-snapshot-secret'
+    SING_YIN_HOST = '127.0.0.1'
+    SING_YIN_PORT = '8080'
+}}
+$worker = [pscustomobject]@{{
+    OriginPort = 8080
+    AuthEpoch = [long]31
+    OriginPrincipalKid = 'rc31-origin'
+}}
+$result = [ordered]@{{}}
+$result.match = [bool](Assert-WorkerHostGatewayParity -Values $values -WorkerSettings $worker).Matches
+foreach ($case in @('port', 'epoch', 'kid')) {{
+    $candidate = [pscustomobject]@{{
+        OriginPort = if ($case -ceq 'port') {{ 8081 }} else {{ 8080 }}
+        AuthEpoch = if ($case -ceq 'epoch') {{ [long]32 }} else {{ [long]31 }}
+        OriginPrincipalKid = if ($case -ceq 'kid') {{ 'other-origin' }} else {{ 'rc31-origin' }}
+    }}
+    try {{
+        $null = Assert-WorkerHostGatewayParity -Values $values -WorkerSettings $candidate
+        $result[$case] = 'accepted'
+    }} catch {{
+        $result[$case] = [string]$_.Exception.Message
+    }}
+}}
+$result | ConvertTo-Json -Compress
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8-sig",
+        errors="replace",
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout.splitlines()[-1])
+    assert payload["match"] is True
+    assert "SING_YIN_PORT" in payload["port"]
+    assert "AUTH_EPOCH" in payload["epoch"]
+    assert "ORIGIN_PRINCIPAL_KID" in payload["kid"]
 
 
 def test_deployment_fingerprint_snippet_executes_in_windows_powershell_51() -> None:
@@ -278,7 +593,12 @@ def test_deployment_script_switches_locked_host_and_requires_write_readiness() -
 
 def test_deployment_script_rolls_back_commit_dependencies_environment_and_task() -> None:
     source = _source()
-    catch_block = source.split("} catch {", 1)[1]
+    outer_catch = (
+        "\n    } catch {\n"
+        "    $failure = Protect-ReportText $_.Exception.Message"
+    )
+    assert outer_catch in source
+    catch_block = source.split(outer_catch, 1)[1].split("\n} finally {", 1)[0]
 
     assert '$rollbackAttempted = $true' in source
     assert '"switch",' in catch_block and "$previousCommit" in catch_block

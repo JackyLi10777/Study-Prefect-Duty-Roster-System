@@ -17,7 +17,10 @@ from nicegui_app.services.music_library import (
     MusicTrack,
     builtin_tracks_for_context,
 )
-from nicegui_app.services.guest_downloads import GuestDownloadTicket
+from nicegui_app.services.guest_downloads import (
+    GuestDownloadCapacityError,
+    GuestDownloadTicket,
+)
 from nicegui_app.ui import access_control, downloads, music
 
 
@@ -159,15 +162,17 @@ def test_guest_generated_file_uses_single_use_server_endpoint(
         lambda *args, **kwargs: direct_downloads.append((args, kwargs)),
     )
 
-    downloads.deliver_generated_download(
+    delivered = downloads.deliver_generated_download(
         b"fictional-demo",
         "SYSS_DEMO_report.json",
         media_type="application/json",
     )
 
+    assert delivered is True
     assert direct_downloads == []
     assert issued == [
         {
+            "access_mode": AccessMode.GUEST,
             "session_id": "guest-session",
             "filename": "SYSS_DEMO_report.json",
             "content": b"fictional-demo",
@@ -177,6 +182,62 @@ def test_guest_generated_file_uses_single_use_server_endpoint(
     assert len(scripts) == 1
     assert "/api/generated-download/" + ("A" * 43) in scripts[0]
     assert "response.blob()" in scripts[0]
+    assert "response.headers.get('Content-Type')" in scripts[0]
+    assert "actualType!==expectedType" in scripts[0]
+    assert "application/json" in scripts[0]
+    assert scripts[0].index("actualType!==expectedType") < scripts[0].index("response.blob()")
     assert "fetch(" in scripts[0]
     assert "credentials:'same-origin'" in scripts[0]
     assert "URL.revokeObjectURL" in scripts[0]
+
+
+def test_generated_file_capacity_failure_is_reported_to_caller(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    notifications: list[tuple[object, object]] = []
+
+    class FullRegistry:
+        def issue(self, **_kwargs):  # type: ignore[no-untyped-def]
+            raise GuestDownloadCapacityError("capacity exhausted")
+
+    monkeypatch.setattr(downloads, "current_page_context", _guest_context)
+    monkeypatch.setattr(downloads, "guest_download_registry", FullRegistry)
+    monkeypatch.setattr(
+        downloads.ui,
+        "notify",
+        lambda message, *, type=None: notifications.append((message, type)),
+    )
+
+    delivered = downloads.deliver_generated_download(
+        b"fictional-demo",
+        "SYSS_DEMO_report.json",
+        media_type="application/json",
+    )
+
+    assert delivered is False
+    assert notifications and notifications[-1][1] == "warning"
+
+
+def test_generated_file_callers_do_not_report_success_after_delivery_failure() -> None:
+    root = Path(__file__).resolve().parents[1] / "nicegui_app" / "ui"
+    source_contracts = {
+        root / "page_shared.py": (
+            "if not deliver_generated_download(",
+            'ui.notify(t("pdf_ready"), type="positive")',
+        ),
+        root / "page_routes" / "people.py": (
+            "if not deliver_generated_download(",
+            'ui.notify(t("summary_export_ready"), type="positive")',
+        ),
+        root / "page_routes" / "stewardship.py": (
+            "if not deliver_generated_download(",
+            "handover_package_dialog.close()",
+        ),
+    }
+
+    for source_path, (guard, success_action) in source_contracts.items():
+        source = source_path.read_text(encoding="utf-8")
+        guard_offset = source.index(guard)
+        success_offset = source.index(success_action, guard_offset)
+        guarded_region = source[guard_offset:success_offset]
+        assert "return" in guarded_region, source_path

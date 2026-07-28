@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from nicegui import ui
 
+from nicegui_app.access_context import PageContext
 from nicegui_app.ui.design_token_contract import quasar_palette
 from nicegui_app.ui.preferences import preference_get, preference_set
 from nicegui_app.ui.theme_markup import THEME_HEAD_HTML
@@ -74,6 +75,23 @@ def set_theme_preference(value: str) -> None:
     if value not in {"system", "light", "dark"}:
         raise ValueError("theme preference must be system, light, or dark")
     preference_set("theme", value)
+
+
+def adopt_verified_theme_handoff(context: PageContext) -> bool:
+    """Adopt the Public entrance choice once when this workspace is unset.
+
+    The hint is authenticated by the gateway and can only be light or dark.
+    Existing Admin or Guest preferences always win, preserving their separate
+    durable and process-local storage boundaries.
+    """
+
+    if preference_get("theme", None) in {"system", "light", "dark"}:
+        return False
+    handoff = context.principal.theme_handoff
+    if handoff not in {"light", "dark"}:
+        return False
+    preference_set("theme", handoff)
+    return True
 
 
 def next_explicit_theme(resolved_theme: str) -> str:

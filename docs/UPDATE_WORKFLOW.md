@@ -1,8 +1,12 @@
 # 更新、驗證與上傳：一個命令完成正確層級
 
+> **線上來源真相（2026-07-28）：**目前 runtime operational，但 Windows host checkout 已由 rc30 漂移（73 tracked＋3 untracked），canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 亦未建立來源歸屬。乾淨 rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是較舊歷史版本。rc31 仍未凍結、未標記、未部署。下文所有「live rc30／唯一線上基線／第一級回退」字樣只保留歷史上下文，均由本段取代。健康閘門不等於來源相符、部署或真人驗收。
+
 我是李創杰。這份流程是我與 Codex 對正式發布工作的反思結果：更新慢的主因不是 Git 上傳，而是過去把每次文字或測試修改都當成完整 runtime 發布。
 
-> **目前發布界線：** live rc30 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是正式基線；rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` 是第一級 origin 回退，Worker `d7b51f21-7692-418d-866c-034c2c57292d` 是立即 edge 回退。rc30 已完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換、0% Worker smoke、100% promotion 及 canonical rendered checks。任何後續 focused tests、`--staged` 或文件更新都不會自動成為新的已部署 runtime；仍須以實際 origin／Worker 報告和線上核對為準。
+> **歷史 rc30 乾淨發布界線：** annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 曾是正式乾淨基線，並完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換、0% Worker smoke、100% promotion 及 canonical rendered checks。目前 active pair 已來源漂移，所以該 clean pair 現是第一個已知、已驗證的復原目標；rc27／`c4c728aa…` 與 Worker `d7b51f21…` 只屬更深歷史。任何後續 focused tests、`--staged` 或文件更新都不會自動成為新的已部署 runtime；仍須以實際 origin／Worker 報告和線上核對為準。
+
+> **目前 rc31 候選界線：** `codex/rc31-unified-theme-controls` 在早期主題切換切片之後，已再修改排程核心、生成檔案交付、手機抽屜、通用寫入 admission、備份／交接／還原、migration guard，以及 Windows→Worker port／epoch／KID 的唯讀 preflight 與套用後二次 parity gate。早期 901 項／8 個瀏覽器情境不是目前工作樹的 exact-source 發布證據。凍結最終來源後，必須由該 fingerprint 的正式 report 給出當時實際 gate 集合與結果；在 commit／tag、正式備份與隔離還原、origin／Worker 部署及 canonical 線上核對完成前，rc30 仍是唯一線上基線。
 
 rc20 的完整候選報告約需 **404 秒**；當中主要時間用於完整 Python 套件、桌面／手機瀏覽器、寫入／PDF／還原、效能及備份失敗演練。這些證據對政策、資料庫、工作流、部署或正式 runtime 改動很重要，但不應因 README 改一句話而重跑。最近三次沒有 runtime 改動的提交亦在 GitHub Quality 與 CodeQL 合計使用約 18 分鐘。
 
@@ -70,7 +74,7 @@ rc20 的精確發布證據是：annotated tag `v1.2.0-rc.20`、commit `e3d84858a
 | 只有測試及文件 | `tests` | 被修改的測試；共用 test helper 改動則升級為完整 Python suite；另加 hygiene 及秘密掃描 |
 | GitHub workflow 或快速分類器 | `assurance` | assurance 聚焦測試、完整安全閘門及 hygiene |
 | Cloudflare Worker／登入／Viewer | `worker` | pre-push 跑 Worker 聚焦契約、hygiene 及秘密掃描；正式部署使用 `--release` |
-| NiceGUI、政策、公平、交易、SQLite、遷移、依賴、運行資產、Windows 主機腳本或正式驗證器 | `full` | pre-push 跑完整 Python、安全、Worker 及 hygiene；正式部署使用 `--release` 執行當前完整 gate（rc20 候選基線為 14 項，後續以 source-matched report 為準） |
+| NiceGUI、政策、公平、交易、SQLite、遷移、依賴、運行資產、Windows 主機腳本或正式驗證器 | `full` | pre-push 跑完整 Python、安全、Worker 及 hygiene；正式部署使用 `--release` 執行當前完整 gate。歷史版本的 gate 數量只屬該版本；後續一律以凍結來源的 source-matched report 為準。 |
 | 未能識別的新路徑或 Git base | `full` | 失敗時向高風險升級，不會靜默略過 |
 
 `/support` 頁面、Worker route、`SupportInbox`、redaction／quota、收件匣設定、
@@ -111,6 +115,7 @@ pre-push profile 內互不寫入的檢查會並行執行。正式候選驗證仍
 以下情況不是一般「上傳更新」；部署前必須使用 `--release`，並保留所列人手確認：
 
 - 正式政策、公平、交易、備份、還原或 migration 改動；
+- 排程求解器、完整崗位／權重 validation、generated-file ticket isolation／capacity、mobile drawer focus/cleanup、universal write admission、recovery marker 或 exact-byte staged backup／handover 改動；
 - Assist. 模式或名冊可值班日契約改動，包括 `legacy_fixed_weekday`／`flexible_weekly`、AHP-only、同日不重複、不連續當值及 migration `0011_assist_assignment_mode`；
 - Worker 身份驗證、管理 session、Viewer 加密或 VPC 邊界改動；
 - Windows 主機切換、依賴更新或正式 release tag；
