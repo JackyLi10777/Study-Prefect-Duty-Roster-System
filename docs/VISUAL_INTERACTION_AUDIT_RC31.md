@@ -25,7 +25,7 @@ the authority for the final state.
 - Historical rc30 screenshots, deployment reports and evidence remain historical
   and are not rewritten as rc31 proof.
 
-## Historical source-candidate evidence
+## Formal source-candidate evidence
 
 - An earlier `python -X utf8 -m pytest -q` slice passed 901／901 before the
   later reliability and handoff changes in this branch.
@@ -34,8 +34,14 @@ the authority for the final state.
   producing 24 temporary screenshots with no console, page or server errors.
 - That historical Worker contract suite passed 46／46. The rc31 browser matrix is registered
   as the formal release verifier's fifteenth fingerprint-bound gate.
-- These checks describe only that earlier candidate slice. Final frozen-source
-  full-suite, Public→Admin／Guest handoff, reduced-motion／forced-colour browser
-  evidence and exact-source release gates must be rerun. They do not claim a
-  protected-main merge, annotated tag, Windows origin deployment, Worker
-  promotion or supervised human acceptance.
+- These checks describe only that earlier candidate slice.
+- On 2026-07-29 the exact 297-file runtime fingerprint
+  `f1638aae580ba7785c430da7a668c6975a9f5bf40880e0cd0a6c0f6fc8be46ed`
+  passed the formal 15-gate release-candidate run. The rendered evidence includes
+  16 Public→Admin／Guest continuity cases, desktop Light／Dark component grammar,
+  390px phone, 768×1024 and 820×1180 touch tablets, 1024×768 desktop-shell touch,
+  320px reduced motion, 256px reflow and 844×390 landscape. Runtime verification
+  observed +0 DOM nodes, +0 listeners and 0.46 MiB heap growth.
+- This evidence is authoritative for the reviewed source behavior only. It does
+  not claim a protected-main merge, annotated tag, Windows-origin deployment,
+  Worker promotion, canonical online rendering or supervised human acceptance.

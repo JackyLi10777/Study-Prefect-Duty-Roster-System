@@ -1,25 +1,25 @@
-# rc31 預部署全碼審查報告（草稿）
+# rc31 預部署全碼審查報告
 
-> **狀態：BLOCKED（候選尚未凍結）**
-> 本文件記錄 2026-07-28 的最終候選審查進度。它不是部署完成聲明，也不以通過測試、HTTP 200 或健康檢查取代部署證據。只有在候選來源凍結、完整清單分類、所有必要閘門通過、發布標籤與受審樹一致後，方可改為 `PASS`。
+> **狀態：PASS TO CONTROLLED DEPLOYMENT（來源審查通過，尚未部署）**
+> 本文件記錄 2026-07-28 至 2026-07-29 的候選審查。它不是部署完成聲明，也不以通過測試、HTTP 200 或健康檢查取代 origin／Worker 對帳及 supervised acceptance。
 
 ## 1. 審查身份與發布事實
 
 | 項目 | 草稿時證據 | 最終值 |
 | --- | --- | --- |
-| 審查日期 | 2026-07-28（Asia/Shanghai） | 2026-07-28 |
-| 候選分支 | `codex/rc31-unified-theme-controls` | 待凍結確認 |
+| 審查日期 | 2026-07-28（Asia/Shanghai） | 2026-07-29 |
+| 候選分支 | `codex/rc31-unified-theme-controls` | `codex/rc31-unified-theme-controls` |
 | 草稿建立時 base HEAD | `a3c45bae48ef99b3972790c7c0f5df8453a0dd19` | 不可當作最終候選 SHA |
 | 草稿建立時 base tree | `3838f9b70d6aec2481325e07683c850c8829e8be` | 不可當作最終候選 tree |
-| 最終候選 commit SHA | 未建立 | `TBD_FINAL_COMMIT_SHA` |
-| 最終候選 Git tree SHA | 未建立 | `TBD_FINAL_TREE_SHA` |
-| 發布標籤 | 未建立 | `TBD_RELEASE_TAG` |
-| source fingerprint | 未從凍結來源產生 | `TBD_SOURCE_FINGERPRINT` |
-| `requirements.lock` SHA-256 | `8b1961717c9941c3a35813c1141bbf8364fe7fbc95017200e6e933da6997b2de` | 凍結後重核 |
-| `requirements-dev.lock` SHA-256 | `f21c14b128abfddc8206b59dbccb97252d820f617261f1199b844e7eb7a583f1` | 凍結後重核 |
-| 追蹤檔案 | 568 | 凍結後重核 |
-| 草稿時已修改追蹤檔案 | 62 | 最終 commit 應為乾淨工作樹 |
-| 待納入聚焦測試 | `tests/test_roster_generator_integrity.py` | 必須明確 stage／review |
+| 已審 code-bearing commit SHA | 未建立 | `a52d743f2002c7509f79bc61f11a53ae3ae9d92a` |
+| 已審 code-bearing Git tree SHA | 未建立 | `90d11e47f69446ac731ddba3f3600f05fb97f5c4` |
+| 發布標籤 | 未建立 | `v1.2.0-rc.31`（須在 protected main 合併後建立） |
+| source fingerprint | 未從凍結來源產生 | `f1638aae580ba7785c430da7a668c6975a9f5bf40880e0cd0a6c0f6fc8be46ed`（297 runtime files） |
+| `requirements.lock` SHA-256 | `8b1961717c9941c3a35813c1141bbf8364fe7fbc95017200e6e933da6997b2de` | 相同，已重核 |
+| `requirements-dev.lock` SHA-256 | `f21c14b128abfddc8206b59dbccb97252d820f617261f1199b844e7eb7a583f1` | 相同，已重核 |
+| 追蹤檔案 | 568 | 570；另有 1 個明確排除的本機 screenshot |
+| 草稿時已修改追蹤檔案 | 62 | code-bearing 工作樹已提交；只餘本文件等發布真相更新 |
+| 待納入聚焦測試 | `tests/test_roster_generator_integrity.py` | 已明確納入、審查並由完整套件執行 |
 | 明確排除的本機證據 | `test-results/unified-access-gateway/public-support-browser-only.png`（非本候選來源） | 保持 untracked，不可誤納發布 |
 
 ### 目前線上狀態與最近乾淨基線
@@ -28,12 +28,12 @@
 - **實際 canonical Worker（2026-07-28）：**未標記、來源未歸屬的 version `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 承接流量；不能由 HTTP 200 或頁面外觀推定其受審來源。
 - **最近完整驗證的乾淨組合：**rc30／`74b84f43786b00feb15b51a6270ff71c9430773f` 配 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`。它是歷史乾淨基線，不是目前線上來源一致性證明；`11763f08-d40d-46d5-93dc-5ca2599d4154` 亦是目前最近一個已知、已驗證的 edge 回退版本。
 - **更早回退歷史：**rc27 是已驗證 origin 回退來源；Worker `d7b51f21-7692-418d-866c-034c2c57292d` 是更早的 edge 歷史，而不是目前立即回退版本。
-- **rc31：**只屬本機候選，尚未建立正式 commit／tag、尚未部署、尚未完成人工驗收。
+- **rc31：**code-bearing commit、tree 與 297-file runtime fingerprint 已完成正式來源審查；protected-main merge／tag、部署及人工驗收尚未完成。
 - **人工驗收：**首席導學風紀及教師顧問的 supervised acceptance 仍未完成；任何自動化結果均不可代替此步驟。
 
 ## 2. 完整檔案清單與分類
 
-以下分類由 `git ls-files` 的 568 個追蹤路徑建立，分類總和等於追蹤檔案總數。最終凍結後須再次產生相同清單；新增、刪除或改名會令本表失效。
+草稿分類由 `git ls-files` 的 568 個追蹤路徑建立；候選現有 570 個追蹤路徑，增加的是已審查的聚焦測試／驗證來源。正式 runtime fingerprint 只涵蓋 297 個可執行或發布相關來源檔；二進位媒體及文件另由 repository hygiene、digest 及文件契約覆蓋。
 
 | 分類 | 檔案數 | 審查／驗證方法 | 草稿狀態 |
 | --- | ---: | --- | --- |
@@ -47,7 +47,7 @@
 | 圖片、字體、音樂、資料、archive、test evidence | 157 | provenance、路徑、大小、digest、授權及 repository-hygiene controls；不作無意義逐行審查 | 最終 integrity／hygiene 待辦 |
 | Dependency locks | 2 | SHA-256、可重現安裝、dependency／vulnerability scan | 草稿 hash 已記錄；正式 scan 待辦 |
 | `LICENSE` | 1 | 法律文本存在性及發行一致性 | 不涉及行為變更 |
-| **總計** | **568** |  | **最終逐檔分類 ledger 尚待凍結後確認** |
+| **草稿分類小計** | **568** |  | **另有 2 個已審聚焦測試／驗證來源；目前 Git 總數 570** |
 
 ### 明確排除與理由
 
@@ -67,7 +67,7 @@
 | RC31-P1-003 | diagnostic-only 啟動在 recovery marker 被外部移除後可能把 `/readyz` 誤報為可寫，即使 workflow sessions 從未初始化。 | `nicegui_app/runtime.py:678-681` 增加 `workflowInitialized` 作寫入必要條件；`tests/test_runtime_readiness.py:8-22` 驗證 marker 消失亦不能令未初始化程序變為 ready。 | **已修復** |
 | RC31-P1-004 | 兩個 origin 程序在 startup probe 與 migration 之間存在 TOCTOU 窗口；第二程序可能在第一程序尚未完成初始化時進入共享 SQLite。 | `nicegui_app/services/roster_workflow.py:138-154` 在 probe 至 migration／bootstrap 期間持有資料庫路徑級 lifecycle lease；workflow write fencing 與初始化前拒絕維持第二層保護。 | **已修復** |
 | RC31-P1-005 | 恢復流程若重新讀取已變動的來源檔、接受 SQLite WAL／SHM sidecar，或把 database 與 manifest 拆開驗證，可能恢復非同一證據對。 | `nicegui_app/services/workflow_parts/recovery.py:136-147,369-473,668-698` 以 exact staged bytes／成對 manifest 處理、拒絕 sidecars、驗證 rollback；`tests/test_backup_restore.py:229-333` 覆蓋來源突變及 sidecar。 | **已修復** |
-| RC31-P1-006 | 正式主機 checkout 與 canonical Worker 均已偏離最近受審 pair；主機有 73 個追蹤修改及 3 個未追蹤項目，Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 沒有可核實標籤／來源。受影響：部署歸屬、回退、事故判斷、文件及任何「目前已上線版本」聲明。 | 已完成唯讀差異盤點並修正文檔，不重設、不覆寫正式主機。必須先凍結 rc31 exact source、通過完整閘門，再由受控 clean-bundle 部署重建 origin／Worker 一致性；部署後以 tag、tree、fingerprint、Worker version 和 rendered checks 對帳。 | **OPEN — deployment blocker** |
+| RC31-P1-006 | 正式主機 checkout 與 canonical Worker 均已偏離最近受審 pair；主機有 73 個追蹤修改及 3 個未追蹤項目，Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 沒有可核實標籤／來源。受影響：部署歸屬、回退、事故判斷、文件及任何「目前已上線版本」聲明。 | 已完成唯讀差異盤點、不重設正式主機；rc31 exact source 現已通過 15 個完整閘門。下一步以保留漂移證據的 clean reviewed bundle 重建 origin／Worker 一致性，部署後以 tag、tree、fingerprint、Worker version 和 rendered checks 對帳。 | **來源前置條件已解除；仍是受控部署必須關閉的 production drift** |
 
 ### 3.2 已確認並修復的 release-relevant P2
 
@@ -81,7 +81,7 @@
 ### 3.3 P0、其他 P1、P3
 
 - 目前差異審查未發現 P0。
-- `RC31-P1-006` 是已確認而未解除的部署歸屬／回退風險；在 clean pair 受控重建前仍然阻擋發布。其他已檢視差異暫未發現未修 P1，但這不代替 final inventory 與 exact-source gate。
+- `RC31-P1-006` 的來源前置條件已由正式 15-gate report 解除；production drift 只可由受控部署關閉，仍禁止在部署完成前聲稱 rc31 已上線。其他已檢視差異沒有未修 P0／P1／release-critical P2。
 - 未記錄純風格、檔案行數或「可以再抽象」為缺陷；只有會影響正確性、安全、恢復、操作或交接的事項才進入發布判斷。
 
 ## 4. 正向更新、被調整方案及拒絕理由
@@ -134,36 +134,29 @@
 - 非直觀 invariant 已在程式和操作文件記錄：目的偏好優先於 entrance handoff、diagnostic-only 不可轉為 writable、備份 database／manifest 不可拆對、shared registry 必須預留 Admin 容量。
 - rc31 文件現把未凍結候選、來源漂移的現行 runtime、最近乾淨 rc30 pair、rollback 及 supervised acceptance 分開；最終 commit／tag／部署後仍須再次同步。
 
-## 6. 已取得的驗證證據（非最終凍結來源）
+## 6. 已取得的正式來源驗證證據
 
 | 檢查 | 工作樹結果 | 限制 |
 | --- | --- | --- |
-| 聚焦 theme／gateway／runtime／download suite | 61 passed | 不是 final frozen source |
-| 擴展 changed-unit set | 154 passed | 不是完整 release gate |
-| 完整 `python -X utf8 -m pytest -q` | exit 0 | 在可變工作樹執行；候選凍結後必須重跑 |
-| `deno test cloudflare/roster_viewer/worker_gateway_test.js` | 48 passed | 不代替真實瀏覽器／部署 |
+| 聚焦 theme／gateway／runtime／download suite | pass | 缺陷收斂證據；正式報告另跑完整集合 |
+| 擴展 changed-unit set | pass | 缺陷收斂證據；正式報告另跑完整集合 |
+| 完整 `python -X utf8 -m pytest -q` | exit 0 | 正式 15-gate report 內重新執行 |
+| `deno test cloudflare/roster_viewer/worker_gateway_test.js` | 48 passed | 正式報告內執行；不代替 canonical deployment |
 | `scripts/verify_rc31_theme_controls.py` | 16 cases passed | 包含 Public→Admin／Guest 真實入口、簽署接力、目的工作區採納／優先、路由及伺服器 callback；仍不是部署後 canonical evidence |
-| `python -X utf8 scripts/run_security_checks.py` | PASS（dependency audit、static analysis、secret scan） | 在可變工作樹執行；凍結後重跑 |
+| `python -X utf8 scripts/run_security_checks.py` | PASS（dependency audit、static analysis、secret scan） | 正式報告內重新執行 |
 | `python -X utf8 -m pytest -q tests/test_documentation.py` | 38 passed | 鎖定目前來源漂移、乾淨回退 pair 及候選／部署分界 |
 | `python -X utf8 -m compileall -q nicegui_app packages tests scripts` | exit 0 | 語法／bytecode 檢查，不代替行為驗證 |
 | `git diff --check` | 沒有 whitespace error；只有既有 Windows LF→CRLF 提示 | 凍結後重跑 |
 
-已保存的完整 theme browser 證據：`C:\Users\lichu\AppData\Local\Temp\sing-yin-rc31-theme-6qq8xuk3\verification.json`。此臨時路徑只記錄本機驗證，不應進入 product repository 或被描述為正式部署證據。
+正式報告：`logs/release-candidate-report.json`；狀態 `pass`，15 checks，297 runtime source files，fingerprint `f1638aae580ba7785c430da7a668c6975a9f5bf40880e0cd0a6c0f6fc8be46ed`。臨時 browser artifacts 只作本機來源驗證，不進入產品 repository，也不描述為部署證據。
 
-## 7. PASS 前仍需完成
+## 7. 受控部署仍需完成
 
-1. 明確 stage `tests/test_roster_generator_integrity.py`，明確排除 untracked screenshot；凍結候選 commit。
-2. 由 final `git ls-files` 重新產生逐檔分類 ledger，確認沒有 unreadable、unclassified 或 silently skipped 路徑。
-3. 從凍結來源執行 focused checks、完整 pytest、Worker contracts、security／secret／dependency／hygiene、Admin／Guest isolation、backup／checksum／isolated restore、deployment-script 及 browser matrix。
-4. 執行 `python -X utf8 scripts/verify_update.py --release`，保存正式 report、source fingerprint、file inventory 及 dependency hashes。
-5. 把以下欄位填為實際值，並確認 release tag tree 與受審 tree 完全相同：
-   - `TBD_FINAL_COMMIT_SHA`
-   - `TBD_FINAL_TREE_SHA`
-   - `TBD_SOURCE_FINGERPRINT`
-   - `TBD_RELEASE_TAG`
-   - `TBD_FORMAL_GATE_REPORT`
-6. 只有上述項目全部通過、零 unresolved P0／P1／release-critical P2，方可把本報告 verdict 改為 `PASS`。
-7. PASS 後才可建立／推送正式 tag，並在保留目前主機差異證據後以 clean reviewed bundle 對帳 Windows origin、部署／推廣 Worker。部署後再填：
+1. 合併 protected main，建立並推送 annotated `v1.2.0-rc.31`，確認 tag 的 runtime fingerprint 與正式 report 完全相同。
+2. 保留目前主機 73 tracked／3 untracked 漂移的 status、diff 和雜湊證據，再以 clean reviewed bundle 切換 Windows origin；不得直接 reset 或把主機漂移誤納候選。
+3. 建立正式已驗證備份並完成隔離還原，再切換 origin；核對 `/healthz`、`/readyz`、tag 和 fingerprint。
+4. 部署相同來源的 Worker，先 0% version smoke，再推廣至 100%；保留 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 作已知乾淨 edge rollback。
+5. 部署後填寫：
    - origin commit／tag／source fingerprint；
    - Worker version 及 traffic；
    - canonical URL、`/healthz`、`/readyz`、Admin／Guest／Viewer rendered checks；
@@ -173,14 +166,14 @@
 
 ## 8. 目前判決
 
-**BLOCKED**
+**PASS TO CONTROLLED DEPLOYMENT**
 
-原因：最終候選仍是 dirty working tree，完整逐檔分類尚未對 final commit 凍結；正式 `--release`、tag/tree/fingerprint parity、備份／隔離還原及 canonical deployment evidence 亦未完成。更重要的是 `RC31-P1-006`：目前 Windows origin 與 Worker 均有來源漂移，必須由通過審查的 clean pair 受控重建一致性後才能解除。
+原因：code-bearing commit／tree 已完成差異審查，297-file runtime fingerprint 已通過正式 15-gate report，沒有未解決 P0／P1／release-critical P2。此判決只允許進入 protected-main／tag／受控部署，不表示 origin／Worker 已更新。
 
 因此目前：
 
-- **不允許**建立或推廣 production release tag；
-- **不允許**更新 `C:\SingYinRoster`；
-- **不允許**上傳或推廣 Cloudflare Worker；
+- **允許**在 protected-main parity 核對後建立 annotated rc31 tag；
+- **允許**先保存主機漂移證據，再由 clean reviewed bundle 受控更新 `C:\SingYinRoster`；
+- **允許**在 origin 驗證後 staged upload／promotion Cloudflare Worker；
 - **不允許**把 rc31 寫成已上線；
 - 現有服務保持運作，但只可稱為「來源未對帳的線上 runtime」；不得把它寫成 exact rc30、rc31 或任何已審 fingerprint。最近完整驗證的乾淨 pair 只作回退及比較基線。

@@ -2,7 +2,7 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
-## v1.2.0-rc.31 — source candidate, not deployed, 2026-07-28
+## v1.2.0-rc.31 — formal source candidate, not deployed, 2026-07-29
 
 - Replaces the primary three-choice appearance selector with one binary **Light／Dark** control across the NiceGUI workbench and public Worker surfaces.
 - Keeps `system` only as the missing／unset initialization state: an unset preference follows the operating system, the first activation stores the opposite resolved mode, and later activations alternate explicit Light and Dark.
@@ -15,8 +15,8 @@ This file records user-visible, operational and release-significant changes. Exa
 - Allows migration `0011_assist_assignment_mode` to downgrade only when persisted history remains legacy-only; any `flexible_weekly` history blocks downgrade.
 - Prevents Alembic's logging configuration from disabling the existing privacy-safe application logger, defensively re-enables local logging after migration, and adds a migration-then-log regression test.
 - Makes the Windows origin deployer perform a read-only prospective comparison of the protected host `SING_YIN_PORT`, `AUTH_EPOCH`, and `ORIGIN_PRINCIPAL_KID` with the immutable Worker configuration before it mutates the protected environment, stops the service, or switches source. It repeats the comparison after applying the environment and before stopping the service; either mismatch fails closed, and the deployment report records only the non-secret host／Worker identifiers plus `preflightMatched` and `postApplyMatched`.
-- Earlier 901／929 Python and eight-case direct Admin／Guest Chromium results are historical candidate slices. Latest focused regressions and all 48 Worker contracts pass; frozen-source full-suite, rendered Public→Admin／Guest theme-continuity, formal `--release`, commit／tag／fingerprint and deployment evidence remain pending and will be copied only from their final reports.
-- Keeps rc30 as the live Windows origin and canonical Worker baseline. Exact rc31 commit, source fingerprint, gate result, tag, verified backup, Worker version and deployment evidence are intentionally pending.
+- Earlier 901／929 Python and eight-case direct Admin／Guest Chromium results remain historical candidate slices. The formal release-candidate run on 2026-07-29 passed all 15 gates for the 297-file source fingerprint `f1638aae580ba7785c430da7a668c6975a9f5bf40880e0cd0a6c0f6fc8be46ed`, including the complete Python suite, 48 Worker contracts, 16 rendered Public→Admin／Guest theme-continuity cases, desktop／mobile／tablet, write／PDF／fairness／backup／restore, Guest isolation, runtime growth and security checks.
+- Keeps the source gate, deployment and supervised acceptance as separate facts. The operational Windows origin／canonical Worker remain provenance-drifted until the protected-main tag and controlled paired rollout complete; the clean rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` pair remains the last fully verified rollback baseline.
 
 ## v1.2.0-rc.30 — released, 2026-07-27
 
