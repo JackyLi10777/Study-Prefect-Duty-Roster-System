@@ -143,6 +143,13 @@ def render_nicegui_css(contract: Mapping[str, Any] | None = None) -> str:
         )
         for name, value in resolved_token_map(active_contract, "nicegui", mode).items():
             lines.append(f"  {name}: {value};")
+        # Keep Quasar's framework variables on the same selector as the
+        # semantic theme tokens.  System-theme resolution happens in the
+        # browser before the Python event round-trip, so a body--dark class
+        # change must update both layers without requiring a page reload.
+        for name, value in quasar_palette(active_contract, mode).items():
+            css_name = name.replace("_", "-")
+            lines.append(f"  --q-{css_name}: {value};")
         lines.append("}")
     lines.append("}")
     return "\n".join(lines) + "\n"

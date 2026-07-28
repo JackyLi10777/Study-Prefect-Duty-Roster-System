@@ -27,6 +27,8 @@ from nicegui_app.ui.page_catalog import (
 )
 from nicegui_app.ui.sound import play_interface_sound
 from nicegui_app.ui.theme import (
+    QUASAR_DARK_PALETTE,
+    QUASAR_LIGHT_PALETTE,
     adopt_verified_theme_handoff,
     apply_quasar_palette,
     apply_theme,
@@ -604,13 +606,28 @@ async def _toggle_theme_in_place(dark_mode, controls) -> None:  # type: ignore[n
 def _install_theme_control_runtime() -> None:
     """Synchronise system resolution, state semantics and open browser tabs."""
 
-    ui.run_javascript(
-        """
+    script = """
         (() => {
           window.__syThemeControlsCleanup?.();
           const controller = new AbortController();
           const signal = controller.signal;
           const media = matchMedia('(prefers-color-scheme: dark)');
+          const palettes = {
+            light: __QUASAR_LIGHT_PALETTE__,
+            dark: __QUASAR_DARK_PALETTE__,
+          };
+          const applyQuasarPalette = theme => {
+            const palette = palettes[theme];
+            if (!palette) return;
+            for (const [name, value] of Object.entries(palette)) {
+              const cssName = name.replaceAll('_', '-');
+              if (typeof window.Quasar?.setCssVar === 'function') {
+                window.Quasar.setCssVar(cssName, value, document.body);
+              } else {
+                document.body.style.setProperty(`--q-${cssName}`, value);
+              }
+            }
+          };
           const channel = typeof BroadcastChannel === 'function'
             ? new BroadcastChannel('sing-yin:appearance:v1') : null;
           const buttons = () => [...document.querySelectorAll('[data-sy-theme-toggle]')];
@@ -653,6 +670,7 @@ def _install_theme_control_runtime() -> None:
             if (!host || explicitPreference() !== 'system' || host.dataset.resolving === 'true') return;
             const browserResolved = media.matches ? 'dark' : 'light';
             if (host.dataset.serverResolved === browserResolved) return;
+            applyQuasarPalette(browserResolved);
             if (window.Quasar?.Dark) window.Quasar.Dark.set(browserResolved === 'dark');
             host.dataset.serverResolved = browserResolved;
             sync({animate: true});
@@ -664,6 +682,7 @@ def _install_theme_control_runtime() -> None:
           const applyExplicit = (theme, {animate = true, broadcast = false} = {}) => {
             if (theme !== 'light' && theme !== 'dark') return;
             for (const button of buttons()) button.dataset.themePreference = theme;
+            applyQuasarPalette(theme);
             if (window.Quasar?.Dark) window.Quasar.Dark.set(theme === 'dark');
             sync({animate});
             if (broadcast) channel?.postMessage({type: 'appearance', theme});
@@ -692,7 +711,10 @@ def _install_theme_control_runtime() -> None:
           reconcileSystemResolution();
         })();
         """
-    )
+    script = script.replace(
+        "__QUASAR_LIGHT_PALETTE__", json.dumps(QUASAR_LIGHT_PALETTE)
+    ).replace("__QUASAR_DARK_PALETTE__", json.dumps(QUASAR_DARK_PALETTE))
+    ui.run_javascript(script)
 
 
 def _header_control_classes(kind: str, *, mobile: bool = False) -> str:
