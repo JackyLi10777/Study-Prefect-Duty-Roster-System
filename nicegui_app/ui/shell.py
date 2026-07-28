@@ -804,6 +804,14 @@ def _install_mobile_drawer_accessibility() -> None:
           button.dataset.syDrawerA11y = 'ready';
           window.__syDrawerA11yOwner = button;
           const isMobile = () => matchMedia('(max-width: 900px)').matches;
+          const currentBackdrop = () => document.querySelector('.q-drawer__backdrop');
+          const backdropVisible = () => {
+            const backdrop = currentBackdrop();
+            if (!(backdrop instanceof HTMLElement)) return false;
+            const style = getComputedStyle(backdrop);
+            return backdrop.getClientRects().length > 0 && style.display !== 'none' &&
+              style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > .01;
+          };
           const isOpen = () => {
             if (!isMobile()) return false;
             const drawer = currentDrawer();
@@ -811,7 +819,7 @@ def _install_mobile_drawer_accessibility() -> None:
             const bounds = drawer.getBoundingClientRect();
             const style = getComputedStyle(drawer);
             return style.visibility !== 'hidden' && bounds.width > 0 &&
-              bounds.right > Math.min(44, bounds.width * .25);
+              bounds.right > Math.min(44, bounds.width * .25) && backdropVisible();
           };
           const focusable = () => {
             const drawer = currentDrawer();
@@ -839,15 +847,21 @@ def _install_mobile_drawer_accessibility() -> None:
             });
           };
           let observedShell = null;
+          let observedBackdrop = null;
           const observer = new MutationObserver(() => sync(false));
           const observeShell = () => {
             const drawer = currentDrawer();
             if (!drawer) return;
             const shell = drawer.closest('.q-drawer');
-            if (!shell || shell === observedShell) return;
+            const backdrop = currentBackdrop();
+            if (!shell || (shell === observedShell && backdrop === observedBackdrop)) return;
             observer.disconnect();
             observedShell = shell;
+            observedBackdrop = backdrop;
             observer.observe(shell, {attributes: true, attributeFilter: ['class', 'style', 'aria-hidden']});
+            if (backdrop instanceof HTMLElement) {
+              observer.observe(backdrop, {attributes: true, attributeFilter: ['class', 'style', 'aria-hidden']});
+            }
           };
           const sync = (focusDrawer = false) => {
             observeShell();
@@ -909,6 +923,7 @@ def _install_mobile_drawer_accessibility() -> None:
             settleFrame = 0;
             observer.disconnect();
             observedShell = null;
+            observedBackdrop = null;
             controller.abort();
             setBackgroundInert(false);
             if (window.__syDrawerA11yOwner === button) window.__syDrawerA11yOwner = null;
