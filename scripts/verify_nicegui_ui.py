@@ -435,7 +435,11 @@ def assert_component_grammar(page, screenshot_path: Path) -> None:  # type: igno
           const inner = element.querySelector('.q-checkbox__inner');
           const style = getComputedStyle(inner);
           return {
-            active: element === document.activeElement,
+            // A labelled native control may receive focus on its hidden input
+            // instead of the Quasar host in touch-emulated Chromium.  The
+            // production contract is :focus-within, so verify that semantic
+            // state rather than requiring one browser-specific active node.
+            active: element.matches(':focus-within'),
             style: style.outlineStyle,
             width: style.outlineWidth,
           };

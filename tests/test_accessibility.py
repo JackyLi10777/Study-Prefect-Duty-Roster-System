@@ -433,6 +433,13 @@ def test_semantic_status_badges_do_not_inherit_quasar_primary_background() -> No
     assert 'ratio >= 4.5' in verifier
 
 
+def test_component_focus_verifier_accepts_native_control_focus_within_host() -> None:
+    verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
+
+    assert "element.matches(':focus-within')" in verifier
+    assert "active: element === document.activeElement" not in verifier
+
+
 def test_durable_handlers_snapshot_visible_form_values_before_the_first_await() -> None:
     pages = combined_page_source()
 
