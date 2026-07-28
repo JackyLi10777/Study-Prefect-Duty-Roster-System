@@ -9,6 +9,7 @@ from scripts import verify_release_candidate
 from scripts.verify_rc31_theme_controls import (
     _close_mobile_drawer,
     _gateway_test_secrets,
+    _start_worker_harness,
     _worker_harness_source,
 )
 from scripts.verify_release_candidate import (
@@ -156,6 +157,67 @@ def test_rc31_worker_harness_keeps_one_use_credentials_out_of_generated_source()
     assert all(value not in harness for value in first.values())
     assert "Deno.env.get(name)" in harness
     assert "SING_YIN_TEST_ADMIN_SESSION_SECRET" in harness
+
+
+def test_rc31_worker_harness_injects_one_use_credentials_only_through_subprocess_environment(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeProcess:
+        def poll(self) -> None:
+            return None
+
+    class ReadyResponse:
+        status = 200
+
+        def __enter__(self) -> "ReadyResponse":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    def fake_popen(command: list[str], **kwargs: object) -> FakeProcess:
+        captured["command"] = command
+        captured["environment"] = kwargs["env"]
+        return FakeProcess()
+
+    secret_values = _gateway_test_secrets()
+    case_root = tmp_path / "worker-harness"
+    case_root.mkdir()
+    monkeypatch.setattr(
+        "scripts.verify_rc31_theme_controls.shutil.which",
+        lambda _name: "deno-test-runtime",
+    )
+    monkeypatch.setattr(
+        "scripts.verify_rc31_theme_controls._free_loopback_port",
+        lambda: 18767,
+    )
+    monkeypatch.setattr(
+        "scripts.verify_rc31_theme_controls.subprocess.Popen",
+        fake_popen,
+    )
+    monkeypatch.setattr(
+        "scripts.verify_rc31_theme_controls.urlopen",
+        lambda *_args, **_kwargs: ReadyResponse(),
+    )
+
+    _process, output, worker_url, _log_path = _start_worker_harness(
+        case_root,
+        origin_port=18768,
+        secret_values=secret_values,
+    )
+    output.close()
+
+    environment = captured["environment"]
+    assert isinstance(environment, dict)
+    assert environment["SING_YIN_TEST_ADMIN_SESSION_SECRET"] == secret_values["admin_session"]
+    assert environment["SING_YIN_TEST_GUEST_SESSION_SECRET"] == secret_values["guest_session"]
+    assert environment["SING_YIN_TEST_ORIGIN_PRINCIPAL_SECRET"] == secret_values["origin_principal"]
+    assert worker_url == "http://localhost:18767"
+    harness = (case_root / "worker-theme-harness.mjs").read_text(encoding="utf-8")
+    assert all(value not in harness for value in secret_values.values())
 
 
 def test_rc31_drawer_close_requires_focus_restoration_only_after_escape() -> None:
