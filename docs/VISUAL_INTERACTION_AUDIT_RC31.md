@@ -36,12 +36,12 @@ the authority for the final state.
   as the formal release verifier's fifteenth fingerprint-bound gate.
 - These checks describe only that earlier candidate slice.
 - On 2026-07-29 the exact 297-file runtime fingerprint
-  `f1638aae580ba7785c430da7a668c6975a9f5bf40880e0cd0a6c0f6fc8be46ed`
+  `696e6079a2abe671ad09e73c15353491541cf2c74bbd5f205e4eef17939d1ff0`
   passed the formal 15-gate release-candidate run. The rendered evidence includes
   16 Public→Admin／Guest continuity cases, desktop Light／Dark component grammar,
   390px phone, 768×1024 and 820×1180 touch tablets, 1024×768 desktop-shell touch,
   320px reduced motion, 256px reflow and 844×390 landscape. Runtime verification
-  observed +0 DOM nodes, +0 listeners and 0.46 MiB heap growth.
+  observed +0 DOM nodes, +0 listeners and 0.45 MiB heap growth.
 - This evidence is authoritative for the reviewed source behavior only. It does
   not claim a protected-main merge, annotated tag, Windows-origin deployment,
   Worker promotion, canonical online rendering or supervised human acceptance.
