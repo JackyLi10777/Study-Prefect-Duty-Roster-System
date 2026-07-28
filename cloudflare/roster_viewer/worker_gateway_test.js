@@ -504,6 +504,8 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assert(script.includes('function stageThemeHandoff()'));
   assert(script.includes('stageThemeHandoff();'));
   assert(script.includes("themeToggle.setAttribute('aria-pressed', String(isDark))"));
+  assert(script.includes('themeToggleLabel.textContent = nextCopy.current'));
+  assert(!script.includes('themeToggleLabel.textContent = copy.current'));
   assert(script.includes('let runtimeThemePreference = null'));
   assert(script.includes('runtimeThemePreference = theme'));
 });

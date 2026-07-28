@@ -1,9 +1,9 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
 > **線上來源真相（2026-07-28，取代下文舊狀態字樣）：** Windows runtime operational，但主機 rc30 checkout 已觀察到 73 個 tracked 修改及 3 個 untracked 項目，故不可稱為 exact rc30／已審核不可變 bundle。canonical Worker 目前為來源未歸屬的 `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed`。乾淨 rc30＋`11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是更早歷史版本。rc31 未部署，真人驗收未完成。任何回退先保存及歸屬主機漂移，禁止盲目 reset／覆寫。
-
+>
 > **歷史 rc30 乾淨發布證據：** Windows origin 曾以受控方式運行並驗證健康、ready 的 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；其 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% version smoke 後承接 100% 流量。canonical root、capability health 與 rendered desktop／320px／Guest Engineering checks 通過，private readiness 保持預期 redirect。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前復原先使用較近的乾淨 rc30／`11763f08…`。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
-
+>
 > **SSH 維護邊界（2026-07-17）：** Windows 主機另有只限 loopback、Ed25519 金鑰登入的 SSH 維護服務。目前只供主機本身的 Codex／受控終端使用；日後如新增校外 SSH，必須建立獨立的 Cloudflare 私有 SSH 路由指向 `localhost:22`，不可啟用 Windows OpenSSH 公開防火牆規則或路由器轉發。詳見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。
 
 ## 1. 日常使用者只需知道
@@ -254,8 +254,8 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 1. 恢復 maintenance；
 2. 以受控部署報告確認自動 rollback 的 `attempted`／`succeeded`、previous commit 及 previous Worker version；
-3. origin 事故：先保存及歸屬現行主機漂移，再以受控 clean bundle 回復 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；除非 gateway 亦受影響，不要同時改動 Worker；
-4. gateway 事故：把 traffic 恢復至最近已知已驗證 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`，不要為純 gateway 問題改動 origin；
+3. 在現行 origin／Worker 來源已漂移或未歸屬時，先保存及歸屬差異，再把 origin 回復至受控 clean bundle `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`，並把 Worker traffic 回復至配對驗證的 `11763f08-d40d-46d5-93dc-5ca2599d4154`；不得單側回退而形成未驗證組合；
+4. 只有來源指紋、身份參數、路由契約及相容性 gate 已證明另一側仍與目標版本相容時，事故負責人才可批准單側 origin 或 Worker 回退；報告必須記錄所用證據及配對版本；
 5. 核對 host commit、`/healthz`、`/readyz`／`writeReady=true`、Admin、Guest、Viewer、WebSocket、登出及資料狀態；
 6. 只有乾淨 rc30 無法安全恢復，且事故負責人明確批准更深復原時，才依序考慮 rc27、rc26 及 rc24 已驗證歷史；更舊版本只保留為證據；
 7. 如資料完整性受疑，使用受控 restore，而非手動覆寫 SQLite。

@@ -4,7 +4,8 @@ from dataclasses import replace
 
 import pytest
 
-from roster_core import Assignment, Prefect, generate_weekly_roster
+import roster_core.generator as generator_module
+from roster_core import Assignment, Prefect, RosterGenerationError, generate_weekly_roster
 from roster_core.generator import validate_assignments
 from roster_core.loaders import load_prefect_seed
 from roster_policy import DAYS, DutyPost, PrefectRole, RosterPolicyError, SchoolDay, duty_weight
@@ -138,6 +139,13 @@ def test_generation_backtracks_when_fairness_greedy_choice_blocks_later_day() ->
     assert tuesday_regular_ids == {"tue-alt-0", "tue-alt-1", "tue-alt-2"}
     assert {"bridge-0", "bridge-1", "bridge-2"} <= wednesday_regular_ids
     validate_assignments(assignments, prefects)
+
+
+def test_generation_fails_cleanly_when_search_budget_is_exhausted(monkeypatch) -> None:
+    monkeypatch.setattr(generator_module, "REGULAR_SCHEDULE_SEARCH_NODE_LIMIT", 0)
+
+    with pytest.raises(RosterGenerationError, match="safe search limit"):
+        generate_weekly_roster(_greedy_trap_directory())
 
 
 @pytest.fixture

@@ -11,11 +11,11 @@
 > **部署時發現的主機漂移：**切換前 `C:\SingYinRoster` 的 rc20 checkout 有 26 個未提交／未追蹤項目。發布流程沒有把它們混入候選，而是完整保存為 stash commit `56e2f5148f4be1444c45d31c25b81f5a7df1ba03`，再從不可變 rc21 tag 部署；除非先作獨立差異審查，切勿把這份 stash 套回正式主機。
 >
 > **歷史 rc18 受控發布（已由 rc20 取代）：**annotated tag `v1.2.0-rc.18`／commit `fd504a8` 曾是 live origin。288 個發布輸入以指紋 `de0612fb8d9ee0530ba108efb1f658ab06e3e2212477fdb8832eb9ab3c0e1664` 通過 14／14 gate；正式備份 `20260722-024349-422389-manual_verified_backup.sqlite3`、SHA-256 `51ad0e42284c0d42363d2f8fd2bc3dc70ae0ce1f79d258016ec2d66bf6741c7f` 及隔離還原通過。這只是歷史回復證據，不是 rc26 的目前回退層級。
-
+>
 > **手機／平板／桌面共存規則：**平板不是放大的手機，桌面也不可繼承平板壓縮。768×1024 及 820×1180 直向平板使用 adaptive shell，操作表單維持一欄，支援卡片可使用兩欄；1024×768 橫向觸控平板保留 compact desktop shell，但操作及文件區不得壓成多個狹窄欄，證據與下載最多兩欄；1440×1024 保留 full desktop shell 與閱讀寬度。四個 viewport 屬於同一候選裝置矩陣，並與手機共用同一網址、身份、路由、資料、排班規則、審計、PDF 及返回邏輯。
-
+>
 > **歷史 rc4 rollout 記錄（不可作現行步驟）：** rc4 已成功把正式 Alembic schema 由 `0007` 升至 `0008`，建立已驗證備份並完成隔離還原；其後 `git fetch origin main` 只更新 `FETCH_HEAD`，而 ancestry gate 讀取 stale `origin/main`，造成假失敗。rc4 因而從未被宣告為 live。自動 rollback 未能證明 origin health 後，主機以相容的 rc4／`30f282f` 完成 forward recovery；rc5／`bafaef6` 已改用明確 remote-tracking refspec，並重新通過完整 13-gate 報告。
-
+>
 > **歷史 rc7 分階段規則（現已完成）：** origin 階段阻擋每一個 failure 及所有其他 warning；只有明確依賴尚未部署 Worker 的 `cloudflare_access` 可暫時延後。匹配 Worker 上線後，這項檢查以及 Admin／Guest／Viewer／WebSocket 線上驗收全部通過，才結束 maintenance。後續發布須依本文件的通用受控次序重新產生候選專屬證據，不可重用 rc7 標籤或報告。
 
 ## 運作原則
@@ -192,7 +192,7 @@ python -X utf8 -m nicegui_app.main
 5. 完成一批更新後先執行 `python -X utf8 scripts\verify_update.py`。它會按 Git 變更自動選擇 `docs`、`tests`、`assurance`、`worker` 或 `full`，並顯示執行及略過理由；未知路徑一律升級，不會靜默少驗證。只有正式 runtime、政策、資料庫、依賴、Worker、Windows 主機或正式證據閘門改動，才需要先安裝 `requirements-dev.lock`、Chromium 及 Deno，再由同一命令啟動完整 `verify_release_candidate.py`。乾淨 rc30 的歷史 exact-source report 有 14 道閘門；後續候選的實際 gate 數量及結果只可引用該候選凍結來源所產生的 `logs/release-candidate-report.json`，不可沿用 rc30 或早期 rc31 計數。正式 verifier 自行建立臨時資料庫、備份及日誌，絕不採用正式學校資料路徑；只有報告所有項目均為 `pass` 且 runtime 指紋仍相符，才算機器驗證完成。文件、測試及 CI 改動另有聚焦證據，不會令已證實的 runtime 誤報過期；詳細矩陣見 `docs/UPDATE_WORKFLOW.md`。這不能取代下方的人手驗收。
    `D:\code_v3` 是開發及驗證副本，`C:\SingYinRoster` 是目前工作排程器實際執行的安裝副本；修改前者不會自動更新後者。完成驗證後仍須依 Windows 專用主機手冊第 12 節備份、停止、更新、重新啟動及核對，否則瀏覽器會繼續顯示舊版。
 6. 不要在 `verify_update.py` 或完整 verifier 通過後再重跑同一套 hygiene／security；它們已由所選 profile 擁有。只有單獨調查某一道閘門時才直接執行相應腳本。發布前仍須人工閱讀 `git status --short`，不可用未核對的 `git add -A`；沒有真正 commit 歷史、被追蹤的運行資料，或尚未加入 Git 的發布敏感程式／遷移／Cloudflare／設定／交接文件，都會由 repository hygiene 阻擋。
-7. 受控 Windows 部署會先以唯讀方式把受保護主機 `.env` 與一次性 overlay 合併成候選設定；在修改 `.env`、停止排程工作或切換來源前，核對 loopback port、`AUTH_EPOCH` 及 `ORIGIN_PRINCIPAL_KID` 與候選 `wrangler.jsonc` 完全一致。套用後、停機前會再核對一次；任何差異都會 fail closed。成功報告只記錄非秘密的 host／Worker port、epoch、KID 及 `preflightMatched=true`／`postApplyMatched=true`，絕不記錄 principal secret。
+7. 受控 Windows 部署會先以唯讀方式把受保護主機 `.env` 與一次性 overlay 合併成候選設定；在修改 `.env`、停止排程工作或切換來源前，核對 loopback port、`AUTH_EPOCH` 及 `ORIGIN_PRINCIPAL_KID` 與候選 `wrangler.jsonc` 完全一致。套用後、停機前會再核對一次；任何差異都會 fail closed。只有完整部署成功才刪除一次性 overlay；失敗或回退未完成時會保留該受保護檔案供同一次受控重試，維護者不得把它貼入工單、版本庫或日誌。成功報告只記錄非秘密的 host／Worker port、epoch、KID 及 `preflightMatched=true`／`postApplyMatched=true`，絕不記錄 principal secret。
 
 ### 操作失敗與本機支援記錄
 

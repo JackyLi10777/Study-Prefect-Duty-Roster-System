@@ -17,8 +17,8 @@ def test_readiness_requires_database_maintenance_and_recovery_to_be_clear() -> N
 
     for runtime in (
         {"workflowInitialized": False, "maintenance": False, "recoveryRequired": False},
-        {"maintenance": True, "recoveryRequired": False},
-        {"maintenance": False, "recoveryRequired": True},
+        {"workflowInitialized": True, "maintenance": True, "recoveryRequired": False},
+        {"workflowInitialized": True, "maintenance": False, "recoveryRequired": True},
     ):
         payload, status = compose_readiness_payload(
             {"status": "ok"},

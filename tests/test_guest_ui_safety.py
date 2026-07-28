@@ -205,8 +205,9 @@ def test_generated_file_capacity_failure_is_reported_to_caller(
     monkeypatch.setattr(
         downloads.ui,
         "notify",
-        lambda message, *, type=None: notifications.append((message, type)),
+        lambda message, **kwargs: notifications.append((message, kwargs.get("type"))),
     )
+    monkeypatch.setattr(downloads, "new_request_reference", lambda: "REQ-CAPACITY")
 
     delivered = downloads.deliver_generated_download(
         b"fictional-demo",
@@ -216,6 +217,7 @@ def test_generated_file_capacity_failure_is_reported_to_caller(
 
     assert delivered is False
     assert notifications and notifications[-1][1] == "warning"
+    assert "REQ-CAPACITY" in str(notifications[-1][0])
 
 
 def test_generated_file_callers_do_not_report_success_after_delivery_failure() -> None:

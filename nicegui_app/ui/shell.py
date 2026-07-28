@@ -627,16 +627,22 @@ def _install_theme_control_runtime() -> None:
             const current = resolved();
             const isDark = current === 'dark';
             for (const button of buttons()) {
-              const label = isDark ? button.dataset.actionLight : button.dataset.actionDark;
+              const label = (isDark ? button.dataset.actionLight : button.dataset.actionDark) || '';
               button.dataset.themeResolved = current;
               button.setAttribute('aria-pressed', String(isDark));
               button.setAttribute('aria-label', label);
               button.title = label;
               const icon = button.querySelector('.q-icon');
               if (icon) icon.textContent = isDark ? 'dark_mode' : 'light_mode';
-              const text = button.dataset.syThemeShowLabel === 'true'
-                ? button.querySelector('.q-btn__content > span:not(.q-icon)') : null;
+              const content = button.dataset.syThemeShowLabel === 'true'
+                ? button.querySelector('.q-btn__content') : null;
+              const text = content?.querySelector('[data-sy-theme-label], span:not(.q-icon)');
               if (text) text.textContent = label;
+              else if (content) {
+                const textNode = [...content.childNodes].find(node =>
+                  node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+                if (textNode) textNode.textContent = label;
+              }
               if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 button.dataset.syIconChanging = 'true';
                 setTimeout(() => delete button.dataset.syIconChanging, 220);

@@ -25,6 +25,7 @@ class RosterGenerationError(RuntimeError):
 
 HISTORY_PRIORITY_MULTIPLIER_MIN = 0.8
 HISTORY_PRIORITY_MULTIPLIER_MAX = 2.0
+REGULAR_SCHEDULE_SEARCH_NODE_LIMIT = 50_000
 
 
 def _normalized_history_priority_multiplier(value: float) -> float:
@@ -701,6 +702,7 @@ def _solve_regular_schedule(
     assigned_by_day: dict[SchoolDay, set[str]] = defaultdict(set)
     selected: list[Assignment | None] = [None] * len(slots)
     failed_states: set[tuple[int, tuple[tuple[str, int], ...]]] = set()
+    visited_nodes = 0
 
     def state_key(slot_index: int) -> tuple[int, tuple[tuple[str, int], ...]]:
         day_masks = tuple(
@@ -716,6 +718,13 @@ def _solve_regular_schedule(
         return slot_index, day_masks
 
     def solve(slot_index: int) -> bool:
+        nonlocal visited_nodes
+        visited_nodes += 1
+        if visited_nodes > REGULAR_SCHEDULE_SEARCH_NODE_LIMIT:
+            raise RosterGenerationError(
+                "Roster generation stopped after reaching the safe search limit. "
+                "Review availability and leave constraints, then try again."
+            )
         if slot_index == len(slots):
             return True
 

@@ -1,7 +1,7 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
 > **線上來源真相（2026-07-28）：**目前 Windows runtime operational，但其 rc30 checkout 已觀察到 73 tracked 修改及 3 untracked 項目；canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 來源未歸屬。active pair 因此不是 exact rc30／指紋相符。乾淨 rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是較舊歷史版本。rc31 未部署，真人驗收未完成。下文任何「live rc30／目前回退層級」字樣只保留歷史上下文，由本段取代。
-
+>
 > **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 當時承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；canonical public root、capability health、desktop／320px theme control 及 Guest Engineering ≈10B disclosure 已以 live Chromium 核對，private readiness 保持預期 redirect。
 >
 > **復原層級：**先保存並歸屬現有漂移，第一個已知已驗證的 clean pair 是 rc30／`74b84f…` 加 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`。rc27／`c4c728aa…`、rc26／`248955cb…` 及 Worker `d7b51f21…` 只屬更深一層的歷史復原來源。
