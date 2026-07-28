@@ -52,7 +52,9 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert 'more = page.get_by_test_id("mobile-more")' in verifier
     assert "dataset.syDrawerA11y === 'ready'" in verifier
     assert "more.click()" in verifier
-    assert "main#main-content')?.inert === true" in verifier
+    assert "button?.getAttribute('aria-expanded') === 'true'" in verifier
+    assert "drawer?.contains(document.activeElement)" in verifier
+    assert "main#main-content')?.inert === true" not in verifier
     assert "main#main-content')?.inert !== true" in verifier
     assert 'mobile_navigation.locator("button").last.click()' not in verifier
 
