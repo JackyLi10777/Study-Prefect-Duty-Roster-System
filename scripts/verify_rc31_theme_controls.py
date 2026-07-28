@@ -840,6 +840,32 @@ def _public_theme_state(
     )
 
 
+def _is_expected_gateway_handoff_request_failure(
+    failure: str,
+    *,
+    worker_url: str,
+    origin_url: str,
+) -> bool:
+    """Classify disposable transport noise after the handoff is proven.
+
+    The Admin callback returns to an HTTPS public root while the disposable
+    Worker harness intentionally listens on plain HTTP.  Route replacement can
+    also cancel a redundant, already-fulfilled ``/auth/status`` poll after the
+    hydrated workbench and its theme persistence have been verified.  These
+    failures are safe to suppress only at the end of the successful handoff
+    case; every other browser transport failure remains release-blocking.
+    """
+
+    disposable_edge = f"https://{urlsplit(worker_url).netloc}/"
+    disposable_http_root = f"{worker_url}/"
+    origin_status = f"{origin_url.rstrip('/')}/auth/status"
+    return (
+        failure.startswith(f"public: GET {disposable_edge}: net::ERR_")
+        or failure == f"public: GET {disposable_http_root}: net::ERR_ABORTED"
+        or failure == f"origin: GET {origin_status}: net::ERR_ABORTED"
+    )
+
+
 def _exercise_gateway_handoff_case(
     browser: Browser,
     evidence_root: Path,
@@ -1127,18 +1153,21 @@ def _exercise_gateway_handoff_case(
             evidence_root / "screenshots",
             f"{case_id}-workbench-{target}",
         )
-        disposable_edge = f"https://{urlsplit(worker_url).netloc}/"
-        disposable_http_root = f"{worker_url}/"
-        expected_edge_failures = [
+        expected_harness_failures = [
             failure
             for failure in request_failures
-            if failure.startswith(f"public: GET {disposable_edge}: net::ERR_")
-            or failure == f"public: GET {disposable_http_root}: net::ERR_ABORTED"
+            if _is_expected_gateway_handoff_request_failure(
+                failure,
+                worker_url=worker_url,
+                origin_url=environment["SING_YIN_TEST_URL"],
+            )
         ]
-        if expected_edge_failures and len(expected_edge_failures) == len(request_failures):
+        if expected_harness_failures and len(expected_harness_failures) == len(request_failures):
             # Establishing the Admin session makes the real Worker return to its
             # public HTTPS root.  This disposable harness intentionally exposes
             # only plain HTTP, so Chromium's failed TLS retry is harness noise.
+            # Replacing the hydrated origin route may also abort a redundant
+            # status poll after the acceptance assertions have already passed.
             # The signed session/principal and hydrated origin assertions above
             # remain the acceptance boundary.
             request_failures.clear()
