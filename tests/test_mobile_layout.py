@@ -36,6 +36,9 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert "observer.observe(backdrop" in shell
     assert "event.target.closest('.q-drawer__backdrop')" in shell
     assert "const settle = (expectedOpen, focusDrawer = false)" in shell
+    assert "return isMobile() ? open : drawerVisible" in shell
+    assert "drawerButtons().forEach(trigger =>" in shell
+    assert "settle(expectedOpen, trigger === button && expectedOpen)" in shell
     assert "settleFrame = requestAnimationFrame(tick)" in shell
     assert "performance.now() - startedAt >= 3000" in shell
     assert "setTimeout(() => sync(true), 220)" not in shell

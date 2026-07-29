@@ -930,7 +930,7 @@ def _install_mobile_drawer_accessibility() -> None:
               first?.focus({preventScroll: true});
             }
             if (wasOpen && !open) button.focus({preventScroll: true});
-            return open;
+            return isMobile() ? open : drawerVisible;
           };
           const settle = (expectedOpen, focusDrawer = false) => {
             if (settleFrame) cancelAnimationFrame(settleFrame);
@@ -946,10 +946,12 @@ def _install_mobile_drawer_accessibility() -> None:
             };
             settleFrame = requestAnimationFrame(tick);
           };
-          button.addEventListener('click', () => {
-            const expectedOpen = button.getAttribute('aria-expanded') !== 'true';
-            settle(expectedOpen, expectedOpen);
-          }, {signal: controller.signal});
+          drawerButtons().forEach(trigger => {
+            trigger.addEventListener('click', () => {
+              const expectedOpen = trigger.getAttribute('aria-expanded') !== 'true';
+              settle(expectedOpen, trigger === button && expectedOpen);
+            }, {signal: controller.signal});
+          });
           document.addEventListener('click', event => {
             if (!(event.target instanceof Element) || !event.target.closest('.q-drawer__backdrop')) return;
             settle(false, false);

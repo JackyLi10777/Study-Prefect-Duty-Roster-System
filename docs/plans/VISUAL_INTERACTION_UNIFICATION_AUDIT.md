@@ -1,7 +1,7 @@
 # Visual and Interaction Unification Audit
 
 **Date:** 2026-07-29
-**Candidate branch:** `codex/rc32-ui-command-id-fix`
+**Candidate branches:** `codex/rc32-ui-command-id-fix`, followed by the focused `codex/rc32-drawer-state-fix`
 **Scope:** Public entrance, Admin／Guest workbench, desktop header, sidebar, mobile drawer and tab bar, settings, support, public viewer, shared controls and responsive states.
 
 ## Decision brief
@@ -26,6 +26,8 @@
 ## Audit result
 
 No verified defect requires changes to roster policy, fairness, authentication, Guest capability isolation, backups, recovery, data retention or database schema. The release candidate is therefore limited to shared presentation, accessible state synchronisation, motion lifecycle, browser verification and matching documentation.
+
+The first formal rc32 browser gate exposed one additional boundary case: the desktop drawer moved off-screen correctly, but its shared reconciliation loop stopped after checking the mobile-open condition and left `aria-expanded` and the persistent glyph stale. The focused follow-up binds both drawer triggers to the same cancellable reconciliation loop while selecting the real mobile-open or desktop-visible state for the current viewport. This is a release-blocking accessibility correction, not a relaxed assertion or a change to navigation behaviour.
 
 The authoritative acceptance evidence is produced by:
 
