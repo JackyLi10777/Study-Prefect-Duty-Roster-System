@@ -891,7 +891,11 @@ try {
         [bool]$releaseReport.humanAcceptanceRequired -ne $true -or
         $null -eq $releaseReport.toolVersions -or
         $reportRequiredChecks.Count -ne $requiredCheckCount -or
-        (Compare-Object -ReferenceObject $requiredChecks -DifferenceObject $reportRequiredChecks -SyncWindow 0).Count -ne 0 -or
+        (
+            Compare-Object `
+                -ReferenceObject @($requiredChecks | Sort-Object) `
+                -DifferenceObject @($reportRequiredChecks | Sort-Object)
+        ).Count -ne 0 -or
         $releaseReport.status -cne "pass" -or
         $reportChecks.Count -ne $requiredCheckCount -or
         $passedNames.Count -ne $requiredCheckCount -or
