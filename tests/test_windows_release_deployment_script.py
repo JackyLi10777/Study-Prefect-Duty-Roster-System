@@ -184,6 +184,14 @@ def test_deployment_script_requires_the_current_release_gate_fingerprint() -> No
     assert "twelve-gate" not in source.lower()
 
 
+def test_deployment_script_compares_release_gate_identities_without_order_semantics() -> None:
+    source = _source()
+
+    assert "-ReferenceObject @($requiredChecks | Sort-Object)" in source
+    assert "-DifferenceObject @($reportRequiredChecks | Sort-Object)" in source
+    assert "-SyncWindow 0" not in source
+
+
 def test_deployment_script_requires_worker_and_host_gateway_settings_to_match() -> None:
     source = _source()
 
