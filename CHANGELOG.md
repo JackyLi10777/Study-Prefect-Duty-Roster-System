@@ -2,7 +2,21 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
-## v1.2.0-rc.32 — R5／R6 remediation candidate, not yet released, 2026-07-29
+## v1.2.0-rc.35 — released, 2026-07-29
+
+- Ships the R5／R6 security and recovery controls, unified Light／Dark handoff, and one system-wide semantic icon morph grammar without layout drift, rotation, or competing animation systems.
+- Keeps persistent truth ahead of temporary hover/focus previews; synchronizes mobile menu lifecycle with `aria-expanded`; preserves static, reduced-motion, forced-colour, disabled, busy, keyboard and touch behavior.
+- Passed all 15 formal gates against the 297-file fingerprint `121302ae68946f43b7eedc93ed0dc9186574f5e42e06551d1fe120263c47e075` at annotated tag `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4`.
+- Deployed to the Windows origin after verified backup `20260729-073307-909072-manual_verified_backup.sqlite3` (SHA-256 `f3fb18b53a9f93129d42da71ba47c85c166caf8c9ae8c1289955bf5f103e9c7f`) and isolated restore; `/healthz` and `/readyz` passed with `writeReady=true`.
+- Promoted Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` from 0% staged smoke to 100% traffic. Cloudflare Access, rendered desktop/mobile Guest language and theme continuity, mobile menu lifecycle, and Viewer recovery passed with zero console/page errors.
+- Records rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2` and Worker `7816b183-3edb-49ca-b39b-a91091ae794f` as the first origin and edge rollback targets. Supervised human acceptance remains open.
+
+## v1.2.0-rc.33–rc.34 — release-tool corrections, superseded by rc35, 2026-07-29
+
+- Made host/Worker release-gate identity comparisons order-independent and safe under Windows PowerShell 5.1 strict mode when no differences exist.
+- Both failed attempts stopped before source switching or Worker upload; no production data or traffic was changed.
+
+## v1.2.0-rc.32 — R5／R6 remediation source history, superseded by rc35, 2026-07-29
 
 - Resolves OS-theme changes in place so unfinished forms, focus, scroll and dialogs are not discarded by a page reload.
 - Rechecks the verified Admin／Guest principal immediately before every workflow write; an expired long-lived page or WebSocket cannot retain write authority.
@@ -10,7 +24,7 @@ This file records user-visible, operational and release-significant changes. Exa
 - Parses and re-encodes support PNG files with bounded dimensions／pixels／chunks／output, removing nonessential metadata and rejecting malformed, truncated and polyglot payloads.
 - Binds formal release-report schema 2 to clean Git commit／tree／planned annotated tag, exact checks and tool versions; deployment scripts reject stale or source-mismatched reports.
 - Rejects unsupported `::1` NiceGUI origin binding and obvious secret placeholders, makes internal-backup workflow fencing explicit, revalidates staged local music before replacement, and adds manual clipboard recovery.
-- This section describes working source only. It does not become a release or deployment record until protected-main, tag, formal report, backup／restore and paired origin／Worker evidence exist.
+- This section records the earlier working-source stage. The completed protected-main, tag, formal report, backup／restore and paired origin／Worker evidence is recorded under rc35 above.
 
 ## v1.2.0-rc.31 — formal source candidate, not deployed, 2026-07-29
 

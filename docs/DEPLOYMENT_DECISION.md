@@ -1,6 +1,6 @@
 # 部署與遠端存取決策指南 / Deployment decision
 
-> **線上來源真相（2026-07-29）：** clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459` 正在 Windows origin 運行；canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 承接 100% 流量。R5／R6 修復仍是 rc32 工作候選，未部署；因 Worker source 已修改，獲批後必須以同一 immutable tag 配對部署 origin 及 Worker。rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退；真人驗收未完成。
+> **線上來源真相（2026-07-29）：** clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4` 正在 Windows origin 運行；canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量。相同 immutable tag 已完成 15／15 gate、正式備份與隔離還原、配對 origin／Worker 部署及 canonical browser checks。第一個 origin／Worker 回退分別為 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2` 及 `7816b183-3edb-49ca-b39b-a91091ae794f`；真人驗收未完成。
 >
 > **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker 是已驗證 version `11763f08-d40d-46d5-93dc-5ca2599d4154`。296 個 runtime 來源檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前備份 `20260727-023041-069097-manual_verified_backup.sqlite3`／SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 通過 0% version smoke 後升至 100%；origin readiness 與 canonical rendered smoke 通過。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；在目前來源漂移狀態下，最近乾淨 rc30＋`11763f08…` 本身才是第一個已知、已驗證的復原目標。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
 

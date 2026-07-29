@@ -1,6 +1,6 @@
 # Windows 專用主機完整設定手冊
 
-> **主機來源真相（2026-07-29）：** `C:\SingYinRoster` 正運行 clean annotated `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`；健康及 readiness 均通過。R5／R6 修復是尚未審核、標記或部署的 rc32 工作候選。rc30 是立即已知已驗證 origin 回退；真人驗收未完成。
+> **主機來源真相（2026-07-29）：** `C:\SingYinRoster` 正運行 clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`，配對 canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量；健康及 readiness 均通過。受控部署前備份、隔離還原、資料行數、公平對帳及 restore audit 已核對。第一個 origin 回退是 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2`；第一個 Worker 回退是 `7816b183-3edb-49ca-b39b-a91091ae794f`。真人驗收未完成。
 
 **適用系統：** Sing Yin Study Prefect Duty Roster System（NiceGUI + SQLite）
 **讀者：** 完全不懂程式、第一次設定電腦的人

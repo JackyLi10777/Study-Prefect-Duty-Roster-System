@@ -1,6 +1,6 @@
 # 正式驗收證據矩陣 / Acceptance evidence matrix
 
-> **線上來源真相（2026-07-29）：** clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459` 正在 Windows origin 運行；canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 為 100% 流量版本。R5／R6 修復仍是 rc32 工作候選，未完成受保護發布或部署。rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退；真人驗收仍未完成。
+> **線上來源真相（2026-07-29）：** clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4` 正在 Windows origin 運行；canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 為 100% 流量版本。297-file 指紋 `121302ae68946f43b7eedc93ed0dc9186574f5e42e06551d1fe120263c47e075` 通過 15／15 gate；正式備份及隔離還原、origin readiness、Cloudflare Access、桌面／手機 Guest、語言／主題及 Viewer 復原頁均已核對。rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2` 與 Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 分別是第一個 origin／edge 回退；真人驗收仍未完成。
 
 本文件把機器驗證與真人驗收分開。`logs/release-candidate-report.json` 顯示 `pass`，只代表下列自動化證據在隔離虛構資料中通過；它不代表實際名單、學校做法、專用電腦、加密離機位置或外部存取決定已獲真人批准。
 

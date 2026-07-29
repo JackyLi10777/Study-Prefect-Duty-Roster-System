@@ -1,6 +1,6 @@
 # 更新、驗證與上傳：一個命令完成正確層級
 
-> **線上來源真相（2026-07-29）：**目前 runtime operational，但 Windows host checkout 已由 rc30 漂移（73 tracked＋3 untracked），canonical Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed` 亦未建立來源歸屬。乾淨 rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；`11763f08…` 是立即已知已驗證 edge 回退，`d7b51f21…` 是較舊歷史版本。rc31 可部署來源已凍結並以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過 15／15 正式候選閘門，但未合併受保護的 `main`、未標記、未部署。下文所有「live rc30／唯一線上基線／第一級回退」字樣只保留歷史上下文，均由本段取代。健康閘門或候選驗證不等於部署或真人驗收。
+> **線上來源真相（2026-07-29）：**目前 runtime 是 clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`，canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量。297-file 指紋 `121302ae68946f43b7eedc93ed0dc9186574f5e42e06551d1fe120263c47e075` 通過 15／15 gate，並完成正式備份、隔離還原、配對部署及 canonical browser checks。第一個 origin／Worker 回退分別為 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2` 及 `7816b183-3edb-49ca-b39b-a91091ae794f`。下文較舊 live／candidate 字樣只保留歷史；健康閘門或候選驗證仍不等於部署或真人驗收。
 
 我是李創杰。這份流程是我與 Codex 對正式發布工作的反思結果：更新慢的主因不是 Git 上傳，而是過去把每次文字或測試修改都當成完整 runtime 發布。
 

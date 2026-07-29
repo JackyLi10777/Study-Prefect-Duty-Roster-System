@@ -1,6 +1,6 @@
 # 快速啟動 / Quick start
 
-> **線上來源真相（2026-07-29）：** Windows origin 正運行 clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`，canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 承接 100% 流量。R5／R6 修復仍是未審核、未標記、未部署的 rc32 工作候選。rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退；真人驗收未完成。
+> **線上來源真相（2026-07-29）：** Windows origin 正運行 clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`，canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量。正式備份／隔離還原、readiness、Cloudflare Access 及 canonical desktop／mobile browser checks 已通過。第一個 origin／Worker 回退分別為 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2` 及 `7816b183-3edb-49ca-b39b-a91091ae794f`；真人驗收未完成。
 >
 > **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 發布輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量。這組 clean pair 是目前第一個已知、已驗證的復原目標；rc27／`c4c728aa…` 與 Worker `d7b51f21…` 只屬更深歷史。
 >

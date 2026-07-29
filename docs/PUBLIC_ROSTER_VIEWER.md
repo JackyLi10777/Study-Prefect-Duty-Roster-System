@@ -1,6 +1,6 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **線上來源真相（2026-07-29）：** Windows origin 正運行 clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`；canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 承接 100% 流量。R5／R6 修復仍是 rc32 工作候選，未部署。rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退；真人驗收未完成。
+> **線上來源真相（2026-07-29）：** Windows origin 正運行 clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`；canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量。Public、Guest、Admin Access 入口及無完整密鑰的 Viewer 安全復原頁已以 canonical Chromium 核對。第一個 origin／Worker 回退分別為 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2` 及 `7816b183-3edb-49ca-b39b-a91091ae794f`；真人驗收未完成。
 >
 > **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 當時承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；canonical public root、capability health、desktop／320px theme control 及 Guest Engineering ≈10B disclosure 已以 live Chromium 核對，private readiness 保持預期 redirect。
 >

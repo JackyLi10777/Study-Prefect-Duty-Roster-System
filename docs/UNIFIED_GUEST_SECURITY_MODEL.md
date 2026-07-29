@@ -1,6 +1,6 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
-> **線上來源真相（2026-07-29）：** clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459` 正在 Windows origin 運行，Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 承接 100% 流量。R5／R6 的有限 Guest receipt metadata、真實 replay 標記及弱 secret placeholder 拒絕仍屬 rc32 工作候選，未部署。rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退；真人驗收未完成。
+> **線上來源真相（2026-07-29）：** clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4` 正在 Windows origin 運行，Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量。R5／R6 的有限 Guest receipt metadata、真實 replay 標記及弱 secret placeholder 拒絕已納入這次配對發布；desktop／390px Guest、語言／主題 continuity 及登出生命週期的正式候選證據已通過。第一個 Worker 回退是 `7816b183-3edb-49ca-b39b-a91091ae794f`；真人驗收未完成。
 >
 > **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 來源檔案以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate 並完成受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量。這組 clean pair 是目前第一個已知、已驗證的復原目標；rc27／`c4c728aa…` 與 Worker `d7b51f21…` 是更深歷史。Admin、Guest 與公開 Viewer 使用同一身份邊界；該次 deployment report 證實當時 origin ready 且無 maintenance、recovery 或 pending backup obligation，真人身份與工作流驗收仍保持獨立未完成。
 

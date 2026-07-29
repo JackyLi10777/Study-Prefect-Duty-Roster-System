@@ -1,6 +1,6 @@
 # 首席導學風紀操作手冊 / Head Study Prefect operator guide
 
-> **目前服務狀態（2026-07-29）：**服務正以 clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459` 及 canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 運行。R5／R6 修復仍是未部署的 rc32 工作候選；rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退。真人驗收仍未完成；一般操作員不要自行重設、覆寫或切換主機。
+> **目前服務狀態（2026-07-29）：**服務正以 clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4` 及 canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 運行。正式備份、隔離還原、主機 readiness、Cloudflare Access 及線上瀏覽器核對已通過；真人驗收仍未完成。一般操作員不要自行重設、覆寫或切換主機。
 >
 > **歷史 rc30 乾淨發布證據：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 配 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；rc27／`c4c728aa…` 與 `d7b51f21…` 是更深歷史。Assist. in charge 可選固定星期或每週靈活模式；Public 支援回報只在瀏覽器生成，已驗證 Admin／Guest 使用同一 NiceGUI 支援流程。首席導學風紀及教師顧問真人驗收仍待完成。
 
