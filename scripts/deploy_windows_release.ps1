@@ -881,6 +881,11 @@ try {
     )
     $unexpectedNames = @($passedNames | Where-Object { $_ -notin $requiredChecks })
     $missingNames = @($requiredChecks | Where-Object { $_ -notin $passedNames })
+    $reportIdentityDifferences = @(
+        Compare-Object `
+            -ReferenceObject @($requiredChecks | Sort-Object) `
+            -DifferenceObject @($reportRequiredChecks | Sort-Object)
+    )
     if (
         [int]$releaseReport.schemaVersion -ne 2 -or
         [string]$releaseReport.sourceCommit -cne $releaseCommit -or
@@ -891,11 +896,7 @@ try {
         [bool]$releaseReport.humanAcceptanceRequired -ne $true -or
         $null -eq $releaseReport.toolVersions -or
         $reportRequiredChecks.Count -ne $requiredCheckCount -or
-        (
-            Compare-Object `
-                -ReferenceObject @($requiredChecks | Sort-Object) `
-                -DifferenceObject @($reportRequiredChecks | Sort-Object)
-        ).Count -ne 0 -or
+        $reportIdentityDifferences.Count -ne 0 -or
         $releaseReport.status -cne "pass" -or
         $reportChecks.Count -ne $requiredCheckCount -or
         $passedNames.Count -ne $requiredCheckCount -or
