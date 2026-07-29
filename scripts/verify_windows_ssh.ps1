@@ -57,7 +57,7 @@ $output = & $ssh.Source `
     -o ConnectTimeout=8 `
     -o ConnectionAttempts=1 `
     $HostAlias `
-    "powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand $encoded" 2>&1
+    "powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand $encoded" 2>&1
 $exitCode = $LASTEXITCODE
 $text = ($output | Out-String).Trim()
 $report = @{

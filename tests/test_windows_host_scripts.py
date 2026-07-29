@@ -312,6 +312,10 @@ def test_windows_ssh_setup_is_key_only_loopback_only_and_fail_closed() -> None:
 
     assert "-o BatchMode=yes" in verification
     assert "-o ConnectTimeout=8" in verification
+    assert (
+        'powershell.exe -NoLogo -NoProfile -NonInteractive '
+        '-ExecutionPolicy Bypass -EncodedCommand $encoded'
+    ) in verification
     assert "isAdministrator" in verification
     assert 'Get-Service -Name "sshd"' in verification
     assert 'Get-ScheduledTask -TaskName "Sing Yin Roster Host"' in verification
