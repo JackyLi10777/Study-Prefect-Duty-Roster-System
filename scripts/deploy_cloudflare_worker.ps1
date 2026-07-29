@@ -430,6 +430,11 @@ try {
     $reportRequiredIdentities = @($releaseReport.requiredCheckIdentities)
     $reportCheckNames = @($reportChecks | ForEach-Object { [string]$_.name })
     $reportCheckStatuses = @($reportChecks | ForEach-Object { [string]$_.status })
+    $reportIdentityDifferences = @(
+        Compare-Object `
+            -ReferenceObject @($reportRequiredIdentities | Sort-Object) `
+            -DifferenceObject @($reportCheckNames | Sort-Object)
+    )
     if (
         [int]$releaseReport.schemaVersion -ne 2 -or
         [string]$releaseReport.status -cne "pass" -or
@@ -441,7 +446,7 @@ try {
         [bool]$releaseReport.humanAcceptanceRequired -ne $true -or
         $reportRequiredIdentities.Count -eq 0 -or
         $reportChecks.Count -ne $reportRequiredIdentities.Count -or
-        (Compare-Object -ReferenceObject $reportRequiredIdentities -DifferenceObject $reportCheckNames -SyncWindow 0).Count -ne 0 -or
+        $reportIdentityDifferences.Count -ne 0 -or
         @($reportCheckStatuses | Where-Object { $_ -cne "pass" }).Count -ne 0
     ) {
         throw "The source-bound release report does not match the immutable Worker release."
