@@ -414,6 +414,8 @@ def test_browser_verifier_keeps_navigation_button_stable_while_icon_tells_story(
     assert 'page.locator(".sy-desktop-drawer-trigger")' in verifier
     assert 'data-sy-icon-story-category="persistent"' in verifier
     assert ") == static_navigation_toggle_transform" in verifier
+    assert "textContent.trim() === 'menu'" in verifier
+    assert "textContent.trim() === 'close'" in verifier
     assert 'navigation_toggle_icon.text_content().strip() == "menu"' in verifier
     assert 'navigation_toggle_icon.text_content().strip() == "close"' in verifier
 
