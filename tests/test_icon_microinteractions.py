@@ -218,6 +218,7 @@ def test_language_verifier_reads_the_visible_label_not_the_material_icon_ligatur
     verifier = _read("scripts/verify_nicegui_ui.py")
 
     assert 'get_by_text("繁中", exact=True)' in verifier
+    assert "chinese_label.count() == 1 and chinese_label.is_visible()" in verifier
     assert 'inner_text().strip() == "繁中"' not in verifier
     assert 'get_attribute("aria-label") == "Switch to 繁體中文"' in verifier
 

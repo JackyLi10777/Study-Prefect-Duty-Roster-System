@@ -569,7 +569,8 @@ def main() -> None:
         page.wait_for_function("document.activeElement?.id === 'main-content'")
         # User storage can retain the previous smoke run's language preference.
         language_control = page.get_by_test_id("language-control")
-        if language_control.get_by_text("繁中", exact=True).count() == 1:
+        chinese_label = language_control.get_by_text("繁中", exact=True)
+        if chinese_label.count() == 1 and chinese_label.is_visible():
             language_control.click()
             page.wait_for_load_state("domcontentloaded")
         page.get_by_text("第一次使用", exact=False).or_(
