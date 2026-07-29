@@ -1081,6 +1081,9 @@ def main() -> None:
         page.wait_for_function(
             "document.querySelector('.sy-desktop-drawer-trigger')?.getAttribute('aria-expanded') === 'false'"
         )
+        page.wait_for_function(
+            "document.querySelector('.sy-desktop-drawer-trigger .q-icon')?.textContent.trim() === 'menu'"
+        )
         assert navigation_toggle.evaluate(
             "element => getComputedStyle(element).transform"
         ) == static_navigation_toggle_transform
@@ -1088,6 +1091,9 @@ def main() -> None:
         navigation_toggle.click()
         page.wait_for_function(
             "document.querySelector('.sy-desktop-drawer-trigger')?.getAttribute('aria-expanded') === 'true'"
+        )
+        page.wait_for_function(
+            "document.querySelector('.sy-desktop-drawer-trigger .q-icon')?.textContent.trim() === 'close'"
         )
         assert navigation_toggle_icon.text_content().strip() == "close"
         page.goto(f"{BASE_URL}/getting-started", wait_until="domcontentloaded")
