@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 import ast
+import inspect
 from pathlib import Path
+
+from nicegui_app.services.guest_adapter import GuestWorkspaceAdapter
+from nicegui_app.services.roster_workflow import RosterWorkflow
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -35,3 +39,11 @@ def test_retry_sensitive_ui_writes_pass_an_explicit_command_id() -> None:
                 )
 
     assert missing == [], "UI writes missing explicit command_id:\n" + "\n".join(missing)
+
+
+def test_admin_and_guest_retry_sensitive_write_signatures_accept_command_id() -> None:
+    for method_name in RETRY_SENSITIVE_UI_WRITES - {"create_share"}:
+        for adapter_type in (RosterWorkflow, GuestWorkspaceAdapter):
+            parameters = inspect.signature(getattr(adapter_type, method_name)).parameters
+            assert "command_id" in parameters, f"{adapter_type.__name__}.{method_name} drifted"
+            assert parameters["command_id"].kind is inspect.Parameter.KEYWORD_ONLY
