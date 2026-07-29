@@ -568,8 +568,9 @@ def main() -> None:
         page.keyboard.press("Enter")
         page.wait_for_function("document.activeElement?.id === 'main-content'")
         # User storage can retain the previous smoke run's language preference.
-        if page.get_by_test_id("language-control").inner_text().strip() == "繁中":
-            page.get_by_test_id("language-control").click()
+        language_control = page.get_by_test_id("language-control")
+        if language_control.get_by_text("繁中", exact=True).count() == 1:
+            language_control.click()
             page.wait_for_load_state("domcontentloaded")
         page.get_by_text("第一次使用", exact=False).or_(
             page.get_by_text("First time here", exact=False)
@@ -1306,7 +1307,9 @@ def main() -> None:
         page.wait_for_load_state("domcontentloaded")
         page.get_by_text("Dashboard", exact=True).first.wait_for(timeout=10_000)
         chinese_button = page.get_by_test_id("language-control")
-        assert chinese_button.inner_text().strip() == "繁中"
+        chinese_label = chinese_button.get_by_text("繁中", exact=True)
+        assert chinese_label.count() == 1
+        assert chinese_label.is_visible()
         assert chinese_button.get_attribute("aria-label") == "Switch to 繁體中文"
         chinese_button.click()
         page.wait_for_load_state("domcontentloaded")
