@@ -234,7 +234,12 @@ class GuestWorkspaceAdapter:
         state = self._state()
         return self._prefect_output(self._prefect_record(state, prefect_id))
 
-    def create_prefect(self, prefect_input: PrefectInput) -> dict[str, object]:
+    def create_prefect(
+        self,
+        prefect_input: PrefectInput,
+        *,
+        command_id: str | None = None,
+    ) -> dict[str, object]:
         self._require_modify()
         self._validate_prefect_input(prefect_input)
         view = self._view()
@@ -261,7 +266,7 @@ class GuestWorkspaceAdapter:
             "fictional": True,
         }
         state.setdefault("prefects", []).append(record)
-        self._commit(view, state, "prefect-create")
+        self._commit(view, state, "prefect-create", command_id=command_id)
         return self._prefect_output(record)
 
     def update_prefect(
@@ -270,6 +275,7 @@ class GuestWorkspaceAdapter:
         prefect_input: PrefectInput,
         *,
         expected_version: int | None = None,
+        command_id: str | None = None,
     ) -> dict[str, object]:
         self._require_modify()
         self._validate_prefect_input(prefect_input)
@@ -303,10 +309,16 @@ class GuestWorkspaceAdapter:
                 "fictional": True,
             }
         )
-        self._commit(view, state, "prefect-update")
+        self._commit(view, state, "prefect-update", command_id=command_id)
         return self._prefect_output(record)
 
-    def archive_prefect(self, prefect_id: str, *, expected_version: int | None = None) -> None:
+    def archive_prefect(
+        self,
+        prefect_id: str,
+        *,
+        expected_version: int | None = None,
+        command_id: str | None = None,
+    ) -> None:
         self._require_modify()
         view = self._view()
         state = view.state
@@ -319,12 +331,17 @@ class GuestWorkspaceAdapter:
             raise WorkflowConflictError("This demo prefect changed in another tab.")
         record["active"] = False
         record["version"] = current_version + 1
-        self._commit(view, state, "prefect-archive")
+        self._commit(view, state, "prefect-archive", command_id=command_id)
 
-    def import_prefects(self, prefect_inputs: Iterable[PrefectInput]) -> list[dict[str, object]]:
+    def import_prefects(
+        self,
+        prefect_inputs: Iterable[PrefectInput],
+        *,
+        command_id: str | None = None,
+    ) -> list[dict[str, object]]:
         """Retain UI shape while denying every guest import at the service edge."""
 
-        del prefect_inputs
+        del prefect_inputs, command_id
         self._context.require(Capability.DATA_IMPORT)
         raise WorkflowError("Guest data import remains disabled in the browser-only workspace.")
 

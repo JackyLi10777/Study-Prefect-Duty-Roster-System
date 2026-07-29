@@ -7,6 +7,7 @@ from datetime import date
 import hashlib
 import inspect
 import json
+from uuid import uuid4
 
 from nicegui import events, run, ui
 
@@ -146,6 +147,7 @@ def _prefect_upload_read_failure_text(error: BaseException) -> str:
 def _show_prefect_dialog(existing: dict[str, object] | None = None) -> None:
     workflow = get_workflow()
     title_key = "edit_prefect" if existing else "add_prefect"
+    save_command_id = f"prefect-{'update' if existing else 'create'}-ui:{uuid4().hex}"
     day_options = {day.name: day_label(day) for day in SchoolDay}
     role_options = {"study_prefect": role_label("study_prefect"), "assistant_head": role_label("assistant_head")}
     with ui.dialog() as dialog, ui.card().classes("sy-surface w-full max-w-2xl p-6"):
@@ -245,10 +247,16 @@ def _show_prefect_dialog(existing: dict[str, object] | None = None) -> None:
                         str(existing["id"]),
                         prefect_input,
                         expected_version=int(existing["version"]),
+                        command_id=save_command_id,
                     )
                 )
                 if existing
-                else (lambda: workflow.create_prefect(prefect_input))
+                else (
+                    lambda: workflow.create_prefect(
+                        prefect_input,
+                        command_id=save_command_id,
+                    )
+                )
             )
             result = await _run_with_progress(
                 save_action,
@@ -725,6 +733,7 @@ def prefects_page() -> None:
                             ).props("outline color=primary data-testid=empty-open-import")
                 options = {item["id"]: f"{item['nameZh']} ({item['form']} {item['className']})" for item in prefects}
                 prefect_versions = {str(item["id"]): int(item["version"]) for item in prefects}
+                archive_command_state: dict[str, str | None] = {"value": None}
                 directory_actions_classes = "sy-directory-actions w-full items-end gap-3 flex-wrap mb-4"
                 if not prefects:
                     directory_actions_classes += " hidden"
@@ -750,6 +759,7 @@ def prefects_page() -> None:
                                 lambda: workflow.archive_prefect(
                                     prefect_id,
                                     expected_version=prefect_versions[prefect_id],
+                                    command_id=str(archive_command_state["value"]),
                                 ),
                                 title_key="progress_prefect_archive_title",
                                 working_key="progress_prefect_archive_working",
@@ -774,6 +784,7 @@ def prefects_page() -> None:
                         if not selected.value:
                             ui.notify(t("operation_error"), type="negative")
                             return
+                        archive_command_state["value"] = f"prefect-archive-ui:{uuid4().hex}"
                         archive_dialog.open()
 
                     edit_button = ui.button(t("edit_prefect"), icon="edit", on_click=edit_selected).props("outline color=primary")
@@ -828,6 +839,7 @@ def prefects_page() -> None:
                     file_preview_state: dict[str, object | None] = {
                         "value": None,
                         "fingerprint": None,
+                        "command_id": None,
                     }
                     import_button_state: dict[str, object | None] = {"value": None}
                     mapping_controls: dict[str, object] = {}
@@ -850,6 +862,7 @@ def prefects_page() -> None:
                     def invalidate_file_preview() -> None:
                         file_preview_state["value"] = None
                         file_preview_state["fingerprint"] = None
+                        file_preview_state["command_id"] = None
                         file_preview_area.clear()
                         set_file_import_enabled(False)
 
@@ -1049,6 +1062,7 @@ def prefects_page() -> None:
                                 _render_import_preview_content(file_preview_area, preview)
                                 if not preview.issues and preview.rows:
                                     file_preview_state["fingerprint"] = current_file_fingerprint(parsed, mapping)
+                                    file_preview_state["command_id"] = f"prefect-file-import-ui:{uuid4().hex}"
                                     set_file_import_enabled(file_preview_state["fingerprint"] is not None)
 
                             async def import_file_preview() -> None:
@@ -1084,7 +1098,10 @@ def prefects_page() -> None:
                                     ui.notify(t("operation_error"), type="negative")
                                     return
                                 result = await _run_with_progress(
-                                    lambda: workflow.import_prefects(fresh_preview.rows),
+                                    lambda: workflow.import_prefects(
+                                        fresh_preview.rows,
+                                        command_id=str(file_preview_state["command_id"]),
+                                    ),
                                     title_key="progress_import_title",
                                     working_key="progress_import_working",
                                     icon="upload_file",
@@ -1175,6 +1192,7 @@ def prefects_page() -> None:
                     import_text.disable()
                 preview_state: dict[str, ImportPreview | None] = {"value": None}
                 preview_fingerprint: dict[str, str | None] = {"value": None}
+                text_import_command: dict[str, str | None] = {"value": None}
                 text_import_button_state: dict[str, object | None] = {"value": None}
                 preview_area = ui.column().classes("w-full gap-3 mt-4")
 
@@ -1190,6 +1208,7 @@ def prefects_page() -> None:
                 def invalidate_text_preview() -> None:
                     preview_state["value"] = None
                     preview_fingerprint["value"] = None
+                    text_import_command["value"] = None
                     preview_area.clear()
                     set_text_import_enabled(False)
 
@@ -1266,6 +1285,7 @@ def prefects_page() -> None:
                     ready = not preview.issues and bool(preview.rows)
                     if ready:
                         preview_fingerprint["value"] = _prefect_text_preview_fingerprint(text)
+                        text_import_command["value"] = f"prefect-text-import-ui:{uuid4().hex}"
                     set_text_import_enabled(ready)
 
                 async def import_preview() -> None:
@@ -1282,7 +1302,10 @@ def prefects_page() -> None:
                     if not _require_clipboard_ingest(invalidate_text_preview):
                         return
                     result = await _run_with_progress(
-                        lambda: workflow.import_prefects(preview.rows),
+                        lambda: workflow.import_prefects(
+                            preview.rows,
+                            command_id=str(text_import_command["value"]),
+                        ),
                         title_key="progress_import_title",
                         working_key="progress_import_working",
                         icon="upload_file",

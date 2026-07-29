@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 from nicegui import ui
@@ -114,6 +115,7 @@ def _show_share_receipt(receipt) -> None:  # type: ignore[no-untyped-def]
 
 def _open_create_confirmation(service: PublicRosterShareService, roster_week_id: int) -> None:
     current_page_context().require(Capability.EXTERNAL_DELIVERY)
+    share_command_id = f"public-share-create-ui:{uuid4().hex}"
     with ui.dialog().props(
         "data-testid=public-share-confirm-dialog"
     ) as dialog, ui.card().classes("sy-surface w-full max-w-lg p-6"):
@@ -126,7 +128,10 @@ def _open_create_confirmation(service: PublicRosterShareService, roster_week_id:
             current_page_context().require(Capability.EXTERNAL_DELIVERY)
             dialog.close()
             receipt = await _run_with_progress(
-                lambda: service.create_share(roster_week_id),
+                lambda: service.create_share(
+                    roster_week_id,
+                    command_id=share_command_id,
+                ),
                 title_key="public_share_progress_title",
                 working_key="public_share_progress_working",
                 icon="encrypted",
