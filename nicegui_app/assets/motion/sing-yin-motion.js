@@ -92,7 +92,6 @@
    * more than translation: calendar -> confirmed calendar, closed book ->
    * open book, question -> illuminated idea, and grid -> rearranged grid. */
   const iconStoryGlyphs = new Map([
-    ['menu', 'arrow_back'],
     ['space_dashboard', 'dashboard_customize'],
     ['dashboard', 'view_quilt'],
     ['calendar_month', 'event_available'],
@@ -111,8 +110,22 @@
     ['edit_note', 'fact_check'],
     ['save', 'task_alt'],
     ['picture_as_pdf', 'file_download'],
+    ['translate', 'language'],
+    ['logout', 'exit_to_app'],
+    ['headphones', 'graphic_eq'],
+    ['support_agent', 'contact_support'],
+    ['mail_outline', 'forward_to_inbox'],
+    ['format_list_bulleted', 'checklist']
+  ]);
+  const persistentIconPairs = new Map([
     ['volume_off', 'volume_up'],
-    ['dark_mode', 'light_mode']
+    ['volume_up', 'volume_off'],
+    ['light_mode', 'dark_mode'],
+    ['dark_mode', 'light_mode'],
+    ['play_arrow', 'pause'],
+    ['pause', 'play_arrow'],
+    ['menu', 'close'],
+    ['close', 'menu']
   ]);
 
   const pointerControllers = new Map();
@@ -140,6 +153,12 @@
     if (root instanceof Element && root.matches(selector)) matches.push(root);
     root.querySelectorAll?.(selector).forEach((element) => matches.push(element));
     return matches;
+  };
+  const setDataset = (element, key, value) => {
+    if (element.dataset[key] !== value) element.dataset[key] = value;
+  };
+  const deleteDataset = (element, key) => {
+    if (key in element.dataset) delete element.dataset[key];
   };
   const animateOnce = (element, children = false) => {
     if (element.dataset.syMotionReady === 'true') return;
@@ -267,42 +286,63 @@
       const host = icon.closest(interactiveIconHostSelector);
       const name = icon.textContent?.trim() || '';
       if (!host || !name) return;
-      const role = iconMotionRoles.get(name) || 'signal';
-      icon.dataset.syIconMotion = role;
-      icon.dataset.syIconName = name;
-      const storyGlyph = iconStoryGlyphs.get(name);
+      const role = host.dataset.syIconMotionRole || iconMotionRoles.get(name) || 'signal';
+      setDataset(icon, 'syIconMotion', role);
+      setDataset(icon, 'syIconName', name);
+      const category = host.dataset.syIconStoryCategory || 'preview';
+      setDataset(icon, 'syIconStoryCategory', category);
+      if (category === 'persistent') {
+        deleteDataset(icon, 'syIconStoryFrom');
+        deleteDataset(icon, 'syIconStoryTo');
+        deleteDataset(icon, 'syIconStoryActive');
+        iconStoryState?.setPersistent(host, name);
+        return;
+      }
+      if (category === 'static') {
+        deleteDataset(icon, 'syIconStoryFrom');
+        deleteDataset(icon, 'syIconStoryTo');
+        deleteDataset(icon, 'syIconStoryActive');
+        iconStoryState?.clear(host);
+        return;
+      }
+      const storyGlyph = host.dataset.syIconStoryTo || iconStoryGlyphs.get(name);
       if (storyGlyph) {
-        icon.dataset.syIconStoryFrom = name;
-        icon.dataset.syIconStoryTo = storyGlyph;
+        setDataset(icon, 'syIconStoryFrom', name);
+        setDataset(icon, 'syIconStoryTo', storyGlyph);
+      } else {
+        deleteDataset(icon, 'syIconStoryFrom');
+        deleteDataset(icon, 'syIconStoryTo');
+        deleteDataset(icon, 'syIconStoryActive');
       }
     });
   };
-  const animateIconStory = (host, active, { allowCoarse = false } = {}) => {
-    const icon = host.querySelector(`${interactiveIconSelector}[data-sy-icon-story-to]`);
+  const guardStateFor = host => iconStoryState?.setGuards(host, {
+    reduced: reducedMotion(),
+    disabled: host.matches('.disabled,[aria-disabled="true"]'),
+    busy: host.matches('.q-btn--loading,[aria-busy="true"]')
+  });
+  const cancelIconTimeline = icon => {
     if (!(icon instanceof HTMLElement)) return;
     const previousTimeline = iconStoryTimelines.get(icon);
     if (previousTimeline) {
       previousTimeline.kill();
       iconStoryTimelines.delete(icon);
     }
-    window.gsap.killTweensOf(icon);
-    window.gsap.set(icon, { clearProps: 'opacity,visibility,scale,y,transform' });
-    if (
-      reducedMotion()
-      || (!allowCoarse && !window.matchMedia(FINE_POINTER_QUERY).matches)
-      || host.matches('.disabled,[aria-disabled="true"],[aria-busy="true"]')
-    ) {
-      const original = icon.dataset.syIconStoryFrom;
-      if (original) {
-        icon.textContent = original;
-        icon.dataset.syIconName = original;
-      }
-      icon.dataset.syIconStoryActive = 'false';
+    window.gsap?.killTweensOf(icon);
+    window.gsap?.set(icon, { clearProps: 'opacity,visibility,scale,y,transform' });
+  };
+  const morphGlyph = (icon, next, { active = false } = {}) => {
+    if (!(icon instanceof HTMLElement) || !next) return;
+    cancelIconTimeline(icon);
+    if (icon.textContent?.trim() === next) {
+      icon.dataset.syIconName = next;
+      icon.dataset.syIconStoryActive = active ? 'true' : 'false';
       return;
     }
-    const next = active ? icon.dataset.syIconStoryTo : icon.dataset.syIconStoryFrom;
-    if (!next) return;
-    if (icon.textContent?.trim() === next) {
+    const host = icon.closest(interactiveIconHostSelector);
+    const guards = host instanceof HTMLElement ? guardStateFor(host) : null;
+    if (reducedMotion() || guards?.interactive === false || !window.gsap) {
+      icon.textContent = next;
       icon.dataset.syIconName = next;
       icon.dataset.syIconStoryActive = active ? 'true' : 'false';
       return;
@@ -318,7 +358,7 @@
       .to(icon, {
         autoAlpha: 0,
         scale: 0.42,
-        duration: 0.11,
+        duration: 0.08,
         ease: 'power2.in',
         onComplete: () => {
           icon.textContent = next;
@@ -332,11 +372,58 @@
         {
           autoAlpha: 1,
           scale: 1,
-          duration: 0.26,
+          duration: 0.10,
           ease: 'power3.out',
           clearProps: 'opacity,visibility,scale,y,transform'
         }
       );
+  };
+  const setPersistentGlyph = (target, next, { animate = true } = {}) => {
+    const host = target instanceof Element
+      ? (target.matches(interactiveIconHostSelector) ? target : target.closest(interactiveIconHostSelector))
+      : null;
+    if (!(host instanceof HTMLElement) || !next) return false;
+    const icon = host.querySelector(interactiveIconSelector);
+    if (!(icon instanceof HTMLElement)) return false;
+    host.dataset.syIconStoryCategory = 'persistent';
+    icon.dataset.syIconStoryCategory = 'persistent';
+    const touchTimer = iconStoryTouchTimers.get(host);
+    if (touchTimer) window.clearTimeout(touchTimer);
+    iconStoryTouchTimers.delete(host);
+    const state = iconStoryState?.setPersistent(host, next);
+    delete icon.dataset.syIconStoryFrom;
+    delete icon.dataset.syIconStoryTo;
+    delete icon.dataset.syIconStoryActive;
+    if (!animate || !state) {
+      cancelIconTimeline(icon);
+      icon.textContent = next;
+      icon.dataset.syIconName = next;
+    } else {
+      morphGlyph(icon, next, { active: false });
+    }
+    return true;
+  };
+  const animateIconStory = (host, active, { allowCoarse = false } = {}) => {
+    const icon = host.querySelector(`${interactiveIconSelector}[data-sy-icon-story-to]`);
+    if (!(icon instanceof HTMLElement)) return;
+    cancelIconTimeline(icon);
+    const guards = guardStateFor(host);
+    if (
+      reducedMotion()
+      || (!allowCoarse && !window.matchMedia(FINE_POINTER_QUERY).matches)
+      || guards?.interactive === false
+    ) {
+      const original = icon.dataset.syIconStoryFrom;
+      if (original) {
+        icon.textContent = original;
+        icon.dataset.syIconName = original;
+      }
+      icon.dataset.syIconStoryActive = 'false';
+      return;
+    }
+    const next = active ? icon.dataset.syIconStoryTo : icon.dataset.syIconStoryFrom;
+    if (!next) return;
+    morphGlyph(icon, next, { active });
   };
   const iconStoryHost = (event) => event.target instanceof Element
     ? event.target.closest(interactiveIconHostSelector)
@@ -408,6 +495,19 @@
     if (!(root instanceof Element)) return;
     if (pointerControllers.has(root)) removePointerSurface(root);
     root.querySelectorAll?.('.sy-pointer-reactive').forEach(removePointerSurface);
+  };
+  const removeIconMotionWithin = root => {
+    if (!(root instanceof Element)) return;
+    const hosts = [];
+    if (root.matches(interactiveIconHostSelector)) hosts.push(root);
+    root.querySelectorAll?.(interactiveIconHostSelector).forEach(host => hosts.push(host));
+    hosts.forEach(host => {
+      iconStoryState?.clear(host);
+      const timer = iconStoryTouchTimers.get(host);
+      if (timer) window.clearTimeout(timer);
+      iconStoryTouchTimers.delete(host);
+      host.querySelectorAll?.(interactiveIconSelector).forEach(icon => cancelIconTimeline(icon));
+    });
   };
 
   const rememberActionHost = (event) => {
@@ -564,6 +664,7 @@
     lastActionHost = null;
     operationFeedbackHost = null;
     delete document.documentElement.dataset.syMotion;
+    delete window.__syIconMotion;
     window.__singYinMotionBootstrapped = false;
   };
   window.__disposeSingYinMotion = dispose;
@@ -611,6 +712,21 @@
       (context) => {
         const { reduce, fine } = context.conditions;
         document.documentElement.dataset.syMotion = reduce ? 'reduced' : 'ready';
+        if (reduce) {
+          iconStoryTouchTimers.forEach(timer => window.clearTimeout(timer));
+          iconStoryTouchTimers.clear();
+        }
+        document.querySelectorAll(interactiveIconHostSelector).forEach(host => {
+          const state = guardStateFor(host);
+          const icon = host.querySelector(interactiveIconSelector);
+          if (reduce && icon instanceof HTMLElement && icon.dataset.syIconStoryFrom) {
+            cancelIconTimeline(icon);
+            icon.textContent = icon.dataset.syIconStoryFrom;
+            icon.dataset.syIconName = icon.dataset.syIconStoryFrom;
+            icon.dataset.syIconStoryActive = 'false';
+          }
+          if (!state?.interactive) cancelIconTimeline(icon);
+        });
         Array.from(pointerControllers.keys()).forEach(removePointerSurface);
         if (!reduce && fine) hydratePointers();
         return () => Array.from(pointerControllers.keys()).forEach(removePointerSurface);
@@ -621,6 +737,13 @@
       mutations.forEach((mutation) => {
         mutation.removedNodes.forEach(removePointersWithin);
         mutation.removedNodes.forEach(removeTocWithin);
+        mutation.removedNodes.forEach(removeIconMotionWithin);
+        if (mutation.type === 'attributes' && mutation.target instanceof Element) {
+          hydrateIconMotion(mutation.target);
+          const host = mutation.target.matches(interactiveIconHostSelector)
+            ? mutation.target : mutation.target.closest(interactiveIconHostSelector);
+          if (host instanceof HTMLElement) guardStateFor(host);
+        }
         mutation.addedNodes.forEach((node) => {
           if (!(node instanceof Element)) return;
           hydrateMotion(node);
@@ -632,7 +755,12 @@
       /* A target section can arrive after its TOC in a streamed NiceGUI patch. */
       hydrateToc();
     });
-    mutationObserver.observe(document.body, { childList: true, subtree: true });
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'aria-disabled', 'aria-busy', 'data-sy-icon-motion-role', 'data-sy-icon-story-to', 'data-sy-icon-story-category']
+    });
     document.fonts?.ready.then(() => {
       if (!disposed) hydrateMotion();
     });
@@ -656,6 +784,25 @@
       }, 260);
     };
     document.addEventListener('click', disclosureHandler, true);
+    window.__syIconMotion = Object.freeze({
+      setPersistentGlyph,
+      hydrate: hydrateIconMotion,
+      classify: target => {
+        const host = target instanceof Element
+          ? (target.matches(interactiveIconHostSelector) ? target : target.closest(interactiveIconHostSelector))
+          : null;
+        const icon = host?.querySelector(interactiveIconSelector);
+        if (!(host instanceof HTMLElement) || !(icon instanceof HTMLElement)) return null;
+        return Object.freeze({
+          category: icon.dataset.syIconStoryCategory || 'preview',
+          role: icon.dataset.syIconMotion || 'signal',
+          source: icon.dataset.syIconName || icon.textContent?.trim() || '',
+          destination: icon.dataset.syIconStoryTo || '',
+        });
+      },
+      storySources: Object.freeze([...iconStoryGlyphs.keys()]),
+      persistentPairs: Object.freeze([...persistentIconPairs.entries()])
+    });
   };
 
   if (document.readyState === 'loading') {

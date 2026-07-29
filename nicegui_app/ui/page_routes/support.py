@@ -389,6 +389,9 @@ def _render_admin_support(source_path: str) -> None:
                             t("support_email_action"),
                             icon="mail_outline",
                             variant="quiet",
+                            motion_role="forward",
+                            icon_story_to="forward_to_inbox",
+                            icon_story_category="preview",
                             on_click=lambda: ui.run_javascript(f"window.location.href={json.dumps(mailto)}"),
                         )
 

@@ -811,19 +811,25 @@ def _public_theme_state(
     expected_theme: ColourScheme,
     expected_preference: Literal["system", "light", "dark"],
 ) -> dict[str, Any]:
+    expected_label = "深色 · Dark" if expected_theme == "dark" else "淺色 · Light"
     page.wait_for_function(
-        """([expectedTheme, expectedPreference]) => {
+        """([expectedTheme, expectedPreference, expectedLabel]) => {
           const control = document.querySelector('[data-testid="public-theme-control"]');
           if (!control) return false;
           const resolved = control.dataset.resolvedTheme || '';
           const preference = control.dataset.themePreference || '';
+          const label = document.getElementById('themeToggleLabel')?.textContent?.trim() || '';
           const rootTheme = document.documentElement.dataset.theme || 'system';
           const rendered = rootTheme === 'system'
             ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
             : rootTheme;
-          return resolved === expectedTheme && preference === expectedPreference && rendered === expectedTheme;
+          return resolved === expectedTheme
+            && preference === expectedPreference
+            && rendered === expectedTheme
+            && label === expectedLabel
+            && !label.includes('Auto');
         }""",
-        arg=[expected_theme, expected_preference],
+        arg=[expected_theme, expected_preference, expected_label],
         timeout=10_000,
     )
     return page.evaluate(

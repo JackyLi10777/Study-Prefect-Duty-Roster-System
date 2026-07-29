@@ -301,7 +301,7 @@ const VIEWER_HTML = `<!doctype html>
         </g>
         <path class="theme-icon theme-icon--moon" d="M20 15.4A8.2 8.2 0 0 1 8.6 4a8.4 8.4 0 1 0 11.4 11.4Z"></path>
       </svg>
-      <span id="themeToggleLabel" class="theme-toggle-label">自動 · Auto</span>
+      <span id="themeToggleLabel" class="theme-toggle-label">淺色 · Light</span>
     </button>
   </header>
 
@@ -820,10 +820,10 @@ button, input, select, textarea { font: inherit; }
 .theme-toggle { cursor: pointer; }
 .theme-toggle-icon { overflow: visible; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.65; }
 .theme-icon { transform-box: fill-box; transform-origin: center; transition: opacity 180ms var(--ease-standard), transform 180ms var(--ease-standard); }
-.theme-icon--sun { opacity: 1; transform: rotate(0deg) scale(1); }
-.theme-icon--moon { opacity: 0; transform: rotate(24deg) scale(.72); }
-.theme-toggle[data-resolved-theme="dark"] .theme-icon--sun { opacity: 0; transform: rotate(-28deg) scale(.72); }
-.theme-toggle[data-resolved-theme="dark"] .theme-icon--moon { opacity: 1; transform: rotate(0deg) scale(1); }
+.theme-icon--sun { opacity: 1; transform: scale(1); }
+.theme-icon--moon { opacity: 0; transform: scale(.58); }
+.theme-toggle[data-resolved-theme="dark"] .theme-icon--sun { opacity: 0; transform: scale(.58); }
+.theme-toggle[data-resolved-theme="dark"] .theme-icon--moon { opacity: 1; transform: scale(1); }
 .theme-toggle[data-icon-changing="true"] .theme-toggle-icon { animation: theme-icon-state 220ms var(--ease-standard); }
 .theme-toggle-label { min-width: 82px; text-align: left; white-space: nowrap; }
 .theme-toggle:hover { color: var(--ink); border-color: var(--line-strong); background: var(--surface); }
@@ -1035,9 +1035,9 @@ button, input, select, textarea { font: inherit; }
   transition: border-color 140ms ease, background-color 140ms ease, transform 100ms ease;
 }
 
-.verse-refresh svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; transition: transform 220ms var(--ease-standard); }
+.verse-refresh svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; transition: transform 180ms var(--ease-standard), opacity 180ms var(--ease-standard); }
 .verse-refresh:hover { border-color: color-mix(in srgb, var(--gold) 62%, transparent); background: var(--devotional-control); }
-.verse-refresh:hover svg { transform: rotate(24deg); }
+.verse-refresh:hover svg { opacity: .82; transform: scale(.9); }
 .verse-refresh:active { transform: scale(0.97); }
 .verse-refresh:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
 
@@ -1328,7 +1328,7 @@ button, input, select, textarea { font: inherit; }
   transform: translate(-50%, -50%);
 }
 .sy-secure-pulse::before { width: 10px; height: 10px; background: var(--brand); }
-.sy-secure-pulse::after { width: 22px; height: 22px; border: 1px solid var(--brand); animation: secure-pulse 1.4s var(--ease-standard) infinite; }
+.sy-secure-pulse::after { width: 22px; height: 22px; border: 1px solid var(--brand); opacity: .65; }
 
 .state-icon {
   display: grid;
@@ -1603,7 +1603,6 @@ tbody td {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes secure-pulse { 0%, 100% { opacity: .3; transform: translate(-50%, -50%) scale(.76); } 50% { opacity: .9; transform: translate(-50%, -50%) scale(1); } }
 @keyframes portal-story-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes portal-panel-enter { from { opacity: 0; transform: translateY(12px) scale(0.992); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes portal-strip-enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -1691,7 +1690,7 @@ tbody td {
 @media (hover: hover) and (pointer: fine) {
   .access-panel { transition: border-color 180ms ease, box-shadow 220ms ease, transform 180ms var(--ease-standard); }
   .access-panel:hover { border-color: var(--line-strong); box-shadow: 0 18px 42px rgba(31, 41, 39, 0.12); transform: translateY(-2px); }
-  .access-panel:hover .access-panel-icon svg { transform: scale(1.06) rotate(-3deg); }
+  .access-panel:hover .access-panel-icon svg { transform: scale(1.06); }
   .guest-enter:hover .guest-enter-icon svg { transform: scale(1.08); }
 }
 
@@ -1906,10 +1905,6 @@ const shareErrorCopy = {
 const systemDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
 const reducedThemeMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const themeCopy = {
-  system: {
-    current: '自動 · Auto',
-    next: '深色模式 · Dark mode',
-  },
   light: {
     current: '淺色 · Light',
     next: '深色模式 · Dark mode',

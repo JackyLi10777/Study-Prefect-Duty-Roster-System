@@ -179,6 +179,23 @@ def test_public_components_cover_complete_interaction_states() -> None:
     assert "copy_failed_manual" in source
 
 
+def test_shared_action_accepts_semantic_icon_metadata_without_page_timelines() -> None:
+    source = (UI_ROOT / "components.py").read_text(encoding="utf-8")
+    support = (UI_ROOT / "page_routes" / "support.py").read_text(encoding="utf-8")
+
+    assert 'IconStoryCategory = Literal["preview", "persistent", "lifecycle", "static"]' in source
+    for argument in ("motion_role:", "icon_story_to:", "icon_story_category:"):
+        assert argument in source
+    for attribute in (
+        "data-sy-icon-motion-role",
+        "data-sy-icon-story-to",
+        "data-sy-icon-story-category",
+    ):
+        assert attribute in source
+    assert 'icon_story_to="forward_to_inbox"' in support
+    assert "gsap" not in support.lower()
+
+
 def test_legacy_page_helpers_delegate_to_the_public_component_contract() -> None:
     source = (UI_ROOT / "page_shared.py").read_text(encoding="utf-8")
 

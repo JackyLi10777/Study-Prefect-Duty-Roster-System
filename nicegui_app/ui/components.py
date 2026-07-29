@@ -27,6 +27,7 @@ from nicegui_app.ui.reference_navigation import (
 
 
 ActionVariant = Literal["primary", "secondary", "quiet", "attention", "danger"]
+IconStoryCategory = Literal["preview", "persistent", "lifecycle", "static"]
 StatusTone = Literal["action", "stable", "attention", "danger", "neutral"]
 WorkflowState = Literal["active", "done", "pending"]
 _Control = TypeVar("_Control")
@@ -43,8 +44,11 @@ def action(
     disabled: bool = False,
     test_id: str | None = None,
     classes: str = "",
+    motion_role: str | None = None,
+    icon_story_to: str | None = None,
+    icon_story_category: IconStoryCategory | None = None,
 ):
-    """Render one action with complete hover, busy and disabled semantics."""
+    """Render one action with complete state and optional semantic icon metadata."""
 
     props = {
         "primary": "color=primary",
@@ -59,6 +63,12 @@ def action(
         props += " disable aria-disabled=true"
     if test_id:
         props += f" data-testid={test_id}"
+    if motion_role:
+        props += f" data-sy-icon-motion-role={motion_role}"
+    if icon_story_to:
+        props += f" data-sy-icon-story-to={icon_story_to}"
+    if icon_story_category:
+        props += f" data-sy-icon-story-category={icon_story_category}"
     button = ui.button(text, icon=icon, on_click=on_click).props(props).classes(
         f"sy-action sy-action--{variant} {classes}".strip()
     )

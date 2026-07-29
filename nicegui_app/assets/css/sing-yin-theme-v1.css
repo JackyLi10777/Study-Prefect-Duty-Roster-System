@@ -107,13 +107,7 @@ button, [role="button"], a, input, textarea, select { touch-action: manipulation
 .sy-header-control--logout:focus-visible { border-color: var(--sy-role-danger) !important; color: var(--sy-role-danger) !important; background: var(--sy-role-danger-soft) !important; }
 .sy-header-control .q-icon, .sy-header-control .q-btn__content { color: currentcolor !important; }
 .sy-header-control .q-icon { transform-origin: center; transition: opacity var(--sy-motion-state) var(--sy-ease), transform var(--sy-motion-state) var(--sy-ease); }
-.sy-header-control[data-sy-icon-changing="true"] .q-icon { animation: sy-header-icon-state 220ms var(--sy-ease); }
 .body--dark .sy-header-control { box-shadow: inset 0 1px 0 color-mix(in srgb, white 9%, transparent), 0 2px 8px rgba(0,0,0,.25) !important; }
-@keyframes sy-header-icon-state {
-  0% { opacity: 1; transform: rotate(0deg) scale(1); }
-  47% { opacity: .28; transform: rotate(-28deg) scale(.72); }
-  100% { opacity: 1; transform: rotate(0deg) scale(1); }
-}
 .sy-main { color: var(--sy-ink); }
 .sy-page-title, .sy-main > .q-label.text-2xl.font-semibold { color: var(--sy-ink); font-size: clamp(25px, 2.3vw, 31px); font-weight: 750; letter-spacing: -.03em; line-height: 1.25; }
 .sy-sidebar { position: relative; isolation: isolate; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; padding-bottom: max(16px, env(safe-area-inset-bottom)); background: var(--sy-sidebar-veil), linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--sy-surface) 18%, transparent) 54%, var(--sy-surface) 118%), var(--sy-image-sidebar) right bottom / auto 100% no-repeat !important; }

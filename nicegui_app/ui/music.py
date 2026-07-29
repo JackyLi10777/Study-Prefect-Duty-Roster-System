@@ -79,6 +79,7 @@ def _music_state_script(state: str) -> str:
         "trigger.dataset.musicState = state;"
         "trigger.setAttribute('aria-label', accessibleName);"
         "trigger.setAttribute('title', label);"
+        "window.__syIconMotion?.setPersistentGlyph(trigger, state === 'playing' ? 'graphic_eq' : 'headphones', {animate:true});"
         "}"
         "const status = document.querySelector('[data-testid=music-playback-status]');"
         "if (status) { status.dataset.musicState = state; status.textContent = label; }"
@@ -111,7 +112,7 @@ def _music_state_callback_script() -> str:
         "const label = labels[state] || labels.error;"
         "document.body.dataset.syMusicAutoplay = state;"
         "const trigger = document.querySelector('[data-testid=page-music-button]');"
-        "if (trigger) { trigger.dataset.musicState = state; trigger.setAttribute('aria-label', pageMusic + ' — ' + label); trigger.setAttribute('title', label); }"
+        "if (trigger) { trigger.dataset.musicState = state; trigger.setAttribute('aria-label', pageMusic + ' — ' + label); trigger.setAttribute('title', label); window.__syIconMotion?.setPersistentGlyph(trigger, state === 'playing' ? 'graphic_eq' : 'headphones', {animate:true}); }"
         "const status = document.querySelector('[data-testid=music-playback-status]');"
         "if (status) { status.dataset.musicState = state; status.textContent = label; }"
         "}"
@@ -448,7 +449,8 @@ def render_page_music_control(context: str) -> None:
     ui.button(icon="headphones", on_click=open_dialog).props(
         f'flat round aria-label="{attr(t("page_music"))} — '
         f'{attr(t(f"music_status_{initial_trigger_state}"))}" '
-        f'data-testid=page-music-button data-music-state={initial_trigger_state}'
+        f'data-testid=page-music-button data-music-state={initial_trigger_state} '
+        'data-sy-icon-motion-role=play data-sy-icon-story-category=persistent'
     ).classes("sy-music-trigger").style("color: var(--sy-nav-ink) !important").tooltip(t("page_music"))
 
 
