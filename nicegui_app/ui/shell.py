@@ -488,9 +488,13 @@ def _navigate_with_sound(path: str) -> None:
     navigate_to(path)
 
 
-def _sync_preference_controls(
+async def _sync_preference_controls(
     controls, *, icon: str, label: str, pressed: bool
 ) -> None:  # type: ignore[no-untyped-def]
+    await ui.run_javascript(
+        "document.querySelectorAll('[data-sy-sound-toggle]').forEach(button => "
+        f"window.__syIconMotion?.setPersistentGlyph(button, {json.dumps(icon)}, {{animate:true}}));"
+    )
     for button, show_label, tooltip in controls:
         button.set_text(label if show_label else "")
         button.props(
@@ -507,7 +511,7 @@ async def _toggle_sound_feedback_with_preview(controls) -> None:  # type: ignore
     toggle_sound_feedback()
     enabled = sound_feedback_enabled()
     label = t("disable_sound_feedback") if enabled else t("enable_sound_feedback")
-    _sync_preference_controls(
+    await _sync_preference_controls(
         controls,
         icon="volume_up" if enabled else "volume_off",
         label=label,
@@ -532,8 +536,12 @@ def _current_theme_control(resolved_theme: str | None = None) -> tuple[str, str,
     )
 
 
-def _sync_theme_controls(controls) -> None:  # type: ignore[no-untyped-def]
+async def _sync_theme_controls(controls) -> None:  # type: ignore[no-untyped-def]
     icon, label, is_dark = _current_theme_control()
+    await ui.run_javascript(
+        "document.querySelectorAll('[data-sy-theme-toggle]').forEach(button => "
+        f"window.__syIconMotion?.setPersistentGlyph(button, {json.dumps(icon)}, {{animate:true}}));"
+    )
     for button, show_label, tooltip in controls["buttons"]:
         button.set_text(label if show_label else "")
         button.props(
@@ -594,7 +602,7 @@ async def _toggle_theme_in_place(dark_mode, controls) -> None:  # type: ignore[n
         is_dark = target == "dark"
         dark_mode.set_value(is_dark)
         apply_quasar_palette(is_dark)
-        _sync_theme_controls(controls)
+        await _sync_theme_controls(controls)
         ui.run_javascript(
             f"window.__syThemeControls?.applyExplicit?.({json.dumps(target)}, "
             "{animate:true,broadcast:true});"
@@ -648,8 +656,11 @@ def _install_theme_control_runtime() -> None:
               button.setAttribute('aria-pressed', String(isDark));
               button.setAttribute('aria-label', label);
               button.title = label;
-              const icon = button.querySelector('.q-icon');
-              if (icon) icon.textContent = isDark ? 'dark_mode' : 'light_mode';
+              const nextIcon = isDark ? 'dark_mode' : 'light_mode';
+              if (!window.__syIconMotion?.setPersistentGlyph(button, nextIcon, {animate})) {
+                const icon = button.querySelector('.q-icon');
+                if (icon) icon.textContent = nextIcon;
+              }
               const content = button.dataset.syThemeShowLabel === 'true'
                 ? button.querySelector('.q-btn__content') : null;
               const text = content?.querySelector('[data-sy-theme-label], span:not(.q-icon)');
@@ -658,10 +669,6 @@ def _install_theme_control_runtime() -> None:
                 const textNode = [...content.childNodes].find(node =>
                   node.nodeType === Node.TEXT_NODE && node.textContent.trim());
                 if (textNode) textNode.textContent = label;
-              }
-              if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                button.dataset.syIconChanging = 'true';
-                setTimeout(() => delete button.dataset.syIconChanging, 220);
               }
             }
           };
@@ -743,7 +750,8 @@ def _render_mobile_drawer_tools(
                 on_click=lambda: _reload_after_preference_change(toggle_locale),
             ).props(
                 f'flat no-caps aria-label="{attr(language_action)}" title="{attr(language_action)}" '
-                'data-testid=mobile-language-control'
+                'data-testid=mobile-language-control data-sy-icon-motion-role=toggle '
+                'data-sy-icon-story-category=preview data-sy-icon-story-to=language'
             ).classes(_header_control_classes("language", mobile=True))
             sound_enabled = sound_feedback_enabled()
             sound_label = t("disable_sound_feedback") if sound_enabled else t("enable_sound_feedback")
@@ -753,7 +761,8 @@ def _render_mobile_drawer_tools(
                 on_click=lambda: _toggle_sound_feedback_with_preview(sound_controls),
             ).props(
                 f'flat no-caps aria-label="{attr(sound_label)}" title="{attr(sound_label)}" '
-                f'aria-pressed={"true" if sound_enabled else "false"} data-testid=mobile-sound-control'
+                f'aria-pressed={"true" if sound_enabled else "false"} data-testid=mobile-sound-control '
+                'data-sy-sound-toggle data-sy-icon-motion-role=toggle data-sy-icon-story-category=persistent'
             ).classes(_header_control_classes("sound", mobile=True))
             sound_controls.append((sound_button, True, None))
             theme_icon, theme_label, is_dark = _current_theme_control()
@@ -765,6 +774,7 @@ def _render_mobile_drawer_tools(
                 f'flat no-caps aria-label="{attr(theme_label)}" title="{attr(theme_label)}" '
                 f'aria-pressed={"true" if is_dark else "false"} data-testid=mobile-theme-control '
                 f'data-sy-theme-toggle data-sy-theme-show-label=true data-theme-preference={theme_preference()} '
+                'data-sy-icon-motion-role=toggle data-sy-icon-story-category=persistent '
                 f'data-action-light="{attr(t("theme_switch_to_light"))}" '
                 f'data-action-dark="{attr(t("theme_switch_to_dark"))}"'
             ).classes(_header_control_classes("theme", mobile=True))
@@ -807,7 +817,8 @@ def _render_mobile_tabbar(
             more_label = f'{more_label}: {t(active_definition.title_key)}'
         more = ui.button(t("mobile_more"), icon="menu", on_click=drawer.toggle).props(
             f'flat no-caps aria-label="{attr(more_label)}" aria-controls=main-navigation-drawer '
-            'aria-expanded=false data-testid=mobile-more'
+            'aria-expanded=false data-testid=mobile-more data-sy-icon-motion-role=menu '
+            'data-sy-icon-story-category=persistent'
         ).classes("sy-mobile-tab")
         if active_path not in primary_paths:
             more.classes("sy-mobile-tab--active")
@@ -820,6 +831,7 @@ def _install_mobile_drawer_accessibility() -> None:
         """
         (() => {
           const button = document.querySelector('[data-testid="mobile-more"]');
+          const drawerButtons = () => [...document.querySelectorAll('[aria-controls="main-navigation-drawer"]')];
           const currentDrawer = () => document.getElementById('main-navigation-drawer');
           if (!button || !currentDrawer()) return;
           window.__syDrawerA11yCleanup?.();
@@ -844,6 +856,14 @@ def _install_mobile_drawer_accessibility() -> None:
             const style = getComputedStyle(drawer);
             return style.visibility !== 'hidden' && bounds.width > 0 &&
               bounds.right > Math.min(44, bounds.width * .25) && backdropVisible();
+          };
+          const isDrawerVisible = () => {
+            const drawer = currentDrawer();
+            if (!drawer) return false;
+            const bounds = drawer.getBoundingClientRect();
+            const style = getComputedStyle(drawer);
+            return style.visibility !== 'hidden' && style.display !== 'none' &&
+              bounds.width > 0 && bounds.right > Math.min(44, bounds.width * .25);
           };
           const focusable = () => {
             const drawer = currentDrawer();
@@ -891,7 +911,19 @@ def _install_mobile_drawer_accessibility() -> None:
             observeShell();
             const wasOpen = button.getAttribute('aria-expanded') === 'true';
             const open = isOpen();
-            button.setAttribute('aria-expanded', String(open));
+            const drawerVisible = isDrawerVisible();
+            drawerButtons().forEach(trigger => {
+              const triggerOpen = trigger.matches('[data-testid="mobile-more"]')
+                ? open : drawerVisible;
+              trigger.setAttribute('aria-expanded', String(triggerOpen));
+              const previous = trigger.dataset.syDrawerVisualOpen;
+              window.__syIconMotion?.setPersistentGlyph(
+                trigger,
+                triggerOpen ? 'close' : 'menu',
+                {animate: previous !== undefined && previous !== String(triggerOpen)}
+              );
+              trigger.dataset.syDrawerVisualOpen = String(triggerOpen);
+            });
             setBackgroundInert(open);
             if (focusDrawer && open) {
               const first = focusable()[0];
@@ -1167,7 +1199,8 @@ def page_shell(active_path: str) -> Iterator[None]:
         with ui.row().classes("sy-header-bar w-full items-center justify-between"):
             with ui.row().classes("sy-header-leading items-center gap-2"):
                 ui.button(icon="menu", on_click=drawer.toggle).props(
-                    f'flat round aria-label="{attr(t("open_navigation"))}" aria-controls=main-navigation-drawer'
+                    f'flat round aria-label="{attr(t("open_navigation"))}" aria-controls=main-navigation-drawer '
+                    'aria-expanded=true data-sy-icon-motion-role=menu data-sy-icon-story-category=persistent'
                 ).classes("sy-icon-control sy-desktop-drawer-trigger").style("color: var(--sy-nav-ink) !important").tooltip(t("open_navigation"))
                 with ui.column().classes("sy-header-context gap-0 min-w-0"):
                     ui.label(f"{chapter:02d} · {t(navigation_group_key)}").classes("sy-header-eyebrow")
@@ -1201,10 +1234,12 @@ def page_shell(active_path: str) -> Iterator[None]:
                     language_text, language_action = language_switch_copy(compact=True)
                     ui.button(
                         language_text,
+                        icon="translate",
                         on_click=lambda: _reload_after_preference_change(toggle_locale),
                     ).props(
                         f'flat dense no-caps data-testid=language-control aria-label="{attr(language_action)}" '
-                        f'title="{attr(language_action)}"'
+                        f'title="{attr(language_action)}" data-sy-icon-motion-role=toggle '
+                        'data-sy-icon-story-category=preview data-sy-icon-story-to=language'
                     ).classes(_header_control_classes("language"))
                     sound_icon = "volume_up" if sound_feedback_enabled() else "volume_off"
                     sound_tooltip = (
@@ -1217,7 +1252,8 @@ def page_shell(active_path: str) -> Iterator[None]:
                         on_click=lambda: _toggle_sound_feedback_with_preview(sound_controls),
                     ).props(
                         f'flat round aria-label="{attr(sound_tooltip)}" title="{attr(sound_tooltip)}" '
-                        f'aria-pressed={"true" if sound_feedback_enabled() else "false"} data-testid=sound-control'
+                        f'aria-pressed={"true" if sound_feedback_enabled() else "false"} data-testid=sound-control '
+                        'data-sy-sound-toggle data-sy-icon-motion-role=toggle data-sy-icon-story-category=persistent'
                     ).classes(_header_control_classes("sound"))
                     with sound_button:
                         sound_tooltip_element = ui.tooltip(sound_tooltip)
@@ -1230,6 +1266,7 @@ def page_shell(active_path: str) -> Iterator[None]:
                         f'flat round aria-label="{attr(tooltip)}" title="{attr(tooltip)}" '
                         f'aria-pressed={"true" if is_dark else "false"} data-testid=theme-control '
                         f'data-sy-theme-toggle data-theme-preference={theme_preference()} '
+                        'data-sy-icon-motion-role=toggle data-sy-icon-story-category=persistent '
                         f'data-action-light="{attr(t("theme_switch_to_light"))}" '
                         f'data-action-dark="{attr(t("theme_switch_to_dark"))}"'
                     ).classes(_header_control_classes("theme"))

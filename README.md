@@ -389,6 +389,18 @@ Cloudflare KV 會在不同節點同步新密文。系統不會提早顯示一條
 
 ## 開發與驗證
 
+### 語意圖標形態轉變
+
+互動圖標使用一套共用語法，而不是各頁自行旋轉或漂移：短暫預覽只表達「動作將帶來甚麼結果」，聲音、主題、播放及抽屜等持久狀態則永遠顯示真實目前狀態。圖標在固定的 24×24 槽內以置中收合／交叉淡入轉變；按鈕本體不移位、不傾斜、不縮放，停用、忙碌、觸控及鍵盤焦點都有明確行為。`prefers-reduced-motion`、forced colours 或動畫 runtime 不可用時，介面直接顯示可讀的最終狀態。公平、備份及發布等圖標不會被轉成可能誤導責任或資料位置的符號。
+
+聚焦檢查可重現語意盤點、狀態機及真實瀏覽器行為，而不寫入正式資料：
+
+```powershell
+python -X utf8 scripts\audit_icon_semantics.py
+deno test nicegui_app\assets\motion\sing-yin-icon-story-state_test.js
+python -X utf8 scripts\verify_semantic_icon_motion.py
+```
+
 rc20 正式候選的完整套件為 839 項 Python 測試、3 項 motion runtime 合約及 40 項 Worker Deno 合約。發布驗證把互補證據分開：`scripts/verify_nicegui_ui.py` 核對繁中／英文、深淺模式、鍵盤焦點、配圖主題切換、校徽、空／錯誤／復原狀態、1440×1024 full desktop 及瀏覽器 `pageerror`；`scripts/verify_runtime_performance.py` 核對冷載、重複開關音樂，以及跨代表頁面後返回首頁的 heap／DOM／listener 增長；`scripts/verify_nicegui_mobile.py` 專門核對 256／320／390px 手機、768×1024 與 820×1180 adaptive touch tablet、1024×768 desktop-shell touch tablet 及手機橫向排列；`scripts/verify_nicegui_write_pipeline.py` 只可在隔離 SQLite／備份／日誌路徑，以虛構中文姓名完成整條排班寫入、雙語 PDF、請假調整、另一資料庫還原，以及確認語句保護的新學年封存與新名單匯入；`scripts/verify_nicegui_partial_backup.py` 故意令備份失敗，證明已提交資料不會被誤報為回復，並完成手動快照復原。NiceGUI 的長連線及互動後背景音樂令全網絡靜止不是可靠完成訊號，因此測試以 DOM、URL 及真實操作結果判斷就緒；所有瀏覽器階段同時把 console error 及未捕捉頁面錯誤視為失敗。
 
 rc19 的單一裝置矩陣把平板與桌面列為共存形態：除 256／320／390px 手機與手機橫向外，矩陣同時包含 768×1024 及 820×1180 adaptive touch tablet、1024×768 desktop-shell touch tablet，以及 1440×1024 full desktop。`verify_nicegui_mobile.py` 負責手機／平板量測，`verify_nicegui_ui.py` 負責完整桌面證據；兩者共同檢查正確導航 shell、44px 目標、內容寬度、無 document overflow、鍵盤／焦點及 console／page errors。這是 rc19 候選契約，只有來源 fingerprint 相符的最終報告才可宣稱通過；詳見[正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md)。

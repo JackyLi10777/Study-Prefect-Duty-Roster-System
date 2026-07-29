@@ -833,6 +833,26 @@ Shared CSS motion tokens are the only default timing vocabulary: `--sy-motion-pr
 - Music is a separate comfort layer whose local player may make exactly one visible page-ready attempt at a browser-local default of 50%, and always offers immediate pause/off controls. The controller inspects the `HTMLMediaElement.play()` promise and exposes `starting`, `playing`, `blocked`, `loading`, `transport`, `decoding`, `lifecycle`, `paused` and fallback `error`; the interface must never claim playback from intent alone. With entry intent `unset`, the identity CTA itself is the default-music trusted pointer／keyboard action and calls `play()` synchronously before any `await`, timer or navigation. Playback success, rejection, synchronous failure or the 450 ms startup budget all continue exactly once to the selected identity; media failure is never presented as authentication failure. The accessible **「預設：開啟音樂／Default: Enter with music」** and **「安靜繼續／Continue quietly」** controls are optional recovery／preference actions. Explicit quiet intent wins for the current visit. Generic capture-phase retries must not compete with navigation. The 50% level is a starting point rather than forced loudness: a versioned migration upgrades only exact legacy 24%／35% defaults, while every other operator-selected level is preserved. When two routes resolve to the same local track, the next route restores that track's session position and playing／paused state instead of restarting it; this continuity uses bounded `sessionStorage`, never the roster database or permanent browser storage. `/view#…` stays silent and YouTube remains manual. A YouTube player must remain fully visible with native controls, never autoplay, and never sit behind a form, name, table, warning, roster, fairness record, or PDF. Public playlist playback does not require sign-in; optional API search and saved playlist names must never carry student data.
 - No GSAP ScrollTrigger, pinning, looping animation, parallax, bouncing icons, or ambient video.
 
+### 8.2 Icon Morph Grammar / 圖標形態轉變語法
+
+圖標動效是操作語意的一部分，不是用來提高「已動畫圖標數量」的裝飾層。所有互動圖標必須先被分類；沒有可信目的 glyph 時，保留原圖標和完整文字標籤，優先於加入視覺有趣但錯誤的故事。
+
+1. **Persistent state morph／持續性真實狀態**：圖標轉換後持續顯示真實狀態，例如 `light_mode ↔ dark_mode`、`volume_off ↔ volume_up`、已確認播放後的 `play_arrow ↔ pause`，以及與抽屜實際開關狀態同步的 `menu ↔ close`。真實狀態在 hover、focus、touch 預示期間改變時，真實狀態永遠勝出。
+2. **Intent-to-outcome preview／意圖至結果預示**：hover 或鍵盤 focus 可在同一圖標槽內短暫預示操作結果，例如 `save → task_alt`、`edit_note → fact_check`、`calendar_month → event_available`；離開後恢復來源 glyph。預示不可冒充已完成、已發布或已下載。
+3. **Operation lifecycle feedback／操作生命週期回饋**：只有真實事件可驅動「原操作 → 處理中 → 實際成功、注意或錯誤」。一般圖標不可被改成虛假 spinner；真實 loading spinner 可以旋轉，但完成或失敗狀態必須由操作結果決定。
+4. **Intentionally static／有意保持靜態**：裝飾、資訊、表格儲存格、警告、證據、狀態和不具互動性的圖標保持靜態。替換後會扭曲意思、暗示不存在的雲端能力，或把正面狀態改成不確定的圖標亦保持靜態或只使用既有 role 回饋。
+
+共同不變條件：
+
+- Glyph 通常置於固定 `24×24px` 槽位，中心收束／crossfade 後原位顯示目的 glyph；按鈕 host 不移動、不傾斜、不旋轉、不改變尺寸，亦不產生 layout shift。
+- 禁止以晃動、方向性位移、彈跳、任意旋轉、持續脈動或無限循環代替語意轉變。「呼吸感」來自真實互動和狀態回應，不是永久播放。
+- Pointer hover、鍵盤 focus 及兩者重疊共享同一狀態機。快速進出必須取消上一條 timeline；coarse pointer 只可在有幫助時播放一次有界限的按壓故事，不模擬 hover。
+- Disabled、busy、DOM replacement、NiceGUI reconnect、執行期間 reduced-motion 變更和 disposer cleanup 都屬於同一生命週期合約。任何時刻只可有一個共用 runtime 擁有圖標轉變；頁首或單頁不得再疊加另一套動畫。
+- `prefers-reduced-motion: reduce` 立即解析至有意義的靜態最終狀態；forced colours、無 GSAP 或動畫失敗時，標籤、accessible name、`aria-pressed`、focus indicator 和真實狀態仍須完整清楚。
+- 不新增 GIF、遠端動畫資產、Anime.js、Lottie 或第二套通用 runtime。本地已消毒 SVG 只限現有 glyph family 無法清楚表達的高價值招牌控制。
+
+清單和覆蓋率必須分開報告：unique glyph names、source call sites、rendered interactive instances、已分類 semantic roles、有效 story sources、story destinations、role-only controls、decorative／informational icons 及 intentionally-static icons，不可混用分母。驗收目標是所有渲染出的互動圖標控制均被分類，而不是達到任意故事數字。
+
 ### Hover and press response
 
 - Primary buttons rise by at most 1px on hover and compress slightly on press.

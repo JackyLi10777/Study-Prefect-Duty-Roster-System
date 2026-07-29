@@ -335,6 +335,8 @@ def test_viewer_is_bilingual_responsive_theme_aware_printable_and_reduced_motion
     assert ':root:not([data-theme-ready="true"]) .theme-toggle { visibility: hidden; }' in source
     assert 'id="themeToggle"' in source
     assert 'data-testid="public-theme-control"' in source
+    assert '<span id="themeToggleLabel" class="theme-toggle-label">淺色 · Light</span>' in source
+    assert "system: {\n    current: '自動 · Auto'" not in source
     assert "themeToggle?.addEventListener('click'" in source
     assert "resolvedTheme() === 'dark' ? 'light' : 'dark'" in source
     assert "function stageThemeHandoff()" in source
@@ -719,11 +721,16 @@ def test_gateway_cta_and_share_loading_expose_honest_accessible_states() -> None
         "button.removeAttribute('aria-busy')",
         "button.removeAttribute('aria-disabled')",
         "welcomeEntryController.reset()",
-        "@keyframes secure-pulse",
+        "animation: spin 760ms linear infinite",
         "@media (prefers-reduced-motion: reduce)",
-        ".sy-secure-pulse::after { animation: none",
     ):
         assert required in source
+
+    secure_indicator = source.split(".sy-secure-pulse", 1)[1].split(
+        ".state-icon", 1
+    )[0]
+    assert "animation:" not in secure_indicator
+    assert "@keyframes secure-pulse" not in source
 
     assert "touch-action: manipulation" in source
     assert ".access-panel .admin-login::before" in source

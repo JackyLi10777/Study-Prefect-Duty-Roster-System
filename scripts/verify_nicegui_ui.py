@@ -511,6 +511,38 @@ def assert_reference_toc(page, *, required_targets: tuple[str, ...]) -> None:  #
         assert page.locator(f'[id="{target}"]').count() == 1
 
 
+def assert_rendered_icon_semantics(page) -> dict[str, int]:  # type: ignore[no-untyped-def]
+    """Audit rendered controls without confusing DOM instances with source call sites."""
+
+    page.wait_for_function("typeof window.__syIconMotion?.classify === 'function'")
+    audit = page.evaluate(
+        """() => {
+          const hosts = [...document.querySelectorAll('.q-btn,.q-tab,.q-item.q-item--clickable')];
+          const rows = hosts.flatMap(host => {
+            const icons = [...host.querySelectorAll(
+              '.q-icon.material-icons,.q-icon.material-icons-outlined,' +
+              '.q-icon.material-symbols-outlined,.q-icon.material-symbols-rounded'
+            )];
+            return icons.map(icon => ({host, icon, classification: window.__syIconMotion.classify(host)}));
+          });
+          const categories = {preview: 0, persistent: 0, static: 0};
+          const missing = [];
+          rows.forEach(({host, icon, classification}) => {
+            if (!classification || !icon.dataset.syIconMotion || !icon.dataset.syIconStoryCategory) {
+              missing.push({text: host.textContent?.trim().slice(0, 80), glyph: icon.textContent?.trim()});
+              return;
+            }
+            categories[classification.category] = (categories[classification.category] || 0) + 1;
+          });
+          return {total: rows.length, missing, categories};
+        }"""
+    )
+    assert audit["total"] > 0
+    assert audit["missing"] == [], audit["missing"]
+    assert set(audit["categories"]) <= {"preview", "persistent", "static"}
+    return {key: int(value) for key, value in audit["categories"].items()}
+
+
 def main() -> None:
     LIGHT_SCREENSHOT.parent.mkdir(parents=True, exist_ok=True)
     expected_invalid_backups = prepare_invalid_backup_fixture()
@@ -569,6 +601,9 @@ def main() -> None:
         assert page.get_by_role("link", name="跳至主要內容").count() == 1
         page.wait_for_function("document.documentElement.dataset.syMotion === 'ready'")
         assert page.evaluate("window.gsap?.version") == "3.13.0"
+        dashboard_icon_categories = assert_rendered_icon_semantics(page)
+        assert dashboard_icon_categories["persistent"] >= 3
+        assert dashboard_icon_categories["preview"] >= 1
         primary_flow_action = page.locator(".sy-flow-step--active .q-btn.bg-primary")
         primary_flow_icon = primary_flow_action.locator(".q-icon[data-sy-icon-motion]").first
         primary_flow_icon.wait_for(timeout=5_000)
@@ -613,9 +648,20 @@ def main() -> None:
               });
             }"""
         )
+        sound_icon = sound_toggle.locator(".q-icon").first
+        sound_host_box = sound_toggle.bounding_box()
+        assert sound_icon.get_attribute("data-sy-icon-story-category") == "persistent"
+        assert sound_icon.inner_text().strip() == "volume_off"
         sound_toggle.click()
         enabled_sound_toggle = page.get_by_role("button", name="關閉提示音")
         enabled_sound_toggle.wait_for(timeout=5_000)
+        page.wait_for_function(
+            "document.querySelector('[data-sy-sound-toggle] .q-icon')?.textContent.trim() === 'volume_up'"
+        )
+        updated_sound_host_box = enabled_sound_toggle.bounding_box()
+        assert sound_host_box is not None and updated_sound_host_box is not None
+        for coordinate in ("x", "y", "width", "height"):
+            assert abs(sound_host_box[coordinate] - updated_sound_host_box[coordinate]) < 0.6
         assert enabled_sound_toggle.evaluate(
             "element => element.querySelector('.q-btn__content > span.block') === null"
         )
@@ -1021,26 +1067,29 @@ def main() -> None:
         expansion_header = page.locator(".q-expansion-item .q-item").first
         assert expansion_header.evaluate("element => getComputedStyle(element).cursor") == "pointer"
         navigation_toggle = page.locator(".sy-desktop-drawer-trigger")
-        navigation_toggle_icon = navigation_toggle.locator(".q-icon[data-sy-icon-story-to]").first
+        navigation_toggle_icon = navigation_toggle.locator(
+            '.q-icon[data-sy-icon-story-category="persistent"]'
+        ).first
         assert navigation_toggle.count() == 1
         assert navigation_toggle_icon.count() == 1
         static_navigation_toggle_transform = navigation_toggle.evaluate(
             "element => getComputedStyle(element).transform"
         )
-        static_navigation_icon_transform = navigation_toggle_icon.evaluate(
-            "element => getComputedStyle(element).transform"
+        assert navigation_toggle.get_attribute("aria-expanded") == "true"
+        assert navigation_toggle_icon.text_content().strip() == "close"
+        navigation_toggle.click()
+        page.wait_for_function(
+            "document.querySelector('.sy-desktop-drawer-trigger')?.getAttribute('aria-expanded') === 'false'"
         )
-        navigation_toggle.hover()
-        page.wait_for_timeout(190)
         assert navigation_toggle.evaluate(
             "element => getComputedStyle(element).transform"
         ) == static_navigation_toggle_transform
-        assert navigation_toggle_icon.evaluate(
-            "element => getComputedStyle(element).transform"
-        ) != static_navigation_icon_transform
-        assert navigation_toggle_icon.text_content().strip() == navigation_toggle_icon.get_attribute(
-            "data-sy-icon-story-to"
+        assert navigation_toggle_icon.text_content().strip() == "menu"
+        navigation_toggle.click()
+        page.wait_for_function(
+            "document.querySelector('.sy-desktop-drawer-trigger')?.getAttribute('aria-expanded') === 'true'"
         )
+        assert navigation_toggle_icon.text_content().strip() == "close"
         page.goto(f"{BASE_URL}/getting-started", wait_until="domcontentloaded")
         page.locator(".sy-onboarding-symbol").wait_for(timeout=10_000)
         assert page.get_by_test_id("reference-index").locator(".sy-reference-index-card").count() == 3

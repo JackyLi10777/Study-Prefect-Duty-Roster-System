@@ -71,12 +71,14 @@ def test_story_icons_change_glyphs_instead_of_only_translating() -> None:
     motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
 
     expected_stories = {
-        "menu": "arrow_back",
         "space_dashboard": "dashboard_customize",
         "calendar_month": "event_available",
         "help_outline": "lightbulb",
         "menu_book": "auto_stories",
         "save": "task_alt",
+        "translate": "language",
+        "logout": "exit_to_app",
+        "headphones": "graphic_eq",
     }
     for source, destination in expected_stories.items():
         assert f"['{source}', '{destination}']" in motion
@@ -85,7 +87,7 @@ def test_story_icons_change_glyphs_instead_of_only_translating() -> None:
     story = motion.split("const animateIconStory", 1)[1].split("const iconStoryHost", 1)[0]
     assert "rotate:" not in story
     assert "back.out" not in story
-    assert "power3.out" in story
+    assert "power3.out" in motion
     assert "prefers-reduced-motion: reduce" in motion
     assert "new AbortController()" in motion
 
@@ -93,18 +95,20 @@ def test_story_icons_change_glyphs_instead_of_only_translating() -> None:
 def test_story_icon_state_survives_rapid_reversal_and_pointer_focus_overlap() -> None:
     motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
     state_machine = _read("nicegui_app/assets/motion/sing-yin-icon-story-state.js")
-    story = motion.split("const animateIconStory", 1)[1].split("const hydratePointers", 1)[0]
+    story = motion.split("const cancelIconTimeline", 1)[1].split("const hydratePointers", 1)[0]
 
     cancel = story.index("const previousTimeline = iconStoryTimelines.get(icon)")
     decide = story.index("const next = active ?")
     assert cancel < decide
     assert "previousTimeline.kill()" in story
-    assert "window.gsap.set(icon, { clearProps:" in story
+    assert "window.gsap?.set(icon, { clearProps:" in story
     assert "window.SingYinIconStoryState?.create?.()" in motion
     assert "iconStoryState?.transition(host, input, true)" in story
     assert "iconStoryState?.transition(host, input, false)" in story
-    assert "const wasActive = state.pointer || state.focus" in state_machine
+    assert "const previewActive = state => state.pointer || state.focus" in state_machine
     assert "return wasActive === isActive ? null : isActive" in state_machine
+    assert "setPersistent(host, glyph)" in state_machine
+    assert "persistentGlyph" in state_machine
 
 
 def test_disabled_or_busy_story_icon_is_restored_without_animating() -> None:
@@ -112,11 +116,91 @@ def test_disabled_or_busy_story_icon_is_restored_without_animating() -> None:
     story = motion.split("const animateIconStory", 1)[1].split("const iconStoryHost", 1)[0]
 
     icon_lookup = story.index("const icon = host.querySelector")
-    disabled_guard = story.index("host.matches('.disabled")
+    disabled_guard = motion.index("host.matches('.disabled")
     assert icon_lookup < disabled_guard
     assert "const original = icon.dataset.syIconStoryFrom" in story
     assert "icon.textContent = original" in story
     assert "icon.dataset.syIconStoryActive = 'false'" in story
+
+
+def test_persistent_controls_do_not_use_temporary_hover_stories() -> None:
+    motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
+    shell = _read("nicegui_app/ui/shell.py")
+    music = _read("nicegui_app/ui/music.py")
+
+    preview_registry = motion.split("const iconStoryGlyphs", 1)[1].split(");", 1)[0]
+    for persistent_source in ("volume_off", "dark_mode", "menu", "play_arrow", "pause"):
+        assert f"['{persistent_source}'," not in preview_registry
+    for pair in (
+        "['volume_off', 'volume_up']",
+        "['dark_mode', 'light_mode']",
+        "['menu', 'close']",
+        "['play_arrow', 'pause']",
+    ):
+        assert pair in motion
+    assert "setPersistentGlyph" in motion
+    assert "data-sy-icon-story-category=persistent" in shell
+    assert "data-sy-sound-toggle" in shell
+    assert "data-sy-icon-story-category=persistent" in music
+
+
+def test_intentionally_static_category_blocks_registry_preview() -> None:
+    motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
+    static_scope = motion.split("if (category === 'static')", 1)[1].split(
+        "const storyGlyph", 1
+    )[0]
+
+    assert "deleteDataset(icon, 'syIconStoryFrom')" in static_scope
+    assert "deleteDataset(icon, 'syIconStoryTo')" in static_scope
+    assert "iconStoryState?.clear(host)" in static_scope
+
+
+def test_header_rotation_layer_was_removed_in_favour_of_shared_morph() -> None:
+    theme = _read("nicegui_app/assets/css/sing-yin-theme-v1.css")
+    shell = _read("nicegui_app/ui/shell.py")
+
+    assert "sy-header-icon-state" not in theme
+    assert "syIconChanging" not in shell
+    assert "window.__syIconMotion?.setPersistentGlyph" in shell
+
+    worker = _read("cloudflare/roster_viewer/worker.js")
+    theme_scope = worker.split(".theme-icon--sun", 1)[1].split(".skip-link", 1)[0]
+    assert "rotate(" not in theme_scope
+    assert "scale(.58)" in theme_scope
+
+
+def test_public_entry_icons_do_not_rotate_or_loop_decoratively() -> None:
+    worker = _read("cloudflare/roster_viewer/worker.js")
+
+    verse_refresh = worker.split(".verse-refresh svg", 1)[1].split(".service-note", 1)[0]
+    assert "rotate(" not in verse_refresh
+
+    access_icon = worker.split(".access-panel-icon svg", 1)[1].split(
+        ".guest-enter:hover", 1
+    )[0]
+    assert "rotate(" not in access_icon
+
+    secure_indicator = worker.split(".sy-secure-pulse", 1)[1].split(
+        ".state-icon", 1
+    )[0]
+    assert "infinite" not in secure_indicator
+
+
+def test_persistent_preference_updates_cannot_cross_contaminate_controls() -> None:
+    shell = _read("nicegui_app/ui/shell.py")
+    sound_scope = shell.split("async def _sync_preference_controls", 1)[1].split(
+        "async def _toggle_sound_feedback_with_preview", 1
+    )[0]
+    theme_scope = shell.split("async def _sync_theme_controls", 1)[1].split(
+        "def _remember_system_theme_resolution", 1
+    )[0]
+
+    assert "[data-sy-sound-toggle]" in sound_scope
+    assert "[data-sy-theme-toggle]" not in sound_scope
+    assert "[data-sy-theme-toggle]" in theme_scope
+    assert "[data-sy-sound-toggle]" not in theme_scope
+    assert "await ui.run_javascript" in sound_scope
+    assert "await ui.run_javascript" in theme_scope
 
 
 def test_isolated_browser_verifier_exercises_story_reversal_and_input_overlap() -> None:
@@ -136,6 +220,12 @@ def test_icon_hydration_uses_observation_and_delegation_not_per_button_listeners
     assert "MutationObserver" in motion
     assert "mutationObserver?.disconnect()" in motion
     assert "hydrateIconMotion()" in motion or "hydrateIconMotion(document)" in motion
+
+    hydration = motion.split("const hydrateIconMotion", 1)[1].split("const guardStateFor", 1)[0]
+    assert "setDataset(icon, 'syIconStoryCategory', category)" in hydration
+    assert "setDataset(icon, 'syIconStoryTo', storyGlyph)" in hydration
+    assert "icon.dataset.syIconStoryCategory = category" not in hydration
+    assert "icon.dataset.syIconStoryTo = storyGlyph" not in hydration
 
     for per_button_listener in (
         r"querySelectorAll\(\s*['\"][^'\"]*(?:\.q-btn|\bbutton\b)",
@@ -322,7 +412,16 @@ def test_browser_verifier_keeps_navigation_button_stable_while_icon_tells_story(
     verifier = _read("scripts/verify_nicegui_ui.py")
 
     assert 'page.locator(".sy-desktop-drawer-trigger")' in verifier
-    assert 'navigation_toggle.locator(".q-icon[data-sy-icon-story-to]").first' in verifier
+    assert 'data-sy-icon-story-category="persistent"' in verifier
     assert ") == static_navigation_toggle_transform" in verifier
-    assert ") != static_navigation_icon_transform" in verifier
-    assert 'get_attribute("data-sy-icon-story-to")' in verifier
+    assert 'navigation_toggle_icon.text_content().strip() == "menu"' in verifier
+    assert 'navigation_toggle_icon.text_content().strip() == "close"' in verifier
+
+
+def test_browser_verifier_audits_every_rendered_interactive_icon() -> None:
+    verifier = _read("scripts/verify_nicegui_ui.py")
+
+    assert "def assert_rendered_icon_semantics" in verifier
+    assert "window.__syIconMotion.classify(host)" in verifier
+    assert 'assert audit["missing"] == []' in verifier
+    assert 'dashboard_icon_categories["persistent"] >= 3' in verifier

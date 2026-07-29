@@ -34,3 +34,38 @@ Deno.test('focus-first overlap behaves the same as pointer-first overlap', () =>
   assertEquals(machine.transition(host, 'focus', false), null, 'pointer keeps active');
   assertEquals(machine.transition(host, 'pointer', false), false, 'last input restores');
 });
+
+Deno.test('a persistent state change wins while a preview is active', () => {
+  const machine = globalThis.SingYinIconStoryState.create();
+  const host = {};
+
+  machine.setPersistent(host, 'volume_off');
+  assertEquals(machine.transition(host, 'pointer', true), true, 'preview starts');
+  const state = machine.setPersistent(host, 'volume_up');
+  assertEquals(state.persistentGlyph, 'volume_up', 'real glyph wins');
+  assertEquals(state.previewActive, true, 'input state remains observable');
+  assertEquals(state.revision, 2, 'persistent revision advances');
+});
+
+Deno.test('disabled busy and reduced-motion guards cancel temporary preview', () => {
+  const machine = globalThis.SingYinIconStoryState.create();
+  const host = {};
+
+  machine.transition(host, 'focus', true);
+  const guarded = machine.setGuards(host, {busy: true});
+  assertEquals(guarded.interactive, false, 'busy control is not interactive');
+  assertEquals(guarded.previewActive, false, 'busy control cancels preview');
+  assertEquals(machine.transition(host, 'focus', false), null, 'cleanup is idempotent');
+});
+
+Deno.test('clearing a replaced host removes all prior state', () => {
+  const machine = globalThis.SingYinIconStoryState.create();
+  const host = {};
+
+  machine.setPersistent(host, 'dark_mode');
+  machine.transition(host, 'pointer', true);
+  machine.clear(host);
+  const state = machine.current(host);
+  assertEquals(state.persistentGlyph, null, 'persistent glyph is cleared');
+  assertEquals(state.previewActive, false, 'preview inputs are cleared');
+});

@@ -500,6 +500,17 @@ suite, compilation, dependency integrity, desktop browser smoke, measured
 runtime performance and memory stability, the fictional-data write/PDF and
 restore pipeline, independent mobile adaptation, strict deployment readiness,
 committed-without-backup recovery, and the isolated unified-Guest workflow.
+Semantic icon motion is governed by one shared grammar rather than page-specific
+rotation or drift. Temporary previews communicate an action's outcome, while
+sound, theme, playback, and drawer controls always preserve their true persistent
+state. Glyphs collapse and crossfade inside a fixed 24x24 slot; the button host
+never moves, tilts, or resizes. Disabled, busy, pointer, keyboard, coarse-touch,
+reduced-motion, forced-colour, reconnect, and DOM-replacement paths are explicit.
+The focused inventory, state-machine, and disposable-browser checks are
+`scripts/audit_icon_semantics.py`,
+`nicegui_app/assets/motion/sing-yin-icon-story-state_test.js`, and
+`scripts/verify_semantic_icon_motion.py`.
+
 The formal verifier has fourteen gates, including the independent icon-state-machine
 contract; the final matching fingerprint is recorded only after the frozen-source
 rerun. Machine evidence remains separate

@@ -408,6 +408,30 @@ Live transport evidence is recorded separately from final acceptance: a temporar
 
 The only deliberate application-originated external request carrying roster-derived content is the explicitly enabled public-share adapter. It sends authenticated ciphertext and minimum metadata—not plaintext or OP state—to the fixed canonical Worker after confirmation.
 
+## Semantic icon motion boundary
+
+`nicegui_app/assets/motion/sing-yin-icon-story-state.js` owns the framework-neutral
+state machine for pointer, focus, persistent glyph, guards and revision. The
+NiceGUI runtime in `sing-yin-motion.js` owns DOM discovery, GSAP timelines,
+touch timers, MutationObserver hydration and disposal. Page modules may declare
+only semantic metadata through the shared component API; they must not create a
+second timeline, rotate the host, or infer product state from translated labels.
+
+The four categories are persistent state, intent-to-outcome preview, operation
+lifecycle and intentionally static. Persistent state has priority over hover and
+touch. Every interactive Material glyph receives a rendered category and role;
+unknown or responsibility-sensitive actions remain static until a truthful pair
+is reviewed. Reduced motion, disabled and busy controls cancel temporary stories
+and immediately expose the truthful glyph. Removed DOM clears timers, timelines
+and WeakMap state; reconnect hydration is idempotent so semantic attributes cannot
+create a MutationObserver loop.
+
+The public Worker uses the same fixed-slot, centred opacity/scale grammar with a
+smaller implementation. It does not load a second animation runtime. The
+deterministic state-machine tests, rendered semantic audit and disposable browser
+verifier jointly cover reversal, pointer/focus overlap, touch restoration,
+persistent controls, fixed geometry, forced colours and repeated route replacement.
+
 ## Verification
 
 - `scripts/verify_practice_mode.py` checks the isolated health identity, bilingual persistent banner, light/dark styling, phone layout, console, and local screenshots without writing roster data.
