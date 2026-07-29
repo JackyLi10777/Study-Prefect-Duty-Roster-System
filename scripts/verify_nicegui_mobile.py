@@ -458,30 +458,37 @@ def _assert_route_focus_transfer(page: Page, *, label: str) -> None:
 
 
 def _assert_coarse_pointer_icon_story(page: Page, *, label: str) -> None:
-    """A touch press tells one semantic icon story, then restores its source glyph."""
+    """A touch opens the drawer with a persistent menu-to-close state story."""
 
     _assert_mobile_page(page, "/", label=f"{label} icon-story origin")
     if page.evaluate("matchMedia('(hover: hover) and (pointer: fine)').matches"):
         raise AssertionError(f"{label} unexpectedly exposes a fine pointer.")
-    icon = page.get_by_test_id("mobile-more").locator('[data-sy-icon-story-to="arrow_back"]')
+    more = page.get_by_test_id("mobile-more")
+    icon = more.locator(".q-icon").first
     icon.wait_for(state="visible", timeout=10_000)
     if icon.inner_text().strip() != "menu":
         raise AssertionError(f"{label} icon story did not start from the menu glyph.")
-    page.get_by_test_id("mobile-more").dispatch_event(
-        "pointerdown",
-        {"pointerType": "touch", "isPrimary": True},
-    )
+    if icon.get_attribute("data-sy-icon-story-category") != "persistent":
+        raise AssertionError(f"{label} menu icon is not governed by persistent drawer state.")
+    more.click()
     page.wait_for_function(
         """() => {
-          const icon = document.querySelector('[data-testid="mobile-more"] [data-sy-icon-story-to="arrow_back"]');
-          return icon?.textContent?.trim() === 'arrow_back' && icon?.dataset.syIconStoryActive === 'true';
+          const host = document.querySelector('[data-testid="mobile-more"]');
+          const icon = host?.querySelector('.q-icon');
+          return host?.getAttribute('aria-expanded') === 'true' &&
+            icon?.textContent?.trim() === 'close' &&
+            icon?.dataset.syIconStoryCategory === 'persistent';
         }""",
         timeout=3_000,
     )
+    page.keyboard.press("Escape")
     page.wait_for_function(
         """() => {
-          const icon = document.querySelector('[data-testid="mobile-more"] [data-sy-icon-story-to="arrow_back"]');
-          return icon?.textContent?.trim() === 'menu' && icon?.dataset.syIconStoryActive === 'false';
+          const host = document.querySelector('[data-testid="mobile-more"]');
+          const icon = host?.querySelector('.q-icon');
+          return host?.getAttribute('aria-expanded') === 'false' &&
+            icon?.textContent?.trim() === 'menu' &&
+            icon?.dataset.syIconStoryCategory === 'persistent';
         }""",
         timeout=3_000,
     )

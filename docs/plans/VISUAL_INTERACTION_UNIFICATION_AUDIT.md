@@ -31,6 +31,8 @@ The first formal rc32 browser gate exposed one additional boundary case: the des
 
 The next formal pass reached the bilingual control and confirmed that the page, visible label and accessible name had all switched correctly. Its verifier nevertheless read the Material icon ligature (`language`) together with the visible `繁中` label and treated that combined implementation text as the label. The focused correction now asserts the exact visible label descendant, the exact `aria-label` and the document language independently. Product behaviour and acceptance strictness are unchanged; the test now observes the same semantic layers that a user and assistive technology receive.
 
+The following mobile gate exposed a persistent-state hydration race rather than a layout failure. Quasar can change drawer-trigger classes before the 180ms `menu → close` morph completes; the shared MutationObserver then saw the old glyph and could overwrite the newer persistent state. Hydration now preserves an existing persistent glyph while its timeline is active and restores that authoritative state after DOM replacement. The mobile verifier follows the real disclosure lifecycle—tap opens to `close`, Escape closes to `menu`, with matching `aria-expanded`—instead of checking the retired `arrow_back` preview story.
+
 The authoritative acceptance evidence is produced by:
 
 - `python -X utf8 scripts/audit_icon_semantics.py`
