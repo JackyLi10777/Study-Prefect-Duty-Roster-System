@@ -1,6 +1,6 @@
 # 聖言中學導學風紀值班表生成系統
 
-> **已核實線上來源（2026-07-29）：** Windows origin 正運行 clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`；canonical Worker version `7816b183-3edb-49ca-b39b-a91091ae794f` 承接 100% 流量。R5／R6 修復分支只是規劃為 rc32 的工作候選，尚未審核、標記或部署。rc30 origin＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退；真人驗收仍未完成。下文較舊的 live／candidate 字樣只保留歷史證據，均由本段取代。
+> **已核實線上來源（2026-07-29）：** Windows origin 正運行 clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`；canonical Worker version `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量。297 個發布檔案的指紋 `121302ae68946f43b7eedc93ed0dc9186574f5e42e06551d1fe120263c47e075` 通過 15／15 正式閘門；正式備份、隔離還原、origin health／readiness、Cloudflare Access、桌面／手機 Guest、語言／主題及 Viewer 復原頁均已核對。第一個 origin 回退是 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2`，第一個 Worker 回退是 `7816b183-3edb-49ca-b39b-a91091ae794f`；首席導學風紀及教師顧問的受監督真人驗收仍未完成。下文較舊的 live／candidate 字樣只保留歷史證據，均由本段取代。
 >
 > **非以役人，乃役於人。**
 > 

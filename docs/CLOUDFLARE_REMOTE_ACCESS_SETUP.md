@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **線上來源真相（2026-07-29）：** Windows origin 正運行 clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`，canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 承接 100% 流量。R5／R6 修復仍是 rc32 工作候選，未部署；因 Worker secret placeholder 契約已修改，候選獲批後 origin 與 Worker 必須配對受控部署。rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退。
+> **線上來源真相（2026-07-29）：** Windows origin 正運行 clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`，canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量。配對部署已通過 origin／Worker identity parity、0% staged smoke、100% promotion、Cloudflare Access 及 canonical rendered checks。第一個 origin 回退是 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2`；第一個 Worker 回退是 `7816b183-3edb-49ca-b39b-a91091ae794f`。真人驗收未完成。
 >
 > **歷史 rc30 乾淨發布證據：** Windows origin 曾以受控方式運行並驗證健康、ready 的 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；其 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% version smoke 後承接 100% 流量。canonical root、capability health 與 rendered desktop／320px／Guest Engineering checks 通過，private readiness 保持預期 redirect。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前復原先使用較近的乾淨 rc30／`11763f08…`。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
 >
@@ -288,6 +288,6 @@ additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，�
 
 ## English operational summary
 
-The active Windows origin and canonical Worker are operational but provenance-drifted. The origin checkout points at rc30 while containing unreviewed modifications, and canonical traffic is served by unattributed Worker `a2e3ad14-d191-4ffc-85e4-eda40e42e5ed`; neither may be described as exact rc30 or fingerprint-matched. The nearest known verified recovery pair is clean `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` plus Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`, after preserving and attributing the active drift. rc27 and Worker `d7b51f21-7692-418d-866c-034c2c57292d` are deeper historical recovery evidence.
+The active Windows origin and canonical Worker are the clean, source-matched rc35 pair recorded at the top of this document. The origin runs annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`; Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` serves 100% of canonical traffic. The immediate recorded rollback targets are rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2` for the origin and Worker `7816b183-3edb-49ca-b39b-a91091ae794f` for the edge. Earlier rc30 and rc27 pairs remain historical recovery evidence only.
 
-Historically, the clean rc30 pair passed the `15d155d8…` gate set and completed the controlled origin switch, staged smoke, 100% promotion and canonical root／Guest／Admin handoff／Viewer checks. It is recovery evidence, not a description of the current active source. Supervised human acceptance remains open.
+The rc35 pair passed the 15／15 source-matched gate set and completed the controlled origin switch, staged smoke, 100% promotion and canonical Public／Guest／Admin handoff／Viewer checks. Historical rc30 evidence does not describe current production. Supervised human acceptance remains open.

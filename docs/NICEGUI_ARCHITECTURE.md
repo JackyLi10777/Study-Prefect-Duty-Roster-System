@@ -1,6 +1,6 @@
 # NiceGUI Runtime Architecture
 
-> **Verified production truth (2026-07-29):** Windows runs clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`; canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f` serves 100% traffic. The R5／R6 branch is only a working rc32 source candidate. rc30 plus Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` is the immediate known verified rollback; human acceptance remains open. Older live／candidate wording is historical and superseded by this notice.
+> **Verified production truth (2026-07-29):** Windows runs clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`; canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` serves 100% traffic. The 297-file source passed 15／15 gates and the paired rollout passed backup／restore, readiness, Access and rendered browser checks. The first origin rollback is rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2`; the first Worker rollback is `7816b183-3edb-49ca-b39b-a91091ae794f`. Human acceptance remains open. Older live／candidate wording is historical and superseded by this notice.
 >
 ## Purpose
 
