@@ -214,6 +214,15 @@ def test_isolated_browser_verifier_exercises_story_reversal_and_input_overlap() 
     assert "story_icon.inner_text().strip() == story_from" in verifier
 
 
+def test_language_verifier_reads_the_visible_label_not_the_material_icon_ligature() -> None:
+    verifier = _read("scripts/verify_nicegui_ui.py")
+
+    assert 'get_by_text("繁中", exact=True)' in verifier
+    assert "chinese_label.count() == 1 and chinese_label.is_visible()" in verifier
+    assert 'inner_text().strip() == "繁中"' not in verifier
+    assert 'get_attribute("aria-label") == "Switch to 繁體中文"' in verifier
+
+
 def test_icon_hydration_uses_observation_and_delegation_not_per_button_listeners() -> None:
     motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
 

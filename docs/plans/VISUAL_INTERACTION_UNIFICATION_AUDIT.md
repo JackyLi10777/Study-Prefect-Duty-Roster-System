@@ -29,6 +29,8 @@ No verified defect requires changes to roster policy, fairness, authentication, 
 
 The first formal rc32 browser gate exposed one additional boundary case: the desktop drawer moved off-screen correctly, but its shared reconciliation loop stopped after checking the mobile-open condition and left `aria-expanded` and the persistent glyph stale. The focused follow-up binds both drawer triggers to the same cancellable reconciliation loop while selecting the real mobile-open or desktop-visible state for the current viewport. This is a release-blocking accessibility correction, not a relaxed assertion or a change to navigation behaviour.
 
+The next formal pass reached the bilingual control and confirmed that the page, visible label and accessible name had all switched correctly. Its verifier nevertheless read the Material icon ligature (`language`) together with the visible `繁中` label and treated that combined implementation text as the label. The focused correction now asserts the exact visible label descendant, the exact `aria-label` and the document language independently. Product behaviour and acceptance strictness are unchanged; the test now observes the same semantic layers that a user and assistive technology receive.
+
 The authoritative acceptance evidence is produced by:
 
 - `python -X utf8 scripts/audit_icon_semantics.py`
