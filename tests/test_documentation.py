@@ -232,6 +232,19 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
         assert "e3d84858abfe23714929a87c4bcf76e55999ce7c" in document
         assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in document
 
+    cloudflare = (PROJECT_ROOT / "docs" / "CLOUDFLARE_REMOTE_ACCESS_SETUP.md").read_text(
+        encoding="utf-8"
+    )
+    update_workflow = (PROJECT_ROOT / "docs" / "UPDATE_WORKFLOW.md").read_text(
+        encoding="utf-8"
+    )
+    unified_guest = (PROJECT_ROOT / "docs" / "UNIFIED_GUEST_SECURITY_MODEL.md").read_text(
+        encoding="utf-8"
+    )
+    assert "operational but provenance-drifted" not in cloudflare
+    assert "目前 rc31 候選界線" not in update_workflow
+    assert "Production currently runs clean `v1.2.0-rc.31`" not in unified_guest
+
     for document in (status, handover):
         assert "v1.2.0-rc.18" in document
         assert "fd504a8" in document
@@ -368,6 +381,8 @@ def test_operator_deployment_docs_use_observed_drift_and_recovery_hierarchy() ->
 
     assert "Current production identity is recorded in the document header" in decision
     assert "Historically, before the rc31 rollout" in decision
+    assert "目前來源待對帳的 runtime" not in decision
+    assert "現行 origin／Worker 來源待對帳" not in quickstart
     assert "受審候選的正式 tag／commit" in quickstart
     assert "現行證據以 rc30 report 為準" not in quickstart
     assert "canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`" in cloudflare
@@ -913,7 +928,8 @@ def test_current_release_history_and_gate_count_are_exact() -> None:
     engineering_section = operator_guide.split("## 11. 工程與品質證據", 1)[1].split(
         "\n## ", 1
     )[0]
-    assert "十四道發布閘門" in engineering_section
+    assert "目前十五道發布閘門" in engineering_section
+    assert "十四道閘門只屬較早版本的歷史說明" in engineering_section
     assert "八道發布閘門" not in engineering_section
 
 

@@ -4,9 +4,9 @@
 
 我是李創杰。這份流程是我與 Codex 對正式發布工作的反思結果：更新慢的主因不是 Git 上傳，而是過去把每次文字或測試修改都當成完整 runtime 發布。
 
-> **歷史 rc30 乾淨發布界線：** annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 曾是正式乾淨基線，並完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換、0% Worker smoke、100% promotion 及 canonical rendered checks。目前 active pair 已來源漂移，所以該 clean pair 現是第一個已知、已驗證的復原目標；rc27／`c4c728aa…` 與 Worker `d7b51f21…` 只屬更深歷史。任何後續 focused tests、`--staged` 或文件更新都不會自動成為新的已部署 runtime；仍須以實際 origin／Worker 報告和線上核對為準。
+> **歷史 rc30 乾淨發布界線：** annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 曾是正式乾淨基線，並完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換、0% Worker smoke、100% promotion 及 canonical rendered checks。它現在只屬歷史證據；目前 rc35 active pair 已對帳，立即回退以本頁頂部記錄的 rc34 origin／rc34-era Worker 為準。任何後續 focused tests、`--staged` 或文件更新都不會自動成為新的已部署 runtime；仍須以實際 origin／Worker 報告和線上核對為準。
 >
-> **目前 rc31 候選界線：** `codex/rc31-unified-theme-controls` 在早期主題切換切片之後，已再修改排程核心、生成檔案交付、手機抽屜、通用寫入 admission、備份／交接／還原、migration guard，以及 Windows→Worker port／epoch／KID 的唯讀 preflight 與套用後二次 parity gate。早期 901 項／8 個瀏覽器情境不是目前工作樹的 exact-source 發布證據；凍結的 297 個可部署來源檔案已由正式 report 以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過 15／15 gate。這只證明候選來源；在 protected-main 合併／tag、正式備份與隔離還原、origin／Worker 部署及 canonical 線上核對完成前，rc30 仍是最近完整驗證的乾淨線上基線。
+> **歷史 rc31 候選界線：** `codex/rc31-unified-theme-controls` 曾修改排程核心、生成檔案交付、手機抽屜、通用寫入 admission、備份／交接／還原及 migration guard；其 297 個可部署來源檔案以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時的 15／15 gate。它已被後續正式 rc35 取代，不代表目前候選或線上狀態。
 
 rc20 的完整候選報告約需 **404 秒**；當中主要時間用於完整 Python 套件、桌面／手機瀏覽器、寫入／PDF／還原、效能及備份失敗演練。這些證據對政策、資料庫、工作流、部署或正式 runtime 改動很重要，但不應因 README 改一句話而重跑。最近三次沒有 runtime 改動的提交亦在 GitHub Quality 與 CodeQL 合計使用約 18 分鐘。
 
