@@ -1,6 +1,6 @@
 # Windows 專用主機完整設定手冊
 
-> **主機來源真相（2026-07-30）：** `C:\SingYinRoster` 正運行 clean annotated `v1.2.0-rc.40`／`2ec900a5ef1c021183717dfa648ef76b55452ffb`，canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量；健康及 readiness 均通過。受控部署前備份 `20260730-135505-648220-manual_verified_backup.sqlite3`、隔離還原、資料行數、公平對帳及 restore audit 已核對。第一個 origin 回退是 tagged `v1.2.0-rc.39`／commit `80b9de7ea8abce57b67c6041e580f915a819315e`；rc35／`570e29f745eef7c1995635d1b187021a8fec6ea4` 與 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 是更深復原證據。真人驗收未完成。
+> **主機來源真相（2026-07-31）：** `C:\SingYinRoster` 正運行 clean annotated `v1.2.0-rc.41`／`74072b0175ff64807312a8cc5b9cd016b6628210`，canonical Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` 承接 100% 流量；健康及 readiness 均通過。受控部署前備份 `20260730-160630-793049-manual_verified_backup.sqlite3`、隔離還原、資料行數、公平對帳及 restore audit 已核對。第一層配對回退是 rc40／`2ec900a5ef1c021183717dfa648ef76b55452ffb` 與 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`；rc39／`80b9de7ea8abce57b67c6041e580f915a819315e`、rc35／`570e29f745eef7c1995635d1b187021a8fec6ea4` 與 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 是更深復原證據。真人驗收未完成。
 
 **適用系統：** Sing Yin Study Prefect Duty Roster System（NiceGUI + SQLite）
 **讀者：** 完全不懂程式、第一次設定電腦的人
@@ -23,7 +23,7 @@
 完成本手冊後，運作方式如下：
 
 1. 一部 Windows 電腦長期保存程式、SQLite 資料庫、備份、日誌、PDF 及音樂。
-2. NiceGUI origin 只在這部電腦的受保護 loopback endpoint 開放（目前為 `127.0.0.1:8080`）；日常使用者從唯一正式 `workers.dev` 網站進入。目前 rc39 訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace；`/guest`、`/try` 只作兼容重定向。管理員登入後仍留在同一網址。
+2. NiceGUI origin 只在這部電腦的受保護 loopback endpoint 開放（目前為 `127.0.0.1:8080`）；日常使用者從唯一正式 `workers.dev` 網站進入。目前 rc41 訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace；`/guest`、`/try` 只作兼容重定向。管理員登入後仍留在同一網址。
 3. 電腦開機後，可由 Windows 工作排程器在背景自動啟動系統。
 4. 初次安裝先驗證 loopback origin，再依 Cloudflare 手冊連接既有 Tunnel、VPC Service、Access 及 Worker；始終不設定路由器轉發或公開 NiceGUI 連接埠。
 5. 即使電腦沒有互聯網，名單、排班、PDF、備份及還原仍可使用；YouTube 音樂除外。
@@ -352,7 +352,7 @@ SING_YIN_LOG_BACKUP_COUNT=5
 
 本機模式第一次啟動會自動建立 `data\runtime\.nicegui-storage-secret`，不需要手動輸入 secret，也不要打開、分享或修改該檔案。
 
-完成本機驗證後，正式啟用程序才會把受保護主機設定切換為 `server` 模式，只監聽由 `SING_YIN_HOST`／`SING_YIN_PORT` 指定的 loopback endpoint，並啟用 Access、Viewer gateway 與獨立 `SING_YIN_STORAGE_SECRET`。不要手動逐項拼湊正式設定；依本手冊及 [Cloudflare 遠端存取手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 的受控啟用／核對程序一次完成。目前 rc39 主機已處於這個 server-mode／loopback 狀態。
+完成本機驗證後，正式啟用程序才會把受保護主機設定切換為 `server` 模式，只監聽由 `SING_YIN_HOST`／`SING_YIN_PORT` 指定的 loopback endpoint，並啟用 Access、Viewer gateway 與獨立 `SING_YIN_STORAGE_SECRET`。不要手動逐項拼湊正式設定；依本手冊及 [Cloudflare 遠端存取手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 的受控啟用／核對程序一次完成。目前 rc41 主機已處於這個 server-mode／loopback 狀態。
 
 ---
 
@@ -689,7 +689,7 @@ rc20 的自動化裝置矩陣已包含手機／平板／桌面與 accessibility�
 
 1. 立即停止接受正式寫入，記錄時間、canonical route、裝置、release tag／commit、Worker version 及非敏感畫面；不要重複提交可能已完成的操作。
 2. 先閱讀 Windows／Worker deployment JSON 的 rollback `attempted`、`succeeded`、previous commit／version。受控腳本已開始回退時，不要同時再跑第二次或手動覆寫檔案。
-3. 若目前 rc39 origin 發現回歸，由發布維護者讓受控 clean-bundle 流程依 deployment report 回復 rc35／`570e29f745eef7c1995635d1b187021a8fec6ea4`。純 gateway 事故把 Worker traffic 恢復至 `d7069f99-81b4-4388-aa28-383b58bfc68f`；更舊來源只在 rc35 不能安全恢復且事故負責人批准時使用。禁止 `git reset --hard`、直接複製開發樹或留下未經證明的混合版本。
+3. 若目前 rc41 origin 發現回歸，由發布維護者讓受控 clean-bundle 流程依 deployment report 回復 rc40／`2ec900a5ef1c021183717dfa648ef76b55452ffb`，並把 Worker traffic 恢復至 `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`。更舊來源只在 rc40 不能安全恢復且事故負責人批准時使用。禁止 `git reset --hard`、直接複製開發樹或留下未經證明的混合版本。
 4. 回退後核對實際回退層、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出和完整使用者流程。
 5. 只有上述結果全部一致才恢復操作；不能證明 rollback 成功時保持 maintenance／唯讀並交由 IT 處理。
 
