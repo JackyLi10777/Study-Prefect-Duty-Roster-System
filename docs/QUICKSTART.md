@@ -1,12 +1,12 @@
 # 快速啟動 / Quick start
 
-> **線上來源真相（2026-07-30）：** Windows origin 正運行 clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e`，canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量。正式備份／隔離還原、readiness、0%／100% Worker promotion、canonical health／entrance／viewer 及 Cloudflare Access 已通過。第一個 origin／Worker 回退分別為 tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4` 及 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`；真人驗收未完成。
+> **線上來源真相（2026-07-30）：** Windows origin 正運行 clean annotated `v1.2.0-rc.40`／`2ec900a5ef1c021183717dfa648ef76b55452ffb`，canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量。正式備份／隔離還原、readiness、canonical Admin／Guest 入口音樂及真實 Guest Dashboard 已通過；Worker runtime 未變，故沒有無差異部署。第一個 origin 回退為 tagged `v1.2.0-rc.39`／commit `80b9de7ea8abce57b67c6041e580f915a819315e`；rc35／`570e29f745eef7c1995635d1b187021a8fec6ea4` 與 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 為更深復原證據；真人驗收未完成。
 >
-> **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 發布輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量。這組 clean pair 是當時第一個已知、已驗證的復原目標；目前第一層回退是本頁頂部記錄的 rc35 origin／Worker，rc27／rc30 只屬更深歷史。
+> **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 發布輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量。這組 clean pair 是當時第一個已知、已驗證的復原目標；目前第一層 origin 回退是本頁頂部記錄的 rc39，rc35／rc30／rc27 只屬更深歷史。
 >
 > **rc30 歷史乾淨發布證據（真人驗收仍未簽署）：** rc30 保留完整 Admin／Guest／Public／Viewer 邊界及 `/support` 身份分流，並加入目的語言本名、明確 System／Light／Dark 選擇及有日期／非遙測聲明的 ≈10B creator token 約數。機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
 >
-> **歷史 rc31 候選證據：** `codex/rc31-unified-theme-controls` 把可見外觀控制簡化為單一淺色／深色按鈕；`system` 只作未設定的初始化狀態。其 297 個可部署來源檔案曾以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時的 15／15 正式候選閘門；它已被後續正式版本（目前 rc39）取代，不代表目前候選、復原目標或線上狀態。
+> **歷史 rc31 候選證據：** `codex/rc31-unified-theme-controls` 把可見外觀控制簡化為單一淺色／深色按鈕；`system` 只作未設定的初始化狀態。其 297 個可部署來源檔案曾以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時的 15／15 正式候選閘門；它已被後續正式版本（目前 rc40）取代，不代表目前候選、復原目標或線上狀態。
 
 ## 每日使用
 

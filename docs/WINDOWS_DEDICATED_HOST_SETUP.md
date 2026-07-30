@@ -1,6 +1,6 @@
 # Windows 專用主機完整設定手冊
 
-> **主機來源真相（2026-07-30）：** `C:\SingYinRoster` 正運行 clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e`，配對 canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量；健康及 readiness 均通過。受控部署前備份 `20260730-065635-724310-manual_verified_backup.sqlite3`、隔離還原、資料行數、公平對帳及 restore audit 已核對；部署亦完成排程帳戶憑證輪換。第一個 origin 回退是 tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4`；第一個 Worker 回退是 `d7069f99-81b4-4388-aa28-383b58bfc68f`。真人驗收未完成。
+> **主機來源真相（2026-07-30）：** `C:\SingYinRoster` 正運行 clean annotated `v1.2.0-rc.40`／`2ec900a5ef1c021183717dfa648ef76b55452ffb`，canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量；健康及 readiness 均通過。受控部署前備份 `20260730-135505-648220-manual_verified_backup.sqlite3`、隔離還原、資料行數、公平對帳及 restore audit 已核對。第一個 origin 回退是 tagged `v1.2.0-rc.39`／commit `80b9de7ea8abce57b67c6041e580f915a819315e`；rc35／`570e29f745eef7c1995635d1b187021a8fec6ea4` 與 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 是更深復原證據。真人驗收未完成。
 
 **適用系統：** Sing Yin Study Prefect Duty Roster System（NiceGUI + SQLite）
 **讀者：** 完全不懂程式、第一次設定電腦的人

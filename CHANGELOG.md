@@ -10,6 +10,14 @@ This file records user-visible, operational and release-significant changes. Exa
 - Adds a delayed, self-cleaning route progress track and moves host-local support-report persistence off the UI event loop while rejecting Guest persistence before loading begins.
 - Extends the executable design-token, bilingual, reduced-motion, forced-colour, Worker, accessibility, support and dialog-lifecycle contracts. This section is source-candidate history until formal release and deployment evidence is recorded below.
 
+## v1.2.0-rc.40 — released, 2026-07-30
+
+- Completes the semantic icon/action-motion contract and public-entry sound-state verification fixes while retaining the rc39 roster, identity, backup and Worker-runtime behavior.
+- Passed all 15 formal gates against the 298-file fingerprint `e4e34ca75c422f823cfeb16e94c72705e1f73b8d56e6b2c6b953e102761a8f4c` at annotated tag `v1.2.0-rc.40`／commit `2ec900a5ef1c021183717dfa648ef76b55452ffb`.
+- Deployed to the Windows origin after verified backup `20260730-135505-648220-manual_verified_backup.sqlite3` (SHA-256 `c397478a19e420fc85a22a23e0c245a44b1f59cc2b30cbe9fdfc0f196187b961`) and isolated restore; `/healthz` and `/readyz` passed with `writeReady=true` and no pending backup obligation.
+- Retains Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` at 100% because the rc39→rc40 Worker runtime and configuration are unchanged. Canonical entry-music checks and a real Guest Dashboard browser flow passed without console errors.
+- Records tagged `v1.2.0-rc.39`／commit `80b9de7ea8abce57b67c6041e580f915a819315e` as the first origin rollback. Supervised human acceptance remains open.
+
 ## v1.2.0-rc.39 — released, 2026-07-30
 
 - Preserves the complete rc35 product behavior and R5／R6／R7 controls while correcting Windows scheduled-task credential handling for unattended origin deployment.
