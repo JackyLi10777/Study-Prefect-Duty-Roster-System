@@ -1,6 +1,6 @@
 # 正式驗收證據矩陣 / Acceptance evidence matrix
 
-> **線上來源真相（2026-07-30）：** clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e` 正在 Windows origin 運行；canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 為 100% 流量版本。297-file 指紋 `df4a2ecb84f242e24349570d209e95405d7251c85810450ce39cf957427b92b9` 通過 15／15 gate；正式備份 `20260730-065635-724310-manual_verified_backup.sqlite3`／SHA-256 `5876a5ef4cbee6c5573852f454a734c466c5aa17c0bcee8b8faf5c4de8db668c`、隔離還原、origin readiness、Cloudflare Access、0% Worker smoke、100% promotion 及 canonical health／entrance／viewer 均已核對。Tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4` 與 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 分別是第一個 origin／edge 回退；真人驗收仍未完成。
+> **線上來源真相（2026-07-30）：** clean annotated `v1.2.0-rc.40`／`2ec900a5ef1c021183717dfa648ef76b55452ffb` 正在 Windows origin 運行；canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 為 100% 流量版本。298-file 指紋 `e4e34ca75c422f823cfeb16e94c72705e1f73b8d56e6b2c6b953e102761a8f4c` 通過 15／15 gate；正式備份 `20260730-135505-648220-manual_verified_backup.sqlite3`／SHA-256 `c397478a19e420fc85a22a23e0c245a44b1f59cc2b30cbe9fdfc0f196187b961`、隔離還原、origin readiness、canonical Admin／Guest 入口音樂及真實 Guest Dashboard 均已核對。Worker runtime 未變，故沿用已驗證版本。Tagged `v1.2.0-rc.39`／commit `80b9de7ea8abce57b67c6041e580f915a819315e` 是第一個 origin 回退；rc35／`570e29f745eef7c1995635d1b187021a8fec6ea4` 與 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 保留為更深復原證據；真人驗收仍未完成。
 
 本文件把機器驗證與真人驗收分開。`logs/release-candidate-report.json` 顯示 `pass`，只代表下列自動化證據在隔離虛構資料中通過；它不代表實際名單、學校做法、專用電腦、加密離機位置或外部存取決定已獲真人批准。
 

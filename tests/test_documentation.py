@@ -215,17 +215,19 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
 
     release_truth_documents = (status, architecture, security, handover, acceptance)
     for document in release_truth_documents:
+        assert "v1.2.0-rc.40" in document
+        assert "2ec900a5ef1c021183717dfa648ef76b55452ffb" in document
+        assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in document
         assert "v1.2.0-rc.39" in document
         assert "80b9de7ea8abce57b67c6041e580f915a819315e" in document
-        assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in document
-        assert "v1.2.0-rc.35" in document
         assert "570e29f745eef7c1995635d1b187021a8fec6ea4" in document
         assert "d7069f99-81b4-4388-aa28-383b58bfc68f" in document
         current_header = "\n".join(document.splitlines()[:15])
+        assert "v1.2.0-rc.40" in current_header
+        assert "2ec900a5ef1c021183717dfa648ef76b55452ffb" in current_header
+        assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in current_header
         assert "v1.2.0-rc.39" in current_header
         assert "80b9de7ea8abce57b67c6041e580f915a819315e" in current_header
-        assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in current_header
-        assert "v1.2.0-rc.35" in current_header
         assert "570e29f745eef7c1995635d1b187021a8fec6ea4" in current_header
         assert "d7069f99-81b4-4388-aa28-383b58bfc68f" in current_header
 
@@ -261,7 +263,7 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
         assert "93c6c93866c617862c790a4ed939d9acbe789dcdfaf512c9519aff9e0b4e6d3a" in document
 
     assert "rc30 exact-source and deployment evidence" in status
-    assert "live Windows origin is the clean annotated `v1.2.0-rc.39`" in status
+    assert "live Windows origin is the clean annotated `v1.2.0-rc.40`" in status
     assert "R5／R6 remediation provenance" in status
     assert "v1.2 rc30 is the current controlled Windows origin" not in status
     assert "Historical Service Weave v1.2 rc18 controlled rollout" in status
@@ -277,7 +279,7 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
     assert "d7069f99-81b4-4388-aa28-383b58bfc68f" in readme_header
     assert "immediate known verified rollback" not in readme_header
 
-    current_fingerprint = "df4a2ecb84f242e24349570d209e95405d7251c85810450ce39cf957427b92b9"
+    current_fingerprint = "e4e34ca75c422f823cfeb16e94c72705e1f73b8d56e6b2c6b953e102761a8f4c"
     historical_rc30_fingerprint = (
         "15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc"
     )
@@ -290,11 +292,13 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
         if line.startswith("> **Verified production truth (")
     )
     for current_notice in (current_notice_zh, current_notice_en):
-        assert "v1.2.0-rc.39" in current_notice
-        assert "80b9de7ea8abce57b67c6041e580f915a819315e" in current_notice
+        assert "v1.2.0-rc.40" in current_notice
+        assert "2ec900a5ef1c021183717dfa648ef76b55452ffb" in current_notice
         assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in current_notice
         assert current_fingerprint in current_notice
         assert historical_rc30_fingerprint not in current_notice
+        assert "v1.2.0-rc.39" in current_notice
+        assert "80b9de7ea8abce57b67c6041e580f915a819315e" in current_notice
         assert "v1.2.0-rc.35" in current_notice
         assert "570e29f745eef7c1995635d1b187021a8fec6ea4" in current_notice
         assert "d7069f99-81b4-4388-aa28-383b58bfc68f" in current_notice
@@ -302,8 +306,8 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
     readme_main_row = next(
         line for line in readme.splitlines() if line.startswith("| `main` |")
     )
+    assert "v1.2.0-rc.40" in readme_main_row
     assert "v1.2.0-rc.39" in readme_main_row
-    assert "v1.2.0-rc.35" in readme_main_row
     assert "v1.2.0-rc.31" not in readme_main_row
 
     rc30_notice_zh = next(
@@ -319,11 +323,11 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
         assert historical_rc30_fingerprint in rc30_notice
         assert current_fingerprint not in rc30_notice
 
-    rc39_capability_paragraph = readme_en.split(
-        "Current rc39 production retains and re-verifies", 1
+    rc40_capability_paragraph = readme_en.split(
+        "Current rc40 production retains and re-verifies", 1
     )[1].split("## Repository editions", 1)[0]
-    assert current_fingerprint in rc39_capability_paragraph
-    assert historical_rc30_fingerprint not in rc39_capability_paragraph
+    assert current_fingerprint in rc40_capability_paragraph
+    assert historical_rc30_fingerprint not in rc40_capability_paragraph
     assert "remains disabled by default" not in status
     assert "now run the matching rc7 release" not in status
     assert "Windows origin remains healthy／ready on rc4" not in security
@@ -420,17 +424,17 @@ def test_operator_deployment_docs_use_observed_drift_and_recovery_hierarchy() ->
     )
 
     for document in (quickstart, windows, cloudflare, viewer, decision):
+        assert "v1.2.0-rc.40" in document
+        assert "2ec900a5ef1c021183717dfa648ef76b55452ffb" in document
+        assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in document
         assert "v1.2.0-rc.39" in document
         assert "80b9de7ea8abce57b67c6041e580f915a819315e" in document
-        assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in document
-        assert "v1.2.0-rc.35" in document
-        assert "570e29f745eef7c1995635d1b187021a8fec6ea4" in document
         current_header = "\n".join(document.splitlines()[:15])
+        assert "v1.2.0-rc.40" in current_header
+        assert "2ec900a5ef1c021183717dfa648ef76b55452ffb" in current_header
+        assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in current_header
         assert "v1.2.0-rc.39" in current_header
         assert "80b9de7ea8abce57b67c6041e580f915a819315e" in current_header
-        assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in current_header
-        assert "v1.2.0-rc.35" in current_header
-        assert "570e29f745eef7c1995635d1b187021a8fec6ea4" in current_header
         assert "v1.2.0-rc.30" in document
         assert "74b84f43786b00feb15b51a6270ff71c9430773f" in document
         assert "11763f08-d40d-46d5-93dc-5ca2599d4154" in document
@@ -530,16 +534,16 @@ def test_docs_share_historical_rc20_device_matrix_and_current_rollback_hierarchy
         current_summary = next(
             line for line in document.splitlines() if line.startswith(summary_marker)
         )
+        assert "v1.2.0-rc.40" in current_summary, relative_path
+        assert "2ec900a5ef1c021183717dfa648ef76b55452ffb" in current_summary, relative_path
+        assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in current_summary, relative_path
         assert "v1.2.0-rc.39" in current_summary, relative_path
         assert "80b9de7ea8abce57b67c6041e580f915a819315e" in current_summary, relative_path
-        assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in current_summary, relative_path
-        assert "v1.2.0-rc.35" in current_summary, relative_path
-        assert "570e29f745eef7c1995635d1b187021a8fec6ea4" in current_summary, relative_path
         assert "d7069f99-81b4-4388-aa28-383b58bfc68f" in current_summary, relative_path
         assert "真人驗收" in current_summary or "acceptance" in current_summary, relative_path
     normalized_readme_en = " ".join(readme_en.split())
-    assert "first Worker rollback" in normalized_readme_en
-    assert "live Windows origin is the clean annotated `v1.2.0-rc.39`" in status
+    assert "Worker runtime/configuration is unchanged from rc39" in normalized_readme_en
+    assert "live Windows origin is the clean annotated `v1.2.0-rc.40`" in status
 
     assert "rc17／`99f5816` 與 Worker `c85770b2-c626-462c-bc74-5e6bd305c75b` 是即時回退組合" not in readme
     assert "is the immediate rollback pair" not in status

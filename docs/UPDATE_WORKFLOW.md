@@ -1,14 +1,14 @@
 # 更新、驗證與上傳：一個命令完成正確層級
 
-> **線上來源真相（2026-07-30）：**目前 runtime 是 clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e`，canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量。297-file 指紋 `df4a2ecb84f242e24349570d209e95405d7251c85810450ce39cf957427b92b9` 通過 15／15 gate，並完成正式備份、隔離還原、配對部署、canonical health／entrance／viewer 及 Access fail-closed checks。第一個 origin／Worker 回退分別為 tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4` 及 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`。下文較舊 live／candidate 字樣只保留歷史；健康閘門或候選驗證仍不等於部署或真人驗收。
+> **線上來源真相（2026-07-30）：**目前 runtime 是 clean annotated `v1.2.0-rc.40`／`2ec900a5ef1c021183717dfa648ef76b55452ffb`，canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量。298-file 指紋 `e4e34ca75c422f823cfeb16e94c72705e1f73b8d56e6b2c6b953e102761a8f4c` 通過 15／15 gate，並完成正式備份、隔離還原、受控 origin 部署、canonical Admin／Guest 入口音樂及真實 Guest Dashboard 核對。rc39→rc40 的 Worker runtime／configuration 沒有改動，因此保留已驗證版本而沒有進行無差異部署。第一個 origin 回退是 tagged `v1.2.0-rc.39`／commit `80b9de7ea8abce57b67c6041e580f915a819315e`；健康閘門或候選驗證仍不等於真人驗收。
 
 > **rc37／rc38 歷史界線：**受保護的 `v1.2.0-rc.37` 指向較早 rc36 source，屬 void／未部署標籤；`v1.2.0-rc.38` 通過來源閘門但沒有通過 Windows 排程帳戶憑證切換，因此沒有取代 rc35。新部署或回退不可把兩者誤當成目前線上版本。
 
 我是李創杰。這份流程是我與 Codex 對正式發布工作的反思結果：更新慢的主因不是 Git 上傳，而是過去把每次文字或測試修改都當成完整 runtime 發布。
 
-> **歷史 rc30 乾淨發布界線：** annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 曾是正式乾淨基線，並完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換、0% Worker smoke、100% promotion 及 canonical rendered checks。它現在只屬歷史證據；目前 rc39 active pair 已對帳，立即回退以本頁頂部記錄的 rc35 origin／Worker 為準。任何後續 focused tests、`--staged` 或文件更新都不會自動成為新的已部署 runtime；仍須以實際 origin／Worker 報告和線上核對為準。
+> **歷史 rc30 乾淨發布界線：** annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 曾是正式乾淨基線，並完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換、0% Worker smoke、100% promotion 及 canonical rendered checks。它現在只屬歷史證據；目前 rc40 origin 與已驗證 Worker 已對帳，立即 origin 回退以本頁頂部記錄的 rc39 為準。任何後續 focused tests、`--staged` 或文件更新都不會自動成為新的已部署 runtime；仍須以實際 origin／Worker 報告和線上核對為準。
 >
-> **歷史 rc31 候選界線：** `codex/rc31-unified-theme-controls` 曾修改排程核心、生成檔案交付、手機抽屜、通用寫入 admission、備份／交接／還原及 migration guard；其 297 個可部署來源檔案以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時的 15／15 gate。它已被後續正式版本（目前 rc39）取代，不代表目前候選或線上狀態。
+> **歷史 rc31 候選界線：** `codex/rc31-unified-theme-controls` 曾修改排程核心、生成檔案交付、手機抽屜、通用寫入 admission、備份／交接／還原及 migration guard；其 297 個可部署來源檔案以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時的 15／15 gate。它已被後續正式版本（目前 rc40）取代，不代表目前候選或線上狀態。
 
 rc20 的完整候選報告約需 **404 秒**；當中主要時間用於完整 Python 套件、桌面／手機瀏覽器、寫入／PDF／還原、效能及備份失敗演練。這些證據對政策、資料庫、工作流、部署或正式 runtime 改動很重要，但不應因 README 改一句話而重跑。最近三次沒有 runtime 改動的提交亦在 GitHub Quality 與 CodeQL 合計使用約 18 分鐘。
 
