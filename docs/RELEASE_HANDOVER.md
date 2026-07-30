@@ -1,6 +1,6 @@
 # 首次發布與交接手冊 / First-release and handover guide
 
-> **交接前必讀的線上來源真相（2026-07-29）：** Windows origin 正運行 clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`；canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 承接 100% 流量。R5／R6 修復仍是未審核、未標記、未部署的 rc32 工作候選。rc30 origin＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退；真人驗收未完成。下文較舊狀態只作歷史證據。
+> **交接前必讀的線上來源真相（2026-07-29）：** Windows origin 正運行 clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`；canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量。297-file 指紋通過 15／15 gate；正式備份 `20260729-073307-909072-manual_verified_backup.sqlite3`（SHA-256 `f3fb18b53a9f93129d42da71ba47c85c166caf8c9ae8c1289955bf5f103e9c7f`）、隔離還原、readiness、Access 及線上瀏覽器核對已通過。第一個 origin／Worker 回退分別是 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2` 及 `7816b183-3edb-49ca-b39b-a91091ae794f`；真人驗收未完成。下文較舊狀態只作歷史證據。
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 

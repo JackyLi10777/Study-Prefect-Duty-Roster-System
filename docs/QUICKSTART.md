@@ -1,12 +1,12 @@
 # 快速啟動 / Quick start
 
-> **線上來源真相（2026-07-29）：** Windows origin 正運行 clean `v1.2.0-rc.31`／`ba129a4931d11e844649e8ff356f5bf2ab048459`，canonical Worker `7816b183-3edb-49ca-b39b-a91091ae794f` 承接 100% 流量。R5／R6 修復仍是未審核、未標記、未部署的 rc32 工作候選。rc30＋Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是立即已知已驗證回退；真人驗收未完成。
+> **線上來源真相（2026-07-29）：** Windows origin 正運行 clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`，canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量。正式備份／隔離還原、readiness、Cloudflare Access 及 canonical desktop／mobile browser checks 已通過。第一個 origin／Worker 回退分別為 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2` 及 `7816b183-3edb-49ca-b39b-a91091ae794f`；真人驗收未完成。
 >
 > **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 發布輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量。這組 clean pair 是目前第一個已知、已驗證的復原目標；rc27／`c4c728aa…` 與 Worker `d7b51f21…` 只屬更深歷史。
 >
 > **rc30 歷史乾淨發布證據（真人驗收仍未簽署）：** rc30 保留完整 Admin／Guest／Public／Viewer 邊界及 `/support` 身份分流，並加入目的語言本名、明確 System／Light／Dark 選擇及有日期／非遙測聲明的 ≈10B creator token 約數。機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
 >
-> **rc31 來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 把可見外觀控制簡化為單一淺色／深色按鈕；`system` 只作未設定的初始化狀態。凍結的 297 個可部署來源檔案已以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過 15／15 正式候選閘門；尚待 protected-main 合併與標籤、正式備份與隔離還原、相配 Worker／origin 部署及 canonical 核對。現行 origin／Worker 來源待對帳；乾淨 rc30＋`11763f08…` 是最近完整驗證的復原基線。
+> **歷史 rc31 候選證據：** `codex/rc31-unified-theme-controls` 把可見外觀控制簡化為單一淺色／深色按鈕；`system` 只作未設定的初始化狀態。其 297 個可部署來源檔案曾以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時的 15／15 正式候選閘門；它已被 rc35 正式來源及部署證據取代，不代表目前候選、復原目標或線上狀態。
 
 ## 每日使用
 
@@ -18,7 +18,7 @@
 4. 完成後按「登出」，特別是共用裝置；只關閉分頁不等於清除管理員／Guest session 及同 session 的其他分頁狀態。
 5. 如只需查看首席導學風紀發出的週表，直接開啟完整 `/view#…` 連結；不要以 Guest 或 Admin 入口取代分享連結。
 
-目前 最近完整驗證的乾淨 rc30 source 中，生成前先在名單核對職務及「可值班日」：只有助理首席導學風紀可當 `Assist. in charge`，未勾選的星期一律視為不方便／不可值班。新週次可選「固定星期模式」或「每週靈活模式」；固定模式保留同一 AHP 的星期擁有權，本週請假只作一次替補；靈活模式按可值班日及長期公平記錄作可重現的每週變化。既有週表會重開其已保存模式。
+目前正式 rc35 中，生成前先在名單核對職務及「可值班日」：只有助理首席導學風紀可當 `Assist. in charge`，未勾選的星期一律視為不方便／不可值班。新週次可選「固定星期模式」或「每週靈活模式」；固定模式保留同一 AHP 的星期擁有權，本週請假只作一次替補；靈活模式按可值班日及長期公平記錄作可重現的每週變化。既有週表會重開其已保存模式。
 
 首次進入而尚未保存外觀偏好時，畫面會跟隨電腦／手機的深淺模式。伺服器首屏只提供中性的淺色提示，瀏覽器會在外觀控制可見前解析系統模式並在需要時同步；若瀏覽器完全不支援系統色彩查詢才保留淺色。右上角只有一個淺色／深色按鈕：圖標顯示目前解析模式，輔助文字說明按下後的相反模式。第一次按下會儲存目前解析結果的相反模式，其後只在明確淺色與深色間切換。Guest 在同一有效 session 內重新整理仍會保留語言及外觀；登出後按設計回到新 session 預設。從公開入口刻意進入 Admin／Guest 時，只會暫存已明確選擇的 `light`／`dark` 提示，最長 120 秒；Worker 核對並放入簽署身份後才交給目的工作區，建立 session 時會清除暫存 cookie。目的地已有偏好時不會被覆寫。
 

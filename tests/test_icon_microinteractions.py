@@ -214,6 +214,28 @@ def test_isolated_browser_verifier_exercises_story_reversal_and_input_overlap() 
     assert "story_icon.inner_text().strip() == story_from" in verifier
 
 
+def test_language_verifier_reads_the_visible_label_not_the_material_icon_ligature() -> None:
+    verifier = _read("scripts/verify_nicegui_ui.py")
+
+    assert 'get_by_text("繁中", exact=True)' in verifier
+    assert "chinese_label.count() == 1 and chinese_label.is_visible()" in verifier
+    assert 'inner_text().strip() == "繁中"' not in verifier
+    assert 'get_attribute("aria-label") == "Switch to 繁體中文"' in verifier
+
+
+def test_mobile_verifier_checks_the_persistent_drawer_story_contract() -> None:
+    verifier = _read("scripts/verify_nicegui_mobile.py")
+    story = verifier.split("def _assert_coarse_pointer_icon_story", 1)[1].split(
+        "def _assert_responsive_table_cards", 1
+    )[0]
+
+    assert 'locator(".q-icon").first' in story
+    assert 'data-sy-icon-story-category") != "persistent"' in story
+    assert "more.click()" in story
+    assert "page.keyboard.press(\"Escape\")" in story
+    assert "arrow_back" not in story
+
+
 def test_icon_hydration_uses_observation_and_delegation_not_per_button_listeners() -> None:
     motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
 
@@ -226,6 +248,8 @@ def test_icon_hydration_uses_observation_and_delegation_not_per_button_listeners
     assert "setDataset(icon, 'syIconStoryTo', storyGlyph)" in hydration
     assert "icon.dataset.syIconStoryCategory = category" not in hydration
     assert "icon.dataset.syIconStoryTo = storyGlyph" not in hydration
+    assert "const persistentGlyph = iconStoryState?.current(host).persistentGlyph" in hydration
+    assert "persistentGlyph !== name && !iconStoryTimelines.has(icon)" in hydration
 
     for per_button_listener in (
         r"querySelectorAll\(\s*['\"][^'\"]*(?:\.q-btn|\bbutton\b)",
@@ -414,6 +438,8 @@ def test_browser_verifier_keeps_navigation_button_stable_while_icon_tells_story(
     assert 'page.locator(".sy-desktop-drawer-trigger")' in verifier
     assert 'data-sy-icon-story-category="persistent"' in verifier
     assert ") == static_navigation_toggle_transform" in verifier
+    assert "textContent.trim() === 'menu'" in verifier
+    assert "textContent.trim() === 'close'" in verifier
     assert 'navigation_toggle_icon.text_content().strip() == "menu"' in verifier
     assert 'navigation_toggle_icon.text_content().strip() == "close"' in verifier
 

@@ -295,7 +295,13 @@
         deleteDataset(icon, 'syIconStoryFrom');
         deleteDataset(icon, 'syIconStoryTo');
         deleteDataset(icon, 'syIconStoryActive');
-        iconStoryState?.setPersistent(host, name);
+        const persistentGlyph = iconStoryState?.current(host).persistentGlyph;
+        if (!persistentGlyph) {
+          iconStoryState?.setPersistent(host, name);
+        } else if (persistentGlyph !== name && !iconStoryTimelines.has(icon)) {
+          icon.textContent = persistentGlyph;
+          icon.dataset.syIconName = persistentGlyph;
+        }
         return;
       }
       if (category === 'static') {

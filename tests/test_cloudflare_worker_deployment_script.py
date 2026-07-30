@@ -30,6 +30,16 @@ def test_worker_deployment_is_bound_to_an_immutable_published_release() -> None:
     assert "is not contained in origin/main" in source
 
 
+def test_worker_release_gate_identity_comparison_is_order_independent_and_strict_safe() -> None:
+    source = _source()
+
+    assert "$reportIdentityDifferences = @(" in source
+    assert "-ReferenceObject @($reportRequiredIdentities | Sort-Object)" in source
+    assert "-DifferenceObject @($reportCheckNames | Sort-Object)" in source
+    assert "$reportIdentityDifferences.Count -ne 0" in source
+    assert "-SyncWindow 0" not in source
+
+
 def test_worker_deployment_derives_its_default_source_from_its_own_checkout() -> None:
     source = _source()
     parameter_block = source.split("$ErrorActionPreference", 1)[0]
