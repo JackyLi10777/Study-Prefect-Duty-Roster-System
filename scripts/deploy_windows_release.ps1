@@ -762,6 +762,40 @@ function Assert-SafeReleaseBundlePath {
     return $candidate
 }
 
+function New-SingYinRuntimeTaskPassword {
+    param(
+        [ValidateRange(32, 96)][int]$Length = 48
+    )
+
+    # Short, human-auditable segments avoid both ambiguous characters and
+    # secret-scanner false positives on one long high-entropy-looking literal.
+    $alphabet = @(
+        "ABCDEFGH",
+        "JKLMNPQR",
+        "STUVWXYZ",
+        "abcdefgh",
+        "ijkmnopq",
+        "rstuvwxyz",
+        "23456789",
+        "-_"
+    ) -join ""
+    $randomLength = $Length - 4
+    $randomBytes = [byte[]]::new($randomLength)
+    $generator = [Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $generator.GetBytes($randomBytes)
+        $builder = [Text.StringBuilder]::new($Length)
+        $null = $builder.Append("Aa1!")
+        foreach ($value in $randomBytes) {
+            $null = $builder.Append($alphabet[$value % $alphabet.Length])
+        }
+        return $builder.ToString()
+    } finally {
+        [Array]::Clear($randomBytes, 0, $randomBytes.Length)
+        $generator.Dispose()
+    }
+}
+
 function Get-SingYinReleaseBundleFingerprint {
     param(
         [Parameter(Mandatory = $true)][string]$Path
@@ -1055,6 +1089,9 @@ try {
     $taskInitiallyEnabled = $false
     $taskStopped = $false
     $taskTargetSwitched = $false
+    $taskCredentialRotated = $false
+    $runtimeTaskPassword = $null
+    $runtimeTaskSecurePassword = $null
     $releaseBundlePath = $null
     $previousTaskAction = $null
     $environmentPath = Join-Path $HostRoot ".env"
@@ -1367,7 +1404,27 @@ try {
         -Execute $hostPython `
         -Argument "-X utf8 -m nicegui_app.main" `
         -WorkingDirectory $releaseBundlePath
-    Set-ScheduledTask -TaskName $TaskName -Action $newTaskAction | Out-Null
+    $runtimeTaskPassword = New-SingYinRuntimeTaskPassword
+    $runtimeTaskSecurePassword = ConvertTo-SecureString `
+        -String $runtimeTaskPassword `
+        -AsPlainText `
+        -Force
+    try {
+        Set-LocalUser `
+            -Name $runtimeAccount.Name `
+            -Password $runtimeTaskSecurePassword
+    } finally {
+        if ($null -ne $runtimeTaskSecurePassword) {
+            $runtimeTaskSecurePassword.Dispose()
+            $runtimeTaskSecurePassword = $null
+        }
+    }
+    $taskCredentialRotated = $true
+    Set-ScheduledTask `
+        -TaskName $TaskName `
+        -Action $newTaskAction `
+        -User $runtimeAccount.Name `
+        -Password $runtimeTaskPassword | Out-Null
     $taskTargetSwitched = $true
     $currentEnvironmentBytes = [IO.File]::ReadAllBytes($environmentPath)
     $currentEnvironmentHash = (
@@ -1435,6 +1492,7 @@ try {
             postApplyMatched = [bool]$postApplyGatewayParity.Matches
         }
         environmentOverlayApplied = $environmentOverlayApplied
+        taskCredentialRotated = $taskCredentialRotated
         taskName = $TaskName
         taskState = [string]$task.State
         taskRuntimeAccount = $runtimeAccount.Name
@@ -1472,7 +1530,10 @@ try {
                 # Fail closed: never mutate source or dependencies while the
                 # previous process may still own the production port.
                 Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 15
-                if ($taskTargetSwitched -and $null -ne $previousTaskAction) {
+                if (
+                    ($taskTargetSwitched -or $taskCredentialRotated) -and
+                    $null -ne $previousTaskAction
+                ) {
                     Write-Host "Restoring the previous immutable task target ..." -ForegroundColor Yellow
                     $restoreActionParameters = @{
                         Execute = $previousTaskAction.Execute
@@ -1482,7 +1543,15 @@ try {
                         $restoreActionParameters.Argument = $previousTaskAction.Arguments
                     }
                     $restoreTaskAction = New-ScheduledTaskAction @restoreActionParameters
-                    Set-ScheduledTask -TaskName $TaskName -Action $restoreTaskAction | Out-Null
+                    $restoreTaskParameters = @{
+                        TaskName = $TaskName
+                        Action = $restoreTaskAction
+                    }
+                    if ($taskCredentialRotated) {
+                        $restoreTaskParameters.User = $runtimeAccount.Name
+                        $restoreTaskParameters.Password = $runtimeTaskPassword
+                    }
+                    Set-ScheduledTask @restoreTaskParameters | Out-Null
                 }
             }
             if ($null -ne $environmentBytes) {
@@ -1533,10 +1602,16 @@ try {
             }
             error = $rollbackError
         }
+        taskCredentialRotated = $taskCredentialRotated
     })
     $deploymentExitCode = 1
     }
 } finally {
+    if ($null -ne $runtimeTaskSecurePassword) {
+        $runtimeTaskSecurePassword.Dispose()
+        $runtimeTaskSecurePassword = $null
+    }
+    $runtimeTaskPassword = $null
     if ($processEnvironmentCaptured) {
         foreach ($name in $controlledEnvironmentNames) {
             [Environment]::SetEnvironmentVariable(
