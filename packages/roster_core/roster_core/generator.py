@@ -681,7 +681,7 @@ def _solve_regular_schedule(
     *,
     leave_days: Mapping[str, set[SchoolDay]],
     history_priority_multiplier: float,
-) -> list[Assignment]:
+) -> dict[tuple[SchoolDay, DutyPost, int], Assignment]:
     """Find a complete regular-prefect schedule with deterministic backtracking.
 
     Candidate order preserves the established fairness preference. Unlike the
@@ -691,12 +691,15 @@ def _solve_regular_schedule(
     repeated exploration of equivalent hard-constraint states.
     """
 
-    slots = [
-        (day, post)
-        for day in DAYS
-        for post in required_posts_for_day(day)
-        if post is not DutyPost.ASSIST_IN_CHARGE
-    ]
+    slots: list[tuple[SchoolDay, DutyPost, int]] = []
+    for day in DAYS:
+        seat_by_post: dict[DutyPost, int] = defaultdict(int)
+        for post in required_posts_for_day(day):
+            if post is DutyPost.ASSIST_IN_CHARGE:
+                continue
+            seat = seat_by_post[post]
+            slots.append((day, post, seat))
+            seat_by_post[post] += 1
     generated_load: dict[str, float] = defaultdict(float)
     assigned_days: dict[str, set[SchoolDay]] = defaultdict(set)
     assigned_by_day: dict[SchoolDay, set[str]] = defaultdict(set)
@@ -733,7 +736,7 @@ def _solve_regular_schedule(
             return False
         if not _remaining_slots_have_daily_matching(
             prefects,
-            slots=slots[slot_index:],
+            slots=[(day, post) for day, post, _seat in slots[slot_index:]],
             assigned_by_day=assigned_by_day,
             assigned_days=assigned_days,
             leave_days=leave_days,
@@ -741,7 +744,7 @@ def _solve_regular_schedule(
             failed_states.add(state)
             return False
 
-        day, post = slots[slot_index]
+        day, post, _seat = slots[slot_index]
         for prefect in _candidate_options(
             prefects,
             day=day,
@@ -780,7 +783,13 @@ def _solve_regular_schedule(
             "No complete weekly roster satisfies availability, leave, role, "
             "same-day and non-consecutive-duty rules."
         )
-    return [assignment for assignment in selected if assignment is not None]
+    if any(assignment is None for assignment in selected):
+        raise RosterGenerationError("Regular schedule solver returned an incomplete result.")
+    return {
+        slot: assignment
+        for slot, assignment in zip(slots, selected, strict=True)
+        if assignment is not None
+    }
 
 
 def generate_weekly_roster(
@@ -817,13 +826,12 @@ def generate_weekly_roster(
         previous_assist_assignments=previous_assist_assignments or {},
     )
 
-    regular_assignments = iter(
-        _solve_regular_schedule(
-            prefects,
-            leave_days=excluded_days,
-            history_priority_multiplier=normalized_multiplier,
-        )
+    regular_assignments = _solve_regular_schedule(
+        prefects,
+        leave_days=excluded_days,
+        history_priority_multiplier=normalized_multiplier,
     )
+    regular_seat_by_post: dict[tuple[SchoolDay, DutyPost], int] = defaultdict(int)
 
     for day in DAYS:
         for post in required_posts_for_day(day):
@@ -837,7 +845,10 @@ def generate_weekly_roster(
                     weight=duty_weight(post),
                 )
             else:
-                assignment = next(regular_assignments)
+                seat_key = (day, post)
+                seat = regular_seat_by_post[seat_key]
+                assignment = regular_assignments[(day, post, seat)]
+                regular_seat_by_post[seat_key] += 1
             assignments.append(assignment)
 
     validate_assignments(assignments, prefects, leave_days=excluded_days)

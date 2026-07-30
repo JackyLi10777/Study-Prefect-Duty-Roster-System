@@ -1,63 +1,88 @@
-# Shared UI Components
+# Components — current NiceGUI source inventory
 
-This is a source-linked inventory for the NiceGUI application. The canonical implementation remains in the linked Python and CSS files; this document intentionally does not duplicate large source files.
+Generated from the authoritative repository checkout on 2026-07-30. This is a source-grounded map for design exploration, not a second component specification.
 
-## Rendering stack
+## Runtime
 
-- Framework: NiceGUI with its Vue and Quasar browser runtime.
-- Component library: NiceGUI `ui.*` builders and Quasar controls.
-- Icons: Material icon names supplied through NiceGUI.
-- Styling: semantic `sy-*` classes, generated CSS variables, Quasar properties, and utility classes passed through `.classes()`.
-- Translation: Traditional Chinese first, with complete English messages resolved at render time.
+- NiceGUI + Quasar only; do not introduce React, Tailwind, Radix, Framer Motion, or copied community runtime code.
+- Material outlined icon names are passed through NiceGUI.
+- Traditional Chinese is primary; English uses the same DOM hierarchy.
+- Admin and Guest render the same component skeleton. Capability checks remain server-side.
 
-The highest-use framework primitives are `label`, `element`, `button`, `row`, `column`, `icon`, `card`, `select`, `dialog`, `tabs`, `table`, and `expansion`.
+## Public component API
 
-## Shared primitives
+Canonical source: `nicegui_app/ui/components.py` (complete file, 406 lines).
 
-| Component or pattern | Canonical source | Purpose | Important inputs |
-|---|---|---|---|
-| Progress operation dialog | [`_run_with_progress`](../../nicegui_app/ui/page_shared.py) | Presents an honest indeterminate operation, records the outcome, and prevents duplicate durable actions. | title key, working key, icon, callable |
-| Feedback channel | [`_render_feedback_channel`](../../nicegui_app/ui/page_shared.py) | Shared support and source-reference panel in full or compact form. | `compact` |
-| Tone badge | [`_tone_badge`](../../nicegui_app/ui/page_shared.py) | Stable semantic status vocabulary across action, stable, attention, danger, and neutral states. | text, tone, optional properties |
-| Responsive table | [`_render_responsive_table`](../../nicegui_app/ui/page_shared.py) | Renders one display model as a desktop table and a labelled phone grid. | rows, columns, row key, class, test identifier |
-| Roster table and cards | [`_render_roster_table`](../../nicegui_app/ui/page_shared.py) | Shared wide table and phone duty-card representation. | roster identifier |
-| Mobile roster cards | [`_render_mobile_roster_cards`](../../nicegui_app/ui/page_shared.py) | Day-grouped duty cards without horizontal scrolling. | abstract display rows |
-| Mobile directory cards | [`_render_mobile_prefect_cards`](../../nicegui_app/ui/page_shared.py) | Compact identity, role, availability, and fairness summary cards. | abstract display rows |
-| Weekly flow step | [`_render_flow_step`](../../nicegui_app/ui/page_shared.py) | One numbered stage in the generate, review, and adjustment sequence. | number, title, detail, state, icon, optional action |
-| Storage lifecycle | [`_render_storage_lifecycle`](../../nicegui_app/ui/page_shared.py) | Explains draft, publication, adjustment, and verified recovery state. | workflow read model |
-| Operation hint | [`_render_operation_hint`](../../nicegui_app/ui/page_shared.py) | Concise purpose-and-method cue immediately before a consequential action. | body key, icon |
-| Empty state | [`_render_empty_state`](../../nicegui_app/ui/page_shared.py) | Clear next action for an empty result, with an optional contextual illustration slot. | title, body, icon, optional action |
-| Route recovery state | [`_render_roster_route_state`](../../nicegui_app/ui/page_shared.py) | Safe recovery choices for stale or premature roster URLs. | copy keys, icon, primary and secondary routes |
-| Co-creation panel | [`_render_co_creation`](../../nicegui_app/ui/page_shared.py) | Shared non-sensitive creator and project-closing surface. | translated content from the catalogue |
-| Page contents navigation | [`render_page_toc`](../../nicegui_app/ui/reference_navigation.py) | Compact page-local anchor navigation. | ordered anchor and label pairs |
-| Reference pager | [`render_reference_pager`](../../nicegui_app/ui/reference_navigation.py) | Previous and next navigation within an operator or trust reading lane. | previous and next destinations |
-| Restricted capability | [`render_restricted_capability`](../../nicegui_app/ui/page_access.py) | Shared explanation for an unavailable action without treating UI as the permission boundary. | icon |
+Source outline (python):
+    ActionVariant = Literal["primary", "secondary", "quiet", "attention", "danger"]
+    IconStoryCategory = Literal["preview", "persistent", "lifecycle", "static"]
+    StatusTone = Literal["action", "stable", "attention", "danger", "neutral"]
+    WorkflowState = Literal["active", "done", "pending"]
 
-## Stateful feature components
+    def action(text: str, *, icon: str | None = None,
+               on_click: Callable[..., object] | None = None,
+               variant: ActionVariant = "primary", busy: bool = False,
+               disabled: bool = False, test_id: str | None = None,
+               classes: str = "", motion_role: str | None = None,
+               icon_story_to: str | None = None,
+               icon_story_category: IconStoryCategory | None = None): ...
 
-These are reusable renderers, but their visual state is coupled to workflow or browser state.
+    def field(*, label: str, control_factory: Callable[[], _Control],
+              description: str | None = None, optional: bool = False,
+              error: str | None = None, read_only: bool = False,
+              test_id: str | None = None) -> _Control: ...
 
-| Component | Canonical source | Visual states |
-|---|---|---|
-| Page music control | [`render_page_music_control`](../../nicegui_app/ui/music.py) | playing, paused, browser-blocked, off; volume and profile controls |
-| Music settings | [`render_music_library_settings`](../../nicegui_app/ui/music.py) | catalogue, local additions, context assignments, sound preferences |
-| Guest music settings | [`render_guest_music_settings`](../../nicegui_app/ui/music.py) | bounded settings without official-write controls |
-| Online music panel | [`render_youtube_panel`](../../nicegui_app/ui/youtube_music.py) | guidance, saved public playlist, search results, visible player |
-| Access-control console | [`render_access_control_console`](../../nicegui_app/ui/access_control.py) | restricted, unconfigured, ready, empty, loading, and active-link management |
-| Published-roster share action | [`render_roster_share_action`](../../nicegui_app/ui/access_control.py) | unavailable, confirmation, receipt, and revoke states |
+    def status(text: str, tone: StatusTone = "neutral", *, props: str = ""): ...
+    def dialog(*, title: str, description: str, consequence: str | None = None,
+               persistent: bool = False, test_id: str | None = None): ...
+    def empty_state(*, title: str, body: str, icon: str,
+                    action_text: str | None = None,
+                    on_action: Callable[..., object] | None = None,
+                    action_variant: ActionVariant = "secondary",
+                    action_test_id: str | None = None,
+                    illustrated: bool = False, test_id: str | None = None) -> None: ...
+    def restricted_state(*, title: str, body: str,
+                         action_text: str | None = None,
+                         on_action: Callable[..., object] | None = None,
+                         test_id: str | None = None) -> None: ...
+    def progress_state(*, title: str, status_text: str,
+                       value: float | None = None,
+                       test_id: str | None = None) -> None: ...
+    def responsive_table(*, rows: list[dict[str, object]],
+                         columns: list[dict[str, object]], row_key: str,
+                         classes: str = "", test_id: str | None = None) -> None: ...
+    def workflow_step(*, number: int, title: str, detail: str,
+                      state: WorkflowState, state_text: str, icon: str,
+                      action_text: str | None = None,
+                      on_action: Callable[..., object] | None = None) -> None: ...
+    def editorial_heading(*, title: str, copy: str,
+                          kicker: str | None = None,
+                          anchor_id: str | None = None) -> None: ...
+    def page_toc(items: Sequence[ReferenceItem]) -> None: ...
+    def reference_pager(*, previous: ReferenceDestination | None = None,
+                        next_: ReferenceDestination | None = None) -> None: ...
+    def code_sample(*, code: str, label: str, language: str = "text",
+                    test_id: str | None = None) -> None: ...
 
-## Common visual class families
+Every public primitive owns complete default, hover/focus, disabled, busy, error, empty, and restricted semantics. `action` accepts semantic icon-story metadata; animation must not alter button hit geometry.
 
-- Surfaces: `sy-surface`, `sy-surface-subtle`, `sy-workbench`.
-- Status: `sy-status-badge`, `sy-tone-*`, `sy-status-stack`.
-- Navigation: `sy-sidebar`, `sy-nav-active`, `sy-mobile-tabbar`, `sy-reference-*`.
-- Forms and consequences: `sy-adjustment-*`, `sy-mobile-actions`, `sy-border-attention`.
-- Empty and recovery states: `sy-empty-state`, `sy-inline-empty`, `sy-restricted-state`.
-- Editorial contexts: `sy-daily-start`, `sy-chapel`, `sy-handover-*`, `sy-platform-*`, `sy-engineering-*`, `sy-architecture-*`.
+## Existing feature renderers
 
-## Context rules
+Canonical source: `nicegui_app/ui/page_shared.py`.
 
-- Include the linked Python renderer, the shared shell, the relevant route module, and the four theme stylesheets for visual work.
-- Include the relevant translation catalogue when exact bilingual copy structure matters.
-- Use abstract fixture values when a draft needs rows, names, dates, counts, or status examples.
-- Treat services and policy packages as state contracts. They are not visual components and should be added only when a design depends on their state vocabulary.
+| Renderer | Source range | Responsibility |
+|---|---:|---|
+| operation hint | search `_render_operation_hint` | purpose + method before consequential work |
+| roster presentation | search `_render_roster_table` and mobile card renderer | shared duty data on desktop and phone |
+| honest progress | search `_run_with_progress` | prevents duplicate durable actions |
+| storage lifecycle | search `_render_storage_lifecycle` | draft/publish/adjust/backup explanation |
+| safe route state | search `_render_roster_route_state` | stale and premature URL recovery |
+| co-creation | search `_render_co_creation` | creator/project close, non-operational |
+
+## Interaction contract
+
+- Whole-button state may morph icon + label + surface, but layout cannot jump.
+- Persistent state changes (save, publish, withdraw) need a reversible or explicit completion state.
+- Preview-only hover stories reset on pointer leave and never imply completion.
+- Touch, keyboard, reduced-motion, forced-colours, busy, and disabled states remain fully legible.
+- No decorative animation behind tables, names, fairness data, warnings, or PDF content.

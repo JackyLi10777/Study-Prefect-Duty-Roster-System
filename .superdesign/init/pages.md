@@ -1,190 +1,140 @@
-# Key Page Dependency Trees
+# Pages — current dependency trees
 
-These trees are complete for render-facing local UI dependencies. Linked service and policy modules define available states but should remain source references rather than copied design payloads.
+These trees describe the actual NiceGUI composition used for the faithful baseline.
 
-## Common shell dependency tree
+## 1. Public entrance
 
-- [`nicegui_app/ui/shell.py`](../../nicegui_app/ui/shell.py)
-  - [`nicegui_app/ui/i18n.py`](../../nicegui_app/ui/i18n.py)
-    - [`nicegui_app/ui/preferences.py`](../../nicegui_app/ui/preferences.py)
-    - [`nicegui_app/ui/i18n_catalog/__init__.py`](../../nicegui_app/ui/i18n_catalog/__init__.py)
-  - [`nicegui_app/ui/theme.py`](../../nicegui_app/ui/theme.py)
-    - [`nicegui_app/ui/design_token_contract.py`](../../nicegui_app/ui/design_token_contract.py)
-    - [`nicegui_app/ui/theme_markup.py`](../../nicegui_app/ui/theme_markup.py)
-    - [`nicegui_app/ui/motion.py`](../../nicegui_app/ui/motion.py)
-  - [`nicegui_app/ui/music.py`](../../nicegui_app/ui/music.py)
-    - [`nicegui_app/ui/youtube_music.py`](../../nicegui_app/ui/youtube_music.py)
-    - [`nicegui_app/ui/sound.py`](../../nicegui_app/ui/sound.py)
-  - [`nicegui_app/runtime.py`](../../nicegui_app/runtime.py)
-  - [`nicegui_app/access_context.py`](../../nicegui_app/access_context.py)
-  - [`nicegui_app/application_mode.py`](../../nicegui_app/application_mode.py)
-  - [`nicegui_app/contact.py`](../../nicegui_app/contact.py)
-- [`design_system/tokens.v1.json`](../../design_system/tokens.v1.json)
-- [`nicegui_app/assets/css/sing-yin-tokens-v1.css`](../../nicegui_app/assets/css/sing-yin-tokens-v1.css)
-- [`nicegui_app/assets/css/sing-yin-theme-v1.css`](../../nicegui_app/assets/css/sing-yin-theme-v1.css)
-- [`nicegui_app/assets/css/sing-yin-narrative-v1.css`](../../nicegui_app/assets/css/sing-yin-narrative-v1.css)
-- [`nicegui_app/assets/css/sing-yin-mobile-v1.css`](../../nicegui_app/assets/css/sing-yin-mobile-v1.css)
+Source outline (text):
+    gateway public route
+    ├── product identity / Service Weave mark
+    ├── editorial value proposition
+    ├── Admin sign-in action
+    ├── Guest demonstration action
+    ├── published-share guidance
+    ├── Daily Verse excerpt
+    └── theme preference handoff
 
-## `/` — Dashboard
+## 2. Dashboard `/`
 
-Entry: [`dashboard_page` in `home.py`](../../nicegui_app/ui/page_routes/home.py)
+Source: `nicegui_app/ui/page_routes/home.py:29-162`.
 
-- Common shell dependency tree
-- [`nicegui_app/ui/devotional.py`](../../nicegui_app/ui/devotional.py)
-  - [`packages/roster_core/roster_core/devotional.py`](../../packages/roster_core/roster_core/devotional.py)
-- [`nicegui_app/ui/page_shared.py`](../../nicegui_app/ui/page_shared.py)
-  - `_navigate_with_feedback`
-  - `_render_flow_step`
-  - `_tone_badge`
-- [`nicegui_app/ui/preferences.py`](../../nicegui_app/ui/preferences.py)
-- [`nicegui_app/runtime.py`](../../nicegui_app/runtime.py)
+Source outline (text):
+    page_shell("/")
+    ├── Daily Verse hero (dashboard_verse, refresh, reflection)
+    ├── three-stage weekly workflow
+    │   ├── generate draft
+    │   ├── review / publish / export
+    │   └── published-duty absence
+    ├── current roster state / empty state
+    └── safe next action
 
-Primary regions: Daily Verse, mobile next action, Weekly Pulse, recent-roster history.
+## 3. Rosters `/rosters`
 
-## `/rosters` — Weekly roster workspace
+Source: `nicegui_app/ui/page_routes/weekly.py:175-668`.
 
-Entry: [`rosters_page` in `weekly.py`](../../nicegui_app/ui/page_routes/weekly.py)
+Source outline (text):
+    page_shell("/rosters")
+    ├── directory-required recovery state
+    ├── storage lifecycle
+    ├── workflow navigation
+    ├── Generate tab
+    │   ├── week date
+    │   ├── Assist assignment policy
+    │   ├── history fairness multiplier + chart
+    │   ├── vacancies/rules
+    │   ├── pre-generation leave
+    │   └── generate command
+    └── Adjust/Edit tab
+        └── current roster versions/actions
 
-- Common shell dependency tree
-- [`nicegui_app/ui/page_shared.py`](../../nicegui_app/ui/page_shared.py)
-  - `_next_monday`
-  - `_render_empty_state`
-  - `_render_operation_hint`
-  - `_run_with_progress`
-  - `_safe_read_action`
-- [`nicegui_app/ui/access_control.py`](../../nicegui_app/ui/access_control.py)
-- [`nicegui_app/services/roster_workflow.py`](../../nicegui_app/services/roster_workflow.py)
-- [`packages/roster_core/roster_core/__init__.py`](../../packages/roster_core/roster_core/__init__.py)
-- [`packages/roster_policy/roster_policy/__init__.py`](../../packages/roster_policy/roster_policy/__init__.py)
+## 4. Roster detail `/rosters/{id}`
 
-Primary regions: empty-ready orientation, generation and history tabs, week and fairness controls, leave declarations, roster history.
+Source: `nicegui_app/ui/page_routes/weekly.py:674-901`.
 
-## `/rosters/{roster_week_id}` — Roster detail
+Source outline (text):
+    page shell
+    ├── explicit return/workflow navigation
+    ├── status/version/week metadata
+    ├── shared roster matrix
+    ├── manual draft edit controls when draft
+    ├── publish/export actions
+    ├── withdraw published action when eligible
+    └── adjustment destination
 
-Entry: [`roster_detail_page` in `weekly.py`](../../nicegui_app/ui/page_routes/weekly.py)
+## 5. Prefects `/prefects`
 
-- Common shell dependency tree
-- [`nicegui_app/ui/page_shared.py`](../../nicegui_app/ui/page_shared.py)
-  - `_render_roster_table`
-  - `_render_storage_lifecycle`
-  - `_render_roster_route_state`
-  - `_open_roster_export_dialog`
-  - `_run_with_progress`
-- [`nicegui_app/ui/access_control.py`](../../nicegui_app/ui/access_control.py)
-  - `render_roster_share_action`
-- [`nicegui_app/services/roster_workflow.py`](../../nicegui_app/services/roster_workflow.py)
-- [`packages/roster_policy/roster_policy/__init__.py`](../../packages/roster_policy/roster_policy/__init__.py)
+Source: `nicegui_app/ui/page_routes/people.py:701-1332`.
 
-Primary regions: status and week summary, desktop table or phone cards, publication controls, draft correction, export, and route recovery.
+Source outline (text):
+    page shell
+    ├── directory search/filter/edit
+    ├── CSV/XLSX upload with bounded preview
+    ├── paste/import assistant states
+    ├── responsive directory table/cards
+    ├── fairness panel and trends
+    └── bilingual PDF + JSON evidence downloads
 
-## `/rosters/{roster_week_id}/adjustments` — Published-duty adjustment
+## 6. Handover `/handover`
 
-Entry: [`adjustment_detail_page` in `weekly.py`](../../nicegui_app/ui/page_routes/weekly.py)
+Source: `nicegui_app/ui/page_routes/stewardship.py:31-232`.
 
-- Common shell dependency tree
-- [`nicegui_app/ui/page_shared.py`](../../nicegui_app/ui/page_shared.py)
-  - `_render_roster_table`
-  - `_render_operation_hint`
-  - `_render_roster_route_state`
-  - `_run_with_progress`
-- [`nicegui_app/services/roster_workflow.py`](../../nicegui_app/services/roster_workflow.py)
-- [`packages/roster_policy/roster_policy/__init__.py`](../../packages/roster_policy/roster_policy/__init__.py)
+Source outline (text):
+    page shell
+    ├── paired atmosphere hero
+    ├── page-local contents
+    ├── operator checklist
+    ├── new-year directory handover
+    ├── verified backup/restore evidence
+    └── acceptance responsibility
 
-Primary regions: current roster, original assignment, eligible substitute, required reason, confirmation, and completed state.
+## 7. Platform `/platform`
 
-## `/prefects` — Directory and fairness
+Source: `nicegui_app/ui/page_routes/showcase.py:43-270`.
 
-Entry: [`prefects_page` in `people.py`](../../nicegui_app/ui/page_routes/people.py)
+Source outline (text):
+    page shell
+    ├── product mark + functional identity
+    ├── live operational snapshot
+    ├── real Study Prefect Team roles
+    ├── operating map
+    ├── capabilities and solutions
+    ├── service principles
+    └── resources/co-creation close
 
-- Common shell dependency tree
-- [`nicegui_app/ui/page_shared.py`](../../nicegui_app/ui/page_shared.py)
-  - `_prefect_directory_rows`
-  - `_render_mobile_prefect_cards`
-  - `_render_responsive_table`
-  - `_render_empty_state`
-  - `_run_with_progress`
-- [`nicegui_app/ui/page_access.py`](../../nicegui_app/ui/page_access.py)
-- [`nicegui_app/ui/downloads.py`](../../nicegui_app/ui/downloads.py)
-- [`nicegui_app/services/prefect_import_assistant.py`](../../nicegui_app/services/prefect_import_assistant.py)
-- [`nicegui_app/services/summary_report_export.py`](../../nicegui_app/services/summary_report_export.py)
-- [`nicegui_app/utils/prefect_file_import.py`](../../nicegui_app/utils/prefect_file_import.py)
-- [`nicegui_app/utils/prefect_import.py`](../../nicegui_app/utils/prefect_import.py)
-- [`nicegui_app/services/roster_workflow.py`](../../nicegui_app/services/roster_workflow.py)
-- [`packages/roster_policy/roster_policy/__init__.py`](../../packages/roster_policy/roster_policy/__init__.py)
+## 8. System architecture `/system-architecture`
 
-Primary regions: directory and fairness tabs, desktop table or phone cards, editor dialog, reports, import preview, and restricted states.
+Source: `nicegui_app/ui/page_routes/showcase.py:573-732`.
 
-## `/handover` — Successor handover
+Source outline (text):
+    page shell
+    ├── editorial hero + TOC
+    ├── PageContext / capability boundary
+    ├── policy/core/workflow/persistence layers
+    ├── Guest/Admin adapters and lifecycle
+    ├── health/readiness/recovery
+    └── extension rules + reference pager
 
-Entry: [`handover_page` in `stewardship.py`](../../nicegui_app/ui/page_routes/stewardship.py)
+## 9. Daily Verse `/devotional`
 
-- Common shell dependency tree
-- [`nicegui_app/ui/page_shared.py`](../../nicegui_app/ui/page_shared.py)
-  - `_run_with_progress`
-  - `_tone_badge`
-- [`nicegui_app/ui/reference_navigation.py`](../../nicegui_app/ui/reference_navigation.py)
-- [`nicegui_app/release_evidence.py`](../../nicegui_app/release_evidence.py)
-- [`nicegui_app/services/roster_workflow.py`](../../nicegui_app/services/roster_workflow.py)
+Source: `nicegui_app/ui/page_routes/home.py:309-369`; selection source `nicegui_app/ui/devotional.py` (complete, 59 lines).
 
-Primary regions: hero, page contents, successor steps, school-year rollover, readiness cards, machine evidence, and human acceptance.
+Source outline (text):
+    page shell
+    ├── sacred hero with theme-paired image
+    ├── tone selector + refresh
+    ├── bilingual verse, reference and translation attribution
+    ├── reading/reflective context
+    ├── prayer companion
+    └── return to weekly service
 
-## `/settings` — Settings and recovery
+## 10. Support `/support`
 
-Entry: [`settings_page` in `stewardship.py`](../../nicegui_app/ui/page_routes/stewardship.py)
+Source: `nicegui_app/ui/page_routes/support.py`.
 
-- Common shell dependency tree
-- [`nicegui_app/ui/music.py`](../../nicegui_app/ui/music.py)
-- [`nicegui_app/ui/page_access.py`](../../nicegui_app/ui/page_access.py)
-- [`nicegui_app/ui/downloads.py`](../../nicegui_app/ui/downloads.py)
-- [`nicegui_app/ui/page_shared.py`](../../nicegui_app/ui/page_shared.py)
-  - `_render_operation_hint`
-  - `_render_empty_state`
-  - `_run_with_progress`
-  - `_tone_badge`
-- [`nicegui_app/services/roster_workflow.py`](../../nicegui_app/services/roster_workflow.py)
-
-Primary regions: media preferences, handover summary, recovery status, integrity warning, package preparation, and restore confirmation.
-
-## `/access-control` — Access and public links
-
-Entry: [`access_control_page` in `access.py`](../../nicegui_app/ui/page_routes/access.py)
-
-- Common shell dependency tree
-- [`nicegui_app/ui/access_control.py`](../../nicegui_app/ui/access_control.py)
-  - `render_access_control_console`
-  - `_render_active_shares`
-  - `_open_create_confirmation`
-- [`nicegui_app/ui/page_access.py`](../../nicegui_app/ui/page_access.py)
-- [`nicegui_app/ui/page_shared.py`](../../nicegui_app/ui/page_shared.py)
-- [`nicegui_app/services/public_roster_share.py`](../../nicegui_app/services/public_roster_share.py)
-
-Primary regions: access-mode introduction, operator and viewer cards, roster selection, create confirmation, and active-link management.
-
-## `/platform` — Platform and team
-
-Entry: [`platform_page` in `showcase.py`](../../nicegui_app/ui/page_routes/showcase.py)
-
-- Common shell dependency tree
-- [`nicegui_app/ui/platform_summary.py`](../../nicegui_app/ui/platform_summary.py)
-- [`nicegui_app/ui/page_shared.py`](../../nicegui_app/ui/page_shared.py)
-  - `_render_feedback_channel`
-  - `_render_co_creation`
-  - `_tone_badge`
-- [`nicegui_app/ui/reference_navigation.py`](../../nicegui_app/ui/reference_navigation.py)
-- [`nicegui_app/release_evidence.py`](../../nicegui_app/release_evidence.py)
-
-Primary regions: editorial hero, live summary, team operating model, capabilities, solutions, principles, resources, and co-creation closing.
-
-## `/system-architecture` — Architecture and trust
-
-Entry: [`system_architecture_page` in `showcase.py`](../../nicegui_app/ui/page_routes/showcase.py)
-
-- Common shell dependency tree
-- [`nicegui_app/ui/page_shared.py`](../../nicegui_app/ui/page_shared.py)
-  - `_render_feedback_channel`
-  - `_tone_badge`
-- [`nicegui_app/ui/reference_navigation.py`](../../nicegui_app/ui/reference_navigation.py)
-- [`nicegui_app/release_evidence.py`](../../nicegui_app/release_evidence.py)
-- [`nicegui_app/ui/platform_summary.py`](../../nicegui_app/ui/platform_summary.py)
-
-Primary regions: architecture hero, service lifeline, system layers, trust evidence, FAQ, and reference pager.
+Source outline (text):
+    page shell
+    ├── browser-only Public/Viewer report path
+    ├── Guest non-persistent report path
+    ├── Admin local incident bundle path
+    ├── redaction and attachment guidance
+    └── support reference / recovery state

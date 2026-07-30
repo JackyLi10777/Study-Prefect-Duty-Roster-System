@@ -74,6 +74,10 @@
 }
 
 .sy-workflow-navigation {
+  --sy-workflow-position: 25%;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   padding: 6px;
@@ -83,7 +87,24 @@
   box-shadow: inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
 }
 
+/* Direction B owns orientation: this line reports the current place in the
+ * weekly sequence, not completion or elapsed time. Direction A supplies the
+ * quiet material surface; Direction C remains outside operational routes. */
+.sy-workflow-navigation--operational-rhythm::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0 auto auto 0;
+  width: var(--sy-workflow-position, 25%);
+  height: 3px;
+  background: var(--sy-woven-line);
+  content: "";
+  pointer-events: none;
+  transition: width var(--sy-motion-state) var(--sy-ease);
+}
+
 .sy-workflow-navigation-step {
+  position: relative;
+  z-index: 1;
   width: 100%;
   min-height: 58px;
   padding: 8px 10px !important;
@@ -223,6 +244,10 @@
   gap: 14px;
 }
 
+.sy-workflow-navigation-step.is-locked {
+  opacity: .62;
+}
+
 .sy-support-details .sy-support-form-grid,
 .sy-support-details .sy-support-browser-grid {
   margin-top: 10px;
@@ -245,6 +270,10 @@
     scroll-padding-inline: 6px;
     scroll-snap-type: x proximity;
     scrollbar-width: thin;
+  }
+
+  .sy-workflow-navigation--operational-rhythm::before {
+    display: none;
   }
 
   .sy-workflow-navigation-step {
@@ -277,6 +306,12 @@
   .sy-support-form-grid > *,
   .sy-support-browser-grid > * {
     grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sy-workflow-navigation--operational-rhythm::before {
+    transition: none;
   }
 }
 

@@ -1,48 +1,61 @@
-# Routes
+# Routes — canonical current contract
 
-NiceGUI uses decorator-based route registration rather than a file-based frontend router.
+Canonical registry: `nicegui_app/ui/page_catalog.py` (complete source, 305 lines). Registration side effects are imported once by `nicegui_app/ui/page_routes/__init__.py`:
 
-## Registration chain
+Source outline (python):
+    from . import access, home, people, showcase, stewardship, support, weekly
+    __all__ = ["access", "home", "people", "showcase", "stewardship", "support", "weekly"]
 
-1. [`nicegui_app/main.py`](../../nicegui_app/main.py) imports the UI facade.
-2. [`nicegui_app/ui/pages.py`](../../nicegui_app/ui/pages.py) imports the route package.
-3. [`nicegui_app/ui/page_routes/__init__.py`](../../nicegui_app/ui/page_routes/__init__.py) imports all six route modules.
-4. Each route module registers functions with `@ui.page`.
+## PageDefinition schema
 
-## Page map
+Source outline (python):
+    class PageKind(str, Enum):
+        OPERATIONS = "operations"
+        STORY = "story"
+        EVIDENCE = "evidence"
+        REFERENCE = "reference"
+        SACRED = "sacred"
 
-| URL | Page function | Source | Layout active path | Summary |
+    @dataclass(frozen=True)
+    class PageDefinition:
+        route: str
+        title_key: str
+        navigation_group: str
+        icon: str
+        page_kind: PageKind
+        music_context: str
+        required_capability: Capability | None
+        visible_access_modes: frozenset[AccessMode]
+        mobile_primary: bool = False
+
+## Workbench route map
+
+| Route | Kind | Icon | Music | Primary purpose |
 |---|---|---|---|---|
-| `/` | `dashboard_page` | [`home.py`](../../nicegui_app/ui/page_routes/home.py) | `/` | Daily Verse, next action, Weekly Pulse, and recent rosters |
-| `/dashboard` | `dashboard_alias` | [`home.py`](../../nicegui_app/ui/page_routes/home.py) | redirect | Compatibility redirect to Dashboard |
-| `/getting-started` | `getting_started_page` | [`home.py`](../../nicegui_app/ui/page_routes/home.py) | `/getting-started` | First-use steps and reference map |
-| `/guide` | `operator_guide_page` | [`home.py`](../../nicegui_app/ui/page_routes/home.py) | `/guide` | Operator guidance and troubleshooting table |
-| `/devotional` | `devotional_page` | [`home.py`](../../nicegui_app/ui/page_routes/home.py) | `/devotional` | Full sacred-reading view with reflection, prayer, and return action |
-| `/rosters` | `rosters_page` | [`weekly.py`](../../nicegui_app/ui/page_routes/weekly.py) | `/rosters` | Generate a weekly draft and inspect roster history |
-| `/rosters/new` | `generate_roster_page` | [`weekly.py`](../../nicegui_app/ui/page_routes/weekly.py) | redirect | Compatibility redirect to the roster workspace |
-| `/rosters/{roster_week_id}` | `roster_detail_page` | [`weekly.py`](../../nicegui_app/ui/page_routes/weekly.py) | `/rosters` | Draft review, correction, publication, export, and published view |
-| `/adjustments` | `adjustments_page` | [`weekly.py`](../../nicegui_app/ui/page_routes/weekly.py) | redirect | Compatibility redirect to the roster workspace |
-| `/rosters/{roster_week_id}/adjustments` | `adjustment_detail_page` | [`weekly.py`](../../nicegui_app/ui/page_routes/weekly.py) | `/rosters` | Published-duty leave adjustment and substitute confirmation |
-| `/prefects` | `prefects_page` | [`people.py`](../../nicegui_app/ui/page_routes/people.py) | `/prefects` | Directory, fairness, reports, editing, and imports |
-| `/audit` | `audit_page` | [`people.py`](../../nicegui_app/ui/page_routes/people.py) | redirect | Compatibility redirect to Prefects |
-| `/handover` | `handover_page` | [`stewardship.py`](../../nicegui_app/ui/page_routes/stewardship.py) | `/handover` | Successor steps, school-year rollover, readiness, and acceptance evidence |
-| `/settings` | `settings_page` | [`stewardship.py`](../../nicegui_app/ui/page_routes/stewardship.py) | `/settings` | Music preferences, recovery status, handover package, and restore |
-| `/access-control` | `access_control_page` | [`access.py`](../../nicegui_app/ui/page_routes/access.py) | `/access-control` | Operator and viewer access model plus public-link management |
-| `/platform` | `platform_page` | [`showcase.py`](../../nicegui_app/ui/page_routes/showcase.py) | `/platform` | Team operating model, capabilities, solutions, and resources |
-| `/engineering` | `engineering_page` | [`showcase.py`](../../nicegui_app/ui/page_routes/showcase.py) | `/engineering` | Engineering facts, architecture layers, and release gates |
-| `/system-architecture` | `system_architecture_page` | [`showcase.py`](../../nicegui_app/ui/page_routes/showcase.py) | `/system-architecture` | Service lifeline, system layers, trust evidence, and FAQ |
+| `/` | operations | `space_dashboard` | dashboard | Daily Verse + next safe weekly action |
+| `/rosters` | operations | `calendar_month` | weekly | generate, review, publish, export, adjust |
+| `/prefects` | operations | `groups` | people | directory, import, fairness and reports |
+| `/handover` | operations | `handshake` | handover | annual handover and recovery duties |
+| `/access-control` | operations | `admin_panel_settings` | settings | access explanation and controls |
+| `/settings` | operations | `settings` | settings | session/system preferences and recovery |
+| `/platform` | story | `domain` | architecture | mission, roles, capability and continuity |
+| `/system-architecture` | reference | `account_tree` | architecture | boundaries, lifecycle and reference |
+| `/engineering` | evidence | `build_circle` | architecture | verified release/recovery evidence |
+| `/getting-started` | reference | `play_circle` | getting_started | first-use route |
+| `/guide` | reference | `help_outline` | guide | operator procedures |
+| `/devotional` | sacred | `menu_book` | devotional | reading, reflection, prayer, return to service |
+| `/support` | operations | `support_agent` | guide | local incident report and recovery guidance |
 
-## Shared layout
+Additional parameterised routes are owned by `page_routes/weekly.py` for roster detail and adjustments, by `page_routes/people.py` for audit/reporting, and by the gateway for Public/Viewer entry. They must project the same shell and capability policy.
 
-All non-redirect pages use [`page_shell`](../../nicegui_app/ui/shell.py). The active path controls navigation highlighting and the stable page slug. The optional music context selects only a page-level listening profile; it does not receive route records.
+## Navigation groups
 
-## Route-module ownership
+1. getting started
+2. weekly operations
+3. people and fairness
+4. handover and governance
+5. administration
+6. contextual help
+7. trust/resources portal
 
-- [`home.py`](../../nicegui_app/ui/page_routes/home.py): Dashboard, onboarding, guide, devotional.
-- [`weekly.py`](../../nicegui_app/ui/page_routes/weekly.py): Weekly roster workflow and adjustments.
-- [`people.py`](../../nicegui_app/ui/page_routes/people.py): Directory, fairness, reports, and imports.
-- [`stewardship.py`](../../nicegui_app/ui/page_routes/stewardship.py): Handover and settings.
-- [`access.py`](../../nicegui_app/ui/page_routes/access.py): Access-control entry page.
-- [`showcase.py`](../../nicegui_app/ui/page_routes/showcase.py): Platform, engineering, and architecture narratives.
-
-Non-visual application endpoints are intentionally outside this design route map.
+Only Dashboard, Rosters, and Prefects are mobile-primary. All other routes remain reachable through More/drawer and explicit workflow navigation.

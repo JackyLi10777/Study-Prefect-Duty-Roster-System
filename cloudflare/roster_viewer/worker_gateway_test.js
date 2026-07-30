@@ -439,6 +439,17 @@ Deno.test('strips Access and gateway session credentials but preserves the NiceG
   assertEquals(sanitized.get('Cookie'), 'session=nicegui-session; preference=zh-HK');
 });
 
+Deno.test('strips alternate-case spellings of every security cookie', () => {
+  const sanitized = stripAccessCredentials(new Headers({
+    Cookie: 'session=nicegui-session; cf_authorization=secret-access; '
+      + '__host-singyinadminsession=secret-admin; '
+      + '__HOST-SINGYINGUESTSESSION=secret-guest; '
+      + '__host-singyinthemehandoff=dark; preference=zh-HK',
+  }));
+
+  assertEquals(sanitized.get('Cookie'), 'session=nicegui-session; preference=zh-HK');
+});
+
 Deno.test('landing welcome playlists use paired instrumental tracks and a 50 percent default volume', async () => {
   assertEquals(Object.keys(WELCOME_TRACKS).sort().join(','), 'bright,quiet');
   for (const profile of ['bright', 'quiet']) {
@@ -508,6 +519,32 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assert(!script.includes('themeToggleLabel.textContent = copy.current'));
   assert(script.includes('let runtimeThemePreference = null'));
   assert(script.includes('runtimeThemePreference = theme'));
+});
+
+Deno.test('rejects an obvious administrator session placeholder even when it is long enough', async () => {
+  const env = accessEnvironment('sing-yin-runtime-placeholder-admin-secret');
+  env.ADMIN_SESSION_SECRET = 'change-me-change-me-change-me-change-me'; // pragma: allowlist secret -- rejected placeholder fixture
+  const fixture = await signingFixture();
+  const nowSeconds = Math.floor(Date.now() / 1_000);
+  const token = await signedJwt(validClaims(env, nowSeconds));
+  const originalFetch = globalThis.fetch;
+  const originalWarn = console.warn;
+  let diagnostic = '';
+  globalThis.fetch = jwksFetcher(fixture.jwk);
+  console.warn = value => { diagnostic = String(value); };
+  try {
+    const response = await worker.fetch(new Request('https://gateway.example/auth/login', {
+      headers: { 'Cf-Access-Jwt-Assertion': token },
+    }), env, { waitUntil() {} });
+    assertEquals(response.status, 403);
+    const record = JSON.parse(diagnostic);
+    assertEquals(record.phase, 'admin_session');
+    assertEquals(record.reason, 'session_secret_configuration');
+    assert(!diagnostic.includes(token));
+  } finally {
+    globalThis.fetch = originalFetch;
+    console.warn = originalWarn;
+  }
 });
 
 Deno.test('welcome entry attempts playback inside the activation and navigates once on success or failure', async () => {
@@ -1764,7 +1801,15 @@ Deno.test('concurrent conflicting creates remain immutable and every visible con
     { method: 'DELETE', headers: { Authorization: `Bearer ${env.ADMIN_BEARER_TOKEN}` } },
   ), env, { waitUntil() {} });
   assertEquals(deleted.status, 204);
-  assertEquals(kv.records.size, 0);
+  assertEquals(kv.records.size, 1);
+  assert(kv.records.has(`share:revoked:${basePayload.shareId}`));
+
+  const postDeleteView = await worker.fetch(new Request('https://gateway.example/api/view', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ shareId: basePayload.shareId }),
+  }), env, { waitUntil() {} });
+  assertEquals(postDeleteView.status, 404);
 });
 
 Deno.test('reads lists replays and deletes legacy share records without rewriting them', async () => {
@@ -1824,5 +1869,30 @@ Deno.test('reads lists replays and deletes legacy share records without rewritin
     { method: 'DELETE', headers: { Authorization: `Bearer ${env.ADMIN_BEARER_TOKEN}` } },
   ), env, { waitUntil() {} });
   assertEquals(deleted.status, 204);
-  assertEquals(kv.records.size, 0);
+  assertEquals(kv.records.size, 1);
+  const revocation = JSON.parse(kv.records.get(`share:revoked:${shareId}`));
+  assertEquals(revocation.version, 1);
+  assertEquals(revocation.kind, 'revoked');
+  assertEquals(revocation.shareId, shareId);
+  assert(Number.isFinite(Date.parse(revocation.revokedAt)));
+
+  const viewAfterDelete = await worker.fetch(new Request('https://gateway.example/api/view', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ shareId }),
+  }), env, { waitUntil() {} });
+  assertEquals(viewAfterDelete.status, 404);
+
+  const recreate = await worker.fetch(new Request('https://gateway.example/api/admin/shares', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.ADMIN_BEARER_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  }), env, { waitUntil() {} });
+  assertEquals(recreate.status, 409);
+  const recreateBody = await recreate.json();
+  assertEquals(recreateBody.error, 'share_revoked');
+  assertEquals(kv.records.size, 1);
 });

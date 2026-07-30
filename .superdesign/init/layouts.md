@@ -1,93 +1,68 @@
-# Shared Layouts
+# Layouts — current application shell
 
-## Canonical app shell
+Generated from `nicegui_app/ui/shell.py` (1,329 lines). The file is too large to duplicate safely; the complete owning function is `page_shell` at lines 1083–1329 and its responsive helpers are listed below.
 
-Source: [`nicegui_app/ui/shell.py`](../../nicegui_app/ui/shell.py)
+## Sole workbench layout
 
-`page_shell(title_key, active_path, music_context=None)` is the sole shared layout wrapper. Every primary page uses it.
+Source outline (python):
+    @contextmanager
+    def page_shell(active_path: str) -> Iterator[None]:
+        page_context = current_page_context()
+        adopt_verified_theme_handoff(page_context)
+        dark_mode = apply_theme()
+        document_language = "en" if current_locale() == "en" else "zh-Hant-HK"
+        # resolve PageDefinition, enforce visibility/capability,
+        # install Guest snapshot and auth-status monitors,
+        # render drawer/header/status/main/mobile navigation/footer,
+        # then install theme, focus, drawer and viewport browser runtimes.
 
-### Rendered structure
+The actual function validates the current `PageDefinition`, requires its capability, renders one shared desktop/mobile shell, and yields exactly one `main` content region. Admin and Guest differ through `PageContext`, not layout markup.
 
-1. Apply the current light or dark theme and Quasar palette.
-2. Set the document language and install the dirty-form navigation guard.
-3. Resolve access mode, navigation chapter, page slug, and current icon.
-4. Render the responsive navigation drawer.
-5. Render the application header and utility dock.
-6. Render practice, Guest, or maintenance status when active.
-7. Render `<main>` with stable page, domain, and mode attributes.
-8. Render the mobile bottom navigation after main content in DOM order.
-9. Install mobile drawer focus, Escape-key, and focus-trap behaviour.
+## Exact helper ownership
 
-## Desktop shell
+| Function | Lines | Owns |
+|---|---:|---|
+| `_navigation_context` | 54–67 | chapter/group/icon from canonical page catalog |
+| `_install_guest_snapshot_bridge` | 123–272 | per-tab Guest session snapshot lifecycle |
+| `_install_auth_status_monitor` | 273–473 | expiry/revocation checks |
+| `_render_mobile_drawer_tools` | 734–792 | language, sound, theme, sign-out |
+| `_render_mobile_tabbar` | 793–826 | three weekly primary destinations + More |
+| `_install_mobile_drawer_accessibility` | 827–992 | focus trap, Escape, inert background |
+| `_install_mobile_viewport_accessibility` | 993–1060 | viewport and safe-area behaviour |
+| `_install_route_focus_management` | 1061–1082 | heading focus after navigation |
+| `page_shell` | 1083–1329 | complete layout assembly |
 
-### Sidebar
+## Rendered hierarchy
 
-- School identity and service principle.
-- Four navigation groups:
-  - Weekly work: Dashboard and Rosters.
-  - People and fairness: Prefects.
-  - Support system: Handover, Access Control, and Settings.
-  - Reference: Platform, System Architecture, Engineering, Getting Started, Guide, and Devotional.
-- Current item uses weight, a slim rail, border, and surface change rather than colour alone.
-- Persistent compact feedback and source-reference group.
+Source outline (text):
+    body[data-sy-page][data-sy-page-kind][data-sy-access-mode]
+    ├── skip link
+    ├── header
+    │   ├── drawer trigger + chapter/page title
+    │   └── music / mode / language / sound / theme / sign-out controls
+    ├── left drawer
+    │   ├── Service Weave product mark + functional name
+    │   ├── grouped navigation from PAGE_DEFINITIONS
+    │   ├── trust/reference destinations
+    │   └── feedback links
+    ├── access-mode notice when needed
+    ├── main#main-content
+    │   └── page-owned content
+    ├── reference pager when page-owned
+    ├── copyright footer
+    └── mobile bottom navigation
 
-### Header
+## Breakpoints and composition
 
-- Skip link.
-- Drawer trigger.
-- Chapter number, navigation-group label, and page title.
-- Optional page-context music control.
-- Access-mode status and sign-out action.
-- Language, sound, and appearance controls grouped as a compact dock.
+- `> 900px`: persistent drawer and full utility dock.
+- `<= 900px`: hidden drawer, compact header, bottom primary navigation, stacked content.
+- `320–390px`: one-column reading order, no horizontal overflow, primary actions remain reachable.
+- Main content width is governed by semantic layout CSS, not page-specific `max-w-*` classes.
 
-### Main canvas
+## Layout invariants
 
-- Maximum content width of 1440 pixels.
-- Page context spine precedes route content.
-- Route-specific class and data attributes allow page and mode styling without separate layouts.
-- No shared footer is rendered.
-
-## Adaptive shell
-
-Breakpoint: `900px`.
-
-- Header becomes a one-line compact bar.
-- Desktop utility controls move into the secondary drawer except for the page music trigger.
-- Fixed bottom navigation exposes Dashboard, Rosters, Prefects, and More.
-- More opens the same shared navigation and utility groups.
-- Safe-area padding protects the final page action and bottom navigation.
-- Tables use alternate card or grid presentations from the same display model.
-- Phone landscape remains in the adaptive shell.
-
-The adaptive rules are implemented in:
-
-- [`nicegui_app/assets/css/sing-yin-mobile-v1.css`](../../nicegui_app/assets/css/sing-yin-mobile-v1.css)
-- [`nicegui_app/assets/css/sing-yin-theme-v1.css`](../../nicegui_app/assets/css/sing-yin-theme-v1.css)
-- [`nicegui_app/assets/css/sing-yin-narrative-v1.css`](../../nicegui_app/assets/css/sing-yin-narrative-v1.css)
-
-## Page-local reference layout
-
-Source: [`nicegui_app/ui/reference_navigation.py`](../../nicegui_app/ui/reference_navigation.py)
-
-- `render_page_toc` provides a compact on-page contents list.
-- `render_reference_pager` creates explicit previous and next reading order.
-- These helpers are used by onboarding, guide, handover, platform, engineering, and architecture pages.
-
-## Layout dependencies
-
-- Theme application: [`nicegui_app/ui/theme.py`](../../nicegui_app/ui/theme.py)
-- Translation and locale: [`nicegui_app/ui/i18n.py`](../../nicegui_app/ui/i18n.py)
-- Browser preferences: [`nicegui_app/ui/preferences.py`](../../nicegui_app/ui/preferences.py)
-- Page music: [`nicegui_app/ui/music.py`](../../nicegui_app/ui/music.py)
-- Semantic feedback sound: [`nicegui_app/ui/sound.py`](../../nicegui_app/ui/sound.py)
-- Current page and access context: [`nicegui_app/runtime.py`](../../nicegui_app/runtime.py)
-- Contact destinations: [`nicegui_app/contact.py`](../../nicegui_app/contact.py)
-
-## Design invariants
-
-- Main content precedes repeated mobile navigation in DOM order.
-- All primary main-content actions retain a practical touch target.
-- Appearance and sound changes preserve the current route and unfinished form context.
-- Language changes may reload only after the dirty-form guard is satisfied.
-- Global status banners share one ordered stack.
-- Context imagery never owns required information or sits behind operational tables and forms.
+1. Current task and safe next action precede story/evidence content on operational pages.
+2. Browser Back must remain valid; explicit workflow back/next actions are added only when hierarchy is not inferable.
+3. Mobile and desktop use the same data and action ordering.
+4. One viewport has at most two simultaneous active motion groups.
+5. Page-local background art never sits behind sensitive operational data.

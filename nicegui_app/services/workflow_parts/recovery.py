@@ -400,7 +400,14 @@ class RecoveryWorkflowMixin:
                 raise WorkflowError(
                     "Backup source changed after verification; restore was stopped before migration."
                 )
-            sessions = create_session_factory(prepared_path)
+            try:
+                sessions = create_session_factory(prepared_path)
+            except RuntimeError as exc:
+                if "fairness_unreconciled" in str(exc):
+                    raise WorkflowError(
+                        "Fairness reconciliation failed: backup candidate does not match its ledger."
+                    ) from exc
+                raise
             with sessions() as session:
                 table_rows = session.connection().exec_driver_sql(
                     "SELECT name FROM sqlite_master WHERE type = 'table'"

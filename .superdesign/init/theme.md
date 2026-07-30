@@ -1,93 +1,69 @@
-# Theme and Design Tokens
+# Theme — executable current token contract
 
-## Design direction
+Source of truth: `design_system/tokens.v1.json`, contract `1.1.0`, name `Sing Yin Luminous Sacred Precision`.
 
-The active thesis is a quiet school operations desk: one clear responsibility at a time, with enough evidence to act confidently. The complete product rationale and governance live in [`Professional_Design_System.md`](../../Professional_Design_System.md).
+## Layer order
 
-The weekly workflow uses restrained operational surfaces. Daily Verse uses a separate sacred-reading language. Onboarding and handover use a gentle archive language. Risk and recovery use plain, high-contrast safety surfaces.
+Source outline (text):
+    primitive → semantic → component
+    tokens → base → layout → components → material → interaction → narrative/pages → motion → mobile
 
-## Sources of truth
+## Primitive source values
 
-| Layer | Canonical source | Responsibility |
-|---|---|---|
-| Machine token contract | [`design_system/tokens.v1.json`](../../design_system/tokens.v1.json) | Primitive, semantic, and component layers for light and dark modes |
-| Contract loader and generator | [`nicegui_app/ui/design_token_contract.py`](../../nicegui_app/ui/design_token_contract.py) | Resolves references and supplies the Quasar palette bridge |
-| Generated variables | [`sing-yin-tokens-v1.css`](../../nicegui_app/assets/css/sing-yin-tokens-v1.css) | Versioned `--sy-*` variables |
-| Base and component styles | [`sing-yin-theme-v1.css`](../../nicegui_app/assets/css/sing-yin-theme-v1.css) | Quasar integration, controls, tables, page components, responsive rules |
-| Editorial narrative | [`sing-yin-narrative-v1.css`](../../nicegui_app/assets/css/sing-yin-narrative-v1.css) | Page spine, introductions, reference cards, and trust narratives |
-| Adaptive composition | [`sing-yin-mobile-v1.css`](../../nicegui_app/assets/css/sing-yin-mobile-v1.css) | Phone header, bottom navigation, safe areas, and compact action layout |
-| Theme runtime | [`nicegui_app/ui/theme.py`](../../nicegui_app/ui/theme.py) | Appearance preference, semantic atmosphere slots, and Quasar palette |
-| Head markup | [`nicegui_app/ui/theme_markup.py`](../../nicegui_app/ui/theme_markup.py) | Stylesheet order |
-| Motion runtime | [`nicegui_app/assets/motion/sing-yin-motion.js`](../../nicegui_app/assets/motion/sing-yin-motion.js) | One-shot entry, selected pointer response, and semantic feedback pulse |
+Source outline (json):
+    {
+      "actionFillLight": "#35647C",
+      "actionStrongLight": "#284C60",
+      "actionSoftLight": "#E8F0F3",
+      "actionForegroundDark": "#9BC2D2",
+      "actionFillDark": "#47758B",
+      "actionSoftDark": "#1A2B34",
+      "stableFillLight": "#0F766E",
+      "stableForegroundDark": "#72D6C7",
+      "attentionForegroundLight": "#8A5A00",
+      "attentionForegroundDark": "#F0C96A",
+      "dangerFillLight": "#963C35",
+      "dangerForegroundDark": "#D98F87",
+      "inkLight": "#1C1C1E",
+      "inkDark": "#F5F5F7",
+      "surfaceLight": "#FFFFFF",
+      "surfaceDark": "#1C1C1E",
+      "groundLight": "#F2F2F7",
+      "groundDark": "#0D1117",
+      "ease": "cubic-bezier(.2, .8, .2, 1)",
+      "easeEnter": "cubic-bezier(.16, 1, .3, 1)",
+      "easeExit": "cubic-bezier(.4, 0, 1, 1)",
+      "press": "90ms",
+      "state": "180ms",
+      "layer": "260ms"
+    }
 
-## Core semantic palette
+## Semantic roles
 
-| Role | Light | Dark | Meaning |
+| Role | Light | Dark | Use |
 |---|---|---|---|
-| Ground | `#F2F2F7` | `#0D1117` | Application canvas |
-| Surface | `#FFFFFF` | `#1C1C1E` | Working surfaces and raised sheets |
-| Ink | `#1C1C1E` | `#F5F5F7` | Primary text |
-| Muted | `#5F6065` | `#C7C7CC` | Supporting text |
-| Action | `#35647C` | `#9BC2D2` | Primary action and current workflow stage |
-| Stable | `#0F766E` | `#72D6C7` | Verified or completed state |
-| Attention | `#8A5A00` | `#F0C96A` | Review or incomplete state |
-| Danger | `#963C35` | `#D98F87` | Destructive or failed state |
+| action | `#35647C` | `#9BC2D2` | primary operation/current step |
+| stable | `#0F766E` | `#72D6C7` | verified/completed |
+| attention | `#8A5A00` | `#F0C96A` | needs review/incomplete |
+| danger | `#963C35` | `#D98F87` | destructive/failed |
+| ink | `#1C1C1E` | `#F5F5F7` | primary text |
+| muted | `#5F6065` | `#C7C7CC` | supporting text |
 
-Status colours are not interchangeable with brand identity. Primary action uses slate blue; teal is reserved for stability and verification.
+Teal is not a generic accent. It is reserved for stable identity and verification. Slate blue owns actions and current workflow position.
 
-## Type
+## Type and surfaces
 
-- Primary interface: Inter with Hong Kong Chinese system fallbacks.
-- Devotional and reflective passages: Noto Serif HK-style serif stack.
-- Technical references and numeric evidence: restrained monospace stack.
-- Traditional Chinese is primary; English preserves the same hierarchy and component geometry.
-- Local font files are runtime assets and are not copied into design context.
+- UI: Inter + Noto Sans HK fallbacks.
+- Sacred reading only: Noto Serif HK.
+- Code/evidence: restrained monospace.
+- Operational forms/tables: matte opaque surfaces without illustrations.
+- Sacred surface: deep indigo + parchment/gold language, generous leading.
+- Story/reference surfaces may use paired local light/dark imagery with explicit veils.
 
-## Geometry and density
+## Theme runtime source
 
-- Shared surfaces generally use 16 to 20 pixel radii.
-- Raised devotional and editorial hero surfaces may use a 28 pixel radius.
-- Header controls use a compact 12 to 16 pixel dock grammar.
-- Primary content max width is 1440 pixels.
-- Adaptive shell breakpoint is 900 pixels.
-- Main-content touch targets are at least 44 pixels; important mobile actions generally use 48 pixels.
-- Routine scanning stays compact. Publication, restore, archive, and fairness consequences receive more space and explanation.
+`nicegui_app/ui/theme.py` defines `theme_preference`, `current_theme`, `set_theme_preference`, `apply_quasar_palette`, and `apply_theme`. Default preference is `system`; explicit light/dark selection is preserved. Quasar colours are generated from the same token contract, not independently chosen.
 
-## Motion
+## Atmosphere pairs
 
-- Press acknowledgement: `90ms`.
-- State change: `180ms`.
-- Layer or entry transition: `260ms`.
-- Entry effects use transform and opacity, run once, and remain interruptible.
-- Exit is faster than entry.
-- Reduced-motion mode removes decorative movement and pointer lighting.
-- Pointer lighting is reserved for real action containers and selected non-sensitive editorial surfaces.
-
-## Atmosphere
-
-[`nicegui_app/ui/theme.py`](../../nicegui_app/ui/theme.py) owns semantic light and dark pairs for the sidebar, Weekly Pulse, devotional, onboarding, handover, platform, guide, engineering, architecture, architecture lifeline, and shared ready-empty state.
-
-Drafts should reference the semantic slot, not copy or reinterpret a runtime image file. The same slot, crop rule, mask, and purpose must remain stable across appearances. Context imagery is optional, low-opacity, and never carries required information.
-
-## Component grammar
-
-- Solid material hierarchy: ground, quiet group, working surface, raised decision layer.
-- Borders and restrained shadows communicate elevation; blur is unnecessary.
-- Buttons have clear primary, outline, flat, and danger consequences.
-- Status badges combine text and colour.
-- Navigation uses weight and a slim position rail.
-- Tables preserve factual density on desktop and switch to equivalent labelled cards on phones.
-- Forms keep validation and repair near the failing field.
-
-## Context bundle for a visual draft
-
-Use the relevant page source plus:
-
-- [`nicegui_app/ui/shell.py`](../../nicegui_app/ui/shell.py)
-- [`nicegui_app/ui/page_shared.py`](../../nicegui_app/ui/page_shared.py)
-- [`design_system/tokens.v1.json`](../../design_system/tokens.v1.json)
-- All four stylesheets listed above
-- [`nicegui_app/ui/theme.py`](../../nicegui_app/ui/theme.py)
-- The relevant translation catalogue under [`nicegui_app/ui/i18n_catalog`](../../nicegui_app/ui/i18n_catalog)
-
-Runtime media, generated exports, operator records, and secret-bearing configuration are outside design context.
+`sidebar`, `weekly-pulse`, `devotional`, `onboarding`, `handover`, `platform`, `guide`, `engineering`, `architecture`, `architecture-lifeline`, and `empty-ready` each resolve to matched light/dark local WebP assets. No image is allowed behind names, forms, tables, fairness data, warnings, or PDF content.

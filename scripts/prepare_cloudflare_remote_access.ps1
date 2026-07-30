@@ -17,9 +17,7 @@ if (-not $cloudflared -and $InstallCloudflared) {
     Write-Host "Installing cloudflared from Windows Package Manager..." -ForegroundColor Cyan
     & winget.exe install --id Cloudflare.cloudflared --exact --source winget --accept-package-agreements --accept-source-agreements
     if ($LASTEXITCODE -ne 0) { throw "cloudflared installation failed (exit $LASTEXITCODE)." }
-    $machine = [Environment]::GetEnvironmentVariable("Path", "Machine")
-    $user = [Environment]::GetEnvironmentVariable("Path", "User")
-    $env:Path = "$machine;$user"
+    Update-SingYinProcessPath
     $cloudflared = Find-SingYinCloudflared
 }
 if (-not $cloudflared) {

@@ -54,9 +54,25 @@ def render_workflow_navigation(
 ) -> None:
     """Show the operator's current location and safe next destinations."""
 
-    with ui.element("nav").classes("sy-workflow-navigation w-full").props(f'aria-label="{attr(label)}"'):
-        for index, step in enumerate(steps, start=1):
+    workflow_steps = tuple(steps)
+    if not workflow_steps:
+        raise ValueError("Workflow navigation requires at least one step.")
+    if current_index < 1 or current_index > len(workflow_steps):
+        raise ValueError("Workflow navigation current_index is outside the available steps.")
+    invalid_states = {step.state for step in workflow_steps} - {"available", "locked"}
+    if invalid_states:
+        raise ValueError("Workflow navigation contains an unsupported step state.")
+
+    position = current_index / len(workflow_steps) * 100
+    with (
+        ui.element("nav")
+        .classes("sy-workflow-navigation sy-workflow-navigation--operational-rhythm w-full")
+        .props(f'aria-label="{attr(label)}" data-design-direction="B-A-C"')
+        .style(f"--sy-workflow-position: {position:.2f}%")
+    ):
+        for index, step in enumerate(workflow_steps, start=1):
             is_current = index == current_index
+            semantic_state = "current" if is_current else step.state
             classes = "sy-workflow-navigation-step"
             if is_current:
                 classes += " is-current"
@@ -66,11 +82,11 @@ def render_workflow_navigation(
                 classes += " sy-workflow-navigation-content"
                 control = ui.element("div").props("aria-current=step")
             else:
-                state_props = "disable" if step.state == "locked" else ""
+                state_props = "disable aria-disabled=true" if step.state == "locked" else ""
                 control = ui.button(on_click=lambda route=step.route: navigate_to(route)).props(
                     f"flat no-caps {state_props}"
                 )
-            with control.classes(classes):
+            with control.classes(classes).props(f"data-state={semantic_state}"):
                 ui.label(f"{index:02d}").classes("sy-workflow-navigation-index")
                 ui.icon(step.icon).classes("sy-workflow-navigation-icon").props("aria-hidden=true")
                 ui.label(step.label).classes("sy-workflow-navigation-label")

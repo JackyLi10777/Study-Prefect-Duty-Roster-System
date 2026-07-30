@@ -137,14 +137,12 @@ def test_deployment_script_refreshes_origin_main_before_ancestor_checks() -> Non
     source = _source()
     explicit_refspec = '"+refs/heads/main:refs/remotes/origin/main"'
     source_ancestor_check = "merge-base --is-ancestor $releaseCommit origin/main"
-    host_ancestor_check = "merge-base --is-ancestor $hostReleaseCommit origin/main"
 
     first_fetch = source.index(explicit_refspec)
-    second_fetch = source.index(explicit_refspec, first_fetch + 1)
 
-    assert source.count(explicit_refspec) == 2
+    assert source.count(explicit_refspec) == 1
     assert first_fetch < source.index(source_ancestor_check)
-    assert second_fetch < source.index(host_ancestor_check)
+    assert "$hostReleaseCommit" not in source
     assert '"origin",\n        "main"' not in source
 
 
@@ -465,6 +463,13 @@ def test_deployment_script_fences_data_and_preserves_the_protected_environment()
     assert "Get-SingYinAclStatus" in source
     assert "[IO.File]::ReadAllBytes($environmentPath)" in source
     assert "[IO.File]::WriteAllBytes($environmentPath, $environmentBytes)" in source
+    capture_index = source.index("$environmentBytes = [IO.File]::ReadAllBytes($environmentPath)")
+    protect_index = source.index("Protect-SingYinSensitivePath -Path $environmentPath")
+    assert capture_index < protect_index
+    assert "GetSecurityDescriptorSddlForm" in source
+    assert "$environmentAclSddl" in source
+    assert "SetSecurityDescriptorSddlForm" in source
+    assert "Set-Acl -LiteralPath $environmentPath -AclObject $restoredAcl" in source
     assert "environmentProtected = $true" in source
     for setting in (
         "SING_YIN_UNIFIED_GUEST",
@@ -561,12 +566,16 @@ def test_deployment_script_requires_gateway_principal_and_restores_overlay_state
     assert '[Environment]::SetEnvironmentVariable(' in source
 
 
-def test_deployment_script_switches_locked_host_and_requires_write_readiness() -> None:
+def test_deployment_script_switches_to_an_immutable_bundle_and_requires_write_readiness() -> None:
     source = _source()
 
-    assert '"switch",' in source and '"--detach",' in source
+    assert '"archive", "--format=zip"' in source
+    assert "New-SingYinReleaseBundle" in source
+    assert 'Join-Path $stagingPath ".venv"' in source
     assert '"--require-hashes"' in source
-    assert "scripts\\prepare_windows_host.ps1" in source
+    assert "New-ScheduledTaskAction" in source
+    assert "Set-ScheduledTask -TaskName $TaskName -Action $newTaskAction" in source
+    assert '"switch",' not in source
     assert "Get-SingYinTaskInspection" in source
     assert "Enable-ScheduledTask -TaskName $TaskName" in source
     assert "Start-ScheduledTask -TaskName $TaskName" in source
@@ -589,9 +598,12 @@ def test_deployment_script_switches_locked_host_and_requires_write_readiness() -
     assert '"scripts\\check_deployment_readiness.py",' in source
     assert '"--strict"' in source
     assert '"--allow-pending-cloudflare-access"' in source
+    assert 'Remove-Item -LiteralPath $archivePath -Force -ErrorAction Stop' in source
+    assert "Release archive cleanup failed" in source
+    assert 'Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue' not in source
 
 
-def test_deployment_script_rolls_back_commit_dependencies_environment_and_task() -> None:
+def test_deployment_script_rolls_back_task_target_environment_and_task_state() -> None:
     source = _source()
     outer_catch = (
         "\n    } catch {\n"
@@ -601,8 +613,11 @@ def test_deployment_script_rolls_back_commit_dependencies_environment_and_task()
     catch_block = source.split(outer_catch, 1)[1].split("\n} finally {", 1)[0]
 
     assert '$rollbackAttempted = $true' in source
-    assert '"switch",' in catch_block and "$previousCommit" in catch_block
-    assert '"--require-hashes"' in catch_block
+    assert "$previousTaskAction" in catch_block
+    assert "New-ScheduledTaskAction @restoreActionParameters" in catch_block
+    assert "Set-ScheduledTask -TaskName $TaskName -Action $restoreTaskAction" in catch_block
+    assert '"switch",' not in catch_block
+    assert '"pip"' not in catch_block
     assert "[IO.File]::WriteAllBytes($environmentPath, $environmentBytes)" in catch_block
     assert "Enable-ScheduledTask -TaskName $TaskName" in catch_block
     assert "Start-ScheduledTask -TaskName $TaskName" in catch_block
@@ -610,6 +625,17 @@ def test_deployment_script_rolls_back_commit_dependencies_environment_and_task()
     assert "rollbackSucceeded" in source
     assert "Protect-ReportText" in source
     assert "nativeLog = [IO.Path]::GetFileName" in source
+
+
+def test_rollback_never_switches_task_target_until_the_production_port_is_released() -> None:
+    source = _source()
+    rollback = source.split("$rollbackAttempted = $true", 1)[1]
+    wait_index = rollback.index("Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 15")
+    task_switch_index = rollback.index("Set-ScheduledTask -TaskName $TaskName -Action $restoreTaskAction")
+
+    assert wait_index < task_switch_index
+    assert "try { Wait-PortReleased" not in rollback
+    assert "catch { }" not in rollback[:task_switch_index]
 
 
 def test_deployment_script_parses_in_windows_powershell_51() -> None:
