@@ -27,7 +27,7 @@ from nicegui_app.ui.reference_navigation import (
 
 
 ActionVariant = Literal["primary", "secondary", "quiet", "attention", "danger"]
-IconStoryCategory = Literal["preview", "persistent", "lifecycle", "static"]
+IconStoryCategory = Literal["preview", "persistent", "lifecycle", "role", "static"]
 StatusTone = Literal["action", "stable", "attention", "danger", "neutral"]
 WorkflowState = Literal["active", "done", "pending"]
 _Control = TypeVar("_Control")

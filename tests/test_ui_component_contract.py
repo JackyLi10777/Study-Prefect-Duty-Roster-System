@@ -183,7 +183,7 @@ def test_shared_action_accepts_semantic_icon_metadata_without_page_timelines() -
     source = (UI_ROOT / "components.py").read_text(encoding="utf-8")
     support = (UI_ROOT / "page_routes" / "support.py").read_text(encoding="utf-8")
 
-    assert 'IconStoryCategory = Literal["preview", "persistent", "lifecycle", "static"]' in source
+    assert 'IconStoryCategory = Literal["preview", "persistent", "lifecycle", "role", "static"]' in source
     for argument in ("motion_role:", "icon_story_to:", "icon_story_category:"):
         assert argument in source
     for attribute in (

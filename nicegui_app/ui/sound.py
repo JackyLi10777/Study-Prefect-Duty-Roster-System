@@ -1,4 +1,4 @@
-"""Small, opt-in semantic sounds coordinated with the local music player."""
+"""Small, action-triggered semantic sounds coordinated with local music."""
 
 from __future__ import annotations
 

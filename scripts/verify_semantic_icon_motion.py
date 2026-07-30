@@ -144,6 +144,80 @@ def _persistent_contract(page: Page) -> dict[str, Any]:
     return {"source": source, "destination": destination}
 
 
+def _sound_default_contract(page: Page) -> None:
+    host = page.get_by_test_id("sound-control")
+    host.wait_for(state="visible", timeout=10_000)
+    icon = _icon(host)
+    if host.get_attribute("aria-pressed") != "true" or icon.inner_text().strip() != "volume_up":
+        raise SemanticIconVerificationError(
+            "An unset interaction-sound preference did not resolve to the enabled truthful state."
+        )
+
+
+def _gear_contract(page: Page) -> dict[str, Any]:
+    hosts = page.locator(".q-btn,.q-tab,.q-item.q-item--clickable").filter(
+        has=page.locator('.q-icon[data-sy-icon-motion="gear"]')
+    )
+    host = _visible(hosts)
+    icon = _icon(host)
+    before = host.bounding_box()
+    resting_transform = icon.evaluate("element => getComputedStyle(element).transform")
+    host.hover()
+    page.wait_for_timeout(120)
+    preview_transform = icon.evaluate("element => getComputedStyle(element).transform")
+    if preview_transform == "none":
+        raise SemanticIconVerificationError("The Settings gear did not show its bounded intent preview.")
+    page.mouse.move(1, 1)
+    page.wait_for_timeout(240)
+    host.dispatch_event("pointerdown", {"pointerType": "mouse", "button": 0})
+    page.wait_for_timeout(80)
+    activation_transform = icon.evaluate("element => getComputedStyle(element).transform")
+    if activation_transform in {"none", resting_transform}:
+        raise SemanticIconVerificationError("The Settings gear activation did not expose an intermediate rotation state.")
+    page.wait_for_timeout(340)
+    for _ in range(3):
+        host.dispatch_event("pointerdown", {"pointerType": "mouse", "button": 0})
+        page.wait_for_timeout(35)
+    page.wait_for_timeout(420)
+    if icon.evaluate("element => getComputedStyle(element).transform") != resting_transform:
+        raise SemanticIconVerificationError("Rapid Settings activation accumulated rotation state.")
+    _assert_stable_box(before, host.bounding_box())
+    return {
+        "role": icon.get_attribute("data-sy-icon-motion"),
+        "previewTransform": preview_transform,
+        "activationTransform": activation_transform,
+    }
+
+
+def _lifecycle_contract(page: Page) -> dict[str, str]:
+    hosts = page.locator(".q-btn,.q-tab,.q-item.q-item--clickable").filter(
+        has=page.locator('.q-icon[data-sy-icon-story-category="lifecycle"]')
+    )
+    host = _visible(hosts)
+    icon = _icon(host)
+    source = icon.get_attribute("data-sy-icon-story-from") or icon.inner_text().strip()
+    host.focus()
+    page.evaluate(
+        "() => window.dispatchEvent(new CustomEvent('sy:feedback', {detail: {kind: 'working'}}))"
+    )
+    page.wait_for_timeout(220)
+    working = icon.inner_text().strip()
+    if working != "hourglass_top":
+        raise SemanticIconVerificationError(f"Lifecycle working glyph was {working!r}, not hourglass_top.")
+    page.evaluate(
+        "() => window.dispatchEvent(new CustomEvent('sy:feedback', {detail: {kind: 'success'}}))"
+    )
+    page.wait_for_timeout(220)
+    success = icon.inner_text().strip()
+    if success in {source, "hourglass_top"}:
+        raise SemanticIconVerificationError("Lifecycle success did not reveal a distinct truthful result glyph.")
+    page.wait_for_timeout(900)
+    if icon.inner_text().strip() != source:
+        raise SemanticIconVerificationError("Lifecycle result did not settle back to its source glyph.")
+    host.evaluate("element => element.blur()")
+    return {"source": source, "working": working, "success": success}
+
+
 def _guard_contract(page: Page) -> None:
     host = _visible_preview_host(page)
     icon = _icon(host)
@@ -234,7 +308,10 @@ def _exercise_context(
         elif viewport[0] <= 390:
             result["touch"] = _touch_contract(page)
         else:
+            _sound_default_contract(page)
             result["preview"] = _preview_contract(page)
+            result["gear"] = _gear_contract(page)
+            result["lifecycle"] = _lifecycle_contract(page)
             result["persistent"] = _persistent_contract(page)
             _guard_contract(page)
 

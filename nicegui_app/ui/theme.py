@@ -109,8 +109,15 @@ def next_explicit_theme(resolved_theme: str) -> str:
 
 
 def sound_feedback_enabled() -> bool:
-    """Sound is always opt-in so shared school computers remain quiet by default."""
-    return bool(preference_get("sound_feedback", False))
+    """Return the effective interaction-sound preference.
+
+    A missing value defaults to enabled, while either explicit boolean is
+    authoritative.  Reading the default never writes it back, so a Guest
+    session stays temporary and an operator opt-out is never migrated away.
+    """
+
+    value = preference_get("sound_feedback", None)
+    return True if value is None else bool(value)
 
 
 def toggle_sound_feedback() -> None:

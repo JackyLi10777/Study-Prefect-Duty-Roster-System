@@ -525,7 +525,7 @@ def assert_rendered_icon_semantics(page) -> dict[str, int]:  # type: ignore[no-u
             )];
             return icons.map(icon => ({host, icon, classification: window.__syIconMotion.classify(host)}));
           });
-          const categories = {preview: 0, persistent: 0, static: 0};
+          const categories = {preview: 0, persistent: 0, lifecycle: 0, role: 0, static: 0};
           const missing = [];
           rows.forEach(({host, icon, classification}) => {
             if (!classification || !icon.dataset.syIconMotion || !icon.dataset.syIconStoryCategory) {
@@ -539,7 +539,7 @@ def assert_rendered_icon_semantics(page) -> dict[str, int]:  # type: ignore[no-u
     )
     assert audit["total"] > 0
     assert audit["missing"] == [], audit["missing"]
-    assert set(audit["categories"]) <= {"preview", "persistent", "static"}
+    assert set(audit["categories"]) <= {"preview", "persistent", "lifecycle", "role", "static"}
     return {key: int(value) for key, value in audit["categories"].items()}
 
 
@@ -593,8 +593,9 @@ def main() -> None:
         assert page.locator('[role="heading"][aria-level="1"]').count() == 1
         assert page.locator('[aria-current="page"]:visible').count() == 1
         assert page.get_by_role("button", name="開啟主要導覽").count() == 1
-        sound_toggle = page.get_by_role("button", name="開啟提示音")
+        sound_toggle = page.get_by_role("button", name="關閉提示音")
         assert sound_toggle.count() == 1
+        assert sound_toggle.get_attribute("aria-pressed") == "true"
         theme_control = page.get_by_test_id("theme-control")
         assert theme_control.count() == 1
         assert theme_control.get_attribute("aria-pressed") == "false"
@@ -653,26 +654,26 @@ def main() -> None:
         sound_icon = sound_toggle.locator(".q-icon").first
         sound_host_box = sound_toggle.bounding_box()
         assert sound_icon.get_attribute("data-sy-icon-story-category") == "persistent"
-        assert sound_icon.inner_text().strip() == "volume_off"
+        assert sound_icon.inner_text().strip() == "volume_up"
         sound_toggle.click()
-        enabled_sound_toggle = page.get_by_role("button", name="關閉提示音")
-        enabled_sound_toggle.wait_for(timeout=5_000)
+        disabled_sound_toggle = page.get_by_role("button", name="開啟提示音")
+        disabled_sound_toggle.wait_for(timeout=5_000)
         page.wait_for_function(
-            "document.querySelector('[data-sy-sound-toggle] .q-icon')?.textContent.trim() === 'volume_up'"
+            "document.querySelector('[data-sy-sound-toggle] .q-icon')?.textContent.trim() === 'volume_off'"
         )
-        updated_sound_host_box = enabled_sound_toggle.bounding_box()
+        updated_sound_host_box = disabled_sound_toggle.bounding_box()
         assert sound_host_box is not None and updated_sound_host_box is not None
         for coordinate in ("x", "y", "width", "height"):
             assert abs(sound_host_box[coordinate] - updated_sound_host_box[coordinate]) < 0.6
-        assert enabled_sound_toggle.evaluate(
+        assert disabled_sound_toggle.evaluate(
             "element => element.querySelector('.q-btn__content > span.block') === null"
         )
         page.wait_for_function("window.__syVerifiedSoundKinds.includes('success')", timeout=5_000)
         page.wait_for_function("window.__singYinAudioContext !== undefined", timeout=5_000)
         page.reload(wait_until="domcontentloaded")
-        page.get_by_role("button", name="關閉提示音").wait_for(timeout=5_000)
-        page.get_by_role("button", name="關閉提示音").click()
         page.get_by_role("button", name="開啟提示音").wait_for(timeout=5_000)
+        assert page.get_by_test_id("sound-control").get_attribute("aria-pressed") == "false"
+        assert page.get_by_test_id("sound-control").locator(".q-icon").first.inner_text().strip() == "volume_off"
         primary_flow_action.dispatch_event("pointerdown")
         page.evaluate(
             """() => {
