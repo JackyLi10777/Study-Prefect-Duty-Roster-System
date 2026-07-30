@@ -4,6 +4,7 @@ This file records user-visible, operational and release-significant changes. Exa
 
 ## Unreleased — honest whole-site waiting experience
 
+- Fixed Admin support submission after the waiting-experience refactor by capturing the browser locale before host-local incident persistence moves to a worker thread.
 - Gives the public Admin and Guest entries one shared `idle → starting → navigating → slow／error` lifecycle across desktop and mobile, with role-specific copy, duplicate suppression, delayed progress, safe retry, back-navigation cleanup, and a privacy-safe support reference.
 - Adds the truthful Cloudflare sign-in assistance path without a local password database or email-enumeration copy; welcome audio remains a non-blocking trusted-click enhancement.
 - Replaces invented 14%／56% operation progress with one phased indeterminate coordinator and a bounded completion morph; measured progress remains available only for real `completed／total` data.
