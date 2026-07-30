@@ -344,7 +344,7 @@ NiceGUI browser identity is deliberately resolved before work crosses a thread b
 
 Pointer light is deliberately narrower than narrative entry. Only real link/action containers and the non-sensitive co-creation surface may receive it. Static workflow steps, architecture layers, onboarding, handover, storage explanations, tables, forms, warnings and evidence cards remain visually static so a hover treatment cannot imply an unavailable action.
 
-`nicegui_app/ui/sound.py` owns the separate opt-in Web Audio cues. Navigation, an accepted long operation, and successful completion have distinct short tones; page load, hover, form error, and background ambience remain silent. Every cue also dispatches a non-audio `sy:feedback` event, so sound-off operation retains visual acknowledgement. Music remains a separate operator-started media layer and is never synchronized to UI sound.
+`nicegui_app/ui/sound.py` owns the separate action-triggered Web Audio cues. An unset preference resolves to enabled without writing a value; an explicit Admin or bounded-Guest true／false choice is preserved. Navigation, an accepted long operation, and successful completion have distinct short tones; page load, hover, form error, and background ambience remain silent. Every eligible cue also dispatches a non-audio `sy:feedback` event, so sound-off operation retains visual acknowledgement. Music remains a separate operator-started media layer and is never synchronized to UI sound.
 
 ### Optional YouTube boundary
 
@@ -417,8 +417,8 @@ touch timers, MutationObserver hydration and disposal. Page modules may declare
 only semantic metadata through the shared component API; they must not create a
 second timeline, rotate the host, or infer product state from translated labels.
 
-The four categories are persistent state, intent-to-outcome preview, operation
-lifecycle and intentionally static. Persistent state has priority over hover and
+The five rendered categories are persistent state, intent-to-outcome preview,
+operation lifecycle, semantic role and intentionally static. Persistent state has priority over hover and
 touch. Every interactive Material glyph receives a rendered category and role;
 unknown or responsibility-sensitive actions remain static until a truthful pair
 is reviewed. Reduced motion, disabled and busy controls cancel temporary stories
@@ -431,6 +431,17 @@ smaller implementation. It does not load a second animation runtime. The
 deterministic state-machine tests, rendered semantic audit and disposable browser
 verifier jointly cover reversal, pointer/focus overlap, touch restoration,
 persistent controls, fixed geometry, forced colours and repeated route replacement.
+
+`nicegui_app.ui.icon_motion_contract` is the executable traceability inventory for
+the 19 required controls. It records route, label key, call site, access modes,
+mobile behavior, source／destination glyph, role, category, states and static or
+reduced-motion rationale. The Settings glyph is the only rotation exception:
+hover／focus may rotate the glyph 70 degrees and activation may play one bounded
+270-degree turn, while the host, label and active-route layout remain fixed. True
+`sy:feedback` events drive lifecycle glyphs and fixed-footprint tonal states;
+timeouts settle back to the source rather than inventing success. Source counts,
+rendered counts and deployment truth are kept separate in
+[`docs/audits/SEMANTIC_ICON_ACTION_MOTION_2026-07-30.md`](audits/SEMANTIC_ICON_ACTION_MOTION_2026-07-30.md).
 
 ## Verification
 

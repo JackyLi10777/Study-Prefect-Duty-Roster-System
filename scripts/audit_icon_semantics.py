@@ -13,9 +13,15 @@ from collections import Counter
 import json
 from pathlib import Path
 import re
-
+import sys
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from nicegui_app.ui.icon_motion_contract import ICON_MOTION_CONTRACTS
+
+
 UI_ROOT = PROJECT_ROOT / "nicegui_app"
 MOTION_PATH = UI_ROOT / "assets" / "motion" / "sing-yin-motion.js"
 
@@ -92,10 +98,39 @@ def build_inventory(*, include_locations: bool = False) -> dict[str, object]:
             "preview_story_sources": len(preview_pairs),
             "preview_story_destinations": len({destination for _, destination in preview_pairs}),
             "persistent_pair_directions": len(persistent_pairs),
+            "mandatory_control_contracts": len(ICON_MOTION_CONTRACTS),
+            "full_story_contracts": sum(
+                contract.category in {"persistent", "preview", "lifecycle"}
+                for contract in ICON_MOTION_CONTRACTS
+            ),
+            "role_only_contracts": sum(
+                contract.category == "role" for contract in ICON_MOTION_CONTRACTS
+            ),
+            "intentionally_static_contracts": sum(
+                contract.category == "static" for contract in ICON_MOTION_CONTRACTS
+            ),
         },
         "glyph_counts": dict(sorted(glyph_counts.items())),
         "preview_story_pairs": preview_pairs,
         "persistent_pair_directions": persistent_pairs,
+        "mandatory_controls": [
+            {
+                "key": contract.key,
+                "routes": contract.routes,
+                "i18n_keys": contract.i18n_keys,
+                "callsite_hint": contract.callsite_hint,
+                "access_modes": contract.access_modes,
+                "mobile": contract.mobile,
+                "source": contract.source_glyph,
+                "destination": contract.destination_glyph,
+                "role": contract.role,
+                "category": contract.category,
+                "states": contract.states,
+                "reduced_motion": contract.reduced_motion,
+                "static_rationale": contract.static_rationale,
+            }
+            for contract in ICON_MOTION_CONTRACTS
+        ],
     }
     if include_locations:
         result["literal_locations"] = literal

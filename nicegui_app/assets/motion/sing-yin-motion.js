@@ -79,13 +79,15 @@
     ...['menu'].map((name) => [name, 'menu']),
     ...['play_arrow', 'play_circle', 'smart_display'].map((name) => [name, 'play']),
     ...['search'].map((name) => [name, 'search']),
-    ...['delete_outline', 'logout', 'person_off', 'link_off', 'close', 'event_busy'].map((name) => [name, 'danger']),
+    ...['delete_outline', 'logout', 'person_off', 'link_off', 'close', 'event_busy', 'undo'].map((name) => [name, 'danger']),
     ...['warning_amber', 'assignment_late', 'gpp_maybe', 'pending_actions'].map((name) => [name, 'attention']),
     ...[
       'home', 'space_dashboard', 'dashboard', 'view_quilt', 'calendar_month',
-      'calendar_view_week', 'groups', 'handshake', 'database', 'settings',
-      'domain', 'engineering', 'account_tree', 'menu_book', 'help_outline'
-    ].map((name) => [name, 'navigation'])
+      'calendar_view_week', 'groups', 'handshake', 'database',
+      'domain', 'engineering', 'account_tree', 'menu_book', 'help_outline',
+      'balance', 'support_agent'
+    ].map((name) => [name, 'navigation']),
+    ['settings', 'gear']
   ]);
   /* A selected set of familiar controls tells a short visual story by
    * changing into a second, semantically related glyph. This is deliberately
@@ -99,7 +101,6 @@
     ['groups', 'diversity_3'],
     ['handshake', 'sync_alt'],
     ['admin_panel_settings', 'verified_user'],
-    ['settings', 'settings_suggest'],
     ['domain', 'apartment'],
     ['account_tree', 'hub'],
     ['build_circle', 'construction'],
@@ -116,6 +117,27 @@
     ['support_agent', 'contact_support'],
     ['mail_outline', 'forward_to_inbox'],
     ['format_list_bulleted', 'checklist']
+  ]);
+  /* High-value operations can preview their intended outcome, then show a
+   * distinct lifecycle glyph only when the existing sy:feedback channel
+   * reports real working/result state.  This registry is deliberately small:
+   * absent entries remain role-only or static rather than inventing success. */
+  const operationLifecycleGlyphs = new Map([
+    ['edit_calendar', { preview: 'calendar_month', working: 'hourglass_top', success: 'event_available' }],
+    ['edit_note', { preview: 'fact_check', working: 'hourglass_top', success: 'task_alt' }],
+    ['publish', { preview: 'fact_check', working: 'hourglass_top', success: 'verified' }],
+    ['fact_check', { preview: 'task_alt', working: 'hourglass_top', success: 'verified' }],
+    ['save', { preview: 'task_alt', working: 'hourglass_top', success: 'task_alt' }],
+    ['upload', { preview: 'upload_file', working: 'hourglass_top', success: 'task_alt' }],
+    ['upload_file', { preview: 'fact_check', working: 'hourglass_top', success: 'task_alt' }],
+    ['person_add', { preview: 'group_add', working: 'hourglass_top', success: 'person_check' }],
+    ['edit', { preview: 'edit_note', working: 'hourglass_top', success: 'task_alt' }],
+    ['archive', { preview: 'inventory_2', working: 'hourglass_top', success: 'task_alt' }],
+    ['event_repeat', { preview: 'calendar_month', working: 'hourglass_top', success: 'event_available' }],
+    ['restore', { preview: 'settings_backup_restore', working: 'hourglass_top', success: 'verified' }],
+    ['settings_backup_restore', { preview: 'restore', working: 'hourglass_top', success: 'verified' }],
+    ['refresh', { preview: 'autorenew', working: 'hourglass_top', success: 'task_alt' }],
+    ['support_agent', { preview: 'contact_support', working: 'hourglass_top', success: 'task_alt' }]
   ]);
   const persistentIconPairs = new Map([
     ['volume_off', 'volume_up'],
@@ -289,7 +311,10 @@
       const role = host.dataset.syIconMotionRole || iconMotionRoles.get(name) || 'signal';
       setDataset(icon, 'syIconMotion', role);
       setDataset(icon, 'syIconName', name);
-      const category = host.dataset.syIconStoryCategory || 'preview';
+      const category = host.dataset.syIconStoryCategory
+        || (operationLifecycleGlyphs.has(name)
+          ? 'lifecycle'
+          : iconStoryGlyphs.has(name) ? 'preview' : 'role');
       setDataset(icon, 'syIconStoryCategory', category);
       if (category === 'persistent') {
         deleteDataset(icon, 'syIconStoryFrom');
@@ -311,7 +336,9 @@
         iconStoryState?.clear(host);
         return;
       }
-      const storyGlyph = host.dataset.syIconStoryTo || iconStoryGlyphs.get(name);
+      const storyGlyph = host.dataset.syIconStoryTo
+        || operationLifecycleGlyphs.get(name)?.preview
+        || iconStoryGlyphs.get(name);
       if (storyGlyph) {
         setDataset(icon, 'syIconStoryFrom', name);
         setDataset(icon, 'syIconStoryTo', storyGlyph);
@@ -383,6 +410,25 @@
           clearProps: 'opacity,visibility,scale,y,transform'
         }
       );
+  };
+  const animateGearActivation = (host) => {
+    if (!(host instanceof HTMLElement) || reducedMotion() || !window.gsap) return;
+    if (host.matches('.disabled,[aria-disabled="true"],[aria-busy="true"]')) return;
+    const icon = host.querySelector(`${interactiveIconSelector}[data-sy-icon-motion="gear"]`);
+    if (!(icon instanceof HTMLElement)) return;
+    cancelIconTimeline(icon);
+    window.gsap.killTweensOf(icon);
+    window.gsap.fromTo(
+      icon,
+      { rotation: 0 },
+      {
+        rotation: 270,
+        duration: 0.30,
+        ease: 'power2.inOut',
+        overwrite: true,
+        onComplete: () => window.gsap?.set(icon, { clearProps: 'rotation,transform' })
+      }
+    );
   };
   const setPersistentGlyph = (target, next, { animate = true } = {}) => {
     const host = target instanceof Element
@@ -528,6 +574,7 @@
     lastActionHost = source;
     lastActionAt = Date.now();
     operationFeedbackHost = null;
+    animateGearActivation(source);
     markFeedbackTarget('navigation', source);
   };
 
@@ -624,6 +671,32 @@
       .fromTo(pulse, { autoAlpha: 0, scale: 0.68 }, { autoAlpha: 0.72, scale: 1, duration: 0.16, ease: 'power2.out' })
       .to(pulse, { autoAlpha: 0, scale: 1.52, duration: 0.34, ease: 'power1.out' });
   };
+  const lifecycleGlyphFor = (kind, icon) => {
+    if (!(icon instanceof HTMLElement)) return '';
+    const source = icon.dataset.syIconStoryFrom || icon.dataset.syIconName || icon.textContent?.trim() || '';
+    const lifecycle = operationLifecycleGlyphs.get(source);
+    if (!lifecycle) return '';
+    if (kind === 'working') return lifecycle.working || '';
+    if (kind === 'success') return lifecycle.success || '';
+    if (kind === 'attention') return 'warning_amber';
+    if (kind === 'error') return 'error_outline';
+    return '';
+  };
+  const applyLifecycleGlyph = (kind, target) => {
+    if (!(target instanceof HTMLElement)) return;
+    const icon = target.querySelector(interactiveIconSelector);
+    if (!(icon instanceof HTMLElement) || icon.dataset.syIconStoryCategory !== 'lifecycle') return;
+    const next = lifecycleGlyphFor(kind, icon);
+    if (!next) return;
+    morphGlyph(icon, next, { active: kind === 'working' });
+  };
+  const restoreLifecycleGlyph = (target) => {
+    if (!(target instanceof HTMLElement) || !target.isConnected) return;
+    const icon = target.querySelector(interactiveIconSelector);
+    if (!(icon instanceof HTMLElement) || icon.dataset.syIconStoryCategory !== 'lifecycle') return;
+    const source = icon.dataset.syIconStoryFrom;
+    if (source) morphGlyph(icon, source, { active: false });
+  };
   const markFeedbackTarget = (kind, target) => {
     if (!(target instanceof HTMLElement)) return;
     const state = ['success', 'working', 'attention', 'error'].includes(kind) ? kind : 'navigation';
@@ -631,14 +704,16 @@
     const existing = feedbackTimers.get(target);
     if (existing) window.clearTimeout(existing);
     target.dataset.syFeedbackState = state;
+    applyLifecycleGlyph(kind, target);
     const timer = window.setTimeout(() => {
       if (target.dataset.syFeedbackState === state) delete target.dataset.syFeedbackState;
+      restoreLifecycleGlyph(target);
       feedbackTimers.delete(target);
       if (
         ['success', 'attention', 'error'].includes(kind)
         && operationFeedbackHost === target
       ) operationFeedbackHost = null;
-    }, 620);
+    }, kind === 'working' ? 12_000 : 820);
     feedbackTimers.set(target, timer);
   };
 
@@ -800,13 +875,14 @@
         const icon = host?.querySelector(interactiveIconSelector);
         if (!(host instanceof HTMLElement) || !(icon instanceof HTMLElement)) return null;
         return Object.freeze({
-          category: icon.dataset.syIconStoryCategory || 'preview',
+          category: icon.dataset.syIconStoryCategory || 'role',
           role: icon.dataset.syIconMotion || 'signal',
           source: icon.dataset.syIconName || icon.textContent?.trim() || '',
           destination: icon.dataset.syIconStoryTo || '',
         });
       },
       storySources: Object.freeze([...iconStoryGlyphs.keys()]),
+      lifecycleSources: Object.freeze([...operationLifecycleGlyphs.keys()]),
       persistentPairs: Object.freeze([...persistentIconPairs.entries()])
     });
   };

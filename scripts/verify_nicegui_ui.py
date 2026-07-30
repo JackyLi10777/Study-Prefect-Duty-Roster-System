@@ -525,7 +525,7 @@ def assert_rendered_icon_semantics(page) -> dict[str, int]:  # type: ignore[no-u
             )];
             return icons.map(icon => ({host, icon, classification: window.__syIconMotion.classify(host)}));
           });
-          const categories = {preview: 0, persistent: 0, static: 0};
+          const categories = {preview: 0, persistent: 0, lifecycle: 0, role: 0, static: 0};
           const missing = [];
           rows.forEach(({host, icon, classification}) => {
             if (!classification || !icon.dataset.syIconMotion || !icon.dataset.syIconStoryCategory) {
@@ -539,7 +539,7 @@ def assert_rendered_icon_semantics(page) -> dict[str, int]:  # type: ignore[no-u
     )
     assert audit["total"] > 0
     assert audit["missing"] == [], audit["missing"]
-    assert set(audit["categories"]) <= {"preview", "persistent", "static"}
+    assert set(audit["categories"]) <= {"preview", "persistent", "lifecycle", "role", "static"}
     return {key: int(value) for key, value in audit["categories"].items()}
 
 
@@ -593,8 +593,9 @@ def main() -> None:
         assert page.locator('[role="heading"][aria-level="1"]').count() == 1
         assert page.locator('[aria-current="page"]:visible').count() == 1
         assert page.get_by_role("button", name="開啟主要導覽").count() == 1
-        sound_toggle = page.get_by_role("button", name="開啟提示音")
+        sound_toggle = page.get_by_role("button", name="關閉提示音")
         assert sound_toggle.count() == 1
+        assert sound_toggle.get_attribute("aria-pressed") == "true"
         theme_control = page.get_by_test_id("theme-control")
         assert theme_control.count() == 1
         assert theme_control.get_attribute("aria-pressed") == "false"

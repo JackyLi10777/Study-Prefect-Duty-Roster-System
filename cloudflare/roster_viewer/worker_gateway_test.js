@@ -521,6 +521,33 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assert(script.includes('runtimeThemePreference = theme'));
 });
 
+Deno.test('public semantic controls preserve truthful state, fixed hosts, and reduced-motion fallbacks', async () => {
+  const env = accessEnvironment('sing-yin-public-semantic-motion');
+  const context = { waitUntil() {} };
+  const home = await worker.fetch(new Request('https://gateway.example/'), env, context);
+  const html = await home.text();
+  assert(html.includes('data-testid="public-theme-control"'));
+  assert(html.includes('id="refreshLandingVerse"'));
+  assert(html.includes('aria-label="換一篇經文 · Show another verse"'));
+
+  const stylesheet = await worker.fetch(
+    new Request('https://gateway.example/viewer.css'),
+    env,
+    context,
+  );
+  const css = await stylesheet.text();
+  assert(css.includes('.theme-icon { transform-box: fill-box; transform-origin: center;'));
+  assert(css.includes('.theme-toggle[data-resolved-theme="dark"] .theme-icon--moon'));
+  assert(css.includes('.verse-refresh:hover svg { opacity: .82; transform: scale(.9); }'));
+  assert(css.includes('@media (prefers-reduced-motion: reduce)'));
+  assert(!css.includes('.verse-refresh:hover svg { transform: rotate('));
+
+  const scriptResponse = await worker.fetch(new Request('https://gateway.example/viewer.js'), env, context);
+  const script = await scriptResponse.text();
+  assert(script.includes("themeToggle.setAttribute('aria-pressed', String(isDark))"));
+  assert(script.includes("refreshLandingVerse?.addEventListener('click'"));
+});
+
 Deno.test('rejects an obvious administrator session placeholder even when it is long enough', async () => {
   const env = accessEnvironment('sing-yin-runtime-placeholder-admin-secret');
   env.ADMIN_SESSION_SECRET = 'change-me-change-me-change-me-change-me'; // pragma: allowlist secret -- rejected placeholder fixture

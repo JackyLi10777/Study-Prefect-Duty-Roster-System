@@ -839,7 +839,7 @@ Shared CSS motion tokens are the only default timing vocabulary: `--sy-motion-pr
 - Icon feedback has complete control states: hover and keyboard focus express intent; press acknowledges input; a one-shot `navigation` state confirms route selection; busy and disabled remain still; accepted work may emit one short `working`, `success`, `attention` or silent `error` response at the initiating control. A single delegated recent-action reference survives a progress dialog taking focus, remains bounded in time, and is cleared safely; hydration uses the shared mutation observer and CSS state selectors rather than per-button listeners.
 - Static evidence, team, architecture and metric cards must not masquerade as controls. On a fine pointer, only their explanatory icon may make a restrained response; the card surface remains still unless it contains a real link or action. A labelled process-map node may rise by at most 2px because its response helps the reader follow a sequence, but it must not gain a pointer cursor or imply navigation.
 - Respect `prefers-reduced-motion`: skip GSAP entry/stagger/pulse motion, remove hover transforms and nonessential transitions, and keep the final content immediately visible. If GSAP cannot load, the runtime fails open to a static interface after a bounded retry rather than blocking the page.
-- Sound remains opt-in and quiet. Navigation, accepted long-operation start, and successful completion may use short semantic cues; no hover, page-load, error, or background sound may play automatically. Visual feedback remains available when sound is off.
+- Interface feedback sound defaults to **enabled only when no preference has ever been saved**. An explicit `true` remains enabled and an explicit `false` remains disabled; migration or hydration must never overwrite an opt-out. Admin, Guest, desktop and mobile resolve the same effective value, while Guest stores it only for the bounded temporary session. The visible icon, label, tooltip, `aria-label` and `aria-pressed` update immediately with that effective state. This default is permission to play a short cue only after an eligible pointer or keyboard action; it never permits hover, page-load, error, loop, background or autoplay-policy-bypass sound. Visual feedback remains complete when sound is off or playback is rejected.
 - Music is a separate comfort layer whose local player may make exactly one visible page-ready attempt at a browser-local default of 50%, and always offers immediate pause/off controls. The controller inspects the `HTMLMediaElement.play()` promise and exposes `starting`, `playing`, `blocked`, `loading`, `transport`, `decoding`, `lifecycle`, `paused` and fallback `error`; the interface must never claim playback from intent alone. With entry intent `unset`, the identity CTA itself is the default-music trusted pointer／keyboard action and calls `play()` synchronously before any `await`, timer or navigation. Playback success, rejection, synchronous failure or the 450 ms startup budget all continue exactly once to the selected identity; media failure is never presented as authentication failure. The accessible **「預設：開啟音樂／Default: Enter with music」** and **「安靜繼續／Continue quietly」** controls are optional recovery／preference actions. Explicit quiet intent wins for the current visit. Generic capture-phase retries must not compete with navigation. The 50% level is a starting point rather than forced loudness: a versioned migration upgrades only exact legacy 24%／35% defaults, while every other operator-selected level is preserved. When two routes resolve to the same local track, the next route restores that track's session position and playing／paused state instead of restarting it; this continuity uses bounded `sessionStorage`, never the roster database or permanent browser storage. `/view#…` stays silent and YouTube remains manual. A YouTube player must remain fully visible with native controls, never autoplay, and never sit behind a form, name, table, warning, roster, fairness record, or PDF. Public playlist playback does not require sign-in; optional API search and saved playlist names must never carry student data.
 - No GSAP ScrollTrigger, pinning, looping animation, parallax, bouncing icons, or ambient video.
 
@@ -862,6 +862,20 @@ Shared CSS motion tokens are the only default timing vocabulary: `--sy-motion-pr
 - 不新增 GIF、遠端動畫資產、Anime.js、Lottie 或第二套通用 runtime。本地已消毒 SVG 只限現有 glyph family 無法清楚表達的高價值招牌控制。
 
 清單和覆蓋率必須分開報告：unique glyph names、source call sites、rendered interactive instances、已分類 semantic roles、有效 story sources、story destinations、role-only controls、decorative／informational icons 及 intentionally-static icons，不可混用分母。驗收目標是所有渲染出的互動圖標控制均被分類，而不是達到任意故事數字。
+
+#### Settings gear exception / 設定齒輪例外
+
+`settings` 是唯一可使用旋轉來表達機械設定動作的常規 Material glyph；這是圖標本身的語意例外，不是解除固定按鈕幾何的限制。
+
+- 只可旋轉 glyph；按鈕 host、文字標籤、焦點框、導航列和版面位置必須完全穩定。
+- Fine-pointer hover／focus 預示採一次有界限的 `45–90deg` 轉動；真正 activation 可完成一次 `180–360deg` 動作後乾淨回到基準角度。快速重複操作必須先取消舊 timeline，不得累積角度或留下傾斜狀態。
+- 只有真正在執行設定操作且 host 同時帶有 settings-operation 與 busy 狀態時，才可連續旋轉；完成、失敗、取消、路由替換和 disposer 均立即停止並復位。
+- 目前所在的 Settings 導航項必須保持穩定，不能像 spinner 一樣持續轉動。齒輪在任何中間幀和最終幀均須保持可辨識。
+- Reduced motion、forced colours、無 GSAP 或動畫失效時不旋轉，只以穩定色調、邊界、焦點和文字傳達狀態。
+
+#### Action lifecycle contract / 操作生命週期契約
+
+每個高價值操作按鈕共享 `idle → hover/focus → pressed → busy → success/attention/error → settled`。外部 footprint 在所有階段固定；whole-button 回饋只可改變色調、邊界、陰影或有界限的進度表面，不位移、不傾斜、不抖動、不彈跳。`busy`、`success`、`attention` 和 `error` 必須由真實操作事件觸發；沒有完成證據便不可顯示成功 glyph 或播放成功提示音。動作 settle 後恢復來源 glyph，除非它是由真實狀態持續控制的 persistent control。
 
 ### Hover and press response
 

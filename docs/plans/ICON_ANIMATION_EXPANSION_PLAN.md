@@ -1,9 +1,13 @@
 # 全站語意圖標形態轉變執行基線
 
-**日期：** 2026-07-29
-**活動分支：** `codex/rc32-ui-command-id-fix`
-**起始提交：** `53e25f18fae1a8148398b20eb4906e7e85f23b93`
-**狀態：** 候選實作與本機驗證已完成；只可在全站整合閘門通過後進入受控 commit、候選發布及部署
+**首次制定：** 2026-07-29
+
+**完成審計：** 2026-07-30
+
+**完成分支：** `codex/semantic-icon-action-motion`
+
+**完成基線：** `origin/main`／`ebe8d0c3219d9af40f8c44bdae9bf23c51366635`
+**狀態：** 候選實作與本機驗證已完成；未 commit、未 push、未部署。完成證據見[`../audits/SEMANTIC_ICON_ACTION_MOTION_2026-07-30.md`](../audits/SEMANTIC_ICON_ACTION_MOTION_2026-07-30.md)。
 
 ## 1. 可重現分母
 
@@ -15,8 +19,9 @@
 | Literal 互動圖標呼叫點 | 132 |
 | Literal 資訊／裝飾圖標呼叫點 | 43 |
 | 動態圖標表達式 | 38 |
-| Preview story source／destination | 24／24 |
+| Preview story source／destination | 23／23 |
 | Persistent pair direction | 8 |
+| Mandatory control contract | 19 |
 
 渲染實例由隔離瀏覽器的 `assert_rendered_icon_semantics` 逐頁量度。所有 `.q-btn`、`.q-tab` 與可點擊 `.q-item` 內 Material 圖標，必須取得 `role` 和 `category`；來源呼叫點與 DOM 實例永遠分開報告。
 
@@ -27,14 +32,15 @@
 1. `persistent`：只由真實狀態驅動，例如提示音、主題、播放器與抽屜。
 2. `preview`：hover／focus／短觸控預告準確的意圖或結果；離開後回復。
 3. `operation lifecycle`：working／success／attention／error 只由真實操作事件驅動。
-4. `static`：轉變會誤導時保持原 glyph；可保留標準焦點與色彩回饋。
+4. `role`：有清楚功能角色但不宜承諾結果的控制，只使用一致 tonal／focus 回饋。
+5. `static`：轉變會誤導時保持原 glyph；可保留標準焦點與色彩回饋。
 
 優先次序為：真實 persistent state > disabled／busy／reduced-motion guard > 暫時 preview。頁面不得建立自己的 timeline 或覆寫共用 glyph 狀態。
 
 ## 3. 幾何與動效契約
 
 - 圖標通常留在同一 24×24 slot；按鈕／導航列／卡片 host 不位移、不旋轉、不傾斜、不改尺寸。
-- glyph 在中心以 opacity＋scale 收合再展開，總長 180 ms；禁止漂移、彈跳、旋轉和循環動畫。
+- glyph 在中心以 opacity＋scale 收合再展開，總長 180 ms；禁止 host 漂移、彈跳、旋轉和循環動畫。唯一例外是設定 gear glyph：hover／focus 70°，activation 單次 270°，active route 與 reduced motion 靜止。
 - Fine pointer：hover 和 focus 採一個聚合狀態，兩者重疊時不會過早回復。
 - Coarse touch：只在具有準確 preview 時短暫播放；真實 persistent 狀態改變時立即取消舊 preview。
 - Disabled／busy：取消 timeline 並顯示真實 glyph。
@@ -57,7 +63,7 @@ Persistent glyph 由 `window.__syIconMotion.setPersistentGlyph` 更新。Hover �
 - 導覽：`space_dashboard → dashboard_customize`、`dashboard → view_quilt`、`groups → diversity_3`、`handshake → sync_alt`。
 - 工作：`calendar_month → event_available`、`calendar_view_week → event_note`、`edit_calendar → calendar_month`、`edit_note → fact_check`、`save → task_alt`、`picture_as_pdf → file_download`。
 - 指引：`help_outline → lightbulb`、`menu_book → auto_stories`、`play_circle → rocket_launch`。
-- 系統：`admin_panel_settings → verified_user`、`settings → settings_suggest`、`domain → apartment`、`account_tree → hub`、`build_circle → construction`。
+- 系統：`admin_panel_settings → verified_user`、`domain → apartment`、`account_tree → hub`、`build_circle → construction`；`settings` 使用專用 bounded gear，而不是更換為 `settings_suggest`。
 - 工具：`translate → language`、`logout → exit_to_app`、`headphones → graphic_eq`、`support_agent → contact_support`、`mail_outline → forward_to_inbox`、`format_list_bulleted → checklist`。
 
 ### 明確拒絕

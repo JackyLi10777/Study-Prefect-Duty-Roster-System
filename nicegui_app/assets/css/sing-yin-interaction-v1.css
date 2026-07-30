@@ -82,6 +82,10 @@
   --sy-icon-intent-transform: scale(1.1);
 }
 
+.q-icon[data-sy-icon-motion="gear"] {
+  --sy-icon-intent-transform: rotate(70deg) scale(1.04);
+}
+
 /* Story icons change shape in place; their host remains a stable click target. */
 .q-icon[data-sy-icon-story-to] {
   --sy-icon-intent-transform: scale(1.1);
@@ -153,9 +157,14 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
 
   body :is(.q-btn, .q-tab, .q-item.q-item--clickable):not(.disabled):not([aria-disabled="true"]):not(.q-btn--loading):not([aria-busy="true"]):hover
     .q-icon[data-sy-icon-motion]::after {
-  opacity: .72;
-  border-radius: 50%;
-  transform: scale(1);
+    opacity: .72;
+    border-radius: 50%;
+    transform: scale(1);
+  }
+
+  body :is(.q-btn, .q-tab, .q-item.q-item--clickable):is([aria-current="page"], .sy-nav-link--active):hover
+    .q-icon[data-sy-icon-motion="gear"] {
+    transform: none;
   }
 }
 
@@ -214,6 +223,32 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
   animation: sy-icon-error var(--sy-motion-layer) var(--sy-ease) 1;
 }
 
+/* The button footprint never changes across its lifecycle.  Tonal inset
+ * feedback augments the label and glyph without moving, tilting or resizing
+ * the action container. */
+:where(.q-btn, .q-tab, .q-item.q-item--clickable)[data-sy-feedback-state] {
+  transition:
+    color var(--sy-motion-state) var(--sy-ease),
+    background-color var(--sy-motion-state) var(--sy-ease),
+    box-shadow var(--sy-motion-state) var(--sy-ease);
+}
+
+:where(.q-btn, .q-tab, .q-item.q-item--clickable)[data-sy-feedback-state="working"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sy-role-action) 42%, transparent);
+}
+
+:where(.q-btn, .q-tab, .q-item.q-item--clickable)[data-sy-feedback-state="success"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sy-role-stable) 56%, transparent);
+}
+
+:where(.q-btn, .q-tab, .q-item.q-item--clickable)[data-sy-feedback-state="attention"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sy-role-attention) 62%, transparent);
+}
+
+:where(.q-btn, .q-tab, .q-item.q-item--clickable)[data-sy-feedback-state="error"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sy-role-danger) 62%, transparent);
+}
+
 /*
  * Editorial showcase cards are not disguised as buttons. Static team,
  * capability and metric cards stay physically still; only the explanatory
@@ -243,13 +278,13 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
 
 .sy-solution-card:focus-within .sy-solution-icon,
 .sy-reference-index-card:focus-within .sy-reference-index-icon {
-  transform: translate3d(2px, -1px, 0) scale(1.04);
+  transform: scale(1.04);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .sy-team-role:hover .sy-team-role-icon,
   .sy-platform-metric:hover .sy-platform-metric-icon {
-    transform: translate3d(0, -1px, 0) scale(1.04);
+    transform: scale(1.04);
   }
 
   .sy-capability-card:hover .sy-capability-icon,
@@ -257,13 +292,13 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
   .sy-engineering-pillar:hover .sy-engineering-pillar-icon,
   .sy-architecture-layer:hover .sy-architecture-layer-icon,
   .sy-trust-evidence-card:hover .sy-trust-evidence-icon {
-    transform: translate3d(0, -1px, 0) scale(1.03);
+    transform: scale(1.03);
   }
 
   .sy-solution-card:hover .sy-solution-icon,
   .sy-reference-index-card:hover .sy-reference-index-icon,
   .sy-engineering-fact:hover .sy-engineering-fact-icon {
-    transform: translate3d(2px, -1px, 0) scale(1.04);
+    transform: scale(1.04);
   }
 }
 
@@ -289,5 +324,17 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
     .q-icon[data-sy-icon-motion]::after {
     opacity: 0 !important;
     transform: none !important;
+  }
+
+  :where(.q-btn, .q-tab, .q-item.q-item--clickable)[data-sy-feedback-state] {
+    transition: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(.q-btn, .q-tab, .q-item.q-item--clickable)[data-sy-feedback-state] {
+    box-shadow: none;
+    outline: 2px solid CanvasText;
+    outline-offset: 2px;
   }
 }

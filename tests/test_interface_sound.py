@@ -6,6 +6,7 @@ import pytest
 
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.ui.sound import _bounded_float
+from nicegui_app.ui import theme
 from tests.ui_source import combined_page_source
 
 
@@ -17,7 +18,7 @@ def test_audio_preferences_are_bounded(value: object, default: float, maximum: f
     assert _bounded_float(value, default=default, maximum=maximum) == expected
 
 
-def test_interface_sound_is_semantic_opt_in_and_ducks_music() -> None:
+def test_interface_sound_is_semantic_action_feedback_and_ducks_music() -> None:
     sound = (PROJECT_ROOT / "nicegui_app" / "ui" / "sound.py").read_text(encoding="utf-8")
     pages = combined_page_source()
     music = (PROJECT_ROOT / "nicegui_app" / "ui" / "music.py").read_text(encoding="utf-8")
@@ -40,6 +41,23 @@ def test_interface_sound_is_semantic_opt_in_and_ducks_music() -> None:
     assert "pointerover" not in sound.lower()
     assert "audio_setup_seen" in music
     assert "test_interface_sound" in music
+
+
+@pytest.mark.parametrize(
+    ("stored", "expected"),
+    [(None, True), (True, True), (False, False)],
+)
+def test_interface_sound_default_preserves_explicit_operator_choice(
+    monkeypatch: pytest.MonkeyPatch,
+    stored: bool | None,
+    expected: bool,
+) -> None:
+    writes: list[tuple[str, object]] = []
+    monkeypatch.setattr(theme, "preference_get", lambda key, default=None: stored)
+    monkeypatch.setattr(theme, "preference_set", lambda key, value: writes.append((key, value)))
+
+    assert theme.sound_feedback_enabled() is expected
+    assert writes == [], "Resolving a missing default must not persist or overwrite an opt-out"
 
 
 def test_shell_previews_and_updates_sound_without_reloading_unfinished_forms() -> None:
