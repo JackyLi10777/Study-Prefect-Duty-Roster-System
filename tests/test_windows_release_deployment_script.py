@@ -319,6 +319,8 @@ def test_deployment_rotates_runtime_task_credential_without_persisting_it() -> N
     assert "[Array]::Clear($randomBytes, 0, $randomBytes.Length)" in source
     assert "Set-LocalUser `" in source
     assert "-Password $runtimeTaskSecurePassword" in source
+    assert source.count("$runtimeTaskSecurePassword.Dispose()") == 2
+    assert source.count("$runtimeTaskSecurePassword = $null") == 3
     assert "-Password $runtimeTaskPassword | Out-Null" in source
     assert "$taskCredentialRotated = $true" in source
     assert "($taskTargetSwitched -or $taskCredentialRotated)" in source

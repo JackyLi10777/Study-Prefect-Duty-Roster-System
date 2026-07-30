@@ -1091,6 +1091,7 @@ try {
     $taskTargetSwitched = $false
     $taskCredentialRotated = $false
     $runtimeTaskPassword = $null
+    $runtimeTaskSecurePassword = $null
     $releaseBundlePath = $null
     $previousTaskAction = $null
     $environmentPath = Join-Path $HostRoot ".env"
@@ -1408,9 +1409,16 @@ try {
         -String $runtimeTaskPassword `
         -AsPlainText `
         -Force
-    Set-LocalUser `
-        -Name $runtimeAccount.Name `
-        -Password $runtimeTaskSecurePassword
+    try {
+        Set-LocalUser `
+            -Name $runtimeAccount.Name `
+            -Password $runtimeTaskSecurePassword
+    } finally {
+        if ($null -ne $runtimeTaskSecurePassword) {
+            $runtimeTaskSecurePassword.Dispose()
+            $runtimeTaskSecurePassword = $null
+        }
+    }
     $taskCredentialRotated = $true
     Set-ScheduledTask `
         -TaskName $TaskName `
@@ -1599,6 +1607,10 @@ try {
     $deploymentExitCode = 1
     }
 } finally {
+    if ($null -ne $runtimeTaskSecurePassword) {
+        $runtimeTaskSecurePassword.Dispose()
+        $runtimeTaskSecurePassword = $null
+    }
     $runtimeTaskPassword = $null
     if ($processEnvironmentCaptured) {
         foreach ($name in $controlledEnvironmentNames) {
