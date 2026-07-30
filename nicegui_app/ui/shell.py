@@ -16,7 +16,7 @@ from nicegui_app.runtime import current_page_context, get_workflow
 from nicegui_app.ui.brand import render_service_weave_mark
 from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import current_locale, language_switch_copy, t, toggle_locale
-from nicegui_app.ui.navigation import navigate_to
+from nicegui_app.ui.navigation import install_route_progress_runtime, navigate_to
 from nicegui_app.ui.music import render_page_music_control
 from nicegui_app.ui.page_catalog import (
     mobile_navigation_for,
@@ -1273,6 +1273,11 @@ def page_shell(active_path: str) -> Iterator[None]:
                         f'data-action-dark="{attr(t("theme_switch_to_dark"))}"'
                     ).classes(_header_control_classes("theme"))
                     theme_controls["buttons"].append((theme_button, False, None))
+    ui.element("div").props(
+        f'id=sy-route-progress role=status aria-live=polite aria-hidden=true '
+        f'aria-label="{attr(t("route_loading"))}" data-active=false'
+    ).classes("sy-route-progress")
+    install_route_progress_runtime()
     _render_system_theme_resolver()
     _install_theme_control_runtime()
     maintenance = get_workflow().maintenance_status()

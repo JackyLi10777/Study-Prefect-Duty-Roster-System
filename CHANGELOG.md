@@ -2,6 +2,14 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
+## Unreleased — honest whole-site waiting experience
+
+- Gives the public Admin and Guest entries one shared `idle → starting → navigating → slow／error` lifecycle across desktop and mobile, with role-specific copy, duplicate suppression, delayed progress, safe retry, back-navigation cleanup, and a privacy-safe support reference.
+- Adds the truthful Cloudflare sign-in assistance path without a local password database or email-enumeration copy; welcome audio remains a non-blocking trusted-click enhancement.
+- Replaces invented 14%／56% operation progress with one phased indeterminate coordinator and a bounded completion morph; measured progress remains available only for real `completed／total` data.
+- Adds a delayed, self-cleaning route progress track and moves host-local support-report persistence off the UI event loop while rejecting Guest persistence before loading begins.
+- Extends the executable design-token, bilingual, reduced-motion, forced-colour, Worker, accessibility, support and dialog-lifecycle contracts. This section is source-candidate history until formal release and deployment evidence is recorded below.
+
 ## v1.2.0-rc.39 — released, 2026-07-30
 
 - Preserves the complete rc35 product behavior and R5／R6／R7 controls while correcting Windows scheduled-task credential handling for unattended origin deployment.

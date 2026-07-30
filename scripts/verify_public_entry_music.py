@@ -121,6 +121,23 @@ def _entry_case(
         page.keyboard.press("Enter")
     else:
         button.click(no_wait_after=True)
+    page.wait_for_function(
+        "([role]) => document.querySelector(`[data-entry-role=\"${role}\"]:not([hidden])`)?.dataset.entryState === 'navigating'",
+        arg=[role],
+    )
+    _assert(button.get_attribute("aria-busy") == "true", f"{role}/{outcome} did not expose aria-busy")
+    other_role = "guest" if role == "admin" else "admin"
+    other_button = page.locator(f'[data-entry-role="{other_role}"]:visible').first
+    _assert(other_button.get_attribute("data-entry-locked") == "true", f"{role}/{outcome} did not lock role switching")
+    expected_copy = "正在連接安全登入" if role == "admin" else "正在建立私人示範工作區"
+    _assert(expected_copy in button.inner_text(), f"{role}/{outcome} did not render role-specific waiting copy")
+    _assert("__ENTRY_REFERENCE__" not in page.content(), "entry support reference was not rendered")
+    _assert(page.get_by_text("收不到驗證碼？", exact=False).count() >= 1, "sign-in help is missing")
+    if context_options and context_options.get("reduced_motion") == "reduce":
+        spinner_animation = button.locator(".entry-spinner").evaluate(
+            "element => getComputedStyle(element).animationName"
+        )
+        _assert(spinner_animation == "none", "reduced-motion entry spinner still animates")
     page.wait_for_timeout(800)
     expected_path = "/auth/login" if role == "admin" else "/guest"
     matching = [url for url in requests if urlsplit(url).path == expected_path]
@@ -130,6 +147,26 @@ def _entry_case(
     _assert(calls >= 2, f"{role}/{outcome} did not retry playback inside the entry activation")
     page.context.close()
     return {"role": role, "outcome": outcome, "keyboard": keyboard, "requests": len(matching), "play_calls": calls}
+
+
+def _slow_state_case(browser: Browser, base_url: str) -> dict[str, object]:
+    page, requests, errors, _ = _new_page(browser, base_url, "pending", {"width": 1440, "height": 1000})
+    button = page.locator('[data-entry-role="guest"]:visible').first
+    button.click(no_wait_after=True)
+    page.wait_for_function(
+        "document.querySelector('[data-entry-role=\"guest\"]:not([hidden])')?.dataset.entryState === 'slow'",
+        timeout=10_000,
+    )
+    _assert(button.get_attribute("aria-busy") is None, "slow Guest entry remained aria-busy")
+    _assert(button.get_attribute("aria-disabled") is None, "slow Guest entry did not unlock")
+    _assert("需時較長" in button.inner_text(), "slow Guest entry did not explain the delay")
+    button.click(no_wait_after=True)
+    page.wait_for_timeout(700)
+    matching = [url for url in requests if urlsplit(url).path == "/guest"]
+    _assert(len(matching) == 2, "slow Guest retry did not start exactly one fresh navigation")
+    _assert(not errors, f"slow Guest retry raised errors: {errors}")
+    page.context.close()
+    return {"role": "guest", "outcome": "slow-retry", "requests": len(matching)}
 
 
 def _quiet_case(browser: Browser, base_url: str) -> dict[str, object]:
@@ -268,6 +305,7 @@ def main() -> int:
         results.append(_entry_case(browser, base_url, role="guest", outcome="throw", viewport={"width": 1440, "height": 1000}, context_options={"color_scheme": "dark"}))
         results.append(_entry_case(browser, base_url, role="admin", outcome="pending", viewport={"width": 390, "height": 844}, context_options={"is_mobile": True, "has_touch": True, "color_scheme": "no-preference"}))
         results.append(_entry_case(browser, base_url, role="guest", outcome="reject", viewport={"width": 390, "height": 844}, keyboard=True, context_options={"reduced_motion": "reduce", "forced_colors": "active"}))
+        results.append(_slow_state_case(browser, base_url))
         results.append(_quiet_case(browser, base_url))
         results.append(_already_playing_case(browser, base_url))
         results.append(_rapid_activation_case(browser, base_url))

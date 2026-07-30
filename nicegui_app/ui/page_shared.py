@@ -171,13 +171,31 @@ async def _run_with_progress(
     started_at = perf_counter()
     record_operator_event(action=working_key, outcome="started", reference=reference)
     try:
-        with ui.dialog().props("persistent") as dialog, ui.card().classes("sy-progress-dialog w-full max-w-sm p-6"):
+        with ui.dialog().props("persistent") as dialog, ui.card().classes(
+            "sy-progress-dialog w-full max-w-sm p-6"
+        ).props(
+            "aria-busy=true data-progress-mode=phased data-phase=preparing"
+        ) as progress_shell:
             with ui.row().classes("items-center gap-3"):
-                ui.icon(icon).classes("sy-progress-dialog-icon").props("aria-hidden=true")
+                with ui.element("span").classes("sy-progress-dialog-icon").props("aria-hidden=true"):
+                    ui.icon(icon).classes("sy-progress-dialog-icon-work")
+                    ui.icon("task_alt").classes("sy-progress-dialog-icon-success")
                 with ui.column().classes("gap-0"):
                     ui.label(t(title_key)).classes("sy-progress-dialog-title")
                     status = ui.label(t("progress_preparing")).classes("sy-progress-dialog-status").props("aria-live=polite")
-            progress = ui.linear_progress(value=0.14, show_value=False, color="primary").classes("w-full mt-6")
+            with ui.element("ol").classes("sy-progress-dialog-phases").props(
+                f'aria-label="{attr(t("progress_phase_label"))}"'
+            ):
+                for phase, label_key in (
+                    ("preparing", "progress_phase_preparing"),
+                    ("working", "progress_phase_processing"),
+                    ("complete", "progress_phase_complete"),
+                ):
+                    with ui.element("li").classes("sy-progress-dialog-phase").props(f"data-phase-marker={phase}"):
+                        ui.label(t(label_key))
+            progress = ui.linear_progress(show_value=False, color="primary").classes("w-full mt-4").props(
+                f'indeterminate aria-label="{attr(t("progress_indeterminate"))}"'
+            )
             ui.label(t("progress_keep_open")).classes("sy-progress-dialog-note mt-3")
 
         _delete_dialog_after_close(dialog)
@@ -185,8 +203,7 @@ async def _run_with_progress(
         play_interface_sound("working")
         await asyncio.sleep(0.08)  # Allow the dialog to paint before work begins.
         status.set_text(t(working_key))
-        progress.value = 0.56
-        progress.update()
+        progress_shell.props("data-phase=working")
         result = await run.io_bound(action)
     except CommittedWriteBackupError as error:
         if dialog is not None:
@@ -214,7 +231,9 @@ async def _run_with_progress(
         ui.notify(_operation_error_message(reference), type="negative", timeout=8_000)
         return _OPERATION_FAILED
     else:
-        status.set_text(t("progress_finalising"))
+        status.set_text(t("progress_complete"))
+        progress_shell.props("data-phase=complete aria-busy=false")
+        progress.props(remove="indeterminate")
         progress.value = 1.0
         progress.update()
         await asyncio.sleep(0.13)

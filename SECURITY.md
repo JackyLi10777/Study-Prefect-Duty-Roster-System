@@ -40,6 +40,11 @@ and a redacted support reference if available. Use fictional data. Stop testing
 if it could affect availability, another person's session, Cloudflare resources,
 or the production database.
 
+The public sign-in and failure screens may show a bounded `CF-...` or `GW-...`
+support reference. It is safe to quote that reference to the maintainer, but it
+does not prove authentication and must never be accompanied by a one-time code,
+email address, cookie, JWT, or screenshot containing those values.
+
 For ordinary bugs and UX problems, create the report through the application's
 `/support` page first. A public GitHub issue should contain only the resulting
 reference, a redacted technical summary, and fictional reproduction data. Keep

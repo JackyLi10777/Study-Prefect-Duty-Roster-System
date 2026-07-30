@@ -41,7 +41,10 @@
       "--shadow-raised": "0 18px 46px rgba(28, 46, 42, 0.14)",
       "--radius-large": "24px",
       "--radius-medium": "14px",
-      "--ease-standard": "cubic-bezier(0.2, 0, 0, 1)"
+      "--ease-standard": "cubic-bezier(0.2, 0, 0, 1)",
+      "--entry-progress-track": "color-mix(in srgb, var(--line-strong) 54%, transparent)",
+      "--entry-progress-fill": "var(--action)",
+      "--entry-slow-surface": "color-mix(in srgb, var(--gold) 11%, var(--surface))"
     },
     "dark": {
       "--canvas": "#0c1217",
@@ -74,7 +77,10 @@
       "--danger": "#f0a29a",
       "--danger-soft": "#412421",
       "--shadow": "0 28px 76px rgba(0, 0, 0, 0.36)",
-      "--shadow-raised": "0 28px 72px rgba(0, 0, 0, 0.4)"
+      "--shadow-raised": "0 28px 72px rgba(0, 0, 0, 0.4)",
+      "--entry-progress-track": "color-mix(in srgb, var(--line-strong) 54%, transparent)",
+      "--entry-progress-fill": "var(--action)",
+      "--entry-slow-surface": "color-mix(in srgb, var(--gold) 11%, var(--surface))"
     }
   }
 }

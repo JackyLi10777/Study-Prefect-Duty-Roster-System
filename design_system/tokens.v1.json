@@ -174,6 +174,12 @@
             "--sy-status-danger-bg": "var(--sy-role-danger-soft)",
             "--sy-status-neutral-fg": "#34363A",
             "--sy-status-neutral-bg": "var(--sy-role-neutral-soft)",
+            "--sy-progress-track": "{layers.primitive.color.surfaceSubtleLight}",
+            "--sy-progress-fill": "{layers.primitive.color.actionFillLight}",
+            "--sy-progress-busy-surface": "#F7FAFB",
+            "--sy-progress-slow-surface": "#FFF4D6",
+            "--sy-progress-success": "{layers.primitive.color.stableFillLight}",
+            "--sy-progress-error": "{layers.primitive.color.dangerFillLight}",
             "--sy-sidebar-veil": "linear-gradient(180deg, rgba(255,255,255,.91), rgba(255,255,255,.78) 58%, rgba(248,246,240,.84))",
             "--sy-empty-ready-veil": "linear-gradient(90deg, rgba(255,255,255,.97) 0%, rgba(255,255,255,.94) 58%, rgba(255,255,255,.76) 100%)",
             "--sy-architecture-veil": "linear-gradient(90deg, rgba(251,248,239,.985) 0%, rgba(251,248,239,.94) 45%, rgba(251,248,239,.30) 78%)",
@@ -202,6 +208,12 @@
             "--sy-status-danger-bg": "var(--sy-role-danger-soft)",
             "--sy-status-neutral-fg": "var(--sy-role-neutral)",
             "--sy-status-neutral-bg": "var(--sy-role-neutral-soft)",
+            "--sy-progress-track": "{layers.primitive.color.surfaceSubtleDark}",
+            "--sy-progress-fill": "{layers.primitive.color.actionForegroundDark}",
+            "--sy-progress-busy-surface": "#172128",
+            "--sy-progress-slow-surface": "rgba(168,132,73,.20)",
+            "--sy-progress-success": "{layers.primitive.color.stableForegroundDark}",
+            "--sy-progress-error": "{layers.primitive.color.dangerForegroundDark}",
             "--sy-hover-glow": "rgba(94, 234, 212, .10)",
             "--sy-hover-shadow": "0 16px 34px rgba(0, 0, 0, .34)",
             "--sy-sidebar-veil": "linear-gradient(180deg, rgba(13,17,23,.82), rgba(13,17,23,.66) 56%, rgba(8,13,20,.54))",
@@ -290,11 +302,17 @@
             "--shadow-raised": "0 18px 46px rgba(28, 46, 42, 0.14)",
             "--radius-large": "24px",
             "--radius-medium": "14px",
-            "--ease-standard": "cubic-bezier(0.2, 0, 0, 1)"
+            "--ease-standard": "cubic-bezier(0.2, 0, 0, 1)",
+            "--entry-progress-track": "color-mix(in srgb, var(--line-strong) 54%, transparent)",
+            "--entry-progress-fill": "var(--action)",
+            "--entry-slow-surface": "color-mix(in srgb, var(--gold) 11%, var(--surface))"
           },
           "dark": {
             "--shadow": "0 28px 76px rgba(0, 0, 0, 0.36)",
-            "--shadow-raised": "0 28px 72px rgba(0, 0, 0, 0.4)"
+            "--shadow-raised": "0 28px 72px rgba(0, 0, 0, 0.4)",
+            "--entry-progress-track": "color-mix(in srgb, var(--line-strong) 54%, transparent)",
+            "--entry-progress-fill": "var(--action)",
+            "--entry-slow-surface": "color-mix(in srgb, var(--gold) 11%, var(--surface))"
           }
         }
       }

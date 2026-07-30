@@ -14,6 +14,11 @@ MESSAGES = {
     "support_add_details": {"zh-HK": "加入更多資料", "en": "Add details"},
     "support_route_category": {"zh-HK": "發生問題的頁面", "en": "Affected page"},
     "support_workflow_action": {"zh-HK": "當時進行的操作", "en": "Action in progress"},
+    "progress_support_save_title": {"zh-HK": "正在建立臨時錯誤報告", "en": "Creating temporary issue report"},
+    "progress_support_save_working": {
+        "zh-HK": "正在移除不必要的中繼資料並安全儲存本機報告…",
+        "en": "Removing unnecessary metadata and saving the local report safely…",
+    },
     "support_expected": {"zh-HK": "預期會發生甚麼", "en": "Expected result"},
     "support_actual": {"zh-HK": "實際發生了甚麼", "en": "Actual result"},
     "support_reproduction": {"zh-HK": "重現步驟（每行一步）", "en": "Reproduction steps (one per line)"},

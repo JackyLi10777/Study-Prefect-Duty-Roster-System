@@ -578,6 +578,17 @@ def main() -> None:
         ).first.wait_for(timeout=10_000)
         ensure_rendered_theme(page, "light")
         page.get_by_text("本週值班工作台", exact=True).wait_for(timeout=10_000)
+        route_progress = page.locator("#sy-route-progress")
+        assert route_progress.count() == 1
+        assert route_progress.get_attribute("data-active") == "false"
+        assert page.evaluate("typeof window.__syRouteProgress?.start === 'function'") is True
+        page.evaluate("window.__syRouteProgress.start()")
+        assert route_progress.get_attribute("data-active") == "false"
+        page.wait_for_function("document.querySelector('#sy-route-progress')?.dataset.active === 'true'")
+        assert route_progress.get_attribute("aria-hidden") is None
+        page.evaluate("window.__syRouteProgress.stop()")
+        assert route_progress.get_attribute("data-active") == "false"
+        assert route_progress.get_attribute("aria-hidden") == "true"
         assert page.locator(".sy-flow-step--active .q-btn.bg-primary").evaluate(
             "element => getComputedStyle(element).backgroundColor"
         ) == "rgb(53, 100, 124)"

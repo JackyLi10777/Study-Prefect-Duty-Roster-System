@@ -63,6 +63,18 @@ def test_admin_support_clears_consumed_attachments_after_save() -> None:
     assert success.index("attachment_summary.clear()") < success.index('ui.notify(t("support_saved")')
 
 
+def test_admin_support_rejects_guest_before_showing_shared_progress() -> None:
+    source = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_routes" / "support.py").read_text(encoding="utf-8")
+    handler = source[source.index("async def save_incident"):source.index('save_button.on("click", save_incident)')]
+
+    assert handler.index("active_context.require(Capability.PERSISTENT_WRITE)") < handler.index(
+        "await _run_with_progress("
+    )
+    assert "attachment_snapshot = tuple(attachments)" in handler
+    assert 'title_key="progress_support_save_title"' in handler
+    assert 'working_key="progress_support_save_working"' in handler
+
+
 def test_support_messages_are_complete_bilingual_copy() -> None:
     assert MESSAGES
     for value in MESSAGES.values():
