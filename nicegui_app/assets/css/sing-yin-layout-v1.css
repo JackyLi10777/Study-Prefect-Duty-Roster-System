@@ -75,6 +75,7 @@
 
 .sy-workflow-navigation {
   --sy-workflow-position: 25%;
+
   position: relative;
   isolation: isolate;
   overflow: hidden;

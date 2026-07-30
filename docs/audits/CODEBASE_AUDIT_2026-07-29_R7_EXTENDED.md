@@ -28,7 +28,7 @@ During rollback, the script switches to the previous commit (`line 1222`), then 
 
 **Impact:** A failed deployment attempting to rollback can permanently break the production origin, requiring manual recovery.
 
-**Fix:** Verify pip exit code BEFORE switching git; if pip would fail, abort rollback and notify operator.
+**Disposition after adjudication:** Superseded and resolved. The controlled deployer now builds an independent immutable source＋virtual-environment bundle, verifies it before downtime, atomically changes the scheduled-task action, and retains the prior bundle unchanged for rollback. Pre-installing into the running shared environment would not have been atomic.
 
 ### R7-S2: Environment backup missing for failures before line 975
 **File:** `scripts/deploy_windows_release.ps1:1238-1242`
@@ -112,7 +112,7 @@ Empty catch masks port-not-released condition. Subsequent restart fails silently
 
 Between `listKvKeys` and batch `delete`, a concurrent `createShare` can write new keys that survive deletion. No post-delete verification or idempotency token.
 
-**Fix:** Add version check or post-delete verification.
+**Disposition after adjudication:** Superseded and resolved. Permanent no-digest revocation tombstones are checked by create, read and list paths; conflicting recreation is rejected. A post-delete list alone would still be unsafe under eventual consistency.
 
 ### R7-P1: ROOM_CAPACITY policy rule not exported
 **File:** `packages/roster_policy/roster_policy/rules.py:109`
@@ -136,7 +136,7 @@ Between `listKvKeys` and batch `delete`, a concurrent `createShare` can write ne
 
 The anchor backfill SQL computes `current_weight - sum(ledger_deltas)` with no post-backfill reconciliation check. Silent corruption would propagate into all future fairness calculations.
 
-**Fix:** Add a `SELECT ABS(SUM(delta) + anchor - current_weight) < 0.01` assertion after backfill.
+**Disposition after adjudication:** Superseded and resolved without rewriting historical migration 0003. Runtime bootstrap／readiness and isolated restore preflight reconcile every fairness anchor against its ledger and fail closed on disagreement. Any future schema change must remain additive.
 
 ### R7-A1: prepare_windows_host PATH refresh can duplicate entries
 **File:** `scripts/prepare_windows_host.ps1:22`

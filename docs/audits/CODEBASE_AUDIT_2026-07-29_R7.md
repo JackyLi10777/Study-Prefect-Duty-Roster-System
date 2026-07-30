@@ -61,11 +61,11 @@
 
 | Status | Count |
 |--------|-------|
-| **Fixed/Remediated** | 9 |
+| **Fixed/Remediated** | 10 |
 | **Accepted by design** | 2 |
-| **Open P3 (non-blocking)** | 10 |
+| **Open P3 (non-blocking)** | 11 |
 | **Not verified this round** | 2 |
-| **Total tracked** | 23 |
+| **Total tracked** | 25 |
 
 ---
 
@@ -115,7 +115,7 @@ All open findings are P3 — optional clarity, consistency, or style improvement
 - ✅ IPv6 loopback rejected explicitly
 - ✅ Orphaned i18n keys removed
 - ✅ PROJECT_STATUS.md reflects rc35 current state
-- ⚠️ 12 open P3 findings (non-blocking, optional cleanup)
+- ⚠️ 11 open P3 findings plus 2 not verified in this audit round (non-blocking follow-up)
 
 **Remaining for full acceptance:** Supervised Head Study Prefect and teacher-advisor human acceptance.
 

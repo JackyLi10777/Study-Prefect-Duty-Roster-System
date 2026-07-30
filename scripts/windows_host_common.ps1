@@ -61,8 +61,13 @@ function Get-SingYinEnvironmentMap {
         if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith("#")) {
             continue
         }
-        if ($line -notmatch '^\s*(?<name>SING_YIN_[A-Z0-9_]+)\s*=\s*(?<value>.*)$') {
-            if ($trimmed.StartsWith("SING_YIN_", [StringComparison]::Ordinal)) {
+        $controlledNamePattern = '(?:SING_YIN_[A-Z0-9_]+|ORIGIN_PRINCIPAL_(?:SECRET|KID)|AUTH_EPOCH)'
+        if ($line -notmatch "^\s*(?<name>$controlledNamePattern)\s*=\s*(?<value>.*)$") {
+            if (
+                $trimmed.StartsWith("SING_YIN_", [StringComparison]::Ordinal) -or
+                $trimmed.StartsWith("ORIGIN_PRINCIPAL_", [StringComparison]::Ordinal) -or
+                $trimmed.StartsWith("AUTH_EPOCH", [StringComparison]::Ordinal)
+            ) {
                 throw "The Sing Yin environment file contains a malformed setting."
             }
             continue

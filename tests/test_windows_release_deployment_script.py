@@ -677,3 +677,71 @@ def test_deployment_script_parses_in_windows_powershell_51() -> None:
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_release_environment_copy_is_acl_first_and_utf8_without_bom() -> None:
+    source = _source()
+
+    create = source.index('$null = New-Item -ItemType File -Path $bundleEnvironment -Force')
+    protect = source.index(
+        'Protect-SingYinSensitivePath -Path $bundleEnvironment -RuntimeUser $RuntimeUser',
+        create,
+    )
+    populate = source.index(
+        '[IO.File]::WriteAllBytes($bundleEnvironment, [IO.File]::ReadAllBytes($EnvironmentPath))',
+        protect,
+    )
+    assert create < protect < populate
+    assert '[Text.UTF8Encoding]::new($false)' in source
+    assert '[IO.File]::WriteAllText($temporaryPath, $content, $utf8WithoutBom)' in source
+    assert '$output | Set-Content -LiteralPath $temporaryPath -Encoding UTF8' not in source
+
+
+def test_host_environment_import_requires_every_gateway_control() -> None:
+    function_source = _powershell_function_source("Import-HostEnvironment")
+
+    for name in (
+        "SING_YIN_UNIFIED_GUEST",
+        "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL",
+        "ORIGIN_PRINCIPAL_SECRET",
+        "ORIGIN_PRINCIPAL_KID",
+        "AUTH_EPOCH",
+        "SING_YIN_GUEST_SNAPSHOT_SECRET",
+    ):
+        assert f'"{name}"' in function_source
+    assert "protected host environment is missing" in function_source
+
+
+def test_release_environment_writer_executes_without_utf8_bom(tmp_path: Path) -> None:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production host script")
+    env_path = tmp_path / ".env"
+    env_path.write_text("SING_YIN_PORT=8080\n", encoding="utf-8")
+    escaped = str(env_path).replace("'", "''")
+    function_source = _powershell_function_source("Set-ReleaseEnvironmentValue")
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+function Protect-SingYinSensitivePath {{ param($Path, $RuntimeUser) }}
+{function_source}
+Set-ReleaseEnvironmentValue -Path '{escaped}' -Name 'SING_YIN_PORT' -Value '8456' -RuntimeUser 'test-user'
+$bytes = [IO.File]::ReadAllBytes('{escaped}')
+[ordered]@{{
+  prefix = if ($bytes.Length -ge 3) {{ "$($bytes[0])-$($bytes[1])-$($bytes[2])" }} else {{ '' }}
+  text = [IO.File]::ReadAllText('{escaped}', [Text.UTF8Encoding]::new($false))
+}} | ConvertTo-Json -Compress
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8-sig",
+        errors="replace",
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(next(line for line in result.stdout.splitlines() if line.startswith("{")))
+    assert payload["prefix"] != "239-187-191"
+    assert payload["text"] == "SING_YIN_PORT=8456\r\n"

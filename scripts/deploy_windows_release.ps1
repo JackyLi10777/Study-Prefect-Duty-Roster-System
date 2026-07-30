@@ -185,6 +185,18 @@ function Read-HostEnvironmentValues([string]$EnvironmentPath) {
 
 function Import-HostEnvironment([string]$EnvironmentPath) {
     $values = Read-HostEnvironmentValues -EnvironmentPath $EnvironmentPath
+    foreach ($requiredName in @(
+        "SING_YIN_UNIFIED_GUEST",
+        "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL",
+        "ORIGIN_PRINCIPAL_SECRET",
+        "ORIGIN_PRINCIPAL_KID",
+        "AUTH_EPOCH",
+        "SING_YIN_GUEST_SNAPSHOT_SECRET"
+    )) {
+        if (-not $values.ContainsKey($requiredName)) {
+            throw "The protected host environment is missing $requiredName."
+        }
+    }
     foreach ($name in $values.Keys) {
         [Environment]::SetEnvironmentVariable($name, [string]$values[$name], "Process")
     }
@@ -697,7 +709,8 @@ function Set-ReleaseEnvironmentValue {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
         [Parameter(Mandatory = $true)][string]$Name,
-        [Parameter(Mandatory = $true)][string]$Value
+        [Parameter(Mandatory = $true)][string]$Value,
+        [Parameter(Mandatory = $true)][string]$RuntimeUser
     )
 
     if ($Name -notmatch '^[A-Z][A-Z0-9_]*$' -or $Value -match '[\x00-\x1F\x7F]') {
@@ -719,7 +732,11 @@ function Set-ReleaseEnvironmentValue {
     if ($matched -eq 0) { $output = @($output) + "$Name=$Value" }
     $temporaryPath = "$Path.release-$PID-$([Guid]::NewGuid().ToString('N')).tmp"
     try {
-        $output | Set-Content -LiteralPath $temporaryPath -Encoding UTF8
+        $null = New-Item -ItemType File -Path $temporaryPath -Force
+        Protect-SingYinSensitivePath -Path $temporaryPath -RuntimeUser $RuntimeUser
+        $utf8WithoutBom = [Text.UTF8Encoding]::new($false)
+        $content = [string]::Join([Environment]::NewLine, [string[]]$output) + [Environment]::NewLine
+        [IO.File]::WriteAllText($temporaryPath, $content, $utf8WithoutBom)
         Move-Item -LiteralPath $temporaryPath -Destination $Path -Force
     } finally {
         Remove-Item -LiteralPath $temporaryPath -Force -ErrorAction SilentlyContinue
@@ -806,22 +823,22 @@ function New-SingYinReleaseBundle {
         ) -WorkingDirectory $stagingPath | Out-Null
 
         $bundleEnvironment = Join-Path $stagingPath ".env"
-        Copy-Item -LiteralPath $EnvironmentPath -Destination $bundleEnvironment
-        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -Name "SING_YIN_APP_MODE" -Value "official"
-        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -Name "SING_YIN_DATABASE_PATH" -Value (
+        $null = New-Item -ItemType File -Path $bundleEnvironment -Force
+        Protect-SingYinSensitivePath -Path $bundleEnvironment -RuntimeUser $RuntimeUser
+        [IO.File]::WriteAllBytes($bundleEnvironment, [IO.File]::ReadAllBytes($EnvironmentPath))
+        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -RuntimeUser $RuntimeUser -Name "SING_YIN_APP_MODE" -Value "official"
+        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -RuntimeUser $RuntimeUser -Name "SING_YIN_DATABASE_PATH" -Value (
             Join-Path $HostRoot "data\runtime\sing-yin-roster.sqlite3"
         )
-        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -Name "SING_YIN_BACKUP_DIR" -Value (
+        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -RuntimeUser $RuntimeUser -Name "SING_YIN_BACKUP_DIR" -Value (
             Join-Path $HostRoot "data\backups"
         )
-        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -Name "SING_YIN_LOG_DIR" -Value (
+        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -RuntimeUser $RuntimeUser -Name "SING_YIN_LOG_DIR" -Value (
             Join-Path $HostRoot "logs"
         )
-        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -Name "SING_YIN_SUPPORT_DIR" -Value (
+        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -RuntimeUser $RuntimeUser -Name "SING_YIN_SUPPORT_DIR" -Value (
             Join-Path $HostRoot "data\support"
         )
-        Protect-SingYinSensitivePath -Path $bundleEnvironment -RuntimeUser $RuntimeUser
-
         Invoke-Native -Executable $bundlePython -Arguments @(
             "-X", "utf8", "-c", "import nicegui; import nicegui_app.main"
         ) -WorkingDirectory $stagingPath | Out-Null

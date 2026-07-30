@@ -13,9 +13,35 @@ import pytest
 from nicegui_app.config import PREFECT_SEED_PATH, PROJECT_ROOT
 from nicegui_app.persistence.database import database_url
 from nicegui_app.services.roster_workflow import PrefectInput, RosterWorkflow, WorkflowError
+from nicegui_app.services.workflow_parts import recovery as recovery_module
 
 
 WEEK_START = date(2026, 9, 7)
+
+
+def test_restore_candidate_wraps_generic_database_startup_failures(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    source = tmp_path / "candidate.sqlite3"
+    source.write_bytes(b"isolated-candidate")
+    expected_sha256 = hashlib.sha256(source.read_bytes()).hexdigest()
+
+    def fail_to_open(_path: Path):
+        raise RuntimeError("migration_bootstrap_failed")
+
+    monkeypatch.setattr(recovery_module, "create_session_factory", fail_to_open)
+
+    with pytest.raises(WorkflowError, match="opening the isolated restore candidate") as error:
+        workflow._prepare_restore_candidate(source, expected_sha256=expected_sha256)
+
+    assert isinstance(error.value.__cause__, RuntimeError)
+    assert list(tmp_path.glob(".*.restore-*.tmp.sqlite3")) == []
 
 
 def test_restore_reverts_to_a_verified_snapshot_and_preserves_a_pre_restore_snapshot(tmp_path) -> None:

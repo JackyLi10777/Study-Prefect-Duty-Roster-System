@@ -121,6 +121,50 @@ def test_environment_map_rejects_ambiguous_or_control_character_entries(
     assert message in rejected.stderr
 
 
+def test_environment_map_keeps_all_controlled_gateway_settings(tmp_path: Path) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text(
+        "SING_YIN_UNIFIED_GUEST=1\n"
+        "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL=true\n"
+        "ORIGIN_PRINCIPAL_SECRET=not-a-production-secret\n"
+        "ORIGIN_PRINCIPAL_KID=rc36-origin\n"
+        "AUTH_EPOCH=36\n"
+        "SING_YIN_GUEST_SNAPSHOT_SECRET=not-a-production-snapshot-secret\n",
+        encoding="utf-8",
+    )
+
+    result = _powershell(
+        f". '{_quoted(COMMON)}'; Get-SingYinEnvironmentMap -Path '{_quoted(env_path)}' "
+        "| ConvertTo-Json -Compress"
+    )
+    payload = json.loads(result.stdout)
+
+    assert payload["ORIGIN_PRINCIPAL_SECRET"] == "not-a-production-secret"
+    assert payload["ORIGIN_PRINCIPAL_KID"] == "rc36-origin"
+    assert payload["AUTH_EPOCH"] == "36"
+
+
+@pytest.mark.parametrize(
+    "content",
+    (
+        "ORIGIN_PRINCIPAL_SECRET secret\n",
+        "ORIGIN_PRINCIPAL_KID kid\n",
+        "AUTH_EPOCH 36\n",
+    ),
+)
+def test_environment_map_rejects_malformed_gateway_settings(tmp_path: Path, content: str) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text(content, encoding="utf-8")
+
+    rejected = _powershell(
+        f". '{_quoted(COMMON)}'; Get-SingYinEnvironmentMap -Path '{_quoted(env_path)}'",
+        check=False,
+    )
+
+    assert rejected.returncode != 0
+    assert "malformed setting" in rejected.stderr
+
+
 def test_acl_helper_removes_broad_write_access_from_temporary_paths(tmp_path: Path) -> None:
     protected_dir = tmp_path / "runtime"
     protected_dir.mkdir()

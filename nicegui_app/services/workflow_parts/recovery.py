@@ -407,7 +407,9 @@ class RecoveryWorkflowMixin:
                     raise WorkflowError(
                         "Fairness reconciliation failed: backup candidate does not match its ledger."
                     ) from exc
-                raise
+                raise WorkflowError(
+                    "Backup preflight failed while opening the isolated restore candidate."
+                ) from exc
             with sessions() as session:
                 table_rows = session.connection().exec_driver_sql(
                     "SELECT name FROM sqlite_master WHERE type = 'table'"

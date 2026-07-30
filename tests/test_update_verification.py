@@ -56,7 +56,7 @@ def test_no_change_selects_no_work() -> None:
     assert plan.changed_path_count == 0
 
 
-def test_verification_report_writes_are_atomic_and_process_unique(
+def test_verification_report_writes_are_atomic_with_concurrent_threads(
     monkeypatch,
     tmp_path: Path,
 ) -> None:

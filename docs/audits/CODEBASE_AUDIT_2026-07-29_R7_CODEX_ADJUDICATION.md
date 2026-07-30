@@ -3,7 +3,7 @@
 **Adjudicated:** 2026-07-30
 **Reviewed working source:** branch `codex/rc32-ui-command-id-fix`, HEAD `9831c69900eb0dd4a9246540b80c482314b518b7`
 **Annotated candidate tag:** `v1.2.0-rc.35` peels to `570e29f745eef7c1995635d1b187021a8fec6ea4`
-**Production truth at review time:** `PROJECT_STATUS.md` identifies the Windows origin as `v1.2.0-rc.31` / `ba129a4931d11e844649e8ff356f5bf2ab048459` and the canonical Worker as `7816b183-3edb-49ca-b39b-a91091ae794f`. The reviewed HEAD and rc35 tag are not proven live by this audit.
+**Production truth at original review time:** the reviewed source was not live. Production subsequently advanced through a separate controlled release to Windows origin `v1.2.0-rc.35` / `570e29f745eef7c1995635d1b187021a8fec6ea4` and Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`, as recorded authoritatively in `PROJECT_STATUS.md`.
 **Working-tree preservation:** the pre-existing modifications to `scripts/verify_unified_guest_ui.py` and `test-results/uiverse-components/desktop-light-components.png`, and the pre-existing untracked audit/screenshot files, were left untouched.
 
 ## Decision
@@ -27,11 +27,11 @@ The original adjudication below remains the decision record. The working tree ha
 | P3, P8, P9 | Startup readiness fails closed on unreconciled fairness anchors; Alembic uses model metadata and an absolute SQLite URL, rejecting cwd-relative targets | database configuration and fairness reconciliation tests; Alembic drift check |
 | A1, A4 | Process PATH refresh preserves the first case-insensitive entry without duplicates; bounded release-archive cleanup failures now emit an operator warning | Windows host and deployment-script tests |
 
-Focused cross-layer verification after these changes passed 79 tests covering workflow hierarchy, responsive layout, component contracts, Windows host preparation and release deployment. Fifty Worker gateway contracts and the isolated semantic-icon browser gate also passed across four access／viewport contexts and 20 route replacements. The complete 1,009-test Python collection passed. The `.superdesign/init` references were normalized from fenced code into safe indented source outlines without dropping their source-grounded implementation detail, and the project-context contract now passes. Exact-source release gates remain required before any candidate can be described as releasable. R7-W6 remains a low-severity availability concern because KV read-after-write consistency can still produce a conservative conflict response; content-addressed keys preserve safety, so a Durable Object or revised response contract is deferred rather than introduced inside this remediation.
+Focused cross-layer verification on pre-merge commit `c32c01f` passed 79 tests covering workflow hierarchy, responsive layout, component contracts, Windows host preparation and release deployment. Fifty Worker gateway contracts and the isolated semantic-icon browser gate also passed across four access／viewport contexts and 20 route replacements. The complete 1,009-test Python collection passed. Integration commit `a331587` then merged the rc35 production baseline and passed a focused 125-test Python set plus 50 Worker contracts; those results are integration evidence, not a formal exact-source release report. The `.superdesign/init` references were normalized from fenced code into safe indented source outlines without dropping their source-grounded implementation detail. Remaining release blockers are deliberately narrow: a protected-main merge, a new clean annotated tag, a formal exact-source report, a verified backup and isolated restore, matched origin／Worker rollout evidence, and supervised human acceptance. R7-W6 remains a low-severity availability concern because KV read-after-write consistency can still produce a conservative conflict response; content-addressed keys preserve safety, so a Durable Object or revised response contract is deferred rather than introduced inside this remediation.
 
 ## Concise current-state brief
 
-- **Current state:** a dirty, user-owned working tree at `9831c69`, with a clean annotated rc35 tag pointing to another commit and a documented rc31 production origin. Candidate, reviewed source, live origin and human acceptance are distinct states.
+- **Current state:** the original audit examined dirty source at `9831c69`; its fixes were later committed and integrated with the rc35 production baseline. Candidate source, protected main, tagged release, live origin／Worker and human acceptance remain distinct states.
 - **Operator problem:** a visually broad motion system is present, but current-state fidelity, Daily Verse light-theme quality, button state completeness and release truth are not yet established in one evidence chain.
 - **Highest risks:** non-atomic shared-venv rollback, swallowed rollback port failure, concurrent verification-report writes, share-revocation races, stale Superdesign project context and misleading deployment language.
 - **Approach:** preserve the tree; adjudicate code paths first; refresh design context; reproduce the rendered product before proposing alternatives; do not implement a selected redesign or perform release actions before approval.
@@ -95,12 +95,9 @@ This inventory defines the minimum review boundary before a future production up
 
 ## Required disposition before production release
 
-1. Replace in-place shared-venv source switching with staged immutable runtime bundles and an atomic task-target switch; verify rollback without mutating the retained prior bundle.
-2. Reject malformed/control-character environment entries, make rollback port release fail closed, and use unique atomic verification-report files.
-3. Add a generation-aware/tombstone share-revocation design, or a transactional store for mutable share identity.
-4. Add regression tests for each confirmed blocker and run them on the exact clean, tagged tree.
-5. Reconcile fairness anchors through a forward/runtime integrity mechanism; never rewrite migration 0003.
-6. Produce exact source fingerprint, clean commit/tag, verified backup + isolated restore, origin/Worker version evidence and supervised human acceptance as separate claims.
+1. Run the implemented immutable-bundle, strict-environment, atomic-report, tombstone and fairness-readiness controls on the exact clean tagged tree.
+2. Merge through protected main and create a new immutable annotated tag.
+3. Produce the exact source fingerprint, verified backup＋isolated restore, origin／Worker version evidence and supervised human acceptance as separate claims.
 
 ## Status of this adjudication
 

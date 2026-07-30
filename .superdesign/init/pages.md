@@ -1,6 +1,6 @@
-# Pages — current dependency trees
+# Pages — selected current dependency trees
 
-These trees describe the actual NiceGUI composition used for the faithful baseline.
+These selected trees describe the actual NiceGUI composition used for the faithful baseline. The canonical route registry remains the complete source of page coverage.
 
 ## 1. Public entrance
 
