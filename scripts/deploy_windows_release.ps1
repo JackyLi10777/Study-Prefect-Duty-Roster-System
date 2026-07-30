@@ -762,6 +762,68 @@ function Assert-SafeReleaseBundlePath {
     return $candidate
 }
 
+function Get-SingYinReleaseBundleFingerprint {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+
+    $root = [IO.Path]::GetFullPath($Path).TrimEnd('\')
+    $prefix = "$root\"
+    $hasher = [Security.Cryptography.SHA256]::Create()
+    $encoding = [Text.UTF8Encoding]::new($false)
+    $fileCount = 0
+    try {
+        $items = @(
+            Get-ChildItem -LiteralPath $root -Recurse -Force |
+                Sort-Object -Property FullName
+        )
+        foreach ($item in $items) {
+            $fullPath = [IO.Path]::GetFullPath($item.FullName)
+            if (-not $fullPath.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+                throw "The release bundle fingerprint escaped the controlled bundle path."
+            }
+            if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "The release bundle contains an unsupported reparse point."
+            }
+            if ($item.PSIsContainer) {
+                continue
+            }
+            $relativePath = $fullPath.Substring($prefix.Length).Replace('\', '/')
+            if ($relativePath -ceq ".sing-yin-release.json") {
+                continue
+            }
+            $fileHasher = [Security.Cryptography.SHA256]::Create()
+            $fileStream = [IO.File]::OpenRead($fullPath)
+            try {
+                $fileHash = ([BitConverter]::ToString(
+                    $fileHasher.ComputeHash($fileStream)
+                )).Replace("-", "").ToLowerInvariant()
+            } finally {
+                $fileStream.Dispose()
+                $fileHasher.Dispose()
+            }
+            $record = "$relativePath`0$($item.Length)`0$fileHash`n"
+            $recordBytes = $encoding.GetBytes($record)
+            $null = $hasher.TransformBlock(
+                $recordBytes,
+                0,
+                $recordBytes.Length,
+                $recordBytes,
+                0
+            )
+            $fileCount += 1
+        }
+        $empty = [byte[]]::new(0)
+        $null = $hasher.TransformFinalBlock($empty, 0, 0)
+        return [pscustomobject]@{
+            Sha256 = ([BitConverter]::ToString($hasher.Hash)).Replace("-", "").ToLowerInvariant()
+            FileCount = $fileCount
+        }
+    } finally {
+        $hasher.Dispose()
+    }
+}
+
 function New-SingYinReleaseBundle {
     param(
         [Parameter(Mandatory = $true)][string]$Repository,
@@ -781,16 +843,22 @@ function New-SingYinReleaseBundle {
     $bundlePath = Assert-SafeReleaseBundlePath -ReleaseRoot $releaseRoot -CandidatePath (
         Join-Path $releaseRoot $bundleName
     )
+    $sourceTree = Get-GitValue -Repository $Repository -Arguments @("rev-parse", "$Commit`^{tree}")
     $markerPath = Join-Path $bundlePath ".sing-yin-release.json"
     if (Test-Path -LiteralPath $bundlePath) {
         if (-not (Test-Path -LiteralPath $markerPath -PathType Leaf)) {
             throw "An unverified directory already occupies the immutable release bundle path."
         }
         $marker = Get-Content -LiteralPath $markerPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $fingerprint = Get-SingYinReleaseBundleFingerprint -Path $bundlePath
         if (
+            [int]$marker.schemaVersion -ne 2 -or
             [string]$marker.releaseRef -cne $ReleaseRef -or
             [string]$marker.commit -cne $Commit -or
+            [string]$marker.sourceTree -cne $sourceTree -or
             [string]$marker.environmentSha256 -cne $EnvironmentHash -or
+            [string]$marker.bundleContentSha256 -cne [string]$fingerprint.Sha256 -or
+            [int]$marker.bundleFileCount -ne [int]$fingerprint.FileCount -or
             -not (Test-Path -LiteralPath (Join-Path $bundlePath ".venv\Scripts\python.exe") -PathType Leaf)
         ) {
             throw "The existing release bundle does not match the requested immutable release."
@@ -847,12 +915,15 @@ function New-SingYinReleaseBundle {
             "--strict", "--allow-pending-cloudflare-access"
         ) -WorkingDirectory $stagingPath | Out-Null
 
+        $bundleFingerprint = Get-SingYinReleaseBundleFingerprint -Path $stagingPath
         $marker = [ordered]@{
-            schemaVersion = 1
+            schemaVersion = 2
             releaseRef = $ReleaseRef
             commit = $Commit
-            sourceTree = Get-GitValue -Repository $Repository -Arguments @("rev-parse", "$Commit`^{tree}")
+            sourceTree = $sourceTree
             environmentSha256 = $EnvironmentHash
+            bundleContentSha256 = [string]$bundleFingerprint.Sha256
+            bundleFileCount = [int]$bundleFingerprint.FileCount
             createdAt = [DateTimeOffset]::UtcNow.ToString("o")
         }
         $marker | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (
@@ -1120,11 +1191,19 @@ try {
     # Fail before reading or consuming a one-use environment overlay. A dirty
     # installed checkout is an attribution problem, not a condition that this
     # deployer may repair implicitly; preserving the overlay lets the operator
-    # reconcile the host and retry without recreating sensitive settings.
+    # reconcile the host and retry without recreating sensitive settings. The
+    # deployer-owned immutable bundle directory is deliberately excluded: a
+    # failed or previous deployment may leave a verified bundle there, and it
+    # must not make the host checkout appear operator-modified. Existing
+    # bundles are reused only after their complete file-tree fingerprint is
+    # verified by New-SingYinReleaseBundle.
     $hostStatus = Get-GitValue -Repository $HostRoot -Arguments @(
         "status",
         "--porcelain",
-        "--untracked-files=all"
+        "--untracked-files=all",
+        "--",
+        ".",
+        ":(exclude)releases/**"
     )
     if (-not [string]::IsNullOrWhiteSpace($hostStatus)) {
         throw "The installed host repository is not clean."
