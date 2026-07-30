@@ -220,6 +220,9 @@ def test_deployment_script_requires_worker_and_host_gateway_settings_to_match() 
         'throw "The installed host repository is not clean."',
         host_clean,
     ) < preflight
+    host_status_block = source[host_clean:preflight]
+    assert '":(exclude)releases/**"' in host_status_block
+    assert '"--"' in host_status_block
     assert source.index("$overlayPathToDelete = $resolvedOverlayPath") > preflight
     assert source.index("$environmentBytes = [IO.File]::ReadAllBytes", preflight) > preflight
     assert "workerOriginPort = $workerOriginPort" in source

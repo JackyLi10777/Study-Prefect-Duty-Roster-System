@@ -1120,11 +1120,17 @@ try {
     # Fail before reading or consuming a one-use environment overlay. A dirty
     # installed checkout is an attribution problem, not a condition that this
     # deployer may repair implicitly; preserving the overlay lets the operator
-    # reconcile the host and retry without recreating sensitive settings.
+    # reconcile the host and retry without recreating sensitive settings. The
+    # deployer-owned immutable bundle directory is deliberately excluded: a
+    # failed or previous deployment may leave a verified bundle there, and it
+    # must not make the host checkout appear operator-modified.
     $hostStatus = Get-GitValue -Repository $HostRoot -Arguments @(
         "status",
         "--porcelain",
-        "--untracked-files=all"
+        "--untracked-files=all",
+        "--",
+        ".",
+        ":(exclude)releases/**"
     )
     if (-not [string]::IsNullOrWhiteSpace($hostStatus)) {
         throw "The installed host repository is not clean."
