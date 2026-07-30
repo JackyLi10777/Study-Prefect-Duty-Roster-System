@@ -655,6 +655,11 @@ def main() -> None:
         sound_host_box = sound_toggle.bounding_box()
         assert sound_icon.get_attribute("data-sy-icon-story-category") == "persistent"
         assert sound_icon.inner_text().strip() == "volume_up"
+        page.evaluate(
+            "window.dispatchEvent(new CustomEvent('sy:feedback', {detail: {kind: 'success'}}))"
+        )
+        page.wait_for_function("window.__syVerifiedSoundKinds.includes('success')", timeout=5_000)
+        page.wait_for_function("window.__singYinAudioContext !== undefined", timeout=5_000)
         sound_toggle.click()
         disabled_sound_toggle = page.get_by_role("button", name="開啟提示音")
         disabled_sound_toggle.wait_for(timeout=5_000)
@@ -668,8 +673,6 @@ def main() -> None:
         assert disabled_sound_toggle.evaluate(
             "element => element.querySelector('.q-btn__content > span.block') === null"
         )
-        page.wait_for_function("window.__syVerifiedSoundKinds.includes('success')", timeout=5_000)
-        page.wait_for_function("window.__singYinAudioContext !== undefined", timeout=5_000)
         page.reload(wait_until="domcontentloaded")
         page.get_by_role("button", name="開啟提示音").wait_for(timeout=5_000)
         assert page.get_by_test_id("sound-control").get_attribute("aria-pressed") == "false"
