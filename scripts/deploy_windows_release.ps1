@@ -177,32 +177,26 @@ print(json.dumps({'fingerprint': fingerprint, 'fileCount': file_count}))
 }
 
 function Read-HostEnvironmentValues([string]$EnvironmentPath) {
-    if (-not (Test-Path -LiteralPath $EnvironmentPath -PathType Leaf)) {
-        throw "The protected host environment file is missing."
-    }
-    $values = @{}
-    foreach ($rawLine in Get-Content -LiteralPath $EnvironmentPath -Encoding UTF8) {
-        $line = $rawLine.Trim()
-        if ([string]::IsNullOrWhiteSpace($line) -or $line.StartsWith("#")) { continue }
-        $separator = $line.IndexOf("=")
-        if ($separator -lt 1) { continue }
-        $name = $line.Substring(0, $separator).Trim()
-        if ($name -notmatch "^[A-Za-z_][A-Za-z0-9_]*$") { continue }
-        $value = $line.Substring($separator + 1).Trim()
-        if (
-            $value.Length -ge 2 -and
-            (($value.StartsWith('"') -and $value.EndsWith('"')) -or
-             ($value.StartsWith("'") -and $value.EndsWith("'")))
-        ) {
-            $value = $value.Substring(1, $value.Length - 2)
-        }
-        $values[$name] = $value
-    }
-    return $values
+    # The shared parser rejects malformed SING_YIN_ entries, duplicate keys,
+    # and C0/DEL control characters.  Do not maintain a second, permissive
+    # parser in the release boundary.
+    return Get-SingYinEnvironmentMap -Path $EnvironmentPath
 }
 
 function Import-HostEnvironment([string]$EnvironmentPath) {
     $values = Read-HostEnvironmentValues -EnvironmentPath $EnvironmentPath
+    foreach ($requiredName in @(
+        "SING_YIN_UNIFIED_GUEST",
+        "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL",
+        "ORIGIN_PRINCIPAL_SECRET",
+        "ORIGIN_PRINCIPAL_KID",
+        "AUTH_EPOCH",
+        "SING_YIN_GUEST_SNAPSHOT_SECRET"
+    )) {
+        if (-not $values.ContainsKey($requiredName)) {
+            throw "The protected host environment is missing $requiredName."
+        }
+    }
     foreach ($name in $values.Keys) {
         [Environment]::SetEnvironmentVariable($name, [string]$values[$name], "Process")
     }
@@ -711,6 +705,183 @@ function Wait-LoopbackReadiness([Parameter(Mandatory = $true)][int]$Port, [int]$
     throw "The official origin did not become write-ready within $TimeoutSeconds seconds."
 }
 
+function Set-ReleaseEnvironmentValue {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$Value,
+        [Parameter(Mandatory = $true)][string]$RuntimeUser
+    )
+
+    if ($Name -notmatch '^[A-Z][A-Z0-9_]*$' -or $Value -match '[\x00-\x1F\x7F]') {
+        throw "The release environment override is malformed."
+    }
+    $pattern = '^\s*' + [regex]::Escape($Name) + '\s*='
+    $matched = 0
+    $output = foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
+        if ($line -match $pattern) {
+            $matched += 1
+            if ($matched -gt 1) {
+                throw "The protected host environment contains a duplicate $Name setting."
+            }
+            "$Name=$Value"
+        } else {
+            $line
+        }
+    }
+    if ($matched -eq 0) { $output = @($output) + "$Name=$Value" }
+    $temporaryPath = "$Path.release-$PID-$([Guid]::NewGuid().ToString('N')).tmp"
+    try {
+        $null = New-Item -ItemType File -Path $temporaryPath -Force
+        Protect-SingYinSensitivePath -Path $temporaryPath -RuntimeUser $RuntimeUser
+        $utf8WithoutBom = [Text.UTF8Encoding]::new($false)
+        $content = [string]::Join([Environment]::NewLine, [string[]]$output) + [Environment]::NewLine
+        [IO.File]::WriteAllText($temporaryPath, $content, $utf8WithoutBom)
+        Move-Item -LiteralPath $temporaryPath -Destination $Path -Force
+    } finally {
+        Remove-Item -LiteralPath $temporaryPath -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Assert-SafeReleaseBundlePath {
+    param(
+        [Parameter(Mandatory = $true)][string]$ReleaseRoot,
+        [Parameter(Mandatory = $true)][string]$CandidatePath
+    )
+
+    $root = [IO.Path]::GetFullPath($ReleaseRoot).TrimEnd('\')
+    $candidate = [IO.Path]::GetFullPath($CandidatePath).TrimEnd('\')
+    $prefix = "$root\"
+    if (-not $candidate.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "The release bundle path escaped the controlled release root."
+    }
+    $leaf = $candidate.Substring($prefix.Length)
+    if ([string]::IsNullOrWhiteSpace($leaf) -or $leaf -match '[\\/]' -or $leaf -notmatch '^[A-Za-z0-9._-]+$') {
+        throw "The release bundle path is not a single safe child directory."
+    }
+    return $candidate
+}
+
+function New-SingYinReleaseBundle {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string]$Commit,
+        [Parameter(Mandatory = $true)][string]$ReleaseRef,
+        [Parameter(Mandatory = $true)][string]$HostRoot,
+        [Parameter(Mandatory = $true)][string]$EnvironmentPath,
+        [Parameter(Mandatory = $true)][string]$EnvironmentHash,
+        [Parameter(Mandatory = $true)][string]$BootstrapPython,
+        [Parameter(Mandatory = $true)][string]$RuntimeUser
+    )
+
+    $releaseRoot = Join-Path $HostRoot "releases"
+    $null = New-Item -ItemType Directory -Path $releaseRoot -Force
+    $safeRelease = $ReleaseRef -replace '[^A-Za-z0-9._-]', '-'
+    $bundleName = "$safeRelease-$($Commit.Substring(0, 12))-$($EnvironmentHash.Substring(0, 12))"
+    $bundlePath = Assert-SafeReleaseBundlePath -ReleaseRoot $releaseRoot -CandidatePath (
+        Join-Path $releaseRoot $bundleName
+    )
+    $markerPath = Join-Path $bundlePath ".sing-yin-release.json"
+    if (Test-Path -LiteralPath $bundlePath) {
+        if (-not (Test-Path -LiteralPath $markerPath -PathType Leaf)) {
+            throw "An unverified directory already occupies the immutable release bundle path."
+        }
+        $marker = Get-Content -LiteralPath $markerPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        if (
+            [string]$marker.releaseRef -cne $ReleaseRef -or
+            [string]$marker.commit -cne $Commit -or
+            [string]$marker.environmentSha256 -cne $EnvironmentHash -or
+            -not (Test-Path -LiteralPath (Join-Path $bundlePath ".venv\Scripts\python.exe") -PathType Leaf)
+        ) {
+            throw "The existing release bundle does not match the requested immutable release."
+        }
+        return $bundlePath
+    }
+
+    $stagingName = "$bundleName.staging-$PID-$([Guid]::NewGuid().ToString('N'))"
+    $stagingPath = Assert-SafeReleaseBundlePath -ReleaseRoot $releaseRoot -CandidatePath (
+        Join-Path $releaseRoot $stagingName
+    )
+    $archivePath = Join-Path ([IO.Path]::GetTempPath()) (
+        "sing-yin-release-$PID-$([Guid]::NewGuid().ToString('N')).zip"
+    )
+    try {
+        Invoke-Native -Executable "git.exe" -Arguments @(
+            "archive", "--format=zip", "--output", $archivePath, $Commit
+        ) -WorkingDirectory $Repository | Out-Null
+        $null = New-Item -ItemType Directory -Path $stagingPath -Force
+        Expand-Archive -LiteralPath $archivePath -DestinationPath $stagingPath
+
+        $venvPath = Join-Path $stagingPath ".venv"
+        Invoke-Native -Executable $BootstrapPython -Arguments @(
+            "-m", "venv", $venvPath
+        ) -WorkingDirectory $Repository | Out-Null
+        $bundlePython = Join-Path $venvPath "Scripts\python.exe"
+        Invoke-Native -Executable $bundlePython -Arguments @(
+            "-m", "pip", "install", "--require-hashes", "-r",
+            (Join-Path $stagingPath "requirements.lock")
+        ) -WorkingDirectory $stagingPath | Out-Null
+
+        $bundleEnvironment = Join-Path $stagingPath ".env"
+        $null = New-Item -ItemType File -Path $bundleEnvironment -Force
+        Protect-SingYinSensitivePath -Path $bundleEnvironment -RuntimeUser $RuntimeUser
+        [IO.File]::WriteAllBytes($bundleEnvironment, [IO.File]::ReadAllBytes($EnvironmentPath))
+        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -RuntimeUser $RuntimeUser -Name "SING_YIN_APP_MODE" -Value "official"
+        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -RuntimeUser $RuntimeUser -Name "SING_YIN_DATABASE_PATH" -Value (
+            Join-Path $HostRoot "data\runtime\sing-yin-roster.sqlite3"
+        )
+        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -RuntimeUser $RuntimeUser -Name "SING_YIN_BACKUP_DIR" -Value (
+            Join-Path $HostRoot "data\backups"
+        )
+        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -RuntimeUser $RuntimeUser -Name "SING_YIN_LOG_DIR" -Value (
+            Join-Path $HostRoot "logs"
+        )
+        Set-ReleaseEnvironmentValue -Path $bundleEnvironment -RuntimeUser $RuntimeUser -Name "SING_YIN_SUPPORT_DIR" -Value (
+            Join-Path $HostRoot "data\support"
+        )
+        Invoke-Native -Executable $bundlePython -Arguments @(
+            "-X", "utf8", "-c", "import nicegui; import nicegui_app.main"
+        ) -WorkingDirectory $stagingPath | Out-Null
+        Invoke-Native -Executable $bundlePython -Arguments @(
+            "-X", "utf8", "scripts\check_deployment_readiness.py",
+            "--strict", "--allow-pending-cloudflare-access"
+        ) -WorkingDirectory $stagingPath | Out-Null
+
+        $marker = [ordered]@{
+            schemaVersion = 1
+            releaseRef = $ReleaseRef
+            commit = $Commit
+            sourceTree = Get-GitValue -Repository $Repository -Arguments @("rev-parse", "$Commit`^{tree}")
+            environmentSha256 = $EnvironmentHash
+            createdAt = [DateTimeOffset]::UtcNow.ToString("o")
+        }
+        $marker | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (
+            Join-Path $stagingPath ".sing-yin-release.json"
+        ) -Encoding UTF8
+        Grant-SingYinRuntimeReadAccess -Path $stagingPath -RuntimeUser $RuntimeUser
+        Grant-SingYinVenvBasePythonReadAccess -ProjectRoot $stagingPath -RuntimeUser $RuntimeUser
+        Move-Item -LiteralPath $stagingPath -Destination $bundlePath
+        return $bundlePath
+    } catch {
+        # Retain a completed bundle only after the atomic directory rename.
+        # A private staging directory contains a copied environment file, so
+        # remove it on failure after first verifying it is a controlled child.
+        $safeStagingPath = Assert-SafeReleaseBundlePath -ReleaseRoot $releaseRoot -CandidatePath $stagingPath
+        if (Test-Path -LiteralPath $safeStagingPath) {
+            Remove-Item -LiteralPath $safeStagingPath -Recurse -Force
+        }
+        throw
+    } finally {
+        if (Test-Path -LiteralPath $archivePath) {
+            try {
+                Remove-Item -LiteralPath $archivePath -Force -ErrorAction Stop
+            } catch {
+                Write-Warning "Release archive cleanup failed; remove the bounded temporary file manually: $archivePath"
+            }
+        }
+    }
+}
+
 $resolvedOverlayPath = $null
 $overlayPathToDelete = $null
 $deploymentExitCode = 1
@@ -812,10 +983,18 @@ try {
     $taskInitiallyRunning = $false
     $taskInitiallyEnabled = $false
     $taskStopped = $false
-    $switchedHost = $false
+    $taskTargetSwitched = $false
+    $releaseBundlePath = $null
+    $previousTaskAction = $null
     $environmentPath = Join-Path $HostRoot ".env"
     $deploymentPort = 8080
     $environmentBytes = $null
+    $environmentAclSddl = $null
+    $environmentAclSections = (
+        [Security.AccessControl.AccessControlSections]::Access -bor
+        [Security.AccessControl.AccessControlSections]::Owner -bor
+        [Security.AccessControl.AccessControlSections]::Group
+    )
     $environmentHash = $null
     $environmentOverlayApplied = $false
     $controlledEnvironmentNames = @(
@@ -918,7 +1097,8 @@ try {
     $inspection = Get-SingYinTaskInspection `
         -TaskName $TaskName `
         -ProjectRoot $HostRoot `
-        -RuntimeUser $runtimeAccount.Name
+        -RuntimeUser $runtimeAccount.Name `
+        -AllowReleaseBundle
     if (-not $inspection.Exists -or -not $inspection.Owned) {
         throw "The startup task is missing or is not safely owned by this release host."
     }
@@ -928,6 +1108,11 @@ try {
     }
     if ([string]$task.Principal.LogonType -cne "Password") {
         throw "The owned startup task must use the password-backed service account."
+    }
+    $previousTaskAction = [pscustomobject]@{
+        Execute = [string]$task.Actions[0].Execute
+        Arguments = [string]$task.Actions[0].Arguments
+        WorkingDirectory = [string]$task.Actions[0].WorkingDirectory
     }
     $taskInitiallyRunning = [string]$task.State -ceq "Running"
     $taskInitiallyEnabled = [bool]$task.Settings.Enabled
@@ -970,6 +1155,14 @@ try {
     $overlayPathToDelete = $resolvedOverlayPath
 
     Write-Step "Protecting and applying the preflighted host settings"
+    # Capture both content and the original security descriptor before the
+    # first mutation. A failed protection or overlay step must be able to
+    # restore the exact pre-deployment file state, not merely apply the latest
+    # preferred ACL policy to already-mutated content.
+    $environmentBytes = [IO.File]::ReadAllBytes($environmentPath)
+    $environmentAclSddl = (Get-Acl -LiteralPath $environmentPath).GetSecurityDescriptorSddlForm(
+        $environmentAclSections
+    )
     Protect-SingYinSensitivePath -Path $environmentPath -RuntimeUser $runtimeAccount.Name
     $aclStatus = Get-SingYinAclStatus `
         -Paths @($environmentPath) `
@@ -977,7 +1170,6 @@ try {
     if (-not $aclStatus.Compliant) {
         throw "The protected host environment ACL is not compliant."
     }
-    $environmentBytes = [IO.File]::ReadAllBytes($environmentPath)
     if ($null -ne $resolvedOverlayPath) {
         if (
             [string]::Equals(
@@ -1021,6 +1213,20 @@ try {
     $workerAuthEpoch = [long]$postApplyGatewayParity.WorkerAuthEpoch
     $hostOriginPrincipalKid = [string]$postApplyGatewayParity.HostOriginPrincipalKid
     $workerOriginPrincipalKid = [string]$postApplyGatewayParity.WorkerOriginPrincipalKid
+
+    Write-Step "Building and verifying an immutable release bundle before downtime"
+    $releaseBundlePath = New-SingYinReleaseBundle `
+        -Repository $SourceRoot `
+        -Commit $releaseCommit `
+        -ReleaseRef $ReleaseRef `
+        -HostRoot $HostRoot `
+        -EnvironmentPath $environmentPath `
+        -EnvironmentHash $environmentHash `
+        -BootstrapPython $sourcePython `
+        -RuntimeUser $runtimeAccount.Name
+    $releaseBundlePath = Assert-SafeReleaseBundlePath `
+        -ReleaseRoot (Join-Path $HostRoot "releases") `
+        -CandidatePath $releaseBundlePath
 
     Write-Step "Stopping the owned task and fencing port $deploymentPort"
     if ([string]$task.State -ceq "Running") {
@@ -1076,52 +1282,14 @@ try {
         throw "The verified snapshot checksum no longer matches the backup report."
     }
 
-    Write-Step "Switching the Windows host to the immutable release tag"
-    Invoke-Native -Executable "git.exe" -Arguments @(
-        "fetch",
-        "--prune",
-        "--tags",
-        "origin"
-    ) -WorkingDirectory $HostRoot | Out-Null
-    Invoke-Native -Executable "git.exe" -Arguments @(
-        "fetch",
-        "origin",
-        "+refs/heads/main:refs/remotes/origin/main"
-    ) -WorkingDirectory $HostRoot | Out-Null
-    $hostReleaseCommit = Assert-ImmutableReleaseTag -Repository $HostRoot -TagName $ReleaseRef
-    if ($hostReleaseCommit -cne $releaseCommit) {
-        throw "The installed host resolved a different release commit."
-    }
-    & git.exe -C $HostRoot merge-base --is-ancestor $hostReleaseCommit origin/main
-    if ($LASTEXITCODE -ne 0) {
-        throw "The installed host release tag is not contained in origin/main."
-    }
-    Invoke-Native -Executable "git.exe" -Arguments @(
-        "switch",
-        "--detach",
-        $ReleaseRef
-    ) -WorkingDirectory $HostRoot | Out-Null
-    $switchedHost = $true
-    if ((Get-GitValue -Repository $HostRoot -Arguments @("rev-parse", "HEAD")) -cne $releaseCommit) {
-        throw "The installed host did not switch to the exact release commit."
-    }
-
-    Write-Step "Installing hash-locked dependencies and restoring protected ACLs"
-    $hostPython = Join-Path $HostRoot ".venv\Scripts\python.exe"
-    Invoke-Native -Executable $hostPython -Arguments @(
-        "-m",
-        "pip",
-        "install",
-        "--require-hashes",
-        "-r",
-        (Join-Path $HostRoot "requirements.lock")
-    ) -WorkingDirectory $HostRoot | Out-Null
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (
-        Join-Path $HostRoot "scripts\prepare_windows_host.ps1"
-    ) -ProjectRoot $HostRoot -RuntimeUser $RuntimeUser
-    if ($LASTEXITCODE -ne 0) {
-        throw "Windows host preparation failed."
-    }
+    Write-Step "Atomically switching the owned task to the immutable release bundle"
+    $hostPython = Join-Path $releaseBundlePath ".venv\Scripts\python.exe"
+    $newTaskAction = New-ScheduledTaskAction `
+        -Execute $hostPython `
+        -Argument "-X utf8 -m nicegui_app.main" `
+        -WorkingDirectory $releaseBundlePath
+    Set-ScheduledTask -TaskName $TaskName -Action $newTaskAction | Out-Null
+    $taskTargetSwitched = $true
     $currentEnvironmentBytes = [IO.File]::ReadAllBytes($environmentPath)
     $currentEnvironmentHash = (
         [BitConverter]::ToString(
@@ -1135,7 +1303,7 @@ try {
 
     $postSwitchInspection = Get-SingYinTaskInspection `
         -TaskName $TaskName `
-        -ProjectRoot $HostRoot `
+        -ProjectRoot $releaseBundlePath `
         -RuntimeUser $runtimeAccount.Name
     if (-not $postSwitchInspection.Exists -or -not $postSwitchInspection.Owned) {
         throw "The startup task no longer matches the updated release host."
@@ -1152,7 +1320,7 @@ try {
         "scripts\check_deployment_readiness.py",
         "--strict",
         "--allow-pending-cloudflare-access"
-    ) -WorkingDirectory $HostRoot | Out-Null
+    ) -WorkingDirectory $releaseBundlePath | Out-Null
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
 
     Write-DeploymentReport -Payload ([ordered]@{
@@ -1163,6 +1331,7 @@ try {
         releaseRef = $ReleaseRef
         releaseCommit = $releaseCommit
         previousCommit = $previousCommit
+        releaseBundle = $releaseBundlePath
         sourceFingerprint = [string]$currentFingerprint.fingerprint
         sourceFileCount = [int]$currentFingerprint.fileCount
         releaseChecksPassed = $requiredCheckCount
@@ -1221,30 +1390,32 @@ try {
         try {
             if ($taskStopped) {
                 Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-                try { Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 15 } catch { }
-                if ($switchedHost -and -not [string]::IsNullOrWhiteSpace($previousCommit)) {
-                    Write-Host "Restoring the previous host commit $previousCommit ..." -ForegroundColor Yellow
-                    Invoke-Native -Executable "git.exe" -Arguments @(
-                        "switch",
-                        "--detach",
-                        $previousCommit
-                    ) -WorkingDirectory $HostRoot | Out-Null
-                    $rollbackPython = Join-Path $HostRoot ".venv\Scripts\python.exe"
-                    Invoke-Native -Executable $rollbackPython -Arguments @(
-                        "-m",
-                        "pip",
-                        "install",
-                        "--require-hashes",
-                        "-r",
-                        (Join-Path $HostRoot "requirements.lock")
-                    ) -WorkingDirectory $HostRoot | Out-Null
+                # Fail closed: never mutate source or dependencies while the
+                # previous process may still own the production port.
+                Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 15
+                if ($taskTargetSwitched -and $null -ne $previousTaskAction) {
+                    Write-Host "Restoring the previous immutable task target ..." -ForegroundColor Yellow
+                    $restoreActionParameters = @{
+                        Execute = $previousTaskAction.Execute
+                        WorkingDirectory = $previousTaskAction.WorkingDirectory
+                    }
+                    if (-not [string]::IsNullOrWhiteSpace($previousTaskAction.Arguments)) {
+                        $restoreActionParameters.Argument = $previousTaskAction.Arguments
+                    }
+                    $restoreTaskAction = New-ScheduledTaskAction @restoreActionParameters
+                    Set-ScheduledTask -TaskName $TaskName -Action $restoreTaskAction | Out-Null
                 }
             }
             if ($null -ne $environmentBytes) {
                 [IO.File]::WriteAllBytes($environmentPath, $environmentBytes)
-                Protect-SingYinSensitivePath `
-                    -Path $environmentPath `
-                    -RuntimeUser $runtimeAccount.Name
+                if (-not [string]::IsNullOrWhiteSpace($environmentAclSddl)) {
+                    $restoredAcl = Get-Acl -LiteralPath $environmentPath
+                    $restoredAcl.SetSecurityDescriptorSddlForm(
+                        $environmentAclSddl,
+                        $environmentAclSections
+                    )
+                    Set-Acl -LiteralPath $environmentPath -AclObject $restoredAcl
+                }
             }
             if ($taskStopped) {
                 if ($taskInitiallyEnabled -or $taskInitiallyRunning) {
@@ -1269,12 +1440,18 @@ try {
         releaseRef = $ReleaseRef
         releaseCommit = $releaseCommit
         previousCommit = $previousCommit
+        releaseBundle = $releaseBundlePath
         failure = $failure
         nativeLog = [IO.Path]::GetFileName($script:NativeLogPath)
         rollback = [ordered]@{
             attempted = $rollbackAttempted
             succeeded = $rollbackSucceeded
             commit = if ($rollbackSucceeded) { $previousCommit } else { $null }
+            taskTarget = if ($rollbackSucceeded -and $null -ne $previousTaskAction) {
+                $previousTaskAction.WorkingDirectory
+            } else {
+                $null
+            }
             error = $rollbackError
         }
     })

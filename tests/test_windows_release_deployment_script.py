@@ -137,14 +137,12 @@ def test_deployment_script_refreshes_origin_main_before_ancestor_checks() -> Non
     source = _source()
     explicit_refspec = '"+refs/heads/main:refs/remotes/origin/main"'
     source_ancestor_check = "merge-base --is-ancestor $releaseCommit origin/main"
-    host_ancestor_check = "merge-base --is-ancestor $hostReleaseCommit origin/main"
 
     first_fetch = source.index(explicit_refspec)
-    second_fetch = source.index(explicit_refspec, first_fetch + 1)
 
-    assert source.count(explicit_refspec) == 2
+    assert source.count(explicit_refspec) == 1
     assert first_fetch < source.index(source_ancestor_check)
-    assert second_fetch < source.index(host_ancestor_check)
+    assert "$hostReleaseCommit" not in source
     assert '"origin",\n        "main"' not in source
 
 
@@ -475,6 +473,13 @@ def test_deployment_script_fences_data_and_preserves_the_protected_environment()
     assert "Get-SingYinAclStatus" in source
     assert "[IO.File]::ReadAllBytes($environmentPath)" in source
     assert "[IO.File]::WriteAllBytes($environmentPath, $environmentBytes)" in source
+    capture_index = source.index("$environmentBytes = [IO.File]::ReadAllBytes($environmentPath)")
+    protect_index = source.index("Protect-SingYinSensitivePath -Path $environmentPath")
+    assert capture_index < protect_index
+    assert "GetSecurityDescriptorSddlForm" in source
+    assert "$environmentAclSddl" in source
+    assert "SetSecurityDescriptorSddlForm" in source
+    assert "Set-Acl -LiteralPath $environmentPath -AclObject $restoredAcl" in source
     assert "environmentProtected = $true" in source
     for setting in (
         "SING_YIN_UNIFIED_GUEST",
@@ -571,12 +576,16 @@ def test_deployment_script_requires_gateway_principal_and_restores_overlay_state
     assert '[Environment]::SetEnvironmentVariable(' in source
 
 
-def test_deployment_script_switches_locked_host_and_requires_write_readiness() -> None:
+def test_deployment_script_switches_to_an_immutable_bundle_and_requires_write_readiness() -> None:
     source = _source()
 
-    assert '"switch",' in source and '"--detach",' in source
+    assert '"archive", "--format=zip"' in source
+    assert "New-SingYinReleaseBundle" in source
+    assert 'Join-Path $stagingPath ".venv"' in source
     assert '"--require-hashes"' in source
-    assert "scripts\\prepare_windows_host.ps1" in source
+    assert "New-ScheduledTaskAction" in source
+    assert "Set-ScheduledTask -TaskName $TaskName -Action $newTaskAction" in source
+    assert '"switch",' not in source
     assert "Get-SingYinTaskInspection" in source
     assert "Enable-ScheduledTask -TaskName $TaskName" in source
     assert "Start-ScheduledTask -TaskName $TaskName" in source
@@ -599,9 +608,12 @@ def test_deployment_script_switches_locked_host_and_requires_write_readiness() -
     assert '"scripts\\check_deployment_readiness.py",' in source
     assert '"--strict"' in source
     assert '"--allow-pending-cloudflare-access"' in source
+    assert 'Remove-Item -LiteralPath $archivePath -Force -ErrorAction Stop' in source
+    assert "Release archive cleanup failed" in source
+    assert 'Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue' not in source
 
 
-def test_deployment_script_rolls_back_commit_dependencies_environment_and_task() -> None:
+def test_deployment_script_rolls_back_task_target_environment_and_task_state() -> None:
     source = _source()
     outer_catch = (
         "\n    } catch {\n"
@@ -611,8 +623,11 @@ def test_deployment_script_rolls_back_commit_dependencies_environment_and_task()
     catch_block = source.split(outer_catch, 1)[1].split("\n} finally {", 1)[0]
 
     assert '$rollbackAttempted = $true' in source
-    assert '"switch",' in catch_block and "$previousCommit" in catch_block
-    assert '"--require-hashes"' in catch_block
+    assert "$previousTaskAction" in catch_block
+    assert "New-ScheduledTaskAction @restoreActionParameters" in catch_block
+    assert "Set-ScheduledTask -TaskName $TaskName -Action $restoreTaskAction" in catch_block
+    assert '"switch",' not in catch_block
+    assert '"pip"' not in catch_block
     assert "[IO.File]::WriteAllBytes($environmentPath, $environmentBytes)" in catch_block
     assert "Enable-ScheduledTask -TaskName $TaskName" in catch_block
     assert "Start-ScheduledTask -TaskName $TaskName" in catch_block
@@ -620,6 +635,17 @@ def test_deployment_script_rolls_back_commit_dependencies_environment_and_task()
     assert "rollbackSucceeded" in source
     assert "Protect-ReportText" in source
     assert "nativeLog = [IO.Path]::GetFileName" in source
+
+
+def test_rollback_never_switches_task_target_until_the_production_port_is_released() -> None:
+    source = _source()
+    rollback = source.split("$rollbackAttempted = $true", 1)[1]
+    wait_index = rollback.index("Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 15")
+    task_switch_index = rollback.index("Set-ScheduledTask -TaskName $TaskName -Action $restoreTaskAction")
+
+    assert wait_index < task_switch_index
+    assert "try { Wait-PortReleased" not in rollback
+    assert "catch { }" not in rollback[:task_switch_index]
 
 
 def test_deployment_script_parses_in_windows_powershell_51() -> None:
@@ -651,3 +677,71 @@ def test_deployment_script_parses_in_windows_powershell_51() -> None:
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_release_environment_copy_is_acl_first_and_utf8_without_bom() -> None:
+    source = _source()
+
+    create = source.index('$null = New-Item -ItemType File -Path $bundleEnvironment -Force')
+    protect = source.index(
+        'Protect-SingYinSensitivePath -Path $bundleEnvironment -RuntimeUser $RuntimeUser',
+        create,
+    )
+    populate = source.index(
+        '[IO.File]::WriteAllBytes($bundleEnvironment, [IO.File]::ReadAllBytes($EnvironmentPath))',
+        protect,
+    )
+    assert create < protect < populate
+    assert '[Text.UTF8Encoding]::new($false)' in source
+    assert '[IO.File]::WriteAllText($temporaryPath, $content, $utf8WithoutBom)' in source
+    assert '$output | Set-Content -LiteralPath $temporaryPath -Encoding UTF8' not in source
+
+
+def test_host_environment_import_requires_every_gateway_control() -> None:
+    function_source = _powershell_function_source("Import-HostEnvironment")
+
+    for name in (
+        "SING_YIN_UNIFIED_GUEST",
+        "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL",
+        "ORIGIN_PRINCIPAL_SECRET",
+        "ORIGIN_PRINCIPAL_KID",
+        "AUTH_EPOCH",
+        "SING_YIN_GUEST_SNAPSHOT_SECRET",
+    ):
+        assert f'"{name}"' in function_source
+    assert "protected host environment is missing" in function_source
+
+
+def test_release_environment_writer_executes_without_utf8_bom(tmp_path: Path) -> None:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production host script")
+    env_path = tmp_path / ".env"
+    env_path.write_text("SING_YIN_PORT=8080\n", encoding="utf-8")
+    escaped = str(env_path).replace("'", "''")
+    function_source = _powershell_function_source("Set-ReleaseEnvironmentValue")
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+function Protect-SingYinSensitivePath {{ param($Path, $RuntimeUser) }}
+{function_source}
+Set-ReleaseEnvironmentValue -Path '{escaped}' -Name 'SING_YIN_PORT' -Value '8456' -RuntimeUser 'test-user'
+$bytes = [IO.File]::ReadAllBytes('{escaped}')
+[ordered]@{{
+  prefix = if ($bytes.Length -ge 3) {{ "$($bytes[0])-$($bytes[1])-$($bytes[2])" }} else {{ '' }}
+  text = [IO.File]::ReadAllText('{escaped}', [Text.UTF8Encoding]::new($false))
+}} | ConvertTo-Json -Compress
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8-sig",
+        errors="replace",
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(next(line for line in result.stdout.splitlines() if line.startswith("{")))
+    assert payload["prefix"] != "239-187-191"
+    assert payload["text"] == "SING_YIN_PORT=8456\r\n"

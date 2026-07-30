@@ -20,6 +20,7 @@ from pathlib import Path, PurePosixPath
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from typing import Iterable, Sequence
 
@@ -534,9 +535,34 @@ def _write_report(
             for result in results
         ],
     }
-    temporary = REPORT_PATH.with_suffix(".tmp")
-    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    temporary.replace(REPORT_PATH)
+    encoded = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="wb",
+            prefix=f".{REPORT_PATH.name}.",
+            suffix=".tmp",
+            dir=REPORT_PATH.parent,
+            delete=False,
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            temporary.write(encoded)
+            temporary.flush()
+            os.fsync(temporary.fileno())
+        for attempt in range(50):
+            try:
+                os.replace(temporary_path, REPORT_PATH)
+                break
+            except PermissionError:
+                if attempt == 49:
+                    raise
+                # Windows can briefly deny replacing a destination while a
+                # concurrent verifier finishes its own atomic rename.
+                time.sleep(0.01)
+        temporary_path = None
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
 
 
 def _write_github_output(path: Path, plan: VerificationPlan) -> None:

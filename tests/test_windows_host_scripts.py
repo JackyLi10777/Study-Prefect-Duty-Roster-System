@@ -95,6 +95,76 @@ def test_configured_endpoint_uses_env_port_and_refuses_external_bind(tmp_path: P
     assert "loopback-only" in rejected.stderr
 
 
+@pytest.mark.parametrize(
+    ("content", "message"),
+    (
+        ("SING_YIN_PORT=8456\tunsafe\n", "control character"),
+        ("SING_YIN_PORT=8456\x00unsafe\n", "control character"),
+        ("SING_YIN_PORT 8456\n", "malformed setting"),
+        ("SING_YIN_PORT=8456\nSING_YIN_PORT=8457\n", "duplicate setting"),
+    ),
+)
+def test_environment_map_rejects_ambiguous_or_control_character_entries(
+    tmp_path: Path,
+    content: str,
+    message: str,
+) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text(content, encoding="utf-8")
+
+    rejected = _powershell(
+        f". '{_quoted(COMMON)}'; Get-SingYinEnvironmentMap -Path '{_quoted(env_path)}'",
+        check=False,
+    )
+
+    assert rejected.returncode != 0
+    assert message in rejected.stderr
+
+
+def test_environment_map_keeps_all_controlled_gateway_settings(tmp_path: Path) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text(
+        "SING_YIN_UNIFIED_GUEST=1\n"
+        "SING_YIN_REQUIRE_GATEWAY_PRINCIPAL=true\n"
+        "ORIGIN_PRINCIPAL_SECRET=not-a-production-secret\n"
+        "ORIGIN_PRINCIPAL_KID=rc36-origin\n"
+        "AUTH_EPOCH=36\n"
+        "SING_YIN_GUEST_SNAPSHOT_SECRET=not-a-production-snapshot-secret\n",
+        encoding="utf-8",
+    )
+
+    result = _powershell(
+        f". '{_quoted(COMMON)}'; Get-SingYinEnvironmentMap -Path '{_quoted(env_path)}' "
+        "| ConvertTo-Json -Compress"
+    )
+    payload = json.loads(result.stdout)
+
+    assert payload["ORIGIN_PRINCIPAL_SECRET"] == "not-a-production-secret"
+    assert payload["ORIGIN_PRINCIPAL_KID"] == "rc36-origin"
+    assert payload["AUTH_EPOCH"] == "36"
+
+
+@pytest.mark.parametrize(
+    "content",
+    (
+        "ORIGIN_PRINCIPAL_SECRET secret\n",
+        "ORIGIN_PRINCIPAL_KID kid\n",
+        "AUTH_EPOCH 36\n",
+    ),
+)
+def test_environment_map_rejects_malformed_gateway_settings(tmp_path: Path, content: str) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text(content, encoding="utf-8")
+
+    rejected = _powershell(
+        f". '{_quoted(COMMON)}'; Get-SingYinEnvironmentMap -Path '{_quoted(env_path)}'",
+        check=False,
+    )
+
+    assert rejected.returncode != 0
+    assert "malformed setting" in rejected.stderr
+
+
 def test_acl_helper_removes_broad_write_access_from_temporary_paths(tmp_path: Path) -> None:
     protected_dir = tmp_path / "runtime"
     protected_dir.mkdir()
@@ -261,6 +331,30 @@ def test_windows_host_scripts_bind_permissions_and_task_to_dedicated_runtime_use
     assert all("-RuntimeUser $runtimeAccount.Name" in line for line in activation_acl_calls)
     assert 'RuntimeUser = "SingYinRosterSvc"' in doctor
     assert 'Add-DoctorCheck "runtime_account" "pass"' in doctor
+
+
+def test_windows_process_path_refresh_preserves_first_entry_and_removes_duplicates() -> None:
+    common = COMMON.read_text(encoding="utf-8")
+    preparation = (PROJECT_ROOT / "scripts" / "prepare_windows_host.ps1").read_text(
+        encoding="utf-8"
+    )
+    cloudflare = (
+        PROJECT_ROOT / "scripts" / "prepare_cloudflare_remote_access.ps1"
+    ).read_text(encoding="utf-8")
+
+    assert "function Join-SingYinProcessPath" in common
+    assert "$seen.ContainsKey($comparisonKey)" in common
+    assert "Update-SingYinProcessPath" in preparation
+    assert "Update-SingYinProcessPath" in cloudflare
+    assert '$env:Path = "$machine;$user"' not in preparation
+    assert '$env:Path = "$machine;$user"' not in cloudflare
+
+    result = _powershell(
+        f". '{_quoted(COMMON)}'; "
+        "Join-SingYinProcessPath -MachinePath 'C:\\Tools;C:\\Bin;C:\\Tools\\' "
+        "-UserPath 'c:\\tools;C:\\UserBin;;'"
+    )
+    assert result.stdout.strip() == r"C:\Tools;C:\Bin;C:\UserBin"
 
 
 def test_windows_scripts_do_not_resolve_psscriptroot_inside_parameter_defaults() -> None:

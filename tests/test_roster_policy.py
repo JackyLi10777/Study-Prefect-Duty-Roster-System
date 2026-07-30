@@ -7,6 +7,7 @@ from roster_core.loaders import load_prefect_seed
 from roster_policy import (
     DUTY_SERVICE_TIME_WINDOWS,
     DUTY_TIME_WINDOWS,
+    ROOM_CAPACITY,
     ROOM_OPENING_TIME_WINDOWS,
     DutyPost,
     PrefectRole,
@@ -39,6 +40,15 @@ def test_room_202_is_closed_on_tuesday_and_friday() -> None:
     assert DutyPost.ROOM_202 not in required_posts_for_day(SchoolDay.TUESDAY)
     assert DutyPost.ROOM_202 not in required_posts_for_day(SchoolDay.FRIDAY)
     assert required_posts_for_day(SchoolDay.MONDAY).count(DutyPost.ROOM_202) == 2
+
+
+def test_room_capacity_is_part_of_the_public_policy_contract() -> None:
+    assert ROOM_CAPACITY == {
+        DutyPost.ASSIST_IN_CHARGE: 1,
+        DutyPost.ROOM_302: 1,
+        DutyPost.ROOM_303: 2,
+        DutyPost.ROOM_202: 2,
+    }
 
 
 def test_duty_weights_match_school_policy() -> None:

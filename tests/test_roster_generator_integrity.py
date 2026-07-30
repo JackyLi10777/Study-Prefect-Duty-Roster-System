@@ -148,6 +148,29 @@ def test_generation_fails_cleanly_when_search_budget_is_exhausted(monkeypatch) -
         generate_weekly_roster(_greedy_trap_directory())
 
 
+def test_generation_uses_explicit_slot_keys_not_solver_mapping_order(monkeypatch) -> None:
+    original_solver = generator_module._solve_regular_schedule
+    prefects = _greedy_trap_directory()
+    expected = [
+        (assignment.day, assignment.post, assignment.prefect_id)
+        for assignment in generate_weekly_roster(prefects)
+    ]
+
+    def reverse_mapping_order(*args, **kwargs):  # type: ignore[no-untyped-def]
+        solved = original_solver(*args, **kwargs)
+        return dict(reversed(tuple(solved.items())))
+
+    monkeypatch.setattr(generator_module, "_solve_regular_schedule", reverse_mapping_order)
+
+    assignments = generate_weekly_roster(prefects)
+
+    assert [
+        (assignment.day, assignment.post, assignment.prefect_id)
+        for assignment in assignments
+    ] == expected
+    validate_assignments(assignments, prefects)
+
+
 @pytest.fixture
 def valid_roster() -> tuple[list[Assignment], list[Prefect]]:
     prefects = load_prefect_seed()

@@ -13,15 +13,38 @@ from sqlalchemy import Engine, event
 from sqlalchemy.engine import URL, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from nicegui_app.config import PROJECT_ROOT, SQLITE_BUSY_TIMEOUT_MS
+from nicegui_app.config import DEFAULT_DATABASE_PATH, PROJECT_ROOT, SQLITE_BUSY_TIMEOUT_MS
 from nicegui_app.persistence.models import Base
+
+
+def _fairness_is_reconciled(connection: sqlite3.Connection) -> bool:
+    """Return whether persistent totals equal anchors plus the immutable ledger."""
+
+    discrepancy = connection.execute(
+        """
+        SELECT 1
+        FROM prefects AS p
+        LEFT JOIN fairness_ledger AS f ON f.prefect_id = p.id
+        GROUP BY p.id
+        HAVING
+            ABS(
+                (p.history_weight_anchor + COALESCE(SUM(f.delta), 0.0))
+                - p.history_weight
+            ) > 0.0001
+            OR
+            (p.history_duties_anchor + COALESCE(SUM(f.duty_delta), 0))
+                != p.history_duties
+        LIMIT 1
+        """
+    ).fetchone()
+    return discrepancy is None
 
 
 def _alembic_config(database_path: Path | None = None) -> Config:
     config = Config(str(PROJECT_ROOT / "alembic.ini"))
     config.set_main_option("script_location", str(PROJECT_ROOT / "migrations"))
-    if database_path is not None:
-        config.set_main_option("sqlalchemy.url", database_url(database_path))
+    configured_path = DEFAULT_DATABASE_PATH if database_path is None else database_path
+    config.set_main_option("sqlalchemy.url", database_url(configured_path.resolve()))
     return config
 
 
@@ -62,6 +85,8 @@ def database_readiness(database_path: Path) -> str:
             }
             if versions != current_migration_heads():
                 return "migration_pending"
+            if not _fairness_is_reconciled(connection):
+                return "fairness_unreconciled"
         finally:
             connection.close()
     except sqlite3.Error:
@@ -100,6 +125,12 @@ def create_sqlite_engine(database_path: Path) -> Engine:
 
 def create_session_factory(database_path: Path) -> sessionmaker[Session]:
     migrate_database(database_path)
+    readiness = database_readiness(database_path)
+    if readiness != "ok":
+        raise RuntimeError(
+            "The roster database is not write-ready after migration "
+            f"({readiness})."
+        )
     # WAL is a persistent database setting rather than a per-connection
     # option. Applying it before the pooled engine opens avoids two concurrent
     # checkouts contending on `PRAGMA journal_mode` during a write.

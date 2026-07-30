@@ -27,6 +27,23 @@ def test_roster_child_routes_have_explicit_hierarchy_and_return_destinations() -
     current_branch = navigation.split("if is_current:", 1)[1].split("else:", 1)[0]
     assert 'ui.element("div").props("aria-current=step")' in current_branch
     assert "ui.button" not in current_branch
+    assert 'data-design-direction="B-A-C"' in navigation
+    assert "--sy-workflow-position" in navigation
+    assert "data-state={semantic_state}" in navigation
+    assert "aria-disabled=true" in navigation
+
+
+def test_selected_design_composition_keeps_operational_rhythm_primary() -> None:
+    layout = _read("nicegui_app/assets/css/sing-yin-layout-v1.css")
+    design_system = _read("Professional_Design_System.md")
+
+    assert ".sy-workflow-navigation--operational-rhythm::before" in layout
+    assert "width: var(--sy-workflow-position, 25%)" in layout
+    assert "@media (prefers-reduced-motion: reduce)" in layout
+    assert "B → A → C" in design_system
+    assert "Operational Rhythm" in design_system
+    assert "Quiet Editorial Continuity" in design_system
+    assert "Sacred Service Narrative" in design_system
 
 
 def test_internal_navigation_uses_one_focus_preserving_gateway() -> None:

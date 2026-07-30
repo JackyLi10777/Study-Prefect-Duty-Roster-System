@@ -20,6 +20,32 @@ function Find-SingYinCloudflared {
     return $null
 }
 
+function Join-SingYinProcessPath {
+    param(
+        [AllowEmptyString()][string]$MachinePath,
+        [AllowEmptyString()][string]$UserPath
+    )
+
+    $seen = @{}
+    $ordered = [Collections.Generic.List[string]]::new()
+    foreach ($entry in @($MachinePath, $UserPath) -split ';') {
+        $candidate = [string]$entry
+        if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+        $candidate = $candidate.Trim()
+        $comparisonKey = $candidate.TrimEnd('\')
+        if ($seen.ContainsKey($comparisonKey)) { continue }
+        $seen[$comparisonKey] = $true
+        $ordered.Add($candidate)
+    }
+    return ($ordered -join ';')
+}
+
+function Update-SingYinProcessPath {
+    $machine = [Environment]::GetEnvironmentVariable("Path", "Machine")
+    $user = [Environment]::GetEnvironmentVariable("Path", "User")
+    $env:Path = Join-SingYinProcessPath -MachinePath $machine -UserPath $user
+}
+
 function Get-SingYinEnvironmentMap {
     param([Parameter(Mandatory = $true)][string]$Path)
 
@@ -28,8 +54,29 @@ function Get-SingYinEnvironmentMap {
     }
     $values = @{}
     foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
-        if ($line -notmatch '^\s*(?<name>SING_YIN_[A-Z0-9_]+)\s*=\s*(?<value>.*)$') { continue }
-        $values[$Matches.name] = $Matches.value.Trim()
+        if ($line -match '[\x00-\x1F\x7F]') {
+            throw "The Sing Yin environment file contains a control character."
+        }
+        $trimmed = $line.Trim()
+        if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith("#")) {
+            continue
+        }
+        $controlledNamePattern = '(?:SING_YIN_[A-Z0-9_]+|ORIGIN_PRINCIPAL_(?:SECRET|KID)|AUTH_EPOCH)'
+        if ($line -notmatch "^\s*(?<name>$controlledNamePattern)\s*=\s*(?<value>.*)$") {
+            if (
+                $trimmed.StartsWith("SING_YIN_", [StringComparison]::Ordinal) -or
+                $trimmed.StartsWith("ORIGIN_PRINCIPAL_", [StringComparison]::Ordinal) -or
+                $trimmed.StartsWith("AUTH_EPOCH", [StringComparison]::Ordinal)
+            ) {
+                throw "The Sing Yin environment file contains a malformed setting."
+            }
+            continue
+        }
+        $name = $Matches.name
+        if ($values.ContainsKey($name)) {
+            throw "The Sing Yin environment file contains a duplicate setting."
+        }
+        $values[$name] = $Matches.value.Trim()
     }
     return $values
 }
@@ -74,7 +121,8 @@ function Get-SingYinTaskInspection {
     param(
         [Parameter(Mandatory = $true)][string]$TaskName,
         [Parameter(Mandatory = $true)][string]$ProjectRoot,
-        [string]$RuntimeUser = ""
+        [string]$RuntimeUser = "",
+        [switch]$AllowReleaseBundle
     )
 
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
@@ -82,11 +130,30 @@ function Get-SingYinTaskInspection {
         return [pscustomobject]@{ Exists = $false; Owned = $false; State = "missing" }
     }
     $expectedRoot = [IO.Path]::GetFullPath($ProjectRoot).TrimEnd('\')
-    $expectedPython = [IO.Path]::GetFullPath((Join-Path $expectedRoot ".venv\Scripts\python.exe"))
+    $releaseRoot = [IO.Path]::GetFullPath((Join-Path $expectedRoot "releases")).TrimEnd('\')
     $matchingAction = @($task.Actions) | Where-Object {
         try {
+            $workingRoot = [IO.Path]::GetFullPath([string]$_.WorkingDirectory).TrimEnd('\')
+            $expectedPython = [IO.Path]::GetFullPath((Join-Path $workingRoot ".venv\Scripts\python.exe"))
+            $rootMatches = $workingRoot -ieq $expectedRoot
+            if ($AllowReleaseBundle -and -not $rootMatches) {
+                $releasePrefix = "$releaseRoot\"
+                $relative = if ($workingRoot.StartsWith(
+                    $releasePrefix,
+                    [StringComparison]::OrdinalIgnoreCase
+                )) {
+                    $workingRoot.Substring($releasePrefix.Length)
+                } else {
+                    ""
+                }
+                $rootMatches = (
+                    -not [string]::IsNullOrWhiteSpace($relative) -and
+                    $relative -notmatch '[\\/]' -and
+                    $relative -match '^[A-Za-z0-9._-]+$'
+                )
+            }
+            $rootMatches -and
             [IO.Path]::GetFullPath([string]$_.Execute) -ieq $expectedPython -and
-            [IO.Path]::GetFullPath([string]$_.WorkingDirectory).TrimEnd('\') -ieq $expectedRoot -and
             ([string]$_.Arguments).Trim() -ceq "-X utf8 -m nicegui_app.main"
         } catch { $false }
     } | Select-Object -First 1

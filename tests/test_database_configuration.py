@@ -12,10 +12,15 @@ from alembic.config import Config
 import pytest
 
 from nicegui_app import runtime
-from nicegui_app.config import PROJECT_ROOT, SQLITE_BUSY_TIMEOUT_MS
+from nicegui_app.config import PREFECT_SEED_PATH, PROJECT_ROOT, SQLITE_BUSY_TIMEOUT_MS
 from nicegui_app.deployment import health_snapshot
 from nicegui_app.main import compose_readiness_payload
-from nicegui_app.persistence.database import create_sqlite_engine, database_url
+from nicegui_app.persistence.database import (
+    _alembic_config,
+    create_sqlite_engine,
+    database_readiness,
+    database_url,
+)
 from nicegui_app.services.maintenance import MaintenanceStatus
 from nicegui_app.services.roster_workflow import RosterWorkflow, WorkflowMaintenanceError
 
@@ -29,6 +34,52 @@ def test_sqlite_engine_applies_the_configured_busy_timeout(tmp_path: Path) -> No
         assert engine.url.get_backend_name() == "sqlite"
     finally:
         engine.dispose()
+
+
+def test_alembic_uses_absolute_targets_and_model_metadata(tmp_path: Path) -> None:
+    database_path = tmp_path / "autogenerate-contract.sqlite3"
+    config = _alembic_config(database_path)
+    assert Path(config.get_main_option("sqlalchemy.url").removeprefix("sqlite:///" )).is_absolute()
+
+    command.upgrade(config, "head")
+    command.check(config)
+
+
+def test_alembic_rejects_a_relative_sqlite_target(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    config = Config(str(PROJECT_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(PROJECT_ROOT / "migrations"))
+    config.set_main_option("sqlalchemy.url", "sqlite:///relative-target.sqlite3")
+
+    with pytest.raises(RuntimeError, match="absolute SQLite URL"):
+        command.current(config)
+    assert not (tmp_path / "relative-target.sqlite3").exists()
+
+
+def test_unreconciled_fairness_blocks_startup_and_health_readiness(tmp_path: Path) -> None:
+    database_path = tmp_path / "unreconciled.sqlite3"
+    workflow = RosterWorkflow(
+        database_path=database_path,
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    workflow._dispose_database_connections()
+
+    with sqlite3.connect(database_path) as connection:
+        connection.execute(
+            "UPDATE prefects SET history_weight = history_weight + 1 WHERE id = "
+            "(SELECT id FROM prefects ORDER BY id LIMIT 1)"
+        )
+        connection.commit()
+
+    assert database_readiness(database_path) == "fairness_unreconciled"
+    restarted = RosterWorkflow(database_path=database_path, backup_dir=tmp_path / "backups")
+    with pytest.raises(RuntimeError, match="fairness_unreconciled"):
+        restarted.bootstrap()
 
 
 def test_recovery_marker_starts_diagnostics_without_migrating_or_mutating_database(

@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+import json
 from pathlib import Path
 
 import pytest
 
+import scripts.verify_update as verify_update_module
+
 from scripts.verify_update import (
+    TaskResult,
     VerificationPlan,
+    _write_report,
     build_tasks,
     changed_paths,
     classify_paths,
@@ -48,6 +54,32 @@ def test_no_change_selects_no_work() -> None:
 
     assert plan.profile == "none"
     assert plan.changed_path_count == 0
+
+
+def test_verification_report_writes_are_atomic_with_concurrent_threads(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    report_path = tmp_path / "change-verification-report.json"
+    monkeypatch.setattr(verify_update_module, "REPORT_PATH", report_path)
+    plan = VerificationPlan("tests", "concurrency", 1, False, False)
+
+    def write(index: int) -> None:
+        _write_report(
+            plan,
+            (TaskResult(f"check-{index}", "pass", index, 0),),
+            ci=False,
+            release=False,
+            staged=False,
+        )
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        list(executor.map(write, range(32)))
+
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert payload["status"] == "pass"
+    assert payload["checks"][0]["name"].startswith("check-")
+    assert list(tmp_path.glob(".change-verification-report.json.*.tmp")) == []
 
 
 def test_changelog_is_release_documentation_not_an_unknown_source_path() -> None:

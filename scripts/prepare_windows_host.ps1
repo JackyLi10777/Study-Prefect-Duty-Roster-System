@@ -17,9 +17,7 @@ function Write-Step([string]$Message) {
 }
 
 function Refresh-ProcessPath {
-    $machine = [Environment]::GetEnvironmentVariable("Path", "Machine")
-    $user = [Environment]::GetEnvironmentVariable("Path", "User")
-    $env:Path = "$machine;$user"
+    Update-SingYinProcessPath
 }
 
 function Require-Command([string]$Name, [string]$WingetId) {

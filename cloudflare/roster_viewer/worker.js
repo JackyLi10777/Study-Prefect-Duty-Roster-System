@@ -7,6 +7,7 @@ import {
 const SHARE_SCHEMA = 'sing-yin-public-roster-v1';
 const SHARE_KEY_PREFIX = 'share:';
 const CONTENT_SHARE_KEY_PREFIX = 'share:v2:';
+const REVOKED_SHARE_KEY_PREFIX = 'share:revoked:';
 const CONTENT_DIGEST_PATTERN = /^[a-f0-9]{64}$/;
 const MAX_ADMIN_BODY_BYTES = 196_608;
 const MAX_VIEW_BODY_BYTES = 2_048;
@@ -2934,7 +2935,7 @@ function accessTokenFromRequest(request) {
 
 function adminSessionSecret(env) {
   const secret = typeof env.ADMIN_SESSION_SECRET === 'string' ? env.ADMIN_SESSION_SECRET : ''; // pragma: allowlist secret -- environment variable name only
-  if (secret.length < 32 || secret.length > 512 || secret !== secret.trim()) {
+  if (secret.length < 32 || secret.length > 512 || secret !== secret.trim() || isObviousSecretPlaceholder(secret)) {
     throw new AccessValidationError('session_secret_configuration');
   }
   return secret;
@@ -3482,11 +3483,11 @@ function stripAccessCredentials(inputHeaders) {
     .filter(part => {
       if (!part) return false;
       const separator = part.indexOf('=');
-      const name = (separator < 0 ? part : part.slice(0, separator)).trim();
-      return name.toLowerCase() !== ACCESS_COOKIE_NAME.toLowerCase()
-        && name !== ADMIN_SESSION_COOKIE_NAME
-        && name !== GUEST_SESSION_COOKIE_NAME
-        && name !== THEME_HANDOFF_COOKIE_NAME;
+      const name = (separator < 0 ? part : part.slice(0, separator)).trim().toLowerCase();
+      return name !== ACCESS_COOKIE_NAME.toLowerCase()
+        && name !== ADMIN_SESSION_COOKIE_NAME.toLowerCase()
+        && name !== GUEST_SESSION_COOKIE_NAME.toLowerCase()
+        && name !== THEME_HANDOFF_COOKIE_NAME.toLowerCase();
     });
   if (retainedCookies.length) headers.set('Cookie', retainedCookies.join('; '));
   else headers.delete('Cookie');
@@ -3846,6 +3847,18 @@ function contentShareKey(shareId, contentDigest) {
   return `${contentSharePrefix(shareId)}${contentDigest}`;
 }
 
+function revokedShareKey(shareId) {
+  return `${REVOKED_SHARE_KEY_PREFIX}${shareId}`;
+}
+
+function validRevocation(record, shareId) {
+  return record
+    && record.version === 1
+    && record.kind === 'revoked'
+    && record.shareId === shareId
+    && Number.isFinite(Date.parse(record.revokedAt));
+}
+
 function parseContentShareKey(key) {
   if (typeof key !== 'string' || !key.startsWith(CONTENT_SHARE_KEY_PREFIX)) return null;
   const remainder = key.slice(CONTENT_SHARE_KEY_PREFIX.length);
@@ -3925,10 +3938,18 @@ async function listKvKeys(kv, prefix, limit = 1_000) {
 
 async function resolveStoredShare(shareId, env) {
   const legacyKey = SHARE_KEY_PREFIX + shareId;
-  const [legacyRaw, contentItems] = await Promise.all([
+  const [revokedRaw, legacyRaw, contentItems] = await Promise.all([
+    env.ROSTER_SHARES.get(revokedShareKey(shareId)),
     env.ROSTER_SHARES.get(legacyKey),
     listKvKeys(env.ROSTER_SHARES, contentSharePrefix(shareId), 2),
   ]);
+  const revokedRecord = parseStoredJson(revokedRaw);
+  if (revokedRecord === undefined) return { kind: 'conflict' };
+  if (revokedRecord) {
+    return validRevocation(revokedRecord, shareId)
+      ? { kind: 'revoked' }
+      : { kind: 'conflict' };
+  }
   const legacyRecord = parseStoredJson(legacyRaw);
   if (legacyRecord === undefined) return { kind: 'conflict' };
   if (contentItems.length > 1 || (legacyRecord && contentItems.length > 0)) return { kind: 'conflict' };
@@ -3993,6 +4014,7 @@ async function createShare(request, env) {
   // key between different payloads and resolving every visible collision closed.
   const before = await resolveStoredShare(validated.shareId, env);
   if (before.kind === 'conflict') return jsonResponse({ error: 'share_conflict' }, 409);
+  if (before.kind === 'revoked') return jsonResponse({ error: 'share_revoked' }, 409);
   if (before.kind === 'record') {
     const exactReplay = before.record.version === 1
       ? sameLegacyPayloadContent(before.record, record)
@@ -4022,6 +4044,10 @@ async function createShare(request, env) {
 
   const after = await resolveStoredShare(validated.shareId, env);
   if (after.kind === 'conflict') return jsonResponse({ error: 'share_conflict' }, 409);
+  if (after.kind === 'revoked') {
+    await env.ROSTER_SHARES.delete(key);
+    return jsonResponse({ error: 'share_revoked' }, 409);
+  }
   if (after.kind === 'record' && !sameStoredContent(after.record, record)) {
     return jsonResponse({ error: 'share_exists' }, 409);
   }
@@ -4038,6 +4064,9 @@ async function listShares(env) {
   const items = await listKvKeys(env.ROSTER_SHARES, SHARE_KEY_PREFIX);
   const shareIds = new Set();
   for (const item of items) {
+    if (typeof item.name === 'string' && item.name.startsWith(REVOKED_SHARE_KEY_PREFIX)) {
+      continue;
+    }
     const contentKey = parseContentShareKey(item.name);
     if (contentKey) {
       shareIds.add(contentKey.shareId);
@@ -4053,6 +4082,7 @@ async function listShares(env) {
   const shares = [];
   for (const shareId of shareIds) {
     const resolved = await resolveStoredShare(shareId, env);
+    if (resolved.kind === 'revoked') continue;
     if (resolved.kind !== 'record') return jsonResponse({ error: 'share_conflict' }, 409);
     shares.push({
       shareId,
@@ -4082,6 +4112,15 @@ async function deleteShare(request, shareId, env) {
     await env.ROSTER_SHARES.delete(contentShareKey(shareId, contentDigest));
     return new Response(null, { status: 204 });
   }
+  await env.ROSTER_SHARES.put(
+    revokedShareKey(shareId),
+    JSON.stringify({
+      version: 1,
+      kind: 'revoked',
+      shareId,
+      revokedAt: new Date().toISOString(),
+    }),
+  );
   const contentItems = await listKvKeys(env.ROSTER_SHARES, contentSharePrefix(shareId));
   await Promise.all([
     env.ROSTER_SHARES.delete(SHARE_KEY_PREFIX + shareId),
