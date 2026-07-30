@@ -84,3 +84,16 @@ def test_settings_sound_switch_previews_the_enabled_state() -> None:
     assert 'play_interface_sound("success", force=True)' in handler
     assert 'ui.notify(t("sound_feedback_on")' in handler
     assert 'ui.notify(t("sound_feedback_off")' in handler
+
+
+def test_browser_verifier_proves_default_sound_before_persisting_opt_out() -> None:
+    verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
+    sound_flow = verifier.split("sound_icon = sound_toggle.locator", 1)[1].split(
+        'page.reload(wait_until="domcontentloaded")', 1
+    )[0]
+
+    feedback = "window.dispatchEvent(new CustomEvent('sy:feedback', {detail: {kind: 'success'}}))"
+    assert sound_flow.index(feedback) < sound_flow.index("sound_toggle.click()")
+    assert sound_flow.index("window.__syVerifiedSoundKinds.includes('success')") < sound_flow.index(
+        "sound_toggle.click()"
+    )
