@@ -1,10 +1,10 @@
 # Sing Yin Study Prefect Duty Roster System
 
-> **Verified production truth (2026-07-30):** the Windows origin is running clean annotated `v1.2.0-rc.40` at `2ec900a5ef1c021183717dfa648ef76b55452ffb`; canonical Worker version `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` serves 100% of traffic. The rc40 298-file fingerprint `e4e34ca75c422f823cfeb16e94c72705e1f73b8d56e6b2c6b953e102761a8f4c` passed all 15 formal gates. Verified production backup `20260730-135505-648220-manual_verified_backup.sqlite3` with SHA-256 `c397478a19e420fc85a22a23e0c245a44b1f59cc2b30cbe9fdfc0f196187b961` passed isolated restore, fairness, row-count and restore-audit checks; origin health/readiness, canonical Admin/Guest entry-audio paths, and a real Guest Dashboard session also passed. Worker runtime/configuration is unchanged from rc39, so the verified Worker was deliberately retained without a no-op redeployment. The first origin rollback is tagged `v1.2.0-rc.39` at commit `80b9de7ea8abce57b67c6041e580f915a819315e`. Tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4` and Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` are deeper recovery evidence. Supervised Head Study Prefect and teacher-advisor acceptance remains open. Any older live/candidate wording below is historical evidence and is superseded by this notice.
+> **Verified production truth (2026-07-31):** the Windows origin is running clean annotated `v1.2.0-rc.41` at `74072b0175ff64807312a8cc5b9cd016b6628210`; canonical Worker version `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` serves 100% of traffic. The rc41 298-file fingerprint `cd4344d33f78ba160500a5921382d65e5aece8574a3c0edd1a30b4088ad10186` passed all 15 formal gates. Verified production backup `20260730-160630-793049-manual_verified_backup.sqlite3` with SHA-256 `21feb26a1c7ffad17bfd9b74192a8917dfee910f1cbd1e6fa20e0a4c4ffc525f` passed isolated restore, fairness, row-count and restore-audit checks; origin health/readiness, zero-percent version smoke, 100% Worker promotion, and canonical health/entrance/Viewer checks also passed. The first controlled paired rollback is rc40 origin `2ec900a5ef1c021183717dfa648ef76b55452ffb` with the previous Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`. Rc39 at `80b9de7ea8abce57b67c6041e580f915a819315e`, rc35 at `570e29f745eef7c1995635d1b187021a8fec6ea4`, and Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` remain deeper recovery evidence. Supervised Head Study Prefect and teacher-advisor acceptance remains open. Any older live/candidate wording below is historical evidence and is superseded by this notice.
 >
-> **Historical clean-release evidence (2026-07-27):** the clean controlled Windows origin ran annotated tag `v1.2.0-rc.30` at commit `74b84f43786b00feb15b51a6270ff71c9430773f`; Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` passed zero-percent smoke and then served 100% of traffic. The 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` passed all 14 formal gates, and verified backup `20260727-023041-069097-manual_verified_backup.sqlite3` with SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` passed isolated restore, fairness, row-count, and restore-audit checks. Origin health/readiness, canonical root/health, rendered desktop/320px theme controls, and the Guest Engineering ≈10B disclosure passed. This was the fully verified clean pair at that time; current rc40 production and the rc39 first-origin rollback are recorded above. Supervised Head Study Prefect and teacher-advisor acceptance remains outstanding.
+> **Historical clean-release evidence (2026-07-27):** the clean controlled Windows origin ran annotated tag `v1.2.0-rc.30` at commit `74b84f43786b00feb15b51a6270ff71c9430773f`; Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` passed zero-percent smoke and then served 100% of traffic. The 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` passed all 14 formal gates, and verified backup `20260727-023041-069097-manual_verified_backup.sqlite3` with SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` passed isolated restore, fairness, row-count, and restore-audit checks. Origin health/readiness, canonical root/health, rendered desktop/320px theme controls, and the Guest Engineering ≈10B disclosure passed. This was the fully verified clean pair at that time; current rc41 production and the rc40 first paired rollback are recorded above. Supervised Head Study Prefect and teacher-advisor acceptance remains outstanding.
 >
-> **Historical rc31 source candidate (frozen, never deployed):** branch `codex/rc31-unified-theme-controls` combined the binary Light／Dark control with complete deterministic room-schedule solving and strict slot/weight validation, bounded Admin／Guest generated-file delivery, rendered-state mobile-drawer focus synchronization, universal business-write admission, diagnostic-only recovery-marker startup, exact-byte staged backup／handover／restore verification, migration-provenance guards, and fail-closed host／Worker identity parity. Its 297 deployable source files passed all 15 formal `--release` gates with fingerprint `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042`. It is retained as historical source evidence only and has been superseded by current rc40 production; it is not a current candidate, deployment, or rollback target.
+> **Historical rc31 source candidate (frozen, never deployed):** branch `codex/rc31-unified-theme-controls` combined the binary Light／Dark control with complete deterministic room-schedule solving and strict slot/weight validation, bounded Admin／Guest generated-file delivery, rendered-state mobile-drawer focus synchronization, universal business-write admission, diagnostic-only recovery-marker startup, exact-byte staged backup／handover／restore verification, migration-provenance guards, and fail-closed host／Worker identity parity. Its 297 deployable source files passed all 15 formal `--release` gates with fingerprint `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042`. It is retained as historical source evidence only and has been superseded by current rc41 production; it is not a current candidate, deployment, or rollback target.
 >
 > **Not to be served, but to serve. — Mark 10:45**
 
@@ -129,25 +129,26 @@ release tag cannot be updated or deleted. See the complete
 data classes, incident response, and residual limits.
 
 The retained **v1.1 rollback** record is historical recovery evidence only; it
-does not replace the current rc40 production truth or rc39 first-origin rollback.
+does not replace the current rc41 production truth or rc40 first paired rollback.
 
 The public entrance, shared-roster viewer, and NiceGUI workbench use the same
 `Copyright © 2026 LI Chuangjie` page-footer attribution. Clean group-sharing
 roster PDFs retain their explicit supplementary-footer export option.
 
-Non-interactive editorial cards gain a quiet fine-pointer ambient follow-light and focus-within halo without lift or cursor change; action cards keep the existing lift + glow. Current rc40 production includes Assist fixed-weekday／flexible-weekly modes plus the versioned Service Weave `ProductIdentity`,
+Non-interactive editorial cards gain a quiet fine-pointer ambient follow-light and focus-within halo without lift or cursor change; action cards keep the existing lift + glow. Current rc41 production includes Assist fixed-weekday／flexible-weekly modes plus the versioned Service Weave `ProductIdentity`,
 central `PageDefinition` catalogue, public NiceGUI component API, explicit CSS
 ownership, filterable Engineering evidence index, internal Developer Reference,
 bounded Guest preferences, unified generated-file delivery, the browser／PDF
 roster matrix, and auditable published-roster withdrawal.
 
-Current rc40 production retains and re-verifies admission control that rejects excess Guest sessions without
+Current rc41 production retains and re-verifies admission control that rejects excess Guest sessions without
 evicting active users, stronger import and network bounds, aggregate fairness
 reconciliation, explicit return paths, and stable button containers whose icons
 transform internally. Its 298-file fingerprint
-`e4e34ca75c422f823cfeb16e94c72705e1f73b8d56e6b2c6b953e102761a8f4c`
-passed all 15 formal gates before the controlled origin rollout. The Worker runtime
-and configuration did not change from rc39, so the already verified Worker was retained.
+`cd4344d33f78ba160500a5921382d65e5aece8574a3c0edd1a30b4088ad10186`
+passed all 15 formal gates before the controlled origin rollout. Worker
+`610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` passed zero-percent version smoke and
+canonical verification before and after its promotion to 100% traffic.
 
 ## Repository editions
 
@@ -156,7 +157,7 @@ and configuration did not change from rc39, so the already verified Worker was r
 | `codex/login-copy-music-rc18` | NiceGUI + SQLite, historical release source | Superseded rc18 `fd504a8` entrance, devotional, interaction and rollback line |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite, historical source | Previous Service Weave editorial integration line |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Previous unified-guest architecture line; no longer the formal baseline |
-| `main` | NiceGUI + SQLite, self-hosted | Current production origin is clean `v1.2.0-rc.40`; first origin rollback is rc39 |
+| `main` | NiceGUI + SQLite, self-hosted | Current production is clean `v1.2.0-rc.41`; first paired rollback is rc40 origin plus the previous Worker |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 

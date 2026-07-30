@@ -1,6 +1,6 @@
 # NiceGUI Runtime Architecture
 
-> **Verified production truth (2026-07-30):** Windows runs clean annotated `v1.2.0-rc.40`／`2ec900a5ef1c021183717dfa648ef76b55452ffb`; canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` serves 100% traffic. The 298-file source fingerprint `e4e34ca75c422f823cfeb16e94c72705e1f73b8d56e6b2c6b953e102761a8f4c` passed 15／15 gates and the controlled origin rollout passed backup／restore, readiness, canonical entry-music and real Guest Dashboard checks. The Worker runtime did not change from rc39 to rc40, so no no-op edge deployment was made. The first origin rollback is tagged `v1.2.0-rc.39` at commit `80b9de7ea8abce57b67c6041e580f915a819315e`; rc35／`570e29f745eef7c1995635d1b187021a8fec6ea4` and Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` remain deeper recovery evidence. Human acceptance remains open. Older live／candidate wording is historical and superseded by this notice.
+> **Verified production truth (2026-07-31):** Windows runs clean annotated `v1.2.0-rc.41`／`74072b0175ff64807312a8cc5b9cd016b6628210`; canonical Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` serves 100% traffic. The 298-file source fingerprint `cd4344d33f78ba160500a5921382d65e5aece8574a3c0edd1a30b4088ad10186` passed 15／15 gates and the controlled rollout passed backup／restore, readiness, zero-percent version smoke, 100% promotion and canonical checks. The first paired rollback is rc40／`2ec900a5ef1c021183717dfa648ef76b55452ffb` with Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`; rc39／`80b9de7ea8abce57b67c6041e580f915a819315e`, rc35／`570e29f745eef7c1995635d1b187021a8fec6ea4` and Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` remain deeper recovery evidence. Human acceptance remains open. Older live／candidate wording is historical and superseded by this notice.
 >
 ## Purpose
 
@@ -41,7 +41,7 @@
 > restore. Worker source and configuration were unchanged, so Worker version
 > `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` was retained without a new Worker
 > rollout. rc21 is now a historical secondary recovery baseline; rc26 later replaced it,
-> while rc27 was the first-level origin rollback beneath rc30 at that time. Current rc39 production and rc35 rollback are recorded at the top of this document.
+> while rc27 was the first-level origin rollback beneath rc30 at that time. Current rc41 production and the rc40 paired rollback are recorded at the top of this document.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 

@@ -2,14 +2,17 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
-## Unreleased — honest whole-site waiting experience
+## v1.2.0-rc.41 — released, 2026-07-31
 
 - Fixed Admin support submission after the waiting-experience refactor by capturing the browser locale before host-local incident persistence moves to a worker thread.
 - Gives the public Admin and Guest entries one shared `idle → starting → navigating → slow／error` lifecycle across desktop and mobile, with role-specific copy, duplicate suppression, delayed progress, safe retry, back-navigation cleanup, and a privacy-safe support reference.
 - Adds the truthful Cloudflare sign-in assistance path without a local password database or email-enumeration copy; welcome audio remains a non-blocking trusted-click enhancement.
 - Replaces invented 14%／56% operation progress with one phased indeterminate coordinator and a bounded completion morph; measured progress remains available only for real `completed／total` data.
 - Adds a delayed, self-cleaning route progress track and moves host-local support-report persistence off the UI event loop while rejecting Guest persistence before loading begins.
-- Extends the executable design-token, bilingual, reduced-motion, forced-colour, Worker, accessibility, support and dialog-lifecycle contracts. This section is source-candidate history until formal release and deployment evidence is recorded below.
+- Extends the executable design-token, bilingual, reduced-motion, forced-colour, Worker, accessibility, support and dialog-lifecycle contracts.
+- Passed all 15 formal gates against the 298-file fingerprint `cd4344d33f78ba160500a5921382d65e5aece8574a3c0edd1a30b4088ad10186` at annotated tag `v1.2.0-rc.41`／commit `74072b0175ff64807312a8cc5b9cd016b6628210`.
+- Deployed the immutable Windows bundle after verified backup `20260730-160630-793049-manual_verified_backup.sqlite3` (SHA-256 `21feb26a1c7ffad17bfd9b74192a8917dfee910f1cbd1e6fa20e0a4c4ffc525f`) and isolated restore; `/healthz` and `/readyz` passed with `writeReady=true` and no pending backup obligation.
+- Staged Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` at 0%, passed version-specific health／entrance／Viewer smoke, then promoted it to 100% and repeated canonical smoke. Rc40 origin and Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` are the first paired rollback. Supervised human acceptance remains open.
 
 ## v1.2.0-rc.40 — released, 2026-07-30
 
