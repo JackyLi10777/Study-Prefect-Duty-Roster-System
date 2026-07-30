@@ -97,3 +97,4 @@ def test_browser_verifier_previews_sound_with_a_real_enable_gesture_before_opt_o
     preview_index = sound_flow.index("window.__syVerifiedSoundKinds.includes('success')")
     opt_out_index = sound_flow.index("enabled_sound_toggle.click()")
     assert disable_index < enable_index < preview_index < opt_out_index
+    assert "window.__singYinAudioContext?.state === 'running'" in sound_flow
