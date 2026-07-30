@@ -1,8 +1,8 @@
 # 首席導學風紀操作手冊 / Head Study Prefect operator guide
 
-> **目前服務狀態（2026-07-29）：**服務正以 clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4` 及 canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 運行。正式備份、隔離還原、主機 readiness、Cloudflare Access 及線上瀏覽器核對已通過；真人驗收仍未完成。一般操作員不要自行重設、覆寫或切換主機。
+> **目前服務狀態（2026-07-30）：**服務正以 clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e` 及 canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 運行。正式備份、隔離還原、主機 readiness、0%／100% Worker promotion、canonical health／entrance／viewer 及 Cloudflare Access 核對已通過；真人驗收仍未完成。一般操作員不要自行重設、覆寫或切換主機。
 >
-> **歷史 rc30 乾淨發布證據：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 配 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是最近完整驗證的乾淨組合；rc27／`c4c728aa…` 與 `d7b51f21…` 是更深歷史。Assist. in charge 可選固定星期或每週靈活模式；Public 支援回報只在瀏覽器生成，已驗證 Admin／Guest 使用同一 NiceGUI 支援流程。首席導學風紀及教師顧問真人驗收仍待完成。
+> **歷史 rc30 乾淨發布證據：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 配 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是當時完整驗證的乾淨組合；目前 rc39 及第一層 rc35 回退以本頁頂部記錄為準，rc27／`c4c728aa…` 與 `d7b51f21…` 是更深歷史。Assist. in charge 可選固定星期或每週靈活模式；Public 支援回報只在瀏覽器生成，已驗證 Admin／Guest 使用同一 NiceGUI 支援流程。首席導學風紀及教師顧問真人驗收仍待完成。
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊留給下一任首席導學風紀，並讓它配合系統內的「使用手冊」頁面。我希望你只需理解怎樣安全完成日常工作，不必先學懂程式或資料庫。每個主要操作區上方均有「操作提示」：先說明用途，再提示安全次序；請在輸入資料或按主要按鈕前先閱讀該提示。若你剛接手系統，先開啟側邊欄的「開始使用」，再逐段閱讀「使用手冊」；不必一次記住所有程序。
 

@@ -1,6 +1,6 @@
 # 聖言中學導學風紀值班表生成系統
 
-> **已核實線上來源（2026-07-29）：** Windows origin 正運行 clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`；canonical Worker version `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量。297 個發布檔案的指紋 `121302ae68946f43b7eedc93ed0dc9186574f5e42e06551d1fe120263c47e075` 通過 15／15 正式閘門；正式備份、隔離還原、origin health／readiness、Cloudflare Access、桌面／手機 Guest、語言／主題及 Viewer 復原頁均已核對。第一個 origin 回退是 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2`，第一個 Worker 回退是 `7816b183-3edb-49ca-b39b-a91091ae794f`；首席導學風紀及教師顧問的受監督真人驗收仍未完成。下文較舊的 live／candidate 字樣只保留歷史證據，均由本段取代。
+> **已核實線上來源（2026-07-30）：** Windows origin 正運行 clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e`；canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量。297 個發布檔案的指紋 `df4a2ecb84f242e24349570d209e95405d7251c85810450ce39cf957427b92b9` 通過 15／15 正式閘門；正式備份 `20260730-065635-724310-manual_verified_backup.sqlite3`（SHA-256 `5876a5ef4cbee6c5573852f454a734c466c5aa17c0bcee8b8faf5c4de8db668c`）、隔離還原、公平及行數核對、origin health／readiness、0% Worker smoke、100% promotion、canonical health／entrance／viewer 與 Cloudflare Access fail-closed 核對均已通過。第一個 origin／Worker 回退分別是 tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4` 及 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`；首席導學風紀及教師顧問的受監督真人驗收仍未完成。下文較舊的 live／candidate 字樣只保留歷史證據，均由本段取代。
 >
 > **非以役人，乃役於人。**
 > 
@@ -69,7 +69,7 @@ Admin 是正式工作的標準版本；Guest 使用同一組路由、導航、�
 | `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；歷史整合來源 | rc17 的多用戶、操作層級及前端穩定性整合線；現行發布已由 rc27 取代 |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；歷史整合來源 | 前一階段 Service Weave v1.2 編輯式整合線 |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 現行正式來源為 `v1.2.0-rc.31`；主機及 Worker 身份見本頁最上方線上來源摘要 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 現行正式來源為 `v1.2.0-rc.39`；第一層配對回退為 `v1.2.0-rc.35`，主機及 Worker 身份見本頁最上方線上來源摘要 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -83,13 +83,13 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 網站公開入口、分享檢視器及 NiceGUI 工作台共用頁尾署名 `Copyright © 2026 LI Chuangjie`；供群組發布的乾淨值班表 PDF 仍由匯出選項決定是否加入補充頁尾。
 
-**歷史 rc30 乾淨發布證據：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 曾以不可變來源同步到 `C:\SingYinRoster`；`/healthz` 正常、`/readyz` ready、`writeReady=true`。296 個發布輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前正式備份 `20260727-023041-069097-manual_verified_backup.sqlite3`、SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b`、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 曾經 0% version smoke 後升至 100% 流量；canonical root／healthz、desktop／320px theme control 及 Guest Engineering ≈10B disclosure 均已核對。這是最近完整驗證的乾淨 origin＋Worker 組合；`11763f08…` 現為立即已知已驗證 edge 回退，`d7b51f21…` 只屬更早歷史。首席導學風紀及教師顧問真人驗收仍未完成。
+**歷史 rc30 乾淨發布證據：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 曾以不可變來源同步到 `C:\SingYinRoster`；`/healthz` 正常、`/readyz` ready、`writeReady=true`。296 個發布輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前正式備份 `20260727-023041-069097-manual_verified_backup.sqlite3`、SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b`、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 曾經 0% version smoke 後升至 100% 流量；canonical root／healthz、desktop／320px theme control 及 Guest Engineering ≈10B disclosure 均已核對。這是當時完整驗證的乾淨 origin＋Worker 組合；目前版本及第一層回退以本頁頂部 rc39／rc35 記錄為準。首席導學風紀及教師顧問真人驗收仍未完成。
 
 **公開安全及版本完整性：** 公開瀏覽器只接觸 Cloudflare Worker；正式 NiceGUI origin 仍只綁定 loopback，Admin 必須同時通過 Cloudflare Access、私密精確電郵 allowlist、短期 session 及請求綁定的 HMAC principal。GitHub `main` 只接受通過 `test-and-audit` 與 Python／Worker CodeQL 的 pull request，禁止 force-push 和刪除；Actions 引用必須固定完整 SHA，`v*` 發布標籤建立後亦不可更新或刪除。完整威脅模型、資料分類、事件處理及殘餘限制見[公開網站安全與私隱模型](docs/SECURITY_AND_PRIVACY.md)。
 
-**最近乾淨發布（v1.2 rc30）：** 在 rc27 的已驗證 workflow 與 rc28／rc29 的入口及部署工具修正上，rc30 把語言切換改為目的語言本名，並把外觀改為明確 System／Light／Dark 三選一；Engineering 以有日期及非遙測聲明的 **≈10B** 約數呈現提供截圖所見的跨工具創作者 token 用量。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。Public／Viewer 支援報告保持瀏覽器暫存；目前線上來源待對帳，首席導學風紀及教師顧問真人驗收仍待完成。
+**歷史乾淨發布（v1.2 rc30）：** 在 rc27 的已驗證 workflow 與 rc28／rc29 的入口及部署工具修正上，rc30 把語言切換改為目的語言本名，並把外觀改為明確 System／Light／Dark 三選一；Engineering 以有日期及非遙測聲明的 **≈10B** 約數呈現提供截圖所見的跨工具創作者 token 用量。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。Public／Viewer 支援報告保持瀏覽器暫存；目前 rc39 線上來源已對帳，首席導學風紀及教師顧問真人驗收仍待完成。
 
-> **rc31 來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 現已包括單一淺色／深色控制、完整週表回溯求解及嚴格崗位／權重驗證、Admin／Guest 隔離而共享的生成檔案交付、依實際渲染狀態同步的手機抽屜、全域業務寫入 admission、recovery marker 下的 diagnostic-only 啟動，以及 exact-byte staged 備份／交接／還原與 migration provenance guard。未設定外觀時跟隨作業系統；只有刻意進入 Admin／Guest 時，公開入口才暫存經 Worker 驗證、最多 120 秒且不承載身份的明確 `light`／`dark` 提示，Worker 再把它放進簽署 session 及 request-bound principal，建立 session 後清除暫存 cookie；既有工作區偏好永遠優先。Guest 單檔上限為 5 MiB，Admin 為 64 MiB；總記憶體上限 128 MiB，當中保留 64 MiB／16 票證予 Admin。較早 901／929 Python 及八個直接 Chromium 情境只屬歷史切片；凍結的 297 個可部署來源檔案已以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過 15／15 正式 `--release` 閘門，包括完整 Python、48／48 Worker contracts、16 個本機渲染 Public→Admin／Guest 主題聯動情境、桌面／手機／平板、完整寫入／雙語 PDF、備份失敗及隔離還原。尚待完成的是 protected-main 合併與標籤、正式備份與隔離還原、相配 origin／Worker 部署、canonical 線上核對及真人驗收。目前線上來源仍待對帳；乾淨 rc30＋`11763f08…` 只是最近完整驗證的乾淨基線。
+> **歷史 rc31 來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 的 297 個可部署來源檔案曾以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時 15／15 正式 `--release` 閘門。它只保留為來源演進證據，沒有部署，亦不是目前候選或回退目標；目前 rc39 production pair 及 rc35 第一層回退以本頁頂部為準。
 
 rc16–rc29 是這批能力的歷史來源；rc27 是更深的已驗證 origin 歷史回退，不是目前第一層 edge 回退。下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換曾由乾淨 rc30 驗證，並保留在 rc31 候選。
 
@@ -364,7 +364,7 @@ Worker 部署除 Viewer 管理所需的 `ADMIN_BEARER_TOKEN` 外，亦必須配�
 不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
 
 **目前可否在校外使用？**
-可以。canonical 網站目前仍可連線，但 origin／Worker 來源正待對帳，不能以健康回應推定為 exact rc30。最近完整驗證的乾淨復原組合是 rc30／`74b84f4` 加 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`；rc27／`c4c728aa` 與 `d7b51f21…` 只屬更深一層的歷史復原來源。一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
+可以。canonical 網站目前由已對帳的 rc39 origin／Worker 配對提供服務；第一層受控回退是 rc35／`570e29f` 加 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`。rc30／rc27 及其 Worker 只屬更深歷史，不應作日常第一選擇。一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
 
 **別人可否用 Viewer 連結編輯週表？**
 不可。分享連結永遠唯讀；網址參數、瀏覽器標頭或畫面操作都不能把訪客升級為管理員。只有 Access policy 內的管理員身份通過驗證後，Worker 才轉送完整工作台。
@@ -468,7 +468,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The v1.2 topology uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. The active origin and Worker are operational but provenance-drifted and must not be attributed to an exact release. The last fully verified clean pair is `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` with Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`; it passed 14／14 source-matched gates under fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` and remains the nearest known verified recovery target after preserving the active drift. rc27 and Worker `d7b51f21-7692-418d-866c-034c2c57292d` are deeper historical recovery evidence. Supervised human acceptance remains open. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
+The v1.2 topology uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. Current production is clean rc39／`80b9de7ea8abce57b67c6041e580f915a819315e` with Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`; the first controlled rollback is rc35／`570e29f745eef7c1995635d1b187021a8fec6ea4` with Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`. Supervised human acceptance remains open. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 

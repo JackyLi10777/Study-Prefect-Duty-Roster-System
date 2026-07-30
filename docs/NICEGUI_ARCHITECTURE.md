@@ -1,17 +1,17 @@
 # NiceGUI Runtime Architecture
 
-> **Verified production truth (2026-07-29):** Windows runs clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`; canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` serves 100% traffic. The 297-file source passed 15／15 gates and the paired rollout passed backup／restore, readiness, Access and rendered browser checks. The first origin rollback is rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2`; the first Worker rollback is `7816b183-3edb-49ca-b39b-a91091ae794f`. Human acceptance remains open. Older live／candidate wording is historical and superseded by this notice.
+> **Verified production truth (2026-07-30):** Windows runs clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e`; canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` serves 100% traffic. The 297-file source fingerprint `df4a2ecb84f242e24349570d209e95405d7251c85810450ce39cf957427b92b9` passed 15／15 gates and the paired rollout passed backup／restore, readiness, staged promotion, canonical health／entrance／viewer and Access fail-closed checks. The first origin rollback is tagged `v1.2.0-rc.35` at commit `570e29f745eef7c1995635d1b187021a8fec6ea4`; the first Worker rollback is `d7069f99-81b4-4388-aa28-383b58bfc68f`. Human acceptance remains open. Older live／candidate wording is historical and superseded by this notice.
 >
 ## Purpose
 
 `nicegui_app/` is the sole official local runtime for the Sing Yin Study Prefect Duty Roster System. The earlier `frontend/`, `backend/`, `demo_code/`, and `demo_code2/` runtime trees are absent from the active release.
 
-> **Last fully verified clean v1.2 rc30 evidence:** the controlled Windows origin uses
+> **Historical clean v1.2 rc30 evidence:** the controlled Windows origin used
 > `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`; the canonical Worker is
 > `11763f08-d40d-46d5-93dc-5ca2599d4154`. The 296-input runtime release passed all 14 formal gates
 > with fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc`.
-> First-level origin rollback is rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`;
-> Worker `d7b51f21-7692-418d-866c-034c2c57292d` is the immediately previous edge version.
+> At that time, first-level origin rollback was rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d`;
+> Worker `d7b51f21-7692-418d-866c-034c2c57292d` was the immediately previous edge version.
 > A fresh production backup, checksum, fairness reconciliation and isolated
 > restore passed before cutover. Worker version
 > `11763f08-d40d-46d5-93dc-5ca2599d4154` passed zero-percent version smoke before
@@ -41,7 +41,7 @@
 > restore. Worker source and configuration were unchanged, so Worker version
 > `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` was retained without a new Worker
 > rollout. rc21 is now a historical secondary recovery baseline; rc26 later replaced it,
-> while rc27 is now the first-level origin rollback beneath the last verified clean rc30 origin described above.
+> while rc27 was the first-level origin rollback beneath rc30 at that time. Current rc39 production and rc35 rollback are recorded at the top of this document.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 

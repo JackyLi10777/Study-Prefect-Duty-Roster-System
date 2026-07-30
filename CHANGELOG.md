@@ -2,6 +2,20 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
+## v1.2.0-rc.39 — released, 2026-07-30
+
+- Preserves the complete rc35 product behavior and R5／R6／R7 controls while correcting Windows scheduled-task credential handling for unattended origin deployment.
+- Rotates the dedicated service-account password in memory, uses the same protected credential for task registration and rollback, disposes the secure value, and never writes the password to source, logs, reports or release bundles.
+- Passed all 15 formal gates against the 297-file fingerprint `df4a2ecb84f242e24349570d209e95405d7251c85810450ce39cf957427b92b9` at annotated tag `v1.2.0-rc.39`／commit `80b9de7ea8abce57b67c6041e580f915a819315e`.
+- Deployed to the Windows origin after verified backup `20260730-065635-724310-manual_verified_backup.sqlite3` (SHA-256 `5876a5ef4cbee6c5573852f454a734c466c5aa17c0bcee8b8faf5c4de8db668c`) and isolated restore; `/healthz` and `/readyz` passed with `writeReady=true` and no pending backup obligation.
+- Promoted Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` from 0% staged smoke to 100% traffic. Canonical health, entrance, Viewer and Cloudflare Access fail-closed／OTP checks passed.
+- Records tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4` and Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` as the immediate paired rollback. Supervised human acceptance remains open.
+
+## v1.2.0-rc.36–rc.38 — release-tool corrections, superseded by rc39, 2026-07-30
+
+- Corrected the Windows deployment path in successive candidates; stopped each unsuccessful attempt before an unsafe production source or traffic change.
+- `v1.2.0-rc.37` is a void protected tag and was never deployed. `v1.2.0-rc.38` passed source verification but stopped safely at the scheduled-task credential boundary and was never deployed.
+
 ## v1.2.0-rc.35 — released, 2026-07-29
 
 - Ships the R5／R6 security and recovery controls, unified Light／Dark handoff, and one system-wide semantic icon morph grammar without layout drift, rotation, or competing animation systems.
