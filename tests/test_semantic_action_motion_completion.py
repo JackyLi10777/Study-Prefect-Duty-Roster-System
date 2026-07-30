@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.ui.icon_motion_contract import (
     ICON_MOTION_CONTRACTS,
@@ -44,6 +46,23 @@ def test_release_critical_controls_have_traceable_motion_contracts() -> None:
     assert all(contract.reduced_motion for contract in by_key.values())
 
 
+def test_traceability_rejects_placeholder_routes_copy_and_callsites() -> None:
+    baseline = ICON_MOTION_CONTRACTS[0]
+    invalid = (
+        replace(baseline, key="bad-route", routes=("/does-not-exist",)),
+        replace(baseline, key="bad-copy", i18n_keys=("not_a_real_translation_key",)),
+        replace(baseline, key="bad-file", callsite_hint="not_a_real_file.py"),
+        replace(baseline, key="bad-token", callsite_hint="page_catalog.py:not_a_real_token"),
+    )
+
+    errors = validate_icon_motion_contracts(invalid)
+
+    assert "Unknown route for bad-route: /does-not-exist" in errors
+    assert "Unknown i18n key for bad-copy: not_a_real_translation_key" in errors
+    assert "Unresolved callsite for bad-file: not_a_real_file.py" in errors
+    assert "Missing callsite token for bad-token: not_a_real_token" in errors
+
+
 def test_shared_runtime_owns_operation_lifecycle_without_fake_page_timelines() -> None:
     motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
     combined_pages = "\n".join(
@@ -77,6 +96,8 @@ def test_settings_gear_is_the_only_bounded_rotation_exception() -> None:
     assert "rotation: 270" in gear_scope
     assert "killTweensOf(icon)" in gear_scope
     assert "clearProps: 'rotation,transform'" in gear_scope
+    assert "[aria-current=\"page\"]" in gear_scope
+    assert ".sy-nav-link--active" in gear_scope
     assert '.q-icon[data-sy-icon-motion="gear"]' in css
     assert "rotate(70deg)" in css
     assert "animation-iteration-count: infinite" not in css

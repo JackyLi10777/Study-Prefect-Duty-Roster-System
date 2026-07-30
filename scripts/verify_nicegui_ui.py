@@ -654,26 +654,26 @@ def main() -> None:
         sound_icon = sound_toggle.locator(".q-icon").first
         sound_host_box = sound_toggle.bounding_box()
         assert sound_icon.get_attribute("data-sy-icon-story-category") == "persistent"
-        assert sound_icon.inner_text().strip() == "volume_off"
+        assert sound_icon.inner_text().strip() == "volume_up"
         sound_toggle.click()
-        enabled_sound_toggle = page.get_by_role("button", name="關閉提示音")
-        enabled_sound_toggle.wait_for(timeout=5_000)
+        disabled_sound_toggle = page.get_by_role("button", name="開啟提示音")
+        disabled_sound_toggle.wait_for(timeout=5_000)
         page.wait_for_function(
-            "document.querySelector('[data-sy-sound-toggle] .q-icon')?.textContent.trim() === 'volume_up'"
+            "document.querySelector('[data-sy-sound-toggle] .q-icon')?.textContent.trim() === 'volume_off'"
         )
-        updated_sound_host_box = enabled_sound_toggle.bounding_box()
+        updated_sound_host_box = disabled_sound_toggle.bounding_box()
         assert sound_host_box is not None and updated_sound_host_box is not None
         for coordinate in ("x", "y", "width", "height"):
             assert abs(sound_host_box[coordinate] - updated_sound_host_box[coordinate]) < 0.6
-        assert enabled_sound_toggle.evaluate(
+        assert disabled_sound_toggle.evaluate(
             "element => element.querySelector('.q-btn__content > span.block') === null"
         )
         page.wait_for_function("window.__syVerifiedSoundKinds.includes('success')", timeout=5_000)
         page.wait_for_function("window.__singYinAudioContext !== undefined", timeout=5_000)
         page.reload(wait_until="domcontentloaded")
-        page.get_by_role("button", name="關閉提示音").wait_for(timeout=5_000)
-        page.get_by_role("button", name="關閉提示音").click()
         page.get_by_role("button", name="開啟提示音").wait_for(timeout=5_000)
+        assert page.get_by_test_id("sound-control").get_attribute("aria-pressed") == "false"
+        assert page.get_by_test_id("sound-control").locator(".q-icon").first.inner_text().strip() == "volume_off"
         primary_flow_action.dispatch_event("pointerdown")
         page.evaluate(
             """() => {

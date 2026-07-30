@@ -413,7 +413,10 @@
   };
   const animateGearActivation = (host) => {
     if (!(host instanceof HTMLElement) || reducedMotion() || !window.gsap) return;
-    if (host.matches('.disabled,[aria-disabled="true"],[aria-busy="true"]')) return;
+    if (
+      host.matches('.disabled,[aria-disabled="true"],[aria-busy="true"]')
+      || host.matches('[aria-current="page"],.sy-nav-link--active')
+    ) return;
     const icon = host.querySelector(`${interactiveIconSelector}[data-sy-icon-motion="gear"]`);
     if (!(icon instanceof HTMLElement)) return;
     cancelIconTimeline(icon);

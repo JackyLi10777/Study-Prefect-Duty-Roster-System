@@ -169,6 +169,12 @@ def _gear_contract(page: Page) -> dict[str, Any]:
         raise SemanticIconVerificationError("The Settings gear did not show its bounded intent preview.")
     page.mouse.move(1, 1)
     page.wait_for_timeout(240)
+    host.dispatch_event("pointerdown", {"pointerType": "mouse", "button": 0})
+    page.wait_for_timeout(80)
+    activation_transform = icon.evaluate("element => getComputedStyle(element).transform")
+    if activation_transform in {"none", resting_transform}:
+        raise SemanticIconVerificationError("The Settings gear activation did not expose an intermediate rotation state.")
+    page.wait_for_timeout(340)
     for _ in range(3):
         host.dispatch_event("pointerdown", {"pointerType": "mouse", "button": 0})
         page.wait_for_timeout(35)
@@ -176,7 +182,11 @@ def _gear_contract(page: Page) -> dict[str, Any]:
     if icon.evaluate("element => getComputedStyle(element).transform") != resting_transform:
         raise SemanticIconVerificationError("Rapid Settings activation accumulated rotation state.")
     _assert_stable_box(before, host.bounding_box())
-    return {"role": icon.get_attribute("data-sy-icon-motion"), "previewTransform": preview_transform}
+    return {
+        "role": icon.get_attribute("data-sy-icon-motion"),
+        "previewTransform": preview_transform,
+        "activationTransform": activation_transform,
+    }
 
 
 def _lifecycle_contract(page: Page) -> dict[str, str]:
