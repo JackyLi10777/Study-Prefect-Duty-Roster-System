@@ -93,7 +93,7 @@ Worker 必須有：
 - 不把管理員加入 Cloudflare Dashboard 成員作為登入前提。
 - 不建立應用內共用密碼。
 
-**控制台與歷史乾淨證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。乾淨 rc30 origin＋Worker `11763f08…` 組合曾通過 canonical root、gateway health、真實 Guest session／logout、Admin Access handoff、Viewer、desktop／320px theme control 及 Guest Engineering 核對；目前 rc39 配對及第一層 rc35 回退以本頁頂部的最新證據為準。
+**控制台與歷史乾淨證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。乾淨 rc30 origin＋Worker `11763f08…` 組合曾通過 canonical root、gateway health、真實 Guest session／logout、Admin Access handoff、Viewer、desktop／320px theme control 及 Guest Engineering 核對；目前 rc41 配對及第一層 rc40 配對回退以本頁頂部的最新證據為準。
 
 ## 4. 來源驗證
 

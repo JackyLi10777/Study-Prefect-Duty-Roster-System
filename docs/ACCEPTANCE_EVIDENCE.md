@@ -4,9 +4,9 @@
 
 本文件把機器驗證與真人驗收分開。`logs/release-candidate-report.json` 顯示 `pass`，只代表下列自動化證據在隔離虛構資料中通過；它不代表實際名單、學校做法、專用電腦、加密離機位置或外部存取決定已獲真人批准。
 
-> **歷史 rc30 乾淨發布證據（2026-07-27）：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是當時完整驗證的乾淨組合。rc30 的 296-file runtime 指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate，包括 894 項 Python、3 個 motion 及 46 個 Worker contract，並完成受控 Windows 切換、正式備份、隔離還原、0% Worker smoke、100% promotion、origin health／readiness 與 canonical rendered checks。現在的 rc39 production pair 及 rc35 第一層回退以本頁頂部為準；機器與線上證據不能代替真人驗收，後者保持未完成。
+> **歷史 rc30 乾淨發布證據（2026-07-27）：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是當時完整驗證的乾淨組合。rc30 的 296-file runtime 指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate，包括 894 項 Python、3 個 motion 及 46 個 Worker contract，並完成受控 Windows 切換、正式備份、隔離還原、0% Worker smoke、100% promotion、origin health／readiness 與 canonical rendered checks。現在的 rc41 production 及 rc40 第一層配對回退以本頁頂部為準；rc39／rc35 只屬更深歷史。機器與線上證據不能代替真人驗收，後者保持未完成。
 >
-> **歷史 rc31 綜合來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 的 297 個可部署來源檔案曾以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時 15／15 正式 `--release` 閘門。它只保留為來源演進證據，沒有部署，亦不是目前候選或回退目標；目前 rc39 production pair 及 rc35 第一層回退以本頁頂部為準。
+> **歷史 rc31 綜合來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 的 297 個可部署來源檔案曾以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時 15／15 正式 `--release` 閘門。它只保留為來源演進證據，沒有部署，亦不是目前候選或回退目標；目前 rc41 production 及 rc40 第一層配對回退以本頁頂部為準。
 >
 > **rc28 來源候選（未上線）：** 46 個 Worker contract 已證明四個身份 CTA 共用同一控制器，並覆蓋成功、拒絕、同步例外、逾時、安靜意圖、已播放、重複啟動、`pageshow` 及媒體失敗分類。`scripts/verify_public_entry_music.py` 以真實 Chromium 覆蓋 desktop Admin、desktop Guest、390px mobile Admin／Guest、滑鼠／鍵盤、安靜、已播放、快速雙擊及 silent `/view`，每個身份測試只觀察一次目標請求並在建立真正 session／輸入私人憑證前截停。NiceGUI 的聚焦 Chromium 階段另已覆蓋 desktop menu、320px 全寬 System／Light／Dark 選擇器、目的語言本名、偏好隔離、256–1024px adaptive matrix、reduced motion 及零 console／page errors。Engineering 的 ≈10B 是按 2026-07-27 提供截圖把 9.38B 四捨五入的跨工具創作者指標，不是即時產品遙測。這些聚焦證據仍不是正式發布：須再由 exact-source release report、0% Worker version smoke、100% promotion 及 canonical live browser smoke 補完；首席導學風紀及教師顧問真人驗收仍保持未完成。
 >

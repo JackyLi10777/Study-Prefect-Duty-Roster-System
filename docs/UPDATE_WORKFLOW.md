@@ -1,7 +1,6 @@
 # 更新、驗證與上傳：一個命令完成正確層級
 
 > **線上來源真相（2026-07-31）：**目前 runtime 是 clean annotated `v1.2.0-rc.41`／`74072b0175ff64807312a8cc5b9cd016b6628210`，canonical Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` 承接 100% 流量。298-file 指紋 `cd4344d33f78ba160500a5921382d65e5aece8574a3c0edd1a30b4088ad10186` 通過 15／15 gate，並完成正式備份、隔離還原、受控 origin 部署、0% 指定版本 smoke、100% promotion 及 canonical checks。第一層配對回退是 rc40／`2ec900a5ef1c021183717dfa648ef76b55452ffb` 與 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`；健康閘門或候選驗證仍不等於真人驗收。
-
 > **rc37／rc38 歷史界線：**受保護的 `v1.2.0-rc.37` 指向較早 rc36 source，屬 void／未部署標籤；`v1.2.0-rc.38` 通過來源閘門但沒有通過 Windows 排程帳戶憑證切換，因此沒有取代 rc35。新部署或回退不可把兩者誤當成目前線上版本。
 
 我是李創杰。這份流程是我與 Codex 對正式發布工作的反思結果：更新慢的主因不是 Git 上傳，而是過去把每次文字或測試修改都當成完整 runtime 發布。

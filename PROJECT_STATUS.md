@@ -14,7 +14,7 @@
 
 **R7 remediation and selected B → A → C composition（retained in current rc41 production, 2026-07-31）：** the release controls, permanent share tombstones, fairness reconciliation, restore preflight and explicit roster-capacity contracts remain active. The interface continues to use **B — Operational Rhythm** as the workflow skeleton, **A — Quiet Editorial Continuity** as the ordinary visual layer and **C — Sacred Service Narrative** only for Daily Verse. These controls are covered by the rc41 evidence above; only supervised acceptance remains pending.
 
-**Release-history clarification（2026-07-30）：** protected tag `v1.2.0-rc.37` points to an earlier rc36 source and is void／not deployed; `v1.2.0-rc.38` passed its source gate but was not deployed. rc39 is the first origin rollback; only rc40 is the current deployed release.
+**Release-history clarification（2026-07-31）：** protected tag `v1.2.0-rc.37` points to an earlier rc36 source and is void／not deployed; `v1.2.0-rc.38` passed its source gate but was not deployed. Rc41 is the current deployed release, rc40 is the first paired rollback, and rc39／rc35 are deeper recovery history.
 
 **R5／R6 remediation provenance（retained in current rc41 production）：** clean Git and tag binding, strict loopback and secret checks, write-boundary principal expiry, bounded Guest idempotency, sanitized incident attachments, backup fencing, staged-music revalidation and clipboard recovery remain active. Current evidence is recorded in the rc41 section above.
 
@@ -177,7 +177,7 @@ Before the rc39 controlled rollout, the protected `C:\SingYinRoster` origin had 
 
 The 2026-07-15 browser-only `/try` trial is retained as historical evidence only. In the current v1.2 product, `/guest` and `/try` are compatibility redirects to the common entrance; a server-verified Guest session uses the same NiceGUI routes with a bounded fictional in-memory adapter. The official database still starts empty on a new installation and receives no automatic demonstration seed; Practice Mode keeps its separate local fictional seed. Existing official data may be retired only by the controlled reset after a new verified backup, isolated restore proof and successful revocation of every public Viewer link.
 
-Historical rc30 verified the real-use refinement requested on 2026-07-15: every in-app crest container is transparent in both appearances and its local PNG appears without a delayed fade; local contextual music makes one visible low-volume page-ready attempt with immediate pause/off controls and explicit playing／paused／browser-blocked／off states; the full Daily Verse route adds a dignified read／reflect／pray／serve sequence; the unified Guest product retains the non-sensitive Platform & Resources entries, team model, solutions and co-creation narrative on the same NiceGUI routes; and Handover provides a maintenance-locked new-school-year rollover which creates verified before／after backups, archives the active directory, cancels unused pre-generation leave and preserves roster, fairness and audit history. These behaviours are retained in the exact rc39 production evidence recorded above.
+Historical rc30 verified the real-use refinement requested on 2026-07-15: every in-app crest container is transparent in both appearances and its local PNG appears without a delayed fade; local contextual music makes one visible low-volume page-ready attempt with immediate pause/off controls and explicit playing／paused／browser-blocked／off states; the full Daily Verse route adds a dignified read／reflect／pray／serve sequence; the unified Guest product retains the non-sensitive Platform & Resources entries, team model, solutions and co-creation narrative on the same NiceGUI routes; and Handover provides a maintenance-locked new-school-year rollover which creates verified before／after backups, archives the active directory, cancels unused pre-generation leave and preserves roster, fairness and audit history. These behaviours are retained in the exact rc41 production evidence recorded above.
 
 The 2026-07-16 Dashboard refinement is active in the protected C-host origin. A critical review of ReactBits, SuperDesign, 21st.dev and a Linear design case produced one deliberately narrow information-architecture change: on wide desktops the primary weekly workbench is paired with a compact recent-roster review rail; at 1280 px and below the same semantic DOM order stacks into the existing verse → next safe action → weekly work → recent history sequence. No generic KPI strip, decorative chart, React／Tailwind component import, shader, looping motion, new image or runtime dependency was added. The bounded fictional Guest adapter and all operational policy／persistence layers remain unchanged.
 
@@ -432,7 +432,7 @@ revision; they do not supersede the v1.2 release truth at the top of this file.
 ## Next Steps
 
 1. Complete supervised Head Study Prefect and teacher-advisor acceptance for the weekly workflow, PDF delivery, safe withdrawal, problem reporting and handover.
-2. Record any evidence-based usability issue found during that session without changing the deployed rc35 source or rollback pair first.
+2. Record any evidence-based usability issue found during that session without first changing the deployed rc41 source or its rc40 paired rollback.
 3. Create a new immutable candidate only if acceptance identifies a concrete defect or a separately approved release scope.
 
 ## Key Decisions and Architecture
@@ -462,7 +462,7 @@ Important boundaries:
 
 | Risk | Status | Mitigation |
 |---|---|---|
-| Supervised human acceptance remains unsigned | Acceptance item, not a runtime blocker | Head Study Prefect and teacher advisor complete the published acceptance checklist against the deployed rc35 pair; record only evidence-based follow-up issues |
+| Supervised human acceptance remains unsigned | Acceptance item, not a runtime blocker | Head Study Prefect and teacher advisor complete the published acceptance checklist against the deployed rc41 pair; record only evidence-based follow-up issues |
 | Local-first support and content distillation | Introduced in rc26; retained and reverified in current rc41 production | Admin host-local consent, browser-only Public／Guest／Viewer reports, simplified route copy and Worker `/support` passed exact-source and canonical checks; retain support content outside roster transactions and Git |
 | Signed Guest snapshot bridge | Introduced in rc26; retained and reverified in current rc41 production | Same-tab refresh, duplicate-tab allocation, nonce binding, replay rejection and cleanup passed the fingerprint-bound release report and controlled deployment checks |
 | Guest and Admin share page renderers | Managed by capability boundary | Deny by default in `PageContext`, adapter and services; keep dependency-boundary and direct-service bypass tests in the formal gate |

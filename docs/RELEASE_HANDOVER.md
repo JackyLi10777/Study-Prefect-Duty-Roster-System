@@ -1,7 +1,6 @@
 # 首次發布與交接手冊 / First-release and handover guide
 
 > **交接前必讀的線上來源真相（2026-07-31）：** Windows origin 正運行 clean annotated `v1.2.0-rc.41`／`74072b0175ff64807312a8cc5b9cd016b6628210`；canonical Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` 承接 100% 流量。298-file 指紋 `cd4344d33f78ba160500a5921382d65e5aece8574a3c0edd1a30b4088ad10186` 通過 15／15 gate；正式備份 `20260730-160630-793049-manual_verified_backup.sqlite3`（SHA-256 `21feb26a1c7ffad17bfd9b74192a8917dfee910f1cbd1e6fa20e0a4c4ffc525f`）、隔離還原、公平與行數核對、restore audit、origin readiness、0% Worker smoke、100% promotion 及 canonical checks 已通過。第一層配對回退是 rc40／`2ec900a5ef1c021183717dfa648ef76b55452ffb` 與 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`；rc39／`80b9de7ea8abce57b67c6041e580f915a819315e`、rc35／`570e29f745eef7c1995635d1b187021a8fec6ea4` 及 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 保留為更深復原證據。真人驗收未完成。下文較舊狀態只作歷史證據。
-
 > **rc37／rc38 版本澄清：**受保護的 `v1.2.0-rc.37` 標籤指向較早 rc36 source，屬 void／未部署版本，不能當成回退目標；`v1.2.0-rc.38` 通過來源閘門，但 Windows 排程帳戶憑證邊界令部署在切換前停止並保留 rc35。正式服務只以本頁頂部的 rc41 origin 與 Worker 為準。
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。

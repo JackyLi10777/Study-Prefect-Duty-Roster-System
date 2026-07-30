@@ -229,6 +229,52 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
         assert "2ec900a5ef1c021183717dfa648ef76b55452ffb" in current_header
         assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in current_header
 
+    active_pair_lines = (
+        next(line for line in status.splitlines() if line.startswith("**Current Phase:**")),
+        next(
+            line
+            for line in architecture.splitlines()
+            if line.startswith("> **Verified production truth (")
+        ),
+        next(
+            line
+            for line in security.splitlines()
+            if line.startswith("> **線上來源真相（")
+        ),
+        next(
+            line
+            for line in handover.splitlines()
+            if line.startswith("> **交接前必讀的線上來源真相（")
+        ),
+        next(
+            line
+            for line in acceptance.splitlines()
+            if line.startswith("> **線上來源真相（")
+        ),
+    )
+    for active_pair_line in active_pair_lines:
+        assert "v1.2.0-rc.41" in active_pair_line
+        assert "74072b0175ff64807312a8cc5b9cd016b6628210" in active_pair_line
+        assert "610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e" in active_pair_line
+        assert "rc40" in active_pair_line.lower()
+        assert "2ec900a5ef1c021183717dfa648ef76b55452ffb" in active_pair_line
+        assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in active_pair_line
+
+    stale_active_claims = (
+        "only rc40 is the current deployed release",
+        "the current rc39 origin",
+        "current rc39 production pair",
+        "currently rc39 production pair",
+        "against the deployed rc35 pair",
+        "目前 rc39 主機",
+        "目前 rc39 origin",
+        "第一層 rc35 回退",
+    )
+    for document in (status, architecture, security, handover, acceptance, quickstart):
+        normalized = document.lower()
+        for stale_claim in stale_active_claims:
+            assert stale_claim.lower() not in normalized
+
     # Detailed historical rc20 provenance belongs in the status and handover
     # records; current architecture and security guides need not duplicate it.
     for document in (status, handover):
