@@ -86,14 +86,15 @@ def test_settings_sound_switch_previews_the_enabled_state() -> None:
     assert 'ui.notify(t("sound_feedback_off")' in handler
 
 
-def test_browser_verifier_proves_default_sound_before_persisting_opt_out() -> None:
+def test_browser_verifier_previews_sound_with_a_real_enable_gesture_before_opt_out() -> None:
     verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
     sound_flow = verifier.split("sound_icon = sound_toggle.locator", 1)[1].split(
         'page.reload(wait_until="domcontentloaded")', 1
     )[0]
 
-    feedback = "window.dispatchEvent(new CustomEvent('sy:feedback', {detail: {kind: 'success'}}))"
-    assert sound_flow.index(feedback) < sound_flow.index("sound_toggle.click()")
-    assert sound_flow.index("window.__syVerifiedSoundKinds.includes('success')") < sound_flow.index(
-        "sound_toggle.click()"
-    )
+    disable_index = sound_flow.index("sound_toggle.click()")
+    enable_index = sound_flow.index("disabled_sound_toggle.click()")
+    preview_index = sound_flow.index("window.__syVerifiedSoundKinds.includes('success')")
+    opt_out_index = sound_flow.index("enabled_sound_toggle.click()")
+    assert disable_index < enable_index < preview_index < opt_out_index
+    assert "window.__singYinAudioContext?.state === 'running'" in sound_flow
