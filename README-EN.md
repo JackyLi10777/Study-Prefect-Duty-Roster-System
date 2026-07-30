@@ -138,9 +138,9 @@ roster matrix, and auditable published-roster withdrawal.
 Current rc39 production retains and re-verifies admission control that rejects excess Guest sessions without
 evicting active users, stronger import and network bounds, aggregate fairness
 reconciliation, explicit return paths, and stable button containers whose icons
-transform internally. Its 296-input fingerprint
-`15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc`
-passed all 14 formal gates before the controlled origin and Worker rollout.
+transform internally. Its 297-file fingerprint
+`df4a2ecb84f242e24349570d209e95405d7251c85810450ce39cf957427b92b9`
+passed all 15 formal gates before the controlled origin and Worker rollout.
 
 ## Repository editions
 

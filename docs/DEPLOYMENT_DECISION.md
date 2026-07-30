@@ -125,11 +125,11 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 3. 進入短暫 maintenance；
 4. 從該不可變 tag 更新 Windows bundle，執行 additive migration `0011_assist_assignment_mode`；
 5. 保持現行受保護設定不變，核對 `/healthz` 及 `/readyz`；
-6. 比較 Worker source／受保護設定；沒有改動時記錄沿用已驗證版本，有改動時才執行 staged Worker rollout；目前 edge 的立即回退是 `7816b183-3edb-49ca-b39b-a91091ae794f`，rc30 的 `11763f08…` 只屬更早歷史；
+6. 比較 Worker source／受保護設定；沒有改動時記錄沿用已驗證版本，有改動時才執行 staged Worker rollout；目前 edge 的立即回退是 `d7069f99-81b4-4388-aa28-383b58bfc68f`，rc34 的 `7816b183…` 與 rc30 的 `11763f08…` 只屬更早歷史；
 7. 以虛構資料核對 Public、Admin、Guest、Viewer、PDF、登出、到期及多分頁隔離；
 8. 完成真人驗收後才結束 maintenance 並宣布候選上線。
 
-任何候選 origin／線上 gate 失敗，先保存失敗證據，再依 rc35 deployment report 回復 origin rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2` 及 Worker `7816b183-3edb-49ca-b39b-a91091ae794f`；只有較近回退無法安全恢復且事故負責人批准時，才使用 rc30、rc27 或更早的已驗證基線。Additive migration 必須讓回退版本仍可讀原有資料。
+任何新候選 origin／線上 gate 失敗，先保存失敗證據，再回復 tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4` 及 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`；只有這個配對回退無法安全恢復且事故負責人批准時，才使用 rc34、rc30、rc27 或更早的已驗證基線。Additive migration 必須讓回退版本仍可讀原有資料。
 
 逐步 Cloudflare 設定、staged rollout、驗收及回退命令見
 [`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)。
@@ -149,10 +149,11 @@ remains the sole system of record for SQLite, backups, logs, PDFs, and local
 music. Current production identity is recorded in the document header and must
 be re-observed after every rollout.
 
-Historically, before the rc31 rollout, the active origin and Worker were
-provenance-drifted. Exact rc30 source passed the `15d155d8…` fingerprint gates
+Historically, before the rc39 rollout, the active origin and Worker had periods
+of provenance drift. Exact rc30 source passed its `15d155d8…` fingerprint gates
 and completed the controlled origin switch, staged Worker smoke, 100% promotion,
-and canonical Public／Guest／Admin handoff／Viewer checks. That drift was preserved
-and attributed before rc31 deployment; rc30 plus Worker `11763f08…` is now the
-immediate verified rollback pair, while rc27 and `d7b51f21…` are deeper history.
-Supervised human acceptance remains outstanding.
+and canonical Public／Guest／Admin handoff／Viewer checks. That evidence remains
+historical. The immediate verified rollback is now tagged rc35 commit
+`570e29f745eef7c1995635d1b187021a8fec6ea4` plus Worker
+`d7069f99-81b4-4388-aa28-383b58bfc68f`; rc34, rc30, rc27 and `d7b51f21…` are
+deeper history. Supervised human acceptance remains outstanding.

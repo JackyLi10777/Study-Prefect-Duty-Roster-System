@@ -1,14 +1,10 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
 > **線上來源真相（2026-07-30）：** Windows origin 正運行 clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e`；canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量。Public 入口、Viewer 安全復原、canonical health 及 Admin Access fail-closed／OTP 已核對。第一個 origin／Worker 回退分別為 tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4` 及 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`；真人驗收未完成。
->
 > **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 當時承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；canonical public root、capability health、desktop／320px theme control 及 Guest Engineering ≈10B disclosure 已以 live Chromium 核對，private readiness 保持預期 redirect。
->
-> **復原層級：**先保存並歸屬現有漂移，第一個已知已驗證的 clean pair 是 rc30／`74b84f…` 加 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`。rc27／`c4c728aa…`、rc26／`248955cb…` 及 Worker `d7b51f21…` 只屬更深一層的歷史復原來源。
->
+> **復原層級：**目前第一層是 tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4` 加 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`。rc30／`74b84f…`、rc27／`c4c728aa…`、rc26／`248955cb…` 及 Worker `11763f08…`／`d7b51f21…` 只屬更深一層的歷史復原來源。
 > **歷史 rc31 來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 曾統一 Public／Viewer 與 NiceGUI 外觀控制，其 297 個可部署來源檔案以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時 15／15 候選閘門。它沒有部署，亦不是目前候選或回退目標；目前 rc39 production pair 及 rc35 第一層回退以本頁頂部為準。
->
-> **歷史 rc21 受控上線證據：** 291 個來源檔案以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate；切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／`fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已完成 checksum、公平對帳、行數核對、還原審計及隔離還原。這段只保留歷史來源；目前 live 與回退層級以上方 rc30／rc27／rc26 說明為準。
+> **歷史 rc21 受控上線證據：** 291 個來源檔案以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate；切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／`fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已完成 checksum、公平對帳、行數核對、還原審計及隔離還原。這段只保留歷史來源；目前 live 與第一層配對回退以上方 rc39／rc35 說明為準。
 
 我是李創杰。我希望所有使用者只需記住同一個網站，但同一個網址不代表相同權限。v1.2 把入口、完整 Guest 體驗及管理員工作台統一到同一套 NiceGUI 路由和元件；只有已發布週表的 `/view#…` 保留為獨立、只讀、可分享的能力連結。
 

@@ -69,7 +69,7 @@ Admin 是正式工作的標準版本；Guest 使用同一組路由、導航、�
 | `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；歷史整合來源 | rc17 的多用戶、操作層級及前端穩定性整合線；現行發布已由 rc27 取代 |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；歷史整合來源 | 前一階段 Service Weave v1.2 編輯式整合線 |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 現行正式來源為 `v1.2.0-rc.31`；主機及 Worker 身份見本頁最上方線上來源摘要 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 現行正式來源為 `v1.2.0-rc.39`；第一層配對回退為 `v1.2.0-rc.35`，主機及 Worker 身份見本頁最上方線上來源摘要 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 

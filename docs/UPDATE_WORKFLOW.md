@@ -1,6 +1,6 @@
 # 更新、驗證與上傳：一個命令完成正確層級
 
-> **線上來源真相（2026-07-30）：**目前 runtime 是 clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e`，canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量。297-file 指紋 `df4a2ecb84f242e24349570d209e95405d7251c85810450ce39cf957427b92b9` 通過 15／15 gate，並完成正式備份、隔離還原、配對部署、canonical health／entrance／viewer 及 Access fail-closed checks。第一個 origin／Worker 回退分別為 rc35 commit `570e29f745eef7c1995635d1b187021a8fec6ea4` 及 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`。下文較舊 live／candidate 字樣只保留歷史；健康閘門或候選驗證仍不等於部署或真人驗收。
+> **線上來源真相（2026-07-30）：**目前 runtime 是 clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e`，canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量。297-file 指紋 `df4a2ecb84f242e24349570d209e95405d7251c85810450ce39cf957427b92b9` 通過 15／15 gate，並完成正式備份、隔離還原、配對部署、canonical health／entrance／viewer 及 Access fail-closed checks。第一個 origin／Worker 回退分別為 tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4` 及 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`。下文較舊 live／candidate 字樣只保留歷史；健康閘門或候選驗證仍不等於部署或真人驗收。
 
 > **rc37／rc38 歷史界線：**受保護的 `v1.2.0-rc.37` 指向較早 rc36 source，屬 void／未部署標籤；`v1.2.0-rc.38` 通過來源閘門但沒有通過 Windows 排程帳戶憑證切換，因此沒有取代 rc35。新部署或回退不可把兩者誤當成目前線上版本。
 

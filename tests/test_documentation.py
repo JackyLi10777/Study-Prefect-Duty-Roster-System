@@ -276,6 +276,54 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
     assert "v1.2.0-rc.35" in readme_header
     assert "d7069f99-81b4-4388-aa28-383b58bfc68f" in readme_header
     assert "immediate known verified rollback" not in readme_header
+
+    current_fingerprint = "df4a2ecb84f242e24349570d209e95405d7251c85810450ce39cf957427b92b9"
+    historical_rc30_fingerprint = (
+        "15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc"
+    )
+    current_notice_zh = next(
+        line for line in readme.splitlines() if line.startswith("> **已核實線上來源（")
+    )
+    current_notice_en = next(
+        line
+        for line in readme_en.splitlines()
+        if line.startswith("> **Verified production truth (")
+    )
+    for current_notice in (current_notice_zh, current_notice_en):
+        assert "v1.2.0-rc.39" in current_notice
+        assert "80b9de7ea8abce57b67c6041e580f915a819315e" in current_notice
+        assert "2cb38b05-6091-43be-86d3-d9f3ccae1ceb" in current_notice
+        assert current_fingerprint in current_notice
+        assert historical_rc30_fingerprint not in current_notice
+        assert "v1.2.0-rc.35" in current_notice
+        assert "570e29f745eef7c1995635d1b187021a8fec6ea4" in current_notice
+        assert "d7069f99-81b4-4388-aa28-383b58bfc68f" in current_notice
+
+    readme_main_row = next(
+        line for line in readme.splitlines() if line.startswith("| `main` |")
+    )
+    assert "v1.2.0-rc.39" in readme_main_row
+    assert "v1.2.0-rc.35" in readme_main_row
+    assert "v1.2.0-rc.31" not in readme_main_row
+
+    rc30_notice_zh = next(
+        line for line in readme.splitlines() if line.startswith("**歷史 rc30 乾淨發布證據：**")
+    )
+    rc30_notice_en = next(
+        line
+        for line in readme_en.splitlines()
+        if line.startswith("> **Historical clean-release evidence (")
+    )
+    for rc30_notice in (rc30_notice_zh, rc30_notice_en):
+        assert "v1.2.0-rc.30" in rc30_notice
+        assert historical_rc30_fingerprint in rc30_notice
+        assert current_fingerprint not in rc30_notice
+
+    rc39_capability_paragraph = readme_en.split(
+        "Current rc39 production retains and re-verifies", 1
+    )[1].split("## Repository editions", 1)[0]
+    assert current_fingerprint in rc39_capability_paragraph
+    assert historical_rc30_fingerprint not in rc39_capability_paragraph
     assert "remains disabled by default" not in status
     assert "now run the matching rc7 release" not in status
     assert "Windows origin remains healthy／ready on rc4" not in security
@@ -389,7 +437,7 @@ def test_operator_deployment_docs_use_observed_drift_and_recovery_hierarchy() ->
         assert "d7069f99-81b4-4388-aa28-383b58bfc68f" in current_header
 
     assert "Current production identity is recorded in the document header" in decision
-    assert "Historically, before the rc31 rollout" in decision
+    assert "Historically, before the rc39 rollout" in decision
     assert "目前來源待對帳的 runtime" not in decision
     assert "現行 origin／Worker 來源待對帳" not in quickstart
     assert "受審候選的正式 tag／commit" in quickstart
