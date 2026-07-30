@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **線上來源真相（2026-07-29）：** Windows origin 正運行 clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`，canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量。配對部署已通過 origin／Worker identity parity、0% staged smoke、100% promotion、Cloudflare Access 及 canonical rendered checks。第一個 origin 回退是 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2`；第一個 Worker 回退是 `7816b183-3edb-49ca-b39b-a91091ae794f`。真人驗收未完成。
+> **線上來源真相（2026-07-30）：** Windows origin 正運行 clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e`，canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量。配對部署已通過 origin／Worker identity parity、正式備份及隔離還原、0% staged smoke、100% promotion、canonical health／entrance／viewer 及 Cloudflare Access fail-closed／OTP 核對。第一個 origin 回退是 tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4`；第一個 Worker 回退是 `d7069f99-81b4-4388-aa28-383b58bfc68f`。真人驗收未完成。
 >
 > **歷史 rc30 乾淨發布證據：** Windows origin 曾以受控方式運行並驗證健康、ready 的 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；其 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% version smoke 後承接 100% 流量。canonical root、capability health 與 rendered desktop／320px／Guest Engineering checks 通過，private readiness 保持預期 redirect。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前復原先使用較近的乾淨 rc30／`11763f08…`。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
 >
@@ -93,7 +93,7 @@ Worker 必須有：
 - 不把管理員加入 Cloudflare Dashboard 成員作為登入前提。
 - 不建立應用內共用密碼。
 
-**控制台與歷史乾淨證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。乾淨 rc30 origin＋Worker `11763f08…` 組合曾通過 canonical root、gateway health、真實 Guest session／logout、Admin Access handoff、Viewer、desktop／320px theme control 及 Guest Engineering 核對；目前來源漂移的 active pair 及任何後續候選仍須產生與來源相符的新證據。
+**控制台與歷史乾淨證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。乾淨 rc30 origin＋Worker `11763f08…` 組合曾通過 canonical root、gateway health、真實 Guest session／logout、Admin Access handoff、Viewer、desktop／320px theme control 及 Guest Engineering 核對；目前 rc39 配對及第一層 rc35 回退以本頁頂部的最新證據為準。
 
 ## 4. 來源驗證
 
@@ -288,6 +288,6 @@ additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，�
 
 ## English operational summary
 
-The active Windows origin and canonical Worker are the clean, source-matched rc35 pair recorded at the top of this document. The origin runs annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`; Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` serves 100% of canonical traffic. The immediate recorded rollback targets are rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2` for the origin and Worker `7816b183-3edb-49ca-b39b-a91091ae794f` for the edge. Earlier rc30 and rc27 pairs remain historical recovery evidence only.
+The active Windows origin and canonical Worker are the clean, source-matched rc39 pair recorded at the top of this document. The origin runs annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e`; Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` serves 100% of canonical traffic. The immediate recorded rollback targets are rc35 commit `570e29f745eef7c1995635d1b187021a8fec6ea4` for the origin and Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` for the edge. Earlier pairs remain historical recovery evidence only.
 
-The rc35 pair passed the 15／15 source-matched gate set and completed the controlled origin switch, staged smoke, 100% promotion and canonical Public／Guest／Admin handoff／Viewer checks. Historical rc30 evidence does not describe current production. Supervised human acceptance remains open.
+The rc39 pair passed the 15／15 source-matched gate set and completed the controlled origin switch, staged smoke, 100% promotion, canonical health／entrance／viewer checks and Cloudflare Access fail-closed verification. Historical release evidence does not describe current production. Supervised human acceptance remains open.

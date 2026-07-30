@@ -1,8 +1,8 @@
 # 部署與遠端存取決策指南 / Deployment decision
 
-> **線上來源真相（2026-07-29）：** clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4` 正在 Windows origin 運行；canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量。相同 immutable tag 已完成 15／15 gate、正式備份與隔離還原、配對 origin／Worker 部署及 canonical browser checks。第一個 origin／Worker 回退分別為 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2` 及 `7816b183-3edb-49ca-b39b-a91091ae794f`；真人驗收未完成。
+> **線上來源真相（2026-07-30）：** clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e` 正在 Windows origin 運行；canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量。相同 immutable tag 已完成 15／15 gate、正式備份與隔離還原、配對 origin／Worker 部署、canonical health／entrance／viewer 及 Cloudflare Access fail-closed checks。第一個 origin／Worker 回退分別為 tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4` 及 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`；真人驗收未完成。
 >
-> **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker 是已驗證 version `11763f08-d40d-46d5-93dc-5ca2599d4154`。296 個 runtime 來源檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前備份 `20260727-023041-069097-manual_verified_backup.sqlite3`／SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 通過 0% version smoke 後升至 100%；origin readiness 與 canonical rendered smoke 通過。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；在目前來源漂移狀態下，最近乾淨 rc30＋`11763f08…` 本身才是第一個已知、已驗證的復原目標。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
+> **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker 是已驗證 version `11763f08-d40d-46d5-93dc-5ca2599d4154`。296 個 runtime 來源檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前備份 `20260727-023041-069097-manual_verified_backup.sqlite3`／SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 通過 0% version smoke 後升至 100%；origin readiness 與 canonical rendered smoke 通過。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前 rc39 production pair 及 rc35 第一層回退以本頁頂部記錄為準。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
 
 ## 結論
 
@@ -32,10 +32,10 @@ NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另�
 
 | 層 | 現況 |
 |---|---|
-| `C:\SingYinRoster` | clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`；297-file runtime fingerprint `121302ae68946f43b7eedc93ed0dc9186574f5e42e06551d1fe120263c47e075` 已對帳 |
-| Cloudflare Worker／Access／Tunnel | canonical traffic 由受審 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100%；Access 與 Tunnel 驗證已通過 |
-| rc35 來源與部署證據 | 15／15 gate；受控 origin 切換、正式備份／隔離還原、staged Worker smoke、100% promotion、canonical rendered checks 通過 |
-| 第一個已驗證配對復原目標 | origin 使用 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2`，edge 使用 Worker `7816b183-3edb-49ca-b39b-a91091ae794f`；仍須按 deployment report 保持來源與身份契約相容，不得任意單側回退 |
+| `C:\SingYinRoster` | clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e`；297-file runtime fingerprint `df4a2ecb84f242e24349570d209e95405d7251c85810450ce39cf957427b92b9` 已對帳 |
+| Cloudflare Worker／Access／Tunnel | canonical traffic 由受審 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100%；Access、Tunnel 與 OTP fail-closed 驗證已通過 |
+| rc39 來源與部署證據 | 15／15 gate；受控 origin 切換、正式備份／隔離還原、staged Worker smoke、100% promotion、canonical health／entrance／viewer checks 通過 |
+| 第一個已驗證配對復原目標 | origin 使用 rc35 commit `570e29f745eef7c1995635d1b187021a8fec6ea4`，edge 使用 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`；仍須按 deployment report 保持來源與身份契約相容，不得任意單側回退 |
 | 有條件單側回退 | 只有來源指紋、身份參數、路由契約及相容性 gate 證明未改動一側與目標相容時，事故負責人才可批准；不可把 gateway 回退誤寫成 origin 回退 |
 | 更深歷史復原來源 | rc27／`c4c728aa`、rc26／`248955cb` 及 Worker `d7b51f21…`；只有較近乾淨來源無法安全恢復且事故負責人批准時使用 |
 | `codex/frontend-guest-performance-rc16` | rc17 來源分支；14 項 gate、標籤、Windows bundle 及 Worker staged rollout 已完成 |
@@ -120,7 +120,7 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 
 只有完整 release report 與來源 fingerprint 一致時，才可：
 
-1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前 rc35 active origin／Worker 已對帳，任何新候選仍須產生自己的來源指紋及部署證據；
+1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前 rc39 active origin／Worker 已對帳，任何新候選仍須產生自己的來源指紋及部署證據；
 2. 建立並驗證正式備份，在另一隔離資料庫完成還原；
 3. 進入短暫 maintenance；
 4. 從該不可變 tag 更新 Windows bundle，執行 additive migration `0011_assist_assignment_mode`；

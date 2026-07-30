@@ -12,7 +12,7 @@ compromise. Every high-risk operation must fail closed, limit blast radius,
 leave diagnosable evidence, and remain recoverable from verified backups and an
 immutable release.
 
-> **Current boundary (2026-07-29):** production is clean annotated `v1.2.0-rc.35` at origin commit `570e29f745eef7c1995635d1b187021a8fec6ea4` with Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`. The R5／R6 controls described below are now live in this paired release. The first origin rollback is rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2`; the first Worker rollback is `7816b183-3edb-49ca-b39b-a91091ae794f`. Supervised acceptance is pending.
+> **Current boundary (2026-07-30):** production is clean annotated `v1.2.0-rc.39` at origin commit `80b9de7ea8abce57b67c6041e580f915a819315e` with Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`. The R5／R6／R7 controls described below are live in this paired release. The first origin rollback is tagged `v1.2.0-rc.35` at commit `570e29f745eef7c1995635d1b187021a8fec6ea4`; the first Worker rollback is `d7069f99-81b4-4388-aa28-383b58bfc68f`. Supervised acceptance is pending.
 
 ## 1. 資產及資料分類 / Assets and data classes
 

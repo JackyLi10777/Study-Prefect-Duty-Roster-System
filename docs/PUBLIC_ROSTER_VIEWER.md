@@ -1,12 +1,12 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **線上來源真相（2026-07-29）：** Windows origin 正運行 clean annotated `v1.2.0-rc.35`／`570e29f745eef7c1995635d1b187021a8fec6ea4`；canonical Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 承接 100% 流量。Public、Guest、Admin Access 入口及無完整密鑰的 Viewer 安全復原頁已以 canonical Chromium 核對。第一個 origin／Worker 回退分別為 rc34 commit `8fd7ce46095f0b8ad8687bcb01ba60c6a8eab5d2` 及 `7816b183-3edb-49ca-b39b-a91091ae794f`；真人驗收未完成。
+> **線上來源真相（2026-07-30）：** Windows origin 正運行 clean annotated `v1.2.0-rc.39`／`80b9de7ea8abce57b67c6041e580f915a819315e`；canonical Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 承接 100% 流量。Public 入口、Viewer 安全復原、canonical health 及 Admin Access fail-closed／OTP 已核對。第一個 origin／Worker 回退分別為 tagged `v1.2.0-rc.35`／commit `570e29f745eef7c1995635d1b187021a8fec6ea4` 及 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f`；真人驗收未完成。
 >
 > **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 當時承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；canonical public root、capability health、desktop／320px theme control 及 Guest Engineering ≈10B disclosure 已以 live Chromium 核對，private readiness 保持預期 redirect。
 >
 > **復原層級：**先保存並歸屬現有漂移，第一個已知已驗證的 clean pair 是 rc30／`74b84f…` 加 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154`。rc27／`c4c728aa…`、rc26／`248955cb…` 及 Worker `d7b51f21…` 只屬更深一層的歷史復原來源。
 >
-> **rc31 來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 已把 Public／Viewer 與 NiceGUI 的可見外觀控制統一為單一淺色／深色按鈕。`system` 只保留為未設定的初始化狀態；未設定時跟隨裝置系統，第一次操作儲存目前解析結果的相反模式，其後只在明確淺色與深色間切換。凍結的 297 個可部署來源檔案已以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過 15／15 正式候選閘門；尚待 protected-main 合併與標籤、正式備份與隔離還原、Worker／origin 部署及 canonical 線上核對。乾淨 rc30＋`11763f08…` 仍是最近完整驗證的乾淨基線；active pair 來源待對帳。
+> **歷史 rc31 來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 曾統一 Public／Viewer 與 NiceGUI 外觀控制，其 297 個可部署來源檔案以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時 15／15 候選閘門。它沒有部署，亦不是目前候選或回退目標；目前 rc39 production pair 及 rc35 第一層回退以本頁頂部為準。
 >
 > **歷史 rc21 受控上線證據：** 291 個來源檔案以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate；切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／`fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已完成 checksum、公平對帳、行數核對、還原審計及隔離還原。這段只保留歷史來源；目前 live 與回退層級以上方 rc30／rc27／rc26 說明為準。
 
@@ -141,10 +141,10 @@ user may download JSON, copy the redacted summary, or open a prefilled email.
 
 ## English quick guide
 
-The last verified clean rc30 origin (`v1.2.0-rc.30`, commit `74b84f43786b00feb15b51a6270ff71c9430773f`) passed all 14 formal gates with source fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc`, including 894 Python tests, 3 motion contracts, and 46 Worker contracts, before the controlled Windows switch. Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` passed zero-percent version smoke before promotion to 100%; rc27／`c4c728aa41c9b0122aaa2c015b3cc38e246db43d` is the first-level origin rollback and Worker `d7b51f21-7692-418d-866c-034c2c57292d` is the immediately previous edge version.
+Historical rc30 origin (`v1.2.0-rc.30`, commit `74b84f43786b00feb15b51a6270ff71c9430773f`) passed all 14 formal gates with source fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc`, including 894 Python tests, 3 motion contracts, and 46 Worker contracts, before the controlled Windows switch. Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` passed zero-percent version smoke before promotion to 100%. Current rc39 production and rc35 origin／Worker rollback identifiers are recorded at the top of this document.
 
 The current product contract uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
 
-`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The Service Weave editorial integration, rc27 audit remediations, and rc30 explicit language／appearance controls are part of the last verified clean rc30 source.
+`/guest` and `/try` are compatibility redirects to the unified entry. `/view#…` remains a separate, encrypted, read-only published-roster link. The Service Weave editorial integration, rc27 audit remediations, and rc30 explicit language／appearance controls remain historical provenance; current production and rollback identifiers are recorded at the top of this document.
 
 Admin and Guest share the same stable Assist. mode codes: `legacy_fixed_weekday` keeps the canonical AHP weekday, while `flexible_weekly` rotates only across selected available weekdays and avoids the previous week's day where feasible. Both enforce AHP-only eligibility, leave, same-day uniqueness, and no-consecutive-duty rules. Official rosters persist the selected mode; Guest rosters keep it only in the bounded in-memory workspace.
