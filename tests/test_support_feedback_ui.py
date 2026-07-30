@@ -72,6 +72,10 @@ def test_admin_support_rejects_guest_before_showing_shared_progress() -> None:
     )
     assert "attachment_snapshot = tuple(attachments)" in handler
     assert "active_locale = current_locale()" in handler
+    assert handler.index("active_locale = current_locale()") < handler.index("def create_incident")
+    assert handler.index("active_locale = current_locale()") < handler.index(
+        "await _run_with_progress("
+    )
     worker = handler[handler.index("def create_incident"):handler.index("summary = await _run_with_progress(")]
     assert "current_locale()" not in worker
     assert '"locale": active_locale' in worker
