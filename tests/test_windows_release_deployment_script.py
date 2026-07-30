@@ -310,6 +310,66 @@ def test_release_bundle_fingerprint_detects_content_changes_and_ignores_marker(
     assert changed["sha256"] != first["sha256"]
 
 
+def test_deployment_rotates_runtime_task_credential_without_persisting_it() -> None:
+    source = _source()
+
+    assert "function New-SingYinRuntimeTaskPassword" in source
+    assert '[ValidateRange(32, 96)][int]$Length = 48' in source
+    assert '$null = $builder.Append("Aa1!")' in source
+    assert "[Array]::Clear($randomBytes, 0, $randomBytes.Length)" in source
+    assert "Set-LocalUser `" in source
+    assert "-Password $runtimeTaskSecurePassword" in source
+    assert "-Password $runtimeTaskPassword | Out-Null" in source
+    assert "$taskCredentialRotated = $true" in source
+    assert "($taskTargetSwitched -or $taskCredentialRotated)" in source
+    assert "$restoreTaskParameters.Password = $runtimeTaskPassword" in source
+    assert "$runtimeTaskPassword = $null" in source
+    assert "taskCredentialRotated = $taskCredentialRotated" in source
+
+
+def test_runtime_task_password_generator_produces_distinct_complex_values() -> None:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production host script")
+    function_source = _powershell_function_source("New-SingYinRuntimeTaskPassword")
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+{function_source}
+$first = New-SingYinRuntimeTaskPassword
+$second = New-SingYinRuntimeTaskPassword
+[ordered]@{{
+    firstLength = $first.Length
+    secondLength = $second.Length
+    hasUpper = [bool]($first -cmatch '[A-Z]')
+    hasLower = [bool]($first -cmatch '[a-z]')
+    hasDigit = [bool]($first -match '[0-9]')
+    hasSpecial = [bool]($first -match '[!_-]')
+    distinct = [bool]($first -cne $second)
+}} | ConvertTo-Json -Compress
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8-sig",
+        errors="replace",
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout.strip())
+    assert payload == {
+        "firstLength": 48,
+        "secondLength": 48,
+        "hasUpper": True,
+        "hasLower": True,
+        "hasDigit": True,
+        "hasSpecial": True,
+        "distinct": True,
+    }
+
+
 def test_worker_gateway_parser_accepts_active_jsonc_and_ignores_line_comments(
     tmp_path: Path,
 ) -> None:
@@ -663,7 +723,9 @@ def test_deployment_script_switches_to_an_immutable_bundle_and_requires_write_re
     assert 'Join-Path $stagingPath ".venv"' in source
     assert '"--require-hashes"' in source
     assert "New-ScheduledTaskAction" in source
-    assert "Set-ScheduledTask -TaskName $TaskName -Action $newTaskAction" in source
+    assert "-Action $newTaskAction `" in source
+    assert "-User $runtimeAccount.Name `" in source
+    assert "-Password $runtimeTaskPassword | Out-Null" in source
     assert '"switch",' not in source
     assert "Get-SingYinTaskInspection" in source
     assert "Enable-ScheduledTask -TaskName $TaskName" in source
@@ -704,7 +766,11 @@ def test_deployment_script_rolls_back_task_target_environment_and_task_state() -
     assert '$rollbackAttempted = $true' in source
     assert "$previousTaskAction" in catch_block
     assert "New-ScheduledTaskAction @restoreActionParameters" in catch_block
-    assert "Set-ScheduledTask -TaskName $TaskName -Action $restoreTaskAction" in catch_block
+    assert "$restoreTaskParameters = @{" in catch_block
+    assert "Action = $restoreTaskAction" in catch_block
+    assert "$restoreTaskParameters.User = $runtimeAccount.Name" in catch_block
+    assert "$restoreTaskParameters.Password = $runtimeTaskPassword" in catch_block
+    assert "Set-ScheduledTask @restoreTaskParameters | Out-Null" in catch_block
     assert '"switch",' not in catch_block
     assert '"pip"' not in catch_block
     assert "[IO.File]::WriteAllBytes($environmentPath, $environmentBytes)" in catch_block
@@ -720,7 +786,7 @@ def test_rollback_never_switches_task_target_until_the_production_port_is_releas
     source = _source()
     rollback = source.split("$rollbackAttempted = $true", 1)[1]
     wait_index = rollback.index("Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 15")
-    task_switch_index = rollback.index("Set-ScheduledTask -TaskName $TaskName -Action $restoreTaskAction")
+    task_switch_index = rollback.index("Set-ScheduledTask @restoreTaskParameters | Out-Null")
 
     assert wait_index < task_switch_index
     assert "try { Wait-PortReleased" not in rollback
