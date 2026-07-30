@@ -76,6 +76,47 @@ try {{
     return json.loads(json_lines[-1])
 
 
+def _run_bundle_fingerprint(bundle_path: Path) -> dict[str, object]:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production host script")
+    escaped_path = str(bundle_path).replace("'", "''")
+    function_source = _powershell_function_source(
+        "Get-SingYinReleaseBundleFingerprint",
+    )
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+{function_source}
+try {{
+    $fingerprint = Get-SingYinReleaseBundleFingerprint -Path '{escaped_path}'
+    [ordered]@{{
+        ok = $true
+        sha256 = [string]$fingerprint.Sha256
+        fileCount = [int]$fingerprint.FileCount
+    }} | ConvertTo-Json -Compress
+}} catch {{
+    [ordered]@{{
+        ok = $false
+        error = [string]$_.Exception.Message
+    }} | ConvertTo-Json -Compress
+}}
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8-sig",
+        errors="replace",
+    )
+
+    assert result.returncode == 0, result.stderr
+    json_lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
+    assert json_lines, f"PowerShell fingerprint emitted no JSON payload: {result.stdout!r}"
+    return json.loads(json_lines[-1])
+
+
 def _worker_configuration(
     *,
     port: str = "8080",
@@ -221,8 +262,18 @@ def test_deployment_script_requires_worker_and_host_gateway_settings_to_match() 
         host_clean,
     ) < preflight
     host_status_block = source[host_clean:preflight]
-    assert '":(exclude)releases/**"' in host_status_block
-    assert '"--"' in host_status_block
+    assert (
+        '"--untracked-files=all",\n'
+        '        "--",\n'
+        '        ".",\n'
+        '        ":(exclude)releases/**"'
+    ) in host_status_block
+    assert "function Get-SingYinReleaseBundleFingerprint" in source
+    assert 'throw "The release bundle contains an unsupported reparse point."' in source
+    assert "bundleContentSha256" in source
+    assert "bundleFileCount" in source
+    assert "[int]$marker.schemaVersion -ne 2" in source
+    assert "[string]$marker.sourceTree -cne $sourceTree" in source
     assert source.index("$overlayPathToDelete = $resolvedOverlayPath") > preflight
     assert source.index("$environmentBytes = [IO.File]::ReadAllBytes", preflight) > preflight
     assert "workerOriginPort = $workerOriginPort" in source
@@ -232,6 +283,31 @@ def test_deployment_script_requires_worker_and_host_gateway_settings_to_match() 
     assert "workerOriginPrincipalKid = $workerOriginPrincipalKid" in source
     assert "preflightMatched = [bool]$preflightGatewayParity.Matches" in source
     assert "postApplyMatched = [bool]$postApplyGatewayParity.Matches" in source
+
+
+def test_release_bundle_fingerprint_detects_content_changes_and_ignores_marker(
+    tmp_path: Path,
+) -> None:
+    bundle = tmp_path / "bundle"
+    nested = bundle / "nested"
+    nested.mkdir(parents=True)
+    (bundle / "app.py").write_text("print('first')\n", encoding="utf-8")
+    (nested / "data.txt").write_text("stable\n", encoding="utf-8")
+
+    first = _run_bundle_fingerprint(bundle)
+    assert first["ok"] is True
+    assert first["fileCount"] == 2
+    assert re.fullmatch(r"[0-9a-f]{64}", str(first["sha256"]))
+
+    (bundle / ".sing-yin-release.json").write_text("{}\n", encoding="utf-8")
+    marker_only = _run_bundle_fingerprint(bundle)
+    assert marker_only == first
+
+    (bundle / "app.py").write_text("print('changed')\n", encoding="utf-8")
+    changed = _run_bundle_fingerprint(bundle)
+    assert changed["ok"] is True
+    assert changed["fileCount"] == 2
+    assert changed["sha256"] != first["sha256"]
 
 
 def test_worker_gateway_parser_accepts_active_jsonc_and_ignores_line_comments(
