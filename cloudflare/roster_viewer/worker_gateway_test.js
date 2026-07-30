@@ -462,6 +462,8 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   const context = { waitUntil() {} };
   const home = await worker.fetch(new Request('https://gateway.example/'), env, context);
   const html = await home.text();
+  assert(/^GW-[A-F0-9]{12}$/.test(home.headers.get('X-Sing-Yin-Support-Reference') || ''));
+  assert(!html.includes('__ENTRY_REFERENCE__'));
   assert(html.includes('id="welcomeAudioPlayer"'));
   assert(html.includes('id="welcomeAudioVolume" type="range" min="0" max="100" step="1" value="50"'));
   assert(html.includes('Playback is attempted at 50%; music never blocks sign-in or the guest demo.'));
@@ -469,6 +471,8 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assert(html.includes('id="welcomeAudioEnter"'));
   assert(html.includes('id="welcomeAudioQuiet"'));
   assert(html.includes('Entry sound'));
+  assert(html.includes('收不到驗證碼？'));
+  assert(html.includes('data-entry-role="guest" data-entry-state="idle"'));
   assert(html.includes('id="themeToggle"'));
   assert(html.includes('data-testid="public-theme-control"'));
   assert(html.includes('aria-pressed="false"'));
@@ -499,6 +503,8 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assert(script.includes('createWelcomeEntryController({'));
   assert(script.includes('trustedEntryDestination'));
   assert(script.includes('welcomeEntryController.enter(destination'));
+  assert(script.includes('onStateChange: setEntryState'));
+  assert(script.includes('slowMs: 8000'));
   assert(!script.includes("welcomeAudioPlayer?.dataset.autoplayState === 'blocked'"));
   assert(script.includes('if (welcomeAudioRecovery) welcomeAudioRecovery.hidden = true;'));
   assert(!script.includes("setWelcomeRecoveryVisible(false);\n    if (welcomeAudioStatus)"));
@@ -662,6 +668,52 @@ Deno.test('welcome entry does not restart audio that is already playing', () => 
   assertEquals(controller.enter('/guest', 'guest'), true);
   assertEquals(playCalls, 0);
   assertEquals(navigationCalls, 1);
+});
+
+Deno.test('welcome entry exposes a recoverable slow state and ignores late settlement', async () => {
+  const states = [];
+  let scheduledSlow;
+  let resolvePlayback;
+  const playback = new Promise(resolve => { resolvePlayback = resolve; });
+  const controller = createWelcomeEntryController({
+    play: () => playback,
+    navigate: destination => states.push(`navigate:${destination}`),
+    onStateChange: (role, state) => states.push(`${role || 'none'}:${state}`),
+    scheduleSlow(callback, delay) {
+      scheduledSlow = { callback, delay };
+      return 11;
+    },
+    cancelSlow() {},
+    slowMs: 8000,
+  });
+
+  assertEquals(controller.enter('/guest', 'guest'), true);
+  assertEquals(scheduledSlow.delay, 8000);
+  assertEquals(controller.getState(), 'starting');
+  scheduledSlow.callback();
+  assertEquals(controller.getState(), 'slow');
+  assertEquals(controller.isBusy(), false);
+  resolvePlayback();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert(!states.includes('navigate:/guest'));
+  assertEquals(controller.enter('/guest', 'guest'), true);
+});
+
+Deno.test('welcome entry reports synchronous navigation failure and unlocks retry', () => {
+  const states = [];
+  const controller = createWelcomeEntryController({
+    play: () => Promise.resolve(),
+    isPlaying: () => true,
+    navigate: () => { throw new Error('navigation unavailable'); },
+    onStateChange: (role, state) => states.push(`${role || 'none'}:${state}`),
+  });
+
+  assertEquals(controller.enter('/auth/login', 'admin'), true);
+  assertEquals(controller.getState(), 'error');
+  assertEquals(controller.isBusy(), false);
+  assert(states.includes('admin:error'));
+  assertEquals(controller.enter('/auth/login', 'admin'), true);
 });
 
 Deno.test('welcome audio failure classification remains explicit and deterministic', () => {

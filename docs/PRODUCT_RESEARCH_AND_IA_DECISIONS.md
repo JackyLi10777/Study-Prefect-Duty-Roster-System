@@ -2,9 +2,9 @@
 
 **Product:** Service Weave／服事經緯 — 聖言中學導學風紀值班表生成系統
 
-**Decision version:** 1.0
+**Decision version:** 1.1
 
-**Last reviewed:** 2026-07-27
+**Last reviewed:** 2026-07-30
 **Owner:** `Professional_Design_System.md` defines the executable design direction; this document records why that direction was chosen.
 
 ## Decision summary
@@ -27,6 +27,14 @@ The visual direction has evolved to **Luminous Sacred Precision／明澈而莊�
 - **Reject:** forced-autoplay claims, muted-start deception, arbitrary first-click capture listeners, repeated hidden retries, third-party autoplay and any server header presented as a way to bypass browser policy.
 
 `Permissions-Policy: autoplay=(self)` documents the intended same-origin boundary but does not override the browser's user-activation policy. The encrypted Viewer remains silent.
+
+### Waiting-state decision — Adopt／Adapt／Reject
+
+- **Adopt:** expose a real busy state immediately, prevent duplicate activation, preserve the initiating context, and announce only meaningful phase changes. An indeterminate operation does not expose `aria-valuenow`; a determinate bar is allowed only when the service owns a real `completed／total` measurement.
+- **Adapt:** use the existing public-entry controller and NiceGUI progress dialog as the two shared owners. Entry navigation receives role-specific Admin／Guest copy and a delayed indeterminate track; consequential local work receives a persistent bilingual phase dialog. Fast work is never slowed merely to display animation.
+- **Reject:** decorative looping loaders, fictional percentages, page-local spinner dialects, an enabled retry for a write whose outcome is unknown, skeletons for unknown content shapes, and any music-loading state presented as authentication progress.
+
+The accessible contract follows the WAI-ARIA [`progressbar` role](https://www.w3.org/TR/wai-aria-1.2/#progressbar): determinate values are bounded and truthful; indeterminate progress omits a value. Reduced motion retains labels, boundaries and busy semantics without moving sheen, scale or rotation.
 
 ## Research method
 
@@ -84,6 +92,7 @@ Search/filter, local table of contents, previous/next reading and copyable comma
 - The dominant task remains first at every width. Tables may become day-grouped cards only when scan order is preserved.
 - Controls remain geometrically stable. Icons may tell a short semantic story—open, refresh, complete, reveal—but containers do not drift, tilt or orbit.
 - Motion uses the existing 90／180／260 ms contract, is interruptible, and becomes static under reduced motion, touch-only or forced-colour conditions.
+- Waiting feedback is progressive rather than theatrical: contained press feedback is immediate; an inline indicator appears only after a genuine short delay; a persistent dialog is reserved for consequential work. A slow-state message explains that work is continuing and supplies a safe reference without inventing failure.
 - Pointer-light may enrich the public entrance or a non-sensitive narrative surface. It is prohibited behind forms, tables, names, fairness records, warnings and PDFs.
 
 ## Stopping rule

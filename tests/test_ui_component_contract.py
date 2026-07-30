@@ -179,6 +179,17 @@ def test_public_components_cover_complete_interaction_states() -> None:
     assert "copy_failed_manual" in source
 
 
+def test_progress_component_distinguishes_indeterminate_and_measured_work() -> None:
+    source = (UI_ROOT / "components.py").read_text(encoding="utf-8")
+    progress = source.split("def progress_state(", 1)[1].split("def responsive_table(", 1)[0]
+
+    assert "if value is None:" in progress
+    assert "indeterminate color=primary aria-label=" in progress
+    assert "aria-valuenow" not in progress.split("else:", 1)[0]
+    assert "bounded_value = max(0.0, min(1.0, value))" in progress
+    assert "aria-valuemin=0 aria-valuemax=100" in progress
+
+
 def test_shared_action_accepts_semantic_icon_metadata_without_page_timelines() -> None:
     source = (UI_ROOT / "components.py").read_text(encoding="utf-8")
     support = (UI_ROOT / "page_routes" / "support.py").read_text(encoding="utf-8")

@@ -240,9 +240,15 @@ def progress_state(
                 ui.label(title).classes("sy-progress-state-title")
                 ui.label(status_text).classes("sy-progress-state-copy")
         if value is None:
-            ui.linear_progress().props("indeterminate color=primary").classes("w-full")
+            ui.linear_progress(show_value=False).props(
+                f'indeterminate color=primary aria-label="{attr(status_text)}"'
+            ).classes("w-full")
         else:
-            ui.linear_progress(value=max(0.0, min(1.0, value)), color="primary").classes("w-full")
+            bounded_value = max(0.0, min(1.0, value))
+            ui.linear_progress(value=bounded_value, show_value=False, color="primary").props(
+                f'aria-label="{attr(status_text)}" aria-valuemin=0 aria-valuemax=100 '
+                f"aria-valuenow={round(bounded_value * 100)}"
+            ).classes("w-full")
 
 
 def responsive_table(

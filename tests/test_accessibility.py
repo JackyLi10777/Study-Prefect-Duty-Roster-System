@@ -93,6 +93,13 @@ def test_shared_navigation_marks_route_focus_without_racing_anchor_navigation() 
 
     assert "ROUTE_FOCUS_JAVASCRIPT" in navigation
     assert "sessionStorage.setItem('sy:route-focus', 'main')" in navigation
+    assert "window.__syRouteProgress?.start()" in navigation
+    assert "window.setTimeout" in navigation
+    assert "}, 150)" in navigation
+    assert "window.__syRouteProgressCleanup" in navigation
+    assert "id=sy-route-progress" in shell
+    assert "aria-hidden=true" in shell
+    assert "install_route_progress_runtime()" in shell
     assert "navigate_to(path)" in shell
     assert "js_handler=f\"() => {{{ROUTE_FOCUS_JAVASCRIPT}}}\"" in workflow
 

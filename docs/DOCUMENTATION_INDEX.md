@@ -72,6 +72,7 @@ If prose conflicts with executable policy, transactional behavior, security chec
 | [`PRODUCT_RESEARCH_AND_IA_DECISIONS.md`](PRODUCT_RESEARCH_AND_IA_DECISIONS.md) | 產品研究來源、Adopt／Adapt／Reject 取捨及四區資訊架構 | public entrance、workbench、trust hub、documentation portal 或 reference decision 改變 |
 | [`VISUAL_INTERACTION_AUDIT_RC31.md`](VISUAL_INTERACTION_AUDIT_RC31.md) | rc31 外觀控制缺陷、保留邊界、驗收矩陣及反例 | rc31 theme control scope、interaction contract 或 acceptance matrix 改變 |
 | [`audits/SEMANTIC_ICON_ACTION_MOTION_2026-07-30.md`](audits/SEMANTIC_ICON_ACTION_MOTION_2026-07-30.md) | 語意圖標來源分母、19 個必需控制、渲染實例、提示音預設及未部署邊界 | icon role／category、lifecycle feedback、gear exception、sound default 或 motion verifier 改變 |
+| [`plans/WHOLE_SITE_WAITING_EXPERIENCE_PLAN.md`](plans/WHOLE_SITE_WAITING_EXPERIENCE_PLAN.md) | Admin／Guest 入口、誠實進度、slow-state、按鈕圖標分母及全站等待狀態所有權 | entry lifecycle、progress mode、loading token、button inventory 或 waiting-state gate 改變 |
 | [`MUSIC_IMPORT_DECISION.md`](MUSIC_IMPORT_DECISION.md) | 本機音訊匯入的安全及技術決策 | importer、source allowlist、metadata 或 legal/operational boundary 改變 |
 | [`MUSIC_PLAYLIST_CANDIDATES.md`](MUSIC_PLAYLIST_CANDIDATES.md) | 經審核但尚未必納入的音樂候選 | playlist review 或 catalogue decision 改變 |
 

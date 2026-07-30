@@ -60,6 +60,12 @@ longest document:
 | Practice | The official local workflow with fictional content | Separate `data/practice/` SQLite, backups, logs, and preferences | Every output is non-official and official data is never read or written |
 | Local maintenance | localhost, controlled private WARP, or loopback SSH | Protected host data and maintenance evidence | Recovery and deployment only; never a second daily site |
 
+### Waiting and progress behaviour
+
+Admin and Guest entries share one state lifecycle. Activation immediately locks duplicate identity choices and shows role-specific copy; the thin progress track appears only after 150 ms. If the page is still visible after eight seconds, the entry unlocks for a safe retry and keeps sign-in help plus a privacy-safe support reference that contains no email, token, or internal stack. Welcome audio remains independent: playback failure can never block the selected identity.
+
+Official writes, reports, exports, backups, and restores use one phased progress treatment: **prepare → process safely → complete**. Unmeasured work is indeterminate or phased and no longer invents 14% or 56%; a percentage is allowed only when the service supplies real `completed/total` data. Route navigation shows a top track only after 150 ms and cleans it on completion, return, or page exit. A timed-out official write is not automatically retried because timeout does not prove failure; review the visible state and OP/REQ reference first. Guest-denied import, upload, official persistence, or costly operations fail at the capability boundary before loading begins. Keyboard, forced-colours, and reduced-motion users receive equivalent static state information.
+
 The [documentation index](docs/DOCUMENTATION_INDEX.md) records document
 ownership, source-of-truth precedence, configuration classes, data lifecycles,
 verification levels, known limits, and the update triggers that keep the set

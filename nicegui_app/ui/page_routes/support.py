@@ -17,11 +17,7 @@ from nicegui_app.access_context import AccessMode, Capability
 from nicegui_app.application_mode import current_application_mode
 from nicegui_app.config import POLICY_VERSION
 from nicegui_app.contact import FEEDBACK_EMAIL
-from nicegui_app.observability import (
-    new_operation_reference,
-    record_operator_event,
-    record_operator_failure,
-)
+from nicegui_app.observability import new_operation_reference, record_operator_failure
 from nicegui_app.release_evidence import release_source_fingerprint
 from nicegui_app.runtime import current_page_context
 from nicegui_app.services.support_incidents import (
@@ -35,12 +31,12 @@ from nicegui_app.services.support_incidents import (
     OP_REFERENCE_PATTERN,
     REQ_REFERENCE_PATTERN,
     SupportInbox,
-    SupportIncidentError,
 )
 from nicegui_app.ui.components import action, status
 from nicegui_app.ui.downloads import deliver_generated_download
 from nicegui_app.ui.html_safety import attr, text
 from nicegui_app.ui.i18n import current_locale, t
+from nicegui_app.ui.page_shared import _OPERATION_FAILED, _run_with_progress
 from nicegui_app.ui.shell import page_shell
 
 
@@ -327,9 +323,26 @@ def _render_admin_support(source_path: str) -> None:
                     safe_error_type="operator_report",
                     safe_code_locations=(f"route:{route.value}",),
                 )
+            except PermissionError as error:
+                reference = record_operator_failure(
+                    error,
+                    action="create_support_incident",
+                    reference=operation_id,
+                )
+                preview_dialog.close()
+                ui.notify(
+                    t("support_save_failed", reference=reference),
+                    type="negative",
+                    timeout=8_000,
+                )
+                return
+
+            application_mode = current_application_mode()
+            attachment_snapshot = tuple(attachments)
+
+            def create_incident():  # type: ignore[no-untyped-def]
                 source_fingerprint, _ = release_source_fingerprint()
-                application_mode = current_application_mode()
-                summary = SupportInbox().create_incident(
+                return SupportInbox().create_incident(
                     report,
                     application_version=os.getenv("SING_YIN_RELEASE_VERSION", POLICY_VERSION),
                     source_fingerprint=source_fingerprint,
@@ -345,13 +358,17 @@ def _render_admin_support(source_path: str) -> None:
                         "category": "operator_report",
                         "outcome": "submitted",
                     },),
-                    attachments=tuple(attachments),
+                    attachments=attachment_snapshot,
                 )
-                record_operator_event(action="create_support_incident", outcome="succeeded", reference=operation_id)
-            except (SupportIncidentError, PermissionError, OSError) as error:
-                reference = record_operator_failure(error, action="create_support_incident", reference=operation_id)
+
+            summary = await _run_with_progress(
+                create_incident,
+                title_key="progress_support_save_title",
+                working_key="progress_support_save_working",
+                icon="support_agent",
+            )
+            if summary is _OPERATION_FAILED:
                 preview_dialog.close()
-                ui.notify(t("support_save_failed", reference=reference), type="negative", timeout=8_000)
                 return
             preview_dialog.close()
             consent.value = True

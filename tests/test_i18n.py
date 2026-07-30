@@ -261,6 +261,12 @@ def test_long_running_operator_actions_have_bilingual_progress_copy() -> None:
     progress_keys = {
         "progress_preparing",
         "progress_finalising",
+        "progress_complete",
+        "progress_indeterminate",
+        "progress_phase_label",
+        "progress_phase_preparing",
+        "progress_phase_processing",
+        "progress_phase_complete",
         "progress_keep_open",
         "progress_generate_title",
         "progress_generate_working",

@@ -690,6 +690,25 @@ Language always names the destination locale; sound and appearance expose synchr
 
 Buttons must say what happens: “生成並儲存草稿”, “確認發布並入帳”, “建立交接備份包”. Avoid “提交”, “確定”, or icon-only critical actions.
 
+#### Honest waiting-state contract / 誠實等待狀態契約
+
+Waiting feedback is a state explanation, not entertainment and not a substitute for performance. The shared owners are the public-entry controller for identity navigation and the NiceGUI progress coordinator for workbench operations. Pages may request a presentation; they may not create independent spinner timers, percentages or progress-dialog styles.
+
+| Measured wait／work type | Presentation | Truth and recovery contract |
+|---|---|---|
+| `0–150ms` | Existing press／glyph acknowledgement only | Never delay completion so that a loader becomes visible. |
+| Pending beyond `150ms` | Button-local busy state and a narrow indeterminate track | Preserve the label／role, set `aria-busy`, prevent duplicate activation and omit percentage. |
+| Read pending beyond `800ms` | Inline progress state or a geometry-preserving skeleton | Skeleton requires a known final shape; it never represents a write. |
+| Consequential local operation | Persistent bilingual phase dialog | Snapshot inputs before the async boundary; do not offer cancel after an irreversible write begins. |
+| Measurable batch／transfer | Determinate progress | Requires real monotonic `completed／total`; expose bounded `aria-valuenow` and a meaningful unit. |
+| Still pending beyond `8s` | Calm slow-state explanation | Do not declare failure or auto-retry a write; show an OP／REQ reference and one safe next step. |
+
+Public identity entry uses `idle → pressed → starting → navigating → slow／error → reset`. Administrator and Guest controls share the same geometry and lifecycle but retain truthful role-specific copy. All visible identity controls are locked during one activation; desktop and mobile copies reconcile together. `pageshow`, navigation cancellation, timeout and error clean every timer and busy attribute. Welcome music keeps its independent 450ms start budget and never blocks or impersonates authentication.
+
+Workbench operation progress defaults to **indeterminate／phased**, not a simulated percentage. “Preparing”, the owning action label and “Finalising” are announced only when those boundaries are actually reached. The processing phase remains indeterminate unless the service reports real units. Completion may render one bounded success state only after the owning transaction and required backup obligation succeed. Failure, conflict and committed-without-backup outcomes close the progress surface, retain an operation reference and offer their existing safe recovery path.
+
+`prefers-reduced-motion: reduce` removes spinner rotation, sheen, skeleton shimmer and transform. The static icon, status label, progress boundary, `aria-busy` and final outcome remain. Forced colours use system boundaries and text. Normal phase updates use `aria-live="polite"`; percentage changes are not repeatedly announced.
+
 Dialog actions use one responsive grammar. Desktop presents a short, right-aligned action row; at `<= 900px`, the same semantic order becomes `sy-mobile-actions` with full-width controls of at least 48px. The safest exit or review action remains distinguishable from the consequential action, and source order follows consequence rather than visual convenience.
 
 #### Sing Yin tactile component grammar

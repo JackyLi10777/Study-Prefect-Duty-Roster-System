@@ -119,12 +119,17 @@ export function createWelcomeEntryController({
   isPlaying = () => false,
   onIntentChange = () => {},
   onBusyChange = () => {},
+  onStateChange = () => {},
   onPlaybackStarted = () => {},
   onPlaybackFailed = () => {},
   onPlaybackTimeout = () => {},
+  onNavigationFailed = () => {},
   schedule = (callback, delay) => setTimeout(callback, delay),
   cancel = timer => clearTimeout(timer),
+  scheduleSlow = (callback, delay) => setTimeout(callback, delay),
+  cancelSlow = timer => clearTimeout(timer),
   timeoutMs = 450,
+  slowMs = 0,
 } = {}) {
   if (typeof play !== 'function') throw new TypeError('play must be a function');
   if (typeof navigate !== 'function') throw new TypeError('navigate must be a function');
@@ -133,6 +138,22 @@ export function createWelcomeEntryController({
   let busy = false;
   let activation = 0;
   let timer = null;
+  let slowTimer = null;
+  let activeRole = '';
+  let state = 'idle';
+
+  const emitState = (role, nextState) => {
+    activeRole = role;
+    state = nextState;
+    onStateChange(role, nextState);
+  };
+
+  const clearTimers = () => {
+    if (timer !== null) cancel(timer);
+    if (slowTimer !== null) cancelSlow(slowTimer);
+    timer = null;
+    slowTimer = null;
+  };
 
   const setIntent = (nextIntent) => {
     if (!['unset', 'music', 'quiet'].includes(nextIntent)) {
@@ -144,17 +165,30 @@ export function createWelcomeEntryController({
 
   const reset = () => {
     activation += 1;
-    if (timer !== null) cancel(timer);
-    timer = null;
+    clearTimers();
     busy = false;
     onBusyChange('', false);
+    emitState('', 'idle');
   };
 
   const enter = (destination, role = '') => {
     if (typeof destination !== 'string' || destination.length === 0 || busy) return false;
+    clearTimers();
     busy = true;
     const currentActivation = ++activation;
     onBusyChange(role, true);
+    emitState(role, 'starting');
+
+    if (Number.isFinite(slowMs) && slowMs > 0) {
+      slowTimer = scheduleSlow(() => {
+        if (currentActivation !== activation || !busy) return;
+        slowTimer = null;
+        activation += 1;
+        busy = false;
+        onBusyChange(role, false);
+        emitState(role, 'slow');
+      }, slowMs);
+    }
 
     let finished = false;
     const finish = () => {
@@ -162,7 +196,17 @@ export function createWelcomeEntryController({
       finished = true;
       if (timer !== null) cancel(timer);
       timer = null;
-      navigate(destination);
+      emitState(role, 'navigating');
+      try {
+        navigate(destination);
+      } catch (error) {
+        if (slowTimer !== null) cancelSlow(slowTimer);
+        slowTimer = null;
+        busy = false;
+        onBusyChange(role, false);
+        emitState(role, 'error');
+        onNavigationFailed(error);
+      }
     };
 
     if (intent === 'quiet' || isPlaying()) {
@@ -205,6 +249,8 @@ export function createWelcomeEntryController({
     setIntent,
     getIntent: () => intent,
     isBusy: () => busy,
+    getRole: () => activeRole,
+    getState: () => state,
   });
 }
 
@@ -320,14 +366,15 @@ const VIEWER_HTML = `<!doctype html>
 
         <nav class="mobile-entry-actions" aria-label="立即進入 · Continue to the workbench">
           <span class="mobile-entry-label">立即進入 · CONTINUE</span>
-          <a id="mobileAdminLogin" class="mobile-entry-action mobile-entry-action--admin" data-entry-role="admin" href="/auth/login">
-            <span><strong>管理員登入</strong><small lang="en">Administrator sign in</small></span>
-            <span aria-hidden="true">→</span>
+          <a id="mobileAdminLogin" class="mobile-entry-action mobile-entry-action--admin" data-entry-role="admin" data-entry-state="idle" href="/auth/login">
+            <span><strong>安全登入</strong><small lang="en">Administrator sign in</small></span>
+            <span class="entry-indicator" aria-hidden="true"><span class="entry-arrow">→</span><span class="entry-spinner"></span></span>
           </a>
-          <a id="mobileGuestEnter" class="mobile-entry-action mobile-entry-action--guest" data-entry-role="guest" href="/guest">
+          <a id="mobileGuestEnter" class="mobile-entry-action mobile-entry-action--guest" data-entry-role="guest" data-entry-state="idle" href="/guest">
             <span><strong>進入訪客示範</strong><small lang="en">Try the fictional demo</small></span>
-            <span aria-hidden="true">→</span>
+            <span class="entry-indicator" aria-hidden="true"><span class="entry-arrow">→</span><span class="entry-spinner"></span></span>
           </a>
+          <p id="mobileEntryStatus" class="mobile-entry-status" aria-live="polite"></p>
         </nav>
 
         <section class="devotional-prompt" aria-labelledby="landingDevotionalTitle">
@@ -364,31 +411,43 @@ const VIEWER_HTML = `<!doctype html>
             <path d="m9 12 2 2 4-4"></path>
           </svg>
         </div>
-        <h2 id="adminPanelTitle">登入管理值班表</h2>
-        <p class="access-copy">完成身份驗證後返回本網站，繼續本週工作。</p>
-        <p class="access-copy access-copy--en" lang="en">After verification, return here to continue this week’s roster.</p>
+        <h2 id="adminPanelTitle">管理員登入</h2>
+        <p class="access-copy">使用已獲授權的電郵接收 Cloudflare 單次驗證碼。系統不保存密碼。</p>
+        <p class="access-copy access-copy--en" lang="en">Use an approved email address to receive a Cloudflare one-time code. This system stores no password.</p>
 
-        <a id="adminLogin" class="admin-login" data-entry-role="admin" href="/auth/login">
+        <a id="adminLogin" class="admin-login" data-entry-role="admin" data-entry-state="idle" href="/auth/login">
           <span class="admin-login-copy">
-            <strong>管理員登入</strong>
+            <strong>安全登入</strong>
             <span lang="en">Administrator sign in</span>
           </span>
-          <span class="admin-login-indicator" aria-hidden="true">
-            <span class="admin-login-arrow">→</span>
-            <span class="admin-login-spinner"></span>
+          <span class="entry-indicator admin-login-indicator" aria-hidden="true">
+            <span class="entry-arrow admin-login-arrow">→</span>
+            <span class="entry-spinner admin-login-spinner"></span>
           </span>
         </a>
-        <a id="guestEnter" class="guest-enter" data-entry-role="guest" href="/guest">
+        <a id="guestEnter" class="guest-enter" data-entry-role="guest" data-entry-state="idle" href="/guest">
           <span class="guest-enter-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="19" height="19"><path d="M2.8 12s3.4-6 9.2-6 9.2 6 9.2 6-3.4 6-9.2 6-9.2-6-9.2-6Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>
           </span>
           <span class="guest-enter-copy"><strong>進入訪客示範</strong><span lang="en">Try the fictional demo</span></span>
-          <span aria-hidden="true">→</span>
+          <span class="entry-indicator" aria-hidden="true"><span class="entry-arrow">→</span><span class="entry-spinner"></span></span>
         </a>
         <p id="loginAssurance" class="login-assurance" aria-live="polite">
           <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15"><path d="M8 11V8a4 4 0 0 1 8 0v3"></path><rect x="5" y="11" width="14" height="10" rx="2"></rect></svg>
           <span>受控身份驗證 · Verified sign-in</span>
         </p>
+        <details id="loginHelp" class="login-help">
+          <summary>收不到驗證碼？ <span lang="en">· Trouble signing in?</span></summary>
+          <div class="login-help-body">
+            <p>請使用已獲授權的管理員電郵，並檢查垃圾郵件及短暫延遲。平台沒有自製密碼，也不會在此顯示電郵是否獲授權。</p>
+            <p lang="en">Use an approved administrator email, then check spam and allow for a short delay. The platform stores no password and does not reveal whether an address is approved.</p>
+            <div class="login-help-actions">
+              <a href="/auth/login">重新開始安全登入 <span lang="en">· Restart secure sign-in</span></a>
+              <a href="/support#public">報告登入問題 <span lang="en">· Report a sign-in problem</span></a>
+            </div>
+            <p class="login-help-reference">入口參考 · Entry reference: <code>__ENTRY_REFERENCE__</code></p>
+          </div>
+        </details>
 
         <section id="welcomeAudioPlayer" class="welcome-audio-player" data-autoplay-state="starting" data-entry-intent="unset" aria-labelledby="welcomeAudioHeading">
           <audio id="welcomeAudio" preload="metadata" playsinline></audio>
@@ -728,6 +787,9 @@ const VIEWER_CSS = `:root {
   --radius-large: 24px;
   --radius-medium: 14px;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --entry-progress-track: color-mix(in srgb, var(--line-strong) 54%, transparent);
+  --entry-progress-fill: var(--action);
+  --entry-slow-surface: color-mix(in srgb, var(--gold) 11%, var(--surface));
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
 }
 
@@ -975,6 +1037,9 @@ button, input, select, textarea { font: inherit; }
 }
 
 .mobile-entry-action {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -996,6 +1061,7 @@ button, input, select, textarea { font: inherit; }
 .mobile-entry-action--guest { background: color-mix(in srgb, var(--surface) 78%, transparent); }
 .mobile-entry-action:active { transform: scale(0.985); }
 .mobile-entry-action:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+.mobile-entry-status { min-height: 1.35em; margin: 0; color: var(--portal-story-muted); font-size: 0.68rem; line-height: 1.4; }
 
 .devotional-prompt {
   margin-top: 30px;
@@ -1132,11 +1198,11 @@ button, input, select, textarea { font: inherit; }
 .admin-login-copy { display: grid; gap: 1px; text-align: left; }
 .admin-login-copy strong { font-size: 0.87rem; }
 .admin-login-copy span { font-size: 0.66rem; font-weight: 560; opacity: 0.78; }
-.admin-login-indicator { display: grid; place-items: center; width: 20px; height: 20px; margin-left: auto; }
-.admin-login-arrow,
-.admin-login-spinner { grid-area: 1 / 1; }
-.admin-login-arrow { font-size: 1.1rem; transition: opacity 120ms ease, transform 160ms var(--ease-standard); }
-.admin-login-spinner {
+.entry-indicator { display: grid; place-items: center; width: 20px; height: 20px; margin-left: auto; }
+.entry-arrow,
+.entry-spinner { grid-area: 1 / 1; }
+.entry-arrow { font-size: 1.1rem; transition: opacity 120ms ease, transform 160ms var(--ease-standard); }
+.entry-spinner {
   width: 15px;
   height: 15px;
   border: 2px solid color-mix(in srgb, currentColor 42%, transparent);
@@ -1147,13 +1213,13 @@ button, input, select, textarea { font: inherit; }
 }
 .access-panel .admin-login:hover { border-color: var(--action-hover); background: var(--action-hover); box-shadow: 0 14px 28px color-mix(in srgb, var(--action) 25%, transparent); }
 .access-panel .admin-login:hover::before { transform: skewX(-17deg) translateX(690%); }
-.access-panel .admin-login:hover .admin-login-arrow { transform: translateX(3px); }
+.access-panel .admin-login:hover .entry-arrow { transform: translateX(3px); }
 .access-panel .admin-login:active { transform: translateY(0) scale(0.985); }
-.access-panel .admin-login[data-connecting="true"] { pointer-events: none; opacity: 0.88; }
-.access-panel .admin-login[data-connecting="true"] .admin-login-arrow { opacity: 0; transform: translateX(5px); }
-.access-panel .admin-login[data-connecting="true"] .admin-login-spinner { opacity: 1; transform: scale(1); animation: spin 760ms linear infinite; }
 
 .guest-enter {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -1179,7 +1245,50 @@ button, input, select, textarea { font: inherit; }
 .guest-enter-copy strong { font-size: 0.8rem; }
 .guest-enter-copy span { color: var(--ink-muted); font-size: 0.65rem; font-weight: 560; }
 
+[data-entry-role]::after {
+  position: absolute;
+  z-index: 3;
+  right: auto;
+  bottom: 0;
+  left: 0;
+  width: 34%;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--entry-progress-fill);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-130%);
+}
+
+[data-entry-state="starting"],
+[data-entry-state="navigating"] { pointer-events: none; cursor: wait; }
+[data-entry-locked="true"] { pointer-events: none; opacity: 0.52; }
+[data-entry-state="starting"] .entry-arrow,
+[data-entry-state="navigating"] .entry-arrow { opacity: 0; transform: scale(0.76); }
+[data-entry-state="starting"] .entry-spinner,
+[data-entry-state="navigating"] .entry-spinner { opacity: 1; transform: scale(1); animation: spin 760ms linear infinite; }
+[data-entry-state="starting"]::after,
+[data-entry-state="navigating"]::after {
+  animation: entry-progress 980ms var(--ease-standard) 150ms infinite;
+}
+[data-entry-state="slow"] { border-color: var(--gold) !important; }
+[data-entry-role="guest"][data-entry-state="slow"] { background: var(--entry-slow-surface); }
+[data-entry-role="admin"][data-entry-state="slow"] { background: var(--action); color: var(--action-ink); }
+[data-entry-state="error"] { border-color: var(--danger) !important; }
+
 .login-assurance { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 10px 0 0; color: var(--ink-muted); font-size: 0.66rem; line-height: 1.4; }
+.login-help { margin-top: 10px; border-top: 1px solid var(--line); color: var(--ink-muted); }
+.login-help summary { min-height: 44px; padding: 12px 2px 8px; color: var(--ink); font-size: 0.72rem; font-weight: 700; cursor: pointer; }
+.login-help summary:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; border-radius: 8px; }
+.login-help-body { display: grid; gap: 8px; padding: 2px 2px 10px; font-size: 0.69rem; line-height: 1.55; }
+.login-help-body p { margin: 0; }
+.login-help-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.login-help-actions a { display: inline-flex; align-items: center; min-height: 44px; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 10px; color: var(--ink); font-weight: 700; text-decoration: none; }
+.login-help-actions a:hover { border-color: var(--brand); background: var(--surface-muted); }
+.login-help-actions a:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.login-help-reference { color: var(--ink-muted); }
+.login-help-reference code { color: var(--ink); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; }
 .welcome-audio-player {
   margin-top: 18px;
   padding: 14px;
@@ -1604,6 +1713,10 @@ tbody td {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes entry-progress {
+  0% { opacity: 1; transform: translateX(-130%); }
+  100% { opacity: 1; transform: translateX(395%); }
+}
 @keyframes portal-story-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes portal-panel-enter { from { opacity: 0; transform: translateY(12px) scale(0.992); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes portal-strip-enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -1644,6 +1757,9 @@ tbody td {
   --danger-soft: #412421;
   --shadow: 0 28px 76px rgba(0, 0, 0, 0.36);
   --shadow-raised: 0 28px 72px rgba(0, 0, 0, 0.4);
+  --entry-progress-track: color-mix(in srgb, var(--line-strong) 54%, transparent);
+  --entry-progress-fill: var(--action);
+  --entry-slow-surface: color-mix(in srgb, var(--gold) 11%, var(--surface));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1680,6 +1796,9 @@ tbody td {
     --danger-soft: #412421;
     --shadow: 0 28px 76px rgba(0, 0, 0, 0.36);
     --shadow-raised: 0 28px 72px rgba(0, 0, 0, 0.4);
+    --entry-progress-track: color-mix(in srgb, var(--line-strong) 54%, transparent);
+    --entry-progress-fill: var(--action);
+    --entry-slow-surface: color-mix(in srgb, var(--gold) 11%, var(--surface));
   }
 
   :root:not([data-theme="light"]) .portal-story-image--light { opacity: 0; }
@@ -1774,6 +1893,7 @@ tbody td {
   .theme-toggle,
   .verse-refresh,
   .site-share-button,
+  .login-help-actions a,
   .welcome-audio-button,
   .welcome-audio-player { border: 1px solid CanvasText; }
   .access-panel .admin-login { background: ButtonFace; color: ButtonText; }
@@ -1790,7 +1910,10 @@ tbody td {
   .access-panel .admin-login::before { display: none; }
   .portal-story-media { transform: none !important; }
   .brand-mark-image { transition: none !important; }
-  .access-panel .admin-login[data-connecting="true"] .admin-login-spinner { animation: none; border-color: currentColor; opacity: .8; }
+  [data-entry-state="starting"] .entry-spinner,
+  [data-entry-state="navigating"] .entry-spinner { animation: none; border-color: currentColor; opacity: .8; }
+  [data-entry-state="starting"]::after,
+  [data-entry-state="navigating"]::after { display: none; }
   .sy-secure-pulse::after { animation: none; opacity: .65; transform: translate(-50%, -50%) scale(1); }
 }
 
@@ -1852,7 +1975,9 @@ const rosterTable = document.getElementById('rosterTable');
 const themeToggle = document.getElementById('themeToggle');
 const themeToggleLabel = document.getElementById('themeToggleLabel');
 const entryButtons = Array.from(document.querySelectorAll('[data-entry-role]'));
-const adminLoginButtons = Array.from(document.querySelectorAll('[data-entry-role="admin"]'));
+const loginAssurance = document.getElementById('loginAssurance');
+const loginAssuranceCopy = loginAssurance?.querySelector('span');
+const mobileEntryStatus = document.getElementById('mobileEntryStatus');
 const portalStory = document.querySelector('.portal-story');
 const portalStoryMedia = document.getElementById('portalStoryMedia');
 const devotionalPrompt = document.querySelector('.devotional-prompt');
@@ -2349,23 +2474,84 @@ shareSite?.addEventListener('click', async () => {
   }
 });
 
-const setAdminLoginState = (connecting) => {
-  adminLoginButtons.forEach((button) => {
+const ENTRY_COPY = Object.freeze({
+  admin: Object.freeze({
+    idleZh: '安全登入',
+    idleEn: 'Administrator sign in',
+    busyZh: '正在連接安全登入…',
+    busyEn: 'Connecting securely…',
+    slowZh: '連接所需時間較長，請重試',
+    slowEn: 'Secure connection is taking longer. Try again.',
+    errorZh: '未能開始安全登入，請重試',
+    errorEn: 'Secure sign-in could not start. Try again.',
+  }),
+  guest: Object.freeze({
+    idleZh: '進入訪客示範',
+    idleEn: 'Try the fictional demo',
+    busyZh: '正在建立私人示範工作區…',
+    busyEn: 'Preparing your private demo workspace…',
+    slowZh: '建立示範工作區需時較長，請重試',
+    slowEn: 'The demo workspace is taking longer. Try again.',
+    errorZh: '未能建立示範工作區，請重試',
+    errorEn: 'The demo workspace could not start. Try again.',
+  }),
+});
+
+const setEntryStatus = (role, state) => {
+  const copy = ENTRY_COPY[role] || null;
+  let message = '';
+  if (copy && (state === 'starting' || state === 'navigating')) {
+    message = role === 'admin'
+      ? '正在前往 Cloudflare 安全驗證… · Opening Cloudflare secure verification…'
+      : '正在建立不保存正式資料的私人示範工作區… · Preparing a private demo workspace that never saves production data…';
+  } else if (copy && state === 'slow') {
+    message = role === 'admin'
+      ? '連接所需時間較長。你可重試或開啟「收不到驗證碼？」取得協助。 · Connection is taking longer. Retry or open sign-in help.'
+      : '建立示範工作區所需時間較長。請重試；正式資料未被修改。 · The demo is taking longer. Retry; production data was not changed.';
+  } else if (copy && state === 'error') {
+    message = role === 'admin'
+      ? '未能開始安全登入。請重試或查看登入協助。 · Secure sign-in could not start. Retry or view sign-in help.'
+      : '未能建立示範工作區。請重試。 · The demo workspace could not start. Please retry.';
+  }
+  if (loginAssuranceCopy) {
+    loginAssuranceCopy.textContent = message || '受控身份驗證 · Verified sign-in';
+  }
+  if (mobileEntryStatus) mobileEntryStatus.textContent = message;
+};
+
+const setEntryState = (role, state) => {
+  const pending = state === 'starting' || state === 'navigating';
+  entryButtons.forEach((button) => {
     if (!(button instanceof HTMLAnchorElement)) return;
-    if (connecting) {
-      button.dataset.connecting = 'true';
+    const buttonRole = button.dataset.entryRole || '';
+    const selected = Boolean(role) && buttonRole === role;
+    const copy = ENTRY_COPY[buttonRole];
+    button.dataset.entryState = selected ? state : 'idle';
+    if (pending && !selected) {
+      button.dataset.entryLocked = 'true';
+    } else {
+      delete button.dataset.entryLocked;
+    }
+    if (selected && pending) {
       button.setAttribute('aria-busy', 'true');
+    } else {
+      button.removeAttribute('aria-busy');
+    }
+    if (pending) {
       button.setAttribute('aria-disabled', 'true');
     } else {
-      delete button.dataset.connecting;
-      button.removeAttribute('aria-busy');
       button.removeAttribute('aria-disabled');
     }
     const zh = button.querySelector('strong');
     const en = button.querySelector('[lang="en"]');
-    if (zh) zh.textContent = connecting ? '正在連接安全登入…' : '管理員登入';
-    if (en) en.textContent = connecting ? 'Connecting securely…' : 'Administrator sign in';
+    const statePrefix = selected && state === 'slow' ? 'slow'
+      : selected && state === 'error' ? 'error'
+      : selected && pending ? 'busy'
+      : 'idle';
+    if (copy && zh) zh.textContent = copy[statePrefix + 'Zh'];
+    if (copy && en) en.textContent = copy[statePrefix + 'En'];
   });
+  setEntryStatus(role, state);
 };
 
 const trustedEntryDestination = (button) => {
@@ -2390,13 +2576,13 @@ welcomeEntryController = createWelcomeEntryController({
   onIntentChange: (intent) => {
     if (welcomeAudioPlayer) welcomeAudioPlayer.dataset.entryIntent = intent;
   },
-  onBusyChange: (role, connecting) => {
-    if (role === 'admin' || !connecting) setAdminLoginState(connecting);
-  },
+  onStateChange: setEntryState,
   onPlaybackStarted: markWelcomeAudioPlaying,
   onPlaybackFailed: (error) => markWelcomeAudioFailure(error, { revealRecovery: false }),
   onPlaybackTimeout: markWelcomeAudioTimeout,
+  onNavigationFailed: () => {},
   timeoutMs: 450,
+  slowMs: 8000,
 });
 
 entryButtons.forEach((button) => button.addEventListener('click', (event) => {
@@ -2409,6 +2595,10 @@ entryButtons.forEach((button) => button.addEventListener('click', (event) => {
 }));
 
 window.addEventListener('pageshow', () => {
+  welcomeEntryController.reset();
+});
+
+window.addEventListener('pagehide', () => {
   welcomeEntryController.reset();
 });
 
@@ -2752,9 +2942,13 @@ const ACCESS_FAILURE_HTML = `<!doctype html>
       <h1>未能確認管理員身分</h1>
       <p>登入資料可能已到期或不適用於這個網站。請返回首頁後重新登入。</p>
       <p class="state-english" lang="en">Your administrator session could not be verified. Return to the home page and sign in again.</p>
+      <p>若沒有收到驗證碼，請檢查垃圾郵件並稍候片刻。此頁不會顯示電郵是否獲授權。</p>
+      <p class="state-english" lang="en">If the code has not arrived, check spam and allow for a short delay. This page never reveals whether an email is approved.</p>
+      <p class="support-reference">支援編號 · Support reference: <strong>__ACCESS_REFERENCE__</strong></p>
       <div class="guest-actions">
+        <a class="admin-login" href="/auth/login">重新開始安全登入 <span lang="en">· Restart secure sign-in</span></a>
+        <a class="admin-login" href="/support#public">報告登入問題 <span lang="en">· Report sign-in problem</span></a>
         <a class="admin-login" href="/logout">清除登入狀態 <span lang="en">· Sign out</span></a>
-        <a class="admin-login" href="/">返回首頁 <span lang="en">· Return home</span></a>
       </div>
     </section>
   </main>
@@ -2763,6 +2957,20 @@ const ACCESS_FAILURE_HTML = `<!doctype html>
 
 function gatewayReference() {
   return `GW-${crypto.randomUUID().replaceAll('-', '').slice(0, 12).toUpperCase()}`;
+}
+
+function publicEntryReference(request) {
+  const ray = (request?.headers?.get('CF-Ray') || '').slice(0, 32);
+  return /^[A-Za-z0-9-]{1,32}$/.test(ray) ? `CF-${ray.toUpperCase()}` : gatewayReference();
+}
+
+function publicLandingResponse(request, html = VIEWER_HTML) {
+  const reference = publicEntryReference(request);
+  const rendered = html.replaceAll('__ENTRY_REFERENCE__', reference);
+  return staticResponse(request, rendered, 200, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'X-Sing-Yin-Support-Reference': reference,
+  });
 }
 
 function originFailureResponse(reference) {
@@ -3546,9 +3754,12 @@ async function notifyOriginSessionRevocation(request, env, principal) {
 }
 
 function accessFailureResponse(status = 403, reference = '') {
-  const headers = { 'Content-Type': 'text/html; charset=utf-8' };
-  if (reference) headers['X-Sing-Yin-Support-Reference'] = reference;
-  return response(ACCESS_FAILURE_HTML, status, headers);
+  const safeReference = /^[A-Z0-9-]{3,64}$/.test(reference) ? reference : gatewayReference();
+  const headers = {
+    'Content-Type': 'text/html; charset=utf-8',
+    'X-Sing-Yin-Support-Reference': safeReference,
+  };
+  return response(ACCESS_FAILURE_HTML.replaceAll('__ACCESS_REFERENCE__', safeReference), status, headers);
 }
 
 function loggedAccessFailure(request, phase, error) {
@@ -4180,7 +4391,7 @@ async function route(request, env, context) {
   }
   if (path === '/view') {
     if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
-    return staticResponse(request, VIEWER_HTML, 200, { 'Content-Type': 'text/html; charset=utf-8' });
+    return publicLandingResponse(request);
   }
   if (path === '/viewer.css') {
     if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
@@ -4333,7 +4544,7 @@ async function route(request, env, context) {
       const landingHtml = url.search === '?guest=1'
         ? VIEWER_HTML.replace('data-guest-bootstrap="false"', 'data-guest-bootstrap="true"')
         : VIEWER_HTML;
-      return staticResponse(request, landingHtml, 200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return publicLandingResponse(request, landingHtml);
     }
     if (path === '/support') {
       if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
