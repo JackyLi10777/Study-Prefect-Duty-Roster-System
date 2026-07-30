@@ -338,6 +338,7 @@ def _render_admin_support(source_path: str) -> None:
                 return
 
             application_mode = current_application_mode()
+            active_locale = current_locale()
             attachment_snapshot = tuple(attachments)
 
             def create_incident():  # type: ignore[no-untyped-def]
@@ -350,7 +351,7 @@ def _render_admin_support(source_path: str) -> None:
                     environment={
                         "platform_family": platform.system().lower(),
                         "python": f"{sys.version_info.major}.{sys.version_info.minor}",
-                        "locale": current_locale(),
+                        "locale": active_locale,
                     },
                     health_summary={"capture": "ok"},
                     events=({
