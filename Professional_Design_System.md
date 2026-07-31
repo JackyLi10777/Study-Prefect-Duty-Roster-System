@@ -130,12 +130,18 @@ This order is a testable composition contract, not an inspiration list. When a p
 
 ### Original atmosphere assets
 
-Original raster atmosphere artwork may be used only as a low-opacity contextual layer behind non-sensitive dashboard content. Current approved assets are:
+Original raster atmosphere artwork may be used only as a low-opacity contextual layer in a page header, narrative hero, empty state, or non-sensitive reading surface. It is never a full-page wallpaper and never enters the operational data plane. Every canonical workbench route declares one semantic atmosphere slot and one presentation mode: `embedded` when a mature hero already owns the composition, or `shell` when the shared shell supplies a compact header after `sy-page-context`. Current approved assets include:
+
+禁用範圍：圖片不可放在資料表、表單、警告或 PDF 後方，也不可承載學生姓名、公平數據、互動控制或確認對話框。
 
 - `nicegui_app/assets/atmosphere/weekly-pulse-light-v1.webp` — Weekly Pulse light-mode warm layered-paper context.
 - `nicegui_app/assets/atmosphere/weekly-pulse-dark-v1.webp` — the same Weekly Pulse composition in its deep-indigo dark treatment.
-- `nicegui_app/assets/atmosphere/devotional-sacred-light-v1.webp` — Daily Verse light-mode parchment-and-window context.
-- `nicegui_app/assets/atmosphere/devotional-sacred-dark-v1.webp` — Daily Verse dark-mode evening-window context.
+- `nicegui_app/assets/atmosphere/devotional-sacred-light-v2.webp` — Daily Verse v2 morning parchment-and-window context with a protected left reading zone.
+- `nicegui_app/assets/atmosphere/devotional-sacred-dark-v2.webp` — Same-composition Daily Verse v2 evening companion.
+- `nicegui_app/assets/atmosphere/weekly-operations-light-v1.webp` and `weekly-operations-dark-v1.webp` — Roster generation, adjustment and history header pair.
+- `nicegui_app/assets/atmosphere/people-fairness-light-v1.webp` and `people-fairness-dark-v1.webp` — People directory and fairness header pair, using blank abstract index cards rather than identities.
+- `nicegui_app/assets/atmosphere/administration-recovery-light-v1.webp` and `administration-recovery-dark-v1.webp` — Settings, access and recovery header pair without fake UI or credentials.
+- `nicegui_app/assets/atmosphere/support-lifeline-light-v1.webp` and `support-lifeline-dark-v1.webp` — Support and incident-report header pair without readable report content.
 - `nicegui_app/assets/atmosphere/handover-archive-light-v1.webp` — Handover light-mode quiet archive context.
 - `nicegui_app/assets/atmosphere/handover-archive-dark-v1.webp` — Handover dark-mode evening archive context.
 - `nicegui_app/assets/atmosphere/platform-stewardship-light-v1.webp` — Platform & Team light-mode coordinated stewardship studio.
@@ -155,13 +161,15 @@ Original raster atmosphere artwork may be used only as a low-opacity contextual 
 
 They contain no people, student data, text, logo, or school crest. They must never replace a button icon, appear inside a roster table/PDF, or sit behind a form field. A solid or gradient readability layer, paired light/dark assets, matching pair dimensions, one shared crop/mask rule, and separately tuned theme opacity/readability veils are mandatory. An enabled contextual background may not use a single shared raster in both themes.
 
-Enabled background art now follows a stricter pair contract. `ATMOSPHERE_THEME_PAIRS` in `nicegui_app/ui/theme.py` is the registry: sidebar, Weekly Pulse, Daily Verse, onboarding, handover, Operator Guide, Platform & Team, Engineering & Quality, architecture hero, architecture lifeline, and the shared empty-ready state each own exactly one semantic image slot and exactly two performance-sized files named `*-light-v1.webp` and `*-dark-v1.webp`. The component selector refers only to `--sy-image-<slot>`; `:root` supplies its light image and `.body--dark` supplies the corresponding dark image. This guarantees the same DOM position, crop rule, mask, and purpose in both themes. A dark image must be a theme companion, not an unrelated scene placed elsewhere.
+The head-level resolver must establish `data-sy-resolved-theme` before the external token stylesheet can paint. A higher-specificity, registry-derived atmosphere map then exposes only the resolved Light or Dark URLs; the in-page theme runtime keeps that attribute synchronized. Resource Timing acceptance must prove that a route-family header requests its current slot/theme asset without first downloading its companion.
 
-Active atmosphere artwork is delivered as WebP and each file must remain below 250 KB unless a browser trace proves a justified exception. The current 22-file paired set totals about 1.83 MB. Browser identity marks also use purpose-sized derivatives: a 512×512 favicon and 640-pixel web crest prevent print masters from being decoded for small-screen presentation.
+Enabled background art follows a strict pair contract. `ATMOSPHERE_THEME_PAIRS` in `nicegui_app/ui/theme.py` is the registry: sidebar, Weekly Pulse, Daily Verse, weekly operations, people and fairness, administration and recovery, support, onboarding, handover, Operator Guide, Platform & Team, Engineering & Quality, architecture hero, architecture lifeline, and the shared empty-ready state each own exactly one semantic image slot and exactly two performance-sized files. The component selector refers only to `--sy-image-<slot>`; `:root` supplies its light image and `.body--dark` supplies the corresponding dark image. This guarantees the same DOM position, crop rule, mask, and purpose in both themes. A dark image must be an edit-derived companion of its light master, not an unrelated scene placed elsewhere.
+
+Active atmosphere artwork is delivered as `1600×900` WebP for the new all-route set. Each file targets 180 KB and has a hard 250 KB gate unless a browser trace proves a justified exception. Exact bytes, dimensions, SHA-256, generation prompts, crop, veil and forbidden placements are release evidence in `docs/design/ATMOSPHERE_ASSET_MANIFEST.md`; prose totals in this document are not the integrity source. Browser identity marks continue to use purpose-sized derivatives so print masters are never decoded for small-screen presentation.
 
 Legacy one-off atmosphere files are not retained as active or fallback backgrounds. If a new contextual background is approved, both theme files, the registry entry, the CSS variable, asset-existence test, and light/dark browser assertion must arrive in the same change.
 
-The sidebar, Operator Guide, Platform & Team hero, Engineering & Quality hero, and architecture page are the only additional approved placement contexts in this phase. Their images sit behind a solid readability veil and never carry required information. They are **not** a reason to fill every blank area: useful breathing room remains part of a calm operating desk. Generated imagery is prohibited behind data tables, forms, warnings, names, fairness records, interactive controls, and PDFs（不可放在資料表、表單、警告或 PDF 後方）.
+Approved placement is route-family based: mature embedded heroes retain their own atmosphere; roster, people/fairness, administration/recovery and support routes receive exactly one shared shell header. Images sit behind a solid readability veil and never carry required information. They are **not** a reason to fill every blank area: useful breathing room remains part of a calm operating desk. Generated imagery is prohibited behind data tables, forms, warnings, student names, fairness records, interactive controls, confirmation dialogs, encrypted viewers, downloads and PDFs（不可放在資料表、表單、警告、控制、對話框或 PDF 後方）.
 
 All future generated assets must be reviewed against this checklist before use: appropriate context; no implied real student; no readable text; no trademark or logo; local project copy exists; dark-mode opacity is specified; small-screen crop is safe; no required information depends on the image.
 
@@ -485,7 +493,7 @@ The Daily Verse is a distinct component, not a recoloured dashboard card.
 
 - **Structure:** small book mark; bilingual devotional label; Scripture in serif reading type; reference; quiet refresh control; one progressively disclosed reflection. The main dashboard version remains compact; the `/devotional` page may use the fuller reading chamber.
 - **Canonical translations:** every maintained direct Scripture quotation uses Traditional Chinese RCUV 2010（神版）and English NKJV, with the versions named explicitly near the reading. Content comes from `data/devotional/daily-verses.seed.json`; release validation fails when either translation metadata, Scripture text, or exact-verification state is absent or wrong. A service-principle paraphrase must be labelled as a principle and must not masquerade as a verbatim verse.
-- **Materials:** deep indigo surface, warm parchment text, restrained gold rule, and a local right-weighted contextual image. In light mode it uses `devotional-sacred-light-v1.webp`; dark mode uses `devotional-sacred-dark-v1.webp`.
+- **Materials:** a warm morning parchment surface in light mode and deep indigo surface in dark mode, with restrained gold rules and the same right-weighted contextual composition. Light uses `devotional-sacred-light-v2.webp`; dark uses `devotional-sacred-dark-v2.webp`.
 - **Reading protection:** a solid left-to-right veil protects text; the image is never the sole contrast mechanism. Scripture may never sit on a busy crop, an animated layer, or a translucent glass panel.
 - **Motion:** no automatic movement. Hover may deepen elevation only; verse refresh is an explicit action and changes content without an ornamental page transition.
 - **Separation:** blue remains a work-action colour below. The Daily Verse uses gold and parchment only within its own surface, so it is recognisably sacred without turning the application into a themed template.
@@ -854,7 +862,7 @@ Shared CSS motion tokens are the only default timing vocabulary: `--sy-motion-pr
 
 - CSS uses the standard easing `cubic-bezier(.2, .8, .2, 1)`. The local GSAP runtime uses matching `power2.out`/`power1.out` curves for one-shot narrative entry, capped group stagger, cursor smoothing, and semantic feedback pulse.
 - GSAP is locally vendored and same-origin; it has no data, navigation, policy, persistence, or network responsibility. `IntersectionObserver` starts a surface only once, while `MutationObserver` discovers NiceGUI-rendered content without polling the application state. The runtime owns an idempotent disposer, disconnects both observers, aborts pointer listeners, removes generated nodes, and uses `gsap.matchMedia()` so a live reduced-motion or pointer-capability change can revert enhancements safely.
-- Material icon names are hydrated into stable semantic motion roles—`forward`, `back`, `navigation`, `refresh`, `confirm`, `download`, `upload`, `exchange`, `create`, `edit`, `toggle`, `play`, `search`, `danger`, `attention`, or neutral `signal`. The role describes the action rather than the page, so the same Dashboard, roster, directory, save, publish, download or edit action behaves consistently throughout the product.
+- Material icon names are hydrated into stable semantic motion roles—`forward`, `back`, `navigation`, `refresh`, `confirm`, `download`, `upload`, `exchange`, `create`, `edit`, `toggle`, `play`, `search`, `danger`, `attention`, bounded `rotary`, or neutral `signal`. The role describes the action rather than the page, so the same Dashboard, roster, directory, save, publish, download or edit action behaves consistently throughout the product.
 - Icon feedback has complete control states: hover and keyboard focus express intent; press acknowledges input; a one-shot `navigation` state confirms route selection; busy and disabled remain still; accepted work may emit one short `working`, `success`, `attention` or silent `error` response at the initiating control. A single delegated recent-action reference survives a progress dialog taking focus, remains bounded in time, and is cleared safely; hydration uses the shared mutation observer and CSS state selectors rather than per-button listeners.
 - Static evidence, team, architecture and metric cards must not masquerade as controls. On a fine pointer, only their explanatory icon may make a restrained response; the card surface remains still unless it contains a real link or action. A labelled process-map node may rise by at most 2px because its response helps the reader follow a sequence, but it must not gain a pointer cursor or imply navigation.
 - Respect `prefers-reduced-motion`: skip GSAP entry/stagger/pulse motion, remove hover transforms and nonessential transitions, and keep the final content immediately visible. If GSAP cannot load, the runtime fails open to a static interface after a bounded retry rather than blocking the page.
@@ -882,14 +890,15 @@ Shared CSS motion tokens are the only default timing vocabulary: `--sy-motion-pr
 
 清單和覆蓋率必須分開報告：unique glyph names、source call sites、rendered interactive instances、已分類 semantic roles、有效 story sources、story destinations、role-only controls、decorative／informational icons 及 intentionally-static icons，不可混用分母。驗收目標是所有渲染出的互動圖標控制均被分類，而不是達到任意故事數字。
 
-#### Settings gear exception / 設定齒輪例外
+#### Bounded rotary allowlist / 有界旋轉白名單
 
-`settings` 是唯一可使用旋轉來表達機械設定動作的常規 Material glyph；這是圖標本身的語意例外，不是解除固定按鈕幾何的限制。
+旋轉只可用於本身具有圓周、回復或週期語意的 glyph。精確白名單為 `settings`、持續狀態的 `light_mode ↔ dark_mode`、備份導覽 `settings_backup_restore`、`history` 及 `undo`。實際資料還原 `restore` 使用操作生命週期 morph，禁止疊加旋轉；草稿、發布、匯入、風紀管理、換經文及其他已有 glyph story 的操作只使用 morph。資訊、表格、證據、disabled 和純裝飾 glyph 保持靜態。
 
 - 只可旋轉 glyph；按鈕 host、文字標籤、焦點框、導航列和版面位置必須完全穩定。
-- Fine-pointer hover／focus 預示採一次有界限的 `45–90deg` 轉動；真正 activation 可完成一次 `180–360deg` 動作後乾淨回到基準角度。快速重複操作必須先取消舊 timeline，不得累積角度或留下傾斜狀態。
-- 只有真正在執行設定操作且 host 同時帶有 settings-operation 與 busy 狀態時，才可連續旋轉；完成、失敗、取消、路由替換和 disposer 均立即停止並復位。
-- 目前所在的 Settings 導航項必須保持穩定，不能像 spinner 一樣持續轉動。齒輪在任何中間幀和最終幀均須保持可辨識。
+- `settings` 的 hover／focus 預示為順時針 `70deg`，activation 為順時針 `270deg／260ms`；`settings_backup_restore` 為 `60deg`／`180deg`；`history` 為逆時針 `55deg`／`180deg`；`undo` 只在真實 activation 播放一次有界逆時針動作。
+- 主題切換是唯一可把 persistent glyph morph 與 rotary 組合的控制：只有使用者實際切換時播放 `90deg／180ms`，初次 hydration 不播放。任何其他 host 只能解析一個 `data-sy-icon-motion-mode`。
+- Busy、disabled、reconnect、DOM replacement、快速重複操作、執行期間 reduced-motion 變更及 disposer 必須取消既有 timeline、清除 inline transform 並回復當前真實 glyph。角度不可累積，旋轉不可無限循環。
+- 目前所在的 Settings 導覽項和任何旋轉控制的外框必須保持穩定，不能像 spinner 一樣持續轉動；glyph 在中間幀和最終幀均須可辨識。
 - Reduced motion、forced colours、無 GSAP 或動畫失效時不旋轉，只以穩定色調、邊界、焦點和文字傳達狀態。
 
 #### Action lifecycle contract / 操作生命週期契約
@@ -907,8 +916,12 @@ Shared CSS motion tokens are the only default timing vocabulary: `--sy-motion-pr
 - Buttons and expansion headers use a pointer cursor. Disabled actions use `not-allowed`; static tables, roster cells, names, warnings, and fairness data never gain a pointer cursor or floating transform.
 - Sidebar items and expansion headers remain anchored: they do not drift, tilt or rotate. Responsiveness comes from the internal icon story, surface colour, border and focus ring, so navigation never appears physically unstable.
 - Touch devices do not run hover transforms. Under `prefers-reduced-motion: reduce`, hover translation is removed and the cursor light is not rendered.
-- A coarse-pointer press may run one in-place semantic icon story and restore the source glyph after a bounded delay. It must not rotate, drift, move the button, loop, delay activation, or run when reduced motion is requested.
+- A coarse-pointer press may run one in-place semantic icon story and restore the source glyph after a bounded delay. Only an allowlisted rotary control may rotate its glyph once; no control may drift, move the host, loop, delay activation, or run when reduced motion is requested.
 - Hover tooltips are suppressed on coarse pointers; the same controls retain their explicit accessible names.
+
+#### Tactile capsule switches / 擬態膠囊開關
+
+Admin／Guest 的「重要操作提示音」及「音樂自動播放」使用共用 `sy-tactile-toggle`，因為它們是高頻環境偏好而非一般表單欄位。Pressed 時只在既有 footprint 內收束 track inset shadow、把 thumb 壓縮至約 `0.92` 並短暫反轉高光；release 後立即解析至真實 checked state。一般表單 switch 保持較克制的共用樣式。Header 的提示音、主題及設定控制使用固定圓形 tonal well，但 focus ring 仍是最外層且不得被陰影遮蓋。鍵盤、觸控、滑鼠、深淺模式、forced colours、disabled 和 reduced motion 必須保留相同狀態語意；動畫或音效失敗不得改變偏好值。
 
 ---
 

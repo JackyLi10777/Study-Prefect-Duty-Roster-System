@@ -155,7 +155,7 @@ def test_intentionally_static_category_blocks_registry_preview() -> None:
     assert "iconStoryState?.clear(host)" in static_scope
 
 
-def test_header_rotation_layer_was_removed_in_favour_of_shared_morph() -> None:
+def test_header_theme_uses_one_bounded_shared_morph_and_rotation() -> None:
     theme = _read("nicegui_app/assets/css/sing-yin-theme-v1.css")
     shell = _read("nicegui_app/ui/shell.py")
 
@@ -164,9 +164,12 @@ def test_header_rotation_layer_was_removed_in_favour_of_shared_morph() -> None:
     assert "window.__syIconMotion?.setPersistentGlyph" in shell
 
     worker = _read("cloudflare/roster_viewer/worker.js")
-    theme_scope = worker.split(".theme-icon--sun", 1)[1].split(".skip-link", 1)[0]
-    assert "rotate(" not in theme_scope
-    assert "scale(.58)" in theme_scope
+    theme_scope = worker.split(".theme-toggle-icon", 1)[1].split(".skip-link", 1)[0]
+    keyframes = worker.split("@keyframes theme-icon-state", 1)[1].split(".skip-link", 1)[0]
+    assert "animation: theme-icon-state 180ms" in theme_scope
+    assert "rotate(-90deg)" in keyframes
+    assert "scale(.72)" in keyframes
+    assert "infinite" not in keyframes
 
 
 def test_public_entry_icons_do_not_rotate_or_loop_decoratively() -> None:
@@ -184,6 +187,73 @@ def test_public_entry_icons_do_not_rotate_or_loop_decoratively() -> None:
         ".state-icon", 1
     )[0]
     assert "infinite" not in secure_indicator
+
+
+def test_rotary_motion_is_allowlisted_exclusive_bounded_and_cleaned_up() -> None:
+    motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
+    interaction = _read("nicegui_app/assets/css/sing-yin-interaction-v1.css")
+
+    for mode, preview, activation in (
+        ("rotary-only", "70", "270"),
+        ("persistent-rotary", "0", "90"),
+        ("rotary-navigation", "60", "180"),
+        ("rotary-history", "-55", "-180"),
+        ("rotary-action", "0", "-180"),
+    ):
+        assert f"'{mode}': Object.freeze({{" in motion
+        contract = motion.split(f"'{mode}': Object.freeze({{", 1)[1].split("})", 1)[0]
+        assert f"preview: {preview}" in contract
+        assert f"activation: {activation}" in contract
+
+    assert "Object.freeze(['settings', 'light_mode', 'dark_mode', 'settings_backup_restore', 'history', 'undo'])" in motion
+    assert "if (rotaryContract && motionMode !== 'persistent-rotary') category = 'role'" in motion
+    assert "cancelIconTimeline(icon);" in motion
+    assert "cancelRotaryTimeline(icon);" in motion
+    assert "iconRotaryTimelines.clear()" in motion
+    assert "clearProps: 'rotation,transform'" in motion
+    for mode in (
+        "rotary-only",
+        "rotary-navigation",
+        "rotary-history",
+        "rotary-action",
+        "persistent-rotary",
+    ):
+        assert f'[data-sy-icon-motion-mode="{mode}"]' in interaction
+
+
+def test_theme_rotation_only_runs_for_a_real_user_state_change() -> None:
+    motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
+    shell = _read("nicegui_app/ui/shell.py")
+    worker = _read("cloudflare/roster_viewer/worker.js")
+
+    assert "host.dataset.syIconMotionMode === 'persistent-rotary'" in motion
+    assert "morphGlyph(icon, next, { active: false, rotation })" in motion
+    assert "data-sy-icon-motion-mode=persistent-rotary" in shell
+    assert "sync({animate: false})" in shell
+    assert "applyTheme(savedTheme(), { persist: false, animate: false })" in worker
+    assert "applyTheme('system', { persist: false, animate: false })" in worker
+    assert "applyTheme(next, { persist: true, animate: true })" in worker
+
+
+def test_tactile_preference_switches_have_a_pressed_shape_without_layout_shift() -> None:
+    music = _read("nicegui_app/ui/music.py")
+    theme = _read("nicegui_app/assets/css/sing-yin-theme-v1.css")
+
+    assert music.count("sy-tactile-toggle") >= 4
+    tactile = theme.split(".sy-tactile-toggle", 1)[1]
+    assert "inset" in tactile
+    assert "scale(.92)" in tactile
+    assert "width:" not in tactile.split(".sy-tactile-toggle:active", 1)[1].split("}", 1)[0]
+    assert "height:" not in tactile.split(".sy-tactile-toggle:active", 1)[1].split("}", 1)[0]
+    assert "@media (forced-colors: active)" in theme
+
+
+def test_theme_runtime_keeps_the_prepaint_asset_selector_in_sync() -> None:
+    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+
+    assert shell.count("document.documentElement.dataset.syResolvedTheme") >= 2
+    assert "document.documentElement.dataset.syResolvedTheme = theme" in shell
+    assert "document.documentElement.dataset.syResolvedTheme = current" in shell
 
 
 def test_persistent_preference_updates_cannot_cross_contaminate_controls() -> None:

@@ -82,8 +82,13 @@
   --sy-icon-intent-transform: scale(1.1);
 }
 
-.q-icon[data-sy-icon-motion="gear"] {
-  --sy-icon-intent-transform: rotate(70deg) scale(1.04);
+.q-icon[data-sy-icon-motion-mode="rotary-only"],
+.q-icon[data-sy-icon-motion-mode="rotary-navigation"],
+.q-icon[data-sy-icon-motion-mode="rotary-history"],
+.q-icon[data-sy-icon-motion-mode="rotary-action"],
+.q-icon[data-sy-icon-motion-mode="persistent-rotary"] {
+  --sy-rotary-preview-degrees: 0deg;
+  --sy-icon-intent-transform: rotate(var(--sy-rotary-preview-degrees, 0deg)) scale(1.04);
 }
 
 /* Story icons change shape in place; their host remains a stable click target. */
@@ -163,7 +168,7 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
   }
 
   body :is(.q-btn, .q-tab, .q-item.q-item--clickable):is([aria-current="page"], .sy-nav-link--active):hover
-    .q-icon[data-sy-icon-motion="gear"] {
+    .q-icon[data-sy-icon-motion-mode="rotary-only"] {
     transform: none;
   }
 }
@@ -203,23 +208,23 @@ body :is(.q-btn.q-btn--loading, .q-btn[aria-busy="true"])
   100% { transform: scale(1); }
 }
 
-[data-sy-feedback-state="navigation"] .q-icon[data-sy-icon-motion] {
+[data-sy-feedback-state="navigation"] .q-icon[data-sy-icon-motion]:not([data-sy-icon-motion-mode*="rotary"]) {
   animation: sy-icon-navigation var(--sy-motion-layer) var(--sy-ease) 1;
 }
 
-[data-sy-feedback-state="success"] .q-icon[data-sy-icon-motion] {
+[data-sy-feedback-state="success"] .q-icon[data-sy-icon-motion]:not([data-sy-icon-motion-mode*="rotary"]) {
   animation: sy-icon-confirm var(--sy-motion-layer) var(--sy-ease) 1;
 }
 
-[data-sy-feedback-state="working"] .q-icon[data-sy-icon-motion] {
+[data-sy-feedback-state="working"] .q-icon[data-sy-icon-motion]:not([data-sy-icon-motion-mode*="rotary"]) {
   animation: sy-icon-working var(--sy-motion-layer) var(--sy-ease) 1;
 }
 
-[data-sy-feedback-state="attention"] .q-icon[data-sy-icon-motion] {
+[data-sy-feedback-state="attention"] .q-icon[data-sy-icon-motion]:not([data-sy-icon-motion-mode*="rotary"]) {
   animation: sy-icon-attention var(--sy-motion-layer) var(--sy-ease) 1;
 }
 
-[data-sy-feedback-state="error"] .q-icon[data-sy-icon-motion] {
+[data-sy-feedback-state="error"] .q-icon[data-sy-icon-motion]:not([data-sy-icon-motion-mode*="rotary"]) {
   animation: sy-icon-error var(--sy-motion-layer) var(--sy-ease) 1;
 }
 

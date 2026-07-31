@@ -68,10 +68,12 @@ If prose conflicts with executable policy, transactional behavior, security chec
 | [`BRANCH_STRATEGY.md`](BRANCH_STRATEGY.md) | branch、tag、platform snapshot 及歷史保留規則 | branch purpose、release line 或 archive policy 改變 |
 | [`AI_AGENT_GIT_GUIDE.md`](AI_AGENT_GIT_GUIDE.md) | Codex 與輔助 Agent 的工作樹、分支、提交、審查及禁止操作 | worktree allocation、agent branch、review ownership 或 GitHub protection 改變 |
 | [`../Professional_Design_System.md`](../Professional_Design_System.md) | token、component、responsive、motion、SVG／Lottie、a11y 及驗證規則 | visual token、shared component、motion 或 accessibility contract 改變 |
+| [`design/ATMOSPHERE_ASSET_MANIFEST.md`](design/ATMOSPHERE_ASSET_MANIFEST.md) | AI 氣氛資產提示詞、用途、尺寸、大小、SHA-256、裁切、遮罩、人工檢視及禁用位置 | atmosphere slot、圖片、生成工具、theme pair、hash 或 placement boundary 改變 |
 | [`CONTENT_DESIGN_AUDIT.md`](CONTENT_DESIGN_AUDIT.md) | 可見文案的用途分類、保留／蒸餾決定、頁面主行動與後果說明 | page hierarchy、visible copy、progressive disclosure、support copy 或 content ownership 改變 |
 | [`PRODUCT_RESEARCH_AND_IA_DECISIONS.md`](PRODUCT_RESEARCH_AND_IA_DECISIONS.md) | 產品研究來源、Adopt／Adapt／Reject 取捨及四區資訊架構 | public entrance、workbench、trust hub、documentation portal 或 reference decision 改變 |
 | [`VISUAL_INTERACTION_AUDIT_RC31.md`](VISUAL_INTERACTION_AUDIT_RC31.md) | rc31 外觀控制缺陷、保留邊界、驗收矩陣及反例 | rc31 theme control scope、interaction contract 或 acceptance matrix 改變 |
-| [`audits/SEMANTIC_ICON_ACTION_MOTION_2026-07-30.md`](audits/SEMANTIC_ICON_ACTION_MOTION_2026-07-30.md) | 語意圖標來源分母、19 個必需控制、渲染實例、提示音預設及未部署邊界 | icon role／category、lifecycle feedback、gear exception、sound default 或 motion verifier 改變 |
+| [`audits/SEMANTIC_ICON_ACTION_MOTION_2026-07-30.md`](audits/SEMANTIC_ICON_ACTION_MOTION_2026-07-30.md) | 語意圖標來源分母、21 個必需控制、五項旋轉白名單、提示音預設及渲染驗證 | icon role／category／motion mode、lifecycle feedback、rotation allowlist、sound default 或 motion verifier 改變 |
+| [`audits/ATMOSPHERE_MOTION_ACCEPTANCE_2026-07-31.md`](audits/ATMOSPHERE_MOTION_ACCEPTANCE_2026-07-31.md) | 全路由氣氛、每日聖言、語意旋轉、觸覺開關、裝置矩陣及部署前後證據 | 本輪資產、視覺、互動、browser gate、release 或 production evidence 改變 |
 | [`plans/WHOLE_SITE_WAITING_EXPERIENCE_PLAN.md`](plans/WHOLE_SITE_WAITING_EXPERIENCE_PLAN.md) | Admin／Guest 入口、誠實進度、slow-state、按鈕圖標分母及全站等待狀態所有權 | entry lifecycle、progress mode、loading token、button inventory 或 waiting-state gate 改變 |
 | [`MUSIC_IMPORT_DECISION.md`](MUSIC_IMPORT_DECISION.md) | 本機音訊匯入的安全及技術決策 | importer、source allowlist、metadata 或 legal/operational boundary 改變 |
 | [`MUSIC_PLAYLIST_CANDIDATES.md`](MUSIC_PLAYLIST_CANDIDATES.md) | 經審核但尚未必納入的音樂候選 | playlist review 或 catalogue decision 改變 |

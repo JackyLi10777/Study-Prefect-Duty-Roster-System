@@ -47,6 +47,8 @@ class PageDefinition:
     icon: str
     page_kind: PageKind
     music_context: str
+    atmosphere_slot: str
+    atmosphere_presentation: str
     required_capability: Capability | None
     visible_access_modes: frozenset[AccessMode]
     mobile_primary: bool = False
@@ -71,6 +73,8 @@ PAGE_DEFINITIONS = (
         icon="space_dashboard",
         page_kind=PageKind.OPERATIONS,
         music_context="dashboard",
+        atmosphere_slot="weekly-pulse",
+        atmosphere_presentation="embedded",
         required_capability=Capability.DEMO_DATA_READ,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
         mobile_primary=True,
@@ -82,6 +86,8 @@ PAGE_DEFINITIONS = (
         icon="calendar_month",
         page_kind=PageKind.OPERATIONS,
         music_context="weekly",
+        atmosphere_slot="weekly-operations",
+        atmosphere_presentation="shell",
         required_capability=Capability.DEMO_DATA_READ,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
         mobile_primary=True,
@@ -93,6 +99,8 @@ PAGE_DEFINITIONS = (
         icon="groups",
         page_kind=PageKind.OPERATIONS,
         music_context="people",
+        atmosphere_slot="people-fairness",
+        atmosphere_presentation="shell",
         required_capability=Capability.DEMO_DATA_READ,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
         mobile_primary=True,
@@ -104,6 +112,8 @@ PAGE_DEFINITIONS = (
         icon="handshake",
         page_kind=PageKind.OPERATIONS,
         music_context="handover",
+        atmosphere_slot="handover",
+        atmosphere_presentation="embedded",
         required_capability=Capability.DEMO_DATA_READ,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
     ),
@@ -114,6 +124,8 @@ PAGE_DEFINITIONS = (
         icon="admin_panel_settings",
         page_kind=PageKind.OPERATIONS,
         music_context="settings",
+        atmosphere_slot="administration-recovery",
+        atmosphere_presentation="shell",
         required_capability=Capability.SESSION_PREFERENCES_MODIFY,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
     ),
@@ -124,6 +136,8 @@ PAGE_DEFINITIONS = (
         icon="settings",
         page_kind=PageKind.OPERATIONS,
         music_context="settings",
+        atmosphere_slot="administration-recovery",
+        atmosphere_presentation="shell",
         required_capability=Capability.SESSION_PREFERENCES_MODIFY,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
     ),
@@ -134,6 +148,8 @@ PAGE_DEFINITIONS = (
         icon="domain",
         page_kind=PageKind.STORY,
         music_context="architecture",
+        atmosphere_slot="platform",
+        atmosphere_presentation="embedded",
         required_capability=None,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
     ),
@@ -144,6 +160,8 @@ PAGE_DEFINITIONS = (
         icon="account_tree",
         page_kind=PageKind.REFERENCE,
         music_context="architecture",
+        atmosphere_slot="architecture",
+        atmosphere_presentation="embedded",
         required_capability=None,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
     ),
@@ -154,6 +172,8 @@ PAGE_DEFINITIONS = (
         icon="build_circle",
         page_kind=PageKind.EVIDENCE,
         music_context="architecture",
+        atmosphere_slot="engineering",
+        atmosphere_presentation="embedded",
         required_capability=None,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
     ),
@@ -164,6 +184,8 @@ PAGE_DEFINITIONS = (
         icon="play_circle",
         page_kind=PageKind.REFERENCE,
         music_context="getting_started",
+        atmosphere_slot="onboarding",
+        atmosphere_presentation="embedded",
         required_capability=None,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
     ),
@@ -174,6 +196,8 @@ PAGE_DEFINITIONS = (
         icon="help_outline",
         page_kind=PageKind.REFERENCE,
         music_context="guide",
+        atmosphere_slot="guide",
+        atmosphere_presentation="embedded",
         required_capability=None,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
     ),
@@ -184,6 +208,8 @@ PAGE_DEFINITIONS = (
         icon="menu_book",
         page_kind=PageKind.SACRED,
         music_context="devotional",
+        atmosphere_slot="devotional",
+        atmosphere_presentation="embedded",
         required_capability=None,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
     ),
@@ -194,6 +220,8 @@ PAGE_DEFINITIONS = (
         icon="support_agent",
         page_kind=PageKind.OPERATIONS,
         music_context="guide",
+        atmosphere_slot="support-lifeline",
+        atmosphere_presentation="shell",
         required_capability=None,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
     ),
@@ -273,6 +301,10 @@ def validate_page_catalog() -> list[str]:
             errors.append(f"Unknown navigation group for {page.route}")
         if not page.title_key or not page.icon or not page.music_context:
             errors.append(f"Incomplete page presentation contract: {page.route}")
+        if not page.atmosphere_slot:
+            errors.append(f"Missing atmosphere slot for {page.route}")
+        if page.atmosphere_presentation not in {"embedded", "shell"}:
+            errors.append(f"Invalid atmosphere presentation for {page.route}")
         if AccessMode.PUBLIC in page.visible_access_modes:
             errors.append(f"Workbench page must not expose PUBLIC shell access: {page.route}")
         if page.required_capability is not None:

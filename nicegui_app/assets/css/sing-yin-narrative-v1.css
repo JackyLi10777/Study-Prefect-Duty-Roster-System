@@ -88,6 +88,62 @@ body.body--dark:has(.sy-page-shell) {
   background: linear-gradient(90deg, var(--sy-line), transparent);
 }
 
+.sy-page-atmosphere {
+  --sy-page-atmosphere-image: none;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  min-height: clamp(104px, 10vw, 146px);
+  border: 1px solid var(--sy-atmosphere-border);
+  border-radius: 22px;
+  background: var(--sy-atmosphere-surface);
+  box-shadow: var(--sy-atmosphere-shadow);
+}
+
+.sy-page-atmosphere::before {
+  position: absolute;
+  inset: 0;
+  background:
+    var(--sy-atmosphere-veil),
+    var(--sy-page-atmosphere-image) right center / cover no-repeat;
+  content: "";
+  pointer-events: none;
+}
+
+.sy-page-atmosphere::after {
+  position: absolute;
+  right: clamp(18px, 3vw, 40px);
+  bottom: 14px;
+  left: clamp(18px, 3vw, 40px);
+  height: 1px;
+  background: var(--sy-woven-line);
+  content: "";
+  opacity: .48;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .sy-page-atmosphere::before {
+    background:
+      linear-gradient(90deg, var(--sy-atmosphere-surface) 0 68%, color-mix(in srgb, var(--sy-atmosphere-surface) 88%, transparent) 100%),
+      var(--sy-page-atmosphere-image) right center / cover no-repeat;
+  }
+}
+
+@media (max-width: 620px) {
+  .sy-page-atmosphere {
+    min-height: 92px;
+    border-radius: 18px;
+  }
+
+  .sy-page-atmosphere::before {
+    background:
+      linear-gradient(90deg, var(--sy-atmosphere-surface) 0 56%, color-mix(in srgb, var(--sy-atmosphere-surface) 78%, transparent) 100%),
+      var(--sy-page-atmosphere-image) 68% center / cover no-repeat;
+  }
+}
+
 /* ---------- Brand lockup and navigation as a stable story spine ---------- */
 
 .sy-brand-lockup {

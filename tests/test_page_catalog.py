@@ -13,6 +13,7 @@ from nicegui_app.ui.page_catalog import (
     portal_pages_for,
     validate_page_catalog,
 )
+from nicegui_app.ui.theme import ATMOSPHERE_THEME_PAIRS
 
 
 def test_page_catalog_is_complete_unique_and_translation_independent() -> None:
@@ -86,6 +87,10 @@ def test_desktop_and_mobile_shell_read_the_page_catalog() -> None:
     assert "title_key = active_page.title_key" in shell
     assert "active_page.page_kind.value" in shell
     assert "active_page.music_context" in shell
+    assert "active_page.atmosphere_slot" in shell
+    assert 'active_page.atmosphere_presentation == "shell"' in shell
+    assert '"sy-page-atmosphere"' in shell
+    assert "--sy-page-atmosphere-image: var(--sy-image-" in shell
     assert 'data-sy-page-kind="{page_kind}"' in shell
     assert "sy-page-kind-{page_kind}" in shell
 
@@ -95,3 +100,58 @@ def test_desktop_and_mobile_shell_read_the_page_catalog() -> None:
     )
     assert "music_context=" not in route_sources
     assert 'page_shell("dashboard", "/")' not in route_sources
+
+
+def test_every_page_has_one_registered_atmosphere_and_one_presentation_mode() -> None:
+    expected = {
+        "/": ("weekly-pulse", "embedded"),
+        "/rosters": ("weekly-operations", "shell"),
+        "/prefects": ("people-fairness", "shell"),
+        "/handover": ("handover", "embedded"),
+        "/access-control": ("administration-recovery", "shell"),
+        "/settings": ("administration-recovery", "shell"),
+        "/platform": ("platform", "embedded"),
+        "/system-architecture": ("architecture", "embedded"),
+        "/engineering": ("engineering", "embedded"),
+        "/getting-started": ("onboarding", "embedded"),
+        "/guide": ("guide", "embedded"),
+        "/devotional": ("devotional", "embedded"),
+        "/support": ("support-lifeline", "shell"),
+    }
+
+    assert {
+        page.route: (page.atmosphere_slot, page.atmosphere_presentation)
+        for page in PAGE_DEFINITIONS
+    } == expected
+    assert all(page.atmosphere_slot in ATMOSPHERE_THEME_PAIRS for page in PAGE_DEFINITIONS)
+
+
+def test_shell_atmosphere_is_a_noninteractive_band_after_page_context() -> None:
+    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(
+        encoding="utf-8"
+    )
+    narrative = (
+        PROJECT_ROOT
+        / "nicegui_app"
+        / "assets"
+        / "css"
+        / "sing-yin-narrative-v1.css"
+    ).read_text(encoding="utf-8")
+
+    context_index = shell.index('classes("sy-page-context")')
+    atmosphere_index = shell.index('"sy-page-atmosphere"')
+    content_index = shell.index("        yield", atmosphere_index)
+    assert context_index < atmosphere_index < content_index
+    assert "aria-hidden=true" in shell[atmosphere_index:content_index]
+    assert "pointer-events: none" in narrative.split(
+        ".sy-page-atmosphere::before", 1
+    )[1].split("}", 1)[0]
+    atmosphere_rules = narrative.split("/* ---------- Brand lockup", 1)[0]
+    for sensitive_selector in (
+        ".q-table",
+        ".q-field",
+        ".q-dialog",
+        ".sy-roster-mobile-prefect",
+        ".sy-fairness",
+    ):
+        assert sensitive_selector not in atmosphere_rules

@@ -95,7 +95,11 @@
             "--sy-motion-layer": "{layers.primitive.motion.layer}",
             "--sy-image-sidebar": "url('/assets/atmosphere/sidebar-stewardship-light-v1.webp')",
             "--sy-image-weekly-pulse": "url('/assets/atmosphere/weekly-pulse-light-v1.webp')",
-            "--sy-image-devotional": "url('/assets/atmosphere/devotional-sacred-light-v1.webp')",
+            "--sy-image-devotional": "url('/assets/atmosphere/devotional-sacred-light-v2.webp')",
+            "--sy-image-weekly-operations": "url('/assets/atmosphere/weekly-operations-light-v1.webp')",
+            "--sy-image-people-fairness": "url('/assets/atmosphere/people-fairness-light-v1.webp')",
+            "--sy-image-administration-recovery": "url('/assets/atmosphere/administration-recovery-light-v1.webp')",
+            "--sy-image-support-lifeline": "url('/assets/atmosphere/support-lifeline-light-v1.webp')",
             "--sy-image-onboarding": "url('/assets/atmosphere/onboarding-desk-light-v1.webp')",
             "--sy-image-handover": "url('/assets/atmosphere/handover-archive-light-v1.webp')",
             "--sy-image-platform": "url('/assets/atmosphere/platform-stewardship-light-v1.webp')",
@@ -137,7 +141,11 @@
             "--sy-nav-ink": "#E8E6DF",
             "--sy-image-sidebar": "url('/assets/atmosphere/sidebar-stewardship-dark-v1.webp')",
             "--sy-image-weekly-pulse": "url('/assets/atmosphere/weekly-pulse-dark-v1.webp')",
-            "--sy-image-devotional": "url('/assets/atmosphere/devotional-sacred-dark-v1.webp')",
+            "--sy-image-devotional": "url('/assets/atmosphere/devotional-sacred-dark-v2.webp')",
+            "--sy-image-weekly-operations": "url('/assets/atmosphere/weekly-operations-dark-v1.webp')",
+            "--sy-image-people-fairness": "url('/assets/atmosphere/people-fairness-dark-v1.webp')",
+            "--sy-image-administration-recovery": "url('/assets/atmosphere/administration-recovery-dark-v1.webp')",
+            "--sy-image-support-lifeline": "url('/assets/atmosphere/support-lifeline-dark-v1.webp')",
             "--sy-image-onboarding": "url('/assets/atmosphere/onboarding-desk-dark-v1.webp')",
             "--sy-image-handover": "url('/assets/atmosphere/handover-archive-dark-v1.webp')",
             "--sy-image-platform": "url('/assets/atmosphere/platform-stewardship-dark-v1.webp')",
@@ -185,6 +193,23 @@
             "--sy-architecture-veil": "linear-gradient(90deg, rgba(251,248,239,.985) 0%, rgba(251,248,239,.94) 45%, rgba(251,248,239,.30) 78%)",
             "--sy-architecture-mobile-veil": "linear-gradient(180deg, rgba(251,248,239,.98) 0%, rgba(251,248,239,.90) 60%, rgba(251,248,239,.42) 100%)",
             "--sy-platform-veil": "linear-gradient(90deg, rgba(250,247,239,.99) 0%, rgba(250,247,239,.95) 46%, rgba(250,247,239,.28) 78%)"
+            ,"--sy-atmosphere-surface": "#F7F5EF"
+            ,"--sy-atmosphere-veil": "linear-gradient(90deg, rgba(255,255,255,.985) 0%, rgba(255,255,255,.94) 48%, rgba(255,255,255,.58) 78%, rgba(255,255,255,.22) 100%)"
+            ,"--sy-atmosphere-border": "rgba(53,100,124,.20)"
+            ,"--sy-atmosphere-shadow": "0 14px 32px rgba(28,28,30,.08)"
+            ,"--sy-devotional-ground": "#FFF9E8"
+            ,"--sy-devotional-control": "#FFFDF7"
+            ,"--sy-devotional-ink": "#213047"
+            ,"--sy-devotional-muted": "#4E5D6A"
+            ,"--sy-devotional-gold": "#755A2B"
+            ,"--sy-devotional-veil": "linear-gradient(90deg, #FFF9E8 0%, rgba(255,249,232,.99) 52%, rgba(255,249,232,.78) 73%, rgba(255,249,232,.30) 100%)"
+            ,"--sy-rotary-well": "linear-gradient(145deg, #FFFFFF, #E7EEF1)"
+            ,"--sy-rotary-edge": "rgba(53,100,124,.28)"
+            ,"--sy-rotary-shadow": "inset 0 1px 0 rgba(255,255,255,.92), 0 5px 14px rgba(40,76,96,.14)"
+            ,"--sy-tactile-track": "#D9E3E7"
+            ,"--sy-tactile-track-active": "#35647C"
+            ,"--sy-tactile-inset": "inset 0 3px 7px rgba(31,62,78,.30), inset 0 -1px 0 rgba(255,255,255,.72)"
+            ,"--sy-tactile-thumb-shadow": "0 2px 5px rgba(31,62,78,.30), inset 0 1px 0 rgba(255,255,255,.88)"
           },
           "dark": {
             "--sy-button-primary-bg": "{layers.primitive.color.actionFillDark}",
@@ -221,6 +246,23 @@
             "--sy-architecture-veil": "linear-gradient(90deg, rgba(11,16,23,.985) 0%, rgba(11,16,23,.93) 46%, rgba(11,16,23,.24) 78%)",
             "--sy-architecture-mobile-veil": "linear-gradient(180deg, rgba(11,16,23,.98) 0%, rgba(11,16,23,.90) 60%, rgba(11,16,23,.38) 100%)",
             "--sy-platform-veil": "linear-gradient(90deg, rgba(10,15,22,.99) 0%, rgba(10,15,22,.94) 46%, rgba(10,15,22,.24) 78%)"
+            ,"--sy-atmosphere-surface": "#121A22"
+            ,"--sy-atmosphere-veil": "linear-gradient(90deg, rgba(13,17,23,.985) 0%, rgba(13,17,23,.93) 48%, rgba(13,17,23,.58) 78%, rgba(13,17,23,.22) 100%)"
+            ,"--sy-atmosphere-border": "rgba(155,194,210,.24)"
+            ,"--sy-atmosphere-shadow": "0 16px 36px rgba(0,0,0,.28)"
+            ,"--sy-devotional-ground": "#11182D"
+            ,"--sy-devotional-control": "#18223A"
+            ,"--sy-devotional-ink": "#FFF8E8"
+            ,"--sy-devotional-muted": "#D8DFE8"
+            ,"--sy-devotional-gold": "#F2D393"
+            ,"--sy-devotional-veil": "linear-gradient(90deg, #11182D 0%, rgba(17,24,45,.99) 52%, rgba(17,24,45,.78) 73%, rgba(17,24,45,.28) 100%)"
+            ,"--sy-rotary-well": "linear-gradient(145deg, #263440, #111A22)"
+            ,"--sy-rotary-edge": "rgba(155,194,210,.30)"
+            ,"--sy-rotary-shadow": "inset 0 1px 0 rgba(255,255,255,.10), 0 6px 16px rgba(0,0,0,.34)"
+            ,"--sy-tactile-track": "#273740"
+            ,"--sy-tactile-track-active": "#47758B"
+            ,"--sy-tactile-inset": "inset 0 3px 8px rgba(0,0,0,.58), inset 0 -1px 0 rgba(255,255,255,.08)"
+            ,"--sy-tactile-thumb-shadow": "0 2px 6px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.20)"
           }
         }
       }

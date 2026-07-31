@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+
 from PIL import Image
 
 from nicegui_app.main import open_browser_on_startup
@@ -46,29 +48,96 @@ def test_browser_auto_open_can_be_disabled_for_managed_or_headless_runs(monkeypa
     assert open_browser_on_startup() is False
 
 
-def test_original_atmosphere_assets_are_available_to_the_local_runtime() -> None:
+def test_active_atmosphere_assets_exactly_match_the_runtime_registry() -> None:
     atmosphere = PROJECT_ROOT / "nicegui_app" / "assets" / "atmosphere"
-    assert len(list(atmosphere.glob("*-light-v1.webp"))) == 11
-    assert len(list(atmosphere.glob("*-dark-v1.webp"))) == 11
+    registered = {
+        asset
+        for pair in ATMOSPHERE_THEME_PAIRS.values()
+        for asset in pair
+    }
+    available = {path.name for path in atmosphere.glob("*.webp")}
+
+    assert available == registered
+    assert len(registered) == 30
+    assert "devotional-sacred-light-v1.webp" not in available
+    assert "devotional-sacred-dark-v1.webp" not in available
 
 
 def test_every_enabled_atmosphere_uses_one_shared_slot_with_a_light_dark_pair() -> None:
     atmosphere = PROJECT_ROOT / "nicegui_app" / "assets" / "atmosphere"
     theme = combined_theme_source()
 
-    assert set(ATMOSPHERE_THEME_PAIRS) == {"sidebar", "weekly-pulse", "devotional", "onboarding", "handover", "platform", "guide", "engineering", "architecture", "architecture-lifeline", "empty-ready"}
+    assert set(ATMOSPHERE_THEME_PAIRS) == {
+        "sidebar",
+        "weekly-pulse",
+        "devotional",
+        "weekly-operations",
+        "people-fairness",
+        "administration-recovery",
+        "support-lifeline",
+        "onboarding",
+        "handover",
+        "platform",
+        "guide",
+        "engineering",
+        "architecture",
+        "architecture-lifeline",
+        "empty-ready",
+    }
     for slot, (light_asset, dark_asset) in ATMOSPHERE_THEME_PAIRS.items():
-        assert light_asset.endswith("-light-v1.webp")
-        assert dark_asset.endswith("-dark-v1.webp")
+        assert "-light-v" in light_asset and light_asset.endswith(".webp")
+        assert "-dark-v" in dark_asset and dark_asset.endswith(".webp")
         assert (atmosphere / light_asset).is_file()
         assert (atmosphere / dark_asset).is_file()
         assert _image_dimensions(atmosphere / light_asset) == _image_dimensions(atmosphere / dark_asset)
         assert (atmosphere / light_asset).stat().st_size < 250_000
         assert (atmosphere / dark_asset).stat().st_size < 250_000
         assert light_asset in theme and dark_asset in theme
-        assert theme.count(f"--sy-image-{slot}") >= 3, f"{slot} must have light, dark, and component use"
+        assert theme.count(f"--sy-image-{slot}") >= 2, f"{slot} must have light and dark token values"
     assert "weekly-pulse-paper.png" not in theme
     assert "devotional-morning-window.png" not in theme
+
+
+def test_new_route_family_assets_are_normalized_and_within_budget() -> None:
+    atmosphere = PROJECT_ROOT / "nicegui_app" / "assets" / "atmosphere"
+    new_slots = {
+        "weekly-operations",
+        "people-fairness",
+        "administration-recovery",
+        "support-lifeline",
+        "devotional",
+    }
+
+    for slot in new_slots:
+        for asset in ATMOSPHERE_THEME_PAIRS[slot]:
+            path = atmosphere / asset
+            assert _image_dimensions(path) == (1600, 900)
+            assert path.stat().st_size <= 180_000
+
+
+def test_generated_atmosphere_manifest_matches_assets_and_strips_private_metadata() -> None:
+    atmosphere = PROJECT_ROOT / "nicegui_app" / "assets" / "atmosphere"
+    manifest = (
+        PROJECT_ROOT / "docs" / "design" / "ATMOSPHERE_ASSET_MANIFEST.md"
+    ).read_text(encoding="utf-8")
+    generated_slots = {
+        "weekly-operations",
+        "people-fairness",
+        "administration-recovery",
+        "support-lifeline",
+        "devotional",
+    }
+
+    for slot in generated_slots:
+        for asset in ATMOSPHERE_THEME_PAIRS[slot]:
+            path = atmosphere / asset
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            assert f"`{asset}`" in manifest
+            assert f"| {path.stat().st_size:,} |" in manifest
+            assert f"`{digest}`" in manifest
+            with Image.open(path) as image:
+                assert not image.getexif()
+                assert not ({"exif", "xmp"} & set(image.info))
 
 
 def test_nicegui_favicon_is_a_real_local_file() -> None:

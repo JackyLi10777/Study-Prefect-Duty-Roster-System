@@ -17,14 +17,16 @@ MANDATORY_CONTROLS = {
     "generate_draft",
     "review_publish",
     "published_leave",
-    "history_withdraw",
+    "withdraw_published_roster",
+    "roster_history_navigation",
     "data_import",
     "fairness",
     "add_prefect",
     "edit_prefect",
     "archive_prefect",
     "new_year_directory",
-    "backup_restore",
+    "backup_settings_navigation",
+    "restore_backup",
     "acceptance_guide",
     "verified_snapshot",
     "change_verse",
@@ -83,23 +85,27 @@ def test_shared_runtime_owns_operation_lifecycle_without_fake_page_timelines() -
     assert "gsap.timeline" not in combined_pages
 
 
-def test_settings_gear_is_the_only_bounded_rotation_exception() -> None:
+def test_rotation_is_limited_to_the_reviewed_semantic_allowlist() -> None:
     motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
     css = _read("nicegui_app/assets/css/sing-yin-interaction-v1.css")
 
     assert "['settings', 'gear']" in motion
     assert "['settings', 'settings_suggest']" not in motion
-    assert "const animateGearActivation" in motion
-    gear_scope = motion.split("const animateGearActivation", 1)[1].split(
+    assert "const animateRotaryActivation" in motion
+    rotary_scope = motion.split("const animateRotaryActivation", 1)[1].split(
         "const setPersistentGlyph", 1
     )[0]
-    assert "rotation: 270" in gear_scope
-    assert "killTweensOf(icon)" in gear_scope
-    assert "clearProps: 'rotation,transform'" in gear_scope
-    assert "[aria-current=\"page\"]" in gear_scope
-    assert ".sy-nav-link--active" in gear_scope
-    assert '.q-icon[data-sy-icon-motion="gear"]' in css
-    assert "rotate(70deg)" in css
+    assert "contract.activation" in rotary_scope
+    assert "cancelIconTimeline(icon)" in rotary_scope
+    assert "cancelRotaryTimeline(icon)" in rotary_scope
+    assert "clearProps: 'rotation,transform'" in rotary_scope
+    assert "[aria-current=\"page\"]" in rotary_scope
+    assert ".sy-nav-link--active" in rotary_scope
+    assert '.q-icon[data-sy-icon-motion-mode="rotary-only"]' in css
+    assert "rotate(var(--sy-rotary-preview-degrees, 0deg))" in css
+    assert "rotationAllowlist: Object.freeze(['settings', 'light_mode', 'dark_mode', 'settings_backup_restore', 'history', 'undo'])" in motion
+    for excluded in ("refresh", "publish", "upload_file", "person_add", "support_agent"):
+        assert f"rotationAllowlist: Object.freeze([{excluded}" not in motion
     assert "animation-iteration-count: infinite" not in css
 
 
@@ -135,5 +141,17 @@ def test_inventory_reports_contract_denominators_without_callsite_conflation() -
     denominators = inventory["denominators"]
     assert denominators["mandatory_control_contracts"] == len(MANDATORY_CONTROLS)
     assert denominators["full_story_contracts"] > denominators["role_only_contracts"]
+    assert denominators["rotary_contracts"] == 5
     assert len(inventory["mandatory_controls"]) == len(MANDATORY_CONTROLS)
+    assert {
+        control["key"]: control["motion_mode"]
+        for control in inventory["mandatory_controls"]
+        if "rotary" in control["motion_mode"]
+    } == {
+        "settings": "rotary-only",
+        "theme": "persistent-rotary",
+        "withdraw_published_roster": "rotary-action",
+        "roster_history_navigation": "rotary-history",
+        "backup_settings_navigation": "rotary-navigation",
+    }
     assert inventory["baseline"]["warning"] == "Source call sites are not rendered DOM instances."

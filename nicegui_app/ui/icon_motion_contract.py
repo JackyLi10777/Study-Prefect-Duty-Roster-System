@@ -26,6 +26,10 @@ class IconMotionContract:
     category: str
     states: tuple[str, ...]
     reduced_motion: str
+    motion_mode: str = "role-only"
+    rotation_direction: str | None = None
+    preview_degrees: int = 0
+    activation_degrees: int = 0
     static_rationale: str | None = None
 
 
@@ -34,25 +38,27 @@ PERSISTENT_STATES = ("idle", "pressed", "state_changed", "settled")
 
 
 ICON_MOTION_CONTRACTS = (
-    IconMotionContract("settings", ("/settings",), ("settings",), "page_catalog.py", ("admin", "guest"), True, "settings", None, "gear", "role", STANDARD_STATES, "Static tonal state; no rotation."),
-    IconMotionContract("sound", ("*",), ("enable_sound_feedback", "disable_sound_feedback"), "shell.py", ("admin", "guest"), True, "volume_off", "volume_up", "toggle", "persistent", PERSISTENT_STATES, "Immediate truthful glyph; no transition."),
-    IconMotionContract("theme", ("*",), ("theme_switch_to_light", "theme_switch_to_dark"), "shell.py", ("admin", "guest", "public"), True, "light_mode", "dark_mode", "toggle", "persistent", PERSISTENT_STATES, "Immediate truthful glyph; no transition."),
-    IconMotionContract("usage_instructions", ("/guide", "/getting-started"), ("operator_guide", "getting_started"), "page_catalog.py", ("admin", "guest", "public"), True, "help_outline", "lightbulb", "navigation", "preview", STANDARD_STATES, "Source glyph remains with visible text."),
-    IconMotionContract("generate_draft", ("/rosters",), ("generate_roster",), "weekly.py:edit_calendar", ("admin", "guest"), True, "edit_calendar", "calendar_month", "edit", "lifecycle", STANDARD_STATES, "Result is also stated in text."),
-    IconMotionContract("review_publish", ("/rosters/{id}",), ("publish",), "weekly.py:publish", ("admin", "guest"), True, "publish", "fact_check", "confirm", "lifecycle", STANDARD_STATES, "No unpublished state is implied."),
-    IconMotionContract("published_leave", ("/rosters/{id}/adjustments",), ("adjust_roster",), "weekly.py:fact_check", ("admin", "guest"), True, "fact_check", "task_alt", "confirm", "lifecycle", STANDARD_STATES, "Status text remains authoritative."),
-    IconMotionContract("history_withdraw", ("/rosters/{id}",), ("withdraw_roster_action",), "weekly.py:undo", ("admin", "guest"), True, "undo", None, "danger", "role", STANDARD_STATES, "Withdrawal has no safe playful destination glyph."),
-    IconMotionContract("data_import", ("/prefects",), ("import_prefects",), "people.py:upload_file", ("admin",), True, "upload_file", "fact_check", "upload", "lifecycle", STANDARD_STATES, "Guest restriction remains visible and static."),
-    IconMotionContract("fairness", ("/prefects",), ("fairness_explained",), "people.py:balance", ("admin", "guest"), True, "balance", None, "navigation", "role", STANDARD_STATES, "Fairness must not morph into a financial symbol."),
-    IconMotionContract("add_prefect", ("/prefects",), ("add_prefect",), "people.py:person_add", ("admin", "guest"), True, "person_add", "group_add", "create", "lifecycle", STANDARD_STATES, "Name and validation messages remain visible."),
-    IconMotionContract("edit_prefect", ("/prefects",), ("edit_prefect",), "people.py:edit", ("admin", "guest"), True, "edit", "edit_note", "edit", "lifecycle", STANDARD_STATES, "Edit does not imply save until result feedback."),
-    IconMotionContract("archive_prefect", ("/prefects",), ("archive_prefect",), "people.py:archive", ("admin", "guest"), True, "archive", "inventory_2", "confirm", "lifecycle", STANDARD_STATES, "Archive confirmation remains explicit."),
-    IconMotionContract("new_year_directory", ("/handover",), ("school_year_rollover_action",), "stewardship.py:event_repeat", ("admin", "guest"), True, "event_repeat", "calendar_month", "refresh", "lifecycle", STANDARD_STATES, "Destructive consequences remain in the dialog."),
-    IconMotionContract("backup_restore", ("/settings", "/handover"), ("backup_restore", "restore_selected_backup"), "stewardship.py:settings_backup_restore", ("admin",), True, "settings_backup_restore", "restore", "refresh", "lifecycle", STANDARD_STATES, "Guest sees a restricted static state."),
-    IconMotionContract("acceptance_guide", ("/handover",), ("acceptance_title",), "page_shared.py:fact_check", ("admin", "guest"), True, "fact_check", "task_alt", "confirm", "lifecycle", STANDARD_STATES, "Human acceptance cannot be fabricated by animation."),
-    IconMotionContract("verified_snapshot", ("/settings", "/handover"), ("create_verified_backup",), "page_shared.py:settings_backup_restore", ("admin",), True, "settings_backup_restore", "restore", "refresh", "lifecycle", STANDARD_STATES, "Verification label and digest remain visible."),
-    IconMotionContract("change_verse", ("/", "/devotional"), ("refresh_verse",), "home.py:refresh", ("admin", "guest", "public"), True, "refresh", "autorenew", "refresh", "lifecycle", STANDARD_STATES, "Verse text never moves with the control."),
-    IconMotionContract("temporary_report", ("/support",), ("report_problem",), "page_catalog.py:support_agent", ("admin", "guest", "public"), True, "support_agent", "contact_support", "navigation", "lifecycle", STANDARD_STATES, "Incident content remains untrusted and local-only."),
+    IconMotionContract("settings", ("/settings",), ("settings",), "page_catalog.py", ("admin", "guest"), True, "settings", None, "gear", "role", STANDARD_STATES, "Only the glyph rotates; the selected host remains still.", "rotary-only", "cw", 70, 270),
+    IconMotionContract("sound", ("*",), ("enable_sound_feedback", "disable_sound_feedback"), "shell.py", ("admin", "guest"), True, "volume_off", "volume_up", "toggle", "persistent", PERSISTENT_STATES, "The truthful volume state morphs without rotation.", "persistent-morph"),
+    IconMotionContract("theme", ("*",), ("theme_switch_to_light", "theme_switch_to_dark"), "shell.py", ("admin", "guest", "public"), True, "light_mode", "dark_mode", "toggle", "persistent", PERSISTENT_STATES, "A user-triggered state change combines one morph with one bounded turn.", "persistent-rotary", "cw", 0, 90),
+    IconMotionContract("usage_instructions", ("/guide", "/getting-started"), ("operator_guide", "getting_started"), "page_catalog.py", ("admin", "guest", "public"), True, "help_outline", "lightbulb", "navigation", "preview", STANDARD_STATES, "Source glyph remains with visible text.", "morph-only"),
+    IconMotionContract("generate_draft", ("/rosters",), ("generate_roster",), "weekly.py:edit_calendar", ("admin", "guest"), True, "edit_calendar", "calendar_month", "edit", "lifecycle", STANDARD_STATES, "Result is also stated in text.", "lifecycle-morph"),
+    IconMotionContract("review_publish", ("/rosters/{id}",), ("publish",), "weekly.py:publish", ("admin", "guest"), True, "publish", "fact_check", "confirm", "lifecycle", STANDARD_STATES, "No unpublished state is implied.", "lifecycle-morph"),
+    IconMotionContract("published_leave", ("/rosters/{id}/adjustments",), ("adjust_roster",), "weekly.py:fact_check", ("admin", "guest"), True, "fact_check", "task_alt", "confirm", "lifecycle", STANDARD_STATES, "Status text remains authoritative.", "lifecycle-morph"),
+    IconMotionContract("withdraw_published_roster", ("/rosters/{id}",), ("withdraw_roster_action",), "weekly.py:undo", ("admin", "guest"), True, "undo", None, "danger", "role", STANDARD_STATES, "Undo makes one bounded reverse turn; confirmation owns the consequence.", "rotary-action", "ccw", 0, -180),
+    IconMotionContract("roster_history_navigation", ("/rosters",), ("roster_workflow_history",), "weekly.py:history", ("admin", "guest"), True, "history", None, "navigation", "role", STANDARD_STATES, "History previews and activates counter-clockwise without changing state.", "rotary-history", "ccw", -55, -180),
+    IconMotionContract("data_import", ("/prefects",), ("import_prefects",), "people.py:upload_file", ("admin",), True, "upload_file", "fact_check", "upload", "lifecycle", STANDARD_STATES, "Guest restriction remains visible and static.", "lifecycle-morph"),
+    IconMotionContract("fairness", ("/prefects",), ("fairness_explained",), "people.py:balance", ("admin", "guest"), True, "balance", None, "navigation", "role", STANDARD_STATES, "Fairness must not morph into a financial symbol.", "role-only"),
+    IconMotionContract("add_prefect", ("/prefects",), ("add_prefect",), "people.py:person_add", ("admin", "guest"), True, "person_add", "group_add", "create", "lifecycle", STANDARD_STATES, "Name and validation messages remain visible.", "lifecycle-morph"),
+    IconMotionContract("edit_prefect", ("/prefects",), ("edit_prefect",), "people.py:edit", ("admin", "guest"), True, "edit", "edit_note", "edit", "lifecycle", STANDARD_STATES, "Edit does not imply save until result feedback.", "lifecycle-morph"),
+    IconMotionContract("archive_prefect", ("/prefects",), ("archive_prefect",), "people.py:archive", ("admin", "guest"), True, "archive", "inventory_2", "confirm", "lifecycle", STANDARD_STATES, "Archive confirmation remains explicit.", "lifecycle-morph"),
+    IconMotionContract("new_year_directory", ("/handover",), ("school_year_rollover_action",), "stewardship.py:event_repeat", ("admin", "guest"), True, "event_repeat", "calendar_month", "refresh", "lifecycle", STANDARD_STATES, "Destructive consequences remain in the dialog.", "lifecycle-morph"),
+    IconMotionContract("backup_settings_navigation", ("/settings", "/handover"), ("open_backup_settings",), "page_shared.py:settings_backup_restore", ("admin", "guest"), True, "settings_backup_restore", None, "refresh", "role", STANDARD_STATES, "The circular backup navigation glyph turns without implying a restore.", "rotary-navigation", "cw", 60, 180),
+    IconMotionContract("restore_backup", ("/settings",), ("restore_selected_backup",), "stewardship.py:restore", ("admin",), True, "restore", "verified", "refresh", "lifecycle", STANDARD_STATES, "Actual restore state comes only from the operation lifecycle.", "lifecycle-morph"),
+    IconMotionContract("acceptance_guide", ("/handover",), ("acceptance_title",), "page_shared.py:fact_check", ("admin", "guest"), True, "fact_check", "task_alt", "confirm", "lifecycle", STANDARD_STATES, "Human acceptance cannot be fabricated by animation.", "lifecycle-morph"),
+    IconMotionContract("verified_snapshot", ("/settings", "/handover"), ("create_verified_backup",), "stewardship.py:add_to_drive", ("admin",), True, "add_to_drive", "arrow_forward", "confirm", "lifecycle", STANDARD_STATES, "Verification label and digest remain visible.", "lifecycle-morph"),
+    IconMotionContract("change_verse", ("/", "/devotional"), ("refresh_verse",), "home.py:refresh", ("admin", "guest", "public"), True, "refresh", "autorenew", "refresh", "lifecycle", STANDARD_STATES, "Verse text never moves with the control.", "lifecycle-morph"),
+    IconMotionContract("temporary_report", ("/support",), ("report_problem",), "page_catalog.py:support_agent", ("admin", "guest", "public"), True, "support_agent", "contact_support", "navigation", "lifecycle", STANDARD_STATES, "Incident content remains untrusted and local-only.", "lifecycle-morph"),
 )
 
 
@@ -98,10 +104,38 @@ def validate_icon_motion_contracts(
     if len(keys) != len(set(keys)):
         errors.append("Duplicate semantic control key")
     allowed_categories = {"persistent", "preview", "lifecycle", "role", "static"}
+    allowed_motion_modes = {
+        "static",
+        "role-only",
+        "morph-only",
+        "lifecycle-morph",
+        "persistent-morph",
+        "rotary-only",
+        "persistent-rotary",
+        "rotary-navigation",
+        "rotary-history",
+        "rotary-action",
+    }
+    rotary_modes = {
+        "rotary-only",
+        "persistent-rotary",
+        "rotary-navigation",
+        "rotary-history",
+        "rotary-action",
+    }
     declared_routes = _declared_route_templates()
     for contract in contracts:
         if contract.category not in allowed_categories:
             errors.append(f"Unknown category for {contract.key}: {contract.category}")
+        if contract.motion_mode not in allowed_motion_modes:
+            errors.append(f"Unknown motion mode for {contract.key}: {contract.motion_mode}")
+        if contract.motion_mode in rotary_modes:
+            if contract.rotation_direction not in {"cw", "ccw"}:
+                errors.append(f"Missing rotation direction for {contract.key}")
+            if contract.activation_degrees == 0:
+                errors.append(f"Missing activation rotation for {contract.key}")
+        elif contract.rotation_direction is not None or contract.preview_degrees or contract.activation_degrees:
+            errors.append(f"Non-rotary contract declares rotation for {contract.key}")
         if contract.category in {"persistent", "preview", "lifecycle"} and not contract.destination_glyph:
             errors.append(f"Missing destination glyph for {contract.key}")
         if not contract.routes or not contract.i18n_keys or not contract.callsite_hint:

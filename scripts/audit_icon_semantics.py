@@ -109,6 +109,9 @@ def build_inventory(*, include_locations: bool = False) -> dict[str, object]:
             "intentionally_static_contracts": sum(
                 contract.category == "static" for contract in ICON_MOTION_CONTRACTS
             ),
+            "rotary_contracts": sum(
+                "rotary" in contract.motion_mode for contract in ICON_MOTION_CONTRACTS
+            ),
         },
         "glyph_counts": dict(sorted(glyph_counts.items())),
         "preview_story_pairs": preview_pairs,
@@ -125,6 +128,10 @@ def build_inventory(*, include_locations: bool = False) -> dict[str, object]:
                 "destination": contract.destination_glyph,
                 "role": contract.role,
                 "category": contract.category,
+                "motion_mode": contract.motion_mode,
+                "rotation_direction": contract.rotation_direction,
+                "preview_degrees": contract.preview_degrees,
+                "activation_degrees": contract.activation_degrees,
                 "states": contract.states,
                 "reduced_motion": contract.reduced_motion,
                 "static_rationale": contract.static_rationale,

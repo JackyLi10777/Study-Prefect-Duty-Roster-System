@@ -435,11 +435,12 @@ verifier jointly cover reversal, pointer/focus overlap, touch restoration,
 persistent controls, fixed geometry, forced colours and repeated route replacement.
 
 `nicegui_app.ui.icon_motion_contract` is the executable traceability inventory for
-the 19 required controls. It records route, label key, call site, access modes,
-mobile behavior, source／destination glyph, role, category, states and static or
-reduced-motion rationale. The Settings glyph is the only rotation exception:
-hover／focus may rotate the glyph 70 degrees and activation may play one bounded
-270-degree turn, while the host, label and active-route layout remain fixed. True
+the 21 required controls. It records route, label key, call site, access modes,
+mobile behavior, source／destination glyph, role, category, motion mode, bounded
+rotation parameters, states and static or reduced-motion rationale. Rotation is
+restricted to Settings, real appearance changes, Backup Settings navigation,
+History and Undo. Restore and every existing task story remain lifecycle/morph
+only, while the host, label and active-route layout remain fixed. True
 `sy:feedback` events drive lifecycle glyphs and fixed-footprint tonal states;
 timeouts settle back to the source rather than inventing success. Source counts,
 rendered counts and deployment truth are kept separate in
