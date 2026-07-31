@@ -652,7 +652,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -RuntimeUser SingYinRosterSvc
 ```
 
-腳本在停止服務前核對正式報告、來源指紋、host／Worker identity parity、主機工作樹、排程 owner 及現有 task target。它從排程工作的實際 immutable bundle marker 取得上一版本，驗證整個 bundle fingerprint，建立新 bundle／獨立 `.venv`、正式備份及隔離還原，最後原子切換排程；不得同時手動停止、安裝套件或切換 checkout。
+腳本在停止服務前核對正式報告、來源指紋、host／Worker identity parity、主機工作樹、排程 owner 及現有 task target。它從排程工作的實際 immutable bundle marker 取得上一版本，重算整個 bundle fingerprint，並把 marker 的 release／commit／tree／environment 交叉綁定至 `origin` 上的 annotated tag、tag-resolved Git tree、切換前受保護 `.env` 的 SHA-256 及確定性的 bundle 目錄名稱。其後才建立新 bundle／獨立 `.venv`、正式備份及隔離還原，最後原子切換排程；不得同時手動停止、安裝套件或切換 checkout。
 
 ### 步驟 12.3：核對實際 runtime 身分
 
@@ -665,7 +665,7 @@ $Action | Select-Object Execute, Arguments, WorkingDirectory
 Get-Content -LiteralPath (Join-Path $Action.WorkingDirectory ".sing-yin-release.json") -Raw
 ```
 
-`Execute`、`WorkingDirectory`、marker 的 `releaseRef`／`commit`／`sourceTree`／bundle hash 必須與 Windows deployment report 和 source-bound report 一致。未來報告亦須以 `previousReleaseRef`／`previousReleaseSource` 說明前一 task target；rc43 的歷史報告在修正前已封存，因此其舊 `previousCommit` 不可單獨作回退證據。
+`Execute`、`WorkingDirectory`、marker 的 `releaseRef`／`commit`／`sourceTree`／`environmentSha256`／bundle hash 必須與 Windows deployment report、source-bound report、已發布 annotated tag、受保護 host `.env` 雜湊及 bundle 目錄名稱一致。未來報告亦須以 `previousReleaseRef`／`previousReleaseSource` 說明前一 task target；rc43 的歷史報告在修正前已封存，因此其舊 `previousCommit` 不可單獨作回退證據。
 
 ### 步驟 12.4：核對資料、健康及報告
 

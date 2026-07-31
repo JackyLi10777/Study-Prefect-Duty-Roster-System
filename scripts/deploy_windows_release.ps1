@@ -860,11 +860,16 @@ function Get-SingYinReleaseBundleFingerprint {
 
 function Get-SingYinPreviousReleaseIdentity {
     param(
+        [Parameter(Mandatory = $true)][string]$Repository,
         [Parameter(Mandatory = $true)][string]$HostRoot,
-        [Parameter(Mandatory = $true)][string]$TaskWorkingDirectory
+        [Parameter(Mandatory = $true)][string]$TaskWorkingDirectory,
+        [Parameter(Mandatory = $true)][string]$ExpectedEnvironmentHash
     )
 
     $hostPath = [IO.Path]::GetFullPath($HostRoot).TrimEnd('\')
+    if ($ExpectedEnvironmentHash -notmatch '^[0-9a-f]{64}$') {
+        throw "The protected host environment fingerprint is invalid."
+    }
     if ([string]::IsNullOrWhiteSpace($TaskWorkingDirectory)) {
         throw "The owned startup task does not declare a working directory."
     }
@@ -908,6 +913,31 @@ function Get-SingYinPreviousReleaseIdentity {
         [int]$marker.bundleFileCount -ne [int]$fingerprint.FileCount
     ) {
         throw "The startup task release bundle identity marker is invalid or stale."
+    }
+
+    # The marker is deliberately excluded from the bundle-content digest so
+    # it can be written after the archive and environment are complete. Bind
+    # its identity fields to evidence outside that marker: the protected tag
+    # published to origin, the tag's Git tree, the pre-overlay host
+    # environment, and the task-target bundle name created from those values.
+    $trustedCommit = Assert-ImmutableReleaseTag `
+        -Repository $Repository `
+        -TagName ([string]$marker.releaseRef)
+    $trustedTree = Get-GitValue `
+        -Repository $Repository `
+        -Arguments @("rev-parse", "$trustedCommit`^{tree}")
+    $safeRelease = [string]$marker.releaseRef -replace '[^A-Za-z0-9._-]', '-'
+    $expectedBundleLeaf = (
+        "$safeRelease-$($trustedCommit.Substring(0, 12))-" +
+        $ExpectedEnvironmentHash.Substring(0, 12)
+    )
+    if (
+        [string]$marker.commit -cne $trustedCommit -or
+        [string]$marker.sourceTree -cne $trustedTree -or
+        [string]$marker.environmentSha256 -cne $ExpectedEnvironmentHash -or
+        [IO.Path]::GetFileName($bundlePath) -cne $expectedBundleLeaf
+    ) {
+        throw "The startup task release identity does not match trusted tag or environment evidence."
     }
 
     return [pscustomobject]@{
@@ -1307,9 +1337,14 @@ try {
     if (-not [string]::IsNullOrWhiteSpace($hostStatus)) {
         throw "The installed host repository is not clean."
     }
+    $previousEnvironmentHash = (
+        Get-FileHash -LiteralPath $environmentPath -Algorithm SHA256
+    ).Hash.ToLowerInvariant()
     $previousReleaseIdentity = Get-SingYinPreviousReleaseIdentity `
+        -Repository $SourceRoot `
         -HostRoot $HostRoot `
-        -TaskWorkingDirectory $previousTaskAction.WorkingDirectory
+        -TaskWorkingDirectory $previousTaskAction.WorkingDirectory `
+        -ExpectedEnvironmentHash $previousEnvironmentHash
     $previousCommit = [string]$previousReleaseIdentity.Commit
     $previousReleaseRef = $previousReleaseIdentity.ReleaseRef
     $previousReleaseSource = [string]$previousReleaseIdentity.Source

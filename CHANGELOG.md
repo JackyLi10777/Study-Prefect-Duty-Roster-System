@@ -4,7 +4,7 @@ This file records user-visible, operational and release-significant changes. Exa
 
 ## Unreleased — post-rc43 release-evidence correction
 
-- Derives the previous origin identity from the scheduled task's actual immutable bundle and verifies its complete marker-bound fingerprint before recording a predecessor or rollback commit. A legacy task that still runs directly from `HostRoot` remains supported explicitly.
+- Derives the previous origin identity from the scheduled task's actual immutable bundle and verifies its complete content fingerprint before recording a predecessor or rollback commit. Because the identity marker is intentionally outside that content digest, its release, commit, tree and environment fields are now independently bound to the annotated tag published on `origin`, the tag-resolved Git tree, the pre-overlay protected host-environment SHA-256 and the deterministic bundle directory name. A legacy task that still runs directly from `HostRoot` remains supported explicitly.
 - Adds `previousReleaseRef` and `previousReleaseSource` to future Windows deployment reports. The already-issued rc43 report remains immutable and retains its known stale `previousCommit`; direct task and marker evidence prove rc41 was the real predecessor and captured rollback target.
 - Removes stale rc35／rc39 "current rollback" wording and the obsolete direct-checkout host update instructions from operator documentation. Current production remains rc43 with rc41／Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` as the first paired rollback.
 

@@ -125,11 +125,11 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 3. 進入短暫 maintenance；
 4. 從該不可變 tag 更新 Windows bundle，執行 additive migration `0011_assist_assignment_mode`；
 5. 保持現行受保護設定不變，核對 `/healthz` 及 `/readyz`；
-6. 比較 Worker source／受保護設定；沒有改動時記錄沿用已驗證版本，有改動時才執行 staged Worker rollout；目前 edge 的立即回退是 `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`，`d7069f99…`、rc34 的 `7816b183…` 與 rc30 的 `11763f08…` 只屬更早歷史；
+6. 比較 Worker source／受保護設定；沒有改動時記錄沿用已驗證版本，有改動時才執行 staged Worker rollout；目前 edge 的第一層回退是 rc41 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`，rc40 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 是第二層，`d7069f99…`、rc34 的 `7816b183…` 與 rc30 的 `11763f08…` 只屬更早歷史；
 7. 以虛構資料核對 Public、Admin、Guest、Viewer、PDF、登出、到期及多分頁隔離；
 8. 完成真人驗收後才結束 maintenance 並宣布候選上線。
 
-任何新候選 origin／線上 gate 失敗，先保存失敗證據，再回復 tagged `v1.2.0-rc.40`／commit `2ec900a5ef1c021183717dfa648ef76b55452ffb` 及 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`；只有這個配對回退無法安全恢復且事故負責人批准時，才使用 rc39、rc35、rc34、rc30、rc27 或更早的已驗證基線。Additive migration 必須讓回退版本仍可讀原有資料。
+任何新候選 origin／線上 gate 失敗，先保存失敗證據，再回復 tagged `v1.2.0-rc.41`／commit `74072b0175ff64807312a8cc5b9cd016b6628210` 及 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；只有這個第一層配對回退無法安全恢復且事故負責人批准時，才使用 rc40／`2ec900a5ef1c021183717dfa648ef76b55452ffb` 與 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`，其後才是 rc39、rc35、rc34、rc30、rc27 或更早的已驗證基線。Additive migration 必須讓回退版本仍可讀原有資料。
 
 逐步 Cloudflare 設定、staged rollout、驗收及回退命令見
 [`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)。

@@ -43,7 +43,7 @@
 
 ## 候選閘門證據
 
-- `logs/release-candidate-report.json`：`status=pass`，綁定 `v1.2.0-rc.43`／commit `c8201f33e454d9120c73386642cbf9d737391466`／tree `11f759908218aee64c9d49024759beadf8ff9f5b`；SHA-256 `6e79ded5ae289bd9c5ecb775aa635109cdbbd12a2b0ebf7f145d72378ab848e9`。
+- `logs/release-candidate-report.json`：`status=pass`，綁定 `v1.2.0-rc.43`／commit `c8201f33e454d9120c73386642cbf9d737391466`／tree `11f759908218aee64c9d49024759beadf8ff9f5b`；報告內的 306-file `sourceFingerprint` 為 `699dc436c69e02f3b9062a04500715929ba35f78f48e14a3d80a0ac33c18640b`，JSON 報告檔本身的 SHA-256 為 `6e79ded5ae289bd9c5ecb775aa635109cdbbd12a2b0ebf7f145d72378ab848e9`。
 - 15 個 required checks 全部通過，包括 repository hygiene、security gates、53／53 Worker tests、完整 Python suite、主題 16-case browser matrix、桌面／手機 browser、真實 write pipeline、Guest parity／隔離及 partial-backup recovery。
 - Resource Timing 證明每個 shell atmosphere route 只下載當前主題資產；候選期間曾偵測到 inactive companion 被下載，修正 head-level theme prepaint 後才放行。
 - Runtime performance：初始傳輸 1.26 MiB、route-cycle heap 增長 0.46 MiB、DOM nodes `+0`、listeners `+0`。
