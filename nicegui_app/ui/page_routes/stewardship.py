@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from nicegui import events, ui
+from nicegui import events, run, ui
 
 from nicegui_app.release_evidence import load_release_evidence
 from nicegui_app.runtime import get_workflow
@@ -28,9 +28,11 @@ from nicegui_app.ui.reference_navigation import render_page_toc, render_referenc
 from nicegui_app.ui.shell import page_shell
 
 @ui.page("/handover")
-def handover_page() -> None:
+async def handover_page() -> None:
     workflow = get_workflow()
-    readiness = workflow.handover_readiness()
+    overview = await run.io_bound(workflow.backup_overview)
+    readiness = overview["readiness"]
+    evidence_time = overview["evidenceGeneratedAt"].astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
     release_evidence = load_release_evidence()
     with page_shell("/handover"):
         with ui.element("section").classes("sy-handover-hero w-full").props(
@@ -138,6 +140,15 @@ def handover_page() -> None:
                     ui.label(t(label_key)).classes("text-sm text-[var(--sy-muted)]")
                     ui.label(value).classes("text-xl font-semibold mt-1")
                     _tone_badge(t("handover_ready") if ready else t("handover_attention"), "stable" if ready else "attention").classes("mt-3")
+        with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
+            ui.label(t("backup_evidence_time", time=evidence_time)).classes(
+                "text-xs text-[var(--sy-muted)]"
+            ).props("data-testid=handover-backup-evidence-time")
+            ui.button(
+                t("backup_recheck_now"),
+                icon="refresh",
+                on_click=ui.navigate.reload,
+            ).props("flat data-testid=handover-backup-recheck")
 
         state_key = {
             "pass": "acceptance_status_pass",
@@ -233,17 +244,19 @@ def handover_page() -> None:
 
 
 @ui.page("/settings")
-def settings_page() -> None:
+async def settings_page() -> None:
     workflow = get_workflow()
-    status = workflow.backup_status()
-    backup_inventory = workflow.backup_inventory()
+    overview = await run.io_bound(workflow.backup_overview)
+    status = overview["status"]
+    backup_inventory = overview["inventory"]
     backups = list(backup_inventory["items"])
     backup_options = {
         str(item["path"]): f"{item['createdAt']:%Y-%m-%d %H:%M} | {item['path'].name}"
         for item in backups
         if item["verification"].get("valid")
     }
-    readiness = workflow.handover_readiness()
+    readiness = overview["readiness"]
+    evidence_time = overview["evidenceGeneratedAt"].astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
     with page_shell("/settings"):
         _render_operation_hint("hint_settings", icon="settings_backup_restore")
         if _is_guest_mode():
@@ -270,6 +283,15 @@ def settings_page() -> None:
                         ).props("aria-hidden=true")
         with ui.card().classes("sy-surface sy-operations-panel w-full p-6"):
             ui.label(t("persistence_notice")).classes("text-lg font-semibold")
+            with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap mt-2"):
+                ui.label(t("backup_evidence_time", time=evidence_time)).classes(
+                    "text-xs text-[var(--sy-muted)]"
+                ).props("data-testid=settings-backup-evidence-time")
+                ui.button(
+                    t("backup_recheck_now"),
+                    icon="refresh",
+                    on_click=ui.navigate.reload,
+                ).props("flat data-testid=settings-backup-recheck")
             ui.label(f"{t('database')}: {status['databasePath']}").classes("sy-path-value text-sm text-[var(--sy-muted)] mt-3")
             ui.label(f"{t('backup_directory')}: {status['backupDirectory']}").classes("sy-path-value text-sm text-[var(--sy-muted)]")
             if status["latestPath"]:

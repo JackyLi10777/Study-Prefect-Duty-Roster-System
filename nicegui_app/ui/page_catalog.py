@@ -221,7 +221,7 @@ PAGE_DEFINITIONS = (
         page_kind=PageKind.OPERATIONS,
         music_context="guide",
         atmosphere_slot="support-lifeline",
-        atmosphere_presentation="shell",
+        atmosphere_presentation="embedded",
         required_capability=None,
         visible_access_modes=WORKBENCH_ACCESS_MODES,
     ),

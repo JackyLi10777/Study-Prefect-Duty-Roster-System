@@ -588,6 +588,25 @@ class GuestWorkspaceAdapter:
             reverse=True,
         )
 
+    def latest_roster_week(self) -> dict[str, object] | None:
+        weeks = self.roster_week_history(page=1, page_size=1)
+        return weeks[0] if weeks else None
+
+    def roster_week_history(
+        self,
+        *,
+        page: int = 1,
+        page_size: int = 24,
+    ) -> list[dict[str, object]]:
+        self._require_read()
+        if page < 1:
+            raise WorkflowError("Roster history page must be at least one.")
+        if page_size < 1 or page_size > 100:
+            raise WorkflowError("Roster history page size must be between 1 and 100.")
+        ordered = self.roster_weeks()
+        start = (page - 1) * page_size
+        return ordered[start : start + page_size]
+
     def roster_week(self, roster_week_id: int) -> dict[str, object]:
         self._require_read()
         return self._week_output(self._week_record(self._state(), roster_week_id))
@@ -1214,6 +1233,19 @@ class GuestWorkspaceAdapter:
             "verifiedCount": len(items),
             "invalidCount": 0,
             "invalidReasonCounts": {},
+        }
+
+    def backup_overview(self, limit: int = 12) -> dict[str, object]:
+        """Return the same bounded evidence shape as the durable workspace."""
+        self._require_read()
+        status = self.backup_status()
+        inventory = self.backup_inventory(limit=limit)
+        readiness = self.handover_readiness()
+        return {
+            "status": status,
+            "inventory": inventory,
+            "readiness": readiness,
+            "evidenceGeneratedAt": _now(),
         }
 
     def create_verified_backup(self) -> _DemoPath:

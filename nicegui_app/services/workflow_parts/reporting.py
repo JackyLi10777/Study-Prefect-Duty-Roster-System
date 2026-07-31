@@ -72,40 +72,32 @@ class ReportingWorkflowMixin:
             self._require_monday(period_end)
 
         with self._session() as session:
-            statement = select(RosterWeekRecord).where(RosterWeekRecord.status == "published")
+            week_filter = select(RosterWeekRecord.id).where(RosterWeekRecord.status == "published")
             if period_start is not None:
-                statement = statement.where(RosterWeekRecord.week_start >= period_start)
+                week_filter = week_filter.where(RosterWeekRecord.week_start >= period_start)
             if period_end is not None:
-                statement = statement.where(RosterWeekRecord.week_start <= period_end)
+                week_filter = week_filter.where(RosterWeekRecord.week_start <= period_end)
+            statement = select(RosterWeekRecord).where(RosterWeekRecord.id.in_(week_filter))
             weeks = list(session.scalars(statement.order_by(RosterWeekRecord.week_start, RosterWeekRecord.id)).all())
-            source_ids = [week.id for week in weeks]
             week_by_id = {week.id: week for week in weeks}
 
             all_prefects = list(session.scalars(select(PrefectRecord).order_by(PrefectRecord.name_zh)).all())
             active_prefects = [prefect for prefect in all_prefects if prefect.active]
             prefect_by_id = {prefect.id: prefect for prefect in all_prefects}
 
-            assignments = (
-                list(
-                    session.scalars(
-                        select(RosterAssignmentRecord)
-                        .where(RosterAssignmentRecord.roster_week_id.in_(source_ids))
-                        .order_by(RosterAssignmentRecord.roster_week_id, RosterAssignmentRecord.id)
-                    ).all()
-                )
-                if source_ids
-                else []
+            assignments = list(
+                session.scalars(
+                    select(RosterAssignmentRecord)
+                    .where(RosterAssignmentRecord.roster_week_id.in_(week_filter))
+                    .order_by(RosterAssignmentRecord.roster_week_id, RosterAssignmentRecord.id)
+                ).all()
             )
-            adjustments = (
-                list(
-                    session.scalars(
-                        select(LeaveAdjustmentRecord)
-                        .where(LeaveAdjustmentRecord.roster_week_id.in_(source_ids))
-                        .order_by(LeaveAdjustmentRecord.created_at, LeaveAdjustmentRecord.id)
-                    ).all()
-                )
-                if source_ids
-                else []
+            adjustments = list(
+                session.scalars(
+                    select(LeaveAdjustmentRecord)
+                    .where(LeaveAdjustmentRecord.roster_week_id.in_(week_filter))
+                    .order_by(LeaveAdjustmentRecord.created_at, LeaveAdjustmentRecord.id)
+                ).all()
             )
 
             contribution_values: dict[str, dict[str, object]] = defaultdict(
@@ -283,11 +275,19 @@ class ReportingWorkflowMixin:
         all_weeks = list(session.scalars(statement.order_by(RosterWeekRecord.week_start, RosterWeekRecord.id)).all())
         if not all_weeks:
             return ()
-        week_ids = [week.id for week in all_weeks]
         ledger_rows = list(
             session.scalars(
                 select(FairnessLedgerRecord)
-                .where(FairnessLedgerRecord.roster_week_id.in_(week_ids))
+                .join(
+                    RosterWeekRecord,
+                    RosterWeekRecord.id == FairnessLedgerRecord.roster_week_id,
+                )
+                .where(RosterWeekRecord.status == "published")
+                .where(
+                    RosterWeekRecord.week_start <= period_end
+                    if period_end is not None
+                    else True
+                )
                 .order_by(FairnessLedgerRecord.created_at, FairnessLedgerRecord.id)
             ).all()
         )

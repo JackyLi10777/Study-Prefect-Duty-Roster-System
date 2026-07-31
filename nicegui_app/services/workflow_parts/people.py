@@ -8,6 +8,7 @@ from nicegui_app.services.workflow_dependencies import (
     Iterable,
     LeaveAdjustmentRecord,
     LeaveDeclarationRecord,
+    PrefectAvailabilityRecord,
     PrefectInput,
     PrefectRecord,
     PrefectRole,
@@ -422,18 +423,48 @@ class PeopleWorkflowMixin:
             if receipt is not None:
                 session.rollback()
             else:
-                for name in normalized_names:
-                    self._assert_name_available(session, name)
-                for prefect_input in inputs:
-                    self._assert_assist_fixed_day_available(session, prefect_input)
-                records: list[PrefectRecord] = []
-                for prefect_input in inputs:
-                    record = self._new_prefect_record(prefect_input)
-                    session.add(record)
-                    session.flush()
-                    self._replace_availability(session, record.id, prefect_input.available_days)
-                    records.append(record)
-                outputs = [self._prefect_output(session, record) for record in records]
+                existing_names = set(
+                    session.scalars(
+                        select(PrefectRecord.name_zh).where(
+                            PrefectRecord.active.is_(True),
+                            PrefectRecord.name_zh.in_(normalized_names),
+                        )
+                    ).all()
+                )
+                if existing_names:
+                    raise WorkflowError("A prefect with this Chinese name already exists.")
+                if fixed_assist_days:
+                    occupied_fixed_days = set(
+                        session.scalars(
+                            select(PrefectRecord.fixed_general_duty).where(
+                                PrefectRecord.active.is_(True),
+                                PrefectRecord.role_code == PrefectRole.ASSISTANT_HEAD.value,
+                                PrefectRecord.fixed_general_duty.in_(fixed_assist_days),
+                            )
+                        ).all()
+                    )
+                    if occupied_fixed_days:
+                        raise WorkflowConflictError(
+                            "Another active Assistant Head Study Prefect already owns this fixed weekday."
+                        )
+                records = [self._new_prefect_record(item) for item in inputs]
+                session.add_all(records)
+                # Persist the parent rows in one batch before adding availability
+                # records. These models intentionally do not expose an ORM
+                # relationship, so SQLAlchemy cannot infer the foreign-key insert
+                # order from object references alone.
+                session.flush()
+                session.add_all(
+                    [
+                        PrefectAvailabilityRecord(prefect_id=record.id, day=day)
+                        for record, item in zip(records, inputs, strict=True)
+                        for day in item.available_days
+                    ]
+                )
+                outputs = [
+                    self._prefect_output_from_days(record, item.available_days)
+                    for record, item in zip(records, inputs, strict=True)
+                ]
                 receipt = {"prefects": outputs}
                 self._audit(session, operation_type, None, {"count": len(records)})
                 self._commit_operation_command(

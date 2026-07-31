@@ -36,6 +36,7 @@ from nicegui_app.services.workflow_dependencies import (
     select,
     sessionmaker,
     sqlite3,
+    timezone,
     uuid4,
 )
 from nicegui_app.services.workflow_fencing import fenced_workflow_write
@@ -73,6 +74,7 @@ _REQUIRED_TABLES_BY_REVISION: dict[str, frozenset[str]] = {
     "0009": _V12_PERSISTENCE_TABLES,
     "0010": _V12_PERSISTENCE_TABLES,
     "0011": _V12_PERSISTENCE_TABLES,
+    "0012": _V12_PERSISTENCE_TABLES,
 }
 
 
@@ -119,9 +121,58 @@ class RecoveryWorkflowMixin:
             "backupPath": backup["latestPath"],
         }
 
+    def backup_overview(self, limit: int = 12) -> dict[str, object]:
+        """Build one time-stamped backup view without repeating integrity checks."""
+        inventory = self.backup_inventory(limit=limit)
+        verified_by_path = {
+            Path(item["path"]).resolve(): item["verification"]
+            for item in inventory["items"]
+            if isinstance(item, dict) and item.get("path") is not None
+        }
+        with self._session() as session:
+            latest = session.scalar(
+                select(BackupRunRecord)
+                .order_by(BackupRunRecord.created_at.desc(), BackupRunRecord.id.desc())
+                .limit(1)
+            )
+            prefect_count = session.scalar(
+                select(func.count()).select_from(PrefectRecord).where(PrefectRecord.active.is_(True))
+            ) or 0
+            roster_count = session.scalar(select(func.count()).select_from(RosterWeekRecord)) or 0
+        latest_path = Path(latest.backup_path) if latest and latest.backup_path else None
+        latest_verification = None
+        if latest_path is not None:
+            latest_verification = verified_by_path.get(latest_path.resolve())
+            if latest_verification is None:
+                latest_verification = self.verify_backup(latest_path)
+        status = {
+            "databasePath": self.database_path,
+            "backupDirectory": self.backup_dir,
+            "latestSuccess": latest.success if latest else None,
+            "latestPath": latest_path,
+            "latestCreatedAt": latest.created_at if latest else None,
+            "latestVerification": latest_verification,
+        }
+        readiness = {
+            "activePrefectCount": prefect_count,
+            "rosterCount": roster_count,
+            "verifiedBackup": bool(latest_verification and latest_verification.get("valid")),
+            "backupPath": latest_path,
+        }
+        return {
+            "status": status,
+            "inventory": inventory,
+            "readiness": readiness,
+            "evidenceGeneratedAt": datetime.now(timezone.utc),
+        }
+
     def backup_status(self) -> dict[str, object]:
         with self._session() as session:
-            latest = session.scalar(select(BackupRunRecord).order_by(BackupRunRecord.created_at.desc()))
+            latest = session.scalar(
+                select(BackupRunRecord)
+                .order_by(BackupRunRecord.created_at.desc(), BackupRunRecord.id.desc())
+                .limit(1)
+            )
             latest_path = Path(latest.backup_path) if latest and latest.backup_path else None
             return {
                 "databasePath": self.database_path,

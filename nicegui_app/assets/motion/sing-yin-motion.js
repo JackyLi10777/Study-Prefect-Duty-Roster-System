@@ -124,6 +124,7 @@
    * absent entries remain role-only or static rather than inventing success. */
   const operationLifecycleGlyphs = new Map([
     ['edit_calendar', { preview: 'calendar_month', working: 'hourglass_top', success: 'event_available' }],
+    ['event_busy', { preview: 'event_note', working: 'hourglass_top', success: 'task_alt' }],
     ['edit_note', { preview: 'fact_check', working: 'hourglass_top', success: 'task_alt' }],
     ['publish', { preview: 'fact_check', working: 'hourglass_top', success: 'verified' }],
     ['fact_check', { preview: 'task_alt', working: 'hourglass_top', success: 'verified' }],

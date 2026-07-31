@@ -15,6 +15,7 @@ from nicegui_app.services.roster_workflow import (
     WorkflowError,
 )
 from nicegui_app.ui.access_control import render_roster_share_action, revoke_withdrawn_roster_shares
+from nicegui_app.ui.components import action
 from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import day_label, t
 from nicegui_app.ui.navigation import navigate_to
@@ -174,7 +175,7 @@ def _render_withdraw_action(workflow, week: dict[str, object], roster_week_id: i
 @ui.page("/rosters")
 def rosters_page() -> None:
     workflow = get_workflow()
-    weeks = workflow.roster_weeks()
+    weeks = workflow.roster_week_history(page=1, page_size=100)
     prefects = workflow.prefects()
     with page_shell("/rosters"):
         if not prefects:
@@ -561,6 +562,9 @@ def rosters_page() -> None:
                             0,
                         )
                         declare_command_id = f"leave-declare-ui:{uuid4().hex}"
+                        declare_leave_button.disable()
+                        declare_leave_button.set_icon("hourglass_top")
+                        declare_leave_button.props("aria-busy=true")
                         result = await _run_with_progress(
                             lambda: workflow.declare_leave(
                                 week_start=week_start,
@@ -575,12 +579,27 @@ def rosters_page() -> None:
                             icon="event_busy",
                         )
                         if result is not _OPERATION_FAILED:
+                            declare_leave_button.set_icon("task_alt")
                             leave_reason.value = ""
                             leave_reason.update()
                             refresh_leave_list()
                             ui.notify(t("leave_declared"), type="positive")
+                        else:
+                            declare_leave_button.set_icon("event_busy")
+                        declare_leave_button.enable()
+                        declare_leave_button.props(remove="aria-busy")
 
-                    ui.button(t("declare_leave"), icon="event_busy", on_click=declare_leave).props("outline color=primary").classes("mt-3")
+                    declare_leave_button = action(
+                        t("declare_leave"),
+                        icon="event_busy",
+                        on_click=declare_leave,
+                        variant="secondary",
+                        classes="mt-3",
+                        motion_role="edit",
+                        icon_story_to="event_note",
+                        icon_story_category="lifecycle",
+                        test_id="declare-pre-generation-leave",
+                    )
                     week_input.on(
                         "change",
                         lambda _event: (

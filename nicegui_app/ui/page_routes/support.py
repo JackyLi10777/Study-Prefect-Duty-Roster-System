@@ -428,6 +428,24 @@ def support_page() -> None:
     context = current_page_context()
     source_path = _support_source_path()
     with page_shell("/support"):
+        with ui.element("section").classes("sy-support-hero w-full").props(
+            f'aria-label="{attr(t("support_hero_title"))}" data-testid=support-hero'
+        ):
+            with ui.column().classes("sy-support-hero-copy gap-3"):
+                ui.label(t("support_hero_kicker")).classes("sy-support-hero-kicker")
+                ui.label(t("support_hero_title")).classes("sy-support-hero-title")
+                ui.label(t("support_hero_intro")).classes("sy-support-hero-intro")
+                with ui.element("ol").classes("sy-support-hero-steps"):
+                    for index, key in enumerate(
+                        ("support_hero_step_one", "support_hero_step_two", "support_hero_step_three"),
+                        start=1,
+                    ):
+                        with ui.element("li"):
+                            ui.label(f"{index:02d}").classes("sy-support-hero-step-number")
+                            ui.label(t(key))
+                ui.label(
+                    t("support_hero_guest_scope" if context.principal.mode is AccessMode.GUEST else "support_hero_admin_scope")
+                ).classes("sy-support-hero-scope")
         with ui.element("div").classes("sy-support-layout w-full"):
             if context.principal.mode is AccessMode.GUEST:
                 _render_guest_support(source_path)

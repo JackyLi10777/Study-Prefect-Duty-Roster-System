@@ -35,6 +35,15 @@ class PrefectRecord(Base):
             unique=True,
             sqlite_where=text("active = 1"),
         ),
+        Index(
+            "uq_prefects_active_assist_fixed_weekday",
+            "fixed_general_duty",
+            unique=True,
+            sqlite_where=text(
+                "active = 1 AND role_code = 'assistant_head' "
+                "AND fixed_general_duty <> 'NONE'"
+            ),
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
@@ -86,6 +95,7 @@ class RosterWeekRecord(Base):
             unique=True,
             sqlite_where=text("status IN ('draft', 'published')"),
         ),
+        Index("ix_roster_weeks_status_week_start_id", "status", "week_start", "id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -127,6 +137,12 @@ class FairnessLedgerRecord(Base):
     __tablename__ = "fairness_ledger"
     __table_args__ = (
         Index("ix_fairness_ledger_prefect_id", "prefect_id"),
+        Index(
+            "ix_fairness_ledger_roster_week_created_id",
+            "roster_week_id",
+            "created_at",
+            "id",
+        ),
         UniqueConstraint(
             "operation_id",
             "assignment_id",
@@ -152,7 +168,15 @@ class FairnessLedgerRecord(Base):
 
 class LeaveAdjustmentRecord(Base):
     __tablename__ = "leave_adjustments"
-    __table_args__ = (UniqueConstraint("command_id", name="uq_leave_adjustment_command"),)
+    __table_args__ = (
+        UniqueConstraint("command_id", name="uq_leave_adjustment_command"),
+        Index(
+            "ix_leave_adjustments_roster_week_created_id",
+            "roster_week_id",
+            "created_at",
+            "id",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     roster_week_id: Mapped[int] = mapped_column(ForeignKey("roster_weeks.id"))
@@ -217,6 +241,13 @@ class BackupRunRecord(Base):
     success: Mapped[bool] = mapped_column(Boolean)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+Index(
+    "ix_backup_runs_created_id",
+    BackupRunRecord.created_at.desc(),
+    BackupRunRecord.id.desc(),
+)
 
 
 class OperationCommandRecord(Base):

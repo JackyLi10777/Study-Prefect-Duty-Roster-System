@@ -2,6 +2,8 @@
 
 > **已核實線上來源（2026-07-31）：** Windows origin 正運行 clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466`；canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 承接 100% 流量。rc43 的 306 個發布檔案以指紋 `699dc436c69e02f3b9062a04500715929ba35f78f48e14a3d80a0ac33c18640b` 通過 15／15 正式閘門；正式備份 `20260731-013103-079514-manual_verified_backup.sqlite3`（SHA-256 `f07306c89e79a610b40105627620c1603b707c39a7ab4cc537217df61c358e1c`）、隔離還原、公平及行數核對、origin health／readiness、Worker 0% 指定版本 smoke、100% promotion 與 canonical health／entrance／Viewer 均已通過。第一層受控回退是 rc41 origin `74072b0175ff64807312a8cc5b9cd016b6628210` 與前一 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；rc40／`2ec900a5ef1c021183717dfa648ef76b55452ffb` 及 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 是第二層回退。`v1.2.0-rc.42` 與 rc43 指向同一來源，但沒有綁定正式報告且從未部署，不是回退目標。首席導學風紀及教師顧問的受監督真人驗收仍未完成。下文較舊的 live／candidate 字樣只保留歷史證據，均由本段取代。
 >
+> **rc44 候選工作（尚未上線）：** 保留 SQLite，按真實查詢計劃增加索引及有界查詢，消除名單匯入／撤回流程的 N+1，加入不記錄參數或學生內容的可選慢 SQL 診斷，並把備份核對移出 UI event loop。完整合成規模證據涵蓋 2,400 名虛構風紀／5,200 週；正式發布完成前，線上真相仍是上方 rc43。
+>
 > **非以役人，乃役於人。**
 > 
 > **Not to be served, but to serve.** — Mark 10:45

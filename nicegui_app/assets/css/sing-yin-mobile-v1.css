@@ -1,5 +1,22 @@
 /* Phone-specific composition. The routes, workflow and data model remain shared. */
 @media (max-width: 900px) {
+  .sy-support-hero {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .sy-support-hero::before {
+    inset: auto 0 0 0;
+    height: 34%;
+    opacity: .34;
+  }
+
+  .sy-support-hero::after {
+    background: linear-gradient(180deg, var(--sy-surface) 0 72%, color-mix(in srgb, var(--sy-surface) 70%, transparent) 100%);
+  }
+
+  .sy-support-hero-copy { padding: 28px 22px 72px; }
+
   .sy-product-mark--display {
     width: 142px;
     height: 142px;

@@ -1,0 +1,124 @@
+{
+  "profile": "full",
+  "generatedAt": "2026-07-31T14:22:11.109873+00:00",
+  "syntheticOnly": true,
+  "levels": [
+    {
+      "prefects": 24,
+      "weeks": 52,
+      "statementCount": 45,
+      "populateMs": 25.711,
+      "backupMs": 17.475,
+      "databaseBytes": 188416,
+      "walBytes": 0,
+      "memoryCurrentBytes": 31791,
+      "memoryPeakBytes": 52949,
+      "plans": {
+        "latestRoster": [
+          "SEARCH roster_weeks USING COVERING INDEX ix_roster_weeks_status_week_start_id (status=?)"
+        ],
+        "weekLedger": [
+          "SEARCH fairness_ledger USING INDEX ix_fairness_ledger_roster_week_created_id (roster_week_id=?)"
+        ],
+        "latestBackup": [
+          "SCAN backup_runs USING COVERING INDEX ix_backup_runs_created_id"
+        ]
+      },
+      "timings": {
+        "latestRoster": {
+          "p50Ms": 0.017,
+          "p95Ms": 0.02,
+          "maxMs": 0.083
+        },
+        "weekLedger": {
+          "p50Ms": 0.014,
+          "p95Ms": 0.016,
+          "maxMs": 0.063
+        },
+        "latestBackup": {
+          "p50Ms": 0.013,
+          "p95Ms": 0.031,
+          "maxMs": 0.038
+        }
+      }
+    },
+    {
+      "prefects": 240,
+      "weeks": 520,
+      "statementCount": 45,
+      "populateMs": 53.269,
+      "backupMs": 17.264,
+      "databaseBytes": 606208,
+      "walBytes": 0,
+      "memoryCurrentBytes": 279607,
+      "memoryPeakBytes": 534587,
+      "plans": {
+        "latestRoster": [
+          "SEARCH roster_weeks USING COVERING INDEX ix_roster_weeks_status_week_start_id (status=?)"
+        ],
+        "weekLedger": [
+          "SEARCH fairness_ledger USING INDEX ix_fairness_ledger_roster_week_created_id (roster_week_id=?)"
+        ],
+        "latestBackup": [
+          "SCAN backup_runs USING COVERING INDEX ix_backup_runs_created_id"
+        ]
+      },
+      "timings": {
+        "latestRoster": {
+          "p50Ms": 0.01,
+          "p95Ms": 0.011,
+          "maxMs": 0.038
+        },
+        "weekLedger": {
+          "p50Ms": 0.009,
+          "p95Ms": 0.01,
+          "maxMs": 0.027
+        },
+        "latestBackup": {
+          "p50Ms": 0.009,
+          "p95Ms": 0.009,
+          "maxMs": 0.02
+        }
+      }
+    },
+    {
+      "prefects": 2400,
+      "weeks": 5200,
+      "statementCount": 45,
+      "populateMs": 439.402,
+      "backupMs": 48.408,
+      "databaseBytes": 3977216,
+      "walBytes": 0,
+      "memoryCurrentBytes": 1091047,
+      "memoryPeakBytes": 5109605,
+      "plans": {
+        "latestRoster": [
+          "SEARCH roster_weeks USING COVERING INDEX ix_roster_weeks_status_week_start_id (status=?)"
+        ],
+        "weekLedger": [
+          "SEARCH fairness_ledger USING INDEX ix_fairness_ledger_roster_week_created_id (roster_week_id=?)"
+        ],
+        "latestBackup": [
+          "SCAN backup_runs USING COVERING INDEX ix_backup_runs_created_id"
+        ]
+      },
+      "timings": {
+        "latestRoster": {
+          "p50Ms": 0.01,
+          "p95Ms": 0.013,
+          "maxMs": 0.061
+        },
+        "weekLedger": {
+          "p50Ms": 0.009,
+          "p95Ms": 0.01,
+          "maxMs": 0.033
+        },
+        "latestBackup": {
+          "p50Ms": 0.009,
+          "p95Ms": 0.009,
+          "maxMs": 0.021
+        }
+      }
+    }
+  ]
+}

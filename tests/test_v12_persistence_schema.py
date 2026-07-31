@@ -154,7 +154,7 @@ def test_0007_to_head_preserves_data_and_adds_v12_contracts(tmp_path: Path) -> N
     command.upgrade(config, "head")
 
     with sqlite3.connect(database_path) as connection:
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0011",)
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0012",)
         assert connection.execute(
             "SELECT reason, version FROM leave_declarations WHERE prefect_id = ?",
             ("prefect-existing",),
@@ -194,6 +194,15 @@ def test_0007_to_head_preserves_data_and_adds_v12_contracts(tmp_path: Path) -> N
             row[1] for row in connection.execute("PRAGMA index_list(fairness_ledger)")
         }
         assert "ix_fairness_ledger_prefect_id" in ledger_indexes
+        assert "ix_fairness_ledger_roster_week_created_id" in ledger_indexes
+        assert "ix_roster_weeks_status_week_start_id" in roster_indexes
+        assert "uq_prefects_active_assist_fixed_weekday" in indexes
+        assert {
+            row[1] for row in connection.execute("PRAGMA index_list(leave_adjustments)")
+        } >= {"ix_leave_adjustments_roster_week_created_id"}
+        assert {
+            row[1] for row in connection.execute("PRAGMA index_list(backup_runs)")
+        } >= {"ix_backup_runs_created_id"}
 
 
 def test_active_chinese_name_uniqueness_allows_archived_history(tmp_path: Path) -> None:
@@ -323,6 +332,30 @@ def test_duplicate_active_names_block_v12_migration_without_data_loss(tmp_path: 
             ("衝突測試",),
         ).fetchone() == (2,)
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0007",)
+
+
+def test_duplicate_fixed_assistant_weekday_blocks_0012_without_data_changes(tmp_path: Path) -> None:
+    database_path = tmp_path / "duplicate-assist-weekday.sqlite3"
+    config = _alembic_config(database_path)
+    command.upgrade(config, "0011")
+    with sqlite3.connect(database_path) as connection:
+        _insert_prefect(connection, "assistant-a", "助理首席甲")
+        _insert_prefect(connection, "assistant-b", "助理首席乙")
+        connection.execute(
+            "UPDATE prefects SET role_code='assistant_head', fixed_general_duty='MONDAY' "
+            "WHERE id IN ('assistant-a','assistant-b')"
+        )
+        connection.commit()
+
+    with pytest.raises(RuntimeError, match="more than one active Assistant Head Study Prefect"):
+        command.upgrade(config, "head")
+
+    with sqlite3.connect(database_path) as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM prefects WHERE role_code='assistant_head' "
+            "AND fixed_general_duty='MONDAY'"
+        ).fetchone() == (2,)
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0011",)
 
 
 def test_v12_migration_downgrades_cleanly_to_0007(tmp_path: Path) -> None:

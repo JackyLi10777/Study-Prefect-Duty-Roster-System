@@ -2,6 +2,17 @@
 
 MESSAGES = {
     "report_problem": {"zh-HK": "報告問題", "en": "Report a problem"},
+    "support_hero_kicker": {"zh-HK": "本機診斷支援", "en": "LOCAL DIAGNOSTIC SUPPORT"},
+    "support_hero_title": {"zh-HK": "三項資料，建立可重現的問題報告", "en": "Three details for a reproducible issue report"},
+    "support_hero_intro": {
+        "zh-HK": "把看到的現象整理成可核對、可安全交接的診斷線索，不會改動值班表或公平帳本。",
+        "en": "Turn what you observed into reviewable, safely transferable diagnostic evidence without changing rosters or the fairness ledger.",
+    },
+    "support_hero_step_one": {"zh-HK": "描述預期與實際", "en": "Describe expected and actual results"},
+    "support_hero_step_two": {"zh-HK": "列出重現步驟並清理敏感資料", "en": "List reproduction steps and remove sensitive data"},
+    "support_hero_step_three": {"zh-HK": "建立、檢查及下載報告", "en": "Build, review, and download the report"},
+    "support_hero_admin_scope": {"zh-HK": "管理員確認後可保存至本機支援收件箱。", "en": "Administrators may save a confirmed report to the local support inbox."},
+    "support_hero_guest_scope": {"zh-HK": "訪客報告只留在目前分頁，關閉後即失效。", "en": "Guest reports remain only in the current tab and disappear when it closes."},
     "support_local_first": {"zh-HK": "本機優先・不會自動上載", "en": "Local-first · never uploaded automatically"},
     "support_admin_body": {
         "zh-HK": "確認後，報告只會保存到主機的支援收件箱，不會寫入值班表資料庫。",

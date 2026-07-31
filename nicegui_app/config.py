@@ -34,10 +34,30 @@ def _bounded_int_environment(
     return min(maximum, max(minimum, value))
 
 
+def _boolean_environment(name: str, *, default: bool = False) -> bool:
+    """Read one explicit boolean without treating arbitrary text as truthy."""
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    normalized = raw_value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
 SQLITE_BUSY_TIMEOUT_MS = _bounded_int_environment(
     "SING_YIN_SQLITE_BUSY_TIMEOUT_MS",
     default=10_000,
     minimum=1_000,
+    maximum=60_000,
+)
+SQL_DIAGNOSTICS_ENABLED = _boolean_environment("SING_YIN_SQL_DIAGNOSTICS")
+SLOW_SQL_MS = _bounded_int_environment(
+    "SING_YIN_SLOW_SQL_MS",
+    default=100,
+    minimum=1,
     maximum=60_000,
 )
 BRAND_ASSET_DIR = PROJECT_ROOT / "nicegui_app" / "assets" / "brand"

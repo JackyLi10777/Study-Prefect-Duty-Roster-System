@@ -15,6 +15,7 @@ MANDATORY_CONTROLS = {
     "theme",
     "usage_instructions",
     "generate_draft",
+    "declare_leave",
     "review_publish",
     "published_leave",
     "withdraw_published_roster",

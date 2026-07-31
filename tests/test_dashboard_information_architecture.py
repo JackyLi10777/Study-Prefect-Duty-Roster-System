@@ -17,11 +17,16 @@ def test_dashboard_keeps_one_primary_workbench_and_a_compact_review_rail() -> No
     assert "data-testid=dashboard-history" in home
     assert 'ui.element("ul").classes("sy-dashboard-history-list")' in home
     assert 'ui.element("li").classes("sy-dashboard-history-item")' in home
-    assert "recent_weeks = weeks[:3]" in home
-    assert re.search(r"^\s*weeks = weeks\[:3\]$", home, re.MULTILINE) is None
+    assert "recent_weeks = workflow.roster_week_history(page=1, page_size=3)" in home
+    assert "latest = recent_weeks[0] if recent_weeks else None" in home
+    assert "workflow.roster_weeks()" not in home
 
     first_time_action = re.search(r'^(\s*)ui\.button\(t\("first_time_link"\)', home, re.MULTILINE)
-    history_setup = re.search(r"^(\s*)recent_weeks = weeks\[:3\]$", home, re.MULTILINE)
+    history_setup = re.search(
+        r"^(\s*)recent_weeks = workflow\.roster_week_history\(page=1, page_size=3\)$",
+        home,
+        re.MULTILINE,
+    )
     assert first_time_action is not None and history_setup is not None
     assert len(first_time_action.group(1)) > len(history_setup.group(1))
 
