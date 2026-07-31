@@ -625,6 +625,7 @@ def _install_theme_control_runtime() -> None:
             dark: __QUASAR_DARK_PALETTE__,
           };
           const applyQuasarPalette = theme => {
+            document.documentElement.dataset.syResolvedTheme = theme;
             const palette = palettes[theme];
             if (!palette) return;
             for (const [name, value] of Object.entries(palette)) {
@@ -644,12 +645,15 @@ def _install_theme_control_runtime() -> None:
             const value = buttons()[0]?.dataset.themePreference;
             return value === 'light' || value === 'dark' ? value : 'system';
           };
-          const resolved = () => (document.body.classList.contains('body--dark') ||
-            document.documentElement.classList.contains('body--dark') ||
-            (explicitPreference() === 'system' && media.matches)) ? 'dark' : 'light';
+          const resolved = () => {
+            const preference = explicitPreference();
+            if (preference === 'light' || preference === 'dark') return preference;
+            return media.matches ? 'dark' : 'light';
+          };
           const sync = ({animate = false} = {}) => {
             const current = resolved();
             const isDark = current === 'dark';
+            document.documentElement.dataset.syResolvedTheme = current;
             for (const button of buttons()) {
               const label = (isDark ? button.dataset.actionLight : button.dataset.actionDark) || '';
               button.dataset.themeResolved = current;
@@ -680,7 +684,7 @@ def _install_theme_control_runtime() -> None:
             applyQuasarPalette(browserResolved);
             if (window.Quasar?.Dark) window.Quasar.Dark.set(browserResolved === 'dark');
             host.dataset.serverResolved = browserResolved;
-            sync({animate: true});
+            sync({animate: false});
             const trigger = host.querySelector(`[data-sy-theme-resolve="${browserResolved}"]`);
             if (!trigger) return;
             host.dataset.resolving = 'true';
@@ -774,7 +778,8 @@ def _render_mobile_drawer_tools(
                 f'flat no-caps aria-label="{attr(theme_label)}" title="{attr(theme_label)}" '
                 f'aria-pressed={"true" if is_dark else "false"} data-testid=mobile-theme-control '
                 f'data-sy-theme-toggle data-sy-theme-show-label=true data-theme-preference={theme_preference()} '
-                'data-sy-icon-motion-role=toggle data-sy-icon-story-category=persistent '
+                'data-sy-icon-motion-role=toggle data-sy-icon-motion-mode=persistent-rotary '
+                'data-sy-icon-story-category=persistent '
                 f'data-action-light="{attr(t("theme_switch_to_light"))}" '
                 f'data-action-dark="{attr(t("theme_switch_to_dark"))}"'
             ).classes(_header_control_classes("theme", mobile=True))
@@ -1268,7 +1273,8 @@ def page_shell(active_path: str) -> Iterator[None]:
                         f'flat round aria-label="{attr(tooltip)}" title="{attr(tooltip)}" '
                         f'aria-pressed={"true" if is_dark else "false"} data-testid=theme-control '
                         f'data-sy-theme-toggle data-theme-preference={theme_preference()} '
-                        'data-sy-icon-motion-role=toggle data-sy-icon-story-category=persistent '
+                        'data-sy-icon-motion-role=toggle data-sy-icon-motion-mode=persistent-rotary '
+                        'data-sy-icon-story-category=persistent '
                         f'data-action-light="{attr(t("theme_switch_to_light"))}" '
                         f'data-action-dark="{attr(t("theme_switch_to_dark"))}"'
                     ).classes(_header_control_classes("theme"))
@@ -1326,6 +1332,15 @@ def page_shell(active_path: str) -> Iterator[None]:
             ui.icon(active_icon).classes("sy-page-context-icon")
             ui.label(t(navigation_group_key)).classes("sy-page-context-label")
             ui.element("span").classes("sy-page-context-line")
+        if active_page.atmosphere_presentation == "shell":
+            ui.element("div").classes(
+                "sy-page-atmosphere"
+            ).props(
+                f'aria-hidden=true data-sy-atmosphere-slot="{active_page.atmosphere_slot}" '
+                'data-sy-atmosphere-presentation=shell'
+            ).style(
+                f"--sy-page-atmosphere-image: var(--sy-image-{active_page.atmosphere_slot})"
+            )
         yield
     with ui.element("footer").props("role=contentinfo data-testid=page-copyright").classes("sy-page-footer"):
         ui.label(t("service_principle")).classes("sy-page-footer-principle")

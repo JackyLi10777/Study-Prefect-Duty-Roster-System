@@ -116,3 +116,22 @@ def test_missing_theme_handoff_preserves_system_default(monkeypatch) -> None:
     assert theme.adopt_verified_theme_handoff(context) is False
     assert saved == {}
     assert theme.theme_preference() == "system"
+
+
+def test_initial_head_resolves_exactly_one_atmosphere_theme_before_stylesheets() -> None:
+    dark_head = theme.initial_theme_head_html("dark")
+
+    assert dark_head.index('data-sy-runtime="initial-theme"') < dark_head.index(
+        'data-sy-initial-atmosphere-tokens="current-theme-only"'
+    )
+    assert "document.documentElement.dataset.syResolvedTheme=resolved" in dark_head
+    assert "matchMedia('(prefers-color-scheme: dark)')" in dark_head
+    assert dark_head.count(':root[data-sy-resolved-theme="light"]') == 1
+    assert dark_head.count(':root[data-sy-resolved-theme="dark"]') == 1
+    for slot, (light_asset, dark_asset) in theme.ATMOSPHERE_THEME_PAIRS.items():
+        assert dark_head.count(f"--sy-image-{slot}:") == 2
+        assert dark_head.count(light_asset) == 1
+        assert dark_head.count(dark_asset) == 1
+
+    with pytest.raises(ValueError, match="initial theme preference"):
+        theme.initial_theme_head_html("sepia")

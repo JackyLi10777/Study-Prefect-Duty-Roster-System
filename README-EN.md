@@ -27,6 +27,10 @@ adjust published leave → explain fairness → back up, restore, and hand over.
 
 The public entrance presents one prepared duty desk in paired morning-light and evening-dark versions. An unlabelled ledger, three paper workflow markers, and a restrained teal line convey record keeping, the three-step weekly sequence, and continuous service. Both original WebP assets are local to the project and contain no people, student data, writing, crest, external tracking, or third-party image request; reduced-motion mode remains a fully readable static entrance.
 
+The workbench extends that rule across every principal route. Weekly operations, people/fairness, administration/recovery, and support each use one local AI-generated light/dark atmosphere pair; Daily Verse uses a same-composition morning/night v2 pair. Images are confined to headers, narrative heroes, empty states, and non-sensitive reading surfaces. They never sit behind names, tables, forms, fairness data, warnings, dialogs, controls, or PDFs. Only the current route and resolved appearance consume the relevant asset. All ten new or replacement WebPs are `1600×900` and at most 180 KB; prompts, SHA-256 digests, prohibited placements, and human review are recorded in the [atmosphere asset manifest](docs/design/ATMOSPHERE_ASSET_MANIFEST.md).
+
+Interaction motion is semantic and auditable. Only Settings, the appearance toggle, Backup Settings navigation, History, and Undo may use bounded rotation. Restore, draft, publish, import, directory management, verse refresh, and support actions retain truthful lifecycle or glyph morphs without a second rotation. Sound and music-autoplay switches receive a clearer short inset press. Button hosts, labels, focus rings, and layout never rotate or shift, while busy, disabled, reconnect, and reduced-motion states clear transforms immediately.
+
 [Traditional Chinese README](README.md) · [Operator guide](docs/OPERATOR_GUIDE.md)
 · [Architecture](docs/NICEGUI_ARCHITECTURE.md) · [Release status](PROJECT_STATUS.md)
 · [Assist assignment modes](docs/ROSTER_POLICY_MODES.md)
@@ -513,6 +517,9 @@ sound, theme, playback, and drawer controls always preserve their true persisten
 state. Glyphs collapse and crossfade inside a fixed 24x24 slot; the button host
 never moves, tilts, or resizes. Disabled, busy, pointer, keyboard, coarse-touch,
 reduced-motion, forced-colour, reconnect, and DOM-replacement paths are explicit.
+Bounded rotation is restricted to Settings, a real appearance change, Backup
+Settings navigation, History, and Undo. Restore and controls with an existing
+glyph story remain lifecycle-morph only.
 The focused inventory, state-machine, and disposable-browser checks are
 `scripts/audit_icon_semantics.py`,
 `nicegui_app/assets/motion/sing-yin-icon-story-state_test.js`, and

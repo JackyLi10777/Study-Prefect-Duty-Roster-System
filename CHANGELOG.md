@@ -2,6 +2,15 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
+## v1.2.0-rc.42 — source candidate, 2026-07-31
+
+- Adds four paired route-family atmosphere systems for weekly work, people/fairness, administration/recovery, and support, plus a same-composition Daily Verse v2 pair. All ten local WebPs are 1600×900, at most 180 KB, stripped of metadata, and governed by an exact prompt/hash/placement manifest.
+- Extends `PageDefinition` with one registered atmosphere slot and `embedded | shell` presentation contract. Shared shell bands remain non-interactive and outside tables, forms, names, fairness data, warnings, dialogs, controls, and PDFs; mature heroes do not receive a duplicate image.
+- Rebuilds the Daily Verse light surface with warm parchment, dark readable ink, restrained gold, a left reading veil, and 16–20% mobile image strength while preserving the indigo night composition.
+- Replaces indiscriminate rotation with a five-control allowlist: Settings, explicit appearance changes, Backup Settings navigation, History, and Undo. Actual restore and other task controls retain truthful lifecycle morphs; verified snapshots use `add_to_drive → arrow_forward → verified` feedback.
+- Deepens the tactile inset response for sound and music-autoplay switches without layout movement, and keeps Admin/Guest parity, routes, identity, Session, SQLite, capabilities, and data formats unchanged.
+- Formal exact-source release, Windows backup/isolated restore/origin switch, staged Worker rollout, canonical smoke, and supervised human acceptance remain separate until recorded in `PROJECT_STATUS.md`.
+
 ## v1.2.0-rc.41 — released, 2026-07-31
 
 - Fixed Admin support submission after the waiting-experience refactor by capturing the browser locale before host-local incident persistence moves to a worker thread.

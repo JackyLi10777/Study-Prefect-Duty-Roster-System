@@ -85,7 +85,7 @@
       'home', 'space_dashboard', 'dashboard', 'view_quilt', 'calendar_month',
       'calendar_view_week', 'groups', 'handshake', 'database',
       'domain', 'engineering', 'account_tree', 'menu_book', 'help_outline',
-      'balance', 'support_agent'
+      'balance', 'support_agent', 'history'
     ].map((name) => [name, 'navigation']),
     ['settings', 'gear']
   ]);
@@ -134,6 +134,7 @@
     ['edit', { preview: 'edit_note', working: 'hourglass_top', success: 'task_alt' }],
     ['archive', { preview: 'inventory_2', working: 'hourglass_top', success: 'task_alt' }],
     ['event_repeat', { preview: 'calendar_month', working: 'hourglass_top', success: 'event_available' }],
+    ['add_to_drive', { preview: 'arrow_forward', working: 'hourglass_top', success: 'verified' }],
     ['restore', { preview: 'settings_backup_restore', working: 'hourglass_top', success: 'verified' }],
     ['settings_backup_restore', { preview: 'restore', working: 'hourglass_top', success: 'verified' }],
     ['refresh', { preview: 'autorenew', working: 'hourglass_top', success: 'task_alt' }],
@@ -149,11 +150,19 @@
     ['menu', 'close'],
     ['close', 'menu']
   ]);
+  const rotaryMotionContracts = Object.freeze({
+    'rotary-only': Object.freeze({ preview: 70, activation: 270, duration: 0.26, direction: 'cw' }),
+    'persistent-rotary': Object.freeze({ preview: 0, activation: 90, duration: 0.18, direction: 'cw' }),
+    'rotary-navigation': Object.freeze({ preview: 60, activation: 180, duration: 0.18, direction: 'cw' }),
+    'rotary-history': Object.freeze({ preview: -55, activation: -180, duration: 0.18, direction: 'ccw' }),
+    'rotary-action': Object.freeze({ preview: 0, activation: -180, duration: 0.18, direction: 'ccw' })
+  });
 
   const pointerControllers = new Map();
   const tocObservers = new Map();
   const feedbackTimers = new Map();
   const iconStoryTimelines = new Map();
+  const iconRotaryTimelines = new Map();
   const iconStoryTouchTimers = new Map();
   const iconStoryState = window.SingYinIconStoryState?.create?.() || null;
   const ACTION_MEMORY_MS = 5 * 60 * 1000;
@@ -311,10 +320,42 @@
       const role = host.dataset.syIconMotionRole || iconMotionRoles.get(name) || 'signal';
       setDataset(icon, 'syIconMotion', role);
       setDataset(icon, 'syIconName', name);
-      const category = host.dataset.syIconStoryCategory
+      let category = host.dataset.syIconStoryCategory
         || (operationLifecycleGlyphs.has(name)
           ? 'lifecycle'
           : iconStoryGlyphs.has(name) ? 'preview' : 'role');
+      const requestedMotionMode = host.dataset.syIconMotionMode;
+      const motionMode = requestedMotionMode
+        || (host.matches('[data-sy-theme-toggle]')
+          ? 'persistent-rotary'
+          : name === 'settings'
+            ? 'rotary-only'
+            : name === 'history'
+              ? 'rotary-history'
+              : name === 'undo'
+                ? 'rotary-action'
+                : category === 'persistent'
+                  ? 'persistent-morph'
+                  : category === 'lifecycle'
+                    ? 'lifecycle-morph'
+                    : category === 'preview'
+                      ? 'morph-only'
+                      : category === 'static' ? 'static' : 'role-only');
+      const rotaryContract = rotaryMotionContracts[motionMode];
+      if (rotaryContract && motionMode !== 'persistent-rotary') category = 'role';
+      setDataset(host, 'syIconMotionMode', motionMode);
+      setDataset(icon, 'syIconMotionMode', motionMode);
+      if (rotaryContract) {
+        setDataset(icon, 'syIconRotationDirection', rotaryContract.direction);
+        setDataset(icon, 'syIconPreviewDegrees', String(rotaryContract.preview));
+        setDataset(icon, 'syIconActivationDegrees', String(rotaryContract.activation));
+        icon.style.setProperty('--sy-rotary-preview-degrees', `${rotaryContract.preview}deg`);
+      } else {
+        deleteDataset(icon, 'syIconRotationDirection');
+        deleteDataset(icon, 'syIconPreviewDegrees');
+        deleteDataset(icon, 'syIconActivationDegrees');
+        icon.style.removeProperty('--sy-rotary-preview-degrees');
+      }
       setDataset(icon, 'syIconStoryCategory', category);
       if (category === 'persistent') {
         deleteDataset(icon, 'syIconStoryFrom');
@@ -364,7 +405,7 @@
     window.gsap?.killTweensOf(icon);
     window.gsap?.set(icon, { clearProps: 'opacity,visibility,scale,y,transform' });
   };
-  const morphGlyph = (icon, next, { active = false } = {}) => {
+  const morphGlyph = (icon, next, { active = false, rotation = 0 } = {}) => {
     if (!(icon instanceof HTMLElement) || !next) return;
     cancelIconTimeline(icon);
     if (icon.textContent?.trim() === next) {
@@ -391,6 +432,7 @@
       .to(icon, {
         autoAlpha: 0,
         scale: 0.42,
+        rotation: rotation ? rotation / 2 : 0,
         duration: 0.08,
         ease: 'power2.in',
         onComplete: () => {
@@ -401,36 +443,50 @@
       })
       .fromTo(
         icon,
-        { autoAlpha: 0, scale: 0.58 },
+        { autoAlpha: 0, scale: 0.58, rotation: rotation ? -rotation / 2 : 0 },
         {
           autoAlpha: 1,
           scale: 1,
+          rotation: 0,
           duration: 0.10,
           ease: 'power3.out',
-          clearProps: 'opacity,visibility,scale,y,transform'
+          clearProps: 'opacity,visibility,scale,y,rotation,transform'
         }
       );
   };
-  const animateGearActivation = (host) => {
+  const cancelRotaryTimeline = icon => {
+    if (!(icon instanceof HTMLElement)) return;
+    const timeline = iconRotaryTimelines.get(icon);
+    timeline?.kill();
+    iconRotaryTimelines.delete(icon);
+    window.gsap?.killTweensOf(icon, 'rotation');
+    window.gsap?.set(icon, { clearProps: 'rotation,transform' });
+  };
+  const animateRotaryActivation = (host) => {
     if (!(host instanceof HTMLElement) || reducedMotion() || !window.gsap) return;
     if (
       host.matches('.disabled,[aria-disabled="true"],[aria-busy="true"]')
       || host.matches('[aria-current="page"],.sy-nav-link--active')
     ) return;
-    const icon = host.querySelector(`${interactiveIconSelector}[data-sy-icon-motion="gear"]`);
+    const motionMode = host.dataset.syIconMotionMode || '';
+    const contract = rotaryMotionContracts[motionMode];
+    if (!contract || motionMode === 'persistent-rotary') return;
+    const icon = host.querySelector(`${interactiveIconSelector}[data-sy-icon-motion-mode="${motionMode}"]`);
     if (!(icon instanceof HTMLElement)) return;
     cancelIconTimeline(icon);
-    window.gsap.killTweensOf(icon);
-    window.gsap.fromTo(
+    cancelRotaryTimeline(icon);
+    const timeline = window.gsap.timeline({
+      defaults: { overwrite: 'auto' },
+      onComplete: () => {
+        if (iconRotaryTimelines.get(icon) === timeline) iconRotaryTimelines.delete(icon);
+        window.gsap?.set(icon, { clearProps: 'rotation,transform' });
+      }
+    });
+    iconRotaryTimelines.set(icon, timeline);
+    timeline.fromTo(
       icon,
       { rotation: 0 },
-      {
-        rotation: 270,
-        duration: 0.30,
-        ease: 'power2.inOut',
-        overwrite: true,
-        onComplete: () => window.gsap?.set(icon, { clearProps: 'rotation,transform' })
-      }
+      { rotation: contract.activation, duration: contract.duration, ease: 'power2.inOut' }
     );
   };
   const setPersistentGlyph = (target, next, { animate = true } = {}) => {
@@ -454,7 +510,9 @@
       icon.textContent = next;
       icon.dataset.syIconName = next;
     } else {
-      morphGlyph(icon, next, { active: false });
+      const rotation = host.dataset.syIconMotionMode === 'persistent-rotary'
+        ? rotaryMotionContracts['persistent-rotary'].activation : 0;
+      morphGlyph(icon, next, { active: false, rotation });
     }
     return true;
   };
@@ -561,7 +619,10 @@
       const timer = iconStoryTouchTimers.get(host);
       if (timer) window.clearTimeout(timer);
       iconStoryTouchTimers.delete(host);
-      host.querySelectorAll?.(interactiveIconSelector).forEach(icon => cancelIconTimeline(icon));
+      host.querySelectorAll?.(interactiveIconSelector).forEach(icon => {
+        cancelIconTimeline(icon);
+        cancelRotaryTimeline(icon);
+      });
     });
   };
 
@@ -577,7 +638,7 @@
     lastActionHost = source;
     lastActionAt = Date.now();
     operationFeedbackHost = null;
-    animateGearActivation(source);
+    animateRotaryActivation(source);
     markFeedbackTarget('navigation', source);
   };
 
@@ -734,6 +795,11 @@
       window.gsap?.set(icon, { clearProps: 'opacity,visibility,scale,y,transform' });
     });
     iconStoryTimelines.clear();
+    iconRotaryTimelines.forEach((timeline, icon) => {
+      timeline.kill();
+      window.gsap?.set(icon, { clearProps: 'rotation,transform' });
+    });
+    iconRotaryTimelines.clear();
     feedbackTimers.forEach((timer) => window.clearTimeout(timer));
     feedbackTimers.clear();
     iconStoryTouchTimers.forEach((timer) => window.clearTimeout(timer));
@@ -809,7 +875,10 @@
             icon.dataset.syIconName = icon.dataset.syIconStoryFrom;
             icon.dataset.syIconStoryActive = 'false';
           }
-          if (!state?.interactive) cancelIconTimeline(icon);
+          if (reduce || !state?.interactive) {
+            cancelIconTimeline(icon);
+            cancelRotaryTimeline(icon);
+          }
         });
         Array.from(pointerControllers.keys()).forEach(removePointerSurface);
         if (!reduce && fine) hydratePointers();
@@ -826,7 +895,14 @@
           hydrateIconMotion(mutation.target);
           const host = mutation.target.matches(interactiveIconHostSelector)
             ? mutation.target : mutation.target.closest(interactiveIconHostSelector);
-          if (host instanceof HTMLElement) guardStateFor(host);
+          if (host instanceof HTMLElement) {
+            const state = guardStateFor(host);
+            if (!state?.interactive) {
+              const icon = host.querySelector(interactiveIconSelector);
+              cancelIconTimeline(icon);
+              cancelRotaryTimeline(icon);
+            }
+          }
         }
         mutation.addedNodes.forEach((node) => {
           if (!(node instanceof Element)) return;
@@ -843,7 +919,7 @@
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['class', 'aria-disabled', 'aria-busy', 'data-sy-icon-motion-role', 'data-sy-icon-story-to', 'data-sy-icon-story-category']
+      attributeFilter: ['class', 'aria-disabled', 'aria-busy', 'data-sy-icon-motion-role', 'data-sy-icon-motion-mode', 'data-sy-icon-story-to', 'data-sy-icon-story-category']
     });
     document.fonts?.ready.then(() => {
       if (!disposed) hydrateMotion();
@@ -880,13 +956,18 @@
         return Object.freeze({
           category: icon.dataset.syIconStoryCategory || 'role',
           role: icon.dataset.syIconMotion || 'signal',
+          motionMode: host.dataset.syIconMotionMode || icon.dataset.syIconMotionMode || 'role-only',
+          rotationDirection: icon.dataset.syIconRotationDirection || '',
+          previewDegrees: Number(icon.dataset.syIconPreviewDegrees || 0),
+          activationDegrees: Number(icon.dataset.syIconActivationDegrees || 0),
           source: icon.dataset.syIconName || icon.textContent?.trim() || '',
           destination: icon.dataset.syIconStoryTo || '',
         });
       },
       storySources: Object.freeze([...iconStoryGlyphs.keys()]),
       lifecycleSources: Object.freeze([...operationLifecycleGlyphs.keys()]),
-      persistentPairs: Object.freeze([...persistentIconPairs.entries()])
+      persistentPairs: Object.freeze([...persistentIconPairs.entries()]),
+      rotationAllowlist: Object.freeze(['settings', 'light_mode', 'dark_mode', 'settings_backup_restore', 'history', 'undo'])
     });
   };
 

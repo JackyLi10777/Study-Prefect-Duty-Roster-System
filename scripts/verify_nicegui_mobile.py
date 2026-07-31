@@ -42,6 +42,7 @@ PORTRAIT_ROUTES = (
     "/platform",
     "/engineering",
     "/system-architecture",
+    "/support",
 )
 COMPACT_ROUTES = {
     "/": "Dashboard",
@@ -54,6 +55,34 @@ LANDSCAPE_ROUTES = ("/", "/rosters", "/prefects", "/guide")
 TABLET_ROUTES = ("/", "/rosters", "/prefects", "/settings", "/system-architecture")
 DESKTOP_TOUCH_ROUTES = ("/", "/rosters", "/prefects", "/engineering", "/settings")
 REFLOW_ROUTES = ("/", "/rosters", "/guide")
+
+SHELL_ATMOSPHERE_ASSETS = {
+    "/rosters": (
+        "weekly-operations",
+        "weekly-operations-light-v1.webp",
+        "weekly-operations-dark-v1.webp",
+    ),
+    "/prefects": (
+        "people-fairness",
+        "people-fairness-light-v1.webp",
+        "people-fairness-dark-v1.webp",
+    ),
+    "/settings": (
+        "administration-recovery",
+        "administration-recovery-light-v1.webp",
+        "administration-recovery-dark-v1.webp",
+    ),
+    "/access-control": (
+        "administration-recovery",
+        "administration-recovery-light-v1.webp",
+        "administration-recovery-dark-v1.webp",
+    ),
+    "/support": (
+        "support-lifeline",
+        "support-lifeline-light-v1.webp",
+        "support-lifeline-dark-v1.webp",
+    ),
+}
 
 
 def isolated_paths() -> tuple[Path, Path, Path]:
@@ -283,10 +312,78 @@ def _assert_mobile_page(page: Page, route: str, *, label: str) -> None:
     page.locator('[role="heading"][aria-level="1"]').wait_for(state="visible", timeout=10_000)
     if "Sing Yin Study Prefect Duty Roster" not in page.title():
         raise AssertionError(f"{label} opened an unexpected page title: {page.title()!r}")
+    _assert_mobile_atmosphere(page, route=route, label=label)
     _assert_bottom_navigation(page, label=label)
     _assert_no_horizontal_overflow(page, label=label)
     _assert_touch_targets(page, label=label)
     _assert_shell_not_obscured(page, label=label)
+
+
+def _assert_mobile_atmosphere(page: Page, *, route: str, label: str) -> None:
+    """Keep current-route imagery decorative, theme-correct, and outside content."""
+
+    shell_bands = page.locator(".sy-page-atmosphere:visible")
+    expected = SHELL_ATMOSPHERE_ASSETS.get(route)
+    if expected is None:
+        if shell_bands.count() != 0:
+            raise AssertionError(f"{label} duplicates an embedded hero with a shell atmosphere band.")
+    else:
+        slot, light_asset, dark_asset = expected
+        if shell_bands.count() != 1:
+            raise AssertionError(f"{label} expected one shell atmosphere band, found {shell_bands.count()}.")
+        band = shell_bands.first
+        if band.get_attribute("aria-hidden") != "true":
+            raise AssertionError(f"{label} atmosphere is exposed to assistive technology.")
+        if band.get_attribute("data-sy-atmosphere-slot") != slot:
+            raise AssertionError(f"{label} atmosphere uses the wrong route-family slot.")
+        if band.get_attribute("data-sy-atmosphere-presentation") != "shell":
+            raise AssertionError(f"{label} atmosphere lost its shell presentation contract.")
+        if band.locator("button, a, input, select, textarea, table, [role=dialog]").count() != 0:
+            raise AssertionError(f"{label} atmosphere contains interactive or sensitive content.")
+        metrics = band.evaluate(
+            """(element) => {
+              const bounds = element.getBoundingClientRect();
+              const nextContent = element.nextElementSibling?.getBoundingClientRect();
+              return {
+                backgroundImage: getComputedStyle(element, '::before').backgroundImage,
+                dark: document.body.classList.contains('body--dark'),
+                height: bounds.height,
+                bottom: bounds.bottom,
+                nextContentTop: nextContent?.top ?? null,
+              };
+            }"""
+        )
+        expected_asset = dark_asset if metrics["dark"] else light_asset
+        if expected_asset not in metrics["backgroundImage"]:
+            raise AssertionError(
+                f"{label} did not resolve only the current theme asset {expected_asset}: "
+                f"{metrics['backgroundImage']}"
+            )
+        if metrics["height"] < 90:
+            raise AssertionError(f"{label} atmosphere collapsed below its reserved mobile height: {metrics}")
+        if metrics["nextContentTop"] is None or metrics["nextContentTop"] + 1 < metrics["bottom"]:
+            raise AssertionError(f"{label} atmosphere overlaps the following page content: {metrics}")
+
+    if route == "/devotional":
+        chapel = page.locator(".sy-chapel:visible")
+        if chapel.count() != 1:
+            raise AssertionError(f"{label} expected one Daily Verse reading surface.")
+        devotional = chapel.evaluate(
+            """(element) => ({
+              backgroundImage: getComputedStyle(element, '::after').backgroundImage,
+              opacity: Number.parseFloat(getComputedStyle(element, '::after').opacity),
+              dark: document.body.classList.contains('body--dark'),
+            })"""
+        )
+        expected_asset = (
+            "devotional-sacred-dark-v2.webp"
+            if devotional["dark"]
+            else "devotional-sacred-light-v2.webp"
+        )
+        if expected_asset not in devotional["backgroundImage"]:
+            raise AssertionError(f"{label} did not resolve the accepted Daily Verse v2 image.")
+        if not 0.15 <= devotional["opacity"] <= 0.20:
+            raise AssertionError(f"{label} Daily Verse image is too strong for mobile reading: {devotional}")
 
 
 def _assert_desktop_touch_page(page: Page, route: str, *, label: str) -> None:

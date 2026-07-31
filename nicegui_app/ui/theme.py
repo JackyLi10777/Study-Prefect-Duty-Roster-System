@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from nicegui import ui
 
 from nicegui_app.access_context import PageContext
@@ -14,7 +16,14 @@ from nicegui_app.ui.motion import MOTION_HEAD_HTML
 ATMOSPHERE_THEME_PAIRS = {
     "sidebar": ("sidebar-stewardship-light-v1.webp", "sidebar-stewardship-dark-v1.webp"),
     "weekly-pulse": ("weekly-pulse-light-v1.webp", "weekly-pulse-dark-v1.webp"),
-    "devotional": ("devotional-sacred-light-v1.webp", "devotional-sacred-dark-v1.webp"),
+    "devotional": ("devotional-sacred-light-v2.webp", "devotional-sacred-dark-v2.webp"),
+    "weekly-operations": ("weekly-operations-light-v1.webp", "weekly-operations-dark-v1.webp"),
+    "people-fairness": ("people-fairness-light-v1.webp", "people-fairness-dark-v1.webp"),
+    "administration-recovery": (
+        "administration-recovery-light-v1.webp",
+        "administration-recovery-dark-v1.webp",
+    ),
+    "support-lifeline": ("support-lifeline-light-v1.webp", "support-lifeline-dark-v1.webp"),
     "onboarding": ("onboarding-desk-light-v1.webp", "onboarding-desk-dark-v1.webp"),
     "handover": ("handover-archive-light-v1.webp", "handover-archive-dark-v1.webp"),
     "platform": ("platform-stewardship-light-v1.webp", "platform-stewardship-dark-v1.webp"),
@@ -134,6 +143,39 @@ def apply_quasar_palette(is_dark: bool) -> None:
     ui.colors(**(QUASAR_DARK_PALETTE if is_dark else QUASAR_LIGHT_PALETTE))
 
 
+def initial_theme_head_html(preference: str) -> str:
+    """Resolve atmosphere assets before external CSS can paint the wrong pair."""
+
+    if preference not in {"system", "light", "dark"}:
+        raise ValueError("initial theme preference must be system, light, or dark")
+    resolved_script = (
+        '<script data-sy-runtime="initial-theme">'
+        "(() => {"
+        f"const preference={json.dumps(preference)};"
+        "const resolved=preference==='system'"
+        "?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')"
+        ":preference;"
+        "document.documentElement.dataset.syResolvedTheme=resolved;"
+        "})();"
+        "</script>"
+    )
+    theme_blocks: list[str] = []
+    for appearance, pair_index in (("light", 0), ("dark", 1)):
+        declarations = "".join(
+            f"--sy-image-{slot}:url('/assets/atmosphere/{assets[pair_index]}');"
+            for slot, assets in ATMOSPHERE_THEME_PAIRS.items()
+        )
+        theme_blocks.append(
+            f':root[data-sy-resolved-theme="{appearance}"]{{{declarations}}}'
+        )
+    return (
+        resolved_script
+        + '<style data-sy-initial-atmosphere-tokens="current-theme-only">'
+        + "".join(theme_blocks)
+        + "</style>"
+    )
+
+
 def apply_theme():  # type: ignore[no-untyped-def]
     """Inject one restrained theme system for every page before content renders."""
     appearance = theme_preference()
@@ -142,6 +184,6 @@ def apply_theme():  # type: ignore[no-untyped-def]
     # Quasar utilities and the CSS tokens must share every semantic role;
     # otherwise framework defaults can leak into danger and dark-mode controls.
     apply_quasar_palette(is_dark)
-    ui.add_head_html(THEME_HEAD_HTML)
+    ui.add_head_html(initial_theme_head_html(appearance) + "\n" + THEME_HEAD_HTML)
     ui.add_head_html(MOTION_HEAD_HTML)
     return dark_mode

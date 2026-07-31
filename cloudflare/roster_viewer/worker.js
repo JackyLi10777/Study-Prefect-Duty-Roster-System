@@ -887,7 +887,7 @@ button, input, select, textarea { font: inherit; }
 .theme-icon--moon { opacity: 0; transform: scale(.58); }
 .theme-toggle[data-resolved-theme="dark"] .theme-icon--sun { opacity: 0; transform: scale(.58); }
 .theme-toggle[data-resolved-theme="dark"] .theme-icon--moon { opacity: 1; transform: scale(1); }
-.theme-toggle[data-icon-changing="true"] .theme-toggle-icon { animation: theme-icon-state 220ms var(--ease-standard); }
+.theme-toggle[data-icon-changing="true"] .theme-toggle-icon { animation: theme-icon-state 180ms var(--ease-standard); }
 .theme-toggle-label { min-width: 82px; text-align: left; white-space: nowrap; }
 .theme-toggle:hover { color: var(--ink); border-color: var(--line-strong); background: var(--surface); }
 .theme-toggle:active { transform: scale(0.975); }
@@ -895,9 +895,9 @@ button, input, select, textarea { font: inherit; }
 .skip-link:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
 
 @keyframes theme-icon-state {
-  0% { transform: scale(1); }
-  48% { transform: scale(.78); }
-  100% { transform: scale(1); }
+  0% { transform: rotate(-90deg) scale(.72); }
+  55% { transform: rotate(-36deg) scale(.86); }
+  100% { transform: rotate(0deg) scale(1); }
 }
 
 .skip-link {
@@ -2073,7 +2073,7 @@ function syncThemeControl({ animate = false } = {}) {
   if (themeToggleLabel) themeToggleLabel.textContent = nextCopy.current;
   if (animate && !reducedThemeMotion.matches) {
     themeToggle.dataset.iconChanging = 'true';
-    window.setTimeout(() => delete themeToggle.dataset.iconChanging, 220);
+    window.setTimeout(() => delete themeToggle.dataset.iconChanging, 180);
   }
 }
 
@@ -2092,7 +2092,7 @@ function applyTheme(value, { persist = false, animate = false } = {}) {
   syncThemeControl({ animate });
 }
 
-applyTheme(savedTheme());
+applyTheme(savedTheme(), { persist: false, animate: false });
 requestAnimationFrame(() => { document.documentElement.dataset.themeReady = 'true'; });
 
 const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');

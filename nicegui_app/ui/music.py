@@ -273,7 +273,9 @@ def render_page_music_control(context: str) -> None:
                 autoplay_switch = ui.switch(
                     t("music_autoplay"),
                     value=autoplay_enabled,
-                ).props("name=music-autoplay data-testid=music-autoplay-switch")
+                ).props("name=music-autoplay data-testid=music-autoplay-switch").classes(
+                    "sy-tactile-toggle"
+                )
                 ui.label(t("music_autoplay_hint")).classes("text-xs leading-5 text-[var(--sy-muted)] -mt-3")
 
                 def change_autoplay(event: events.ValueChangeEventArguments) -> None:
@@ -467,11 +469,13 @@ def render_music_library_settings() -> None:
                 ui.label(t("audio_preferences_intro")).classes("text-sm leading-6 text-[var(--sy-muted)]")
             ui.icon("graphic_eq").classes("sy-settings-section-icon").props("aria-hidden=true")
 
-        sound_switch = ui.switch(t("interface_sounds"), value=sound_feedback_enabled()).props("name=interface-sounds").classes("mt-4")
+        sound_switch = ui.switch(t("interface_sounds"), value=sound_feedback_enabled()).props("name=interface-sounds").classes("mt-4 sy-tactile-toggle")
         autoplay_switch = ui.switch(
             t("music_autoplay"),
             value=music_autoplay_enabled(),
-        ).props("name=settings-music-autoplay data-testid=settings-music-autoplay")
+        ).props("name=settings-music-autoplay data-testid=settings-music-autoplay").classes(
+            "sy-tactile-toggle"
+        )
         ui.label(t("music_autoplay_hint")).classes("text-xs leading-5 text-[var(--sy-muted)]")
         sound_slider = ui.slider(min=0, max=100, value=round(preferred_sound_volume() * 100)).props(
             f'label aria-label="{attr(t("interface_sound_volume"))}"'
@@ -671,11 +675,13 @@ def render_guest_music_settings() -> None:
         sound_switch = ui.switch(
             t("interface_sounds"),
             value=sound_feedback_enabled(),
-        ).props("name=guest-interface-sounds").classes("mt-4")
+        ).props("name=guest-interface-sounds").classes("mt-4 sy-tactile-toggle")
         autoplay_switch = ui.switch(
             t("music_autoplay"),
             value=music_autoplay_enabled(),
-        ).props("name=guest-music-autoplay data-testid=guest-music-autoplay")
+        ).props("name=guest-music-autoplay data-testid=guest-music-autoplay").classes(
+            "sy-tactile-toggle"
+        )
         profile_select = ui.select(
             label=t("music_profile"),
             options={

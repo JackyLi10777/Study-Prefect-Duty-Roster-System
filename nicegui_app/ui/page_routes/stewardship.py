@@ -224,7 +224,10 @@ def handover_page() -> None:
                     t("open_backup_settings"),
                     icon="settings_backup_restore",
                     on_click=lambda: navigate_to("/settings"),
-                ).props("flat data-testid=acceptance-open-settings")
+                ).props(
+                    "flat data-testid=acceptance-open-settings "
+                    "data-sy-icon-motion-mode=rotary-navigation"
+                )
         ui.button(t("open_system_architecture"), icon="account_tree", on_click=lambda: navigate_to("/system-architecture")).props("flat").classes("self-start")
         render_reference_pager(previous=("/guide", "operator_guide"))
 

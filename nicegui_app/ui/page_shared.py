@@ -115,7 +115,10 @@ def _show_committed_without_backup(reference: str, *, recovery_required: bool = 
                     t("open_backup_settings"),
                     icon="settings_backup_restore",
                     on_click=lambda: (dialog.close(), navigate_to("/settings")),
-                ).props("data-testid=partial-backup-settings-action")
+                ).props(
+                    "data-testid=partial-backup-settings-action "
+                    "data-sy-icon-motion-mode=rotary-navigation"
+                )
     _delete_dialog_after_close(dialog)
     dialog.open()
 
@@ -732,7 +735,9 @@ def _render_storage_lifecycle(workflow) -> None:  # type: ignore[no-untyped-def]
                         ui.label(t(title_key)).classes("sy-storage-step-title")
                         ui.label(t(detail_key)).classes("sy-storage-step-copy")
             ui.label(t("storage_backup_verified") if backup_verified else t("storage_backup_attention")).classes("sy-storage-backup-note")
-            ui.button(t("open_backup_settings"), icon="settings_backup_restore", on_click=lambda: navigate_to("/settings")).props("flat").classes("mt-2")
+            ui.button(t("open_backup_settings"), icon="settings_backup_restore", on_click=lambda: navigate_to("/settings")).props(
+                "flat data-sy-icon-motion-mode=rotary-navigation"
+            ).classes("mt-2")
 
 
 def _render_operation_hint(body_key: str, *, icon: str = "tips_and_updates") -> None:
@@ -811,11 +816,14 @@ def _render_roster_route_state(
                 icon="arrow_back",
                 on_click=lambda: navigate_to(primary_path),
             ).props(f"color=primary data-testid={test_id}-primary")
+            secondary_props = f"outline color=primary data-testid={test_id}-secondary"
+            if secondary_icon == "settings_backup_restore":
+                secondary_props += " data-sy-icon-motion-mode=rotary-navigation"
             ui.button(
                 t(secondary_key),
                 icon=secondary_icon,
                 on_click=lambda: navigate_to(secondary_path),
-            ).props(f"outline color=primary data-testid={test_id}-secondary")
+            ).props(secondary_props)
 
 def _render_co_creation() -> None:
     """Render the shared, non-sensitive co-creation closing panel."""

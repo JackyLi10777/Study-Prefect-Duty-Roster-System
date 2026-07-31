@@ -67,6 +67,20 @@ SETTINGS_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-settings-dark.png"
 SETTINGS_MOBILE_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-settings-mobile.png"
 DEVOTIONAL_LIGHT_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-devotional-light.png"
 DEVOTIONAL_DARK_SCREENSHOT = PROJECT_ROOT / "logs" / "nicegui-devotional-dark.png"
+ROUTE_ATMOSPHERE_SLOTS = {
+    "/rosters": "weekly-operations",
+    "/adjustments": "weekly-operations",
+    "/prefects": "people-fairness",
+    "/audit": "people-fairness",
+    "/settings": "administration-recovery",
+    "/access-control": "administration-recovery",
+    "/support": "support-lifeline",
+}
+ROUTE_ATMOSPHERE_ASSETS = {
+    f"{slot}-{appearance}-v1.webp"
+    for slot in set(ROUTE_ATMOSPHERE_SLOTS.values())
+    for appearance in ("light", "dark")
+}
 COMPONENT_EVIDENCE_DIR = PROJECT_ROOT / "test-results" / "uiverse-components"
 COMPONENT_LIGHT_SCREENSHOT = COMPONENT_EVIDENCE_DIR / "desktop-light-components.png"
 COMPONENT_DARK_SCREENSHOT = COMPONENT_EVIDENCE_DIR / "desktop-dark-components.png"
@@ -230,6 +244,55 @@ def assert_status_tone_contrast(page) -> None:  # type: ignore[no-untyped-def]
         ratio = element_contrast_ratio(badge)
         assert ratio >= 4.5, f"{tone} status contrast was only {ratio:.2f}:1"
     fixture.evaluate("element => element.remove()")
+
+
+def assert_shell_atmosphere(
+    page,  # type: ignore[no-untyped-def]
+    *,
+    route: str,
+    appearance: str,
+) -> None:
+    """Verify one non-interactive route-family band and its resolved pair."""
+
+    slot = ROUTE_ATMOSPHERE_SLOTS[route]
+    expected_asset = f"{slot}-{appearance}-v1.webp"
+    band = page.locator(".sy-page-atmosphere")
+    band.wait_for(state="visible", timeout=10_000)
+    assert band.count() == 1
+    assert band.get_attribute("aria-hidden") == "true"
+    assert band.get_attribute("data-sy-atmosphere-slot") == slot
+    assert band.get_attribute("data-sy-atmosphere-presentation") == "shell"
+    assert band.locator("button,input,select,textarea,form,table,[role=dialog]").count() == 0
+    visual = band.evaluate(
+        """element => ({
+          background: getComputedStyle(element, '::before').backgroundImage,
+          pointerEvents: getComputedStyle(element, '::before').pointerEvents,
+          height: element.getBoundingClientRect().height,
+        })"""
+    )
+    assert expected_asset in visual["background"]
+    for other_asset in ROUTE_ATMOSPHERE_ASSETS - {expected_asset}:
+        assert other_asset not in visual["background"]
+    assert visual["pointerEvents"] == "none"
+    assert visual["height"] >= 90
+    page.wait_for_function(
+        """asset => performance.getEntriesByType('resource')
+          .some(entry => entry.name.endsWith(asset))""",
+        arg=expected_asset,
+        timeout=10_000,
+    )
+    loaded_route_assets = set(
+        page.evaluate(
+            """assets => performance.getEntriesByType('resource')
+              .map(entry => assets.find(asset => entry.name.endsWith(asset)))
+              .filter(Boolean)""",
+            sorted(ROUTE_ATMOSPHERE_ASSETS),
+        )
+    )
+    assert loaded_route_assets == {expected_asset}, (
+        f"{route} {appearance} loaded route-family assets outside its current slot/theme: "
+        f"{sorted(loaded_route_assets)}"
+    )
 
 
 def ensure_rendered_theme(page, target: str) -> None:  # type: ignore[no-untyped-def]
@@ -581,7 +644,10 @@ def main() -> None:
         route_progress = page.locator("#sy-route-progress")
         assert route_progress.count() == 1
         assert route_progress.get_attribute("data-active") == "false"
-        assert page.evaluate("typeof window.__syRouteProgress?.start === 'function'") is True
+        page.wait_for_function(
+            "typeof window.__syRouteProgress?.start === 'function'",
+            timeout=10_000,
+        )
         page.evaluate("window.__syRouteProgress.start()")
         assert route_progress.get_attribute("data-active") == "false"
         page.wait_for_function("document.querySelector('#sy-route-progress')?.dataset.active === 'true'")
@@ -751,7 +817,7 @@ def main() -> None:
         ) == "rgb(24, 63, 85)"
         assert "bg-primary" not in (page.locator(".sy-workbench .sy-tone-action").first.get_attribute("class") or "")
         assert_status_tone_contrast(page)
-        assert "devotional-sacred-light-v1.webp" in page.locator(".sy-daily-start").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
+        assert "devotional-sacred-light-v2.webp" in page.locator(".sy-daily-start").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "weekly-pulse-light-v1.webp" in page.locator(".sy-workbench").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "paper-fibre-light-v1.svg" in page.locator(".sy-main").evaluate(
             "element => getComputedStyle(element).backgroundImage"
@@ -829,9 +895,16 @@ def main() -> None:
         assert page.locator(".sy-devotional-reading-grid .sy-devotional-companion").count() == 3
         assert page.get_by_role("button", name="換一篇經文").count() == 1
         assert page.locator(".sy-devotional-tone-select").count() == 1
-        assert "devotional-sacred-light-v1.webp" in page.locator(".sy-chapel").evaluate(
+        assert "devotional-sacred-light-v2.webp" in page.locator(".sy-chapel").evaluate(
             "element => getComputedStyle(element, '::after').backgroundImage"
         )
+        for selector in (
+            ".sy-chapel .sy-verse",
+            ".sy-chapel .sy-devotional-reference",
+            ".sy-chapel .sy-verse-translation--chapel",
+            ".sy-chapel .sy-devotional-page-intro",
+        ):
+            assert element_contrast_ratio(page.locator(selector)) >= 4.5
         chapel_box = page.locator(".sy-chapel").bounding_box()
         reading_box = page.locator(".sy-devotional-reading").bounding_box()
         assert chapel_box is not None and reading_box is not None
@@ -851,10 +924,17 @@ def main() -> None:
             ("/adjustments", "請先建立正式名單"),
             ("/audit", "公平審核"),
             ("/handover", "交接指引"),
+            ("/settings", "系統設定"),
+            ("/access-control", "存取控制"),
+            ("/support", "報告問題"),
         ):
             response = page.goto(f"{BASE_URL}{path}", wait_until="domcontentloaded")
             assert response is not None and response.status == 200, path
             page.get_by_text(expected_text, exact=False).first.wait_for(timeout=10_000)
+            if path in ROUTE_ATMOSPHERE_SLOTS:
+                assert_shell_atmosphere(page, route=path, appearance="light")
+            else:
+                assert page.locator(".sy-page-atmosphere").count() == 0
             if path == "/rosters":
                 assert "empty-ready-light-v1.webp" in page.locator(".sy-empty-state--illustrated").evaluate(
                     "element => getComputedStyle(element).backgroundImage"
@@ -1371,7 +1451,7 @@ def main() -> None:
             f"dark active navigation contrast was {dark_active_navigation_contrast:.2f}:1 "
             f"for {dark_active_navigation_colours}"
         )
-        assert "devotional-sacred-dark-v1.webp" in page.locator(".sy-daily-start").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
+        assert "devotional-sacred-dark-v2.webp" in page.locator(".sy-daily-start").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "weekly-pulse-dark-v1.webp" in page.locator(".sy-workbench").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         assert "paper-fibre-dark-v1.svg" in page.locator(".sy-main").evaluate(
             "element => getComputedStyle(element).backgroundImage"
@@ -1406,11 +1486,22 @@ def main() -> None:
         page.goto(f"{BASE_URL}/devotional", wait_until="domcontentloaded")
         page.locator(".sy-devotional-page").wait_for(timeout=10_000)
         page.wait_for_timeout(450)
-        assert "devotional-sacred-dark-v1.webp" in page.locator(".sy-chapel").evaluate(
+        assert "devotional-sacred-dark-v2.webp" in page.locator(".sy-chapel").evaluate(
             "element => getComputedStyle(element, '::after').backgroundImage"
         )
         assert page.locator(".sy-devotional-reading-grid .sy-devotional-companion").count() == 3
+        for selector in (
+            ".sy-chapel .sy-verse",
+            ".sy-chapel .sy-devotional-reference",
+            ".sy-chapel .sy-verse-translation--chapel",
+            ".sy-chapel .sy-devotional-page-intro",
+        ):
+            assert element_contrast_ratio(page.locator(selector)) >= 4.5
         page.screenshot(path=str(DEVOTIONAL_DARK_SCREENSHOT), full_page=True)
+        for route in ("/rosters", "/prefects", "/settings", "/support"):
+            response = page.goto(f"{BASE_URL}{route}", wait_until="domcontentloaded")
+            assert response is not None and response.status == 200, route
+            assert_shell_atmosphere(page, route=route, appearance="dark")
         page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
         page.get_by_text("Data import", exact=True).click()
         page.get_by_text("Upload CSV/XLSX or paste JSON/CSV", exact=False).wait_for(timeout=10_000)
