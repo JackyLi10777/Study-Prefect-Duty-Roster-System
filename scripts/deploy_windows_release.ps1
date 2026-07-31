@@ -858,6 +858,66 @@ function Get-SingYinReleaseBundleFingerprint {
     }
 }
 
+function Get-SingYinPreviousReleaseIdentity {
+    param(
+        [Parameter(Mandatory = $true)][string]$HostRoot,
+        [Parameter(Mandatory = $true)][string]$TaskWorkingDirectory
+    )
+
+    $hostPath = [IO.Path]::GetFullPath($HostRoot).TrimEnd('\')
+    if ([string]::IsNullOrWhiteSpace($TaskWorkingDirectory)) {
+        throw "The owned startup task does not declare a working directory."
+    }
+    $workingDirectory = [IO.Path]::GetFullPath($TaskWorkingDirectory).TrimEnd('\')
+    if ([string]::Equals(
+        $workingDirectory,
+        $hostPath,
+        [StringComparison]::OrdinalIgnoreCase
+    )) {
+        return [pscustomobject]@{
+            Commit = Get-GitValue -Repository $hostPath -Arguments @("rev-parse", "HEAD")
+            ReleaseRef = $null
+            Source = "legacy-host-checkout"
+            Bundle = $null
+        }
+    }
+
+    $releaseRoot = Join-Path $hostPath "releases"
+    $bundlePath = Assert-SafeReleaseBundlePath `
+        -ReleaseRoot $releaseRoot `
+        -CandidatePath $workingDirectory
+    if (-not (Test-Path -LiteralPath $bundlePath -PathType Container)) {
+        throw "The startup task references a missing immutable release bundle."
+    }
+    $markerPath = Join-Path $bundlePath ".sing-yin-release.json"
+    if (-not (Test-Path -LiteralPath $markerPath -PathType Leaf)) {
+        throw "The startup task release bundle is missing its identity marker."
+    }
+
+    $marker = Get-Content -LiteralPath $markerPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $fingerprint = Get-SingYinReleaseBundleFingerprint -Path $bundlePath
+    if (
+        [int]$marker.schemaVersion -ne 2 -or
+        [string]$marker.releaseRef -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$' -or
+        [string]$marker.commit -notmatch '^[0-9a-f]{40}$' -or
+        [string]$marker.sourceTree -notmatch '^[0-9a-f]{40}$' -or
+        [string]$marker.environmentSha256 -notmatch '^[0-9a-f]{64}$' -or
+        [string]$marker.bundleContentSha256 -notmatch '^[0-9a-f]{64}$' -or
+        [int]$marker.bundleFileCount -lt 1 -or
+        [string]$marker.bundleContentSha256 -cne [string]$fingerprint.Sha256 -or
+        [int]$marker.bundleFileCount -ne [int]$fingerprint.FileCount
+    ) {
+        throw "The startup task release bundle identity marker is invalid or stale."
+    }
+
+    return [pscustomobject]@{
+        Commit = [string]$marker.commit
+        ReleaseRef = [string]$marker.releaseRef
+        Source = "immutable-release-marker"
+        Bundle = $bundlePath
+    }
+}
+
 function New-SingYinReleaseBundle {
     param(
         [Parameter(Mandatory = $true)][string]$Repository,
@@ -1084,6 +1144,8 @@ try {
     $startedAt = [DateTimeOffset]::UtcNow
     $releaseCommit = $null
     $previousCommit = $null
+    $previousReleaseRef = $null
+    $previousReleaseSource = $null
     $backupReport = $null
     $taskInitiallyRunning = $false
     $taskInitiallyEnabled = $false
@@ -1245,7 +1307,12 @@ try {
     if (-not [string]::IsNullOrWhiteSpace($hostStatus)) {
         throw "The installed host repository is not clean."
     }
-    $previousCommit = Get-GitValue -Repository $HostRoot -Arguments @("rev-parse", "HEAD")
+    $previousReleaseIdentity = Get-SingYinPreviousReleaseIdentity `
+        -HostRoot $HostRoot `
+        -TaskWorkingDirectory $previousTaskAction.WorkingDirectory
+    $previousCommit = [string]$previousReleaseIdentity.Commit
+    $previousReleaseRef = $previousReleaseIdentity.ReleaseRef
+    $previousReleaseSource = [string]$previousReleaseIdentity.Source
 
     Write-Step "Preflighting host and Worker gateway identity without changing the host"
     $currentHostEnvironment = Read-HostEnvironmentValues -EnvironmentPath $environmentPath
@@ -1467,6 +1534,8 @@ try {
         releaseRef = $ReleaseRef
         releaseCommit = $releaseCommit
         previousCommit = $previousCommit
+        previousReleaseRef = $previousReleaseRef
+        previousReleaseSource = $previousReleaseSource
         releaseBundle = $releaseBundlePath
         sourceFingerprint = [string]$currentFingerprint.fingerprint
         sourceFileCount = [int]$currentFingerprint.fileCount
@@ -1588,6 +1657,8 @@ try {
         releaseRef = $ReleaseRef
         releaseCommit = $releaseCommit
         previousCommit = $previousCommit
+        previousReleaseRef = $previousReleaseRef
+        previousReleaseSource = $previousReleaseSource
         releaseBundle = $releaseBundlePath
         failure = $failure
         nativeLog = [IO.Path]::GetFileName($script:NativeLogPath)

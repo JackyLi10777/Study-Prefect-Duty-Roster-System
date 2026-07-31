@@ -2,11 +2,11 @@
 
 **日期：** 2026-07-31
 
-**候選：** `codex/rc42-atmosphere-motion`
+**發布來源：** `codex/rc42-atmosphere-motion` → protected `main`／`c8201f33e454d9120c73386642cbf9d737391466` → `v1.2.0-rc.43`
 
-**基線：** clean `origin/main`／`22ebe1050721799d76c3adc5c52ab04e956da368`
+**開發基線：** clean `origin/main`／`22ebe1050721799d76c3adc5c52ab04e956da368`
 
-**狀態：** staged release candidate 已通過完整自動閘門及 Codex 視覺審核；等待 immutable commit／tag 與正式部署證據
+**狀態：** rc43 已通過完整自動閘門、Codex 視覺審核、immutable Origin 切換、Worker staged rollout 及 canonical smoke；首席導學風紀／教師顧問的受監督真人驗收仍待完成
 
 ## 變更邊界
 
@@ -38,12 +38,12 @@
 | tactile switch mouse／keyboard／touch／forced-colours | component＋mobile browser | 通過 |
 | 320／390／tablet／desktop、繁中／英文、Light／Dark | release browser matrix | 通過 |
 | Python、Deno、security、repository hygiene | staged＋formal release reports | 通過 |
-| Origin backup／isolated restore／health／readiness | Windows deployment report | 待部署 |
-| Worker 0%／version smoke／100%／canonical smoke | Worker deployment report | 待部署 |
+| Origin backup／isolated restore／health／readiness | `windows-release-deployment-v1.2.0-rc.43.json`＋獨立 task／marker 核對 | 通過 |
+| Worker 0%／version smoke／100%／canonical smoke | `cloudflare-worker-deployment-v1.2.0-rc.43.json`＋獨立 deployment-status 核對 | 通過 |
 
 ## 候選閘門證據
 
-- `logs/release-candidate-report.json`：`status=pass`，SHA-256 `416b9e0586173c45d38cd1cb520b98efd9921f4482dc5fcce11bdba2a11d6ca0`。
+- `logs/release-candidate-report.json`：`status=pass`，綁定 `v1.2.0-rc.43`／commit `c8201f33e454d9120c73386642cbf9d737391466`／tree `11f759908218aee64c9d49024759beadf8ff9f5b`；SHA-256 `6e79ded5ae289bd9c5ecb775aa635109cdbbd12a2b0ebf7f145d72378ab848e9`。
 - 15 個 required checks 全部通過，包括 repository hygiene、security gates、53／53 Worker tests、完整 Python suite、主題 16-case browser matrix、桌面／手機 browser、真實 write pipeline、Guest parity／隔離及 partial-backup recovery。
 - Resource Timing 證明每個 shell atmosphere route 只下載當前主題資產；候選期間曾偵測到 inactive companion 被下載，修正 head-level theme prepaint 後才放行。
 - Runtime performance：初始傳輸 1.26 MiB、route-cycle heap 增長 0.46 MiB、DOM nodes `+0`、listeners `+0`。
@@ -60,4 +60,9 @@
 
 ## 發布真相
 
-在正式 tag、backup、isolated restore、origin switch、Worker staged promotion 及 canonical checks 完成前，production 仍是 `PROJECT_STATUS.md` 頂部所列 rc41 pair。本文件不得用「已上線」代替實際 deployment evidence。
+- Origin 排程工作由 `SingYinRosterSvc` 執行 `C:\SingYinRoster\releases\v1.2.0-rc.43-c8201f33e454-5c891432a1d8\.venv\Scripts\python.exe`；marker 的 release／commit／tree 與正式報告一致。
+- 切換前快照 `20260731-013103-079514-manual_verified_backup.sqlite3`／SHA-256 `f07306c89e79a610b40105627620c1603b707c39a7ab4cc537217df61c358e1c` 通過隔離還原、公平、行數及 restore-audit 核對。
+- Origin `/healthz` 為 `ok`；`/readyz` 為 `ready`、`writeReady=true`、`maintenance=false`、`recoveryRequired=false`、`pendingBackupObligations=0`。
+- Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 經 0% candidate smoke 後承接 100% 流量；舊 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` 是第一 edge rollback。
+- `v1.2.0-rc.42` 與 rc43 同 commit／tree，但沒有 source-bound formal report，亦未部署；rc43 才是本輪唯一正式發布身份。
+- 已封存的 rc43 Windows report 之 legacy `previousCommit` 取自 inactive host checkout；實際 pre-switch task marker 為 rc41／`74072b0175ff64807312a8cc5b9cd016b6628210`，回滾以保存的 task action 為準。Post-rc43 deployer 已改為驗證排程工作所指 bundle 的完整 marker／fingerprint，並為未來報告記錄 `previousReleaseRef`／`previousReleaseSource`。

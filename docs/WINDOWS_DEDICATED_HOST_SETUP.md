@@ -1,6 +1,6 @@
 # Windows 專用主機完整設定手冊
 
-> **主機來源真相（2026-07-31）：** `C:\SingYinRoster` 正運行 clean annotated `v1.2.0-rc.41`／`74072b0175ff64807312a8cc5b9cd016b6628210`，canonical Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` 承接 100% 流量；健康及 readiness 均通過。受控部署前備份 `20260730-160630-793049-manual_verified_backup.sqlite3`、隔離還原、資料行數、公平對帳及 restore audit 已核對。第一層配對回退是 rc40／`2ec900a5ef1c021183717dfa648ef76b55452ffb` 與 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`；rc39／`80b9de7ea8abce57b67c6041e580f915a819315e`、rc35／`570e29f745eef7c1995635d1b187021a8fec6ea4` 與 Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` 是更深復原證據。真人驗收未完成。
+> **主機來源真相（2026-07-31）：** owned scheduled task 正運行 clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466` 的 immutable bundle，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 承接 100% 流量；健康及 readiness 均通過。受控部署前備份 `20260731-013103-079514-manual_verified_backup.sqlite3`、隔離還原、資料行數、公平對帳及 restore audit 已核對。第一層配對回退是 rc41／`74072b0175ff64807312a8cc5b9cd016b6628210` 與 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；rc40 與其 Worker 是第二層回退。inactive `C:\SingYinRoster` Git checkout 的 HEAD 不是 runtime 身分證據；須讀取 scheduled-task target 與 `.sing-yin-release.json` marker。真人驗收未完成。
 
 **適用系統：** Sing Yin Study Prefect Duty Roster System（NiceGUI + SQLite）
 **讀者：** 完全不懂程式、第一次設定電腦的人
@@ -12,7 +12,7 @@
 
 > **SSH 維護狀態（2026-07-17）：** Windows OpenSSH Server 已以金鑰限定模式運行，只監聽 `127.0.0.1:22` 及 `[::1]:22`；密碼、互動式登入、轉發及 Windows 公開入站規則均停用。安裝、驗證、金鑰輪換及緊急停用程序見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。這是維護入口，不是另一個使用者網站。
 >
-> **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式部署不可變標籤 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`。`Sing Yin Roster Host` 由非管理員 `SingYinRosterSvc` 帳戶運行；實際 loopback endpoint 由受保護 `.env` 的 `SING_YIN_HOST`／`SING_YIN_PORT` 決定，現為 `127.0.0.1:8080`。296 個 runtime 檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 gate；備份 `20260727-023041-069097-manual_verified_backup.sqlite3` 及隔離還原已通過。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量；origin readiness 與 canonical rendered smoke 已核對。在當時的來源漂移狀態下，這組乾淨 rc30／`11763f08…` 是第一個已知、已驗證的復原目標；目前第一層回退是本頁頂部記錄的 rc35 origin／Worker，rc27／rc30 是更深歷史。
+> **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式部署不可變標籤 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`。`Sing Yin Roster Host` 由非管理員 `SingYinRosterSvc` 帳戶運行；實際 loopback endpoint 由受保護 `.env` 的 `SING_YIN_HOST`／`SING_YIN_PORT` 決定，現為 `127.0.0.1:8080`。296 個 runtime 檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 gate；備份 `20260727-023041-069097-manual_verified_backup.sqlite3` 及隔離還原已通過。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量；origin readiness 與 canonical rendered smoke 已核對。在當時的來源漂移狀態下，這組乾淨 rc30／`11763f08…` 是第一個已知、已驗證的復原目標；目前第一層配對回退是本頁頂部記錄的 rc41 origin／Worker，rc40／rc39／rc35／rc30／rc27 是更深歷史。
 >
 > **歷史 rc21 受控部署紀錄：**annotated tag `v1.2.0-rc.21`／commit `f7df4d0170e6bacd65340cc893992a17b5ed4aed` 曾以 fingerprint `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate，並完成受控 Windows 切換。切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／SHA-256 `fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已通過 checksum、公平對帳、行數核對、還原審計及隔離還原。不要把 branch、未提交 source 或一般開發樹手動複製進正式主機；切換前發現的 rc20 主機漂移已封存於 stash commit `56e2f5148f4be1444c45d31c25b81f5a7df1ba03`，不得直接套回 production。這段只保留歷史證據；目前 rc27／rc26／rc24 層級以上方狀態為準。
 
@@ -23,7 +23,7 @@
 完成本手冊後，運作方式如下：
 
 1. 一部 Windows 電腦長期保存程式、SQLite 資料庫、備份、日誌、PDF 及音樂。
-2. NiceGUI origin 只在這部電腦的受保護 loopback endpoint 開放（目前為 `127.0.0.1:8080`）；日常使用者從唯一正式 `workers.dev` 網站進入。目前 rc41 訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace；`/guest`、`/try` 只作兼容重定向。管理員登入後仍留在同一網址。
+2. NiceGUI origin 只在這部電腦的受保護 loopback endpoint 開放（目前為 `127.0.0.1:8080`）；日常使用者從唯一正式 `workers.dev` 網站進入。目前 rc43 訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace；`/guest`、`/try` 只作兼容重定向。管理員登入後仍留在同一網址。
 3. 電腦開機後，可由 Windows 工作排程器在背景自動啟動系統。
 4. 初次安裝先驗證 loopback origin，再依 Cloudflare 手冊連接既有 Tunnel、VPC Service、Access 及 Worker；始終不設定路由器轉發或公開 NiceGUI 連接埠。
 5. 即使電腦沒有互聯網，名單、排班、PDF、備份及還原仍可使用；YouTube 音樂除外。
@@ -352,7 +352,7 @@ SING_YIN_LOG_BACKUP_COUNT=5
 
 本機模式第一次啟動會自動建立 `data\runtime\.nicegui-storage-secret`，不需要手動輸入 secret，也不要打開、分享或修改該檔案。
 
-完成本機驗證後，正式啟用程序才會把受保護主機設定切換為 `server` 模式，只監聽由 `SING_YIN_HOST`／`SING_YIN_PORT` 指定的 loopback endpoint，並啟用 Access、Viewer gateway 與獨立 `SING_YIN_STORAGE_SECRET`。不要手動逐項拼湊正式設定；依本手冊及 [Cloudflare 遠端存取手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 的受控啟用／核對程序一次完成。目前 rc41 主機已處於這個 server-mode／loopback 狀態。
+完成本機驗證後，正式啟用程序才會把受保護主機設定切換為 `server` 模式，只監聽由 `SING_YIN_HOST`／`SING_YIN_PORT` 指定的 loopback endpoint，並啟用 Access、Viewer gateway 與獨立 `SING_YIN_STORAGE_SECRET`。不要手動逐項拼湊正式設定；依本手冊及 [Cloudflare 遠端存取手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 的受控啟用／核對程序一次完成。目前 rc43 主機已處於這個 server-mode／loopback 狀態。
 
 ---
 
@@ -628,60 +628,55 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 腳本已核對 annotated tag、`origin/main` ancestry 及正式 fingerprint，建立正式已驗證備份並完成隔離還原，才進入 maintenance 及停止工作；其後安裝 exact bundle、執行 additive migration `0011_assist_assignment_mode`、重新啟動並核對 `/healthz`／`/readyz`。實際備份檔名、SHA-256 及切換結果已由 `logs\windows-release-deployment-v1.2.0-rc.20.json` 寫入交接紀錄；本段只保留作可追溯的歷史程序。
 
-rc20 沒有 Worker source／設定變更，所以已完成的 Windows origin 切換沒有執行 Worker 部署；canonical Worker 保持 verified version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`。以下手動步驟只保留作安裝者理解及未來經批准候選的核對清單，不可用來重跑 rc20，也不可與正在執行的受控腳本同時操作。
+rc20 沒有 Worker source／設定變更，所以已完成的 Windows origin 切換沒有執行 Worker 部署；canonical Worker 當時保持 verified version `f780feb2-671a-4feb-b6f6-b7f9d5b31e89`。以下改列目前的不可變 bundle 程序。禁止再以停止排程、切換 `C:\SingYinRoster` checkout、就地 `pip install` 的舊手動方法更新正式服務；該 checkout 可以落後，且不代表實際 runtime。
 
-### 步驟 12.1：先建立已驗證離機備份
+### 步驟 12.1：準備不可變候選
 
-完成第 11 節全部步驟。
+1. 在乾淨候選 checkout 建立並推送獲批准的 annotated tag；不可猜測 `main` 或使用未提交 source。
+2. 以候選環境執行 `python -X utf8 scripts\verify_update.py --release`，確認 source-bound report 的 tag、commit、tree、fingerprint、檔案數及全部 required checks 一致。
+3. 完成第 11 節的離機備份；正式 deployer 仍會另建部署前快照並做隔離還原。
 
-### 步驟 12.2：停止排程工作
+### 步驟 12.2：只使用受控部署腳本
 
-1. 開啟工作排程器。
-2. 找到 `Sing Yin Roster Host`。
-3. 按右鍵→「結束」。
-4. 確認瀏覽器重新整理後已不能進入網站。
-
-### 步驟 12.3：切換至已驗證的發布標籤
-
-開啟普通 PowerShell：
+在已提升權限的 PowerShell 從候選 checkout 執行；以下 placeholder 必須換成已核准的實際路徑與標籤：
 
 ```powershell
-Set-Location C:\SingYinRoster
-git status --short
-$PreviousCommit = (git rev-parse HEAD).Trim()
-```
-
-正常情況不會列出程式檔修改。如果看到不明檔案或 `M`、`D`，先停止，不要執行 reset 或刪除，交給維護者檢查。
-
-先向維護者取得本次已通過 GitHub Quality gate、CodeQL 及正式候選 gate 的獲批准 annotated tag。歷史 rc20 的 exact 值是 `v1.2.0-rc.20`；現行主機已是 rc39，未來更新必須使用新的獲批准標籤，不可照抄歷史值或自行猜測 `main` 是否已完成驗證。確認沒有不明修改後：
-
-```powershell
+$CandidateRoot = "<clean-candidate-checkout>"
 $ReleaseRef = "<next-approved-annotated-tag>"
-git fetch --prune --tags origin
-$ReleaseCommit = (git rev-parse "$ReleaseRef^{commit}").Trim()
-git merge-base --is-ancestor $ReleaseCommit origin/main
-if ($LASTEXITCODE -ne 0) { throw "發布標籤不在已推送的 origin/main 內。" }
-git switch --detach $ReleaseRef
-if ((git rev-parse HEAD).Trim() -ne $ReleaseCommit) { throw "目前程式與發布標籤不一致。" }
-git status --short
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File "$CandidateRoot\scripts\deploy_windows_release.ps1" `
+  -SourceRoot $CandidateRoot `
+  -HostRoot C:\SingYinRoster `
+  -ReleaseRef $ReleaseRef `
+  -TaskName "Sing Yin Roster Host" `
+  -RuntimeUser SingYinRosterSvc
 ```
 
-`$ReleaseCommit` 必須能解析為 commit，最後一條正常情況不會輸出任何項目。這些命令只從 GitHub 下載及切換已驗證程式，不會上載或刪除本機 `.env`、SQLite、備份、日誌或音樂。保留 `$PreviousCommit` 作回退證據；回退時切回該 commit，禁止使用 `git reset --hard`。
+腳本在停止服務前核對正式報告、來源指紋、host／Worker identity parity、主機工作樹、排程 owner 及現有 task target。它從排程工作的實際 immutable bundle marker 取得上一版本，驗證整個 bundle fingerprint，建立新 bundle／獨立 `.venv`、正式備份及隔離還原，最後原子切換排程；不得同時手動停止、安裝套件或切換 checkout。
 
-### 步驟 12.4：更新 Python 套件
+### 步驟 12.3：核對實際 runtime 身分
+
+部署成功後以提升權限 PowerShell 讀取排程 action，不能以 `C:\SingYinRoster` Git HEAD 代替：
 
 ```powershell
-C:\SingYinRoster\.venv\Scripts\python.exe -m pip install --require-hashes -r C:\SingYinRoster\requirements.lock
+$Task = Get-ScheduledTask -TaskName "Sing Yin Roster Host"
+$Action = @($Task.Actions)[0]
+$Action | Select-Object Execute, Arguments, WorkingDirectory
+Get-Content -LiteralPath (Join-Path $Action.WorkingDirectory ".sing-yin-release.json") -Raw
 ```
 
-### 步驟 12.5：重新啟動及核對
+`Execute`、`WorkingDirectory`、marker 的 `releaseRef`／`commit`／`sourceTree`／bundle hash 必須與 Windows deployment report 和 source-bound report 一致。未來報告亦須以 `previousReleaseRef`／`previousReleaseSource` 說明前一 task target；rc43 的歷史報告在修正前已封存，因此其舊 `previousCommit` 不可單獨作回退證據。
 
-1. 在工作排程器對 `Sing Yin Roster Host` 按右鍵→「執行」。
-2. 開啟 `http://127.0.0.1:8080`。
-3. 執行健康檢查。
-4. 核對名單、最近一份週表和最新備份仍可讀。
-5. 下載一份測試 PDF，確認中文正常顯示。
-6. 在 `C:\SingYinRoster` 執行 `git rev-parse --short HEAD` 並把短版 commit 記入交接紀錄；這個值必須與本次已驗證、已發布的 commit 相同。`/healthz` 正常只證明程式與資料庫可回應，不能證明畫面已更新到最新原始碼。
+### 步驟 12.4：核對資料、健康及報告
+
+1. 確認 deployment JSON 為 `pass`，正式備份檔名、SHA-256、隔離還原、公平、行數及 restore audit 全部成功。
+2. 核對 `http://127.0.0.1:8080/healthz` 與 `/readyz`；必須為 healthy／ready、`writeReady=true`，且沒有 maintenance、recovery 或 pending backup obligation。
+3. 核對排程由 `SingYinRosterSvc` 運行，實際 Python process command line 指向同一不可變 bundle。
+4. 核對名單、最近週表、最新備份及一份中文 PDF；再依正式裝置矩陣驗收畫面。單獨 HTTP 200 不足以接受發布。
+
+### 步驟 12.5：按變更範圍處理 Worker
+
+若 Worker source 或設定改變，依 Cloudflare 文件先建立 0% candidate，對指定 version 完成 health／entrance／Viewer smoke，再升至 100% 並重做 canonical 核對。若 Worker 未變，明確記錄沿用版本及原因，不做無意義部署。任何失敗都使用受控 rollback，不可手動覆寫正式 bundle。
 
 rc20 的自動化裝置矩陣已包含手機／平板／桌面與 accessibility，但 origin 切換後仍要依[正式驗收證據矩陣](ACCEPTANCE_EVIDENCE.md)在 canonical 網址核對 Assist 模式、可值班日、320×760／390×844 首屏、200% zoom／256×700 reflow、軟鍵盤、route focus、44px standalone targets、768×1024／820×1180／1024×768／1440×1024、light／dark、reduced motion及 forced colours。任何一項失敗都不可只因 `/healthz`／`/readyz` 正常而接受發布。
 
@@ -689,7 +684,7 @@ rc20 的自動化裝置矩陣已包含手機／平板／桌面與 accessibility�
 
 1. 立即停止接受正式寫入，記錄時間、canonical route、裝置、release tag／commit、Worker version 及非敏感畫面；不要重複提交可能已完成的操作。
 2. 先閱讀 Windows／Worker deployment JSON 的 rollback `attempted`、`succeeded`、previous commit／version。受控腳本已開始回退時，不要同時再跑第二次或手動覆寫檔案。
-3. 若目前 rc41 origin 發現回歸，由發布維護者讓受控 clean-bundle 流程依 deployment report 回復 rc40／`2ec900a5ef1c021183717dfa648ef76b55452ffb`，並把 Worker traffic 恢復至 `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`。更舊來源只在 rc40 不能安全恢復且事故負責人批准時使用。禁止 `git reset --hard`、直接複製開發樹或留下未經證明的混合版本。
+3. 若目前 rc43 origin 發現回歸，由發布維護者讓受控 clean-bundle 流程依 captured task target 回復 rc41／`74072b0175ff64807312a8cc5b9cd016b6628210`，並把 Worker traffic 恢復至 `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`。rc43 的歷史 deployment report 在 reporter 修正前已封存，其 legacy `previousCommit` 不可單獨作 rollback 身分；以 captured task target、marker 及 fingerprint 為準。後續報告則必須提供已驗證的 `previousReleaseRef`／`previousReleaseSource`。更舊來源只在 rc41 不能安全恢復且事故負責人批准時使用。禁止 `git reset --hard`、直接複製開發樹或留下未經證明的混合版本。
 4. 回退後核對實際回退層、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出和完整使用者流程。
 5. 只有上述結果全部一致才恢復操作；不能證明 rollback 成功時保持 maintenance／唯讀並交由 IT 處理。
 

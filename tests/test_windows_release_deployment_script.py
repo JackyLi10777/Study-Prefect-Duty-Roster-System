@@ -117,6 +117,59 @@ try {{
     return json.loads(json_lines[-1])
 
 
+def _run_previous_release_identity(
+    host_root: Path,
+    task_working_directory: Path,
+) -> dict[str, object]:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production host script")
+    escaped_host = str(host_root).replace("'", "''")
+    escaped_working_directory = str(task_working_directory).replace("'", "''")
+    function_source = "\n".join(
+        (
+            _powershell_function_source("Assert-SafeReleaseBundlePath"),
+            _powershell_function_source("Get-SingYinReleaseBundleFingerprint"),
+            _powershell_function_source("Get-SingYinPreviousReleaseIdentity"),
+        )
+    )
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+{function_source}
+try {{
+    $identity = Get-SingYinPreviousReleaseIdentity `
+        -HostRoot '{escaped_host}' `
+        -TaskWorkingDirectory '{escaped_working_directory}'
+    [ordered]@{{
+        ok = $true
+        commit = [string]$identity.Commit
+        releaseRef = [string]$identity.ReleaseRef
+        source = [string]$identity.Source
+        bundle = [string]$identity.Bundle
+    }} | ConvertTo-Json -Compress
+}} catch {{
+    [ordered]@{{
+        ok = $false
+        error = [string]$_.Exception.Message
+    }} | ConvertTo-Json -Compress
+}}
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8-sig",
+        errors="replace",
+    )
+
+    assert result.returncode == 0, result.stderr
+    json_lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
+    assert json_lines, f"PowerShell identity check emitted no JSON payload: {result.stdout!r}"
+    return json.loads(json_lines[-1])
+
+
 def _worker_configuration(
     *,
     port: str = "8080",
@@ -308,6 +361,84 @@ def test_release_bundle_fingerprint_detects_content_changes_and_ignores_marker(
     assert changed["ok"] is True
     assert changed["fileCount"] == 2
     assert changed["sha256"] != first["sha256"]
+
+
+def test_previous_release_identity_comes_from_verified_task_bundle(
+    tmp_path: Path,
+) -> None:
+    host_root = tmp_path / "host"
+    bundle = host_root / "releases" / "v1.2.0-rc.41-example"
+    bundle.mkdir(parents=True)
+    (bundle / "app.py").write_text("print('release')\n", encoding="utf-8")
+    fingerprint = _run_bundle_fingerprint(bundle)
+    marker = {
+        "schemaVersion": 2,
+        "releaseRef": "v1.2.0-rc.41",
+        "commit": "7" * 40,
+        "sourceTree": "8" * 40,
+        "environmentSha256": "9" * 64,
+        "bundleContentSha256": fingerprint["sha256"],
+        "bundleFileCount": fingerprint["fileCount"],
+    }
+    (bundle / ".sing-yin-release.json").write_text(
+        json.dumps(marker),
+        encoding="utf-8",
+    )
+
+    identity = _run_previous_release_identity(host_root, bundle)
+
+    assert identity == {
+        "ok": True,
+        "commit": "7" * 40,
+        "releaseRef": "v1.2.0-rc.41",
+        "source": "immutable-release-marker",
+        "bundle": str(bundle),
+    }
+
+
+def test_previous_release_identity_rejects_a_tampered_task_bundle(
+    tmp_path: Path,
+) -> None:
+    host_root = tmp_path / "host"
+    bundle = host_root / "releases" / "v1.2.0-rc.41-example"
+    bundle.mkdir(parents=True)
+    app = bundle / "app.py"
+    app.write_text("print('release')\n", encoding="utf-8")
+    fingerprint = _run_bundle_fingerprint(bundle)
+    marker = {
+        "schemaVersion": 2,
+        "releaseRef": "v1.2.0-rc.41",
+        "commit": "7" * 40,
+        "sourceTree": "8" * 40,
+        "environmentSha256": "9" * 64,
+        "bundleContentSha256": fingerprint["sha256"],
+        "bundleFileCount": fingerprint["fileCount"],
+    }
+    (bundle / ".sing-yin-release.json").write_text(
+        json.dumps(marker),
+        encoding="utf-8",
+    )
+    app.write_text("print('tampered')\n", encoding="utf-8")
+
+    identity = _run_previous_release_identity(host_root, bundle)
+
+    assert identity["ok"] is False
+    assert "identity marker is invalid or stale" in str(identity["error"])
+
+
+def test_deployment_reports_previous_identity_from_the_task_target() -> None:
+    source = _source()
+    assignment = source.index(
+        "$previousReleaseIdentity = Get-SingYinPreviousReleaseIdentity",
+    )
+    task_capture = source.index("$previousTaskAction = [pscustomobject]@{")
+
+    assert task_capture < assignment
+    assert "-TaskWorkingDirectory $previousTaskAction.WorkingDirectory" in source
+    assert "$previousCommit = [string]$previousReleaseIdentity.Commit" in source
+    assert "previousReleaseRef = $previousReleaseRef" in source
+    assert "previousReleaseSource = $previousReleaseSource" in source
+    assert '$previousCommit = Get-GitValue -Repository $HostRoot -Arguments @("rev-parse", "HEAD")' not in source
 
 
 def test_deployment_rotates_runtime_task_credential_without_persisting_it() -> None:
