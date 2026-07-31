@@ -12,7 +12,7 @@ compromise. Every high-risk operation must fail closed, limit blast radius,
 leave diagnosable evidence, and remain recoverable from verified backups and an
 immutable release.
 
-> **Current boundary (2026-07-31):** production is clean annotated `v1.2.0-rc.41` at origin commit `74072b0175ff64807312a8cc5b9cd016b6628210` with Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`. The R5／R6／R7 controls, Guest isolation and honest waiting-state contracts described below are live in this paired release. The first paired rollback is rc40 at commit `2ec900a5ef1c021183717dfa648ef76b55452ffb` with Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`; rc39／`80b9de7ea8abce57b67c6041e580f915a819315e`, rc35／`570e29f745eef7c1995635d1b187021a8fec6ea4` and Worker `d7069f99-81b4-4388-aa28-383b58bfc68f` remain deeper recovery evidence. Supervised acceptance is pending.
+> **Current boundary (2026-07-31):** production is clean annotated `v1.2.0-rc.43` at origin commit `c8201f33e454d9120c73386642cbf9d737391466` with Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d`. The R5／R6／R7 controls, Guest isolation, honest waiting-state contracts and atmosphere/motion presentation changes described below are live in this paired release. The first paired rollback is rc41 at commit `74072b0175ff64807312a8cc5b9cd016b6628210` with Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`; rc40 and its Worker remain the second pair. Rc42 is source-only and was never deployed. Supervised acceptance is pending.
 
 ## 1. 資產及資料分類 / Assets and data classes
 

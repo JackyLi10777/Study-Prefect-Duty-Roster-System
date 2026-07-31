@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -115,6 +116,134 @@ try {{
     json_lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
     assert json_lines, f"PowerShell fingerprint emitted no JSON payload: {result.stdout!r}"
     return json.loads(json_lines[-1])
+
+
+def _run_previous_release_identity(
+    repository: Path,
+    host_root: Path,
+    task_working_directory: Path,
+    expected_environment_hash: str,
+) -> dict[str, object]:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production host script")
+    escaped_repository = str(repository).replace("'", "''")
+    escaped_host = str(host_root).replace("'", "''")
+    escaped_working_directory = str(task_working_directory).replace("'", "''")
+    function_source = "\n".join(
+        (
+            _powershell_function_source("Get-GitValue"),
+            _powershell_function_source("Assert-ImmutableReleaseTag"),
+            _powershell_function_source("Assert-SafeReleaseBundlePath"),
+            _powershell_function_source("Get-SingYinReleaseBundleFingerprint"),
+            _powershell_function_source("Get-SingYinPreviousReleaseIdentity"),
+        )
+    )
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+{function_source}
+try {{
+    $identity = Get-SingYinPreviousReleaseIdentity `
+        -Repository '{escaped_repository}' `
+        -HostRoot '{escaped_host}' `
+        -TaskWorkingDirectory '{escaped_working_directory}' `
+        -ExpectedEnvironmentHash '{expected_environment_hash}'
+    [ordered]@{{
+        ok = $true
+        commit = [string]$identity.Commit
+        releaseRef = [string]$identity.ReleaseRef
+        source = [string]$identity.Source
+        bundle = [string]$identity.Bundle
+    }} | ConvertTo-Json -Compress
+}} catch {{
+    [ordered]@{{
+        ok = $false
+        error = [string]$_.Exception.Message
+    }} | ConvertTo-Json -Compress
+}}
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8-sig",
+        errors="replace",
+    )
+
+    assert result.returncode == 0, result.stderr
+    json_lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
+    assert json_lines, f"PowerShell identity check emitted no JSON payload: {result.stdout!r}"
+    return json.loads(json_lines[-1])
+
+
+def _git(repository: Path, *arguments: str) -> str:
+    result = subprocess.run(
+        ["git", *arguments],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    return result.stdout.strip()
+
+
+def _create_trusted_release_bundle(
+    tmp_path: Path,
+) -> tuple[Path, Path, Path, dict[str, object], str]:
+    repository = tmp_path / "repository"
+    remote = tmp_path / "remote.git"
+    repository.mkdir()
+    _git(repository, "init", "--initial-branch=main")
+    _git(repository, "config", "user.name", "Release Test")
+    _git(repository, "config", "user.email", "release-test@example.invalid")
+    (repository / "app.py").write_text("print('release')\n", encoding="utf-8")
+    _git(repository, "add", "app.py")
+    _git(repository, "commit", "-m", "Create trusted release")
+    release_ref = "v1.2.0-rc.41"
+    _git(repository, "tag", "-a", release_ref, "-m", "Trusted release")
+    subprocess.run(
+        ["git", "init", "--bare", str(remote)],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    _git(repository, "remote", "add", "origin", str(remote))
+    _git(repository, "push", "origin", "main", "--tags")
+
+    commit = _git(repository, "rev-parse", f"refs/tags/{release_ref}^{{commit}}")
+    source_tree = _git(repository, "rev-parse", f"{commit}^{{tree}}")
+    environment_bytes = b"SING_YIN_APP_MODE=official\r\n"
+    environment_hash = hashlib.sha256(environment_bytes).hexdigest()
+    host_root = tmp_path / "host"
+    host_root.mkdir()
+    (host_root / ".env").write_bytes(environment_bytes)
+    bundle = (
+        host_root
+        / "releases"
+        / f"{release_ref}-{commit[:12]}-{environment_hash[:12]}"
+    )
+    bundle.mkdir(parents=True)
+    app = bundle / "app.py"
+    app.write_text("print('release')\n", encoding="utf-8")
+    fingerprint = _run_bundle_fingerprint(bundle)
+    marker: dict[str, object] = {
+        "schemaVersion": 2,
+        "releaseRef": release_ref,
+        "commit": commit,
+        "sourceTree": source_tree,
+        "environmentSha256": environment_hash,
+        "bundleContentSha256": fingerprint["sha256"],
+        "bundleFileCount": fingerprint["fileCount"],
+    }
+    (bundle / ".sing-yin-release.json").write_text(
+        json.dumps(marker),
+        encoding="utf-8",
+    )
+    return repository, host_root, bundle, marker, environment_hash
 
 
 def _worker_configuration(
@@ -308,6 +437,130 @@ def test_release_bundle_fingerprint_detects_content_changes_and_ignores_marker(
     assert changed["ok"] is True
     assert changed["fileCount"] == 2
     assert changed["sha256"] != first["sha256"]
+
+
+def test_previous_release_identity_comes_from_verified_task_bundle(
+    tmp_path: Path,
+) -> None:
+    repository, host_root, bundle, marker, environment_hash = (
+        _create_trusted_release_bundle(tmp_path)
+    )
+
+    identity = _run_previous_release_identity(
+        repository,
+        host_root,
+        bundle,
+        environment_hash,
+    )
+
+    assert identity == {
+        "ok": True,
+        "commit": marker["commit"],
+        "releaseRef": marker["releaseRef"],
+        "source": "immutable-release-marker",
+        "bundle": str(bundle),
+    }
+
+
+def test_previous_release_identity_rejects_a_tampered_task_bundle(
+    tmp_path: Path,
+) -> None:
+    repository, host_root, bundle, _, environment_hash = (
+        _create_trusted_release_bundle(tmp_path)
+    )
+    app = bundle / "app.py"
+    app.write_text("print('tampered')\n", encoding="utf-8")
+
+    identity = _run_previous_release_identity(
+        repository,
+        host_root,
+        bundle,
+        environment_hash,
+    )
+
+    assert identity["ok"] is False
+    assert "identity marker is invalid or stale" in str(identity["error"])
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    (
+        ("releaseRef", "v1.2.0-rc.40"),
+        ("commit", "a" * 40),
+        ("sourceTree", "b" * 40),
+        ("environmentSha256", "c" * 64),
+    ),
+)
+def test_previous_release_identity_rejects_marker_identity_tampering(
+    tmp_path: Path,
+    field: str,
+    replacement: str,
+) -> None:
+    repository, host_root, bundle, marker, environment_hash = (
+        _create_trusted_release_bundle(tmp_path)
+    )
+    marker[field] = replacement
+    (bundle / ".sing-yin-release.json").write_text(
+        json.dumps(marker),
+        encoding="utf-8",
+    )
+
+    identity = _run_previous_release_identity(
+        repository,
+        host_root,
+        bundle,
+        environment_hash,
+    )
+
+    assert identity["ok"] is False
+
+
+def test_previous_release_identity_rejects_a_renamed_release_bundle(
+    tmp_path: Path,
+) -> None:
+    repository, host_root, bundle, _, environment_hash = (
+        _create_trusted_release_bundle(tmp_path)
+    )
+    renamed_bundle = bundle.with_name(f"{bundle.name}-renamed")
+    bundle.rename(renamed_bundle)
+
+    identity = _run_previous_release_identity(
+        repository,
+        host_root,
+        renamed_bundle,
+        environment_hash,
+    )
+
+    assert identity["ok"] is False
+    assert "trusted tag or environment evidence" in str(identity["error"])
+
+
+def test_deployment_reports_previous_identity_from_the_task_target() -> None:
+    source = _source()
+    assignment = source.index(
+        "$previousReleaseIdentity = Get-SingYinPreviousReleaseIdentity",
+    )
+    task_capture = source.index("$previousTaskAction = [pscustomobject]@{")
+
+    assert task_capture < assignment
+    assert "-Repository $SourceRoot" in source[assignment : assignment + 500]
+    assert "-TaskWorkingDirectory $previousTaskAction.WorkingDirectory" in source
+    assert "-ExpectedEnvironmentHash $previousEnvironmentHash" in source
+    assert "$trustedCommit = Assert-ImmutableReleaseTag" in source
+    assert '[string]$marker.sourceTree -cne $trustedTree' in source
+    assert (
+        '[string]$marker.environmentSha256 -cne $ExpectedEnvironmentHash'
+        in source
+    )
+    assert '[IO.Path]::GetFileName($bundlePath) -cne $expectedBundleLeaf' in source
+    assert "$previousCommit = [string]$previousReleaseIdentity.Commit" in source
+    assert "previousReleaseRef = $previousReleaseRef" in source
+    assert "previousReleaseSource = $previousReleaseSource" in source
+    legacy_checkout_probe = (
+        '$previousCommit = Get-GitValue -Repository $HostRoot '
+        '-Arguments @("rev-parse", "HEAD")'
+    )
+    assert legacy_checkout_probe not in source
 
 
 def test_deployment_rotates_runtime_task_credential_without_persisting_it() -> None:

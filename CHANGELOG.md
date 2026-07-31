@@ -2,14 +2,27 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
-## v1.2.0-rc.42 — source candidate, 2026-07-31
+## Unreleased — post-rc43 release-evidence correction
+
+- Derives the previous origin identity from the scheduled task's actual immutable bundle and verifies its complete content fingerprint before recording a predecessor or rollback commit. Because the identity marker is intentionally outside that content digest, its release, commit, tree and environment fields are now independently bound to the annotated tag published on `origin`, the tag-resolved Git tree, the pre-overlay protected host-environment SHA-256 and the deterministic bundle directory name. A legacy task that still runs directly from `HostRoot` remains supported explicitly.
+- Adds `previousReleaseRef` and `previousReleaseSource` to future Windows deployment reports. The already-issued rc43 report remains immutable and retains its known stale `previousCommit`; direct task and marker evidence prove rc41 was the real predecessor and captured rollback target.
+- Removes stale rc35／rc39 "current rollback" wording and the obsolete direct-checkout host update instructions from operator documentation. Current production remains rc43 with rc41／Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` as the first paired rollback.
+
+## v1.2.0-rc.43 — released, 2026-07-31
 
 - Adds four paired route-family atmosphere systems for weekly work, people/fairness, administration/recovery, and support, plus a same-composition Daily Verse v2 pair. All ten local WebPs are 1600×900, at most 180 KB, stripped of metadata, and governed by an exact prompt/hash/placement manifest.
 - Extends `PageDefinition` with one registered atmosphere slot and `embedded | shell` presentation contract. Shared shell bands remain non-interactive and outside tables, forms, names, fairness data, warnings, dialogs, controls, and PDFs; mature heroes do not receive a duplicate image.
 - Rebuilds the Daily Verse light surface with warm parchment, dark readable ink, restrained gold, a left reading veil, and 16–20% mobile image strength while preserving the indigo night composition.
 - Replaces indiscriminate rotation with a five-control allowlist: Settings, explicit appearance changes, Backup Settings navigation, History, and Undo. Actual restore and other task controls retain truthful lifecycle morphs; verified snapshots use `add_to_drive → arrow_forward → verified` feedback.
 - Deepens the tactile inset response for sound and music-autoplay switches without layout movement, and keeps Admin/Guest parity, routes, identity, Session, SQLite, capabilities, and data formats unchanged.
-- Formal exact-source release, Windows backup/isolated restore/origin switch, staged Worker rollout, canonical smoke, and supervised human acceptance remain separate until recorded in `PROJECT_STATUS.md`.
+- Passed all 15 exact-source gates at protected-main commit `c8201f33e454d9120c73386642cbf9d737391466`, tree `11f759908218aee64c9d49024759beadf8ff9f5b`, 306-file fingerprint `699dc436c69e02f3b9062a04500715929ba35f78f48e14a3d80a0ac33c18640b`, and annotated tag `v1.2.0-rc.43`.
+- Deployed immutable Windows bundle `v1.2.0-rc.43-c8201f33e454-5c891432a1d8` after verified backup `20260731-013103-079514-manual_verified_backup.sqlite3` (SHA-256 `f07306c89e79a610b40105627620c1603b707c39a7ab4cc537217df61c358e1c`) and isolated restore; health and write-readiness passed with no pending obligation.
+- Staged Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` at 0%, passed version-specific health／entrance／Viewer smoke, promoted it to 100%, and repeated independent canonical checks. Rc41 origin and Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` are the first paired rollback. Supervised human acceptance remains open.
+
+## v1.2.0-rc.42 — source-only tag, never deployed, 2026-07-31
+
+- Protected tag `v1.2.0-rc.42` points to the same commit and tree later released as rc43, but it was created before the final formal verifier selected and bound `v1.2.0-rc.43`.
+- No Windows origin or Worker deployment used rc42. Rc43 is the sole authoritative release identity for this source; rc42 is not a production or rollback target.
 
 ## v1.2.0-rc.41 — released, 2026-07-31
 
