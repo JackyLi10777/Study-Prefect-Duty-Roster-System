@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from nicegui_app.config import DEFAULT_DATABASE_PATH, PROJECT_ROOT, SQLITE_BUSY_TIMEOUT_MS
 from nicegui_app.persistence.models import Base
+from nicegui_app.persistence.sql_diagnostics import install_sql_diagnostics
 
 
 def _fairness_is_reconciled(connection: sqlite3.Connection) -> bool:
@@ -101,6 +102,15 @@ def database_url(database_path: Path) -> str:
 def migrate_database(database_path: Path) -> None:
     database_path.parent.mkdir(parents=True, exist_ok=True)
     command.upgrade(_alembic_config(database_path), "head")
+    # Run once at process bootstrap after additive migrations.  Modern SQLite
+    # uses this bounded command to refresh only statistics it considers useful;
+    # request handlers never execute ANALYZE or PRAGMA optimize.
+    connection = sqlite3.connect(database_path, timeout=SQLITE_BUSY_TIMEOUT_MS / 1_000)
+    try:
+        connection.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
+        connection.execute("PRAGMA optimize")
+    finally:
+        connection.close()
 
 
 def create_sqlite_engine(database_path: Path) -> Engine:
@@ -119,6 +129,8 @@ def create_sqlite_engine(database_path: Path) -> Engine:
         cursor.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
         cursor.execute("PRAGMA foreign_keys = ON")
         cursor.close()
+
+    install_sql_diagnostics(engine)
 
     return engine
 

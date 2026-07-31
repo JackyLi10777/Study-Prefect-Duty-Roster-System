@@ -321,6 +321,14 @@ class PersistenceWorkflowMixin:
         days = session.scalars(
             select(PrefectAvailabilityRecord.day).where(PrefectAvailabilityRecord.prefect_id == record.id)
         ).all()
+        return self._prefect_output_from_days(record, days)
+
+    @staticmethod
+    def _prefect_output_from_days(
+        record: PrefectRecord,
+        days: Iterable[str],
+    ) -> dict[str, object]:
+        """Render an already-loaded prefect without issuing another query."""
         return {
             "id": record.id,
             "nameZh": record.name_zh,
@@ -442,8 +450,13 @@ class PersistenceWorkflowMixin:
 
     def _availability_by_prefect(self, session: Session) -> dict[str, set[SchoolDay]]:
         availability: dict[str, set[SchoolDay]] = defaultdict(set)
-        for record in session.scalars(select(PrefectAvailabilityRecord)).all():
-            availability[record.prefect_id].add(SchoolDay[record.day])
+        rows = session.execute(
+            select(PrefectAvailabilityRecord.prefect_id, PrefectAvailabilityRecord.day)
+            .join(PrefectRecord, PrefectRecord.id == PrefectAvailabilityRecord.prefect_id)
+            .where(PrefectRecord.active.is_(True))
+        ).all()
+        for prefect_id, day in rows:
+            availability[prefect_id].add(SchoolDay[day])
         return availability
 
     def _leave_days_for_week(self, session: Session, week_start: date) -> dict[str, set[SchoolDay]]:

@@ -1,5 +1,11 @@
 # 正式驗收證據矩陣 / Acceptance evidence matrix
 
+## rc44 候選證據（不是部署證據）
+
+- 合成 SQLite 規模驗證涵蓋 24／52、240／520、2,400／5,200 人／週層級；查詢計劃、statement count、p50／p95、記憶體、DB／WAL 大小及備份時間保存在 `docs/audits/rc44-sqlite-scale.json`。
+- 尚須完成 migration 升降級與衝突拒絕、完整 pytest、staged／release verifier、隔離 Admin／Guest／Public 瀏覽器矩陣、正式備份及隔離還原、來源指紋、origin health／readiness、canonical Worker 代理核對及受監督真人驗收。
+- 候選閘門通過不代表 rc44 已上線；受控切換及線上核對完成前，rc43 仍是 production truth。
+
 > **線上來源真相（2026-07-31）：** clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466` 正在 Windows origin 運行；canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 為 100% 流量版本。306-file 指紋 `699dc436c69e02f3b9062a04500715929ba35f78f48e14a3d80a0ac33c18640b` 通過 15／15 gate；正式備份 `20260731-013103-079514-manual_verified_backup.sqlite3`／SHA-256 `f07306c89e79a610b40105627620c1603b707c39a7ab4cc537217df61c358e1c`、隔離還原、origin readiness、Worker 0%／100% rollout 及 canonical smoke 均已核對。Rc41／`74072b0175ff64807312a8cc5b9cd016b6628210` 與 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` 是第一層配對回退；rc40 及其 Worker 是第二層回退。Rc42 與 rc43 同源但沒有正式報告、沒有部署，不能當作回退；真人驗收仍未完成。
 
 本文件把機器驗證與真人驗收分開。`logs/release-candidate-report.json` 顯示 `pass`，只代表下列自動化證據在隔離虛構資料中通過；它不代表實際名單、學校做法、專用電腦、加密離機位置或外部存取決定已獲真人批准。

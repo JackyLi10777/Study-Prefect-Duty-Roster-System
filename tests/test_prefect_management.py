@@ -6,6 +6,7 @@ import sqlite3
 from threading import Barrier, Event
 
 import pytest
+from sqlalchemy import event
 
 from nicegui_app.config import PREFECT_SEED_PATH
 from nicegui_app.persistence.models import BackupObligationRecord, OperationCommandRecord
@@ -503,6 +504,43 @@ def test_ai_import_preview_normalizes_traditional_chinese_csv_before_persistence
     assert preview.issues == ()
     assert {item["nameZh"] for item in imported} == {"梁子軒", "范皓朗"}
     assert {item["roleCode"] for item in imported} == {"study_prefect", "assistant_head"}
+
+
+def test_bulk_prefect_import_select_count_does_not_grow_with_directory_size(tmp_path) -> None:
+    def import_and_count(size: int, suffix: str) -> int:
+        workflow = RosterWorkflow(
+            database_path=tmp_path / f"bulk-{suffix}.sqlite3",
+            backup_dir=tmp_path / f"backups-{suffix}",
+            seed_path=PREFECT_SEED_PATH,
+        )
+        workflow.bootstrap()
+        assert workflow.sessions is not None
+        engine = workflow.sessions.kw["bind"]
+        selects: list[str] = []
+
+        def record_select(_connection, _cursor, statement, _parameters, _context, _many) -> None:
+            if statement.lstrip().lower().startswith("select"):
+                selects.append(statement)
+
+        event.listen(engine, "before_cursor_execute", record_select)
+        try:
+            workflow.import_prefects(
+                [
+                    PrefectInput(
+                        name_zh=f"測試風紀{chr(0x4E00 + index)}",
+                        form="F.4",
+                        class_name="4A",
+                        role_code="study_prefect",
+                        available_days=("MONDAY", "WEDNESDAY"),
+                    )
+                    for index in range(size)
+                ]
+            )
+        finally:
+            event.remove(engine, "before_cursor_execute", record_select)
+        return len(selects)
+
+    assert import_and_count(8, "small") == import_and_count(80, "large")
 
 
 def test_downloadable_import_template_contains_only_fictional_rows_that_pass_preview_validation() -> None:

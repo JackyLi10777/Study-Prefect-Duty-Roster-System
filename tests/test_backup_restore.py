@@ -215,7 +215,7 @@ def test_restore_accepts_a_verified_0007_snapshot_then_migrates_before_full_vali
     workflow.restore_backup(legacy_snapshot)
 
     with sqlite3.connect(workflow.database_path) as connection:
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0011",)
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0012",)
         assert connection.execute(
             "SELECT COUNT(*) FROM backup_obligations WHERE status <> 'completed'"
         ).fetchone() == (0,)

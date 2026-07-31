@@ -1044,6 +1044,13 @@ No phase may weaken roster policy, persistent fairness, backup verification, pri
 
 ## 11. Governance
 
+### rc44 operational completion additions
+
+- The Support page uses an embedded bilingual diagnostic hero, not an empty decorative strip: purpose and three safe reporting steps remain text-first, while the paired image occupies only the supporting right side and disappears behind no form content.
+- Leave declaration tells a complete icon story (`event_busy → event_note → hourglass_top → task_alt`); Fairness Review uses `balance → fact_check`. Only the glyph changes—button geometry never translates, tilts, rotates or scales.
+- Settings and Handover show when backup evidence was generated and offer an explicit re-check. Expensive manifest, checksum and integrity work runs off the UI event loop and never pretends to be real-time when it is cached evidence.
+- The operator guide is organised into five repeatable work periods, with success, stop and safe-next-step language. Technical trust pages explain when to use them before exposing deeper evidence.
+
 This file is the design source of truth for the active NiceGUI application, but it is a **living executable standard rather than a permanent creative restriction**. A better design direction may replace an earlier rule when evidence shows clearer operation, stronger accessibility, better brand coherence or lower maintenance risk. The change is complete only when the shared tokens, reusable components, every affected route, both themes, both languages, responsive states, reduced-motion behaviour, tests and this document all move together. A one-page exception is not an evolution of the system; it is design drift.
 
 When a UI decision changes, update this file and `PROJECT_STATUS.md` together. Retire or migrate superseded selectors and components instead of leaving two competing visual dialects. A change needs an explicit rationale if it:

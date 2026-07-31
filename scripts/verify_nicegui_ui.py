@@ -74,11 +74,11 @@ ROUTE_ATMOSPHERE_SLOTS = {
     "/audit": "people-fairness",
     "/settings": "administration-recovery",
     "/access-control": "administration-recovery",
-    "/support": "support-lifeline",
 }
+EMBEDDED_ATMOSPHERE_SLOTS = {"/support": "support-lifeline"}
 ROUTE_ATMOSPHERE_ASSETS = {
     f"{slot}-{appearance}-v1.webp"
-    for slot in set(ROUTE_ATMOSPHERE_SLOTS.values())
+    for slot in set(ROUTE_ATMOSPHERE_SLOTS.values()) | set(EMBEDDED_ATMOSPHERE_SLOTS.values())
     for appearance in ("light", "dark")
 }
 COMPONENT_EVIDENCE_DIR = PROJECT_ROOT / "test-results" / "uiverse-components"
@@ -292,6 +292,30 @@ def assert_shell_atmosphere(
     assert loaded_route_assets == {expected_asset}, (
         f"{route} {appearance} loaded route-family assets outside its current slot/theme: "
         f"{sorted(loaded_route_assets)}"
+    )
+
+
+def assert_support_hero(page, *, appearance: str) -> None:  # type: ignore[no-untyped-def]
+    """Verify the support image is embedded in its content hero, not rendered as shell chrome."""
+
+    expected_asset = f"support-lifeline-{appearance}-v1.webp"
+    assert page.locator(".sy-page-atmosphere").count() == 0
+    hero = page.get_by_test_id("support-hero")
+    hero.wait_for(state="visible", timeout=10_000)
+    assert hero.locator(".sy-support-hero-steps li").count() == 3
+    visual = hero.evaluate(
+        """element => ({
+          background: getComputedStyle(element, '::before').backgroundImage,
+        })"""
+    )
+    assert expected_asset in visual["background"]
+    for other_asset in ROUTE_ATMOSPHERE_ASSETS - {expected_asset}:
+        assert other_asset not in visual["background"]
+    page.wait_for_function(
+        """asset => performance.getEntriesByType('resource')
+          .some(entry => entry.name.endsWith(asset))""",
+        arg=expected_asset,
+        timeout=10_000,
     )
 
 
@@ -933,6 +957,8 @@ def main() -> None:
             page.get_by_text(expected_text, exact=False).first.wait_for(timeout=10_000)
             if path in ROUTE_ATMOSPHERE_SLOTS:
                 assert_shell_atmosphere(page, route=path, appearance="light")
+            elif path in EMBEDDED_ATMOSPHERE_SLOTS:
+                assert_support_hero(page, appearance="light")
             else:
                 assert page.locator(".sy-page-atmosphere").count() == 0
             if path == "/rosters":
@@ -940,7 +966,15 @@ def main() -> None:
                     "element => getComputedStyle(element).backgroundImage"
                 )
         page.goto(f"{BASE_URL}/handover", wait_until="domcontentloaded")
-        assert page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link").count() == 4
+        assert_reference_toc(
+            page,
+            required_targets=(
+                "handover-steps-section",
+                "handover-rollover-section",
+                "handover-readiness-section",
+                "handover-acceptance-section",
+            ),
+        )
         assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 1
         assert "handover-archive-light-v1.webp" in page.locator(".sy-handover-hero").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         readiness_cards = page.locator(".sy-handover-readiness-card")
@@ -1166,8 +1200,20 @@ def main() -> None:
         assert "guide-handbook-light-v1.webp" in page.locator(".sy-guide-hero").evaluate(
             "element => getComputedStyle(element, '::after').backgroundImage"
         )
-        assert page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link").count() == 4
-        assert page.get_by_test_id("guide-troubleshooting").locator(".sy-troubleshooting-row").count() == 8
+        assert_reference_toc(
+            page,
+            required_targets=(
+                "guide-week-start",
+                "guide-before-publish",
+                "guide-after-publish",
+                "guide-fairness-review",
+                "guide-annual-handover",
+                "guide-troubleshooting",
+            ),
+        )
+        troubleshooting = page.get_by_test_id("guide-troubleshooting")
+        assert troubleshooting.locator(".sy-troubleshooting-head").count() == 1
+        assert troubleshooting.locator(".sy-troubleshooting-row:not(.sy-troubleshooting-head)").count() == 11
         assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 2
         page.screenshot(path=str(GUIDE_SCREENSHOT), full_page=True)
         expansion_header = page.locator(".q-expansion-item .q-item").first
@@ -1498,10 +1544,14 @@ def main() -> None:
         ):
             assert element_contrast_ratio(page.locator(selector)) >= 4.5
         page.screenshot(path=str(DEVOTIONAL_DARK_SCREENSHOT), full_page=True)
-        for route in ("/rosters", "/prefects", "/settings", "/support"):
+        for route in ("/rosters", "/prefects", "/settings"):
             response = page.goto(f"{BASE_URL}{route}", wait_until="domcontentloaded")
             assert response is not None and response.status == 200, route
             assert_shell_atmosphere(page, route=route, appearance="dark")
+        response = page.goto(f"{BASE_URL}/support", wait_until="domcontentloaded")
+        assert response is not None and response.status == 200, "/support"
+        page.get_by_text("Three details for a reproducible issue report", exact=False).wait_for(timeout=10_000)
+        assert_support_hero(page, appearance="dark")
         page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
         page.get_by_text("Data import", exact=True).click()
         page.get_by_text("Upload CSV/XLSX or paste JSON/CSV", exact=False).wait_for(timeout=10_000)
@@ -1607,7 +1657,17 @@ def main() -> None:
         page.screenshot(path=str(ENGINEERING_MOBILE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/guide", wait_until="domcontentloaded")
         page.get_by_text("Operator guide", exact=True).first.wait_for(timeout=10_000)
-        assert page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link").count() == 4
+        assert_reference_toc(
+            page,
+            required_targets=(
+                "guide-week-start",
+                "guide-before-publish",
+                "guide-after-publish",
+                "guide-fairness-review",
+                "guide-annual-handover",
+                "guide-troubleshooting",
+            ),
+        )
         assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 2
         troubleshooting_head = page.get_by_test_id("guide-troubleshooting").locator(".sy-troubleshooting-head")
         head_style = troubleshooting_head.evaluate(

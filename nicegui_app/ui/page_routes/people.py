@@ -706,7 +706,11 @@ def prefects_page() -> None:
         with ui.tabs().classes("w-full sy-fg-action") as tabs:
             directory_tab = ui.tab("directory", label=t("directory"), icon="groups")
             import_tab = ui.tab("ai_import", label=t("ai_import"), icon="upload_file")
-            fairness_tab = ui.tab("fairness", label=t("audit"), icon="balance")
+            fairness_tab = ui.tab("fairness", label=t("audit"), icon="balance").props(
+                "data-sy-icon-motion-role=navigation "
+                "data-sy-icon-story-to=fact_check "
+                "data-sy-icon-story-category=preview"
+            )
         with ui.tab_panels(tabs, value="directory", animated=False, keep_alive=False).classes("w-full bg-transparent"):
             with ui.tab_panel("directory").classes("px-0"):
                 prefects = workflow.prefects()

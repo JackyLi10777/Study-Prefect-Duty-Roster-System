@@ -148,6 +148,10 @@ def test_mobile_verifier_declares_real_touch_contexts_and_shared_route_matrix() 
         '"/system-architecture"',
     ):
         assert route in source
+    assert 'EMBEDDED_ATMOSPHERE_ASSETS = {' in source
+    assert '"/support": ("support-lifeline-light-v1.webp", "support-lifeline-dark-v1.webp")' in source
+    assert 'get_by_test_id("support-hero")' in source
+    assert 'hero.locator(".sy-support-hero-steps li").count() != 3' in source
     assert verify_nicegui_mobile.COMPACT_ROUTES["/handover"] == "Handover guide"
 
 

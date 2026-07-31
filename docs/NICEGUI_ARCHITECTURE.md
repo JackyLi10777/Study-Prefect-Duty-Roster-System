@@ -1,5 +1,14 @@
 # NiceGUI Runtime Architecture
 
+## rc44 SQLite performance contract
+
+- SQLite remains the sole roster, fairness, audit and backup truth for one active NiceGUI origin. PostgreSQL is a future migration target only if the deployment requires more than one active origin or measured write-lock pressure persists after optimisation; Redis, MongoDB, MySQL and Oracle are not runtime dependencies.
+- Alembic `0012` adds measured composite indexes for active roster-week lookup, fairness and leave-adjustment history, descending backup lookup, and a partial unique fixed-weekday rule for active Assistant Head Study Prefects. Migration preflight stops safely when legacy fixed weekdays conflict and never rewrites school data.
+- `latest_roster_week()` and bounded `roster_week_history()` are the ordinary read APIs. Bulk prefect import preloads names, fixed weekdays and availability; reporting uses a subquery; withdrawal preloads compensation inputs; outbox workers use bounded batches.
+- `SING_YIN_SQL_DIAGNOSTICS=1` enables SQLAlchemy timing. `SING_YIN_SLOW_SQL_MS` defaults to `100`. Diagnostics record only operation class, stable fingerprint, duration, row count and request reference—never bound parameters, names, leave reasons or roster contents.
+- Startup runs one controlled `PRAGMA optimize` after migration. Request handlers do not run `ANALYZE`. WAL, foreign keys, busy timeout, `BEGIN IMMEDIATE`, optimistic versions, command receipts, backup obligations and the maintenance lock remain unchanged.
+- Backup overview is one bounded inventory snapshot with an evidence timestamp. Checksum, manifest and integrity work is dispatched with `run.io_bound`, so loading Settings or Handover does not block other browser sessions.
+
 > **Verified production truth (2026-07-31):** Windows runs clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466`; canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` serves 100% traffic. The 306-file source fingerprint `699dc436c69e02f3b9062a04500715929ba35f78f48e14a3d80a0ac33c18640b` passed 15／15 gates and the controlled rollout passed backup／restore, readiness, zero-percent version smoke, 100% promotion and canonical checks. The first paired rollback is rc41／`74072b0175ff64807312a8cc5b9cd016b6628210` with Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`; rc40 and its Worker are the second pair. Rc42 is source-only and was never deployed. Human acceptance remains open. Older live／candidate wording is historical and superseded by this notice.
 >
 ## Purpose

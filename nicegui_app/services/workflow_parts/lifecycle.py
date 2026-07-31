@@ -478,6 +478,13 @@ class RosterLifecycleMixin:
                         FairnessLedgerRecord.assignment_id,
                     )
                 ).all()
+                prefect_ids = {prefect_id for prefect_id, *_rest in ledger_totals}
+                prefects_by_id = {
+                    prefect.id: prefect
+                    for prefect in session.scalars(
+                        select(PrefectRecord).where(PrefectRecord.id.in_(prefect_ids))
+                    ).all()
+                }
                 compensation_count = 0
                 ledger_operation_id = f"roster-withdraw:{week.id}"
                 for prefect_id, assignment_id, net_weight, net_duties in ledger_totals:
@@ -485,7 +492,7 @@ class RosterLifecycleMixin:
                     duty_delta = int(net_duties)
                     if abs(weight_delta) <= 0.0001 and duty_delta == 0:
                         continue
-                    prefect = session.get(PrefectRecord, prefect_id)
+                    prefect = prefects_by_id.get(prefect_id)
                     if prefect is None:
                         raise WorkflowError("A fairness-ledger prefect no longer exists; withdrawal was rolled back.")
                     prefect.history_weight = round(prefect.history_weight - weight_delta, 4)
@@ -981,40 +988,66 @@ class RosterLifecycleMixin:
             weight=assignment_weight,
         )
 
-    def roster_weeks(self) -> list[dict[str, object]]:
+    @staticmethod
+    def _roster_week_output(row: RosterWeekRecord) -> dict[str, object]:
+        return {
+            "id": row.id,
+            "weekStart": row.week_start,
+            "status": row.status,
+            "version": row.version,
+            "historyPriorityMultiplier": row.history_priority_multiplier,
+            "assistAssignmentMode": row.assist_assignment_mode,
+            "generatedAt": row.generated_at,
+            "publishedAt": row.published_at,
+            "withdrawnAt": row.withdrawn_at,
+            "withdrawalReason": row.withdrawal_reason,
+        }
+
+    def latest_roster_week(self) -> dict[str, object] | None:
+        """Return only the newest week for dashboards and next-action routing."""
         with self._session() as session:
-            rows = session.scalars(select(RosterWeekRecord).order_by(RosterWeekRecord.week_start.desc())).all()
-            return [
-                {
-                    "id": row.id,
-                    "weekStart": row.week_start,
-                    "status": row.status,
-                    "version": row.version,
-                    "historyPriorityMultiplier": row.history_priority_multiplier,
-                    "assistAssignmentMode": row.assist_assignment_mode,
-                    "generatedAt": row.generated_at,
-                    "publishedAt": row.published_at,
-                    "withdrawnAt": row.withdrawn_at,
-                    "withdrawalReason": row.withdrawal_reason,
-                }
-                for row in rows
-            ]
+            row = session.scalar(
+                select(RosterWeekRecord)
+                .order_by(RosterWeekRecord.week_start.desc(), RosterWeekRecord.id.desc())
+                .limit(1)
+            )
+            return self._roster_week_output(row) if row is not None else None
+
+    def roster_week_history(
+        self,
+        *,
+        page: int = 1,
+        page_size: int = 24,
+    ) -> list[dict[str, object]]:
+        """Return one bounded history page in stable newest-first order."""
+        if page < 1:
+            raise WorkflowError("Roster history page must be at least one.")
+        if page_size < 1 or page_size > 100:
+            raise WorkflowError("Roster history page size must be between 1 and 100.")
+        with self._session() as session:
+            rows = session.scalars(
+                select(RosterWeekRecord)
+                .order_by(RosterWeekRecord.week_start.desc(), RosterWeekRecord.id.desc())
+                .limit(page_size)
+                .offset((page - 1) * page_size)
+            ).all()
+            return [self._roster_week_output(row) for row in rows]
+
+    def roster_weeks(self) -> list[dict[str, object]]:
+        """Compatibility read for bounded-data services; UI uses history/latest APIs."""
+        with self._session() as session:
+            rows = session.scalars(
+                select(RosterWeekRecord).order_by(
+                    RosterWeekRecord.week_start.desc(),
+                    RosterWeekRecord.id.desc(),
+                )
+            ).all()
+            return [self._roster_week_output(row) for row in rows]
 
     def roster_week(self, roster_week_id: int) -> dict[str, object]:
         with self._session() as session:
             row = self._week_or_error(session, roster_week_id)
-            return {
-                "id": row.id,
-                "weekStart": row.week_start,
-                "status": row.status,
-                "version": row.version,
-                "historyPriorityMultiplier": row.history_priority_multiplier,
-                "assistAssignmentMode": row.assist_assignment_mode,
-                "generatedAt": row.generated_at,
-                "publishedAt": row.published_at,
-                "withdrawnAt": row.withdrawn_at,
-                "withdrawalReason": row.withdrawal_reason,
-            }
+            return self._roster_week_output(row)
 
     def assignments(self, roster_week_id: int) -> list[dict[str, object]]:
         with self._session() as session:

@@ -33,9 +33,9 @@ def dashboard_page() -> None:
     reference = verse.reference_zh if locale_is_zh else verse.reference_en
     scripture = verse.scripture_zh if locale_is_zh else verse.scripture_en
     reflection = verse.reflection_zh if locale_is_zh else verse.reflection_en
-    weeks = workflow.roster_weeks()
     has_prefects = bool(workflow.prefects())
-    latest = weeks[0] if weeks else None
+    recent_weeks = workflow.roster_week_history(page=1, page_size=3)
+    latest = recent_weeks[0] if recent_weeks else None
     if not has_prefects:
         next_title_key = "flow_directory"
         next_action_key = "open_prefects"
@@ -122,7 +122,6 @@ def dashboard_page() -> None:
                         _render_flow_step(number=2, title_key="flow_review", detail_key="flow_review_detail", state="done", state_key="flow_done", icon="fact_check", action_key="flow_open_published", action=lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}"))
                         _render_flow_step(number=3, title_key="flow_leave", detail_key="flow_leave_detail", state="active", state_key="flow_current", icon="event_busy", action_key="flow_open_adjustment", action=lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}/adjustments"))
                 ui.button(t("first_time_link"), icon="play_circle", on_click=lambda: navigate_to("/getting-started")).props("flat").classes("mt-5")
-            recent_weeks = weeks[:3]
             with ui.element("aside").classes("sy-dashboard-history").props(
                 "aria-labelledby=dashboard-history-title data-testid=dashboard-history"
             ):
@@ -227,23 +226,29 @@ def getting_started_page() -> None:
 def operator_guide_page() -> None:
     groups = (
         (
-            "guide-prepare",
-            "guide_group_prepare_title",
-            (("guide_open_title", "guide_open_body"), ("guide_directory_title", "guide_directory_body")),
+            "guide-week-start",
+            "guide_group_week_start_title",
+            (("guide_week_start_title", "guide_week_start_body"),),
         ),
         (
-            "guide-weekly",
-            "guide_group_weekly_title",
-            (
-                ("guide_draft_title", "guide_draft_body"),
-                ("guide_manual_title", "guide_manual_body"),
-                ("guide_publish_title", "guide_publish_body"),
-            ),
+            "guide-before-publish",
+            "guide_group_before_publish_title",
+            (("guide_before_publish_title", "guide_before_publish_body"),),
         ),
         (
-            "guide-stewardship",
-            "guide_group_stewardship_title",
-            (("guide_recovery_title", "guide_recovery_body"), ("guide_support_title", "guide_support_body")),
+            "guide-after-publish",
+            "guide_group_after_publish_title",
+            (("guide_after_publish_title", "guide_after_publish_body"),),
+        ),
+        (
+            "guide-fairness-review",
+            "guide_group_fairness_review_title",
+            (("guide_fairness_review_title", "guide_fairness_review_body"),),
+        ),
+        (
+            "guide-annual-handover",
+            "guide_group_annual_handover_title",
+            (("guide_annual_handover_title", "guide_annual_handover_body"),),
         ),
     )
     issues = (
@@ -253,6 +258,10 @@ def operator_guide_page() -> None:
         ("guide_issue_backup_seen", "guide_issue_backup_meaning", "guide_issue_backup_next"),
         ("guide_issue_restore_seen", "guide_issue_restore_meaning", "guide_issue_restore_next"),
         ("guide_issue_session_seen", "guide_issue_session_meaning", "guide_issue_session_next"),
+        ("guide_issue_pdf_seen", "guide_issue_pdf_meaning", "guide_issue_pdf_next"),
+        ("guide_issue_upload_seen", "guide_issue_upload_meaning", "guide_issue_upload_next"),
+        ("guide_issue_network_seen", "guide_issue_network_meaning", "guide_issue_network_next"),
+        ("guide_issue_withdraw_seen", "guide_issue_withdraw_meaning", "guide_issue_withdraw_next"),
         ("guide_issue_support_seen", "guide_issue_support_meaning", "guide_issue_support_next"),
     )
     with page_shell("/guide"):
@@ -263,9 +272,11 @@ def operator_guide_page() -> None:
                 ui.label(t("guide_intro")).classes("text-[var(--sy-muted)] leading-7")
         render_page_toc(
             (
-                ("guide-prepare", "guide_group_prepare_title"),
-                ("guide-weekly", "guide_group_weekly_title"),
-                ("guide-stewardship", "guide_group_stewardship_title"),
+                ("guide-week-start", "guide_group_week_start_title"),
+                ("guide-before-publish", "guide_group_before_publish_title"),
+                ("guide-after-publish", "guide_group_after_publish_title"),
+                ("guide-fairness-review", "guide_group_fairness_review_title"),
+                ("guide-annual-handover", "guide_group_annual_handover_title"),
                 ("guide-troubleshooting", "guide_troubleshooting_title"),
             )
         )

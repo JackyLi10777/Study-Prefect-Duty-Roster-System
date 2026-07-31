@@ -77,11 +77,9 @@ SHELL_ATMOSPHERE_ASSETS = {
         "administration-recovery-light-v1.webp",
         "administration-recovery-dark-v1.webp",
     ),
-    "/support": (
-        "support-lifeline",
-        "support-lifeline-light-v1.webp",
-        "support-lifeline-dark-v1.webp",
-    ),
+}
+EMBEDDED_ATMOSPHERE_ASSETS = {
+    "/support": ("support-lifeline-light-v1.webp", "support-lifeline-dark-v1.webp"),
 }
 
 
@@ -324,6 +322,28 @@ def _assert_mobile_atmosphere(page: Page, *, route: str, label: str) -> None:
 
     shell_bands = page.locator(".sy-page-atmosphere:visible")
     expected = SHELL_ATMOSPHERE_ASSETS.get(route)
+    embedded = EMBEDDED_ATMOSPHERE_ASSETS.get(route)
+    if embedded is not None:
+        if shell_bands.count() != 0:
+            raise AssertionError(f"{label} duplicates an embedded hero with a shell atmosphere band.")
+        hero = page.get_by_test_id("support-hero")
+        if hero.count() != 1 or not hero.is_visible():
+            raise AssertionError(f"{label} is missing its embedded support hero.")
+        if hero.locator(".sy-support-hero-steps li").count() != 3:
+            raise AssertionError(f"{label} support hero lost its three-step workflow.")
+        visual = hero.evaluate(
+            """element => ({
+              backgroundImage: getComputedStyle(element, '::before').backgroundImage,
+              dark: document.body.classList.contains('body--dark'),
+            })"""
+        )
+        expected_asset = embedded[1] if visual["dark"] else embedded[0]
+        if expected_asset not in visual["backgroundImage"]:
+            raise AssertionError(
+                f"{label} embedded support hero did not resolve the current theme asset: "
+                f"{visual['backgroundImage']}"
+            )
+        return
     if expected is None:
         if shell_bands.count() != 0:
             raise AssertionError(f"{label} duplicates an embedded hero with a shell atmosphere band.")

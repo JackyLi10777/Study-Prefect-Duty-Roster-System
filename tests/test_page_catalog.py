@@ -116,7 +116,7 @@ def test_every_page_has_one_registered_atmosphere_and_one_presentation_mode() ->
         "/getting-started": ("onboarding", "embedded"),
         "/guide": ("guide", "embedded"),
         "/devotional": ("devotional", "embedded"),
-        "/support": ("support-lifeline", "shell"),
+        "/support": ("support-lifeline", "embedded"),
     }
 
     assert {

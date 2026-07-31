@@ -178,20 +178,23 @@ class ExternalShareOutboxMixin:
         if not _CONTENT_DIGEST.fullmatch(content_digest):
             raise WorkflowError("The public share content digest is invalid.")
         with self._session() as session:
-            candidates = session.scalars(
-                select(ExternalShareOutboxRecord)
+            candidates = session.execute(
+                select(ExternalShareOutboxRecord, OperationCommandRecord)
+                .join(
+                    OperationCommandRecord,
+                    OperationCommandRecord.command_id == ExternalShareOutboxRecord.command_id,
+                )
                 .where(
                     ExternalShareOutboxRecord.roster_week_id == roster_week_id,
                     ExternalShareOutboxRecord.roster_version == roster_version,
                     ExternalShareOutboxRecord.content_digest == content_digest,
                     ExternalShareOutboxRecord.status.in_(("pending", "delivering")),
+                    OperationCommandRecord.status == "pending",
                 )
                 .order_by(ExternalShareOutboxRecord.id.desc())
+                .limit(16)
             ).all()
-            for outbox in candidates:
-                command = session.get(OperationCommandRecord, outbox.command_id)
-                if command is None or command.status != "pending":
-                    continue
+            for outbox, command in candidates:
                 saved = self._decode_share_command(command.result_json)
                 receipt = saved.get("receipt")
                 if isinstance(receipt, dict) and str(receipt.get("expiresAt") or "") == expires_at:
@@ -374,14 +377,22 @@ class ExternalShareOutboxMixin:
                 "deliveredAt": outbox.delivered_at,
             }
 
-    def pending_external_share_revocations(self) -> list[dict[str, object]]:
+    def pending_external_share_revocations(
+        self,
+        *,
+        limit: int = 64,
+    ) -> list[dict[str, object]]:
         """Return durable revocation work without exposing roster content."""
+
+        if limit < 1 or limit > 256:
+            raise WorkflowError("Share revocation batch size must be between 1 and 256.")
 
         with self._session() as session:
             rows = session.scalars(
                 select(ExternalShareOutboxRecord)
                 .where(ExternalShareOutboxRecord.status == "revocation_pending")
                 .order_by(ExternalShareOutboxRecord.updated_at, ExternalShareOutboxRecord.id)
+                .limit(limit)
             ).all()
             return [
                 {

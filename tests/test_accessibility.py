@@ -380,7 +380,7 @@ def test_prefect_form_repairs_expected_omissions_before_starting_a_durable_write
 def test_roster_forms_repair_predictable_input_before_background_work() -> None:
     pages = combined_page_source()
     leave_handler = pages.split("async def declare_leave() -> None:", 1)[1].split(
-        'ui.button(t("declare_leave")', 1
+        "declare_leave_button = action(", 1
     )[0]
     draft_handler = pages.split("async def save_draft_change() -> None:", 1)[1].split(
         'with ui.row().classes("sy-mobile-actions gap-3 mt-4"):', 1
@@ -578,6 +578,9 @@ def test_reference_navigation_keeps_touch_targets_and_mobile_table_semantics() -
     architecture_verification = verifier.split(
         'page.goto(f"{BASE_URL}/system-architecture"', 1
     )[1].split('page.goto(f"{BASE_URL}/guide"', 1)[0]
+    guide_verification = verifier.split(
+        'page.goto(f"{BASE_URL}/guide"', 1
+    )[1].split('expansion_header =', 1)[0]
     toc_rule = theme.split(".sy-reference-toc-link {", 1)[1].split("}", 1)[0]
     mobile_header_rule = theme.split(".sy-troubleshooting-head { position: absolute;", 1)[1].split("}", 1)[0]
 
@@ -588,8 +591,11 @@ def test_reference_navigation_keeps_touch_targets_and_mobile_table_semantics() -
     assert "def assert_reference_toc(" in verifier
     assert "len(targets) == len(set(targets))" in verifier
     assert "architecture-developer-section" in verifier
+    assert "guide-week-start" in guide_verification
+    assert "guide-troubleshooting" in guide_verification
     assert '.locator(".sy-reference-toc-link").count()' not in engineering_verification
     assert '.locator(".sy-reference-toc-link").count()' not in architecture_verification
+    assert '.locator(".sy-reference-toc-link").count()' not in guide_verification
 
 
 def test_mobile_drawer_traps_focus_and_hides_background_from_assistive_technology() -> None:
