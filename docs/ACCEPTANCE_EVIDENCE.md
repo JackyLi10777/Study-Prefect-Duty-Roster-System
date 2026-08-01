@@ -59,7 +59,7 @@
 | H-05 | 302／303／202 人數、開放日、名冊「可值班日」、同日不重複、不連續；普通房間求解只能返回完整週表或受控無解，不得留下部分安排或錯誤點數 | `test_roster_policy.py::test_generated_roster_preserves_non_negotiable_rules`; `test_assist_mode_guardrails.py`; Room 202 closure、greedy-dead-end、完整 slot multiplicity 及 duty-weight rejection 測試已納入 rc31 exact-current-source 15／15 正式報告 | 抽查一個實際週，確認未選的不可當值日從未被使用，所有必需格完整且點數正確，並確認校務安排沒有臨時政策變更 |
 | H-06 | 生成前請假排除；舊草稿須重新生成 | `test_pre_generation_leaves.py`; write pipeline | 以獲批准的測試情境核對提示是否易明 |
 | H-07 | 發布需確認；公平帳本只入帳一次 | `test_roster_persistence.py` 的單次及並行發布測試；write pipeline 34.0 入帳證據 | 閱讀確認內容後才發布實際測試週 |
-| H-08 | 發布後請假只供合資格替補並保留帳本／審計 | `test_pre_generation_leaves.py`; `test_roster_persistence.py`; write pipeline | 由首席導學風紀解釋一次替補選擇理由 |
+| H-08 | 發布後請假只供合資格替補並保留帳本／審計；所有舊 Viewer 版本進入 durable revocation，回應遺失亦不留下可重送的密鑰，精確重試不撤銷新版本 | `test_pre_generation_leaves.py`; `test_roster_persistence.py`; `test_external_share_outbox.py`; `test_access_control_ui.py`; write pipeline | 由首席導學風紀解釋一次替補選擇理由，並以虛構週表核對舊 Viewer 撤銷／待撤銷收據及新版本重發次序 |
 | H-09 | 中英文 PDF 單頁橫向、中文姓名、完整星期／崗位、202 關閉格 | `test_roster_export.py::test_bilingual_published_schedule_pdfs_expose_every_operator_check`; write pipeline 下載後直接解析兩份 PDF | 在實際列印／手機群組預覽中核對字體大小、分頁及裁切 |
 | H-10 | 群組週表與具名內部公平審計分開 | `test_roster_export.py::test_internal_audit_pdf_is_separate_from_group_schedule`; export dialog browser coverage | 決定審計檔接收者；不得預設發到風紀群組 |
 | H-11 | 繼任者可依交接指引獨立完成 | handover route、雙語內容及狀態由 UI smoke／i18n 測試覆蓋 | 必須由一位未參與開發的人實際演練，不能由開發者代簽 |

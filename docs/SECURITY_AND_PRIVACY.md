@@ -163,6 +163,16 @@ startup deliberately returns HTTP 503 with `workflowInitialized=false` and
 controlled recovery and a safe process restart are required before writes can
 resume.
 
+Public Viewer publication uses a durable, version-bound outbox. When a
+published roster is corrected or withdrawn, the same SQLite transaction marks
+every older or possibly delivered share as `revocation_pending` and removes any
+queued delivery envelope and decryption key. The UI then attempts idempotent
+Worker deletion outside the roster transaction. A lost create response is
+treated as possibly delivered rather than incorrectly cancelled; a failed
+delete remains retryable and never invites the operator to repeat the committed
+roster change. Workers KV is still eventually consistent, so the interface does
+not claim instant global disappearance and copied plaintext cannot be recalled.
+
 Backups are outside Git. A trusted recovery point is a self-contained SQLite
 snapshot plus a same-name JSON-object manifest; adjacent WAL, SHM, or journal
 sidecars are rejected. Verification checks the exact database/manifest digests,

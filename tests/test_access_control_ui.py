@@ -62,6 +62,32 @@ def test_public_share_action_is_available_only_inside_published_roster_branch() 
     assert "render_roster_share_action(workflow, roster_week_id)" in published_branch
 
 
+def test_published_adjustment_immediately_processes_stale_viewer_revocation() -> None:
+    weekly = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_routes" / "weekly.py").read_text(encoding="utf-8")
+
+    adjustment = weekly.split("async def apply_adjustment() -> None:", 1)[1].split(
+        'ui.label(t("adjustment_step_reason"))',
+        1,
+    )[0]
+    assert "result.share_ids_to_revoke" in adjustment
+    assert "revoke_roster_shares" in adjustment
+    assert "adjustment_receipt_share_revoked" in adjustment
+    assert "adjustment_receipt_share_pending" in adjustment
+    assert "do not retry the adjustment" in MESSAGES["adjustment_share_pending"][EN]
+    assert "不要重複提交調整" in MESSAGES["adjustment_share_pending"][ZH_HK]
+
+
+def test_access_console_can_retry_durable_stale_viewer_revocations() -> None:
+    source = (PROJECT_ROOT / "nicegui_app" / "ui" / "access_control.py").read_text(encoding="utf-8")
+
+    assert "workflow.pending_external_share_revocations()" in source
+    assert "revoke_roster_shares(workflow, share_ids)" in source
+    assert "data-testid=pending-public-share-revocations" in source
+    assert "data-testid=retry-pending-public-share-revocations" in source
+    assert "do not resubmit the roster change" in MESSAGES["public_share_pending_body"][EN]
+    assert "不要重複提交值班變更" in MESSAGES["public_share_pending_body"][ZH_HK]
+
+
 def test_live_viewer_verifier_uses_only_a_temporary_fictional_workflow() -> None:
     source = (PROJECT_ROOT / "scripts" / "verify_public_roster_viewer.py").read_text(encoding="utf-8")
 

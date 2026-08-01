@@ -84,6 +84,7 @@ class LeaveAdjustmentResult:
     original_prefect_name: str = ""
     replacement_prefect_name: str | None = None
     weight: float = 0.0
+    share_ids_to_revoke: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
