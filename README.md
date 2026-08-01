@@ -219,6 +219,7 @@ python -X utf8 -m nicegui_app.main
 | 公開攻擊面、資料私隱、secret、GitHub 權限、事件處理及剩餘風險 | [公開安全與私隱模型](docs/SECURITY_AND_PRIVACY.md)及[安全通報政策](SECURITY.md) |
 | 第一次接手、隔離練習及重設 | `START_PRACTICE_MODE.cmd`、`RESET_PRACTICE_MODE.cmd` 及 [快速啟動](docs/QUICKSTART.md) |
 | 備份、還原、交接、正式驗收 | [首次發布與交接手冊](docs/RELEASE_HANDOVER.md) |
+| 整部主機損毀後，以加密外置副本量度 RPO／RTO 並在替代位置還原 | [離機災難復原手冊](docs/OFFSITE_DISASTER_RECOVERY.md) |
 | 完成一批改動後，按風險一次完成必要驗證 | [更新、驗證與上傳流程](docs/UPDATE_WORKFLOW.md) |
 | 每項驗收要求的自動化證據與真人責任 | [正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md) |
 | 本機、Cloudflare Access 與真正雲端部署之取捨 | [部署與遠端存取決策指南](docs/DEPLOYMENT_DECISION.md) |

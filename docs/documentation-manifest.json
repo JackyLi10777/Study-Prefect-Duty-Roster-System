@@ -27,6 +27,7 @@
     ],
     "runbook": [
       "docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md",
+      "docs/OFFSITE_DISASTER_RECOVERY.md",
       "docs/OPERATOR_GUIDE.md",
       "docs/PUBLIC_ROSTER_VIEWER.md",
       "docs/QUICKSTART.md",
@@ -92,7 +93,8 @@
     "design-language": "Professional_Design_System.md",
     "operator-workflow": "docs/OPERATOR_GUIDE.md",
     "public-viewer-share-lifecycle": "docs/PUBLIC_ROSTER_VIEWER.md",
-    "release-and-recovery-runbook": "docs/RELEASE_HANDOVER.md",
+    "release-deployment-and-compatible-rollback": "docs/RELEASE_HANDOVER.md",
+    "offsite-disaster-recovery": "docs/OFFSITE_DISASTER_RECOVERY.md",
     "security-and-privacy": "docs/SECURITY_AND_PRIVACY.md",
     "guest-capability-boundary": "docs/UNIFIED_GUEST_SECURITY_MODEL.md"
   },

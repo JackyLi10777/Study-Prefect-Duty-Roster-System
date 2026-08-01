@@ -18,6 +18,9 @@ This file records user-visible, operational and release-significant changes. The
 - Made active-risk governance executable: every `Tracked` project risk now resolves to an existing L1／L2／L3 iteration with an owner and closure evidence, while managed／resolved／historical risks cannot masquerade as active work.
 - Corrected the stale established-WebSocket risk description. Browser expiry logout is UX and cleanup; server-side page and captured-workflow guards independently reject expiry, revocation, auth-epoch changes and signing-key rotation without introducing a second session owner.
 - Promoted encrypted off-device recovery and actual Worker／WebSocket mixed-load evidence into the decision queue instead of burying them in narrative status text.
+- Added a narrow off-site recovery service and administrator wrapper that accept only an approved external BitLocker USB／SD target, bind a fresh verified SQLite／manifest handover package to immutable release and path-free digest evidence, publish atomically, and drill an isolated restore from the copied bundle.
+- Added fail-closed tests for target evidence, tampering, unsafe archive members, RPO evidence, release identity, active immutable-bundle execution and the absence of internal-disk／host-bound encryption fallbacks. This remains source capability: no real external medium, deployment or replacement-host drill is claimed.
+- Split complete-host-loss recovery into one bilingual owner runbook with explicit RPO／RTO, retention, key custody and failure boundaries; release, host, operator, security, architecture and acceptance documents now link to that owner instead of maintaining competing procedures.
 
 ## v1.2.0-rc.45 — released, 2026-08-01
 

@@ -92,8 +92,8 @@ JSON 是唯讀報告證據，不是 SQLite 還原備份。需要交接或復原�
 - 「已驗證」不只代表檔案可打開：候選必須是 `.sqlite3` 與同名 JSON-object manifest 的自包含配對，沒有相鄰 `-wal`、`-shm` 或 `-journal` sidecar，並通過 manifest／SHA-256、SQLite 完整性、supported migration revision、零 pending obligation 及必要資料表核對。受控還原先把候選兩個檔案的精確 bytes 複製到私人 staging，再重新核對兩個 digest；只支援從 revision `0007` 沿已知線性鏈在隔離副本升級至目前 Alembic head，未知／未來 revision 會停止。升級後仍須通過 current schema、foreign keys 與公平帳本；正式 live 資料庫完成啟動或還原後必須位於目前 head，否則 `/healthz` 會顯示 degraded，而不是健康。
 - 新安裝或尚未完成第一次快照時，交接包與還原按鈕會停用；依空狀態提示按「立即建立已驗證快照」。只有校驗成功並重新載入後，才可選擇還原或建立交接包。不要嘗試以手動放置、改名或未附 manifest 的 SQLite 檔繞過此狀態。
 - 若畫面顯示「最近檢查的快照中，有 N 個未通過驗證」，這些檔案已被隔離於交接／還原選單。分類只用來指出 manifest、checksum、sidecar、SQLite、migration、pending obligation 或 schema 層級；不要自行修補或刪除證據。先建立新的已驗證快照，若仍失敗，向受控 IT 支援提供 OP／REQ 編號，由支援人員在本機調查。
-- 離機備份時，在「系統設定」按「建立交接備份包」。確認敏感資料提示後，系統會把最近一份已驗證快照及 manifest 重新複製到私人 staging，立即核對該 exact pair 的兩個 digest，才把同一份 SQLite、manifest 及還原說明加入 ZIP；封包在記憶體本機生成，不會自動加密、上載或留下第二份本機副本。
-- 立即把下載的 ZIP 儲存在學校批准的加密離機位置。日後需要還原時，解壓 ZIP，把 SQLite 檔案及同名 manifest 一併放回 `data/backups/`，再在「系統設定」選擇顯示為「已驗證」的快照。切勿在程式執行時手動覆寫 `data/runtime/sing-yin-roster.sqlite3`。
+- 「系統設定」的「建立交接備份包」供受控繼任交接：系統會私人 staging 並重新核對 exact SQLite／manifest pair，再在記憶體建立 ZIP；它不會自動加密、上載或保留第二份本機副本。下載完成不等於已有離機災難復原證據。
+- 整部主機損毀的 RPO／RTO、BitLocker 外置媒體、密鑰分離、保留、匯出及 replacement-location drill 只依[離機災難復原手冊](OFFSITE_DISASTER_RECOVERY.md)執行。本手冊不複製該程序；任何還原仍須把 exact pair 交給受控 restore，切勿在程式運行時覆寫 live SQLite。
 - 每次交接均由繼任者在「交接指引」確認：名單存在、週表歷史可讀、最近備份已驗證。
 - 如畫面顯示「資料已儲存，但備份未完成」，不可重複剛才的生成、發布、調整或名單操作。先按「重新載入並核對」，確認資料庫結果，再到「系統設定」按「立即建立已驗證快照」。只有新快照成功覆蓋並結清 pending obligation、`/readyz` 回復 `writeReady=true` 後才繼續下一項工作；建立失敗時所有業務寫入保持 fail-closed。
 - 還原後，瀏覽器歷史或舊書籤可能指向已不存在的週表。看到「找不到這份值班表」時，不代表目前資料再次損壞；先按「查看現有值班表」核對現有週次，如剛完成還原則再按「核對備份與還原」確認快照。不要修改網址中的週表編號猜測資料。
