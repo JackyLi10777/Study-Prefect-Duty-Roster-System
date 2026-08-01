@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "rules": [
+    {
+      "name": "policy-is-framework-independent",
+      "source_paths": [
+        "packages/roster_policy"
+      ],
+      "forbidden_import_prefixes": [
+        "nicegui_app",
+        "roster_core"
+      ]
+    },
+    {
+      "name": "core-is-application-independent",
+      "source_paths": [
+        "packages/roster_core"
+      ],
+      "forbidden_import_prefixes": [
+        "nicegui_app"
+      ]
+    },
+    {
+      "name": "persistence-does-not-call-workflows-or-ui",
+      "source_paths": [
+        "nicegui_app/persistence"
+      ],
+      "forbidden_import_prefixes": [
+        "nicegui_app.services",
+        "nicegui_app.ui"
+      ]
+    },
+    {
+      "name": "services-do-not-import-ui",
+      "source_paths": [
+        "nicegui_app/services"
+      ],
+      "forbidden_import_prefixes": [
+        "nicegui_app.ui"
+      ]
+    },
+    {
+      "name": "ui-does-not-import-persistence",
+      "source_paths": [
+        "nicegui_app/ui"
+      ],
+      "forbidden_import_prefixes": [
+        "nicegui_app.persistence"
+      ]
+    }
+  ]
+}

@@ -1,8 +1,10 @@
 # 聖言中學導學風紀值班表生成系統
 
-> **已核實線上來源（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5`；308 個發布檔案以指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 正式閘門。受控切換把 SQLite 升級至 Alembic `0012`，並以正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`（SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`）完成隔離還原、公平、行數及 restore-audit 核對；origin health／write-readiness 與 canonical entrance／Guest／support 瀏覽器 smoke 均通過。Worker 來源沒有改動，故保留既有 100% 流量版本並確認其 gateway health。rc43 只保留為歷史來源；migration `0012` 後不可只切回舊程式，必須配合受控資料庫還原。首席導學風紀及教師顧問的受監督真人驗收仍未完成。下文較舊的 current／live／candidate 字樣只保留歷史證據，均由本段取代。
+<!-- SING_YIN_CURRENT_STATUS:START -->
+> **已核實線上來源（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的不可變 bundle；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源沒有改動，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 維持 100% 流量且健康。`v1.2.0-rc.43` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`。精確狀態及更新規則見[目前系統狀態](docs/status/CURRENT_STATUS.md)。
+<!-- SING_YIN_CURRENT_STATUS:END -->
 >
-> **rc45 完成範圍：** 保留 SQLite，按真實查詢計劃增加索引及有界查詢，消除名單匯入／撤回流程的 N+1，加入不記錄參數或學生內容的可選慢 SQL 診斷，並把備份核對移出 UI event loop。完整合成規模證據涵蓋 2,400 名虛構風紀／5,200 週；本段功能已隨上方 rc45 上線。
+> **rc45 完成範圍（歷史發布能力）：** 保留 SQLite，按真實查詢計劃增加索引及有界查詢，消除名單匯入／撤回流程的 N+1，加入不記錄參數或學生內容的可選慢 SQL 診斷，並把備份核對移出 UI event loop。完整合成規模證據涵蓋 2,400 名虛構風紀／5,200 週；是否仍在正式環境運行以上方生成狀態為準。
 >
 > **非以役人，乃役於人。**
 > 
@@ -36,7 +38,7 @@
 | 任何使用者，遇到錯誤、下載失敗或顯示異常 | 正式網站 →「問題回報／Support」 | [本機問題回報與事故處理](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md) |
 | 新任首席導學風紀，要先安全演練 | `START_PRACTICE_MODE.cmd` | [快速啟動](docs/QUICKSTART.md)及[操作手冊](docs/OPERATOR_GUIDE.md) |
 | IT／維護者，要部署、復原或查找 OP 編號 | [完整文件索引](docs/DOCUMENTATION_INDEX.md) | [Windows 主機設定](docs/WINDOWS_DEDICATED_HOST_SETUP.md)及[更新流程](docs/UPDATE_WORKFLOW.md) |
-| 開發者／審查者，要理解程式邊界或提交修改 | [NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) | [程式驗收審查](docs/CODE_ACCEPTANCE_REVIEW.md)、[AI Agent 工作樹指南](docs/AI_AGENT_GIT_GUIDE.md)及[貢獻指南](CONTRIBUTING.md) |
+| 開發者／審查者，要理解程式邊界或提交修改 | [架構總覽](docs/ARCHITECTURE_OVERVIEW.md) | [詳細 NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md)、[文件治理](docs/DOCUMENTATION_SYSTEM.md)、[程式驗收審查](docs/CODE_ACCEPTANCE_REVIEW.md)及[貢獻指南](CONTRIBUTING.md) |
 
 ### 使用模式與資料邊界
 
@@ -81,7 +83,7 @@ Admin 是正式工作的標準版本；Guest 使用同一組路由、導航、�
 | `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；歷史整合來源 | rc17 的多用戶、操作層級及前端穩定性整合線；現行發布已由 rc27 取代 |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；歷史整合來源 | 前一階段 Service Weave v1.2 編輯式整合線 |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 現行正式來源為 `v1.2.0-rc.45`；資料庫已升至 Alembic `0012`，回退須依頁首摘要執行相容資料庫還原 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 受保護的整合主線；精確正式版本與資料庫復原限制以[目前系統狀態](docs/status/CURRENT_STATUS.md)為準 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 
@@ -95,13 +97,13 @@ GitHub同時保存程式、測試、文件、設計素材、內置音樂、虛�
 
 網站公開入口、分享檢視器及 NiceGUI 工作台共用頁尾署名 `Copyright © 2026 LI Chuangjie`；供群組發布的乾淨值班表 PDF 仍由匯出選項決定是否加入補充頁尾。
 
-**歷史 rc30 乾淨發布證據：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 曾以不可變來源同步到 `C:\SingYinRoster`；`/healthz` 正常、`/readyz` ready、`writeReady=true`。296 個發布輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前正式備份 `20260727-023041-069097-manual_verified_backup.sqlite3`、SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b`、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 曾經 0% version smoke 後升至 100% 流量；canonical root／healthz、desktop／320px theme control 及 Guest Engineering ≈10B disclosure 均已核對。這是當時完整驗證的乾淨 origin＋Worker 組合；目前版本及 migration `0012` 後的受控復原限制以本頁頂部 rc45 記錄為準。首席導學風紀及教師顧問真人驗收仍未完成。
+**歷史 rc30 乾淨發布證據：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 曾以不可變來源同步到 `C:\SingYinRoster`；`/healthz` 正常、`/readyz` ready、`writeReady=true`。296 個發布輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前正式備份 `20260727-023041-069097-manual_verified_backup.sqlite3`、SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b`、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 曾經 0% version smoke 後升至 100% 流量；canonical root／healthz、desktop／320px theme control 及 Guest Engineering ≈10B disclosure 均已核對。這是當時完整驗證的乾淨 origin＋Worker 組合；目前版本、migration 及受控復原限制只以上方生成狀態為準。首席導學風紀及教師顧問真人驗收仍未完成。
 
 **公開安全及版本完整性：** 公開瀏覽器只接觸 Cloudflare Worker；正式 NiceGUI origin 仍只綁定 loopback，Admin 必須同時通過 Cloudflare Access、私密精確電郵 allowlist、短期 session 及請求綁定的 HMAC principal。GitHub `main` 只接受通過 `test-and-audit` 與 Python／Worker CodeQL 的 pull request，禁止 force-push 和刪除；Actions 引用必須固定完整 SHA，`v*` 發布標籤建立後亦不可更新或刪除。完整威脅模型、資料分類、事件處理及殘餘限制見[公開網站安全與私隱模型](docs/SECURITY_AND_PRIVACY.md)。
 
-**歷史乾淨發布（v1.2 rc30）：** 在 rc27 的已驗證 workflow 與 rc28／rc29 的入口及部署工具修正上，rc30 把語言切換改為目的語言本名，並把外觀改為明確 System／Light／Dark 三選一；Engineering 以有日期及非遙測聲明的 **≈10B** 約數呈現提供截圖所見的跨工具創作者 token 用量。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。Public／Viewer 支援報告保持瀏覽器暫存；目前 rc45 線上來源已對帳，首席導學風紀及教師顧問真人驗收仍待完成。
+**歷史乾淨發布（v1.2 rc30）：** 在 rc27 的已驗證 workflow 與 rc28／rc29 的入口及部署工具修正上，rc30 把語言切換改為目的語言本名，並把外觀改為明確 System／Light／Dark 三選一；Engineering 以有日期及非遙測聲明的 **≈10B** 約數呈現提供截圖所見的跨工具創作者 token 用量。Admin 與 Guest 共用路由、元件與視覺骨架，但能力、資料 adapter 及持久化邊界由伺服器分流；排班規則、公平帳本、PDF、備份與還原沒有移入頁面層。Public／Viewer 支援報告保持瀏覽器暫存；目前線上來源與真人驗收狀態以上方生成摘要為準。
 
-> **歷史 rc31 來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 的 297 個可部署來源檔案曾以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時 15／15 正式 `--release` 閘門。它只保留為來源演進證據，沒有部署，亦不是目前候選或回退目標；目前 rc45 及 migration `0012` 後的受控復原限制以本頁頂部為準。
+> **歷史 rc31 來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 的 297 個可部署來源檔案曾以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時 15／15 正式 `--release` 閘門。它只保留為來源演進證據，沒有部署，亦不是目前候選或回退目標；目前 release、migration 及復原限制以本頁頂部生成狀態為準。
 
 rc16–rc29 是這批能力的歷史來源；rc27 是更深的已驗證 origin 歷史回退，不是目前第一層 edge 回退。下文描述的容量、匯入／網絡上限、50% 新瀏覽器音樂預設、聚合公平對帳、明確返回路徑及圖標狀態轉換曾由乾淨 rc30 驗證，並保留在 rc31 候選。
 
@@ -220,7 +222,7 @@ python -X utf8 -m nicegui_app.main
 | 完成一批改動後，按風險一次完成必要驗證 | [更新、驗證與上傳流程](docs/UPDATE_WORKFLOW.md) |
 | 每項驗收要求的自動化證據與真人責任 | [正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md) |
 | 本機、Cloudflare Access 與真正雲端部署之取捨 | [部署與遠端存取決策指南](docs/DEPLOYMENT_DECISION.md) |
-| NiceGUI、政策、工作流與資料層責任 | [NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) |
+| NiceGUI、政策、工作流與資料層責任 | [架構總覽](docs/ARCHITECTURE_OVERVIEW.md) → [詳細 NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md) |
 | 視覺、無障礙、深淺模式與動效標準 | [Professional Design System](Professional_Design_System.md) |
 | 平台使命、團隊分工、服務方案與共創結語 | 系統內「平台與團隊」頁面 |
 | 測試規模、發布閘門、工程能力與建造脈絡 | 系統內「工程與品質證據」頁面 |
@@ -229,7 +231,7 @@ python -X utf8 -m nicegui_app.main
 | GitHub分支、歷史版本及發布規則 | [Branch Strategy](docs/BRANCH_STRATEGY.md) |
 | Codex 與輔助 AI Agent 的獨立工作樹、提交及 PR 路徑 | [AI Agent Git Guide](docs/AI_AGENT_GIT_GUIDE.md) |
 | 虛構資料、日誌及測試證據封存 | [Public project archive](archive/README.md) |
-| 全部文件的讀者、權威來源、更新時機及覆蓋檢查 | [完整文件索引](docs/DOCUMENTATION_INDEX.md) |
+| 全部文件的讀者、權威來源、更新時機及覆蓋檢查 | [完整文件索引](docs/DOCUMENTATION_INDEX.md)及[文件系統治理](docs/DOCUMENTATION_SYSTEM.md) |
 
 ## 平台與團隊
 
@@ -376,7 +378,7 @@ Worker 部署除 Viewer 管理所需的 `ADMIN_BEARER_TOKEN` 外，亦必須配�
 不可重複剛才的操作，因為資料庫變更已經生效。先重新載入核對結果，再前往「系統設定」按「立即建立已驗證快照」。這個狀態會使用獨立的 OP 支援編號，避免與已回復的普通失敗混淆。
 
 **目前可否在校外使用？**
-可以。canonical 網站目前由已對帳的 rc45 origin 與未變更、已重新核對健康的 canonical gateway 提供服務。SQLite 已升至 Alembic `0012`；第一個復原選擇是保留 rc45 並依已驗證正式備份執行受控還原。rc43／rc41／rc40／rc39／rc35／rc30／rc27 及其較舊 Worker 只屬歷史來源，使用舊程式前必須配合相容的 pre-0012 資料庫還原。一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
+可以。canonical 網站由上方「目前系統狀態」記錄的已核實 origin 與 Worker 提供服務；migration、第一個復原選擇及舊程式相容要求亦只依該狀態頁執行。一般使用者毋須安裝 WARP，WARP 只保留作維護後備。
 
 **別人可否用 Viewer 連結編輯週表？**
 不可。分享連結永遠唯讀；網址參數、瀏覽器標頭或畫面操作都不能把訪客升級為管理員。只有 Access policy 內的管理員身份通過驗證後，Worker 才轉送完整工作台。
@@ -482,7 +484,7 @@ An operator failure displays an `OP-...` reference and does not publish anything
 
 ### Safety and remote access
 
-The v1.2 topology uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. Current production origin is clean rc45／`90777345ea9ed5652c73873edb3c8c846a9ceac5` with Alembic `0012`; Worker source and protected configuration did not change, so the existing gateway remains at 100% traffic and its health was rechecked. Rc43, rc41 and older applications require a compatible pre-0012 database restore and are not code-only rollback targets. Supervised human acceptance remains open. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
+The v1.2 topology uses one canonical `workers.dev` site and one NiceGUI product. A verified guest session resolves to a bounded, memory-only workspace with fictional data; an approved administrator completes Cloudflare Access and resolves to the official workflow. The Worker strips browser-supplied identity headers and injects an HMAC-signed principal containing the verified mode, session, expiry, auth epoch, and key ID. Same-host `/view#…` links remain separate, expiring, revocable encrypted snapshots. Localhost and private WARP are maintenance fallbacks. Exact production, migration, Worker, rollback and human-acceptance truth is maintained in [current system status](docs/status/CURRENT_STATUS.md), not copied into this architecture summary. Follow the [remote-access guide](docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md), [canonical-site guide](docs/PUBLIC_ROSTER_VIEWER.md), and [guest security model](docs/UNIFIED_GUEST_SECURITY_MODEL.md).
 
 For operating instructions, recovery, architecture, and current release evidence, use the document map above.
 

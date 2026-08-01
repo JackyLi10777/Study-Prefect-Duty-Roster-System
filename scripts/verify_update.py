@@ -52,6 +52,7 @@ _ASSURANCE_FILES = {
     ".github/dependabot.yml",
     ".github/workflows/codeql.yml",
     ".github/workflows/quality.yml",
+    "scripts/project_governance.py",
     "scripts/verify_update.py",
 }
 _FULL_ROOT_FILES = {
@@ -86,6 +87,7 @@ _SHARED_TEST_FILES = {
 }
 _ASSURANCE_TESTS = (
     "tests/test_documentation.py",
+    "tests/test_project_governance.py",
     "tests/test_release_evidence.py",
     "tests/test_release_verifier.py",
     "tests/test_repository_hygiene.py",
@@ -377,9 +379,14 @@ def build_tasks(
         "secret_scan",
         (_python("scripts/run_security_checks.py", "--only", "secret_scan"),),
     )
+    governance = Task(
+        "project_governance",
+        (_python("scripts/project_governance.py", "--check"),),
+    )
     if plan.profile == "docs":
         return (
             diff_task,
+            governance,
             Task("documentation_contract", (_python("-m", "pytest", "-q", "tests/test_documentation.py"),)),
             hygiene,
             secret_scan,
@@ -388,6 +395,7 @@ def build_tasks(
         test_arguments = _profile_test_arguments(paths)
         return (
             diff_task,
+            governance,
             Task("changed_tests", (_python(*test_arguments),)),
             hygiene,
             secret_scan,
@@ -396,6 +404,7 @@ def build_tasks(
         deno = shutil.which("deno") or "deno"
         return (
             diff_task,
+            governance,
             Task(
                 "worker_contract",
                 (
@@ -415,6 +424,7 @@ def build_tasks(
         assurance_arguments = _profile_test_arguments(paths, required_tests=_ASSURANCE_TESTS)
         return (
             diff_task,
+            governance,
             Task("assurance_contract", (_python(*assurance_arguments),)),
             hygiene,
             Task("security_gates", (_python("scripts/run_security_checks.py"),)),
@@ -422,6 +432,7 @@ def build_tasks(
     deno = shutil.which("deno") or "deno"
     return (
         diff_task,
+        governance,
         Task(
             "automated_test_suite",
             (_python(

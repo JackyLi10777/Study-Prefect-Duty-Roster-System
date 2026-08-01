@@ -12,10 +12,12 @@ This index is the entry point and coverage contract for the documentation set. I
 | 首席導學風紀 | 今週如何安全生成、發布、分享及處理請假？ | [`OPERATOR_GUIDE.md`](OPERATOR_GUIDE.md) |
 | 新任首席導學風紀 | 如何先練習、再接收正式資料與交接包？ | [`QUICKSTART.md`](QUICKSTART.md) → [`RELEASE_HANDOVER.md`](RELEASE_HANDOVER.md) |
 | 顧問老師 | 哪些結果是自動證據，哪些仍要真人核對？ | [`ACCEPTANCE_EVIDENCE.md`](ACCEPTANCE_EVIDENCE.md) |
+| 任何讀者 | 現在正式運行甚麼版本、資料庫及 Worker？ | [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md) |
 | IT／主機維護者 | 如何安裝、部署、備份、復原及安全維護？ | [`WINDOWS_DEDICATED_HOST_SETUP.md`](WINDOWS_DEDICATED_HOST_SETUP.md) |
 | 遠端存取維護者 | Worker、Access、VPC origin 與 Viewer 如何配合？ | [`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) |
-| 開發者 | 模組、交易、資料、Guest adapter 與 UI 的責任在哪裡？ | [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHITECTURE.md) |
+| 開發者 | 一項改動應放在哪個模組，依賴方向是甚麼？ | [`ARCHITECTURE_OVERVIEW.md`](ARCHITECTURE_OVERVIEW.md) → [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHITECTURE.md) |
 | 發布者／審查者 | 這次改動需要哪一級驗證及甚麼發布證據？ | [`UPDATE_WORKFLOW.md`](UPDATE_WORKFLOW.md) → [`CODE_ACCEPTANCE_REVIEW.md`](CODE_ACCEPTANCE_REVIEW.md) |
+| 文件維護者 | 文件如何分類、同步、迭代及淘汰？ | [`DOCUMENTATION_SYSTEM.md`](DOCUMENTATION_SYSTEM.md) |
 | UI／UX 維護者 | 元件、token、排版、動效與無障礙規則是甚麼？ | [`../Professional_Design_System.md`](../Professional_Design_System.md) |
 
 ## 權威來源次序 / Source-of-truth precedence
@@ -26,9 +28,10 @@ This index is the entry point and coverage contract for the documentation set. I
 2. `nicegui_app/services/roster_workflow.py`、交易服務、migration 與正式資料契約。
 3. `nicegui_app/access_context.py`、Guest adapter、Worker 驗證與下載邊界。
 4. 鎖定測試、正式 release fingerprint 及機器產生的部署／驗證報告。
-5. 架構、安全、操作、交接及部署專題文件。
-6. `README.md`／`README-EN.md` 的導覽與摘要。
-7. 歷史分支、封存、截圖及舊版本說明。
+5. 由上述證據更新的 [`status/current-release.json`](status/current-release.json) 與生成的 [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md)。
+6. 架構、安全、操作、交接及部署專題文件。
+7. `README.md`／`README-EN.md` 的導覽與摘要。
+8. 歷史分支、封存、截圖及舊版本說明。
 
 If prose conflicts with executable policy, transactional behavior, security checks, migrations, or current release evidence, the executable and verified contract wins and the prose must be corrected. Historical branches and screenshots never define current behavior.
 
@@ -43,7 +46,8 @@ If prose conflicts with executable policy, transactional behavior, security chec
 | [`ROSTER_POLICY_MODES.md`](ROSTER_POLICY_MODES.md) | 固定星期／每週靈活 Assist. in charge 模式、固定日維護及相容資料 | mode code、預設模式、輪換、固定星期、可當值日或請假替補規則改變 |
 | [`RELEASE_HANDOVER.md`](RELEASE_HANDOVER.md) | 備份、隔離還原、正式部署、回退、下一任交接 | release gate、tag、backup、restore、deployment 或 rollback 改變 |
 | [`ACCEPTANCE_EVIDENCE.md`](ACCEPTANCE_EVIDENCE.md) | 自動證據與首席導學風紀／顧問老師真人責任的逐項矩陣 | gate、acceptance criterion、證據位置或人手責任改變 |
-| [`PROJECT_STATUS.md`](../PROJECT_STATUS.md) | 現行版本、已完成能力、發布證據、剩餘風險 | 候選建立、部署完成、風險開關或正式狀態改變 |
+| [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md) | 由單一 JSON 生成的精確 live／migration／Worker／rollback／acceptance 狀態 | 觀察到部署、復原或真人驗收狀態改變；先更新 JSON，再執行 `project_governance.py --write` |
+| [`PROJECT_STATUS.md`](../PROJECT_STATUS.md) | 已完成能力、交付歷史、長期風險與里程碑 | 能力完成、風險開關或歷史交付記錄改變；不得手動複製目前 release identifiers |
 
 ### 身份、資料與遠端存取 / Identity, data, and remote access
 
@@ -62,11 +66,14 @@ If prose conflicts with executable policy, transactional behavior, security chec
 
 | Document | Owns | Update when |
 |---|---|---|
-| [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHITECTURE.md) | runtime、module boundary、PageContext、transactions、concurrency、readiness、backup | architectural boundary、schema、service owner 或 failure path 改變 |
+| [`ARCHITECTURE_OVERVIEW.md`](ARCHITECTURE_OVERVIEW.md) | 十分鐘模組地圖、主要 seam、依賴方向及改動放置規則 | module owner、interface、dependency direction 或 composition 改變 |
+| [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHITECTURE.md) | runtime、PageContext、transactions、concurrency、readiness、backup 的完整細節 | schema、service implementation 或 failure path 改變 |
 | [`CODE_ACCEPTANCE_REVIEW.md`](CODE_ACCEPTANCE_REVIEW.md) | 風險導向程式審查、10×／100× 判斷、供應鏈及故障情境 | risk model、dependency、capacity assumption 或 review gate 改變 |
 | [`UPDATE_WORKFLOW.md`](UPDATE_WORKFLOW.md) | working-tree／staged／release 驗證選擇與安全上傳 | verifier profile、command、staging 或 release sequence 改變 |
 | [`BRANCH_STRATEGY.md`](BRANCH_STRATEGY.md) | branch、tag、platform snapshot 及歷史保留規則 | branch purpose、release line 或 archive policy 改變 |
 | [`AI_AGENT_GIT_GUIDE.md`](AI_AGENT_GIT_GUIDE.md) | Codex 與輔助 Agent 的工作樹、分支、提交、審查及禁止操作 | worktree allocation、agent branch、review ownership 或 GitHub protection 改變 |
+| [`DOCUMENTATION_SYSTEM.md`](DOCUMENTATION_SYSTEM.md) | 文件生命週期、單一狀態來源、topic owner、ADR 及驗證規則 | 文件分類、status generator、owner 或治理流程改變 |
+| [`ITERATION_REGISTER.md`](ITERATION_REGISTER.md) | 仍影響下一個決定且有 owner／evidence 的改善佇列 | 項目進入、狀態改變或完成後移出 |
 | [`../Professional_Design_System.md`](../Professional_Design_System.md) | token、component、responsive、motion、SVG／Lottie、a11y 及驗證規則 | visual token、shared component、motion 或 accessibility contract 改變 |
 | [`design/ATMOSPHERE_ASSET_MANIFEST.md`](design/ATMOSPHERE_ASSET_MANIFEST.md) | AI 氣氛資產提示詞、用途、尺寸、大小、SHA-256、裁切、遮罩、人工檢視及禁用位置 | atmosphere slot、圖片、生成工具、theme pair、hash 或 placement boundary 改變 |
 | [`CONTENT_DESIGN_AUDIT.md`](CONTENT_DESIGN_AUDIT.md) | 可見文案的用途分類、保留／蒸餾決定、頁面主行動與後果說明 | page hierarchy、visible copy、progressive disclosure、support copy 或 content ownership 改變 |
@@ -171,13 +178,14 @@ HTTP 200 alone is not UI evidence; a passing unit suite alone is not release evi
 When a change is ready for review:
 
 1. Update the authoritative specialist document first.
-2. Update both `README.md` and `README-EN.md` when the entry path, public behavior, release baseline, or major capability changes.
-3. Update `PROJECT_STATUS.md` for candidate/live state and residual risk.
-4. Update `RELEASE_HANDOVER.md` and `ACCEPTANCE_EVIDENCE.md` for release, backup, rollback, or human checks.
-5. Update `Professional_Design_System.md` for shared visual, responsive, motion, or accessibility rules.
-6. Add every new `docs/*.md` file to this catalogue; the documentation test fails when a Markdown document is omitted.
-7. Run link/contract tests and the risk-selected verification profile.
-8. Keep historical evidence labelled historical; never silently rewrite an old release as current.
+2. Use [`documentation-manifest.json`](documentation-manifest.json) to confirm lifecycle class, topic owner and update triggers.
+3. For observed live／migration／Worker／rollback／acceptance changes, update `status/current-release.json` and run `python -X utf8 scripts/project_governance.py --write`; never hand-copy mutable identifiers.
+4. Update both `README.md` and `README-EN.md` only when reader routing, public behavior or a major capability changes.
+5. Update `PROJECT_STATUS.md` for capability/history and residual risk; update `RELEASE_HANDOVER.md`／`ACCEPTANCE_EVIDENCE.md` for procedures and evidence.
+6. Update `Professional_Design_System.md` for shared visual, responsive, motion or accessibility rules.
+7. Classify every new Markdown file or collection and add its authoritative route here when it is a first-class guide.
+8. Run `python -X utf8 scripts/project_governance.py --check` and the risk-selected verification profile.
+9. Keep historical evidence labelled historical; never silently rewrite an old release as current.
 
 ## 參考方法與批判性取捨 / Reference patterns and critical choices
 

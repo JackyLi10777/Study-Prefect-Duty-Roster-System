@@ -1,12 +1,14 @@
 # Sing Yin Study Prefect Duty Roster System
 
-> **Verified production truth (2026-08-01):** the Windows origin is running clean annotated `v1.2.0-rc.45` at `90777345ea9ed5652c73873edb3c8c846a9ceac5`. Its 308-file fingerprint `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` passed all 15 formal gates. The controlled switch upgraded SQLite to Alembic `0012`; verified backup `20260801-064628-279309-manual_verified_backup.sqlite3` with SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8` passed isolated restore, fairness, row-count and restore-audit checks. Origin health/write-readiness and canonical entrance/Guest/support browser smoke passed without console errors. Worker source did not change, so the existing 100% version remains in service and its gateway health was rechecked. Rc43 is historical source evidence, not a code-only rollback after migration `0012`; rollback requires the controlled database restore procedure. Supervised Head Study Prefect and teacher-advisor acceptance remains open. Older current/live wording below is historical and superseded by this notice.
+<!-- SING_YIN_CURRENT_STATUS:START -->
+> **Verified production truth (2026-08-01):** the live Windows origin is clean annotated `v1.2.0-rc.45` at `90777345ea9ed5652c73873edb3c8c846a9ceac5` and runs an immutable bundle. Its 308-file fingerprint `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` passed 15/15 gates. SQLite is at Alembic `0012`; verified backup `20260801-064628-279309-manual_verified_backup.sqlite3` with SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`, isolated restore, health, `writeReady=true`, `maintenance=false`, `recoveryRequired=false`, and `pendingBackups=0` passed. Worker source did not change; canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` remains healthy at 100% traffic. `v1.2.0-rc.43` is historical source evidence, not a code-only rollback after migration `0012`; recovery requires the controlled compatible database restore. Supervised human acceptance remains `pending`. See [current system status](docs/status/CURRENT_STATUS.md) for the exact state and update contract.
+<!-- SING_YIN_CURRENT_STATUS:END -->
 >
-> **rc45 completed scope:** SQLite remains the local-first source of truth. Evidence-led indexes, bounded latest/history queries, N+1 removal, opt-in privacy-safe slow-SQL diagnostics, non-blocking backup evidence, and clearer support/operator guidance are now live. The isolated synthetic scale run reaches 2,400 prefects and 5,200 weeks.
+> **rc45 completed scope (historical release capability):** SQLite remains the local-first source of truth. Evidence-led indexes, bounded latest/history queries, N+1 removal, opt-in privacy-safe slow-SQL diagnostics, non-blocking backup evidence, and clearer support/operator guidance were introduced with this release. The isolated synthetic scale run reaches 2,400 prefects and 5,200 weeks; the generated status above alone says what is live now.
 >
-> **Historical clean-release evidence (2026-07-27):** the clean controlled Windows origin ran annotated tag `v1.2.0-rc.30` at commit `74b84f43786b00feb15b51a6270ff71c9430773f`; Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` passed zero-percent smoke and then served 100% of traffic. The 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` passed all 14 formal gates, and verified backup `20260727-023041-069097-manual_verified_backup.sqlite3` with SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` passed isolated restore, fairness, row-count, and restore-audit checks. Origin health/readiness, canonical root/health, rendered desktop/320px theme controls, and the Guest Engineering ≈10B disclosure passed. This was the fully verified clean pair at that time; current rc45 production and the controlled pre-0012 database-restore boundary are recorded above. Supervised Head Study Prefect and teacher-advisor acceptance remains outstanding.
+> **Historical clean-release evidence (2026-07-27):** the clean controlled Windows origin ran annotated tag `v1.2.0-rc.30` at commit `74b84f43786b00feb15b51a6270ff71c9430773f`; Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` passed zero-percent smoke and then served 100% of traffic. The 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` passed all 14 formal gates, and verified backup `20260727-023041-069097-manual_verified_backup.sqlite3` with SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` passed isolated restore, fairness, row-count, and restore-audit checks. Origin health/readiness, canonical root/health, rendered desktop/320px theme controls, and the Guest Engineering ≈10B disclosure passed. This was the fully verified clean pair at that time; the generated status above owns current production and recovery truth.
 >
-> **Historical rc31 source candidate (frozen, never deployed):** branch `codex/rc31-unified-theme-controls` combined the binary Light／Dark control with complete deterministic room-schedule solving and strict slot/weight validation, bounded Admin／Guest generated-file delivery, rendered-state mobile-drawer focus synchronization, universal business-write admission, diagnostic-only recovery-marker startup, exact-byte staged backup／handover／restore verification, migration-provenance guards, and fail-closed host／Worker identity parity. Its 297 deployable source files passed all 15 formal `--release` gates with fingerprint `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042`. It is retained as historical source evidence only and has been superseded by current rc45 production; it is not a current candidate, deployment, or rollback target.
+> **Historical rc31 source candidate (frozen, never deployed):** branch `codex/rc31-unified-theme-controls` combined the binary Light／Dark control with complete deterministic room-schedule solving and strict slot/weight validation, bounded Admin／Guest generated-file delivery, rendered-state mobile-drawer focus synchronization, universal business-write admission, diagnostic-only recovery-marker startup, exact-byte staged backup／handover／restore verification, migration-provenance guards, and fail-closed host／Worker identity parity. Its 297 deployable source files passed all 15 formal `--release` gates with fingerprint `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042`. It is retained as historical source evidence only and was superseded by later production releases; it is not a current candidate, deployment, or rollback target.
 >
 > **Not to be served, but to serve. — Mark 10:45**
 
@@ -34,7 +36,7 @@ The workbench extends that rule across every principal route. Weekly operations,
 Interaction motion is semantic and auditable. Only Settings, the appearance toggle, Backup Settings navigation, History, and Undo may use bounded rotation. Restore, draft, publish, import, directory management, verse refresh, and support actions retain truthful lifecycle or glyph morphs without a second rotation. Sound and music-autoplay switches receive a clearer short inset press. Button hosts, labels, focus rings, and layout never rotate or shift, while busy, disabled, reconnect, and reduced-motion states clear transforms immediately.
 
 [Traditional Chinese README](README.md) · [Operator guide](docs/OPERATOR_GUIDE.md)
-· [Architecture](docs/NICEGUI_ARCHITECTURE.md) · [Release status](PROJECT_STATUS.md)
+· [Architecture](docs/ARCHITECTURE_OVERVIEW.md) · [Current system status](docs/status/CURRENT_STATUS.md)
 · [Assist assignment modes](docs/ROSTER_POLICY_MODES.md)
 · [Canonical-site access guide](docs/PUBLIC_ROSTER_VIEWER.md)
 
@@ -53,7 +55,7 @@ longest document:
 | Successor rehearsing before receiving official data | `START_PRACTICE_MODE.cmd` | [Quick start](docs/QUICKSTART.md) and [operator guide](docs/OPERATOR_GUIDE.md) |
 | IT maintainer deploying, recovering, or tracing an OP reference | [Documentation index](docs/DOCUMENTATION_INDEX.md) | [Windows host setup](docs/WINDOWS_DEDICATED_HOST_SETUP.md) and [update workflow](docs/UPDATE_WORKFLOW.md) |
 | Security reviewer or vulnerability reporter | [Security and privacy model](docs/SECURITY_AND_PRIVACY.md) | [Private reporting policy](SECURITY.md) and [branch strategy](docs/BRANCH_STRATEGY.md) |
-| Developer or reviewer changing code | [NiceGUI architecture](docs/NICEGUI_ARCHITECTURE.md) | [Risk-led code review](docs/CODE_ACCEPTANCE_REVIEW.md), [AI Agent worktree guide](docs/AI_AGENT_GIT_GUIDE.md), and [contributing guide](CONTRIBUTING.md) |
+| Developer or reviewer changing code | [Architecture overview](docs/ARCHITECTURE_OVERVIEW.md) | [Detailed NiceGUI architecture](docs/NICEGUI_ARCHITECTURE.md), [documentation governance](docs/DOCUMENTATION_SYSTEM.md), [risk-led code review](docs/CODE_ACCEPTANCE_REVIEW.md), and [contributing guide](CONTRIBUTING.md) |
 
 ### Access and data boundary
 
@@ -135,27 +137,28 @@ release tag cannot be updated or deleted. See the complete
 data classes, incident response, and residual limits.
 
 The retained **v1.1 rollback** record is historical recovery evidence only; it
-does not replace the current rc45 production truth or its Alembic `0012`
-controlled database-restore boundary.
+does not replace the production and database-restore truth generated from
+[current system status](docs/status/CURRENT_STATUS.md).
 
 The public entrance, shared-roster viewer, and NiceGUI workbench use the same
 `Copyright © 2026 LI Chuangjie` page-footer attribution. Clean group-sharing
 roster PDFs retain their explicit supplementary-footer export option.
 
-Non-interactive editorial cards gain a quiet fine-pointer ambient follow-light and focus-within halo without lift or cursor change; action cards keep the existing lift + glow. Current rc45 production includes Assist fixed-weekday／flexible-weekly modes plus the versioned Service Weave `ProductIdentity`,
+Non-interactive editorial cards gain a quiet fine-pointer ambient follow-light and focus-within halo without lift or cursor change; action cards keep the existing lift + glow. Capabilities introduced through rc45 include Assist fixed-weekday／flexible-weekly modes plus the versioned Service Weave `ProductIdentity`,
 central `PageDefinition` catalogue, public NiceGUI component API, explicit CSS
 ownership, filterable Engineering evidence index, internal Developer Reference,
 bounded Guest preferences, unified generated-file delivery, the browser／PDF
 roster matrix, and auditable published-roster withdrawal.
 
-Current rc45 production retains and re-verifies admission control that rejects excess Guest sessions without
+<!-- CURRENT_CAPABILITY_SUMMARY:START -->
+Release capabilities retained and re-verified through rc45 include admission control that rejects excess Guest sessions without
 evicting active users, stronger import and network bounds, aggregate fairness
 reconciliation, explicit return paths, and stable button containers whose icons
-transform internally. Its 308-file fingerprint
-`032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83`
-passed all 15 formal gates before the controlled origin rollout. Worker source,
-bindings and security configuration were unchanged; the existing 100% gateway
+transform internally. Exact source fingerprint, gate, origin and Worker evidence
+is generated from the [current system status](docs/status/CURRENT_STATUS.md).
+Worker source, bindings and security configuration were unchanged; the existing 100% gateway
 was retained and rechecked against the new origin.
+<!-- CURRENT_CAPABILITY_SUMMARY:END -->
 
 ## Repository editions
 
@@ -164,7 +167,7 @@ was retained and rechecked against the new origin.
 | `codex/login-copy-music-rc18` | NiceGUI + SQLite, historical release source | Superseded rc18 `fd504a8` entrance, devotional, interaction and rollback line |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite, historical source | Previous Service Weave editorial integration line |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite, Windows self-hosted | Previous unified-guest architecture line; no longer the formal baseline |
-| `main` | NiceGUI + SQLite, self-hosted | Current production is clean `v1.2.0-rc.45`; the database is at Alembic `0012`, so rollback requires the compatible controlled database-restore procedure |
+| `main` | NiceGUI + SQLite, self-hosted | Protected integration branch; exact production and database-recovery truth lives in [current system status](docs/status/CURRENT_STATUS.md) |
 | `nicegui-self-hosted` | Dedicated Windows or Linux host | Platform-labelled release snapshot |
 | `streamlit-cloud` | Streamlit Cloud | Preserved legacy reference |
 

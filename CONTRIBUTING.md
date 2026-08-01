@@ -8,7 +8,9 @@ hand over—not merely add visible complexity.
 
 Read:
 
-- `PROJECT_STATUS.md`
+- `docs/status/CURRENT_STATUS.md`
+- `docs/ARCHITECTURE_OVERVIEW.md`
+- `docs/DOCUMENTATION_SYSTEM.md`
 - `Professional_Design_System.md`
 - `docs/NICEGUI_ARCHITECTURE.md`
 - `docs/RELEASE_HANDOVER.md`
@@ -21,18 +23,30 @@ The active runtime is NiceGUI. `demo_code/`, `demo_code2/`, and the
 
 - `roster_policy`: duty posts, opening days, capacities, role gates, weights.
 - `roster_core`: pure generation and validation.
-- `roster_workflow`: transactions, fairness ledger, audit, backup, restore.
+- `RosterWorkflow`: transactions, fairness ledger, audit, backup, restore.
 - `nicegui_app/ui`: bilingual presentation, navigation, guidance and feedback.
+- `docs/status/current-release.json`: mutable production, migration, Worker,
+  recovery and human-acceptance identifiers.
 
 Do not derive rules from translated labels or place fairness decisions in page
-handlers.
+handlers. Do not hand-copy mutable current-release values into ordinary guides;
+run the status generator. Cross-module dependency directions are executable in
+`docs/architecture/module-boundaries.json`.
 
 ## Required checks
 
 ```powershell
-python -X utf8 -m pytest -q
-python -X utf8 scripts\verify_release_candidate.py
+python -X utf8 scripts\project_governance.py --check
+python -X utf8 scripts\verify_update.py --plan
+python -X utf8 -m pytest -q <focused-tests>
+python -X utf8 scripts\verify_update.py --staged
 ```
+
+Use `verify_update.py --release` only for a real release candidate. When
+observed deployment, recovery, Worker or human-acceptance truth changes, update
+`docs/status/current-release.json`, then run
+`python -X utf8 scripts\project_governance.py --write`; generated status blocks
+must not be edited by hand.
 
 UI changes also require browser evidence for Traditional Chinese/English,
 light/dark mode, phone width, keyboard focus, console output, and paired theme

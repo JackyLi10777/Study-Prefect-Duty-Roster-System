@@ -12,7 +12,9 @@ compromise. Every high-risk operation must fail closed, limit blast radius,
 leave diagnosable evidence, and remain recoverable from verified backups and an
 immutable release.
 
-> **Current boundary (2026-08-01):** production is clean annotated `v1.2.0-rc.45` at origin commit `90777345ea9ed5652c73873edb3c8c846a9ceac5` with SQLite at Alembic `0012`. Worker source and protected configuration did not change, so the existing canonical gateway remains in service and its health was rechecked. The R5／R6／R7 controls, Guest isolation, honest waiting-state contracts and atmosphere/motion presentation changes described below remain live. Rc43, rc41 and older applications are historical sources and require a compatible pre-0012 database restore; they are not code-only rollback targets. Rc42 is source-only and was never deployed. Supervised acceptance is pending.
+<!-- SING_YIN_CURRENT_STATUS:START -->
+> **Verified production truth (2026-08-01):** the live Windows origin is clean annotated `v1.2.0-rc.45` at `90777345ea9ed5652c73873edb3c8c846a9ceac5` and runs an immutable bundle. Its 308-file fingerprint `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` passed 15/15 gates. SQLite is at Alembic `0012`; verified backup `20260801-064628-279309-manual_verified_backup.sqlite3` with SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`, isolated restore, health, `writeReady=true`, `maintenance=false`, `recoveryRequired=false`, and `pendingBackups=0` passed. Worker source did not change; canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` remains healthy at 100% traffic. `v1.2.0-rc.43` is historical source evidence, not a code-only rollback after migration `0012`; recovery requires the controlled compatible database restore. Supervised human acceptance remains `pending`. See [current system status](status/CURRENT_STATUS.md) for the exact state and update contract.
+<!-- SING_YIN_CURRENT_STATUS:END -->
 
 ## 1. 資產及資料分類 / Assets and data classes
 

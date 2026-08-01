@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+from collections.abc import Mapping
 import hashlib
 import json
 from pathlib import Path
@@ -40,6 +41,16 @@ _PUBLIC_AUDIT_DIGEST_LOCATIONS = {
     "docs/audits/CODEBASE_AUDIT_FINDINGS_2026-07-26_R3.json": {
         ("audit_metadata", "commit"),
     },
+}
+_CURRENT_RELEASE_RELATIVE_PATH = "docs/status/current-release.json"
+_PUBLIC_CURRENT_RELEASE_DIGEST = re.compile(
+    r'^\s*"(?P<field>commit|fingerprint_sha256|backup_sha256)"\s*:\s*'
+    r'"(?P<digest>[0-9a-f]{40}|[0-9a-f]{64})"\s*,?\s*$'
+)
+_PUBLIC_CURRENT_RELEASE_DIGEST_LOCATIONS = {
+    "commit": ("release", "commit"),
+    "fingerprint_sha256": ("release", "fingerprint_sha256"),
+    "backup_sha256": ("recovery", "backup_sha256"),
 }
 _CHECK_NAMES = ("dependency_audit", "static_analysis", "secret_scan")
 _SECRET_SCAN_TARGETS = (
@@ -123,6 +134,45 @@ def _is_public_audit_digest(
         if value == digest:
             return True
     return False
+
+
+def _is_public_current_release_digest(
+    path: str,
+    line_number: object,
+    root: Path = PROJECT_ROOT,
+) -> bool:
+    """Recognize only public provenance hashes in the live status schema."""
+
+    normalized = path.replace("\\", "/").lstrip("./")
+    if normalized != _CURRENT_RELEASE_RELATIVE_PATH:
+        return False
+    relative_path = Path(normalized)
+    try:
+        index = int(line_number) - 1
+        lines = (root / relative_path).read_text(encoding="utf-8").splitlines()
+        line = lines[index]
+        payload = json.loads("\n".join(lines))
+    except (TypeError, ValueError, IndexError, OSError, json.JSONDecodeError):
+        return False
+    if not isinstance(payload, Mapping):
+        return False
+    if payload.get("schema_version") != 1 or payload.get("state") != "live":
+        return False
+    match = _PUBLIC_CURRENT_RELEASE_DIGEST.fullmatch(line)
+    if match is None:
+        return False
+
+    field = match.group("field")
+    digest = match.group("digest")
+    location = _PUBLIC_CURRENT_RELEASE_DIGEST_LOCATIONS[field]
+    value: object = payload
+    try:
+        for key in location:
+            value = value[key]  # type: ignore[index]
+    except (KeyError, TypeError):
+        return False
+    expected_length = 40 if field == "commit" else 64
+    return len(digest) == expected_length and value == digest
 
 
 def _render_verified_service_weave_module(payload: bytes) -> str:
@@ -280,6 +330,9 @@ def main() -> int:
                     if not (
                         _is_public_pnpm_integrity(path, item.get("line_number"))
                         or _is_public_audit_digest(path, item.get("line_number"))
+                        or _is_public_current_release_digest(
+                            path, item.get("line_number")
+                        )
                         or (
                             path.replace("\\", "/").lstrip("./")
                             == _SERVICE_WEAVE_GENERATED_RELATIVE_PATH
