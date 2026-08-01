@@ -50,7 +50,7 @@
 > restore. Worker source and configuration were unchanged, so Worker version
 > `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` was retained without a new Worker
 > rollout. rc21 is now a historical secondary recovery baseline; rc26 later replaced it,
-> while rc27 was the first-level origin rollback beneath rc30 at that time. Current rc43 production and the rc41 paired rollback are recorded at the top of this document.
+> while rc27 was the first-level origin rollback beneath rc30 at that time. Current rc45 production and the migration `0012` controlled-restore boundary are recorded at the top of this document.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 

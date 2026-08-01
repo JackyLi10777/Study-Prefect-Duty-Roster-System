@@ -93,7 +93,7 @@ Worker 必須有：
 - 不把管理員加入 Cloudflare Dashboard 成員作為登入前提。
 - 不建立應用內共用密碼。
 
-**控制台與歷史乾淨證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。乾淨 rc30 origin＋Worker `11763f08…` 組合曾通過 canonical root、gateway health、真實 Guest session／logout、Admin Access handoff、Viewer、desktop／320px theme control 及 Guest Engineering 核對；目前 rc43 配對及第一層 rc41 配對回退以本頁頂部的最新證據為準。
+**控制台與歷史乾淨證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。乾淨 rc30 origin＋Worker `11763f08…` 組合曾通過 canonical root、gateway health、真實 Guest session／logout、Admin Access handoff、Viewer、desktop／320px theme control 及 Guest Engineering 核對；目前 rc45 origin、未變更的 gateway 及 migration `0012` 後的受控復原限制以本頁頂部證據為準。
 
 ## 4. 來源驗證
 
@@ -288,6 +288,6 @@ additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，�
 
 ## English operational summary
 
-The active Windows origin and canonical Worker are the clean, source-matched rc43 pair recorded at the top of this document. The origin runs annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466`; Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` serves 100% of canonical traffic. The immediate recorded rollback targets are rc41 commit `74072b0175ff64807312a8cc5b9cd016b6628210` for the origin and Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` for the edge. Earlier pairs remain historical recovery evidence only.
+The active Windows origin is clean annotated `v1.2.0-rc.45` at `90777345ea9ed5652c73873edb3c8c846a9ceac5`, with SQLite at Alembic `0012`. Worker source and protected configuration did not change, so the existing canonical gateway remains in service and its health was rechecked. Rc43, rc41 and earlier pairs remain historical source evidence only; none is a code-only rollback target after migration `0012`. Restoring an older application requires the controlled compatible pre-0012 database restore procedure.
 
-The rc43 pair passed the 15／15 source-matched gate set and completed the controlled origin switch, staged smoke, 100% promotion, canonical health／entrance／Viewer checks and Cloudflare Access fail-closed verification. Historical release evidence does not describe current production. Supervised human acceptance remains open.
+The rc45 origin passed the 15／15 source-matched gate set and completed the controlled origin switch, verified backup and isolated restore, canonical health／entrance／Guest／support checks and Cloudflare Access fail-closed verification. No Worker rollout was needed because its source and configuration were unchanged. Historical release evidence does not describe current production. Supervised human acceptance remains open.

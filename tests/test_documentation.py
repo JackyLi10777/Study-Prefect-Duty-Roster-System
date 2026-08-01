@@ -266,24 +266,38 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
         "第一層 rc35 回退",
         "目前第一層受控回退是 rc35",
         "目前第一層 origin 回退是本頁頂部記錄的 rc39",
+        "目前 rc43 production",
+        "current rc43 production and the rc41",
+        "production currently runs clean `v1.2.0-rc.43`",
+        "目前正式 rc43 中",
+        "the current rc43 origin",
+        "current production is rc43",
     )
-    for document in (status, architecture, security, handover, acceptance, quickstart):
+    for document in (
+        status,
+        architecture,
+        security,
+        handover,
+        acceptance,
+        quickstart,
+        readme,
+        readme_en,
+        windows,
+        cloudflare,
+        viewer,
+        decision,
+        operator,
+        update_workflow,
+    ):
         normalized = document.lower()
         for stale_claim in stale_active_claims:
             assert stale_claim.lower() not in normalized
 
     formal_switch = decision.split("## 正式切換程序", 1)[1].split("## English", 1)[0]
-    assert "v1.2.0-rc.41" in formal_switch
-    assert "74072b0175ff64807312a8cc5b9cd016b6628210" in formal_switch
-    assert "610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e" in formal_switch
-    assert formal_switch.index("v1.2.0-rc.41") < formal_switch.index("rc40／")
-    first_worker_rollback = formal_switch.index(
-        "610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e"
-    )
-    second_worker_rollback = formal_switch.index(
-        "2cb38b05-6091-43be-86d3-d9f3ccae1ceb"
-    )
-    assert first_worker_rollback < second_worker_rollback
+    assert "rc45" in formal_switch
+    assert "0012" in formal_switch
+    assert "pre-0012" in formal_switch
+    assert "code-only rollback" in formal_switch
 
     # Detailed historical rc20 provenance belongs in the status and handover
     # records; current architecture and security guides need not duplicate it.
