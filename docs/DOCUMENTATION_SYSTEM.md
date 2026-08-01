@@ -68,6 +68,7 @@ python -X utf8 scripts/project_governance.py --check
 | schema／migration／restore | architecture、release handover、host runbook、current release state |
 | encrypted off-site copy／complete host loss | `OFFSITE_DISASTER_RECOVERY.md`；architecture 只描述 seam，其他指南只保留 fail-closed 邊界摘要及連結，不複製門檻、保留期或操作程序 |
 | 公開 Worker／Access／Viewer | Cloudflare runbook、安全模型、public viewer guide |
+| Guest capacity／Worker service binding／WebSocket／下載／backup／outbox 混合負載 | `CODE_ACCEPTANCE_REVIEW.md` 定義何時量度，`ACCEPTANCE_EVIDENCE.md` 擁有驗收映射，結果進日期化 `audits/`；只有正式部署身份改變才更新 current-release JSON |
 | 操作者步驟或文案 | operator guide、quickstart、i18n／browser contract |
 | release／deployment／rollback | current-release JSON、CHANGELOG、release evidence；再執行 `--write` |
 

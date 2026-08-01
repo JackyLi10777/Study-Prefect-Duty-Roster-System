@@ -83,6 +83,7 @@ If prose conflicts with executable policy, transactional behavior, security chec
 | [`VISUAL_INTERACTION_AUDIT_RC31.md`](VISUAL_INTERACTION_AUDIT_RC31.md) | rc31 外觀控制缺陷、保留邊界、驗收矩陣及反例 | rc31 theme control scope、interaction contract 或 acceptance matrix 改變 |
 | [`audits/SEMANTIC_ICON_ACTION_MOTION_2026-07-30.md`](audits/SEMANTIC_ICON_ACTION_MOTION_2026-07-30.md) | 語意圖標來源分母、21 個必需控制、五項旋轉白名單、提示音預設及渲染驗證 | icon role／category／motion mode、lifecycle feedback、rotation allowlist、sound default 或 motion verifier 改變 |
 | [`audits/ATMOSPHERE_MOTION_ACCEPTANCE_2026-07-31.md`](audits/ATMOSPHERE_MOTION_ACCEPTANCE_2026-07-31.md) | 全路由氣氛、每日聖言、語意旋轉、觸覺開關、裝置矩陣及部署前後證據 | 本輪資產、視覺、互動、browser gate、release 或 production evidence 改變 |
+| [`audits/MIXED_GATEWAY_LOAD_ACCEPTANCE_2026-08-01.md`](audits/MIXED_GATEWAY_LOAD_ACCEPTANCE_2026-08-01.md) | 實際 Worker source 在 local workerd 下的 Guest／Admin／WebSocket／下載／備份／outbox／Viewer 混合負載、停止條件及證據限制 | Gateway、Guest capacity、WebSocket、download registry、backup／outbox concurrency 或本機負載基線改變 |
 | [`plans/WHOLE_SITE_WAITING_EXPERIENCE_PLAN.md`](plans/WHOLE_SITE_WAITING_EXPERIENCE_PLAN.md) | Admin／Guest 入口、誠實進度、slow-state、按鈕圖標分母及全站等待狀態所有權 | entry lifecycle、progress mode、loading token、button inventory 或 waiting-state gate 改變 |
 | [`MUSIC_IMPORT_DECISION.md`](MUSIC_IMPORT_DECISION.md) | 本機音訊匯入的安全及技術決策 | importer、source allowlist、metadata 或 legal/operational boundary 改變 |
 | [`MUSIC_PLAYLIST_CANDIDATES.md`](MUSIC_PLAYLIST_CANDIDATES.md) | 經審核但尚未必納入的音樂候選 | playlist review 或 catalogue decision 改變 |
@@ -136,6 +137,7 @@ The documentation set must continue to explain and test all of these boundaries:
 - a committed write followed by backup failure is reported as committed-with-obligation, never falsely rolled back or retried blindly;
 - restore requires manifest, checksum, SQLite integrity, schema, fairness reconciliation, audit, and isolated restore evidence.
 - host-loss recovery requires a separately stored BitLocker external copy, path-free receipt, immutable release identity, and a drill that reads only that copied bundle.
+- mixed gateway capacity uses the actual Worker source under local workerd, browser WebSockets and disposable fictional SQLite; the dated report must state session count, latency context, isolation, fairness, backup／outbox result, memory stop condition and the fact that it is not Cloudflare-edge evidence.
 
 The detailed implementation belongs in [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHITECTURE.md); ordinary operator response belongs in [`OPERATOR_GUIDE.md`](OPERATOR_GUIDE.md), release and compatible rollback in [`RELEASE_HANDOVER.md`](RELEASE_HANDOVER.md), and complete host-loss recovery in [`OFFSITE_DISASTER_RECOVERY.md`](OFFSITE_DISASTER_RECOVERY.md).
 
@@ -145,6 +147,7 @@ The detailed implementation belongs in [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHI
 |---|---|---|
 | Before editing | `python -X utf8 scripts/verify_update.py --plan` | Determines the risk profile without claiming quality |
 | Focused change | Targeted pytest/Deno/compile/browser check | Fast evidence for the touched behavior |
+| Mixed gateway capacity | `python -X utf8 scripts\verify_mixed_gateway_load.py` when Guest admission, Worker service binding／WebSocket, download, backup or outbox concurrency changes | Proves a bounded local real-Worker path with fictional data; does not replace edge smoke, formal release or human acceptance |
 | Before push | `python -X utf8 scripts/verify_update.py --staged` | Verifies the exact intended staged set |
 | Formal release | `python -X utf8 scripts/verify_update.py --release` | Runs the complete fingerprint-bound release gate once |
 | Windows rollout | `scripts/deploy_windows_release.ps1` report, backup, isolated restore, health/readiness | Proves the protected origin moved safely or rolled back |

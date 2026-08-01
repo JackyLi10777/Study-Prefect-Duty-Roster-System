@@ -83,7 +83,7 @@ def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
     ]
 
 
-def test_worker_deployment_toolchain_is_project_pinned() -> None:
+def test_worker_toolchain_is_project_pinned() -> None:
     package = json.loads((VIEWER_ROOT / "package.json").read_text(encoding="utf-8"))
     lock = (VIEWER_ROOT / "pnpm-lock.yaml").read_text(encoding="utf-8")
     workspace = (VIEWER_ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
@@ -92,8 +92,12 @@ def test_worker_deployment_toolchain_is_project_pinned() -> None:
     assert package["version"] == "1.2.0-rc.35"
     assert package["packageManager"] == "pnpm@11.7.0"
     assert package["engines"] == {"node": ">=22"}
-    assert package["devDependencies"] == {"wrangler": "4.110.0"}
+    assert package["devDependencies"] == {
+        "miniflare": "4.20260708.1",
+        "wrangler": "4.110.0",
+    }
     assert package["scripts"]["deploy:dry-run"].startswith("wrangler deploy --dry-run --strict")
+    assert "miniflare@4.20260708.1" in lock
     assert "wrangler@4.110.0" in lock
     assert "sharp@0.35.0" in lock
     assert "sharp@0.34.5" not in lock

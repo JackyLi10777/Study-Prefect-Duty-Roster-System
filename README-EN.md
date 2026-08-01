@@ -504,7 +504,17 @@ python -X utf8 scripts\verify_update.py
 This is the normal one-command entry point. Documentation, test-only, CI,
 Worker, and deployable runtime changes receive different fail-closed profiles;
 unknown paths are upgraded to full verification. Independent read-only checks
-run concurrently. A formal runtime release still uses:
+run concurrently.
+
+When Guest capacity, Worker service-binding/WebSocket behavior, downloads,
+backups, or outbox concurrency changes, also run
+`python -X utf8 scripts\verify_mixed_gateway_load.py`. It uses the actual Worker
+source under local workerd with disposable fictional data. The
+[dated acceptance](docs/audits/MIXED_GATEWAY_LOAD_ACCEPTANCE_2026-08-01.md)
+keeps that bounded local baseline distinct from Cloudflare-edge, deployment,
+production-SLO, and human-device evidence.
+
+A formal runtime release still uses:
 
 ```powershell
 python -m pip install -r requirements-dev.txt

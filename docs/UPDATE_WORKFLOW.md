@@ -111,6 +111,18 @@ origin；有效 Admin／Guest principal 的同一路徑會到達 NiceGUI，而�
 
 pre-push profile 內互不寫入的檢查會並行執行。正式候選驗證仍保持受控次序，因為瀏覽器寫入、備份及還原證據不可互相競爭同一個隔離環境。
 
+## 有界混合 Gateway 容量檢查
+
+以下命令不是每次修改都要執行；只有 Guest admission／workspace 容量、Worker service binding／WebSocket 代理、generated-file download、backup 或 outbox concurrency 的風險改變時才加入：
+
+```powershell
+python -X utf8 scripts\verify_mixed_gateway_load.py
+```
+
+它在本機執行實際 Worker source、Miniflare／workerd、瀏覽器 WebSocket、loopback NiceGUI origin 及虛構 disposable SQLite。它拒絕 production URL／資料路徑／account credential，並記錄 session 數、p95 的測試語境、隔離、公平、backup／outbox 與 cleanup memory stop condition。成功報告位於被忽略的 `logs/mixed-gateway-load/verification.json`；日期化、可審閱的結論進 [`audits/MIXED_GATEWAY_LOAD_ACCEPTANCE_2026-08-01.md`](audits/MIXED_GATEWAY_LOAD_ACCEPTANCE_2026-08-01.md)。
+
+本機 workerd 證據不證明 Cloudflare edge／VPC Service、長時間 soak、正式 SLO、部署或真人裝置體驗，也不取代 `verify_update.py --release`。已有相同 runtime commit、lockfile、設定及風險邊界的乾淨證據可以沿用；任一相關輸入改變後不可沿用。
+
 ## 正式證據不再被文字改動誤傷
 
 正式 `sourceFingerprint` 現只覆蓋可部署 runtime、內置音樂／資產、依賴、主機操作腳本及正式證據閘門。以下內容改動不再令已證實的 runtime 候選變成 stale：

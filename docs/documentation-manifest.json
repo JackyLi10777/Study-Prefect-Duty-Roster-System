@@ -95,6 +95,7 @@
     "public-viewer-share-lifecycle": "docs/PUBLIC_ROSTER_VIEWER.md",
     "release-deployment-and-compatible-rollback": "docs/RELEASE_HANDOVER.md",
     "offsite-disaster-recovery": "docs/OFFSITE_DISASTER_RECOVERY.md",
+    "mixed-gateway-load-acceptance": "docs/ACCEPTANCE_EVIDENCE.md",
     "security-and-privacy": "docs/SECURITY_AND_PRIVACY.md",
     "guest-capability-boundary": "docs/UNIFIED_GUEST_SECURITY_MODEL.md"
   },

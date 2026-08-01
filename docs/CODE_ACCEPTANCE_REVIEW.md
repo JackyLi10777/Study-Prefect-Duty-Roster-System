@@ -52,6 +52,14 @@ Review therefore classifies every literal as configuration, policy, safety budge
 
 At 10×, existing indexed and bounded operations should remain responsive. At 100×, the team measures query plans, report windows, browser rendering, backup duration, and write contention before adding pagination, summaries, stricter period limits, or moving to PostgreSQL. Redis, microservices, or another front end are not added without measured need.
 
+當修改 Guest admission、Worker service binding／WebSocket、下載 registry、backup 或 outbox 的並行行為時，使用以下有界檢查補充單元與隔離流程：
+
+```powershell
+python -X utf8 scripts\verify_mixed_gateway_load.py
+```
+
+它以實際 Worker source、local workerd、瀏覽器 WebSocket、loopback NiceGUI origin 及虛構 disposable SQLite 量度混合路徑。2026-08-01 的乾淨基線為 10 個同時 Guest × 2 waves、2 個 Admin、22 個 WebSockets，沒有跨 session 洩漏、Guest DB write、未處理 lock／5xx 或公平差異；詳見[日期化驗收](audits/MIXED_GATEWAY_LOAD_ACCEPTANCE_2026-08-01.md)。這個命令不是每次 pre-push 儀式，也不把本機 p95 變成 production SLO；只有風險邊界被觸及時才重跑。
+
 ## 5. 依賴必須有明確責任／Every dependency needs an owner and purpose
 
 新增或保留依賴前須回答：
@@ -63,6 +71,8 @@ At 10×, existing indexed and bounded operations should remain responsive. At 10
 - 移除它會影響哪一項可驗證能力？
 
 The repository keeps one locked Python dependency set and locally governed front-end assets. A dependency is not justified by convenience alone; it must remove more risk or work than it introduces.
+
+`cloudflare/roster_viewer` 直接鎖定 dev-only Miniflare，因為混合 gateway verifier 直接使用其 API 啟動 workerd、KV、rate limits 及 service binding；只依賴 Wrangler 的傳遞性版本會隱藏真正 owner。它不進入 production Worker bundle 或 NiceGUI runtime。相反，React adapter、ScrollTrigger 或額外 GSAP plugins 只有出現對應產品需求及可量度收益時才可加入；「skill 存在」或裝飾性動畫本身不是依賴理由。
 
 ## 6. 驗證深度按風險分級／Scale verification to risk
 

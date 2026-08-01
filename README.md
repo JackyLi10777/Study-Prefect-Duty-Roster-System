@@ -430,6 +430,8 @@ python -X utf8 scripts\verify_update.py
 
 它按 Git 變更在 `docs`、`tests`、`assurance`、`worker` 及 `full` profile 中失敗時向高風險選擇，並行執行互不寫入的低風險檢查。只有可部署 runtime、政策、資料庫、依賴、Worker、主機或正式證據閘門改動才啟動完整候選驗證；文件、測試及 CI 改動不再令已證實的 runtime 指紋過期。完整矩陣及不可省略的人手邊界見[更新、驗證與上傳流程](docs/UPDATE_WORKFLOW.md)。
 
+修改 Guest capacity、Worker service binding／WebSocket、下載、備份或 outbox concurrency 時，另執行 `python -X utf8 scripts\verify_mixed_gateway_load.py`。它以實際 Worker source、local workerd 及虛構 disposable SQLite 提供有界混合負載證據；[日期化驗收](docs/audits/MIXED_GATEWAY_LOAD_ACCEPTANCE_2026-08-01.md)明確區分本機基線、正式 edge、部署及真人驗收。
+
 ```powershell
 python -X utf8 scripts\check_deployment_readiness.py
 python -X utf8 -m pytest -q
