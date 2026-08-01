@@ -68,6 +68,18 @@ def test_release_verifier_records_an_unexpected_orchestration_failure(monkeypatc
     workspace.mkdir()
     monkeypatch.setattr(verify_release_candidate, "REPORT_PATH", report_path)
     monkeypatch.setattr(verify_release_candidate.tempfile, "mkdtemp", lambda **_kwargs: str(workspace))
+    clean_source = {
+        "sourceFingerprint": "a" * 64,
+        "sourceFileCount": 309,
+        "sourceCommit": "b" * 40,
+        "sourceTree": "c" * 40,
+        "sourceDirty": False,
+    }
+    monkeypatch.setattr(
+        verify_release_candidate,
+        "_source_state",
+        lambda **_kwargs: dict(clean_source),
+    )
     monkeypatch.setattr(
         verify_release_candidate,
         "_run_check",
@@ -84,6 +96,7 @@ def test_release_verifier_records_an_unexpected_orchestration_failure(monkeypatc
     assert len(report["sourceFingerprint"]) == 64
     assert report["sourceFileCount"] > 0
     assert "unexpected verifier defect" in report["failure"]
+    assert report["postVerificationSource"] == clean_source
     assert workspace.is_dir()
 
 

@@ -8,7 +8,7 @@
 |---|---|---|---|---|---|
 | ITR-001 | L1 | 完成首席導學風紀與教師顧問的受監督真人驗收 | `ACCEPTANCE_EVIDENCE.md` | Ready | 真實身份登入、主要週流程、PDF／Viewer、長時間重新連線、手機／平板及顧問核對簽署 |
 | ITR-004 | L1 | 建立加密離機備份並在不依賴正式主機的隔離位置演練完整還原 | `OFFSITE_DISASTER_RECOVERY.md` | Active | 真實 BitLocker USB／SD 目標摘要、分離密鑰保管、實際 RPO／RTO、離線保存確認，以及由該副本在 replacement location 完成的 `pass` 報告；來源測試或同機 C／D 副本不能關閉此項 |
-| ITR-002 | L1 | 將已審查但尚未部署的來源整合成下一個正式發布，並從單一 current-release source 更新所有狀態摘要 | `status/current-release.json` | Ready | 正式 release gate、備份與隔離還原、受控 origin／必要 Worker 部署、canonical smoke、`project_governance.py --write`／`--check` 及 staged verifier 全部通過 |
+| ITR-002 | L1 | 將已審查但尚未部署的來源整合成下一個正式發布，並從單一 current-release source 更新所有狀態摘要 | `status/current-release.json` | Active | schema 3 source candidate 已完成 15-gate 與 post-verification clean-tree 證據；仍須 protected-main 最終提交／annotated tag、正式備份與隔離還原、受控 origin／必要 Worker 部署、canonical smoke、`project_governance.py --write`／`--check` 及 staged verifier 全部通過 |
 | ITR-003 | L3 | 大型 living／standard 文件在實際觸及時按 owner 拆分，減少跨主題修改 | `DOCUMENTATION_SYSTEM.md` | Conditional | 一次真實改動仍需修改三個以上不相鄰段落，且拆分能降低而非增加跳轉成本 |
 
 ## 進入條件

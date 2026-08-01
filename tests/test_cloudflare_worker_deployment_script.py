@@ -33,6 +33,16 @@ def test_worker_deployment_is_bound_to_an_immutable_published_release() -> None:
 def test_worker_release_gate_identity_comparison_is_order_independent_and_strict_safe() -> None:
     source = _source()
 
+    assert "[int]$releaseReport.schemaVersion -ne 3" in source
+    assert "$postVerificationSource = $releaseReport.postVerificationSource" in source
+    assert "[string]$postVerificationSource.sourceFingerprint -cne [string]$releaseReport.sourceFingerprint" in source
+    assert "[int]$postVerificationSource.sourceFileCount -ne [int]$releaseReport.sourceFileCount" in source
+    assert "[string]$postVerificationSource.sourceCommit -cne [string]$releaseReport.sourceCommit" in source
+    assert "[string]$postVerificationSource.sourceTree -cne [string]$releaseReport.sourceTree" in source
+    assert "[bool]$postVerificationSource.sourceDirty" in source
+    assert "Get-CurrentReleaseFingerprint -Python $sourcePython -Repository $SourceRoot" in source
+    assert "[string]$releaseReport.sourceFingerprint -cne [string]$currentFingerprint.fingerprint" in source
+    assert "[int]$releaseReport.sourceFileCount -ne [int]$currentFingerprint.fileCount" in source
     assert "$reportIdentityDifferences = @(" in source
     assert "-ReferenceObject @($reportRequiredIdentities | Sort-Object)" in source
     assert "-DifferenceObject @($reportCheckNames | Sort-Object)" in source

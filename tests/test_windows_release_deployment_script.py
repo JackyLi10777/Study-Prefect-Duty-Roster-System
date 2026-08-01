@@ -347,6 +347,13 @@ def test_deployment_script_requires_the_current_release_gate_fingerprint() -> No
     assert 'json.dumps({"fingerprint": fingerprint, "fileCount": file_count})' not in source
     assert "sourceFingerprint" in source
     assert "sourceFileCount" in source
+    assert "[int]$releaseReport.schemaVersion -ne 3" in source
+    assert "$postVerificationSource = $releaseReport.postVerificationSource" in source
+    assert "[string]$postVerificationSource.sourceFingerprint -cne [string]$releaseReport.sourceFingerprint" in source
+    assert "[int]$postVerificationSource.sourceFileCount -ne [int]$releaseReport.sourceFileCount" in source
+    assert "[string]$postVerificationSource.sourceCommit -cne [string]$releaseReport.sourceCommit" in source
+    assert "[string]$postVerificationSource.sourceTree -cne [string]$releaseReport.sourceTree" in source
+    assert "[bool]$postVerificationSource.sourceDirty" in source
     assert "The release report fingerprint does not match the immutable release source." in source
     assert "checks.Count -ne 12" not in source
     assert "twelve-gate" not in source.lower()

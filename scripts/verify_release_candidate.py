@@ -163,6 +163,37 @@ def _write_report(report: dict[str, object]) -> None:
     temporary.replace(REPORT_PATH)
 
 
+def _source_state(*, refresh_fingerprint: bool) -> dict[str, object]:
+    """Capture the exact release inputs and Git state at one integrity boundary."""
+
+    fingerprint, file_count = release_source_fingerprint(refresh=refresh_fingerprint)
+    return {
+        "sourceFingerprint": fingerprint,
+        "sourceFileCount": file_count,
+        "sourceCommit": _git_value("rev-parse", "HEAD"),
+        "sourceTree": _git_value("rev-parse", "HEAD^{tree}"),
+        "sourceDirty": bool(_git_value("status", "--porcelain", "--untracked-files=all")),
+    }
+
+
+def _record_post_verification_source(
+    report: dict[str, object],
+    initial_source: dict[str, object],
+    *,
+    require_stable: bool,
+) -> None:
+    """Bind the report to source that remained unchanged throughout every gate."""
+
+    final_source = _source_state(refresh_fingerprint=True)
+    report["postVerificationSource"] = final_source
+    _write_report(report)
+    if require_stable and final_source != initial_source:
+        raise ReleaseVerificationError(
+            "Release verification changed the source, Git revision, tree, or working tree; "
+            "discard generated mutations and rerun from a clean immutable candidate."
+        )
+
+
 def _run_check(name: str, command: list[str], environment: dict[str, str], report: dict[str, object]) -> None:
     print(f"\n=== {name} ===", flush=True)
     started = time.monotonic()
@@ -357,20 +388,13 @@ def _run_unified_access_phase(
 
 def main() -> int:
     workspace = Path(tempfile.mkdtemp(prefix="sing-yin-release-candidate-"))
-    source_fingerprint, source_file_count = release_source_fingerprint()
-    source_commit = _git_value("rev-parse", "HEAD")
-    source_tree = _git_value("rev-parse", "HEAD^{tree}")
-    source_dirty = bool(_git_value("status", "--porcelain", "--untracked-files=all"))
+    initial_source = _source_state(refresh_fingerprint=True)
     planned_release_tag = _planned_release_tag()
     report: dict[str, object] = {
         "schemaVersion": RELEASE_REPORT_SCHEMA_VERSION,
         "project": PROJECT_ID,
         "policyVersion": POLICY_VERSION,
-        "sourceFingerprint": source_fingerprint,
-        "sourceFileCount": source_file_count,
-        "sourceCommit": source_commit,
-        "sourceTree": source_tree,
-        "sourceDirty": source_dirty,
+        **initial_source,
         "plannedReleaseTag": planned_release_tag,
         "immutableReleaseReference": f"refs/tags/{planned_release_tag}",
         "requiredCheckIdentities": list(REQUIRED_CHECK_IDENTITIES),
@@ -385,6 +409,10 @@ def main() -> int:
     base_environment = {**os.environ, "PYTHONUTF8": "1"}
     succeeded = False
     try:
+        if initial_source["sourceDirty"] is not False:
+            raise ReleaseVerificationError(
+                "Release verification requires a clean source tree before any gate runs."
+            )
         _run_check(
             "repository_hygiene",
             [sys.executable, "-X", "utf8", "scripts/check_repository_hygiene.py"],
@@ -457,6 +485,11 @@ def main() -> int:
             scripts=("scripts/verify_nicegui_partial_backup.py",),
             report=report,
         )
+        _record_post_verification_source(
+            report,
+            initial_source,
+            require_stable=True,
+        )
         report["status"] = "pass"
         report["finishedAt"] = datetime.now(timezone.utc).isoformat()
         _write_report(report)
@@ -464,6 +497,15 @@ def main() -> int:
         print(f"\nRelease-candidate verification passed. Report: {REPORT_PATH}", flush=True)
         return 0
     except Exception as error:  # noqa: BLE001 - CLI boundary must leave a failed evidence report
+        if "postVerificationSource" not in report:
+            try:
+                _record_post_verification_source(
+                    report,
+                    initial_source,
+                    require_stable=False,
+                )
+            except Exception:  # noqa: BLE001 - preserve the original gate failure
+                pass
         report["status"] = "fail"
         report["finishedAt"] = datetime.now(timezone.utc).isoformat()
         report["failure"] = str(error)

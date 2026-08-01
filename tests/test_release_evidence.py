@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 
+import pytest
+
 from nicegui_app.config import POLICY_VERSION
 from nicegui_app.release_evidence import (
     PROJECT_ID,
@@ -19,10 +21,11 @@ from nicegui_app.release_evidence import (
     release_source_fingerprint,
 )
 from nicegui_app import release_evidence
+from scripts import verify_release_candidate
 
 
 def _report(*, fingerprint: str, status: str = "pass") -> dict[str, object]:
-    return {
+    report = {
         "schemaVersion": RELEASE_REPORT_SCHEMA_VERSION,
         "project": PROJECT_ID,
         "policyVersion": POLICY_VERSION,
@@ -45,6 +48,14 @@ def _report(*, fingerprint: str, status: str = "pass") -> dict[str, object]:
             {"name": "browser", "status": "pass", "durationMs": 20},
         ],
     }
+    report["postVerificationSource"] = {
+        "sourceFingerprint": report["sourceFingerprint"],
+        "sourceFileCount": report["sourceFileCount"],
+        "sourceCommit": report["sourceCommit"],
+        "sourceTree": report["sourceTree"],
+        "sourceDirty": False,
+    }
+    return report
 
 
 def test_release_source_fingerprint_changes_with_release_input_content(tmp_path: Path) -> None:
@@ -114,6 +125,24 @@ def test_runtime_source_fingerprint_is_cached_for_repeated_showcase_reads(monkey
     assert release_source_fingerprint() == ("a" * 64, 12)
     assert release_source_fingerprint() == ("a" * 64, 12)
     assert calls == 1
+    release_evidence._cached_release_source_fingerprint.cache_clear()
+
+
+def test_release_verifier_can_refresh_a_cached_fingerprint_at_the_final_boundary(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "candidate.py"
+    source.write_text("value = 1\n", encoding="utf-8")
+    monkeypatch.setattr(release_evidence, "RELEASE_SOURCE_ROOTS", (tmp_path,))
+    monkeypatch.setattr(release_evidence, "RELEASE_SOURCE_FILES", ())
+    release_evidence._cached_release_source_fingerprint.cache_clear()
+    cached, _ = release_source_fingerprint()
+
+    source.write_text("value = 2\n", encoding="utf-8")
+
+    assert release_source_fingerprint()[0] == cached
+    assert release_source_fingerprint(refresh=True)[0] != cached
     release_evidence._cached_release_source_fingerprint.cache_clear()
 
 
@@ -278,6 +307,57 @@ def test_release_report_rejects_dirty_or_mismatched_release_provenance(tmp_path:
     payload["sourceDirty"] = True
     report_path.write_text(json.dumps(payload), encoding="utf-8")
     assert load_release_evidence(report_path, current_fingerprint="current").state == "unreadable"
+
+
+def test_release_report_requires_matching_post_verification_source(tmp_path: Path) -> None:
+    report_path = tmp_path / "report.json"
+    payload = _report(fingerprint="current")
+    del payload["postVerificationSource"]
+    report_path.write_text(json.dumps(payload), encoding="utf-8")
+    assert load_release_evidence(report_path, current_fingerprint="current").state == "unreadable"
+
+    payload = _report(fingerprint="current")
+    payload["postVerificationSource"]["sourceDirty"] = True  # type: ignore[index]
+    report_path.write_text(json.dumps(payload), encoding="utf-8")
+    assert load_release_evidence(report_path, current_fingerprint="current").state == "unreadable"
+
+
+def test_formal_verifier_fails_when_any_gate_changes_the_candidate_source(monkeypatch) -> None:
+    states = iter(
+        (
+            {
+                "sourceFingerprint": "a" * 64,
+                "sourceFileCount": 10,
+                "sourceCommit": "b" * 40,
+                "sourceTree": "c" * 40,
+                "sourceDirty": False,
+            },
+            {
+                "sourceFingerprint": "a" * 64,
+                "sourceFileCount": 10,
+                "sourceCommit": "b" * 40,
+                "sourceTree": "c" * 40,
+                "sourceDirty": True,
+            },
+        )
+    )
+    initial = next(states)
+    monkeypatch.setattr(verify_release_candidate, "_source_state", lambda **_kwargs: next(states))
+    monkeypatch.setattr(verify_release_candidate, "_write_report", lambda _report: None)
+
+    with pytest.raises(verify_release_candidate.ReleaseVerificationError, match="changed the source"):
+        verify_release_candidate._record_post_verification_source(
+            {},
+            initial,
+            require_stable=True,
+        )
+
+
+def test_browser_component_evidence_never_overwrites_tracked_visual_references() -> None:
+    verifier = (release_evidence.PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
+
+    assert 'PROJECT_ROOT / "logs" / "uiverse-components"' in verifier
+    assert 'PROJECT_ROOT / "test-results" / "uiverse-components"' not in verifier
 
 
 def test_release_report_requires_the_exact_complete_check_identity_sequence(tmp_path: Path) -> None:

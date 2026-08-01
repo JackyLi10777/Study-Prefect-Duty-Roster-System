@@ -1251,6 +1251,7 @@ try {
     $releaseReportPath = Join-Path $SourceRoot "logs\release-candidate-report.json"
     $releaseReport = Get-Content -LiteralPath $releaseReportPath -Raw -Encoding UTF8 |
         ConvertFrom-Json
+    $postVerificationSource = $releaseReport.postVerificationSource
     $reportChecks = @($releaseReport.checks)
     $reportRequiredChecks = @($releaseReport.requiredCheckIdentities | ForEach-Object { [string]$_ })
     $passedNames = @(
@@ -1266,13 +1267,19 @@ try {
             -DifferenceObject @($reportRequiredChecks | Sort-Object)
     )
     if (
-        [int]$releaseReport.schemaVersion -ne 2 -or
+        [int]$releaseReport.schemaVersion -ne 3 -or
         [string]$releaseReport.sourceCommit -cne $releaseCommit -or
         [string]$releaseReport.sourceTree -cne (Get-GitValue -Repository $SourceRoot -Arguments @("rev-parse", "$releaseCommit`^{tree}")) -or
         [bool]$releaseReport.sourceDirty -or
         [string]$releaseReport.plannedReleaseTag -cne $ReleaseRef -or
         [string]$releaseReport.immutableReleaseReference -cne "refs/tags/$ReleaseRef" -or
         [bool]$releaseReport.humanAcceptanceRequired -ne $true -or
+        $null -eq $postVerificationSource -or
+        [string]$postVerificationSource.sourceFingerprint -cne [string]$releaseReport.sourceFingerprint -or
+        [int]$postVerificationSource.sourceFileCount -ne [int]$releaseReport.sourceFileCount -or
+        [string]$postVerificationSource.sourceCommit -cne [string]$releaseReport.sourceCommit -or
+        [string]$postVerificationSource.sourceTree -cne [string]$releaseReport.sourceTree -or
+        [bool]$postVerificationSource.sourceDirty -or
         $null -eq $releaseReport.toolVersions -or
         $reportRequiredChecks.Count -ne $requiredCheckCount -or
         $reportIdentityDifferences.Count -ne 0 -or
