@@ -17,7 +17,7 @@
 - 一個可觀察的使用者、操作者或維護者結果；
 - 一個主要 owning module 或 document；
 - 可判斷完成的 evidence；
-- 明確狀態：`Proposed`、`Ready`、`Active`、`Blocked` 或 `Done`；
+- 明確狀態：`Proposed`、`Ready`、`Active`、`Conditional`、`Blocked` 或 `Done`；`Conditional` 只在記錄的觸發條件成立後才進入執行；
 - 若風險高，附 rollback 或停止條件。
 
 ## 收斂規則

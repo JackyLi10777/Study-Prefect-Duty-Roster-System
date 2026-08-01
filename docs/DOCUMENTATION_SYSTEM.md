@@ -89,7 +89,7 @@ README 只做導覽與產品摘要，不承擔完整 release history、架構細
 `python -X utf8 scripts/project_governance.py --check` 會拒絕：
 
 - 未分類或重複分類的 Markdown；
-- topic owner 或本機 Markdown link 不存在；
+- topic owner 或任何明確分類／collection 文件的本機 Markdown link 不存在；虛擬環境、依賴、cache 及 build／dist 產物不屬文件庫掃描範圍；
 - current status JSON 格式、hash、gate 或 rollback 語意不完整；
 - generated status 頁或 consumer 區塊過時；
 - consumer 在生成區塊外重複可變的目前版本值；

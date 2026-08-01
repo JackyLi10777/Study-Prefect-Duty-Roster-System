@@ -1,7 +1,7 @@
 # Windows 專用主機完整設定手冊
 
 <!-- SING_YIN_CURRENT_STATUS:START -->
-> **已核實線上來源（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的不可變 bundle；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、health 及 `writeReady=true` 已核對。Worker 來源沒有改動，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 維持 100% 流量且健康。`v1.2.0-rc.43` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
+> **已核實線上來源（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的不可變 bundle；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源沒有改動，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 維持 100% 流量且健康。`v1.2.0-rc.43` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
 <!-- SING_YIN_CURRENT_STATUS:END -->
 
 **適用系統：** Sing Yin Study Prefect Duty Roster System（NiceGUI + SQLite）
@@ -686,7 +686,7 @@ rc20 的自動化裝置矩陣已包含手機／平板／桌面與 accessibility�
 
 1. 立即停止接受正式寫入，記錄時間、canonical route、裝置、release tag／commit、Worker version 及非敏感畫面；不要重複提交可能已完成的操作。
 2. 先閱讀 Windows／Worker deployment JSON 的 rollback `attempted`、`succeeded`、previous commit／version。受控腳本已開始回退時，不要同時再跑第二次或手動覆寫檔案。
-3. 若目前線上 origin 發現回歸，第一個復原選擇是保留當前程式並以本頁頂部所列的已驗證正式備份執行受控還原。若事故需要回復更舊程式，必須先停止正式寫入，依目前 Alembic head 選取相容的正式快照，完成 checksum、公平、行數、restore-audit 及隔離還原，再由事故負責人批准程式與必要的 Worker 切換。歷史 deployment report 的 legacy `previousCommit` 不可單獨作 rollback 身分；以 captured task target、marker、fingerprint 及資料庫相容性證據為準。禁止 `git reset --hard`、直接複製開發樹、只切換 task action 或留下未經證明的混合版本。
+3. 若目前線上 origin 發現回歸，第一個復原選擇是保留當前程式並以本頁頂部所列的已驗證正式備份執行受控還原。若事故需要回復更舊程式，必須先停止正式寫入並確認目標程式支援的 Alembic revision；rc43／rc41 等 pre-0012 程式只可配對已驗證的 pre-0012 正式快照，禁止把 `0012` 資料庫交給舊程式。完成 checksum、公平、行數、restore-audit 及隔離副本的完整應用驗證後，才由事故負責人批准程式與必要的 Worker 切換。歷史 deployment report 的 legacy `previousCommit` 不可單獨作 rollback 身分；以 captured task target、marker、fingerprint 及資料庫相容性證據為準。禁止 `git reset --hard`、直接複製開發樹、只切換 task action 或留下未經證明的混合版本。
 4. 回退後核對實際回退層、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出和完整使用者流程。
 5. 只有上述結果全部一致才恢復操作；不能證明 rollback 成功時保持 maintenance／唯讀並交由 IT 處理。
 

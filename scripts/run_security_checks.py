@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+from collections.abc import Mapping
 import hashlib
 import json
 from pathlib import Path
@@ -152,6 +153,8 @@ def _is_public_current_release_digest(
         line = lines[index]
         payload = json.loads("\n".join(lines))
     except (TypeError, ValueError, IndexError, OSError, json.JSONDecodeError):
+        return False
+    if not isinstance(payload, Mapping):
         return False
     if payload.get("schema_version") != 1 or payload.get("state") != "live":
         return False

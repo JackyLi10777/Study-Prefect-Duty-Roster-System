@@ -12,7 +12,7 @@
 | Production source commit | `90777345ea9ed5652c73873edb3c8c846a9ceac5` |
 | Immutable bundle | `C:\SingYinRoster\releases\v1.2.0-rc.45-90777345ea9e-5c891432a1d8` |
 | Source evidence | 308 files; `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83`; 15/15 gates passed |
-| Windows service | `SingYinRosterSvc`; health `passed`; readiness `passed`; `writeReady=true` |
+| Windows service | `SingYinRosterSvc`; health `passed`; readiness `passed`; `writeReady=true`; `maintenance=false`; `recoveryRequired=false`; `pendingBackups=0` |
 | Canonical Worker | `394e2205-ae8f-4eef-a13a-e701931e6f0d`; 100% traffic; health `passed`; source unchanged for this release |
 
 ## 資料與復原 / Data and recovery

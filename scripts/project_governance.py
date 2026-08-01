@@ -54,6 +54,8 @@ def mutable_current_release_claims(text: str) -> tuple[str, ...]:
 
 
 def _read_json(path: Path) -> dict[str, object]:
+    """Load a JSON object and reject non-object roots."""
+
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError("the JSON root must be an object")
@@ -61,18 +63,24 @@ def _read_json(path: Path) -> dict[str, object]:
 
 
 def _mapping(value: object, name: str) -> Mapping[str, object]:
+    """Require a nested status value to be an object."""
+
     if not isinstance(value, Mapping):
         raise ValueError(f"{name} must be an object")
     return value
 
 
 def _string(value: object, name: str) -> str:
+    """Require a non-empty status string while preserving its exact value."""
+
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{name} must be a non-empty string")
     return value
 
 
 def _status_values(state: Mapping[str, object]) -> dict[str, object]:
+    """Flatten the release-state schema for validation and deterministic rendering."""
+
     release = _mapping(state.get("release"), "release")
     gates = _mapping(release.get("formal_gates"), "release.formal_gates")
     database = _mapping(state.get("database"), "database")
@@ -133,6 +141,8 @@ def _status_values(state: Mapping[str, object]) -> dict[str, object]:
 def _status_schema_violations(
     state: Mapping[str, object], path: str
 ) -> list[ContractViolation]:
+    """Return fail-closed release-state violations without mutating documents."""
+
     violations: list[ContractViolation] = []
     try:
         values = _status_values(state)
@@ -153,7 +163,11 @@ def _status_schema_violations(
         )
     if not _COMMIT.fullmatch(str(values["commit"])):
         violations.append(
-            ContractViolation("status.commit", path, "release.commit must be 40 hex characters")
+            ContractViolation(
+                "status.commit",
+                path,
+                "release.commit must be 40 lowercase hex characters",
+            )
         )
     for field in ("fingerprint", "backup_sha"):
         if not _SHA256.fullmatch(str(values[field])):
@@ -184,6 +198,18 @@ def _status_schema_violations(
         violations.append(
             ContractViolation("status.origin", path, "live origin must record passed health and write readiness")
         )
+    if (
+        values["maintenance"] is not False
+        or values["recovery_required"] is not False
+        or values["pending_backups"] != 0
+    ):
+        violations.append(
+            ContractViolation(
+                "status.origin-obligations",
+                path,
+                "live origin must record no maintenance, recovery requirement, or pending backup obligation",
+            )
+        )
     if values["worker_traffic"] != 100 or values["worker_health"] != "passed":
         violations.append(
             ContractViolation("status.worker", path, "canonical Worker must record passed health and 100% traffic")
@@ -198,6 +224,8 @@ def _status_schema_violations(
 def render_status_block(
     state: Mapping[str, object], *, language: str, link: str
 ) -> str:
+    """Render one generated bilingual consumer notice from release state."""
+
     values = _status_values(state)
     if language == "zh-Hant":
         notice = (
@@ -205,7 +233,8 @@ def render_status_block(
             f"`{values['tag']}`／`{values['commit']}` 的不可變 bundle；{values['file_count']}-file 指紋 "
             f"`{values['fingerprint']}` 通過 {values['gates_passed']}／{values['gates_total']} gate。"
             f"SQLite 位於 Alembic `{values['alembic_head']}`；正式備份 `{values['backup_file']}`／SHA-256 "
-            f"`{values['backup_sha']}`、隔離還原、health 及 `writeReady=true` 已核對。Worker 來源沒有改動，"
+            f"`{values['backup_sha']}`、隔離還原、health、`writeReady=true`、`maintenance=false`、"
+            f"`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源沒有改動，"
             f"canonical Worker `{values['worker_version']}` 維持 {values['worker_traffic']}% 流量且健康。"
             f"`{values['predecessor']}` 只屬歷史來源，migration `{values['alembic_head']}` 後不可作 code-only "
             f"rollback；須使用受控的相容資料庫還原。真人驗收仍為 `{values['human_acceptance']}`。"
@@ -217,7 +246,8 @@ def render_status_block(
             f"`{values['tag']}` at `{values['commit']}` and runs an immutable bundle. Its {values['file_count']}-file "
             f"fingerprint `{values['fingerprint']}` passed {values['gates_passed']}/{values['gates_total']} gates. "
             f"SQLite is at Alembic `{values['alembic_head']}`; verified backup `{values['backup_file']}` with SHA-256 "
-            f"`{values['backup_sha']}`, isolated restore, health, and `writeReady=true` passed. Worker source did not "
+            f"`{values['backup_sha']}`, isolated restore, health, `writeReady=true`, `maintenance=false`, "
+            f"`recoveryRequired=false`, and `pendingBackups=0` passed. Worker source did not "
             f"change; canonical Worker `{values['worker_version']}` remains healthy at {values['worker_traffic']}% "
             f"traffic. `{values['predecessor']}` is historical source evidence, not a code-only rollback after migration "
             f"`{values['alembic_head']}`; recovery requires the controlled compatible database restore. Supervised human "
@@ -230,8 +260,15 @@ def render_status_block(
 
 
 def render_current_status(state: Mapping[str, object]) -> str:
+    """Render the canonical human-readable status page deterministically."""
+
     values = _status_values(state)
-    human = "尚待完成 / Pending" if values["human_acceptance"] == "pending" else "已完成 / Passed"
+    if values["human_acceptance"] == "passed":
+        human = "已完成 / Passed"
+    elif values["human_acceptance"] == "pending":
+        human = "尚待完成 / Pending"
+    else:
+        human = "未通過（狀態無效） / Not passed (invalid state)"
     return (
         "<!-- Generated from current-release.json by scripts/project_governance.py. Do not edit by hand. -->\n"
         "# 目前系統狀態 / Current system status\n\n"
@@ -247,7 +284,10 @@ def render_current_status(state: Mapping[str, object]) -> str:
         f"| Source evidence | {values['file_count']} files; `{values['fingerprint']}`; "
         f"{values['gates_passed']}/{values['gates_total']} gates passed |\n"
         f"| Windows service | `{values['service']}`; health `{values['origin_health']}`; readiness "
-        f"`{values['readiness']}`; `writeReady={str(values['write_ready']).lower()}` |\n"
+        f"`{values['readiness']}`; `writeReady={str(values['write_ready']).lower()}`; "
+        f"`maintenance={str(values['maintenance']).lower()}`; "
+        f"`recoveryRequired={str(values['recovery_required']).lower()}`; "
+        f"`pendingBackups={values['pending_backups']}` |\n"
         f"| Canonical Worker | `{values['worker_version']}`; {values['worker_traffic']}% traffic; "
         f"health `{values['worker_health']}`; source unchanged for this release |\n\n"
         "## 資料與復原 / Data and recovery\n\n"
@@ -270,24 +310,42 @@ def render_current_status(state: Mapping[str, object]) -> str:
     )
 
 
-def _all_imports(path: Path) -> Iterable[str]:
+def _all_imports(path: Path, root: Path) -> Iterable[str]:
+    """Yield absolute import targets, resolving package-relative imports."""
+
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    relative = path.relative_to(root)
+    package_parts = relative.parent.parts
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             yield from (alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            yield node.module
+        elif isinstance(node, ast.ImportFrom):
             if node.level == 0:
-                yield from (
-                    f"{node.module}.{alias.name}"
-                    for alias in node.names
-                    if alias.name != "*"
-                )
+                if not node.module:
+                    continue
+                module = node.module
+            else:
+                retained_parts = len(package_parts) - (node.level - 1)
+                if retained_parts < 0:
+                    continue
+                resolved_parts = list(package_parts[:retained_parts])
+                if node.module:
+                    resolved_parts.extend(node.module.split("."))
+                module = ".".join(resolved_parts)
+            if module:
+                yield module
+            yield from (
+                f"{module}.{alias.name}" if module else alias.name
+                for alias in node.names
+                if alias.name != "*"
+            )
 
 
 def architecture_violations(
     root: Path, contract: Mapping[str, object]
 ) -> tuple[ContractViolation, ...]:
+    """Check declared Python dependency directions, including relative imports."""
+
     violations: list[ContractViolation] = []
     if contract.get("schema_version") != 1:
         violations.append(
@@ -333,7 +391,6 @@ def architecture_violations(
             continue
         for source_path in source_paths:
             candidate = root / str(source_path)
-            python_files = [candidate] if candidate.is_file() else sorted(candidate.rglob("*.py"))
             if not candidate.exists():
                 violations.append(
                     ContractViolation(
@@ -343,10 +400,11 @@ def architecture_violations(
                     )
                 )
                 continue
+            python_files = [candidate] if candidate.is_file() else sorted(candidate.rglob("*.py"))
             for python_file in python_files:
                 relative = python_file.relative_to(root).as_posix()
                 try:
-                    imports = tuple(_all_imports(python_file))
+                    imports = tuple(_all_imports(python_file, root))
                 except (SyntaxError, UnicodeDecodeError) as error:
                     violations.append(
                         ContractViolation(
@@ -377,6 +435,8 @@ def architecture_violations(
 
 
 def _classified_paths(manifest: Mapping[str, object]) -> tuple[set[str], list[ContractViolation]]:
+    """Collect explicit lifecycle classifications and report duplicates."""
+
     violations: list[ContractViolation] = []
     classified: set[str] = set()
     classes = manifest.get("document_classes")
@@ -413,11 +473,26 @@ def _classified_paths(manifest: Mapping[str, object]) -> tuple[set[str], list[Co
 
 
 def _is_collection_member(path: str, collections: Mapping[str, object]) -> bool:
+    """Return whether a document is governed through a declared collection."""
+
     return any(path == prefix or path.startswith(prefix.rstrip("/") + "/") for prefix in collections)
 
 
 def _repository_markdown(root: Path) -> Iterable[str]:
-    excluded_parts = {".git", ".pytest_cache", "node_modules", "test-results"}
+    """Yield maintained Markdown while excluding dependency and build trees."""
+
+    excluded_parts = {
+        ".git",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".ruff_cache",
+        ".venv",
+        "build",
+        "dist",
+        "node_modules",
+        "test-results",
+        "venv",
+    }
     for path in root.rglob("*.md"):
         relative = path.relative_to(root)
         if any(part in excluded_parts for part in relative.parts):
@@ -426,6 +501,8 @@ def _repository_markdown(root: Path) -> Iterable[str]:
 
 
 def _local_link_violations(root: Path, relative_path: str) -> list[ContractViolation]:
+    """Check local Markdown targets without following external URLs."""
+
     path = root / relative_path
     violations: list[ContractViolation] = []
     text = path.read_text(encoding="utf-8")
@@ -462,6 +539,8 @@ def _local_link_violations(root: Path, relative_path: str) -> list[ContractViola
 def documentation_violations(
     root: Path, manifest: Mapping[str, object], state: Mapping[str, object]
 ) -> tuple[ContractViolation, ...]:
+    """Validate lifecycle, ownership, links, and generated status consumers."""
+
     violations: list[ContractViolation] = []
     if manifest.get("schema_version") != 1:
         violations.append(
@@ -534,8 +613,18 @@ def documentation_violations(
         )
     else:
         actual = (root / status_document).read_text(encoding="utf-8") if (root / status_document).is_file() else ""
-        expected = render_current_status(state)
-        if actual != expected:
+        try:
+            expected = render_current_status(state)
+        except ValueError as error:
+            violations.append(
+                ContractViolation(
+                    "documentation.unrenderable-status",
+                    status_document,
+                    str(error),
+                )
+            )
+            expected = None
+        if expected is not None and actual != expected:
             violations.append(
                 ContractViolation(
                     "documentation.stale-generated-status",
@@ -554,11 +643,15 @@ def documentation_violations(
             )
         )
     else:
-        critical_values = _status_values(state)
-        mutable_tokens = tuple(
-            str(critical_values[key])
-            for key in ("tag", "commit", "fingerprint", "backup_file", "backup_sha")
-        )
+        try:
+            critical_values = _status_values(state)
+        except ValueError:
+            mutable_tokens: tuple[str, ...] = ()
+        else:
+            mutable_tokens = tuple(
+                str(critical_values[key])
+                for key in ("tag", "commit", "fingerprint", "backup_file", "backup_sha")
+            )
         for consumer in consumers:
             if not isinstance(consumer, Mapping):
                 violations.append(
@@ -587,7 +680,17 @@ def documentation_violations(
                 re.escape(STATUS_START) + r".*?" + re.escape(STATUS_END), re.DOTALL
             )
             matches = pattern.findall(text)
-            expected = render_status_block(state, language=language, link=link)
+            try:
+                expected = render_status_block(state, language=language, link=link)
+            except ValueError as error:
+                violations.append(
+                    ContractViolation(
+                        "documentation.unrenderable-status-consumer",
+                        relative_path,
+                        str(error),
+                    )
+                )
+                continue
             if len(matches) != 1 or matches[0] != expected:
                 violations.append(
                     ContractViolation(
@@ -616,13 +719,14 @@ def documentation_violations(
                     )
                 )
 
-    for relative_path in sorted(classified):
-        if relative_path.endswith(".md") and (root / relative_path).is_file():
-            violations.extend(_local_link_violations(root, relative_path))
+    for relative_path in sorted(_repository_markdown(root)):
+        violations.extend(_local_link_violations(root, relative_path))
     return tuple(sorted(violations))
 
 
 def validate_project_contracts(root: Path = PROJECT_ROOT) -> tuple[ContractViolation, ...]:
+    """Run all release, architecture, and documentation governance contracts."""
+
     violations: list[ContractViolation] = []
     try:
         manifest = _read_json(root / MANIFEST_PATH)
@@ -659,8 +763,17 @@ def validate_project_contracts(root: Path = PROJECT_ROOT) -> tuple[ContractViola
 
 
 def synchronize_status(root: Path = PROJECT_ROOT) -> tuple[str, ...]:
+    """Preflight and regenerate every status consumer as one logical operation."""
+
     manifest = _read_json(root / MANIFEST_PATH)
-    state = _read_json(root / Path(str(manifest["status_source"])))
+    status_source = Path(str(manifest["status_source"]))
+    state = _read_json(root / status_source)
+    schema_violations = _status_schema_violations(state, status_source.as_posix())
+    if schema_violations:
+        details = "; ".join(
+            f"[{item.code}] {item.message}" for item in schema_violations
+        )
+        raise ValueError(f"refusing to write from an invalid release state: {details}")
     status_path = root / str(manifest["status_document"])
     rendered_status = render_current_status(state)
     pattern = re.compile(
@@ -696,6 +809,8 @@ def synchronize_status(root: Path = PROJECT_ROOT) -> tuple[str, ...]:
 
 
 def _build_parser() -> argparse.ArgumentParser:
+    """Build the small check/write command-line interface."""
+
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true", help="validate without changing files")
@@ -704,6 +819,8 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Execute synchronization when requested, then report contract results."""
+
     args = _build_parser().parse_args(argv)
     if args.write:
         try:

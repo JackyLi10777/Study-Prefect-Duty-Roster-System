@@ -390,8 +390,8 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
         assert current_fingerprint not in rc30_notice
 
     current_capability_paragraph = readme_en.split(
-        "Release capabilities retained and re-verified through rc45", 1
-    )[1].split("## Repository editions", 1)[0]
+        "<!-- CURRENT_CAPABILITY_SUMMARY:START -->", 1
+    )[1].split("<!-- CURRENT_CAPABILITY_SUMMARY:END -->", 1)[0]
     assert "current system status" in current_capability_paragraph
     assert current_fingerprint not in current_capability_paragraph
     assert historical_rc30_fingerprint not in current_capability_paragraph

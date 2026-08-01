@@ -1,6 +1,6 @@
 # Changelog
 
-This file records user-visible, operational and release-significant changes. Exact current deployment truth lives in `docs/status/CURRENT_STATUS.md`; immutable historical evidence remains in `PROJECT_STATUS.md`, dated audits and generated release reports.
+This file records user-visible, operational and release-significant changes. The editable authority for observed deployment truth is `docs/status/current-release.json`; `docs/status/CURRENT_STATUS.md` is its generated, human-readable view and must not be edited by hand. Immutable historical evidence remains in `PROJECT_STATUS.md`, dated audits and generated release reports.
 
 ## Unreleased — maintainability and documentation governance
 
@@ -9,6 +9,7 @@ This file records user-visible, operational and release-significant changes. Exa
 - Added a documentation lifecycle／ownership manifest, ADR register and decision-relevant iteration register; every maintained Markdown file now has a lifecycle class or declared collection.
 - Added `scripts/project_governance.py --check／--write` and integrated the check into adaptive verification profiles. It validates status schema, generated blocks, local links, topic owners, document coverage and architecture boundaries.
 - Kept secret scanning fail-closed while recognizing only the three schema-bound public provenance digests in the live status JSON; arbitrary high-entropy fields, paths or candidate states still fail review.
+- Hardened review boundaries against relative-import bypasses, invalid-state generation, unresolved maintenance／recovery obligations, collection link drift and database snapshots incompatible with a rollback target's Alembic revision.
 - Updated contributor, update-workflow, README and documentation-index routes so maintainers start from current status, architecture overview and the correct owning document.
 
 ## v1.2.0-rc.45 — released, 2026-08-01
