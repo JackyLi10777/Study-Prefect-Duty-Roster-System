@@ -305,7 +305,8 @@ rc21 的正式部署證據固定為 tag `v1.2.0-rc.21`／commit `f7df4d0170e6bac
 - [ ] 同一 Guest 的兩個分頁取得獨立 workspace；複製分頁、重新整理、登出、30 分鐘到期、撤權及 origin 重啟均依安全模型處理，不能重播舊 revision 或交叉取得下載。
 - [ ] 主動登出、管理 session 上限或 Access 較早到期後回到 public；缺少、過期、錯誤 audience／issuer 或非管理員電郵的 JWT 被拒絕，缺少、過期、遭竄改、auth epoch／kid 不符的 session 或 principal 在任何工作台回調均被拒絕。
 - [ ] `/healthz` 及 `/readyz` 同時通過；以崩潰注入留下 backup obligation 後，正常啟動必須先修復，失敗則所有業務寫入保持 fail-closed。另以預先存在的 durable recovery marker 啟動，確認系統在 migration／session／journal mutation 前進入 diagnostic-only、`workflowInitialized=false`、`/readyz` 503，且即使測試中移除 marker，現有程序仍不可寫；受控恢復及安全重啟後才可建立 workflow sessions。學年交接與分享亦不能繞過 admission。
-- [ ] 以虛構已發布週表建立同 host `/view#…` 連結；一般瀏覽器可查看中文姓名週表但不能修改。完成一次發布後請假調整，確認舊版本自動排入撤銷、回應遺失仍會清除 queued key、精確重試不撤銷新版本；撤銷後約一分鐘確認舊完整連結不能再載入。
+- [ ] 以虛構已發布週表建立同 host `/view#…` 連結；一般瀏覽器可查看中文姓名週表但不能修改。完成一次發布後請假調整，確認舊版本自動排入撤銷、回應遺失仍會清除 queued key、精確重試不撤銷新版本。Worker 成功收據不等於每個邊緣節點已即時失效：以私人／無痕視窗每 5 秒重開舊完整連結，最多 90 秒；只有 Viewer 顯示已撤銷／不可用且沒有週表格或姓名才通過。逾時即 fail closed：不得發送新連結，建立臨時錯誤報告並記錄支援編號。
+- [ ] 另以獨立虛構已發布週表及 Viewer 連結完成一次「撤回已發布週表」；確認所有舊連結進入 persisted `revocation_pending`，模擬 Worker 建立回應遺失時 queued key／delivery envelope 仍被清除，且「存取控制台」只重試這些已保存的撤銷，不會重新執行撤回。按上一項同一 5 秒／90 秒邊緣檢查驗證舊連結終止；逾時同樣阻塞驗收。
 - [ ] 完成正式瀏覽器的 WebSocket 長連線／重新連線、檔案上載及 PDF／JSON 下載驗收；下載必須先核對 HTTP status 及精確 MIME，票據只可在同一 verified access mode／session 使用一次，跨模式／重播被拒絕，Guest 滿載時預留 Admin 容量仍可交付。已記錄的 VPC probe 只作傳輸證據。
 - [x] **歷史 rc18 基線（經 rc20 承接，現由 rc26 保留）：**隔離 Chromium 真觸控模擬已覆蓋 390×844 繁中淺色、320×760 英文深色／reduced motion 及 844×390 橫向：單行頁首、`Dashboard／Rosters／Prefects／More`、可捲動 More 抽屜、`aria-expanded`、開啟後焦點、Tab／Shift+Tab 循環、Escape／背景關閉及焦點恢復、手機資料卡、44px 操作、安全區、零橫向溢出及零 console/page error 均通過；乾淨 rc30 的歷史擴展裝置矩陣另見 `ACCEPTANCE_EVIDENCE.md`。
 - [x] **rc20 自動化與線上證據：**fingerprint-matched 14／14 report 已覆蓋裝置矩陣、reflow、reduced motion、navigation／focus、觸控目標、淺／深模式、Guest／Admin 流程及零 console／page error；來源固定為 `v1.2.0-rc.20`／`e3d84858`／`93c6c938…`，受控 Windows 切換及 canonical smoke 亦已完成。這些證據不能代替下列真人手機／平板驗收。
