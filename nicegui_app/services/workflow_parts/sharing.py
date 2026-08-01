@@ -12,10 +12,12 @@ from __future__ import annotations
 import re
 
 from nicegui_app.services.workflow_dependencies import (
+    datetime,
     ExternalShareOutboxRecord,
     MaintenanceModeError,
     OperationCommandRecord,
     RosterWeekRecord,
+    Session,
     WorkflowConflictError,
     WorkflowError,
     WorkflowMaintenanceError,
@@ -31,6 +33,60 @@ _OUTBOX_OPERATION = "external_share_create"
 
 class ExternalShareOutboxMixin:
     """Persistence boundary for replay-safe public roster deliveries."""
+
+    def _queue_obsolete_external_share_revocations(
+        self,
+        session: Session,
+        *,
+        roster_week_id: int,
+        current_version: int | None,
+        invalidated_by: str,
+        now: datetime,
+    ) -> list[str]:
+        """Queue every possibly delivered obsolete Viewer snapshot for revocation.
+
+        A failed gateway response does not prove that the Worker rejected the
+        create request. Pending and delivering rows therefore use the same
+        durable revocation path as confirmed deliveries. The queued envelope
+        and decryption key are erased as soon as a roster change invalidates
+        them; revocation remains retryable by stable share ID.
+        """
+
+        share_rows = session.scalars(
+            select(ExternalShareOutboxRecord)
+            .where(ExternalShareOutboxRecord.roster_week_id == roster_week_id)
+            .order_by(ExternalShareOutboxRecord.id)
+        ).all()
+        share_ids_to_revoke: list[str] = []
+        for share in share_rows:
+            if current_version is not None and share.roster_version >= current_version:
+                continue
+            if share.status == "revoked":
+                continue
+            share.status = "revocation_pending"
+            share.error = None
+            share.updated_at = now
+            share_ids_to_revoke.append(share.share_id)
+
+            command = session.get(OperationCommandRecord, share.command_id)
+            if command is not None and command.status == "pending":
+                command.status = "committed"
+                command.result_json = json.dumps(
+                    {
+                        "status": "revocation_pending",
+                        "invalidatedBy": invalidated_by,
+                        "receipt": {
+                            "shareId": share.share_id,
+                            "rosterWeekId": share.roster_week_id,
+                            "rosterVersion": share.roster_version,
+                        },
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                command.completed_at = now
+        return share_ids_to_revoke
 
     def queue_external_share(
         self,

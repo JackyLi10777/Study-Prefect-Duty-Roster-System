@@ -189,6 +189,26 @@ MESSAGES = {
         "zh-HK": "這一週目前沒有有效的查看連結。",
         "en": "There is currently no active viewing link for this week.",
     },
+    "public_share_pending_title": {
+        "zh-HK": "{count} 條舊 Viewer 連結仍待撤銷",
+        "en": "{count} old Viewer link(s) still await revocation",
+    },
+    "public_share_pending_body": {
+        "zh-HK": "正式值班變更已經提交；不要重複提交值班變更。這裡只會安全重試移除舊連結的雲端密文。",
+        "en": "The official roster change is already committed; do not resubmit the roster change. This action safely retries only removal of the old links' cloud ciphertext.",
+    },
+    "public_share_pending_retry": {
+        "zh-HK": "重試待完成撤銷",
+        "en": "Retry pending revocations",
+    },
+    "public_share_pending_cleared": {
+        "zh-HK": "待完成的舊 Viewer 連結已撤銷。",
+        "en": "The pending old Viewer links were revoked.",
+    },
+    "public_share_pending_partial": {
+        "zh-HK": "仍有 {count} 條舊 Viewer 連結待撤銷；值班變更毋須重做。",
+        "en": "{count} old Viewer link(s) still await revocation; the roster change does not need to be repeated.",
+    },
     "public_share_revoke": {
         "zh-HK": "撤銷",
         "en": "Revoke",

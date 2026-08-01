@@ -14,7 +14,7 @@ from nicegui_app.services.roster_workflow import (
     LEGACY_FIXED_WEEKDAY,
     WorkflowError,
 )
-from nicegui_app.ui.access_control import render_roster_share_action, revoke_withdrawn_roster_shares
+from nicegui_app.ui.access_control import render_roster_share_action, revoke_roster_shares
 from nicegui_app.ui.components import action
 from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import day_label, t
@@ -149,7 +149,7 @@ def _render_withdraw_action(workflow, week: dict[str, object], roster_week_id: i
                 return
             if result.share_ids_to_revoke:
                 revocation = await _run_with_progress(
-                    lambda: revoke_withdrawn_roster_shares(workflow, result.share_ids_to_revoke),
+                    lambda: revoke_roster_shares(workflow, result.share_ids_to_revoke),
                     title_key="progress_share_revoke_title",
                     working_key="progress_share_revoke_working",
                     icon="link_off",
@@ -1078,6 +1078,19 @@ def adjustment_detail_page(roster_week_id: int) -> None:
                     icon="swap_horiz",
                 )
                 if result is not _OPERATION_FAILED:
+                    share_revocation_pending = False
+                    if result.share_ids_to_revoke:
+                        revocation = await _run_with_progress(
+                            lambda: revoke_roster_shares(workflow, result.share_ids_to_revoke),
+                            title_key="progress_share_revoke_title",
+                            working_key="progress_share_revoke_working",
+                            icon="link_off",
+                        )
+                        share_revocation_pending = (
+                            revocation is _OPERATION_FAILED or bool(revocation[1])
+                        )
+                        if share_revocation_pending:
+                            ui.notify(t("adjustment_share_pending"), type="warning", timeout=8_000)
                     ui.notify(
                         t("adjustment_replay_confirmed") if result.idempotent else t("adjustment_saved"),
                         type="info" if result.idempotent else "positive",
@@ -1107,6 +1120,14 @@ def adjustment_detail_page(roster_week_id: int) -> None:
                         safety_parts.append(t("adjustment_receipt_backup_verified"))
                     elif result.idempotent:
                         safety_parts.append(t("adjustment_receipt_replayed"))
+                    if result.share_ids_to_revoke:
+                        safety_parts.append(
+                            t(
+                                "adjustment_receipt_share_pending"
+                                if share_revocation_pending
+                                else "adjustment_receipt_share_revoked"
+                            )
+                        )
                     adjustment_receipt_safety.set_text(" ".join(safety_parts))
                     save_adjustment_button.disable()
                     adjustment_complete_dialog.open()

@@ -515,22 +515,13 @@ class RosterLifecycleMixin:
                     )
                     compensation_count += 1
 
-                share_ids_to_revoke: list[str] = []
-                share_rows = session.scalars(
-                    select(ExternalShareOutboxRecord).where(
-                        ExternalShareOutboxRecord.roster_week_id == roster_week_id
-                    )
-                ).all()
-                for share in share_rows:
-                    if share.status == "delivered":
-                        share.status = "revocation_pending"
-                        share.error = None
-                        share.updated_at = now
-                        share_ids_to_revoke.append(share.share_id)
-                    elif share.status in ("pending", "delivering"):
-                        share.status = "cancelled"
-                        share.error = "roster_withdrawn"
-                        share.updated_at = now
+                share_ids_to_revoke = self._queue_obsolete_external_share_revocations(
+                    session,
+                    roster_week_id=roster_week_id,
+                    current_version=None,
+                    invalidated_by="roster_withdrawn",
+                    now=now,
+                )
 
                 receipt = {
                     "rosterWeekId": week.id,
@@ -764,6 +755,13 @@ class RosterLifecycleMixin:
                         request_fingerprint=request_fingerprint,
                         assignment_weight=assignment_weight,
                     )
+                    share_ids_to_revoke = self._queue_obsolete_external_share_revocations(
+                        session,
+                        roster_week_id=roster_week_id,
+                        current_version=legacy_result.version,
+                        invalidated_by="roster_adjusted",
+                        now=self._now(),
+                    )
                     receipt = {
                         "rosterWeekId": legacy_result.roster_week_id,
                         "assignmentId": legacy_result.assignment_id,
@@ -772,6 +770,7 @@ class RosterLifecycleMixin:
                         "originalPrefectName": legacy_result.original_prefect_name,
                         "replacementPrefectName": legacy_result.replacement_prefect_name,
                         "weight": legacy_result.weight,
+                        "shareIdsToRevoke": share_ids_to_revoke,
                     }
                     replayed = True
                     self._commit_operation_command(
@@ -889,6 +888,13 @@ class RosterLifecycleMixin:
                         created_at=now,
                     )
                     session.add(adjustment)
+                    share_ids_to_revoke = self._queue_obsolete_external_share_revocations(
+                        session,
+                        roster_week_id=roster_week_id,
+                        current_version=requested_version + 1,
+                        invalidated_by="roster_adjusted",
+                        now=now,
+                    )
                     receipt = {
                         "rosterWeekId": roster_week_id,
                         "assignmentId": assignment_id,
@@ -897,12 +903,18 @@ class RosterLifecycleMixin:
                         "originalPrefectName": original_name,
                         "replacementPrefectName": replacement_name,
                         "weight": assignment_weight,
+                        "shareIdsToRevoke": share_ids_to_revoke,
                     }
                     self._audit(
                         session,
                         operation_type,
                         week.id,
-                        {"assignmentId": assignment.id, "status": status, "commandId": operation_id},
+                        {
+                            "assignmentId": assignment.id,
+                            "status": status,
+                            "commandId": operation_id,
+                            "shareRevocationCount": len(share_ids_to_revoke),
+                        },
                     )
                     self._assert_fairness_reconciled(session)
                     self._commit_operation_command(
@@ -928,6 +940,7 @@ class RosterLifecycleMixin:
                 else None
             ),
             weight=float(receipt["weight"]),
+            share_ids_to_revoke=tuple(str(value) for value in receipt.get("shareIdsToRevoke", [])),
         )
 
     @staticmethod

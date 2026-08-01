@@ -180,8 +180,8 @@ def render_roster_share_action(workflow, roster_week_id: int) -> None:  # type: 
         ).props("color=primary data-testid=create-public-share").classes("mt-4")
 
 
-def revoke_withdrawn_roster_shares(workflow, share_ids: tuple[str, ...]) -> tuple[int, int]:  # type: ignore[no-untyped-def]
-    """Deliver durable revocation work after a roster withdrawal transaction."""
+def revoke_roster_shares(workflow, share_ids: tuple[str, ...]) -> tuple[int, int]:  # type: ignore[no-untyped-def]
+    """Deliver durable revocation work after a roster becomes obsolete."""
 
     if not share_ids:
         return (0, 0)
@@ -203,6 +203,67 @@ def revoke_withdrawn_roster_shares(workflow, share_ids: tuple[str, ...]) -> tupl
         else:
             completed += 1
     return completed, failed
+
+
+def _render_pending_revocations(
+    area,
+    workflow,  # type: ignore[no-untyped-def]
+    *,
+    settings: PublicRosterShareSettings,
+) -> None:
+    """Expose a truthful recovery path for durable Viewer revocation work."""
+
+    pending = workflow.pending_external_share_revocations()
+    area.clear()
+    if not pending:
+        return
+    share_ids = tuple(str(item["shareId"]) for item in pending)
+    with area, ui.element("section").classes(
+        "sy-surface sy-restricted-state w-full px-5 py-4"
+    ).props("role=status data-testid=pending-public-share-revocations"):
+        with ui.row().classes("w-full items-start gap-3 no-wrap"):
+            ui.icon("link_off").classes("sy-fg-attention text-xl").props("aria-hidden=true")
+            with ui.column().classes("gap-1 min-w-0 flex-1"):
+                ui.label(t("public_share_pending_title", count=len(share_ids))).classes(
+                    "font-semibold"
+                )
+                ui.label(t("public_share_pending_body")).classes(
+                    "text-sm leading-6 text-[var(--sy-muted)]"
+                )
+
+                if not settings.configured:
+                    ui.label(t("public_share_not_configured")).classes(
+                        "text-sm text-[var(--sy-muted)] mt-2"
+                    )
+                    return
+
+                async def retry_pending() -> None:
+                    result = await _run_with_progress(
+                        lambda: revoke_roster_shares(workflow, share_ids),
+                        title_key="public_share_revoke_progress_title",
+                        working_key="public_share_revoke_progress_working",
+                        icon="link_off",
+                    )
+                    if result is _OPERATION_FAILED:
+                        return
+                    _completed, failed = result
+                    if failed:
+                        ui.notify(
+                            t("public_share_pending_partial", count=failed),
+                            type="warning",
+                            timeout=8_000,
+                        )
+                    else:
+                        ui.notify(t("public_share_pending_cleared"), type="positive")
+                    _render_pending_revocations(area, workflow, settings=settings)
+
+                ui.button(
+                    t("public_share_pending_retry"),
+                    icon="link_off",
+                    on_click=retry_pending,
+                ).props(
+                    "outline color=primary data-testid=retry-pending-public-share-revocations"
+                ).classes("mt-2")
 
 
 def _render_active_shares(
@@ -335,6 +396,9 @@ def render_access_control_console(workflow) -> None:  # type: ignore[no-untyped-
                         icon="link",
                         on_click=lambda: _open_create_confirmation(service, int(roster_select.value)),
                     ).props("color=primary data-testid=console-create-public-share").classes("mt-3")
+
+    pending_area = ui.column().classes("w-full")
+    _render_pending_revocations(pending_area, workflow, settings=settings)
 
     ui.label(t("public_share_active_title")).classes("text-xl font-semibold mt-4")
     management_area = ui.column().classes("w-full gap-3")

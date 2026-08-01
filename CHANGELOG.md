@@ -11,6 +11,10 @@ This file records user-visible, operational and release-significant changes. The
 - Kept secret scanning fail-closed while recognizing only the three schema-bound public provenance digests in the live status JSON; arbitrary high-entropy fields, paths or candidate states still fail review.
 - Hardened review boundaries against relative-import bypasses, invalid-state generation, unresolved maintenance／recovery obligations, collection link drift and database snapshots incompatible with a rollback target's Alembic revision.
 - Updated contributor, update-workflow, README and documentation-index routes so maintainers start from current status, architecture overview and the correct owning document.
+- A published-duty adjustment now atomically queues every older or possibly delivered Viewer snapshot for revocation, erases any still-queued delivery envelope and decryption key, and returns stable share identifiers for an immediate withdrawal attempt.
+- Exact adjustment retries preserve the original revocation receipt and never revoke a newly created current-version share. If edge revocation fails, the committed adjustment remains truthful and the UI tells the operator not to resubmit it; Access control exposes the durable pending count and retries only those withdrawals.
+- Clarified that a successful Worker delete receipt is not proof of instantaneous Cloudflare edge invalidation. Zero-overlap handover now uses a fail-closed private-browser check every five seconds for at most ninety seconds, with an independent published-roster withdrawal scenario.
+- Updated the Viewer, operator, architecture, security, acceptance, handover and project-status owners for the same lifecycle. Production truth remains the generated live status above until this source candidate is formally released and deployed.
 
 ## v1.2.0-rc.45 — released, 2026-08-01
 

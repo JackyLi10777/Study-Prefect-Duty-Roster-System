@@ -21,6 +21,7 @@ from nicegui_app.persistence.models import (
     AuditEventRecord,
     BackupObligationRecord,
     ExternalShareOutboxRecord,
+    LeaveAdjustmentRecord,
     OperationCommandRecord,
 )
 from nicegui_app.services.operation_context import PageContextWorkflowAdapter
@@ -30,6 +31,7 @@ from nicegui_app.services.public_roster_share import (
     PublicRosterShareSettings,
 )
 from nicegui_app.services.roster_workflow import RosterWorkflow, WorkflowMaintenanceError
+from nicegui_app.ui import access_control
 
 
 WEEK_START = date(2026, 9, 7)
@@ -74,6 +76,18 @@ class RecordingGateway:
 
     def revoke(self, _share_id: str):
         return None
+
+
+class FlakyRevocationService:
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+        self.failures_remaining = 1
+
+    def revoke_share(self, share_id: str) -> None:
+        self.calls.append(share_id)
+        if self.failures_remaining:
+            self.failures_remaining -= 1
+            raise PublicRosterShareError("simulated revocation failure")
 
 
 class ConcurrentIdempotentGateway:
@@ -273,6 +287,253 @@ def test_withdrawing_a_delivered_share_creates_durable_revocation_work(tmp_path)
     workflow.complete_external_share_revocation(share_id)
     assert workflow.pending_external_share_revocations() == []
     assert workflow.external_share_outbox("public-share-withdrawal-test")["status"] == "revoked"
+
+
+def test_adjustment_queues_only_older_delivered_share_versions_for_revocation(tmp_path) -> None:
+    workflow, roster_id = _workflow(tmp_path)
+    gateway = RecordingGateway()
+    service = PublicRosterShareService(
+        workflow,
+        settings=_settings(),
+        gateway=gateway,
+        now=lambda: FIXED_NOW,
+    )
+    service.create_share(roster_id, command_id="public-share-before-adjustment")
+    old_share_id = str(gateway.created[-1]["shareId"])
+    reviewed = workflow.roster_week(roster_id)
+    assignment = next(row for row in workflow.assignments(roster_id) if row["status"] == "active")
+
+    result = workflow.apply_leave_adjustment(
+        roster_week_id=roster_id,
+        assignment_id=int(assignment["id"]),
+        replacement_prefect_id=None,
+        reason="Prefect reported an absence after publication",
+        command_id="adjust-public-share-test",
+        expected_week_version=int(reviewed["version"]),
+    )
+
+    assert result.share_ids_to_revoke == (old_share_id,)
+    assert workflow.pending_external_share_revocations() == [
+        {"shareId": old_share_id, "rosterWeekId": roster_id, "attempts": 1}
+    ]
+
+    service.create_share(roster_id, command_id="public-share-after-adjustment")
+    new_share_id = str(gateway.created[-1]["shareId"])
+    replay = workflow.apply_leave_adjustment(
+        roster_week_id=roster_id,
+        assignment_id=int(assignment["id"]),
+        replacement_prefect_id=None,
+        reason="Prefect reported an absence after publication",
+        command_id="adjust-public-share-test",
+        expected_week_version=int(reviewed["version"]),
+    )
+
+    assert replay.idempotent is True
+    assert replay.share_ids_to_revoke == (old_share_id,)
+    assert workflow.external_share_outbox("public-share-after-adjustment")["status"] == "delivered"
+    assert new_share_id != old_share_id
+
+
+def test_adjustment_revokes_response_lost_share_and_scrubs_queued_secret(tmp_path) -> None:
+    workflow, roster_id = _workflow(tmp_path)
+    gateway = CommitThenLoseGateway()
+    service = PublicRosterShareService(
+        workflow,
+        settings=_settings(),
+        gateway=gateway,
+        now=lambda: FIXED_NOW,
+    )
+    with pytest.raises(PublicRosterShareError, match="simulated response loss"):
+        service.create_share(roster_id, command_id="response-lost-before-adjustment")
+    share_id = str(gateway.created[0]["shareId"])
+    reviewed = workflow.roster_week(roster_id)
+    assignment = next(row for row in workflow.assignments(roster_id) if row["status"] == "active")
+
+    result = workflow.apply_leave_adjustment(
+        roster_week_id=roster_id,
+        assignment_id=int(assignment["id"]),
+        replacement_prefect_id=None,
+        reason="Prefect reported an absence after publication",
+        command_id="adjust-response-lost-share",
+        expected_week_version=int(reviewed["version"]),
+    )
+
+    assert result.share_ids_to_revoke == (share_id,)
+    with workflow._session() as session:
+        outbox = session.scalar(
+            select(ExternalShareOutboxRecord).where(
+                ExternalShareOutboxRecord.share_id == share_id
+            )
+        )
+        assert outbox is not None
+        command = session.get(OperationCommandRecord, outbox.command_id)
+        assert command is not None
+        assert outbox.status == "revocation_pending"
+        assert command.status == "committed"
+        assert "shareKey" not in command.result_json
+        assert "deliveryPayload" not in command.result_json
+        assert "ciphertext" not in command.result_json
+
+
+def test_legacy_adjustment_replay_recovers_revocation_receipt_and_scrubs_queued_secret(
+    tmp_path,
+) -> None:
+    workflow, roster_id = _workflow(tmp_path)
+    gateway = CommitThenLoseGateway()
+    service = PublicRosterShareService(
+        workflow,
+        settings=_settings(),
+        gateway=gateway,
+        now=lambda: FIXED_NOW,
+    )
+    with pytest.raises(PublicRosterShareError, match="simulated response loss"):
+        service.create_share(roster_id, command_id="response-lost-before-legacy-replay")
+    share_id = str(gateway.created[0]["shareId"])
+    reviewed = workflow.roster_week(roster_id)
+    assignment = next(row for row in workflow.assignments(roster_id) if row["status"] == "active")
+    command_id = "legacy-adjustment-replay"
+    reason = "Legacy adjustment committed before durable command receipts"
+    fingerprint = workflow._leave_adjustment_request_fingerprint(
+        roster_week_id=roster_id,
+        assignment_id=int(assignment["id"]),
+        replacement_prefect_id=None,
+        reason=reason,
+    )
+    with workflow._session() as session:
+        session.add(
+            LeaveAdjustmentRecord(
+                roster_week_id=roster_id,
+                assignment_id=int(assignment["id"]),
+                original_prefect_id=str(assignment["prefectId"]),
+                original_prefect_name=str(assignment["prefectName"]),
+                replacement_prefect_id=None,
+                replacement_prefect_name=None,
+                reason=reason,
+                status="vacant",
+                command_id=command_id,
+                request_fingerprint=fingerprint,
+                committed_version=int(reviewed["version"]) + 1,
+                created_at=FIXED_NOW.replace(tzinfo=None),
+            )
+        )
+        session.commit()
+
+    result = workflow.apply_leave_adjustment(
+        roster_week_id=roster_id,
+        assignment_id=int(assignment["id"]),
+        replacement_prefect_id=None,
+        reason=reason,
+        command_id=command_id,
+        expected_week_version=int(reviewed["version"]),
+    )
+
+    assert result.idempotent is True
+    assert result.share_ids_to_revoke == (share_id,)
+    with workflow._session() as session:
+        outbox = session.scalar(
+            select(ExternalShareOutboxRecord).where(
+                ExternalShareOutboxRecord.share_id == share_id
+            )
+        )
+        assert outbox is not None
+        share_command = session.get(OperationCommandRecord, outbox.command_id)
+        replay_command = session.get(OperationCommandRecord, command_id)
+        assert share_command is not None
+        assert replay_command is not None
+        assert outbox.status == "revocation_pending"
+        assert share_command.status == "committed"
+        assert "shareKey" not in share_command.result_json
+        assert "deliveryPayload" not in share_command.result_json
+        assert "ciphertext" not in share_command.result_json
+        assert json.loads(replay_command.result_json)["shareIdsToRevoke"] == [share_id]
+
+
+def test_revocation_retry_only_replays_worker_delete_and_preserves_roster_change(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    workflow, roster_id = _workflow(tmp_path)
+    gateway = RecordingGateway()
+    service = PublicRosterShareService(
+        workflow,
+        settings=_settings(),
+        gateway=gateway,
+        now=lambda: FIXED_NOW,
+    )
+    service.create_share(roster_id, command_id="share-before-revocation-retry")
+    old_share_id = str(gateway.created[-1]["shareId"])
+    reviewed = workflow.roster_week(roster_id)
+    assignment = next(row for row in workflow.assignments(roster_id) if row["status"] == "active")
+    adjustment = workflow.apply_leave_adjustment(
+        roster_week_id=roster_id,
+        assignment_id=int(assignment["id"]),
+        replacement_prefect_id=None,
+        reason="Prefect reported an absence after publication",
+        command_id="adjust-before-revocation-retry",
+        expected_week_version=int(reviewed["version"]),
+    )
+    service.create_share(roster_id, command_id="share-after-revocation-retry")
+    new_share_id = str(gateway.created[-1]["shareId"])
+    committed_version = int(workflow.roster_week(roster_id)["version"])
+    adjustment_count = workflow.leave_adjustment_count(roster_id)
+
+    revoker = FlakyRevocationService()
+    context = PageContext.create(
+        Principal(AccessMode.LOCAL_MAINTENANCE, "revocation-retry-test")
+    )
+    monkeypatch.setattr(access_control, "current_page_context", lambda: context)
+    monkeypatch.setattr(
+        access_control,
+        "_public_share_service",
+        lambda *_args, **_kwargs: revoker,
+    )
+
+    assert access_control.revoke_roster_shares(
+        workflow, adjustment.share_ids_to_revoke
+    ) == (0, 1)
+    assert workflow.pending_external_share_revocations() == [
+        {"shareId": old_share_id, "rosterWeekId": roster_id, "attempts": 2}
+    ]
+    assert workflow.leave_adjustment_count(roster_id) == adjustment_count
+    assert int(workflow.roster_week(roster_id)["version"]) == committed_version
+    assert workflow.external_share_outbox("share-after-revocation-retry")["status"] == "delivered"
+
+    assert access_control.revoke_roster_shares(
+        workflow, adjustment.share_ids_to_revoke
+    ) == (1, 0)
+    assert workflow.pending_external_share_revocations() == []
+    assert revoker.calls == [old_share_id, old_share_id]
+    assert old_share_id != new_share_id
+    assert workflow.leave_adjustment_count(roster_id) == adjustment_count
+    assert int(workflow.roster_week(roster_id)["version"]) == committed_version
+    assert workflow.external_share_outbox("share-after-revocation-retry")["status"] == "delivered"
+
+
+def test_withdrawal_revokes_response_lost_share_instead_of_cancelling_it(tmp_path) -> None:
+    workflow, roster_id = _workflow(tmp_path)
+    gateway = CommitThenLoseGateway()
+    service = PublicRosterShareService(
+        workflow,
+        settings=_settings(),
+        gateway=gateway,
+        now=lambda: FIXED_NOW,
+    )
+    with pytest.raises(PublicRosterShareError, match="simulated response loss"):
+        service.create_share(roster_id, command_id="response-lost-before-withdrawal")
+    share_id = str(gateway.created[0]["shareId"])
+    current = workflow.roster_week(roster_id)
+
+    result = workflow.withdraw_published_roster(
+        roster_id,
+        expected_version=int(current["version"]),
+        reason="Published the wrong reviewed roster",
+        command_id="withdraw-response-lost-share",
+    )
+
+    assert result.share_ids_to_revoke == (share_id,)
+    assert workflow.pending_external_share_revocations() == [
+        {"shareId": share_id, "rosterWeekId": roster_id, "attempts": 1}
+    ]
 
 
 def test_two_admin_tabs_replay_one_exact_share_command_concurrently(tmp_path) -> None:

@@ -90,6 +90,7 @@
     "module-dependency-contract": "docs/architecture/module-boundaries.json",
     "design-language": "Professional_Design_System.md",
     "operator-workflow": "docs/OPERATOR_GUIDE.md",
+    "public-viewer-share-lifecycle": "docs/PUBLIC_ROSTER_VIEWER.md",
     "release-and-recovery-runbook": "docs/RELEASE_HANDOVER.md",
     "security-and-privacy": "docs/SECURITY_AND_PRIVACY.md",
     "guest-capability-boundary": "docs/UNIFIED_GUEST_SECURITY_MODEL.md"
