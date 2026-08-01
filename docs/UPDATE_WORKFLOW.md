@@ -1,6 +1,6 @@
 # 更新、驗證與上傳：一個命令完成正確層級
 
-> **線上來源真相（2026-07-31）：**目前 runtime 是 clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466`，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 承接 100% 流量。306-file 指紋 `699dc436c69e02f3b9062a04500715929ba35f78f48e14a3d80a0ac33c18640b` 通過 15／15 gate，並完成正式備份、隔離還原、受控 origin 部署、0% 指定版本 smoke、100% promotion 及 canonical checks。第一層配對回退是 rc41／`74072b0175ff64807312a8cc5b9cd016b6628210` 與 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；rc42 沒有綁定正式報告且未部署；健康閘門或候選驗證仍不等於真人驗收。
+> **線上來源真相（2026-08-01）：**目前 runtime 是 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5`，SQLite 已升至 Alembic `0012`。308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate，並完成正式備份、隔離還原、受控 origin 部署及 canonical checks。Worker 來源及受保護設定沒有改動，既有 gateway 保持 100% 流量且健康已重新核對。rc43／rc41 及更舊程式只屬歷史來源，回復時必須配合相容的 pre-0012 資料庫還原；健康閘門或候選驗證仍不等於真人驗收。
 > **rc37／rc38 歷史界線：**受保護的 `v1.2.0-rc.37` 指向較早 rc36 source，屬 void／未部署標籤；`v1.2.0-rc.38` 通過來源閘門但沒有通過 Windows 排程帳戶憑證切換，因此沒有取代 rc35。新部署或回退不可把兩者誤當成目前線上版本。
 
 我是李創杰。這份流程是我與 Codex 對正式發布工作的反思結果：更新慢的主因不是 Git 上傳，而是過去把每次文字或測試修改都當成完整 runtime 發布。

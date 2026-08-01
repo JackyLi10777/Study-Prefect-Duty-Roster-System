@@ -12,7 +12,7 @@ compromise. Every high-risk operation must fail closed, limit blast radius,
 leave diagnosable evidence, and remain recoverable from verified backups and an
 immutable release.
 
-> **Current boundary (2026-07-31):** production is clean annotated `v1.2.0-rc.43` at origin commit `c8201f33e454d9120c73386642cbf9d737391466` with Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d`. The R5／R6／R7 controls, Guest isolation, honest waiting-state contracts and atmosphere/motion presentation changes described below are live in this paired release. The first paired rollback is rc41 at commit `74072b0175ff64807312a8cc5b9cd016b6628210` with Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`; rc40 and its Worker remain the second pair. Rc42 is source-only and was never deployed. Supervised acceptance is pending.
+> **Current boundary (2026-08-01):** production is clean annotated `v1.2.0-rc.45` at origin commit `90777345ea9ed5652c73873edb3c8c846a9ceac5` with SQLite at Alembic `0012`. Worker source and protected configuration did not change, so the existing canonical gateway remains in service and its health was rechecked. The R5／R6／R7 controls, Guest isolation, honest waiting-state contracts and atmosphere/motion presentation changes described below remain live. Rc43, rc41 and older applications are historical sources and require a compatible pre-0012 database restore; they are not code-only rollback targets. Rc42 is source-only and was never deployed. Supervised acceptance is pending.
 
 ## 1. 資產及資料分類 / Assets and data classes
 

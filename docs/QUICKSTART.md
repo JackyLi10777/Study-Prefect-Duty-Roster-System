@@ -1,12 +1,12 @@
 # 快速啟動 / Quick start
 
-> **線上來源真相（2026-07-31）：** Windows origin 正運行 clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466`，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 承接 100% 流量。正式備份／隔離還原、readiness、0% 指定版本 smoke、100% promotion 及 canonical checks 已通過。第一層配對回退為 rc41／`74072b0175ff64807312a8cc5b9cd016b6628210` 與 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；rc40 與其 Worker 為第二層回退；真人驗收未完成。
+> **線上來源真相（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5`，canonical Worker gateway 維持健康。正式備份／隔離還原、Alembic `0012`、readiness、canonical entrance／Guest／support checks 已通過。rc43 只可配合相容資料庫還原，不可直接切換；真人驗收未完成。
 >
-> **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 發布輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量。這組 clean pair 是當時第一個已知、已驗證的復原目標；目前第一層配對回退是本頁頂部記錄的 rc41／Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`，rc40／rc39／rc35／rc30／rc27 只屬更深歷史。
+> **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 發布輸入以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 gate，正式備份、checksum、公平對帳、行數核對、還原審計及隔離還原亦已通過。canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量。這組 clean pair 是當時第一個已知、已驗證的復原目標；目前 rc45 及 migration `0012` 後的受控資料庫復原限制以本頁頂部為準，rc43／rc41／rc40／rc39／rc35／rc30／rc27 只屬歷史來源。
 >
 > **rc30 歷史乾淨發布證據（真人驗收仍未簽署）：** rc30 保留完整 Admin／Guest／Public／Viewer 邊界及 `/support` 身份分流，並加入目的語言本名、明確 System／Light／Dark 選擇及有日期／非遙測聲明的 ≈10B creator token 約數。機器驗證及線上 smoke 不能代替首席導學風紀與教師顧問真人驗收。
 >
-> **歷史 rc31 候選證據：** `codex/rc31-unified-theme-controls` 把可見外觀控制簡化為單一淺色／深色按鈕；`system` 只作未設定的初始化狀態。其 297 個可部署來源檔案曾以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時的 15／15 正式候選閘門；它已被後續正式版本（目前 rc43）取代，不代表目前候選、復原目標或線上狀態。
+> **歷史 rc31 候選證據：** `codex/rc31-unified-theme-controls` 把可見外觀控制簡化為單一淺色／深色按鈕；`system` 只作未設定的初始化狀態。其 297 個可部署來源檔案曾以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時的 15／15 正式候選閘門；它已被後續正式版本（目前 rc45）取代，不代表目前候選、復原目標或線上狀態。
 
 ## 每日使用
 
@@ -18,7 +18,7 @@
 4. 完成後按「登出」，特別是共用裝置；只關閉分頁不等於清除管理員／Guest session 及同 session 的其他分頁狀態。
 5. 如只需查看首席導學風紀發出的週表，直接開啟完整 `/view#…` 連結；不要以 Guest 或 Admin 入口取代分享連結。
 
-目前正式 rc43 中，生成前先在名單核對職務及「可值班日」：只有助理首席導學風紀可當 `Assist. in charge`，未勾選的星期一律視為不方便／不可值班。新週次可選「固定星期模式」或「每週靈活模式」；固定模式保留同一 AHP 的星期擁有權，本週請假只作一次替補；靈活模式按可值班日及長期公平記錄作可重現的每週變化。既有週表會重開其已保存模式。
+目前正式 rc45 中，生成前先在名單核對職務及「可值班日」：只有助理首席導學風紀可當 `Assist. in charge`，未勾選的星期一律視為不方便／不可值班。新週次可選「固定星期模式」或「每週靈活模式」；固定模式保留同一 AHP 的星期擁有權，本週請假只作一次替補；靈活模式按可值班日及長期公平記錄作可重現的每週變化。既有週表會重開其已保存模式。
 
 首次進入而尚未保存外觀偏好時，畫面會跟隨電腦／手機的深淺模式。伺服器首屏只提供中性的淺色提示，瀏覽器會在外觀控制可見前解析系統模式並在需要時同步；若瀏覽器完全不支援系統色彩查詢才保留淺色。右上角只有一個淺色／深色按鈕：圖標顯示目前解析模式，輔助文字說明按下後的相反模式。第一次按下會儲存目前解析結果的相反模式，其後只在明確淺色與深色間切換。Guest 在同一有效 session 內重新整理仍會保留語言及外觀；登出後按設計回到新 session 預設。從公開入口刻意進入 Admin／Guest 時，只會暫存已明確選擇的 `light`／`dark` 提示，最長 120 秒；Worker 核對並放入簽署身份後才交給目的工作區，建立 session 時會清除暫存 cookie。目的地已有偏好時不會被覆寫。
 
@@ -34,7 +34,7 @@ Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 sess
 4. 用鍵盤或讀屏由 Dashboard 轉到 Rosters／Prefects，焦點應到新頁 `main`。開啟次要頁時 **More** 可視覺 active，但 current page 應是抽屜內的實際路由，而不是 More menu trigger。
 5. 在淺色、深色、reduced motion 及 forced-colours 各核對一次。Standalone action 至少 44px；touch icon story 只在原位做一次 opacity／scale 變化，不漂移、不旋轉，且 reduced motion 保持靜止。
 
-任一項失敗都先停止正式寫入、記錄時間／route／裝置及非敏感畫面並登出，不要反覆提交表單。維護者依 [發布與交接手冊](RELEASE_HANDOVER.md) 判斷事故屬 origin 還是 gateway：目前第一層受控回退是 rc41／`74072b0175ff64807312a8cc5b9cd016b6628210` 加 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；更舊來源只在 rc41 不能安全恢復時使用。只看到 `/healthz` 200 不足以恢復使用。
+任一項失敗都先停止正式寫入、記錄時間／route／裝置及非敏感畫面並登出，不要反覆提交表單。維護者依 [發布與交接手冊](RELEASE_HANDOVER.md) 判斷事故屬 origin、gateway 還是資料狀態：第一個復原選擇是保留 rc45 並以已驗證正式備份執行受控還原。資料庫已升至 Alembic `0012`；回復 rc43／rc41 或更舊程式前，必須使用相容的 pre-0012 快照完成隔離還原，不能只切換程式或 Worker。只看到 `/healthz` 200 不足以恢復使用。
 
 ## 本機維護或 Cloudflare 故障復原
 
@@ -74,6 +74,6 @@ Guest 同一分頁重新整理時，可還原最新、已簽署且綁定該 sess
 
 ## English
 
-Historically, clean `v1.2.0-rc.30` at `74b84f43786b00feb15b51a6270ff71c9430773f` passed 14／14 source-matched gates under fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` (894 Python tests, 3 motion, and 46 Worker contracts) and completed controlled Windows and Worker deployments. It was the first known verified clean recovery source at that time. Current production is rc43 and the first paired rollback is rc41 with Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`; rc40, rc39, rc35, rc30 and rc27 are deeper history. Supervised Head Study Prefect and teacher-advisor acceptance remains pending.
+Historically, clean `v1.2.0-rc.30` at `74b84f43786b00feb15b51a6270ff71c9430773f` passed 14／14 source-matched gates under fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` (894 Python tests, 3 motion, and 46 Worker contracts) and completed controlled Windows and Worker deployments. It was the first known verified clean recovery source at that time. Current production is rc45 with Alembic `0012`; the first recovery path keeps rc45 and restores its verified backup. Rc43, rc41 and older applications require a compatible pre-0012 database restore. Supervised Head Study Prefect and teacher-advisor acceptance remains pending.
 
-The current rc43 origin and verified Worker identified at the top of this document provide one canonical site with either a time-limited **Guest experience** using fictional in-memory data or **Admin login** through Cloudflare Access. A refresh in the same Guest tab may restore its latest signed revision, but a duplicated tab receives another workspace and logout, expiry, revocation, or origin restart invalidates the temporary token. Select **Log out** when finished because closing one tab does not clear every session state. `/view#…` remains the separate read-only published-roster link. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for HTTP readiness, and only then opens the browser. For a durable fictional rehearsal with backup/restore, use `START_PRACTICE_MODE.cmd`; the remote Guest workspace is intentionally temporary. Check `/readyz`, not only `/healthz`, before accepting official writes. Fixed weekday preserves each AHP's weekday across weeks while a leave substitute remains week-local; Flexible weekly varies deterministically among declared available days with fairness history primary. Unchecked days are never eligible, and an existing week reopens with its saved mode. These Assist. modes were introduced in historical rc20 and remain part of current rc43 production.
+The current rc45 origin and unchanged, health-rechecked gateway identified at the top of this document provide one canonical site with either a time-limited **Guest experience** using fictional in-memory data or **Admin login** through Cloudflare Access. A refresh in the same Guest tab may restore its latest signed revision, but a duplicated tab receives another workspace and logout, expiry, revocation, or origin restart invalidates the temporary token. Select **Log out** when finished because closing one tab does not clear every session state. `/view#…` remains the separate read-only published-roster link. `START_SING_YIN_ROSTER.cmd` is a local maintenance and recovery launcher only. It reuses an existing official service, chooses a free port from 8080–8099 when necessary, waits for HTTP readiness, and only then opens the browser. For a durable fictional rehearsal with backup/restore, use `START_PRACTICE_MODE.cmd`; the remote Guest workspace is intentionally temporary. Check `/readyz`, not only `/healthz`, before accepting official writes. Fixed weekday preserves each AHP's weekday across weeks while a leave substitute remains week-local; Flexible weekly varies deterministically among declared available days with fairness history primary. Unchecked days are never eligible, and an existing week reopens with its saved mode. These Assist. modes were introduced in historical rc20 and remain part of current rc45 production.

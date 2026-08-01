@@ -1,8 +1,8 @@
 # 部署與遠端存取決策指南 / Deployment decision
 
-> **線上來源真相（2026-07-31）：** clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466` 正在 Windows origin 運行；canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 承接 100% 流量。rc43 已完成 15／15 gate、正式備份與隔離還原、受控 origin 部署、Worker 0% 指定版本 smoke、100% promotion 及 canonical health／entrance／Viewer 核對。第一層配對回退為 rc41／`74072b0175ff64807312a8cc5b9cd016b6628210` 與 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；rc40 與其 Worker 是第二層回退。rc42 與 rc43 同源但未綁定正式報告、未部署。真人驗收未完成。
+> **線上來源真相（2026-08-01）：** clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 正在 Windows origin 運行。308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate；Alembic `0012`、正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`、隔離還原、health、`writeReady=true` 及 canonical browser smoke 通過。Worker 未改動並保持健康。rc43 回復必須配合相容的受控資料庫還原，不可只改排程路徑。真人驗收未完成。
 >
-> **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker 是已驗證 version `11763f08-d40d-46d5-93dc-5ca2599d4154`。296 個 runtime 來源檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前備份 `20260727-023041-069097-manual_verified_backup.sqlite3`／SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 通過 0% version smoke 後升至 100%；origin readiness 與 canonical rendered smoke 通過。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前 rc43 production 及 rc41 第一層配對回退以本頁頂部記錄為準。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
+> **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker 是已驗證 version `11763f08-d40d-46d5-93dc-5ca2599d4154`。296 個 runtime 來源檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前備份 `20260727-023041-069097-manual_verified_backup.sqlite3`／SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 通過 0% version smoke 後升至 100%；origin readiness 與 canonical rendered smoke 通過。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前 rc45 及 migration `0012` 後的受控復原限制以本頁頂部記錄為準。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
 
 ## 結論
 
@@ -32,12 +32,12 @@ NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另�
 
 | 層 | 現況 |
 |---|---|
-| Windows owned scheduled task | clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466` immutable bundle；306-file runtime fingerprint `699dc436c69e02f3b9062a04500715929ba35f78f48e14a3d80a0ac33c18640b` 已對帳。Inactive `C:\SingYinRoster` Git HEAD 不代表 runtime。 |
-| Cloudflare Worker／Access／Tunnel | canonical traffic 由受審 Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 承接 100%；Access、Tunnel 與 OTP fail-closed 驗證已通過 |
-| rc43 來源與部署證據 | 15／15 gate；受控 origin 切換、正式備份／隔離還原、0% Worker smoke、100% promotion 及 canonical health／entrance／Viewer checks 通過 |
-| 第一個已驗證配對復原目標 | origin 使用 rc41 commit `74072b0175ff64807312a8cc5b9cd016b6628210`，edge 使用 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；不得任意單側回退 |
-| 有條件單側回退 | 只有來源指紋、身份參數、路由契約及相容性 gate 證明未改動一側與目標相容時，事故負責人才可批准；不可把 gateway 回退誤寫成 origin 回退 |
-| 更深歷史復原來源 | rc40／`2ec900a5` 與 Worker `2cb38b05…`，再到 rc39／rc35／rc30／rc27／rc26；只有較近乾淨來源無法安全恢復且事故負責人批准時使用 |
+| Windows owned scheduled task | clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` immutable bundle；308-file runtime fingerprint `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 已對帳。Inactive `C:\SingYinRoster` Git HEAD 不代表 runtime。 |
+| Cloudflare Worker／Access／Tunnel | Worker 來源及受保護設定未改動；既有 canonical gateway 承接 100% 流量，Access、Tunnel、OTP fail-closed 及 gateway health 已重新核對 |
+| rc45 來源與部署證據 | 15／15 gate；受控 origin 切換、migration `0012`、正式備份／隔離還原及 canonical health／entrance／Guest／support checks 通過 |
+| 第一個已驗證復原目標 | 保留 rc45 程式並使用已驗證正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3` 進行受控還原；先在隔離資料庫核對 checksum、公平、行數及 restore audit |
+| 舊程式相容復原 | migration `0012` 後，rc43／rc41 等舊程式不得作 code-only rollback；必須先選取相容的 pre-0012 快照並完成受控隔離還原，再由事故負責人批准切換 |
+| 更深歷史復原來源 | rc43／rc41／rc40／rc39／rc35／rc30／rc27／rc26 及其 Worker 只屬歷史來源；只有 rc45 復原不能安全恢復且事故負責人批准時使用 |
 | `codex/frontend-guest-performance-rc16` | rc17 來源分支；14 項 gate、標籤、Windows bundle 及 Worker staged rollout 已完成 |
 | `SING_YIN_UNIFIED_GUEST` | 正式環境的受保護設定必須為 `1`；後續候選不得以切換旗標取代完整驗證 |
 
@@ -120,16 +120,16 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 
 只有完整 release report 與來源 fingerprint 一致時，才可：
 
-1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前 rc43 origin／Worker 已對帳，任何新候選仍須產生自己的來源指紋及部署證據；
+1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前 rc45 origin、Alembic `0012` 與未變更的 gateway 已對帳，任何新候選仍須產生自己的來源指紋及部署證據；
 2. 建立並驗證正式備份，在另一隔離資料庫完成還原；
 3. 進入短暫 maintenance；
-4. 從該不可變 tag 更新 Windows bundle，執行 additive migration `0011_assist_assignment_mode`；
+4. 從該不可變 tag 更新 Windows bundle，執行候選所需的 additive migration；目前 schema head 是 `0012`；
 5. 保持現行受保護設定不變，核對 `/healthz` 及 `/readyz`；
-6. 比較 Worker source／受保護設定；沒有改動時記錄沿用已驗證版本，有改動時才執行 staged Worker rollout；目前 edge 的第一層回退是 rc41 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`，rc40 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 是第二層，`d7069f99…`、rc34 的 `7816b183…` 與 rc30 的 `11763f08…` 只屬更早歷史；
+6. 比較 Worker source／受保護設定；沒有改動時記錄沿用已驗證版本並重新核對 gateway health，有改動時才執行 staged Worker rollout；Worker 與 origin 的復原必須各自有來源及相容性證據，不得把歷史 Worker 版本當作 migration `0012` 後的直接程式回退；
 7. 以虛構資料核對 Public、Admin、Guest、Viewer、PDF、登出、到期及多分頁隔離；
 8. 完成真人驗收後才結束 maintenance 並宣布候選上線。
 
-任何新候選 origin／線上 gate 失敗，先保存失敗證據，再回復 tagged `v1.2.0-rc.41`／commit `74072b0175ff64807312a8cc5b9cd016b6628210` 及 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；只有這個第一層配對回退無法安全恢復且事故負責人批准時，才使用 rc40／`2ec900a5ef1c021183717dfa648ef76b55452ffb` 與 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb`，其後才是 rc39、rc35、rc34、rc30、rc27 或更早的已驗證基線。Additive migration 必須讓回退版本仍可讀原有資料。
+任何新候選 origin／線上 gate 失敗，先保存失敗證據，再把排程工作回復至切換前已捕獲、已驗證且與目前 schema 相容的 task target。若事故需要回復至 rc43／rc41 或更舊程式，必須先停止正式寫入，選取相容的 pre-0012 正式快照，完成 checksum、公平、行數、restore-audit 及隔離還原，再由事故負責人批准程式及必要的 Worker 切換。不得把 rc43／rc41 當作 code-only rollback，也不得假設 additive migration 自動保證舊程式可讀新 schema。
 
 逐步 Cloudflare 設定、staged rollout、驗收及回退命令見
 [`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)。
@@ -153,7 +153,9 @@ Historically, before the rc39 rollout, the active origin and Worker had periods
 of provenance drift. Exact rc30 source passed its `15d155d8…` fingerprint gates
 and completed the controlled origin switch, staged Worker smoke, 100% promotion,
 and canonical Public／Guest／Admin handoff／Viewer checks. That evidence remains
-historical. The immediate verified paired rollback is now rc41 commit
-`74072b0175ff64807312a8cc5b9cd016b6628210` plus Worker
-`610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`; rc40, rc39, rc35, rc34, rc30, rc27
-and their older Workers are deeper history. Supervised human acceptance remains outstanding.
+historical. Current production is rc45 with Alembic `0012`; the unchanged
+canonical gateway remains in service. The first recovery path keeps the rc45
+application and restores its verified backup under the controlled procedure.
+Rc43, rc41 and older applications require a compatible pre-0012 database
+restore and are not code-only rollback targets. Supervised human acceptance
+remains outstanding.

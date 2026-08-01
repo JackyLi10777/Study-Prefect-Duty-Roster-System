@@ -1,6 +1,6 @@
 # Windows 專用主機完整設定手冊
 
-> **主機來源真相（2026-07-31）：** owned scheduled task 正運行 clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466` 的 immutable bundle，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 承接 100% 流量；健康及 readiness 均通過。受控部署前備份 `20260731-013103-079514-manual_verified_backup.sqlite3`、隔離還原、資料行數、公平對帳及 restore audit 已核對。第一層配對回退是 rc41／`74072b0175ff64807312a8cc5b9cd016b6628210` 與 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；rc40 與其 Worker 是第二層回退。inactive `C:\SingYinRoster` Git checkout 的 HEAD 不是 runtime 身分證據；須讀取 scheduled-task target 與 `.sing-yin-release.json` marker。真人驗收未完成。
+> **主機來源真相（2026-08-01）：** owned scheduled task 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的 immutable bundle `C:\SingYinRoster\releases\v1.2.0-rc.45-90777345ea9e-5c891432a1d8`；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、資料行數、公平對帳、restore audit、health 及 `writeReady=true` 已核對。Worker 未改動且 gateway 健康。Alembic 已升至 `0012`，rc43 不能作 code-only rollback；必須配合受控的 pre-0012 相容資料庫還原。inactive `C:\SingYinRoster` Git checkout 的 HEAD 不是 runtime 身分證據；須讀取 scheduled-task target 與 `.sing-yin-release.json` marker。真人驗收未完成。
 
 **適用系統：** Sing Yin Study Prefect Duty Roster System（NiceGUI + SQLite）
 **讀者：** 完全不懂程式、第一次設定電腦的人
@@ -12,7 +12,7 @@
 
 > **SSH 維護狀態（2026-07-17）：** Windows OpenSSH Server 已以金鑰限定模式運行，只監聽 `127.0.0.1:22` 及 `[::1]:22`；密碼、互動式登入、轉發及 Windows 公開入站規則均停用。安裝、驗證、金鑰輪換及緊急停用程序見 [Windows SSH 維護通道](WINDOWS_SSH_MAINTENANCE.md)。這是維護入口，不是另一個使用者網站。
 >
-> **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式部署不可變標籤 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`。`Sing Yin Roster Host` 由非管理員 `SingYinRosterSvc` 帳戶運行；實際 loopback endpoint 由受保護 `.env` 的 `SING_YIN_HOST`／`SING_YIN_PORT` 決定，現為 `127.0.0.1:8080`。296 個 runtime 檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 gate；備份 `20260727-023041-069097-manual_verified_backup.sqlite3` 及隔離還原已通過。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量；origin readiness 與 canonical rendered smoke 已核對。在當時的來源漂移狀態下，這組乾淨 rc30／`11763f08…` 是第一個已知、已驗證的復原目標；目前第一層配對回退是本頁頂部記錄的 rc41 origin／Worker，rc40／rc39／rc35／rc30／rc27 是更深歷史。
+> **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式部署不可變標籤 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`。`Sing Yin Roster Host` 由非管理員 `SingYinRosterSvc` 帳戶運行；實際 loopback endpoint 由受保護 `.env` 的 `SING_YIN_HOST`／`SING_YIN_PORT` 決定，現為 `127.0.0.1:8080`。296 個 runtime 檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 gate；備份 `20260727-023041-069097-manual_verified_backup.sqlite3` 及隔離還原已通過。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量；origin readiness 與 canonical rendered smoke 已核對。在當時的來源漂移狀態下，這組乾淨 rc30／`11763f08…` 是第一個已知、已驗證的復原目標；目前 rc45 及 migration `0012` 後的受控復原限制以本頁頂部記錄為準，rc43／rc41／rc40／rc39／rc35／rc30／rc27 是歷史來源。
 >
 > **歷史 rc21 受控部署紀錄：**annotated tag `v1.2.0-rc.21`／commit `f7df4d0170e6bacd65340cc893992a17b5ed4aed` 曾以 fingerprint `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate，並完成受控 Windows 切換。切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／SHA-256 `fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已通過 checksum、公平對帳、行數核對、還原審計及隔離還原。不要把 branch、未提交 source 或一般開發樹手動複製進正式主機；切換前發現的 rc20 主機漂移已封存於 stash commit `56e2f5148f4be1444c45d31c25b81f5a7df1ba03`，不得直接套回 production。這段只保留歷史證據；目前 rc27／rc26／rc24 層級以上方狀態為準。
 
@@ -23,7 +23,7 @@
 完成本手冊後，運作方式如下：
 
 1. 一部 Windows 電腦長期保存程式、SQLite 資料庫、備份、日誌、PDF 及音樂。
-2. NiceGUI origin 只在這部電腦的受保護 loopback endpoint 開放（目前為 `127.0.0.1:8080`）；日常使用者從唯一正式 `workers.dev` 網站進入。目前 rc43 訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace；`/guest`、`/try` 只作兼容重定向。管理員登入後仍留在同一網址。
+2. NiceGUI origin 只在這部電腦的受保護 loopback endpoint 開放（目前為 `127.0.0.1:8080`）；日常使用者從唯一正式 `workers.dev` 網站進入。目前 rc45 訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace；`/guest`、`/try` 只作兼容重定向。管理員登入後仍留在同一網址。
 3. 電腦開機後，可由 Windows 工作排程器在背景自動啟動系統。
 4. 初次安裝先驗證 loopback origin，再依 Cloudflare 手冊連接既有 Tunnel、VPC Service、Access 及 Worker；始終不設定路由器轉發或公開 NiceGUI 連接埠。
 5. 即使電腦沒有互聯網，名單、排班、PDF、備份及還原仍可使用；YouTube 音樂除外。
@@ -352,7 +352,7 @@ SING_YIN_LOG_BACKUP_COUNT=5
 
 本機模式第一次啟動會自動建立 `data\runtime\.nicegui-storage-secret`，不需要手動輸入 secret，也不要打開、分享或修改該檔案。
 
-完成本機驗證後，正式啟用程序才會把受保護主機設定切換為 `server` 模式，只監聽由 `SING_YIN_HOST`／`SING_YIN_PORT` 指定的 loopback endpoint，並啟用 Access、Viewer gateway 與獨立 `SING_YIN_STORAGE_SECRET`。不要手動逐項拼湊正式設定；依本手冊及 [Cloudflare 遠端存取手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 的受控啟用／核對程序一次完成。目前 rc43 主機已處於這個 server-mode／loopback 狀態。
+完成本機驗證後，正式啟用程序才會把受保護主機設定切換為 `server` 模式，只監聽由 `SING_YIN_HOST`／`SING_YIN_PORT` 指定的 loopback endpoint，並啟用 Access、Viewer gateway 與獨立 `SING_YIN_STORAGE_SECRET`。不要手動逐項拼湊正式設定；依本手冊及 [Cloudflare 遠端存取手冊](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) 的受控啟用／核對程序一次完成。目前 rc45 主機已處於這個 server-mode／loopback 狀態。
 
 ---
 
@@ -684,7 +684,7 @@ rc20 的自動化裝置矩陣已包含手機／平板／桌面與 accessibility�
 
 1. 立即停止接受正式寫入，記錄時間、canonical route、裝置、release tag／commit、Worker version 及非敏感畫面；不要重複提交可能已完成的操作。
 2. 先閱讀 Windows／Worker deployment JSON 的 rollback `attempted`、`succeeded`、previous commit／version。受控腳本已開始回退時，不要同時再跑第二次或手動覆寫檔案。
-3. 若目前 rc43 origin 發現回歸，由發布維護者讓受控 clean-bundle 流程依 captured task target 回復 rc41／`74072b0175ff64807312a8cc5b9cd016b6628210`，並把 Worker traffic 恢復至 `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`。rc43 的歷史 deployment report 在 reporter 修正前已封存，其 legacy `previousCommit` 不可單獨作 rollback 身分；以 captured task target、marker 及 fingerprint 為準。後續報告則必須提供已驗證的 `previousReleaseRef`／`previousReleaseSource`。更舊來源只在 rc41 不能安全恢復且事故負責人批准時使用。禁止 `git reset --hard`、直接複製開發樹或留下未經證明的混合版本。
+3. 若目前 rc45 origin 發現回歸，第一個復原選擇是保留 rc45 程式並以已驗證正式備份執行受控還原。資料庫已升至 Alembic `0012`；若事故需要回復 rc43／rc41 或更舊程式，必須先停止正式寫入，選取相容的 pre-0012 正式快照，完成 checksum、公平、行數、restore-audit 及隔離還原，再由事故負責人批准程式與必要的 Worker 切換。歷史 deployment report 的 legacy `previousCommit` 不可單獨作 rollback 身分；以 captured task target、marker、fingerprint 及資料庫相容性證據為準。禁止 `git reset --hard`、直接複製開發樹、只切換 task action 或留下未經證明的混合版本。
 4. 回退後核對實際回退層、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出和完整使用者流程。
 5. 只有上述結果全部一致才恢復操作；不能證明 rollback 成功時保持 maintenance／唯讀並交由 IT 處理。
 
