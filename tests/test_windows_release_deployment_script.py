@@ -713,6 +713,31 @@ def test_previous_release_identity_rejects_marker_identity_tampering(
     assert identity["ok"] is False
 
 
+def test_previous_release_identity_rejects_missing_marker_timestamp_cleanly(
+    tmp_path: Path,
+) -> None:
+    repository, host_root, bundle, marker, environment_hash = (
+        _create_trusted_release_bundle(tmp_path)
+    )
+    del marker["createdAt"]
+    (bundle / ".sing-yin-release.json").write_text(
+        json.dumps(marker),
+        encoding="utf-8",
+    )
+
+    identity = _run_previous_release_identity(
+        repository,
+        host_root,
+        bundle,
+        environment_hash,
+    )
+
+    assert identity["ok"] is False
+    assert identity["error"] == (
+        "The startup task release bundle identity marker is invalid or stale."
+    )
+
+
 def test_previous_release_identity_rejects_a_renamed_release_bundle(
     tmp_path: Path,
 ) -> None:

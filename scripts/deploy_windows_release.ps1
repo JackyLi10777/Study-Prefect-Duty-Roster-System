@@ -897,7 +897,8 @@ function Get-SingYinReleaseBundleFingerprint {
 function Get-SingYinLegacyReleaseBundleFingerprint {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
-        [Parameter(Mandatory = $true)]$Marker
+        [Parameter(Mandatory = $true)]$Marker,
+        [Parameter(Mandatory = $true)]$CurrentFingerprint
     )
 
     [DateTimeOffset]$createdAt = [DateTimeOffset]::MinValue
@@ -911,9 +912,8 @@ function Get-SingYinLegacyReleaseBundleFingerprint {
         return $null
     }
 
-    $fullFingerprint = Get-SingYinReleaseBundleFingerprint -Path $Path
     $expectedFileCount = [int]$Marker.bundleFileCount
-    $derivedFileDelta = [int]$fullFingerprint.FileCount - $expectedFileCount
+    $derivedFileDelta = [int]$CurrentFingerprint.FileCount - $expectedFileCount
     if ($derivedFileDelta -le 0) {
         return $null
     }
@@ -1018,12 +1018,16 @@ function Get-SingYinPreviousReleaseIdentity {
 
     $marker = Get-Content -LiteralPath $markerPath -Raw -Encoding UTF8 | ConvertFrom-Json
     [DateTimeOffset]$markerCreatedAt = [DateTimeOffset]::MinValue
-    $markerCreatedAtValid = [DateTimeOffset]::TryParse(
-        [string]$marker.createdAt,
-        [Globalization.CultureInfo]::InvariantCulture,
-        [Globalization.DateTimeStyles]::RoundtripKind,
-        [ref]$markerCreatedAt
-    )
+    $markerCreatedAtValid = $false
+    $markerCreatedAtProperty = $marker.PSObject.Properties['createdAt']
+    if ($null -ne $markerCreatedAtProperty) {
+        $markerCreatedAtValid = [DateTimeOffset]::TryParse(
+            [string]$markerCreatedAtProperty.Value,
+            [Globalization.CultureInfo]::InvariantCulture,
+            [Globalization.DateTimeStyles]::RoundtripKind,
+            [ref]$markerCreatedAt
+        )
+    }
     if (
         [int]$marker.schemaVersion -ne 2 -or
         [string]$marker.releaseRef -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$' -or
@@ -1071,7 +1075,8 @@ function Get-SingYinPreviousReleaseIdentity {
     ) {
         $legacyCompatibility = Get-SingYinLegacyReleaseBundleFingerprint `
             -Path $bundlePath `
-            -Marker $marker
+            -Marker $marker `
+            -CurrentFingerprint $fingerprint
         if ($null -eq $legacyCompatibility) {
             throw "The startup task release bundle identity marker is invalid or stale."
         }
