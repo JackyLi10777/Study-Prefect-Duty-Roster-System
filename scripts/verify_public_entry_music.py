@@ -1,8 +1,9 @@
 """Verify that welcome music never gates Admin or Guest entry.
 
 The browser's media API is replaced before page load so autoplay outcomes are
-deterministic. Destination requests are aborted after observation; the check
-therefore does not create a Guest session or enter Cloudflare Access.
+deterministic. Destination requests receive a no-content response after
+observation; the check therefore keeps the entrance document available without
+creating a Guest session or entering Cloudflare Access.
 """
 
 from __future__ import annotations
@@ -11,7 +12,7 @@ import argparse
 import json
 from urllib.parse import urlsplit
 
-from playwright.sync_api import Browser, Page, sync_playwright
+from playwright.sync_api import Browser, Page, Route, sync_playwright
 
 
 PLAYBACK_OVERRIDE = """
@@ -45,6 +46,20 @@ def _assert(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
+def _observe_entry_route(route: Route, requests: list[str]) -> None:
+    requests.append(route.request.url)
+    # A cancelled top-level navigation sends current Chromium releases to
+    # chrome-error://chromewebdata and destroys the entrance DOM before its
+    # loading state can be inspected. HTTP 204 deliberately leaves the current
+    # document in place while still preventing either destination workflow from
+    # starting.
+    route.fulfill(
+        status=204,
+        headers={"Cache-Control": "no-store"},
+        body=b"",
+    )
+
+
 def _new_page(
     browser: Browser,
     base_url: str,
@@ -62,8 +77,7 @@ def _new_page(
     origin = f"{urlsplit(base_url).scheme}://{urlsplit(base_url).netloc}"
 
     def observe_entry(route) -> None:
-        requests.append(route.request.url)
-        route.abort()
+        _observe_entry_route(route, requests)
 
     page.route(f"{origin}/auth/login", observe_entry)
     page.route(f"{origin}/guest", observe_entry)
@@ -154,7 +168,7 @@ def _slow_state_case(browser: Browser, base_url: str) -> dict[str, object]:
     button = page.locator('[data-entry-role="guest"]:visible').first
     button.click(no_wait_after=True)
     page.wait_for_function(
-        "document.querySelector('[data-entry-role=\"guest\"]:not([hidden])')?.dataset.entryState === 'slow'",
+        "() => document.querySelector('[data-entry-role=\"guest\"]:not([hidden])')?.dataset.entryState === 'slow'",
         timeout=10_000,
     )
     _assert(button.get_attribute("aria-busy") is None, "slow Guest entry remained aria-busy")

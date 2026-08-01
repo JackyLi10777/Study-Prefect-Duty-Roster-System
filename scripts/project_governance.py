@@ -436,6 +436,14 @@ def _status_schema_violations(
         violations.append(
             ContractViolation("status.worker", path, "canonical Worker must record passed health and 100% traffic")
         )
+    if not isinstance(values["worker_source_changed"], bool):
+        violations.append(
+            ContractViolation(
+                "status.worker-source",
+                path,
+                "worker.source_changed_for_release must be a JSON Boolean",
+            )
+        )
     if values["human_acceptance"] not in {"pending", "passed"}:
         violations.append(
             ContractViolation("status.acceptance", path, "supervised_human must be pending or passed")
@@ -450,27 +458,37 @@ def render_status_block(
 
     values = _status_values(state)
     if language == "zh-Hant":
+        worker_status = (
+            "Worker 來源已更新，"
+            if values["worker_source_changed"] is True
+            else "Worker 來源沒有改動，"
+        )
         notice = (
             f"> **已核實線上來源（{values['observed_at']}）：** Windows origin 正運行 clean annotated "
             f"`{values['tag']}`／`{values['commit']}` 的不可變 bundle；{values['file_count']}-file 指紋 "
             f"`{values['fingerprint']}` 通過 {values['gates_passed']}／{values['gates_total']} gate。"
             f"SQLite 位於 Alembic `{values['alembic_head']}`；正式備份 `{values['backup_file']}`／SHA-256 "
             f"`{values['backup_sha']}`、隔離還原、health、`writeReady=true`、`maintenance=false`、"
-            f"`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源沒有改動，"
+            f"`recoveryRequired=false` 及 `pendingBackups=0` 已核對。{worker_status}"
             f"canonical Worker `{values['worker_version']}` 維持 {values['worker_traffic']}% 流量且健康。"
             f"`{values['predecessor']}` 只屬歷史來源，migration `{values['alembic_head']}` 後不可作 code-only "
             f"rollback；須使用受控的相容資料庫還原。真人驗收仍為 `{values['human_acceptance']}`。"
             f"精確狀態及更新規則見[目前系統狀態]({link})。"
         )
     elif language == "en":
+        worker_status = (
+            "Worker source changed and was promoted; "
+            if values["worker_source_changed"] is True
+            else "Worker source did not change; "
+        )
         notice = (
             f"> **Verified production truth ({values['observed_at']}):** the live Windows origin is clean annotated "
             f"`{values['tag']}` at `{values['commit']}` and runs an immutable bundle. Its {values['file_count']}-file "
             f"fingerprint `{values['fingerprint']}` passed {values['gates_passed']}/{values['gates_total']} gates. "
             f"SQLite is at Alembic `{values['alembic_head']}`; verified backup `{values['backup_file']}` with SHA-256 "
             f"`{values['backup_sha']}`, isolated restore, health, `writeReady=true`, `maintenance=false`, "
-            f"`recoveryRequired=false`, and `pendingBackups=0` passed. Worker source did not "
-            f"change; canonical Worker `{values['worker_version']}` remains healthy at {values['worker_traffic']}% "
+            f"`recoveryRequired=false`, and `pendingBackups=0` passed. {worker_status}"
+            f"canonical Worker `{values['worker_version']}` remains healthy at {values['worker_traffic']}% "
             f"traffic. `{values['predecessor']}` is historical source evidence, not a code-only rollback after migration "
             f"`{values['alembic_head']}`; recovery requires the controlled compatible database restore. Supervised human "
             f"acceptance remains `{values['human_acceptance']}`. See [current system status]({link}) for the exact state "
@@ -491,6 +509,11 @@ def render_current_status(state: Mapping[str, object]) -> str:
         human = "尚待完成 / Pending"
     else:
         human = "未通過（狀態無效） / Not passed (invalid state)"
+    worker_source = (
+        "source updated and promoted for this release"
+        if values["worker_source_changed"] is True
+        else "source unchanged for this release"
+    )
     return (
         "<!-- Generated from current-release.json by scripts/project_governance.py. Do not edit by hand. -->\n"
         "# 目前系統狀態 / Current system status\n\n"
@@ -511,7 +534,7 @@ def render_current_status(state: Mapping[str, object]) -> str:
         f"`recoveryRequired={str(values['recovery_required']).lower()}`; "
         f"`pendingBackups={values['pending_backups']}` |\n"
         f"| Canonical Worker | `{values['worker_version']}`; {values['worker_traffic']}% traffic; "
-        f"health `{values['worker_health']}`; source unchanged for this release |\n\n"
+        f"health `{values['worker_health']}`; {worker_source} |\n\n"
         "## 資料與復原 / Data and recovery\n\n"
         "| 項目 / Item | 已核實值 / Verified value |\n"
         "|---|---|\n"

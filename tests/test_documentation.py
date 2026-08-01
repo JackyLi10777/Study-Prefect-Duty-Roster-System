@@ -22,6 +22,9 @@ CURRENT_RELEASE_FINGERPRINT = CURRENT_RELEASE_STATE["release"][
 ]
 CURRENT_ALEMBIC_HEAD = CURRENT_RELEASE_STATE["database"]["alembic_head"]
 CURRENT_PREDECESSOR = CURRENT_RELEASE_STATE["historical_predecessor"]["release"]
+CURRENT_WORKER_SOURCE_CHANGED = CURRENT_RELEASE_STATE["worker"][
+    "source_changed_for_release"
+]
 CURRENT_STATUS_START = "<!-- SING_YIN_CURRENT_STATUS:START -->"
 CURRENT_STATUS_END = "<!-- SING_YIN_CURRENT_STATUS:END -->"
 
@@ -507,7 +510,12 @@ def test_operator_deployment_docs_use_observed_drift_and_recovery_hierarchy() ->
     assert "現行 origin／Worker 來源待對帳" not in quickstart
     assert "受審候選的正式 tag／commit" in quickstart
     assert "現行證據以 rc30 report 為準" not in quickstart
-    assert "Worker 來源沒有改動" in cloudflare
+    expected_worker_source = (
+        "Worker 來源已更新"
+        if CURRENT_WORKER_SOURCE_CHANGED is True
+        else "Worker 來源沒有改動"
+    )
+    assert expected_worker_source in _current_status_block(cloudflare)
     assert "不得單側回退而形成未驗證組合" in cloudflare
 
     assert "保存及歸屬差異" in cloudflare

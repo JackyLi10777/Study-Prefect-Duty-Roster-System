@@ -2,7 +2,12 @@
 
 This file records user-visible, operational and release-significant changes. The editable authority for observed deployment truth is `docs/status/current-release.json`; `docs/status/CURRENT_STATUS.md` is its generated, human-readable view and must not be edited by hand. Immutable historical evidence remains in `PROJECT_STATUS.md`, dated audits and generated release reports.
 
-## Unreleased — maintainability, documentation and frontend reset
+## Unreleased — verification maintainability
+
+- Updated the canonical public-entry browser verifier to complete intercepted Admin／Guest navigation with HTTP 204. This preserves the entrance DOM for loading-state inspection without creating a Guest session or entering Cloudflare Access; aborting the top-level request made current Chromium replace the page with `chrome-error://chromewebdata`.
+- Replaced a CSP-incompatible bare `wait_for_function` expression with a function predicate and added a regression test for the no-content interception contract. Production behavior, security policy and release assets are unchanged.
+
+## v1.2.0-rc.47 — released, 2026-08-02
 
 - Reset the NiceGUI workbench as a task-first Quiet Command Center: a wider institutional navigation rail, compact utility header, solid operational surfaces and contextual route bands replace the accumulated provisional composition without changing routes, identity, Guest, workflow, SQLite or recovery contracts.
 - Reordered the Dashboard so the current weekly workflow precedes recent-history review and Daily Verse, retained truthful empty／busy states and rejected synthetic KPIs, fake progress and decorative alerts.

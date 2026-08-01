@@ -136,6 +136,8 @@ def test_status_schema_rejects_candidate_partial_gates_and_code_only_rollback() 
     unsafe_rollback["database"]["rollback_requires_compatible_restore"] = False  # type: ignore[index]
     unresolved_origin = _release_state()
     unresolved_origin["origin"]["maintenance"] = True  # type: ignore[index]
+    ambiguous_worker_source = _release_state()
+    ambiguous_worker_source["worker"]["source_changed_for_release"] = "yes"  # type: ignore[index]
 
     assert "status.state" in {
         item.code for item in _status_schema_violations(candidate, "state.json")
@@ -149,6 +151,31 @@ def test_status_schema_rejects_candidate_partial_gates_and_code_only_rollback() 
     assert "status.origin-obligations" in {
         item.code for item in _status_schema_violations(unresolved_origin, "state.json")
     }
+    assert "status.worker-source" in {
+        item.code
+        for item in _status_schema_violations(ambiguous_worker_source, "state.json")
+    }
+
+
+def test_status_rendering_describes_worker_source_change_truthfully() -> None:
+    state = _release_state()
+    state["worker"]["source_changed_for_release"] = True  # type: ignore[index]
+
+    assert "Worker source changed and was promoted" in render_status_block(
+        state, language="en", link="CURRENT_STATUS.md"
+    )
+    assert "Worker 來源已更新" in render_status_block(
+        state, language="zh-Hant", link="CURRENT_STATUS.md"
+    )
+    assert "source updated and promoted for this release" in render_current_status(
+        state
+    )
+
+    state["worker"]["source_changed_for_release"] = False  # type: ignore[index]
+    assert "Worker source did not change" in render_status_block(
+        state, language="en", link="CURRENT_STATUS.md"
+    )
+    assert "source unchanged for this release" in render_current_status(state)
 
 
 def test_status_rendering_fails_closed_for_language_and_acceptance() -> None:
