@@ -47,6 +47,15 @@
       "forbidden_import_prefixes": [
         "nicegui_app.persistence"
       ]
+    },
+    {
+      "name": "ui-does-not-construct-official-workflow",
+      "source_paths": [
+        "nicegui_app/ui"
+      ],
+      "forbidden_import_prefixes": [
+        "nicegui_app.services.roster_workflow.RosterWorkflow"
+      ]
     }
   ]
 }

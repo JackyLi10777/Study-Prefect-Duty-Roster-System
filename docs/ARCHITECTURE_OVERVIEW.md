@@ -22,7 +22,7 @@ flowchart LR
     GUEST["Guest adapters\nbounded in-memory workspace"] --> WORKFLOW
 ```
 
-依賴方向只可由較外層指向較內層或明確 adapter。UI 不直接讀寫 persistence；workflow 與 persistence 不依賴 UI；domain packages 不依賴 NiceGUI application code。
+依賴方向只可由較外層指向較內層或明確 adapter。UI 只從 runtime composition root 取得身分綁定的 workflow adapter，不直接建立 `RosterWorkflow` 或讀寫 persistence；workflow 與 persistence 不依賴 UI；domain packages 不依賴 NiceGUI application code。
 
 ## 模組責任與 seam
 
@@ -32,7 +32,7 @@ flowchart LR
 | `packages/roster_core` | 生成與驗證結果 | 排班搜尋、完整性與公平計算 | NiceGUI、SQLite、Cloudflare |
 | `nicegui_app/persistence` | session factory、models、migration/readiness primitives | SQLAlchemy、SQLite pragma、SQL 診斷 | 頁面、文案、操作流程 |
 | `nicegui_app/services` | `RosterWorkflow`、Guest／下載／分享／支援 use cases | 交易、冪等、版本、備份義務、adapter 選擇 | NiceGUI widget 或 CSS |
-| `nicegui_app/ui` | 頁面、共用狀態元件、i18n、design/motion contract | Quasar/NiceGUI 呈現與瀏覽器生命週期 | SQLAlchemy model 或直接資料庫寫入 |
+| `nicegui_app/ui` | 頁面、共用狀態元件、i18n、design/motion contract | Quasar/NiceGUI 呈現與瀏覽器生命週期 | SQLAlchemy model、直接資料庫寫入或直接建立正式 workflow |
 | `nicegui_app/main.py`、`runtime.py` | HTTP/runtime composition | 身份接線、啟動、readiness、process lifecycle | 可重用業務規則 |
 | `cloudflare/roster_viewer` | 公開入口、Access gateway、Viewer | Token 驗證、KV 密文、edge lifecycle | 正式名單與排班寫入 |
 
@@ -83,7 +83,8 @@ sequenceDiagram
 - `roster_core` → `nicegui_app`；
 - persistence → workflow services 或 UI；
 - services → UI；
-- UI → persistence。
+- UI → persistence；
+- UI → `services.roster_workflow` 的直接建構／匯入（必須經 `runtime.get_workflow()` 取得身分綁定 adapter）。
 
 執行：
 
@@ -106,4 +107,4 @@ python -X utf8 scripts/project_governance.py --check
 
 ## English summary
 
-Keep policy and generation framework-independent, persistence presentation-free, workflows UI-independent, and UI free of direct persistence knowledge. `RosterWorkflow` is the primary deep module for transactional use cases; `main.py` and `runtime.py` compose adapters. The machine-readable boundary contract prevents reverse imports, while the detailed architecture document remains authoritative for transactions, recovery, Guest isolation, and runtime behavior.
+Keep policy and generation framework-independent, persistence presentation-free, workflows UI-independent, and UI free of direct persistence or direct official-workflow construction. `RosterWorkflow` is the primary deep module for transactional use cases; `main.py` and `runtime.py` compose identity-bound adapters. The machine-readable boundary contract prevents reverse imports and UI bypasses, while the detailed architecture document remains authoritative for transactions, recovery, Guest isolation, and runtime behavior.

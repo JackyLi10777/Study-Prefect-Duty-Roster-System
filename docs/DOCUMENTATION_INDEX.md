@@ -73,7 +73,7 @@ If prose conflicts with executable policy, transactional behavior, security chec
 | [`BRANCH_STRATEGY.md`](BRANCH_STRATEGY.md) | branch、tag、platform snapshot 及歷史保留規則 | branch purpose、release line 或 archive policy 改變 |
 | [`AI_AGENT_GIT_GUIDE.md`](AI_AGENT_GIT_GUIDE.md) | Codex 與輔助 Agent 的工作樹、分支、提交、審查及禁止操作 | worktree allocation、agent branch、review ownership 或 GitHub protection 改變 |
 | [`DOCUMENTATION_SYSTEM.md`](DOCUMENTATION_SYSTEM.md) | 文件生命週期、單一狀態來源、topic owner、ADR 及驗證規則 | 文件分類、status generator、owner 或治理流程改變 |
-| [`ITERATION_REGISTER.md`](ITERATION_REGISTER.md) | 仍影響下一個決定且有 owner／evidence 的改善佇列 | 項目進入、狀態改變或完成後移出 |
+| [`ITERATION_REGISTER.md`](ITERATION_REGISTER.md) | 以 L1／L2／L3 排序、連接活躍風險、owner 及關閉證據的改善佇列 | 項目進入、優先級／狀態改變、風險連結改變或完成後移出 |
 | [`../Professional_Design_System.md`](../Professional_Design_System.md) | token、component、responsive、motion、SVG／Lottie、a11y 及驗證規則 | visual token、shared component、motion 或 accessibility contract 改變 |
 | [`design/ATMOSPHERE_ASSET_MANIFEST.md`](design/ATMOSPHERE_ASSET_MANIFEST.md) | AI 氣氛資產提示詞、用途、尺寸、大小、SHA-256、裁切、遮罩、人工檢視及禁用位置 | atmosphere slot、圖片、生成工具、theme pair、hash 或 placement boundary 改變 |
 | [`CONTENT_DESIGN_AUDIT.md`](CONTENT_DESIGN_AUDIT.md) | 可見文案的用途分類、保留／蒸餾決定、頁面主行動與後果說明 | page hierarchy、visible copy、progressive disclosure、support copy 或 content ownership 改變 |

@@ -8,6 +8,7 @@ import time
 
 import pytest
 
+import nicegui_app.access_context as access_context
 import nicegui_app.main as main_module
 import nicegui_app.runtime as runtime
 from nicegui_app.access_context import AccessMode, PageContext, Principal
@@ -138,13 +139,14 @@ def test_revoked_cached_context_and_captured_adapter_fail_immediately(
             return "ok"
 
     guarded = runtime._RuntimeGuardedAdapter(Delegate(), context)
+    captured_write = guarded.write
     runtime._page_contexts["admin-client"] = context
     monkeypatch.setattr(
         runtime,
         "_current_client",
         lambda: SimpleNamespace(id="admin-client", request=None),
     )
-    assert guarded.write() == "ok"
+    assert captured_write() == "ok"
     runtime.revoke_authenticated_session(context)
 
     with pytest.raises(OriginPrincipalError, match="revoked"):
@@ -152,8 +154,72 @@ def test_revoked_cached_context_and_captured_adapter_fail_immediately(
     with pytest.raises(OriginPrincipalError, match="revoked"):
         runtime.current_page_context()
     with pytest.raises(OriginPrincipalError, match="revoked"):
-        guarded.write()
+        captured_write()
     assert calls == ["write"]
+
+
+def test_captured_adapter_fails_at_expiry_without_a_new_websocket_handshake(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _runtime_environment(monkeypatch)
+    now = datetime(2026, 8, 1, 10, 0, tzinfo=timezone.utc)
+    observed_now = now
+    principal = Principal(
+        mode=AccessMode.ADMIN,
+        subject="operator@syss.edu.hk",
+        session_id="admin-expiring",
+        expires_at=now + timedelta(minutes=1),
+        auth_epoch=7,
+        key_id="origin-v7",
+    )
+    calls: list[str] = []
+
+    class Delegate:
+        def read(self) -> str:
+            calls.append("read")
+            return "ok"
+
+    monkeypatch.setattr(access_context, "_utc_now", lambda: observed_now)
+    captured_read = runtime._RuntimeGuardedAdapter(
+        Delegate(), PageContext.create(principal)
+    ).read
+    assert captured_read() == "ok"
+
+    observed_now = principal.expires_at
+    with pytest.raises(access_context.PrincipalExpiredError, match="expired"):
+        captured_read()
+    assert calls == ["read"]
+
+
+@pytest.mark.parametrize(
+    ("environment_name", "replacement", "message"),
+    [
+        ("AUTH_EPOCH", "8", "revoked"),
+        ("ORIGIN_PRINCIPAL_KID", "origin-v8", "rotated"),
+    ],
+)
+def test_captured_adapter_rechecks_identity_generation_on_every_invocation(
+    monkeypatch: pytest.MonkeyPatch,
+    environment_name: str,
+    replacement: str,
+    message: str,
+) -> None:
+    _runtime_environment(monkeypatch)
+    calls: list[str] = []
+
+    class Delegate:
+        def read(self) -> str:
+            calls.append("read")
+            return "ok"
+
+    context = PageContext.create(_principal(AccessMode.ADMIN, "admin-session"))
+    captured_read = runtime._RuntimeGuardedAdapter(Delegate(), context).read
+    assert captured_read() == "ok"
+
+    monkeypatch.setenv(environment_name, replacement)
+    with pytest.raises(OriginPrincipalError, match=message):
+        captured_read()
+    assert calls == ["read"]
 
 
 def test_current_page_context_composes_once_for_concurrent_client_loads(
@@ -225,4 +291,6 @@ def test_shell_logout_requires_confirmed_revocation_and_broadcasts_to_admin_tabs
     assert "if (!response.ok) throw new Error(`logout ${response.status}`)" in shell_source
     assert "登出尚未安全完成" in shell_source
     assert "The server could not confirm that this session was revoked" in shell_source
+    assert "(expiresAt * 1000) - Date.now() - 250" in shell_source
+    assert "window.setTimeout(() => invalidate(), delay)" in shell_source
     assert "window.location.replace('/')" in shell_source

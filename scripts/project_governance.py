@@ -33,6 +33,15 @@ _MUTABLE_CURRENT_RELEASE_CLAIM = re.compile(
     r"|(?:目前|現行)(?:正式)?\s*rc\d+\b",
     re.IGNORECASE,
 )
+_ITERATION_ID = re.compile(r"ITR-\d{3}")
+_ITERATION_STATES = frozenset(
+    {"Proposed", "Ready", "Active", "Conditional", "Blocked", "Done"}
+)
+_ITERATION_PRIORITIES = frozenset({"L1", "L2", "L3"})
+_RISK_STATES = frozenset({"Tracked", "Managed", "Resolved", "Historical"})
+_RISK_TRACKING = re.compile(r"(?:`ITR-\d{3}`)(?:,\s*`ITR-\d{3}`)*|—")
+_RISK_TABLE_HEADING = "## Known Issues and Risks"
+_ITERATION_TABLE_HEADING = "## 目前佇列 / Current queue"
 
 
 @dataclass(frozen=True, order=True)
@@ -51,6 +60,219 @@ def mutable_current_release_claims(text: str) -> tuple[str, ...]:
     """
 
     return tuple(match.group(0) for match in _MUTABLE_CURRENT_RELEASE_CLAIM.finditer(text))
+
+
+def _markdown_table_after_heading(
+    text: str, heading: str
+) -> tuple[tuple[str, ...], tuple[tuple[str, ...], ...]]:
+    """Return one simple Markdown table immediately following an exact heading."""
+
+    lines = text.splitlines()
+    try:
+        cursor = lines.index(heading) + 1
+    except ValueError as error:
+        raise ValueError(f"missing heading {heading!r}") from error
+    while cursor < len(lines) and not lines[cursor].strip():
+        cursor += 1
+    if cursor + 1 >= len(lines):
+        raise ValueError(f"missing table after {heading!r}")
+
+    def cells(line: str) -> tuple[str, ...]:
+        stripped = line.strip()
+        if not stripped.startswith("|") or not stripped.endswith("|"):
+            raise ValueError(f"expected a pipe-delimited table after {heading!r}")
+        return tuple(cell.strip() for cell in stripped[1:-1].split("|"))
+
+    header = cells(lines[cursor])
+    separator = cells(lines[cursor + 1])
+    if len(separator) != len(header) or any(
+        re.fullmatch(r":?-{3,}:?", cell) is None for cell in separator
+    ):
+        raise ValueError(f"invalid table separator after {heading!r}")
+
+    rows: list[tuple[str, ...]] = []
+    cursor += 2
+    while cursor < len(lines) and lines[cursor].lstrip().startswith("|"):
+        row = cells(lines[cursor])
+        if len(row) != len(header):
+            raise ValueError(f"table row has the wrong width after {heading!r}")
+        rows.append(row)
+        cursor += 1
+    if not rows:
+        raise ValueError(f"table after {heading!r} must contain at least one row")
+    return header, tuple(rows)
+
+
+def iteration_risk_violations(root: Path) -> tuple[ContractViolation, ...]:
+    """Require every actionable project risk to resolve to owned iteration work."""
+
+    project_status_path = root / "PROJECT_STATUS.md"
+    iteration_path = root / "docs/ITERATION_REGISTER.md"
+    violations: list[ContractViolation] = []
+    for path, label in (
+        (project_status_path, "project risk register"),
+        (iteration_path, "iteration register"),
+    ):
+        if not path.is_file():
+            violations.append(
+                ContractViolation(
+                    "iteration.missing-document",
+                    str(path),
+                    f"{label} does not exist",
+                )
+            )
+    if violations:
+        return tuple(sorted(violations))
+
+    try:
+        iteration_header, iteration_rows = _markdown_table_after_heading(
+            iteration_path.read_text(encoding="utf-8"), _ITERATION_TABLE_HEADING
+        )
+        risk_header, risk_rows = _markdown_table_after_heading(
+            project_status_path.read_text(encoding="utf-8"), _RISK_TABLE_HEADING
+        )
+    except ValueError as error:
+        return (
+            ContractViolation(
+                "iteration.table-schema",
+                "PROJECT_STATUS.md / docs/ITERATION_REGISTER.md",
+                str(error),
+            ),
+        )
+
+    expected_iteration_header = (
+        "ID",
+        "Priority",
+        "Outcome",
+        "Owning module/document",
+        "State",
+        "Evidence needed to close",
+    )
+    expected_risk_header = ("Risk", "State", "Tracking", "Mitigation")
+    if iteration_header != expected_iteration_header:
+        violations.append(
+            ContractViolation(
+                "iteration.table-schema",
+                "docs/ITERATION_REGISTER.md",
+                f"expected columns {expected_iteration_header!r}",
+            )
+        )
+    if risk_header != expected_risk_header:
+        violations.append(
+            ContractViolation(
+                "risk.table-schema",
+                "PROJECT_STATUS.md",
+                f"expected columns {expected_risk_header!r}",
+            )
+        )
+    if violations:
+        return tuple(sorted(violations))
+
+    iteration_states: dict[str, str] = {}
+    previous_priority = 0
+    for raw_id, priority, _outcome, _owner, state, _evidence in iteration_rows:
+        normalized_id = raw_id.strip("` ")
+        iteration_id = (
+            normalized_id if _ITERATION_ID.fullmatch(normalized_id) else ""
+        )
+        if not iteration_id or raw_id not in {iteration_id, f"`{iteration_id}`"}:
+            violations.append(
+                ContractViolation(
+                    "iteration.invalid-id",
+                    "docs/ITERATION_REGISTER.md",
+                    f"iteration ID must be one exact ITR-NNN value: {raw_id!r}",
+                )
+            )
+        elif iteration_id in iteration_states:
+            violations.append(
+                ContractViolation(
+                    "iteration.duplicate-id",
+                    "docs/ITERATION_REGISTER.md",
+                    f"iteration ID is duplicated: {iteration_id}",
+                )
+            )
+        else:
+            iteration_states[iteration_id] = state
+        if state not in _ITERATION_STATES:
+            violations.append(
+                ContractViolation(
+                    "iteration.invalid-state",
+                    "docs/ITERATION_REGISTER.md",
+                    f"{iteration_id or raw_id} uses unsupported state {state!r}",
+                )
+            )
+        if priority not in _ITERATION_PRIORITIES:
+            violations.append(
+                ContractViolation(
+                    "iteration.invalid-priority",
+                    "docs/ITERATION_REGISTER.md",
+                    f"{iteration_id or raw_id} uses unsupported priority {priority!r}",
+                )
+            )
+        else:
+            priority_rank = int(priority[1])
+            if priority_rank < previous_priority:
+                violations.append(
+                    ContractViolation(
+                        "iteration.priority-order",
+                        "docs/ITERATION_REGISTER.md",
+                        "iterations must remain ordered L1, then L2, then L3",
+                    )
+                )
+            previous_priority = priority_rank
+
+    for risk, state, tracking, _mitigation in risk_rows:
+        tracked_ids = tuple(_ITERATION_ID.findall(tracking))
+        if _RISK_TRACKING.fullmatch(tracking) is None:
+            violations.append(
+                ContractViolation(
+                    "risk.invalid-tracking",
+                    "PROJECT_STATUS.md",
+                    f"risk tracking must be backticked ITR references or an em dash: {risk}",
+                )
+            )
+        if state not in _RISK_STATES:
+            violations.append(
+                ContractViolation(
+                    "risk.invalid-state",
+                    "PROJECT_STATUS.md",
+                    f"risk {risk!r} uses unsupported state {state!r}",
+                )
+            )
+        if state == "Tracked" and not tracked_ids:
+            violations.append(
+                ContractViolation(
+                    "risk.untracked",
+                    "PROJECT_STATUS.md",
+                    f"tracked risk has no ITR reference: {risk}",
+                )
+            )
+        elif state != "Tracked" and tracked_ids:
+            violations.append(
+                ContractViolation(
+                    "risk.unexpected-tracking",
+                    "PROJECT_STATUS.md",
+                    f"only Tracked risks may reference active iterations: {risk}",
+                )
+            )
+        for iteration_id in tracked_ids:
+            if iteration_id not in iteration_states:
+                violations.append(
+                    ContractViolation(
+                        "risk.unknown-iteration",
+                        "PROJECT_STATUS.md",
+                        f"risk {risk!r} references missing {iteration_id}",
+                    )
+                )
+            elif iteration_states[iteration_id] == "Done":
+                violations.append(
+                    ContractViolation(
+                        "risk.closed-iteration",
+                        "PROJECT_STATUS.md",
+                        f"tracked risk {risk!r} references completed {iteration_id}",
+                    )
+                )
+    return tuple(sorted(set(violations)))
 
 
 def _read_json(path: Path) -> dict[str, object]:
@@ -759,6 +981,7 @@ def validate_project_contracts(root: Path = PROJECT_ROOT) -> tuple[ContractViola
     else:
         violations.extend(architecture_violations(root, architecture))
     violations.extend(documentation_violations(root, manifest, state))
+    violations.extend(iteration_risk_violations(root))
     return tuple(sorted(set(violations)))
 
 

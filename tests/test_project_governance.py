@@ -9,6 +9,7 @@ from scripts.project_governance import (
     _status_schema_violations,
     architecture_violations,
     documentation_violations,
+    iteration_risk_violations,
     mutable_current_release_claims,
     render_current_status,
     render_status_block,
@@ -28,8 +29,80 @@ def _release_state() -> dict[str, object]:
     )
 
 
+def _write_iteration_risk_documents(
+    root: Path, *, risks: str, iterations: str
+) -> None:
+    (root / "docs").mkdir(exist_ok=True)
+    (root / "PROJECT_STATUS.md").write_text(risks, encoding="utf-8")
+    (root / "docs" / "ITERATION_REGISTER.md").write_text(
+        iterations, encoding="utf-8"
+    )
+
+
 def test_project_governance_contracts_are_self_consistent() -> None:
     assert validate_project_contracts(PROJECT_ROOT) == ()
+
+
+def test_iteration_risk_contract_requires_valid_traceable_work(tmp_path: Path) -> None:
+    risks = """
+## Known Issues and Risks
+
+| Risk | State | Tracking | Mitigation |
+|---|---|---|---|
+| Off-host recovery is not proven | Tracked | `ITR-004` | Prove an isolated restore. |
+| Session expiry | Managed | — | Every invocation fails closed. |
+"""
+    iterations = """
+## 目前佇列 / Current queue
+
+| ID | Priority | Outcome | Owning module/document | State | Evidence needed to close |
+|---|---|---|---|---|---|
+| ITR-004 | L1 | Prove off-host recovery | `RELEASE_HANDOVER.md` | Ready | Restore evidence |
+"""
+    _write_iteration_risk_documents(tmp_path, risks=risks, iterations=iterations)
+    assert iteration_risk_violations(tmp_path) == ()
+
+    _write_iteration_risk_documents(
+        tmp_path,
+        risks=risks.replace("Tracked | `ITR-004`", "Tracked | `ITR-999`"),
+        iterations=iterations,
+    )
+
+    violations = iteration_risk_violations(tmp_path)
+
+    assert {item.code for item in violations} == {"risk.unknown-iteration"}
+
+
+def test_iteration_risk_contract_rejects_untracked_and_ambiguous_states(
+    tmp_path: Path,
+) -> None:
+    _write_iteration_risk_documents(
+        tmp_path,
+        risks="""
+## Known Issues and Risks
+
+| Risk | State | Tracking | Mitigation |
+|---|---|---|---|
+| Off-host recovery is not proven | Tracked | — | Prove an isolated restore. |
+| Session expiry | Maybe | — | Ambiguous. |
+""",
+        iterations="""
+## 目前佇列 / Current queue
+
+| ID | Priority | Outcome | Owning module/document | State | Evidence needed to close |
+|---|---|---|---|---|---|
+| ITR-004 | L0 | Prove off-host recovery | `RELEASE_HANDOVER.md` | Waiting | Restore evidence |
+""",
+    )
+
+    violations = iteration_risk_violations(tmp_path)
+
+    assert {item.code for item in violations} == {
+        "iteration.invalid-priority",
+        "iteration.invalid-state",
+        "risk.invalid-state",
+        "risk.untracked",
+    }
 
 
 def test_current_status_markdown_is_deterministic_from_machine_state() -> None:
@@ -164,6 +237,39 @@ def test_architecture_contract_rejects_a_service_to_ui_dependency(tmp_path: Path
     assert violations[0].code == "architecture.forbidden-import"
     assert violations[0].path == "nicegui_app/services/bad_dependency.py"
     assert "nicegui_app.ui" in violations[0].message
+
+
+def test_architecture_contract_can_forbid_one_constructor_without_hiding_types(
+    tmp_path: Path,
+) -> None:
+    source_root = tmp_path / "nicegui_app" / "ui"
+    source_root.mkdir(parents=True)
+    (source_root / "allowed_type.py").write_text(
+        "from nicegui_app.services.roster_workflow import PrefectInput\n",
+        encoding="utf-8",
+    )
+    (source_root / "forbidden_constructor.py").write_text(
+        "from nicegui_app.services.roster_workflow import RosterWorkflow\n",
+        encoding="utf-8",
+    )
+    contract = {
+        "schema_version": 1,
+        "rules": [
+            {
+                "name": "ui-does-not-construct-official-workflow",
+                "source_paths": ["nicegui_app/ui"],
+                "forbidden_import_prefixes": [
+                    "nicegui_app.services.roster_workflow.RosterWorkflow"
+                ],
+            }
+        ],
+    }
+
+    violations = architecture_violations(tmp_path, contract)
+
+    assert len(violations) == 1
+    assert violations[0].path == "nicegui_app/ui/forbidden_constructor.py"
+    assert "RosterWorkflow" in violations[0].message
 
 
 def test_architecture_contract_resolves_relative_service_imports(tmp_path: Path) -> None:
