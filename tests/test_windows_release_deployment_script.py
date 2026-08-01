@@ -34,6 +34,49 @@ def _powershell_function_source(name: str) -> str:
     return source[start : start + len(marker) + next_function.start()]
 
 
+def _run_required_boolean_contract() -> dict[str, object]:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production host script")
+    function_source = _powershell_function_source("Test-RequiredBooleanProperty")
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+{function_source}
+$payloads = @(
+    '{{"sourceDirty":false}}',
+    '{{"sourceDirty":true}}',
+    '{{}}',
+    '{{"sourceDirty":0}}',
+    '{{"sourceDirty":1}}',
+    '{{"sourceDirty":"false"}}',
+    '{{"sourceDirty":null}}'
+)
+$results = @(
+    foreach ($payload in $payloads) {{
+        $candidate = $payload | ConvertFrom-Json
+        [bool](Test-RequiredBooleanProperty -InputObject $candidate -Name "sourceDirty")
+    }}
+)
+[ordered]@{{
+    results = $results
+    nullObject = [bool](Test-RequiredBooleanProperty -InputObject $null -Name "sourceDirty")
+}} | ConvertTo-Json -Compress
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8-sig",
+        errors="replace",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    json_lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
+    assert json_lines, f"PowerShell Boolean validator emitted no JSON payload: {result.stdout!r}"
+    return json.loads(json_lines[-1])
+
+
 def _run_worker_gateway_parser(tmp_path: Path, configuration: str) -> dict[str, object]:
     if not POWERSHELL:
         pytest.skip("Windows PowerShell is required for the production host script")
@@ -347,9 +390,27 @@ def test_deployment_script_requires_the_current_release_gate_fingerprint() -> No
     assert 'json.dumps({"fingerprint": fingerprint, "fileCount": file_count})' not in source
     assert "sourceFingerprint" in source
     assert "sourceFileCount" in source
+    assert "[int]$releaseReport.schemaVersion -ne 3" in source
+    assert "$postVerificationSource = $releaseReport.postVerificationSource" in source
+    assert "[string]$postVerificationSource.sourceFingerprint -cne [string]$releaseReport.sourceFingerprint" in source
+    assert "[int]$postVerificationSource.sourceFileCount -ne [int]$releaseReport.sourceFileCount" in source
+    assert "[string]$postVerificationSource.sourceCommit -cne [string]$releaseReport.sourceCommit" in source
+    assert "[string]$postVerificationSource.sourceTree -cne [string]$releaseReport.sourceTree" in source
+    assert "-not $releaseSourceDirtyIsBoolean" in source
+    assert "-not $postSourceDirtyIsBoolean" in source
+    assert "[bool]$postVerificationSource.sourceDirty" in source
     assert "The release report fingerprint does not match the immutable release source." in source
     assert "checks.Count -ne 12" not in source
     assert "twelve-gate" not in source.lower()
+
+
+def test_deployment_script_rejects_missing_or_non_boolean_dirty_state() -> None:
+    result = _run_required_boolean_contract()
+
+    assert result == {
+        "results": [True, True, False, False, False, False, False],
+        "nullObject": False,
+    }
 
 
 def test_deployment_script_compares_release_gate_identities_without_order_semantics() -> None:

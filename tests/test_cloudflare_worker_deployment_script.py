@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import base64
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -20,6 +22,62 @@ def _source() -> str:
     return SCRIPT.read_text(encoding="utf-8")
 
 
+def _powershell_function_source(name: str) -> str:
+    source = _source()
+    marker = f"function {name}"
+    start = source.index(marker)
+    next_function = re.search(
+        r"(?m)^function\s+[A-Za-z0-9_-]+",
+        source[start + len(marker) :],
+    )
+    if next_function is None:
+        return source[start:]
+    return source[start : start + len(marker) + next_function.start()]
+
+
+def _run_required_boolean_contract() -> dict[str, object]:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production deployment script")
+    function_source = _powershell_function_source("Test-RequiredBooleanProperty")
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+{function_source}
+$payloads = @(
+    '{{"sourceDirty":false}}',
+    '{{"sourceDirty":true}}',
+    '{{}}',
+    '{{"sourceDirty":0}}',
+    '{{"sourceDirty":1}}',
+    '{{"sourceDirty":"false"}}',
+    '{{"sourceDirty":null}}'
+)
+$results = @(
+    foreach ($payload in $payloads) {{
+        $candidate = $payload | ConvertFrom-Json
+        [bool](Test-RequiredBooleanProperty -InputObject $candidate -Name "sourceDirty")
+    }}
+)
+[ordered]@{{
+    results = $results
+    nullObject = [bool](Test-RequiredBooleanProperty -InputObject $null -Name "sourceDirty")
+}} | ConvertTo-Json -Compress
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8-sig",
+        errors="replace",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    json_lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
+    assert json_lines, f"PowerShell Boolean validator emitted no JSON payload: {result.stdout!r}"
+    return json.loads(json_lines[-1])
+
+
 def test_worker_deployment_is_bound_to_an_immutable_published_release() -> None:
     source = _source()
     assert '"status", "--porcelain", "--untracked-files=all"' in source
@@ -33,11 +91,32 @@ def test_worker_deployment_is_bound_to_an_immutable_published_release() -> None:
 def test_worker_release_gate_identity_comparison_is_order_independent_and_strict_safe() -> None:
     source = _source()
 
+    assert "[int]$releaseReport.schemaVersion -ne 3" in source
+    assert "$postVerificationSource = $releaseReport.postVerificationSource" in source
+    assert "[string]$postVerificationSource.sourceFingerprint -cne [string]$releaseReport.sourceFingerprint" in source
+    assert "[int]$postVerificationSource.sourceFileCount -ne [int]$releaseReport.sourceFileCount" in source
+    assert "[string]$postVerificationSource.sourceCommit -cne [string]$releaseReport.sourceCommit" in source
+    assert "[string]$postVerificationSource.sourceTree -cne [string]$releaseReport.sourceTree" in source
+    assert "-not $releaseSourceDirtyIsBoolean" in source
+    assert "-not $postSourceDirtyIsBoolean" in source
+    assert "[bool]$postVerificationSource.sourceDirty" in source
+    assert "Get-CurrentReleaseFingerprint -Python $sourcePython -Repository $SourceRoot" in source
+    assert "[string]$releaseReport.sourceFingerprint -cne [string]$currentFingerprint.fingerprint" in source
+    assert "[int]$releaseReport.sourceFileCount -ne [int]$currentFingerprint.fileCount" in source
     assert "$reportIdentityDifferences = @(" in source
     assert "-ReferenceObject @($reportRequiredIdentities | Sort-Object)" in source
     assert "-DifferenceObject @($reportCheckNames | Sort-Object)" in source
     assert "$reportIdentityDifferences.Count -ne 0" in source
     assert "-SyncWindow 0" not in source
+
+
+def test_worker_release_gate_rejects_missing_or_non_boolean_dirty_state() -> None:
+    result = _run_required_boolean_contract()
+
+    assert result == {
+        "results": [True, True, False, False, False, False, False],
+        "nullObject": False,
+    }
 
 
 def test_worker_deployment_derives_its_default_source_from_its_own_checkout() -> None:

@@ -70,6 +70,10 @@ class ReleaseVerificationError(RuntimeError):
     """Raised when one release gate fails; later gates must not imply success."""
 
 
+class ReleaseSourceDriftError(ReleaseVerificationError):
+    """Raised at the first gate boundary whose source no longer matches the candidate."""
+
+
 def _git_value(*arguments: str) -> str:
     result = subprocess.run(
         ["git", *arguments],
@@ -163,7 +167,45 @@ def _write_report(report: dict[str, object]) -> None:
     temporary.replace(REPORT_PATH)
 
 
-def _run_check(name: str, command: list[str], environment: dict[str, str], report: dict[str, object]) -> None:
+def _source_state(*, refresh_fingerprint: bool) -> dict[str, object]:
+    """Capture the exact release inputs and Git state at one integrity boundary."""
+
+    fingerprint, file_count = release_source_fingerprint(refresh=refresh_fingerprint)
+    return {
+        "sourceFingerprint": fingerprint,
+        "sourceFileCount": file_count,
+        "sourceCommit": _git_value("rev-parse", "HEAD"),
+        "sourceTree": _git_value("rev-parse", "HEAD^{tree}"),
+        "sourceDirty": bool(_git_value("status", "--porcelain", "--untracked-files=all")),
+    }
+
+
+def _record_post_verification_source(
+    report: dict[str, object],
+    initial_source: dict[str, object],
+    *,
+    require_stable: bool,
+) -> None:
+    """Bind the report to source that remained unchanged throughout every gate."""
+
+    final_source = _source_state(refresh_fingerprint=True)
+    report["postVerificationSource"] = final_source
+    _write_report(report)
+    if require_stable and final_source != initial_source:
+        raise ReleaseSourceDriftError(
+            "Release verification changed the source, Git revision, tree, or working tree; "
+            "discard generated mutations and rerun from a clean immutable candidate."
+        )
+
+
+def _run_check(
+    name: str,
+    command: list[str],
+    environment: dict[str, str],
+    report: dict[str, object],
+    *,
+    initial_source: dict[str, object] | None = None,
+) -> None:
     print(f"\n=== {name} ===", flush=True)
     started = time.monotonic()
     result = subprocess.run(command, cwd=PROJECT_ROOT, env=environment, check=False)
@@ -174,6 +216,12 @@ def _run_check(name: str, command: list[str], environment: dict[str, str], repor
     _write_report(report)
     if result.returncode != 0:
         raise ReleaseVerificationError(f"{name} failed with exit code {result.returncode}.")
+    if initial_source is not None:
+        _record_post_verification_source(
+            report,
+            initial_source,
+            require_stable=True,
+        )
 
 
 def _deno_gateway_command() -> list[str]:
@@ -275,6 +323,7 @@ def _run_browser_phase(
     blocked_backup: bool,
     scripts: tuple[str, ...],
     report: dict[str, object],
+    initial_source: dict[str, object] | None = None,
 ) -> None:
     port = _free_loopback_port()
     environment = isolated_environment(root, port, blocked_backup=blocked_backup)
@@ -293,6 +342,7 @@ def _run_browser_phase(
                 [sys.executable, "-X", "utf8", script],
                 environment,
                 report,
+                initial_source=initial_source,
             )
         if not blocked_backup:
             _run_check(
@@ -300,6 +350,7 @@ def _run_browser_phase(
                 [sys.executable, "-X", "utf8", "scripts/check_deployment_readiness.py", "--strict"],
                 environment,
                 report,
+                initial_source=initial_source,
             )
     finally:
         _stop_server(process, output)
@@ -310,6 +361,7 @@ def _run_unified_access_phase(
     *,
     root: Path,
     report: dict[str, object],
+    initial_source: dict[str, object] | None = None,
 ) -> None:
     """Run the same NiceGUI routes as an isolated operator and guest."""
 
@@ -347,6 +399,7 @@ def _run_unified_access_phase(
             [sys.executable, "-X", "utf8", "scripts/verify_unified_guest_ui.py"],
             guest_environment,
             report,
+            initial_source=initial_source,
         )
     finally:
         _stop_server(guest_process, guest_output)
@@ -357,20 +410,13 @@ def _run_unified_access_phase(
 
 def main() -> int:
     workspace = Path(tempfile.mkdtemp(prefix="sing-yin-release-candidate-"))
-    source_fingerprint, source_file_count = release_source_fingerprint()
-    source_commit = _git_value("rev-parse", "HEAD")
-    source_tree = _git_value("rev-parse", "HEAD^{tree}")
-    source_dirty = bool(_git_value("status", "--porcelain", "--untracked-files=all"))
+    initial_source = _source_state(refresh_fingerprint=True)
     planned_release_tag = _planned_release_tag()
     report: dict[str, object] = {
         "schemaVersion": RELEASE_REPORT_SCHEMA_VERSION,
         "project": PROJECT_ID,
         "policyVersion": POLICY_VERSION,
-        "sourceFingerprint": source_fingerprint,
-        "sourceFileCount": source_file_count,
-        "sourceCommit": source_commit,
-        "sourceTree": source_tree,
-        "sourceDirty": source_dirty,
+        **initial_source,
         "plannedReleaseTag": planned_release_tag,
         "immutableReleaseReference": f"refs/tags/{planned_release_tag}",
         "requiredCheckIdentities": list(REQUIRED_CHECK_IDENTITIES),
@@ -385,29 +431,37 @@ def main() -> int:
     base_environment = {**os.environ, "PYTHONUTF8": "1"}
     succeeded = False
     try:
+        if initial_source["sourceDirty"] is not False:
+            raise ReleaseVerificationError(
+                "Release verification requires a clean source tree before any gate runs."
+            )
         _run_check(
             "repository_hygiene",
             [sys.executable, "-X", "utf8", "scripts/check_repository_hygiene.py"],
             base_environment,
             report,
+            initial_source=initial_source,
         )
         _run_check(
             "security_gates",
             [sys.executable, "-X", "utf8", "scripts/run_security_checks.py"],
             base_environment,
             report,
+            initial_source=initial_source,
         )
         _run_check(
             "motion_state_machine_tests",
             _deno_motion_command(),
             base_environment,
             report,
+            initial_source=initial_source,
         )
         _run_check(
             "cloudflare_gateway_tests",
             _deno_gateway_command(),
             base_environment,
             report,
+            initial_source=initial_source,
         )
         _run_check(
             "automated_test_suite",
@@ -422,19 +476,28 @@ def main() -> int:
             ],
             base_environment,
             report,
+            initial_source=initial_source,
         )
         _run_check(
             "python_compile",
             [sys.executable, "-X", "utf8", "-m", "compileall", "-q", "nicegui_app", "packages", "tests", "scripts"],
             base_environment,
             report,
+            initial_source=initial_source,
         )
-        _run_check("dependency_integrity", [sys.executable, "-m", "pip", "check"], base_environment, report)
+        _run_check(
+            "dependency_integrity",
+            [sys.executable, "-m", "pip", "check"],
+            base_environment,
+            report,
+            initial_source=initial_source,
+        )
         _run_check(
             "rc31_theme_control_browser",
             [sys.executable, "-X", "utf8", "scripts/verify_rc31_theme_controls.py"],
             base_environment,
             report,
+            initial_source=initial_source,
         )
         _run_browser_phase(
             root=workspace / "normal",
@@ -446,16 +509,24 @@ def main() -> int:
                 "scripts/verify_nicegui_mobile.py",
             ),
             report=report,
+            initial_source=initial_source,
         )
         _run_unified_access_phase(
             root=workspace / "unified-access",
             report=report,
+            initial_source=initial_source,
         )
         _run_browser_phase(
             root=workspace / "partial-backup",
             blocked_backup=True,
             scripts=("scripts/verify_nicegui_partial_backup.py",),
             report=report,
+            initial_source=initial_source,
+        )
+        _record_post_verification_source(
+            report,
+            initial_source,
+            require_stable=True,
         )
         report["status"] = "pass"
         report["finishedAt"] = datetime.now(timezone.utc).isoformat()
@@ -464,6 +535,15 @@ def main() -> int:
         print(f"\nRelease-candidate verification passed. Report: {REPORT_PATH}", flush=True)
         return 0
     except Exception as error:  # noqa: BLE001 - CLI boundary must leave a failed evidence report
+        if not isinstance(error, ReleaseSourceDriftError):
+            try:
+                _record_post_verification_source(
+                    report,
+                    initial_source,
+                    require_stable=False,
+                )
+            except Exception:  # noqa: BLE001 - preserve the original gate failure
+                pass
         report["status"] = "fail"
         report["finishedAt"] = datetime.now(timezone.utc).isoformat()
         report["failure"] = str(error)

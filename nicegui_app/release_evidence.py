@@ -16,7 +16,7 @@ from nicegui_app.config import POLICY_VERSION, PROJECT_ROOT
 
 REPORT_PATH = PROJECT_ROOT / "logs" / "release-candidate-report.json"
 PROJECT_ID = "sing-yin-study-prefect-duty-roster"
-RELEASE_REPORT_SCHEMA_VERSION = 2
+RELEASE_REPORT_SCHEMA_VERSION = 3
 RELEASE_SOURCE_ROOTS = (
     PROJECT_ROOT / "nicegui_app",
     PROJECT_ROOT / "packages",
@@ -207,9 +207,13 @@ def _cached_release_source_fingerprint() -> tuple[str, int]:
     return _calculate_release_source_fingerprint()
 
 
-def release_source_fingerprint(paths: Iterable[Path] | None = None) -> tuple[str, int]:
-    """Hash release-sensitive inputs; cache only the immutable runtime source set."""
-    if paths is not None:
+def release_source_fingerprint(
+    paths: Iterable[Path] | None = None,
+    *,
+    refresh: bool = False,
+) -> tuple[str, int]:
+    """Hash release-sensitive inputs; refresh only for an explicit integrity boundary."""
+    if paths is not None or refresh:
         return _calculate_release_source_fingerprint(paths)
     return _cached_release_source_fingerprint()
 
@@ -274,6 +278,20 @@ def load_release_evidence(
     status = payload.get("status")
     if status == "running":
         return ReleaseEvidence("running", passed, total)
+    post_verification_source = payload.get("postVerificationSource")
+    expected_post_verification_source = {
+        "sourceFingerprint": payload.get("sourceFingerprint"),
+        "sourceFileCount": payload.get("sourceFileCount"),
+        "sourceCommit": source_commit,
+        "sourceTree": source_tree,
+        "sourceDirty": False,
+    }
+    if (
+        not isinstance(post_verification_source, dict)
+        or post_verification_source.get("sourceDirty") is not False
+        or post_verification_source != expected_post_verification_source
+    ):
+        return ReleaseEvidence("unreadable", passed, total, finished_at)
     if status == "pass" and total > 0 and passed == total and finished_at is not None:
         return ReleaseEvidence("pass", passed, total, finished_at)
     if status == "fail" or any(item.get("status") == "fail" for item in checks):

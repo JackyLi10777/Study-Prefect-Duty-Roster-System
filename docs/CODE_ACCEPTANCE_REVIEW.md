@@ -96,7 +96,7 @@ This is the smallest acceptable evidence for a low-risk local change. It is not 
 3. 隔離 SQLite／備份／日誌下的 Admin、Guest、繁中、英文、深淺模式及手機瀏覽器流程；
 4. Cloudflare Worker 契約、真實代理路徑、下載標頭及身份邊界；
 5. 正式備份的 checksum／SQLite integrity／公平對帳，以及另一隔離資料庫的受控還原；
-6. `scripts/verify_release_candidate.py` 產生與候選來源綁定的完整報告；
+6. `scripts/verify_release_candidate.py` 產生與候選來源綁定的完整報告，並在最後一關後重新核對 fingerprint、file count、commit、tree 及 clean working tree；一般測試證據不得改寫已追蹤 baseline；
 7. origin 與 Worker 分階段更新、`/healthz`／`/readyz`、回復路徑及線上 smoke check；
 8. 線上 source fingerprint、commit／tag、Worker version 與驗證報告完全吻合後才可宣稱已部署。
 
@@ -116,7 +116,7 @@ Pure documentation changes do not require the full write pipeline, and local pre
 - Guest／Admin／公開 Viewer 的能力與資料隔離；
 - 並發、冪等、舊版本提交及失敗恢復；
 - 正式備份、校驗、公平對帳與隔離還原；
-- staged source、commit／tag、origin fingerprint 及 Worker version 的一致性；
+- staged source、驗證前後 clean source、commit／tag、origin fingerprint 及 Worker version 的一致性；
 - 首席導學風紀及教師顧問對真實操作、列印、語氣、公平及交接責任的真人驗收。
 
 Policy and transaction invariants, identity isolation, concurrency, recovery, verified backup/restore, deployed-source matching, and responsible human acceptance remain mandatory release evidence.

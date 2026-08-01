@@ -194,8 +194,15 @@ def test_release_candidate_launches_separate_unified_operator_and_guest_origins(
         command: list[str],
         environment: dict[str, str],
         _report: dict[str, object],
+        *,
+        initial_source: dict[str, object] | None = None,
     ) -> None:
-        captured_check.update(name=name, command=command, environment=environment)
+        captured_check.update(
+            name=name,
+            command=command,
+            environment=environment,
+            initial_source=initial_source,
+        )
 
     monkeypatch.setattr(verify_release_candidate, "_start_server", fake_start)
     monkeypatch.setattr(verify_release_candidate, "_wait_until_ready", lambda *_args, **_kwargs: None)
@@ -218,6 +225,7 @@ def test_release_candidate_launches_separate_unified_operator_and_guest_origins(
     assert guest["SING_YIN_ADMIN_TEST_URL"] == admin["SING_YIN_TEST_URL"]
     assert guest["SING_YIN_GUEST_TEST_URL"] == guest["SING_YIN_TEST_URL"]
     assert captured_check["name"] == "verify_unified_guest_ui"
+    assert captured_check["initial_source"] is None
     assert "scripts/verify_unified_guest_ui.py" in captured_check["command"]
 
 

@@ -70,6 +70,53 @@ function Get-GitValue {
     return ($output | Out-String).Trim()
 }
 
+function Get-CurrentReleaseFingerprint {
+    param(
+        [Parameter(Mandatory = $true)][string]$Python,
+        [Parameter(Mandatory = $true)][string]$Repository
+    )
+    $code = @'
+import json
+from nicegui_app.release_evidence import release_source_fingerprint
+fingerprint, file_count = release_source_fingerprint(refresh=True)
+print(json.dumps({'fingerprint': fingerprint, 'fileCount': file_count}))
+'@
+    $previousPreference = $ErrorActionPreference
+    try {
+        Push-Location -LiteralPath $Repository
+        $ErrorActionPreference = "Continue"
+        $output = @(& $Python -X utf8 -c $code 2>&1)
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousPreference
+        Pop-Location
+    }
+    if ($exitCode -ne 0) {
+        throw "The Worker release source fingerprint could not be calculated."
+    }
+    $jsonLine = @($output | Where-Object { -not [string]::IsNullOrWhiteSpace($_.ToString()) })[-1]
+    try {
+        return ($jsonLine.ToString() | ConvertFrom-Json)
+    } catch {
+        throw "The Worker release source fingerprint result was not valid JSON."
+    }
+}
+
+function Test-RequiredBooleanProperty {
+    param(
+        [AllowNull()][object]$InputObject,
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+    if ($null -eq $InputObject) {
+        return $false
+    }
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $false
+    }
+    return ($property.Value -is [bool])
+}
+
 function Assert-ImmutableRelease {
     param(
         [Parameter(Mandatory = $true)][string]$Repository,
@@ -426,6 +473,18 @@ try {
     }
     $releaseReport = Get-Content -LiteralPath $releaseReportPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $releaseTree = Get-GitValue -Repository $SourceRoot -Arguments @("rev-parse", "$releaseCommit`^{tree}")
+    $sourcePython = Join-Path $SourceRoot ".venv\Scripts\python.exe"
+    if (-not (Test-Path -LiteralPath $sourcePython -PathType Leaf)) {
+        throw "The verified source Python environment is missing."
+    }
+    $currentFingerprint = Get-CurrentReleaseFingerprint -Python $sourcePython -Repository $SourceRoot
+    $postVerificationSource = $releaseReport.postVerificationSource
+    $releaseSourceDirtyIsBoolean = Test-RequiredBooleanProperty `
+        -InputObject $releaseReport `
+        -Name "sourceDirty"
+    $postSourceDirtyIsBoolean = Test-RequiredBooleanProperty `
+        -InputObject $postVerificationSource `
+        -Name "sourceDirty"
     $reportChecks = @($releaseReport.checks)
     $reportRequiredIdentities = @($releaseReport.requiredCheckIdentities)
     $reportCheckNames = @($reportChecks | ForEach-Object { [string]$_.name })
@@ -436,14 +495,24 @@ try {
             -DifferenceObject @($reportCheckNames | Sort-Object)
     )
     if (
-        [int]$releaseReport.schemaVersion -ne 2 -or
+        [int]$releaseReport.schemaVersion -ne 3 -or
         [string]$releaseReport.status -cne "pass" -or
         [string]$releaseReport.sourceCommit -cne $releaseCommit -or
         [string]$releaseReport.sourceTree -cne $releaseTree -or
+        -not $releaseSourceDirtyIsBoolean -or
         [bool]$releaseReport.sourceDirty -or
         [string]$releaseReport.plannedReleaseTag -cne $ReleaseRef -or
         [string]$releaseReport.immutableReleaseReference -cne "refs/tags/$ReleaseRef" -or
         [bool]$releaseReport.humanAcceptanceRequired -ne $true -or
+        $null -eq $postVerificationSource -or
+        [string]$postVerificationSource.sourceFingerprint -cne [string]$releaseReport.sourceFingerprint -or
+        [int]$postVerificationSource.sourceFileCount -ne [int]$releaseReport.sourceFileCount -or
+        [string]$postVerificationSource.sourceCommit -cne [string]$releaseReport.sourceCommit -or
+        [string]$postVerificationSource.sourceTree -cne [string]$releaseReport.sourceTree -or
+        -not $postSourceDirtyIsBoolean -or
+        [bool]$postVerificationSource.sourceDirty -or
+        [string]$releaseReport.sourceFingerprint -cne [string]$currentFingerprint.fingerprint -or
+        [int]$releaseReport.sourceFileCount -ne [int]$currentFingerprint.fileCount -or
         $reportRequiredIdentities.Count -eq 0 -or
         $reportChecks.Count -ne $reportRequiredIdentities.Count -or
         $reportIdentityDifferences.Count -ne 0 -or

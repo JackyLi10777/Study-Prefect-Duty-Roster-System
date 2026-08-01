@@ -81,7 +81,10 @@ ROUTE_ATMOSPHERE_ASSETS = {
     for slot in set(ROUTE_ATMOSPHERE_SLOTS.values()) | set(EMBEDDED_ATMOSPHERE_SLOTS.values())
     for appearance in ("light", "dark")
 }
-COMPONENT_EVIDENCE_DIR = PROJECT_ROOT / "test-results" / "uiverse-components"
+# A routine verifier must never rewrite tracked visual-reference files.  Fresh
+# evidence belongs with the other ignored run artifacts; baseline refreshes are
+# a separate, deliberate review action.
+COMPONENT_EVIDENCE_DIR = PROJECT_ROOT / "logs" / "uiverse-components"
 COMPONENT_LIGHT_SCREENSHOT = COMPONENT_EVIDENCE_DIR / "desktop-light-components.png"
 COMPONENT_DARK_SCREENSHOT = COMPONENT_EVIDENCE_DIR / "desktop-dark-components.png"
 COMPONENT_MOBILE_LIGHT_SCREENSHOT = COMPONENT_EVIDENCE_DIR / "mobile-320-light-components.png"

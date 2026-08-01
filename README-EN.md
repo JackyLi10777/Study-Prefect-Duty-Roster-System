@@ -543,9 +543,12 @@ The focused inventory, state-machine, and disposable-browser checks are
 `nicegui_app/assets/motion/sing-yin-icon-story-state_test.js`, and
 `scripts/verify_semantic_icon_motion.py`.
 
-The formal verifier has fourteen gates, including the independent icon-state-machine
-contract; the final matching fingerprint is recorded only after the frozen-source
-rerun. Machine evidence remains separate
+The formal verifier has fifteen gates, including the independent icon-state-machine
+and 16-case theme-handoff contracts. Schema 3 records a matching fingerprint, file
+count, commit, tree, and clean Git state again after every gate, so a verifier-induced
+source change fails closed. Deployment preflights require both cleanliness fields
+to be actual JSON Booleans and independently recompute the deployable fingerprint.
+Machine evidence remains separate
 from the final operator/advisor acceptance checklist and from the live
 host/Cloudflare switchover evidence.
 
