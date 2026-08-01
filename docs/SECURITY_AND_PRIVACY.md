@@ -123,7 +123,7 @@ before narrowing.
 
 ## 4. 身份、Guest 及權限 / Identity, Guest, and authorization
 
-The candidate `PageContextWorkflowAdapter` retains the verified principal and calls `require_active()` immediately before every workflow invocation. Durable write methods that expose `command_id` must receive the ID created at the user-intent boundary; a retry cannot silently receive a fresh identity. Client polling remains user feedback, never the authorization boundary. Guest receipts retain only bounded request/result digests, operation, revision, and replay metadata; they do not retain full workspace snapshots for every command.
+`PageContextWorkflowAdapter` retains the verified principal and is wrapped by the runtime identity guard. Every captured workflow invocation rechecks expiry, current `auth_epoch`, current signing-key ID and process-local revocation before reaching the domain workflow. Durable write methods that expose `command_id` must receive the ID created at the user-intent boundary; a retry cannot silently receive a fresh identity. Client polling remains user feedback, never the authorization boundary. Guest receipts retain only bounded request/result digests, operation, revision, and replay metadata; they do not retain full workspace snapshots for every command.
 
 Gateway and snapshot HMAC secrets must be cryptographically generated and must not equal documented placeholders or a repeated single character. This is a deterministic weak-placeholder policy, not a claim that one supplied string's entropy can be measured reliably.
 
@@ -137,6 +137,10 @@ Gateway and snapshot HMAC secrets must be cryptographically generated and must n
   confirmation phrases, transaction boundaries, audit and backup obligations.
 - Logout revokes the origin session before cookies are cleared; failed
   revocation fails closed.
+- The browser schedules logout just before principal expiry and navigates away,
+  while new HTTP／WebSocket handshakes and every already-captured workflow call
+  fail closed independently. Retaining an old transport never extends the
+  principal lifetime; explicit socket teardown is defence in depth only.
 
 See [`UNIFIED_GUEST_SECURITY_MODEL.md`](UNIFIED_GUEST_SECURITY_MODEL.md) for the
 complete parity and ephemeral-state contract.

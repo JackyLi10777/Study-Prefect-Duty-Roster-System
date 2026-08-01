@@ -82,6 +82,7 @@
     "current-production-status": "docs/status/CURRENT_STATUS.md",
     "machine-readable-release-state": "docs/status/current-release.json",
     "project-capability-and-delivery-history": "PROJECT_STATUS.md",
+    "active-improvement-and-risk-tracking": "docs/ITERATION_REGISTER.md",
     "release-history": "CHANGELOG.md",
     "documentation-governance": "docs/DOCUMENTATION_SYSTEM.md",
     "documentation-routing": "docs/DOCUMENTATION_INDEX.md",

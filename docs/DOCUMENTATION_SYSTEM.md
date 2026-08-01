@@ -27,7 +27,9 @@
 
 ### 迭代狀態契約
 
-`ITERATION_REGISTER.md` 只使用 `Proposed`、`Ready`、`Active`、`Conditional`、`Blocked` 或 `Done`。`Conditional` 表示項目暫不執行，只有表內寫明的可觀察觸發條件成立後，才可轉為 `Ready` 或 `Active`；它不是用來隱藏沒有 owner、證據或停止條件的模糊待辦。
+`ITERATION_REGISTER.md` 只使用 `Proposed`、`Ready`、`Active`、`Conditional`、`Blocked` 或 `Done`，並為每項工作標示 `L1`、`L2` 或 `L3`。`Conditional` 表示項目暫不執行，只有表內寫明的可觀察觸發條件成立後，才可轉為 `Ready` 或 `Active`；它不是用來隱藏沒有 owner、證據或停止條件的模糊待辦。
+
+`PROJECT_STATUS.md` 的風險表只使用 `Tracked`、`Managed`、`Resolved` 或 `Historical`。`Tracked` 代表仍需工程、發布或真人證據關閉，必須指向一個現存 `ITR-NNN`；其餘狀態不得掛上活躍 iteration。這個連結讓風險不會只留在長文件中，也避免已由防線管理的事項被無限重開。
 
 ## 單一狀態來源
 
@@ -98,6 +100,7 @@ README 只做導覽與產品摘要，不承擔完整 release history、架構細
 - generated status 頁或 consumer 區塊過時；
 - consumer 在生成區塊外重複可變的目前版本值；
 - module-boundaries contract 禁止的反向 import。
+- 無效的 iteration priority／state、重複 ID、沒有 iteration 的 `Tracked` 風險，以及指向不存在 iteration 的風險。
 
 正式推送前仍須使用 `verify_update.py --staged`。文件契約證明一致性，不證明 runtime、UI 或部署本身正確。
 

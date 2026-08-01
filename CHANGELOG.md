@@ -15,6 +15,9 @@ This file records user-visible, operational and release-significant changes. The
 - Exact adjustment retries preserve the original revocation receipt and never revoke a newly created current-version share. If edge revocation fails, the committed adjustment remains truthful and the UI tells the operator not to resubmit it; Access control exposes the durable pending count and retries only those withdrawals.
 - Clarified that a successful Worker delete receipt is not proof of instantaneous Cloudflare edge invalidation. Zero-overlap handover now uses a fail-closed private-browser check every five seconds for at most ninety seconds, with an independent published-roster withdrawal scenario.
 - Updated the Viewer, operator, architecture, security, acceptance, handover and project-status owners for the same lifecycle. Production truth remains the generated live status above until this source candidate is formally released and deployed.
+- Made active-risk governance executable: every `Tracked` project risk now resolves to an existing L1／L2／L3 iteration with an owner and closure evidence, while managed／resolved／historical risks cannot masquerade as active work.
+- Corrected the stale established-WebSocket risk description. Browser expiry logout is UX and cleanup; server-side page and captured-workflow guards independently reject expiry, revocation, auth-epoch changes and signing-key rotation without introducing a second session owner.
+- Promoted encrypted off-device recovery and actual Worker／WebSocket mixed-load evidence into the decision queue instead of burying them in narrative status text.
 
 ## v1.2.0-rc.45 — released, 2026-08-01
 
