@@ -33,7 +33,7 @@ def test_dashboard_keeps_one_primary_workbench_and_a_compact_review_rail() -> No
     verse_index = home.index('classes("sy-daily-start w-full")')
     workbench_index = home.index('classes("sy-workbench grow min-w-0")')
     history_index = home.index('classes("sy-dashboard-history")')
-    assert verse_index < workbench_index < history_index
+    assert workbench_index < history_index < verse_index
 
 
 def test_dashboard_review_rail_uses_solid_surfaces_and_stacks_before_phone_width() -> None:
@@ -53,6 +53,29 @@ def test_dashboard_review_rail_uses_solid_surfaces_and_stacks_before_phone_width
     phone_end = theme.find("@media", phone_start + 1)
     phone_scope = theme[phone_start : phone_end if phone_end >= 0 else None]
     assert ".sy-dashboard-history" in phone_scope
+
+
+def test_command_center_layer_owns_the_reset_composition_after_mobile_compatibility() -> None:
+    markup = (PROJECT_ROOT / "nicegui_app" / "ui" / "theme_markup.py").read_text(
+        encoding="utf-8"
+    )
+    command_center = (
+        PROJECT_ROOT
+        / "nicegui_app"
+        / "assets"
+        / "css"
+        / "sing-yin-command-center-v2.css"
+    ).read_text(encoding="utf-8")
+
+    assert markup.index('("mobile",') < markup.index('("command-center-v2",')
+    assert "--sy-v2-canvas" in command_center
+    assert ".sy-dashboard-grid" in command_center
+    assert "grid-template-columns: minmax(0, 1fr) minmax(280px, 320px)" in command_center
+    assert ".sy-nav-control.sy-nav-active" in command_center
+    assert ".sy-page-atmosphere" in command_center
+    assert "min-height: 90px" in command_center
+    assert "prefers-reduced-motion" in command_center
+    assert "forced-colors" in command_center
 
 
 def test_design_reference_protocol_rejects_template_dashboard_defaults() -> None:

@@ -53,33 +53,6 @@ def dashboard_page() -> None:
         next_action_key = "flow_open_adjustment"
         next_action = lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}/adjustments")
     with page_shell("/"):
-        with ui.element("section").classes("sy-daily-start w-full").props(
-            f'aria-label="{attr(t("daily_verse"))}"'
-        ):
-            with ui.row().classes("w-full items-start gap-4 flex-wrap"):
-                ui.icon("menu_book").classes("sy-daily-start-icon").props("aria-hidden=true")
-                with ui.column().classes("grow min-w-[240px] gap-1"):
-                    ui.label(t("daily_verse")).classes("sy-daily-start-kicker")
-                    ui.label(scripture).classes("sy-daily-start-verse")
-                    ui.label(reference).classes("sy-daily-start-reference")
-                    ui.label(t("verse_translation_label")).classes("sy-verse-translation")
-                with ui.column().classes("sy-devotional-controls gap-2 items-end"):
-                    tone_preference = str(preference_get("devotional_tone", "auto"))
-                    ui.button(t("refresh_verse"), icon="refresh", on_click=_refresh_dashboard_verse).props("flat").classes("sy-daily-start-refresh")
-            with ui.expansion(reflection.get("title", ""), icon="auto_stories").classes("sy-daily-start-reflection mt-3"):
-                tone_select = ui.select(
-                    label=t("devotional_tone_label"),
-                    options={
-                        "auto": t("devotional_tone_auto"),
-                        "guidance": t("devotional_tone_guidance"),
-                        "comfort": t("devotional_tone_comfort"),
-                    },
-                    value=tone_preference if tone_preference in {"auto", "guidance", "comfort"} else "auto",
-                ).props("dense outlined options-dense").classes("sy-devotional-tone-select mb-3")
-                tone_select.on_value_change(lambda event: _set_devotional_tone(str(event.value)))
-                ui.label(reflection.get("body", "")).classes("text-sm leading-6 text-[var(--sy-muted)] p-1")
-                if reflection.get("prayer"):
-                    ui.label(f"{t('prayer')}: {reflection['prayer']}").classes("mt-3 text-sm italic text-[var(--sy-muted)]")
         with ui.element("section").classes("sy-mobile-next-action w-full").props(
             f'aria-label="{attr(t("mobile_next_action_label"))}"'
         ):
@@ -156,6 +129,33 @@ def dashboard_page() -> None:
                                     icon="arrow_forward",
                                     on_click=lambda item=week: navigate_to(f"/rosters/{item['id']}"),
                                 ).props("flat").classes("sy-dashboard-history-action")
+        with ui.element("section").classes("sy-daily-start w-full").props(
+            f'aria-label="{attr(t("daily_verse"))}"'
+        ):
+            with ui.row().classes("w-full items-start gap-4 flex-wrap"):
+                ui.icon("menu_book").classes("sy-daily-start-icon").props("aria-hidden=true")
+                with ui.column().classes("grow min-w-[240px] gap-1"):
+                    ui.label(t("daily_verse")).classes("sy-daily-start-kicker")
+                    ui.label(scripture).classes("sy-daily-start-verse")
+                    ui.label(reference).classes("sy-daily-start-reference")
+                    ui.label(t("verse_translation_label")).classes("sy-verse-translation")
+                with ui.column().classes("sy-devotional-controls gap-2 items-end"):
+                    tone_preference = str(preference_get("devotional_tone", "auto"))
+                    ui.button(t("refresh_verse"), icon="refresh", on_click=_refresh_dashboard_verse).props("flat").classes("sy-daily-start-refresh")
+            with ui.expansion(reflection.get("title", ""), icon="auto_stories").classes("sy-daily-start-reflection mt-3"):
+                tone_select = ui.select(
+                    label=t("devotional_tone_label"),
+                    options={
+                        "auto": t("devotional_tone_auto"),
+                        "guidance": t("devotional_tone_guidance"),
+                        "comfort": t("devotional_tone_comfort"),
+                    },
+                    value=tone_preference if tone_preference in {"auto", "guidance", "comfort"} else "auto",
+                ).props("dense outlined options-dense").classes("sy-devotional-tone-select mb-3")
+                tone_select.on_value_change(lambda event: _set_devotional_tone(str(event.value)))
+                ui.label(reflection.get("body", "")).classes("text-sm leading-6 text-[var(--sy-muted)] p-1")
+                if reflection.get("prayer"):
+                    ui.label(f"{t('prayer')}: {reflection['prayer']}").classes("mt-3 text-sm italic text-[var(--sy-muted)]")
 
 
 @ui.page("/dashboard")
@@ -176,7 +176,7 @@ def getting_started_page() -> None:
                 ("start-reference-map", "start_toc_reference_map"),
             )
         )
-        with ui.element("section").classes("grid gap-4 w-full").props(
+        with ui.element("section").classes("sy-onboarding-steps grid gap-4 w-full").props(
             f'id=start-first-steps aria-label="{attr(t("start_toc_first_steps"))}"'
         ):
             steps = (

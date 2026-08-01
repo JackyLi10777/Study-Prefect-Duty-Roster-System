@@ -19,7 +19,7 @@ This index is the entry point and coverage contract for the documentation set. I
 | 開發者 | 一項改動應放在哪個模組，依賴方向是甚麼？ | [`ARCHITECTURE_OVERVIEW.md`](ARCHITECTURE_OVERVIEW.md) → [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHITECTURE.md) |
 | 發布者／審查者 | 這次改動需要哪一級驗證及甚麼發布證據？ | [`UPDATE_WORKFLOW.md`](UPDATE_WORKFLOW.md) → [`CODE_ACCEPTANCE_REVIEW.md`](CODE_ACCEPTANCE_REVIEW.md) |
 | 文件維護者 | 文件如何分類、同步、迭代及淘汰？ | [`DOCUMENTATION_SYSTEM.md`](DOCUMENTATION_SYSTEM.md) |
-| UI／UX 維護者 | 元件、token、排版、動效與無障礙規則是甚麼？ | [`../Professional_Design_System.md`](../Professional_Design_System.md) |
+| UI／UX 維護者 | 元件、token、排版、動效與無障礙規則是甚麼？ | [`../Professional_Design_System.md`](../Professional_Design_System.md) → [`FRONTEND_ARCHITECTURE.md`](FRONTEND_ARCHITECTURE.md) |
 
 ## 權威來源次序 / Source-of-truth precedence
 
@@ -77,6 +77,7 @@ If prose conflicts with executable policy, transactional behavior, security chec
 | [`DOCUMENTATION_SYSTEM.md`](DOCUMENTATION_SYSTEM.md) | 文件生命週期、單一狀態來源、topic owner、ADR 及驗證規則 | 文件分類、status generator、owner 或治理流程改變 |
 | [`ITERATION_REGISTER.md`](ITERATION_REGISTER.md) | 以 L1／L2／L3 排序、連接活躍風險、owner 及關閉證據的改善佇列 | 項目進入、優先級／狀態改變、風險連結改變或完成後移出 |
 | [`../Professional_Design_System.md`](../Professional_Design_System.md) | token、component、responsive、motion、SVG／Lottie、a11y 及驗證規則 | visual token、shared component、motion 或 accessibility contract 改變 |
+| [`FRONTEND_ARCHITECTURE.md`](FRONTEND_ARCHITECTURE.md) | 前端 composition、CSS layer、route family、responsive runtime、依賴及遷移責任 | shell／layer ownership、composition order、route hierarchy、viewport runtime 或 frontend dependency 改變 |
 | [`design/ATMOSPHERE_ASSET_MANIFEST.md`](design/ATMOSPHERE_ASSET_MANIFEST.md) | AI 氣氛資產提示詞、用途、尺寸、大小、SHA-256、裁切、遮罩、人工檢視及禁用位置 | atmosphere slot、圖片、生成工具、theme pair、hash 或 placement boundary 改變 |
 | [`CONTENT_DESIGN_AUDIT.md`](CONTENT_DESIGN_AUDIT.md) | 可見文案的用途分類、保留／蒸餾決定、頁面主行動與後果說明 | page hierarchy、visible copy、progressive disclosure、support copy 或 content ownership 改變 |
 | [`PRODUCT_RESEARCH_AND_IA_DECISIONS.md`](PRODUCT_RESEARCH_AND_IA_DECISIONS.md) | 產品研究來源、Adopt／Adapt／Reject 取捨及四區資訊架構 | public entrance、workbench、trust hub、documentation portal 或 reference decision 改變 |
@@ -190,7 +191,7 @@ When a change is ready for review:
 3. For observed live／migration／Worker／rollback／acceptance changes, update `status/current-release.json` and run `python -X utf8 scripts/project_governance.py --write`; never hand-copy mutable identifiers.
 4. Update both `README.md` and `README-EN.md` only when reader routing, public behavior or a major capability changes.
 5. Update `PROJECT_STATUS.md` for capability/history and residual risk; update `RELEASE_HANDOVER.md`／`ACCEPTANCE_EVIDENCE.md` for procedures and evidence.
-6. Update `Professional_Design_System.md` for shared visual, responsive, motion or accessibility rules.
+6. Update `Professional_Design_System.md` for shared visual, responsive, motion or accessibility rules; update `FRONTEND_ARCHITECTURE.md` for composition, layer ownership, route-family or frontend-dependency changes.
 7. Classify every new Markdown file or collection and add its authoritative route here when it is a first-class guide.
 8. Run `python -X utf8 scripts/project_governance.py --check` and the risk-selected verification profile.
 9. Keep historical evidence labelled historical; never silently rewrite an old release as current.

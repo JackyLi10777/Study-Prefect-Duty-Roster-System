@@ -1,10 +1,12 @@
 # 架構總覽 / Architecture overview
 
-本文件讓維護者在十分鐘內判斷「一項改動應放在哪裡、可以依賴誰、需要驗證甚麼」。完整交易、資料表、Guest、復原與 UI 細節仍由 [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHITECTURE.md) 擁有；本頁只保留穩定的模組地圖與改動規則。
+本文件讓維護者在十分鐘內判斷「一項改動應放在哪裡、可以依賴誰、需要驗證甚麼」。完整交易、資料表、Guest 及復原細節由 [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHITECTURE.md) 擁有；前端 composition、CSS layer、route family 與 responsive runtime 由 [`FRONTEND_ARCHITECTURE.md`](FRONTEND_ARCHITECTURE.md) 擁有；本頁只保留穩定的模組地圖與改動規則。
 
 ## 產品範式與固定邊界
 
 「聖言值班表平台」是單一機構、Local-first 的校務值班 B2B Operations Platform，提供 SaaS 級使用體驗。正式資料只在受控 Windows origin 的 SQLite 保存；Cloudflare Worker 是公開入口、身份閘道與加密 Viewer，不是第二個正式資料庫。Admin 與 Guest 共用頁面與互動品質，但 Guest 只接到虛構、短期、隔離的 adapter。
+
+前端採用 **Quiet Command Center with Editorial Sacred Restraint**：日常工作先呈現當前安全步驟，再呈現歷史、證據與每日聖言。`Professional_Design_System.md` 定義體驗與設計語言，`FRONTEND_ARCHITECTURE.md` 定義實作所有權；CSS、頁面和動效都不得成為身份、能力、交易或資料政策的第二個 owner。
 
 ## 模組地圖
 

@@ -2,8 +2,14 @@
 
 This file records user-visible, operational and release-significant changes. The editable authority for observed deployment truth is `docs/status/current-release.json`; `docs/status/CURRENT_STATUS.md` is its generated, human-readable view and must not be edited by hand. Immutable historical evidence remains in `PROJECT_STATUS.md`, dated audits and generated release reports.
 
-## Unreleased — maintainability and documentation governance
+## Unreleased — maintainability, documentation and frontend reset
 
+- Reset the NiceGUI workbench as a task-first Quiet Command Center: a wider institutional navigation rail, compact utility header, solid operational surfaces and contextual route bands replace the accumulated provisional composition without changing routes, identity, Guest, workflow, SQLite or recovery contracts.
+- Reordered the Dashboard so the current weekly workflow precedes recent-history review and Daily Verse, retained truthful empty／busy states and rejected synthetic KPIs, fake progress and decorative alerts.
+- Added one concise three-step product explanation to the desktop public entrance while preserving one visible Admin and Guest action per viewport, the existing login lifecycle, music fallback and Cloudflare security boundary.
+- Added `docs/FRONTEND_ARCHITECTURE.md` as the owner for composition, CSS layers, route families, viewport runtime and migration. `sing-yin-command-center-v2.css` is the only terminal composition layer; a contract test rejects parallel terminal override systems.
+- Corrected the adaptive viewport runtime so keyboard mode requires both a focused editable control and material visual-viewport reduction. It now exports complete visual viewport geometry, preserves the 256 CSS-pixel reflow and keeps mobile navigation available when only browser chrome changes.
+- Rebuilt the sidebar brand lockup and 284px rail geometry to prevent bilingual identity overlap, kept 44px interaction targets and added light/dark, desktop/mobile, forced-colour and reduced-motion composition coverage without adding a frontend or animation dependency.
 - Added a concise architecture overview and an executable import-direction contract for policy, core, persistence, workflow services and UI.
 - Added one machine-readable current-release source plus deterministic Traditional Chinese／English status generation for all operator-facing guides, eliminating manual release-identity drift.
 - Added a documentation lifecycle／ownership manifest, ADR register and decision-relevant iteration register; every maintained Markdown file now has a lifecycle class or declared collection.

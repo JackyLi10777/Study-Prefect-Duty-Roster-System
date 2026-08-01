@@ -22,6 +22,8 @@
 
 互動採用可稽核的語意分級：設定齒輪、主題、備份設定導覽、歷史及撤回才可使用有界旋轉；正式還原、草稿、發布、匯入、名單管理、換經文及問題報告保留真實 lifecycle／glyph morph，不再疊加不合語意的旋轉。提示音及音樂自動播放開關使用更清楚的短暫 inset 壓縮；按鈕、文字、焦點框與版面不旋轉或位移，busy、disabled、reconnect 及 reduced-motion 都會立即清理 transform。
 
+現行前端採用 **Quiet Command Center with Editorial Sacred Restraint**：桌面以清楚的機構式導覽軌、緊湊全域工具列及實體操作面承載日常工作；首頁把當前值班流程放在歷史與每日聖言之前，不製造 KPI、假進度或裝飾警報。手機、平板、200% zoom、深淺模式及中英文仍使用同一語意 DOM、路由、身份與資料契約。設計意圖見 [Professional Design System](Professional_Design_System.md)，composition、CSS layer、route family、viewport runtime 及遷移規則見[前端架構與迭代契約](docs/FRONTEND_ARCHITECTURE.md)。
+
 [English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)
 
 **反饋與聯絡：** 遇到問題時，先在網站開啟 **「問題回報／Support」**，取得支援編號及已刪減的診斷摘要，再電郵我：[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk)。管理員可在明確同意後，把有限大小的 TXT／JSON／PNG 證據保存到主機本機支援收件匣；Guest、Public 及 Viewer 只會在瀏覽器建立報告，不會上載或長期保存。不要提交密碼、token、cookie、完整資料庫或完整備份；姓名、請假內容、值班表、PDF、截圖或日誌只在確實有助調查時提供最少相關部分。完整程序見[本機問題回報與事故處理](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md)。
@@ -38,7 +40,7 @@
 | 任何使用者，遇到錯誤、下載失敗或顯示異常 | 正式網站 →「問題回報／Support」 | [本機問題回報與事故處理](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md) |
 | 新任首席導學風紀，要先安全演練 | `START_PRACTICE_MODE.cmd` | [快速啟動](docs/QUICKSTART.md)及[操作手冊](docs/OPERATOR_GUIDE.md) |
 | IT／維護者，要部署、復原或查找 OP 編號 | [完整文件索引](docs/DOCUMENTATION_INDEX.md) | [Windows 主機設定](docs/WINDOWS_DEDICATED_HOST_SETUP.md)及[更新流程](docs/UPDATE_WORKFLOW.md) |
-| 開發者／審查者，要理解程式邊界或提交修改 | [架構總覽](docs/ARCHITECTURE_OVERVIEW.md) | [詳細 NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md)、[文件治理](docs/DOCUMENTATION_SYSTEM.md)、[程式驗收審查](docs/CODE_ACCEPTANCE_REVIEW.md)及[貢獻指南](CONTRIBUTING.md) |
+| 開發者／審查者，要理解程式邊界或提交修改 | [架構總覽](docs/ARCHITECTURE_OVERVIEW.md) | [前端架構與迭代契約](docs/FRONTEND_ARCHITECTURE.md)、[詳細 NiceGUI 架構](docs/NICEGUI_ARCHITECTURE.md)、[文件治理](docs/DOCUMENTATION_SYSTEM.md)、[程式驗收審查](docs/CODE_ACCEPTANCE_REVIEW.md)及[貢獻指南](CONTRIBUTING.md) |
 
 ### 使用模式與資料邊界
 

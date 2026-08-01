@@ -503,8 +503,19 @@ def _assert_drawer_scrolls(page: Page, *, label: str) -> None:
           };
         }"""
     )
-    if metrics["scrollHeight"] <= metrics["clientHeight"] or metrics["after"] <= metrics["before"]:
-        raise AssertionError(f"{label} drawer cannot reach its lower navigation items: {metrics}")
+    if metrics["scrollHeight"] > metrics["clientHeight"]:
+        if metrics["after"] <= metrics["before"]:
+            raise AssertionError(f"{label} drawer cannot reach its lower navigation items: {metrics}")
+    else:
+        drawer_box = drawer.bounding_box()
+        last_box = last.bounding_box()
+        if (
+            drawer_box is None
+            or last_box is None
+            or last_box["y"] + last_box["height"]
+            > drawer_box["y"] + drawer_box["height"] + 1
+        ):
+            raise AssertionError(f"{label} compact drawer clips its final navigation item: {metrics}")
     if metrics["overflowY"] not in {"auto", "scroll"}:
         raise AssertionError(f"{label} drawer does not expose a scrollable overflow mode: {metrics}")
     _assert_touch_targets(page, label=label, root="#main-navigation-drawer")

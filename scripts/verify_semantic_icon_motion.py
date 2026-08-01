@@ -244,8 +244,14 @@ def _touch_contract(page: Page) -> dict[str, str]:
     if icon.inner_text().strip() != destination:
         raise SemanticIconVerificationError("Touch preview did not reveal the action outcome.")
     page.wait_for_timeout(700)
-    if icon.inner_text().strip() != source:
-        raise SemanticIconVerificationError("Touch preview did not restore its source glyph.")
+    restored = icon.inner_text().strip()
+    if restored != source:
+        raise SemanticIconVerificationError(
+            "Touch preview did not restore its source glyph: "
+            f"source={source!r}, destination={destination!r}, restored={restored!r}, "
+            f"story_from={icon.get_attribute('data-sy-icon-story-from')!r}, "
+            f"story_active={icon.get_attribute('data-sy-icon-story-active')!r}."
+        )
     return {"source": source, "destination": destination}
 
 

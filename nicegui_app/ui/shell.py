@@ -1010,13 +1010,18 @@ def _install_mobile_viewport_accessibility() -> None:
           const root = document.documentElement;
           let revealTimer = 0;
           const isMobile = () => matchMedia('(max-width: 900px)').matches;
-          const keyboardOpen = () => isMobile() && (window.innerHeight - visualViewport.height) > 132;
           const activeField = () => {
             const target = document.activeElement;
             return target instanceof HTMLElement && target.matches('input, textarea, select, [contenteditable="true"]')
               ? target
               : null;
           };
+          // Browser chrome, zoom and pinch-zoom can make innerHeight exceed the
+          // visual viewport even when no software keyboard exists. Only a
+          // focused editable control can open keyboard mode.
+          const keyboardOpen = () => isMobile()
+            && activeField() !== null
+            && (window.innerHeight - visualViewport.height) > 132;
           const setTabbarUnavailable = unavailable => {
             const tabbar = document.querySelector('.sy-mobile-tabbar');
             if (!(tabbar instanceof HTMLElement)) return;
@@ -1039,7 +1044,15 @@ def _install_mobile_viewport_accessibility() -> None:
           const sync = (reveal = false) => {
             const open = keyboardOpen();
             root.classList.toggle('sy-mobile-keyboard-open', open);
+            root.style.setProperty('--sy-layout-viewport-height', `${Math.round(window.innerHeight)}px`);
             root.style.setProperty('--sy-visual-viewport-height', `${Math.round(visualViewport.height)}px`);
+            root.style.setProperty('--sy-visual-viewport-offset-top', `${Math.round(visualViewport.offsetTop)}px`);
+            root.style.setProperty('--sy-visual-viewport-width', `${Math.round(visualViewport.width)}px`);
+            root.style.setProperty('--sy-visual-viewport-offset-left', `${Math.round(visualViewport.offsetLeft)}px`);
+            root.style.setProperty(
+              '--sy-visual-viewport-bottom-inset',
+              `${Math.max(0, Math.round(window.innerHeight - visualViewport.height - visualViewport.offsetTop))}px`
+            );
             setTabbarUnavailable(open);
             if (open && reveal) scheduleReveal(activeField());
           };
@@ -1057,7 +1070,12 @@ def _install_mobile_viewport_accessibility() -> None:
             window.clearTimeout(revealTimer);
             setTabbarUnavailable(false);
             root.classList.remove('sy-mobile-keyboard-open');
+            root.style.removeProperty('--sy-layout-viewport-height');
             root.style.removeProperty('--sy-visual-viewport-height');
+            root.style.removeProperty('--sy-visual-viewport-offset-top');
+            root.style.removeProperty('--sy-visual-viewport-width');
+            root.style.removeProperty('--sy-visual-viewport-offset-left');
+            root.style.removeProperty('--sy-visual-viewport-bottom-inset');
           };
           sync(false);
         })();
@@ -1127,10 +1145,10 @@ def page_shell(active_path: str) -> Iterator[None]:
     theme_controls = {"buttons": [], "busy": False}
     sound_controls = []
     drawer = ui.left_drawer(value=False, bordered=False).props(
-        f'show-if-above breakpoint=900 role=navigation id=main-navigation-drawer aria-label="{attr(t("main_navigation"))}"'
+        f'show-if-above breakpoint=900 width=284 role=navigation id=main-navigation-drawer aria-label="{attr(t("main_navigation"))}"'
     ).classes("sy-sidebar bg-[var(--sy-surface)]")
     with drawer:
-        with ui.column().classes("w-full gap-1 p-4"):
+        with ui.column().classes("sy-sidebar-body w-full gap-1 p-4"):
             with ui.row().classes("sy-brand-lockup items-center gap-3 mb-2"):
                 render_service_weave_mark(context="navigation", test_id="navigation-product-mark")
                 with ui.column().classes("sy-brand-copy gap-0 min-w-0"):
@@ -1195,7 +1213,7 @@ def page_shell(active_path: str) -> Iterator[None]:
                 ui.link(t("report_problem"), support_href).classes("sy-sidebar-feedback-link").props(
                     f'aria-label="{attr(t("report_problem"))}"'
                 )
-    with ui.header(elevated=False).classes("sy-app-header bg-[var(--sy-surface)] border-b border-[var(--sy-line)] px-4"):
+    with ui.header(elevated=False).classes("sy-app-header bg-[var(--sy-surface)] border-b border-[var(--sy-line)]"):
         skip_link = ui.link(t("skip_to_content"), "#main-content").classes("sy-skip-link")
         skip_link.on(
             "click",
@@ -1333,14 +1351,19 @@ def page_shell(active_path: str) -> Iterator[None]:
             ui.label(t(navigation_group_key)).classes("sy-page-context-label")
             ui.element("span").classes("sy-page-context-line")
         if active_page.atmosphere_presentation == "shell":
-            ui.element("div").classes(
+            with ui.element("div").classes(
                 "sy-page-atmosphere"
             ).props(
                 f'aria-hidden=true data-sy-atmosphere-slot="{active_page.atmosphere_slot}" '
                 'data-sy-atmosphere-presentation=shell'
             ).style(
                 f"--sy-page-atmosphere-image: var(--sy-image-{active_page.atmosphere_slot})"
-            )
+            ):
+                with ui.row().classes("sy-page-atmosphere-copy items-center gap-3 no-wrap"):
+                    ui.icon(active_icon).classes("sy-page-atmosphere-icon")
+                    with ui.column().classes("gap-0 min-w-0"):
+                        ui.label(t(navigation_group_key)).classes("sy-page-atmosphere-kicker")
+                        ui.label(t(title_key)).classes("sy-page-atmosphere-title")
         yield
     with ui.element("footer").props("role=contentinfo data-testid=page-copyright").classes("sy-page-footer"):
         ui.label(t("service_principle")).classes("sy-page-footer-principle")
