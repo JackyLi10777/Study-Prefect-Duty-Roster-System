@@ -19,6 +19,7 @@ STYLE_LAYERS = (
     ("compatibility-interaction", "/assets/css/sing-yin-interaction-v1.css", None),
     ("motion", "/assets/css/sing-yin-motion-v1.css", None),
     ("mobile", "/assets/css/sing-yin-mobile-v1.css", "(max-width: 900px)"),
+    ("command-center-v2", "/assets/css/sing-yin-command-center-v2.css", None),
 )
 
 

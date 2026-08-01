@@ -381,10 +381,16 @@ def test_mobile_public_controls_keep_a_44px_touch_target() -> None:
 
 def test_mobile_entrance_exposes_admin_and_guest_actions_before_supplementary_content() -> None:
     source = _source()
+    desktop_workflow = source.index('class="portal-workflow"')
     mobile_actions = source.index('class="mobile-entry-actions"')
     devotional = source.index('class="devotional-prompt"')
 
-    assert mobile_actions < devotional
+    assert desktop_workflow < mobile_actions < devotional
+    assert source.count('class="portal-workflow"') == 1
+    assert "生成與核對" in source and "Generate &amp; review" in source
+    assert "發布與匯出" in source and "Publish &amp; export" in source
+    assert "已發布後請假" in source and "Published-duty absence" in source
+    assert ".portal-workflow { display: none; }" in source
     assert 'class="workflow-cue"' not in source
     assert 'class="portal-kicker"' not in source
     assert 'id="mobileAdminLogin"' in source

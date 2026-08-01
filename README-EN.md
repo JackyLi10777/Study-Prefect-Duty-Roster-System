@@ -35,6 +35,8 @@ The workbench extends that rule across every principal route. Weekly operations,
 
 Interaction motion is semantic and auditable. Only Settings, the appearance toggle, Backup Settings navigation, History, and Undo may use bounded rotation. Restore, draft, publish, import, directory management, verse refresh, and support actions retain truthful lifecycle or glyph morphs without a second rotation. Sound and music-autoplay switches receive a clearer short inset press. Button hosts, labels, focus rings, and layout never rotate or shift, while busy, disabled, reconnect, and reduced-motion states clear transforms immediately.
 
+The current frontend follows **Quiet Command Center with Editorial Sacred Restraint**. A clear institutional navigation rail, compact global utility bar, and solid operational surfaces support repeated work; the dashboard places the current roster workflow before history and Daily Verse without inventing KPIs, progress, or alerts. Phone, tablet, 200% zoom, light/dark, and both languages retain the same semantic DOM, routes, identity, and data contracts. See the [Professional Design System](Professional_Design_System.md) for intent and the [frontend architecture and iteration contract](docs/FRONTEND_ARCHITECTURE.md) for composition, CSS-layer, route-family, viewport-runtime, and migration ownership.
+
 [Traditional Chinese README](README.md) · [Operator guide](docs/OPERATOR_GUIDE.md)
 · [Architecture](docs/ARCHITECTURE_OVERVIEW.md) · [Current system status](docs/status/CURRENT_STATUS.md)
 · [Assist assignment modes](docs/ROSTER_POLICY_MODES.md)
@@ -56,7 +58,7 @@ longest document:
 | IT maintainer deploying, recovering, or tracing an OP reference | [Documentation index](docs/DOCUMENTATION_INDEX.md) | [Windows host setup](docs/WINDOWS_DEDICATED_HOST_SETUP.md) and [update workflow](docs/UPDATE_WORKFLOW.md) |
 | Disaster-recovery custodian preparing for complete host loss | [Off-site disaster-recovery runbook](docs/OFFSITE_DISASTER_RECOVERY.md) | Use an approved BitLocker external volume, separated key custody, and replacement-location evidence |
 | Security reviewer or vulnerability reporter | [Security and privacy model](docs/SECURITY_AND_PRIVACY.md) | [Private reporting policy](SECURITY.md) and [branch strategy](docs/BRANCH_STRATEGY.md) |
-| Developer or reviewer changing code | [Architecture overview](docs/ARCHITECTURE_OVERVIEW.md) | [Detailed NiceGUI architecture](docs/NICEGUI_ARCHITECTURE.md), [documentation governance](docs/DOCUMENTATION_SYSTEM.md), [risk-led code review](docs/CODE_ACCEPTANCE_REVIEW.md), and [contributing guide](CONTRIBUTING.md) |
+| Developer or reviewer changing code | [Architecture overview](docs/ARCHITECTURE_OVERVIEW.md) | [Frontend architecture and iteration contract](docs/FRONTEND_ARCHITECTURE.md), [detailed NiceGUI architecture](docs/NICEGUI_ARCHITECTURE.md), [documentation governance](docs/DOCUMENTATION_SYSTEM.md), [risk-led code review](docs/CODE_ACCEPTANCE_REVIEW.md), and [contributing guide](CONTRIBUTING.md) |
 
 ### Access and data boundary
 

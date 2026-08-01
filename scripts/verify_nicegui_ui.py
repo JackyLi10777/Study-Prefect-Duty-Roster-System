@@ -1746,9 +1746,14 @@ def main() -> None:
         close_music_dialog(mobile_music_dialog)
         verse_box = page.locator(".sy-daily-start").bounding_box()
         workbench_box = page.locator(".sy-workbench").bounding_box()
-        assert verse_box is not None and workbench_box is not None
-        assert verse_box["y"] < workbench_box["y"], "Daily Verse must remain before the weekly workflow on mobile"
-        assert page.locator(".sy-workbench .sy-flow").is_hidden(), "The compact next action should replace duplicate mobile flow cards"
+        history_box = page.get_by_test_id("dashboard-history").bounding_box()
+        assert verse_box is not None and workbench_box is not None and history_box is not None
+        assert workbench_box["y"] < history_box["y"] < verse_box["y"], (
+            "The mobile dashboard must keep operational work and recent history before the devotional reading"
+        )
+        assert page.locator(".sy-workbench .sy-flow").is_visible(), (
+            "The compact next action must be complemented by the non-interactive workflow overview"
+        )
         page.screenshot(path=str(MOBILE_SCREENSHOT), full_page=True)
         for narrow_width in (360, 320):
             page.set_viewport_size({"width": narrow_width, "height": 780})

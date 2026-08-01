@@ -364,6 +364,12 @@ const VIEWER_HTML = `<!doctype html>
         <p id="guestDescription" class="portal-lead">分享連結可直接查看；登入後可生成、核對、發布、匯出及處理已發布後請假。</p>
         <p id="guestDescriptionEn" class="portal-lead portal-lead--en" lang="en">Open a roster share directly, or sign in to generate, review, publish, export, and handle published-duty absences.</p>
 
+        <ol class="portal-workflow" aria-label="每週工作流程 · Weekly workflow">
+          <li><span>01</span><strong>生成與核對</strong><small lang="en">Generate &amp; review</small></li>
+          <li><span>02</span><strong>發布與匯出</strong><small lang="en">Publish &amp; export</small></li>
+          <li><span>03</span><strong>已發布後請假</strong><small lang="en">Published-duty absence</small></li>
+        </ol>
+
         <nav class="mobile-entry-actions" aria-label="立即進入 · Continue to the workbench">
           <span class="mobile-entry-label">立即進入 · CONTINUE</span>
           <a id="mobileAdminLogin" class="mobile-entry-action mobile-entry-action--admin" data-entry-role="admin" data-entry-state="idle" href="/auth/login">
@@ -821,7 +827,7 @@ button, input, select, textarea { font: inherit; }
 .site-header,
 .page-shell,
 .site-footer {
-  width: min(1180px, calc(100% - 40px));
+  width: min(1260px, calc(100% - 48px));
   margin-inline: auto;
 }
 
@@ -830,7 +836,7 @@ button, input, select, textarea { font: inherit; }
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding-block: 28px 18px;
+  padding-block: 22px 14px;
 }
 
 .brand-lockup {
@@ -934,10 +940,10 @@ button, input, select, textarea { font: inherit; }
 .access-portal {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.16fr) minmax(340px, 0.84fr);
+  grid-template-columns: minmax(0, 1.08fr) minmax(390px, 0.92fr);
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 28px;
+  border-radius: 22px;
   background: var(--surface-raised);
   box-shadow: var(--shadow-raised);
   isolation: isolate;
@@ -948,8 +954,8 @@ button, input, select, textarea { font: inherit; }
 .portal-story {
   position: relative;
   z-index: 0;
-  min-height: 580px;
-  padding: 60px 54px 52px;
+  min-height: 640px;
+  padding: 54px 48px 46px;
   overflow: hidden;
   overflow: clip;
   color: var(--portal-story-ink);
@@ -1027,6 +1033,48 @@ button, input, select, textarea { font: inherit; }
 
 .portal-lead--en { margin-top: 5px; font-size: 0.84rem; line-height: 1.6; }
 
+.portal-workflow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 30px 0 0;
+  padding: 0;
+  border-block: 1px solid color-mix(in srgb, var(--portal-story-ink) 16%, transparent);
+  list-style: none;
+}
+
+.portal-workflow li {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-width: 0;
+  padding: 15px 14px 16px 0;
+}
+
+.portal-workflow li + li {
+  padding-left: 14px;
+  border-left: 1px solid color-mix(in srgb, var(--portal-story-ink) 13%, transparent);
+}
+
+.portal-workflow span {
+  color: var(--brand);
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+  font-size: .62rem;
+  font-weight: 820;
+}
+
+.portal-workflow strong {
+  color: var(--portal-story-ink);
+  font-size: .76rem;
+  line-height: 1.35;
+}
+
+.portal-workflow small {
+  color: var(--portal-story-muted);
+  font-size: .62rem;
+  line-height: 1.35;
+}
+
 .mobile-entry-actions { display: none; }
 
 .mobile-entry-label {
@@ -1064,7 +1112,7 @@ button, input, select, textarea { font: inherit; }
 .mobile-entry-status { min-height: 1.35em; margin: 0; color: var(--portal-story-muted); font-size: 0.68rem; line-height: 1.4; }
 
 .devotional-prompt {
-  margin-top: 30px;
+  margin-top: 28px;
   padding: 20px 21px 19px;
   border: 1px solid color-mix(in srgb, var(--gold) 34%, transparent);
   border-radius: 18px;
@@ -1136,10 +1184,10 @@ button, input, select, textarea { font: inherit; }
 
 .access-panel {
   align-self: center;
-  margin: 28px;
-  padding: 39px 34px 34px;
+  margin: 22px;
+  padding: 31px 30px 29px;
   border: 1px solid var(--line);
-  border-radius: 22px;
+  border-radius: 17px;
   background: var(--surface);
   box-shadow: 0 14px 36px rgba(31, 41, 39, 0.08);
 }
@@ -1147,10 +1195,10 @@ button, input, select, textarea { font: inherit; }
 .access-panel-icon {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
-  margin-bottom: 22px;
-  border-radius: 15px;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 14px;
+  border-radius: 12px;
   background: var(--brand-soft);
   color: var(--brand);
 }
@@ -1159,7 +1207,7 @@ button, input, select, textarea { font: inherit; }
 .guest-help-icon svg,
 .login-assurance svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
 .access-panel-icon svg { transition: transform 220ms var(--ease-standard); }
-.access-panel h2 { margin: 11px 0 10px; font-size: clamp(1.75rem, 3vw, 2.25rem); letter-spacing: -0.035em; line-height: 1.12; }
+.access-panel h2 { margin: 7px 0 8px; font-size: clamp(1.65rem, 2.6vw, 2rem); letter-spacing: -0.035em; line-height: 1.12; }
 .access-copy { margin: 0; color: var(--ink-muted); font-size: 0.87rem; line-height: 1.62; }
 .access-copy--en { margin-top: 5px; font-size: 0.76rem; }
 
@@ -1171,7 +1219,7 @@ button, input, select, textarea { font: inherit; }
   overflow: hidden;
   width: 100%;
   min-height: 58px;
-  margin-top: 26px;
+  margin-top: 19px;
   padding: 11px 15px 11px 18px;
   border-color: var(--action);
   border-radius: 14px;
@@ -1337,12 +1385,12 @@ button, input, select, textarea { font: inherit; }
 .welcome-audio-recovery[hidden] { display: none; }
 .welcome-audio-recovery strong { display: block; font-size: 0.72rem; }
 .welcome-audio-recovery p { margin: 5px 0 0; color: var(--ink-muted); font-size: 0.62rem; line-height: 1.45; }
-.welcome-audio-recovery-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.welcome-audio-recovery-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .72fr); gap: 7px; margin-top: 9px; }
 .welcome-audio-recovery-actions button { min-height: 44px; padding: 9px 12px; border: 1px solid var(--line-strong); border-radius: 12px; font: inherit; font-size: 0.68rem; font-weight: 720; cursor: pointer; touch-action: manipulation; }
 .welcome-audio-recovery-primary { background: var(--action); color: var(--action-ink); }
 .welcome-audio-recovery-quiet { background: var(--surface); color: var(--ink); }
 .welcome-audio-recovery-actions button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
-.access-divider { display: flex; align-items: center; margin: 26px 0 22px; }
+.access-divider { display: flex; align-items: center; margin: 19px 0 17px; }
 .access-divider::before,
 .access-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .access-divider span { width: 6px; height: 6px; margin-inline: 9px; border: 1px solid var(--line-strong); border-radius: 50%; }
@@ -1353,7 +1401,7 @@ button, input, select, textarea { font: inherit; }
 .guest-help p { margin: 5px 0 0; color: var(--ink-muted); font-size: 0.71rem; line-height: 1.52; }
 .guest-help p[lang="en"] { margin-top: 3px; font-size: 0.66rem; }
 
-.site-share { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+.site-share { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
 .site-share-button {
   display: flex;
   align-items: center;
@@ -1857,6 +1905,7 @@ tbody td {
     box-shadow: 0 12px 28px color-mix(in srgb, var(--portal-story-ink) 8%, transparent);
     backdrop-filter: blur(12px);
   }
+  .portal-workflow { display: none; }
   .access-panel > [data-entry-role="admin"],
   .access-panel > [data-entry-role="guest"] { display: none; }
   .devotional-prompt { margin-top: 24px; padding: 18px 17px 17px; }

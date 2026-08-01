@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 from itertools import combinations
 from pathlib import Path
+import re
 
 import tinycss2
 
@@ -13,6 +14,7 @@ from nicegui_app.ui.i18n import EN, MESSAGES, ZH_HK
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 UI_ROOT = PROJECT_ROOT / "nicegui_app" / "ui"
 CSS_ROOT = PROJECT_ROOT / "nicegui_app" / "assets" / "css"
+COMPOSITION_LAYERS = {"command-center-v2"}
 
 
 EXPECTED_COMPONENT_API = {
@@ -99,6 +101,7 @@ def test_stylesheets_load_in_the_declared_ownership_order() -> None:
         "compatibility-interaction",
         "motion",
         "mobile",
+        "command-center-v2",
     ]
     positions = [THEME_HEAD_HTML.index(href) for _layer, href, _media in STYLE_LAYERS]
     assert positions == sorted(positions)
@@ -120,11 +123,51 @@ def test_non_mobile_layers_never_reown_exact_selectors() -> None:
     layer_selectors = {
         layer: _selectors(PROJECT_ROOT / "nicegui_app" / href.removeprefix("/"))
         for layer, href, _media in STYLE_LAYERS
-        if layer not in {"tokens", "mobile"}
+        if layer not in {"tokens", "mobile", *COMPOSITION_LAYERS}
     }
     for (left_name, left), (right_name, right) in combinations(layer_selectors.items(), 2):
         overlap = left & right
         assert not overlap, f"{left_name} and {right_name} both own: {sorted(overlap)}"
+
+
+def test_frontend_reset_has_one_explicit_terminal_composition_layer() -> None:
+    composition = [layer for layer, _href, _media in STYLE_LAYERS if layer in COMPOSITION_LAYERS]
+    assert composition == ["command-center-v2"]
+    assert STYLE_LAYERS[-1][0] == "command-center-v2"
+
+    source = (CSS_ROOT / "sing-yin-command-center-v2.css").read_text(encoding="utf-8")
+    assert "final composition layer" in source
+    assert "deliberately does not redeclare generated design-token names" in source
+
+    declared_properties = set(re.findall(r"(?m)^\s*(--sy-[\w-]+)\s*:", source))
+    runtime_viewport_properties = {
+        "--sy-visual-viewport-width",
+        "--sy-visual-viewport-offset-left",
+        "--sy-visual-viewport-bottom-inset",
+    }
+    unexpected = {
+        name
+        for name in declared_properties
+        if not name.startswith("--sy-v2-") and name not in runtime_viewport_properties
+    }
+    assert not unexpected, f"terminal composition layer redeclared managed tokens: {sorted(unexpected)}"
+
+    shell_source = (UI_ROOT / "shell.py").read_text(encoding="utf-8")
+    shell_tree = ast.parse(shell_source)
+    drawer_width = next(
+        ast.literal_eval(node.value)
+        for node in shell_tree.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "DESKTOP_DRAWER_WIDTH_PX"
+            for target in node.targets
+        )
+    )
+    css_width = re.search(r"--sy-v2-rail-width:\s*(\d+)px", source)
+    assert css_width is not None
+    assert drawer_width == int(css_width.group(1))
+    assert "width={DESKTOP_DRAWER_WIDTH_PX}" in shell_source
+    assert "calc(var(--sy-v2-rail-width) + var(--sy-v2-content-gutter))" in source
 
 
 def test_status_badge_surface_is_owned_by_the_component_layer() -> None:

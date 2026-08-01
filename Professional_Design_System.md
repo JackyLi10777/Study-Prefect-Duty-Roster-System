@@ -1,7 +1,7 @@
 # Professional Design System
 
 **Project:** Sing Yin Study Prefect Duty Roster System  
-**Version:** 1.5 — Unified header controls and binary appearance contract
+**Version:** 2.0 — Quiet Command Center frontend architecture
 **Status:** Active design source of truth  
 **Primary audience:** 負責日常操作的當任首席導學風紀、主要在完成後核對的顧問老師、未來維護者及實作代理人
 
@@ -18,6 +18,34 @@ The visual direction is inspired by the discipline behind contemporary iOS and A
 ### Design thesis
 
 > **A quiet school operations desk: one clear responsibility at a time, with enough evidence to act confidently.**
+
+### 2026.08 frontend reset — Quiet Command Center / 安靜而有力量的校務作戰台
+
+This iteration resets the product composition without replacing its proven operating model. The platform is a **single-institution, local-first B2B school-operations product with SaaS-quality interaction**, not a marketing dashboard, social network or generic admin template. The first screen must communicate purpose, present state and the next safe action before it presents decoration.
+
+The resulting visual language is **Quiet Command Center with Editorial Sacred Restraint**:
+
+1. **Task before atmosphere.** The dashboard begins with the live weekly workflow and its one safe next action. Daily Verse remains a distinctive spiritual pause, but follows the operational command area on small screens and never pushes the current task below the first viewport.
+2. **A rail, not a second page.** Desktop navigation is a narrow, stable institutional rail. It exposes the route hierarchy without becoming a long promotional document. Feedback and developer resources remain reachable, but routine navigation is not crowded by repeated explanatory copy.
+3. **Wide working surfaces.** Roster tables, forms, fairness evidence and recovery tools use the available viewport. Content width follows the task: reading pages remain bounded; operational pages may expand to the full work canvas.
+4. **Opaque confidence.** Data, controls and consequential decisions use solid surfaces, clear borders and restrained elevation. Glass, glow and generated imagery are confined to approved identity, atmosphere and devotional zones.
+5. **Editorial typography, operational density.** Large display type is reserved for public identity and Scripture. Application headings, status labels and table content use a compact, high-legibility hierarchy suitable for repeated weekly use.
+6. **Motion explains state.** Press, hover, focus, busy, success and error have one shared lifecycle. Existing semantic icon morphs remain primary; bounded rotation is allowed only for controls whose physical metaphor supports it. GSAP Core remains the sole enhanced motion engine and is progressively enhanced over CSS state contracts; no ScrollTrigger or plugin is added without a measured need.
+7. **No invented product truth.** Visual prototypes may explore composition, but production must not invent users, metrics, percentages, alerts or capabilities. Every displayed state comes from existing product data or is explicitly identified as fictional Guest demonstration data.
+8. **Same product, enforced boundaries.** Admin and Guest receive the same component quality, responsive hierarchy and feedback. Guest limitations remain enforced at UI, callback, service, storage, queue and integration boundaries; visual parity never implies capability parity.
+9. **Calm astonishment.** The desired first impression comes from exact spacing, confident hierarchy, polished transitions, meaningful imagery and complete states—not from maximum effects. A flourish survives only when it improves orientation, comprehension, feedback or product identity.
+
+#### Canonical frontend ownership
+
+The executable frontend follows this ownership order:
+
+`tokens → foundations → layout → compatibility → components → narrative → interaction → motion → mobile → command-center-v2`
+
+`command-center-v2` is the final composition layer for the reset shell and shared cross-page components. It may refine legacy compatibility selectors, but it must not redeclare managed token names, weaken accessibility states, place imagery behind sensitive data or create page-specific component forks. New visual decisions first become semantic tokens or shared component contracts; page CSS is the last resort.
+
+#### Completion test
+
+The reset is complete only when the public entrance, Dashboard, roster workflow, people/fairness, settings/recovery, support, Daily Verse and mobile navigation read as one product in light and dark themes; the current task is identifiable without reading supporting prose; 320 px reflow and keyboard focus remain usable; reduced-motion and forced-colours preserve meaning; and no route regresses its real data, permission or recovery contract.
 
 Interface copy is part of the operating model. Every sentence must help the reader choose an identity, understand a consequence, complete the current task, recover from failure, or verify evidence. Repeated trust claims, generic welcome language, self-congratulatory quality claims and labels that merely restate the page title are removed. Buttons use concrete actions; supporting copy states what happens next in concise Hong Kong written Chinese with complete English parity.
 

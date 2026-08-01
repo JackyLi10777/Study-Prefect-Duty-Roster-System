@@ -64,6 +64,7 @@ python -X utf8 scripts/project_governance.py --check
 |---|---|
 | runtime／模組 seam | `ARCHITECTURE_OVERVIEW.md`、`NICEGUI_ARCHITECTURE.md`、module-boundaries contract |
 | UI token／motion／a11y | `Professional_Design_System.md` 與相應 acceptance evidence |
+| frontend composition／CSS layer／route family／responsive runtime | `FRONTEND_ARCHITECTURE.md`；設計意圖仍由 `Professional_Design_System.md` 擁有 |
 | Admin／Guest capability 或保存 | `UNIFIED_GUEST_SECURITY_MODEL.md`、operator/public guide |
 | schema／migration／restore | architecture、release handover、host runbook、current release state |
 | encrypted off-site copy／complete host loss | `OFFSITE_DISASTER_RECOVERY.md`；architecture 只描述 seam，其他指南只保留 fail-closed 邊界摘要及連結，不複製門檻、保留期或操作程序 |
