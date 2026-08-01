@@ -152,7 +152,7 @@ function Get-CurrentReleaseFingerprint {
     $code = @'
 import json
 from nicegui_app.release_evidence import release_source_fingerprint
-fingerprint, file_count = release_source_fingerprint()
+fingerprint, file_count = release_source_fingerprint(refresh=True)
 print(json.dumps({'fingerprint': fingerprint, 'fileCount': file_count}))
 '@
     $previousPreference = $ErrorActionPreference
@@ -174,6 +174,21 @@ print(json.dumps({'fingerprint': fingerprint, 'fileCount': file_count}))
     } catch {
         throw "The release source fingerprint result was not valid JSON."
     }
+}
+
+function Test-RequiredBooleanProperty {
+    param(
+        [AllowNull()][object]$InputObject,
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+    if ($null -eq $InputObject) {
+        return $false
+    }
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $false
+    }
+    return ($property.Value -is [bool])
 }
 
 function Read-HostEnvironmentValues([string]$EnvironmentPath) {
@@ -1252,6 +1267,12 @@ try {
     $releaseReport = Get-Content -LiteralPath $releaseReportPath -Raw -Encoding UTF8 |
         ConvertFrom-Json
     $postVerificationSource = $releaseReport.postVerificationSource
+    $releaseSourceDirtyIsBoolean = Test-RequiredBooleanProperty `
+        -InputObject $releaseReport `
+        -Name "sourceDirty"
+    $postSourceDirtyIsBoolean = Test-RequiredBooleanProperty `
+        -InputObject $postVerificationSource `
+        -Name "sourceDirty"
     $reportChecks = @($releaseReport.checks)
     $reportRequiredChecks = @($releaseReport.requiredCheckIdentities | ForEach-Object { [string]$_ })
     $passedNames = @(
@@ -1270,6 +1291,7 @@ try {
         [int]$releaseReport.schemaVersion -ne 3 -or
         [string]$releaseReport.sourceCommit -cne $releaseCommit -or
         [string]$releaseReport.sourceTree -cne (Get-GitValue -Repository $SourceRoot -Arguments @("rev-parse", "$releaseCommit`^{tree}")) -or
+        -not $releaseSourceDirtyIsBoolean -or
         [bool]$releaseReport.sourceDirty -or
         [string]$releaseReport.plannedReleaseTag -cne $ReleaseRef -or
         [string]$releaseReport.immutableReleaseReference -cne "refs/tags/$ReleaseRef" -or
@@ -1279,6 +1301,7 @@ try {
         [int]$postVerificationSource.sourceFileCount -ne [int]$releaseReport.sourceFileCount -or
         [string]$postVerificationSource.sourceCommit -cne [string]$releaseReport.sourceCommit -or
         [string]$postVerificationSource.sourceTree -cne [string]$releaseReport.sourceTree -or
+        -not $postSourceDirtyIsBoolean -or
         [bool]$postVerificationSource.sourceDirty -or
         $null -eq $releaseReport.toolVersions -or
         $reportRequiredChecks.Count -ne $requiredCheckCount -or

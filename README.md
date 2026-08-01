@@ -449,7 +449,7 @@ python -m playwright install chromium
 python -X utf8 scripts\verify_release_candidate.py
 ```
 
-驗證器自行建立暫存 SQLite、備份及日誌路徑，依次執行 15 道閘門：版本庫衛生、安全掃描、Cloudflare Worker Deno 契約、圖標互動狀態機、完整 Python 測試、Python 編譯、依賴完整性、16 組主題交接、桌面 NiceGUI smoke、跨頁效能／記憶體穩定性、整條虛構資料寫入／PDF／替補／交接／另一資料庫還原、獨立手機適應驗證、嚴格部署就緒、統一 Guest 隔離，以及「資料已提交但備份失敗」復原演練。每個瀏覽器階段停機後亦會檢查伺服器終端；console error、`pageerror`、`ERROR`、`CRITICAL`、traceback 或未取回的 task exception 均會令發布候選失敗，而不會把原始終端內容複製到報告。兩份 PDF 會直接解析並核對已發布狀態、五個上課日、所有中文姓名及四個 202 室關閉格。它不會採用 `.env` 內的正式資料路徑；一般元件截圖只進入 ignored `logs/`，而 schema 3 報告會在最後一關後重新核對 source fingerprint、file count、commit、tree 及 clean working tree。結果寫入 `logs/release-candidate-report.json`，並明確標示仍需真人驗收；任何 gate 或驗證後來源核對失敗，整體狀態均為 `fail`。
+驗證器自行建立暫存 SQLite、備份及日誌路徑，依次執行 15 道閘門：版本庫衛生、安全掃描、Cloudflare Worker Deno 契約、圖標互動狀態機、完整 Python 測試、Python 編譯、依賴完整性、16 組主題交接、桌面 NiceGUI smoke、跨頁效能／記憶體穩定性、整條虛構資料寫入／PDF／替補／交接／另一資料庫還原、獨立手機適應驗證、嚴格部署就緒、統一 Guest 隔離，以及「資料已提交但備份失敗」復原演練。每個瀏覽器階段停機後亦會檢查伺服器終端；console error、`pageerror`、`ERROR`、`CRITICAL`、traceback 或未取回的 task exception 均會令發布候選失敗，而不會把原始終端內容複製到報告。兩份 PDF 會直接解析並核對已發布狀態、五個上課日、所有中文姓名及四個 202 室關閉格。它不會採用 `.env` 內的正式資料路徑；一般元件截圖只進入 ignored `logs/`，而 schema 3 報告會在每道閘門邊界及最後一關後重新核對 source fingerprint、file count、commit、tree 及 clean working tree。結果寫入 `logs/release-candidate-report.json`，並明確標示仍需真人驗收；任何 gate 或驗證後來源核對失敗，整體狀態均為 `fail`。
 
 交接頁會把機器報告與目前可部署 runtime、遷移、依賴、Cloudflare Worker／設定、Windows 主機操作及正式證據閘門的 SHA-256 指紋重新比對。報告缺失、失敗、格式不可信、缺少驗證後 clean-source binding，或這些發布輸入改動後過期時，均不會顯示為通過；文件、測試或 CI 文字本身不會把已證實的 runtime 誤標為過期。即使目前 15 項檢查全部通過，畫面仍保留首席導學風紀及教師顧問的真人驗收責任。
 

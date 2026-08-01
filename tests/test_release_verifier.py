@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 import subprocess
 import sys
+from types import SimpleNamespace
 
 from scripts import verify_release_candidate
 from scripts.verify_rc31_theme_controls import (
@@ -98,6 +99,50 @@ def test_release_verifier_records_an_unexpected_orchestration_failure(monkeypatc
     assert "unexpected verifier defect" in report["failure"]
     assert report["postVerificationSource"] == clean_source
     assert workspace.is_dir()
+
+
+def test_release_verifier_stops_at_the_first_gate_boundary_source_drift(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    report_path = tmp_path / "release-report.json"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    clean_source = {
+        "sourceFingerprint": "a" * 64,
+        "sourceFileCount": 309,
+        "sourceCommit": "b" * 40,
+        "sourceTree": "c" * 40,
+        "sourceDirty": False,
+    }
+    dirty_source = {**clean_source, "sourceDirty": True}
+    states = [clean_source, dirty_source, clean_source]
+    observed_states: list[dict[str, object]] = []
+
+    def next_source_state(**_kwargs: object) -> dict[str, object]:
+        state = dict(states[len(observed_states)])
+        observed_states.append(state)
+        return state
+
+    monkeypatch.setattr(verify_release_candidate, "REPORT_PATH", report_path)
+    monkeypatch.setattr(verify_release_candidate.tempfile, "mkdtemp", lambda **_kwargs: str(workspace))
+    monkeypatch.setattr(verify_release_candidate, "_source_state", next_source_state)
+    monkeypatch.setattr(verify_release_candidate, "_planned_release_tag", lambda: "v1.2.0-rc.46")
+    monkeypatch.setattr(verify_release_candidate, "_tool_versions", lambda: {})
+    monkeypatch.setattr(
+        verify_release_candidate.subprocess,
+        "run",
+        lambda *_args, **_kwargs: SimpleNamespace(returncode=0),
+    )
+
+    exit_code = verify_release_candidate.main()
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+
+    assert exit_code == 1
+    assert [check["name"] for check in report["checks"]] == ["repository_hygiene"]
+    assert report["postVerificationSource"] == dirty_source
+    assert "changed the source" in report["failure"]
+    assert observed_states == [clean_source, dirty_source]
 
 
 def test_release_verifier_imports_directly_outside_the_project_working_directory(tmp_path: Path) -> None:

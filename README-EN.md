@@ -546,7 +546,9 @@ The focused inventory, state-machine, and disposable-browser checks are
 The formal verifier has fifteen gates, including the independent icon-state-machine
 and 16-case theme-handoff contracts. Schema 3 records a matching fingerprint, file
 count, commit, tree, and clean Git state again after every gate, so a verifier-induced
-source change fails closed. Machine evidence remains separate
+source change fails closed. Deployment preflights require both cleanliness fields
+to be actual JSON Booleans and independently recompute the deployable fingerprint.
+Machine evidence remains separate
 from the final operator/advisor acceptance checklist and from the live
 host/Cloudflare switchover evidence.
 

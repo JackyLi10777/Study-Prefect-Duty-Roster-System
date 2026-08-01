@@ -286,7 +286,11 @@ def load_release_evidence(
         "sourceTree": source_tree,
         "sourceDirty": False,
     }
-    if post_verification_source != expected_post_verification_source:
+    if (
+        not isinstance(post_verification_source, dict)
+        or post_verification_source.get("sourceDirty") is not False
+        or post_verification_source != expected_post_verification_source
+    ):
         return ReleaseEvidence("unreadable", passed, total, finished_at)
     if status == "pass" and total > 0 and passed == total and finished_at is not None:
         return ReleaseEvidence("pass", passed, total, finished_at)

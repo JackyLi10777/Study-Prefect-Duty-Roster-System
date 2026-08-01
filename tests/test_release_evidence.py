@@ -321,6 +321,11 @@ def test_release_report_requires_matching_post_verification_source(tmp_path: Pat
     report_path.write_text(json.dumps(payload), encoding="utf-8")
     assert load_release_evidence(report_path, current_fingerprint="current").state == "unreadable"
 
+    payload = _report(fingerprint="current")
+    payload["postVerificationSource"]["sourceDirty"] = 0  # type: ignore[index]
+    report_path.write_text(json.dumps(payload), encoding="utf-8")
+    assert load_release_evidence(report_path, current_fingerprint="current").state == "unreadable"
+
 
 def test_formal_verifier_fails_when_any_gate_changes_the_candidate_source(monkeypatch) -> None:
     states = iter(

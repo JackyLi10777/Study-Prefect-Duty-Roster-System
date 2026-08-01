@@ -1,6 +1,6 @@
 # 產品成熟度雷達：第五階段 / Product maturity radar: Phase 5
 
-日期：2026-08-02
+日期：2026-08-02（Asia／Shanghai）
 
 範圍：`ITR-002` 的正式候選發布完整性、驗證器輸出隔離及驗證前後來源一致性
 
@@ -27,14 +27,14 @@
 
 - `verify_nicegui_ui.py` 的 routine component captures 改寫到 Git ignored `logs/uiverse-components`；已追蹤 visual reference 只可由另一項明確 baseline review 修改。
 - release report 升級為 schema 3，並新增 `postVerificationSource`。
-- 完整 gate 後以不使用 runtime cache 的方式重新計算 source fingerprint，同時重新讀取 file count、HEAD commit、HEAD tree 及完整 working-tree 狀態。
+- 每道 gate 邊界及完整 gate 後都以不使用 runtime cache 的方式重新計算 source fingerprint，同時重新讀取 file count、HEAD commit、HEAD tree 及完整 working-tree 狀態；第一個不一致邊界立即停止後續 gate。
 - `postVerificationSource` 必須與開始時的五項資料完全相同且 `sourceDirty=false`；任何 verifier-induced mutation、提交／tree 漂移、漏入來源或 fingerprint 改變都令整體 `fail`。
 - evidence reader 同樣 fail closed：缺少、污損或不匹配的 post-check binding 不可在交接頁顯示為通過。
-- Windows origin 與 Worker deployment preflight 都要求 schema 3 nested binding 與頂層來源完全一致；Worker 路徑另以目前 tag checkout 的 Python runtime 重新計算 fingerprint／file count，不可信任可改寫的 ignored JSON。
+- Windows origin 與 Worker deployment preflight 都要求 schema 3 nested binding 與頂層來源完全一致，並要求兩個 `sourceDirty` 都是實際 JSON Boolean；Worker 路徑另以目前 tag checkout 的 Python runtime 重新計算 fingerprint／file count，不可信任可改寫的 ignored JSON。
 
 ## 修正後證據
 
-- 309 個 release-sensitive source files；fingerprint `86e11e061a5b6d0ee08fc7e1dd2b8227c63c0575acd143440f4f41df8da637d3`。
+- 309 個 release-sensitive source files；fingerprint `3648c4a11db052148ba64d59b971e7dddf4673a767a72c1bca50cdc3f7292290`。
 - 15／15 gate 通過：repository hygiene、安全、6 個 motion、53 個 Worker contracts、完整 Python、compile／dependency、16 組主題交接、desktop、runtime、完整寫入／PDF／還原、mobile／tablet、strict readiness、Guest isolation 及 partial-backup recovery。
 - schema 3 `postVerificationSource` 與初始 fingerprint、file count、commit、tree 完全相同，最後 Git working tree 乾淨。
 - 正式主機、Worker、schema 及 current-release JSON 沒有改動；線上仍是 rc45。

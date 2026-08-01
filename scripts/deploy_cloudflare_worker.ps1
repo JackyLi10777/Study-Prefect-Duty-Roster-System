@@ -102,6 +102,21 @@ print(json.dumps({'fingerprint': fingerprint, 'fileCount': file_count}))
     }
 }
 
+function Test-RequiredBooleanProperty {
+    param(
+        [AllowNull()][object]$InputObject,
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+    if ($null -eq $InputObject) {
+        return $false
+    }
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $false
+    }
+    return ($property.Value -is [bool])
+}
+
 function Assert-ImmutableRelease {
     param(
         [Parameter(Mandatory = $true)][string]$Repository,
@@ -464,6 +479,12 @@ try {
     }
     $currentFingerprint = Get-CurrentReleaseFingerprint -Python $sourcePython -Repository $SourceRoot
     $postVerificationSource = $releaseReport.postVerificationSource
+    $releaseSourceDirtyIsBoolean = Test-RequiredBooleanProperty `
+        -InputObject $releaseReport `
+        -Name "sourceDirty"
+    $postSourceDirtyIsBoolean = Test-RequiredBooleanProperty `
+        -InputObject $postVerificationSource `
+        -Name "sourceDirty"
     $reportChecks = @($releaseReport.checks)
     $reportRequiredIdentities = @($releaseReport.requiredCheckIdentities)
     $reportCheckNames = @($reportChecks | ForEach-Object { [string]$_.name })
@@ -478,6 +499,7 @@ try {
         [string]$releaseReport.status -cne "pass" -or
         [string]$releaseReport.sourceCommit -cne $releaseCommit -or
         [string]$releaseReport.sourceTree -cne $releaseTree -or
+        -not $releaseSourceDirtyIsBoolean -or
         [bool]$releaseReport.sourceDirty -or
         [string]$releaseReport.plannedReleaseTag -cne $ReleaseRef -or
         [string]$releaseReport.immutableReleaseReference -cne "refs/tags/$ReleaseRef" -or
@@ -487,6 +509,7 @@ try {
         [int]$postVerificationSource.sourceFileCount -ne [int]$releaseReport.sourceFileCount -or
         [string]$postVerificationSource.sourceCommit -cne [string]$releaseReport.sourceCommit -or
         [string]$postVerificationSource.sourceTree -cne [string]$releaseReport.sourceTree -or
+        -not $postSourceDirtyIsBoolean -or
         [bool]$postVerificationSource.sourceDirty -or
         [string]$releaseReport.sourceFingerprint -cne [string]$currentFingerprint.fingerprint -or
         [int]$releaseReport.sourceFileCount -ne [int]$currentFingerprint.fileCount -or
