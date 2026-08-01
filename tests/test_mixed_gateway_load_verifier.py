@@ -91,9 +91,53 @@ def test_admin_session_fixture_matches_worker_hmac_contract() -> None:
     assert hmac.compare_digest(_decode_base64url(signature_segment), expected)
 
 
+def test_loopback_ports_are_allocated_as_one_distinct_batch() -> None:
+    ports = verifier._free_loopback_ports(3)
+
+    assert len(ports) == 3
+    assert len(set(ports)) == 3
+    assert all(1024 <= port <= 65535 for port in ports)
+
+
+def test_outbox_summary_closes_its_sqlite_connection(monkeypatch, tmp_path: Path) -> None:
+    class Connection:
+        closed = False
+
+        def execute(self, _query: str):
+            return self
+
+        def fetchall(self) -> list[tuple[str, int]]:
+            return [("delivered", 1)]
+
+        def close(self) -> None:
+            self.closed = True
+
+    connection = Connection()
+    monkeypatch.setattr(verifier.sqlite3, "connect", lambda _path: connection)
+
+    assert verifier._outbox_summary(tmp_path / "fictional.sqlite3") == {
+        "records": 1,
+        "delivered": 1,
+        "attempts": 1,
+    }
+    assert connection.closed is True
+
+
+def test_workerd_launcher_owns_cleanup_and_production_compatibility_date() -> None:
+    source = verifier.WORKER_RUNTIME_ENTRY.read_text(encoding="utf-8")
+    worker_config = (verifier.WORKER_ROOT / "wrangler.jsonc").read_text(encoding="utf-8")
+
+    assert "const COMPATIBILITY_DATE = '2026-07-13';" in source
+    assert source.count("compatibilityDate: COMPATIBILITY_DATE") == 2
+    assert '"compatibility_date": "2026-07-13"' in worker_config
+    assert "await disposeActiveRuntime();" in source
+    assert "void disposeActiveRuntime().finally" in source
+
+
 def test_local_workerd_launcher_fails_closed_without_explicit_arguments() -> None:
     node = shutil.which("node")
-    assert node is not None
+    if node is None:
+        pytest.skip("Node.js is required for the local workerd launcher contract test")
 
     result = subprocess.run(
         [node, str(verifier.WORKER_RUNTIME_ENTRY)],

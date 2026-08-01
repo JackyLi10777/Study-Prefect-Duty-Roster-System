@@ -506,8 +506,9 @@ Worker, and deployable runtime changes receive different fail-closed profiles;
 unknown paths are upgraded to full verification. Independent read-only checks
 run concurrently.
 
-When Guest capacity, Worker service-binding/WebSocket behavior, downloads,
-backups, or outbox concurrency changes, also run
+When Admin reads/writes, Guest isolation/capacity, Worker service-binding or
+WebSocket behavior, downloads, backups, outbox concurrency, or Viewer
+publish/decrypt paths change, also run
 `python -X utf8 scripts\verify_mixed_gateway_load.py`. It uses the actual Worker
 source under local workerd with disposable fictional data. The
 [dated acceptance](docs/audits/MIXED_GATEWAY_LOAD_ACCEPTANCE_2026-08-01.md)

@@ -113,7 +113,7 @@ pre-push profile 內互不寫入的檢查會並行執行。正式候選驗證仍
 
 ## 有界混合 Gateway 容量檢查
 
-以下命令不是每次修改都要執行；只有 Guest admission／workspace 容量、Worker service binding／WebSocket 代理、generated-file download、backup 或 outbox concurrency 的風險改變時才加入：
+以下命令不是每次修改都要執行；只有 Admin read／write path、Guest isolation／admission／workspace 容量、Worker service binding／WebSocket 代理、generated-file download、backup、outbox concurrency 或 Viewer publish／decrypt 的風險改變時才加入：
 
 ```powershell
 python -X utf8 scripts\verify_mixed_gateway_load.py

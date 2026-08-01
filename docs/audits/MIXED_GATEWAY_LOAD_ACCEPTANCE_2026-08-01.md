@@ -55,7 +55,7 @@ python -X utf8 scripts\verify_mixed_gateway_load.py
 | Memory | origin baseline 141,840,384 bytes；兩輪 cleanup 後 262,586,368／257,191,936 bytes；第二輪比第一輪約低 5.14 MiB；peak／final 相對 baseline 約 +115.15／+110.01 MiB，均低於 128 MiB stop budget |
 | Stop conditions | cross-session leak、unhandled lock／5xx、fairness mismatch、Guest DB write、cleanup memory budget exceeded 全部為 `false` |
 
-開始時間為 `2026-08-01T15:54:18Z`，完成時間為 `2026-08-01T15:55:32Z`。測試成功後刪除臨時工作目錄；失敗時才保留本機 temp path 供診斷。
+開始時間為 `2026-08-01T15:54:18Z`，完成時間為 `2026-08-01T15:55:32Z`。預設成功時刪除臨時工作目錄；使用 `--retain` 時成功亦會保留並輸出本機 temp path，失敗時同樣保留供診斷。
 
 ## 判讀與限制
 

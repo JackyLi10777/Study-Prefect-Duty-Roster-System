@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import base64
-from contextlib import suppress
+from contextlib import closing, suppress
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 import hashlib
@@ -143,10 +143,25 @@ class BrowserSession:
     latencies_ms: list[float] = field(default_factory=list)
 
 
-def _free_loopback_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as candidate:
-        candidate.bind(("127.0.0.1", 0))
-        return int(candidate.getsockname()[1])
+def _free_loopback_ports(count: int) -> tuple[int, ...]:
+    """Allocate one distinct batch before releasing the loopback reservations."""
+
+    if count < 1:
+        raise ValueError("count must be positive")
+    reservations: list[socket.socket] = []
+    try:
+        for _ in range(count):
+            candidate = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                candidate.bind(("127.0.0.1", 0))
+            except Exception:
+                candidate.close()
+                raise
+            reservations.append(candidate)
+        return tuple(int(candidate.getsockname()[1]) for candidate in reservations)
+    finally:
+        for candidate in reservations:
+            candidate.close()
 
 
 def _base64url(value: bytes) -> str:
@@ -751,7 +766,7 @@ def _assert_log_clean(path: Path, markers: tuple[re.Pattern[str], ...], label: s
 
 
 def _outbox_summary(database_path: Path) -> dict[str, Any]:
-    with sqlite3.connect(database_path) as connection:
+    with closing(sqlite3.connect(database_path)) as connection:
         rows = connection.execute(
             "SELECT status, attempts FROM external_share_outbox ORDER BY id"
         ).fetchall()
@@ -942,9 +957,7 @@ def main() -> int:
         report["sourceDirty"] = _source_dirty()
         origin_root.mkdir(parents=True)
         worker_root.mkdir(parents=True)
-        origin_port = _free_loopback_port()
-        gateway_port = _free_loopback_port()
-        inspector_port = _free_loopback_port()
+        origin_port, gateway_port, inspector_port = _free_loopback_ports(3)
         gateway_url = f"https://localhost:{gateway_port}"
         origin_url = f"http://127.0.0.1:{origin_port}"
         certificate_path, key_path = _generate_local_certificate(worker_root)

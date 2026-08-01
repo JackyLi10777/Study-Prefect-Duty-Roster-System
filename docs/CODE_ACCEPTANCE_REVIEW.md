@@ -52,13 +52,13 @@ Review therefore classifies every literal as configuration, policy, safety budge
 
 At 10×, existing indexed and bounded operations should remain responsive. At 100×, the team measures query plans, report windows, browser rendering, backup duration, and write contention before adding pagination, summaries, stricter period limits, or moving to PostgreSQL. Redis, microservices, or another front end are not added without measured need.
 
-當修改 Guest admission、Worker service binding／WebSocket、下載 registry、backup 或 outbox 的並行行為時，使用以下有界檢查補充單元與隔離流程：
+當修改 Admin read／write path、Guest isolation／admission、Worker service binding／WebSocket、下載 registry、backup、outbox 或 Viewer publish／decrypt 的並行行為時，使用以下有界檢查補充單元與隔離流程：
 
 ```powershell
 python -X utf8 scripts\verify_mixed_gateway_load.py
 ```
 
-它以實際 Worker source、local workerd、瀏覽器 WebSocket、loopback NiceGUI origin 及虛構 disposable SQLite 量度混合路徑。2026-08-01 的乾淨基線為 10 個同時 Guest × 2 waves、2 個 Admin、22 個 WebSockets，沒有跨 session 洩漏、Guest DB write、未處理 lock／5xx 或公平差異；詳見[日期化驗收](audits/MIXED_GATEWAY_LOAD_ACCEPTANCE_2026-08-01.md)。這個命令不是每次 pre-push 儀式，也不把本機 p95 變成 production SLO；只有風險邊界被觸及時才重跑。
+它以實際 Worker source、local workerd、瀏覽器 WebSocket、loopback NiceGUI origin 及虛構 disposable SQLite 量度混合路徑。2026-08-01 的乾淨基線以 10 個同時 Guest × 2 waves 及 2 個 Admin 執行；報告觀察到 22 個已連線 sessions，沒有跨 session 洩漏、Guest DB write、未處理 lock／5xx 或公平差異。Verifier 要求每個 session 實際開啟 WebSocket 及 backup count 增加，但不把觀察到的 `22` 或 `0 → 2` 寫成永久數量；詳見[日期化驗收](audits/MIXED_GATEWAY_LOAD_ACCEPTANCE_2026-08-01.md)。這個命令不是每次 pre-push 儀式，也不把本機 p95 變成 production SLO；只有風險邊界被觸及時才重跑。
 
 ## 5. 依賴必須有明確責任／Every dependency needs an owner and purpose
 

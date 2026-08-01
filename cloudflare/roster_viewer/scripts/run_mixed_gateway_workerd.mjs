@@ -17,6 +17,19 @@ const ORIGIN_PROXY_ENTRY = path.join(
   'fixtures',
   'cloudflare_loopback_origin_proxy.js',
 );
+// Mirror the production Worker contract; the pinned local workerd is exercised
+// by the mixed-load smoke rather than inferred from its package date.
+const COMPATIBILITY_DATE = '2026-07-13';
+
+let activeMiniflare = null;
+
+async function disposeActiveRuntime() {
+  const runtime = activeMiniflare;
+  activeMiniflare = null;
+  if (runtime !== null) {
+    await runtime.dispose();
+  }
+}
 
 const ALLOWED_ARGUMENTS = new Set([
   '--port',
@@ -114,7 +127,7 @@ async function main() {
         modulesRules: [
           { type: 'ESModule', include: ['**/*.js', '**/*.mjs'] },
         ],
-        compatibilityDate: '2026-07-13',
+        compatibilityDate: COMPATIBILITY_DATE,
         bindings: {
           ACCESS_TEAM_DOMAIN: 'https://mixed-load.cloudflareaccess.com',
           ACCESS_AUD: 'mixed-load-access-audience',
@@ -151,23 +164,18 @@ async function main() {
         modulesRules: [
           { type: 'ESModule', include: ['**/*.js', '**/*.mjs'] },
         ],
-        compatibilityDate: '2026-07-13',
+        compatibilityDate: COMPATIBILITY_DATE,
         bindings: {
           LOOPBACK_ORIGIN: `http://127.0.0.1:${originPort}`,
         },
       },
     ],
   });
+  activeMiniflare = miniflare;
 
-  let disposed = false;
-  const dispose = async () => {
-    if (disposed) return;
-    disposed = true;
-    await miniflare.dispose();
-  };
   const stop = (signal) => {
     console.log(`[mixed-load-workerd] received ${signal}; stopping`);
-    void dispose().finally(() => process.exit(0));
+    void disposeActiveRuntime().finally(() => process.exit(0));
   };
   process.once('SIGINT', () => stop('SIGINT'));
   process.once('SIGTERM', () => stop('SIGTERM'));
@@ -177,8 +185,14 @@ async function main() {
   await new Promise(() => {});
 }
 
-main().catch((error) => {
+main().catch(async (error) => {
   const message = error instanceof Error ? error.message : String(error);
   console.error(`[ERROR] mixed-load workerd failed: ${message}`);
   process.exitCode = 1;
+  try {
+    await disposeActiveRuntime();
+  } catch (cleanupError) {
+    const cleanupMessage = cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+    console.error(`[ERROR] mixed-load workerd cleanup failed: ${cleanupMessage}`);
+  }
 });
