@@ -119,3 +119,52 @@ def test_cli_exports_drills_and_writes_a_bounded_report(tmp_path: Path) -> None:
     replacement_report = json.loads(replacement_report_path.read_text(encoding="utf-8"))
     assert replacement_report["status"] == "pass"
     assert replacement_report["drill"]["bundleName"] == bundle_dir.name
+
+
+def test_cli_fails_closed_when_the_release_marker_is_missing(tmp_path: Path) -> None:
+    destination = tmp_path / "external"
+    destination.mkdir()
+    report_path = tmp_path / "reports" / "offsite.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-X",
+            "utf8",
+            str(SCRIPT),
+            "export-and-drill",
+            "--database-path",
+            str(tmp_path / "runtime" / "sing-yin-roster.sqlite3"),
+            "--backup-dir",
+            str(tmp_path / "backups"),
+            "--destination-root",
+            str(destination),
+            "--release-marker",
+            str(tmp_path / "missing-release-marker.json"),
+            "--target-kind",
+            "bitlocker_external",
+            "--target-evidence-sha256",
+            "a" * 64,
+            "--target-encryption-method",
+            "XtsAes256",
+            "--report",
+            str(report_path),
+        ],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+    )
+
+    assert result.returncode == 1
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report == {
+        "checkedAt": report["checkedAt"],
+        "failure": "The immutable release marker is unreadable.",
+        "schemaVersion": 1,
+        "status": "fail",
+    }
+    assert not (destination / "SingYinRosterRecovery").exists()

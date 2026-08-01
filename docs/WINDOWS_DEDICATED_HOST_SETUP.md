@@ -595,18 +595,11 @@ powershell -ExecutionPolicy Bypass -File scripts\doctor_windows_remote_access.ps
 C:\SingYinRoster\data\backups
 ```
 
-### 你仍要做的離機備份
+### 你仍要做的離機災難復原
 
-至少每星期一次，以及每次更新程式前：
+本機快照及網站「建立交接備份包」所下載的 ZIP 都不等於離機災難復原證據。不要手動下載、複製、改名 ZIP，亦不要自行拖走 SQLite；這些路徑會繞過外置卷證據、不可變 release 綁定、原子匯出及 copied-bundle drill。
 
-1. 進入網站「系統設定」。
-2. 確認最新快照顯示「已驗證」。
-3. 按「建立交接備份包」。
-4. 把下載的 ZIP 複製到學校批准的加密 USB 或其他受控離機位置。
-5. 檔名加入日期，例如 `SYSS-Roster-Handover-2026-09-14.zip`。
-6. 每月在練習／複製環境完成一次還原演練。
-
-不要只把 `sing-yin-roster.sqlite3` 單獨拖走；manifest 和還原說明同樣重要。
+完整主機損毀的匯出、演練、保留及保管只依[離機災難復原手冊](OFFSITE_DISASTER_RECOVERY.md)，並只從排程工作實際指向的 immutable release bundle 執行 `export_offsite_recovery.ps1`。任何條件或報告未通過都停止，不以手動複製作後備。
 
 ---
 

@@ -153,14 +153,13 @@ def export_offsite_recovery(
     destination_root: Path,
     *,
     target: OffsiteTargetEvidence,
-    release: OffsiteReleaseIdentity | None = None,
+    release: OffsiteReleaseIdentity,
     now: datetime | None = None,
 ) -> OffsiteExportResult:
     """Atomically export the latest verified handover package to an approved volume."""
 
     _validate_target(target)
-    if release is not None:
-        _validate_release(release)
+    _validate_release(release)
     if _is_link_like(destination_root):
         raise OffsiteRecoveryError("The approved destination root must not be a reparse point.")
     destination = destination_root.resolve(strict=True)
@@ -360,16 +359,14 @@ def _inspect_bundle(
             encryption_method=str(target.get("encryptionMethod", "")),
         )
     )
-    release = receipt.get("release")
-    if release is not None:
-        release_mapping = _required_mapping(release, "release")
-        _validate_release(
-            OffsiteReleaseIdentity(
-                release_ref=str(release_mapping.get("releaseRef", "")),
-                commit=str(release_mapping.get("commit", "")),
-                source_tree=str(release_mapping.get("sourceTree", "")),
-            )
+    release_mapping = _required_mapping(receipt.get("release"), "release")
+    _validate_release(
+        OffsiteReleaseIdentity(
+            release_ref=str(release_mapping.get("releaseRef", "")),
+            commit=str(release_mapping.get("commit", "")),
+            source_tree=str(release_mapping.get("sourceTree", "")),
         )
+    )
     package_receipt = _required_mapping(receipt.get("handoverPackage"), "handoverPackage")
     source_receipt = _required_mapping(receipt.get("sourceSnapshot"), "sourceSnapshot")
     package_name = _safe_filename(str(package_receipt.get("filename", "")), suffix=".zip")
@@ -469,16 +466,16 @@ def _validate_target(target: OffsiteTargetEvidence) -> None:
         raise OffsiteRecoveryError("The off-site target evidence is invalid.")
 
 
-def _validate_release(release: OffsiteReleaseIdentity) -> None:
+def _validate_release(release: OffsiteReleaseIdentity | None) -> None:
+    if not isinstance(release, OffsiteReleaseIdentity):
+        raise OffsiteRecoveryError("The immutable release identity is required.")
     if _RELEASE_REF_RE.fullmatch(release.release_ref) is None:
         raise OffsiteRecoveryError("The immutable release identity is invalid.")
     if _COMMIT_RE.fullmatch(release.commit) is None or _COMMIT_RE.fullmatch(release.source_tree) is None:
         raise OffsiteRecoveryError("The immutable release identity is invalid.")
 
 
-def _release_payload(release: OffsiteReleaseIdentity | None) -> dict[str, str] | None:
-    if release is None:
-        return None
+def _release_payload(release: OffsiteReleaseIdentity) -> dict[str, str]:
     return {
         "releaseRef": release.release_ref,
         "commit": release.commit,

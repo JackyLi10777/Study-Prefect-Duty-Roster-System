@@ -48,7 +48,7 @@ artifact correctness 與 storage trust 分開：Python 收到已驗證的非敏�
 
 ## 完成與外部證據
 
-目前來源證據為：15 項新 recovery／CLI／Windows wrapper 聚焦測試通過；連同既有 backup integrity、restore、obligation、Windows deployment 與 governance 的 109 項整合回歸通過；修復一次 Next Steps 發布契約回歸後，完整 Python suite 為 **1,100 passed**。兩個 Python entry point 完成 `compileall`，PowerShell 5.1 scriptblock parse、project governance、diff whitespace 及 working-tree plan verifier 通過。第一次 staged gate 的 Bandit 指出動態組裝固定表名；改為封閉 SQL allowlist 而非 suppress 後，精確 23-file staged set 的 diff、governance、完整 tests、Worker contracts、repository hygiene、dependency audit、Bandit 與 secret scan 全部通過。正式 release gate 和部署不屬本階段。
+目前來源證據為：18 項 recovery／CLI／Windows wrapper 聚焦測試通過；連同既有 backup integrity、restore、obligation、Windows deployment 與 governance 的 109 項整合回歸通過；完整 Python suite 為 **1,103 passed**。兩個 Python entry point 完成 `compileall`，PowerShell 5.1 scriptblock parse、project governance、diff whitespace 及 working-tree plan verifier 通過。第一次 staged gate 的 Bandit 指出動態組裝固定表名；改為封閉 SQL allowlist 而非 suppress。PR 審查再識別服務層可產生／接受 `release: null` 及 Windows 手冊殘留手動 ZIP 路徑；兩者經核實後改為 fail closed 並新增缺失 marker、null receipt 及 CLI 入口回歸。最終精確 staged set 的 diff、governance、完整 tests、Worker contracts、repository hygiene、dependency audit、Bandit 與 secret scan 全部通過後，才可整合來源。正式 release gate 和部署不屬本階段。
 
 `ITR-004` 的產品完成條件仍是：
 
