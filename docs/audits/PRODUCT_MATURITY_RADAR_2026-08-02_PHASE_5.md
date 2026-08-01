@@ -40,6 +40,8 @@
 - 第一次 protected-main exact-commit replay 另發現測試把 PDF 合法生成時間 `18:30` 誤認為值班明細的舊結束時間；回歸現固定該碰撞時間，並只按每條 allocation 的完整 `start–end` 視窗與次數驗證。這是 test-only 修正，不改變 309-file deployable fingerprint。
 - 正式主機、Worker、schema 及 current-release JSON 沒有改動；線上仍是 rc45。
 
+後續正式執行補充：Quiet Command Center 修正經 PR #78／#79 合併後，annotated `v1.2.0-rc.46` 綁定 `311ea3d13f67995164fc19f30bb49e0ea5225ae1`、tree `9a6efc028eb42e1f0e67e2f1578e51f1613e771e` 及 310-file fingerprint `7a5f15830e01a69268bfc366c78cef4c985b6eb861e0248872ecd8ed43174508`，15／15 exact-source gates 通過。Windows preflight 在任何正式 mutation 前發現 rc45 執行後新增 14 個 Python cache，因舊版 marker 把 bytecode 納入完整 hash 而阻塞；rc46 因此保留為已標記但未部署證據，線上仍是健康 rc45。修復不把可執行 `.pyc` 永久排除於指紋之外，而是精確重建並清理 legacy delta，並以 Python `-B` 防止 rc47 及其後版本再生。
+
 ## A–J 雷達
 
 | Domain | Phase 4 → 5 | 本階段裁決 | 仍需證據／owner |
@@ -59,8 +61,10 @@
 
 本階段在 corrected 15-gate report、post-verification source match、clean tree、文件契約及無可歸因 P0／P1 後停止。若 schema 3 或 browser evidence routing 需回退，只回退本階段來源提交；正式 rc45 不受影響。
 
-下一個最高價值步驟仍是 `ITR-002` 的受控正式發布，但必須在本次任務有明確部署授權時，從 protected-main final commit 建立 annotated rc46 tag，重新產生 exact report，完成正式備份／隔離還原、origin switch、必要 Worker 判斷、canonical smoke 及 current-release generation。`ITR-001` 與 `ITR-004` 仍分別需要真人及真實外置媒體，不能由自動化冒充完成。
+下一個最高價值步驟仍是 `ITR-002` 的受控正式發布：合併 bytecode-integrity 修復後，從 protected-main final commit 建立全新的 annotated rc47 tag，重新產生 exact report，完成正式備份／隔離還原、origin switch、必要 Worker 判斷、canonical smoke 及 current-release generation。rc46 不得移動、刪除或重用。`ITR-001` 與 `ITR-004` 仍分別需要真人及真實外置媒體，不能由自動化冒充完成。
 
 ## English summary
 
 Phase 5 rejects a superficially green release report because the browser verifier rewrote three tracked component screenshots after the initial clean-source check. Routine captures now go to ignored logs, and schema 3 requires a refreshed post-verification fingerprint, file count, commit, tree, and clean Git state to match the initial candidate exactly. The corrected 309-file candidate passed all 15 gates and finished clean. Production remains rc45; tagging, deployment, physical-device acceptance, and real external-media recovery are still separate evidence.
+
+Execution follow-up: the merged frontend reached immutable annotated rc46 and passed a fresh 310-file, 15-gate exact-source run, but Windows preflight stopped before mutation when 14 post-marker runtime bytecode files made the healthy rc45 full-file marker stale. Rc46 remains tagged but undeployed. Rc47 keeps bytecode in integrity scope, permits only an exact-hash legacy cleanup, and launches controlled runtime Python with `-B` to prevent recurrence.

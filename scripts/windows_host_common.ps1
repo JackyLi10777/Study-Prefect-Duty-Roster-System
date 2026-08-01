@@ -152,9 +152,14 @@ function Get-SingYinTaskInspection {
                     $relative -match '^[A-Za-z0-9._-]+$'
                 )
             }
+            $arguments = ([string]$_.Arguments).Trim()
+            $supportedArguments = @(
+                "-X utf8 -m nicegui_app.main",
+                "-B -X utf8 -m nicegui_app.main"
+            )
             $rootMatches -and
             [IO.Path]::GetFullPath([string]$_.Execute) -ieq $expectedPython -and
-            ([string]$_.Arguments).Trim() -ceq "-X utf8 -m nicegui_app.main"
+            $supportedArguments -ccontains $arguments
         } catch { $false }
     } | Select-Object -First 1
     $principalOwned = $true

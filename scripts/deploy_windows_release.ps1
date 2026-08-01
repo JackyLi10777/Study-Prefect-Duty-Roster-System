@@ -813,11 +813,29 @@ function New-SingYinRuntimeTaskPassword {
 
 function Get-SingYinReleaseBundleFingerprint {
     param(
-        [Parameter(Mandatory = $true)][string]$Path
+        [Parameter(Mandatory = $true)][string]$Path,
+        [string[]]$ExcludedRelativePaths = @()
     )
 
     $root = [IO.Path]::GetFullPath($Path).TrimEnd('\')
     $prefix = "$root\"
+    $excluded = [Collections.Generic.HashSet[string]]::new(
+        [StringComparer]::OrdinalIgnoreCase
+    )
+    foreach ($candidatePath in @($ExcludedRelativePaths)) {
+        $normalizedPath = ([string]$candidatePath).Replace('\', '/')
+        if (
+            [string]::IsNullOrWhiteSpace($normalizedPath) -or
+            [IO.Path]::IsPathRooted($normalizedPath) -or
+            $normalizedPath.StartsWith('/') -or
+            $normalizedPath.Contains(':') -or
+            @($normalizedPath.Split('/')) -contains '..' -or
+            @($normalizedPath.Split('/')) -contains '.'
+        ) {
+            throw "The release bundle fingerprint exclusion is unsafe."
+        }
+        $null = $excluded.Add($normalizedPath)
+    }
     $hasher = [Security.Cryptography.SHA256]::Create()
     $encoding = [Text.UTF8Encoding]::new($false)
     $fileCount = 0
@@ -839,6 +857,9 @@ function Get-SingYinReleaseBundleFingerprint {
             }
             $relativePath = $fullPath.Substring($prefix.Length).Replace('\', '/')
             if ($relativePath -ceq ".sing-yin-release.json") {
+                continue
+            }
+            if ($excluded.Contains($relativePath)) {
                 continue
             }
             $fileHasher = [Security.Cryptography.SHA256]::Create()
@@ -873,6 +894,86 @@ function Get-SingYinReleaseBundleFingerprint {
     }
 }
 
+function Get-SingYinLegacyReleaseBundleFingerprint {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)]$Marker,
+        [Parameter(Mandatory = $true)]$CurrentFingerprint
+    )
+
+    [DateTimeOffset]$createdAt = [DateTimeOffset]::MinValue
+    $createdAtValid = [DateTimeOffset]::TryParse(
+        [string]$Marker.createdAt,
+        [Globalization.CultureInfo]::InvariantCulture,
+        [Globalization.DateTimeStyles]::RoundtripKind,
+        [ref]$createdAt
+    )
+    if (-not $createdAtValid) {
+        return $null
+    }
+
+    $expectedFileCount = [int]$Marker.bundleFileCount
+    $derivedFileDelta = [int]$CurrentFingerprint.FileCount - $expectedFileCount
+    if ($derivedFileDelta -le 0) {
+        return $null
+    }
+
+    $root = [IO.Path]::GetFullPath($Path).TrimEnd('\')
+    $prefix = "$root\"
+    $runtimeBytecodePaths = [Collections.Generic.List[string]]::new()
+    $bytecodePattern = '(^|/)__pycache__/[^/]+\.pyc$'
+    $bytecodeOptions = (
+        [Text.RegularExpressions.RegexOptions]::IgnoreCase -bor
+        [Text.RegularExpressions.RegexOptions]::CultureInvariant
+    )
+    $items = @(
+        Get-ChildItem -LiteralPath $root -Recurse -Force |
+            Sort-Object -Property FullName
+    )
+    foreach ($item in $items) {
+        $fullPath = [IO.Path]::GetFullPath($item.FullName)
+        if (-not $fullPath.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "The legacy release bundle check escaped the controlled bundle path."
+        }
+        if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw "The legacy release bundle contains an unsupported reparse point."
+        }
+        if ($item.PSIsContainer) {
+            continue
+        }
+        $relativePath = $fullPath.Substring($prefix.Length).Replace('\', '/')
+        if (
+            [Text.RegularExpressions.Regex]::IsMatch(
+                $relativePath,
+                $bytecodePattern,
+                $bytecodeOptions
+            ) -and
+            $item.LastWriteTimeUtc -gt $createdAt.UtcDateTime
+        ) {
+            $runtimeBytecodePaths.Add($relativePath)
+        }
+    }
+
+    if ($runtimeBytecodePaths.Count -ne $derivedFileDelta) {
+        return $null
+    }
+    $reconstructedFingerprint = Get-SingYinReleaseBundleFingerprint `
+        -Path $Path `
+        -ExcludedRelativePaths $runtimeBytecodePaths.ToArray()
+    if (
+        [string]$reconstructedFingerprint.Sha256 -cne
+            [string]$Marker.bundleContentSha256 -or
+        [int]$reconstructedFingerprint.FileCount -ne $expectedFileCount
+    ) {
+        return $null
+    }
+
+    return [pscustomobject]@{
+        Fingerprint = $reconstructedFingerprint
+        RelativePaths = @($runtimeBytecodePaths.ToArray())
+    }
+}
+
 function Get-SingYinPreviousReleaseIdentity {
     param(
         [Parameter(Mandatory = $true)][string]$Repository,
@@ -899,6 +1000,7 @@ function Get-SingYinPreviousReleaseIdentity {
             ReleaseRef = $null
             Source = "legacy-host-checkout"
             Bundle = $null
+            RepairCount = 0
         }
     }
 
@@ -915,7 +1017,17 @@ function Get-SingYinPreviousReleaseIdentity {
     }
 
     $marker = Get-Content -LiteralPath $markerPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    $fingerprint = Get-SingYinReleaseBundleFingerprint -Path $bundlePath
+    [DateTimeOffset]$markerCreatedAt = [DateTimeOffset]::MinValue
+    $markerCreatedAtValid = $false
+    $markerCreatedAtProperty = $marker.PSObject.Properties['createdAt']
+    if ($null -ne $markerCreatedAtProperty) {
+        $markerCreatedAtValid = [DateTimeOffset]::TryParse(
+            [string]$markerCreatedAtProperty.Value,
+            [Globalization.CultureInfo]::InvariantCulture,
+            [Globalization.DateTimeStyles]::RoundtripKind,
+            [ref]$markerCreatedAt
+        )
+    }
     if (
         [int]$marker.schemaVersion -ne 2 -or
         [string]$marker.releaseRef -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$' -or
@@ -924,8 +1036,7 @@ function Get-SingYinPreviousReleaseIdentity {
         [string]$marker.environmentSha256 -notmatch '^[0-9a-f]{64}$' -or
         [string]$marker.bundleContentSha256 -notmatch '^[0-9a-f]{64}$' -or
         [int]$marker.bundleFileCount -lt 1 -or
-        [string]$marker.bundleContentSha256 -cne [string]$fingerprint.Sha256 -or
-        [int]$marker.bundleFileCount -ne [int]$fingerprint.FileCount
+        -not $markerCreatedAtValid
     ) {
         throw "The startup task release bundle identity marker is invalid or stale."
     }
@@ -955,11 +1066,63 @@ function Get-SingYinPreviousReleaseIdentity {
         throw "The startup task release identity does not match trusted tag or environment evidence."
     }
 
+    $fingerprint = Get-SingYinReleaseBundleFingerprint -Path $bundlePath
+    $identitySource = "immutable-release-marker"
+    $repairCount = 0
+    if (
+        [string]$marker.bundleContentSha256 -cne [string]$fingerprint.Sha256 -or
+        [int]$marker.bundleFileCount -ne [int]$fingerprint.FileCount
+    ) {
+        $legacyCompatibility = Get-SingYinLegacyReleaseBundleFingerprint `
+            -Path $bundlePath `
+            -Marker $marker `
+            -CurrentFingerprint $fingerprint
+        if ($null -eq $legacyCompatibility) {
+            throw "The startup task release bundle identity marker is invalid or stale."
+        }
+
+        # Releases created before runtime bytecode writes were disabled can
+        # contain post-marker cache files. Remove only the exact set whose
+        # exclusion reconstructs the original full bundle hash and count,
+        # then require the ordinary fail-closed fingerprint to pass again.
+        $bundlePrefix = "$bundlePath\"
+        foreach ($relativePath in @($legacyCompatibility.RelativePaths)) {
+            $candidatePath = [IO.Path]::GetFullPath(
+                (Join-Path $bundlePath ([string]$relativePath).Replace('/', '\'))
+            )
+            if (-not $candidatePath.StartsWith(
+                $bundlePrefix,
+                [StringComparison]::OrdinalIgnoreCase
+            )) {
+                throw "The legacy bytecode repair escaped the controlled bundle path."
+            }
+            $candidate = Get-Item -LiteralPath $candidatePath -Force -ErrorAction Stop
+            if (
+                $candidate.PSIsContainer -or
+                ($candidate.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0
+            ) {
+                throw "The legacy bytecode repair encountered an unsafe candidate."
+            }
+            Remove-Item -LiteralPath $candidatePath -Force
+        }
+
+        $fingerprint = Get-SingYinReleaseBundleFingerprint -Path $bundlePath
+        if (
+            [string]$marker.bundleContentSha256 -cne [string]$fingerprint.Sha256 -or
+            [int]$marker.bundleFileCount -ne [int]$fingerprint.FileCount
+        ) {
+            throw "The legacy bytecode repair did not restore the immutable bundle fingerprint."
+        }
+        $identitySource = "immutable-release-marker-legacy-bytecode-repaired"
+        $repairCount = @($legacyCompatibility.RelativePaths).Count
+    }
+
     return [pscustomobject]@{
         Commit = [string]$marker.commit
         ReleaseRef = [string]$marker.releaseRef
-        Source = "immutable-release-marker"
+        Source = $identitySource
         Bundle = $bundlePath
+        RepairCount = $repairCount
     }
 }
 
@@ -1191,6 +1354,7 @@ try {
     $previousCommit = $null
     $previousReleaseRef = $null
     $previousReleaseSource = $null
+    $previousReleaseRepairCount = 0
     $backupReport = $null
     $taskInitiallyRunning = $false
     $taskInitiallyEnabled = $false
@@ -1378,6 +1542,7 @@ try {
     $previousCommit = [string]$previousReleaseIdentity.Commit
     $previousReleaseRef = $previousReleaseIdentity.ReleaseRef
     $previousReleaseSource = [string]$previousReleaseIdentity.Source
+    $previousReleaseRepairCount = [int]$previousReleaseIdentity.RepairCount
 
     Write-Step "Preflighting host and Worker gateway identity without changing the host"
     $currentHostEnvironment = Read-HostEnvironmentValues -EnvironmentPath $environmentPath
@@ -1534,7 +1699,7 @@ try {
     $hostPython = Join-Path $releaseBundlePath ".venv\Scripts\python.exe"
     $newTaskAction = New-ScheduledTaskAction `
         -Execute $hostPython `
-        -Argument "-X utf8 -m nicegui_app.main" `
+        -Argument "-B -X utf8 -m nicegui_app.main" `
         -WorkingDirectory $releaseBundlePath
     $runtimeTaskPassword = New-SingYinRuntimeTaskPassword
     $runtimeTaskSecurePassword = ConvertTo-SecureString `
@@ -1601,6 +1766,7 @@ try {
         previousCommit = $previousCommit
         previousReleaseRef = $previousReleaseRef
         previousReleaseSource = $previousReleaseSource
+        previousReleaseRepairCount = $previousReleaseRepairCount
         releaseBundle = $releaseBundlePath
         sourceFingerprint = [string]$currentFingerprint.fingerprint
         sourceFileCount = [int]$currentFingerprint.fileCount
@@ -1674,7 +1840,14 @@ try {
                         WorkingDirectory = $previousTaskAction.WorkingDirectory
                     }
                     if (-not [string]::IsNullOrWhiteSpace($previousTaskAction.Arguments)) {
-                        $restoreActionParameters.Argument = $previousTaskAction.Arguments
+                        $previousArguments = ([string]$previousTaskAction.Arguments).Trim()
+                        $restoreActionParameters.Argument = if (
+                            $previousArguments -ceq "-X utf8 -m nicegui_app.main"
+                        ) {
+                            "-B -X utf8 -m nicegui_app.main"
+                        } else {
+                            $previousArguments
+                        }
                     }
                     $restoreTaskAction = New-ScheduledTaskAction @restoreActionParameters
                     $restoreTaskParameters = @{
@@ -1724,6 +1897,7 @@ try {
         previousCommit = $previousCommit
         previousReleaseRef = $previousReleaseRef
         previousReleaseSource = $previousReleaseSource
+        previousReleaseRepairCount = $previousReleaseRepairCount
         releaseBundle = $releaseBundlePath
         failure = $failure
         nativeLog = [IO.Path]::GetFileName($script:NativeLogPath)
