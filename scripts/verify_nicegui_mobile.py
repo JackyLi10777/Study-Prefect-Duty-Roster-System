@@ -431,12 +431,22 @@ def _assert_desktop_touch_page(page: Page, route: str, *, label: str) -> None:
         """() => {
           const header = document.querySelector('.sy-app-header');
           const main = document.querySelector('main#main-content');
-          if (!header || !main) return null;
+          const drawer = document.querySelector('#main-navigation-drawer');
+          const leading = document.querySelector('.sy-header-leading');
+          if (!header || !main || !drawer || !leading) return null;
           const headerBounds = header.getBoundingClientRect();
           const mainBounds = main.getBoundingClientRect();
+          const drawerBounds = drawer.getBoundingClientRect();
+          const leadingBounds = leading.getBoundingClientRect();
           return {
             viewport: window.innerWidth,
+            headerTop: headerBounds.top,
             headerBottom: headerBounds.bottom,
+            drawerTop: drawerBounds.top,
+            headerLeadingTop: leadingBounds.top,
+            headerLeadingBottom: leadingBounds.bottom,
+            headerLeadingLeft: leadingBounds.left,
+            headerLeadingRight: leadingBounds.right,
             mainTop: mainBounds.top,
             mainLeft: mainBounds.left,
             mainRight: mainBounds.right,
@@ -448,6 +458,15 @@ def _assert_desktop_touch_page(page: Page, route: str, *, label: str) -> None:
         raise AssertionError(f"{label} is missing the desktop touch shell regions.")
     if shell_metrics["mainTop"] + 1 < shell_metrics["headerBottom"]:
         raise AssertionError(f"{label} main content is obscured by the desktop header: {shell_metrics}")
+    if shell_metrics["drawerTop"] + 1 < shell_metrics["headerBottom"]:
+        raise AssertionError(f"{label} desktop drawer obscures the global header: {shell_metrics}")
+    if (
+        shell_metrics["headerLeadingTop"] + 1 < shell_metrics["headerTop"]
+        or shell_metrics["headerLeadingBottom"] > shell_metrics["headerBottom"] + 1
+        or shell_metrics["headerLeadingLeft"] < -1
+        or shell_metrics["headerLeadingRight"] > shell_metrics["viewport"] + 1
+    ):
+        raise AssertionError(f"{label} header identity is clipped or outside the viewport: {shell_metrics}")
     if shell_metrics["mainWidth"] < 520 or shell_metrics["mainRight"] > shell_metrics["viewport"] + 1:
         raise AssertionError(f"{label} desktop shell leaves an unusable tablet workspace: {shell_metrics}")
 

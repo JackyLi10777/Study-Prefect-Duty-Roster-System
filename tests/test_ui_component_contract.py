@@ -152,6 +152,23 @@ def test_frontend_reset_has_one_explicit_terminal_composition_layer() -> None:
     }
     assert not unexpected, f"terminal composition layer redeclared managed tokens: {sorted(unexpected)}"
 
+    shell_source = (UI_ROOT / "shell.py").read_text(encoding="utf-8")
+    shell_tree = ast.parse(shell_source)
+    drawer_width = next(
+        ast.literal_eval(node.value)
+        for node in shell_tree.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "DESKTOP_DRAWER_WIDTH_PX"
+            for target in node.targets
+        )
+    )
+    css_width = re.search(r"--sy-v2-rail-width:\s*(\d+)px", source)
+    assert css_width is not None
+    assert drawer_width == int(css_width.group(1))
+    assert "width={DESKTOP_DRAWER_WIDTH_PX}" in shell_source
+    assert "calc(var(--sy-v2-rail-width) + var(--sy-v2-content-gutter))" in source
+
 
 def test_status_badge_surface_is_owned_by_the_component_layer() -> None:
     component_source = (CSS_ROOT / "sing-yin-components-v1.css").read_text(encoding="utf-8")

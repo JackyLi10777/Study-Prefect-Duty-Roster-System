@@ -25,6 +25,8 @@
   --sy-v2-shadow-panel: 0 1px 2px rgba(20, 36, 45, .035), 0 10px 30px rgba(20, 36, 45, .055);
   --sy-v2-shadow-float: 0 16px 42px rgba(20, 36, 45, .11);
   --sy-v2-header-height: 66px;
+  /* Kept in executable parity with shell.py DESKTOP_DRAWER_WIDTH_PX. */
+  --sy-v2-rail-width: 284px;
   --sy-v2-content-gutter: clamp(20px, 2.35vw, 38px);
 }
 
@@ -357,7 +359,7 @@ body {
 
 .sy-page-context-index {
   color: var(--sy-role-stable);
-  font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+  font-family: ui-monospace, SFMono-Regular, "Cascadia Code", monospace;
   font-size: 10px;
   font-weight: 820;
 }
@@ -859,7 +861,7 @@ body {
 @media (min-width: 1200px) {
   .sy-app-header {
     padding-right: 16px !important;
-    padding-left: calc(284px + var(--sy-v2-content-gutter)) !important;
+    padding-left: calc(var(--sy-v2-rail-width) + var(--sy-v2-content-gutter)) !important;
   }
 }
 

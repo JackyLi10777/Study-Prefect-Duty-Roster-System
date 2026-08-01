@@ -49,6 +49,7 @@ MOBILE_PRIMARY_NAVIGATION = tuple(
     (page.route, page.title_key, page.icon)
     for page in mobile_navigation_for(AccessMode.ADMIN)
 )
+DESKTOP_DRAWER_WIDTH_PX = 284
 
 
 def _navigation_context(active_path: str, access_mode: AccessMode) -> tuple[int, str, str]:
@@ -1145,7 +1146,8 @@ def page_shell(active_path: str) -> Iterator[None]:
     theme_controls = {"buttons": [], "busy": False}
     sound_controls = []
     drawer = ui.left_drawer(value=False, bordered=False).props(
-        f'show-if-above breakpoint=900 width=284 role=navigation id=main-navigation-drawer aria-label="{attr(t("main_navigation"))}"'
+        f'show-if-above breakpoint=900 width={DESKTOP_DRAWER_WIDTH_PX} role=navigation '
+        f'id=main-navigation-drawer aria-label="{attr(t("main_navigation"))}"'
     ).classes("sy-sidebar bg-[var(--sy-surface)]")
     with drawer:
         with ui.column().classes("sy-sidebar-body w-full gap-1 p-4"):
