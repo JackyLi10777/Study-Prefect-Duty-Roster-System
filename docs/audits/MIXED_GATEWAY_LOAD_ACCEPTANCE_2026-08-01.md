@@ -4,7 +4,7 @@
 
 裁決：**PASS — 關閉 `ITR-005` 的來源驗收；不是正式部署或 Cloudflare edge 證據**
 
-精確來源：`be13c9f731cfc6fc7ebc081db42cd1e1ec831d25`，`sourceDirty=false`
+精確來源：`a9ffc9777bcd48fff6e0cfbe21650d5e547750a9`，`sourceDirty=false`
 
 ## 驗收目標
 
@@ -48,14 +48,14 @@ python -X utf8 scripts\verify_mixed_gateway_load.py
 | Admin capacity | 2 同時 Admin sessions；一個正式寫入與其餘 Admin／Guest 讀取並行 |
 | Transport | 22 個 WebSockets observed；66 個 navigation samples |
 | Guest isolation | 建立及示範發布虛構 roster；observer history 仍為 0；正式 delivery 被拒絕；PDF 839,989 bytes |
-| Admin path | 正式虛構寫入 3,348.40 ms；PDF 838,196 bytes；Viewer share 4,595.33 ms 並成功解密 |
+| Admin path | 正式虛構寫入 3,067.30 ms；PDF 838,196 bytes；Viewer share 4,593.87 ms 並成功解密 |
 | Database | 13 tables／110 fixture rows；只在 Admin 操作後改變；fairness balanced |
 | Backup／outbox | backups `0 → 2`；outbox 1 record、1 delivered、1 attempt |
-| Navigation timing | p95 4,240.73 ms；max 4,276.12 ms。包含本機 headless 混合負載及 180 ms settle，不是正式 SLO |
-| Memory | origin baseline 141,840,384 bytes；兩輪 cleanup 後 262,586,368／257,191,936 bytes；第二輪比第一輪約低 5.14 MiB；peak／final 相對 baseline 約 +115.15／+110.01 MiB，均低於 128 MiB stop budget |
+| Navigation timing | p95 4,047.89 ms；max 4,172.97 ms。包含本機 headless 混合負載及 180 ms settle，不是正式 SLO |
+| Memory | origin baseline 142,458,880 bytes；兩輪 cleanup 後 258,035,712／257,183,744 bytes；第二輪比第一輪約低 0.81 MiB；peak／final 相對 baseline 約 +110.22／+109.41 MiB，均低於 128 MiB stop budget |
 | Stop conditions | cross-session leak、unhandled lock／5xx、fairness mismatch、Guest DB write、cleanup memory budget exceeded 全部為 `false` |
 
-開始時間為 `2026-08-01T15:54:18Z`，完成時間為 `2026-08-01T15:55:32Z`。預設成功時刪除臨時工作目錄；使用 `--retain` 時成功亦會保留並輸出本機 temp path，失敗時同樣保留供診斷。
+開始時間為 `2026-08-01T16:16:29Z`，完成時間為 `2026-08-01T16:17:44Z`。預設成功時刪除臨時工作目錄；使用 `--retain` 時成功亦會保留並輸出本機 temp path，失敗時同樣保留供診斷。
 
 ## 判讀與限制
 

@@ -8,7 +8,7 @@
 
 ## 基線與目前真相
 
-- 本階段使用乾淨 `origin/main` worktree，程式驗證 commit 為 `be13c9f731cfc6fc7ebc081db42cd1e1ec831d25`，最終報告記錄 `sourceDirty=false`。
+- 本階段使用乾淨 `origin/main` worktree，程式驗證 commit 為 `a9ffc9777bcd48fff6e0cfbe21650d5e547750a9`，最終報告記錄 `sourceDirty=false`。
 - 正式運行真相仍只由 [`../status/CURRENT_STATUS.md`](../status/CURRENT_STATUS.md) 擁有：Windows origin 維持 rc45，Worker 維持既有 100% version；本階段沒有部署或修改 `status/current-release.json`。
 - [`MIXED_GATEWAY_LOAD_ACCEPTANCE_2026-08-01.md`](MIXED_GATEWAY_LOAD_ACCEPTANCE_2026-08-01.md) 補上實際 Worker source、local workerd、WebSocket、Guest／Admin、下載、備份、outbox 及 Viewer 在同一拓撲中的可重現證據，因而關閉 `ITR-005`。
 - 本階段審核了現有 GSAP Core、timeline、`quickTo`、`matchMedia`、interruptibility 及 cleanup。現況已由單一 runtime 和測試治理；NiceGUI／vanilla 頁面沒有 React 整合需求，操作介面也沒有 ScrollTrigger 或付費 plugin 的產品需要。因此沒有新增 GSAP runtime、ScrollTrigger、framework adapter 或動畫程式碼。這是避免無收益複雜度的明確決策，不是遺漏。
