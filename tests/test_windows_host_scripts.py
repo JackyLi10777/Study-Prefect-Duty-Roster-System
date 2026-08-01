@@ -313,6 +313,10 @@ def test_windows_host_scripts_bind_permissions_and_task_to_dedicated_runtime_use
     assert "secedit.exe" not in common
     assert "-RequiredIdentitySid $runtimeAccount.Sid.Value" in preparation
     assert 'RuntimeUser = "SingYinRosterSvc"' in startup
+    assert '-Argument "-B -X utf8 -m nicegui_app.main"' in startup
+    assert '"-X utf8 -m nicegui_app.main"' in common
+    assert '"-B -X utf8 -m nicegui_app.main"' in common
+    assert "$supportedArguments -ccontains $arguments" in common
     assert "not owned by this project and runtime account" in startup
     assert "if ($inspection.Exists) { $register.Force = $true }" in startup
     assert "[switch]$NoStart" in startup

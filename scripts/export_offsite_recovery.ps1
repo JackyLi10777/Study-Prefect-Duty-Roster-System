@@ -135,7 +135,7 @@ if (-not $resolvedDestination.StartsWith($approvedPrefix, [StringComparison]::Or
     throw "The off-site destination escaped the approved external volume."
 }
 
-& $python -X utf8 $recoveryTool export-and-drill `
+& $python -B -X utf8 $recoveryTool export-and-drill `
     --database-path $databasePath `
     --backup-dir $backupDir `
     --destination-root $destinationRoot `

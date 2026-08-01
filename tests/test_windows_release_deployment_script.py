@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import base64
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -178,6 +180,9 @@ def _run_previous_release_identity(
             _powershell_function_source("Assert-ImmutableReleaseTag"),
             _powershell_function_source("Assert-SafeReleaseBundlePath"),
             _powershell_function_source("Get-SingYinReleaseBundleFingerprint"),
+            _powershell_function_source(
+                "Get-SingYinLegacyReleaseBundleFingerprint",
+            ),
             _powershell_function_source("Get-SingYinPreviousReleaseIdentity"),
         )
     )
@@ -196,6 +201,7 @@ try {{
         releaseRef = [string]$identity.ReleaseRef
         source = [string]$identity.Source
         bundle = [string]$identity.Bundle
+        repairCount = [int]$identity.RepairCount
     }} | ConvertTo-Json -Compress
 }} catch {{
     [ordered]@{{
@@ -204,16 +210,28 @@ try {{
     }} | ConvertTo-Json -Compress
 }}
 """
-    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
-    result = subprocess.run(
-        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
-        cwd=PROJECT_ROOT,
-        check=False,
-        capture_output=True,
-        text=True,
-        encoding="utf-8-sig",
-        errors="replace",
-    )
+    command_path = repository.parent / "previous-release-identity-test.ps1"
+    command_path.write_text(command, encoding="utf-8-sig")
+    try:
+        result = subprocess.run(
+            [
+                POWERSHELL,
+                "-NoLogo",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(command_path),
+            ],
+            cwd=PROJECT_ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8-sig",
+            errors="replace",
+        )
+    finally:
+        command_path.unlink(missing_ok=True)
 
     assert result.returncode == 0, result.stderr
     json_lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
@@ -281,12 +299,36 @@ def _create_trusted_release_bundle(
         "environmentSha256": environment_hash,
         "bundleContentSha256": fingerprint["sha256"],
         "bundleFileCount": fingerprint["fileCount"],
+        "createdAt": datetime.now(timezone.utc).isoformat(),
     }
     (bundle / ".sing-yin-release.json").write_text(
         json.dumps(marker),
         encoding="utf-8",
     )
     return repository, host_root, bundle, marker, environment_hash
+
+
+def _prepare_legacy_bytecode_marker(
+    bundle: Path,
+    marker: dict[str, object],
+) -> datetime:
+    cache = bundle / "package" / "__pycache__"
+    cache.mkdir(parents=True, exist_ok=True)
+    original_bytecode = cache / "module.cpython-312.pyc"
+    original_bytecode.write_bytes(b"bytecode present when legacy marker was made")
+
+    marker_created_at = datetime.now(timezone.utc)
+    old_timestamp = (marker_created_at - timedelta(minutes=2)).timestamp()
+    os.utime(original_bytecode, (old_timestamp, old_timestamp))
+    legacy_fingerprint = _run_bundle_fingerprint(bundle)
+    marker["bundleContentSha256"] = legacy_fingerprint["sha256"]
+    marker["bundleFileCount"] = legacy_fingerprint["fileCount"]
+    marker["createdAt"] = marker_created_at.isoformat()
+    (bundle / ".sing-yin-release.json").write_text(
+        json.dumps(marker),
+        encoding="utf-8",
+    )
+    return marker_created_at
 
 
 def _worker_configuration(
@@ -500,6 +542,27 @@ def test_release_bundle_fingerprint_detects_content_changes_and_ignores_marker(
     assert changed["sha256"] != first["sha256"]
 
 
+def test_release_bundle_fingerprint_keeps_python_bytecode_in_integrity_scope(
+    tmp_path: Path,
+) -> None:
+    bundle = tmp_path / "bundle"
+    cache = bundle / "package" / "__pycache__"
+    cache.mkdir(parents=True)
+    (bundle / "app.py").write_text("print('stable')\n", encoding="utf-8")
+
+    baseline = _run_bundle_fingerprint(bundle)
+    (cache / "module.cpython-312.pyc").write_bytes(b"runtime bytecode")
+    with_bytecode = _run_bundle_fingerprint(bundle)
+
+    assert with_bytecode["fileCount"] == baseline["fileCount"] + 1
+    assert with_bytecode["sha256"] != baseline["sha256"]
+
+    (bundle / "module.pyc").write_bytes(b"not in __pycache__")
+    outside_cache = _run_bundle_fingerprint(bundle)
+    assert outside_cache["fileCount"] == baseline["fileCount"] + 2
+    assert outside_cache["sha256"] != with_bytecode["sha256"]
+
+
 def test_previous_release_identity_comes_from_verified_task_bundle(
     tmp_path: Path,
 ) -> None:
@@ -520,7 +583,80 @@ def test_previous_release_identity_comes_from_verified_task_bundle(
         "releaseRef": marker["releaseRef"],
         "source": "immutable-release-marker",
         "bundle": str(bundle),
+        "repairCount": 0,
     }
+
+
+def test_previous_release_identity_accepts_exact_legacy_runtime_bytecode_delta(
+    tmp_path: Path,
+) -> None:
+    repository, host_root, bundle, marker, environment_hash = (
+        _create_trusted_release_bundle(tmp_path)
+    )
+    marker_created_at = _prepare_legacy_bytecode_marker(bundle, marker)
+
+    cache = bundle / "package" / "__pycache__"
+    runtime_bytecode = cache / "runtime.cpython-312.pyc"
+    runtime_bytecode.write_bytes(b"bytecode generated after application start")
+    new_timestamp = (marker_created_at + timedelta(minutes=2)).timestamp()
+    os.utime(runtime_bytecode, (new_timestamp, new_timestamp))
+
+    identity = _run_previous_release_identity(
+        repository,
+        host_root,
+        bundle,
+        environment_hash,
+    )
+
+    assert identity == {
+        "ok": True,
+        "commit": marker["commit"],
+        "releaseRef": marker["releaseRef"],
+        "source": "immutable-release-marker-legacy-bytecode-repaired",
+        "bundle": str(bundle),
+        "repairCount": 1,
+    }
+    assert not runtime_bytecode.exists()
+    repaired_fingerprint = _run_bundle_fingerprint(bundle)
+    assert repaired_fingerprint["sha256"] == marker["bundleContentSha256"]
+    assert repaired_fingerprint["fileCount"] == marker["bundleFileCount"]
+
+
+@pytest.mark.parametrize(
+    ("relative_path", "timestamp_offset_minutes"),
+    (
+        ("unexpected.txt", 2),
+        ("package/runtime.pyc", 2),
+        ("package/__pycache__/preexisting.cpython-312.pyc", -2),
+    ),
+)
+def test_previous_release_identity_rejects_non_runtime_legacy_delta(
+    tmp_path: Path,
+    relative_path: str,
+    timestamp_offset_minutes: int,
+) -> None:
+    repository, host_root, bundle, marker, environment_hash = (
+        _create_trusted_release_bundle(tmp_path)
+    )
+    marker_created_at = _prepare_legacy_bytecode_marker(bundle, marker)
+
+    extra = bundle / relative_path
+    extra.parent.mkdir(parents=True, exist_ok=True)
+    extra.write_bytes(b"untrusted delta")
+    timestamp = (
+        marker_created_at + timedelta(minutes=timestamp_offset_minutes)
+    ).timestamp()
+    os.utime(extra, (timestamp, timestamp))
+
+    identity = _run_previous_release_identity(
+        repository,
+        host_root,
+        bundle,
+        environment_hash,
+    )
+
+    assert identity["ok"] is False
+    assert "identity marker is invalid or stale" in str(identity["error"])
 
 
 def test_previous_release_identity_rejects_a_tampered_task_bundle(
@@ -550,6 +686,7 @@ def test_previous_release_identity_rejects_a_tampered_task_bundle(
         ("commit", "a" * 40),
         ("sourceTree", "b" * 40),
         ("environmentSha256", "c" * 64),
+        ("createdAt", "not-a-timestamp"),
     ),
 )
 def test_previous_release_identity_rejects_marker_identity_tampering(
@@ -617,11 +754,16 @@ def test_deployment_reports_previous_identity_from_the_task_target() -> None:
     assert "$previousCommit = [string]$previousReleaseIdentity.Commit" in source
     assert "previousReleaseRef = $previousReleaseRef" in source
     assert "previousReleaseSource = $previousReleaseSource" in source
+    assert "previousReleaseRepairCount = $previousReleaseRepairCount" in source
     legacy_checkout_probe = (
         '$previousCommit = Get-GitValue -Repository $HostRoot '
         '-Arguments @("rev-parse", "HEAD")'
     )
     assert legacy_checkout_probe not in source
+    assert '-Argument "-B -X utf8 -m nicegui_app.main"' in source
+    assert '"immutable-release-marker-legacy-bytecode-repaired"' in source
+    assert "Get-SingYinLegacyReleaseBundleFingerprint" in source
+    assert "Remove-Item -LiteralPath $candidatePath -Force" in source
 
 
 def test_deployment_rotates_runtime_task_credential_without_persisting_it() -> None:

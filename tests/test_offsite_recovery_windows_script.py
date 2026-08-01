@@ -10,6 +10,8 @@ SCRIPT = PROJECT_ROOT / "scripts" / "export_offsite_recovery.ps1"
 def test_windows_export_fails_closed_on_storage_and_encryption_boundaries() -> None:
     source = SCRIPT.read_text(encoding="utf-8")
 
+    assert "& $python -B -X utf8 $recoveryTool export-and-drill" in source
+
     assert "Assert-SingYinAdministrator" in source
     assert "Get-Partition" in source
     assert "Get-Disk" in source

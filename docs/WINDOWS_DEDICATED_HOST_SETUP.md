@@ -649,6 +649,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 腳本在停止服務前核對正式報告、來源指紋、host／Worker identity parity、主機工作樹、排程 owner 及現有 task target。它從排程工作的實際 immutable bundle marker 取得上一版本，重算整個 bundle fingerprint，並把 marker 的 release／commit／tree／environment 交叉綁定至 `origin` 上的 annotated tag、tag-resolved Git tree、切換前受保護 `.env` 的 SHA-256 及確定性的 bundle 目錄名稱。其後才建立新 bundle／獨立 `.venv`、正式備份及隔離還原，最後原子切換排程；不得同時手動停止、安裝套件或切換 checkout。
 
+Bundle 指紋包含所有普通檔案，包括 `.venv` 內既有的 Python bytecode；`.sing-yin-release.json` 是唯一固定排除項。正式排程、受控 rollback 及離機復原工具均以 Python `-B` 執行，避免在 marker 建立後寫入 `__pycache__`。對於修正前已部署的 legacy bundle，部署器只在新增項全部是 marker 建立後寫入、直接位於 `__pycache__` 的普通 `.pyc`，其數量恰好等於檔案數差額，且排除精確集合後可完全重建 marker 的 SHA-256 與檔案數時，才受控移除該集合；移除後必須再次通過普通完整指紋。部署報告以 `previousReleaseSource` 及 `previousReleaseRepairCount` 記錄是否曾執行及清理多少項。不要手動刪除 cache、改 marker、忽略 `.pyc` 或繞過這項檢查。
+
 ### 步驟 12.3：核對實際 runtime 身分
 
 部署成功後以提升權限 PowerShell 讀取排程 action，不能以 `C:\SingYinRoster` Git HEAD 代替：
