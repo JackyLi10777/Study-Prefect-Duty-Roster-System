@@ -16,9 +16,11 @@
 | 已發布週表有錯 | 需要可審計撤回，不是刪除檔案 | 開啟該週撤回，核對公平補償及分享撤銷結果 |
 | 備份仍未完成 | 寫入可能存在，但恢復義務仍開啟 | 停止新寫入，核對結果，建立已驗證快照直至 readiness 恢復 |
 
-> **目前服務狀態（2026-08-01）：**服務正以 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 運行，SQLite 已升至 Alembic `0012`。正式備份、隔離還原、主機 readiness 與 canonical entrance／Guest／support 核對已通過；Worker 來源及受保護設定沒有改動，既有 gateway 健康已重新核對。第一個復原選擇是保留 rc45 並依已驗證正式備份執行受控還原；rc43／rc41 及更舊程式需要相容的 pre-0012 資料庫快照，不能只切換程式或 Worker。真人驗收仍未完成。一般操作員不要自行重設、覆寫或切換主機。
+<!-- SING_YIN_CURRENT_STATUS:START -->
+> **已核實線上來源（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的不可變 bundle；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、health 及 `writeReady=true` 已核對。Worker 來源沒有改動，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 維持 100% 流量且健康。`v1.2.0-rc.43` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
+<!-- SING_YIN_CURRENT_STATUS:END -->
 >
-> **歷史 rc30 乾淨發布證據：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 配 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是當時完整驗證的乾淨組合；目前 rc45 及 migration `0012` 後的受控資料庫復原限制以本頁頂部記錄為準，rc43／rc41／rc40／rc39／rc35／rc27 與其 Worker 是歷史來源。Assist. in charge 可選固定星期或每週靈活模式；Public 支援回報只在瀏覽器生成，已驗證 Admin／Guest 使用同一 NiceGUI 支援流程。首席導學風紀及教師顧問真人驗收仍待完成。
+> **歷史 rc30 乾淨發布證據：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 配 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是當時完整驗證的乾淨組合；目前線上版本及 migration 後的受控資料庫復原限制以本頁頂部生成狀態為準，較早版本及其 Worker 是歷史來源。Assist. in charge 可選固定星期或每週靈活模式；Public 支援回報只在瀏覽器生成，已驗證 Admin／Guest 使用同一 NiceGUI 支援流程。首席導學風紀及教師顧問真人驗收仍待完成。
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊留給下一任首席導學風紀，並讓它配合系統內的「使用手冊」頁面。我希望你只需理解怎樣安全完成日常工作，不必先學懂程式或資料庫。每個主要操作區上方均有「操作提示」：先說明用途，再提示安全次序；請在輸入資料或按主要按鈕前先閱讀該提示。若你剛接手系統，先開啟側邊欄的「開始使用」，再逐段閱讀「使用手冊」；不必一次記住所有程序。
 

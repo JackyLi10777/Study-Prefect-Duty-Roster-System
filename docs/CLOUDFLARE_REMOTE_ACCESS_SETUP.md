@@ -1,6 +1,8 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **線上來源真相（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的不可變套件。來源以指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate；Alembic `0012`、正式備份、隔離還原、origin health／write-readiness 及 canonical entrance／Guest／support smoke 已核對。Worker 來源沒有改動，既有 100% gateway 維持健康。rc43 不是 migration `0012` 後的直接程式回退；回復舊程式須一併採用受控的相容資料庫還原。真人驗收未完成。
+<!-- SING_YIN_CURRENT_STATUS:START -->
+> **已核實線上來源（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的不可變 bundle；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、health 及 `writeReady=true` 已核對。Worker 來源沒有改動，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 維持 100% 流量且健康。`v1.2.0-rc.43` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
+<!-- SING_YIN_CURRENT_STATUS:END -->
 >
 > **歷史 rc30 乾淨發布證據：** Windows origin 曾以受控方式運行並驗證健康、ready 的 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；其 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% version smoke 後承接 100% 流量。canonical root、capability health 與 rendered desktop／320px／Guest Engineering checks 通過，private readiness 保持預期 redirect。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前復原先使用較近的乾淨 rc30／`11763f08…`。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
 >
@@ -93,7 +95,7 @@ Worker 必須有：
 - 不把管理員加入 Cloudflare Dashboard 成員作為登入前提。
 - 不建立應用內共用密碼。
 
-**控制台與歷史乾淨證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。乾淨 rc30 origin＋Worker `11763f08…` 組合曾通過 canonical root、gateway health、真實 Guest session／logout、Admin Access handoff、Viewer、desktop／320px theme control 及 Guest Engineering 核對；目前 rc45 origin、未變更的 gateway 及 migration `0012` 後的受控復原限制以本頁頂部證據為準。
+**控制台與歷史乾淨證據：** `Sing Yin Roster Administrator` 的唯一 destination 已核對為 canonical hostname 的精確 `/auth/login`，並使用既定 allow policy／One-time PIN。乾淨 rc30 origin＋Worker `11763f08…` 組合曾通過 canonical root、gateway health、真實 Guest session／logout、Admin Access handoff、Viewer、desktop／320px theme control 及 Guest Engineering 核對；目前線上 origin、gateway 及 migration 後的受控復原限制以本頁頂部生成狀態為準。
 
 ## 4. 來源驗證
 
@@ -288,6 +290,6 @@ additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，�
 
 ## English operational summary
 
-The active Windows origin is clean annotated `v1.2.0-rc.45` at `90777345ea9ed5652c73873edb3c8c846a9ceac5`, with SQLite at Alembic `0012`. Worker source and protected configuration did not change, so the existing canonical gateway remains in service and its health was rechecked. Rc43, rc41 and earlier pairs remain historical source evidence only; none is a code-only rollback target after migration `0012`. Restoring an older application requires the controlled compatible pre-0012 database restore procedure.
+The exact active origin, Worker, migration and acceptance identity is generated at the top of this guide from the canonical current-status source. Older source pairs remain historical evidence only; restoring an older application requires the controlled compatible database-restore procedure recorded there.
 
 The rc45 origin passed the 15／15 source-matched gate set and completed the controlled origin switch, verified backup and isolated restore, canonical health／entrance／Guest／support checks and Cloudflare Access fail-closed verification. No Worker rollout was needed because its source and configuration were unchanged. Historical release evidence does not describe current production. Supervised human acceptance remains open.

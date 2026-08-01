@@ -9,7 +9,9 @@
 - Startup runs one controlled `PRAGMA optimize` after migration. Request handlers do not run `ANALYZE`. WAL, foreign keys, busy timeout, `BEGIN IMMEDIATE`, optimistic versions, command receipts, backup obligations and the maintenance lock remain unchanged.
 - Backup overview is one bounded inventory snapshot with an evidence timestamp. Checksum, manifest and integrity work is dispatched with `run.io_bound`, so loading Settings or Handover does not block other browser sessions.
 
-> **Verified production truth (2026-08-01):** Windows runs clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` from an immutable bundle. The 308-file fingerprint `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` passed 15／15 gates. Alembic `0012`, verified backup／isolated restore, health, write-readiness and canonical entrance／Guest／support browser smoke passed. Worker source was unchanged and the existing 100% gateway remains healthy. Rc43 requires a compatible database restore and is not a code-only rollback. Human acceptance remains open; older current/live wording is historical and superseded by this notice.
+<!-- SING_YIN_CURRENT_STATUS:START -->
+> **Verified production truth (2026-08-01):** the live Windows origin is clean annotated `v1.2.0-rc.45` at `90777345ea9ed5652c73873edb3c8c846a9ceac5` and runs an immutable bundle. Its 308-file fingerprint `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` passed 15/15 gates. SQLite is at Alembic `0012`; verified backup `20260801-064628-279309-manual_verified_backup.sqlite3` with SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`, isolated restore, health, and `writeReady=true` passed. Worker source did not change; canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` remains healthy at 100% traffic. `v1.2.0-rc.43` is historical source evidence, not a code-only rollback after migration `0012`; recovery requires the controlled compatible database restore. Supervised human acceptance remains `pending`. See [current system status](status/CURRENT_STATUS.md) for the exact state and update contract.
+<!-- SING_YIN_CURRENT_STATUS:END -->
 >
 ## Purpose
 
@@ -50,7 +52,7 @@
 > restore. Worker source and configuration were unchanged, so Worker version
 > `f780feb2-671a-4feb-b6f6-b7f9d5b31e89` was retained without a new Worker
 > rollout. rc21 is now a historical secondary recovery baseline; rc26 later replaced it,
-> while rc27 was the first-level origin rollback beneath rc30 at that time. Current rc45 production and the migration `0012` controlled-restore boundary are recorded at the top of this document.
+> while rc27 was the first-level origin rollback beneath rc30 at that time. Current production and its migration-aware controlled-restore boundary are generated at the top of this document.
 
 The current Head Study Prefect is the normal write operator. The teacher advisor mainly reviews published rosters, fairness, recovery, and handover evidence after completion; the release does not create a second daily-operating workflow for that reviewer role.
 

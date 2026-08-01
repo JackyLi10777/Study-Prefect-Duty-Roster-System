@@ -1,6 +1,15 @@
 # Changelog
 
-This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
+This file records user-visible, operational and release-significant changes. Exact current deployment truth lives in `docs/status/CURRENT_STATUS.md`; immutable historical evidence remains in `PROJECT_STATUS.md`, dated audits and generated release reports.
+
+## Unreleased — maintainability and documentation governance
+
+- Added a concise architecture overview and an executable import-direction contract for policy, core, persistence, workflow services and UI.
+- Added one machine-readable current-release source plus deterministic Traditional Chinese／English status generation for all operator-facing guides, eliminating manual release-identity drift.
+- Added a documentation lifecycle／ownership manifest, ADR register and decision-relevant iteration register; every maintained Markdown file now has a lifecycle class or declared collection.
+- Added `scripts/project_governance.py --check／--write` and integrated the check into adaptive verification profiles. It validates status schema, generated blocks, local links, topic owners, document coverage and architecture boundaries.
+- Kept secret scanning fail-closed while recognizing only the three schema-bound public provenance digests in the live status JSON; arbitrary high-entropy fields, paths or candidate states still fail review.
+- Updated contributor, update-workflow, README and documentation-index routes so maintainers start from current status, architecture overview and the correct owning document.
 
 ## v1.2.0-rc.45 — released, 2026-08-01
 

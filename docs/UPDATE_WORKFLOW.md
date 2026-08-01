@@ -1,15 +1,33 @@
 # 更新、驗證與上傳：一個命令完成正確層級
 
-> **線上來源真相（2026-08-01）：**目前 runtime 是 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5`，SQLite 已升至 Alembic `0012`。308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate，並完成正式備份、隔離還原、受控 origin 部署及 canonical checks。Worker 來源及受保護設定沒有改動，既有 gateway 保持 100% 流量且健康已重新核對。rc43／rc41 及更舊程式只屬歷史來源，回復時必須配合相容的 pre-0012 資料庫還原；健康閘門或候選驗證仍不等於真人驗收。
+<!-- SING_YIN_CURRENT_STATUS:START -->
+> **已核實線上來源（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的不可變 bundle；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、health 及 `writeReady=true` 已核對。Worker 來源沒有改動，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 維持 100% 流量且健康。`v1.2.0-rc.43` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
+<!-- SING_YIN_CURRENT_STATUS:END -->
 > **rc37／rc38 歷史界線：**受保護的 `v1.2.0-rc.37` 指向較早 rc36 source，屬 void／未部署標籤；`v1.2.0-rc.38` 通過來源閘門但沒有通過 Windows 排程帳戶憑證切換，因此沒有取代 rc35。新部署或回退不可把兩者誤當成目前線上版本。
 
 我是李創杰。這份流程是我與 Codex 對正式發布工作的反思結果：更新慢的主因不是 Git 上傳，而是過去把每次文字或測試修改都當成完整 runtime 發布。
 
-> **歷史 rc30 乾淨發布界線：** annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 曾是正式乾淨基線，並完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換、0% Worker smoke、100% promotion 及 canonical rendered checks。它現在只屬歷史證據；目前 rc43 origin 與 Worker 已對帳，立即配對回退以本頁頂部記錄的 rc41 為準。任何後續 focused tests、`--staged` 或文件更新都不會自動成為新的已部署 runtime；仍須以實際 origin／Worker 報告和線上核對為準。
+> **歷史 rc30 乾淨發布界線：** annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 曾是正式乾淨基線，並完成 exact-source `--release`、正式備份、隔離還原、受控 Windows origin 切換、0% Worker smoke、100% promotion 及 canonical rendered checks。它現在只屬歷史證據；目前線上 origin、Worker 及 migration-aware recovery contract 以本頁頂部生成狀態為準。任何後續 focused tests、`--staged` 或文件更新都不會自動成為新的已部署 runtime；仍須以實際 origin／Worker 報告和線上核對為準。
 >
-> **歷史 rc31 候選界線：** `codex/rc31-unified-theme-controls` 曾修改排程核心、生成檔案交付、手機抽屜、通用寫入 admission、備份／交接／還原及 migration guard；其 297 個可部署來源檔案以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時的 15／15 gate。它已被後續正式版本（目前 rc43）取代，不代表目前候選或線上狀態。
+> **歷史 rc31 候選界線：** `codex/rc31-unified-theme-controls` 曾修改排程核心、生成檔案交付、手機抽屜、通用寫入 admission、備份／交接／還原及 migration guard；其 297 個可部署來源檔案以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時的 15／15 gate。它已被後續正式版本取代，不代表目前候選或線上狀態。
 
 rc20 的完整候選報告約需 **404 秒**；當中主要時間用於完整 Python 套件、桌面／手機瀏覽器、寫入／PDF／還原、效能及備份失敗演練。這些證據對政策、資料庫、工作流、部署或正式 runtime 改動很重要，但不應因 README 改一句話而重跑。最近三次沒有 runtime 改動的提交亦在 GitHub Quality 與 CodeQL 合計使用約 18 分鐘。
+
+## 文件與架構先行檢查
+
+所有改動先執行同一個低成本治理檢查：
+
+```powershell
+python -X utf8 scripts\project_governance.py --check
+```
+
+它會核對文件生命週期、topic owner、本機連結、current-release 生成區塊及 Python 模組依賴方向。若觀察到正式 release、migration、backup、Worker 或真人驗收狀態改變，只修改 `docs/status/current-release.json` 的證據值，再執行：
+
+```powershell
+python -X utf8 scripts\project_governance.py --write
+```
+
+這會 deterministic 地更新 `docs/status/CURRENT_STATUS.md` 及所有重要指南頁首。不可逐份手動複製 tag、commit、fingerprint 或備份名稱；普通文件只保留 owner 連結與不會隨版本改變的程序。
 
 ## 日常唯一入口：先診斷，再核對 staged commit
 

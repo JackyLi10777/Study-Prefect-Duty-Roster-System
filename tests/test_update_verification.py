@@ -27,6 +27,7 @@ from scripts.verify_update import (
         (("tests/test_cloudflare_roster_viewer.py",), "tests", True, False),
         (("cloudflare/roster_viewer/worker.js", "README.md"), "worker", True, True),
         ((".github/workflows/quality.yml", "docs/BRANCH_STRATEGY.md"), "assurance", False, False),
+        (("scripts/project_governance.py",), "assurance", False, False),
         (("nicegui_app/ui/pages.py", "README.md"), "full", True, True),
         (("packages/roster_core/roster_core/generator.py",), "full", True, True),
         (("migrations/versions/9999_change.py",), "full", True, True),
@@ -96,6 +97,7 @@ def test_docs_profile_runs_only_documentation_hygiene_and_secret_checks() -> Non
 
     assert [task.name for task in tasks] == [
         "diff_whitespace",
+        "project_governance",
         "documentation_contract",
         "repository_hygiene",
         "secret_scan",
@@ -111,6 +113,7 @@ def test_local_full_profile_runs_pre_push_quality_gates_without_browser_drills()
 
     assert [task.name for task in tasks] == [
         "diff_whitespace",
+        "project_governance",
         "automated_test_suite",
         "worker_contract",
         "repository_hygiene",
@@ -134,6 +137,7 @@ def test_local_worker_profile_defers_formal_release_evidence_until_release_inten
     assert plan.formal_release_required is True
     assert [task.name for task in tasks] == [
         "diff_whitespace",
+        "project_governance",
         "worker_contract",
         "repository_hygiene",
         "secret_scan",
@@ -182,6 +186,7 @@ def test_ci_full_profile_uses_non_browser_quality_gates() -> None:
 
     assert [task.name for task in tasks] == [
         "diff_whitespace",
+        "project_governance",
         "automated_test_suite",
         "worker_contract",
         "repository_hygiene",

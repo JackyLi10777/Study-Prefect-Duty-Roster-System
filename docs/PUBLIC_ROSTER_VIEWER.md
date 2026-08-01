@@ -1,9 +1,11 @@
 # 單一網站存取、訪客體驗與唯讀分享手冊
 
-> **線上來源真相（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5`；canonical Worker 來源沒有改動，既有 100% gateway 維持健康。Public 入口、Guest 工作台及支援頁已以 live Chromium 核對，沒有 console error。rc43 是歷史來源，migration `0012` 後只可配合受控資料庫還原使用；真人驗收未完成。
+<!-- SING_YIN_CURRENT_STATUS:START -->
+> **已核實線上來源（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的不可變 bundle；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、health 及 `writeReady=true` 已核對。Worker 來源沒有改動，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 維持 100% 流量且健康。`v1.2.0-rc.43` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
+<!-- SING_YIN_CURRENT_STATUS:END -->
 > **歷史 rc30 乾淨發布證據：** `C:\SingYinRoster` 曾以受控方式運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker version `11763f08-d40d-46d5-93dc-5ca2599d4154` 當時承接 100% 流量。Public、Guest、Admin 及獨立 `/view#…` Viewer 均由同一 canonical 網站提供；canonical public root、capability health、desktop／320px theme control 及 Guest Engineering ≈10B disclosure 已以 live Chromium 核對，private readiness 保持預期 redirect。
 > **復原層級：**目前正式復原起點是 rc45 已驗證備份及其受控還原程序。資料庫已升至 Alembic `0012`，rc43、rc41、rc40、rc39、rc35、rc30、rc27、rc26 及較舊 Worker 只屬歷史來源；若事故需要舊程式，必須先選取相容的 pre-0012 資料庫快照並完成隔離還原，不能只切換 origin 或 Worker。rc42 從未部署，不能當成復原目標。
-> **歷史 rc31 來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 曾統一 Public／Viewer 與 NiceGUI 外觀控制，其 297 個可部署來源檔案以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時 15／15 候選閘門。它沒有部署，亦不是目前候選或回退目標；目前 rc45 及 migration `0012` 後的受控復原限制以本頁頂部為準。
+> **歷史 rc31 來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 曾統一 Public／Viewer 與 NiceGUI 外觀控制，其 297 個可部署來源檔案以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時 15／15 候選閘門。它沒有部署，亦不是目前候選或回退目標；目前線上版本及 migration 後的受控復原限制以本頁頂部生成狀態為準。
 > **歷史 rc21 受控上線證據：** 291 個來源檔案以指紋 `e7b2a52a004968b899a76de583ca86cb1d575d2a9bbba4cedd5e0e7ab67361b1` 通過 14／14 正式 gate；切換前備份 `20260726-003841-844011-manual_verified_backup.sqlite3`／`fed7b02a82265477a19c9be675d7fd14e8d4b259055af5331e2f76f40b8ee777` 已完成 checksum、公平對帳、行數核對、還原審計及隔離還原。這段只保留歷史來源；目前 live 及受控復原邊界以上方 rc45／Alembic `0012` 說明為準。
 
 我是李創杰。我希望所有使用者只需記住同一個網站，但同一個網址不代表相同權限。v1.2 把入口、完整 Guest 體驗及管理員工作台統一到同一套 NiceGUI 路由和元件；只有已發布週表的 `/view#…` 保留為獨立、只讀、可分享的能力連結。
@@ -137,7 +139,7 @@ user may download JSON, copy the redacted summary, or open a prefilled email.
 
 ## English quick guide
 
-Historical rc30 origin (`v1.2.0-rc.30`, commit `74b84f43786b00feb15b51a6270ff71c9430773f`) passed all 14 formal gates with source fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc`, including 894 Python tests, 3 motion contracts, and 46 Worker contracts, before the controlled Windows switch. Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` passed zero-percent version smoke before promotion to 100%. Current rc45 production and the controlled pre-0012 database-restore boundary are recorded at the top of this document.
+Historical rc30 origin (`v1.2.0-rc.30`, commit `74b84f43786b00feb15b51a6270ff71c9430773f`) passed all 14 formal gates with source fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc`, including 894 Python tests, 3 motion contracts, and 46 Worker contracts, before the controlled Windows switch. Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` passed zero-percent version smoke before promotion to 100%. Current production and its migration-aware controlled database-restore boundary are generated at the top of this document.
 
 The current product contract uses one canonical site and one NiceGUI product. Public users choose either **Admin sign-in** or a time-limited **Guest experience**. Administrators use the official workflow and SQLite database; guests use a server-verified, memory-only adapter populated with fictional Chinese names. Each Guest tab stores only the latest signed, bound snapshot token in `sessionStorage`; restore also requires the current connection nonce, and copied, tampered, expired, stale, or old-boot tokens fail safely. UI hiding is not the security boundary: capabilities are checked again in callbacks, services, downloads, exports, storage, and sharing.
 

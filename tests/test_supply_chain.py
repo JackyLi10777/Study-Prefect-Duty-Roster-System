@@ -7,6 +7,7 @@ import shutil
 from scripts.run_security_checks import (
     _SECRET_SCAN_TARGETS,
     _is_public_audit_digest,
+    _is_public_current_release_digest,
     _is_public_pnpm_integrity,
     _service_weave_delivery_is_current,
 )
@@ -137,6 +138,44 @@ def test_secret_scan_ignores_only_named_public_audit_digests(tmp_path: Path) -> 
     )
     assert not _is_public_audit_digest(
         str(relative_path), first_commit_line, tmp_path
+    )
+
+
+def test_secret_scan_ignores_only_schema_bound_current_release_digests(
+    tmp_path: Path,
+) -> None:
+    relative_path = Path("docs/status/current-release.json")
+    source = ROOT / relative_path
+    status = tmp_path / relative_path
+    status.parent.mkdir(parents=True)
+    shutil.copy2(source, status)
+    lines = status.read_text(encoding="utf-8").splitlines()
+
+    for field in ("commit", "fingerprint_sha256", "backup_sha256"):
+        line_number = next(
+            index
+            for index, line in enumerate(lines, start=1)
+            if f'"{field}"' in line
+        )
+        assert _is_public_current_release_digest(
+            str(relative_path), line_number, tmp_path
+        )
+
+    assert not _is_public_current_release_digest(
+        "docs/status/unreviewed.json", 7, tmp_path
+    )
+
+    payload = json.loads(status.read_text(encoding="utf-8"))
+    payload["state"] = "candidate"
+    status.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    candidate_lines = status.read_text(encoding="utf-8").splitlines()
+    commit_line = next(
+        index
+        for index, line in enumerate(candidate_lines, start=1)
+        if '"commit"' in line
+    )
+    assert not _is_public_current_release_digest(
+        str(relative_path), commit_line, tmp_path
     )
 
 

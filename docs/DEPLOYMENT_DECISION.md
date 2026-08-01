@@ -1,8 +1,10 @@
 # 部署與遠端存取決策指南 / Deployment decision
 
-> **線上來源真相（2026-08-01）：** clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 正在 Windows origin 運行。308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate；Alembic `0012`、正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`、隔離還原、health、`writeReady=true` 及 canonical browser smoke 通過。Worker 未改動並保持健康。rc43 回復必須配合相容的受控資料庫還原，不可只改排程路徑。真人驗收未完成。
+<!-- SING_YIN_CURRENT_STATUS:START -->
+> **已核實線上來源（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的不可變 bundle；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、health 及 `writeReady=true` 已核對。Worker 來源沒有改動，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 維持 100% 流量且健康。`v1.2.0-rc.43` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
+<!-- SING_YIN_CURRENT_STATUS:END -->
 >
-> **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker 是已驗證 version `11763f08-d40d-46d5-93dc-5ca2599d4154`。296 個 runtime 來源檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前備份 `20260727-023041-069097-manual_verified_backup.sqlite3`／SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 通過 0% version smoke 後升至 100%；origin readiness 與 canonical rendered smoke 通過。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前 rc45 及 migration `0012` 後的受控復原限制以本頁頂部記錄為準。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
+> **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker 是已驗證 version `11763f08-d40d-46d5-93dc-5ca2599d4154`。296 個 runtime 來源檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前備份 `20260727-023041-069097-manual_verified_backup.sqlite3`／SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 通過 0% version smoke 後升至 100%；origin readiness 與 canonical rendered smoke 通過。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前線上版本及 migration 後的受控復原限制以本頁頂部生成狀態為準。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
 
 ## 結論
 
@@ -32,10 +34,10 @@ NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另�
 
 | 層 | 現況 |
 |---|---|
-| Windows owned scheduled task | clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` immutable bundle；308-file runtime fingerprint `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 已對帳。Inactive `C:\SingYinRoster` Git HEAD 不代表 runtime。 |
+| Windows owned scheduled task | 精確 tag／commit／bundle／fingerprint 由頁首生成狀態及 `status/CURRENT_STATUS.md` 擁有。Inactive `C:\SingYinRoster` Git HEAD 不代表 runtime。 |
 | Cloudflare Worker／Access／Tunnel | Worker 來源及受保護設定未改動；既有 canonical gateway 承接 100% 流量，Access、Tunnel、OTP fail-closed 及 gateway health 已重新核對 |
 | rc45 來源與部署證據 | 15／15 gate；受控 origin 切換、migration `0012`、正式備份／隔離還原及 canonical health／entrance／Guest／support checks 通過 |
-| 第一個已驗證復原目標 | 保留 rc45 程式並使用已驗證正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3` 進行受控還原；先在隔離資料庫核對 checksum、公平、行數及 restore audit |
+| 第一個已驗證復原目標 | 保留目前程式並使用 [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md) 記錄的已驗證正式備份進行受控還原；先在隔離資料庫核對 checksum、公平、行數及 restore audit |
 | 舊程式相容復原 | migration `0012` 後，rc43／rc41 等舊程式不得作 code-only rollback；必須先選取相容的 pre-0012 快照並完成受控隔離還原，再由事故負責人批准切換 |
 | 更深歷史復原來源 | rc43／rc41／rc40／rc39／rc35／rc30／rc27／rc26 及其 Worker 只屬歷史來源；只有 rc45 復原不能安全恢復且事故負責人批准時使用 |
 | `codex/frontend-guest-performance-rc16` | rc17 來源分支；14 項 gate、標籤、Windows bundle 及 Worker staged rollout 已完成 |
@@ -120,7 +122,7 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 
 只有完整 release report 與來源 fingerprint 一致時，才可：
 
-1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前 rc45 origin、Alembic `0012` 與未變更的 gateway 已對帳，任何新候選仍須產生自己的來源指紋及部署證據；
+1. 凍結候選、核對完整 report 與 fingerprint；候選必須先合併至 `main` 並建立新的獲批准 annotated tag；目前線上 origin、Alembic head 與 gateway 以本頁頂部生成狀態為準，任何新候選仍須產生自己的來源指紋及部署證據；
 2. 建立並驗證正式備份，在另一隔離資料庫完成還原；
 3. 進入短暫 maintenance；
 4. 從該不可變 tag 更新 Windows bundle，執行候選所需的 additive migration；目前 schema head 是 `0012`；

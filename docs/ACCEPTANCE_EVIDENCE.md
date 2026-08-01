@@ -3,17 +3,15 @@
 ## rc45 正式機器與線上證據（真人驗收仍待完成）
 
 - 合成 SQLite 規模驗證涵蓋 24／52、240／520、2,400／5,200 人／週層級；查詢計劃、statement count、p50／p95、記憶體、DB／WAL 大小及備份時間保存在 `docs/audits/rc44-sqlite-scale.json`。
-- `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的 308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 正式 gate。
-- 正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／`bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8` 通過 checksum、SQLite integrity、schema、公平、行數、restore audit 及隔離還原。Origin health、`writeReady=true`、canonical entrance／Guest／support 瀏覽器 smoke 與零 console error 通過。
-- Worker 來源沒有改動，保留既有 100% gateway 並重新核對 health。受監督真人驗收仍未完成；機器 gate 及線上 smoke 不代替首席導學風紀與教師顧問簽署。
-
-> **線上來源真相（2026-08-01）：** clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 正在 Windows origin 運行；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。Alembic `0012`、正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、origin readiness 及 canonical entrance／Guest／support smoke 均已核對。Worker 來源未改動且 gateway 健康。rc43 是歷史來源，不能在 migration `0012` 後作 code-only rollback；舊程式回復必須配合受控的 pre-0012 相容資料庫還原。真人驗收仍未完成。
+<!-- SING_YIN_CURRENT_STATUS:START -->
+> **已核實線上來源（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的不可變 bundle；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、health 及 `writeReady=true` 已核對。Worker 來源沒有改動，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 維持 100% 流量且健康。`v1.2.0-rc.43` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
+<!-- SING_YIN_CURRENT_STATUS:END -->
 
 本文件把機器驗證與真人驗收分開。`logs/release-candidate-report.json` 顯示 `pass`，只代表下列自動化證據在隔離虛構資料中通過；它不代表實際名單、學校做法、專用電腦、加密離機位置或外部存取決定已獲真人批准。
 
 > **歷史 rc30 乾淨發布證據（2026-07-27）：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是當時完整驗證的乾淨組合。rc30 的 296-file runtime 指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate，包括 894 項 Python、3 個 motion 及 46 個 Worker contract，並完成受控 Windows 切換、正式備份、隔離還原、0% Worker smoke、100% promotion、origin health／readiness 與 canonical rendered checks。目前線上版本是本頁頂部的 rc45／Alembic `0012`；任何舊程式復原均須配合受控的相容資料庫還原。rc43／rc41／rc40／rc39／rc35 只屬歷史來源。機器與線上證據不能代替真人驗收，後者保持未完成。
 >
-> **歷史 rc31 綜合來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 的 297 個可部署來源檔案曾以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時 15／15 正式 `--release` 閘門。它只保留為來源演進證據，沒有部署，亦不是目前候選或回退目標；目前 rc45 及 migration `0012` 後的受控資料庫復原限制以本頁頂部為準。
+> **歷史 rc31 綜合來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 的 297 個可部署來源檔案曾以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時 15／15 正式 `--release` 閘門。它只保留為來源演進證據，沒有部署，亦不是目前候選或回退目標；目前線上版本及 migration 後的受控資料庫復原限制以本頁頂部生成狀態為準。
 >
 > **rc28 來源候選（未上線）：** 46 個 Worker contract 已證明四個身份 CTA 共用同一控制器，並覆蓋成功、拒絕、同步例外、逾時、安靜意圖、已播放、重複啟動、`pageshow` 及媒體失敗分類。`scripts/verify_public_entry_music.py` 以真實 Chromium 覆蓋 desktop Admin、desktop Guest、390px mobile Admin／Guest、滑鼠／鍵盤、安靜、已播放、快速雙擊及 silent `/view`，每個身份測試只觀察一次目標請求並在建立真正 session／輸入私人憑證前截停。NiceGUI 的聚焦 Chromium 階段另已覆蓋 desktop menu、320px 全寬 System／Light／Dark 選擇器、目的語言本名、偏好隔離、256–1024px adaptive matrix、reduced motion 及零 console／page errors。Engineering 的 ≈10B 是按 2026-07-27 提供截圖把 9.38B 四捨五入的跨工具創作者指標，不是即時產品遙測。這些聚焦證據仍不是正式發布：須再由 exact-source release report、0% Worker version smoke、100% promotion 及 canonical live browser smoke 補完；首席導學風紀及教師顧問真人驗收仍保持未完成。
 >

@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "status_source": "docs/status/current-release.json",
+  "status_document": "docs/status/CURRENT_STATUS.md",
+  "document_classes": {
+    "entrypoint": [
+      "README.md",
+      "README-EN.md",
+      "docs/DOCUMENTATION_INDEX.md"
+    ],
+    "living": [
+      "PROJECT_STATUS.md",
+      "docs/status/CURRENT_STATUS.md",
+      "docs/ITERATION_REGISTER.md"
+    ],
+    "standard": [
+      "Professional_Design_System.md",
+      "SECURITY.md",
+      "docs/ARCHITECTURE_OVERVIEW.md",
+      "docs/CODE_ACCEPTANCE_REVIEW.md",
+      "docs/CONTENT_DESIGN_AUDIT.md",
+      "docs/NICEGUI_ARCHITECTURE.md",
+      "docs/ROSTER_POLICY_MODES.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/THREAT_MODEL_SUPPORT_INBOX.md",
+      "docs/UNIFIED_GUEST_SECURITY_MODEL.md"
+    ],
+    "runbook": [
+      "docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md",
+      "docs/OPERATOR_GUIDE.md",
+      "docs/PUBLIC_ROSTER_VIEWER.md",
+      "docs/QUICKSTART.md",
+      "docs/RELEASE_HANDOVER.md",
+      "docs/SUPPORT_AND_INCIDENT_WORKFLOW.md",
+      "docs/UPDATE_WORKFLOW.md",
+      "docs/WINDOWS_DEDICATED_HOST_SETUP.md",
+      "docs/WINDOWS_SSH_MAINTENANCE.md"
+    ],
+    "decision": [
+      "docs/DEPLOYMENT_DECISION.md",
+      "docs/MUSIC_IMPORT_DECISION.md",
+      "docs/PRODUCT_RESEARCH_AND_IA_DECISIONS.md",
+      "docs/adr/README.md",
+      "docs/adr/0001-documentation-and-architecture-governance.md"
+    ],
+    "governance": [
+      "CODEX_PROMPTS.md",
+      "CONTRIBUTING.md",
+      "docs/AI_AGENT_GIT_GUIDE.md",
+      "docs/BRANCH_STRATEGY.md",
+      "docs/DOCUMENTATION_SYSTEM.md",
+      "docs/SKILLS_OVERVIEW.md"
+    ],
+    "evidence": [
+      "docs/ACCEPTANCE_EVIDENCE.md",
+      "docs/VISUAL_INTERACTION_AUDIT_RC31.md"
+    ],
+    "plan": [
+      "docs/MUSIC_PLAYLIST_CANDIDATES.md"
+    ],
+    "history": [
+      "CHANGELOG.md"
+    ],
+    "legal": [
+      "NOTICE.md"
+    ],
+    "archive": [
+      "archive/README.md"
+    ]
+  },
+  "collections": {
+    ".superdesign": "design-tool-state",
+    "data/devotional": "curated-content-evidence",
+    "docs/adr": "decision",
+    "docs/audits": "evidence",
+    "docs/design": "asset-record",
+    "docs/plans": "plan",
+    "docs/status": "living-status",
+    "music": "asset-guide"
+  },
+  "topic_owners": {
+    "current-production-status": "docs/status/CURRENT_STATUS.md",
+    "machine-readable-release-state": "docs/status/current-release.json",
+    "project-capability-and-delivery-history": "PROJECT_STATUS.md",
+    "release-history": "CHANGELOG.md",
+    "documentation-governance": "docs/DOCUMENTATION_SYSTEM.md",
+    "documentation-routing": "docs/DOCUMENTATION_INDEX.md",
+    "architecture-overview": "docs/ARCHITECTURE_OVERVIEW.md",
+    "architecture-detail": "docs/NICEGUI_ARCHITECTURE.md",
+    "module-dependency-contract": "docs/architecture/module-boundaries.json",
+    "design-language": "Professional_Design_System.md",
+    "operator-workflow": "docs/OPERATOR_GUIDE.md",
+    "release-and-recovery-runbook": "docs/RELEASE_HANDOVER.md",
+    "security-and-privacy": "docs/SECURITY_AND_PRIVACY.md",
+    "guest-capability-boundary": "docs/UNIFIED_GUEST_SECURITY_MODEL.md"
+  },
+  "status_consumers": [
+    {
+      "path": "README.md",
+      "language": "zh-Hant",
+      "link": "docs/status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "README-EN.md",
+      "language": "en",
+      "link": "docs/status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "PROJECT_STATUS.md",
+      "language": "en",
+      "link": "docs/status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "docs/ACCEPTANCE_EVIDENCE.md",
+      "language": "zh-Hant",
+      "link": "status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md",
+      "language": "zh-Hant",
+      "link": "status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "docs/DEPLOYMENT_DECISION.md",
+      "language": "zh-Hant",
+      "link": "status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "docs/NICEGUI_ARCHITECTURE.md",
+      "language": "en",
+      "link": "status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "docs/OPERATOR_GUIDE.md",
+      "language": "zh-Hant",
+      "link": "status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "docs/PUBLIC_ROSTER_VIEWER.md",
+      "language": "zh-Hant",
+      "link": "status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "docs/QUICKSTART.md",
+      "language": "zh-Hant",
+      "link": "status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "docs/RELEASE_HANDOVER.md",
+      "language": "zh-Hant",
+      "link": "status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "docs/SECURITY_AND_PRIVACY.md",
+      "language": "en",
+      "link": "status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "docs/UNIFIED_GUEST_SECURITY_MODEL.md",
+      "language": "zh-Hant",
+      "link": "status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "docs/UPDATE_WORKFLOW.md",
+      "language": "zh-Hant",
+      "link": "status/CURRENT_STATUS.md"
+    },
+    {
+      "path": "docs/WINDOWS_DEDICATED_HOST_SETUP.md",
+      "language": "zh-Hant",
+      "link": "status/CURRENT_STATUS.md"
+    }
+  ]
+}

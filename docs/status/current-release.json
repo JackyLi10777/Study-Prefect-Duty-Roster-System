@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-08-01",
+  "state": "live",
+  "release": {
+    "tag": "v1.2.0-rc.45",
+    "commit": "90777345ea9ed5652c73873edb3c8c846a9ceac5",
+    "bundle": "C:\\SingYinRoster\\releases\\v1.2.0-rc.45-90777345ea9e-5c891432a1d8",
+    "source_file_count": 308,
+    "fingerprint_sha256": "032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83",
+    "formal_gates": {
+      "passed": 15,
+      "total": 15
+    }
+  },
+  "database": {
+    "alembic_head": "0012",
+    "rollback_requires_compatible_restore": true
+  },
+  "recovery": {
+    "backup_file": "20260801-064628-279309-manual_verified_backup.sqlite3",
+    "backup_sha256": "bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8",
+    "checks": [
+      "checksum",
+      "sqlite-integrity",
+      "schema",
+      "fairness",
+      "row-counts",
+      "restore-audit",
+      "isolated-restore"
+    ]
+  },
+  "origin": {
+    "service": "SingYinRosterSvc",
+    "health": "passed",
+    "readiness": "passed",
+    "write_ready": true,
+    "maintenance": false,
+    "recovery_required": false,
+    "pending_backup_obligations": 0
+  },
+  "worker": {
+    "version_id": "394e2205-ae8f-4eef-a13a-e701931e6f0d",
+    "source_changed_for_release": false,
+    "traffic_percent": 100,
+    "health": "passed"
+  },
+  "historical_predecessor": {
+    "release": "v1.2.0-rc.43",
+    "rollback_mode": "controlled-compatible-database-restore"
+  },
+  "acceptance": {
+    "automated": "passed",
+    "supervised_human": "pending",
+    "roles": [
+      "Head Study Prefect",
+      "teacher-advisor"
+    ]
+  }
+}
