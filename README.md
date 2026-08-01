@@ -1,8 +1,8 @@
 # 聖言中學導學風紀值班表生成系統
 
-> **已核實線上來源（2026-07-31）：** Windows origin 正運行 clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466`；canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 承接 100% 流量。rc43 的 306 個發布檔案以指紋 `699dc436c69e02f3b9062a04500715929ba35f78f48e14a3d80a0ac33c18640b` 通過 15／15 正式閘門；正式備份 `20260731-013103-079514-manual_verified_backup.sqlite3`（SHA-256 `f07306c89e79a610b40105627620c1603b707c39a7ab4cc537217df61c358e1c`）、隔離還原、公平及行數核對、origin health／readiness、Worker 0% 指定版本 smoke、100% promotion 與 canonical health／entrance／Viewer 均已通過。第一層受控回退是 rc41 origin `74072b0175ff64807312a8cc5b9cd016b6628210` 與前一 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；rc40／`2ec900a5ef1c021183717dfa648ef76b55452ffb` 及 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 是第二層回退。`v1.2.0-rc.42` 與 rc43 指向同一來源，但沒有綁定正式報告且從未部署，不是回退目標。首席導學風紀及教師顧問的受監督真人驗收仍未完成。下文較舊的 live／candidate 字樣只保留歷史證據，均由本段取代。
+> **已核實線上來源（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5`；308 個發布檔案以指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 正式閘門。受控切換把 SQLite 升級至 Alembic `0012`，並以正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`（SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`）完成隔離還原、公平、行數及 restore-audit 核對；origin health／write-readiness 與 canonical entrance／Guest／support 瀏覽器 smoke 均通過。Worker 來源沒有改動，故保留既有 100% 流量版本並確認其 gateway health。rc43 只保留為歷史來源；migration `0012` 後不可只切回舊程式，必須配合受控資料庫還原。首席導學風紀及教師顧問的受監督真人驗收仍未完成。下文較舊的 current／live／candidate 字樣只保留歷史證據，均由本段取代。
 >
-> **rc44 候選工作（尚未上線）：** 保留 SQLite，按真實查詢計劃增加索引及有界查詢，消除名單匯入／撤回流程的 N+1，加入不記錄參數或學生內容的可選慢 SQL 診斷，並把備份核對移出 UI event loop。完整合成規模證據涵蓋 2,400 名虛構風紀／5,200 週；正式發布完成前，線上真相仍是上方 rc43。
+> **rc45 完成範圍：** 保留 SQLite，按真實查詢計劃增加索引及有界查詢，消除名單匯入／撤回流程的 N+1，加入不記錄參數或學生內容的可選慢 SQL 診斷，並把備份核對移出 UI event loop。完整合成規模證據涵蓋 2,400 名虛構風紀／5,200 週；本段功能已隨上方 rc45 上線。
 >
 > **非以役人，乃役於人。**
 > 
@@ -81,7 +81,7 @@ Admin 是正式工作的標準版本；Guest 使用同一組路由、導航、�
 | `codex/frontend-guest-performance-rc16` | NiceGUI + SQLite；歷史整合來源 | rc17 的多用戶、操作層級及前端穩定性整合線；現行發布已由 rc27 取代 |
 | `codex/service-weave-v1-2-editorial` | NiceGUI + SQLite；歷史整合來源 | 前一階段 Service Weave v1.2 編輯式整合線 |
 | `codex/unified-guest-redesign` | NiceGUI + SQLite；Windows 自託管 | 前一階段統一 Guest 架構記錄；不再是目前正式基線 |
-| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 現行正式來源為 `v1.2.0-rc.43`；第一層配對回退為 rc41 origin 與前一 Worker，精確身份見本頁最上方線上來源摘要 |
+| `main` | NiceGUI + SQLite；Windows／Linux 自託管 | 現行正式來源為 `v1.2.0-rc.45`；資料庫已升至 Alembic `0012`，回退須依頁首摘要執行相容資料庫還原 |
 | `nicegui-self-hosted` | 專用 Windows 電腦或 Linux／Raspberry Pi 主機 | 與發布時 `main` 一致的平台命名版本 |
 | `streamlit-cloud` | Streamlit Cloud | 由舊 `ai` 分支原提交改名保留的歷史參考版本 |
 

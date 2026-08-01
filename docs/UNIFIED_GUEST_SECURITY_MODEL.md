@@ -1,8 +1,8 @@
 # 統一訪客模式安全模型 / Unified guest security model
 
-> **線上來源真相（2026-07-31）：** clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466` 正在 Windows origin 運行，Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 承接 100% 流量。有限 Guest receipt metadata、真實 replay 標記、寫入邊界期限核對及 R7 可靠性修復均保留；306-file 指紋通過 15／15 閘門，origin readiness、0%／100% Worker rollout 及 canonical checks 已核對。第一層配對回退是 rc41／`74072b0175ff64807312a8cc5b9cd016b6628210` 與 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；rc40 與其 Worker 是第二層回退；真人驗收未完成。
+> **線上來源真相（2026-08-01）：** clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 正在 Windows origin 的不可變 bundle 運行；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 閘門。Alembic `0012`、正式備份／隔離還原、origin health／write-readiness 及 canonical entrance／Guest／support browser smoke 已核對。Worker 來源沒有改動，既有 100% gateway 保持健康。rc43 只屬歷史來源；資料庫升至 `0012` 後不能只切回舊程式，必須執行受控的 pre-0012 相容資料庫還原。真人驗收未完成。
 >
-> **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 來源檔案以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate 並完成受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量。這組 clean pair 是當時第一個已知、已驗證的復原目標；目前 rc43 及第一層 rc41 配對回退以本頁頂部記錄為準，rc40／rc39／rc35／rc30／rc27 是更深歷史。Admin、Guest 與公開 Viewer 使用同一身份邊界；該次 deployment report 證實當時 origin ready 且無 maintenance、recovery 或 pending backup obligation，真人身份與工作流驗收仍保持獨立未完成。
+> **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾以受控方式運行 annotated tag `v1.2.0-rc.30`／commit `74b84f43786b00feb15b51a6270ff71c9430773f`；296 個 runtime 來源檔案以指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate 並完成受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% smoke 後承接 100% 流量。這組 clean pair 是當時第一個已知、已驗證的復原目標；現行 rc45 及其受控資料庫復原限制以本頁頂部記錄為準，rc43／rc41／rc40／rc39／rc35／rc30／rc27 均屬歷史來源。Admin、Guest 與公開 Viewer 使用同一身份邊界；該次 deployment report 證實當時 origin ready 且無 maintenance、recovery 或 pending backup obligation，真人身份與工作流驗收仍保持獨立未完成。
 
 ## 1. 目的
 

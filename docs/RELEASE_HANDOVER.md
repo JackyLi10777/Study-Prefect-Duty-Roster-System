@@ -1,10 +1,10 @@
 # 首次發布與交接手冊 / First-release and handover guide
 
-## rc44 資料層發布程序
+## rc45 資料層發布結果
 
-切換 rc44 origin 前，先在隔離副本升級至 Alembic `0012`，核對固定星期衝突拒絕、foreign keys、quick check 及公平對帳，再執行 `python -X utf8 scripts/verify_sqlite_scale.py --profile full --output docs/audits/rc44-sqlite-scale.json`。慢 SQL 診斷預設關閉；若暫時啟用，必須確認日誌只有指紋與耗時，沒有 SQL 參數或值班內容。Windows 切換仍要求 exact-source 候選報告、全新已驗證備份、隔離還原及可寫 `/readyz`。若 Worker 來源、binding 及安全設定沒有改變，毋須重新部署 Worker；切換後仍須核對其目前 100% 流量版本正確代理新 origin。
+rc45 已在隔離副本及正式主機升級至 Alembic `0012`，完成固定星期衝突拒絕、foreign keys、quick check、公平對帳、完整規模驗證、exact-source 候選報告、全新已驗證備份、隔離還原及可寫 `/readyz`。慢 SQL 診斷預設關閉；若暫時啟用，日誌只可保留指紋與耗時，不可包含 SQL 參數或值班內容。Worker 來源、binding 及安全設定沒有改變，因此沒有進行無意義的 Worker 重部署；既有 100% gateway 已核對能正確代理新 origin。
 
-> **交接前必讀的線上來源真相（2026-07-31）：** Windows origin 正運行 clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466`；canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 承接 100% 流量。306-file 指紋 `699dc436c69e02f3b9062a04500715929ba35f78f48e14a3d80a0ac33c18640b` 通過 15／15 gate；正式備份 `20260731-013103-079514-manual_verified_backup.sqlite3`（SHA-256 `f07306c89e79a610b40105627620c1603b707c39a7ab4cc537217df61c358e1c`）、隔離還原、公平與行數核對、restore audit、origin readiness、0% Worker smoke、100% promotion 及 canonical checks 已通過。第一層配對回退是 rc41／`74072b0175ff64807312a8cc5b9cd016b6628210` 與 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；rc40／`2ec900a5ef1c021183717dfa648ef76b55452ffb` 與 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 是第二層回退。真人驗收未完成。下文較舊狀態只作歷史證據。
+> **交接前必讀的線上來源真相（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的不可變 bundle。308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate；正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`（SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`）、隔離還原、公平、行數、restore audit、origin readiness 及 canonical browser smoke 已通過。Worker 來源未改動，既有 gateway 保持健康。rc43 回復必須配合 pre-0012 相容資料庫還原，不能只切換 task action。真人驗收未完成；下文較舊狀態只作歷史證據。
 > **rc37／rc38／rc42 版本澄清：**受保護的 `v1.2.0-rc.37` 標籤指向較早 rc36 source，屬 void／未部署版本；`v1.2.0-rc.38` 通過來源閘門但沒有部署；rc42 與 rc43 指向同一 commit／tree，但沒有綁定正式報告且從未部署。三者均不能當成回退目標；正式服務只以本頁頂部的 rc43 origin 與 Worker 為準。
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。

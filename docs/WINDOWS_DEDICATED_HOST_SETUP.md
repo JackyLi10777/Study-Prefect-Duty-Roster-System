@@ -1,6 +1,6 @@
 # Windows 專用主機完整設定手冊
 
-> **主機來源真相（2026-07-31）：** owned scheduled task 正運行 clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466` 的 immutable bundle，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 承接 100% 流量；健康及 readiness 均通過。受控部署前備份 `20260731-013103-079514-manual_verified_backup.sqlite3`、隔離還原、資料行數、公平對帳及 restore audit 已核對。第一層配對回退是 rc41／`74072b0175ff64807312a8cc5b9cd016b6628210` 與 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；rc40 與其 Worker 是第二層回退。inactive `C:\SingYinRoster` Git checkout 的 HEAD 不是 runtime 身分證據；須讀取 scheduled-task target 與 `.sing-yin-release.json` marker。真人驗收未完成。
+> **主機來源真相（2026-08-01）：** owned scheduled task 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的 immutable bundle `C:\SingYinRoster\releases\v1.2.0-rc.45-90777345ea9e-5c891432a1d8`；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、資料行數、公平對帳、restore audit、health 及 `writeReady=true` 已核對。Worker 未改動且 gateway 健康。Alembic 已升至 `0012`，rc43 不能作 code-only rollback；必須配合受控的 pre-0012 相容資料庫還原。inactive `C:\SingYinRoster` Git checkout 的 HEAD 不是 runtime 身分證據；須讀取 scheduled-task target 與 `.sing-yin-release.json` marker。真人驗收未完成。
 
 **適用系統：** Sing Yin Study Prefect Duty Roster System（NiceGUI + SQLite）
 **讀者：** 完全不懂程式、第一次設定電腦的人
@@ -23,7 +23,7 @@
 完成本手冊後，運作方式如下：
 
 1. 一部 Windows 電腦長期保存程式、SQLite 資料庫、備份、日誌、PDF 及音樂。
-2. NiceGUI origin 只在這部電腦的受保護 loopback endpoint 開放（目前為 `127.0.0.1:8080`）；日常使用者從唯一正式 `workers.dev` 網站進入。目前 rc43 訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace；`/guest`、`/try` 只作兼容重定向。管理員登入後仍留在同一網址。
+2. NiceGUI origin 只在這部電腦的受保護 loopback endpoint 開放（目前為 `127.0.0.1:8080`）；日常使用者從唯一正式 `workers.dev` 網站進入。目前 rc45 訪客按同站「訪客體驗」進入與管理員相同的 NiceGUI 路由，但只操作虛構記憶體 workspace；`/guest`、`/try` 只作兼容重定向。管理員登入後仍留在同一網址。
 3. 電腦開機後，可由 Windows 工作排程器在背景自動啟動系統。
 4. 初次安裝先驗證 loopback origin，再依 Cloudflare 手冊連接既有 Tunnel、VPC Service、Access 及 Worker；始終不設定路由器轉發或公開 NiceGUI 連接埠。
 5. 即使電腦沒有互聯網，名單、排班、PDF、備份及還原仍可使用；YouTube 音樂除外。

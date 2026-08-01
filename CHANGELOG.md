@@ -2,7 +2,15 @@
 
 This file records user-visible, operational and release-significant changes. Exact deployment evidence remains in `PROJECT_STATUS.md` and the generated release reports.
 
-## Unreleased — post-rc43 release-evidence correction
+## v1.2.0-rc.45 — released, 2026-08-01
+
+- Keeps SQLite as the sole local-first roster truth while adding measured composite indexes, bounded history reads, N+1 removal, privacy-safe optional SQL timing and non-blocking backup evidence.
+- Adds the bilingual diagnostic-support hero, expanded operator guidance and semantic leave/fairness icon lifecycles without changing policy or Guest isolation.
+- Passed all 15 exact-source gates at commit `90777345ea9ed5652c73873edb3c8c846a9ceac5` with 308-file fingerprint `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83`.
+- Deployed immutable Windows bundle `v1.2.0-rc.45-90777345ea9e-5c891432a1d8`; Alembic `0012`, verified backup `20260801-064628-279309-manual_verified_backup.sqlite3` (`bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`), isolated restore, health, write-readiness and canonical browser smoke passed. Worker source was unchanged and its existing 100% gateway remained healthy.
+- Rc43 is not a code-only rollback after migration `0012`; recovery must restore a compatible pre-0012 database through the controlled restore procedure. Supervised human acceptance remains open.
+
+## Historical — post-rc43 release-evidence correction
 
 - Derives the previous origin identity from the scheduled task's actual immutable bundle and verifies its complete content fingerprint before recording a predecessor or rollback commit. Because the identity marker is intentionally outside that content digest, its release, commit, tree and environment fields are now independently bound to the annotated tag published on `origin`, the tag-resolved Git tree, the pre-overlay protected host-environment SHA-256 and the deterministic bundle directory name. A legacy task that still runs directly from `HostRoot` remains supported explicitly.
 - Adds `previousReleaseRef` and `previousReleaseSource` to future Windows deployment reports. The already-issued rc43 report remains immutable and retains its known stale `previousCommit`; direct task and marker evidence prove rc41 was the real predecessor and captured rollback target.

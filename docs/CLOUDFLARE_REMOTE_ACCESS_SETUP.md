@@ -1,6 +1,6 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
-> **線上來源真相（2026-07-31）：** Windows origin 正運行 clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466`，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 承接 100% 流量。受控部署已通過 identity parity、正式備份及隔離還原、0% 指定版本 smoke、100% promotion 與 canonical health／entrance／Viewer 核對。第一層配對回退是 rc41／`74072b0175ff64807312a8cc5b9cd016b6628210` 與 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e`；rc40／`2ec900a5ef1c021183717dfa648ef76b55452ffb` 與 Worker `2cb38b05-6091-43be-86d3-d9f3ccae1ceb` 是第二層回退。rc42 是與 rc43 同源但未綁定正式報告、未部署的 source-only tag。真人驗收未完成。
+> **線上來源真相（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的不可變套件。來源以指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate；Alembic `0012`、正式備份、隔離還原、origin health／write-readiness 及 canonical entrance／Guest／support smoke 已核對。Worker 來源沒有改動，既有 100% gateway 維持健康。rc43 不是 migration `0012` 後的直接程式回退；回復舊程式須一併採用受控的相容資料庫還原。真人驗收未完成。
 >
 > **歷史 rc30 乾淨發布證據：** Windows origin 曾以受控方式運行並驗證健康、ready 的 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；其 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% version smoke 後承接 100% 流量。canonical root、capability health 與 rendered desktop／320px／Guest Engineering checks 通過，private readiness 保持預期 redirect。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前復原先使用較近的乾淨 rc30／`11763f08…`。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
 >

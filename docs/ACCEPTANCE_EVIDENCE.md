@@ -1,12 +1,13 @@
 # 正式驗收證據矩陣 / Acceptance evidence matrix
 
-## rc44 候選證據（不是部署證據）
+## rc45 正式機器與線上證據（真人驗收仍待完成）
 
 - 合成 SQLite 規模驗證涵蓋 24／52、240／520、2,400／5,200 人／週層級；查詢計劃、statement count、p50／p95、記憶體、DB／WAL 大小及備份時間保存在 `docs/audits/rc44-sqlite-scale.json`。
-- 尚須完成 migration 升降級與衝突拒絕、完整 pytest、staged／release verifier、隔離 Admin／Guest／Public 瀏覽器矩陣、正式備份及隔離還原、來源指紋、origin health／readiness、canonical Worker 代理核對及受監督真人驗收。
-- 候選閘門通過不代表 rc44 已上線；受控切換及線上核對完成前，rc43 仍是 production truth。
+- `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的 308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 正式 gate。
+- 正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／`bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8` 通過 checksum、SQLite integrity、schema、公平、行數、restore audit 及隔離還原。Origin health、`writeReady=true`、canonical entrance／Guest／support 瀏覽器 smoke 與零 console error 通過。
+- Worker 來源沒有改動，保留既有 100% gateway 並重新核對 health。受監督真人驗收仍未完成；機器 gate 及線上 smoke 不代替首席導學風紀與教師顧問簽署。
 
-> **線上來源真相（2026-07-31）：** clean annotated `v1.2.0-rc.43`／`c8201f33e454d9120c73386642cbf9d737391466` 正在 Windows origin 運行；canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 為 100% 流量版本。306-file 指紋 `699dc436c69e02f3b9062a04500715929ba35f78f48e14a3d80a0ac33c18640b` 通過 15／15 gate；正式備份 `20260731-013103-079514-manual_verified_backup.sqlite3`／SHA-256 `f07306c89e79a610b40105627620c1603b707c39a7ab4cc537217df61c358e1c`、隔離還原、origin readiness、Worker 0%／100% rollout 及 canonical smoke 均已核對。Rc41／`74072b0175ff64807312a8cc5b9cd016b6628210` 與 Worker `610092f6-59d4-4fd4-ab3a-3fbf1dd2c64e` 是第一層配對回退；rc40 及其 Worker 是第二層回退。Rc42 與 rc43 同源但沒有正式報告、沒有部署，不能當作回退；真人驗收仍未完成。
+> **線上來源真相（2026-08-01）：** clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 正在 Windows origin 運行；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。Alembic `0012`、正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、origin readiness 及 canonical entrance／Guest／support smoke 均已核對。Worker 來源未改動且 gateway 健康。rc43 是歷史來源，不能在 migration `0012` 後作 code-only rollback；舊程式回復必須配合受控的 pre-0012 相容資料庫還原。真人驗收仍未完成。
 
 本文件把機器驗證與真人驗收分開。`logs/release-candidate-report.json` 顯示 `pass`，只代表下列自動化證據在隔離虛構資料中通過；它不代表實際名單、學校做法、專用電腦、加密離機位置或外部存取決定已獲真人批准。
 
