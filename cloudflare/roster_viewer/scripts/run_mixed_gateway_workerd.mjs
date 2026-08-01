@@ -8,8 +8,6 @@ import { access } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { Log, LogLevel, Miniflare } from 'miniflare';
-
 const WORKER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PROJECT_ROOT = path.resolve(WORKER_ROOT, '..', '..');
 const WORKER_ENTRY = path.join(WORKER_ROOT, 'worker.js');
@@ -94,6 +92,7 @@ async function main() {
   const adminSessionSecret = requiredSecret('SING_YIN_LOAD_ADMIN_SESSION_SECRET');
   const guestSessionSecret = requiredSecret('SING_YIN_LOAD_GUEST_SESSION_SECRET');
   const originPrincipalSecret = requiredSecret('SING_YIN_LOAD_ORIGIN_PRINCIPAL_SECRET');
+  const { Log, LogLevel, Miniflare } = await import('miniflare');
 
   const miniflare = new Miniflare({
     host: '127.0.0.1',
