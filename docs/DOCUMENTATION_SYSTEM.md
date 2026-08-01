@@ -25,6 +25,10 @@
 
 所有第一層文件及集合分類在 manifest；同一文件不可同時屬於兩個 class。
 
+### 迭代狀態契約
+
+`ITERATION_REGISTER.md` 只使用 `Proposed`、`Ready`、`Active`、`Conditional`、`Blocked` 或 `Done`。`Conditional` 表示項目暫不執行，只有表內寫明的可觀察觸發條件成立後，才可轉為 `Ready` 或 `Active`；它不是用來隱藏沒有 owner、證據或停止條件的模糊待辦。
+
 ## 單一狀態來源
 
 精確 release tag、commit、fingerprint、migration、backup、Worker、readiness 及真人驗收狀態只手動維護於：
