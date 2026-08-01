@@ -169,6 +169,14 @@ def test_frontend_reset_has_one_explicit_terminal_composition_layer() -> None:
     assert "width={DESKTOP_DRAWER_WIDTH_PX}" in shell_source
     assert "calc(var(--sy-v2-rail-width) + var(--sy-v2-content-gutter))" in source
 
+    history_action = re.search(
+        r"\.sy-dashboard-history-action\s*\{(?P<body>.*?)\}",
+        source,
+        flags=re.DOTALL,
+    )
+    assert history_action is not None
+    assert "min-height: 44px !important" in history_action.group("body")
+
 
 def test_status_badge_surface_is_owned_by_the_component_layer() -> None:
     component_source = (CSS_ROOT / "sing-yin-components-v1.css").read_text(encoding="utf-8")
