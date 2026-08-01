@@ -54,6 +54,7 @@ longest document:
 | Any user reporting an error, failed download, or display problem | Canonical site → **Problem report / Support** | [Local support and incident workflow](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md) |
 | Successor rehearsing before receiving official data | `START_PRACTICE_MODE.cmd` | [Quick start](docs/QUICKSTART.md) and [operator guide](docs/OPERATOR_GUIDE.md) |
 | IT maintainer deploying, recovering, or tracing an OP reference | [Documentation index](docs/DOCUMENTATION_INDEX.md) | [Windows host setup](docs/WINDOWS_DEDICATED_HOST_SETUP.md) and [update workflow](docs/UPDATE_WORKFLOW.md) |
+| Disaster-recovery custodian preparing for complete host loss | [Off-site disaster-recovery runbook](docs/OFFSITE_DISASTER_RECOVERY.md) | Use an approved BitLocker external volume, separated key custody, and replacement-location evidence |
 | Security reviewer or vulnerability reporter | [Security and privacy model](docs/SECURITY_AND_PRIVACY.md) | [Private reporting policy](SECURITY.md) and [branch strategy](docs/BRANCH_STRATEGY.md) |
 | Developer or reviewer changing code | [Architecture overview](docs/ARCHITECTURE_OVERVIEW.md) | [Detailed NiceGUI architecture](docs/NICEGUI_ARCHITECTURE.md), [documentation governance](docs/DOCUMENTATION_SYSTEM.md), [risk-led code review](docs/CODE_ACCEPTANCE_REVIEW.md), and [contributing guide](CONTRIBUTING.md) |
 

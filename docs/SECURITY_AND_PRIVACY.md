@@ -186,11 +186,19 @@ re-verifies both digests, migrates only the supported legacy chain from revision
 `0007` to the current head in isolation, then validates the current schema,
 foreign keys, row counts, and fairness before installation. Unknown or future
 revisions are rejected. Handover packaging likewise re-stages and re-verifies the
-exact pair immediately before ZIP creation. Windows ACLs
+exact pair immediately before ZIP creation. The off-site recovery seam adds a
+path-free receipt bound to the package, snapshot, manifest, schema and immutable
+release identity, then restores only from the copied bundle. Its Windows adapter
+accepts only a non-system USB／SD NTFS volume with BitLocker protection on and
+fully encrypted; it has no internal-disk, cloud-sync, DPAPI／EFS or custom-crypto
+fallback. The package is not itself encrypted, so the external volume and its
+separately held recovery key are the confidentiality boundary. Exact procedure,
+RPO／RTO and custody requirements are owned by
+[`OFFSITE_DISASTER_RECOVERY.md`](OFFSITE_DISASTER_RECOVERY.md). Windows ACLs
 limit runtime data, backups, logs and `.env` to the dedicated runtime account,
-SYSTEM and administrators. Host compromise by an administrator or loss of the
-physical disk is outside application-level protection; use Windows device
-encryption/BitLocker and an offline encrypted backup when those risks matter.
+SYSTEM and administrators. An administrator who already controls the host can
+still read export-time plaintext and rewrite unsigned receipts; separated
+custody and a replacement-location drill remain mandatory.
 
 ## 6. GitHub 及供應鏈治理 / Repository and supply-chain governance
 
@@ -282,7 +290,9 @@ databases, backups, or complete logs remain in a private controlled channel.
   physical-device compromise are separate trust domains.
 - KV is eventually consistent; immutable keys and conflict detection prevent
   silent replacement but do not turn KV into a transactional database.
-- Application backups do not replace encrypted, geographically separate disaster
-  recovery when the roster becomes mission critical.
+- Source support for an off-site bundle does not prove disaster recovery. A real
+  approved BitLocker device, separated key custody, offline retention and a
+  replacement-location drill are still required; see
+  [`OFFSITE_DISASTER_RECOVERY.md`](OFFSITE_DISASTER_RECOVERY.md).
 
 These limits are acceptance inputs, not reasons to weaken the controls above.

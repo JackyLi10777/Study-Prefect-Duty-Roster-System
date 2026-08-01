@@ -595,18 +595,11 @@ powershell -ExecutionPolicy Bypass -File scripts\doctor_windows_remote_access.ps
 C:\SingYinRoster\data\backups
 ```
 
-### 你仍要做的離機備份
+### 你仍要做的離機災難復原
 
-至少每星期一次，以及每次更新程式前：
+本機快照及網站「建立交接備份包」所下載的 ZIP 都不等於離機災難復原證據。不要手動下載、複製、改名 ZIP，亦不要自行拖走 SQLite；這些路徑會繞過外置卷證據、不可變 release 綁定、原子匯出及 copied-bundle drill。
 
-1. 進入網站「系統設定」。
-2. 確認最新快照顯示「已驗證」。
-3. 按「建立交接備份包」。
-4. 把下載的 ZIP 複製到學校批准的加密 USB 或其他受控離機位置。
-5. 檔名加入日期，例如 `SYSS-Roster-Handover-2026-09-14.zip`。
-6. 每月在練習／複製環境完成一次還原演練。
-
-不要只把 `sing-yin-roster.sqlite3` 單獨拖走；manifest 和還原說明同樣重要。
+完整主機損毀的匯出、演練、保留及保管只依[離機災難復原手冊](OFFSITE_DISASTER_RECOVERY.md)，並只從排程工作實際指向的 immutable release bundle 執行 `export_offsite_recovery.ps1`。任何條件或報告未通過都停止，不以手動複製作後備。
 
 ---
 
@@ -714,7 +707,7 @@ rc20 的自動化裝置矩陣已包含手機／平板／桌面與 accessibility�
 - [ ] 執行 `/healthz` 健康檢查。
 - [ ] 確認工作排程器沒有重複的 Sing Yin 工作。
 - [ ] 在設定頁確認最近快照已驗證。
-- [ ] 建立一個新的離機交接備份包。
+- [ ] 依[離機災難復原手冊](OFFSITE_DISASTER_RECOVERY.md)把新 verified snapshot 匯出至批准的 BitLocker 外置媒體，完成 copied-bundle drill，安全退出並離線保存。
 - [ ] 檢查 `logs\app.log` 是否持續輪替，而不是無限增長。
 - [ ] 確認電腦仍不會接電自動睡眠。
 - [ ] 核對主機日期和時區。
@@ -764,6 +757,8 @@ C:\SingYinRoster\.venv\Scripts\python.exe -X utf8 scripts\inspect_support_log.py
 
 ## 16. 搬到另一部 Windows 主機
 
+有舊主機可用的計劃搬遷按以下步驟；舊主機已損毀或內置儲存不可用時，改用[離機災難復原手冊](OFFSITE_DISASTER_RECOVERY.md)，不得假設本機 `data\backups` 仍存在。
+
 1. 在舊主機建立最新已驗證交接備份包。
 2. 在新主機依第 2 至第 9 節全新安裝程式。
 3. 先以新主機的練習模式確認運作正常。
@@ -790,7 +785,7 @@ C:\SingYinRoster\.venv\Scripts\python.exe -X utf8 scripts\inspect_support_log.py
 - [ ] 重新啟動後網站會自動恢復。
 - [ ] `/healthz` 顯示 official 及 database ok。
 - [ ] `doctor_windows_remote_access.ps1` 沒有 `fail`；正式使用前以 `-Strict` 通過。
-- [ ] 已建立並移走一個已驗證交接備份包。
+- [ ] 已由批准的 BitLocker 外置媒體完成一次不依賴正式主機資料的 replacement-location drill，並按離機手冊記錄 RPO／RTO、保管人及 `pass` 報告。
 
 ### 首席導學風紀
 

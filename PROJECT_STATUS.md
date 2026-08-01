@@ -6,6 +6,8 @@
 > **Verified production truth (2026-08-01):** the live Windows origin is clean annotated `v1.2.0-rc.45` at `90777345ea9ed5652c73873edb3c8c846a9ceac5` and runs an immutable bundle. Its 308-file fingerprint `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` passed 15/15 gates. SQLite is at Alembic `0012`; verified backup `20260801-064628-279309-manual_verified_backup.sqlite3` with SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`, isolated restore, health, `writeReady=true`, `maintenance=false`, `recoveryRequired=false`, and `pendingBackups=0` passed. Worker source did not change; canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` remains healthy at 100% traffic. `v1.2.0-rc.43` is historical source evidence, not a code-only rollback after migration `0012`; recovery requires the controlled compatible database restore. Supervised human acceptance remains `pending`. See [current system status](docs/status/CURRENT_STATUS.md) for the exact state and update contract.
 <!-- SING_YIN_CURRENT_STATUS:END -->
 
+**Off-site disaster-recovery source candidate（not deployed, 2026-08-01）：** current source adds an external-BitLocker-only export seam, path-free integrity receipt, immutable release identity and isolated restore drill that still passes after the original synthetic host data is removed. It deliberately rejects internal disks, sync folders and host-bound encryption fallbacks. The formal host remains rc45 and no real encrypted external medium or second-host drill was available during this phase, so `ITR-004` stays active and no production recovery claim has changed.
+
 **rc44／rc45 SQLite and product-completion release（live, 2026-08-01）：** the rc44 work was merged to protected `main`, formally verified and released as rc45. SQLite remains the single local-first source of truth. Measured indexes, bounded history APIs, N+1 removal, privacy-safe optional SQL diagnostics, one-pass non-blocking backup evidence, the bilingual support hero, semantic leave／fairness icon lifecycles and the five-part operator guide are now live. The isolated scale run covered 24／52, 240／520 and 2,400／5,200 synthetic prefect/week levels. Browser smoke rechecked the canonical entrance, in-memory Guest workspace and support route with no console errors. This paragraph supersedes later historical wording that still calls rc43 current.
 
 **Historical atmosphere and semantic-motion release:** the reviewed `codex/rc42-atmosphere-motion` change was squash-merged to protected `main` as `c8201f33e454d9120c73386642cbf9d737391466`／tree `11f759908218aee64c9d49024759beadf8ff9f5b` and deployed under `v1.2.0-rc.43`. It added the all-route light/dark atmosphere registry, ten normalized local AI assets, Daily Verse v2 reading surface, five-control rotary allowlist, lifecycle-only restore, and tactile preference switches without changing routes, Cloudflare Access, Session, Guest capabilities, SQLite, policy, or data formats. Protected tag `v1.2.0-rc.42` points to the same commit and tree but was created before the final formal verifier selected and bound rc43; rc42 therefore remains source-only and was never deployed. Rc43 was the authoritative release identity for that historical rollout and is superseded by rc45.
@@ -441,9 +443,9 @@ revision; they do not supersede the v1.2 release truth at the top of this file.
 
 ## Next Steps
 
-1. Complete supervised Head Study Prefect and teacher-advisor acceptance for the weekly workflow, PDF delivery, safe withdrawal, problem reporting and handover.
-2. Record any evidence-based usability issue found during that session without first changing the deployed rc43 source or its rc41 paired rollback.
-3. Create a new immutable candidate only if acceptance identifies a concrete defect or a separately approved release scope.
+1. Complete `ITR-004` with a school-approved BitLocker external device, separately held recovery key, measured RPO／RTO and a replacement-location drill that does not use the origin host.
+2. Complete supervised Head Study Prefect and teacher-advisor acceptance for the weekly workflow, PDF delivery, safe withdrawal, problem reporting and handover.
+3. Create a new immutable candidate only if acceptance identifies a concrete defect or `ITR-002` has a separately approved release scope; then use the formal release gate and keep deployment truth generated from `status/current-release.json` rather than treating this source branch as live.
 
 ## Key Decisions and Architecture
 
@@ -457,7 +459,7 @@ revision; they do not supersede the v1.2 release truth at the top of this file.
 | Localization | Traditional Chinese default; English is a full UI counterpart; direct Scripture quotations use RCUV 2010（神版）and NKJV respectively |
 | Theme | Professional Teal `#0F766E`, restrained gold, light/dark support |
 | Responsive presentation | One URL, login, route set, data and policy engine; desktop and phone use independent arrangements from shared view models, never a second mobile site or user-agent-routed application |
-| External access | clean paired rc43 production: one canonical workers.dev hostname; public `/` entrance; signed Guest session → VPC → the same NiceGUI routes backed by an in-memory adapter; exact-email One-time PIN → signed Admin session → official workflow; `/guest` and `/try` compatibility redirects; separate encrypted `/view#…` Viewer. The Windows origin is loopback-only at `c8201f33…`; Worker `394e2205…` serves 100% traffic. Rc41／`74072b01…` and Worker `610092f6…` are the first paired rollback targets. The unified `/support` contract keeps Admin host-local consent and browser-only Guest／Public／Viewer boundaries. |
+| External access | One canonical workers.dev hostname; public `/` entrance; signed Guest session → VPC → the same NiceGUI routes backed by an in-memory adapter; exact-email One-time PIN → signed Admin session → official workflow; `/guest` and `/try` compatibility redirects; separate encrypted `/view#…` Viewer. The Windows origin remains loopback-only and `/support` keeps Admin host-local consent plus browser-only Guest／Public／Viewer boundaries. Exact live origin, Worker, schema and compatible rollback truth is generated in the status block above. |
 | Optional online music | Visible YouTube public-playlist player; no sign-in/payment/API key for playback, optional local-environment API key for search |
 | PDF export | Local-memory ReportLab generation with a Traditional Chinese CJK font; no public upload |
 
@@ -480,7 +482,7 @@ Important boundaries:
 | Canonical Access/VPC gateway is not yet fully human-accepted | Tracked | `ITR-001` | Guest／Viewer desktop, dark and mobile evidence plus Access-JWT／signed-session／VPC／WebSocket automation pass; keep localhost／WARP as maintenance fallback until exact-email One-time PIN login／logout, reconnect, upload, PDF and isolated full write flow are signed off |
 | Adaptive phone／tablet／desktop shell lacks physical-device sign-off | Tracked | `ITR-001` | Automated adaptive tablets, desktop, keyboard, route-focus, forced-colour and public-entry matrices pass; repeat keyboard, zoom, rotation and real safe-area checks on iPhone Safari and Android Chrome during supervised acceptance |
 | NiceGUI session-signing secret | Managed | — | The dedicated server-mode host uses an independent value in its protected `.env`; it is not stored in source, reports, screenshots or backups |
-| Complete host loss cannot yet be recovered from an off-device copy | Tracked | `ITR-004` | Local verified backups and isolated restore are proven; define encrypted off-device retention, key ownership, RPO／RTO and a replacement-location restore drill |
+| Complete host loss cannot yet be recovered from an off-device copy | Tracked | `ITR-004` | Source now enforces an external BitLocker target, exact copied-bundle receipt and isolated restore drill; closure still requires real media, separated key custody, offline retention, measured RPO／RTO and a replacement-location `pass` independent of the origin host |
 | Bundled PDF font assets are missing or corrupt on a replacement PC | Managed | — | Deployment and repository integrity checks cover the bundled Noto Sans HK Regular／Medium／SemiBold files; redeploy the formal version first, or use the three documented per-weight `.env` overrides only after print testing |
 | Pre-generation leave enforcement | Resolved | — | Draft generation and publishing both validate persistent weekly declarations |
 | Earlier Next／FastAPI scaffold | Resolved | — | It is absent from the active release; NiceGUI is the sole runtime |
@@ -505,6 +507,7 @@ Important boundaries:
 | `nicegui_app/services/guest_workspace.py` | Bounded in-memory fictional Guest workspaces and signed snapshot codec |
 | `nicegui_app/services/guest_adapter.py` | Same-route Guest workflow facade with no official persistence or external integration |
 | `nicegui_app/services/roster_workflow.py` | Generate, publish, leave-adjustment, fairness, backup transactions |
+| `nicegui_app/services/offsite_recovery.py` | Exact off-site export receipt, copied-bundle validation and temporary replacement restore drill |
 | `nicegui_app/ui/` | Shared shell, bilingual messages, theme, pages |
 | `nicegui_app/utils/prefect_import.py`, `prefect_file_import.py` | Local JSON／CSV normalization plus bounded CSV／XLSX parsing and reviewed field mapping |
 | `nicegui_app/services/prefect_import_assistant.py` | Optional, default-off heading-only DeepSeek mapping suggestions; no raw roster rows |
@@ -523,6 +526,7 @@ Important boundaries:
 | `docs/SKILLS_OVERVIEW.md` | Active prompt/skill governance and maintenance guide |
 | `Professional_Design_System.md` | Active UI/UX design source of truth, token roles, implementation phases, and quality gates |
 | `docs/RELEASE_HANDOVER.md` | Local launch, PDF, backup, external-access gate, and final acceptance procedure |
+| `docs/OFFSITE_DISASTER_RECOVERY.md` | External BitLocker target, RPO／RTO, custody, retention and complete-host-loss recovery procedure |
 | `docs/ACCEPTANCE_EVIDENCE.md` | Requirement-by-requirement automated evidence and remaining human sign-off |
 | `docs/QUICKSTART.md` | Double-click startup, duplicate launch, and port-conflict instructions |
 | `docs/DEPLOYMENT_DECISION.md` | Approved local mode, Cloudflare Access decision gates, and true-cloud architecture boundary |

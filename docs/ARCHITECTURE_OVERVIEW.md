@@ -16,6 +16,8 @@ flowchart LR
     DOMAIN --> POLICY["roster_policy\nexecutable school policy"]
     WORKFLOW --> PERSIST["Persistence adapters\nSQLAlchemy + SQLite + Alembic"]
     WORKFLOW --> RECOVERY["Maintenance, backup, restore, audit"]
+    RECOVERY --> OFFSITE["Off-site recovery seam\nverified copy + isolated drill"]
+    HOST["Windows storage adapter\nexternal BitLocker evidence"] --> OFFSITE
     RUNTIME["main.py + runtime.py\ncomposition root"] --> UI
     RUNTIME --> WORKFLOW
     WORKER["Cloudflare Worker\npublic entrance + gateway + Viewer"] --> RUNTIME
@@ -32,11 +34,13 @@ flowchart LR
 | `packages/roster_core` | 生成與驗證結果 | 排班搜尋、完整性與公平計算 | NiceGUI、SQLite、Cloudflare |
 | `nicegui_app/persistence` | session factory、models、migration/readiness primitives | SQLAlchemy、SQLite pragma、SQL 診斷 | 頁面、文案、操作流程 |
 | `nicegui_app/services` | `RosterWorkflow`、Guest／下載／分享／支援 use cases | 交易、冪等、版本、備份義務、adapter 選擇 | NiceGUI widget 或 CSS |
+| `nicegui_app/services/offsite_recovery.py` | `export_offsite_recovery`、`drill_offsite_recovery` | exact-copy receipt、digest／ZIP validation、temporary replacement restore | BitLocker discovery、UI、secret storage 或部署切換 |
+| `scripts/export_offsite_recovery.ps1` | Windows external-volume evidence adapter | active immutable bundle、USB／SD、NTFS、BitLocker and host path checks | SQLite policy、custom encryption 或 fallback target |
 | `nicegui_app/ui` | 頁面、共用狀態元件、i18n、design/motion contract | Quasar/NiceGUI 呈現與瀏覽器生命週期 | SQLAlchemy model、直接資料庫寫入或直接建立正式 workflow |
 | `nicegui_app/main.py`、`runtime.py` | HTTP/runtime composition | 身份接線、啟動、readiness、process lifecycle | 可重用業務規則 |
 | `cloudflare/roster_viewer` | 公開入口、Access gateway、Viewer | Token 驗證、KV 密文、edge lifecycle | 正式名單與排班寫入 |
 
-最重要的 deep module 是 `RosterWorkflow`：頁面只需理解 use case、結果及錯誤契約，不需知道交易順序、SQL、備份或 fairness ledger 的實作。
+最重要的 deep module 是 `RosterWorkflow`：頁面只需理解 use case、結果及錯誤契約，不需知道交易順序、SQL、備份或 fairness ledger 的實作。Host-loss 復原則由另一個窄 seam 擁有：Python 只相信已核實的目標證據並負責 artifact correctness；PowerShell 只把真實 Windows storage／BitLocker 狀態轉成該證據。兩者都不把硬件或加密判斷散入 UI 和 workflow。
 
 ## 一次正式寫入的固定流程
 
@@ -72,6 +76,7 @@ sequenceDiagram
 | 頁面或互動 | `nicegui_app/ui` 共用 interface | i18n、a11y、Admin/Guest parity、browser evidence |
 | 公開登入、Viewer、edge route | Worker | Worker contracts、Access、canonical smoke |
 | 啟動、主機、部署 | composition/deployment scripts | readiness、backup、rollback、handover |
+| 完整主機損失／離機副本 | `offsite_recovery.py`＋Windows volume adapter | recovery runbook、security、replacement-location evidence |
 
 若一次小改動需要同時修改三個以上不相鄰模組，先檢查是否有資訊沒有被真正擁有、interface 太淺，或頁面正在重複 workflow 知識；不要先增加另一層 pass-through helper。
 

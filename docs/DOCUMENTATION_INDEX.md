@@ -13,7 +13,8 @@ This index is the entry point and coverage contract for the documentation set. I
 | 新任首席導學風紀 | 如何先練習、再接收正式資料與交接包？ | [`QUICKSTART.md`](QUICKSTART.md) → [`RELEASE_HANDOVER.md`](RELEASE_HANDOVER.md) |
 | 顧問老師 | 哪些結果是自動證據，哪些仍要真人核對？ | [`ACCEPTANCE_EVIDENCE.md`](ACCEPTANCE_EVIDENCE.md) |
 | 任何讀者 | 現在正式運行甚麼版本、資料庫及 Worker？ | [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md) |
-| IT／主機維護者 | 如何安裝、部署、備份、復原及安全維護？ | [`WINDOWS_DEDICATED_HOST_SETUP.md`](WINDOWS_DEDICATED_HOST_SETUP.md) |
+| IT／主機維護者 | 如何安裝、部署及安全維護正式主機？ | [`WINDOWS_DEDICATED_HOST_SETUP.md`](WINDOWS_DEDICATED_HOST_SETUP.md) |
+| 災難復原保管人 | 整部主機損毀後，如何由加密離機副本復原？ | [`OFFSITE_DISASTER_RECOVERY.md`](OFFSITE_DISASTER_RECOVERY.md) |
 | 遠端存取維護者 | Worker、Access、VPC origin 與 Viewer 如何配合？ | [`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) |
 | 開發者 | 一項改動應放在哪個模組，依賴方向是甚麼？ | [`ARCHITECTURE_OVERVIEW.md`](ARCHITECTURE_OVERVIEW.md) → [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHITECTURE.md) |
 | 發布者／審查者 | 這次改動需要哪一級驗證及甚麼發布證據？ | [`UPDATE_WORKFLOW.md`](UPDATE_WORKFLOW.md) → [`CODE_ACCEPTANCE_REVIEW.md`](CODE_ACCEPTANCE_REVIEW.md) |
@@ -44,7 +45,8 @@ If prose conflicts with executable policy, transactional behavior, security chec
 | [`QUICKSTART.md`](QUICKSTART.md) | 雙擊啟動、Practice Mode、埠號衝突、最快安全入口 | launcher、port selection、practice identity 或初次啟動改變 |
 | [`OPERATOR_GUIDE.md`](OPERATOR_GUIDE.md) | 每週端到端操作、錯誤復原、名冊、發布、PDF、Viewer、請假、公平 | 任何可見工作流程、按鈕名稱、確認語句或恢復步驟改變 |
 | [`ROSTER_POLICY_MODES.md`](ROSTER_POLICY_MODES.md) | 固定星期／每週靈活 Assist. in charge 模式、固定日維護及相容資料 | mode code、預設模式、輪換、固定星期、可當值日或請假替補規則改變 |
-| [`RELEASE_HANDOVER.md`](RELEASE_HANDOVER.md) | 備份、隔離還原、正式部署、回退、下一任交接 | release gate、tag、backup、restore、deployment 或 rollback 改變 |
+| [`RELEASE_HANDOVER.md`](RELEASE_HANDOVER.md) | 本機已驗證快照、受控還原、正式部署、相容回退及下一任交接 | release gate、tag、managed restore、deployment 或 rollback 改變 |
+| [`OFFSITE_DISASTER_RECOVERY.md`](OFFSITE_DISASTER_RECOVERY.md) | 外置 BitLocker 目標、RPO／RTO、離機保留、密鑰責任、host-loss 及 replacement-location drill | off-site target、export receipt、retention、custody、disaster restore 或 drill contract 改變 |
 | [`ACCEPTANCE_EVIDENCE.md`](ACCEPTANCE_EVIDENCE.md) | 自動證據與首席導學風紀／顧問老師真人責任的逐項矩陣 | gate、acceptance criterion、證據位置或人手責任改變 |
 | [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md) | 由單一 JSON 生成的精確 live／migration／Worker／rollback／acceptance 狀態 | 觀察到部署、復原或真人驗收狀態改變；先更新 JSON，再執行 `project_governance.py --write` |
 | [`PROJECT_STATUS.md`](../PROJECT_STATUS.md) | 已完成能力、交付歷史、長期風險與里程碑 | 能力完成、風險開關或歷史交付記錄改變；不得手動複製目前 release identifiers |
@@ -133,8 +135,9 @@ The documentation set must continue to explain and test all of these boundaries:
 - `/healthz` proves liveness and database access, while `/readyz` additionally proves write readiness, recovery state, maintenance state, and backup obligations;
 - a committed write followed by backup failure is reported as committed-with-obligation, never falsely rolled back or retried blindly;
 - restore requires manifest, checksum, SQLite integrity, schema, fairness reconciliation, audit, and isolated restore evidence.
+- host-loss recovery requires a separately stored BitLocker external copy, path-free receipt, immutable release identity, and a drill that reads only that copied bundle.
 
-The detailed implementation belongs in [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHITECTURE.md); the operator response belongs in [`OPERATOR_GUIDE.md`](OPERATOR_GUIDE.md) and [`RELEASE_HANDOVER.md`](RELEASE_HANDOVER.md).
+The detailed implementation belongs in [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHITECTURE.md); ordinary operator response belongs in [`OPERATOR_GUIDE.md`](OPERATOR_GUIDE.md), release and compatible rollback in [`RELEASE_HANDOVER.md`](RELEASE_HANDOVER.md), and complete host-loss recovery in [`OFFSITE_DISASTER_RECOVERY.md`](OFFSITE_DISASTER_RECOVERY.md).
 
 ## 驗證層級 / Verification ladder
 
@@ -145,6 +148,7 @@ The detailed implementation belongs in [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHI
 | Before push | `python -X utf8 scripts/verify_update.py --staged` | Verifies the exact intended staged set |
 | Formal release | `python -X utf8 scripts/verify_update.py --release` | Runs the complete fingerprint-bound release gate once |
 | Windows rollout | `scripts/deploy_windows_release.ps1` report, backup, isolated restore, health/readiness | Proves the protected origin moved safely or rolled back |
+| Off-site recovery | `scripts/export_offsite_recovery.ps1` plus a replacement-location `drill` report | Proves a real encrypted external copy can restore without the original host; source-only tests do not satisfy this row |
 | Worker rollout | `scripts/deploy_cloudflare_worker.ps1` zero-traffic staging, version smoke, promotion | Proves the exact Worker version reached canonical traffic |
 | Human acceptance | [`ACCEPTANCE_EVIDENCE.md`](ACCEPTANCE_EVIDENCE.md) | Confirms real identity, device, workflow, copy, PDF, and advisor expectations |
 
