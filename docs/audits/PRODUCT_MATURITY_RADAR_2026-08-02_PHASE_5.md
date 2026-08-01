@@ -37,6 +37,7 @@
 - 309 個 release-sensitive source files；fingerprint `3648c4a11db052148ba64d59b971e7dddf4673a767a72c1bca50cdc3f7292290`。
 - 15／15 gate 通過：repository hygiene、安全、6 個 motion、53 個 Worker contracts、完整 Python、compile／dependency、16 組主題交接、desktop、runtime、完整寫入／PDF／還原、mobile／tablet、strict readiness、Guest isolation 及 partial-backup recovery。
 - schema 3 `postVerificationSource` 與初始 fingerprint、file count、commit、tree 完全相同，最後 Git working tree 乾淨。
+- 第一次 protected-main exact-commit replay 另發現測試把 PDF 合法生成時間 `18:30` 誤認為值班明細的舊結束時間；回歸現固定該碰撞時間，並只按每條 allocation 的完整 `start–end` 視窗與次數驗證。這是 test-only 修正，不改變 309-file deployable fingerprint。
 - 正式主機、Worker、schema 及 current-release JSON 沒有改動；線上仍是 rc45。
 
 ## A–J 雷達

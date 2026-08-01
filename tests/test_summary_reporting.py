@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import date
+from datetime import date, datetime
 import hashlib
 from io import BytesIO
 import json
@@ -225,7 +225,10 @@ def test_bilingual_allocation_statement_lists_dates_room_times_and_calculated_ho
     workflow: RosterWorkflow,
 ) -> None:
     _publish(workflow, FIRST_WEEK)
-    report = workflow.build_period_report()
+    report = replace(
+        workflow.build_period_report(),
+        generated_at=datetime(2026, 8, 1, 18, 30),
+    )
     contribution = next(row for row in report.contributions if row.allocations)
 
     assert sum(item.scheduled_minutes for item in contribution.allocations) == contribution.scheduled_minutes
@@ -255,7 +258,9 @@ def test_bilingual_allocation_statement_lists_dates_room_times_and_calculated_ho
     for post_code in {item.post_code for item in contribution.allocations}:
         assert duty_labels[post_code] in chinese_text
         assert duty_labels[post_code] in english_text
-    assert "18:30" not in chinese_text
-    assert "18:30" not in english_text
+    expected_windows = [f"{item.start_time}–{item.end_time}" for item in contribution.allocations]
+    for rendered_text in (chinese_text, english_text):
+        for window in set(expected_windows):
+            assert rendered_text.count(window) == expected_windows.count(window)
     assert "核對實際出席" in chinese_text
     assert "attendance is checked" in english_text
