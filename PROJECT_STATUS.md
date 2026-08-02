@@ -576,14 +576,14 @@ Important boundaries:
 
 ```powershell
 python -m pip install -r requirements.txt
-python -X utf8 -m nicegui_app.main
+python -X utf8 -m nicegui_app.launcher
 ```
 
 Open `http://127.0.0.1:8080`.
 
 ```powershell
 python -X utf8 -m pytest -q
-python C:\Users\lichu\.codex\skills\webapp-testing\scripts\with_server.py --server "python -X utf8 -m nicegui_app.main" --port 8080 -- python -X utf8 scripts\verify_nicegui_ui.py
+python C:\Users\lichu\.codex\skills\webapp-testing\scripts\with_server.py --server "python -X utf8 -m nicegui_app.launcher" --port 8080 -- python -X utf8 scripts\verify_nicegui_ui.py
 ```
 
 ## Maintenance Rule

@@ -252,7 +252,7 @@ def _start_server(environment: dict[str, str], log_path: Path) -> tuple[subproce
     log_path.parent.mkdir(parents=True, exist_ok=True)
     output = log_path.open("w", encoding="utf-8")
     process = subprocess.Popen(
-        [sys.executable, "-X", "utf8", "-m", "nicegui_app.main"],
+        [sys.executable, "-X", "utf8", "-m", "nicegui_app.launcher"],
         cwd=PROJECT_ROOT,
         env=environment,
         stdout=output,

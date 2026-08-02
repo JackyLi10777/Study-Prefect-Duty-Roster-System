@@ -397,9 +397,12 @@ Invoke-RestMethod http://127.0.0.1:8080/healthz | Format-List
 
 ```text
 C:\SingYinRoster\data\runtime
+C:\SingYinRoster\data\runtime\nicegui-storage
 C:\SingYinRoster\data\backups
 C:\SingYinRoster\logs
 ```
+
+`nicegui-storage` 不由 launcher 預先建立；launcher 只在 NiceGUI 載入前設定路徑，目錄會在管理員首次儲存介面偏好、框架實際寫入 storage 時建立。
 
 不要直接開啟或修改 `sing-yin-roster.sqlite3`。
 
@@ -500,7 +503,7 @@ C:\SingYinRoster\.venv\Scripts\python.exe
 **新增引數：**
 
 ```text
--X utf8 -m nicegui_app.main
+-B -X utf8 -m nicegui_app.launcher
 ```
 
 **開始位置：**
@@ -649,7 +652,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 腳本在停止服務前核對正式報告、來源指紋、host／Worker identity parity、主機工作樹、排程 owner 及現有 task target。它從排程工作的實際 immutable bundle marker 取得上一版本，重算整個 bundle fingerprint，並把 marker 的 release／commit／tree／environment 交叉綁定至 `origin` 上的 annotated tag、tag-resolved Git tree、切換前受保護 `.env` 的 SHA-256 及確定性的 bundle 目錄名稱。其後才建立新 bundle／獨立 `.venv`、正式備份及隔離還原，最後原子切換排程；不得同時手動停止、安裝套件或切換 checkout。
 
-Bundle 指紋包含所有普通檔案，包括 `.venv` 內既有的 Python bytecode；`.sing-yin-release.json` 是唯一固定排除項。正式排程、受控 rollback 及離機復原工具均以 Python `-B` 執行，避免在 marker 建立後寫入 `__pycache__`。對於修正前已部署的 legacy bundle，部署器只在新增項全部是 marker 建立後寫入、直接位於 `__pycache__` 的普通 `.pyc`，其數量恰好等於檔案數差額，且排除精確集合後可完全重建 marker 的 SHA-256 與檔案數時，才受控移除該集合；移除後必須再次通過普通完整指紋。部署報告以 `previousReleaseSource` 及 `previousReleaseRepairCount` 記錄是否曾執行及清理多少項。不要手動刪除 cache、改 marker、忽略 `.pyc` 或繞過這項檢查。
+Bundle 指紋包含所有普通檔案，包括 `.venv` 內既有的 Python bytecode；`.sing-yin-release.json` 是唯一固定排除項。正式排程、受控 rollback 及離機復原工具均以 Python `-B` 執行，避免在 marker 建立後寫入 `__pycache__`；正式入口則先由 `nicegui_app.launcher` 把管理員偏好綁定至 `C:\SingYinRoster\data\runtime\nicegui-storage`，再載入 NiceGUI，避免 runtime JSON 進入不可變 bundle。
+
+對於修正前已部署的 legacy bundle，部署器只接受兩種可以精確重建 marker 的新增差異：marker 後直接位於 `__pycache__` 的普通 `.pyc`，以及 marker 後建立、名稱嚴格符合 `storage-general.json`／`storage-user-<uuid>.json`、不超過 64 KiB 的 NiceGUI JSON 物件。前者按既有程序移除；後者必須等舊程序停止後才驗證、複製至受保護 runtime 目錄、核對內容摘要並從 bundle 移除。清理後整個 bundle 必須再次通過普通完整指紋；任何其他名稱、內容類型、時間、數量、reparse point 或摘要差異仍然 fail closed。部署報告以 `previousReleaseSource`、`previousReleaseRepairCount` 及 `legacyNiceGuiStorageMigration` 記錄證據。不要手動刪除 cache／偏好、改 marker、擴大忽略規則或繞過這項檢查。
 
 ### 步驟 12.3：核對實際 runtime 身分
 

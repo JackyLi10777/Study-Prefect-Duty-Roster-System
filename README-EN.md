@@ -71,6 +71,12 @@ longest document:
 | Practice | The official local workflow with fictional content | Separate `data/practice/` SQLite, backups, logs, and preferences | Every output is non-official and official data is never read or written |
 | Local maintenance | localhost, controlled private WARP, or loopback SSH | Protected host data and maintenance evidence | Recovery and deployment only; never a second daily site |
 
+The managed Windows host starts through `nicegui_app.launcher`. Before NiceGUI
+is imported, it binds Admin theme, locale, devotional, and bounded audio
+preferences to the protected `data/runtime/nicegui-storage` directory beside
+the official database. These files contain no roster rows or Guest state and
+never write into or travel with an immutable release bundle.
+
 ### Waiting and progress behaviour
 
 Admin and Guest entries share one state lifecycle. Activation immediately locks duplicate identity choices and shows role-specific copy; the thin progress track appears only after 150 ms. If the page is still visible after eight seconds, the entry unlocks for a safe retry and keeps sign-in help plus a privacy-safe support reference that contains no email, token, or internal stack. Welcome audio remains independent: playback failure can never block the selected identity.

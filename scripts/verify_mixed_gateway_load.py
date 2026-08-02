@@ -976,7 +976,7 @@ def main() -> int:
         database_path, backup_dir = _seed_disposable_database(environment)
         before_fingerprint, before_counts = logical_database_fingerprint(database_path)
         origin_process, origin_output = _start_process(
-            [str(Path(sys.executable).resolve()), "-X", "utf8", "-m", "nicegui_app.main"],
+            [str(Path(sys.executable).resolve()), "-X", "utf8", "-m", "nicegui_app.launcher"],
             environment=environment,
             log_path=origin_log,
         )

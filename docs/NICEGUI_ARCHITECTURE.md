@@ -110,11 +110,19 @@ For host maintenance:
 
 ```powershell
 python -m pip install -r requirements.txt
-python -X utf8 -m nicegui_app.main
+python -X utf8 -m nicegui_app.launcher
 ```
 
 Open `http://127.0.0.1:8080` locally only while diagnosing, recovering, or
 maintaining the host. The origin remains loopback in every deployment state.
+
+`nicegui_app.launcher` is the production composition edge. It resolves the
+database identity first and sets `NICEGUI_STORAGE_PATH` to the sibling
+`nicegui-storage` runtime directory before importing NiceGUI. Administrator UI
+preferences therefore survive immutable release-bundle replacement without
+writing into source; Guest preferences remain bounded session memory and never
+enter this directory. Direct `nicegui_app.main` imports are reserved for tests
+and module-level diagnostics, not managed host startup.
 
 ### Verified `PageContext` and Guest adapter
 
