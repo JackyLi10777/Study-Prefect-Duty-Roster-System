@@ -30,6 +30,9 @@ from nicegui_app.services.workflow_types import (
     ASSIST_ASSIGNMENT_MODE_CODES,
     AssistAssignmentMode,
     DraftAssignmentUpdateResult,
+    DraftCellEdit,
+    DraftDayEdit,
+    DraftPatchResult,
     DutyAllocationEntry,
     FairnessDiscrepancy,
     FairnessReconciliationReport,
@@ -46,6 +49,7 @@ from nicegui_app.services.workflow_types import (
     RosterWithdrawalResult,
     WorkflowConflictError,
     WorkflowError,
+    WeekScheduleOverrides,
 )
 from roster_core.generator import (
     RosterGenerationError,
@@ -61,6 +65,7 @@ from roster_policy import (
     RosterPolicyError,
     SchoolDay,
     can_assign_role,
+    duty_weight,
     is_chinese_display_name,
     required_posts_for_day,
 )
@@ -68,6 +73,40 @@ from roster_policy import (
 
 DEMO_POLICY_VERSION = f"guest-demo-{DEMO_FIXTURE_VERSION}"
 _DEMO_BACKUP_NAME = "DEMO_MEMORY_SNAPSHOT"
+_DAY_CLOSURE_REASON_CODES = frozenset(
+    {"school_event", "weather", "examination", "special_arrangement", "other"}
+)
+
+
+def _stable_school_day(value: SchoolDay | str) -> SchoolDay:
+    if isinstance(value, SchoolDay):
+        return value
+    try:
+        return SchoolDay[str(value).strip().upper()]
+    except KeyError as error:
+        raise WorkflowError("A roster day must use a stable weekday code.") from error
+
+
+def _normalized_closed_days(values: Iterable[SchoolDay | str]) -> tuple[SchoolDay, ...]:
+    days = tuple(_stable_school_day(value) for value in values)
+    if len(days) != len(set(days)):
+        raise WorkflowError("Closed days contain a duplicate weekday.")
+    return tuple(sorted(days, key=int))
+
+
+def _parse_cell_key(cell_key: str) -> tuple[SchoolDay, DutyPost, int]:
+    parts = str(cell_key).strip().upper().split(":")
+    if len(parts) != 3:
+        raise WorkflowError("Draft cell key must be DAY:POST:SLOT.")
+    try:
+        day = SchoolDay[parts[0]]
+        post = DutyPost[parts[1]]
+        slot_index = int(parts[2])
+    except (KeyError, ValueError) as error:
+        raise WorkflowError("Draft cell key contains an invalid stable code.") from error
+    if slot_index < 1 or slot_index > required_posts_for_day(day).count(post):
+        raise WorkflowError("Draft cell key does not identify a required roster slot.")
+    return day, post, slot_index
 
 
 def _assist_assignment_mode_code(value: object) -> str:
@@ -448,14 +487,22 @@ class GuestWorkspaceAdapter:
         ]
         return sorted(rows, key=lambda row: (str(row["day"]), str(row["prefectName"])))
 
-    def generation_requirements(self, week_start: date) -> list[dict[str, object]]:
+    def generation_requirements(
+        self,
+        week_start: date,
+        *,
+        closed_days: Iterable[SchoolDay | str] = (),
+    ) -> list[dict[str, object]]:
         self._require_read()
         self._require_monday(week_start)
+        normalized_closed_days = frozenset(_normalized_closed_days(closed_days))
         state = self._state()
         prefects = self._active_prefects(state)
         leave_days = self._leave_days(state, week_start)
         requirements: list[dict[str, object]] = []
         for day in SchoolDay:
+            if day in normalized_closed_days:
+                continue
             slot_counts: dict[DutyPost, int] = defaultdict(int)
             for post in required_posts_for_day(day):
                 slot_counts[post] += 1
@@ -483,12 +530,14 @@ class GuestWorkspaceAdapter:
         *,
         history_priority_multiplier: float = 1.0,
         assist_assignment_mode: AssistAssignmentMode | str = LEGACY_FIXED_WEEKDAY,
+        closed_days: Iterable[SchoolDay | str] = (),
         expected_week_version: int | None = None,
         command_id: str | None = None,
     ) -> RosterWeekResult:
         self._require_modify()
         self._require_monday(week_start)
         normalized_assist_mode = _assist_assignment_mode_code(assist_assignment_mode)
+        normalized_closed_days = _normalized_closed_days(closed_days)
         view = self._view()
         state = view.state
         prefects = self._active_prefects(state)
@@ -505,10 +554,14 @@ class GuestWorkspaceAdapter:
                 assist_assignment_mode=normalized_assist_mode,
                 assist_rotation_key=week_start.isoformat(),
                 previous_assist_assignments=previous_assist_assignments,
+                closed_days=normalized_closed_days,
             )
         except RosterGenerationError as error:
             raise WorkflowError(f"Demo draft generation needs attention: {error}") from error
-        if normalized_assist_mode == LEGACY_FIXED_WEEKDAY:
+        if (
+            normalized_assist_mode == LEGACY_FIXED_WEEKDAY
+            and len(normalized_closed_days) < len(SchoolDay)
+        ):
             assist_days = legacy_assist_weekday_mapping(prefects)
             for record in state.get("prefects", []):
                 prefect_id = str(record.get("id", ""))
@@ -540,6 +593,11 @@ class GuestWorkspaceAdapter:
                 "publishedAt": None,
                 "assignments": [],
                 "adjustments": [],
+                "closedDays": [day.name for day in normalized_closed_days],
+                "dayClosures": [
+                    {"day": day.name, "reasonCode": None, "note": None}
+                    for day in normalized_closed_days
+                ],
             }
             weeks.append(week)
         elif week["status"] == "published":
@@ -550,6 +608,11 @@ class GuestWorkspaceAdapter:
             week["assistAssignmentMode"] = normalized_assist_mode
             week["generatedAt"] = _datetime_text(now)
             week["assignments"] = []
+            week["closedDays"] = [day.name for day in normalized_closed_days]
+            week["dayClosures"] = [
+                {"day": day.name, "reasonCode": None, "note": None}
+                for day in normalized_closed_days
+            ]
         assignment_id = self._next_assignment_id(state)
         slot_counts: dict[tuple[str, str], int] = defaultdict(int)
         for assignment in generated:
@@ -611,6 +674,13 @@ class GuestWorkspaceAdapter:
         self._require_read()
         return self._week_output(self._week_record(self._state(), roster_week_id))
 
+    def week_schedule_overrides(self, roster_week_id: int) -> WeekScheduleOverrides:
+        self._require_read()
+        week = self._week_record(self._state(), roster_week_id)
+        return WeekScheduleOverrides(
+            closed_days=tuple(str(day) for day in week.get("closedDays", []))
+        )
+
     def assignments(self, roster_week_id: int) -> list[dict[str, object]]:
         self._require_read()
         week = self._week_record(self._state(), roster_week_id)
@@ -636,6 +706,276 @@ class GuestWorkspaceAdapter:
         if week["status"] != "draft":
             raise WorkflowError("Manual changes are available only for a demo draft.")
         return self._candidate_outputs(state, week, self._assignment_record(week, assignment_id))
+
+    def draft_cell_candidates(
+        self,
+        roster_week_id: int,
+        cell_key: str,
+    ) -> list[dict[str, object]]:
+        self._require_read()
+        day, post, slot_index = _parse_cell_key(cell_key)
+        state = self._state()
+        week = self._week_record(state, roster_week_id)
+        if week["status"] != "draft":
+            raise WorkflowError("Manual changes are available only for a demo draft.")
+        existing = next(
+            (
+                row
+                for row in week.get("assignments", [])
+                if row["day"] == day.name
+                and row["postCode"] == post.name
+                and int(row["slotIndex"]) == slot_index
+            ),
+            None,
+        )
+        probe = existing or {
+            "id": -1,
+            "day": day.name,
+            "postCode": post.name,
+            "slotIndex": slot_index,
+            "prefectId": "__vacant__",
+            "prefectName": "",
+            "weight": float(duty_weight(post)),
+            "status": "active",
+        }
+        candidates = self._candidate_outputs(
+            state,
+            week,
+            probe,
+            include_same_day_assigned=True,
+        )
+        if (
+            str(week.get("assistAssignmentMode", LEGACY_FIXED_WEEKDAY))
+            != LEGACY_FIXED_WEEKDAY
+            or post is not DutyPost.ASSIST_IN_CHARGE
+        ):
+            return candidates
+        fixed_owner = next(
+            (
+                str(row["id"])
+                for row in state.get("prefects", [])
+                if row.get("active", True)
+                and str(row.get("roleCode", row.get("role", "")))
+                == PrefectRole.ASSISTANT_HEAD.value
+                and str(row.get("fixedGeneralDuty", "NONE")) == day.name
+            ),
+            None,
+        )
+        if fixed_owner is None:
+            return candidates
+        return [candidate for candidate in candidates if candidate["id"] == fixed_owner]
+
+    def apply_draft_patch(
+        self,
+        *,
+        roster_week_id: int,
+        expected_week_version: int,
+        cell_edits: Iterable[DraftCellEdit] = (),
+        day_edits: Iterable[DraftDayEdit] = (),
+        reason: str | None = None,
+        command_id: str | None = None,
+    ) -> DraftPatchResult:
+        """Apply a bounded, replay-safe patch inside guest memory only."""
+
+        self._require_modify()
+        normalized_reason = (reason or "").strip()
+        if len(normalized_reason) > 1000:
+            raise WorkflowError("Demo draft patch reason is too long.")
+        if expected_week_version < 1:
+            raise WorkflowError("The reviewed demo draft version is invalid.")
+        materialized_cells = tuple(cell_edits)
+        materialized_days = tuple(day_edits)
+        if not materialized_cells and not materialized_days:
+            raise WorkflowError("Choose at least one demo cell or weekday to change.")
+
+        parsed_cells: list[tuple[DraftCellEdit, SchoolDay, DutyPost, int]] = []
+        seen_cells: set[str] = set()
+        for edit in materialized_cells:
+            day, post, slot_index = _parse_cell_key(edit.cell_key)
+            stable_key = f"{day.name}:{post.name}:{slot_index}"
+            if stable_key in seen_cells:
+                raise WorkflowError("A demo patch cannot change the same cell twice.")
+            if edit.replacement_prefect_id is not None and not edit.replacement_prefect_id.strip():
+                raise WorkflowError(
+                    "An empty prefect identifier is not a vacancy decision."
+                )
+            seen_cells.add(stable_key)
+            parsed_cells.append((edit, day, post, slot_index))
+
+        normalized_days: list[tuple[DraftDayEdit, SchoolDay, str | None, str | None]] = []
+        seen_days: set[SchoolDay] = set()
+        for edit in materialized_days:
+            day = _stable_school_day(edit.day)
+            if day in seen_days:
+                raise WorkflowError("A demo patch cannot change the same weekday twice.")
+            reason_code = (edit.reason_code or "").strip() or None
+            note = (edit.note or "").strip() or None
+            if reason_code is not None and reason_code not in _DAY_CLOSURE_REASON_CODES:
+                raise WorkflowError("A demo day closure must use a stable reason code.")
+            if note is not None and len(note) > 1000:
+                raise WorkflowError("A demo day closure note is too long.")
+            seen_days.add(day)
+            normalized_days.append((edit, day, reason_code, note))
+        closing_days = {day for edit, day, _, _ in normalized_days if edit.closed}
+        if any(day in closing_days for _, day, _, _ in parsed_cells):
+            raise WorkflowError(
+                "A demo cell cannot be assigned while its weekday is being closed."
+            )
+
+        operation_id = (command_id or f"demo-draft-patch:{secrets.token_hex(12)}").strip()
+        if not operation_id or len(operation_id) > 64:
+            raise WorkflowError("Demo draft patch command ID is invalid.")
+        operation_payload = {
+            "rosterWeekId": roster_week_id,
+            "expectedWeekVersion": expected_week_version,
+            "cellEdits": [
+                {
+                    "cellKey": f"{day.name}:{post.name}:{slot_index}",
+                    "replacementPrefectId": edit.replacement_prefect_id,
+                }
+                for edit, day, post, slot_index in parsed_cells
+            ],
+            "dayEdits": [
+                {
+                    "day": day.name,
+                    "closed": edit.closed,
+                    "reasonCode": reason_code,
+                    "note": note,
+                }
+                for edit, day, reason_code, note in normalized_days
+            ],
+            "reason": normalized_reason,
+        }
+        fingerprint = hashlib.sha256(
+            json.dumps(
+                operation_payload,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+
+        view = self._view()
+        state = view.state
+        saved = state.setdefault("draftPatchReceipts", {}).get(operation_id)
+        if saved is not None:
+            if saved.get("fingerprint") != fingerprint:
+                raise WorkflowConflictError(
+                    "This demo command ID was already used for a different draft patch."
+                )
+            result = saved["result"]
+            return DraftPatchResult(
+                roster_week_id=int(result["rosterWeekId"]),
+                version=int(result["version"]),
+                changed_cell_count=int(result["changedCellCount"]),
+                closed_days=tuple(str(day) for day in result.get("closedDays", [])),
+                backup_path=None,
+                idempotent=True,
+            )
+
+        week = self._week_record(state, roster_week_id)
+        if week["status"] != "draft":
+            raise WorkflowError("Only a demo draft can be changed.")
+        if int(week["version"]) != expected_week_version:
+            raise WorkflowConflictError("This demo draft changed in another tab.")
+
+        closures = {
+            SchoolDay[str(row["day"])]: row
+            for row in week.get("dayClosures", [])
+        }
+        for edit, day, reason_code, note in normalized_days:
+            if edit.closed:
+                closures[day] = {
+                    "day": day.name,
+                    "reasonCode": reason_code,
+                    "note": note,
+                }
+                week["assignments"] = [
+                    row for row in week.get("assignments", []) if row["day"] != day.name
+                ]
+            else:
+                closures.pop(day, None)
+
+        rows_by_cell = {
+            (SchoolDay[str(row["day"])], DutyPost[str(row["postCode"])], int(row["slotIndex"])): row
+            for row in week.get("assignments", [])
+        }
+        next_assignment_id = self._next_assignment_id(state)
+        for edit, day, post, slot_index in parsed_cells:
+            if day in closures:
+                raise WorkflowError("A closed demo weekday cannot contain an assignment.")
+            key = (day, post, slot_index)
+            existing = rows_by_cell.get(key)
+            replacement_id = edit.replacement_prefect_id
+            if replacement_id is None:
+                if existing is not None:
+                    week["assignments"].remove(existing)
+                    rows_by_cell.pop(key, None)
+                continue
+            replacement = self._prefect_record(state, replacement_id)
+            if not replacement.get("active", True):
+                raise WorkflowError("The selected demo prefect is inactive.")
+            if existing is None:
+                existing = {
+                    "id": next_assignment_id,
+                    "day": day.name,
+                    "postCode": post.name,
+                    "slotIndex": slot_index,
+                    "prefectId": replacement_id,
+                    "prefectName": replacement["nameZh"],
+                    "weight": float(duty_weight(post)),
+                    "status": "active",
+                }
+                next_assignment_id += 1
+                week["assignments"].append(existing)
+                rows_by_cell[key] = existing
+            else:
+                existing["prefectId"] = replacement_id
+                existing["prefectName"] = replacement["nameZh"]
+                existing["weight"] = float(duty_weight(post))
+                existing["status"] = "active"
+
+        week["closedDays"] = [day.name for day in sorted(closures, key=int)]
+        week["dayClosures"] = [closures[day] for day in sorted(closures, key=int)]
+        self._validate_week_assignments(state, week, require_complete=False)
+        if str(week.get("assistAssignmentMode", LEGACY_FIXED_WEEKDAY)) == LEGACY_FIXED_WEEKDAY:
+            fixed_owners = {
+                str(row.get("fixedGeneralDuty")): str(row["id"])
+                for row in state.get("prefects", [])
+                if row.get("active", True)
+                and str(row.get("roleCode", row.get("role", "")))
+                == PrefectRole.ASSISTANT_HEAD.value
+                and str(row.get("fixedGeneralDuty", "NONE")) in SchoolDay.__members__
+            }
+            for row in week.get("assignments", []):
+                if row["status"] != "active" or row["postCode"] != DutyPost.ASSIST_IN_CHARGE.name:
+                    continue
+                fixed_owner = fixed_owners.get(str(row["day"]))
+                if fixed_owner is not None and str(row.get("prefectId")) != fixed_owner:
+                    raise WorkflowError(
+                        "Legacy fixed-weekday mode requires the weekday's demo Assistant Head Study Prefect."
+                    )
+
+        week["version"] = expected_week_version + 1
+        result = {
+            "rosterWeekId": roster_week_id,
+            "version": int(week["version"]),
+            "changedCellCount": len(parsed_cells),
+            "closedDays": list(week["closedDays"]),
+        }
+        state["draftPatchReceipts"][operation_id] = {
+            "fingerprint": fingerprint,
+            "result": result,
+        }
+        self._commit(view, state, "draft-patch", command_id=operation_id)
+        return DraftPatchResult(
+            roster_week_id=roster_week_id,
+            version=int(week["version"]),
+            changed_cell_count=len(parsed_cells),
+            closed_days=tuple(str(day) for day in week["closedDays"]),
+            backup_path=None,
+            idempotent=False,
+        )
 
     def update_draft_assignment(
         self,
@@ -1449,6 +1789,10 @@ class GuestWorkspaceAdapter:
             "publishedAt": _parse_datetime(week.get("publishedAt")),
             "withdrawnAt": _parse_datetime(week.get("withdrawnAt")),
             "withdrawalReason": week.get("withdrawalReason"),
+            "closedDays": [str(day) for day in week.get("closedDays", [])],
+            "dayClosures": [
+                dict(row) for row in week.get("dayClosures", [])
+            ],
         }
 
     @staticmethod
@@ -1669,11 +2013,17 @@ class GuestWorkspaceAdapter:
         self,
         state: Mapping[str, Any],
         week: Mapping[str, Any],
+        *,
+        require_complete: bool = True,
     ) -> None:
         domain_rows = []
         for row in week.get("assignments", []):
-            if row["status"] != "active" or not row.get("prefectId"):
+            if (
+                row["status"] != "active" or not row.get("prefectId")
+            ) and require_complete:
                 raise WorkflowError("A demo draft with missing assignments cannot be published.")
+            if row["status"] != "active" or not row.get("prefectId"):
+                continue
             domain_rows.append(
                 Assignment(
                     day=SchoolDay[str(row["day"])],
@@ -1688,6 +2038,10 @@ class GuestWorkspaceAdapter:
                 domain_rows,
                 self._active_prefects(state),
                 leave_days=self._leave_days(state, date.fromisoformat(str(week["weekStart"]))),
+                closed_days=(
+                    SchoolDay[str(day)] for day in week.get("closedDays", [])
+                ),
+                require_complete=require_complete,
             )
         except RosterPolicyError as error:
             raise WorkflowError(str(error)) from error
@@ -1697,13 +2051,15 @@ class GuestWorkspaceAdapter:
         state: Mapping[str, Any],
         week: Mapping[str, Any],
         assignment: Mapping[str, Any],
+        *,
+        include_same_day_assigned: bool = False,
     ) -> list[dict[str, object]]:
         if assignment["status"] != "active" or not assignment.get("prefectId"):
             raise WorkflowError("Only an active demo assignment can be changed.")
         day = SchoolDay[str(assignment["day"])]
         post = DutyPost[str(assignment["postCode"])]
         assigned_today = {
-            str(row["prefectId"])
+            str(row["prefectId"]): row
             for row in week.get("assignments", [])
             if row["id"] != assignment["id"]
             and row["status"] == "active"
@@ -1720,7 +2076,7 @@ class GuestWorkspaceAdapter:
             if not row.get("active", True) or str(row["id"]) == assignment["prefectId"]:
                 continue
             prefect_id = str(row["id"])
-            if prefect_id in assigned_today:
+            if prefect_id in assigned_today and not include_same_day_assigned:
                 continue
             if day.name not in row.get("availableDays", []):
                 continue
@@ -1740,16 +2096,25 @@ class GuestWorkspaceAdapter:
                 str(row["nameZh"]),
             )
         )
-        return [
-            {
+        outputs: list[dict[str, object]] = []
+        for row in candidates:
+            output: dict[str, object] = {
                 "id": str(row["id"]),
                 "nameZh": str(row["nameZh"]),
                 "form": str(row["form"]),
                 "className": str(row["className"]),
                 "historyWeight": float(row.get("historyWeight", 0.0)),
             }
-            for row in candidates
-        ]
+            occupied = assigned_today.get(str(row["id"]))
+            if include_same_day_assigned:
+                output["requiresSwap"] = occupied is not None
+                output["occupiedCellKey"] = (
+                    f"{occupied['day']}:{occupied['postCode']}:{int(occupied['slotIndex'])}"
+                    if occupied is not None
+                    else None
+                )
+            outputs.append(output)
+        return outputs
 
     @staticmethod
     def _ensure_history_anchor(prefect: dict[str, Any], state: Mapping[str, Any]) -> None:

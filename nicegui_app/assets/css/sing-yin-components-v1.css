@@ -556,3 +556,312 @@ details.sy-support-details[open] > summary { margin-bottom: 14px; }
     border: 1px solid CanvasText;
   }
 }
+
+/* Draft review workspace ---------------------------------------------------
+   This is an operational matrix, not a decorative table.  Desktop preserves
+   the print/PDF scan pattern while the compact layout groups duties by day. */
+
+.sy-draft-editor {
+  display: grid;
+  width: 100%;
+  gap: 20px;
+}
+
+.sy-draft-grid-shell {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--sy-line);
+  border-radius: 18px;
+  background: var(--sy-surface);
+}
+
+.sy-draft-grid-desktop {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.35fr) repeat(5, minmax(132px, 1fr));
+  width: 100%;
+  min-width: 880px;
+}
+
+.sy-draft-grid-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.sy-draft-grid-corner,
+.sy-draft-grid-day-head,
+.sy-draft-grid-row-head,
+.sy-draft-grid-cell,
+.sy-draft-grid-day-closed {
+  min-width: 0;
+  border-right: 1px solid var(--sy-line);
+  border-bottom: 1px solid var(--sy-line);
+}
+
+.sy-draft-grid-corner,
+.sy-draft-grid-day-head {
+  min-height: 76px;
+  padding: 14px 16px;
+  background: var(--sy-surface-subtle);
+}
+
+.sy-draft-grid-corner {
+  display: flex;
+  align-items: center;
+  color: var(--sy-muted);
+  font-size: 12px;
+  font-weight: 720;
+  letter-spacing: .04em;
+}
+
+.sy-draft-grid-day-head {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  color: var(--sy-ink);
+}
+
+.sy-draft-grid-day-head strong {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.sy-draft-grid-day-head small {
+  color: var(--sy-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sy-draft-grid-day-action {
+  justify-self: start;
+  min-height: 32px;
+  margin-top: 4px;
+  color: var(--sy-role-attention);
+}
+
+.sy-draft-grid-row-head {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-height: 88px;
+  padding: 14px 16px;
+  color: var(--sy-ink);
+  background: var(--sy-surface);
+}
+
+.sy-draft-grid-row-head strong {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.sy-draft-grid-row-head small {
+  color: var(--sy-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+button.sy-draft-grid-cell,
+button.sy-draft-mobile-cell {
+  appearance: none;
+  -webkit-appearance: none;
+  color: var(--sy-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sy-draft-grid-cell {
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  min-height: 88px;
+  padding: 12px 14px;
+  background: var(--sy-surface);
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.sy-draft-grid-cell:hover,
+.sy-draft-mobile-cell:hover {
+  background: var(--sy-role-action-soft);
+}
+
+.sy-draft-grid-cell:focus-visible,
+.sy-draft-mobile-cell:focus-visible,
+.sy-draft-grid-day-action:focus-visible {
+  position: relative;
+  z-index: 2;
+  outline: 3px solid var(--sy-role-action);
+  outline-offset: -3px;
+}
+
+.sy-draft-grid-cell--selected,
+.sy-draft-mobile-cell--selected {
+  background: var(--sy-role-action-soft);
+  box-shadow: inset 4px 0 0 var(--sy-role-action);
+}
+
+.sy-draft-grid-cell--pending,
+.sy-draft-mobile-cell--pending {
+  background: var(--sy-role-attention-soft);
+  box-shadow: inset 0 0 0 2px var(--sy-role-attention);
+}
+
+.sy-draft-grid-cell--vacant strong,
+.sy-draft-mobile-cell--vacant strong {
+  color: var(--sy-role-attention);
+}
+
+.sy-draft-grid-cell--closed,
+.sy-draft-mobile-cell--closed {
+  color: var(--sy-muted);
+  cursor: default;
+  background: var(--sy-surface-subtle);
+}
+
+.sy-draft-cell-name {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 720;
+  line-height: 1.35;
+}
+
+.sy-draft-cell-meta {
+  color: var(--sy-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.sy-draft-grid-day-closed {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  min-height: 528px;
+  padding: 20px 14px;
+  color: var(--sy-role-attention);
+  text-align: center;
+  background:
+    linear-gradient(145deg, var(--sy-role-attention-soft), var(--sy-surface));
+}
+
+.sy-draft-grid-day-closed .q-icon {
+  font-size: 26px;
+}
+
+.sy-draft-grid-desktop > :nth-child(6n) {
+  border-right: 0;
+}
+
+.sy-draft-mobile {
+  display: none;
+}
+
+.sy-draft-mobile-day {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--sy-line);
+  border-radius: 16px;
+  background: var(--sy-surface);
+}
+
+.sy-draft-mobile-cell {
+  display: grid;
+  grid-template-columns: minmax(130px, 1.2fr) minmax(110px, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid var(--sy-line);
+  border-radius: 12px;
+  background: var(--sy-surface);
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.sy-draft-editor-panel {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--sy-line);
+  border-radius: 18px;
+  background: var(--sy-surface);
+}
+
+.sy-draft-pending-bar {
+  position: sticky;
+  z-index: 5;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--sy-line-strong);
+  border-radius: 16px;
+  color: var(--sy-ink);
+  background: var(--sy-surface);
+  box-shadow: 0 12px 34px rgba(20, 35, 48, .14);
+}
+
+@media (max-width: 900px) {
+  .sy-draft-grid-scroll {
+    display: none;
+  }
+
+  .sy-draft-mobile {
+    display: grid;
+    gap: 14px;
+  }
+
+  .sy-draft-pending-bar {
+    position: static;
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 520px) {
+  .sy-draft-mobile-cell {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .sy-draft-editor-panel {
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sy-draft-grid-cell,
+  .sy-draft-mobile-cell {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .sy-draft-grid-shell,
+  .sy-draft-mobile-day,
+  .sy-draft-mobile-cell,
+  .sy-draft-editor-panel,
+  .sy-draft-pending-bar {
+    border-color: CanvasText;
+  }
+
+  .sy-draft-grid-cell--selected,
+  .sy-draft-mobile-cell--selected,
+  .sy-draft-grid-cell--pending,
+  .sy-draft-mobile-cell--pending {
+    outline: 3px solid Highlight;
+    outline-offset: -3px;
+  }
+}

@@ -699,19 +699,33 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
     _wait_for_app(page)
     roster_week_id = int(page.url.rstrip("/").rsplit("/", 1)[-1])
 
-    page.get_by_role(
-        "button",
-        name=re.compile(r"載入合資格人選|Load eligible candidates"),
-    ).click()
-    draft_selects = page.locator("main#main-content .q-select:visible")
-    chosen_draft_candidate = _select_option(page, draft_selects.nth(1))
-    draft_reason = page.locator("textarea[name='draft-change-reason']")
+    draft_grid = page.get_by_test_id("draft-grid-editor")
+    draft_grid.wait_for(state="visible", timeout=10_000)
+    editable_cells = draft_grid.locator('[data-cell-key].sy-draft-grid-cell--assigned')
+    editable_cells.first.wait_for(state="visible", timeout=10_000)
+    if editable_cells.count() < 1:
+        raise UnifiedGuestVerificationError("The draft matrix exposed no editable assigned cells.")
+
+    day_toggle = page.get_by_test_id("draft-day-toggle-monday")
+    day_toggle.wait_for(state="visible", timeout=10_000)
+    day_toggle.click()
+    day_confirm = page.get_by_test_id("draft-day-confirm-close-monday")
+    day_confirm.wait_for(state="visible", timeout=10_000)
+    day_confirm.click()
+    page.get_by_test_id("draft-undo").click()
+
+    editable_cells.first.click()
+    candidate_search = page.get_by_test_id("draft-candidate-search")
+    candidate_search.wait_for(state="visible", timeout=10_000)
+    chosen_draft_candidate = _select_option(
+        page,
+        candidate_search,
+        exclude=re.compile(r"目前安排|Current assignment|空缺|Vacant|unassigned"),
+    )
+    draft_reason = page.locator("textarea[name='draft-batch-reason']")
     if draft_reason.input_value() != "":
-        raise UnifiedGuestVerificationError("The optional draft-change reason did not start blank.")
-    page.get_by_role(
-        "button",
-        name=re.compile(r"儲存草稿修改|Save draft change"),
-    ).click()
+        raise UnifiedGuestVerificationError("The optional draft-batch reason did not start blank.")
+    page.get_by_test_id("draft-save-all").click()
     page.wait_for_function(
         "() => /(?:版本|Version)\\s*2/.test(document.querySelector('.sy-roster-detail-head')?.innerText || '')",
         timeout=30_000,

@@ -1655,6 +1655,8 @@ tbody td {
 .prefect-name { display: block; font-size: 1rem; font-weight: 740; letter-spacing: 0.025em; }
 .cell-status { display: block; color: var(--ink-muted); font-size: 0.76rem; line-height: 1.45; }
 .cell--closed { background: color-mix(in srgb, var(--surface-muted) 88%, var(--line)); }
+.cell--day-closed { background: color-mix(in srgb, var(--surface-muted) 76%, var(--line)); }
+.cell--day-closed .cell-status { color: var(--ink); font-weight: 680; }
 .cell--vacant { background: color-mix(in srgb, var(--vacant-bg) 70%, var(--surface)); }
 .cell--vacant .cell-status { color: var(--vacant-ink); font-weight: 680; }
 
@@ -2829,8 +2831,12 @@ function renderRoster(snapshot, expiresAt) {
   for (const day of snapshot.days) {
     const heading = textElement('th', '', day.labelZh || day.code || '');
     heading.setAttribute('scope', 'col');
+    if (day.state === 'day_closed') heading.classList.add('cell--day-closed');
     heading.append(textElement('span', 'day-en', day.labelEn || ''));
     heading.append(textElement('span', 'day-date', localDate(day.date)));
+    if (day.state === 'day_closed') {
+      heading.append(textElement('span', 'cell-status', '全天不開放 · Closed all day'));
+    }
     headingRow.append(heading);
   }
   head.append(headingRow);
@@ -2851,9 +2857,12 @@ function renderRoster(snapshot, expiresAt) {
       const status = cell?.status || 'vacant';
       if (status === 'assigned' && cell.nameZh) {
         tableCell.append(textElement('span', 'prefect-name', cell.nameZh));
+      } else if (cell?.state === 'day_closed') {
+        tableCell.className = 'cell--day-closed';
+        tableCell.append(textElement('span', 'cell-status', '全天不開放 · Closed all day'));
       } else if (status === 'closed') {
         tableCell.className = 'cell--closed';
-        tableCell.append(textElement('span', 'cell-status', '休室 · Closed'));
+        tableCell.append(textElement('span', 'cell-status', '不開放 · Closed'));
       } else {
         tableCell.className = 'cell--vacant';
         tableCell.append(textElement('span', 'cell-status', '待補 · Vacancy'));

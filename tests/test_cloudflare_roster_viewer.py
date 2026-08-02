@@ -326,7 +326,9 @@ def test_viewer_is_bilingual_responsive_theme_aware_printable_and_reduced_motion
     assert 'lang="zh-Hant-HK"' in source
     assert "導學風紀值班表" in source
     assert "Study Prefect Duty Roster" in source
-    assert "休室 · Closed" in source
+    assert "不開放 · Closed" in source
+    assert "全天不開放 · Closed all day" in source
+    assert "cell?.state === 'day_closed'" in source
     assert "待補 · Vacancy" in source
     assert "@media (prefers-color-scheme: dark)" in source
     assert ':root[data-theme="dark"]' in source

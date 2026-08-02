@@ -5,17 +5,22 @@ from __future__ import annotations
 from nicegui_app.services.workflow_dependencies import (
     ASSIST_ASSIGNMENT_MODE_CODES,
     DraftAssignmentUpdateResult,
+    DraftCellEdit,
+    DraftDayEdit,
+    DraftPatchResult,
     DutyPost,
     ExternalShareOutboxRecord,
     FairnessLedgerRecord,
     LEGACY_FIXED_WEEKDAY,
     LeaveAdjustmentRecord,
     LeaveAdjustmentResult,
+    Iterable,
     POLICY_VERSION,
     Prefect,
     PrefectRecord,
     PrefectRole,
     RosterAssignmentRecord,
+    RosterDayClosureRecord,
     RosterGenerationError,
     RosterWeekRecord,
     RosterWeekResult,
@@ -29,6 +34,7 @@ from nicegui_app.services.workflow_dependencies import (
     datetime,
     defaultdict,
     delete,
+    duty_weight,
     func,
     generate_weekly_roster,
     hashlib,
@@ -37,6 +43,7 @@ from nicegui_app.services.workflow_dependencies import (
     required_posts_for_day,
     select,
     update,
+    WeekScheduleOverrides,
 )
 from nicegui_app.services.workflow_fencing import fenced_workflow_write
 from roster_policy import AssistAssignmentMode
@@ -53,6 +60,48 @@ def _assist_assignment_mode_code(value: object) -> str:
             f"Unsupported Assist assignment mode; expected one of: {allowed}."
         )
     return normalized
+
+
+_DAY_CLOSURE_REASON_CODES = frozenset(
+    {"school_event", "weather", "examination", "special_arrangement", "other"}
+)
+
+
+def _stable_school_day(value: SchoolDay | str) -> SchoolDay:
+    if isinstance(value, SchoolDay):
+        return value
+    try:
+        return SchoolDay[str(value).strip().upper()]
+    except KeyError as error:
+        raise WorkflowError("A roster day must use a stable weekday code.") from error
+
+
+def _normalized_closed_days(values: object) -> tuple[SchoolDay, ...]:
+    if values is None:
+        return ()
+    try:
+        days = tuple(_stable_school_day(value) for value in values)  # type: ignore[arg-type]
+    except TypeError as error:
+        raise WorkflowError("Closed days must be a weekday collection.") from error
+    if len(days) != len(set(days)):
+        raise WorkflowError("Closed days contain a duplicate weekday.")
+    return tuple(sorted(days, key=int))
+
+
+def _parse_cell_key(cell_key: str) -> tuple[SchoolDay, DutyPost, int]:
+    parts = str(cell_key).strip().upper().split(":")
+    if len(parts) != 3:
+        raise WorkflowError("Draft cell key must be DAY:POST:SLOT.")
+    try:
+        day = SchoolDay[parts[0]]
+        post = DutyPost[parts[1]]
+        slot_index = int(parts[2])
+    except (KeyError, ValueError) as error:
+        raise WorkflowError("Draft cell key contains an invalid stable code.") from error
+    allowed_count = required_posts_for_day(day).count(post)
+    if slot_index < 1 or slot_index > allowed_count:
+        raise WorkflowError("Draft cell key does not identify a required roster slot.")
+    return day, post, slot_index
 
 
 def _initialize_legacy_assist_weekdays(
@@ -128,17 +177,20 @@ class RosterLifecycleMixin:
         *,
         history_priority_multiplier: float = 1.0,
         assist_assignment_mode: AssistAssignmentMode | str = LEGACY_FIXED_WEEKDAY,
+        closed_days: Iterable[SchoolDay | str] = (),
         expected_week_version: int | None = None,
         command_id: str | None = None,
     ) -> RosterWeekResult:
         self._require_monday(week_start)
         normalized_assist_mode = _assist_assignment_mode_code(assist_assignment_mode)
+        normalized_closed_days = _normalized_closed_days(closed_days)
         operation_type = "draft_generated"
         operation_id = self._operation_command_id(operation_type, command_id)
         operation_payload = {
             "weekStart": week_start.isoformat(),
             "historyPriorityMultiplier": float(history_priority_multiplier),
             "assistAssignmentMode": normalized_assist_mode,
+            "closedDays": [day.name for day in normalized_closed_days],
             "expectedWeekVersion": expected_week_version,
         }
         receipt: dict[str, object] | None = None
@@ -179,6 +231,7 @@ class RosterLifecycleMixin:
                         assist_assignment_mode=normalized_assist_mode,
                         assist_rotation_key=week_start.isoformat(),
                         previous_assist_assignments=previous_assist_assignments,
+                        closed_days=normalized_closed_days,
                     )
                 except RosterGenerationError as error:
                     raise WorkflowError(f"Draft generation needs attention: {error}") from error
@@ -192,6 +245,7 @@ class RosterLifecycleMixin:
                         now=now,
                     )
                     if normalized_assist_mode == LEGACY_FIXED_WEEKDAY
+                    and len(normalized_closed_days) < len(SchoolDay)
                     else {}
                 )
                 if week is None:
@@ -217,8 +271,24 @@ class RosterLifecycleMixin:
                     week.generated_at = now
                     week.updated_at = now
                     session.execute(delete(RosterAssignmentRecord).where(RosterAssignmentRecord.roster_week_id == week.id))
+                    session.execute(
+                        delete(RosterDayClosureRecord).where(
+                            RosterDayClosureRecord.roster_week_id == week.id
+                        )
+                    )
                     session.flush()
 
+                for closed_day in normalized_closed_days:
+                    session.add(
+                        RosterDayClosureRecord(
+                            roster_week_id=week.id,
+                            day=closed_day.name,
+                            reason_code=None,
+                            note=None,
+                            created_at=now,
+                            updated_at=now,
+                        )
+                    )
                 self._store_assignments(session, week.id, assignments, prefects)
                 receipt = {
                     "id": week.id,
@@ -228,6 +298,7 @@ class RosterLifecycleMixin:
                     "assignmentCount": len(assignments),
                     "historyPriorityMultiplier": week.history_priority_multiplier,
                     "assistAssignmentMode": week.assist_assignment_mode,
+                    "closedDays": [day.name for day in normalized_closed_days],
                 }
                 self._audit(
                     session,
@@ -240,6 +311,7 @@ class RosterLifecycleMixin:
                         "assistAssignmentMode": normalized_assist_mode,
                         "previousAssistWeekdayCount": len(previous_assist_assignments),
                         "fixedWeekdayAssignmentsInitialized": initialized_fixed_weekdays,
+                        "closedDays": [day.name for day in normalized_closed_days],
                         "version": week.version,
                     },
                 )
@@ -326,8 +398,14 @@ class RosterLifecycleMixin:
                 # error rolls this transaction back to the draft state.
                 week = self._week_or_error(session, roster_week_id)
                 assignment_rows = self._assignment_rows(session, week.id)
+                closed_days = self._closed_days(session, week.id)
                 ledger_operation_id = f"roster-publish:{week.id}"
-                self._validate_persisted_assignments(session, assignment_rows, week_start=week.week_start)
+                self._validate_persisted_assignments(
+                    session,
+                    assignment_rows,
+                    week_start=week.week_start,
+                    closed_days=closed_days,
+                )
                 for row in assignment_rows:
                     if row.prefect_id is None or row.status != "active":
                         raise WorkflowError("A roster with a vacancy cannot be published.")
@@ -360,6 +438,7 @@ class RosterLifecycleMixin:
                     "assignmentCount": len(assignment_rows),
                     "historyPriorityMultiplier": week.history_priority_multiplier,
                     "assistAssignmentMode": week.assist_assignment_mode,
+                    "closedDays": [day.name for day in closed_days],
                 }
                 self._audit(
                     session,
@@ -369,6 +448,7 @@ class RosterLifecycleMixin:
                         "assignmentCount": len(assignment_rows),
                         "historyPriorityMultiplier": week.history_priority_multiplier,
                         "assistAssignmentMode": week.assist_assignment_mode,
+                        "closedDays": [day.name for day in closed_days],
                         "version": week.version,
                     },
                 )
@@ -587,6 +667,342 @@ class RosterLifecycleMixin:
             assignment = self._assignment_or_error(session, roster_week_id, assignment_id)
             return self._eligible_assignment_candidates(session, week, assignment)
 
+    def draft_cell_candidates(
+        self,
+        roster_week_id: int,
+        cell_key: str,
+    ) -> list[dict[str, object]]:
+        """Return candidates for an assigned or currently vacant stable cell."""
+
+        day, post, slot_index = _parse_cell_key(cell_key)
+        with self._session() as session:
+            week = self._week_or_error(session, roster_week_id)
+            if week.status != "draft":
+                raise WorkflowError("Manual changes are available only for a draft roster.")
+            existing = session.scalar(
+                select(RosterAssignmentRecord).where(
+                    RosterAssignmentRecord.roster_week_id == roster_week_id,
+                    RosterAssignmentRecord.day == day.name,
+                    RosterAssignmentRecord.post_code == post.name,
+                    RosterAssignmentRecord.slot_index == slot_index,
+                )
+            )
+            probe = existing or RosterAssignmentRecord(
+                id=-1,
+                roster_week_id=roster_week_id,
+                day=day.name,
+                post_code=post.name,
+                slot_index=slot_index,
+                prefect_id="__vacant__",
+                prefect_name_snapshot="",
+                prefect_role_snapshot=None,
+                weight=duty_weight(post),
+                status="active",
+            )
+            candidates = self._eligible_assignment_candidates(
+                session,
+                week,
+                probe,
+                include_same_day_assigned=True,
+            )
+            if week.assist_assignment_mode != LEGACY_FIXED_WEEKDAY or post is not DutyPost.ASSIST_IN_CHARGE:
+                return candidates
+            fixed_owner = session.scalar(
+                select(PrefectRecord.id).where(
+                    PrefectRecord.active.is_(True),
+                    PrefectRecord.role_code == PrefectRole.ASSISTANT_HEAD.value,
+                    PrefectRecord.fixed_general_duty == day.name,
+                )
+            )
+            if fixed_owner is None:
+                return candidates
+            return [candidate for candidate in candidates if candidate["id"] == fixed_owner]
+
+    @fenced_workflow_write
+    def apply_draft_patch(
+        self,
+        *,
+        roster_week_id: int,
+        expected_week_version: int,
+        cell_edits: Iterable[DraftCellEdit] = (),
+        day_edits: Iterable[DraftDayEdit] = (),
+        reason: str | None = None,
+        command_id: str | None = None,
+    ) -> DraftPatchResult:
+        """Apply one final-state draft patch under a single version claim.
+
+        The whole matrix is changed before policy validation, so a swap is
+        validated as one operator decision rather than two temporarily invalid
+        writes. ``None`` is the only explicit vacancy value; an empty prefect
+        identifier is rejected at this service boundary.
+        """
+
+        normalized_reason = (reason or "").strip()
+        if len(normalized_reason) > 1000:
+            raise WorkflowError("Draft patch reason is too long.")
+        if expected_week_version < 1:
+            raise WorkflowError("The reviewed draft version is invalid.")
+
+        materialized_cells = tuple(cell_edits)
+        materialized_days = tuple(day_edits)
+        if not materialized_cells and not materialized_days:
+            raise WorkflowError("Choose at least one draft cell or weekday to change.")
+
+        parsed_cells: list[tuple[DraftCellEdit, SchoolDay, DutyPost, int]] = []
+        seen_cells: set[str] = set()
+        for edit in materialized_cells:
+            day, post, slot_index = _parse_cell_key(edit.cell_key)
+            stable_key = f"{day.name}:{post.name}:{slot_index}"
+            if stable_key in seen_cells:
+                raise WorkflowError("A draft patch cannot change the same cell twice.")
+            if edit.replacement_prefect_id is not None and not edit.replacement_prefect_id.strip():
+                raise WorkflowError(
+                    "An empty prefect identifier is not a vacancy decision; choose a prefect or explicitly clear the cell."
+                )
+            seen_cells.add(stable_key)
+            parsed_cells.append((edit, day, post, slot_index))
+
+        normalized_days: list[tuple[DraftDayEdit, SchoolDay, str | None, str | None]] = []
+        seen_days: set[SchoolDay] = set()
+        for edit in materialized_days:
+            day = _stable_school_day(edit.day)
+            if day in seen_days:
+                raise WorkflowError("A draft patch cannot change the same weekday twice.")
+            reason_code = (edit.reason_code or "").strip() or None
+            note = (edit.note or "").strip() or None
+            if reason_code is not None and reason_code not in _DAY_CLOSURE_REASON_CODES:
+                raise WorkflowError("A day closure must use a stable reason code.")
+            if note is not None and len(note) > 1000:
+                raise WorkflowError("A day closure note is too long.")
+            seen_days.add(day)
+            normalized_days.append((edit, day, reason_code, note))
+
+        closing_days = {
+            day for edit, day, _, _ in normalized_days if edit.closed
+        }
+        if any(day in closing_days for _, day, _, _ in parsed_cells):
+            raise WorkflowError(
+                "A cell cannot be assigned in the same patch which closes its weekday."
+            )
+
+        operation_type = "draft_patch_applied"
+        operation_key = self._operation_command_id(operation_type, command_id)
+        operation_payload = {
+            "rosterWeekId": roster_week_id,
+            "expectedWeekVersion": expected_week_version,
+            "cellEdits": [
+                {
+                    "cellKey": f"{day.name}:{post.name}:{slot_index}",
+                    "replacementPrefectId": edit.replacement_prefect_id,
+                }
+                for edit, day, post, slot_index in parsed_cells
+            ],
+            "dayEdits": [
+                {
+                    "day": day.name,
+                    "closed": edit.closed,
+                    "reasonCode": reason_code,
+                    "note": note,
+                }
+                for edit, day, reason_code, note in normalized_days
+            ],
+            "reason": normalized_reason,
+        }
+
+        receipt: dict[str, object] | None = None
+        replayed = False
+        with self._session() as session:
+            self._begin_serialized_write(session)
+            command, receipt = self._claim_operation_command(
+                session,
+                operation_type=operation_type,
+                command_id=operation_key,
+                payload=operation_payload,
+            )
+            if receipt is not None:
+                replayed = True
+                session.rollback()
+            else:
+                week = self._week_or_error(session, roster_week_id)
+                if week.status != "draft":
+                    raise WorkflowError("Only a draft roster can be changed.")
+                if week.version != expected_week_version:
+                    raise WorkflowConflictError(
+                        "This draft changed in another browser. Refresh and review the latest version before saving."
+                    )
+                now = self._now()
+                claim = session.execute(
+                    update(RosterWeekRecord)
+                    .where(
+                        RosterWeekRecord.id == roster_week_id,
+                        RosterWeekRecord.status == "draft",
+                        RosterWeekRecord.version == expected_week_version,
+                    )
+                    .values(version=expected_week_version + 1, updated_at=now)
+                )
+                if claim.rowcount != 1:
+                    raise WorkflowConflictError(
+                        "This draft changed in another browser. Refresh and review the latest version before saving."
+                    )
+                session.refresh(week)
+
+                closure_rows = session.scalars(
+                    select(RosterDayClosureRecord).where(
+                        RosterDayClosureRecord.roster_week_id == roster_week_id
+                    )
+                ).all()
+                closures = {SchoolDay[row.day]: row for row in closure_rows}
+                for edit, day, reason_code, note in normalized_days:
+                    existing = closures.get(day)
+                    if edit.closed:
+                        if existing is None:
+                            existing = RosterDayClosureRecord(
+                                roster_week_id=roster_week_id,
+                                day=day.name,
+                                reason_code=reason_code,
+                                note=note,
+                                created_at=now,
+                                updated_at=now,
+                            )
+                            session.add(existing)
+                            closures[day] = existing
+                        else:
+                            existing.reason_code = reason_code
+                            existing.note = note
+                            existing.updated_at = now
+                        session.execute(
+                            delete(RosterAssignmentRecord).where(
+                                RosterAssignmentRecord.roster_week_id == roster_week_id,
+                                RosterAssignmentRecord.day == day.name,
+                            )
+                        )
+                    elif existing is not None:
+                        session.delete(existing)
+                        closures.pop(day, None)
+
+                requested_prefect_ids = {
+                    edit.replacement_prefect_id
+                    for edit, _, _, _ in parsed_cells
+                    if edit.replacement_prefect_id is not None
+                }
+                prefect_records = {
+                    record.id: record
+                    for record in session.scalars(
+                        select(PrefectRecord).where(
+                            PrefectRecord.id.in_(requested_prefect_ids),
+                            PrefectRecord.active.is_(True),
+                        )
+                    ).all()
+                } if requested_prefect_ids else {}
+                if set(prefect_records) != requested_prefect_ids:
+                    raise WorkflowError("A selected prefect no longer exists or is inactive.")
+
+                assignment_rows = self._assignment_rows(session, roster_week_id)
+                rows_by_cell = {
+                    (SchoolDay[row.day], DutyPost[row.post_code], row.slot_index): row
+                    for row in assignment_rows
+                }
+                for edit, day, post, slot_index in parsed_cells:
+                    if day in closures:
+                        raise WorkflowError("A closed weekday cannot contain an assignment.")
+                    key = (day, post, slot_index)
+                    existing = rows_by_cell.get(key)
+                    replacement_id = edit.replacement_prefect_id
+                    if replacement_id is None:
+                        if existing is not None:
+                            session.delete(existing)
+                            rows_by_cell.pop(key, None)
+                        continue
+                    replacement = prefect_records[replacement_id]
+                    if existing is None:
+                        existing = RosterAssignmentRecord(
+                            roster_week_id=roster_week_id,
+                            day=day.name,
+                            post_code=post.name,
+                            slot_index=slot_index,
+                            prefect_id=replacement.id,
+                            prefect_name_snapshot=replacement.name_zh,
+                            prefect_role_snapshot=replacement.role_code,
+                            weight=duty_weight(post),
+                            status="active",
+                        )
+                        session.add(existing)
+                        rows_by_cell[key] = existing
+                    else:
+                        existing.prefect_id = replacement.id
+                        existing.prefect_name_snapshot = replacement.name_zh
+                        existing.prefect_role_snapshot = replacement.role_code
+                        existing.weight = duty_weight(post)
+                        existing.status = "active"
+
+                final_closed_days = tuple(sorted(closures, key=int))
+                session.flush()
+                final_rows = self._assignment_rows(session, roster_week_id)
+                self._validate_persisted_assignments(
+                    session,
+                    final_rows,
+                    week_start=week.week_start,
+                    closed_days=final_closed_days,
+                    require_complete=False,
+                )
+
+                if week.assist_assignment_mode == LEGACY_FIXED_WEEKDAY:
+                    fixed_owners = {
+                        record.fixed_general_duty: record.id
+                        for record in self._active_prefect_records(session)
+                        if record.role_code == PrefectRole.ASSISTANT_HEAD.value
+                        and record.fixed_general_duty in SchoolDay.__members__
+                    }
+                    for row in final_rows:
+                        if row.status != "active" or row.post_code != DutyPost.ASSIST_IN_CHARGE.name:
+                            continue
+                        fixed_owner = fixed_owners.get(row.day)
+                        if fixed_owner is not None and row.prefect_id != fixed_owner:
+                            raise WorkflowError(
+                                "Legacy fixed-weekday mode requires the weekday's assigned Assistant Head Study Prefect."
+                            )
+
+                receipt = {
+                    "rosterWeekId": roster_week_id,
+                    "version": week.version,
+                    "changedCellCount": len(parsed_cells),
+                    "closedDays": [day.name for day in final_closed_days],
+                }
+                self._audit(
+                    session,
+                    operation_type,
+                    roster_week_id,
+                    {
+                        "cellKeys": [
+                            f"{day.name}:{post.name}:{slot_index}"
+                            for _, day, post, slot_index in parsed_cells
+                        ],
+                        "dayEdits": [
+                            {"day": day.name, "closed": edit.closed, "reasonCode": reason_code}
+                            for edit, day, reason_code, _ in normalized_days
+                        ],
+                        "reason": normalized_reason,
+                        "version": week.version,
+                    },
+                )
+                self._commit_operation_command(
+                    session,
+                    record=command,
+                    result=receipt,
+                    roster_week_id=roster_week_id,
+                )
+                session.commit()
+
+        assert receipt is not None
+        return DraftPatchResult(
+            roster_week_id=int(receipt["rosterWeekId"]),
+            version=int(receipt["version"]),
+            changed_cell_count=int(receipt["changedCellCount"]),
+            closed_days=tuple(str(day) for day in receipt.get("closedDays", [])),
+            backup_path=self._fulfill_backup_obligation(operation_key),
+            idempotent=replayed,
+        )
+
     @fenced_workflow_write
     def update_draft_assignment(
         self,
@@ -657,7 +1073,12 @@ class RosterLifecycleMixin:
                 assignment.prefect_name_snapshot = replacement.name_zh
                 assignment.prefect_role_snapshot = replacement.role_code
                 assignment.status = "active"
-                self._validate_persisted_assignments(session, self._assignment_rows(session, week.id), week_start=week.week_start)
+                self._validate_persisted_assignments(
+                    session,
+                    self._assignment_rows(session, week.id),
+                    week_start=week.week_start,
+                    closed_days=self._closed_days(session, week.id),
+                )
                 receipt = {
                     "rosterWeekId": week.id,
                     "assignmentId": assignment.id,
@@ -1002,7 +1423,10 @@ class RosterLifecycleMixin:
         )
 
     @staticmethod
-    def _roster_week_output(row: RosterWeekRecord) -> dict[str, object]:
+    def _roster_week_output(
+        row: RosterWeekRecord,
+        closed_days: Iterable[SchoolDay] = (),
+    ) -> dict[str, object]:
         return {
             "id": row.id,
             "weekStart": row.week_start,
@@ -1014,6 +1438,7 @@ class RosterLifecycleMixin:
             "publishedAt": row.published_at,
             "withdrawnAt": row.withdrawn_at,
             "withdrawalReason": row.withdrawal_reason,
+            "closedDays": [day.name for day in closed_days],
         }
 
     def latest_roster_week(self) -> dict[str, object] | None:
@@ -1024,7 +1449,11 @@ class RosterLifecycleMixin:
                 .order_by(RosterWeekRecord.week_start.desc(), RosterWeekRecord.id.desc())
                 .limit(1)
             )
-            return self._roster_week_output(row) if row is not None else None
+            return (
+                self._roster_week_output(row, self._closed_days(session, row.id))
+                if row is not None
+                else None
+            )
 
     def roster_week_history(
         self,
@@ -1044,7 +1473,8 @@ class RosterLifecycleMixin:
                 .limit(page_size)
                 .offset((page - 1) * page_size)
             ).all()
-            return [self._roster_week_output(row) for row in rows]
+            closures = self._closed_days_by_week(session, (row.id for row in rows))
+            return [self._roster_week_output(row, closures.get(row.id, ())) for row in rows]
 
     def roster_weeks(self) -> list[dict[str, object]]:
         """Compatibility read for bounded-data services; UI uses history/latest APIs."""
@@ -1055,12 +1485,22 @@ class RosterLifecycleMixin:
                     RosterWeekRecord.id.desc(),
                 )
             ).all()
-            return [self._roster_week_output(row) for row in rows]
+            closures = self._closed_days_by_week(session, (row.id for row in rows))
+            return [self._roster_week_output(row, closures.get(row.id, ())) for row in rows]
 
     def roster_week(self, roster_week_id: int) -> dict[str, object]:
         with self._session() as session:
             row = self._week_or_error(session, roster_week_id)
-            return self._roster_week_output(row)
+            return self._roster_week_output(row, self._closed_days(session, row.id))
+
+    def week_schedule_overrides(self, roster_week_id: int) -> WeekScheduleOverrides:
+        with self._session() as session:
+            self._week_or_error(session, roster_week_id)
+            return WeekScheduleOverrides(
+                closed_days=tuple(
+                    day.name for day in self._closed_days(session, roster_week_id)
+                )
+            )
 
     def assignments(self, roster_week_id: int) -> list[dict[str, object]]:
         with self._session() as session:
@@ -1090,6 +1530,7 @@ class RosterLifecycleMixin:
         with self._session() as session:
             week = self._week_or_error(session, roster_week_id)
             assignments = self._assignment_rows(session, roster_week_id)
+            closed_days = self._closed_days(session, roster_week_id)
             return (
                 {
                     "id": week.id,
@@ -1100,6 +1541,8 @@ class RosterLifecycleMixin:
                     "assistAssignmentMode": week.assist_assignment_mode,
                     "generatedAt": week.generated_at,
                     "publishedAt": week.published_at,
+                    "closedDays": [day.name for day in closed_days],
+                    "dayClosures": self._closure_outputs(session, roster_week_id),
                 },
                 [
                     {
@@ -1116,15 +1559,23 @@ class RosterLifecycleMixin:
                 ],
             )
 
-    def generation_requirements(self, week_start: date) -> list[dict[str, object]]:
+    def generation_requirements(
+        self,
+        week_start: date,
+        *,
+        closed_days: Iterable[SchoolDay | str] = (),
+    ) -> list[dict[str, object]]:
         """Expose every required weekly slot and its currently eligible pool before generation."""
         self._require_monday(week_start)
+        normalized_closed_days = frozenset(_normalized_closed_days(closed_days))
         with self._session() as session:
             availability = self._availability_by_prefect(session)
             leave_days = self._leave_days_for_week(session, week_start)
             prefects = self._active_prefect_records(session)
             requirements: list[dict[str, object]] = []
             for day in SchoolDay:
+                if day in normalized_closed_days:
+                    continue
                 slot_counts: dict[DutyPost, int] = defaultdict(int)
                 for post in required_posts_for_day(day):
                     slot_counts[post] += 1

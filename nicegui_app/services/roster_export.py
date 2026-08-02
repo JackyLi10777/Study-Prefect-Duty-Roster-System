@@ -13,7 +13,7 @@ from datetime import date, datetime, timedelta
 from io import BytesIO
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Mapping
 from xml.sax.saxutils import escape as xml_escape
 
 from reportlab.lib import colors
@@ -27,10 +27,9 @@ from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Tabl
 
 from nicegui_app.config import DISPLAY_PRINT_CREST_PATH, PROJECT_ROOT
 from nicegui_app.services.roster_presentation import (
-    DAY_ORDER,
     DAY_TEXT,
-    ROSTER_ROWS,
-    build_roster_schedule,
+    RosterCellState,
+    build_roster_presentation,
 )
 from roster_policy import DutyPost, SchoolDay
 
@@ -68,6 +67,8 @@ GRID = colors.HexColor("#B7C9CF")
 INK = colors.HexColor("#17333A")
 MUTED = colors.HexColor("#5E7377")
 CLOSED = colors.HexColor("#EEF3F4")
+DAY_CLOSED = colors.HexColor("#E4E8EC")
+DAY_CLOSED_HEADER = colors.HexColor("#596674")
 
 
 @dataclass(frozen=True)
@@ -105,7 +106,7 @@ def build_roster_pdf(
         Spacer(1, 4 * mm),
         _schedule_grid(
             assignments,
-            week_start=week["weekStart"],
+            week=week,
             language=language,
             styles=styles,
             landscape_mode=True,
@@ -200,23 +201,36 @@ def _schedule_header(
 
 def _schedule_grid(
     assignments: list[dict[str, object]],
-    week_start: object,
+    week: Mapping[str, object],
     language: ExportLanguage,
     styles: dict[str, ParagraphStyle],
     *,
     landscape_mode: bool,
 ) -> Table:
-    schedule = build_roster_schedule(assignments)
+    presentation = build_roster_presentation(week, assignments)
     heading = "值班位置" if language == "zh" else "Duty Position"
     rows: list[list[Paragraph]] = [[Paragraph(heading, styles["grid_heading"])] + [
-        Paragraph(_dated_day_heading(week_start, day, language), styles["grid_heading"])
-        for day in DAY_ORDER
+        Paragraph(
+            _dated_day_heading(
+                presentation.week_start,
+                day.day,
+                language,
+                day_closed=day.state == "day_closed",
+            ),
+            styles["grid_heading"],
+        )
+        for day in presentation.days
     ]]
     cell_backgrounds: list[tuple[int, int, colors.Color]] = []
-    for row_index, schedule_row in enumerate(schedule, start=1):
+    closed_columns = [
+        index
+        for index, day in enumerate(presentation.days, start=1)
+        if day.state == "day_closed"
+    ]
+    for row_index, schedule_row in enumerate(presentation.rows, start=1):
         spec = schedule_row.spec
         post = spec.post
-        start_time, end_time = spec.opening_time
+        start_time, end_time = spec.service_time
         # Duty-post names are operational identifiers and remain English in
         # both PDF languages; headings, weekdays and guidance still localise.
         post_label = xml_escape(spec.display_label)
@@ -227,11 +241,15 @@ def _schedule_grid(
             )
         ]
         for column_index, cell in enumerate(schedule_row.cells, start=1):
-            if cell.status == "closed":
+            if cell.state is RosterCellState.DAY_CLOSED:
+                row.append(Paragraph("全日不開放" if language == "zh" else "Day closed", styles["closed_cell"]))
+                cell_backgrounds.append((column_index, row_index, DAY_CLOSED))
+                continue
+            if cell.state is RosterCellState.ROOM_CLOSED:
                 row.append(Paragraph("不開放" if language == "zh" else "Closed", styles["closed_cell"]))
                 cell_backgrounds.append((column_index, row_index, CLOSED))
                 continue
-            if cell.status != "active":
+            if cell.state is RosterCellState.VACANT:
                 row.append(Paragraph("空缺" if language == "zh" else "Vacant", styles["vacant_cell"]))
                 cell_backgrounds.append((column_index, row_index, ROW_BACKGROUNDS[post]))
                 continue
@@ -261,11 +279,25 @@ def _schedule_grid(
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
     ]
     commands.extend(("BACKGROUND", (column, row), (column, row), background) for column, row, background in cell_backgrounds)
+    for column in closed_columns:
+        commands.extend(
+            [
+                ("BACKGROUND", (column, 0), (column, 0), DAY_CLOSED_HEADER),
+                ("LINEBEFORE", (column, 0), (column, -1), 1.0, DAY_CLOSED_HEADER),
+                ("LINEAFTER", (column, 0), (column, -1), 1.0, DAY_CLOSED_HEADER),
+            ]
+        )
     table.setStyle(TableStyle(commands))
     return table
 
 
-def _dated_day_heading(week_start: object, day: SchoolDay, language: ExportLanguage) -> str:
+def _dated_day_heading(
+    week_start: object,
+    day: SchoolDay,
+    language: ExportLanguage,
+    *,
+    day_closed: bool = False,
+) -> str:
     """Return a locale-stable weekday and calendar date for a PDF column."""
 
     start = _coerce_week_start(week_start)
@@ -275,7 +307,9 @@ def _dated_day_heading(week_start: object, day: SchoolDay, language: ExportLangu
         date_text = f"{duty_date.month}月{duty_date.day}日"
     else:
         date_text = f"{duty_date.day:02d} {ENGLISH_MONTH_ABBREVIATIONS[duty_date.month - 1]}"
-    return f'{weekday}<br/><font size="7.8">{date_text}</font>'
+    closed_text = "全日不開放" if language == "zh" else "DAY CLOSED"
+    suffix = f'<br/><font size="6.8">{closed_text}</font>' if day_closed else ""
+    return f'{weekday}<br/><font size="7.8">{date_text}</font>{suffix}'
 
 
 def _coerce_week_start(value: object) -> date:

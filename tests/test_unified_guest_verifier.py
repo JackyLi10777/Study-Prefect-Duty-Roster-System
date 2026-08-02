@@ -134,7 +134,12 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         "guest-restricted-state",
         "pre-generation-leave-prefect",
         "pre-generation-leave-reason",
-        "draft-change-reason",
+        "data-cell-key",
+        "draft-candidate-search",
+        "draft-batch-reason",
+        "draft-save-all",
+        "draft-day-toggle-monday",
+        "draft-day-confirm-close-monday",
         "leave-adjustment-reason",
         "download-summary-json",
         "school-year-rollover-confirmation",
@@ -144,12 +149,24 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         "main#main-content .q-select:visible",
     ):
         assert contract in source
-    assert source.count('page.locator("main#main-content .q-select:visible")') == 2
+    assert source.count('page.locator("main#main-content .q-select:visible")') == 1
+    assert "draft-change-reason" not in source
+    assert "載入合資格人選" not in source
+    assert "儲存草稿修改" not in source
 
     weekly_source = (
         Path(__file__).parents[1] / "nicegui_app" / "ui" / "page_routes" / "weekly.py"
     ).read_text(encoding="utf-8")
-    assert "data-testid=pre-generation-leave-prefect" in weekly_source
+    for contract in (
+        "data-testid=pre-generation-leave-prefect",
+        "data-cell-key",
+        "data-testid=draft-candidate-search",
+        "name=draft-batch-reason",
+        'test_id="draft-save-all"',
+        'f"draft-day-toggle-',
+        '"draft-day-confirm-close-"',
+    ):
+        assert contract in weekly_source
 
 
 def test_unified_guest_verifier_accepts_only_explicit_fictional_demo_json() -> None:

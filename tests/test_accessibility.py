@@ -338,7 +338,7 @@ def test_core_operator_fields_declare_names_and_disable_credential_autofill() ->
     for field_name in (
         "week-start",
         "pre-generation-leave-reason",
-        "draft-change-reason",
+        "draft-batch-reason",
         "leave-adjustment-reason",
         "name-zh",
         "name-en",
@@ -360,7 +360,7 @@ def test_every_backup_sensitive_ui_write_uses_the_nonblocking_progress_boundary(
     pages = combined_page_source()
 
     assert "def _safe_action" not in pages
-    assert pages.count("_safe_read_action(") == 5  # helper plus four bounded UI reads
+    assert pages.count("_safe_read_action(") == 6  # helper plus five bounded UI reads
     for working_key in (
         "progress_leave_working",
         "progress_leave_cancel_working",
@@ -394,17 +394,17 @@ def test_roster_forms_repair_predictable_input_before_background_work() -> None:
     leave_handler = pages.split("async def declare_leave() -> None:", 1)[1].split(
         "declare_leave_button = action(", 1
     )[0]
-    draft_handler = pages.split("async def save_draft_change() -> None:", 1)[1].split(
-        'with ui.row().classes("sy-mobile-actions gap-3 mt-4"):', 1
+    draft_handler = pages.split("async def save_pending() -> None:", 1)[1].split(
+        "@ui.refreshable", 1
     )[0]
 
     for key in ("leave_prefect_required", "leave_day_required"):
         assert leave_handler.index(key) < leave_handler.index("_run_with_progress")
-    for key in ("draft_assignment_required", "draft_candidate_required"):
-        assert draft_handler.index(key) < draft_handler.index("_run_with_progress")
     assert "workflow.validate_week_start(selected)" in pages
     assert leave_handler.count('run_method("focus")') == 2
-    assert draft_handler.count('run_method("focus")') == 2
+    assert "if not cell_values and not day_values:" in draft_handler
+    assert draft_handler.index("cell_values = tuple(") < draft_handler.index("await _run_with_progress")
+    assert draft_handler.index("day_values = tuple(") < draft_handler.index("await _run_with_progress")
 
 
 def test_history_priority_slider_marks_match_the_nonlinear_numeric_range() -> None:
@@ -467,8 +467,11 @@ def test_durable_handlers_snapshot_visible_form_values_before_the_first_await() 
         "prefect_id = str(leave_prefect.value)",
         "leave_day_value = str(leave_day.value)",
         "assignment_id = int(assignment_select.value)",
-        "replacement_prefect_id = str(candidate_select.value)",
+        'replacement_id = None if replacement_select.value == "__vacant__" else str(replacement_select.value)',
         'reason = str(reason_input.value or "").strip()',
+        "cell_values = tuple(",
+        "day_values = tuple(",
+        'reason = reason_state["value"].strip() or None',
     ):
         assert snapshot in pages
 

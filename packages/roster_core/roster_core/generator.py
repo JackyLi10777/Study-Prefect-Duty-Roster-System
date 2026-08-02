@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from collections import Counter, defaultdict
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 
 from roster_policy import (
     DAYS,
@@ -335,7 +335,8 @@ def _find_nonconsecutive_weekday_schedule(
 
     # last prefect id -> (additive score, path ids, scheduled prefects)
     states: dict[str, tuple[tuple[int, float, int, int], tuple[str, ...], tuple[Prefect, ...]]] = {}
-    for day_index, day in enumerate(DAYS):
+    scheduled_days = [day for day in DAYS if day in candidate_lists]
+    for day_index, day in enumerate(scheduled_days):
         next_states: dict[str, tuple[tuple[int, float, int, int], tuple[str, ...], tuple[Prefect, ...]]] = {}
         for prefect in candidate_lists.get(day, []):
             canonical_prefect = canonical.get(day) if canonical is not None else None
@@ -350,8 +351,9 @@ def _find_nonconsecutive_weekday_schedule(
                 candidate_state = (step_score, (prefect.id,), (prefect,))
                 next_states[prefect.id] = candidate_state
                 continue
+            previous_day = scheduled_days[day_index - 1]
             for previous_id, (score, path_ids, path) in states.items():
-                if previous_id == prefect.id:
+                if previous_id == prefect.id and abs(int(previous_day) - int(day)) == 1:
                     continue
                 total_score = tuple(left + right for left, right in zip(score, step_score, strict=True))
                 candidate_state = (total_score, (*path_ids, prefect.id), (*path, prefect))
@@ -365,7 +367,7 @@ def _find_nonconsecutive_weekday_schedule(
             return None
 
     _, _, best_path = min(states.values(), key=lambda state: state[:2])
-    return dict(zip(DAYS, best_path, strict=True))
+    return dict(zip(scheduled_days, best_path, strict=True))
 
 
 def _canonical_assist_schedule(prefects: list[Prefect]) -> dict[SchoolDay, Prefect]:
@@ -461,11 +463,14 @@ def _legacy_assist_schedule(
     *,
     leave_days: Mapping[str, set[SchoolDay]],
     history_priority_multiplier: float,
+    scheduled_days: tuple[SchoolDay, ...],
 ) -> dict[SchoolDay, Prefect]:
+    if not scheduled_days:
+        return {}
     canonical = _canonical_assist_schedule(prefects)
     eligible_by_day = {
         day: _eligible_assist_candidates(prefects, day=day, leave_days=leave_days)
-        for day in DAYS
+        for day in scheduled_days
     }
     for day, candidates in eligible_by_day.items():
         if not candidates:
@@ -476,7 +481,7 @@ def _legacy_assist_schedule(
     locked = {
         day: prefect
         for day, prefect in canonical.items()
-        if day not in leave_days.get(prefect.id, set())
+        if day in scheduled_days and day not in leave_days.get(prefect.id, set())
     }
     used_ids = {prefect.id for prefect in locked.values()}
     missing_lists = {
@@ -490,7 +495,7 @@ def _legacy_assist_schedule(
                 prefect.id,
             ),
         )
-        for day in DAYS
+        for day in scheduled_days
         if day not in locked
     }
     replacements = _find_unique_weekday_matching(missing_lists)
@@ -512,7 +517,7 @@ def _legacy_assist_schedule(
                 prefect.id,
             ),
         )
-        for day in DAYS
+        for day in scheduled_days
     }
     fallback = _find_nonconsecutive_weekday_schedule(
         candidate_lists,
@@ -533,7 +538,10 @@ def _flexible_assist_schedule(
     history_priority_multiplier: float,
     rotation_key: str,
     previous_assist_assignments: Mapping[SchoolDay, str],
+    scheduled_days: tuple[SchoolDay, ...],
 ) -> dict[SchoolDay, Prefect]:
+    if not scheduled_days:
+        return {}
     candidate_lists = {
         day: sorted(
             _eligible_assist_candidates(prefects, day=day, leave_days=leave_days),
@@ -546,7 +554,7 @@ def _flexible_assist_schedule(
                 prefect.id,
             ),
         )
-        for day in DAYS
+        for day in scheduled_days
     }
     for day, candidates in candidate_lists.items():
         if not candidates:
@@ -580,12 +588,14 @@ def _assist_schedule(
     history_priority_multiplier: float,
     rotation_key: str,
     previous_assist_assignments: Mapping[SchoolDay, str],
+    scheduled_days: tuple[SchoolDay, ...],
 ) -> dict[SchoolDay, Prefect]:
     if mode is AssistAssignmentMode.LEGACY_FIXED_WEEKDAY:
         return _legacy_assist_schedule(
             prefects,
             leave_days=leave_days,
             history_priority_multiplier=history_priority_multiplier,
+            scheduled_days=scheduled_days,
         )
     return _flexible_assist_schedule(
         prefects,
@@ -593,6 +603,7 @@ def _assist_schedule(
         history_priority_multiplier=history_priority_multiplier,
         rotation_key=rotation_key,
         previous_assist_assignments=previous_assist_assignments,
+        scheduled_days=scheduled_days,
     )
 
 
@@ -681,6 +692,7 @@ def _solve_regular_schedule(
     *,
     leave_days: Mapping[str, set[SchoolDay]],
     history_priority_multiplier: float,
+    scheduled_days: tuple[SchoolDay, ...],
 ) -> dict[tuple[SchoolDay, DutyPost, int], Assignment]:
     """Find a complete regular-prefect schedule with deterministic backtracking.
 
@@ -692,7 +704,7 @@ def _solve_regular_schedule(
     """
 
     slots: list[tuple[SchoolDay, DutyPost, int]] = []
-    for day in DAYS:
+    for day in scheduled_days:
         seat_by_post: dict[DutyPost, int] = defaultdict(int)
         for post in required_posts_for_day(day):
             if post is DutyPost.ASSIST_IN_CHARGE:
@@ -800,6 +812,7 @@ def generate_weekly_roster(
     assist_assignment_mode: AssistAssignmentMode | str = AssistAssignmentMode.LEGACY_FIXED_WEEKDAY,
     assist_rotation_key: str | None = None,
     previous_assist_assignments: Mapping[SchoolDay, str] | None = None,
+    closed_days: Iterable[SchoolDay] | None = None,
 ) -> list[Assignment]:
     if not prefects:
         raise RosterGenerationError("Cannot generate roster without prefects.")
@@ -815,6 +828,10 @@ def generate_weekly_roster(
             "Assist rotation key is required for flexible weekly assignment mode."
         )
 
+    normalized_closed_days = frozenset(closed_days or ())
+    if any(not isinstance(day, SchoolDay) for day in normalized_closed_days):
+        raise RosterGenerationError("Closed days must use stable SchoolDay values.")
+    scheduled_days = tuple(day for day in DAYS if day not in normalized_closed_days)
     assignments: list[Assignment] = []
     excluded_days = leave_days or {}
     assist_by_day = _assist_schedule(
@@ -824,16 +841,18 @@ def generate_weekly_roster(
         history_priority_multiplier=normalized_multiplier,
         rotation_key=normalized_rotation_key or "legacy-fixed-weekday",
         previous_assist_assignments=previous_assist_assignments or {},
+        scheduled_days=scheduled_days,
     )
 
     regular_assignments = _solve_regular_schedule(
         prefects,
         leave_days=excluded_days,
         history_priority_multiplier=normalized_multiplier,
+        scheduled_days=scheduled_days,
     )
     regular_seat_by_post: dict[tuple[SchoolDay, DutyPost], int] = defaultdict(int)
 
-    for day in DAYS:
+    for day in scheduled_days:
         for post in required_posts_for_day(day):
             if post is DutyPost.ASSIST_IN_CHARGE:
                 prefect = assist_by_day[day]
@@ -851,7 +870,12 @@ def generate_weekly_roster(
                 regular_seat_by_post[seat_key] += 1
             assignments.append(assignment)
 
-    validate_assignments(assignments, prefects, leave_days=excluded_days)
+    validate_assignments(
+        assignments,
+        prefects,
+        leave_days=excluded_days,
+        closed_days=normalized_closed_days,
+    )
     return assignments
 
 
@@ -860,19 +884,26 @@ def validate_assignments(
     prefects: list[Prefect],
     *,
     leave_days: Mapping[str, set[SchoolDay]] | None = None,
+    closed_days: Iterable[SchoolDay] | None = None,
+    require_complete: bool = True,
 ) -> None:
     prefect_by_id = {prefect.id: prefect for prefect in prefects}
     by_day: dict[SchoolDay, list[Assignment]] = defaultdict(list)
     by_prefect: dict[str, set[SchoolDay]] = defaultdict(set)
     excluded_days = leave_days or {}
+    normalized_closed_days = frozenset(closed_days or ())
+    if any(not isinstance(day, SchoolDay) for day in normalized_closed_days):
+        raise RosterPolicyError("Closed days must use stable SchoolDay values.")
 
-    if not assignments:
+    if not assignments and require_complete and len(normalized_closed_days) != len(DAYS):
         raise RosterPolicyError("Roster assignments cannot be empty.")
 
     for assignment in assignments:
         if assignment.prefect_id not in prefect_by_id:
             raise RosterPolicyError(f"Unknown prefect ID: {assignment.prefect_id}")
         prefect = prefect_by_id[assignment.prefect_id]
+        if assignment.day in normalized_closed_days:
+            raise RosterPolicyError(f"{assignment.day.name} is closed for this roster week.")
         if not is_room_open(assignment.post, assignment.day):
             raise RosterPolicyError(f"{assignment.post.value} is closed on {assignment.day.name}.")
         if not can_assign_role(prefect.role, assignment.post):
@@ -895,8 +926,14 @@ def validate_assignments(
         if len(assigned_ids) != len(set(assigned_ids)):
             raise RosterPolicyError(f"Duplicate prefect assignment on {day.name}.")
         actual_posts = Counter(assignment.post for assignment in day_assignments)
-        expected_posts = Counter(required_posts_for_day(day))
-        if actual_posts != expected_posts:
+        expected_posts = Counter() if day in normalized_closed_days else Counter(required_posts_for_day(day))
+        coverage_invalid = (
+            actual_posts != expected_posts
+            if require_complete
+            else any(actual_posts[post] > count for post, count in expected_posts.items())
+            or any(post not in expected_posts for post in actual_posts)
+        )
+        if coverage_invalid:
             raise RosterPolicyError(f"Incorrect post coverage on {day.name}.")
 
     for prefect_id, days in by_prefect.items():

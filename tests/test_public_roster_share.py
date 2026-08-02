@@ -168,14 +168,20 @@ def test_encrypted_public_snapshot_contains_only_approved_roster_fields(workflow
     assert snapshot["weekStart"] == WEEK_START.isoformat()
     assert len(snapshot["days"]) == 5
     assert len(snapshot["rows"]) == 6
-    assert all(set(day) == {"code", "date", "labelZh", "labelEn"} for day in snapshot["days"])
+    assert all(
+        set(day) == {"code", "date", "labelZh", "labelEn", "state"}
+        for day in snapshot["days"]
+    )
     assert all(
         set(row) == {"postCode", "slotIndex", "labelZh", "labelEn", "dutyTime", "cells"}
         for row in snapshot["rows"]
     )
     assert all(row["dutyTime"] == {"start": "15:40", "end": "17:00"} for row in snapshot["rows"])
     cells = [cell for row in snapshot["rows"] for cell in row["cells"]]
-    assert all(set(cell) in ({"status"}, {"status", "nameZh"}) for cell in cells)
+    assert all(
+        set(cell) in ({"status", "state"}, {"status", "state", "nameZh"})
+        for cell in cells
+    )
     assert all(cell.get("nameZh", "").isascii() is False for cell in cells if "nameZh" in cell)
     assert {cell["status"] for cell in cells} == {"assigned", "closed"}
     banned_keys = {
@@ -208,17 +214,70 @@ def test_encrypted_public_snapshot_contains_only_approved_roster_fields(workflow
 
 def test_share_refuses_non_chinese_authoritative_name(workflow: RosterWorkflow) -> None:
     roster = _published(workflow)
-    original_assignments = workflow.assignments
+    original_snapshot = workflow.roster_schedule_snapshot
 
-    def assignments_with_invalid_name(roster_week_id: int):
-        rows = original_assignments(roster_week_id)
-        return [{**row, "prefectName": "English Name"} if index == 0 else row for index, row in enumerate(rows)]
+    def snapshot_with_invalid_name(roster_week_id: int):
+        week, rows = original_snapshot(roster_week_id)
+        return week, [
+            {**row, "prefectName": "English Name"} if index == 0 else row
+            for index, row in enumerate(rows)
+        ]
 
-    workflow.assignments = assignments_with_invalid_name  # type: ignore[method-assign]
+    workflow.roster_schedule_snapshot = snapshot_with_invalid_name  # type: ignore[method-assign]
     service = PublicRosterShareService(workflow, settings=_settings(), gateway=FakeGateway(), now=lambda: FIXED_NOW)
 
     with pytest.raises(PublicRosterShareError, match="Chinese display name"):
         service.create_share(roster.id)
+
+
+def test_public_share_uses_atomic_schedule_snapshot_and_projects_closed_day_safely(
+    workflow: RosterWorkflow,
+    monkeypatch,
+) -> None:
+    roster = _published(workflow)
+    week, assignments = workflow.roster_schedule_snapshot(roster.id)
+    closed_week = {**week, "closedDays": ["WEDNESDAY"]}
+    monkeypatch.setattr(
+        workflow,
+        "roster_schedule_snapshot",
+        lambda _roster_week_id: (closed_week, assignments),
+    )
+    monkeypatch.setattr(
+        workflow,
+        "roster_week",
+        lambda _roster_week_id: (_ for _ in ()).throw(AssertionError("separate week read")),
+    )
+    monkeypatch.setattr(
+        workflow,
+        "assignments",
+        lambda _roster_week_id: (_ for _ in ()).throw(AssertionError("separate assignment read")),
+    )
+    gateway = FakeGateway()
+    service = PublicRosterShareService(workflow, settings=_settings(), gateway=gateway, now=lambda: FIXED_NOW)
+
+    receipt = service.create_share(roster.id)
+    snapshot = _decrypt(receipt, gateway.created[0])
+    wednesday_index = next(
+        index for index, day in enumerate(snapshot["days"]) if day["code"] == "WEDNESDAY"
+    )
+
+    assert snapshot["days"][wednesday_index]["state"] == "day_closed"
+    assert all(
+        row["cells"][wednesday_index]
+        == {"status": "closed", "state": "day_closed"}
+        for row in snapshot["rows"]
+    )
+    tuesday_index = next(
+        index for index, day in enumerate(snapshot["days"]) if day["code"] == "TUESDAY"
+    )
+    room_202 = [row for row in snapshot["rows"] if row["postCode"] == "ROOM_202"]
+    assert all(
+        row["cells"][tuesday_index]
+        == {"status": "closed", "state": "room_closed"}
+        for row in room_202
+    )
+    assert "cellKey" not in json.dumps(snapshot, ensure_ascii=False)
+    assert "assignmentId" not in json.dumps(snapshot, ensure_ascii=False)
 
 
 def test_post_publication_vacancy_is_shared_without_original_name_or_adjustment_reason(
@@ -249,7 +308,10 @@ def test_post_publication_vacancy_is_shared_without_original_name_or_adjustment_
         if item["postCode"] == assignment["postCode"] and item["slotIndex"] == assignment["slotIndex"]
     )
 
-    assert shared_row["cells"][day_index] == {"status": "vacant"}
+    assert shared_row["cells"][day_index] == {
+        "status": "vacant",
+        "state": "vacant",
+    }
     assert "nameZh" not in shared_row["cells"][day_index]
     assert "Approved confidential reason" not in serialized
     assert "VACANT" not in serialized

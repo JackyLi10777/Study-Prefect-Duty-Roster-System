@@ -52,7 +52,7 @@ def test_schedule_pdf_uses_single_page_weekly_grid_and_keeps_chinese_names(tmp_p
     assert "07 SEP" in extracted_text
     assert "11 SEP" in extracted_text
     assert "Homework Completion Room - 1" in extracted_text
-    assert "15:40–18:30" in extracted_text
+    assert "15:40–18:30" not in extracted_text
     assert "15:40–17:00" in extracted_text
     assert workflow.assignments(draft.id)[0]["prefectName"] in extracted_text
     font_names = _embedded_font_names(reader)
@@ -170,13 +170,42 @@ def test_bilingual_published_schedule_pdfs_expose_every_operator_check(tmp_path)
         assert date_label in english_text
     for date_label in ("9月7日", "9月8日", "9月9日", "9月10日", "9月11日"):
         assert date_label in chinese_text
-    assert chinese_text.count("15:40–18:30") == 2
-    assert chinese_text.count("15:40–17:00") == 4
-    assert english_text.count("15:40–18:30") == 2
-    assert english_text.count("15:40–17:00") == 4
+    assert chinese_text.count("15:40–18:30") == 0
+    assert chinese_text.count("15:40–17:00") == 6
+    assert english_text.count("15:40–18:30") == 0
+    assert english_text.count("15:40–17:00") == 6
     # Two Room 202 rows are closed on both Tuesday and Friday.
     assert chinese_text.count("不開放") == 4
     assert english_text.count("Closed") == 4
+
+
+def test_schedule_pdf_renders_a_whole_day_closure_as_one_distinct_column(tmp_path, monkeypatch) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "closed-day.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    draft = workflow.generate_and_save_draft(date(2026, 9, 7))
+    week, assignments = workflow.roster_schedule_snapshot(draft.id)
+    closed_week = {**week, "closedDays": ["WEDNESDAY"]}
+    monkeypatch.setattr(
+        workflow,
+        "roster_schedule_snapshot",
+        lambda _roster_week_id: (closed_week, assignments),
+    )
+
+    chinese = PdfReader(BytesIO(build_roster_pdf(workflow, draft.id, language="zh").content))
+    english = PdfReader(BytesIO(build_roster_pdf(workflow, draft.id, language="en").content))
+    chinese_text = "\n".join(page.extract_text() for page in chinese.pages)
+    english_text = "\n".join(page.extract_text() for page in english.pages)
+
+    assert "星期三\n9月9日\n全日不開放" in chinese_text
+    assert chinese_text.count("全日不開放") == 7
+    assert "WEDNESDAY" in english_text
+    assert "09 SEP" in english_text
+    assert "DAY CLOSED" in english_text
+    assert english_text.count("Day closed") == 6
 
 
 def test_chinese_schedule_pdf_keeps_duty_post_names_in_authoritative_english(tmp_path) -> None:

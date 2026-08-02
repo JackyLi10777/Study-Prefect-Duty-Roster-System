@@ -446,13 +446,26 @@ def main() -> None:
         )
 
         manual_assignment = workflow.assignments(roster_week_id)[0]
-        manual_candidate = workflow.draft_assignment_candidates(roster_week_id, int(manual_assignment["id"]))[0]
+        manual_cell_key = (
+            f'{manual_assignment["day"]}:'
+            f'{manual_assignment["postCode"]}:'
+            f'{manual_assignment["slotIndex"]}'
+        )
+        manual_candidate = workflow.draft_cell_candidates(roster_week_id, manual_cell_key)[0]
         before_publish_loads = workflow.prefect_loads()
-        page.get_by_role("button", name="載入合資格人選").click()
-        page.locator(".q-notification").filter(has_text="合資格替補").last.wait_for(timeout=10_000)
-        _select_option(page, "替補風紀", _candidate_label(manual_candidate))
+        page.locator(f'[data-cell-key="{manual_cell_key}"]').click()
+        candidate_search = page.get_by_test_id("draft-candidate-search")
+        candidate_search.wait_for(state="visible", timeout=10_000)
+        candidate_search.click()
+        candidate_options = page.locator(".q-menu .q-item:visible")
+        candidate_options.first.wait_for(state="visible", timeout=10_000)
+        candidate_options.filter(has_text=str(manual_candidate["nameZh"])).first.click()
+        batch_reason = page.locator("textarea[name='draft-batch-reason']")
+        assert batch_reason.input_value() == ""
+        page.get_by_test_id("draft-day-toggle-monday").wait_for(state="visible", timeout=10_000)
+        assert page.get_by_test_id("draft-day-confirm-close-monday").count() == 1
         with page.expect_navigation(wait_until="domcontentloaded", timeout=20_000):
-            page.get_by_role("button", name="儲存草稿修改").click()
+            page.get_by_test_id("draft-save-all").click()
         page.get_by_text("草稿預覽", exact=True).wait_for(timeout=10_000)
         workflow = _workflow(database_path, backup_dir)
         changed_assignment = next(item for item in workflow.assignments(roster_week_id) if item["id"] == manual_assignment["id"])
