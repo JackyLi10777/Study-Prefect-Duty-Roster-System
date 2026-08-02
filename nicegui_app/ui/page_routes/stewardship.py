@@ -8,6 +8,11 @@ from nicegui import events, run, ui
 
 from nicegui_app.release_evidence import load_release_evidence
 from nicegui_app.runtime import get_workflow
+from nicegui_app.ui.acceptance_readiness import (
+    ACCEPTANCE_SESSIONS,
+    acceptance_check_counts,
+    build_supervised_acceptance_worksheet,
+)
 from nicegui_app.ui.downloads import deliver_generated_download
 from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import t
@@ -175,9 +180,10 @@ async def handover_page() -> None:
             "missing": "attention",
             "unreadable": "danger",
         }[release_evidence.state]
+        operator_check_count, advisor_check_count = acceptance_check_counts()
         with ui.element("section").classes("sy-acceptance-panel w-full").props(
-            f'id=handover-acceptance-section role=status aria-live=polite '
-            f'aria-label="{attr(t("acceptance_title"))}" data-testid=acceptance-status'
+            f'id=handover-acceptance-section aria-label="{attr(t("acceptance_title"))}" '
+            'data-testid=acceptance-status'
         ):
             with ui.row().classes("w-full items-start justify-between gap-4 flex-wrap"):
                 with ui.row().classes("items-start gap-3 no-wrap"):
@@ -185,7 +191,15 @@ async def handover_page() -> None:
                     with ui.column().classes("gap-1"):
                         ui.label(t("acceptance_title")).classes("sy-acceptance-title")
                         ui.label(t("acceptance_intro")).classes("sy-acceptance-intro")
-                _tone_badge(t(state_key), state_tone, props="data-testid=acceptance-state-badge")
+                with ui.element("div").props(
+                    "role=status aria-live=polite aria-atomic=true "
+                    "data-testid=acceptance-machine-status"
+                ):
+                    _tone_badge(
+                        t(state_key),
+                        state_tone,
+                        props="data-testid=acceptance-state-badge",
+                    )
             with ui.element("div").classes("sy-acceptance-grid"):
                 with ui.element("article").classes("sy-acceptance-card"):
                     ui.icon(state_icon).classes(f"sy-acceptance-card-icon sy-fg-{state_tone}").props("aria-hidden=true")
@@ -212,25 +226,66 @@ async def handover_page() -> None:
                     ui.label(t("acceptance_human_title")).classes("sy-acceptance-card-kicker")
                     ui.label(t("acceptance_human_required")).classes("sy-acceptance-card-title")
                     ui.label(t("acceptance_human_body")).classes("sy-acceptance-card-copy")
-                    ui.label(t("acceptance_role_summary")).classes("sy-acceptance-meta")
-            with ui.expansion(t("acceptance_steps_title"), icon="checklist").classes(
+                    ui.label(
+                        t(
+                            "acceptance_role_summary",
+                            operator_count=operator_check_count,
+                            advisor_count=advisor_check_count,
+                        )
+                    ).classes("sy-acceptance-meta")
+            with ui.expansion(
+                t("acceptance_sessions_title", count=len(ACCEPTANCE_SESSIONS)),
+                icon="checklist",
+            ).classes(
                 "sy-acceptance-steps w-full"
             ).props("data-testid=acceptance-human-steps"):
-                with ui.element("ol").classes("sy-acceptance-step-list"):
-                    for key in (
-                        "acceptance_task_directory",
-                        "acceptance_task_pdf",
-                        "acceptance_task_successor",
-                        "acceptance_task_advisor",
-                    ):
-                        with ui.element("li"):
-                            ui.label(t(key))
+                ui.label(t("acceptance_sessions_intro")).classes("sy-acceptance-session-intro")
+                with ui.element("ol").classes("sy-acceptance-session-grid"):
+                    for index, session in enumerate(ACCEPTANCE_SESSIONS, start=1):
+                        with ui.element("li").classes("sy-acceptance-session-card").props(
+                            f"data-testid=acceptance-session-{session.key}"
+                        ):
+                            with ui.row().classes("items-start gap-3 no-wrap"):
+                                ui.label(f"{index:02d}").classes("sy-acceptance-session-index")
+                                ui.icon(session.icon).classes("sy-acceptance-session-icon").props(
+                                    "aria-hidden=true"
+                                )
+                                with ui.column().classes("gap-1 min-w-0"):
+                                    ui.label(t(session.title_key)).classes("sy-acceptance-session-title")
+                                    ui.label(t(session.body_key)).classes("sy-acceptance-session-copy")
+                            with ui.row().classes("items-center gap-2 flex-wrap"):
+                                ui.label(t(session.role_key)).classes("sy-acceptance-session-role")
+                                ui.label(
+                                    t("acceptance_matrix_items", ids=", ".join(session.check_ids))
+                                ).classes("sy-acceptance-session-ids")
+                            ui.label(t("acceptance_external_record")).classes(
+                                "sy-acceptance-session-record"
+                            )
+                            ui.button(
+                                t(
+                                    "acceptance_open_workspace",
+                                    destination=t(session.destination_key),
+                                ),
+                                icon="arrow_forward",
+                                on_click=lambda route=session.route: navigate_to(route),
+                            ).props(
+                                f"flat color=primary data-testid=acceptance-open-{session.key}"
+                            ).classes("sy-acceptance-session-action")
             with ui.row().classes("sy-acceptance-actions w-full gap-3 flex-wrap"):
+                ui.button(
+                    t("acceptance_download_worksheet"),
+                    icon="download",
+                    on_click=lambda: deliver_generated_download(
+                        build_supervised_acceptance_worksheet(t),
+                        "sing-yin-supervised-acceptance-checklist.md",
+                        media_type="text/markdown",
+                    ),
+                ).props("outline color=primary data-testid=acceptance-download-worksheet")
                 ui.button(
                     t("acceptance_open_guide"),
                     icon="menu_book",
                     on_click=lambda: navigate_to("/guide"),
-                ).props("outline color=primary data-testid=acceptance-open-guide")
+                ).props("flat color=primary data-testid=acceptance-open-guide")
                 ui.button(
                     t("open_backup_settings"),
                     icon="settings_backup_restore",

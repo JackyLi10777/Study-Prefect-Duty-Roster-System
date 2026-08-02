@@ -4,6 +4,7 @@ import re
 
 from nicegui_app.ui import i18n, page_shared as pages
 from nicegui_app.config import PREFECT_SEED_PATH, PROJECT_ROOT
+from nicegui_app.ui.acceptance_readiness import ACCEPTANCE_SESSIONS
 from nicegui_app.ui.i18n import EN, MESSAGES, OFFICIAL_ROLE_TERMS, POST_LABELS, ROLE_LABELS, ZH_HK
 from roster_policy import DutyPost
 from tests.ui_source import combined_theme_source
@@ -231,11 +232,32 @@ def test_release_acceptance_states_and_human_responsibilities_remain_bilingual()
         "acceptance_status_missing",
         "acceptance_status_unreadable",
         "acceptance_human_required",
-        "acceptance_task_directory",
-        "acceptance_task_pdf",
-        "acceptance_task_successor",
-        "acceptance_task_advisor",
+        "acceptance_sessions_title",
+        "acceptance_sessions_intro",
+        "acceptance_role_operator",
+        "acceptance_role_advisor",
+        "acceptance_role_shared",
+        "acceptance_matrix_items",
+        "acceptance_external_record",
+        "acceptance_open_workspace",
+        "acceptance_download_worksheet",
+        "acceptance_worksheet_title",
+        "acceptance_worksheet_intro",
+        "acceptance_worksheet_release",
+        "acceptance_worksheet_date",
+        "acceptance_worksheet_observer",
+        "acceptance_worksheet_result",
+        "acceptance_worksheet_final_note",
     }
+    for session in ACCEPTANCE_SESSIONS:
+        keys.update(
+            {
+                session.title_key,
+                session.body_key,
+                session.destination_key,
+                session.role_key,
+            }
+        )
 
     assert keys <= MESSAGES.keys()
     assert all(MESSAGES[key][ZH_HK].strip() and MESSAGES[key][EN].strip() for key in keys)
