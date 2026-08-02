@@ -19,6 +19,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from openpyxl import Workbook
 from playwright.sync_api import sync_playwright
 
+from nicegui_app.ui.acceptance_readiness import ACCEPTANCE_SESSIONS, acceptance_check_ids
 from nicegui_app.ui.product_identity import PRODUCT_IDENTITY
 
 BASE_URL = os.getenv("SING_YIN_TEST_URL", "http://127.0.0.1:8080")
@@ -986,6 +987,11 @@ def main() -> None:
         assert " " in readiness_grid.evaluate("element => getComputedStyle(element).gridTemplateColumns")
         acceptance_status = page.get_by_test_id("acceptance-status")
         acceptance_status.wait_for(timeout=10_000)
+        assert acceptance_status.get_attribute("role") is None
+        machine_status = page.get_by_test_id("acceptance-machine-status")
+        assert machine_status.get_attribute("role") == "status"
+        assert machine_status.get_attribute("aria-live") == "polite"
+        assert machine_status.get_attribute("aria-atomic") == "true"
         attention_badge = page.locator(".sy-tone-attention").first
         assert "bg-primary" not in (attention_badge.get_attribute("class") or "")
         assert element_contrast_ratio(attention_badge) >= 4.5
@@ -995,10 +1001,27 @@ def main() -> None:
         page.get_by_text("仍需首席導學風紀及教師顧問確認", exact=True).wait_for(timeout=10_000)
         acceptance_steps = page.get_by_test_id("acceptance-human-steps")
         acceptance_steps.locator(".q-item").click()
-        assert acceptance_steps.locator("ol > li").count() == 4
+        session_cards = acceptance_steps.locator(".sy-acceptance-session-card")
+        assert session_cards.count() == len(ACCEPTANCE_SESSIONS)
+        rendered_acceptance = acceptance_steps.inner_text()
+        for check_id in acceptance_check_ids():
+            assert rendered_acceptance.count(check_id) == 1
+        for session in ACCEPTANCE_SESSIONS:
+            assert page.get_by_test_id(f"acceptance-session-{session.key}").count() == 1
+        for button in page.locator(".sy-acceptance-session-action").all():
+            box = button.bounding_box()
+            assert box is not None and box["height"] >= 44
         for button in page.locator(".sy-acceptance-actions .q-btn").all():
             box = button.bounding_box()
             assert box is not None and box["height"] >= 44
+        with page.expect_download(timeout=10_000) as download_info:
+            page.get_by_test_id("acceptance-download-worksheet").click()
+        acceptance_download = download_info.value
+        assert acceptance_download.suggested_filename == "sing-yin-supervised-acceptance-checklist.md"
+        acceptance_worksheet = Path(acceptance_download.path()).read_text(encoding="utf-8")
+        for check_id in acceptance_check_ids():
+            assert acceptance_worksheet.count(f"- [ ] {check_id}") == 1
+        assert "- [x]" not in acceptance_worksheet.lower()
         page.screenshot(path=str(HANDOVER_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
         platform_toc = page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link")
@@ -1723,6 +1746,15 @@ def main() -> None:
         second_acceptance_box = acceptance_cards.nth(1).bounding_box()
         assert first_acceptance_box is not None and second_acceptance_box is not None
         assert first_acceptance_box["y"] < second_acceptance_box["y"]
+        mobile_acceptance_steps = page.get_by_test_id("acceptance-human-steps")
+        mobile_acceptance_steps.locator(".q-item").click()
+        mobile_sessions = mobile_acceptance_steps.locator(".sy-acceptance-session-card")
+        assert mobile_sessions.count() == len(ACCEPTANCE_SESSIONS)
+        first_session_box = mobile_sessions.nth(0).bounding_box()
+        second_session_box = mobile_sessions.nth(1).bounding_box()
+        assert first_session_box is not None and second_session_box is not None
+        assert first_session_box["y"] < second_session_box["y"]
+        assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
         page.screenshot(path=str(HANDOVER_MOBILE_SCREENSHOT), full_page=True)
         page.goto(BASE_URL, wait_until="domcontentloaded")
         page.get_by_text("This week's roster desk", exact=True).wait_for(timeout=10_000)

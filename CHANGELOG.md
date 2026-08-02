@@ -2,12 +2,14 @@
 
 This file records user-visible, operational and release-significant changes. The editable authority for observed deployment truth is `docs/status/current-release.json`; `docs/status/CURRENT_STATUS.md` is its generated, human-readable view and must not be edited by hand. Immutable historical evidence remains in `PROJECT_STATUS.md`, dated audits and generated release reports.
 
-## Unreleased — verification maintainability
+## Unreleased — activation readiness and verification maintainability
 
 - Updated the canonical public-entry browser verifier to complete intercepted Admin／Guest navigation with HTTP 204. This preserves the entrance DOM for loading-state inspection without creating a Guest session or entering Cloudflare Access; aborting the top-level request made current Chromium replace the page with `chrome-error://chromewebdata`.
 - Replaced a CSP-incompatible bare `wait_for_function` expression with a function predicate and added a regression test for the no-content interception contract. Production behavior, security policy and release assets are unchanged.
 - Closed the stale post-rc47 `ITR-002` release item: the host-local support inbox and durable Viewer withdrawal are live code whose remaining evidence belongs to supervised acceptance (`ITR-001`), not another deployment claim.
 - Extended project governance so every actionable non-conditional iteration must be referenced by a tracked project risk. This prevents completed release work from lingering as an orphaned active queue item while preserving genuinely conditional maintainability work.
+- Replaced the handover page's stale four-priority／13-check summary with seven supervised work sessions that cover every H-01–H-21 operator check and A-01–A-04 advisor decision, link to the relevant workspace, and provide an unchecked bilingual Markdown record without pretending the application can approve human evidence.
+- Added a test-enforced contract between the UI acceptance catalog and the authoritative evidence matrix, and removed copied live release identifiers from the design standard so mutable production truth remains owned by the generated current-status system.
 
 ## v1.2.0-rc.47 — released, 2026-08-02
 
