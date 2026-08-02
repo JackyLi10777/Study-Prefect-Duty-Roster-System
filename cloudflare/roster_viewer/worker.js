@@ -442,19 +442,6 @@ const VIEWER_HTML = `<!doctype html>
           <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15"><path d="M8 11V8a4 4 0 0 1 8 0v3"></path><rect x="5" y="11" width="14" height="10" rx="2"></rect></svg>
           <span>受控身份驗證 · Verified sign-in</span>
         </p>
-        <details id="loginHelp" class="login-help">
-          <summary>收不到驗證碼？ <span lang="en">· Trouble signing in?</span></summary>
-          <div class="login-help-body">
-            <p>請使用已獲授權的管理員電郵，並檢查垃圾郵件及短暫延遲。平台沒有自製密碼，也不會在此顯示電郵是否獲授權。</p>
-            <p lang="en">Use an approved administrator email, then check spam and allow for a short delay. The platform stores no password and does not reveal whether an address is approved.</p>
-            <div class="login-help-actions">
-              <a href="/auth/login">重新開始安全登入 <span lang="en">· Restart secure sign-in</span></a>
-              <a href="/support#public">報告登入問題 <span lang="en">· Report a sign-in problem</span></a>
-            </div>
-            <p class="login-help-reference">入口參考 · Entry reference: <code>__ENTRY_REFERENCE__</code></p>
-          </div>
-        </details>
-
         <section id="welcomeAudioPlayer" class="welcome-audio-player" data-autoplay-state="starting" data-entry-intent="unset" aria-labelledby="welcomeAudioHeading">
           <audio id="welcomeAudio" preload="metadata" playsinline></audio>
           <div class="welcome-audio-main">
@@ -492,6 +479,19 @@ const VIEWER_HTML = `<!doctype html>
             </div>
           </div>
         </section>
+
+        <details id="loginHelp" class="login-help">
+          <summary>收不到驗證碼？ <span lang="en">· Trouble signing in?</span></summary>
+          <div class="login-help-body">
+            <p>請使用已獲授權的管理員電郵，並檢查垃圾郵件及短暫延遲。平台沒有自製密碼，也不會在此顯示電郵是否獲授權。</p>
+            <p lang="en">Use an approved administrator email, then check spam and allow for a short delay. The platform stores no password and does not reveal whether an address is approved.</p>
+            <div class="login-help-actions">
+              <a href="/auth/login">重新開始安全登入 <span lang="en">· Restart secure sign-in</span></a>
+              <a href="/support#public">報告登入問題 <span lang="en">· Report a sign-in problem</span></a>
+            </div>
+            <p class="login-help-reference">入口參考 · Entry reference: <code>__ENTRY_REFERENCE__</code></p>
+          </div>
+        </details>
 
         <div class="access-divider" aria-hidden="true"><span></span></div>
         <div class="guest-help">
@@ -1932,8 +1932,8 @@ tbody td {
     white-space: nowrap;
     border: 0;
   }
-  .access-panel > .welcome-audio-player { order: 1; margin-top: 0; }
-  .access-panel > .login-help { order: 2; margin-top: 14px; }
+  .access-panel > .welcome-audio-player { margin-top: 0; }
+  .access-panel > .login-help { margin-top: 14px; }
   .access-panel > .access-divider { order: 3; }
   .access-panel > .guest-help { order: 4; }
   .access-panel > .site-share { order: 5; }

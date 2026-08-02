@@ -72,10 +72,20 @@ def test_command_center_layer_owns_the_reset_composition_after_mobile_compatibil
     assert ".sy-dashboard-grid" in command_center
     assert "grid-template-columns: minmax(0, 1fr) minmax(280px, 320px)" in command_center
     assert ".sy-nav-control.sy-nav-active" in command_center
-    assert ".sy-page-atmosphere" in command_center
-    assert "min-height: 84px" in command_center
-    assert ".sy-flow-step:not(:last-child)::after" in command_center
-    assert 'content: "→"' in command_center
+    atmosphere_rule = re.search(
+        r"\.sy-page-atmosphere\s*\{(?P<body>.*?)\}",
+        command_center,
+        re.DOTALL,
+    )
+    assert atmosphere_rule is not None
+    assert "min-height: 84px" in atmosphere_rule.group("body")
+    arrow_rule = re.search(
+        r"\.sy-flow-step:not\(:last-child\)::after\s*\{(?P<body>.*?)\}",
+        command_center,
+        re.DOTALL,
+    )
+    assert arrow_rule is not None
+    assert 'content: "→"' in arrow_rule.group("body")
     assert "prefers-reduced-motion" in command_center
     assert "forced-colors" in command_center
 

@@ -28,6 +28,12 @@ Isolated Chromium rendering covered desktop-light Dashboard, desktop-light Setti
 
 The generated concept boards were used only to challenge hierarchy and material choices. They were not copied into production and no generated image was added because the existing paired atmosphere assets already serve the approved narrative zones.
 
+## Review adjudication
+
+Protected-main review correctly found that CSS `order` made welcome music appear before sign-in help on mobile while leaving the opposite DOM／assistive-technology order. The audio section now precedes help in the source DOM, the two semantic-reordering declarations are removed and a full supporting-content order contract prevents regression. The review also prompted selector-scoped CSS assertions instead of unrelated whole-file string matches.
+
+A separate suggestion to hide handover readiness from Guest was rejected after source verification. Guest `/settings` resolves through `GuestWorkflowAdapter`; its `backup_overview()`, readiness counts, checkpoint and restore are fictional, session-local memory state and never inspect the formal SQLite database or managed backup paths. Preserving this bounded demonstration is required Admin／Guest experience parity, while durable storage and external operations remain denied by the adapter boundary.
+
 ## Verification ledger
 
 | Gate | Result |

@@ -414,8 +414,17 @@ def test_mobile_entrance_removes_duplicate_sign_in_narrative_and_keeps_support_s
     assert ".access-panel > .access-copy," in source
     assert ".access-panel > .login-assurance { display: none; }" in source
     assert ".access-panel > .access-panel-title {" in source
-    assert ".access-panel > .welcome-audio-player { order: 1; margin-top: 0; }" in source
-    assert ".access-panel > .login-help { order: 2; margin-top: 14px; }" in source
+    assert source.index('class="devotional-prompt"') < source.index('id="welcomeAudioPlayer"')
+    assert source.index('id="welcomeAudioPlayer"') < source.index('id="loginHelp"')
+    assert source.index('id="loginHelp"') < source.index('class="guest-help"')
+    assert source.index('class="guest-help"') < source.index('class="site-share"')
+    assert source.index('class="site-share"') < source.index('class="support-link"')
+    assert ".access-panel > .welcome-audio-player { margin-top: 0; }" in source
+    assert ".access-panel > .login-help { margin-top: 14px; }" in source
+    assert ".access-panel > .access-divider { order: 3; }" in source
+    assert ".access-panel > .guest-help { order: 4; }" in source
+    assert ".access-panel > .site-share { order: 5; }" in source
+    assert ".access-panel > .support-link { order: 6; }" in source
 
 
 def test_public_support_keeps_core_fields_visible_and_optional_details_collapsed() -> None:
