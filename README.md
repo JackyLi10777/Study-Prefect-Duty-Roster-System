@@ -201,10 +201,10 @@ Copy-Item .env.example .env
 臨時本機／練習模式不需手動建立 session secret：第一次啟動會原子建立並持續沿用已被 Git 忽略的 `data/runtime/.nicegui-storage-secret`。目前正式 Windows 主機已使用 `server` 模式，並從受保護的主機 `.env` 取得獨立 `SING_YIN_STORAGE_SECRET`；其值不可寫入版本庫、文件、截圖、日誌或備份。然後以：
 
 ```powershell
-python -X utf8 -m nicegui_app.main
+python -X utf8 -m nicegui_app.launcher
 ```
 
-啟動系統。預設只綁定 `127.0.0.1`；啟動器會優先使用 8080，必要時在 8081–8099 選擇本機可用埠。這是刻意的私隱保護設定。
+啟動系統。正式啟動器會在載入 NiceGUI 前把管理員介面偏好綁定至資料庫旁的 `nicegui-storage` runtime 目錄，確保不可變 release bundle 不被執行時檔案改寫；Guest 偏好仍只存在於有界工作階段記憶體。預設只綁定 `127.0.0.1`；本機啟動流程會選擇受控可用埠。這是刻意的私隱與發布完整性設定。
 
 ## 文件地圖
 

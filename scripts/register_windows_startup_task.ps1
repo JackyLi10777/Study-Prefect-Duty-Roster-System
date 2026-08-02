@@ -21,7 +21,7 @@ if (-not (Test-Path -LiteralPath $python)) {
     throw ".venv is missing. Run scripts\prepare_windows_host.ps1 first."
 }
 
-$action = New-ScheduledTaskAction -Execute $python -Argument "-B -X utf8 -m nicegui_app.main" -WorkingDirectory $ProjectRoot
+$action = New-ScheduledTaskAction -Execute $python -Argument "-B -X utf8 -m nicegui_app.launcher" -WorkingDirectory $ProjectRoot
 $taskDescription = "Starts the local Sing Yin NiceGUI roster host. $script:SingYinTaskOwnerMarker"
 $settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `

@@ -132,7 +132,7 @@ if (-not $aclState.Compliant) { throw "Local data permissions could not be restr
 Write-Step "Running safe import and deployment checks"
 Push-Location $ProjectRoot
 try {
-    & $venvPython -X utf8 -c "import nicegui; import nicegui_app.main; print('NiceGUI application imports passed')"
+    & $venvPython -X utf8 -c "from nicegui_app.launcher import configure_nicegui_storage_path; configure_nicegui_storage_path(); import nicegui; import nicegui_app.main; print('NiceGUI launcher and application imports passed')"
     if ($LASTEXITCODE -ne 0) { throw "Application import check failed." }
     & $venvPython -X utf8 scripts\check_deployment_readiness.py
     if ($LASTEXITCODE -ne 0) { throw "Deployment readiness check failed." }

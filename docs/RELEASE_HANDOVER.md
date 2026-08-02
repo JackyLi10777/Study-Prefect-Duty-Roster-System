@@ -146,6 +146,7 @@ token 及完整日誌留在私人受控渠道。完整程序及威脅模型見
 - Guest 可示範請假、生成、手動修改、發布、雙語 PDF／JSON、發布後請假調整及公平說明；AI、匯入、上載、正式備份／還原、Viewer 分享及永久設定仍由服務層拒絕。每個分頁的最新狀態只以已簽署、綁定 session／workspace／tab 的 token 放在 `sessionStorage`，還原時須核對當次連線 nonce；它不能寫正式 SQLite、公平帳本、備份或外部整合。
 - Guest 下載是一次性、`DEMO` 標示及 `no-store`；下載檔只因訪客主動保存而存在，不能轉入正式資料或成為公平／服務證據。
 - Guest 的語言、外觀、音樂及音效只在已核實 session 的 origin 記憶體中保留；重新整理可延續，登出、到期、撤權或程序重啟即清除。偏好缺失／未設定時跟隨裝置系統；伺服器首屏只提供中性的淺色提示，瀏覽器會在控制可見前解析系統模式並在需要時完成一次同步，若瀏覽器完全不支援系統色彩查詢才保留淺色。可見控制只有淺色／深色，圖標顯示目前解析模式，輔助文字說明下一個相反動作。第一次操作保存相反模式，其後只在明確淺色與深色間切換。Public／Viewer 不讀取或持續同步 Admin／Guest 偏好；只有刻意進入工作區時，明確 `light`／`dark` 才可經已簽署、單次、最長 120 秒的交接帶入，目的地已有偏好時不覆寫。
+- Admin 的相同介面偏好由 `nicegui_app.launcher` 在 NiceGUI 載入前綁定至正式資料庫旁的受保護 `nicegui-storage` 目錄；它不含值班表、請假、公平帳本或 Guest 狀態，也不得寫入／隨 release bundle 複製。更新後若 task 不是以 `nicegui_app.launcher` 啟動，或 bundle 重新出現 `.nicegui` runtime 檔，視為發布完整性異常並停止切換。
 - Admin／Guest 的繁中 PDF、英文 PDF 及 JSON 均由同一帶憑證交付流程下載；Guest 單檔上限為 5 MiB，Admin 為 64 MiB，總記憶體上限為 128 MiB，並保留 64 MiB／16 票證予 Admin。如失敗，先記下畫面顯示的支援編號再重試，不要把瀏覽器「無法擷取檔案」當成 PDF 內容錯誤。
 
 ### 發布錯誤時：撤回，不直接刪除
@@ -191,7 +192,7 @@ token 及完整日誌留在私人受控渠道。完整程序及威脅模型見
 
 ```powershell
 python -m pip install --require-hashes -r requirements.lock
-python -X utf8 -m nicegui_app.main
+python -X utf8 -m nicegui_app.launcher
 ```
 
 3. `SING_YIN_OPEN_BROWSER` 預設為 `true`，令首次開啟更直接；受控或無介面運行可設為 `false`。

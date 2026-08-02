@@ -218,7 +218,7 @@ try {
 
     $process = Start-Process `
         -FilePath $python.Source `
-        -ArgumentList @("-X", "utf8", "-m", "nicegui_app.main") `
+        -ArgumentList @("-X", "utf8", "-m", "nicegui_app.launcher") `
         -WorkingDirectory $ProjectRoot `
         -NoNewWindow `
         -PassThru

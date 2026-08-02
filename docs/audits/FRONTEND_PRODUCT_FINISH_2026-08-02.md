@@ -36,6 +36,10 @@ A separate suggestion to hide handover readiness from Guest was rejected after s
 
 The first protected-main rc48 formal gate then caught two release-blocking visual regressions that focused screenshots had not: the 54px desktop brand mark fell below the existing rendered minimum of 58px, and the 84px atmosphere band fell below its 90px rendered minimum. The candidate keeps the narrower 264px rail, restores the mark to 58px, aligns its lockup／caption geometry, restores the atmosphere minimum to 90px and adds selector-scoped static contracts before rerunning the rendered gate. No production switch occurred during the failed attempt.
 
+Protected main commit `17cb2d0dcf575d1194dd2f9cf104886f6dadf0d5` then passed all 15 schema-3 source gates and was preserved as annotated source-only tag `v1.2.0-rc.48`. Its Windows deployment stopped before downtime or data mutation because the running rc47 bundle had gained one 54-byte `.nicegui/storage-user-<uuid>.json` preference file after its immutable marker was created. Investigation proved that NiceGUI resolves its default storage directory at import time; the managed task still entered through `nicegui_app.main`, so Admin theme／language／sound preferences were written into the release working directory.
+
+The follow-up candidate adds `nicegui_app.launcher` as the managed composition edge. It binds NiceGUI storage to the official database runtime directory before importing the framework. The deployer keeps complete bundle hashing fail-closed, recognizes only a post-marker, at-most-64-KiB NiceGUI `general` or UUID-bound user JSON delta whose exact exclusion reconstructs the marker, waits until the old process is stopped, validates and atomically migrates the JSON to protected runtime storage, removes the source delta, then requires the ordinary full fingerprint again. Invalid names, arrays, malformed JSON, oversized files, reparse points and every unrelated source change remain deployment blockers.
+
 ## Verification ledger
 
 | Gate | Result |
@@ -46,7 +50,7 @@ The first protected-main rc48 formal gate then caught two release-blocking visua
 | Complete Python collection | Passed: 1,150 tests |
 | Admin／Guest theme continuity | Passed: 16 browser cases across viewport, appearance and accessibility modes |
 | Public entry music／navigation lifecycle | Passed: 13 browser cases including rejection, exception, slow retry, double activation and `pageshow` reset |
-| Exact-source release gate | Pending until protected-main integration produces a clean final commit |
-| Production deployment and canonical smoke | Not performed at this evidence checkpoint |
+| Exact-source release gate | rc48 passed all 15 gates; follow-up storage-boundary candidate requires a fresh protected-main replay |
+| Production deployment and canonical smoke | rc48 stopped safely before downtime／mutation on the rc47 runtime-storage delta; production remained rc47 at this checkpoint |
 
 This record must be updated with exact final gate and deployment evidence before any production-complete claim. Supervised Head Study Prefect／teacher-advisor acceptance and physical off-site recovery remain independent obligations.

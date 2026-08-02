@@ -921,7 +921,12 @@ function Get-SingYinLegacyReleaseBundleFingerprint {
     $root = [IO.Path]::GetFullPath($Path).TrimEnd('\')
     $prefix = "$root\"
     $runtimeBytecodePaths = [Collections.Generic.List[string]]::new()
+    $niceGuiStoragePaths = [Collections.Generic.List[string]]::new()
     $bytecodePattern = '(^|/)__pycache__/[^/]+\.pyc$'
+    $niceGuiStoragePattern = (
+        '^\.nicegui/storage-(?:general|user-' +
+        '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json$'
+    )
     $bytecodeOptions = (
         [Text.RegularExpressions.RegexOptions]::IgnoreCase -bor
         [Text.RegularExpressions.RegexOptions]::CultureInvariant
@@ -951,15 +956,34 @@ function Get-SingYinLegacyReleaseBundleFingerprint {
             $item.LastWriteTimeUtc -gt $createdAt.UtcDateTime
         ) {
             $runtimeBytecodePaths.Add($relativePath)
+        } elseif (
+            [Text.RegularExpressions.Regex]::IsMatch(
+                $relativePath,
+                $niceGuiStoragePattern,
+                $bytecodeOptions
+            ) -and
+            $item.LastWriteTimeUtc -gt $createdAt.UtcDateTime -and
+            [int64]$item.Length -gt 0 -and
+            [int64]$item.Length -le 65536
+        ) {
+            # NiceGUI 3 resolves its default storage path at import time.  A
+            # release predating the dedicated launcher can therefore create a
+            # small administrator-preference JSON file inside ``.nicegui``.
+            # Keep the exception exact and bounded; every other runtime delta
+            # remains an integrity failure.
+            $niceGuiStoragePaths.Add($relativePath)
         }
     }
 
-    if ($runtimeBytecodePaths.Count -ne $derivedFileDelta) {
+    $runtimeRelativePaths = @(
+        @($runtimeBytecodePaths.ToArray()) + @($niceGuiStoragePaths.ToArray())
+    )
+    if ($runtimeRelativePaths.Count -ne $derivedFileDelta) {
         return $null
     }
     $reconstructedFingerprint = Get-SingYinReleaseBundleFingerprint `
         -Path $Path `
-        -ExcludedRelativePaths $runtimeBytecodePaths.ToArray()
+        -ExcludedRelativePaths $runtimeRelativePaths
     if (
         [string]$reconstructedFingerprint.Sha256 -cne
             [string]$Marker.bundleContentSha256 -or
@@ -970,7 +994,9 @@ function Get-SingYinLegacyReleaseBundleFingerprint {
 
     return [pscustomobject]@{
         Fingerprint = $reconstructedFingerprint
-        RelativePaths = @($runtimeBytecodePaths.ToArray())
+        RelativePaths = $runtimeRelativePaths
+        BytecodeRelativePaths = @($runtimeBytecodePaths.ToArray())
+        NiceGuiStorageRelativePaths = @($niceGuiStoragePaths.ToArray())
     }
 }
 
@@ -1001,6 +1027,10 @@ function Get-SingYinPreviousReleaseIdentity {
             Source = "legacy-host-checkout"
             Bundle = $null
             RepairCount = 0
+            PendingNiceGuiStorageRelativePaths = @()
+            ExpectedBundleSha256 = $null
+            ExpectedBundleFileCount = 0
+            MarkerCreatedAt = $null
         }
     }
 
@@ -1069,6 +1099,7 @@ function Get-SingYinPreviousReleaseIdentity {
     $fingerprint = Get-SingYinReleaseBundleFingerprint -Path $bundlePath
     $identitySource = "immutable-release-marker"
     $repairCount = 0
+    $pendingNiceGuiStorageRelativePaths = @()
     if (
         [string]$marker.bundleContentSha256 -cne [string]$fingerprint.Sha256 -or
         [int]$marker.bundleFileCount -ne [int]$fingerprint.FileCount
@@ -1081,12 +1112,14 @@ function Get-SingYinPreviousReleaseIdentity {
             throw "The startup task release bundle identity marker is invalid or stale."
         }
 
-        # Releases created before runtime bytecode writes were disabled can
-        # contain post-marker cache files. Remove only the exact set whose
-        # exclusion reconstructs the original full bundle hash and count,
-        # then require the ordinary fail-closed fingerprint to pass again.
+        # Releases created before runtime writes were fully externalized can
+        # contain post-marker Python bytecode or tightly bounded NiceGUI
+        # administrator-preference files. Bytecode can be removed immediately.
+        # Preference files remain in place while the old process is serving and
+        # are migrated only after that process is stopped, preventing a write
+        # race and preserving rollback evidence.
         $bundlePrefix = "$bundlePath\"
-        foreach ($relativePath in @($legacyCompatibility.RelativePaths)) {
+        foreach ($relativePath in @($legacyCompatibility.BytecodeRelativePaths)) {
             $candidatePath = [IO.Path]::GetFullPath(
                 (Join-Path $bundlePath ([string]$relativePath).Replace('/', '\'))
             )
@@ -1106,15 +1139,24 @@ function Get-SingYinPreviousReleaseIdentity {
             Remove-Item -LiteralPath $candidatePath -Force
         }
 
-        $fingerprint = Get-SingYinReleaseBundleFingerprint -Path $bundlePath
+        $pendingNiceGuiStorageRelativePaths = @(
+            $legacyCompatibility.NiceGuiStorageRelativePaths
+        )
+        $fingerprint = Get-SingYinReleaseBundleFingerprint `
+            -Path $bundlePath `
+            -ExcludedRelativePaths $pendingNiceGuiStorageRelativePaths
         if (
             [string]$marker.bundleContentSha256 -cne [string]$fingerprint.Sha256 -or
             [int]$marker.bundleFileCount -ne [int]$fingerprint.FileCount
         ) {
-            throw "The legacy bytecode repair did not restore the immutable bundle fingerprint."
+            throw "The bounded legacy runtime reconstruction did not restore the immutable bundle fingerprint."
         }
-        $identitySource = "immutable-release-marker-legacy-bytecode-repaired"
-        $repairCount = @($legacyCompatibility.RelativePaths).Count
+        $repairCount = @($legacyCompatibility.BytecodeRelativePaths).Count
+        if ($pendingNiceGuiStorageRelativePaths.Count -gt 0) {
+            $identitySource = "immutable-release-marker-legacy-nicegui-storage-pending"
+        } else {
+            $identitySource = "immutable-release-marker-legacy-bytecode-repaired"
+        }
     }
 
     return [pscustomobject]@{
@@ -1123,6 +1165,196 @@ function Get-SingYinPreviousReleaseIdentity {
         Source = $identitySource
         Bundle = $bundlePath
         RepairCount = $repairCount
+        PendingNiceGuiStorageRelativePaths = $pendingNiceGuiStorageRelativePaths
+        ExpectedBundleSha256 = [string]$marker.bundleContentSha256
+        ExpectedBundleFileCount = [int]$marker.bundleFileCount
+        MarkerCreatedAt = $markerCreatedAt
+    }
+}
+
+function Get-SingYinStoppedNiceGuiStoragePaths {
+    param(
+        [Parameter(Mandatory = $true)][string]$BundlePath,
+        [Parameter(Mandatory = $true)][DateTimeOffset]$MarkerCreatedAt
+    )
+
+    $bundle = [IO.Path]::GetFullPath($BundlePath).TrimEnd('\')
+    $bundlePrefix = "$bundle\"
+    $storageDirectory = Join-Path $bundle ".nicegui"
+    if (-not (Test-Path -LiteralPath $storageDirectory)) {
+        return @()
+    }
+    $directory = Get-Item -LiteralPath $storageDirectory -Force -ErrorAction Stop
+    if (
+        -not $directory.PSIsContainer -or
+        ($directory.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0
+    ) {
+        throw "The legacy NiceGUI storage directory is unsafe."
+    }
+
+    $storagePattern = (
+        '^\.nicegui/storage-(?:general|user-' +
+        '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json$'
+    )
+    $storageOptions = (
+        [Text.RegularExpressions.RegexOptions]::IgnoreCase -bor
+        [Text.RegularExpressions.RegexOptions]::CultureInvariant
+    )
+    $relativePaths = [Collections.Generic.List[string]]::new()
+    foreach ($item in @(Get-ChildItem -LiteralPath $storageDirectory -Force)) {
+        $fullPath = [IO.Path]::GetFullPath($item.FullName)
+        if (-not $fullPath.StartsWith(
+            $bundlePrefix,
+            [StringComparison]::OrdinalIgnoreCase
+        )) {
+            throw "The legacy NiceGUI storage scan escaped the controlled bundle."
+        }
+        $relativePath = $fullPath.Substring($bundlePrefix.Length).Replace('\', '/')
+        if (
+            $item.PSIsContainer -or
+            ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+            -not [Text.RegularExpressions.Regex]::IsMatch(
+                $relativePath,
+                $storagePattern,
+                $storageOptions
+            ) -or
+            $item.LastWriteTimeUtc -le $MarkerCreatedAt.UtcDateTime -or
+            [int64]$item.Length -lt 1 -or
+            [int64]$item.Length -gt 65536
+        ) {
+            throw "The stopped legacy NiceGUI storage delta is not safely migratable."
+        }
+        $relativePaths.Add($relativePath)
+    }
+    return @($relativePaths.ToArray())
+}
+
+function Move-SingYinLegacyNiceGuiStorage {
+    param(
+        [Parameter(Mandatory = $true)][string]$BundlePath,
+        [Parameter(Mandatory = $true)][string[]]$RelativePaths,
+        [Parameter(Mandatory = $true)][string]$HostRoot,
+        [Parameter(Mandatory = $true)][string]$RuntimeUser,
+        [Parameter(Mandatory = $true)][string]$ExpectedBundleSha256,
+        [Parameter(Mandatory = $true)][int]$ExpectedBundleFileCount
+    )
+
+    if ($RelativePaths.Count -eq 0) {
+        return [pscustomobject]@{ MigratedCount = 0; StorageRoot = $null }
+    }
+    if (
+        $ExpectedBundleSha256 -notmatch '^[0-9a-f]{64}$' -or
+        $ExpectedBundleFileCount -lt 1
+    ) {
+        throw "The legacy NiceGUI migration lacks trusted bundle evidence."
+    }
+
+    $bundle = [IO.Path]::GetFullPath($BundlePath).TrimEnd('\')
+    $bundlePrefix = "$bundle\"
+    $storageRoot = [IO.Path]::GetFullPath(
+        (Join-Path $HostRoot "data\runtime\nicegui-storage")
+    ).TrimEnd('\')
+    $storagePattern = (
+        '^\.nicegui/storage-(?:general|user-' +
+        '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json$'
+    )
+    $storageOptions = (
+        [Text.RegularExpressions.RegexOptions]::IgnoreCase -bor
+        [Text.RegularExpressions.RegexOptions]::CultureInvariant
+    )
+    $null = New-Item -ItemType Directory -Path $storageRoot -Force
+    Protect-SingYinSensitivePath -Path $storageRoot -RuntimeUser $RuntimeUser
+
+    $migratedCount = 0
+    foreach ($relativePathValue in $RelativePaths) {
+        $relativePath = ([string]$relativePathValue).Replace('\', '/')
+        if (-not [Text.RegularExpressions.Regex]::IsMatch(
+            $relativePath,
+            $storagePattern,
+            $storageOptions
+        )) {
+            throw "The legacy NiceGUI migration received an unsupported path."
+        }
+        $sourcePath = [IO.Path]::GetFullPath(
+            (Join-Path $bundle $relativePath.Replace('/', '\'))
+        )
+        if (-not $sourcePath.StartsWith(
+            $bundlePrefix,
+            [StringComparison]::OrdinalIgnoreCase
+        )) {
+            throw "The legacy NiceGUI migration escaped the controlled bundle path."
+        }
+        $source = Get-Item -LiteralPath $sourcePath -Force -ErrorAction Stop
+        if (
+            $source.PSIsContainer -or
+            ($source.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+            [int64]$source.Length -lt 1 -or
+            [int64]$source.Length -gt 65536
+        ) {
+            throw "The legacy NiceGUI preference file is unsafe."
+        }
+        $rawPreference = Get-Content -LiteralPath $sourcePath -Raw -Encoding UTF8
+        if (-not $rawPreference.TrimStart().StartsWith('{')) {
+            throw "The legacy NiceGUI preference file is not a JSON object."
+        }
+        try {
+            $null = $rawPreference | ConvertFrom-Json -ErrorAction Stop
+        } catch {
+            throw "The legacy NiceGUI preference file is malformed."
+        }
+
+        $destinationPath = Join-Path $storageRoot ([IO.Path]::GetFileName($sourcePath))
+        $temporaryPath = Join-Path $storageRoot (
+            ".migration-$([Guid]::NewGuid().ToString('N')).tmp"
+        )
+        try {
+            Copy-Item -LiteralPath $sourcePath -Destination $temporaryPath -Force
+            $sourceBytes = [IO.File]::ReadAllBytes($sourcePath)
+            $temporaryBytes = [IO.File]::ReadAllBytes($temporaryPath)
+            $sourceHasher = [Security.Cryptography.SHA256]::Create()
+            $temporaryHasher = [Security.Cryptography.SHA256]::Create()
+            try {
+                $sourceHash = [BitConverter]::ToString(
+                    $sourceHasher.ComputeHash($sourceBytes)
+                )
+                $temporaryHash = [BitConverter]::ToString(
+                    $temporaryHasher.ComputeHash($temporaryBytes)
+                )
+                if ($temporaryHash -cne $sourceHash) {
+                    throw "The legacy NiceGUI preference copy failed integrity verification."
+                }
+            } finally {
+                $sourceHasher.Dispose()
+                $temporaryHasher.Dispose()
+                [Array]::Clear($sourceBytes, 0, $sourceBytes.Length)
+                [Array]::Clear($temporaryBytes, 0, $temporaryBytes.Length)
+            }
+            Move-Item -LiteralPath $temporaryPath -Destination $destinationPath -Force
+            Protect-SingYinSensitivePath -Path $destinationPath -RuntimeUser $RuntimeUser
+        } finally {
+            Remove-Item -LiteralPath $temporaryPath -Force -ErrorAction SilentlyContinue
+        }
+        Remove-Item -LiteralPath $sourcePath -Force
+        $migratedCount += 1
+    }
+
+    $legacyStorageDirectory = Join-Path $bundle ".nicegui"
+    if (
+        (Test-Path -LiteralPath $legacyStorageDirectory -PathType Container) -and
+        @(Get-ChildItem -LiteralPath $legacyStorageDirectory -Force).Count -eq 0
+    ) {
+        Remove-Item -LiteralPath $legacyStorageDirectory -Force
+    }
+    $repairedFingerprint = Get-SingYinReleaseBundleFingerprint -Path $bundle
+    if (
+        [string]$repairedFingerprint.Sha256 -cne $ExpectedBundleSha256 -or
+        [int]$repairedFingerprint.FileCount -ne $ExpectedBundleFileCount
+    ) {
+        throw "The legacy NiceGUI migration did not restore the immutable bundle fingerprint."
+    }
+    return [pscustomobject]@{
+        MigratedCount = $migratedCount
+        StorageRoot = $storageRoot
     }
 }
 
@@ -1210,7 +1442,8 @@ function New-SingYinReleaseBundle {
             Join-Path $HostRoot "data\support"
         )
         Invoke-Native -Executable $bundlePython -Arguments @(
-            "-X", "utf8", "-c", "import nicegui; import nicegui_app.main"
+            "-X", "utf8", "-c",
+            "from nicegui_app.launcher import configure_nicegui_storage_path; configure_nicegui_storage_path(); import nicegui; import nicegui_app.main"
         ) -WorkingDirectory $stagingPath | Out-Null
         Invoke-Native -Executable $bundlePython -Arguments @(
             "-X", "utf8", "scripts\check_deployment_readiness.py",
@@ -1355,6 +1588,8 @@ try {
     $previousReleaseRef = $null
     $previousReleaseSource = $null
     $previousReleaseRepairCount = 0
+    $legacyNiceGuiStorageMigrated = 0
+    $legacyNiceGuiStorageRoot = $null
     $backupReport = $null
     $taskInitiallyRunning = $false
     $taskInitiallyEnabled = $false
@@ -1649,6 +1884,57 @@ try {
     $taskStopped = $true
     Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 30
 
+    Write-Step "Reconciling bounded legacy runtime preferences after process stop"
+    $previousBundlePath = [string]$previousReleaseIdentity.Bundle
+    if (-not [string]::IsNullOrWhiteSpace($previousBundlePath)) {
+        $pendingNiceGuiStorage = @(
+            Get-SingYinStoppedNiceGuiStoragePaths `
+                -BundlePath $previousBundlePath `
+                -MarkerCreatedAt ([DateTimeOffset]$previousReleaseIdentity.MarkerCreatedAt)
+        )
+        if ($pendingNiceGuiStorage.Count -gt 0) {
+            $migration = Move-SingYinLegacyNiceGuiStorage `
+                -BundlePath $previousBundlePath `
+                -RelativePaths $pendingNiceGuiStorage `
+                -HostRoot $HostRoot `
+                -RuntimeUser $runtimeAccount.Name `
+                -ExpectedBundleSha256 ([string]$previousReleaseIdentity.ExpectedBundleSha256) `
+                -ExpectedBundleFileCount ([int]$previousReleaseIdentity.ExpectedBundleFileCount)
+            $legacyNiceGuiStorageMigrated = [int]$migration.MigratedCount
+            $legacyNiceGuiStorageRoot = [string]$migration.StorageRoot
+            $previousReleaseRepairCount = (
+                [int]$previousReleaseIdentity.RepairCount +
+                $legacyNiceGuiStorageMigrated
+            )
+            $previousReleaseSource = (
+                "immutable-release-marker-legacy-nicegui-storage-migrated"
+            )
+        } else {
+            $stoppedFingerprint = Get-SingYinReleaseBundleFingerprint `
+                -Path $previousBundlePath
+            if (
+                [string]$previousReleaseIdentity.ExpectedBundleSha256 -cne
+                    [string]$stoppedFingerprint.Sha256 -or
+                [int]$previousReleaseIdentity.ExpectedBundleFileCount -ne
+                    [int]$stoppedFingerprint.FileCount
+            ) {
+                throw "The previous release was not restored to its immutable fingerprint."
+            }
+            if (
+                $previousReleaseSource -ceq
+                    "immutable-release-marker-legacy-nicegui-storage-pending"
+            ) {
+                if ($previousReleaseRepairCount -gt 0) {
+                    $previousReleaseSource = (
+                        "immutable-release-marker-legacy-bytecode-repaired"
+                    )
+                } else {
+                    $previousReleaseSource = "immutable-release-marker"
+                }
+            }
+        }
+    }
+
     Write-Step "Creating a fresh verified backup and isolated restore proof"
     $env:SING_YIN_APP_MODE = "official"
     $env:SING_YIN_DATABASE_PATH = Join-Path $HostRoot "data\runtime\sing-yin-roster.sqlite3"
@@ -1699,7 +1985,7 @@ try {
     $hostPython = Join-Path $releaseBundlePath ".venv\Scripts\python.exe"
     $newTaskAction = New-ScheduledTaskAction `
         -Execute $hostPython `
-        -Argument "-B -X utf8 -m nicegui_app.main" `
+        -Argument "-B -X utf8 -m nicegui_app.launcher" `
         -WorkingDirectory $releaseBundlePath
     $runtimeTaskPassword = New-SingYinRuntimeTaskPassword
     $runtimeTaskSecurePassword = ConvertTo-SecureString `
@@ -1767,6 +2053,10 @@ try {
         previousReleaseRef = $previousReleaseRef
         previousReleaseSource = $previousReleaseSource
         previousReleaseRepairCount = $previousReleaseRepairCount
+        legacyNiceGuiStorageMigration = [ordered]@{
+            migratedCount = $legacyNiceGuiStorageMigrated
+            storageRoot = $legacyNiceGuiStorageRoot
+        }
         releaseBundle = $releaseBundlePath
         sourceFingerprint = [string]$currentFingerprint.fingerprint
         sourceFileCount = [int]$currentFingerprint.fileCount
@@ -1841,12 +2131,14 @@ try {
                     }
                     if (-not [string]::IsNullOrWhiteSpace($previousTaskAction.Arguments)) {
                         $previousArguments = ([string]$previousTaskAction.Arguments).Trim()
-                        $restoreActionParameters.Argument = if (
-                            $previousArguments -ceq "-X utf8 -m nicegui_app.main"
-                        ) {
-                            "-B -X utf8 -m nicegui_app.main"
-                        } else {
-                            $previousArguments
+                        $restoreActionParameters.Argument = switch -CaseSensitive ($previousArguments) {
+                            "-X utf8 -m nicegui_app.main" {
+                                "-B -X utf8 -m nicegui_app.main"
+                            }
+                            "-X utf8 -m nicegui_app.launcher" {
+                                "-B -X utf8 -m nicegui_app.launcher"
+                            }
+                            default { $previousArguments }
                         }
                     }
                     $restoreTaskAction = New-ScheduledTaskAction @restoreActionParameters
@@ -1898,6 +2190,10 @@ try {
         previousReleaseRef = $previousReleaseRef
         previousReleaseSource = $previousReleaseSource
         previousReleaseRepairCount = $previousReleaseRepairCount
+        legacyNiceGuiStorageMigration = [ordered]@{
+            migratedCount = $legacyNiceGuiStorageMigrated
+            storageRoot = $legacyNiceGuiStorageRoot
+        }
         releaseBundle = $releaseBundlePath
         failure = $failure
         nativeLog = [IO.Path]::GetFileName($script:NativeLogPath)

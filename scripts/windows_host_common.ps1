@@ -155,7 +155,9 @@ function Get-SingYinTaskInspection {
             $arguments = ([string]$_.Arguments).Trim()
             $supportedArguments = @(
                 "-X utf8 -m nicegui_app.main",
-                "-B -X utf8 -m nicegui_app.main"
+                "-B -X utf8 -m nicegui_app.main",
+                "-X utf8 -m nicegui_app.launcher",
+                "-B -X utf8 -m nicegui_app.launcher"
             )
             $rootMatches -and
             [IO.Path]::GetFullPath([string]$_.Execute) -ieq $expectedPython -and

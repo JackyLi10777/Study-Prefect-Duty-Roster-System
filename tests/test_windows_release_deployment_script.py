@@ -202,6 +202,7 @@ try {{
         source = [string]$identity.Source
         bundle = [string]$identity.Bundle
         repairCount = [int]$identity.RepairCount
+        pendingNiceGuiStorage = @($identity.PendingNiceGuiStorageRelativePaths)
     }} | ConvertTo-Json -Compress
 }} catch {{
     [ordered]@{{
@@ -236,6 +237,111 @@ try {{
     assert result.returncode == 0, result.stderr
     json_lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
     assert json_lines, f"PowerShell identity check emitted no JSON payload: {result.stdout!r}"
+    return json.loads(json_lines[-1])
+
+
+def _run_legacy_nicegui_storage_migration(
+    bundle: Path,
+    host_root: Path,
+    relative_paths: list[str],
+    expected_sha256: str,
+    expected_file_count: int,
+) -> dict[str, object]:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production host script")
+    escaped_bundle = str(bundle).replace("'", "''")
+    escaped_host = str(host_root).replace("'", "''")
+    paths = ", ".join(f"'{value}'" for value in relative_paths)
+    function_source = "\n".join(
+        (
+            _powershell_function_source("Get-SingYinReleaseBundleFingerprint"),
+            _powershell_function_source("Move-SingYinLegacyNiceGuiStorage"),
+        )
+    )
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+function Protect-SingYinSensitivePath {{ param([string]$Path, [string]$RuntimeUser) }}
+{function_source}
+try {{
+    $result = Move-SingYinLegacyNiceGuiStorage `
+        -BundlePath '{escaped_bundle}' `
+        -RelativePaths @({paths}) `
+        -HostRoot '{escaped_host}' `
+        -RuntimeUser 'test-runtime' `
+        -ExpectedBundleSha256 '{expected_sha256}' `
+        -ExpectedBundleFileCount {expected_file_count}
+    [ordered]@{{
+        ok = $true
+        migratedCount = [int]$result.MigratedCount
+        storageRoot = [string]$result.StorageRoot
+    }} | ConvertTo-Json -Compress
+}} catch {{
+    [ordered]@{{
+        ok = $false
+        error = [string]$_.Exception.Message
+    }} | ConvertTo-Json -Compress
+}}
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8-sig",
+        errors="replace",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    json_lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
+    assert json_lines, f"PowerShell migration emitted no JSON payload: {result.stdout!r}"
+    return json.loads(json_lines[-1])
+
+
+def _run_stopped_nicegui_storage_scan(
+    bundle: Path,
+    marker_created_at: datetime,
+) -> dict[str, object]:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production host script")
+    escaped_bundle = str(bundle).replace("'", "''")
+    escaped_created_at = marker_created_at.isoformat().replace("'", "''")
+    function_source = _powershell_function_source(
+        "Get-SingYinStoppedNiceGuiStoragePaths",
+    )
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+{function_source}
+try {{
+    $paths = @(
+        Get-SingYinStoppedNiceGuiStoragePaths `
+            -BundlePath '{escaped_bundle}' `
+            -MarkerCreatedAt ([DateTimeOffset]::Parse('{escaped_created_at}'))
+    )
+    [ordered]@{{
+        ok = $true
+        paths = $paths
+    }} | ConvertTo-Json -Compress
+}} catch {{
+    [ordered]@{{
+        ok = $false
+        error = [string]$_.Exception.Message
+    }} | ConvertTo-Json -Compress
+}}
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8-sig",
+        errors="replace",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    json_lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
+    assert json_lines, f"PowerShell stopped-storage scan emitted no JSON payload: {result.stdout!r}"
     return json.loads(json_lines[-1])
 
 
@@ -584,6 +690,7 @@ def test_previous_release_identity_comes_from_verified_task_bundle(
         "source": "immutable-release-marker",
         "bundle": str(bundle),
         "repairCount": 0,
+        "pendingNiceGuiStorage": [],
     }
 
 
@@ -615,11 +722,147 @@ def test_previous_release_identity_accepts_exact_legacy_runtime_bytecode_delta(
         "source": "immutable-release-marker-legacy-bytecode-repaired",
         "bundle": str(bundle),
         "repairCount": 1,
+        "pendingNiceGuiStorage": [],
     }
     assert not runtime_bytecode.exists()
     repaired_fingerprint = _run_bundle_fingerprint(bundle)
     assert repaired_fingerprint["sha256"] == marker["bundleContentSha256"]
     assert repaired_fingerprint["fileCount"] == marker["bundleFileCount"]
+
+
+def test_previous_release_identity_defers_and_migrates_exact_nicegui_preference_delta(
+    tmp_path: Path,
+) -> None:
+    repository, host_root, bundle, marker, environment_hash = (
+        _create_trusted_release_bundle(tmp_path)
+    )
+    relative_path = (
+        ".nicegui/storage-user-f32cba68-43d0-4d27-b84c-3cec7b584a99.json"
+    )
+    preference = bundle / Path(relative_path)
+    preference.parent.mkdir(parents=True)
+    preference.write_text('{"theme":"dark","sound":true}', encoding="utf-8")
+    marker_created_at = datetime.fromisoformat(str(marker["createdAt"]))
+    new_timestamp = (marker_created_at + timedelta(minutes=2)).timestamp()
+    os.utime(preference, (new_timestamp, new_timestamp))
+
+    identity = _run_previous_release_identity(
+        repository,
+        host_root,
+        bundle,
+        environment_hash,
+    )
+
+    assert identity == {
+        "ok": True,
+        "commit": marker["commit"],
+        "releaseRef": marker["releaseRef"],
+        "source": "immutable-release-marker-legacy-nicegui-storage-pending",
+        "bundle": str(bundle),
+        "repairCount": 0,
+        "pendingNiceGuiStorage": [relative_path],
+    }
+    assert preference.exists(), "a serving process may still be writing this file"
+
+    migration = _run_legacy_nicegui_storage_migration(
+        bundle,
+        host_root,
+        [relative_path],
+        str(marker["bundleContentSha256"]),
+        int(marker["bundleFileCount"]),
+    )
+
+    destination = host_root / "data" / "runtime" / "nicegui-storage" / preference.name
+    assert migration == {
+        "ok": True,
+        "migratedCount": 1,
+        "storageRoot": str(destination.parent),
+    }
+    assert not preference.exists()
+    assert json.loads(destination.read_text(encoding="utf-8")) == {
+        "theme": "dark",
+        "sound": True,
+    }
+    repaired_fingerprint = _run_bundle_fingerprint(bundle)
+    assert repaired_fingerprint["sha256"] == marker["bundleContentSha256"]
+    assert repaired_fingerprint["fileCount"] == marker["bundleFileCount"]
+
+
+def test_stopped_nicegui_scan_discovers_only_fresh_flat_preference_files(
+    tmp_path: Path,
+) -> None:
+    _, _, bundle, marker, _ = _create_trusted_release_bundle(tmp_path)
+    relative_paths = [
+        ".nicegui/storage-general.json",
+        ".nicegui/storage-user-f32cba68-43d0-4d27-b84c-3cec7b584a99.json",
+    ]
+    marker_created_at = datetime.fromisoformat(str(marker["createdAt"]))
+    new_timestamp = (marker_created_at + timedelta(minutes=2)).timestamp()
+    for relative_path in relative_paths:
+        preference = bundle / Path(relative_path)
+        preference.parent.mkdir(parents=True, exist_ok=True)
+        preference.write_text('{"sound":true}', encoding="utf-8")
+        os.utime(preference, (new_timestamp, new_timestamp))
+
+    result = _run_stopped_nicegui_storage_scan(bundle, marker_created_at)
+
+    assert result == {"ok": True, "paths": relative_paths}
+
+
+@pytest.mark.parametrize(
+    ("relative_path", "content_size", "timestamp_offset_minutes"),
+    (
+        (".nicegui/storage-user-invalid.json", 2, 2),
+        (".nicegui/nested/storage-general.json", 2, 2),
+        (".nicegui/storage-general.json", 2, -2),
+        (".nicegui/storage-general.json", 65537, 2),
+    ),
+    ids=("invalid-name", "nested-path", "pre-marker", "oversize"),
+)
+def test_stopped_nicegui_scan_rejects_unbounded_or_pre_marker_content(
+    tmp_path: Path,
+    relative_path: str,
+    content_size: int,
+    timestamp_offset_minutes: int,
+) -> None:
+    _, _, bundle, marker, _ = _create_trusted_release_bundle(tmp_path)
+    marker_created_at = datetime.fromisoformat(str(marker["createdAt"]))
+    candidate = bundle / Path(relative_path)
+    candidate.parent.mkdir(parents=True, exist_ok=True)
+    candidate.write_bytes(b"x" * content_size)
+    candidate_timestamp = (
+        marker_created_at + timedelta(minutes=timestamp_offset_minutes)
+    ).timestamp()
+    os.utime(candidate, (candidate_timestamp, candidate_timestamp))
+
+    result = _run_stopped_nicegui_storage_scan(bundle, marker_created_at)
+
+    assert result["ok"] is False
+    assert "NiceGUI storage" in str(result["error"])
+
+
+def test_legacy_nicegui_migration_rejects_non_object_json(
+    tmp_path: Path,
+) -> None:
+    _, host_root, bundle, marker, _ = _create_trusted_release_bundle(tmp_path)
+    relative_path = (
+        ".nicegui/storage-user-f32cba68-43d0-4d27-b84c-3cec7b584a99.json"
+    )
+    preference = bundle / Path(relative_path)
+    preference.parent.mkdir(parents=True)
+    preference.write_text("[]", encoding="utf-8")
+
+    migration = _run_legacy_nicegui_storage_migration(
+        bundle,
+        host_root,
+        [relative_path],
+        str(marker["bundleContentSha256"]),
+        int(marker["bundleFileCount"]),
+    )
+
+    assert migration["ok"] is False
+    assert "not a JSON object" in str(migration["error"])
+    assert preference.exists()
 
 
 @pytest.mark.parametrize(
@@ -628,6 +871,7 @@ def test_previous_release_identity_accepts_exact_legacy_runtime_bytecode_delta(
         ("unexpected.txt", 2),
         ("package/runtime.pyc", 2),
         ("package/__pycache__/preexisting.cpython-312.pyc", -2),
+        (".nicegui/storage-user-invalid.json", 2),
     ),
 )
 def test_previous_release_identity_rejects_non_runtime_legacy_delta(
@@ -785,10 +1029,22 @@ def test_deployment_reports_previous_identity_from_the_task_target() -> None:
         '-Arguments @("rev-parse", "HEAD")'
     )
     assert legacy_checkout_probe not in source
-    assert '-Argument "-B -X utf8 -m nicegui_app.main"' in source
+    assert '-Argument "-B -X utf8 -m nicegui_app.launcher"' in source
     assert '"immutable-release-marker-legacy-bytecode-repaired"' in source
+    assert '"immutable-release-marker-legacy-nicegui-storage-pending"' in source
+    assert '"immutable-release-marker-legacy-nicegui-storage-migrated"' in source
     assert "Get-SingYinLegacyReleaseBundleFingerprint" in source
+    assert "Get-SingYinStoppedNiceGuiStoragePaths" in source
+    assert "Move-SingYinLegacyNiceGuiStorage" in source
     assert "Remove-Item -LiteralPath $candidatePath -Force" in source
+    stop = source.index("Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 30")
+    scan = source.index("Get-SingYinStoppedNiceGuiStoragePaths", stop)
+    migrate = source.index("$migration = Move-SingYinLegacyNiceGuiStorage")
+    backup = source.index('Write-Step "Creating a fresh verified backup', migrate)
+    assert stop < scan < migrate < backup
+    assert "$stoppedReleaseIdentity" not in source
+    assert "$reconciledReleaseIdentity" not in source
+    assert "legacyNiceGuiStorageMigration = [ordered]@{" in source
 
 
 def test_deployment_rotates_runtime_task_credential_without_persisting_it() -> None:
@@ -1205,6 +1461,11 @@ def test_deployment_script_switches_to_an_immutable_bundle_and_requires_write_re
     assert "New-SingYinReleaseBundle" in source
     assert 'Join-Path $stagingPath ".venv"' in source
     assert '"--require-hashes"' in source
+    bundle_import_check = (
+        "from nicegui_app.launcher import configure_nicegui_storage_path; "
+        "configure_nicegui_storage_path(); import nicegui; import nicegui_app.main"
+    )
+    assert bundle_import_check in source
     assert "New-ScheduledTaskAction" in source
     assert "-Action $newTaskAction `" in source
     assert "-User $runtimeAccount.Name `" in source

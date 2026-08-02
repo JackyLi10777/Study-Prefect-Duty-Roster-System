@@ -23,6 +23,7 @@ immutable release.
 | Public | landing copy, static assets, capability-only health, fictional demo fixtures | Git repository and Worker | Deliberately public |
 | Shared encrypted | published roster ciphertext, nonce, expiry | Cloudflare KV | Ciphertext is retrievable only with a high-entropy share id; the AES key remains in the URL fragment and is not sent to the Worker |
 | Guest ephemeral | fictional edits, preferences, generated demo result | bounded origin memory plus signed `sessionStorage` snapshot | Isolated per session/tab; expires and is never written to official SQLite |
+| Admin UI preference | theme, locale, devotional tone and bounded audio choices | protected `data/runtime/nicegui-storage` beside the official database | No roster rows or Guest state; readable only through the verified Admin session and host ACL |
 | Official operational | prefects, rosters, leave adjustments, fairness ledger, audit trail | loopback-only Windows SQLite and protected backups | Admin only through the verified gateway |
 | Secret | Cloudflare tokens, bearer/session/HMAC secrets, exact admin allowlist, host `.env`, SSH private keys | Cloudflare Secret store, protected host file, or operator key store | Never committed, logged, embedded in reports, or returned to browsers |
 
@@ -31,6 +32,15 @@ It must not contain the live database, backup snapshots, `.nicegui` user storage
 runtime logs, `.env`, tokens, or credentials. The school feedback address is
 public by design; private backup administrator addresses are not configuration
 or documentation data.
+
+The managed host starts through `nicegui_app.launcher`, which resolves the
+database identity and sets NiceGUI's mutable preference path before importing
+the framework. Immutable release bundles therefore contain code and verified
+dependencies only. A one-time legacy migration accepts only small, post-marker,
+UUID-bound NiceGUI JSON objects whose exclusion exactly reconstructs the old
+bundle fingerprint; it migrates them after process stop and then requires the
+ordinary complete fingerprint again. This compatibility path does not exclude
+the directory from release hashing or accept arbitrary runtime files.
 
 The local rotating application log remains payload-free across schema upgrades.
 Alembic must configure its own handlers without disabling existing application
