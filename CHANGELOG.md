@@ -8,7 +8,7 @@ This file records user-visible, operational and release-significant changes. The
 - Added curated canonical devotional `dv-0122` in verified RCUV 2010／NKJV form, with bilingual reflection, source hashes, theological review, and fixed roster／platform classifications. The canonical bank is now 122 entries while the historical expanded mapping remains exactly 500 records.
 - Added `legacy | curated` devotional provenance validation, secure translation-specific Scripture links, compact two-line authenticated／public footers, and regression coverage that keeps the five-entry public landing rotation unchanged.
 - Repaired the RCUV source extractor so presentation-only footnote superscripts cannot be mistaken for Scripture during external verification.
-- Replaced page-bound music `ui.timer` callbacks with route-scoped, keyed browser deferrals. Rapid route changes now invalidate stale autoplay, continuity, playlist-resume and dialog-focus work instead of letting a deleted NiceGUI parent slot raise a background exception.
+- Replaced page-bound music `ui.timer` callbacks with route-and-render-scoped, keyed browser deferrals. Rapid A→B→A navigation now invalidates stale autoplay, continuity, playlist-resume and dialog-focus work; manual track selection cancels queued auto-resume instead of letting old work reach a new source or deleted NiceGUI slot.
 
 ## v1.2.0-rc.49 — released, 2026-08-02
 
