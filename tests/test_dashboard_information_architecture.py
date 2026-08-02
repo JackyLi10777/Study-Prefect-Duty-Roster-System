@@ -78,7 +78,7 @@ def test_command_center_layer_owns_the_reset_composition_after_mobile_compatibil
         re.DOTALL,
     )
     assert atmosphere_rule is not None
-    assert "min-height: 84px" in atmosphere_rule.group("body")
+    assert "min-height: 90px" in atmosphere_rule.group("body")
     arrow_rule = re.search(
         r"\.sy-flow-step:not\(:last-child\)::after\s*\{(?P<body>.*?)\}",
         command_center,

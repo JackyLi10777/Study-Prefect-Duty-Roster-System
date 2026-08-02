@@ -81,10 +81,10 @@ body {
 
 .sy-brand-lockup {
   display: grid !important;
-  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-columns: 58px minmax(0, 1fr);
   align-items: start !important;
   width: calc(100% - 8px);
-  min-height: 66px;
+  min-height: 70px;
   margin: 0 4px 4px !important;
   padding: 0;
   column-gap: 10px !important;
@@ -93,8 +93,8 @@ body {
 }
 
 .sy-brand-lockup .sy-product-mark {
-  width: 54px;
-  height: 54px;
+  width: 58px;
+  height: 58px;
 }
 
 .sy-brand-eyebrow {
@@ -128,7 +128,7 @@ body {
   box-sizing: border-box;
   width: calc(100% - 8px);
   margin: 2px 4px 17px !important;
-  padding: 0 0 12px 64px;
+  padding: 0 0 12px 68px;
   border-bottom: 1px solid color-mix(in srgb, var(--sy-line) 70%, transparent);
   color: var(--sy-muted) !important;
   font-size: 10px !important;
@@ -383,7 +383,7 @@ body {
 .sy-page-atmosphere {
   display: flex;
   align-items: center;
-  min-height: 84px;
+  min-height: 90px;
   border-color: var(--sy-v2-hairline);
   border-radius: var(--sy-v2-radius-panel);
   box-shadow: none;
