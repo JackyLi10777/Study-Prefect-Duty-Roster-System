@@ -175,6 +175,9 @@ def test_status_rendering_describes_worker_source_change_truthfully() -> None:
     assert "Worker source did not change" in render_status_block(
         state, language="en", link="CURRENT_STATUS.md"
     )
+    assert "Worker 來源沒有改動" in render_status_block(
+        state, language="zh-Hant", link="CURRENT_STATUS.md"
+    )
     assert "source unchanged for this release" in render_current_status(state)
 
 
@@ -187,6 +190,15 @@ def test_status_rendering_fails_closed_for_language_and_acceptance() -> None:
     rendered = render_current_status(state)
     assert "未通過（狀態無效） / Not passed (invalid state)" in rendered
     assert "尚待完成 / Pending" not in rendered
+
+    invalid_worker = _release_state()
+    invalid_worker["worker"]["source_changed_for_release"] = "yes"  # type: ignore[index]
+    with pytest.raises(ValueError, match="must be a JSON Boolean"):
+        render_status_block(
+            invalid_worker, language="en", link="CURRENT_STATUS.md"
+        )
+    with pytest.raises(ValueError, match="must be a JSON Boolean"):
+        render_current_status(invalid_worker)
 
 
 def test_documentation_validation_reports_unsupported_consumer_language(

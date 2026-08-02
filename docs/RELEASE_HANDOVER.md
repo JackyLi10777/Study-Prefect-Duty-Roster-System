@@ -1,13 +1,13 @@
 # 首次發布與交接手冊 / First-release and handover guide
 
-## rc45 資料層發布結果
+## 目前資料層與平台發布結果
 
-rc45 已在隔離副本及正式主機升級至 Alembic `0012`，完成固定星期衝突拒絕、foreign keys、quick check、公平對帳、完整規模驗證、exact-source 候選報告、全新已驗證備份、隔離還原及可寫 `/readyz`。慢 SQL 診斷預設關閉；若暫時啟用，日誌只可保留指紋與耗時，不可包含 SQL 參數或值班內容。Worker 來源、binding 及安全設定沒有改變，因此沒有進行無意義的 Worker 重部署；既有 100% gateway 已核對能正確代理新 origin。
+目前正式版本保留 rc45 完成的 Alembic `0012` 資料層、固定星期衝突拒絕、foreign keys、quick check、公平對帳及完整規模驗證，並完成新的 exact-source 報告、已驗證備份、隔離還原及可寫 `/readyz`。慢 SQL 診斷預設關閉；若暫時啟用，日誌只可保留指紋與耗時，不可包含 SQL 參數或值班內容。Worker 來源已更新，經 0% version smoke 後推廣至頁首所列的 100% canonical version；`wrangler.jsonc`、Access scope、Tunnel route、binding 與 secret-name contract 未更改。
 
 <!-- SING_YIN_CURRENT_STATUS:START -->
 > **已核實線上來源（2026-08-02）：** Windows origin 正運行 clean annotated `v1.2.0-rc.47`／`15f53f97eda81b3f4b1518a44567e18171891711` 的不可變 bundle；310-file 指紋 `3472686105c5a7356da526995438aaef025c52b8c252dc17c21e3de01e27e679` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260801-232211-102949-manual_verified_backup.sqlite3`／SHA-256 `13ca64426a59fcaae098548830de79c3da896a483b2aa8680a0f84488323c432`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `a7218f51-ec6c-4002-a9be-9dfbb691136c` 維持 100% 流量且健康。`v1.2.0-rc.45` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
 <!-- SING_YIN_CURRENT_STATUS:END -->
-> **rc37／rc38／rc42 版本澄清：**受保護的 `v1.2.0-rc.37` 標籤指向較早 rc36 source，屬 void／未部署版本；`v1.2.0-rc.38` 通過來源閘門但沒有部署；rc42 與 rc43 指向同一 commit／tree，但沒有綁定正式報告且從未部署。三者均不能當成回退目標；正式服務只以本頁頂部的 rc45 origin、Alembic `0012` 與未變更 gateway 為準。
+> **rc37／rc38／rc42 版本澄清：**受保護的 `v1.2.0-rc.37` 標籤指向較早 rc36 source，屬 void／未部署版本；`v1.2.0-rc.38` 通過來源閘門但沒有部署；rc42 與 rc43 指向同一 commit／tree，但沒有綁定正式報告且從未部署。三者均不能當成回退目標；正式服務只以本頁頂部生成狀態記錄的 origin、Alembic revision、canonical Worker 及來源變更狀態為準。
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。
 

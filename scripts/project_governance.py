@@ -457,10 +457,15 @@ def render_status_block(
     """Render one generated bilingual consumer notice from release state."""
 
     values = _status_values(state)
+    worker_source_changed = values["worker_source_changed"]
+    if not isinstance(worker_source_changed, bool):
+        raise ValueError(
+            "worker.source_changed_for_release must be a JSON Boolean"
+        )
     if language == "zh-Hant":
         worker_status = (
             "Worker 來源已更新，"
-            if values["worker_source_changed"] is True
+            if worker_source_changed
             else "Worker 來源沒有改動，"
         )
         notice = (
@@ -478,7 +483,7 @@ def render_status_block(
     elif language == "en":
         worker_status = (
             "Worker source changed and was promoted; "
-            if values["worker_source_changed"] is True
+            if worker_source_changed
             else "Worker source did not change; "
         )
         notice = (
@@ -503,6 +508,11 @@ def render_current_status(state: Mapping[str, object]) -> str:
     """Render the canonical human-readable status page deterministically."""
 
     values = _status_values(state)
+    worker_source_changed = values["worker_source_changed"]
+    if not isinstance(worker_source_changed, bool):
+        raise ValueError(
+            "worker.source_changed_for_release must be a JSON Boolean"
+        )
     if values["human_acceptance"] == "passed":
         human = "已完成 / Passed"
     elif values["human_acceptance"] == "pending":
@@ -511,7 +521,7 @@ def render_current_status(state: Mapping[str, object]) -> str:
         human = "未通過（狀態無效） / Not passed (invalid state)"
     worker_source = (
         "source updated and promoted for this release"
-        if values["worker_source_changed"] is True
+        if worker_source_changed
         else "source unchanged for this release"
     )
     return (

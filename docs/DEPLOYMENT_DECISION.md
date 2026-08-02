@@ -35,7 +35,7 @@ NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另�
 | 層 | 現況 |
 |---|---|
 | Windows owned scheduled task | 精確 tag／commit／bundle／fingerprint 由頁首生成狀態及 `status/CURRENT_STATUS.md` 擁有。Inactive `C:\SingYinRoster` Git HEAD 不代表 runtime。 |
-| Cloudflare Worker／Access／Tunnel | Worker 來源及受保護設定未改動；既有 canonical gateway 承接 100% 流量，Access、Tunnel、OTP fail-closed 及 gateway health 已重新核對 |
+| Cloudflare Worker／Access／Tunnel | Worker 來源已更新，經 0% version smoke 後推廣至新的 100% canonical version；`wrangler.jsonc`、Access scope、Tunnel route、binding 與 secret-name contract 未更改，OTP fail-closed 及 gateway health 已重新核對 |
 | 目前來源與部署證據 | 精確 tag、gate、migration、正式備份／隔離還原及 canonical checks 只由頁首生成狀態與 [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md) 擁有 |
 | 第一個已驗證復原目標 | 保留目前程式並使用 [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md) 記錄的已驗證正式備份進行受控還原；先在隔離資料庫核對 checksum、公平、行數及 restore audit |
 | 舊程式相容復原 | migration `0012` 後，rc43／rc41 等舊程式不得作 code-only rollback；必須先選取相容的 pre-0012 快照並完成受控隔離還原，再由事故負責人批准切換 |
