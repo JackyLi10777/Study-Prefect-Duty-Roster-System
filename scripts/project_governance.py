@@ -27,6 +27,9 @@ STATUS_END = "<!-- SING_YIN_CURRENT_STATUS:END -->"
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _COMMIT = re.compile(r"[0-9a-f]{40}")
 _RELEASE = re.compile(r"v\d+\.\d+\.\d+-rc\.\d+")
+_WORKER_VERSION = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+)
 _MARKDOWN_LINK = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 _MUTABLE_CURRENT_RELEASE_CLAIM = re.compile(
     r"\bcurrent(?:\s+(?:production|origin|runtime))?\s+rc\d+\b"
@@ -350,6 +353,10 @@ def _status_values(state: Mapping[str, object]) -> dict[str, object]:
         "backup_sha": _string(
             recovery.get("backup_sha256"), "recovery.backup_sha256"
         ),
+        "offsite_physical_drill": _string(
+            recovery.get("offsite_physical_drill"),
+            "recovery.offsite_physical_drill",
+        ),
         "service": _string(origin.get("service"), "origin.service"),
         "origin_health": _string(origin.get("health"), "origin.health"),
         "readiness": _string(origin.get("readiness"), "origin.readiness"),
@@ -363,6 +370,10 @@ def _status_values(state: Mapping[str, object]) -> dict[str, object]:
         "worker_health": _string(worker.get("health"), "worker.health"),
         "predecessor": _string(
             predecessor.get("release"), "historical_predecessor.release"
+        ),
+        "predecessor_worker": _string(
+            predecessor.get("worker_version_id"),
+            "historical_predecessor.worker_version_id",
         ),
         "rollback_mode": _string(
             predecessor.get("rollback_mode"),
@@ -388,9 +399,9 @@ def _status_schema_violations(
     except ValueError as error:
         return [ContractViolation("status.schema", path, str(error))]
 
-    if state.get("schema_version") != 1:
+    if state.get("schema_version") != 2:
         violations.append(
-            ContractViolation("status.schema-version", path, "schema_version must be 1")
+            ContractViolation("status.schema-version", path, "schema_version must be 2")
         )
     if values["state"] != "live":
         violations.append(
@@ -453,6 +464,15 @@ def _status_schema_violations(
         violations.append(
             ContractViolation("status.worker", path, "canonical Worker must record passed health and 100% traffic")
         )
+    for field in ("worker_version", "predecessor_worker"):
+        if not _WORKER_VERSION.fullmatch(str(values[field])):
+            violations.append(
+                ContractViolation(
+                    "status.worker-version",
+                    path,
+                    f"{field} must be a lowercase Worker version UUID",
+                )
+            )
     if not isinstance(values["worker_source_changed"], bool):
         violations.append(
             ContractViolation(
@@ -464,6 +484,14 @@ def _status_schema_violations(
     if values["human_acceptance"] not in {"pending", "passed"}:
         violations.append(
             ContractViolation("status.acceptance", path, "supervised_human must be pending or passed")
+        )
+    if values["offsite_physical_drill"] not in {"pending", "passed"}:
+        violations.append(
+            ContractViolation(
+                "status.offsite-recovery",
+                path,
+                "offsite_physical_drill must be pending or passed",
+            )
         )
     return violations
 
@@ -494,7 +522,8 @@ def render_status_block(
             f"`recoveryRequired=false` 及 `pendingBackups=0` 已核對。{worker_status}"
             f"canonical Worker `{values['worker_version']}` 維持 {values['worker_traffic']}% 流量且健康。"
             f"`{values['predecessor']}` 只屬歷史來源，migration `{values['alembic_head']}` 後不可作 code-only "
-            f"rollback；須使用受控的相容資料庫還原。真人驗收仍為 `{values['human_acceptance']}`。"
+            f"rollback；須使用受控的相容資料庫還原。真人驗收仍為 `{values['human_acceptance']}`，"
+            f"實體離線 BitLocker 復原演練仍為 `{values['offsite_physical_drill']}`。"
             f"精確狀態及更新規則見[目前系統狀態]({link})。"
         )
     elif language == "en":
@@ -513,7 +542,8 @@ def render_status_block(
             f"canonical Worker `{values['worker_version']}` remains healthy at {values['worker_traffic']}% "
             f"traffic. `{values['predecessor']}` is historical source evidence, not a code-only rollback after migration "
             f"`{values['alembic_head']}`; recovery requires the controlled compatible database restore. Supervised human "
-            f"acceptance remains `{values['human_acceptance']}`. See [current system status]({link}) for the exact state "
+            f"acceptance remains `{values['human_acceptance']}`, and the physical off-site BitLocker recovery drill remains "
+            f"`{values['offsite_physical_drill']}`. See [current system status]({link}) for the exact state "
             f"and update contract."
         )
     else:
@@ -536,6 +566,12 @@ def render_current_status(state: Mapping[str, object]) -> str:
         human = "尚待完成 / Pending"
     else:
         human = "未通過（狀態無效） / Not passed (invalid state)"
+    if values["offsite_physical_drill"] == "passed":
+        offsite_drill = "已完成 / Passed"
+    elif values["offsite_physical_drill"] == "pending":
+        offsite_drill = "待實體媒體演練 / Pending physical-media drill"
+    else:
+        offsite_drill = "未通過（狀態無效） / Not passed (invalid state)"
     worker_source = (
         "source updated and promoted for this release"
         if worker_source_changed
@@ -569,10 +605,12 @@ def render_current_status(state: Mapping[str, object]) -> str:
         f"| Verified backup | `{values['backup_file']}` |\n"
         f"| Backup SHA-256 | `{values['backup_sha']}` |\n"
         f"| Previous application source | `{values['predecessor']}` — historical only |\n"
+        f"| Previous Worker rollback version | `{values['predecessor_worker']}` |\n"
         "| Rollback contract | Migration-aware controlled restore; never switch old code alone |\n\n"
         "## 驗收 / Acceptance\n\n"
         f"- Automated and release evidence: **{values['automated_acceptance']}**.\n"
         f"- Supervised Head Study Prefect and teacher-advisor acceptance: **{human}**.\n"
+        f"- Physical off-site BitLocker recovery drill: **{offsite_drill}**.\n"
         "- HTTP 200, health, or CI alone never substitutes for rendered workflow and human acceptance evidence.\n\n"
         "## 更新契約 / Update contract\n\n"
         "1. Update `current-release.json` only from observed deployment, recovery, and acceptance evidence.\n"

@@ -198,6 +198,10 @@ def test_status_schema_rejects_candidate_partial_gates_and_code_only_rollback() 
     unresolved_origin["origin"]["maintenance"] = True  # type: ignore[index]
     ambiguous_worker_source = _release_state()
     ambiguous_worker_source["worker"]["source_changed_for_release"] = "yes"  # type: ignore[index]
+    invalid_offsite_drill = _release_state()
+    invalid_offsite_drill["recovery"]["offsite_physical_drill"] = "assumed"  # type: ignore[index]
+    invalid_predecessor_worker = _release_state()
+    invalid_predecessor_worker["historical_predecessor"]["worker_version_id"] = "latest"  # type: ignore[index]
 
     assert "status.state" in {
         item.code for item in _status_schema_violations(candidate, "state.json")
@@ -214,6 +218,16 @@ def test_status_schema_rejects_candidate_partial_gates_and_code_only_rollback() 
     assert "status.worker-source" in {
         item.code
         for item in _status_schema_violations(ambiguous_worker_source, "state.json")
+    }
+    assert "status.offsite-recovery" in {
+        item.code
+        for item in _status_schema_violations(invalid_offsite_drill, "state.json")
+    }
+    assert "status.worker-version" in {
+        item.code
+        for item in _status_schema_violations(
+            invalid_predecessor_worker, "state.json"
+        )
     }
 
 
@@ -241,6 +255,23 @@ def test_status_rendering_describes_worker_source_change_truthfully() -> None:
     assert "source unchanged for this release" in render_current_status(state)
 
 
+def test_status_rendering_describes_offsite_drill_truthfully() -> None:
+    state = _release_state()
+    pending = render_current_status(state)
+    assert "待實體媒體演練 / Pending physical-media drill" in pending
+
+    state["recovery"]["offsite_physical_drill"] = "passed"  # type: ignore[index]
+    passed = render_current_status(state)
+    assert "Physical off-site BitLocker recovery drill: **已完成 / Passed**" in passed
+
+    state["recovery"]["offsite_physical_drill"] = "unknown"  # type: ignore[index]
+    invalid = render_current_status(state)
+    assert (
+        "Physical off-site BitLocker recovery drill: "
+        "**未通過（狀態無效） / Not passed (invalid state)**"
+    ) in invalid
+
+
 def test_status_rendering_fails_closed_for_language_and_acceptance() -> None:
     state = _release_state()
     with pytest.raises(ValueError, match="unsupported status language"):
@@ -248,8 +279,13 @@ def test_status_rendering_fails_closed_for_language_and_acceptance() -> None:
 
     state["acceptance"]["supervised_human"] = "unknown"  # type: ignore[index]
     rendered = render_current_status(state)
-    assert "未通過（狀態無效） / Not passed (invalid state)" in rendered
-    assert "尚待完成 / Pending" not in rendered
+    human_line = next(
+        line
+        for line in rendered.splitlines()
+        if "Supervised Head Study Prefect" in line
+    )
+    assert "未通過（狀態無效） / Not passed (invalid state)" in human_line
+    assert "尚待完成 / Pending" not in human_line
 
     invalid_worker = _release_state()
     invalid_worker["worker"]["source_changed_for_release"] = "yes"  # type: ignore[index]
