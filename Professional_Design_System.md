@@ -39,7 +39,7 @@ The resulting visual language is **Quiet Command Center with Editorial Sacred Re
 
 `Woven Clarity` is a measured product-finish pass over Quiet Command Center, not a parallel theme or a second reset. It reduces nested surfaces, repeated explanation and oversized shell chrome while preserving the established atmosphere assets, task order, component lifecycle and security boundaries.
 
-- **Desktop geometry:** the institutional rail is `264px`, the utility header is `64px`, and the contextual atmosphere band is `84px`. These are composition values owned by the terminal layer; page routes do not restate them.
+- **Desktop geometry:** the institutional rail is `264px`, the utility header is `64px`, and the contextual atmosphere band is at least `90px`. These are composition values owned by the terminal layer; page routes do not restate them.
 - **Mobile entrance:** the first viewport is a decision surface. It contains one concise identity statement and exactly one visible Admin／Guest action pair; the duplicated administrator narrative remains semantic but visually hidden, while Daily Verse, music, troubleshooting and sharing follow in that order.
 - **Weekly flow:** the three workflow stages retain stable cards and gain bounded directional connectors on wide screens. The connector communicates sequence only; it disappears when the cards stack and never impersonates progress.
 - **Settings rhythm:** readiness and handover state appears first, followed by preferences／media, continuity controls and recovery. Action, stable and attention rails distinguish these section roles without inventing another card hierarchy.

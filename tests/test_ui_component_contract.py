@@ -169,6 +169,17 @@ def test_frontend_reset_has_one_explicit_terminal_composition_layer() -> None:
     assert "width={DESKTOP_DRAWER_WIDTH_PX}" in shell_source
     assert "calc(var(--sy-v2-rail-width) + var(--sy-v2-content-gutter))" in source
 
+    brand_mark = re.search(
+        r"\.sy-brand-lockup \.sy-product-mark\s*\{(?P<body>.*?)\}",
+        source,
+        flags=re.DOTALL,
+    )
+    assert brand_mark is not None
+    mark_width = re.search(r"width:\s*(\d+)px", brand_mark.group("body"))
+    mark_height = re.search(r"height:\s*(\d+)px", brand_mark.group("body"))
+    assert mark_width is not None and int(mark_width.group(1)) >= 58
+    assert mark_height is not None and int(mark_height.group(1)) >= 58
+
     history_action = re.search(
         r"\.sy-dashboard-history-action\s*\{(?P<body>.*?)\}",
         source,

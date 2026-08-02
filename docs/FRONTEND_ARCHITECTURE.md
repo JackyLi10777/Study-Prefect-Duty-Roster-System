@@ -57,7 +57,7 @@ No CSS file, page route or animation runtime may become an owner for authenticat
 
 - Desktop navigation is a `264px` institutional rail; the main canvas uses the remaining viewport. The compact `64px` header contains route identity and global controls only.
 - Routine support links are compact and secondary; full explanation lives on `/support` and in documentation.
-- Shell atmosphere is an `84px` contextual band. It never competes with the page task.
+- Shell atmosphere is a compact contextual band with a `90px` rendered minimum. It never competes with the page task.
 - Visual-viewport keyboard mode is enabled only when a focused editable control and a material viewport reduction are both present.
 
 ### Dashboard

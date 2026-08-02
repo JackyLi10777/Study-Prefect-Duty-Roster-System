@@ -17,7 +17,7 @@ The accepted direction is **Woven Clarity**: preserve the proven frontend archit
 | Seam | Change | Boundary retained |
 |---|---|---|
 | `cloudflare/roster_viewer/worker.js` | concise Admin-first lead; one visible mobile Admin／Guest pair; supporting content order | Access, Guest workspace and entry-state lifecycle |
-| `sing-yin-command-center-v2.css` | 264px rail, 64px header, 84px atmosphere, quieter surfaces and bounded workflow connectors | sole terminal layer; no token redeclaration |
+| `sing-yin-command-center-v2.css` | 264px rail, 64px header, 90px-minimum atmosphere, quieter surfaces and bounded workflow connectors | sole terminal layer; no token redeclaration |
 | `nicegui_app/ui/shell.py` | drawer constant aligned with rendered rail | route and viewport runtime |
 | Settings route／music components | readiness first; preference, continuity and recovery section roles | callbacks, persistence, verification and permissions |
 | Design／architecture contracts | versioned the composition and iteration rules | live release identity remains generated elsewhere |
@@ -33,6 +33,8 @@ The generated concept boards were used only to challenge hierarchy and material 
 Protected-main review correctly found that CSS `order` made welcome music appear before sign-in help on mobile while leaving the opposite DOM／assistive-technology order. The audio section now precedes help in the source DOM, the two semantic-reordering declarations are removed and a full supporting-content order contract prevents regression. The review also prompted selector-scoped CSS assertions instead of unrelated whole-file string matches.
 
 A separate suggestion to hide handover readiness from Guest was rejected after source verification. Guest `/settings` resolves through `GuestWorkflowAdapter`; its `backup_overview()`, readiness counts, checkpoint and restore are fictional, session-local memory state and never inspect the formal SQLite database or managed backup paths. Preserving this bounded demonstration is required Admin／Guest experience parity, while durable storage and external operations remain denied by the adapter boundary.
+
+The first protected-main rc48 formal gate then caught two release-blocking visual regressions that focused screenshots had not: the 54px desktop brand mark fell below the existing rendered minimum of 58px, and the 84px atmosphere band fell below its 90px rendered minimum. The candidate keeps the narrower 264px rail, restores the mark to 58px, aligns its lockup／caption geometry, restores the atmosphere minimum to 90px and adds selector-scoped static contracts before rerunning the rendered gate. No production switch occurred during the failed attempt.
 
 ## Verification ledger
 
