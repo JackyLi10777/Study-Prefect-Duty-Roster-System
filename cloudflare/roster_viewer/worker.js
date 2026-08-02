@@ -585,8 +585,10 @@ const VIEWER_HTML = `<!doctype html>
 
   <footer class="site-footer">
     <div class="site-footer-principle">
-      <span>服務精神 · 非以役人，乃役於人</span>
-      <span lang="en">Service principle · Not to be served, but to serve.</span>
+      <span>服事方向 · 非以役人，乃役於人（可 10:45）</span>
+      <span lang="en">Why we serve · Not to be served, but to serve (Mark 10:45)</span>
+      <span>服事良心 · 對神對人，常存無虧的良心（徒 24:16）</span>
+      <span lang="en">How we serve · A conscience without offense toward God and men (Acts 24:16)</span>
     </div>
     <span class="site-footer-copyright">Copyright © 2026 LI Chuangjie</span>
   </footer>
@@ -666,7 +668,7 @@ const PUBLIC_SUPPORT_HTML = `<!doctype html>
     </section>
   </main>
   <footer class="site-footer">
-    <div class="site-footer-principle"><span>服務精神 · 非以役人，乃役於人</span><span lang="en">Service principle · Not to be served, but to serve.</span></div>
+    <div class="site-footer-principle"><span>服事方向 · 非以役人，乃役於人（可 10:45）</span><span lang="en">Why we serve · Not to be served, but to serve (Mark 10:45)</span><span>服事良心 · 對神對人，常存無虧的良心（徒 24:16）</span><span lang="en">How we serve · A conscience without offense toward God and men (Acts 24:16)</span></div>
     <span class="site-footer-copyright">Copyright © 2026 LI Chuangjie</span>
   </footer>
   <script type="module" src="/support-feedback.js"></script>
@@ -1745,7 +1747,8 @@ tbody td {
   color: var(--ink-muted);
   font-size: 0.72rem;
 }
-.site-footer-principle { display: grid; gap: 2px; }
+.site-footer-principle { display: grid; gap: 3px; min-width: 0; }
+.site-footer-principle span { overflow-wrap: anywhere; }
 .site-footer-copyright { align-self: end; white-space: nowrap; font-weight: 650; }
 
 .sr-only {

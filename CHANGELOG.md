@@ -4,7 +4,10 @@ This file records user-visible, operational and release-significant changes. The
 
 ## Unreleased
 
-- No product or runtime changes are recorded after rc49; this documentation closeout records observed production truth only.
+- Added a two-layer founding-conviction section to `/platform`: Mark 10:45 explains why authority serves, while Acts 24:16 grounds explainable and accountable decisions in resurrection hope and gospel grace. Direct Scripture, paraphrased principle, and platform interpretation are explicitly distinguished.
+- Added curated canonical devotional `dv-0122` in verified RCUV 2010／NKJV form, with bilingual reflection, source hashes, theological review, and fixed roster／platform classifications. The canonical bank is now 122 entries while the historical expanded mapping remains exactly 500 records.
+- Added `legacy | curated` devotional provenance validation, secure translation-specific Scripture links, compact two-line authenticated／public footers, and regression coverage that keeps the five-entry public landing rotation unchanged.
+- Repaired the RCUV source extractor so presentation-only footnote superscripts cannot be mistaken for Scripture during external verification.
 
 ## v1.2.0-rc.49 — released, 2026-08-02
 

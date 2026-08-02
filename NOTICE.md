@@ -56,3 +56,18 @@ data and does not relicense downloaded media.
 選用的 YouTube 本機音訊匯入適配層使用已鎖定雜湊的 `yt-dlp` 2026.7.4
 Python wheel（Unlicense）及 Deno 2.9.2 runtime（MIT License）。它與排班資料
 完全分開，也不會改變下載媒體本身的授權。
+
+The platform quotes Acts 24:16 from the **Revised Chinese Union Version 2010,
+Traditional Script, Shen Edition** and the **New King James Version (NKJV)**.
+The displayed source links point to [RCUV 2010 on Bible.com](https://www.bible.com/bible/2625/ACT.24.16.%E5%92%8C%E5%90%88%E6%9C%AC2010%20-%20%E7%A5%9E%E7%89%88)
+and [NKJV on Bible.com](https://www.bible.com/bible/114/ACT.24.16.NKJV).
+Those Scripture translations and quotations retain the rights and terms of their
+respective translation owners. The project's MIT License covers project code and
+original project content; it does not relicense either Bible translation.
+
+平台引用《使徒行傳》24:16 的**和合本修訂版 2010（繁體神版）**及
+**新英王欽定本（NKJV）**，並分別連結至 Bible.com 的
+[和合本修訂版來源](https://www.bible.com/bible/2625/ACT.24.16.%E5%92%8C%E5%90%88%E6%9C%AC2010%20-%20%E7%A5%9E%E7%89%88)及
+[NKJV 來源](https://www.bible.com/bible/114/ACT.24.16.NKJV)。經文譯本及引文仍適用
+各譯本權利擁有者的條款；本專案的 MIT License 只涵蓋專案程式及原創內容，並不重新
+授權任何經文譯本。

@@ -56,6 +56,14 @@ This is the decision record for non-obvious runtime-copy changes. It does not re
 - Viewer read-only／expiry truth and the latest-link instruction;
 - loading, empty, error, success and conflict states with one safe next action.
 
+## Decision record
+
+### 2026-08-03 dual-layer conviction decision
+
+The complete “why we serve／how we serve” account is admitted once on `/platform`, between the solution portfolio and operating principles, because it explains the moral purpose of authority and the accountability standard behind fairness, publication, recovery, and handover. It is not repeated in the login hero or sidebar: those surfaces must preserve the user's immediate identity and navigation decisions. Authenticated and public footers retain only two compact principle lines.
+
+Mark 10:45's `非以役人，乃役於人` remains labelled as a service principle drawn from the passage, not a verbatim quotation. Acts 24:16 is a direct bilingual quotation with translation names and source-specific safe links. The accompanying interpretation retains the resurrection-hope and gospel-grace context and explicitly rejects works-righteousness and claims of sinless perfection. This copy is preserved because removing those labels would blur quotation, paraphrase, and project interpretation.
+
 ## Review rule
 
 Each future runtime paragraph must name its decision-changing job in review. If that job already belongs to the shell, control label, state marker, confirmation or documentation, the duplicate is removed rather than rephrased. Automated tests protect hierarchy, capability and recovery contracts; they do not enforce arbitrary word counts.

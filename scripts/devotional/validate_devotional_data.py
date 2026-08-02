@@ -25,6 +25,18 @@ CORRUPTED_PLACEHOLDER_RE = re.compile(r"\?{3,}")
 ARABIC_SCRIPT_RE = re.compile(r"[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]")
 LEADING_CHAPTER_ARTIFACT_RE = re.compile(r"^(?:(?:[^。！？]{1,48})\s+)?\d{1,3}(?:\s+|$)")
 REQUIRED_REFLECTION_FIELDS = ("title", "body", "prayer")
+VALID_ORIGINS = frozenset({"legacy", "curated"})
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _report_path(path: Path) -> str:
+    """Return a reproducible project-relative path for files in this checkout."""
+
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return str(resolved)
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -51,6 +63,7 @@ def validate(seed_path: Path, legacy_path: Path, expanded_path: Path | None = DE
     legacy_ids = {entry.get("legacyId") for entry in legacy_entries}
 
     issues: list[dict[str, str]] = []
+    origin_counts: Counter[str] = Counter()
 
     def issue(level: str, code: str, location: str, message: str) -> None:
         issues.append(
@@ -72,19 +85,36 @@ def validate(seed_path: Path, legacy_path: Path, expanded_path: Path | None = DE
         source = entry.get("source", {})
         reflection = entry.get("reflection", {})
         quality = entry.get("quality", {})
+        origin = str(entry.get("origin", "legacy"))
+        origin_counts[origin] += 1
         legacy_for_entry = set(entry.get("legacyIds", []))
-        covered_legacy_ids.update(legacy_for_entry)
 
-        if not entry.get("legacyIds"):
-            issue("error", "missing-legacy-ids", entry_id, "Seed entry has no legacy IDs.")
-
-        missing_legacy = sorted(legacy_for_entry - legacy_ids)
-        if missing_legacy:
+        if origin not in VALID_ORIGINS:
             issue(
                 "error",
-                "unknown-legacy-id",
+                "invalid-origin",
                 entry_id,
-                f"Seed entry refers to missing legacy IDs: {', '.join(missing_legacy)}.",
+                f"Seed entry origin must be one of: {', '.join(sorted(VALID_ORIGINS))}.",
+            )
+        elif origin == "legacy":
+            covered_legacy_ids.update(legacy_for_entry)
+            if not legacy_for_entry:
+                issue("error", "missing-legacy-ids", entry_id, "Legacy seed entry has no legacy IDs.")
+
+            missing_legacy = sorted(legacy_for_entry - legacy_ids)
+            if missing_legacy:
+                issue(
+                    "error",
+                    "unknown-legacy-id",
+                    entry_id,
+                    f"Seed entry refers to missing legacy IDs: {', '.join(missing_legacy)}.",
+                )
+        elif legacy_for_entry:
+            issue(
+                "error",
+                "curated-has-legacy-ids",
+                entry_id,
+                "Curated seed entries must not claim historical legacy IDs.",
             )
 
         if has_placeholder_corruption(source.get("bookZh", "")):
@@ -137,7 +167,8 @@ def validate(seed_path: Path, legacy_path: Path, expanded_path: Path | None = DE
 
         verification = entry.get("translationVerification", {})
         for lang in ("zh", "en"):
-            status = verification.get(lang, {}).get("status")
+            lang_verification = verification.get(lang, {})
+            status = lang_verification.get("status")
             if status != "verified-exact":
                 issue(
                     "error",
@@ -145,6 +176,55 @@ def validate(seed_path: Path, legacy_path: Path, expanded_path: Path | None = DE
                     f"{entry_id}.translationVerification.{lang}",
                     "Release scripture must be verified-exact for the configured translation.",
                 )
+
+            if origin == "curated":
+                for field in ("source", "sourceUrl", "checkedAt", "localNormalizedHash", "sourceNormalizedHash"):
+                    if not str(lang_verification.get(field, "")).strip():
+                        issue(
+                            "error",
+                            "curated-verification-incomplete",
+                            f"{entry_id}.translationVerification.{lang}.{field}",
+                            "Curated scripture requires complete source and hash evidence.",
+                        )
+                source_url = str(lang_verification.get("sourceUrl", ""))
+                if source_url and not source_url.startswith("https://"):
+                    issue(
+                        "error",
+                        "curated-verification-source-insecure",
+                        f"{entry_id}.translationVerification.{lang}.sourceUrl",
+                        "Curated verification source URLs must use HTTPS.",
+                    )
+                local_hash = str(lang_verification.get("localNormalizedHash", ""))
+                source_hash = str(lang_verification.get("sourceNormalizedHash", ""))
+                if local_hash and not SHA256_RE.fullmatch(local_hash):
+                    issue(
+                        "error",
+                        "curated-verification-hash-invalid",
+                        f"{entry_id}.translationVerification.{lang}.localNormalizedHash",
+                        "Curated verification hashes must be lowercase SHA-256 values.",
+                    )
+                if source_hash and not SHA256_RE.fullmatch(source_hash):
+                    issue(
+                        "error",
+                        "curated-verification-hash-invalid",
+                        f"{entry_id}.translationVerification.{lang}.sourceNormalizedHash",
+                        "Curated verification hashes must be lowercase SHA-256 values.",
+                    )
+                if local_hash and source_hash and local_hash != source_hash:
+                    issue(
+                        "error",
+                        "curated-verification-hash-mismatch",
+                        f"{entry_id}.translationVerification.{lang}",
+                        "Curated local and source normalized hashes must match.",
+                    )
+
+        if origin == "curated" and not str(quality.get("theologicalReview", "")).strip():
+            issue(
+                "error",
+                "curated-theological-review-missing",
+                f"{entry_id}.quality.theologicalReview",
+                "Curated scripture requires an explicit theological review record.",
+            )
 
         scripture_en = str(entry.get("scripture", {}).get("en", ""))
         if "(NKJV)" not in scripture_en:
@@ -223,13 +303,14 @@ def validate(seed_path: Path, legacy_path: Path, expanded_path: Path | None = DE
 
     return {
         "schemaVersion": 1,
-        "seedPath": str(seed_path),
-        "legacyPath": str(legacy_path),
+        "seedPath": _report_path(seed_path),
+        "legacyPath": _report_path(legacy_path),
         "summary": {
             "seedEntryCount": len(seed_entries),
             "legacyEntryCount": len(legacy_entries),
             "coveredLegacyEntryCount": len(covered_legacy_ids),
             "expandedEntryCount": len(expanded_entries) if expanded is not None else None,
+            "originCounts": dict(origin_counts),
             "statusCounts": dict(status_counts),
             "themeCounts": dict(theme_counts),
             "translationVerificationCounts": dict(translation_verification_counts),

@@ -8,6 +8,7 @@ from roster_core import get_foundational_verse, load_devotional_seed, select_dai
 
 def test_foundational_entry_is_mark_10_and_special_use() -> None:
     verse = get_foundational_verse()
+    entries = load_devotional_seed()
     assert verse.id == "dv-0001"
     assert verse.reference_en == "Mark 10:43-45"
     assert verse.reference_zh == "馬可福音 10:43-45"
@@ -16,16 +17,35 @@ def test_foundational_entry_is_mark_10_and_special_use() -> None:
     assert "非以役人，乃役於人" in verse.reflection_zh["title"]
     assert verse.translation_zh == "RCUV 2010"
     assert verse.translation_en == "NKJV"
+    assert sum(entry.is_foundational for entry in entries) == 1
 
 
 def test_every_release_devotional_uses_the_verified_required_translations() -> None:
     entries = load_devotional_seed()
 
-    assert len(entries) == 121
+    assert len(entries) == 122
     assert all(entry.translation_zh == "RCUV 2010" for entry in entries)
     assert all(entry.translation_en == "NKJV" for entry in entries)
     assert all(entry.scripture_zh.strip() for entry in entries)
     assert all(entry.scripture_en.strip().endswith("(NKJV)") for entry in entries)
+
+
+def test_acts_24_16_is_the_curated_how_we_serve_conviction() -> None:
+    entry = next(item for item in load_devotional_seed() if item.id == "dv-0122")
+
+    assert entry.reference_zh == "使徒行傳 24:16"
+    assert entry.reference_en == "Acts 24:16"
+    assert entry.scripture_zh == "因此，我勉勵自己，對　神對人，時常存着無虧的良心。"
+    assert entry.scripture_en == (
+        "This being so, I myself always strive to have a conscience without offense toward God and men. (NKJV)"
+    )
+    assert entry.reflection_zh["title"] == "對神對人，常存無虧的良心"
+    assert entry.reflection_en["title"] == "A Conscience Without Offense"
+    assert "不是靠行為換取救恩" in entry.reflection_zh["body"]
+    assert "neither salvation earned by works" in entry.reflection_en["body"]
+    assert set(entry.themes) == {"justice-fairness", "faithfulness", "spiritual-formation"}
+    assert set(entry.special_use) == {"roster-generation", "platform-conviction"}
+    assert not entry.is_foundational
 
 
 def test_release_devotional_scripture_has_no_scraped_chapter_or_arabic_script_artifacts() -> None:

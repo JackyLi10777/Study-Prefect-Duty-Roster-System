@@ -485,6 +485,10 @@ Deno.test('landing welcome playlists use paired instrumental tracks and a 50 per
   assertEquals(stylesheet.status, 200);
   assert((await stylesheet.text()).includes('.theme-toggle-icon { overflow: visible;'));
   assert(html.includes('Copyright © 2026 LI Chuangjie'));
+  assert(html.includes('服事方向 · 非以役人，乃役於人（可 10:45）'));
+  assert(html.includes('Why we serve · Not to be served, but to serve (Mark 10:45)'));
+  assert(html.includes('服事良心 · 對神對人，常存無虧的良心（徒 24:16）'));
+  assert(html.includes('How we serve · A conscience without offense toward God and men (Acts 24:16)'));
   assert((home.headers.get('Content-Security-Policy') || '').includes("media-src 'self'"));
   assert((home.headers.get('Permissions-Policy') || '').includes('autoplay=(self)'));
 
@@ -1665,6 +1669,10 @@ Deno.test('public support stays browser-only while authenticated support reaches
   const publicBody = await publicResponse.text();
   assertEquals(publicResponse.status, 200);
   assert(publicBody.includes('only in your browser'));
+  assert(publicBody.includes('服事方向 · 非以役人，乃役於人（可 10:45）'));
+  assert(publicBody.includes('Why we serve · Not to be served, but to serve (Mark 10:45)'));
+  assert(publicBody.includes('服事良心 · 對神對人，常存無虧的良心（徒 24:16）'));
+  assert(publicBody.includes('How we serve · A conscience without offense toward God and men (Acts 24:16)'));
   assertEquals(publicResponse.headers.get('Cache-Control'), 'no-store');
   assertEquals(observed.length, 0, 'public support must not reach the origin');
 

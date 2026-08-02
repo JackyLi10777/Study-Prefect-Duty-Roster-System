@@ -264,6 +264,21 @@ The executable owner is the versioned `design_system/tokens.v1.json` contract. I
 | Bilingual parity | Traditional Chinese is primary; English is complete. Chinese names never change. | Does the same hierarchy survive in both languages? |
 | Accessible by default | Contrast, focus, touch target, and reduced motion are part of the component. | Can the task be completed by keyboard and in dark mode? |
 
+### 雙層根本理念 / Dual-layer founding convictions
+
+The platform distinguishes **why service exists** from **how service is practised**. These convictions complement one another and must not be collapsed into a single slogan:
+
+| Layer | Scriptural ground | Product meaning |
+|---|---|---|
+| 為何服事 / Why we serve | Mark 10:45 | Authority is not a claim to be served; it carries responsibility for care, order, and fairness. `非以役人，乃役於人` is labelled as a service principle drawn from the verse, never as a verbatim quotation. |
+| 如何服事 / How we serve | Acts 24:16 | Decisions remain truth-bound before God and explainable, traceable, and accountable before people. A clear conscience is a faithful discipline arising from resurrection hope and gospel grace, not salvation earned by works or a claim of sinless perfection. |
+
+The complete bilingual convictions belong only on `/platform`, between the solution portfolio and operating principles. The shared authenticated, public-entry, Viewer, and public-support footers use two compact active-language lines; the login hero and sidebar do not repeat the full material. This preserves first-screen focus while keeping the product's moral direction visible after entry.
+
+Direct Scripture, platform interpretation, and paraphrased principle must remain visibly distinct. Acts 24:16 is presented as a direct quotation with translation name and an understandable source link. External Scripture links open in a new tab with `noopener noreferrer`, `referrerpolicy=no-referrer`, and a translation-specific accessible name. Mark 10:45's short service principle is explicitly marked non-verbatim. Project interpretation may explain operational consequences, but it must not visually or grammatically impersonate Scripture.
+
+The conviction cards may reuse the existing Sacred Service Narrative's semantic devotional tokens because they contain Scripture, but they do not create a second sacred visual system. Scripture and source text must retain WCAG 2.2 AA contrast in both themes, at 200% text, in forced colours, and on narrow screens. No generated image, ornamental animation, or atmosphere layer may become the source of theological meaning.
+
 ### Executable content-design contract
 
 Visible copy is accepted only when it identifies the current place／state, enables the next action, explains a required input or material consequence, prevents or repairs a likely mistake, states a capability／privacy boundary that changes behaviour, or verifies evidence needed for the present decision. Otherwise it is merged, removed, inferred from trusted context, placed behind progressive disclosure, or moved to owned documentation.
@@ -588,7 +603,7 @@ The canonical workers.dev hostname is one branded system with five clearly disti
 
 The platform-story sequence may learn from the information architecture of mature product and documentation sites—clear value statement, capability groups, one guided starting action, trust explanation, FAQ and resource footer—without copying their screen composition, text, visual assets or brand language. [Claude Platform](https://claude.com/platform/api) and [Claude Platform Docs](https://platform.claude.com/docs) are research references for hierarchy only, not templates.
 
-Every web page uses the shared, low-interference authorship footer `Copyright © 2026 LI Chuangjie` beside the servant-leadership principle. The public entrance／viewer and the NiceGUI workbench must render the same wording, preserve contrast in both themes and stack cleanly on narrow screens. This website authorship mark is not forced into the clean roster PDF; PDF footer content remains an explicit export option so group-sharing layout and operator intent stay unchanged.
+Every web page uses the shared, low-interference authorship footer `Copyright © 2026 LI Chuangjie` beside the two compact founding convictions: why we serve from Mark 10:45 and how we serve from Acts 24:16. The public entrance／viewer and the NiceGUI workbench preserve the same meaning in their bilingual or active-language forms, retain contrast in both themes, and stack cleanly on narrow screens. This website authorship mark and conviction footer are not forced into the clean roster PDF; PDF footer content remains an explicit export option so group-sharing layout and operator intent stay unchanged.
 
 On a wide screen, the root uses a 58/42 editorial composition: the larger story column explains purpose, the three-stage weekly sequence and a compact sacred reading; the smaller access column explains the current permission state, the one next action and three bounded trust facts. It is not a marketing carousel. Below 700 px the same semantic blocks stack in reading order, and 320 px remains the minimum browser evidence width without horizontal overflow. The root exposes one binary **Light / Dark** appearance control. With no stored preference it resolves the operating-system theme; the first activation stores the opposite resolved mode, and subsequent activations toggle explicit Light／Dark. On deliberate Admin／Guest entry only, the explicit choice may be staged as a bounded hint for at most 120 seconds. The Worker validates it, carries it inside the signed session and request-bound principal, and clears the staging cookie when the session is minted; NiceGUI adopts it only if that destination has no saved preference. Forced-colour mode retains native borders and text, and keyboard users receive a skip link plus visible focus.
 
@@ -637,8 +652,9 @@ Brand context and technical evidence use two connected pages instead of one over
 2. Show only anonymous live evidence: active-prefect count, roster-week count, verified-backup state, and display-safe release checks. Never show names, classes, leave, roster content, audit payload, database paths, or backup paths.
 3. Preserve official school roles and describe responsibilities in plain language. Group content by real work—weekly rostering and publishing, fairness review and explanation, guidance and support, and backup/recovery/handover—without inventing titles, offices, departments, ranks, or headcount.
 4. Organise features around four operator outcomes with direct routes into the real workspaces. Copy begins with the job and expected result, not technology.
-5. Connect service, fairness, clarity, responsibility, and continuity to concrete system behaviour. End with resources, feedback, and the two-person co-creation narrative.
-6. If the read-only snapshot fails, keep the complete static story visible and show a neutral bilingual support reference; never render the exception.
+5. Place the two founding convictions after the solution portfolio and before the operating principles: Mark 10:45 answers why service exists, while Acts 24:16 describes truth-bound, grace-shaped accountability in service. Keep service principle, direct Scripture, and platform interpretation visibly distinct.
+6. Connect service, fairness, clarity, responsibility, and continuity to concrete system behaviour. End with resources, feedback, and the two-person co-creation narrative.
+7. If the read-only snapshot fails, keep the complete static story visible and show a neutral bilingual support reference; never render the exception.
 
 **System Architecture & Trust (`/system-architecture`)**
 

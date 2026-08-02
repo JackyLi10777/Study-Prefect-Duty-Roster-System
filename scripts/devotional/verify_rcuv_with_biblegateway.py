@@ -31,10 +31,10 @@ CHAPTER_RE = re.compile(
     r"<span[^>]*class=(?:\"[^\"]*\bchapternum\b[^\"]*\"|'[^']*\bchapternum\b[^']*')[^>]*>.*?</span>",
     re.DOTALL | re.IGNORECASE,
 )
-SUP_RE = re.compile(
-    r"<sup[^>]*class=(?:\"[^\"]*\bversenum\b[^\"]*\"|'[^']*\bversenum\b[^']*')[^>]*>.*?</sup>",
-    re.DOTALL | re.IGNORECASE,
-)
+# Passage superscripts are presentation metadata (verse numbers and footnote
+# markers), never Scripture. Bible Gateway currently emits both ``versenum``
+# and ``footnote`` variants, so remove the complete element before comparison.
+SUP_RE = re.compile(r"<sup\b[^>]*>.*?</sup>", re.DOTALL | re.IGNORECASE)
 TAG_RE = re.compile(r"<[^>]+>")
 SPACE_RE = re.compile(r"\s+")
 PUNCT_RE = re.compile(r"[\s，。；：！？、,.!?;:\"'“”‘’「」『』（）()\[\]{}—–\\-]+")

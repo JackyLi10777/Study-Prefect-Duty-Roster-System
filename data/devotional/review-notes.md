@@ -1,22 +1,27 @@
 # Daily Verse Review Notes
 
-## Foundational Principle
+## Dual Foundational Convictions
 
-**非以役人，乃役於人**  
-**Not to be served, but to serve**  
-Mark 10:45 / 馬可福音 10:45
+**為何服事／Why we serve — 馬可福音 10:45／Mark 10:45**
 
-This is the core spiritual principle of the Sing Yin Study Prefect Duty Roster System. The Daily Verse module, roster generation, fairness audit, and leave adjustment experience should all quietly reinforce servant leadership: authority exists to care for others, maintain order, and create peace after the pattern of Christ.
+`非以役人，乃役於人／Not to be served, but to serve` is a service principle drawn from the passage, not a verbatim quotation.
+
+**如何服事／How we serve — 使徒行傳 24:16／Acts 24:16**
+
+Decisions should remain truth-bound before God and explainable, traceable, and accountable before people. A conscience without offense is faithful discipline arising from resurrection hope and gospel grace, not salvation earned by works or a claim of sinless perfection.
+
+Together these convictions shape the Sing Yin Study Prefect Duty Roster System. The Daily Verse module, roster generation, fairness audit, leave adjustment, publication, recovery, and handover should quietly reinforce servant leadership: authority exists to care for others, maintain order, act honestly, and create peace after the pattern of Christ.
 
 ## Conversion Summary
 
 - Source: `D:\code_v3\daily_verses.py`
 - Legacy entries preserved: 500
-- Unique exact devotional entries promoted to seed: 121
+- Unique exact legacy devotional entries promoted to seed: 121
+- Reviewed curated entries added without a legacy ID: 1
 - Duplicate extra entries detected: 379
-- Current polished seed entries: 121
+- Current polished seed entries: 122
 
-The old bank has complete fields but heavy repetition. The new seed stores unique devotional records and keeps all original legacy IDs for traceability.
+The old bank has complete fields but heavy repetition. The seed stores 121 unique legacy-derived devotional records with all original IDs for traceability, plus one independently sourced curated record that must not invent a legacy mapping.
 
 ## Files
 
@@ -44,7 +49,7 @@ Each exact duplicate group receives a stable `duplicateGroup` such as `dup-0001`
 - `polished`: reflection rewritten or refined for final dashboard use.
 - `deprecated`: reserved for legacy records or entries later excluded from active rotation.
 
-Current status: all 121 canonical seed entries are `polished`. Because each seed entry preserves its `legacyIds`, these 121 canonical records cover all 500 original legacy records.
+Current status: all 122 canonical seed entries are `polished`. The 121 `origin: legacy` records preserve their `legacyIds` and cover all 500 original legacy records; `dv-0122` is `origin: curated`, has `legacyIds: []`, and does not alter that historical mapping.
 
 ## Editorial Pass: Servant Leadership
 
@@ -104,6 +109,12 @@ The following servant-leadership entries are marked for `dashboard-hero` rotatio
 
 `dv-0001` remains the foundational entry and keeps `specialUse: ["dashboard-hero", "roster-generation"]`.
 
+## Curated Conviction Entry
+
+`dv-0122` adds Acts 24:16 for ordinary Daily Verse and relevant theme rotation, with fixed `justice-fairness`, `faithfulness`, and `spiritual-formation` themes and `roster-generation`／`platform-conviction` special uses. It is deliberately **not** foundational, so `dv-0001` remains the only `isFoundational: true` entry. It is also excluded from the Worker's fixed five-entry public landing rotation.
+
+The bilingual reflection applies the passage to drafting, adjustment, publication, and recovery decisions, including choices that may not be visible to others. Its theological review explicitly ties conscience to resurrection hope and gospel grace and rejects both works-righteousness and self-declared sinless perfection.
+
 ## Editorial Pass: Full Canonical Corpus
 
 Status: completed locally.
@@ -138,10 +149,11 @@ python -X utf8 scripts\devotional\validate_devotional_data.py
 Latest result:
 
 ```text
-seed entries: 121
+seed entries: 122
 legacy entries: 500
 covered legacy entries: 500
-status counts: polished = 121
+origin counts: legacy = 121, curated = 1
+status counts: polished = 122
 issues: 0
 expanded entries: 500
 expanded polished entries: 500
@@ -160,7 +172,7 @@ Translation verification has now been completed against the selected external so
 - Chinese: Bible Gateway `RCU17TS`
 - English: Bolls Bible API `NKJV`
 
-Both source-specific verification reports show all 121 canonical entries as `verified-exact`. See:
+Both source-specific verification reports show all 122 canonical entries as `verified-exact`. See:
 
 ```text
 data/devotional/translation-audit.md

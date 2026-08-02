@@ -5,6 +5,7 @@ from __future__ import annotations
 from time import perf_counter
 
 from nicegui import ui
+from roster_core import load_devotional_seed
 
 from nicegui_app.contact import GITHUB_REPOSITORY_URL
 from nicegui_app.observability import new_operation_reference, record_operator_failure
@@ -41,6 +42,8 @@ def _release_evidence_tone(state: str) -> str:
 
 @ui.page("/platform")
 def platform_page() -> None:
+    acts_conviction = next(entry for entry in load_devotional_seed() if entry.id == "dv-0122")
+    acts_scripture_en = acts_conviction.scripture_en.removesuffix(" (NKJV)")
     team_roles = (
         ("flag", "team_role_head", "team_role_head_function", "team_role_head_body", "lead"),
         ("hub", "team_role_assistant", "team_role_assistant_function", "team_role_assistant_body", "coordination"),
@@ -124,6 +127,7 @@ def platform_page() -> None:
                 ("platform-operating-map-section", "platform_operating_map_title"),
                 ("platform-capabilities-section", "capability_map_title"),
                 ("platform-solutions-section", "solutions_portfolio_title"),
+                ("platform-convictions-section", "platform_convictions_title"),
                 ("platform-principles-section", "platform_culture_title"),
                 ("platform-resources-section", "platform_resources_title"),
             )
@@ -231,6 +235,61 @@ def platform_page() -> None:
                             icon="arrow_forward",
                             on_click=lambda destination=route: navigate_to(destination),
                         ).props("flat").classes("sy-solution-action self-start")
+
+        with ui.element("section").classes("sy-architecture-section w-full").props(
+            f'id=platform-convictions-section aria-label="{attr(t("platform_convictions_title"))}" '
+            'data-testid=platform-core-convictions'
+        ):
+            _render_architecture_section_heading(
+                "platform_convictions_kicker", "platform_convictions_title", "platform_convictions_copy"
+            )
+            with ui.element("div").classes("sy-platform-convictions"):
+                with ui.element("article").classes(
+                    "sy-platform-conviction sy-platform-conviction--direction"
+                ).props("data-testid=platform-conviction-direction"):
+                    ui.icon("volunteer_activism").classes("sy-platform-conviction-icon").props("aria-hidden=true")
+                    ui.label(t("platform_conviction_why_label")).classes("sy-platform-conviction-label")
+                    ui.label(t("platform_conviction_why_title")).classes("sy-platform-conviction-title")
+                    ui.label(t("service_principle")).classes("sy-platform-conviction-principle")
+                    ui.label(t("platform_conviction_principle_label")).classes(
+                        "sy-platform-conviction-reference"
+                    )
+                    ui.label(t("platform_conviction_why_body")).classes("sy-platform-conviction-copy")
+
+                with ui.element("article").classes(
+                    "sy-platform-conviction sy-platform-conviction--conscience"
+                ).props("data-testid=platform-conviction-conscience"):
+                    ui.icon("verified_user").classes("sy-platform-conviction-icon").props("aria-hidden=true")
+                    ui.label(t("platform_conviction_how_label")).classes("sy-platform-conviction-label")
+                    ui.label(t("platform_conviction_how_title")).classes("sy-platform-conviction-title")
+                    ui.label(t("platform_conviction_how_body")).classes("sy-platform-conviction-copy")
+                    with ui.element("div").classes("sy-platform-scriptures"):
+                        with ui.element("blockquote").classes("sy-platform-scripture").props("lang=zh-Hant"):
+                            ui.label(f"「{acts_conviction.scripture_zh}」").classes("sy-platform-scripture-text")
+                            ui.label(
+                                f"{acts_conviction.reference_zh} · {t('platform_conviction_zh_translation')}"
+                            ).classes("sy-platform-scripture-cite")
+                            ui.link(
+                                t("platform_conviction_zh_source"),
+                                "https://www.bible.com/bible/2625/ACT.24.16.%E5%92%8C%E5%90%88%E6%9C%AC2010%20-%20%E7%A5%9E%E7%89%88",
+                                new_tab=True,
+                            ).props(
+                                f'target=_blank rel="noopener noreferrer" referrerpolicy=no-referrer '
+                                f'aria-label="{attr(t("platform_conviction_zh_source"))}"'
+                            ).classes("sy-platform-scripture-source")
+                        with ui.element("blockquote").classes("sy-platform-scripture").props("lang=en"):
+                            ui.label(f'“{acts_scripture_en}”').classes("sy-platform-scripture-text")
+                            ui.label(
+                                f"{acts_conviction.reference_en} · {t('platform_conviction_en_translation')}"
+                            ).classes("sy-platform-scripture-cite")
+                            ui.link(
+                                t("platform_conviction_en_source"),
+                                "https://www.bible.com/bible/114/ACT.24.16.NKJV",
+                                new_tab=True,
+                            ).props(
+                                f'target=_blank rel="noopener noreferrer" referrerpolicy=no-referrer '
+                                f'aria-label="{attr(t("platform_conviction_en_source"))}"'
+                            ).classes("sy-platform-scripture-source")
 
         with ui.element("section").classes("sy-architecture-section w-full").props(
             "id=platform-principles-section"
