@@ -2,7 +2,7 @@
 
 ## 目前資料層與平台發布結果
 
-目前正式版本保留 rc45 完成的 Alembic `0012` 資料層、固定星期衝突拒絕、foreign keys、quick check、公平對帳及完整規模驗證，並完成新的 exact-source 報告、已驗證備份、隔離還原及可寫 `/readyz`。慢 SQL 診斷預設關閉；若暫時啟用，日誌只可保留指紋與耗時，不可包含 SQL 參數或值班內容。Worker 來源已更新，經 0% version smoke 後推廣至頁首所列的 100% canonical version；`wrangler.jsonc`、Access scope、Tunnel route、binding 與 secret-name contract 未更改。
+目前正式版本使用 Alembic `0012` 資料層、固定星期衝突拒絕、foreign keys、quick check、公平對帳及完整規模驗證，並完成頁首生成狀態所列的 exact-source 報告、已驗證備份、隔離還原及可寫 `/readyz`。第一個復原選擇是保留該現行程式並還原其已驗證備份；任何舊程式都必須先以相容快照完成隔離驗證，不能作 code-only rollback。慢 SQL 診斷預設關閉；若暫時啟用，日誌只可保留指紋與耗時，不可包含 SQL 參數或值班內容。Worker 來源已更新，經 0% version smoke 後推廣至頁首所列的 100% canonical version；`wrangler.jsonc`、Access scope、Tunnel route、binding 與 secret-name contract 未更改。
 
 <!-- SING_YIN_CURRENT_STATUS:START -->
 > **已核實線上來源（2026-08-02）：** Windows origin 正運行 clean annotated `v1.2.0-rc.49`／`21928e38a0df6fd217a8ba449eb675b94a282f01` 的不可變 bundle；312-file 指紋 `e350497ba121e2420f00cbae3725334e8c45267e140388bbd0b5530e84135878` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260802-091628-350429-manual_verified_backup.sqlite3`／SHA-256 `f827c8932bd78ca2b2528728e6770c539c6f2ad8adfa64a3ec85cd69485e8fd9`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `99ed9a4e-8167-44bd-b478-562ff8f4d17e` 維持 100% 流量且健康。`v1.2.0-rc.47` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`，實體離線 BitLocker 復原演練仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。

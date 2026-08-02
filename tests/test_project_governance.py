@@ -255,6 +255,23 @@ def test_status_rendering_describes_worker_source_change_truthfully() -> None:
     assert "source unchanged for this release" in render_current_status(state)
 
 
+def test_status_rendering_describes_offsite_drill_truthfully() -> None:
+    state = _release_state()
+    pending = render_current_status(state)
+    assert "待實體媒體演練 / Pending physical-media drill" in pending
+
+    state["recovery"]["offsite_physical_drill"] = "passed"  # type: ignore[index]
+    passed = render_current_status(state)
+    assert "Physical off-site BitLocker recovery drill: **已完成 / Passed**" in passed
+
+    state["recovery"]["offsite_physical_drill"] = "unknown"  # type: ignore[index]
+    invalid = render_current_status(state)
+    assert (
+        "Physical off-site BitLocker recovery drill: "
+        "**未通過（狀態無效） / Not passed (invalid state)**"
+    ) in invalid
+
+
 def test_status_rendering_fails_closed_for_language_and_acceptance() -> None:
     state = _release_state()
     with pytest.raises(ValueError, match="unsupported status language"):
