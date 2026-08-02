@@ -1,24 +1,24 @@
 # 正式驗收證據矩陣 / Acceptance evidence matrix
 
-## rc45 正式機器與線上證據（真人驗收仍待完成）
+## 目前正式機器與線上證據（真人驗收仍待完成）
 
 - 合成 SQLite 規模驗證涵蓋 24／52、240／520、2,400／5,200 人／週層級；查詢計劃、statement count、p50／p95、記憶體、DB／WAL 大小及備份時間保存在 `docs/audits/rc44-sqlite-scale.json`。
 <!-- SING_YIN_CURRENT_STATUS:START -->
-> **已核實線上來源（2026-08-01）：** Windows origin 正運行 clean annotated `v1.2.0-rc.45`／`90777345ea9ed5652c73873edb3c8c846a9ceac5` 的不可變 bundle；308-file 指紋 `032bf3d5d41a74e6ad50090ab7ffb13af6e5cca43a23c24adb3f8506d6d29a83` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260801-064628-279309-manual_verified_backup.sqlite3`／SHA-256 `bdf8366aa7b2d3b91d6754dc58d9ec0b6725bf29f7fe3e7d5bf3592b223f69e8`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源沒有改動，canonical Worker `394e2205-ae8f-4eef-a13a-e701931e6f0d` 維持 100% 流量且健康。`v1.2.0-rc.43` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
+> **已核實線上來源（2026-08-02）：** Windows origin 正運行 clean annotated `v1.2.0-rc.47`／`15f53f97eda81b3f4b1518a44567e18171891711` 的不可變 bundle；310-file 指紋 `3472686105c5a7356da526995438aaef025c52b8c252dc17c21e3de01e27e679` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260801-232211-102949-manual_verified_backup.sqlite3`／SHA-256 `13ca64426a59fcaae098548830de79c3da896a483b2aa8680a0f84488323c432`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `a7218f51-ec6c-4002-a9be-9dfbb691136c` 維持 100% 流量且健康。`v1.2.0-rc.45` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
 <!-- SING_YIN_CURRENT_STATUS:END -->
 
 本文件把機器驗證與真人驗收分開。`logs/release-candidate-report.json` 顯示 `pass`，只代表下列自動化證據在隔離虛構資料中通過；它不代表實際名單、學校做法、專用電腦、加密離機位置或外部存取決定已獲真人批准。
 
-### Quiet Command Center frontend reset source evidence（2026-08-02; not yet live）
+### Quiet Command Center frontend reset evidence（2026-08-02; live）
 
-- `python -X utf8 -m pytest`：`1129 passed`，涵蓋設計／元件契約、排班政策、交易、Guest、安全、PDF、備份與復原；本輪沒有為前端改動刪減後端驗證。
+- `python -X utf8 -m pytest`：`1135 passed`，涵蓋設計／元件契約、排班政策、交易、Guest、安全、PDF、備份與復原；本輪沒有為前端改動刪減後端驗證。
 - `deno check worker.js` 及 `deno test worker_gateway_test.js`：53／53 Worker contracts 通過，包含 Admin／Guest 入口、音樂成功／拒絕／逾時 fallback、Session、Access、Viewer、支援及路由邊界。
 - `verify_nicegui_mobile.py`：390px 手機、768×1024 與 820×1180 adaptive touch tablet、1024×768 desktop-shell touch tablet、320px 英文／reduced-motion、256px reflow 及 844×390 landscape 全部通過；沒有 document overflow、重複 shell、遮擋最終操作或焦點語意回歸。
 - `verify_nicegui_ui.py`：在全新正式空白隔離 SQLite 上通過完整桌面／手機、深淺模式、名單／值班工作流、進度、設定、Daily Verse、音樂停用及錯誤恢復檢查，且沒有 console／page error。
 - `verify_semantic_icon_motion.py`：Admin／Guest、forced-colours／reduced-motion 四種 context 及 20 次 route cycle 通過；glyph morph／rotation 沒有改變 host 幾何、競爭狀態或殘留 transform。
-- `project_governance.py --check` 及 `git diff --check` 通過。正式 release gate、Windows origin 切換、Worker 0% candidate browser smoke、100% promotion、canonical live smoke 及真人裝置／校務驗收仍是後續證據，未在本段冒充完成。
+- `project_governance.py --check`、`git diff --check`、15／15 正式 release gate、Windows origin 切換、Worker 0% candidate smoke、100% promotion 及 canonical live smoke 已通過；真人裝置／校務驗收仍待完成，沒有被機器證據取代。
 
-> **歷史 rc30 乾淨發布證據（2026-07-27）：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是當時完整驗證的乾淨組合。rc30 的 296-file runtime 指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate，包括 894 項 Python、3 個 motion 及 46 個 Worker contract，並完成受控 Windows 切換、正式備份、隔離還原、0% Worker smoke、100% promotion、origin health／readiness 與 canonical rendered checks。目前線上版本是本頁頂部的 rc45／Alembic `0012`；任何舊程式復原均須配合受控的相容資料庫還原。rc43／rc41／rc40／rc39／rc35 只屬歷史來源。機器與線上證據不能代替真人驗收，後者保持未完成。
+> **歷史 rc30 乾淨發布證據（2026-07-27）：** `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f` 與 Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 是當時完整驗證的乾淨組合。rc30 的 296-file runtime 指紋 `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 正式 gate，包括 894 項 Python、3 個 motion 及 46 個 Worker contract，並完成受控 Windows 切換、正式備份、隔離還原、0% Worker smoke、100% promotion、origin health／readiness 與 canonical rendered checks。目前線上版本及 Alembic 狀態只以本頁頂部生成區塊為準；任何舊程式復原均須配合受控的相容資料庫還原。rc45／rc43／rc41／rc40／rc39／rc35 只屬歷史來源。機器與線上證據不能代替真人驗收，後者保持未完成。
 >
 > **歷史 rc31 綜合來源候選（已凍結、未上線）：** `codex/rc31-unified-theme-controls` 的 297 個可部署來源檔案曾以指紋 `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042` 通過當時 15／15 正式 `--release` 閘門。它只保留為來源演進證據，沒有部署，亦不是目前候選或回退目標；目前線上版本及 migration 後的受控資料庫復原限制以本頁頂部生成狀態為準。
 >

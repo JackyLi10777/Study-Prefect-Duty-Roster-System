@@ -22,6 +22,9 @@ CURRENT_RELEASE_FINGERPRINT = CURRENT_RELEASE_STATE["release"][
 ]
 CURRENT_ALEMBIC_HEAD = CURRENT_RELEASE_STATE["database"]["alembic_head"]
 CURRENT_PREDECESSOR = CURRENT_RELEASE_STATE["historical_predecessor"]["release"]
+CURRENT_WORKER_SOURCE_CHANGED = CURRENT_RELEASE_STATE["worker"][
+    "source_changed_for_release"
+]
 CURRENT_STATUS_START = "<!-- SING_YIN_CURRENT_STATUS:START -->"
 CURRENT_STATUS_END = "<!-- SING_YIN_CURRENT_STATUS:END -->"
 
@@ -507,8 +510,16 @@ def test_operator_deployment_docs_use_observed_drift_and_recovery_hierarchy() ->
     assert "現行 origin／Worker 來源待對帳" not in quickstart
     assert "受審候選的正式 tag／commit" in quickstart
     assert "現行證據以 rc30 report 為準" not in quickstart
-    assert "Worker 來源沒有改動" in cloudflare
+    assert "保留 rc45" not in quickstart
+    assert "Current production is rc45" not in quickstart
+    expected_worker_source = (
+        "Worker 來源已更新"
+        if CURRENT_WORKER_SOURCE_CHANGED is True
+        else "Worker 來源沒有改動"
+    )
+    assert expected_worker_source in _current_status_block(cloudflare)
     assert "不得單側回退而形成未驗證組合" in cloudflare
+    assert "Worker 來源及受保護設定未改動" not in decision
 
     assert "保存及歸屬差異" in cloudflare
     assert "依序考慮 rc27、rc26 及 rc24" in cloudflare
@@ -524,6 +535,27 @@ def test_operator_deployment_docs_use_observed_drift_and_recovery_hierarchy() ->
     assert '$ReleaseRef = "v1.1.0-rc.16"' not in windows
     assert "15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc" in decision
     assert "<next-approved-annotated-tag>" not in decision
+
+
+def test_manual_current_release_sections_do_not_override_generated_truth() -> None:
+    acceptance = (PROJECT_ROOT / "docs" / "ACCEPTANCE_EVIDENCE.md").read_text(
+        encoding="utf-8"
+    )
+    handover = (PROJECT_ROOT / "docs" / "RELEASE_HANDOVER.md").read_text(
+        encoding="utf-8"
+    )
+
+    for stale_claim in (
+        "## rc45 正式機器與線上證據",
+        "目前線上版本是本頁頂部的 rc45",
+        "Quiet Command Center frontend reset source evidence（2026-08-02; not yet live）",
+    ):
+        assert stale_claim not in acceptance
+    for stale_claim in (
+        "正式服務只以本頁頂部的 rc45 origin",
+        "Worker 來源、binding 及安全設定沒有改變",
+    ):
+        assert stale_claim not in handover
 
 
 def test_docs_share_historical_rc20_device_matrix_and_current_rollback_hierarchy() -> None:
