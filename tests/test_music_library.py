@@ -294,6 +294,13 @@ def test_music_ui_has_operator_controlled_autoplay_on_every_workspace_page() -> 
     assert "navigator.onLine === false" in controller
     assert "const boundAudio = new WeakSet()" in controller
     assert "setTimeout" not in controller
+    assert "ui.timer(" not in music_ui
+    assert "window.__syMusicDeferredScripts" in music_ui
+    assert "window.location.pathname !== pathname" in music_ui
+    assert 'key="track-resume"' in music_ui
+    assert 'key="continuity"' in music_ui
+    assert 'key="autoplay"' in music_ui
+    assert 'key="dialog-focus"' in music_ui
     assert "loop=False" in music_ui
     assert 'audio.on("ended", advance_playlist)' in music_ui
     assert '"sequential": t("music_mode_sequential")' in music_ui
