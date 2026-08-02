@@ -103,7 +103,7 @@ README 只做導覽與產品摘要，不承擔完整 release history、架構細
 - generated status 頁或 consumer 區塊過時；
 - consumer 在生成區塊外重複可變的目前版本值；
 - module-boundaries contract 禁止的反向 import。
-- 無效的 iteration priority／state、重複 ID、沒有 iteration 的 `Tracked` 風險，以及指向不存在 iteration 的風險。
+- 無效的 iteration priority／state、重複 ID、沒有 iteration 的 `Tracked` 風險、指向不存在 iteration 的風險，以及沒有任何 `Tracked` 風險反向引用的可執行 iteration。
 
 正式推送前仍須使用 `verify_update.py --staged`。文件契約證明一致性，不證明 runtime、UI 或部署本身正確。
 

@@ -70,7 +70,10 @@ def test_iteration_risk_contract_requires_valid_traceable_work(tmp_path: Path) -
 
     violations = iteration_risk_violations(tmp_path)
 
-    assert {item.code for item in violations} == {"risk.unknown-iteration"}
+    assert {item.code for item in violations} == {
+        "iteration.unlinked-risk",
+        "risk.unknown-iteration",
+    }
 
 
 def test_iteration_risk_contract_rejects_untracked_and_ambiguous_states(
@@ -103,6 +106,34 @@ def test_iteration_risk_contract_rejects_untracked_and_ambiguous_states(
         "risk.invalid-state",
         "risk.untracked",
     }
+
+
+def test_iteration_risk_contract_rejects_actionable_work_without_a_tracked_risk(
+    tmp_path: Path,
+) -> None:
+    _write_iteration_risk_documents(
+        tmp_path,
+        risks="""
+## Known Issues and Risks
+
+| Risk | State | Tracking | Mitigation |
+|---|---|---|---|
+| Session expiry | Managed | — | Every invocation fails closed. |
+""",
+        iterations="""
+## 目前佇列 / Current queue
+
+| ID | Priority | Outcome | Owning module/document | State | Evidence needed to close |
+|---|---|---|---|---|---|
+| ITR-002 | L1 | Deploy reviewed source | `status/current-release.json` | Active | Deployment evidence |
+| ITR-003 | L3 | Split a large document when justified | `DOCUMENTATION_SYSTEM.md` | Conditional | A real trigger |
+""",
+    )
+
+    violations = iteration_risk_violations(tmp_path)
+
+    assert {item.code for item in violations} == {"iteration.unlinked-risk"}
+    assert "ITR-002" in violations[0].message
 
 
 def test_current_status_markdown_is_deterministic_from_machine_state() -> None:

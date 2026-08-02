@@ -6,6 +6,8 @@ This file records user-visible, operational and release-significant changes. The
 
 - Updated the canonical public-entry browser verifier to complete intercepted Admin／Guest navigation with HTTP 204. This preserves the entrance DOM for loading-state inspection without creating a Guest session or entering Cloudflare Access; aborting the top-level request made current Chromium replace the page with `chrome-error://chromewebdata`.
 - Replaced a CSP-incompatible bare `wait_for_function` expression with a function predicate and added a regression test for the no-content interception contract. Production behavior, security policy and release assets are unchanged.
+- Closed the stale post-rc47 `ITR-002` release item: the host-local support inbox and durable Viewer withdrawal are live code whose remaining evidence belongs to supervised acceptance (`ITR-001`), not another deployment claim.
+- Extended project governance so every actionable non-conditional iteration must be referenced by a tracked project risk. This prevents completed release work from lingering as an orphaned active queue item while preserving genuinely conditional maintainability work.
 
 ## v1.2.0-rc.47 — released, 2026-08-02
 

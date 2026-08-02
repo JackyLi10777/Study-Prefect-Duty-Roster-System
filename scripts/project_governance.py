@@ -37,6 +37,7 @@ _ITERATION_ID = re.compile(r"ITR-\d{3}")
 _ITERATION_STATES = frozenset(
     {"Proposed", "Ready", "Active", "Conditional", "Blocked", "Done"}
 )
+_ACTIONABLE_ITERATION_STATES = frozenset({"Proposed", "Ready", "Active", "Blocked"})
 _ITERATION_PRIORITIES = frozenset({"L1", "L2", "L3"})
 _RISK_STATES = frozenset({"Tracked", "Managed", "Resolved", "Historical"})
 _RISK_TRACKING = re.compile(r"(?:`ITR-\d{3}`)(?:,\s*`ITR-\d{3}`)*|—")
@@ -221,6 +222,7 @@ def iteration_risk_violations(root: Path) -> tuple[ContractViolation, ...]:
                 )
             previous_priority = priority_rank
 
+    tracked_iteration_ids: set[str] = set()
     for risk, state, tracking, _mitigation in risk_rows:
         tracked_ids = tuple(_ITERATION_ID.findall(tracking))
         if _RISK_TRACKING.fullmatch(tracking) is None:
@@ -247,6 +249,8 @@ def iteration_risk_violations(root: Path) -> tuple[ContractViolation, ...]:
                     f"tracked risk has no ITR reference: {risk}",
                 )
             )
+        elif state == "Tracked":
+            tracked_iteration_ids.update(tracked_ids)
         elif state != "Tracked" and tracked_ids:
             violations.append(
                 ContractViolation(
@@ -272,6 +276,18 @@ def iteration_risk_violations(root: Path) -> tuple[ContractViolation, ...]:
                         f"tracked risk {risk!r} references completed {iteration_id}",
                     )
                 )
+    for iteration_id, state in iteration_states.items():
+        if (
+            state in _ACTIONABLE_ITERATION_STATES
+            and iteration_id not in tracked_iteration_ids
+        ):
+            violations.append(
+                ContractViolation(
+                    "iteration.unlinked-risk",
+                    "docs/ITERATION_REGISTER.md",
+                    f"actionable {iteration_id} is not referenced by a Tracked project risk",
+                )
+            )
     return tuple(sorted(set(violations)))
 
 
