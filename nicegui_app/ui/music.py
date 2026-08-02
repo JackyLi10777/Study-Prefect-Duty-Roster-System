@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from uuid import uuid4
 
 from nicegui import events, run, ui
 
@@ -225,6 +226,67 @@ def _music_continuity_script(context: str) -> str:
     """
 
 
+def _music_render_scope_script(render_token: str) -> str:
+    """Start a fresh deferred-work scope for one rendered music control."""
+
+    return (
+        "(() => {"
+        f"window.__syMusicRenderToken = {json.dumps(render_token)};"
+        "window.__syMusicDeferredScripts = Object.create(null);"
+        "})()"
+    )
+
+
+def _deferred_music_script(
+    script: str,
+    *,
+    delay_ms: int,
+    key: str,
+    render_token: str,
+) -> str:
+    """Delay browser work without creating a NiceGUI element-bound timer.
+
+    Route navigation can delete a timer's parent slot before a server-side
+    ``ui.timer`` fires. A keyed browser timer is scoped to the current path and
+    render token; a newer render invalidates all work from an earlier instance,
+    including an A-to-B-to-A navigation that returns to the same path.
+    """
+
+    return (
+        "(() => {"
+        f"const renderToken = {json.dumps(render_token)};"
+        "if (window.__syMusicRenderToken !== renderToken) return;"
+        "const registry = window.__syMusicDeferredScripts || "
+        "(window.__syMusicDeferredScripts = Object.create(null));"
+        f"const key = {json.dumps(key)};"
+        "const token = Symbol(key);"
+        "const pathname = window.location.pathname;"
+        "registry[key] = token;"
+        f"window.setTimeout(() => {{"
+        "if (registry[key] !== token) return;"
+        "delete registry[key];"
+        "if (window.__syMusicRenderToken !== renderToken) return;"
+        "if (window.location.pathname !== pathname) return;"
+        f"{script}"
+        f"}}, {max(0, int(delay_ms))});"
+        "})()"
+    )
+
+
+def _cancel_deferred_music_script(*, key: str, render_token: str) -> str:
+    """Cancel one pending action only when its originating render is current."""
+
+    return (
+        "(() => {"
+        f"const renderToken = {json.dumps(render_token)};"
+        "if (window.__syMusicRenderToken !== renderToken) return;"
+        "const registry = window.__syMusicDeferredScripts;"
+        "if (!registry) return;"
+        f"delete registry[{json.dumps(key)}];"
+        "})()"
+    )
+
+
 def render_page_music_control(context: str) -> None:
     """Render one low-volume playlist with an explicit, persisted autoplay preference."""
     guest_mode = current_page_context().principal.mode is AccessMode.GUEST
@@ -241,6 +303,8 @@ def render_page_music_control(context: str) -> None:
     online_settings = YouTubeSettings.from_environment()
     if not tracks and (guest_mode or not online_settings.enabled):
         return
+    render_token = f"music-{uuid4().hex}"
+    ui.run_javascript(_music_render_scope_script(render_token))
 
     def close_panel() -> None:
         panel.set_visibility(False)
@@ -368,12 +432,26 @@ def render_page_music_control(context: str) -> None:
                         track = track_by_id.get(track_id)
                         if track is None:
                             return
+                        if not continue_playback:
+                            ui.run_javascript(
+                                _cancel_deferred_music_script(
+                                    key="track-resume",
+                                    render_token=render_token,
+                                )
+                            )
                         preference_set(f"music_track_{context}", track.id)
                         audio.pause()
                         audio.set_source(track.asset_url)
                         now_playing.set_text(music_track_label(track))
                         if continue_playback:
-                            ui.timer(0.16, audio.play, once=True)
+                            ui.run_javascript(
+                                _deferred_music_script(
+                                    _music_attempt_script(volume=preferred_music_volume()),
+                                    delay_ms=160,
+                                    key="track-resume",
+                                    render_token=render_token,
+                                )
+                            )
 
                     def choose_track(event: events.ValueChangeEventArguments) -> None:
                         load_track(str(event.value), continue_playback=False)
@@ -407,10 +485,13 @@ def render_page_music_control(context: str) -> None:
                             "flat data-testid=music-pause-now"
                         )
                         pause_button.on("click", js_handler=_music_pause_handler_script())
-                    ui.timer(
-                        0.12,
-                        lambda: ui.run_javascript(_music_continuity_script(context)),
-                        once=True,
+                    ui.run_javascript(
+                        _deferred_music_script(
+                            _music_continuity_script(context),
+                            delay_ms=120,
+                            key="continuity",
+                            render_token=render_token,
+                        )
                     )
                 if not guest_mode:
                     render_youtube_panel(context, online_settings)
@@ -418,9 +499,8 @@ def render_page_music_control(context: str) -> None:
     panel.on("keydown.escape", close_panel)
 
     if tracks and autoplay_enabled:
-        ui.timer(
-            0.35,
-            lambda: ui.run_javascript(
+        ui.run_javascript(
+            _deferred_music_script(
                 "(() => {"
                 "const audio = document.querySelector('audio.sy-page-music-audio');"
                 "if (!audio) return;"
@@ -429,22 +509,25 @@ def render_page_music_control(context: str) -> None:
                 "return;"
                 "}"
                 f"{_music_attempt_script(volume=preferred_music_volume())}"
-                "})()"
+                "})()",
+                delay_ms=350,
+                key="autoplay",
+                render_token=render_token,
             ),
-            once=True,
         )
 
     def open_dialog() -> None:
         panel.set_visibility(True)
-        ui.timer(
-            0.12,
-            lambda: ui.run_javascript(
+        ui.run_javascript(
+            _deferred_music_script(
                 "document.querySelector('[data-testid=page-music-dialog]')?.focus();"
                 "document.querySelectorAll('audio.sy-page-music-audio').forEach(a => {"
                 f"a.volume = {preferred_music_volume()!r}; a.dataset.syBaseVolume = String(a.volume);"
-                "});"
+                "});",
+                delay_ms=120,
+                key="dialog-focus",
+                render_token=render_token,
             ),
-            once=True,
         )
 
     initial_trigger_state = "starting" if autoplay_enabled and tracks else "off"

@@ -10,6 +10,7 @@ import pytest
 
 from nicegui_app.config import MUSIC_DIR, PROJECT_ROOT
 from nicegui_app.services import music_library as music_library_module
+from nicegui_app.ui import music as music_ui_module
 from nicegui_app.ui import sound as sound_ui
 from tests.ui_source import combined_page_source
 from nicegui_app.services.music_library import (
@@ -294,6 +295,16 @@ def test_music_ui_has_operator_controlled_autoplay_on_every_workspace_page() -> 
     assert "navigator.onLine === false" in controller
     assert "const boundAudio = new WeakSet()" in controller
     assert "setTimeout" not in controller
+    assert "ui.timer(" not in music_ui
+    assert "window.__syMusicDeferredScripts" in music_ui
+    assert "window.__syMusicRenderToken" in music_ui
+    assert "window.location.pathname !== pathname" in music_ui
+    assert "if not continue_playback:" in music_ui
+    assert '_cancel_deferred_music_script(' in music_ui
+    assert 'key="track-resume"' in music_ui
+    assert 'key="continuity"' in music_ui
+    assert 'key="autoplay"' in music_ui
+    assert 'key="dialog-focus"' in music_ui
     assert "loop=False" in music_ui
     assert 'audio.on("ended", advance_playlist)' in music_ui
     assert '"sequential": t("music_mode_sequential")' in music_ui
@@ -304,6 +315,29 @@ def test_music_ui_has_operator_controlled_autoplay_on_every_workspace_page() -> 
     assert 'url_path="/assets/music"' in main
     assert "YoutubeMusicLink" not in music_ui
     assert "add_youtube_link" not in music_ui
+
+
+def test_deferred_music_work_is_bound_to_one_render_and_can_be_cancelled() -> None:
+    render_token = "music-render-a"
+    scope = music_ui_module._music_render_scope_script(render_token)
+    deferred = music_ui_module._deferred_music_script(
+        "window.__musicProbe = true;",
+        delay_ms=160,
+        key="track-resume",
+        render_token=render_token,
+    )
+    cancelled = music_ui_module._cancel_deferred_music_script(
+        key="track-resume",
+        render_token=render_token,
+    )
+
+    assert 'window.__syMusicRenderToken = "music-render-a"' in scope
+    assert "window.__syMusicDeferredScripts = Object.create(null)" in scope
+    assert deferred.count("window.__syMusicRenderToken !== renderToken") == 2
+    assert "window.location.pathname !== pathname" in deferred
+    assert "window.setTimeout" in deferred
+    assert "}, 160);" in deferred
+    assert 'delete registry["track-resume"]' in cancelled
 
 
 def test_same_track_continues_across_page_navigation_without_permanent_storage() -> None:
