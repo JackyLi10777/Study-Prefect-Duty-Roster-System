@@ -445,6 +445,71 @@ def main() -> None:
             for item in workflow.assignments(roster_week_id)
         )
 
+        original_monday_assignments = [
+            item for item in workflow.assignments(roster_week_id) if item["day"] == "MONDAY"
+        ]
+        assert original_monday_assignments, "The generated draft did not contain Monday assignments."
+        before_publish_loads = workflow.prefect_loads()
+
+        page.get_by_test_id("draft-day-toggle-monday").click()
+        close_monday = page.get_by_test_id("draft-day-confirm-close-monday")
+        close_monday.wait_for(state="visible", timeout=10_000)
+        close_monday.click()
+        with page.expect_navigation(wait_until="domcontentloaded", timeout=20_000):
+            page.get_by_test_id("draft-save-all").click()
+        page.get_by_text("草稿預覽", exact=True).wait_for(timeout=10_000)
+
+        workflow = _workflow(database_path, backup_dir)
+        assert workflow.week_schedule_overrides(roster_week_id).closed_days == ("MONDAY",)
+        assert all(item["day"] != "MONDAY" for item in workflow.assignments(roster_week_id))
+        page.locator(".sy-draft-grid-day-closed").wait_for(state="visible", timeout=10_000)
+        assert page.get_by_test_id("draft-day-confirm-reopen-monday").count() == 1
+
+        page.reload(wait_until="domcontentloaded")
+        page.get_by_text("草稿預覽", exact=True).wait_for(timeout=10_000)
+        page.locator(".sy-draft-grid-day-closed").wait_for(state="visible", timeout=10_000)
+        assert page.get_by_test_id("draft-day-confirm-reopen-monday").count() == 1
+
+        page.get_by_test_id("draft-day-toggle-monday").click()
+        reopen_monday = page.get_by_test_id("draft-day-confirm-reopen-monday")
+        reopen_monday.wait_for(state="visible", timeout=10_000)
+        reopen_monday.click()
+        with page.expect_navigation(wait_until="domcontentloaded", timeout=20_000):
+            page.get_by_test_id("draft-save-all").click()
+        page.get_by_text("草稿預覽", exact=True).wait_for(timeout=10_000)
+
+        workflow = _workflow(database_path, backup_dir)
+        assert workflow.week_schedule_overrides(roster_week_id).closed_days == ()
+        assert all(item["day"] != "MONDAY" for item in workflow.assignments(roster_week_id))
+        monday_vacancies = page.locator(
+            '[data-cell-key^="MONDAY:"].sy-draft-grid-cell--vacant'
+        )
+        assert monday_vacancies.count() == len(original_monday_assignments)
+
+        for original in original_monday_assignments:
+            original_cell_key = f'{original["day"]}:{original["postCode"]}:{original["slotIndex"]}'
+            page.locator(f'[data-cell-key="{original_cell_key}"]').click()
+            candidate_search = page.get_by_test_id("draft-candidate-search")
+            candidate_search.wait_for(state="visible", timeout=10_000)
+            candidate_search.click()
+            candidate_options = page.locator(".q-menu .q-item:visible")
+            candidate_options.first.wait_for(state="visible", timeout=10_000)
+            candidate_options.filter(has_text=str(original["prefectName"])).first.click()
+        with page.expect_navigation(wait_until="domcontentloaded", timeout=20_000):
+            page.get_by_test_id("draft-save-all").click()
+        page.get_by_text("草稿預覽", exact=True).wait_for(timeout=10_000)
+
+        workflow = _workflow(database_path, backup_dir)
+        restored_monday = {
+            (item["postCode"], item["slotIndex"]): item["prefectId"]
+            for item in workflow.assignments(roster_week_id)
+            if item["day"] == "MONDAY"
+        }
+        assert restored_monday == {
+            (item["postCode"], item["slotIndex"]): item["prefectId"]
+            for item in original_monday_assignments
+        }
+
         manual_assignment = workflow.assignments(roster_week_id)[0]
         manual_cell_key = (
             f'{manual_assignment["day"]}:'
@@ -452,7 +517,6 @@ def main() -> None:
             f'{manual_assignment["slotIndex"]}'
         )
         manual_candidate = workflow.draft_cell_candidates(roster_week_id, manual_cell_key)[0]
-        before_publish_loads = workflow.prefect_loads()
         page.locator(f'[data-cell-key="{manual_cell_key}"]').click()
         candidate_search = page.get_by_test_id("draft-candidate-search")
         candidate_search.wait_for(state="visible", timeout=10_000)
@@ -462,8 +526,6 @@ def main() -> None:
         candidate_options.filter(has_text=str(manual_candidate["nameZh"])).first.click()
         batch_reason = page.locator("textarea[name='draft-batch-reason']")
         assert batch_reason.input_value() == ""
-        page.get_by_test_id("draft-day-toggle-monday").wait_for(state="visible", timeout=10_000)
-        assert page.get_by_test_id("draft-day-confirm-close-monday").count() == 1
         with page.expect_navigation(wait_until="domcontentloaded", timeout=20_000):
             page.get_by_test_id("draft-save-all").click()
         page.get_by_text("草稿預覽", exact=True).wait_for(timeout=10_000)
@@ -473,7 +535,10 @@ def main() -> None:
         assert workflow.prefect_loads() == before_publish_loads
         log_content = (log_dir / "app.log").read_text(encoding="utf-8")
         assert "progress_draft_change_working" in log_content
-        print("[4/8] Saved a reason-optional, versioned, auditable draft correction", flush=True)
+        print(
+            "[4/8] Persisted, reloaded, reopened and restored a closed day before saving an auditable draft correction",
+            flush=True,
+        )
 
         page.goto(f"{BASE_URL}/rosters/{roster_week_id}/adjustments", wait_until="domcontentloaded")
         premature_adjustment = page.get_by_test_id("adjustment-unavailable-state")

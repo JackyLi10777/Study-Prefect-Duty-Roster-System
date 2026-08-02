@@ -8,8 +8,17 @@ from pypdf import PdfReader
 
 from nicegui_app.config import DISPLAY_PRINT_CREST_PATH, PREFECT_SEED_PATH
 from nicegui_app.persistence.models import RosterAssignmentRecord
-from nicegui_app.services.roster_export import _school_badge, build_fairness_audit_pdf, build_roster_pdf
+from nicegui_app.services.roster_export import (
+    GRID,
+    _register_cjk_fonts,
+    _schedule_grid,
+    _school_badge,
+    _styles,
+    build_fairness_audit_pdf,
+    build_roster_pdf,
+)
 from nicegui_app.services.roster_workflow import RosterWorkflow
+from nicegui_app.services.workflow_types import DraftDayEdit
 
 
 def _embedded_font_names(reader: PdfReader) -> set[str]:
@@ -99,6 +108,45 @@ def test_schedule_pdf_uses_the_workflow_atomic_schedule_snapshot(tmp_path, monke
     assert export.content.startswith(b"%PDF")
 
 
+def test_schedule_pdf_renders_a_whole_day_closure_as_one_distinct_column(tmp_path) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "closed-day.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    draft = workflow.generate_and_save_draft(date(2026, 9, 7))
+    workflow.apply_draft_patch(
+        roster_week_id=draft.id,
+        expected_week_version=draft.version,
+        day_edits=(DraftDayEdit(day="WEDNESDAY", closed=True),),
+        command_id="close-wednesday-for-pdf",
+    )
+    week, assignments = workflow.roster_schedule_snapshot(draft.id)
+    table = _schedule_grid(
+        assignments,
+        week,
+        "zh",
+        _styles(_register_cjk_fonts()),
+        landscape_mode=True,
+    )
+    wednesday_column = 3
+
+    assert ("SPAN", (wednesday_column, 1), (wednesday_column, -1)) in table._spanCmds
+    assert any(
+        command[:5]
+        == ("BOX", (wednesday_column, 1), (wednesday_column, -1), 0.38, GRID)
+        for command in table._linecmds
+    )
+    extracted_text = "\n".join(
+        page.extract_text()
+        for page in PdfReader(
+            BytesIO(build_roster_pdf(workflow, draft.id, language="zh").content)
+        ).pages
+    )
+    assert extracted_text.count("全日不開放") == 1
+
+
 def test_group_schedule_crest_and_footer_are_explicit_export_options(tmp_path) -> None:
     workflow = RosterWorkflow(
         database_path=tmp_path / "live.sqlite3",
@@ -177,35 +225,6 @@ def test_bilingual_published_schedule_pdfs_expose_every_operator_check(tmp_path)
     # Two Room 202 rows are closed on both Tuesday and Friday.
     assert chinese_text.count("不開放") == 4
     assert english_text.count("Closed") == 4
-
-
-def test_schedule_pdf_renders_a_whole_day_closure_as_one_distinct_column(tmp_path, monkeypatch) -> None:
-    workflow = RosterWorkflow(
-        database_path=tmp_path / "closed-day.sqlite3",
-        backup_dir=tmp_path / "backups",
-        seed_path=PREFECT_SEED_PATH,
-    )
-    workflow.bootstrap()
-    draft = workflow.generate_and_save_draft(date(2026, 9, 7))
-    week, assignments = workflow.roster_schedule_snapshot(draft.id)
-    closed_week = {**week, "closedDays": ["WEDNESDAY"]}
-    monkeypatch.setattr(
-        workflow,
-        "roster_schedule_snapshot",
-        lambda _roster_week_id: (closed_week, assignments),
-    )
-
-    chinese = PdfReader(BytesIO(build_roster_pdf(workflow, draft.id, language="zh").content))
-    english = PdfReader(BytesIO(build_roster_pdf(workflow, draft.id, language="en").content))
-    chinese_text = "\n".join(page.extract_text() for page in chinese.pages)
-    english_text = "\n".join(page.extract_text() for page in english.pages)
-
-    assert "星期三\n9月9日\n全日不開放" in chinese_text
-    assert chinese_text.count("全日不開放") == 7
-    assert "WEDNESDAY" in english_text
-    assert "09 SEP" in english_text
-    assert "DAY CLOSED" in english_text
-    assert english_text.count("Day closed") == 6
 
 
 def test_chinese_schedule_pdf_keeps_duty_post_names_in_authoritative_english(tmp_path) -> None:

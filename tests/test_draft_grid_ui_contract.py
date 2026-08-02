@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from nicegui_app.config import PROJECT_ROOT
-from nicegui_app.ui.page_routes.weekly import _stage_atomic_draft_selection
+from nicegui_app.ui.page_routes.weekly import (
+    _normalize_draft_candidate_value,
+    _stage_atomic_draft_selection,
+)
 
 
 WEEKLY_SOURCE = (
@@ -66,20 +69,17 @@ def test_same_day_selection_stages_one_atomic_exchange_and_can_be_undone() -> No
         "TUESDAY:ROOM_302:0": "prefect-c",
     }
     pending: dict[str, str | None] = {}
-
     occupied = _stage_atomic_draft_selection(
         "MONDAY:ROOM_302:0",
         "prefect-b",
         original_assignments=originals,
         pending_cells=pending,
     )
-
     assert occupied == "MONDAY:ROOM_303:0"
     assert pending == {
         "MONDAY:ROOM_302:0": "prefect-b",
         "MONDAY:ROOM_303:0": "prefect-a",
     }
-
     _stage_atomic_draft_selection(
         "MONDAY:ROOM_302:0",
         "prefect-a",
@@ -96,16 +96,24 @@ def test_vacancy_selection_does_not_affect_another_cell() -> None:
         "MONDAY:ROOM_303:1": None,
     }
     pending: dict[str, str | None] = {}
-
     occupied = _stage_atomic_draft_selection(
         "MONDAY:ROOM_302:0",
         None,
         original_assignments=originals,
         pending_cells=pending,
     )
-
     assert occupied is None
     assert pending == {"MONDAY:ROOM_302:0": None}
+
+
+def test_vacancy_aliases_normalize_without_treating_blank_input_as_vacant() -> None:
+    for alias in ("X", "x", "×", "空缺", "待安排", "Vacant", "unassigned"):
+        assert _normalize_draft_candidate_value(alias) == "__vacant__"
+    assert _normalize_draft_candidate_value("  X  ") == "__vacant__"
+    assert _normalize_draft_candidate_value("") == ""
+    assert _normalize_draft_candidate_value("   ") == ""
+    assert _normalize_draft_candidate_value(None) is None
+    assert _normalize_draft_candidate_value("prefect-id") == "prefect-id"
 
 
 def test_draft_matrix_has_desktop_mobile_and_accessible_interaction_contracts() -> None:
@@ -121,6 +129,11 @@ def test_draft_matrix_has_desktop_mobile_and_accessible_interaction_contracts() 
     assert "@media (forced-colors: active)" in COMPONENT_SOURCE
     assert "min-height: 52px" in COMPONENT_SOURCE
     assert 'role="grid"' in WEEKLY_SOURCE
+    assert 'role="gridcell" tabindex="0"' in WEEKLY_SOURCE
+    assert "['Enter', 'F2', 'Escape']" in WEEKLY_SOURCE
+    assert "event.preventDefault(); event.stopPropagation()" in WEEKLY_SOURCE
+    assert '"__vacant__": t("draft_explicit_vacancy")' in WEEKLY_SOURCE
+    assert 'new_value_mode="add-unique"' not in WEEKLY_SOURCE
     assert 'aria-live=polite data-testid=draft-pending-bar' in WEEKLY_SOURCE
     assert "draft-day-confirm-close-" in WEEKLY_SOURCE
     assert "draft-day-confirm-reopen-" in WEEKLY_SOURCE

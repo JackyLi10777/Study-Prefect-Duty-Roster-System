@@ -126,6 +126,11 @@ def test_write_pipeline_uses_the_batch_draft_matrix_contract() -> None:
         'get_by_test_id("draft-save-all")',
         'get_by_test_id("draft-day-toggle-monday")',
         'get_by_test_id("draft-day-confirm-close-monday")',
+        'get_by_test_id("draft-day-confirm-reopen-monday")',
+        'page.locator(".sy-draft-grid-day-closed")',
+        'week_schedule_overrides(roster_week_id).closed_days',
+        'data-cell-key^="MONDAY:"',
+        'page.reload(wait_until="domcontentloaded")',
     ):
         assert contract in script
     assert "載入合資格人選" not in script

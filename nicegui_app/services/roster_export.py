@@ -215,7 +215,6 @@ def _schedule_grid(
                 presentation.week_start,
                 day.day,
                 language,
-                day_closed=day.state == "day_closed",
             ),
             styles["grid_heading"],
         )
@@ -242,8 +241,14 @@ def _schedule_grid(
         ]
         for column_index, cell in enumerate(schedule_row.cells, start=1):
             if cell.state is RosterCellState.DAY_CLOSED:
-                row.append(Paragraph("全日不開放" if language == "zh" else "Day closed", styles["closed_cell"]))
-                cell_backgrounds.append((column_index, row_index, DAY_CLOSED))
+                row.append(
+                    Paragraph(
+                        ("全日不開放" if language == "zh" else "Day closed")
+                        if row_index == 1
+                        else "",
+                        styles["closed_cell"],
+                    )
+                )
                 continue
             if cell.state is RosterCellState.ROOM_CLOSED:
                 row.append(Paragraph("不開放" if language == "zh" else "Closed", styles["closed_cell"]))
@@ -283,6 +288,9 @@ def _schedule_grid(
         commands.extend(
             [
                 ("BACKGROUND", (column, 0), (column, 0), DAY_CLOSED_HEADER),
+                ("SPAN", (column, 1), (column, -1)),
+                ("BACKGROUND", (column, 1), (column, -1), DAY_CLOSED),
+                ("BOX", (column, 1), (column, -1), 0.38, GRID),
                 ("LINEBEFORE", (column, 0), (column, -1), 1.0, DAY_CLOSED_HEADER),
                 ("LINEAFTER", (column, 0), (column, -1), 1.0, DAY_CLOSED_HEADER),
             ]
@@ -295,8 +303,6 @@ def _dated_day_heading(
     week_start: object,
     day: SchoolDay,
     language: ExportLanguage,
-    *,
-    day_closed: bool = False,
 ) -> str:
     """Return a locale-stable weekday and calendar date for a PDF column."""
 
@@ -307,9 +313,7 @@ def _dated_day_heading(
         date_text = f"{duty_date.month}月{duty_date.day}日"
     else:
         date_text = f"{duty_date.day:02d} {ENGLISH_MONTH_ABBREVIATIONS[duty_date.month - 1]}"
-    closed_text = "全日不開放" if language == "zh" else "DAY CLOSED"
-    suffix = f'<br/><font size="6.8">{closed_text}</font>' if day_closed else ""
-    return f'{weekday}<br/><font size="7.8">{date_text}</font>{suffix}'
+    return f'{weekday}<br/><font size="7.8">{date_text}</font>'
 
 
 def _coerce_week_start(value: object) -> date:

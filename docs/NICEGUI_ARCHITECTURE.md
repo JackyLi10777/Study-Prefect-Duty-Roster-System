@@ -12,6 +12,8 @@
 <!-- SING_YIN_CURRENT_STATUS:START -->
 > **Verified production truth (2026-08-02):** the live Windows origin is clean annotated `v1.2.0-rc.49` at `21928e38a0df6fd217a8ba449eb675b94a282f01` and runs an immutable bundle. Its 312-file fingerprint `e350497ba121e2420f00cbae3725334e8c45267e140388bbd0b5530e84135878` passed 15/15 gates. SQLite is at Alembic `0012`; verified backup `20260802-091628-350429-manual_verified_backup.sqlite3` with SHA-256 `f827c8932bd78ca2b2528728e6770c539c6f2ad8adfa64a3ec85cd69485e8fd9`, isolated restore, health, `writeReady=true`, `maintenance=false`, `recoveryRequired=false`, and `pendingBackups=0` passed. Worker source changed and was promoted; canonical Worker `99ed9a4e-8167-44bd-b478-562ff8f4d17e` remains healthy at 100% traffic. `v1.2.0-rc.47` is historical source evidence, not a code-only rollback after migration `0012`; recovery requires the controlled compatible database restore. Supervised human acceptance remains `pending`, and the physical off-site BitLocker recovery drill remains `pending`. See [current system status](status/CURRENT_STATUS.md) for the exact state and update contract.
 <!-- SING_YIN_CURRENT_STATUS:END -->
+
+> **Source-only candidate:** `codex/roster-grid-day-closure` adds the shared draft-grid presentation and additive Alembic revision `0013_roster_day_closures`. Production remains exactly as recorded in the generated status block above. This source is not deployed evidence, and revision `0013` must not be treated as live until the formal release, backup, isolated-restore, and controlled-rollout sequence completes.
 >
 ## Purpose
 
@@ -247,9 +249,40 @@ Each interactive official write claims an `operation_commands` receipt inside th
 
 Publication has a database-level single-winner claim: the `roster_weeks` row changes from `draft` to `published` only through a conditional update inside the same transaction that writes fairness-ledger entries. A second tab or concurrent local client is rejected before it can post duplicate workload points.
 
-Prefect creation, update, archive, and bulk import follow the same backup rule. These writes, pre-generation leave changes, draft generation and manual draft correction enter SQLite through `BEGIN IMMEDIATE` before reading the state they intend to change; this serializes the read／validate／write window instead of relying on a duplicate-click guard. Prefect rows carry a stable integer version. Update and archive use an active-row plus version compare-and-swap, while manual draft correction uses the reviewed roster-week version; a stale browser receives a conflict and must reload rather than overwrite a newer save. Archive remains a soft delete because published rosters and fairness-ledger records must remain historically truthful. The page therefore requires a destructive-action confirmation which explicitly says that historical rosters, fairness records, and audit evidence are retained and that there is no immediate undo.
+Prefect creation, update, archive, and bulk import follow the same backup rule. These writes, pre-generation leave changes, draft generation and draft-patch save enter SQLite through `BEGIN IMMEDIATE` before reading the state they intend to change; this serializes the read／validate／write window instead of relying on a duplicate-click guard. Prefect rows carry a stable integer version. Update and archive use an active-row plus version compare-and-swap, while `apply_draft_patch` compares the reviewed roster-week version and validates the complete staged matrix; a stale browser receives a conflict with reload／compare／reapply choices rather than overwriting a newer save. Archive remains a soft delete because published rosters and fairness-ledger records must remain historically truthful. The page therefore requires a destructive-action confirmation which explicitly says that historical rosters, fairness records, and audit evidence are retained and that there is no immediate undo.
 
 `fixed_general_duty`／`fixedGeneralDuty` remains stable compatibility metadata for canonical AHP weekday mapping. The prefect dialog exposes it only for Assistant Head Study Prefects as an optional fixed weekday in legacy mode; flexible mode ignores it. The first accepted automatic legacy mapping persists every one-person／one-day assignment into this field in the same draft transaction, so later directory additions cannot silently move existing owners. When the dialog edits an ordinary prefect or unrelated fields, it must round-trip any existing value rather than replace it with `NONE`. The visible availability selector is authoritative: a fixed weekday must also be selected as available, and unselected days are unavailable to both Assist. modes and room generation.
+
+### Draft matrix and week-local whole-day closures
+
+Alembic `0013_roster_day_closures` is an additive candidate migration. It introduces `roster_day_closures`, keyed by the roster week and stable weekday code with one row per week／day. Optional `reason_code` and `note` are audit context only; translated UI text is never a key. This table is a week-local override layer. It does not replace the permanent room-opening rules owned by `roster_policy` and does not create a school-wide holiday calendar.
+
+`RosterSchedulePresentation` is the shared read model for NiceGUI draft／published views, the bilingual PDF, the public share whitelist, and the Guest adapter. It contains the roster week, version, status, weekday and date, stable post code and slot, English duty-post label, service time, Chinese display name, assignment／prefect identifiers, editability, and exactly one of these states:
+
+- `assigned`: one eligible prefect is assigned;
+- `vacant`: the post is open and requires a prefect;
+- `room_closed`: the long-term room policy closes this post on this weekday;
+- `day_closed`: the whole weekday is closed for this roster week.
+
+Blank editor input is not serialized as a state. The presentation builder, PDF exporter, Viewer/public-share serializer, and responsive day-card adapter must consume this same state model; they may change layout and localized labels but not derive a second interpretation of the roster.
+
+The public draft-edit contract consists of `WeekScheduleOverrides`, `DraftCellEdit`, `DraftDayEdit`, and:
+
+```text
+apply_draft_patch(
+    roster_week_id,
+    expected_version,
+    cell_edits,
+    day_edits,
+    command_id,
+)
+```
+
+NiceGUI keeps cell and day edits local until the operator selects **Review and save**. The workflow then enters one `BEGIN IMMEDIATE` transaction, claims the idempotent command receipt, compares the expected roster version, constructs the final matrix, and revalidates role eligibility, selected availability, pre-generation leave, same-day uniqueness, non-consecutive duties, legacy fixed Assist ownership, and canonical slot coverage after applying whole-day closures. A same-day two-cell swap is therefore atomic. The transaction updates the roster version and closure rows, creates the audit and backup obligation, and commits all or none of the patch. Draft edits never post to the fairness ledger; publication remains the only initial fairness-posting boundary.
+
+Closing a day clears every draft assignment for that weekday inside the same transaction. Reopening the day removes the override but deliberately returns open cells as `vacant`; it never restores assignments whose availability, leave, fairness context, or role may have changed. A completely closed week is a valid zero-assignment draft and may be published with zero fairness points and zero scheduled service time. Published rosters reject `apply_draft_patch`; the operator must use the audited withdrawal transaction before rebuilding a wrongly published week. A late individual absence continues to use the published-duty adjustment workflow instead.
+
+A version conflict is a controlled result, not a last-write-wins update. The UI retains its local patch and offers reload, comparison, and reapplication against the latest presentation. Reapplication still passes the complete workflow validation. Guest implements the same API and states in its bounded in-memory workspace, but never opens the official SQLAlchemy session, creates official backup／audit／fairness rows, or calls external sharing. See [Draft grid and whole-day closure](ROSTER_DRAFT_EDITING.md) for the operator and maintainer contract.
 
 ### Read-only reporting and reviewed import boundaries
 

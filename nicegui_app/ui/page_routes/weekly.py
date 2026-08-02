@@ -60,6 +60,23 @@ _ASSIST_MODE_DETAIL_KEYS = {
     LEGACY_FIXED_WEEKDAY: "assist_assignment_mode_legacy_detail",
     FLEXIBLE_WEEKLY: "assist_assignment_mode_flexible_detail",
 }
+_DRAFT_VACANCY_VALUE = "__vacant__"
+_DRAFT_VACANCY_ALIASES = frozenset(
+    {"x", "×", "空缺", "待安排", "vacant", "unassigned", _DRAFT_VACANCY_VALUE}
+)
+
+
+def _normalize_draft_candidate_value(value: object) -> str | None:
+    """Normalize explicit vacancy aliases without treating blank input as a change."""
+
+    if value is None:
+        return None
+    normalized = str(value).strip()
+    if not normalized:
+        return ""
+    if normalized.casefold() in _DRAFT_VACANCY_ALIASES:
+        return _DRAFT_VACANCY_VALUE
+    return normalized
 
 
 def _assist_assignment_mode_code(value: object, *, fallback: str) -> str:
@@ -231,14 +248,41 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         )
         return candidate_cache[cell.cell_key]
 
-    def choose_cell(cell_key: str) -> None:
+    def open_cell_editor(cell_key: str) -> None:
         selected_cell["key"] = cell_key
         editor.refresh()
+        selector = candidate_selector_ref["control"]
+        if selector is not None:
+            selector.run_method("focus")
+
+    def handle_cell_key(event: Any, cell_key: str) -> None:
+        event_args = event.args if isinstance(event.args, dict) else {}
+        key_name = str(event_args.get("key", "")).lower()
+        if key_name in {"enter", "f2"}:
+            open_cell_editor(cell_key)
+        elif key_name == "escape" and selected_cell["key"] == cell_key:
+            selected_cell["key"] = None
+            editor.refresh()
 
     def stage_candidate(cell_key: str, raw_value: object) -> None:
-        if raw_value in (None, ""):
+        normalized_value = _normalize_draft_candidate_value(raw_value)
+        if normalized_value in (None, ""):
             return
-        replacement_id = None if raw_value == "__vacant__" else str(raw_value)
+        replacement_id = (
+            None if normalized_value == _DRAFT_VACANCY_VALUE else normalized_value
+        )
+        if replacement_id is not None:
+            candidate_ids = {
+                str(candidate["id"])
+                for candidate in (candidate_cache.get(cell_key) or [])
+                if candidate.get("id")
+            }
+            original_id = original_assignments.get(cell_key)
+            if original_id is not None:
+                candidate_ids.add(original_id)
+            if replacement_id not in candidate_ids:
+                editor.refresh()
+                return
         current_id = pending_cells.get(cell_key, original_assignments[cell_key])
         if replacement_id == current_id:
             return
@@ -604,7 +648,8 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                     f"grid-column:{day_index};grid-row:{row_index}"
                                 ).props(
                                     f'type="button" aria-label="{attr(aria)}" '
-                                    f'data-cell-key="{attr(cell.cell_key)}"'
+                                    f'data-cell-key="{attr(cell.cell_key)}" '
+                                    'role="gridcell" tabindex="0"'
                                 )
                                 with button:
                                     ui.label(name).classes("sy-draft-cell-name")
@@ -613,7 +658,17 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                 if state != "closed":
                                     button.on(
                                         "click",
-                                        lambda _event=None, key=cell.cell_key: choose_cell(key),
+                                        lambda _event=None, key=cell.cell_key: open_cell_editor(key),
+                                    )
+                                    button.on(
+                                        "keydown",
+                                        lambda event, key=cell.cell_key: handle_cell_key(event, key),
+                                        args=["key"],
+                                        js_handler=(
+                                            "(event) => { if (['Enter', 'F2', 'Escape'].includes(event.key)) { "
+                                            "event.preventDefault(); event.stopPropagation(); "
+                                            "emit({key: event.key}); } }"
+                                        ),
                                     )
 
                 ui.label(t("draft_grid_mobile_notice")).classes(
@@ -654,7 +709,8 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                     if cell.cell_key in pending_cells:
                                         classes += " sy-draft-mobile-cell--pending"
                                     button = ui.element("button").classes(classes).props(
-                                        f'type="button" aria-label="{attr(row.spec.display_label + ", " + name)}"'
+                                        f'type="button" aria-label="{attr(row.spec.display_label + ", " + name)}" '
+                                        f'data-cell-key="{attr(cell.cell_key)}" role="gridcell" tabindex="0"'
                                     )
                                     with button:
                                         ui.label(row.spec.display_label).classes("text-sm font-semibold")
@@ -665,7 +721,17 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                     if state != "closed":
                                         button.on(
                                             "click",
-                                            lambda _event=None, key=cell.cell_key: choose_cell(key),
+                                            lambda _event=None, key=cell.cell_key: open_cell_editor(key),
+                                        )
+                                        button.on(
+                                            "keydown",
+                                            lambda event, key=cell.cell_key: handle_cell_key(event, key),
+                                            args=["key"],
+                                            js_handler=(
+                                                "(event) => { if (['Enter', 'F2', 'Escape'].includes(event.key)) { "
+                                                "event.preventDefault(); event.stopPropagation(); "
+                                                "emit({key: event.key}); } }"
+                                            ),
                                         )
 
             with ui.element("div").classes("sy-draft-editor-panel"):

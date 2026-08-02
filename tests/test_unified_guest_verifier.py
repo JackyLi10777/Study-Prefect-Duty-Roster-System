@@ -140,6 +140,14 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         "draft-save-all",
         "draft-day-toggle-monday",
         "draft-day-confirm-close-monday",
+        "draft-day-confirm-reopen-monday",
+        ".sy-draft-grid-day-closed",
+        ".sy-draft-mobile-day:visible",
+        ".sy-draft-mobile-cell--assigned:visible",
+        'candidate_input.fill("X")',
+        ".sy-draft-mobile-cell--vacant.sy-draft-mobile-cell--pending:visible",
+        '"vacancyAliasEntered": "X"',
+        '"officialSqliteUnchanged"',
         "leave-adjustment-reason",
         "download-summary-json",
         "school-year-rollover-confirmation",
@@ -153,6 +161,22 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
     assert "draft-change-reason" not in source
     assert "載入合資格人選" not in source
     assert "儲存草稿修改" not in source
+
+    weekly_flow = source.split("def _exercise_weekly_workflow", 1)[1].split(
+        "def _exercise_summary_downloads", 1
+    )[0]
+    assert weekly_flow.index('get_by_test_id("draft-day-confirm-close-monday")') < weekly_flow.index(
+        'page.reload(wait_until="domcontentloaded")'
+    )
+    assert weekly_flow.index('page.reload(wait_until="domcontentloaded")') < weekly_flow.index(
+        'get_by_test_id("draft-day-confirm-reopen-monday")'
+    )
+    assert weekly_flow.index('get_by_test_id("draft-day-confirm-reopen-monday")') < weekly_flow.index(
+        '.sy-draft-mobile-day:visible'
+    )
+    assert weekly_flow.index('.sy-draft-mobile-day:visible') < weekly_flow.index(
+        'name=re.compile(r"發布週表|Publish roster")'
+    )
 
     weekly_source = (
         Path(__file__).parents[1] / "nicegui_app" / "ui" / "page_routes" / "weekly.py"
