@@ -156,7 +156,7 @@ def _is_public_current_release_digest(
         return False
     if not isinstance(payload, Mapping):
         return False
-    if payload.get("schema_version") != 1 or payload.get("state") != "live":
+    if payload.get("schema_version") != 2 or payload.get("state") != "live":
         return False
     match = _PUBLIC_CURRENT_RELEASE_DIGEST.fullmatch(line)
     if match is None:

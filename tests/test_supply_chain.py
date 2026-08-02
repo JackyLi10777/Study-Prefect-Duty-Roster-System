@@ -179,6 +179,19 @@ def test_secret_scan_ignores_only_schema_bound_current_release_digests(
     )
 
     payload = json.loads(source.read_text(encoding="utf-8"))
+    payload["schema_version"] = 1
+    status.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    old_schema_lines = status.read_text(encoding="utf-8").splitlines()
+    commit_line = next(
+        index
+        for index, line in enumerate(old_schema_lines, start=1)
+        if '"commit"' in line
+    )
+    assert not _is_public_current_release_digest(
+        str(relative_path), commit_line, tmp_path
+    )
+
+    payload = json.loads(source.read_text(encoding="utf-8"))
     payload["nested"] = {"commit": "0" * 40}
     status.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     nested_lines = status.read_text(encoding="utf-8").splitlines()

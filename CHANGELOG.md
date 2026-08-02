@@ -2,7 +2,16 @@
 
 This file records user-visible, operational and release-significant changes. The editable authority for observed deployment truth is `docs/status/current-release.json`; `docs/status/CURRENT_STATUS.md` is its generated, human-readable view and must not be edited by hand. Immutable historical evidence remains in `PROJECT_STATUS.md`, dated audits and generated release reports.
 
-## Unreleased — activation readiness and verification maintainability
+## Unreleased
+
+- No product or runtime changes are recorded after rc49; this documentation closeout records observed production truth only.
+
+## v1.2.0-rc.49 — released, 2026-08-02
+
+- Deployed protected-main commit `21928e38a0df6fd217a8ba449eb675b94a282f01` as annotated `v1.2.0-rc.49`. The 312-file source fingerprint `e350497ba121e2420f00cbae3725334e8c45267e140388bbd0b5530e84135878` passed 15／15 gates; Windows Origin now runs the immutable rc49 bundle through `nicegui_app.launcher`, with health／readiness green and Alembic `0012` unchanged.
+- Migrated the one validated 54-byte rc47 NiceGUI administrator-preference JSON to protected runtime storage before switching bundles. The rc47 rollback bundle was restored to its full marker fingerprint, the external file retained its exact SHA-256, and no runtime preference remains inside either immutable bundle.
+- Created verified backup `20260802-091628-350429-manual_verified_backup.sqlite3` with SHA-256 `f827c8932bd78ca2b2528728e6770c539c6f2ad8adfa64a3ec85cd69485e8fd9`; checksum, SQLite integrity, schema, fairness, row counts, restore audit and isolated restore passed.
+- Staged Worker `99ed9a4e-8167-44bd-b478-562ff8f4d17e` at 0%, passed version-override smoke and promoted it to 100%. The previous Worker `a7218f51-ec6c-4002-a9be-9dfbb691136c` remains the exact edge rollback identity; canonical Admin redirect, Guest desktop／mobile workbench, Viewer, theme persistence and browser error checks passed.
 
 - Kept annotated `v1.2.0-rc.48` source-only: all 15 source gates passed, but the Windows deployer stopped before downtime when rc47 contained one post-marker NiceGUI administrator-preference file. The new production launcher resolves `NICEGUI_STORAGE_PATH` to mutable runtime data before importing NiceGUI; deployment accepts only bounded, post-marker `storage-general.json` or `storage-user-<uuid>.json` deltas whose exclusion reconstructs the original bundle fingerprint, then stops the old process, validates and migrates those JSON objects, removes them from source, and re-verifies the complete immutable bundle. Every other bundle delta remains fail-closed.
 - Refined Quiet Command Center into the `Woven Clarity` product-finish pass without adding a second CSS layer or frontend dependency: the desktop rail is narrower, shared surfaces use quieter radii／shadows, route atmosphere is shallower and the weekly stages gain bounded wide-screen sequence connectors.
