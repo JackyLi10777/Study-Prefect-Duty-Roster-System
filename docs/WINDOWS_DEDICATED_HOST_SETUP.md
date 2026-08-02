@@ -402,6 +402,8 @@ C:\SingYinRoster\data\backups
 C:\SingYinRoster\logs
 ```
 
+`nicegui-storage` 不由 launcher 預先建立；launcher 只在 NiceGUI 載入前設定路徑，目錄會在管理員首次儲存介面偏好、框架實際寫入 storage 時建立。
+
 不要直接開啟或修改 `sing-yin-roster.sqlite3`。
 
 ### 步驟 7.3A：確認正式資料是乾淨零起點

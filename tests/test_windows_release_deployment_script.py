@@ -195,7 +195,7 @@ try {{
         -HostRoot '{escaped_host}' `
         -TaskWorkingDirectory '{escaped_working_directory}' `
         -ExpectedEnvironmentHash '{expected_environment_hash}'
-    [ordered]@{{
+    ConvertTo-Json -InputObject ([ordered]@{{
         ok = $true
         commit = [string]$identity.Commit
         releaseRef = [string]$identity.ReleaseRef
@@ -203,12 +203,12 @@ try {{
         bundle = [string]$identity.Bundle
         repairCount = [int]$identity.RepairCount
         pendingNiceGuiStorage = @($identity.PendingNiceGuiStorageRelativePaths)
-    }} | ConvertTo-Json -Compress
+    }}) -Compress
 }} catch {{
-    [ordered]@{{
+    ConvertTo-Json -InputObject ([ordered]@{{
         ok = $false
         error = [string]$_.Exception.Message
-    }} | ConvertTo-Json -Compress
+    }}) -Compress
 }}
 """
     command_path = repository.parent / "previous-release-identity-test.ps1"
@@ -251,9 +251,12 @@ def _run_legacy_nicegui_storage_migration(
         pytest.skip("Windows PowerShell is required for the production host script")
     escaped_bundle = str(bundle).replace("'", "''")
     escaped_host = str(host_root).replace("'", "''")
-    paths = ", ".join(f"'{value}'" for value in relative_paths)
+    paths = ", ".join(
+        "'{}'".format(value.replace("'", "''")) for value in relative_paths
+    )
     function_source = "\n".join(
         (
+            _powershell_function_source("Get-SingYinFileSha256"),
             _powershell_function_source("Get-SingYinReleaseBundleFingerprint"),
             _powershell_function_source("Move-SingYinLegacyNiceGuiStorage"),
         )
@@ -282,16 +285,28 @@ try {{
     }} | ConvertTo-Json -Compress
 }}
 """
-    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
-    result = subprocess.run(
-        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
-        cwd=PROJECT_ROOT,
-        check=False,
-        capture_output=True,
-        text=True,
-        encoding="utf-8-sig",
-        errors="replace",
-    )
+    command_path = host_root.parent / "legacy-nicegui-migration-test.ps1"
+    command_path.write_text(command, encoding="utf-8-sig")
+    try:
+        result = subprocess.run(
+            [
+                POWERSHELL,
+                "-NoLogo",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(command_path),
+            ],
+            cwd=PROJECT_ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8-sig",
+            errors="replace",
+        )
+    finally:
+        command_path.unlink(missing_ok=True)
     assert result.returncode == 0, result.stdout + result.stderr
     json_lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
     assert json_lines, f"PowerShell migration emitted no JSON payload: {result.stdout!r}"
@@ -863,6 +878,96 @@ def test_legacy_nicegui_migration_rejects_non_object_json(
     assert migration["ok"] is False
     assert "not a JSON object" in str(migration["error"])
     assert preference.exists()
+
+
+def test_legacy_nicegui_migration_validates_all_files_before_mutation(
+    tmp_path: Path,
+) -> None:
+    _, host_root, bundle, marker, _ = _create_trusted_release_bundle(tmp_path)
+    relative_paths = [
+        ".nicegui/storage-general.json",
+        ".nicegui/storage-user-f32cba68-43d0-4d27-b84c-3cec7b584a99.json",
+    ]
+    first = bundle / Path(relative_paths[0])
+    second = bundle / Path(relative_paths[1])
+    first.parent.mkdir(parents=True)
+    first.write_text('{"theme":"dark"}', encoding="utf-8")
+    second.write_text("[]", encoding="utf-8")
+
+    migration = _run_legacy_nicegui_storage_migration(
+        bundle,
+        host_root,
+        relative_paths,
+        str(marker["bundleContentSha256"]),
+        int(marker["bundleFileCount"]),
+    )
+
+    destination_root = host_root / "data" / "runtime" / "nicegui-storage"
+    assert migration["ok"] is False
+    assert "not a JSON object" in str(migration["error"])
+    assert first.exists()
+    assert second.exists()
+    assert not (destination_root / first.name).exists()
+
+
+def test_legacy_nicegui_migration_refuses_a_different_existing_destination(
+    tmp_path: Path,
+) -> None:
+    _, host_root, bundle, marker, _ = _create_trusted_release_bundle(tmp_path)
+    relative_path = ".nicegui/storage-general.json"
+    source = bundle / Path(relative_path)
+    source.parent.mkdir(parents=True)
+    source.write_text('{"theme":"dark"}', encoding="utf-8")
+    destination = (
+        host_root / "data" / "runtime" / "nicegui-storage" / source.name
+    )
+    destination.parent.mkdir(parents=True)
+    destination.write_text('{"theme":"light"}', encoding="utf-8")
+
+    migration = _run_legacy_nicegui_storage_migration(
+        bundle,
+        host_root,
+        [relative_path],
+        str(marker["bundleContentSha256"]),
+        int(marker["bundleFileCount"]),
+    )
+
+    assert migration["ok"] is False
+    assert "already contains different data" in str(migration["error"])
+    assert source.exists()
+    assert destination.read_text(encoding="utf-8") == '{"theme":"light"}'
+
+
+def test_legacy_nicegui_migration_reconciles_an_identical_existing_destination(
+    tmp_path: Path,
+) -> None:
+    _, host_root, bundle, marker, _ = _create_trusted_release_bundle(tmp_path)
+    relative_path = ".nicegui/storage-general.json"
+    source = bundle / Path(relative_path)
+    source.parent.mkdir(parents=True)
+    content = '{"theme":"dark"}'
+    source.write_text(content, encoding="utf-8")
+    destination = (
+        host_root / "data" / "runtime" / "nicegui-storage" / source.name
+    )
+    destination.parent.mkdir(parents=True)
+    destination.write_text(content, encoding="utf-8")
+
+    migration = _run_legacy_nicegui_storage_migration(
+        bundle,
+        host_root,
+        [relative_path],
+        str(marker["bundleContentSha256"]),
+        int(marker["bundleFileCount"]),
+    )
+
+    assert migration["ok"] is True
+    assert migration["migratedCount"] == 1
+    assert not source.exists()
+    assert destination.read_text(encoding="utf-8") == content
+    repaired_fingerprint = _run_bundle_fingerprint(bundle)
+    assert repaired_fingerprint["sha256"] == marker["bundleContentSha256"]
+    assert repaired_fingerprint["fileCount"] == marker["bundleFileCount"]
 
 
 @pytest.mark.parametrize(

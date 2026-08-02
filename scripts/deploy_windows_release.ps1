@@ -811,6 +811,28 @@ function New-SingYinRuntimeTaskPassword {
     }
 }
 
+function Get-SingYinFileSha256 {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $file = Get-Item -LiteralPath $Path -Force -ErrorAction Stop
+    if (
+        $file.PSIsContainer -or
+        ($file.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0
+    ) {
+        throw "The SHA-256 input must be a regular file."
+    }
+    $hasher = [Security.Cryptography.SHA256]::Create()
+    $stream = [IO.File]::OpenRead($file.FullName)
+    try {
+        return ([BitConverter]::ToString(
+            $hasher.ComputeHash($stream)
+        )).Replace("-", "").ToLowerInvariant()
+    } finally {
+        $stream.Dispose()
+        $hasher.Dispose()
+    }
+}
+
 function Get-SingYinReleaseBundleFingerprint {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
@@ -927,7 +949,7 @@ function Get-SingYinLegacyReleaseBundleFingerprint {
         '^\.nicegui/storage-(?:general|user-' +
         '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json$'
     )
-    $bytecodeOptions = (
+    $pathMatchOptions = (
         [Text.RegularExpressions.RegexOptions]::IgnoreCase -bor
         [Text.RegularExpressions.RegexOptions]::CultureInvariant
     )
@@ -951,7 +973,7 @@ function Get-SingYinLegacyReleaseBundleFingerprint {
             [Text.RegularExpressions.Regex]::IsMatch(
                 $relativePath,
                 $bytecodePattern,
-                $bytecodeOptions
+                $pathMatchOptions
             ) -and
             $item.LastWriteTimeUtc -gt $createdAt.UtcDateTime
         ) {
@@ -960,7 +982,7 @@ function Get-SingYinLegacyReleaseBundleFingerprint {
             [Text.RegularExpressions.Regex]::IsMatch(
                 $relativePath,
                 $niceGuiStoragePattern,
-                $bytecodeOptions
+                $pathMatchOptions
             ) -and
             $item.LastWriteTimeUtc -gt $createdAt.UtcDateTime -and
             [int64]$item.Length -gt 0 -and
@@ -1262,10 +1284,23 @@ function Move-SingYinLegacyNiceGuiStorage {
         [Text.RegularExpressions.RegexOptions]::IgnoreCase -bor
         [Text.RegularExpressions.RegexOptions]::CultureInvariant
     )
-    $null = New-Item -ItemType Directory -Path $storageRoot -Force
-    Protect-SingYinSensitivePath -Path $storageRoot -RuntimeUser $RuntimeUser
+    if (Test-Path -LiteralPath $storageRoot) {
+        $existingStorageRoot = Get-Item `
+            -LiteralPath $storageRoot `
+            -Force `
+            -ErrorAction Stop
+        if (
+            -not $existingStorageRoot.PSIsContainer -or
+            ($existingStorageRoot.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0
+        ) {
+            throw "The NiceGUI runtime storage root is unsafe."
+        }
+    }
 
-    $migratedCount = 0
+    # Validate every source and destination before mutating either location.
+    # A malformed later file must not leave a valid earlier file half-migrated.
+    $validatedPreferences = [Collections.Generic.List[object]]::new()
+    $seenRelativePaths = @{}
     foreach ($relativePathValue in $RelativePaths) {
         $relativePath = ([string]$relativePathValue).Replace('\', '/')
         if (-not [Text.RegularExpressions.Regex]::IsMatch(
@@ -1275,6 +1310,11 @@ function Move-SingYinLegacyNiceGuiStorage {
         )) {
             throw "The legacy NiceGUI migration received an unsupported path."
         }
+        $relativePathKey = $relativePath.ToLowerInvariant()
+        if ($seenRelativePaths.ContainsKey($relativePathKey)) {
+            throw "The legacy NiceGUI migration received a duplicate path."
+        }
+        $seenRelativePaths[$relativePathKey] = $true
         $sourcePath = [IO.Path]::GetFullPath(
             (Join-Path $bundle $relativePath.Replace('/', '\'))
         )
@@ -1304,38 +1344,87 @@ function Move-SingYinLegacyNiceGuiStorage {
         }
 
         $destinationPath = Join-Path $storageRoot ([IO.Path]::GetFileName($sourcePath))
-        $temporaryPath = Join-Path $storageRoot (
-            ".migration-$([Guid]::NewGuid().ToString('N')).tmp"
-        )
-        try {
-            Copy-Item -LiteralPath $sourcePath -Destination $temporaryPath -Force
-            $sourceBytes = [IO.File]::ReadAllBytes($sourcePath)
-            $temporaryBytes = [IO.File]::ReadAllBytes($temporaryPath)
-            $sourceHasher = [Security.Cryptography.SHA256]::Create()
-            $temporaryHasher = [Security.Cryptography.SHA256]::Create()
-            try {
-                $sourceHash = [BitConverter]::ToString(
-                    $sourceHasher.ComputeHash($sourceBytes)
-                )
-                $temporaryHash = [BitConverter]::ToString(
-                    $temporaryHasher.ComputeHash($temporaryBytes)
-                )
-                if ($temporaryHash -cne $sourceHash) {
-                    throw "The legacy NiceGUI preference copy failed integrity verification."
-                }
-            } finally {
-                $sourceHasher.Dispose()
-                $temporaryHasher.Dispose()
-                [Array]::Clear($sourceBytes, 0, $sourceBytes.Length)
-                [Array]::Clear($temporaryBytes, 0, $temporaryBytes.Length)
+        $destinationExists = Test-Path -LiteralPath $destinationPath
+        if ($destinationExists) {
+            $destination = Get-Item `
+                -LiteralPath $destinationPath `
+                -Force `
+                -ErrorAction Stop
+            if (
+                $destination.PSIsContainer -or
+                ($destination.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+                [int64]$destination.Length -lt 1 -or
+                [int64]$destination.Length -gt 65536
+            ) {
+                throw "The existing NiceGUI preference destination is unsafe."
             }
-            Move-Item -LiteralPath $temporaryPath -Destination $destinationPath -Force
-            Protect-SingYinSensitivePath -Path $destinationPath -RuntimeUser $RuntimeUser
-        } finally {
-            Remove-Item -LiteralPath $temporaryPath -Force -ErrorAction SilentlyContinue
+            $sourceHash = Get-SingYinFileSha256 -Path $sourcePath
+            $destinationHash = Get-SingYinFileSha256 -Path $destinationPath
+            if ($destinationHash -cne $sourceHash) {
+                throw "The legacy NiceGUI preference destination already contains different data."
+            }
         }
-        Remove-Item -LiteralPath $sourcePath -Force
-        $migratedCount += 1
+        $validatedPreferences.Add([pscustomobject]@{
+            SourcePath = $sourcePath
+            DestinationPath = $destinationPath
+            DestinationExists = [bool]$destinationExists
+            TemporaryPath = $null
+        })
+    }
+
+    $null = New-Item -ItemType Directory -Path $storageRoot -Force
+    Protect-SingYinSensitivePath -Path $storageRoot -RuntimeUser $RuntimeUser
+    $migratedCount = 0
+    try {
+        # Stage and hash every absent destination before committing any move.
+        foreach ($preference in $validatedPreferences) {
+            if ($preference.DestinationExists) {
+                continue
+            }
+            $temporaryPath = Join-Path $storageRoot (
+                ".migration-$([Guid]::NewGuid().ToString('N')).tmp"
+            )
+            $preference.TemporaryPath = $temporaryPath
+            Copy-Item `
+                -LiteralPath $preference.SourcePath `
+                -Destination $temporaryPath `
+                -Force `
+                -ErrorAction Stop
+            $sourceHash = Get-SingYinFileSha256 -Path $preference.SourcePath
+            $temporaryHash = Get-SingYinFileSha256 -Path $temporaryPath
+            if ($temporaryHash -cne $sourceHash) {
+                throw "The legacy NiceGUI preference copy failed integrity verification."
+            }
+        }
+
+        foreach ($preference in $validatedPreferences) {
+            if (-not $preference.DestinationExists) {
+                Move-Item `
+                    -LiteralPath $preference.TemporaryPath `
+                    -Destination $preference.DestinationPath `
+                    -ErrorAction Stop
+                $preference.TemporaryPath = $null
+            }
+            Protect-SingYinSensitivePath `
+                -Path $preference.DestinationPath `
+                -RuntimeUser $RuntimeUser
+        }
+        foreach ($preference in $validatedPreferences) {
+            Remove-Item `
+                -LiteralPath $preference.SourcePath `
+                -Force `
+                -ErrorAction Stop
+            $migratedCount += 1
+        }
+    } finally {
+        foreach ($preference in $validatedPreferences) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$preference.TemporaryPath)) {
+                Remove-Item `
+                    -LiteralPath $preference.TemporaryPath `
+                    -Force `
+                    -ErrorAction SilentlyContinue
+            }
+        }
     }
 
     $legacyStorageDirectory = Join-Path $bundle ".nicegui"
