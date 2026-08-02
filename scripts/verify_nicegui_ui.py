@@ -1025,7 +1025,7 @@ def main() -> None:
         page.screenshot(path=str(HANDOVER_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
         platform_toc = page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link")
-        assert platform_toc.count() == 7
+        assert platform_toc.count() == 8
         operating_map_link = platform_toc.nth(2)
         assert "platform-operating-map-section" in (operating_map_link.get_attribute("href") or "")
         operating_map_link.focus()
@@ -1054,6 +1054,18 @@ def main() -> None:
         assert page.get_by_test_id("capability-map").locator(".sy-capability-card").count() == 4
         assert page.get_by_test_id("platform-operating-map").locator(".sy-platform-map-node").count() == 6
         assert page.get_by_test_id("solutions-portfolio").locator(".sy-solution-card").count() == 4
+        convictions = page.get_by_test_id("platform-core-convictions")
+        convictions.wait_for(timeout=10_000)
+        assert convictions.locator(".sy-platform-conviction").count() == 2
+        assert page.get_by_test_id("platform-conviction-direction").count() == 1
+        assert page.get_by_test_id("platform-conviction-conscience").count() == 1
+        scripture_links = convictions.locator(".sy-platform-scripture-source")
+        assert scripture_links.count() == 2
+        for scripture_link in scripture_links.all():
+            assert scripture_link.get_attribute("target") == "_blank"
+            assert "noopener" in (scripture_link.get_attribute("rel") or "")
+            assert "noreferrer" in (scripture_link.get_attribute("rel") or "")
+            assert scripture_link.get_attribute("referrerpolicy") == "no-referrer"
         assert page.get_by_test_id("platform-principles").locator(".sy-platform-value").count() == 5
         assert page.get_by_test_id("platform-resources").locator(".sy-platform-resource").count() == 3
         team_role = page.get_by_test_id("team-operating-model").locator(".sy-team-role").first
