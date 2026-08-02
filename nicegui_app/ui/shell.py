@@ -1368,7 +1368,9 @@ def page_shell(active_path: str) -> Iterator[None]:
                         ui.label(t(title_key)).classes("sy-page-atmosphere-title")
         yield
     with ui.element("footer").props("role=contentinfo data-testid=page-copyright").classes("sy-page-footer"):
-        ui.label(t("service_principle")).classes("sy-page-footer-principle")
+        with ui.element("div").classes("sy-page-footer-principles"):
+            ui.label(t("footer_service_direction")).classes("sy-page-footer-principle")
+            ui.label(t("footer_service_conscience")).classes("sy-page-footer-principle")
         ui.label(t("copyright_notice")).classes("sy-page-footer-copyright")
     _render_mobile_tabbar(drawer, active_path, access_mode)
     _install_mobile_drawer_accessibility()

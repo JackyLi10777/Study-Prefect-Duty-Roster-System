@@ -15,7 +15,7 @@ The project stores verification statuses and hashes in `daily-verses.seed.json` 
 
 The local validator `scripts/devotional/validate_devotional_data.py` currently verifies:
 
-- 121 canonical seed entries exist.
+- 122 canonical seed entries exist: 121 legacy-derived records and one reviewed curated record.
 - 500 legacy entries exist.
 - All 500 legacy entries are covered by seed `legacyIds`.
 - The generated expanded export contains 500 entries.
@@ -27,8 +27,8 @@ The local validator `scripts/devotional/validate_devotional_data.py` currently v
   - Chinese: `RCUV 2010`
   - English: `NKJV`
 - Translation verification status is:
-  - `zh:verified-exact = 121`
-  - `en:verified-exact = 121`
+  - `zh:verified-exact = 122`
+  - `en:verified-exact = 122`
 - No validation issues remain.
 
 Latest generated report:
@@ -41,16 +41,22 @@ data/devotional/validation-report.json
 
 - `translation-verification-rcuv-biblegateway.json`
   - Source: Bible Gateway `RCU17TS`
-  - Checked canonical entries: 121
-  - Result: 121 `verified-exact`
+  - Checked canonical entries: 122
+  - Result: 122 `verified-exact`
 - `translation-verification-nkjv-bolls.json`
   - Source: Bolls Bible API `NKJV`
-  - Checked canonical entries: 121
-  - Result: 121 `verified-exact`
+  - Checked canonical entries: 122
+  - Result: 122 `verified-exact`
 
 ## Applied Corrections
 
 The original converted seed text was not exact against the selected external sources in several places.
+
+### 2026-08-03 curated Acts 24:16 and footnote extraction repair
+
+`dv-0122` adds Acts 24:16 as the first `origin: curated` entry. It has no fabricated legacy ID and therefore does not change the 500-record historical expansion. Its RCUV 2010 and NKJV text, source URLs, normalized source/local hashes, bilingual reflection, classifications and theological-review marker are all required before the validator accepts the record.
+
+A fresh 122-entry RCUV verification found that Bible Gateway now exposes some footnote markers through `<sup>` presentation markup. The extractor now removes all superscript presentation metadata—including verse numbers and footnote markers—before reading passage text. No local Scripture wording was silently broadened to absorb a source-page footnote. The complete RCUV and NKJV corpus then returned `122 verified-exact`.
 
 ### 2026-07-18 chapter-opening extraction repair
 
@@ -88,7 +94,7 @@ After synchronization, both language fields verify exactly under the project nor
 
 ## Data Model Notes
 
-`daily-verses.legacy.json` remains unchanged. It is the historical source trace, not the runtime devotional source.
+`daily-verses.legacy.json` remains unchanged. It is the 500-record historical source trace, not the runtime devotional source. Existing canonical records default to `origin: legacy`; a reviewed future addition may use `origin: curated` only with no `legacyIds` and with complete bilingual source, hash and theological-review evidence.
 
 Runtime and future editing should use:
 

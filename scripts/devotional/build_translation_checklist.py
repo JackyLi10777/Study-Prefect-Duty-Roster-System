@@ -13,6 +13,7 @@ SEED_PATH = ROOT / "data" / "devotional" / "daily-verses.seed.json"
 OUTPUT_PATH = ROOT / "data" / "devotional" / "translation-checklist.csv"
 FIELDNAMES = (
     "id",
+    "origin",
     "legacyIds",
     "referenceZh",
     "referenceEn",
@@ -37,6 +38,7 @@ def checklist_rows(seed: dict[str, Any]) -> list[dict[str, str]]:
         rows.append(
             {
                 "id": str(entry["id"]),
+                "origin": str(entry.get("origin", "legacy")),
                 "legacyIds": ";".join(entry.get("legacyIds", [])),
                 "referenceZh": str(source["reference"]["zh"]),
                 "referenceEn": str(source["reference"]["en"]),

@@ -10,7 +10,11 @@
 >
 > **Historical rc31 source candidate (frozen, never deployed):** branch `codex/rc31-unified-theme-controls` combined the binary Light／Dark control with complete deterministic room-schedule solving and strict slot/weight validation, bounded Admin／Guest generated-file delivery, rendered-state mobile-drawer focus synchronization, universal business-write admission, diagnostic-only recovery-marker startup, exact-byte staged backup／handover／restore verification, migration-provenance guards, and fail-closed host／Worker identity parity. Its 297 deployable source files passed all 15 formal `--release` gates with fingerprint `7f405269322e67ddc1fdfd5dde004af5079b315725487303fbecd8e1c0954042`. It is retained as historical source evidence only and was superseded by later production releases; it is not a current candidate, deployment, or rollback target.
 >
-> **Not to be served, but to serve. — Mark 10:45**
+> **Why we serve · Not to be served, but to serve.** — a service principle drawn from Mark 10:45, not a verbatim quotation
+>
+> **How we serve · “This being so, I myself always strive to have a conscience without offense toward God and men.”** — [Acts 24:16, New King James Version](https://www.bible.com/bible/114/ACT.24.16.NKJV)
+>
+> A clear conscience is faithful discipline shaped by resurrection hope and gospel grace—not salvation earned by works or a claim of sinless perfection.
 
 I am LI Chuangjie Jacky, Head Study Prefect for 2026–2027 at Sing Yin Secondary
 School. I co-created this maintained, local-first roster platform with Codex so

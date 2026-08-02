@@ -117,7 +117,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:31.332714+00:00",
+          "checkedAt": "2026-08-02T16:48:57.624555+00:00",
           "localNormalizedHash": "b7a3ad00c18f9e1e63e38137c12f502362156167297c3a893eaf165d679962a4",
           "sourceNormalizedHash": "b7a3ad00c18f9e1e63e38137c12f502362156167297c3a893eaf165d679962a4",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -127,7 +127,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.151362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.943716+00:00",
           "localNormalizedHash": "538410a3fe409fbf94f8bc75c0ac70f239376915a0be092e808ed3ef12350edb",
           "sourceNormalizedHash": "538410a3fe409fbf94f8bc75c0ac70f239376915a0be092e808ed3ef12350edb",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -198,7 +198,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:31.706610+00:00",
+          "checkedAt": "2026-08-02T16:48:57.983640+00:00",
           "localNormalizedHash": "56663a92460baa8b78a3aebdfa0b533aa39566fe9d2864648edc97d19ca91c93",
           "sourceNormalizedHash": "56663a92460baa8b78a3aebdfa0b533aa39566fe9d2864648edc97d19ca91c93",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -208,7 +208,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.151362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.943716+00:00",
           "localNormalizedHash": "cfbb33326142fcd11fc2f4898c693cfb6d04446d211462bd773a15276760faa3",
           "sourceNormalizedHash": "cfbb33326142fcd11fc2f4898c693cfb6d04446d211462bd773a15276760faa3",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -275,7 +275,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:32.077949+00:00",
+          "checkedAt": "2026-08-02T16:48:58.339742+00:00",
           "localNormalizedHash": "3afc1fe05807d6b61b852f4529bf6db82629af289c5b073e0d395c6f1e711b1a",
           "sourceNormalizedHash": "3afc1fe05807d6b61b852f4529bf6db82629af289c5b073e0d395c6f1e711b1a",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -285,7 +285,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.151362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.943716+00:00",
           "localNormalizedHash": "5dfca299c8ae4b1dfb9e78f9fcbcaea0885d37beb0d764e68985cd4c1966a9a9",
           "sourceNormalizedHash": "5dfca299c8ae4b1dfb9e78f9fcbcaea0885d37beb0d764e68985cd4c1966a9a9",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -352,9 +352,9 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:32.447486+00:00",
-          "localNormalizedHash": "1c0ae562f032da7053b318ecd9b35735a32fb6cc8db2d1e10bebef8d993505a0",
-          "sourceNormalizedHash": "1c0ae562f032da7053b318ecd9b35735a32fb6cc8db2d1e10bebef8d993505a0",
+          "checkedAt": "2026-08-02T16:48:58.698096+00:00",
+          "localNormalizedHash": "82e4704f67ab48d829365dd40d19053f2d3c0fc917658be936980ffa8c3d603c",
+          "sourceNormalizedHash": "82e4704f67ab48d829365dd40d19053f2d3c0fc917658be936980ffa8c3d603c",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
         },
         "en": {
@@ -362,7 +362,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.151362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.943716+00:00",
           "localNormalizedHash": "00e4314f09dda117bedc06c34534dc4b626e8615838bfa0f6662e1766e77502e",
           "sourceNormalizedHash": "00e4314f09dda117bedc06c34534dc4b626e8615838bfa0f6662e1766e77502e",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -429,7 +429,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:32.824029+00:00",
+          "checkedAt": "2026-08-02T16:48:59.053104+00:00",
           "localNormalizedHash": "e1cee38ff109927f96a00a394ba7241f3aae9838f4e7f1f57815288272fcadc1",
           "sourceNormalizedHash": "e1cee38ff109927f96a00a394ba7241f3aae9838f4e7f1f57815288272fcadc1",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -439,7 +439,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.151362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.943716+00:00",
           "localNormalizedHash": "8ad77f5f172157326001d4d117287788f67499a9670d68e6e040182994f272fc",
           "sourceNormalizedHash": "8ad77f5f172157326001d4d117287788f67499a9670d68e6e040182994f272fc",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -511,7 +511,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:33.187119+00:00",
+          "checkedAt": "2026-08-02T16:48:59.412807+00:00",
           "localNormalizedHash": "05898d8ed299aea8bd9d973303c0895ffb7f89a29ec49fa4632b69938b897ec4",
           "sourceNormalizedHash": "05898d8ed299aea8bd9d973303c0895ffb7f89a29ec49fa4632b69938b897ec4",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -521,7 +521,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.151362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.943716+00:00",
           "localNormalizedHash": "75913ba3f46441d991d2e3231b52243f777d34be3d8fb1cf9e4ef5478aad5c09",
           "sourceNormalizedHash": "75913ba3f46441d991d2e3231b52243f777d34be3d8fb1cf9e4ef5478aad5c09",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -592,7 +592,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:33.572973+00:00",
+          "checkedAt": "2026-08-02T16:48:59.774626+00:00",
           "localNormalizedHash": "1d8964e59258636c3108b06e13bbd7f705cc9a915c1e995b6e29c5a8e2f685c9",
           "sourceNormalizedHash": "1d8964e59258636c3108b06e13bbd7f705cc9a915c1e995b6e29c5a8e2f685c9",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -602,7 +602,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.151362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.943716+00:00",
           "localNormalizedHash": "c3fdfee98f9cc7ae5c12fcb6383fd1857b3a971942ce79614308d6d1dd07489c",
           "sourceNormalizedHash": "c3fdfee98f9cc7ae5c12fcb6383fd1857b3a971942ce79614308d6d1dd07489c",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -671,7 +671,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:33.940600+00:00",
+          "checkedAt": "2026-08-02T16:49:00.131401+00:00",
           "localNormalizedHash": "b19d43397c73e9835f540bce3971086596b0de5385feb54a80675b9db8d409e2",
           "sourceNormalizedHash": "b19d43397c73e9835f540bce3971086596b0de5385feb54a80675b9db8d409e2",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -681,7 +681,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.151362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.943716+00:00",
           "localNormalizedHash": "a97f2eeb726a614bf8983402e2e14650c2b62f11e6ad16a8a00460472a730608",
           "sourceNormalizedHash": "a97f2eeb726a614bf8983402e2e14650c2b62f11e6ad16a8a00460472a730608",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -748,7 +748,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:34.330776+00:00",
+          "checkedAt": "2026-08-02T16:49:00.487832+00:00",
           "localNormalizedHash": "d05663ddd313cf47862a517365b77f657e87d71ed80204e1f27bbfd94f83b656",
           "sourceNormalizedHash": "d05663ddd313cf47862a517365b77f657e87d71ed80204e1f27bbfd94f83b656",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -758,7 +758,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.151362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "0556b3da38f6d0aadb1ba1146b5ba0baa3b11164333f37155fc77ebb2a834164",
           "sourceNormalizedHash": "0556b3da38f6d0aadb1ba1146b5ba0baa3b11164333f37155fc77ebb2a834164",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -826,7 +826,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:34.701983+00:00",
+          "checkedAt": "2026-08-02T16:49:00.844815+00:00",
           "localNormalizedHash": "2c876704d5abf05521de1fe1357246afe895bf8e0adf2b43555d7cbb65cf55aa",
           "sourceNormalizedHash": "2c876704d5abf05521de1fe1357246afe895bf8e0adf2b43555d7cbb65cf55aa",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -836,7 +836,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.152362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "6f15fb54040c50235c2c52df3016a5867d35072b489755dae9d01f225d92ac15",
           "sourceNormalizedHash": "6f15fb54040c50235c2c52df3016a5867d35072b489755dae9d01f225d92ac15",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -910,7 +910,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:35.071041+00:00",
+          "checkedAt": "2026-08-02T16:49:01.202414+00:00",
           "localNormalizedHash": "e76e9f743710ca5fddc60d211fdb5a861272f8bf90de42f6d1415e34d2cec280",
           "sourceNormalizedHash": "e76e9f743710ca5fddc60d211fdb5a861272f8bf90de42f6d1415e34d2cec280",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -920,7 +920,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.152362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "4d2e5c37a093e7b6559b107fc1e9f7a31c1bc20be91d1f18c31d416b717a79d7",
           "sourceNormalizedHash": "4d2e5c37a093e7b6559b107fc1e9f7a31c1bc20be91d1f18c31d416b717a79d7",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -987,7 +987,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:35.441331+00:00",
+          "checkedAt": "2026-08-02T16:49:01.563025+00:00",
           "localNormalizedHash": "36d65375ad64dcc72847e1bf0d27808191e8a15c973f67101d78d4ad3d76a9c0",
           "sourceNormalizedHash": "36d65375ad64dcc72847e1bf0d27808191e8a15c973f67101d78d4ad3d76a9c0",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -997,7 +997,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.152362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "70bd32c005d1bbb10f49243532403c4ef98f448049667c381029036a4b79255c",
           "sourceNormalizedHash": "70bd32c005d1bbb10f49243532403c4ef98f448049667c381029036a4b79255c",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -1068,7 +1068,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:35.815213+00:00",
+          "checkedAt": "2026-08-02T16:49:01.920473+00:00",
           "localNormalizedHash": "62d6902f113c2507f82263e8bd96f72f0412071da8348ad0d7c36ce87a4ca661",
           "sourceNormalizedHash": "62d6902f113c2507f82263e8bd96f72f0412071da8348ad0d7c36ce87a4ca661",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -1078,7 +1078,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.152362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "7e8b1bf9e04b401407674fbc8f2a035dc8138f62a47ccbe25b4138e7f598cc64",
           "sourceNormalizedHash": "7e8b1bf9e04b401407674fbc8f2a035dc8138f62a47ccbe25b4138e7f598cc64",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -1145,9 +1145,9 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:36.231966+00:00",
-          "localNormalizedHash": "c8bcdbf9867349c6c52926903772f470c1423770f6b371aa2d1c85be7db861a1",
-          "sourceNormalizedHash": "c8bcdbf9867349c6c52926903772f470c1423770f6b371aa2d1c85be7db861a1",
+          "checkedAt": "2026-08-02T16:49:02.276151+00:00",
+          "localNormalizedHash": "d0c3c94f12da811bfba5c6fd790e803853e2e13d8e057d879cee3ffcfc0c435e",
+          "sourceNormalizedHash": "d0c3c94f12da811bfba5c6fd790e803853e2e13d8e057d879cee3ffcfc0c435e",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
         },
         "en": {
@@ -1155,7 +1155,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.153361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "55e9181d859a216a32c1bdfbba777af90e8438dec62f06b549b335be1ce571bb",
           "sourceNormalizedHash": "55e9181d859a216a32c1bdfbba777af90e8438dec62f06b549b335be1ce571bb",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -1222,7 +1222,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:36.606170+00:00",
+          "checkedAt": "2026-08-02T16:49:02.637167+00:00",
           "localNormalizedHash": "b10d55fa7b39ad5491fd31273bae7dccaf86927ad3899688cd8249d7d2c85279",
           "sourceNormalizedHash": "b10d55fa7b39ad5491fd31273bae7dccaf86927ad3899688cd8249d7d2c85279",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -1232,7 +1232,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.153361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "333258739b770ff103d788787049fb80d08dfc8954eb9cf157c99888240062f5",
           "sourceNormalizedHash": "333258739b770ff103d788787049fb80d08dfc8954eb9cf157c99888240062f5",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -1299,7 +1299,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:36.963879+00:00",
+          "checkedAt": "2026-08-02T16:49:02.993710+00:00",
           "localNormalizedHash": "8ba93acd91b851067a00e689ba089ff7d539a161318a4e34e6d328d79e57ee3c",
           "sourceNormalizedHash": "8ba93acd91b851067a00e689ba089ff7d539a161318a4e34e6d328d79e57ee3c",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -1309,7 +1309,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.153361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "b433426dbf8bf087ebc08b4e86186f6f41f8718f51f8687bf6d2cfd3690d6853",
           "sourceNormalizedHash": "b433426dbf8bf087ebc08b4e86186f6f41f8718f51f8687bf6d2cfd3690d6853",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -1379,7 +1379,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:37.401794+00:00",
+          "checkedAt": "2026-08-02T16:49:03.349081+00:00",
           "localNormalizedHash": "37ad1c3a0ba972e9b97e5235850ceea7345318ee221e3161152dc4d5884b2eca",
           "sourceNormalizedHash": "37ad1c3a0ba972e9b97e5235850ceea7345318ee221e3161152dc4d5884b2eca",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -1389,7 +1389,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.153361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "2e20cb1c767fcef774d7db9ffb06c440a92f401b015255927854c30edf03f2a3",
           "sourceNormalizedHash": "2e20cb1c767fcef774d7db9ffb06c440a92f401b015255927854c30edf03f2a3",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -1456,7 +1456,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:37.821239+00:00",
+          "checkedAt": "2026-08-02T16:49:03.708482+00:00",
           "localNormalizedHash": "79e0de04b0e745a73e86c89c63ae7ae03041e95aad2664721635189c5340c977",
           "sourceNormalizedHash": "79e0de04b0e745a73e86c89c63ae7ae03041e95aad2664721635189c5340c977",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -1466,7 +1466,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.153361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "92b5c9abe8542bf1f72936b7e736b227b350eadc2ee4c01f578b5f2be66d9572",
           "sourceNormalizedHash": "92b5c9abe8542bf1f72936b7e736b227b350eadc2ee4c01f578b5f2be66d9572",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -1534,7 +1534,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:38.191890+00:00",
+          "checkedAt": "2026-08-02T16:49:04.065658+00:00",
           "localNormalizedHash": "640bfaa6a3ec82e88477411983bfb7fa9e9a8610705affa8695f576f9fe8bd59",
           "sourceNormalizedHash": "640bfaa6a3ec82e88477411983bfb7fa9e9a8610705affa8695f576f9fe8bd59",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -1544,7 +1544,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.153361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "7f64b25195b9e07284c11a9dfb21c1f9446f59d34618d50f1b337b92717329f0",
           "sourceNormalizedHash": "7f64b25195b9e07284c11a9dfb21c1f9446f59d34618d50f1b337b92717329f0",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -1611,7 +1611,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:38.549085+00:00",
+          "checkedAt": "2026-08-02T16:49:04.420165+00:00",
           "localNormalizedHash": "24987c5d973fd4084e3ee9f70a4e25c98ce550a2f172d2c80cb9b39a54295fc6",
           "sourceNormalizedHash": "24987c5d973fd4084e3ee9f70a4e25c98ce550a2f172d2c80cb9b39a54295fc6",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -1621,7 +1621,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.153361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "e078708e16f2434ebbbb8af07eb47ad28df8e54aa23e84ba506009a2e47d149e",
           "sourceNormalizedHash": "e078708e16f2434ebbbb8af07eb47ad28df8e54aa23e84ba506009a2e47d149e",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -1688,7 +1688,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:38.907685+00:00",
+          "checkedAt": "2026-08-02T16:49:04.776623+00:00",
           "localNormalizedHash": "87b435a9067216a73b5f6710126849cc3cf7f4408580533dfc1f40620b92999a",
           "sourceNormalizedHash": "87b435a9067216a73b5f6710126849cc3cf7f4408580533dfc1f40620b92999a",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -1698,7 +1698,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.153361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "2a1c259b3faf59583b5696209289fdc2b598538c84e1089bdb839486525075ed",
           "sourceNormalizedHash": "2a1c259b3faf59583b5696209289fdc2b598538c84e1089bdb839486525075ed",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -1765,7 +1765,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:39.279663+00:00",
+          "checkedAt": "2026-08-02T16:49:05.133119+00:00",
           "localNormalizedHash": "3f3123c4cb8d4875f0fe35fef7cc5cd0140061b708c066eb86feebfe72f5e50b",
           "sourceNormalizedHash": "3f3123c4cb8d4875f0fe35fef7cc5cd0140061b708c066eb86feebfe72f5e50b",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -1775,7 +1775,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.153361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "97182acb1b2550f9669f36c72a6e7784f777eb720231bdef22b42c7f15a04031",
           "sourceNormalizedHash": "97182acb1b2550f9669f36c72a6e7784f777eb720231bdef22b42c7f15a04031",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -1842,7 +1842,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:39.657001+00:00",
+          "checkedAt": "2026-08-02T16:49:05.491621+00:00",
           "localNormalizedHash": "aeb7672ff4b34935d92910c4562fd97c0352ddf7d1c8a7a6d4bf6d5ee6d6965c",
           "sourceNormalizedHash": "aeb7672ff4b34935d92910c4562fd97c0352ddf7d1c8a7a6d4bf6d5ee6d6965c",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -1852,7 +1852,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.153361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "02b4c34cb4e1f9a68a0e7890a65dbc73b8447ea9138462294e347c69fcca2792",
           "sourceNormalizedHash": "02b4c34cb4e1f9a68a0e7890a65dbc73b8447ea9138462294e347c69fcca2792",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -1919,7 +1919,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:40.029689+00:00",
+          "checkedAt": "2026-08-02T16:49:05.859602+00:00",
           "localNormalizedHash": "d66cb34147abc0fbf85545ea0e8987276e56c3b36acd7de18230db41d15bfc85",
           "sourceNormalizedHash": "d66cb34147abc0fbf85545ea0e8987276e56c3b36acd7de18230db41d15bfc85",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -1929,7 +1929,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.153361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "f3b861e622fa46f333fda57a347eeb9eab8362e39e5a9e0c0d5e3f6ea60c871e",
           "sourceNormalizedHash": "f3b861e622fa46f333fda57a347eeb9eab8362e39e5a9e0c0d5e3f6ea60c871e",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -1996,7 +1996,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:40.401409+00:00",
+          "checkedAt": "2026-08-02T16:49:06.215694+00:00",
           "localNormalizedHash": "9be0090d2e5711f618ad881cec754a415da1796553d49db688ab92495460872c",
           "sourceNormalizedHash": "9be0090d2e5711f618ad881cec754a415da1796553d49db688ab92495460872c",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -2006,7 +2006,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.153361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "c87c70d5da624a663c43bac4d76a4375d62c8807d14cfa1a471f2b5266c3bd6a",
           "sourceNormalizedHash": "c87c70d5da624a663c43bac4d76a4375d62c8807d14cfa1a471f2b5266c3bd6a",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -2073,9 +2073,9 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:40.777604+00:00",
-          "localNormalizedHash": "d36070dde69cddbb4c7b2d81850130e980ba3537611c80eab6821e6861ff534d",
-          "sourceNormalizedHash": "d36070dde69cddbb4c7b2d81850130e980ba3537611c80eab6821e6861ff534d",
+          "checkedAt": "2026-08-02T16:49:06.576382+00:00",
+          "localNormalizedHash": "b9be2ff482d9d7a80d1c68951022c29c8172395cdb25a8253376dd193bd981f6",
+          "sourceNormalizedHash": "b9be2ff482d9d7a80d1c68951022c29c8172395cdb25a8253376dd193bd981f6",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
         },
         "en": {
@@ -2083,7 +2083,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.153361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "88c215c11f9a6df5817af23f28d792112660f4c989e1a817a3615d385a332425",
           "sourceNormalizedHash": "88c215c11f9a6df5817af23f28d792112660f4c989e1a817a3615d385a332425",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -2151,7 +2151,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:41.137432+00:00",
+          "checkedAt": "2026-08-02T16:49:06.932248+00:00",
           "localNormalizedHash": "4fdbf9ff4438de68f5ddfa65c47f3dca49bb82fc39ef0aa61370996ac8f6c216",
           "sourceNormalizedHash": "4fdbf9ff4438de68f5ddfa65c47f3dca49bb82fc39ef0aa61370996ac8f6c216",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -2161,7 +2161,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.154360+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "362977afbca741627d02a8c9fa51b563cbc90cf59e90b772da784f9198796e78",
           "sourceNormalizedHash": "362977afbca741627d02a8c9fa51b563cbc90cf59e90b772da784f9198796e78",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -2228,7 +2228,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:41.521118+00:00",
+          "checkedAt": "2026-08-02T16:49:07.286793+00:00",
           "localNormalizedHash": "ab282da2050ec21f37de73400b51336c3f59c285e86356b7d167277cdaf3ac31",
           "sourceNormalizedHash": "ab282da2050ec21f37de73400b51336c3f59c285e86356b7d167277cdaf3ac31",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -2238,7 +2238,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.154360+00:00",
+          "checkedAt": "2026-08-02T16:49:50.944721+00:00",
           "localNormalizedHash": "554cfcf0f4421c880bb6fc9a002a0b8b147222e27ed69258ca61d5fd2aa22ce1",
           "sourceNormalizedHash": "554cfcf0f4421c880bb6fc9a002a0b8b147222e27ed69258ca61d5fd2aa22ce1",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -2305,7 +2305,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:41.885651+00:00",
+          "checkedAt": "2026-08-02T16:49:07.649054+00:00",
           "localNormalizedHash": "5387826408de3f7cb36d34ccb75e2957c09e01276e14bc5fbfb83388a6eaeac1",
           "sourceNormalizedHash": "5387826408de3f7cb36d34ccb75e2957c09e01276e14bc5fbfb83388a6eaeac1",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -2315,7 +2315,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.154360+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "059e89ad8a4247a43ff53291c6fd1ebb6e5c384379b56909519b4e61eda6ab23",
           "sourceNormalizedHash": "059e89ad8a4247a43ff53291c6fd1ebb6e5c384379b56909519b4e61eda6ab23",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -2385,7 +2385,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:42.264348+00:00",
+          "checkedAt": "2026-08-02T16:49:08.008308+00:00",
           "localNormalizedHash": "6405ffd778191e58f96366273f323344c16122b6c42090f2cd7970a9bba5c6c8",
           "sourceNormalizedHash": "6405ffd778191e58f96366273f323344c16122b6c42090f2cd7970a9bba5c6c8",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -2395,7 +2395,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.154360+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "b350f373a9e0eedd279e624419b591571738633e1a76bc7b3555ee5162f78335",
           "sourceNormalizedHash": "b350f373a9e0eedd279e624419b591571738633e1a76bc7b3555ee5162f78335",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -2465,7 +2465,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:42.622337+00:00",
+          "checkedAt": "2026-08-02T16:49:08.364419+00:00",
           "localNormalizedHash": "b01f78eb9d0da208a849d6e7cac99173110d03f8f9a6ade8a63e5d89dc890173",
           "sourceNormalizedHash": "b01f78eb9d0da208a849d6e7cac99173110d03f8f9a6ade8a63e5d89dc890173",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -2475,7 +2475,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.154360+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "42d39fbf21a293d9e133af325bbbc03c30670d86539e03a9e2f8eccaea093a36",
           "sourceNormalizedHash": "42d39fbf21a293d9e133af325bbbc03c30670d86539e03a9e2f8eccaea093a36",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -2545,7 +2545,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:43.008324+00:00",
+          "checkedAt": "2026-08-02T16:49:08.732894+00:00",
           "localNormalizedHash": "246ac845fe9b73ebcf656ddd08f276e69ff07cc1b50a860322aaec1c23d2ec24",
           "sourceNormalizedHash": "246ac845fe9b73ebcf656ddd08f276e69ff07cc1b50a860322aaec1c23d2ec24",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -2555,7 +2555,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.154360+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "9373560a6239e97622b62bd2df320e74d9e094436cb72637d0450896a6a06538",
           "sourceNormalizedHash": "9373560a6239e97622b62bd2df320e74d9e094436cb72637d0450896a6a06538",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -2624,7 +2624,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:43.376455+00:00",
+          "checkedAt": "2026-08-02T16:49:09.088737+00:00",
           "localNormalizedHash": "756ea9230da4bba5e893fddeeb19748ee06a612f50698a9d80760ce16d745d2b",
           "sourceNormalizedHash": "756ea9230da4bba5e893fddeeb19748ee06a612f50698a9d80760ce16d745d2b",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -2634,7 +2634,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.154360+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "e5d4f546673d69f48e8a66ac9697bb2594c081e7954ad26bcb4011cd64229c5e",
           "sourceNormalizedHash": "e5d4f546673d69f48e8a66ac9697bb2594c081e7954ad26bcb4011cd64229c5e",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -2704,7 +2704,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:43.749408+00:00",
+          "checkedAt": "2026-08-02T16:49:09.443724+00:00",
           "localNormalizedHash": "346c865a474de72665b9d9dac46b0036bddb0e00c1275390127dff3e375177cc",
           "sourceNormalizedHash": "346c865a474de72665b9d9dac46b0036bddb0e00c1275390127dff3e375177cc",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -2714,7 +2714,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.154360+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "9404e47012743c34a5515113ee65de93dc0a8264dd7c3bc6369290657e47ddfa",
           "sourceNormalizedHash": "9404e47012743c34a5515113ee65de93dc0a8264dd7c3bc6369290657e47ddfa",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -2783,7 +2783,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:44.108856+00:00",
+          "checkedAt": "2026-08-02T16:49:09.816400+00:00",
           "localNormalizedHash": "e9816ab3ca36fee1da67f6d8d1408752889ccc6dfa403c06e9c77bbcf40049fb",
           "sourceNormalizedHash": "e9816ab3ca36fee1da67f6d8d1408752889ccc6dfa403c06e9c77bbcf40049fb",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -2793,7 +2793,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.154360+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "8ce6928f5dc8169f90da51c9ae1f63e0b48a2705bc77e58082f1e4ffa61738de",
           "sourceNormalizedHash": "8ce6928f5dc8169f90da51c9ae1f63e0b48a2705bc77e58082f1e4ffa61738de",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -2862,7 +2862,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:44.482764+00:00",
+          "checkedAt": "2026-08-02T16:49:10.174454+00:00",
           "localNormalizedHash": "abc21621d5282d6609ea82014a9c43cbf87c43a514e401b2e361a8b3eb5d1937",
           "sourceNormalizedHash": "abc21621d5282d6609ea82014a9c43cbf87c43a514e401b2e361a8b3eb5d1937",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -2872,7 +2872,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.154360+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "ce4cdfd47f65570657f093161db04c91a32ebdcbff81343ee1c24c32278eecef",
           "sourceNormalizedHash": "ce4cdfd47f65570657f093161db04c91a32ebdcbff81343ee1c24c32278eecef",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -2939,7 +2939,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:44.853875+00:00",
+          "checkedAt": "2026-08-02T16:49:10.531553+00:00",
           "localNormalizedHash": "5144861ce918efd40167a7597d5ec73f777b6ecffad2945514cd650088e5e515",
           "sourceNormalizedHash": "5144861ce918efd40167a7597d5ec73f777b6ecffad2945514cd650088e5e515",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -2949,7 +2949,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.154360+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "abaa9950289bb607e1901ee13e37113687dc7fdd88a43b54a9a104fc2d93e00c",
           "sourceNormalizedHash": "abaa9950289bb607e1901ee13e37113687dc7fdd88a43b54a9a104fc2d93e00c",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -3018,7 +3018,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:45.211245+00:00",
+          "checkedAt": "2026-08-02T16:49:10.885881+00:00",
           "localNormalizedHash": "4eb4793d0d8b826d75672ffb6545cdeeb977393e8798ca8ff648451d9c4bd95f",
           "sourceNormalizedHash": "4eb4793d0d8b826d75672ffb6545cdeeb977393e8798ca8ff648451d9c4bd95f",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -3028,7 +3028,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.155363+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "9ff2815ca056678c2830812b664aab114f238425af663d5cd9529288519f136b",
           "sourceNormalizedHash": "9ff2815ca056678c2830812b664aab114f238425af663d5cd9529288519f136b",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -3096,7 +3096,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:45.582046+00:00",
+          "checkedAt": "2026-08-02T16:49:11.245583+00:00",
           "localNormalizedHash": "9b6e9900644b6d48aea03f6068c38885a326e4eb09a7047adfa840d3581bd6a1",
           "sourceNormalizedHash": "9b6e9900644b6d48aea03f6068c38885a326e4eb09a7047adfa840d3581bd6a1",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -3106,7 +3106,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.155363+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "cbfd501f0d0ba525eec31f386d585c96ace70d7c16412f10deabe93e9be68ffb",
           "sourceNormalizedHash": "cbfd501f0d0ba525eec31f386d585c96ace70d7c16412f10deabe93e9be68ffb",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -3173,7 +3173,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:45.939257+00:00",
+          "checkedAt": "2026-08-02T16:49:11.599912+00:00",
           "localNormalizedHash": "89fe28046afaa24b6746be57c3c9e186241d3505febbfebbed081df48cab447f",
           "sourceNormalizedHash": "89fe28046afaa24b6746be57c3c9e186241d3505febbfebbed081df48cab447f",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -3183,7 +3183,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.155363+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "1f6fef490c3d5b725e6cf959a3715f217b182697334ad7ff416af1b3fad8afee",
           "sourceNormalizedHash": "1f6fef490c3d5b725e6cf959a3715f217b182697334ad7ff416af1b3fad8afee",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -3253,7 +3253,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:46.314096+00:00",
+          "checkedAt": "2026-08-02T16:49:11.953906+00:00",
           "localNormalizedHash": "5c6d0b19b971b1843322e5a6099e58ae77ac721e9df0eaf78f8661983ba94e8c",
           "sourceNormalizedHash": "5c6d0b19b971b1843322e5a6099e58ae77ac721e9df0eaf78f8661983ba94e8c",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -3263,7 +3263,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.155363+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "a0a1540d5b9ee1a360d608401de91e1d3c52f6cdb34d1bad4e80f1164de84f5f",
           "sourceNormalizedHash": "a0a1540d5b9ee1a360d608401de91e1d3c52f6cdb34d1bad4e80f1164de84f5f",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -3330,7 +3330,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:46.672883+00:00",
+          "checkedAt": "2026-08-02T16:49:12.310876+00:00",
           "localNormalizedHash": "43eda8a36323f55b981c06a738ab7ffe6df07d6b7dd7208b6641b36ce504a59a",
           "sourceNormalizedHash": "43eda8a36323f55b981c06a738ab7ffe6df07d6b7dd7208b6641b36ce504a59a",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -3340,7 +3340,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.155363+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "847e1f8eed62bca14cbca1addf945e4e9df5fea93af601a00d76240bb913fd64",
           "sourceNormalizedHash": "847e1f8eed62bca14cbca1addf945e4e9df5fea93af601a00d76240bb913fd64",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -3408,7 +3408,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:47.033079+00:00",
+          "checkedAt": "2026-08-02T16:49:12.667901+00:00",
           "localNormalizedHash": "b6fb2d7566da6fae33d851b729d2fde9bcb7c72706a6408787a48442e36e9c11",
           "sourceNormalizedHash": "b6fb2d7566da6fae33d851b729d2fde9bcb7c72706a6408787a48442e36e9c11",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -3418,7 +3418,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.155363+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "8625d0ea39268fcb4671b168f7fe78b1c75f284e65c397315a17c76d2fabb977",
           "sourceNormalizedHash": "8625d0ea39268fcb4671b168f7fe78b1c75f284e65c397315a17c76d2fabb977",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -3485,7 +3485,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:47.415250+00:00",
+          "checkedAt": "2026-08-02T16:49:13.026141+00:00",
           "localNormalizedHash": "e41b99a2179ee134e1e9730c82e997c9f70f9c5db9983215aacd282deebae65f",
           "sourceNormalizedHash": "e41b99a2179ee134e1e9730c82e997c9f70f9c5db9983215aacd282deebae65f",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -3495,7 +3495,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.155363+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "9fd57a11fe48a11689d06c9e52ee8c6198a49985ea5c5c20ad2ca66d83f95a69",
           "sourceNormalizedHash": "9fd57a11fe48a11689d06c9e52ee8c6198a49985ea5c5c20ad2ca66d83f95a69",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -3562,7 +3562,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:47.793960+00:00",
+          "checkedAt": "2026-08-02T16:49:13.385615+00:00",
           "localNormalizedHash": "07d21fa0270c3f8ef147d15141c4cbba973e4a89add25623345500d6c25af858",
           "sourceNormalizedHash": "07d21fa0270c3f8ef147d15141c4cbba973e4a89add25623345500d6c25af858",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -3572,7 +3572,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.155363+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "627f4e1f153456fbf4cf8ec31ef6adc5d9982f9d8df4a83d0a1ca3b57b162687",
           "sourceNormalizedHash": "627f4e1f153456fbf4cf8ec31ef6adc5d9982f9d8df4a83d0a1ca3b57b162687",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -3639,9 +3639,9 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:48.162348+00:00",
-          "localNormalizedHash": "8b2aec911566c01049e1bc1acf74ed62ed8b4851ba99db1092b3e71296bfb6d9",
-          "sourceNormalizedHash": "8b2aec911566c01049e1bc1acf74ed62ed8b4851ba99db1092b3e71296bfb6d9",
+          "checkedAt": "2026-08-02T16:49:13.744675+00:00",
+          "localNormalizedHash": "9cf3e6b79035afe013cd9f81e580e8e9e5f09a206ae877fe5bd555a3ebd6bb93",
+          "sourceNormalizedHash": "9cf3e6b79035afe013cd9f81e580e8e9e5f09a206ae877fe5bd555a3ebd6bb93",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
         },
         "en": {
@@ -3649,7 +3649,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.155363+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "8753f0d95333d1a55d15a21aabfac18f972e609302bb92b8250c5bd41f8e84b1",
           "sourceNormalizedHash": "8753f0d95333d1a55d15a21aabfac18f972e609302bb92b8250c5bd41f8e84b1",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -3716,7 +3716,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:48.531231+00:00",
+          "checkedAt": "2026-08-02T16:49:14.104082+00:00",
           "localNormalizedHash": "c1daa626bc5ae6ca058b312fc57ed9b9ae7b59188f55825abd13493beafadf93",
           "sourceNormalizedHash": "c1daa626bc5ae6ca058b312fc57ed9b9ae7b59188f55825abd13493beafadf93",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -3726,7 +3726,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.155363+00:00",
+          "checkedAt": "2026-08-02T16:49:50.945721+00:00",
           "localNormalizedHash": "ad7b679418e661383ce9753618b4c4833130f8f57f9863aee83a3e5b4b4610b5",
           "sourceNormalizedHash": "ad7b679418e661383ce9753618b4c4833130f8f57f9863aee83a3e5b4b4610b5",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -3793,7 +3793,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:48.907608+00:00",
+          "checkedAt": "2026-08-02T16:49:14.462175+00:00",
           "localNormalizedHash": "5dcff0e2316d5085e77d5b26b6b57d6b82adfae64ebae4bef08a583424e72750",
           "sourceNormalizedHash": "5dcff0e2316d5085e77d5b26b6b57d6b82adfae64ebae4bef08a583424e72750",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -3803,7 +3803,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.155363+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947225+00:00",
           "localNormalizedHash": "5c4210f5dac266335b19d8af8f1cadb716ace5de47233c067e254a0f18d18a9c",
           "sourceNormalizedHash": "5c4210f5dac266335b19d8af8f1cadb716ace5de47233c067e254a0f18d18a9c",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -3870,7 +3870,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:49.279888+00:00",
+          "checkedAt": "2026-08-02T16:49:14.840979+00:00",
           "localNormalizedHash": "2d62df76583bb61506fe56550e1b10e8771df8ea6a293247dd329cef855eed33",
           "sourceNormalizedHash": "2d62df76583bb61506fe56550e1b10e8771df8ea6a293247dd329cef855eed33",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -3880,7 +3880,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.155363+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947225+00:00",
           "localNormalizedHash": "381a0834084b1122e8c3304ad4c617c4ed2fc170e15a4ac360e7782ab4e34579",
           "sourceNormalizedHash": "381a0834084b1122e8c3304ad4c617c4ed2fc170e15a4ac360e7782ab4e34579",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -3952,9 +3952,9 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:49.654257+00:00",
-          "localNormalizedHash": "e4913c77d34623015c858af9b045993a1f963ac09797cade1baaa613f4e894f7",
-          "sourceNormalizedHash": "e4913c77d34623015c858af9b045993a1f963ac09797cade1baaa613f4e894f7",
+          "checkedAt": "2026-08-02T16:49:15.199324+00:00",
+          "localNormalizedHash": "547e967a31ca0cf765cfbb3a098298a50435541aa4723dbfe7950de878a50394",
+          "sourceNormalizedHash": "547e967a31ca0cf765cfbb3a098298a50435541aa4723dbfe7950de878a50394",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
         },
         "en": {
@@ -3962,7 +3962,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.156361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947225+00:00",
           "localNormalizedHash": "6b67b6d1aef571564bb185eb7e9ab8b087d17c20c2cf394f9354e58db6ff3803",
           "sourceNormalizedHash": "6b67b6d1aef571564bb185eb7e9ab8b087d17c20c2cf394f9354e58db6ff3803",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -4029,9 +4029,9 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:50.026354+00:00",
-          "localNormalizedHash": "dcc8519e7bc30b24dd9f0c45676faf096995a8a51184f5b0f62cf14941d1f1f7",
-          "sourceNormalizedHash": "dcc8519e7bc30b24dd9f0c45676faf096995a8a51184f5b0f62cf14941d1f1f7",
+          "checkedAt": "2026-08-02T16:49:15.555523+00:00",
+          "localNormalizedHash": "b6ba6d951879c705e5cc407ed7bbda94c9b779035a6f30bf31a8fa146ae86402",
+          "sourceNormalizedHash": "b6ba6d951879c705e5cc407ed7bbda94c9b779035a6f30bf31a8fa146ae86402",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
         },
         "en": {
@@ -4039,7 +4039,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.156361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947225+00:00",
           "localNormalizedHash": "26108db7bd8ddd9b052f294ee604e3641284dec57bd6c1eb695687e416e7d42d",
           "sourceNormalizedHash": "26108db7bd8ddd9b052f294ee604e3641284dec57bd6c1eb695687e416e7d42d",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -4106,7 +4106,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:50.395636+00:00",
+          "checkedAt": "2026-08-02T16:49:15.911844+00:00",
           "localNormalizedHash": "5b115115341781a730650fccb0e527c9066f6fc2affd1ade91f27bd2795f0a3d",
           "sourceNormalizedHash": "5b115115341781a730650fccb0e527c9066f6fc2affd1ade91f27bd2795f0a3d",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -4116,7 +4116,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.156361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947225+00:00",
           "localNormalizedHash": "45ccb392449d41398ead59a70b93ff6284d8db8105ed3fca4ea9cfe627cecba4",
           "sourceNormalizedHash": "45ccb392449d41398ead59a70b93ff6284d8db8105ed3fca4ea9cfe627cecba4",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -4183,7 +4183,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:50.774362+00:00",
+          "checkedAt": "2026-08-02T16:49:16.290040+00:00",
           "localNormalizedHash": "1a6558844503afe1481bc1254da15b813573f67a5a85b61070aeb66bad66ad3e",
           "sourceNormalizedHash": "1a6558844503afe1481bc1254da15b813573f67a5a85b61070aeb66bad66ad3e",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -4193,7 +4193,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.156361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947225+00:00",
           "localNormalizedHash": "c02147114d7225a4fdbdda98c48383e2f4364de5ee25d54ffa050a28ee3963ae",
           "sourceNormalizedHash": "c02147114d7225a4fdbdda98c48383e2f4364de5ee25d54ffa050a28ee3963ae",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -4260,9 +4260,9 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:51.145214+00:00",
-          "localNormalizedHash": "56e5d8ca35fef689bfa0f8c261db86db7c4b998b867d8000142906cfb72c35cf",
-          "sourceNormalizedHash": "56e5d8ca35fef689bfa0f8c261db86db7c4b998b867d8000142906cfb72c35cf",
+          "checkedAt": "2026-08-02T16:49:16.650126+00:00",
+          "localNormalizedHash": "e2063123ceaabb9e4a57667c000a80ac36e91799b0ecab4e5218578893485290",
+          "sourceNormalizedHash": "e2063123ceaabb9e4a57667c000a80ac36e91799b0ecab4e5218578893485290",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
         },
         "en": {
@@ -4270,7 +4270,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.156361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947752+00:00",
           "localNormalizedHash": "6ec49fdc3f00b13320f48987bce8635adf65d9c0e45aa1563e1d22b863232629",
           "sourceNormalizedHash": "6ec49fdc3f00b13320f48987bce8635adf65d9c0e45aa1563e1d22b863232629",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -4337,7 +4337,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:51.519997+00:00",
+          "checkedAt": "2026-08-02T16:49:17.007533+00:00",
           "localNormalizedHash": "beb811e50ab9df7c5037b7cbd78e0ee977dfc9aeac4b7b750508348490be0a09",
           "sourceNormalizedHash": "beb811e50ab9df7c5037b7cbd78e0ee977dfc9aeac4b7b750508348490be0a09",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -4347,7 +4347,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.156361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947752+00:00",
           "localNormalizedHash": "f71c07c9c2ede69ebee60fc20f6d3bf5b831f2afb961852860afe01e94369429",
           "sourceNormalizedHash": "f71c07c9c2ede69ebee60fc20f6d3bf5b831f2afb961852860afe01e94369429",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -4414,7 +4414,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:51.889313+00:00",
+          "checkedAt": "2026-08-02T16:49:17.364695+00:00",
           "localNormalizedHash": "2700271d82e5d8439e089d9b452bb08b81817c9b4992428ccac3480d2ef1fe0f",
           "sourceNormalizedHash": "2700271d82e5d8439e089d9b452bb08b81817c9b4992428ccac3480d2ef1fe0f",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -4424,7 +4424,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.156361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947752+00:00",
           "localNormalizedHash": "b5faecc328845cb3dde5e6458842db3e3f60e96df54ca4d635d223d97ac48bd4",
           "sourceNormalizedHash": "b5faecc328845cb3dde5e6458842db3e3f60e96df54ca4d635d223d97ac48bd4",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -4491,7 +4491,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:52.267697+00:00",
+          "checkedAt": "2026-08-02T16:49:17.724316+00:00",
           "localNormalizedHash": "6510beb225fd45766b6255bf3b7cf1f73a9ab0f9ebeaa170d274a709d751a385",
           "sourceNormalizedHash": "6510beb225fd45766b6255bf3b7cf1f73a9ab0f9ebeaa170d274a709d751a385",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -4501,7 +4501,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.156361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947752+00:00",
           "localNormalizedHash": "a80e553cf6623e4dfdd01eff21ab0a8ca12f71f2502b0c1ad86e1a4ebe3175b8",
           "sourceNormalizedHash": "a80e553cf6623e4dfdd01eff21ab0a8ca12f71f2502b0c1ad86e1a4ebe3175b8",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -4568,7 +4568,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:52.633009+00:00",
+          "checkedAt": "2026-08-02T16:49:18.081210+00:00",
           "localNormalizedHash": "723e941faea2272fd90a32e806d3e777dc8c48c3bd9214cd53a24196c5db48a1",
           "sourceNormalizedHash": "723e941faea2272fd90a32e806d3e777dc8c48c3bd9214cd53a24196c5db48a1",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -4578,7 +4578,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.156361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947752+00:00",
           "localNormalizedHash": "05ad1a651f954d9e0021c120e1c52ed8ee318438c25d6bace330c49c60fe71ad",
           "sourceNormalizedHash": "05ad1a651f954d9e0021c120e1c52ed8ee318438c25d6bace330c49c60fe71ad",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -4647,7 +4647,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:53.008396+00:00",
+          "checkedAt": "2026-08-02T16:49:18.437033+00:00",
           "localNormalizedHash": "c597795420e939cbd4808a3b32af11f1a8c078f470d502a662d6ecbf9c08a0eb",
           "sourceNormalizedHash": "c597795420e939cbd4808a3b32af11f1a8c078f470d502a662d6ecbf9c08a0eb",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -4657,7 +4657,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.156361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947752+00:00",
           "localNormalizedHash": "21a2665d48088486846fd3b6df287ac174a154183a3931e965cebcbfa76d25e1",
           "sourceNormalizedHash": "21a2665d48088486846fd3b6df287ac174a154183a3931e965cebcbfa76d25e1",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -4725,7 +4725,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:53.366496+00:00",
+          "checkedAt": "2026-08-02T16:49:18.795099+00:00",
           "localNormalizedHash": "43b929e4699c11ae2e1ced699342f6ddde186c12be4d5cbee925548561a19162",
           "sourceNormalizedHash": "43b929e4699c11ae2e1ced699342f6ddde186c12be4d5cbee925548561a19162",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -4735,7 +4735,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.156361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947752+00:00",
           "localNormalizedHash": "0b9a07d704bbe810481d29410cadc6c67a0bdcb94de62cdf03b5e17c398cb921",
           "sourceNormalizedHash": "0b9a07d704bbe810481d29410cadc6c67a0bdcb94de62cdf03b5e17c398cb921",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -4802,7 +4802,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:53.726798+00:00",
+          "checkedAt": "2026-08-02T16:49:19.154283+00:00",
           "localNormalizedHash": "6576e21300f53ff8873031afc39c707b258df59b48b3b229d25b35e018a115e5",
           "sourceNormalizedHash": "6576e21300f53ff8873031afc39c707b258df59b48b3b229d25b35e018a115e5",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -4812,7 +4812,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.156361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947752+00:00",
           "localNormalizedHash": "620cb8745303dfe5628655b03e56612fa64b02bfb3845819056f7490c3dde1e4",
           "sourceNormalizedHash": "620cb8745303dfe5628655b03e56612fa64b02bfb3845819056f7490c3dde1e4",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -4879,7 +4879,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:54.092902+00:00",
+          "checkedAt": "2026-08-02T16:49:19.511180+00:00",
           "localNormalizedHash": "c02c70631a3b92d33622b8a1a8a68f6547d58beec7911253d4adef5c225499aa",
           "sourceNormalizedHash": "c02c70631a3b92d33622b8a1a8a68f6547d58beec7911253d4adef5c225499aa",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -4889,7 +4889,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.156361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947752+00:00",
           "localNormalizedHash": "f26bf6505b55e601c1e574d1e8f775cb2e6292e0ca6fa79938b6615fa4615c9a",
           "sourceNormalizedHash": "f26bf6505b55e601c1e574d1e8f775cb2e6292e0ca6fa79938b6615fa4615c9a",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -4956,7 +4956,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:54.473651+00:00",
+          "checkedAt": "2026-08-02T16:49:19.867702+00:00",
           "localNormalizedHash": "e1b8971c7c00a285845935d0cde160564f2c1755ca66b869483f07c7cff26007",
           "sourceNormalizedHash": "e1b8971c7c00a285845935d0cde160564f2c1755ca66b869483f07c7cff26007",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -4966,7 +4966,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.157361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.947752+00:00",
           "localNormalizedHash": "0c274097b0e2d102f02af6d9b39dfbb7e2ca0bc75acbd6a399850834165ecb4f",
           "sourceNormalizedHash": "0c274097b0e2d102f02af6d9b39dfbb7e2ca0bc75acbd6a399850834165ecb4f",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -5033,7 +5033,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:54.842205+00:00",
+          "checkedAt": "2026-08-02T16:49:20.224967+00:00",
           "localNormalizedHash": "090e301ec31f8044c5c2228a654c1e4c01f526ae8b78b4605ec0cab5b2dccccc",
           "sourceNormalizedHash": "090e301ec31f8044c5c2228a654c1e4c01f526ae8b78b4605ec0cab5b2dccccc",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -5043,7 +5043,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.157361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.948756+00:00",
           "localNormalizedHash": "64a8b82abde94b3a8d5176ac8af2fd01d05befc5fcaf74471d0373a48185dcb6",
           "sourceNormalizedHash": "64a8b82abde94b3a8d5176ac8af2fd01d05befc5fcaf74471d0373a48185dcb6",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -5110,7 +5110,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:55.219263+00:00",
+          "checkedAt": "2026-08-02T16:49:20.586484+00:00",
           "localNormalizedHash": "f277aab50f8cddc53c0be802b3e533df24952d7ca8485343a5f641971c812bea",
           "sourceNormalizedHash": "f277aab50f8cddc53c0be802b3e533df24952d7ca8485343a5f641971c812bea",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -5120,7 +5120,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.157361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.948756+00:00",
           "localNormalizedHash": "7450636cf6308db58b51779debcf0f0dcb80c64fb13e9ada55d745e49a67c581",
           "sourceNormalizedHash": "7450636cf6308db58b51779debcf0f0dcb80c64fb13e9ada55d745e49a67c581",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -5188,9 +5188,9 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:55.590768+00:00",
-          "localNormalizedHash": "a9dd76220977d67ca91e38726ccdd38b727962c5e5d1347f04094cd2b44019ec",
-          "sourceNormalizedHash": "a9dd76220977d67ca91e38726ccdd38b727962c5e5d1347f04094cd2b44019ec",
+          "checkedAt": "2026-08-02T16:49:20.945084+00:00",
+          "localNormalizedHash": "bd4d974a7660a0c38d33db2d736979f5a29029f72130af160ec3ea574cf54cdf",
+          "sourceNormalizedHash": "bd4d974a7660a0c38d33db2d736979f5a29029f72130af160ec3ea574cf54cdf",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
         },
         "en": {
@@ -5198,7 +5198,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.157361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.948756+00:00",
           "localNormalizedHash": "7ae5c043c61d648c70f349a05c3a4d910cd56829931055ce00a0fc9a9bec062c",
           "sourceNormalizedHash": "7ae5c043c61d648c70f349a05c3a4d910cd56829931055ce00a0fc9a9bec062c",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -5265,7 +5265,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:55.962858+00:00",
+          "checkedAt": "2026-08-02T16:49:21.302020+00:00",
           "localNormalizedHash": "51e9296dc3d38ad1e2769c0d12ed164604717a881e7b345c0ea8aff35318234e",
           "sourceNormalizedHash": "51e9296dc3d38ad1e2769c0d12ed164604717a881e7b345c0ea8aff35318234e",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -5275,7 +5275,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.157361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.948756+00:00",
           "localNormalizedHash": "11986cfcf6af01c8568fd5387131957943621822359e4e8a64aecb23f631017f",
           "sourceNormalizedHash": "11986cfcf6af01c8568fd5387131957943621822359e4e8a64aecb23f631017f",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -5343,7 +5343,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:56.339569+00:00",
+          "checkedAt": "2026-08-02T16:49:21.660933+00:00",
           "localNormalizedHash": "c2a00fcdfc1e49338c88172c05a0f40a5649efeeb1e5279bf59fb878f889d977",
           "sourceNormalizedHash": "c2a00fcdfc1e49338c88172c05a0f40a5649efeeb1e5279bf59fb878f889d977",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -5353,7 +5353,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.157361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.948756+00:00",
           "localNormalizedHash": "35bc026197a1f1cc837a9ec1f16ae702fb723b535faaa1b65fa56acce145fa07",
           "sourceNormalizedHash": "35bc026197a1f1cc837a9ec1f16ae702fb723b535faaa1b65fa56acce145fa07",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -5423,7 +5423,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:56.710779+00:00",
+          "checkedAt": "2026-08-02T16:49:22.018699+00:00",
           "localNormalizedHash": "d448aebdd55fdaeb1f9d81f6f01ec0e948c093074f4971aae35811c26791b908",
           "sourceNormalizedHash": "d448aebdd55fdaeb1f9d81f6f01ec0e948c093074f4971aae35811c26791b908",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -5433,7 +5433,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.157361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.948756+00:00",
           "localNormalizedHash": "f6fb9d50ecdc69123100b39c13e619b1f6c2e1704d1224ea54874e2630cce35a",
           "sourceNormalizedHash": "f6fb9d50ecdc69123100b39c13e619b1f6c2e1704d1224ea54874e2630cce35a",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -5501,7 +5501,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:57.066460+00:00",
+          "checkedAt": "2026-08-02T16:49:22.372064+00:00",
           "localNormalizedHash": "fceac6fca250d3ae499a483658644ddc86b92e1d8d24f9243aaf6c23406c37dd",
           "sourceNormalizedHash": "fceac6fca250d3ae499a483658644ddc86b92e1d8d24f9243aaf6c23406c37dd",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -5511,7 +5511,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.157361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.948756+00:00",
           "localNormalizedHash": "9245306458c48920ffe16d75aa63dfc4f9293689faf65fe6a7de920bb35e32a0",
           "sourceNormalizedHash": "9245306458c48920ffe16d75aa63dfc4f9293689faf65fe6a7de920bb35e32a0",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -5578,7 +5578,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:57.441698+00:00",
+          "checkedAt": "2026-08-02T16:49:22.730230+00:00",
           "localNormalizedHash": "9f7cad17a742a288bf56120d1c59de705c92b973f9da23495d466063f4ae4ee7",
           "sourceNormalizedHash": "9f7cad17a742a288bf56120d1c59de705c92b973f9da23495d466063f4ae4ee7",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -5588,7 +5588,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.157361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.948756+00:00",
           "localNormalizedHash": "498b54b30cc67515e97e87a4734b303d0df2da8019d3299d505d9570f82c578e",
           "sourceNormalizedHash": "498b54b30cc67515e97e87a4734b303d0df2da8019d3299d505d9570f82c578e",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -5657,9 +5657,9 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:57.803903+00:00",
-          "localNormalizedHash": "0d0f34968ed645e9523d78f313a5dea539e0e725d6f566d7daab3041e59062ae",
-          "sourceNormalizedHash": "0d0f34968ed645e9523d78f313a5dea539e0e725d6f566d7daab3041e59062ae",
+          "checkedAt": "2026-08-02T16:49:23.087158+00:00",
+          "localNormalizedHash": "d11fdb9f998ced21c911e8a6d224d81d7ff4a05d8a445688b3815a3d2c0ee52c",
+          "sourceNormalizedHash": "d11fdb9f998ced21c911e8a6d224d81d7ff4a05d8a445688b3815a3d2c0ee52c",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
         },
         "en": {
@@ -5667,7 +5667,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.157361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.948756+00:00",
           "localNormalizedHash": "44b8e0e6733bd7f64cd49711a852c8d3bf49771147338a74c1093d9ffd47f470",
           "sourceNormalizedHash": "44b8e0e6733bd7f64cd49711a852c8d3bf49771147338a74c1093d9ffd47f470",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -5734,7 +5734,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:58.186859+00:00",
+          "checkedAt": "2026-08-02T16:49:23.442413+00:00",
           "localNormalizedHash": "4b14525f3ad797164acdfd88d74eadc495d9fffcde42e80376fcb82237939e38",
           "sourceNormalizedHash": "4b14525f3ad797164acdfd88d74eadc495d9fffcde42e80376fcb82237939e38",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -5744,7 +5744,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.157361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.948756+00:00",
           "localNormalizedHash": "2448400801a20ab44c687b173b69e7fdc0fc56dc66a14e814615d1754ea6bbe6",
           "sourceNormalizedHash": "2448400801a20ab44c687b173b69e7fdc0fc56dc66a14e814615d1754ea6bbe6",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -5811,9 +5811,9 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:58.564677+00:00",
-          "localNormalizedHash": "cc0a455acb09d6e538b7f6493b4923759c802e052f509073ae8d4dbf2ffb2ced",
-          "sourceNormalizedHash": "cc0a455acb09d6e538b7f6493b4923759c802e052f509073ae8d4dbf2ffb2ced",
+          "checkedAt": "2026-08-02T16:49:23.800004+00:00",
+          "localNormalizedHash": "1f8ad5d0df8263f87d6d731b59432898ffae96caab845b45b766b97459fc2459",
+          "sourceNormalizedHash": "1f8ad5d0df8263f87d6d731b59432898ffae96caab845b45b766b97459fc2459",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
         },
         "en": {
@@ -5821,7 +5821,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.158362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.948756+00:00",
           "localNormalizedHash": "514c2bc1bbca72240e5928a4150915ceb8067396fee0052c9691b9bd908c7636",
           "sourceNormalizedHash": "514c2bc1bbca72240e5928a4150915ceb8067396fee0052c9691b9bd908c7636",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -5888,7 +5888,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:58.936874+00:00",
+          "checkedAt": "2026-08-02T16:49:24.161985+00:00",
           "localNormalizedHash": "6193f509dbfeadf8209afb7d5815e6bfb17ef766b7969952bf083faa20601925",
           "sourceNormalizedHash": "6193f509dbfeadf8209afb7d5815e6bfb17ef766b7969952bf083faa20601925",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -5898,7 +5898,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.158362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.948756+00:00",
           "localNormalizedHash": "7ee15fe3091f35aa3eef54bbbbb7b731d69dbd06b1a9ba52acc45a4a254b34e2",
           "sourceNormalizedHash": "7ee15fe3091f35aa3eef54bbbbb7b731d69dbd06b1a9ba52acc45a4a254b34e2",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -5965,7 +5965,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:59.325775+00:00",
+          "checkedAt": "2026-08-02T16:49:24.528256+00:00",
           "localNormalizedHash": "805a0af419e53fec6a0e6ef954045efabc246ec7e2df8538e9af69c0c3b3534d",
           "sourceNormalizedHash": "805a0af419e53fec6a0e6ef954045efabc246ec7e2df8538e9af69c0c3b3534d",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -5975,7 +5975,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.158362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "65f902c6d8da306764d29cffffed706e3dec7685e88773a96e5d57e0525b73d7",
           "sourceNormalizedHash": "65f902c6d8da306764d29cffffed706e3dec7685e88773a96e5d57e0525b73d7",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -6042,7 +6042,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:30:59.681821+00:00",
+          "checkedAt": "2026-08-02T16:49:24.888180+00:00",
           "localNormalizedHash": "59e9907a09c5fcc9ab5f5b68ca0947ca71d315feefd44d76220e9096ff0202aa",
           "sourceNormalizedHash": "59e9907a09c5fcc9ab5f5b68ca0947ca71d315feefd44d76220e9096ff0202aa",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -6052,7 +6052,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.158362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "e797facdeecf3bf783c04a07ea5cea7afa0255fb9e4a2d6ea97dc179b26a6796",
           "sourceNormalizedHash": "e797facdeecf3bf783c04a07ea5cea7afa0255fb9e4a2d6ea97dc179b26a6796",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -6119,7 +6119,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:00.056020+00:00",
+          "checkedAt": "2026-08-02T16:49:25.244866+00:00",
           "localNormalizedHash": "0377f9addf9a64e051503dd19401007099510ca672b55fb3d1d38861706b01d4",
           "sourceNormalizedHash": "0377f9addf9a64e051503dd19401007099510ca672b55fb3d1d38861706b01d4",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -6129,7 +6129,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.158362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "4b2bc3fb45e236d8e5adfa502a64fb0ca10f1810f629b9766ea7384f26edb5a6",
           "sourceNormalizedHash": "4b2bc3fb45e236d8e5adfa502a64fb0ca10f1810f629b9766ea7384f26edb5a6",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -6196,7 +6196,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:00.415066+00:00",
+          "checkedAt": "2026-08-02T16:49:25.602119+00:00",
           "localNormalizedHash": "13559dbd10b6c4cf35d1aa7833dd1858eea666745c355c4713ae683d092f6ce6",
           "sourceNormalizedHash": "13559dbd10b6c4cf35d1aa7833dd1858eea666745c355c4713ae683d092f6ce6",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -6206,7 +6206,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.158362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "48cc9d0b5ca53accae62a4a6c7d9f40b378be5a07a0190faf865015c4e79a1bc",
           "sourceNormalizedHash": "48cc9d0b5ca53accae62a4a6c7d9f40b378be5a07a0190faf865015c4e79a1bc",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -6273,7 +6273,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:00.776174+00:00",
+          "checkedAt": "2026-08-02T16:49:25.957004+00:00",
           "localNormalizedHash": "dc3186f70d232578976c3ccbb79fe4708efa9eedb040c2af2ffdf3ec722e80f9",
           "sourceNormalizedHash": "dc3186f70d232578976c3ccbb79fe4708efa9eedb040c2af2ffdf3ec722e80f9",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -6283,7 +6283,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.158362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "403f01d2d59aa0bfb5488051b1904c56ca9226c131018fc88da9ef1da983d7ad",
           "sourceNormalizedHash": "403f01d2d59aa0bfb5488051b1904c56ca9226c131018fc88da9ef1da983d7ad",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -6350,7 +6350,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:00.776174+00:00",
+          "checkedAt": "2026-08-02T16:49:25.957004+00:00",
           "localNormalizedHash": "e41b99a2179ee134e1e9730c82e997c9f70f9c5db9983215aacd282deebae65f",
           "sourceNormalizedHash": "e41b99a2179ee134e1e9730c82e997c9f70f9c5db9983215aacd282deebae65f",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -6360,7 +6360,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.158362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "9fd57a11fe48a11689d06c9e52ee8c6198a49985ea5c5c20ad2ca66d83f95a69",
           "sourceNormalizedHash": "9fd57a11fe48a11689d06c9e52ee8c6198a49985ea5c5c20ad2ca66d83f95a69",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -6427,7 +6427,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:01.161524+00:00",
+          "checkedAt": "2026-08-02T16:49:26.326735+00:00",
           "localNormalizedHash": "5effb52515e1dafd9b4573136341847349e8aebfbd9b180254fc45c2ca5adb34",
           "sourceNormalizedHash": "5effb52515e1dafd9b4573136341847349e8aebfbd9b180254fc45c2ca5adb34",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -6437,7 +6437,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.158362+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "126b5c0a216031d2e5fb51cf273d9cf15fa9491ad7bf51d0c0df5a41e7479770",
           "sourceNormalizedHash": "126b5c0a216031d2e5fb51cf273d9cf15fa9491ad7bf51d0c0df5a41e7479770",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -6504,7 +6504,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:01.549858+00:00",
+          "checkedAt": "2026-08-02T16:49:26.686903+00:00",
           "localNormalizedHash": "c63615b7ba12b69ce212c44e5dc64673564f89453b662014548bf8130886b91a",
           "sourceNormalizedHash": "c63615b7ba12b69ce212c44e5dc64673564f89453b662014548bf8130886b91a",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -6514,7 +6514,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "352eb0d831f6fdaaab283dd5f3809f721ab16c0599008522eec856f41da06da7",
           "sourceNormalizedHash": "352eb0d831f6fdaaab283dd5f3809f721ab16c0599008522eec856f41da06da7",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -6581,7 +6581,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:01.932439+00:00",
+          "checkedAt": "2026-08-02T16:49:27.043483+00:00",
           "localNormalizedHash": "290953550bf0de993d5f581d8253dd51f8e7537e69fb663d22143d572a67c3b9",
           "sourceNormalizedHash": "290953550bf0de993d5f581d8253dd51f8e7537e69fb663d22143d572a67c3b9",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -6591,7 +6591,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "fa0018ece62982725c08ebd8dd7797461a5ecda490d2dbd683f593da0535a21d",
           "sourceNormalizedHash": "fa0018ece62982725c08ebd8dd7797461a5ecda490d2dbd683f593da0535a21d",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -6658,7 +6658,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:02.303414+00:00",
+          "checkedAt": "2026-08-02T16:49:27.400624+00:00",
           "localNormalizedHash": "76513d02a809f2c4b6303b92c9b065ef43944fc806bf2963b193ede640d65d30",
           "sourceNormalizedHash": "76513d02a809f2c4b6303b92c9b065ef43944fc806bf2963b193ede640d65d30",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -6668,7 +6668,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "e8b9c6ac93f86ce8f0879996d979bae08588e1e3090b93452ce65d3bc22a66fa",
           "sourceNormalizedHash": "e8b9c6ac93f86ce8f0879996d979bae08588e1e3090b93452ce65d3bc22a66fa",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -6736,7 +6736,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:02.679391+00:00",
+          "checkedAt": "2026-08-02T16:49:27.755758+00:00",
           "localNormalizedHash": "2fa6b7244464278e733daf0e65247f4e522948cffdcb6a8c3a70efdbf8665c77",
           "sourceNormalizedHash": "2fa6b7244464278e733daf0e65247f4e522948cffdcb6a8c3a70efdbf8665c77",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -6746,7 +6746,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "ce674297414045b9d4c414f11bea598ae36f4e60c1ae6fd1b084ce0ac1dfe37a",
           "sourceNormalizedHash": "ce674297414045b9d4c414f11bea598ae36f4e60c1ae6fd1b084ce0ac1dfe37a",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -6821,7 +6821,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:03.050854+00:00",
+          "checkedAt": "2026-08-02T16:49:28.113877+00:00",
           "localNormalizedHash": "1d810eef8afa0087ec4d803aee6bdc612e9ee9f23db2c677299689750cab9980",
           "sourceNormalizedHash": "1d810eef8afa0087ec4d803aee6bdc612e9ee9f23db2c677299689750cab9980",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -6831,7 +6831,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "378bf692c8c56ecf037be0cffd9779311d5949c7d655f9ac8d3f1dbafca06a3a",
           "sourceNormalizedHash": "378bf692c8c56ecf037be0cffd9779311d5949c7d655f9ac8d3f1dbafca06a3a",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -6905,7 +6905,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:03.412358+00:00",
+          "checkedAt": "2026-08-02T16:49:28.472678+00:00",
           "localNormalizedHash": "c0e026eb8b31421647d95eee7ecc025c37b7de763d303f79c69dd0f270b3d534",
           "sourceNormalizedHash": "c0e026eb8b31421647d95eee7ecc025c37b7de763d303f79c69dd0f270b3d534",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -6915,7 +6915,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "8fbda4a313073f07b90c80aa5fd6aedda28580ba4a69ad17fc83470696935569",
           "sourceNormalizedHash": "8fbda4a313073f07b90c80aa5fd6aedda28580ba4a69ad17fc83470696935569",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -6992,7 +6992,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:03.788127+00:00",
+          "checkedAt": "2026-08-02T16:49:28.832634+00:00",
           "localNormalizedHash": "1525ba0c32ea329ca4433194817766c92315709b5af73b76d69902fdb1448af7",
           "sourceNormalizedHash": "1525ba0c32ea329ca4433194817766c92315709b5af73b76d69902fdb1448af7",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -7002,7 +7002,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.949759+00:00",
           "localNormalizedHash": "dda096dbb4e11078b28f483f9e27067e1ff8de32a19a66af4f0cd36008c080b6",
           "sourceNormalizedHash": "dda096dbb4e11078b28f483f9e27067e1ff8de32a19a66af4f0cd36008c080b6",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -7076,7 +7076,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:04.152862+00:00",
+          "checkedAt": "2026-08-02T16:49:29.186987+00:00",
           "localNormalizedHash": "d1fc43e1ee1e11ea819630274daf73ebe067f6cacc14abe30c11f55611b6f5f7",
           "sourceNormalizedHash": "d1fc43e1ee1e11ea819630274daf73ebe067f6cacc14abe30c11f55611b6f5f7",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -7086,7 +7086,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "d3835e0fbd17ed1ca1f58ffcbbac790936df046817152f2a96b8a89aabe75386",
           "sourceNormalizedHash": "d3835e0fbd17ed1ca1f58ffcbbac790936df046817152f2a96b8a89aabe75386",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -7191,7 +7191,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:04.509129+00:00",
+          "checkedAt": "2026-08-02T16:49:29.544228+00:00",
           "localNormalizedHash": "bdfb300443f41b7c612c650f2d2d22bd018229835ab97b6446f90d0f7aedea54",
           "sourceNormalizedHash": "bdfb300443f41b7c612c650f2d2d22bd018229835ab97b6446f90d0f7aedea54",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -7201,7 +7201,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "56db3fc5bf68f576fec960766722d1e34944c6d2a24221cbd42c2e9bfa17753d",
           "sourceNormalizedHash": "56db3fc5bf68f576fec960766722d1e34944c6d2a24221cbd42c2e9bfa17753d",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -7306,7 +7306,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:04.885711+00:00",
+          "checkedAt": "2026-08-02T16:49:29.900539+00:00",
           "localNormalizedHash": "0ed320f54d7175eec726255f15b6cc9b68fb22db8c9171733612eccba492d42d",
           "sourceNormalizedHash": "0ed320f54d7175eec726255f15b6cc9b68fb22db8c9171733612eccba492d42d",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -7316,7 +7316,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "df896890202c2b6407b6afc175d23bc9e8011a3bc965a875b00d8ccccd71d875",
           "sourceNormalizedHash": "df896890202c2b6407b6afc175d23bc9e8011a3bc965a875b00d8ccccd71d875",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -7422,9 +7422,9 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:05.247466+00:00",
-          "localNormalizedHash": "8a11da77a6211adce8485ae6e7eacfb88203699b1354e78c42ad78886f0b6acb",
-          "sourceNormalizedHash": "8a11da77a6211adce8485ae6e7eacfb88203699b1354e78c42ad78886f0b6acb",
+          "checkedAt": "2026-08-02T16:49:30.308287+00:00",
+          "localNormalizedHash": "3175a5e836a6c32b0e52da6d29a5d1b9be177cee3277476fc0a1b6735a28e3e8",
+          "sourceNormalizedHash": "3175a5e836a6c32b0e52da6d29a5d1b9be177cee3277476fc0a1b6735a28e3e8",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
         },
         "en": {
@@ -7432,7 +7432,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "b523d8b160e88cec2f48b965407ca96ef2b3cbfc99e0c8b95f59968fd85f5278",
           "sourceNormalizedHash": "b523d8b160e88cec2f48b965407ca96ef2b3cbfc99e0c8b95f59968fd85f5278",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -7537,7 +7537,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:05.247466+00:00",
+          "checkedAt": "2026-08-02T16:49:30.308287+00:00",
           "localNormalizedHash": "b6fb2d7566da6fae33d851b729d2fde9bcb7c72706a6408787a48442e36e9c11",
           "sourceNormalizedHash": "b6fb2d7566da6fae33d851b729d2fde9bcb7c72706a6408787a48442e36e9c11",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -7547,7 +7547,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "8625d0ea39268fcb4671b168f7fe78b1c75f284e65c397315a17c76d2fabb977",
           "sourceNormalizedHash": "8625d0ea39268fcb4671b168f7fe78b1c75f284e65c397315a17c76d2fabb977",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -7652,7 +7652,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:05.621666+00:00",
+          "checkedAt": "2026-08-02T16:49:30.668601+00:00",
           "localNormalizedHash": "32aa8e9926aeaebcbc330988b422f05f75359c41e0d3366bb93552546cd085ce",
           "sourceNormalizedHash": "32aa8e9926aeaebcbc330988b422f05f75359c41e0d3366bb93552546cd085ce",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -7662,7 +7662,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "12093bf14af4bde9767285dad5ce5900fd7665872710d39759853109cb63035d",
           "sourceNormalizedHash": "12093bf14af4bde9767285dad5ce5900fd7665872710d39759853109cb63035d",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -7768,7 +7768,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:05.986723+00:00",
+          "checkedAt": "2026-08-02T16:49:31.030291+00:00",
           "localNormalizedHash": "425624290679bebbafea45b014a1be04d5aaf4a77484744674d969ce7f3aa5b2",
           "sourceNormalizedHash": "425624290679bebbafea45b014a1be04d5aaf4a77484744674d969ce7f3aa5b2",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -7778,7 +7778,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.159364+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "ba367b28440b44043463ecce99094bc0009798409b32768d045dee207b249a30",
           "sourceNormalizedHash": "ba367b28440b44043463ecce99094bc0009798409b32768d045dee207b249a30",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -7878,7 +7878,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:06.345944+00:00",
+          "checkedAt": "2026-08-02T16:49:31.454806+00:00",
           "localNormalizedHash": "09c7e7ee7c85a914124b27fb3c1f1d570b087fc19f41941680865695f9324d8d",
           "sourceNormalizedHash": "09c7e7ee7c85a914124b27fb3c1f1d570b087fc19f41941680865695f9324d8d",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -7888,7 +7888,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "7737e47cf4d443429296c66e95006743b4f4e063eca53c087e0ddd94ed491797",
           "sourceNormalizedHash": "7737e47cf4d443429296c66e95006743b4f4e063eca53c087e0ddd94ed491797",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -7986,7 +7986,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:06.717553+00:00",
+          "checkedAt": "2026-08-02T16:49:31.812248+00:00",
           "localNormalizedHash": "49cfbf16a9be74a7ceb04a8e43d5003bb1629ac0318c1fd0305f967bb1c0dba6",
           "sourceNormalizedHash": "49cfbf16a9be74a7ceb04a8e43d5003bb1629ac0318c1fd0305f967bb1c0dba6",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -7996,7 +7996,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "109b4bc93f053b6c3e72175c8b594f046c82b1828d311be7efa9fe356cf5735a",
           "sourceNormalizedHash": "109b4bc93f053b6c3e72175c8b594f046c82b1828d311be7efa9fe356cf5735a",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -8097,7 +8097,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:06.717553+00:00",
+          "checkedAt": "2026-08-02T16:49:31.812248+00:00",
           "localNormalizedHash": "5dcff0e2316d5085e77d5b26b6b57d6b82adfae64ebae4bef08a583424e72750",
           "sourceNormalizedHash": "5dcff0e2316d5085e77d5b26b6b57d6b82adfae64ebae4bef08a583424e72750",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -8107,7 +8107,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "5c4210f5dac266335b19d8af8f1cadb716ace5de47233c067e254a0f18d18a9c",
           "sourceNormalizedHash": "5c4210f5dac266335b19d8af8f1cadb716ace5de47233c067e254a0f18d18a9c",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -8205,7 +8205,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:07.088322+00:00",
+          "checkedAt": "2026-08-02T16:49:32.168971+00:00",
           "localNormalizedHash": "93c26ef26ffb4ba23464e5f6c2cb3f70b17a974a3924bb45ac6605aecf13da6a",
           "sourceNormalizedHash": "93c26ef26ffb4ba23464e5f6c2cb3f70b17a974a3924bb45ac6605aecf13da6a",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -8215,7 +8215,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "b4aa9f90c0f321d40a6831e6ef4cd9e629768a76abf66196c679b9307f185769",
           "sourceNormalizedHash": "b4aa9f90c0f321d40a6831e6ef4cd9e629768a76abf66196c679b9307f185769",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -8282,7 +8282,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:07.461440+00:00",
+          "checkedAt": "2026-08-02T16:49:32.538970+00:00",
           "localNormalizedHash": "53590026ac4001d5fca8a9daea1449cc23c5170e497640ddc5914b108acafff4",
           "sourceNormalizedHash": "53590026ac4001d5fca8a9daea1449cc23c5170e497640ddc5914b108acafff4",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -8292,7 +8292,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "ffaa9512f0c20078e84b9791150ff0cd8babba2f0f52212452cb22f8cadc5606",
           "sourceNormalizedHash": "ffaa9512f0c20078e84b9791150ff0cd8babba2f0f52212452cb22f8cadc5606",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -8362,7 +8362,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:07.825261+00:00",
+          "checkedAt": "2026-08-02T16:49:32.905682+00:00",
           "localNormalizedHash": "34111e609ff591b712010753d319b52bff0419a66873c37a68ebd4d53fb22f4c",
           "sourceNormalizedHash": "34111e609ff591b712010753d319b52bff0419a66873c37a68ebd4d53fb22f4c",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -8372,7 +8372,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "ed911d6c8d16eab2796a2e78537aa3f6f3395e708baa3f8340bc7f4b1ee5039b",
           "sourceNormalizedHash": "ed911d6c8d16eab2796a2e78537aa3f6f3395e708baa3f8340bc7f4b1ee5039b",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -8439,7 +8439,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:08.185899+00:00",
+          "checkedAt": "2026-08-02T16:49:33.267650+00:00",
           "localNormalizedHash": "0687dd93953bdd8f999ee5689a0c8df49ce4fdda60f603b58a62f2044e1082ec",
           "sourceNormalizedHash": "0687dd93953bdd8f999ee5689a0c8df49ce4fdda60f603b58a62f2044e1082ec",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -8449,7 +8449,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "b30305b4289504434139a450cce355e34c8fd2c62400a35057264cc79f3ab3fc",
           "sourceNormalizedHash": "b30305b4289504434139a450cce355e34c8fd2c62400a35057264cc79f3ab3fc",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -8516,7 +8516,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:08.547910+00:00",
+          "checkedAt": "2026-08-02T16:49:33.626644+00:00",
           "localNormalizedHash": "7289d1a22083e097f434bcbd27326e46308ed46e05ff24ee5c5c218b611cc271",
           "sourceNormalizedHash": "7289d1a22083e097f434bcbd27326e46308ed46e05ff24ee5c5c218b611cc271",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -8526,7 +8526,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "4073c4f5f33b07dd19dcedf7c4bc8c31e81f0ba71fe5ca41e16d2a8f20ad5be3",
           "sourceNormalizedHash": "4073c4f5f33b07dd19dcedf7c4bc8c31e81f0ba71fe5ca41e16d2a8f20ad5be3",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -8594,7 +8594,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:08.932778+00:00",
+          "checkedAt": "2026-08-02T16:49:33.985000+00:00",
           "localNormalizedHash": "3117a14e9ee972395e4a2dbb90cc8b979008a3526fdbc06d24bb8db7469221ea",
           "sourceNormalizedHash": "3117a14e9ee972395e4a2dbb90cc8b979008a3526fdbc06d24bb8db7469221ea",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -8604,7 +8604,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "db28d58f5d878c666efb4e21b33fc13e554b8a5c2055b669c1dccdaed1d44e7d",
           "sourceNormalizedHash": "db28d58f5d878c666efb4e21b33fc13e554b8a5c2055b669c1dccdaed1d44e7d",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -8672,7 +8672,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:09.309563+00:00",
+          "checkedAt": "2026-08-02T16:49:34.347650+00:00",
           "localNormalizedHash": "9ab08f5be51f208865ad3eaf895f0e5b34527c3922bc6f70e9149a41705bca61",
           "sourceNormalizedHash": "9ab08f5be51f208865ad3eaf895f0e5b34527c3922bc6f70e9149a41705bca61",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -8682,7 +8682,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "0fc98b715f3e7216ffd21a7c9b4b13e8e49ed22bbea92b9a4bfe139e32ba5fae",
           "sourceNormalizedHash": "0fc98b715f3e7216ffd21a7c9b4b13e8e49ed22bbea92b9a4bfe139e32ba5fae",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -8749,7 +8749,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:09.689299+00:00",
+          "checkedAt": "2026-08-02T16:49:34.704602+00:00",
           "localNormalizedHash": "59cd3d4771d0f5b3bda8aa64028924cb730fdd1f6391ac1f152829950d4ffcc0",
           "sourceNormalizedHash": "59cd3d4771d0f5b3bda8aa64028924cb730fdd1f6391ac1f152829950d4ffcc0",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -8759,7 +8759,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "572850d316de7dd78829c8bccbc0f5b7a3136c7dd4790942acb64d3f6abb5c1f",
           "sourceNormalizedHash": "572850d316de7dd78829c8bccbc0f5b7a3136c7dd4790942acb64d3f6abb5c1f",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -8826,7 +8826,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:10.065958+00:00",
+          "checkedAt": "2026-08-02T16:49:35.063821+00:00",
           "localNormalizedHash": "e4ea81987a99bdc03d346bca38f2b6ab224df9e02b27ee2dbda74103e7181496",
           "sourceNormalizedHash": "e4ea81987a99bdc03d346bca38f2b6ab224df9e02b27ee2dbda74103e7181496",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -8836,7 +8836,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "823c0b715edb8b7985974aa2f87c62c34c07ae078c9430d679ccdf7a4298f56e",
           "sourceNormalizedHash": "823c0b715edb8b7985974aa2f87c62c34c07ae078c9430d679ccdf7a4298f56e",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -8903,7 +8903,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:10.442669+00:00",
+          "checkedAt": "2026-08-02T16:49:35.427460+00:00",
           "localNormalizedHash": "d63e8dadeb6d03013c15a5c60ff3bbb1154f59ede71e14894f9239a88c8363cf",
           "sourceNormalizedHash": "d63e8dadeb6d03013c15a5c60ff3bbb1154f59ede71e14894f9239a88c8363cf",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -8913,7 +8913,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.950757+00:00",
           "localNormalizedHash": "264db373b0be7b482adef5bf1454349b5703ba28198b5b1da132301dc1d34953",
           "sourceNormalizedHash": "264db373b0be7b482adef5bf1454349b5703ba28198b5b1da132301dc1d34953",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -8980,7 +8980,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:10.826733+00:00",
+          "checkedAt": "2026-08-02T16:49:35.781768+00:00",
           "localNormalizedHash": "650d4b63e8b3a802696a436bbecc0ffcd27cac2bfb692742da5cd2e2805ec8f0",
           "sourceNormalizedHash": "650d4b63e8b3a802696a436bbecc0ffcd27cac2bfb692742da5cd2e2805ec8f0",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -8990,7 +8990,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.951757+00:00",
           "localNormalizedHash": "88d99ec75e3b6fffb682dcfd3e3a00b006d39085c0cca4f681e3761c79e61173",
           "sourceNormalizedHash": "88d99ec75e3b6fffb682dcfd3e3a00b006d39085c0cca4f681e3761c79e61173",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -9057,7 +9057,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:11.183729+00:00",
+          "checkedAt": "2026-08-02T16:49:36.137346+00:00",
           "localNormalizedHash": "0c2c1c5fb75f709898e45d551f951661b891e980220b4a8f2a05bfe29b9554b8",
           "sourceNormalizedHash": "0c2c1c5fb75f709898e45d551f951661b891e980220b4a8f2a05bfe29b9554b8",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -9067,7 +9067,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.951757+00:00",
           "localNormalizedHash": "383dc7cbcdd8b8e7ee3ab2aa51f7e4db7b33fe053376542274f63f22ddb93d98",
           "sourceNormalizedHash": "383dc7cbcdd8b8e7ee3ab2aa51f7e4db7b33fe053376542274f63f22ddb93d98",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -9134,7 +9134,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:11.556934+00:00",
+          "checkedAt": "2026-08-02T16:49:36.496338+00:00",
           "localNormalizedHash": "d188bd0e00841716a00bae2bcbcdd4cf40c3ac3ef9939fc3f80f6e644e302d9f",
           "sourceNormalizedHash": "d188bd0e00841716a00bae2bcbcdd4cf40c3ac3ef9939fc3f80f6e644e302d9f",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -9144,7 +9144,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.951757+00:00",
           "localNormalizedHash": "84f7ba36004dec479fd29340252abc7c4b4ac6e5f388ca53b9be7f7c2396a746",
           "sourceNormalizedHash": "84f7ba36004dec479fd29340252abc7c4b4ac6e5f388ca53b9be7f7c2396a746",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -9211,7 +9211,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:11.931451+00:00",
+          "checkedAt": "2026-08-02T16:49:36.851621+00:00",
           "localNormalizedHash": "d210d65df71bef0eaa25e9b970a6fb172dfe5c36f673b67d4be765a7493e96cd",
           "sourceNormalizedHash": "d210d65df71bef0eaa25e9b970a6fb172dfe5c36f673b67d4be765a7493e96cd",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -9221,7 +9221,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.951757+00:00",
           "localNormalizedHash": "b1f093abccf106bfe1a0859172e1a87bbb12c6b9dd6536dee09ad3138ace1267",
           "sourceNormalizedHash": "b1f093abccf106bfe1a0859172e1a87bbb12c6b9dd6536dee09ad3138ace1267",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -9288,7 +9288,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:12.289966+00:00",
+          "checkedAt": "2026-08-02T16:49:37.209549+00:00",
           "localNormalizedHash": "b47d2ebde928928e98eaf1670f3cdedace76e7fe2773a1955e699dbcf4c40631",
           "sourceNormalizedHash": "b47d2ebde928928e98eaf1670f3cdedace76e7fe2773a1955e699dbcf4c40631",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -9298,7 +9298,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.160361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.951757+00:00",
           "localNormalizedHash": "553dc93c70361a4b4fd6ac476fddd19bbd40e1778b3c94bef7535c2276d8d788",
           "sourceNormalizedHash": "553dc93c70361a4b4fd6ac476fddd19bbd40e1778b3c94bef7535c2276d8d788",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -9365,7 +9365,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:12.660263+00:00",
+          "checkedAt": "2026-08-02T16:49:37.568091+00:00",
           "localNormalizedHash": "1db9931fa86d17d098187f5c934b3be8c2f6f6eaef219e82f21fc994d21e0fa5",
           "sourceNormalizedHash": "1db9931fa86d17d098187f5c934b3be8c2f6f6eaef219e82f21fc994d21e0fa5",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -9375,7 +9375,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.161361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.951757+00:00",
           "localNormalizedHash": "2f22e7d8090909e758806c27fd4dcc9b073c24fccdb2421c144bcdc3817806dd",
           "sourceNormalizedHash": "2f22e7d8090909e758806c27fd4dcc9b073c24fccdb2421c144bcdc3817806dd",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -9445,7 +9445,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:13.034217+00:00",
+          "checkedAt": "2026-08-02T16:49:37.927882+00:00",
           "localNormalizedHash": "cfa24089d0d52ce4f735ef0cc23bf139446d8c1f93947e12f2b2516487688bd7",
           "sourceNormalizedHash": "cfa24089d0d52ce4f735ef0cc23bf139446d8c1f93947e12f2b2516487688bd7",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -9455,7 +9455,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.161361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.951757+00:00",
           "localNormalizedHash": "bf27ec674d2d901357b14f159df257b8f64d31bad09e56e001d82681bfe0f46d",
           "sourceNormalizedHash": "bf27ec674d2d901357b14f159df257b8f64d31bad09e56e001d82681bfe0f46d",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -9522,7 +9522,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:13.409076+00:00",
+          "checkedAt": "2026-08-02T16:49:38.292995+00:00",
           "localNormalizedHash": "04696ce24b064acc5fbbbf0a528701f4b718dfad1ae94ae6d88211578fe39ac5",
           "sourceNormalizedHash": "04696ce24b064acc5fbbbf0a528701f4b718dfad1ae94ae6d88211578fe39ac5",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -9532,7 +9532,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.161361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.951757+00:00",
           "localNormalizedHash": "ce8ddd223d3e8010218ce915f2b0e6007241f01b47991715a565614bf4a7836a",
           "sourceNormalizedHash": "ce8ddd223d3e8010218ce915f2b0e6007241f01b47991715a565614bf4a7836a",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -9599,7 +9599,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:13.794335+00:00",
+          "checkedAt": "2026-08-02T16:49:38.655125+00:00",
           "localNormalizedHash": "02044a77458378ca2810b9e1277d87088efdd32c32eb0c97b62f0d4d5c984e3c",
           "sourceNormalizedHash": "02044a77458378ca2810b9e1277d87088efdd32c32eb0c97b62f0d4d5c984e3c",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -9609,7 +9609,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.161361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.951757+00:00",
           "localNormalizedHash": "ebc37c7b0be6cada1372765d99e6528bdc7052ef74e91ec5a8e042e7830cba38",
           "sourceNormalizedHash": "ebc37c7b0be6cada1372765d99e6528bdc7052ef74e91ec5a8e042e7830cba38",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -9676,7 +9676,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:14.163366+00:00",
+          "checkedAt": "2026-08-02T16:49:39.012424+00:00",
           "localNormalizedHash": "4362cf955776745ad3762f377b4db189aa32ec1201a595ea9e90aaaf665dc2b1",
           "sourceNormalizedHash": "4362cf955776745ad3762f377b4db189aa32ec1201a595ea9e90aaaf665dc2b1",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -9686,7 +9686,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.161361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.951757+00:00",
           "localNormalizedHash": "7174aafbc093aec6dead796ac04f00b406f4ae4085e14537320c4d16bf9161df",
           "sourceNormalizedHash": "7174aafbc093aec6dead796ac04f00b406f4ae4085e14537320c4d16bf9161df",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -9757,9 +9757,9 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:14.556779+00:00",
-          "localNormalizedHash": "57c645e5f139bf424c7e0d28b48d0b4599cc1b9dc166c526bd865f426992284f",
-          "sourceNormalizedHash": "57c645e5f139bf424c7e0d28b48d0b4599cc1b9dc166c526bd865f426992284f",
+          "checkedAt": "2026-08-02T16:49:39.377052+00:00",
+          "localNormalizedHash": "56b481e0d666e129d02cbfd642b51781cb8adb8d29d84c681015aa4d9b8f0fa9",
+          "sourceNormalizedHash": "56b481e0d666e129d02cbfd642b51781cb8adb8d29d84c681015aa4d9b8f0fa9",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
         },
         "en": {
@@ -9767,7 +9767,7 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.161361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.951757+00:00",
           "localNormalizedHash": "c87236932dd2c9db410beb0c54d966ed74c425917f29ac7451503950412c4af1",
           "sourceNormalizedHash": "c87236932dd2c9db410beb0c54d966ed74c425917f29ac7451503950412c4af1",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
@@ -9837,7 +9837,7 @@
           "expectedTranslation": "RCUV 2010",
           "source": "Bible Gateway RCU17TS",
           "sourceUrl": "https://www.biblegateway.com/",
-          "checkedAt": "2026-07-18T09:31:14.556779+00:00",
+          "checkedAt": "2026-08-02T16:49:39.377052+00:00",
           "localNormalizedHash": "09c7e7ee7c85a914124b27fb3c1f1d570b087fc19f41941680865695f9324d8d",
           "sourceNormalizedHash": "09c7e7ee7c85a914124b27fb3c1f1d570b087fc19f41941680865695f9324d8d",
           "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
@@ -9847,9 +9847,92 @@
           "expectedTranslation": "NKJV",
           "source": "Bolls Bible API NKJV",
           "sourceUrl": "https://bolls.life/",
-          "checkedAt": "2026-07-09T17:42:32.161361+00:00",
+          "checkedAt": "2026-08-02T16:49:50.951757+00:00",
           "localNormalizedHash": "7737e47cf4d443429296c66e95006743b4f4e063eca53c087e0ddd94ed491797",
           "sourceNormalizedHash": "7737e47cf4d443429296c66e95006743b4f4e063eca53c087e0ddd94ed491797",
+          "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
+        }
+      }
+    },
+    {
+      "id": "dv-0122",
+      "origin": "curated",
+      "legacyIds": [],
+      "source": {
+        "book": "Acts",
+        "bookZh": "使徒行傳",
+        "chapter": 24,
+        "verses": "16",
+        "reference": {
+          "zh": "使徒行傳 24:16",
+          "en": "Acts 24:16"
+        },
+        "translation": {
+          "zh": "RCUV 2010",
+          "en": "NKJV"
+        }
+      },
+      "scripture": {
+        "zh": "因此，我勉勵自己，對　神對人，時常存着無虧的良心。",
+        "en": "This being so, I myself always strive to have a conscience without offense toward God and men. (NKJV)"
+      },
+      "reflection": {
+        "zh": {
+          "title": "對神對人，常存無虧的良心",
+          "body": "保羅在腓力斯面前申辯時，把復活的盼望（15節）與每天的操練連在一起。無虧的良心不是靠行為換取救恩，也不是宣稱自己毫無罪過；它是蒙恩的人在神真理光照下忠心省察，並願意在人面前交代。對這個平台而言，每次排班、調整、發布與復原，都應以公平、誠實、可追溯和對人的關顧來完成；即使沒有人看見，也不把方便置於良心之上。",
+          "prayer": "主啊，求你使我在你面前忠心，對人誠實，在每一項看得見或看不見的決定上常存無虧的良心。"
+        },
+        "en": {
+          "title": "A Conscience Without Offense",
+          "body": "When Paul defends himself before Felix, he joins the hope of resurrection (v. 15) to daily discipline (v. 16). A conscience without offense is neither salvation earned by works nor a claim of sinless perfection. It is the practice of a person shaped by grace, examined by God's truth, and answerable to others. In this platform, every roster, adjustment, publication, and recovery should therefore be fair, honest, traceable, and caring—even when no one is watching.",
+          "prayer": "Lord, keep me faithful before You and honest toward others, with a clear conscience in every seen and unseen decision."
+        }
+      },
+      "themes": [
+        "justice-fairness",
+        "faithfulness",
+        "spiritual-formation"
+      ],
+      "audience": [
+        "head-study-prefect",
+        "study-prefect-team"
+      ],
+      "specialUse": [
+        "roster-generation",
+        "platform-conviction"
+      ],
+      "quality": {
+        "status": "polished",
+        "duplicateGroup": "dup-0122",
+        "duplicateCount": 1,
+        "theologicalReview": "approved-gospel-grounded-conscience-editorial",
+        "needsRewrite": false,
+        "notes": [
+          "Curated after the legacy conversion as the second platform conviction: how we serve.",
+          "Reads Acts 24:16 in its immediate resurrection-hope context and rejects works-righteousness or sinless-perfection claims.",
+          "Applies accountable conscience to fair, honest, traceable, and caring roster stewardship."
+        ]
+      },
+      "isFoundational": false,
+      "translationVerification": {
+        "zh": {
+          "status": "verified-exact",
+          "expectedTranslation": "RCUV 2010",
+          "source": "Bible Gateway RCU17TS",
+          "sourceUrl": "https://www.biblegateway.com/",
+          "checkedAt": "2026-08-02T16:49:39.739201+00:00",
+          "localNormalizedHash": "8b47e5cdeef28b6f75cd91476bb063aea3ffb9cc99aa877485c960f7ab91a120",
+          "sourceNormalizedHash": "8b47e5cdeef28b6f75cd91476bb063aea3ffb9cc99aa877485c960f7ab91a120",
+          "notes": "Verified against Bible Gateway RCU17TS after normalizing whitespace."
+        },
+        "en": {
+          "status": "verified-exact",
+          "expectedTranslation": "NKJV",
+          "source": "Bolls Bible API NKJV",
+          "sourceUrl": "https://bolls.life/",
+          "checkedAt": "2026-08-02T16:49:50.951757+00:00",
+          "localNormalizedHash": "ab16b067c27460d790cc63d602faf3401b346dd7371930dab885cdd243b879b4",
+          "sourceNormalizedHash": "ab16b067c27460d790cc63d602faf3401b346dd7371930dab885cdd243b879b4",
           "notes": "Verified against Bolls NKJV after removing local translation marker and normalizing whitespace."
         }
       }

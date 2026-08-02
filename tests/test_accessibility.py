@@ -35,7 +35,13 @@ def test_shared_shell_provides_landmarks_skip_link_and_accessible_icon_controls(
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
     theme = combined_theme_source()
 
-    for key in ("skip_to_content", "main_navigation", "open_navigation"):
+    for key in (
+        "skip_to_content",
+        "main_navigation",
+        "open_navigation",
+        "footer_service_direction",
+        "footer_service_conscience",
+    ):
         assert MESSAGES[key][ZH_HK].strip()
         assert MESSAGES[key][EN].strip()
 
@@ -46,6 +52,9 @@ def test_shared_shell_provides_landmarks_skip_link_and_accessible_icon_controls(
     assert MESSAGES["copyright_notice"][ZH_HK] == "Copyright © 2026 LI Chuangjie"
     assert MESSAGES["copyright_notice"][EN] == "Copyright © 2026 LI Chuangjie"
     assert ".sy-page-footer" in theme
+    assert ".sy-page-footer-principles" in theme
+    assert 't("footer_service_direction")' in shell
+    assert 't("footer_service_conscience")' in shell
     assert "role=navigation" in shell
     assert "aria-current=page" in shell
     assert "aria-level=1" in shell
@@ -82,6 +91,9 @@ def test_mobile_navigation_has_explicit_forced_colours_semantics() -> None:
     assert "Canvas" in forced_scopes
     assert "CanvasText" in forced_scopes
     assert "Highlight" in forced_scopes
+    assert ".sy-platform-conviction" in forced_scopes
+    assert ".sy-platform-scripture" in forced_scopes
+    assert "LinkText" in forced_scopes
 
 
 def test_shared_navigation_marks_route_focus_without_racing_anchor_navigation() -> None:

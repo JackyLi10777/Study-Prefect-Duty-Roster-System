@@ -848,7 +848,15 @@ def test_platform_showcase_exposes_real_team_responsibilities_without_invented_s
     assert '@ui.page("/platform")' in pages
     assert "def _render_co_creation" in shared
     assert 'data-testid=platform-live-summary' in pages
-    for test_id in ("team-operating-model", "capability-map", "solutions-portfolio", "platform-principles"):
+    for test_id in (
+        "team-operating-model",
+        "capability-map",
+        "solutions-portfolio",
+        "platform-core-convictions",
+        "platform-conviction-direction",
+        "platform-conviction-conscience",
+        "platform-principles",
+    ):
         assert f"data-testid={test_id}" in pages
     architecture_page = pages.split('@ui.page("/system-architecture")', 1)[1]
     assert "data-testid=team-operating-model" not in architecture_page
@@ -858,6 +866,31 @@ def test_platform_showcase_exposes_real_team_responsibilities_without_invented_s
     assert "Service in Rooms 302, 303, and 202" in messages
     assert "Four real work areas" in messages
     assert "not departments, offices, ranks, or additional staff" in MESSAGES["capability_map_copy"]["en"]
+
+
+def test_platform_convictions_distinguish_principle_scripture_and_interpretation() -> None:
+    pages = combined_page_source()
+    messages = combined_i18n_source()
+    design_system = (PROJECT_ROOT / "Professional_Design_System.md").read_text(encoding="utf-8")
+    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+
+    platform_section = pages.split('@ui.page("/platform")', 1)[1].split(
+        '@ui.page("/system-architecture")', 1
+    )[0]
+    assert "platform-convictions-section" in platform_section
+    assert "服務原則 · 取意自馬可福音 10:45，並非逐字經文" in messages
+    assert "復活的盼望" in messages
+    assert "不是靠行為換取救恩或宣稱毫無罪過" in messages
+    assert "https://www.bible.com/bible/2625/ACT.24.16" in platform_section
+    assert "https://www.bible.com/bible/114/ACT.24.16.NKJV" in platform_section
+    assert 'rel="noopener noreferrer" referrerpolicy=no-referrer' in platform_section
+    assert "footer_service_direction" in shell
+    assert "footer_service_conscience" in shell
+
+    # Full convictions belong on /platform; the compact footer is the only shell-level copy.
+    assert "platform_convictions_title" not in shell
+    assert "platform_conviction_how_body" not in shell
+    assert "雙層根本理念" in design_system
 
 
 def test_co_creation_profile_uses_local_identity_media_and_canonical_instagram_link() -> None:
@@ -1112,6 +1145,7 @@ def test_reference_pages_form_two_clear_reading_lanes_without_duplicate_docs_rou
         "platform-team-section",
         "platform-capabilities-section",
         "platform-solutions-section",
+        "platform-convictions-section",
         "platform-principles-section",
         "platform-resources-section",
         "handover-steps-section",
