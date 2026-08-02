@@ -73,9 +73,40 @@ def test_command_center_layer_owns_the_reset_composition_after_mobile_compatibil
     assert "grid-template-columns: minmax(0, 1fr) minmax(280px, 320px)" in command_center
     assert ".sy-nav-control.sy-nav-active" in command_center
     assert ".sy-page-atmosphere" in command_center
-    assert "min-height: 90px" in command_center
+    assert "min-height: 84px" in command_center
+    assert ".sy-flow-step:not(:last-child)::after" in command_center
+    assert 'content: "→"' in command_center
     assert "prefers-reduced-motion" in command_center
     assert "forced-colors" in command_center
+
+
+def test_settings_leads_with_readiness_then_groups_preferences_and_recovery() -> None:
+    stewardship = (
+        PROJECT_ROOT / "nicegui_app" / "ui" / "page_routes" / "stewardship.py"
+    ).read_text(encoding="utf-8")
+    music = (PROJECT_ROOT / "nicegui_app" / "ui" / "music.py").read_text(
+        encoding="utf-8"
+    )
+    command_center = (
+        PROJECT_ROOT
+        / "nicegui_app"
+        / "assets"
+        / "css"
+        / "sing-yin-command-center-v2.css"
+    ).read_text(encoding="utf-8")
+
+    overview = stewardship.index("sy-settings-overview")
+    music_dispatch = stewardship.index("render_music_library_settings()")
+    persistence = stewardship.index('t("persistence_notice")')
+    recovery = stewardship.index('t("backup_restore")')
+
+    assert overview < music_dispatch < persistence < recovery
+    assert stewardship.count("sy-settings-continuity") >= 3
+    assert "sy-settings-recovery" in stewardship
+    assert music.count("sy-settings-preference") == 3
+    assert ".sy-page-settings .sy-settings-preference" in command_center
+    assert ".sy-page-settings .sy-settings-continuity" in command_center
+    assert ".sy-page-settings .sy-settings-recovery" in command_center
 
 
 def test_design_reference_protocol_rejects_template_dashboard_defaults() -> None:

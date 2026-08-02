@@ -1,5 +1,5 @@
 /*
- * Service Weave 2.0 — Quiet Command Center
+ * Service Weave 2.1 — Quiet Command Center / Woven Clarity
  *
  * This final composition layer owns the 2026.08 frontend reset while mature
  * route-specific selectors are migrated out of the compatibility sheets. It
@@ -13,20 +13,20 @@
   --sy-visual-viewport-width: 100%;
   --sy-visual-viewport-offset-left: 0px;
   --sy-visual-viewport-bottom-inset: 0px;
-  --sy-v2-canvas: #F4F6F7;
+  --sy-v2-canvas: #F5F7F8;
   --sy-v2-rail: #FBFCFC;
   --sy-v2-panel: #FFFFFF;
-  --sy-v2-panel-muted: #F8FAFA;
+  --sy-v2-panel-muted: #F5F8F8;
   --sy-v2-ink-soft: #42515A;
   --sy-v2-hairline: rgba(40, 76, 96, .15);
   --sy-v2-radius-control: 10px;
-  --sy-v2-radius-panel: 16px;
-  --sy-v2-radius-feature: 20px;
-  --sy-v2-shadow-panel: 0 1px 2px rgba(20, 36, 45, .035), 0 10px 30px rgba(20, 36, 45, .055);
+  --sy-v2-radius-panel: 14px;
+  --sy-v2-radius-feature: 17px;
+  --sy-v2-shadow-panel: 0 1px 2px rgba(20, 36, 45, .035), 0 8px 24px rgba(20, 36, 45, .045);
   --sy-v2-shadow-float: 0 16px 42px rgba(20, 36, 45, .11);
-  --sy-v2-header-height: 66px;
+  --sy-v2-header-height: 64px;
   /* Kept in executable parity with shell.py DESKTOP_DRAWER_WIDTH_PX. */
-  --sy-v2-rail-width: 284px;
+  --sy-v2-rail-width: 264px;
   --sy-v2-content-gutter: clamp(20px, 2.35vw, 38px);
 }
 
@@ -74,17 +74,17 @@ body {
 
 .sy-sidebar-body {
   min-height: 0;
-  padding: 19px 14px 24px !important;
+  padding: 18px 12px 24px !important;
   overflow: visible !important;
   scrollbar-width: thin;
 }
 
 .sy-brand-lockup {
   display: grid !important;
-  grid-template-columns: 60px minmax(0, 1fr);
+  grid-template-columns: 54px minmax(0, 1fr);
   align-items: start !important;
   width: calc(100% - 8px);
-  min-height: 72px;
+  min-height: 66px;
   margin: 0 4px 4px !important;
   padding: 0;
   column-gap: 10px !important;
@@ -93,8 +93,8 @@ body {
 }
 
 .sy-brand-lockup .sy-product-mark {
-  width: 60px;
-  height: 60px;
+  width: 54px;
+  height: 54px;
 }
 
 .sy-brand-eyebrow {
@@ -128,7 +128,7 @@ body {
   box-sizing: border-box;
   width: calc(100% - 8px);
   margin: 2px 4px 17px !important;
-  padding: 0 0 12px 70px;
+  padding: 0 0 12px 64px;
   border-bottom: 1px solid color-mix(in srgb, var(--sy-line) 70%, transparent);
   color: var(--sy-muted) !important;
   font-size: 10px !important;
@@ -149,7 +149,7 @@ body {
 .sy-nav-control {
   position: relative;
   min-height: 40px !important;
-  margin: 1px 0;
+  margin: 2px 0;
   padding: 0 10px !important;
   border: 1px solid transparent !important;
   border-radius: 9px !important;
@@ -337,9 +337,9 @@ body {
   width: 100%;
   max-width: 1600px;
   min-height: calc(100dvh - var(--sy-v2-header-height));
-  gap: 18px !important;
+  gap: 20px !important;
   margin: 0 auto;
-  padding: 22px var(--sy-v2-content-gutter) 54px;
+  padding: 24px var(--sy-v2-content-gutter) 56px;
   color: var(--sy-ink);
 }
 
@@ -383,7 +383,7 @@ body {
 .sy-page-atmosphere {
   display: flex;
   align-items: center;
-  min-height: 96px;
+  min-height: 84px;
   border-color: var(--sy-v2-hairline);
   border-radius: var(--sy-v2-radius-panel);
   box-shadow: none;
@@ -393,7 +393,7 @@ body {
   position: relative;
   z-index: 1;
   width: min(62%, 720px);
-  padding: 18px 24px;
+  padding: 15px 22px;
 }
 
 .sy-page-atmosphere-icon {
@@ -562,14 +562,14 @@ body {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
   align-items: stretch !important;
-  gap: 18px !important;
+  gap: 20px !important;
 }
 
 .sy-workbench {
   position: relative;
   overflow: hidden;
   min-width: 0;
-  padding: 24px;
+  padding: 26px;
   border: 1px solid var(--sy-v2-hairline);
   border-radius: var(--sy-v2-radius-feature);
   background:
@@ -590,19 +590,37 @@ body {
 
 .sy-flow {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 34px;
   margin-top: 20px !important;
 }
 
 .sy-flow-step {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 168px;
   padding: 15px;
   border: 1px solid var(--sy-v2-hairline);
-  border-radius: 13px;
+  border-radius: 12px;
   background: var(--sy-v2-panel-muted);
   box-shadow: none;
+}
+
+.sy-flow-step:not(:last-child)::after {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: -25px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: color-mix(in srgb, var(--sy-role-action) 72%, var(--sy-muted));
+  content: "→";
+  font-size: 18px;
+  font-weight: 720;
+  line-height: 1;
+  transform: translateY(-50%);
 }
 
 .sy-flow-step--active {
@@ -637,7 +655,7 @@ body {
 
 .sy-dashboard-history {
   min-width: 0;
-  padding: 19px;
+  padding: 21px;
   border: 1px solid var(--sy-v2-hairline);
   border-radius: var(--sy-v2-radius-feature);
   background: var(--sy-v2-panel);
@@ -675,7 +693,7 @@ body {
 
 .sy-daily-start {
   min-height: 148px;
-  padding: 21px 24px;
+  padding: 22px 26px;
   border-color: color-mix(in srgb, var(--sy-devotional-gold) 34%, var(--sy-v2-hairline));
   border-radius: var(--sy-v2-radius-feature);
   color: var(--sy-devotional-ink);
@@ -732,6 +750,29 @@ body {
 }
 
 /* ---------- Dense route families ---------- */
+
+.sy-page-settings .sy-settings-section,
+.sy-page-settings .sy-operations-panel {
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.sy-page-settings .sy-settings-preference {
+  border-left: 3px solid var(--sy-role-action);
+}
+
+.sy-page-settings .sy-settings-continuity {
+  border-left: 3px solid var(--sy-role-stable);
+}
+
+.sy-page-settings .sy-settings-recovery {
+  border-left: 3px solid var(--sy-role-attention);
+}
+
+.sy-page-settings .sy-status-summary {
+  min-width: min(100%, 180px);
+  background: var(--sy-v2-panel-muted);
+}
 
 .sy-roster-week-item {
   border-radius: 12px;
@@ -1005,6 +1046,10 @@ body {
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
     margin-top: 16px !important;
+  }
+
+  .sy-flow-step:not(:last-child)::after {
+    display: none;
   }
 
   .sy-workbench .sy-flow {

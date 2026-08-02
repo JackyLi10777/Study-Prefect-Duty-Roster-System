@@ -403,6 +403,21 @@ def test_mobile_entrance_exposes_admin_and_guest_actions_before_supplementary_co
     assert '.access-panel > [data-entry-role="guest"] { display: none; }' in source
 
 
+def test_mobile_entrance_removes_duplicate_sign_in_narrative_and_keeps_support_semantics() -> None:
+    source = _source()
+
+    assert "管理本週值班，或查看已發布週表" in source
+    assert "Cloudflare 單次驗證" in source
+    assert "虛構資料、不保存" in source
+    assert 'id="adminPanelTitle" class="access-panel-title"' in source
+    assert ".access-panel > .access-panel-icon," in source
+    assert ".access-panel > .access-copy," in source
+    assert ".access-panel > .login-assurance { display: none; }" in source
+    assert ".access-panel > .access-panel-title {" in source
+    assert ".access-panel > .welcome-audio-player { order: 1; margin-top: 0; }" in source
+    assert ".access-panel > .login-help { order: 2; margin-top: 14px; }" in source
+
+
 def test_public_support_keeps_core_fields_visible_and_optional_details_collapsed() -> None:
     source = _source()
     expected = source.index('id="supportExpected"')
@@ -443,7 +458,7 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
         "Try the fictional demo",
         'id="shareSite"',
         'href="/auth/login"',
-        "查看已發布週表，或管理本週值班",
+        "管理本週值班，或查看已發布週表",
         "收到值班表分享連結？",
         "分享網站入口",
         "只會分享首頁，不包含任何值班表或查看密鑰",

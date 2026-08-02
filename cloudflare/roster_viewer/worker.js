@@ -360,9 +360,9 @@ const VIEWER_HTML = `<!doctype html>
           <img class="portal-story-image portal-story-image--dark" src="/assets/entrance-operations-dark-v1.webp" alt="" width="1760" height="941" fetchpriority="high" decoding="async">
           <span class="portal-story-veil"></span>
         </div>
-        <h1 id="guestTitle">查看已發布週表，或管理本週值班</h1>
-        <p id="guestDescription" class="portal-lead">分享連結可直接查看；登入後可生成、核對、發布、匯出及處理已發布後請假。</p>
-        <p id="guestDescriptionEn" class="portal-lead portal-lead--en" lang="en">Open a roster share directly, or sign in to generate, review, publish, export, and handle published-duty absences.</p>
+        <h1 id="guestTitle">管理本週值班，或查看已發布週表</h1>
+        <p id="guestDescription" class="portal-lead">登入後可生成、核對、發布與處理請假；分享連結則可直接查看已發布週表。</p>
+        <p id="guestDescriptionEn" class="portal-lead portal-lead--en" lang="en">Sign in to prepare, review, publish and adjust the weekly roster. A share link opens a published roster directly.</p>
 
         <ol class="portal-workflow" aria-label="每週工作流程 · Weekly workflow">
           <li><span>01</span><strong>生成與核對</strong><small lang="en">Generate &amp; review</small></li>
@@ -373,11 +373,11 @@ const VIEWER_HTML = `<!doctype html>
         <nav class="mobile-entry-actions" aria-label="立即進入 · Continue to the workbench">
           <span class="mobile-entry-label">立即進入 · CONTINUE</span>
           <a id="mobileAdminLogin" class="mobile-entry-action mobile-entry-action--admin" data-entry-role="admin" data-entry-state="idle" href="/auth/login">
-            <span><strong>安全登入</strong><small lang="en">Administrator sign in</small></span>
+            <span><strong>管理員登入</strong><small>Cloudflare 單次驗證 · <span lang="en">One-time code</span></small></span>
             <span class="entry-indicator" aria-hidden="true"><span class="entry-arrow">→</span><span class="entry-spinner"></span></span>
           </a>
           <a id="mobileGuestEnter" class="mobile-entry-action mobile-entry-action--guest" data-entry-role="guest" data-entry-state="idle" href="/guest">
-            <span><strong>進入訪客示範</strong><small lang="en">Try the fictional demo</small></span>
+            <span><strong>進入訪客示範</strong><small>虛構資料、不保存 · <span lang="en">Fictional, not saved</span></small></span>
             <span class="entry-indicator" aria-hidden="true"><span class="entry-arrow">→</span><span class="entry-spinner"></span></span>
           </a>
           <p id="mobileEntryStatus" class="mobile-entry-status" aria-live="polite"></p>
@@ -417,7 +417,7 @@ const VIEWER_HTML = `<!doctype html>
             <path d="m9 12 2 2 4-4"></path>
           </svg>
         </div>
-        <h2 id="adminPanelTitle">管理員登入</h2>
+        <h2 id="adminPanelTitle" class="access-panel-title">管理員登入</h2>
         <p class="access-copy">使用已獲授權的電郵接收 Cloudflare 單次驗證碼。系統不保存密碼。</p>
         <p class="access-copy access-copy--en" lang="en">Use an approved email address to receive a Cloudflare one-time code. This system stores no password.</p>
 
@@ -943,7 +943,7 @@ button, input, select, textarea { font: inherit; }
   grid-template-columns: minmax(0, 1.08fr) minmax(390px, 0.92fr);
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 22px;
+  border-radius: 18px;
   background: var(--surface-raised);
   box-shadow: var(--shadow-raised);
   isolation: isolate;
@@ -954,7 +954,7 @@ button, input, select, textarea { font: inherit; }
 .portal-story {
   position: relative;
   z-index: 0;
-  min-height: 640px;
+  min-height: 620px;
   padding: 54px 48px 46px;
   overflow: hidden;
   overflow: clip;
@@ -1016,7 +1016,7 @@ button, input, select, textarea { font: inherit; }
 .portal-story > h1 {
   max-width: 670px;
   margin: 25px 0 16px;
-  font-size: clamp(2.15rem, 4.8vw, 4rem);
+  font-size: clamp(2.25rem, 4.6vw, 3.9rem);
   font-weight: 760;
   letter-spacing: -0.045em;
   line-height: 1.08;
@@ -1898,16 +1898,46 @@ tbody td {
     display: grid;
     gap: 8px;
     margin-top: 21px;
-    padding: 11px;
+    padding: 10px;
     border: 1px solid color-mix(in srgb, var(--portal-story-ink) 16%, transparent);
-    border-radius: 17px;
-    background: color-mix(in srgb, var(--portal-story) 72%, transparent);
-    box-shadow: 0 12px 28px color-mix(in srgb, var(--portal-story-ink) 8%, transparent);
-    backdrop-filter: blur(12px);
+    border-radius: 15px;
+    background: color-mix(in srgb, var(--portal-story) 92%, var(--surface));
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--portal-story-ink) 7%, transparent);
   }
   .portal-workflow { display: none; }
   .access-panel > [data-entry-role="admin"],
   .access-panel > [data-entry-role="guest"] { display: none; }
+  .access-panel {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 24px 20px 26px;
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    background: var(--surface);
+    box-shadow: none;
+  }
+  .access-panel > .access-panel-icon,
+  .access-panel > .access-copy,
+  .access-panel > .login-assurance { display: none; }
+  .access-panel > .access-panel-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .access-panel > .welcome-audio-player { order: 1; margin-top: 0; }
+  .access-panel > .login-help { order: 2; margin-top: 14px; }
+  .access-panel > .access-divider { order: 3; }
+  .access-panel > .guest-help { order: 4; }
+  .access-panel > .site-share { order: 5; }
+  .access-panel > .support-link { order: 6; }
   .devotional-prompt { margin-top: 24px; padding: 18px 17px 17px; }
   .devotional-reflection { grid-template-columns: auto 1fr; }
   .devotional-reflection p[lang="en"] { grid-column: 2; }
@@ -1919,9 +1949,11 @@ tbody td {
 
 @media (max-width: 390px) {
   .brand-subtitle { display: none; }
-  .portal-story { padding-inline: 20px; }
-  .portal-story > h1 { font-size: 2rem; }
-  .access-panel { padding-inline: 20px; }
+  .portal-story { padding: 29px 18px 25px; }
+  .portal-story > h1 { margin-top: 18px; font-size: 2rem; }
+  .portal-lead { font-size: .9rem; line-height: 1.58; }
+  .portal-lead--en { font-size: .76rem; line-height: 1.5; }
+  .access-panel { padding-inline: 18px; }
   .welcome-audio-main { grid-template-columns: auto minmax(0, 1fr); }
   .welcome-audio-actions { grid-column: 2; justify-content: flex-end; }
   .welcome-audio-copy strong { white-space: normal; }

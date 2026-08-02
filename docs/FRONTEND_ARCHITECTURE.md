@@ -55,10 +55,9 @@ No CSS file, page route or animation runtime may become an owner for authenticat
 
 ### Application shell
 
-- Desktop navigation is a fixed-width institutional rail; the main canvas uses the remaining viewport.
-- The header contains route identity and compact global controls only.
+- Desktop navigation is a `264px` institutional rail; the main canvas uses the remaining viewport. The compact `64px` header contains route identity and global controls only.
 - Routine support links are compact and secondary; full explanation lives on `/support` and in documentation.
-- Shell atmosphere is a shallow contextual band. It never competes with the page task.
+- Shell atmosphere is an `84px` contextual band. It never competes with the page task.
 - Visual-viewport keyboard mode is enabled only when a focused editable control and a material viewport reduction are both present.
 
 ### Dashboard
@@ -76,12 +75,20 @@ No CSS file, page route or animation runtime may become an owner for authenticat
 - Consequential actions state the result and recovery path before confirmation.
 - Waiting UI reports real busy state, phase or measured progress; it never delays completion to display animation.
 
+### Settings and recovery
+
+- Readiness／handover state is the first working surface so an operator sees missing custody evidence before changing preferences.
+- Preferences and media use the action role; persistence and handover-package controls use the continuity role; restore uses the attention role and retains its separate danger confirmation.
+- These roles are shared structural classes in the sole terminal layer. Individual settings panels may not create a competing radius, shadow or colour grammar.
+- Reordering presentation must not reorder callbacks, relax confirmation, trigger expensive verification twice or change Admin／Guest capabilities.
+
 ### Public entrance
 
 - One visible Admin entry and one visible Guest entry per viewport.
 - The secure Cloudflare Access and bounded Guest contracts remain unchanged.
-- Identity, a concise value statement, a three-step product explanation and entry choice dominate the first viewport.
-- Music, Daily Verse, help and sharing remain available but visually secondary.
+- Desktop presents identity, a concise value statement, the three-step product explanation and the entry choice as one composition.
+- Mobile presents one decision-first stack: concise identity and value, then one Admin／Guest action pair. A second administrator heading may remain in the accessibility tree for labelled support content but is visually clipped, not shown as a duplicate card.
+- Mobile supporting order is Daily Verse → welcome music → sign-in help → sharing／feedback. These remain available without competing with the entry decision.
 
 ## Motion and dependency policy
 
