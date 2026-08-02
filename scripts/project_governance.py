@@ -225,7 +225,8 @@ def iteration_risk_violations(root: Path) -> tuple[ContractViolation, ...]:
     tracked_iteration_ids: set[str] = set()
     for risk, state, tracking, _mitigation in risk_rows:
         tracked_ids = tuple(_ITERATION_ID.findall(tracking))
-        if _RISK_TRACKING.fullmatch(tracking) is None:
+        tracking_is_valid = _RISK_TRACKING.fullmatch(tracking) is not None
+        if not tracking_is_valid:
             violations.append(
                 ContractViolation(
                     "risk.invalid-tracking",
@@ -249,7 +250,7 @@ def iteration_risk_violations(root: Path) -> tuple[ContractViolation, ...]:
                     f"tracked risk has no ITR reference: {risk}",
                 )
             )
-        elif state == "Tracked":
+        elif state == "Tracked" and tracking_is_valid:
             tracked_iteration_ids.update(tracked_ids)
         elif state != "Tracked" and tracked_ids:
             violations.append(
