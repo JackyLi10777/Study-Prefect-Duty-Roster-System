@@ -1,7 +1,7 @@
 # Professional Design System
 
 **Project:** Sing Yin Study Prefect Duty Roster System  
-**Version:** 2.0 — Quiet Command Center frontend architecture
+**Version:** 2.1 — Quiet Command Center / Woven Clarity refinement
 **Status:** Active design source of truth  
 **Primary audience:** 負責日常操作的當任首席導學風紀、主要在完成後核對的顧問老師、未來維護者及實作代理人
 
@@ -34,6 +34,17 @@ The resulting visual language is **Quiet Command Center with Editorial Sacred Re
 7. **No invented product truth.** Visual prototypes may explore composition, but production must not invent users, metrics, percentages, alerts or capabilities. Every displayed state comes from existing product data or is explicitly identified as fictional Guest demonstration data.
 8. **Same product, enforced boundaries.** Admin and Guest receive the same component quality, responsive hierarchy and feedback. Guest limitations remain enforced at UI, callback, service, storage, queue and integration boundaries; visual parity never implies capability parity.
 9. **Calm astonishment.** The desired first impression comes from exact spacing, confident hierarchy, polished transitions, meaningful imagery and complete states—not from maximum effects. A flourish survives only when it improves orientation, comprehension, feedback or product identity.
+
+#### Woven Clarity refinement
+
+`Woven Clarity` is a measured product-finish pass over Quiet Command Center, not a parallel theme or a second reset. It reduces nested surfaces, repeated explanation and oversized shell chrome while preserving the established atmosphere assets, task order, component lifecycle and security boundaries.
+
+- **Desktop geometry:** the institutional rail is `264px`, the utility header is `64px`, and the contextual atmosphere band is `84px`. These are composition values owned by the terminal layer; page routes do not restate them.
+- **Mobile entrance:** the first viewport is a decision surface. It contains one concise identity statement and exactly one visible Admin／Guest action pair; the duplicated administrator narrative remains semantic but visually hidden, while Daily Verse, music, troubleshooting and sharing follow in that order.
+- **Weekly flow:** the three workflow stages retain stable cards and gain bounded directional connectors on wide screens. The connector communicates sequence only; it disappears when the cards stack and never impersonates progress.
+- **Settings rhythm:** readiness and handover state appears first, followed by preferences／media, continuity controls and recovery. Action, stable and attention rails distinguish these section roles without inventing another card hierarchy.
+- **Surface discipline:** operational panels use smaller radii, quieter shadows and clearer hairlines. Atmosphere remains behind non-sensitive narrative zones; controls, forms, rosters and recovery evidence stay opaque.
+- **Dependency discipline:** the existing CSS and GSAP Core contracts remain sufficient. No GSAP framework adapter, ScrollTrigger, plugin, image pack or second animation runtime is introduced without a measured interaction that the current system cannot express safely.
 
 #### Canonical frontend ownership
 

@@ -165,7 +165,7 @@ def test_frontend_reset_has_one_explicit_terminal_composition_layer() -> None:
     )
     css_width = re.search(r"--sy-v2-rail-width:\s*(\d+)px", source)
     assert css_width is not None
-    assert drawer_width == int(css_width.group(1))
+    assert drawer_width == int(css_width.group(1)) == 264
     assert "width={DESKTOP_DRAWER_WIDTH_PX}" in shell_source
     assert "calc(var(--sy-v2-rail-width) + var(--sy-v2-content-gutter))" in source
 

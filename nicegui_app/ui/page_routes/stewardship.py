@@ -314,16 +314,18 @@ async def settings_page() -> None:
     evidence_time = overview["evidenceGeneratedAt"].astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
     with page_shell("/settings"):
         _render_operation_hint("hint_settings", icon="settings_backup_restore")
-        if _is_guest_mode():
-            render_guest_music_settings()
-            _render_restricted_capability(icon="library_music")
-        else:
-            render_music_library_settings()
-        with ui.card().classes("sy-surface sy-operations-panel w-full p-6"):
+        with ui.card().classes(
+            "sy-surface sy-operations-panel sy-settings-continuity "
+            "sy-settings-overview w-full p-6"
+        ):
             with ui.row().classes("w-full items-center justify-between gap-4 flex-wrap"):
                 with ui.column().classes("gap-1"):
                     ui.label(t("handover")).classes("text-lg font-semibold")
-                ui.button(t("open_handover_guide"), icon="handshake", on_click=lambda: navigate_to("/handover")).props("outline color=primary")
+                ui.button(
+                    t("open_handover_guide"),
+                    icon="handshake",
+                    on_click=lambda: navigate_to("/handover"),
+                ).props("outline color=primary")
             with ui.row().classes("w-full gap-3 flex-wrap mt-4"):
                 for label_key, value, ready in (
                     ("handover_prefects_ready", f"{readiness['activePrefectCount']}", readiness["activePrefectCount"] > 0),
@@ -336,7 +338,14 @@ async def settings_page() -> None:
                         ui.icon("check_circle" if ready else "priority_high").classes(
                             "sy-fg-stable" if ready else "sy-fg-attention"
                         ).props("aria-hidden=true")
-        with ui.card().classes("sy-surface sy-operations-panel w-full p-6"):
+        if _is_guest_mode():
+            render_guest_music_settings()
+            _render_restricted_capability(icon="library_music")
+        else:
+            render_music_library_settings()
+        with ui.card().classes(
+            "sy-surface sy-operations-panel sy-settings-continuity w-full p-6"
+        ):
             ui.label(t("persistence_notice")).classes("text-lg font-semibold")
             with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap mt-2"):
                 ui.label(t("backup_evidence_time", time=evidence_time)).classes(
@@ -395,7 +404,9 @@ async def settings_page() -> None:
                 ui.notify(t("verified_backup_created"), type="positive")
                 ui.navigate.reload()
 
-        with ui.card().classes("sy-surface sy-operations-panel w-full p-6"):
+        with ui.card().classes(
+            "sy-surface sy-operations-panel sy-settings-continuity w-full p-6"
+        ):
             ui.label(t("handover_backup_package")).classes("text-lg font-semibold")
             ui.label(t("handover_backup_package_notice")).classes("text-sm text-[var(--sy-muted)] mt-1")
             if backup_options:
@@ -440,7 +451,9 @@ async def settings_page() -> None:
                     "outline disable aria-disabled=true data-testid=handover-package-disabled-no-backup"
                 ).classes("mt-3")
 
-        with ui.card().classes("sy-surface sy-operations-panel w-full p-6"):
+        with ui.card().classes(
+            "sy-surface sy-operations-panel sy-settings-recovery w-full p-6"
+        ):
             ui.label(t("backup_restore")).classes("text-lg font-semibold")
             ui.label(t("restore_warning")).classes("text-sm text-[var(--sy-muted)] mt-1")
             ui.label(t("create_verified_backup_notice")).classes("text-sm leading-6 text-[var(--sy-muted)] mt-3")

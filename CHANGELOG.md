@@ -4,6 +4,9 @@ This file records user-visible, operational and release-significant changes. The
 
 ## Unreleased — activation readiness and verification maintainability
 
+- Refined Quiet Command Center into the `Woven Clarity` product-finish pass without adding a second CSS layer or frontend dependency: the desktop rail is narrower, shared surfaces use quieter radii／shadows, route atmosphere is shallower and the weekly stages gain bounded wide-screen sequence connectors.
+- Reworked the public mobile entrance into one concise decision-first stack with exactly one visible Admin and Guest action pair. Daily Verse, welcome music, sign-in recovery and sharing now follow in a deliberate order instead of repeating the administrator narrative in a second visible panel; Cloudflare Access, Guest isolation and entry-state behaviour are unchanged.
+- Reordered Settings so handover readiness appears before preferences, then assigned shared preference, continuity and recovery section roles. This changes scanning and hierarchy only; callbacks, verification, persistence, confirmation and capability boundaries remain unchanged.
 - Updated the canonical public-entry browser verifier to complete intercepted Admin／Guest navigation with HTTP 204. This preserves the entrance DOM for loading-state inspection without creating a Guest session or entering Cloudflare Access; aborting the top-level request made current Chromium replace the page with `chrome-error://chromewebdata`.
 - Replaced a CSP-incompatible bare `wait_for_function` expression with a function predicate and added a regression test for the no-content interception contract. Production behavior, security policy and release assets are unchanged.
 - Closed the stale post-rc47 `ITR-002` release item: the host-local support inbox and durable Viewer withdrawal are live code whose remaining evidence belongs to supervised acceptance (`ITR-001`), not another deployment claim.

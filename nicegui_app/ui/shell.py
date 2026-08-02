@@ -49,7 +49,7 @@ MOBILE_PRIMARY_NAVIGATION = tuple(
     (page.route, page.title_key, page.icon)
     for page in mobile_navigation_for(AccessMode.ADMIN)
 )
-DESKTOP_DRAWER_WIDTH_PX = 284
+DESKTOP_DRAWER_WIDTH_PX = 264
 
 
 def _navigation_context(active_path: str, access_mode: AccessMode) -> tuple[int, str, str]:
