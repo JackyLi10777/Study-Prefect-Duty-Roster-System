@@ -684,8 +684,8 @@ button.sy-draft-mobile-cell {
     box-shadow 160ms ease;
 }
 
-.sy-draft-grid-cell:hover,
-.sy-draft-mobile-cell:hover {
+.sy-draft-grid-cell:not(.sy-draft-grid-cell--closed):hover,
+.sy-draft-mobile-cell:not(.sy-draft-mobile-cell--closed):hover {
   background: var(--sy-role-action-soft);
 }
 
@@ -718,8 +718,12 @@ button.sy-draft-mobile-cell {
 .sy-draft-grid-cell--closed,
 .sy-draft-mobile-cell--closed {
   color: var(--sy-muted);
-  cursor: default;
   background: var(--sy-surface-subtle);
+}
+
+button.sy-draft-grid-cell--closed,
+button.sy-draft-mobile-cell--closed {
+  cursor: default;
 }
 
 .sy-draft-cell-name {

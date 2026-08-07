@@ -1145,11 +1145,36 @@ def test_deployment_reports_previous_identity_from_the_task_target() -> None:
     stop = source.index("Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 30")
     scan = source.index("Get-SingYinStoppedNiceGuiStoragePaths", stop)
     migrate = source.index("$migration = Move-SingYinLegacyNiceGuiStorage")
-    backup = source.index('Write-Step "Creating a fresh verified backup', migrate)
+    backup = source.index(
+        'Write-Step "Creating a previous-schema rollback snapshot',
+        migrate,
+    )
     assert stop < scan < migrate < backup
     assert "$stoppedReleaseIdentity" not in source
     assert "$reconciledReleaseIdentity" not in source
     assert "legacyNiceGuiStorageMigration = [ordered]@{" in source
+
+
+def test_deployment_rejects_legacy_or_missing_previous_bundle_before_path_use() -> None:
+    source = _source()
+    identity = source.index(
+        "$previousReleaseIdentity = Get-SingYinPreviousReleaseIdentity",
+    )
+    guard = source.index(
+        '[string]$previousReleaseIdentity.Source -ceq "legacy-host-checkout"',
+        identity,
+    )
+    first_bundle_join = source.index("Join-Path $previousBundlePath", identity)
+    guard_block = source[guard:first_bundle_join]
+
+    assert identity < guard < first_bundle_join
+    assert (
+        "[string]::IsNullOrWhiteSpace("
+        "[string]$previousReleaseIdentity.Bundle"
+        ")"
+    ) in guard_block
+    assert "Establish and verify an immutable release baseline" in guard_block
+    assert "$previousBundlePath = [string]$previousReleaseIdentity.Bundle" in guard_block
 
 
 def test_deployment_rotates_runtime_task_credential_without_persisting_it() -> None:
@@ -1449,6 +1474,56 @@ def test_deployment_fingerprint_snippet_executes_in_windows_powershell_51() -> N
     assert payload["fileCount"] > 0
 
 
+def test_release_database_safety_wrapper_executes_in_windows_powershell_51(
+    tmp_path: Path,
+) -> None:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production host script")
+    function_source = "\n".join(
+        (
+            _powershell_function_source("Protect-ReportText"),
+            _powershell_function_source("Invoke-Native"),
+            _powershell_function_source("Invoke-ReleaseDatabaseSafety"),
+        )
+    )
+    python = str(Path(sys.executable)).replace("'", "''")
+    helper = str(PROJECT_ROOT / "scripts" / "release_database_safety.py").replace(
+        "'", "''"
+    )
+    project_root = str(PROJECT_ROOT).replace("'", "''")
+    native_log = str(tmp_path / "native.log").replace("'", "''")
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$script:NativeLogPath = '{native_log}'
+{function_source}
+$payload = Invoke-ReleaseDatabaseSafety `
+    -Python '{python}' `
+    -ScriptPath '{helper}' `
+    -WorkingDirectory '{project_root}' `
+    -CommandArguments @('head', '--release-root', '{project_root}')
+$payload | ConvertTo-Json -Compress
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    json_lines = [line for line in result.stdout.splitlines() if line.startswith("{")]
+    assert json_lines
+    payload = json.loads(json_lines[-1])
+    assert payload["status"] == "pass"
+    assert len(payload["migrationHeads"]) == 1
+    assert re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", payload["migrationHeads"][0])
+
+
 def test_deployment_script_fences_data_and_preserves_the_protected_environment() -> None:
     source = _source()
 
@@ -1480,7 +1555,12 @@ def test_deployment_script_fences_data_and_preserves_the_protected_environment()
         "Disable-ScheduledTask -TaskName $TaskName"
     )
     assert "Wait-PortReleased -Port $deploymentPort" in source
-    assert "scripts\\verify_formal_backup_restore.py" in source
+    assert "scripts\\release_database_safety.py" in source
+    assert "scripts\\verify_formal_backup_restore.py" not in source
+    assert "-Python $previousPython" in source
+    assert '"prepare",' in source
+    assert '"--release-root", $previousBundlePath' in source
+    assert '"--expected-revision", $previousMigrationHead' in source
     for proof in (
         "isolatedRestore",
         "fairnessBalanced",
@@ -1488,10 +1568,79 @@ def test_deployment_script_fences_data_and_preserves_the_protected_environment()
         "restoreAuditAppended",
         "integrity",
         "sha256",
+        "manifestSha256",
+        "schemaRevision",
     ):
         assert proof in source
     assert "Get-FileHash -LiteralPath $snapshotPath -Algorithm SHA256" in source
+    assert "Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256" in source
     assert "[IO.Path]::GetFileName([string]$backupReport.snapshotFile)" in source
+
+    stopped = source.index("Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 30")
+    previous_bundle_proof = source.index('"prepare",', stopped)
+    task_switch = source.index(
+        'Write-Step "Atomically switching the owned task to the immutable release bundle"',
+        previous_bundle_proof,
+    )
+    candidate_start = source.index("$releaseTaskStartAttempted = $true", task_switch)
+    assert stopped < previous_bundle_proof < task_switch < candidate_start
+
+
+def test_deployment_proves_a_distinct_candidate_recovery_baseline_before_pass() -> None:
+    source = _source()
+    candidate_start = source.index("$releaseTaskStartAttempted = $true")
+    strict_gate = source.index('"--allow-pending-cloudflare-access"', candidate_start)
+    baseline_step = source.index(
+        'Write-Step "Creating a current-schema recovery baseline',
+        strict_gate,
+    )
+    baseline_prepare = source.index(
+        "$currentRecoveryEvidence = Invoke-ReleaseDatabaseSafety",
+        baseline_step,
+    )
+    success_report = source.index("Write-DeploymentReport -Payload", baseline_prepare)
+    baseline_block = source[baseline_step:success_report]
+    normalized_baseline = " ".join(baseline_block.split())
+    report_block = source[success_report : source.index("} catch {", success_report)]
+
+    assert candidate_start < strict_gate < baseline_step < baseline_prepare < success_report
+    assert (
+        '$candidateDatabaseSafetyScript = Join-Path $releaseBundlePath '
+        '"scripts\\release_database_safety.py"'
+    ) in baseline_block
+    assert "-Python $hostPython" in baseline_block
+    assert "-ScriptPath $candidateDatabaseSafetyScript" in baseline_block
+    assert "-WorkingDirectory $releaseBundlePath" in baseline_block
+    assert '"--release-root", $releaseBundlePath' in baseline_block
+    assert '"--expected-revision", $releaseMigrationHead' in baseline_block
+    assert "current-recovery-baseline-$safeReleaseName.json" in baseline_block
+    assert "release-rollback-snapshot-$safeReleaseName.json" not in baseline_block
+    assert (
+        "$currentRecoverySnapshotPath -ieq $rollbackSnapshotPath"
+        in baseline_block
+    )
+    assert (
+        "$currentRecoveryManifestPath -ieq $rollbackManifestPath"
+        in baseline_block
+    )
+    assert (
+        "Get-FileHash -LiteralPath $currentRecoverySnapshotPath -Algorithm SHA256"
+        in baseline_block
+    )
+    assert (
+        "Get-FileHash -LiteralPath $currentRecoveryManifestPath -Algorithm SHA256"
+        in baseline_block
+    )
+    assert (
+        "[string]$currentRecoveryManifest.schemaRevision -cne "
+        "$releaseMigrationHead"
+    ) in normalized_baseline
+    assert (
+        "[string]$currentRecoveryManifest.sha256 -cne "
+        "$currentRecoverySnapshotSha256"
+    ) in normalized_baseline
+    assert "$currentRecoveryBaseline = [ordered]@{" in baseline_block
+    assert "currentRecoveryBaseline = $currentRecoveryBaseline" in report_block
 
 
 def test_deployment_script_consumes_only_a_protected_one_use_environment_overlay() -> None:
@@ -1620,6 +1769,12 @@ def test_deployment_script_rolls_back_task_target_environment_and_task_state() -
     assert "$restoreTaskParameters.User = $runtimeAccount.Name" in catch_block
     assert "$restoreTaskParameters.Password = $runtimeTaskPassword" in catch_block
     assert "Set-ScheduledTask @restoreTaskParameters | Out-Null" in catch_block
+    assert '$databaseRollbackAttempted = $true' in catch_block
+    assert '"restore",' in catch_block
+    assert '$databaseRollbackSucceeded = $true' in catch_block
+    assert '"--expected-sha256", $rollbackSnapshotSha256' in catch_block
+    assert '"--expected-revision", $previousMigrationHead' in catch_block
+    assert "Protect-SingYinSensitivePath `\n                        -Path $databasePath" in catch_block
     assert '"switch",' not in catch_block
     assert '"pip"' not in catch_block
     assert "[IO.File]::WriteAllBytes($environmentPath, $environmentBytes)" in catch_block
@@ -1635,11 +1790,51 @@ def test_rollback_never_switches_task_target_until_the_production_port_is_releas
     source = _source()
     rollback = source.split("$rollbackAttempted = $true", 1)[1]
     wait_index = rollback.index("Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 15")
+    database_restore_index = rollback.index('"restore",')
+    database_proof_index = rollback.index("$databaseRollbackSucceeded = $true")
     task_switch_index = rollback.index("Set-ScheduledTask @restoreTaskParameters | Out-Null")
+    environment_restore_index = rollback.index(
+        "[IO.File]::WriteAllBytes($environmentPath, $environmentBytes)"
+    )
+    previous_task_start_index = rollback.index(
+        "Start-ScheduledTask -TaskName $TaskName",
+        task_switch_index,
+    )
 
-    assert wait_index < task_switch_index
+    assert (
+        wait_index
+        < database_restore_index
+        < database_proof_index
+        < task_switch_index
+        < environment_restore_index
+        < previous_task_start_index
+    )
     assert "try { Wait-PortReleased" not in rollback
     assert "catch { }" not in rollback[:task_switch_index]
+
+
+def test_database_rollback_failure_is_fail_closed_before_the_previous_task() -> None:
+    source = _source()
+    rollback = source.split("$rollbackAttempted = $true", 1)[1]
+    guarded_restore = rollback.split("if ($releaseTaskStartAttempted) {", 1)[1]
+    restore_index = guarded_restore.index("Invoke-ReleaseDatabaseSafety")
+    proof_index = guarded_restore.index("$databaseRollbackSucceeded = $true")
+    task_switch_index = guarded_restore.index(
+        "Set-ScheduledTask @restoreTaskParameters | Out-Null"
+    )
+    previous_task_start_index = guarded_restore.index(
+        "Start-ScheduledTask -TaskName $TaskName",
+        task_switch_index,
+    )
+    rollback_catch_index = guarded_restore.index("\n        } catch {")
+
+    assert restore_index < proof_index < task_switch_index < previous_task_start_index
+    assert previous_task_start_index < rollback_catch_index
+    assert "The candidate may have migrated the database" in guarded_restore
+    assert "database = [ordered]@{" in source
+    assert "required = $releaseTaskStartAttempted" in source
+    assert "attempted = $databaseRollbackAttempted" in source
+    assert "succeeded = $databaseRollbackSucceeded" in source
 
 
 def test_deployment_script_parses_in_windows_powershell_51() -> None:

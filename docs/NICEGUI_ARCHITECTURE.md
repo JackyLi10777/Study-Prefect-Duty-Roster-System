@@ -270,13 +270,17 @@ The public draft-edit contract consists of `WeekScheduleOverrides`, `DraftCellEd
 
 ```text
 apply_draft_patch(
+    *,
     roster_week_id,
-    expected_version,
-    cell_edits,
-    day_edits,
-    command_id,
+    expected_week_version,
+    cell_edits=(),
+    day_edits=(),
+    reason=None,
+    command_id=None,
 )
 ```
+
+`reason` and `command_id` are optional at the API boundary. The UI presents the reason as optional; the workflow normalizes a missing reason to an empty audit note while still requiring at least one explicit cell or weekday edit. Production callers should provide a unique `command_id` whenever an operation may be retried so the same decision remains idempotent.
 
 NiceGUI keeps cell and day edits local until the operator selects **Review and save**. The workflow then enters one `BEGIN IMMEDIATE` transaction, claims the idempotent command receipt, compares the expected roster version, constructs the final matrix, and revalidates role eligibility, selected availability, pre-generation leave, same-day uniqueness, non-consecutive duties, legacy fixed Assist ownership, and canonical slot coverage after applying whole-day closures. A same-day two-cell swap is therefore atomic. The transaction updates the roster version and closure rows, creates the audit and backup obligation, and commits all or none of the patch. Draft edits never post to the fairness ledger; publication remains the only initial fairness-posting boundary.
 

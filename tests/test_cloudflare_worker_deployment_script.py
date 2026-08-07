@@ -132,7 +132,7 @@ def test_worker_deployment_derives_its_default_source_from_its_own_checkout() ->
 
 def test_worker_deployment_uses_pinned_wrangler_and_structured_events() -> None:
     source = _source()
-    assert 'package.devDependencies.wrangler -cne "4.110.0"' in source
+    assert 'package.devDependencies.wrangler -cne "4.116.0"' in source
     assert "WRANGLER_OUTPUT_FILE_PATH" in source
     assert 'Read-WranglerEvent -Path $uploadOutput -Type "version-upload"' in source
     assert 'Read-WranglerEvent -Path $stageOutput -Type "version-deploy"' in source

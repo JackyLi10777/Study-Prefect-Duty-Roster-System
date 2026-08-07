@@ -79,6 +79,16 @@ def _normalize_draft_candidate_value(value: object) -> str | None:
     return normalized
 
 
+def _generation_requirements_query_key(
+    week_start: date,
+    closed_days: object,
+) -> tuple[str, tuple[str, ...]]:
+    """Return one stable key for a rendered generation-requirements result."""
+
+    normalized_days = tuple(sorted(str(day) for day in (closed_days or ())))
+    return week_start.isoformat(), normalized_days
+
+
 def _assist_assignment_mode_code(value: object, *, fallback: str) -> str:
     """Keep stable rule codes separate from their bilingual presentation labels."""
 
@@ -281,6 +291,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             if original_id is not None:
                 candidate_ids.add(original_id)
             if replacement_id not in candidate_ids:
+                ui.notify(t("draft_candidate_invalid"), type="warning")
                 editor.refresh()
                 return
         current_id = pending_cells.get(cell_key, original_assignments[cell_key])
@@ -644,12 +655,17 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                 if cell.cell_key in pending_cells:
                                     classes += " sy-draft-grid-cell--pending"
                                 aria = f"{day_label(cell.day)}, {row.spec.display_label}, {name}"
+                                interaction_props = (
+                                    'role="gridcell" aria-disabled="true" tabindex="-1"'
+                                    if state == "closed"
+                                    else 'role="gridcell" tabindex="0"'
+                                )
                                 button = ui.element("button").classes(classes).style(
                                     f"grid-column:{day_index};grid-row:{row_index}"
                                 ).props(
                                     f'type="button" aria-label="{attr(aria)}" '
                                     f'data-cell-key="{attr(cell.cell_key)}" '
-                                    'role="gridcell" tabindex="0"'
+                                    + interaction_props
                                 )
                                 with button:
                                     ui.label(name).classes("sy-draft-cell-name")
@@ -708,9 +724,15 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                         classes += " sy-draft-mobile-cell--selected"
                                     if cell.cell_key in pending_cells:
                                         classes += " sy-draft-mobile-cell--pending"
+                                    interaction_props = (
+                                        'role="gridcell" aria-disabled="true" tabindex="-1"'
+                                        if state == "closed"
+                                        else 'role="gridcell" tabindex="0"'
+                                    )
                                     button = ui.element("button").classes(classes).props(
                                         f'type="button" aria-label="{attr(row.spec.display_label + ", " + name)}" '
-                                        f'data-cell-key="{attr(cell.cell_key)}" role="gridcell" tabindex="0"'
+                                        f'data-cell-key="{attr(cell.cell_key)}" '
+                                        + interaction_props
                                     )
                                     with button:
                                         ui.label(row.spec.display_label).classes("text-sm font-semibold")
@@ -1258,12 +1280,23 @@ def rosters_page() -> None:
                         day_closure_select.update()
 
                     requirements_area = ui.column().classes("w-full gap-2 mt-4")
+                    requirements_state: dict[str, tuple[str, tuple[str, ...]] | None] = {
+                        "rendered_key": None
+                    }
 
                     def refresh_requirements() -> None:
-                        requirements_area.clear()
                         week_start = selected_week_start()
                         if week_start is None:
+                            requirements_state["rendered_key"] = None
+                            requirements_area.clear()
                             return
+                        query_key = _generation_requirements_query_key(
+                            week_start,
+                            day_closure_select.value,
+                        )
+                        if requirements_state["rendered_key"] == query_key:
+                            return
+                        requirements_area.clear()
                         requirements = _safe_read_action(
                             lambda: workflow.generation_requirements(
                                 week_start,
@@ -1273,6 +1306,7 @@ def rosters_page() -> None:
                         )
                         if requirements is None:
                             return
+                        requirements_state["rendered_key"] = query_key
                         with requirements_area:
                             with ui.expansion(t("generation_requirements"), icon="assignment_late").classes("w-full"):
                                 ui.label(t("generation_requirements_notice")).classes("p-4 pb-1 text-sm text-[var(--sy-muted)]")
@@ -1302,6 +1336,13 @@ def rosters_page() -> None:
                                     row_key="id",
                                     classes="p-4",
                                 )
+
+                    def refresh_requirements_after_leave_change() -> None:
+                        """Invalidate the rendered preflight before leave-dependent refresh."""
+
+                        requirements_state["rendered_key"] = None
+                        refresh_requirements()
+
                     refresh_requirements()
                     day_closure_select.on_value_change(
                         lambda _event: refresh_requirements()
@@ -1378,6 +1419,7 @@ def rosters_page() -> None:
                                         if result is not _OPERATION_FAILED:
                                             ui.notify(t("leave_cancelled"), type="positive")
                                             refresh_leave_list()
+                                            refresh_requirements_after_leave_change()
 
                                     ui.button(t("cancel_leave"), icon="close", on_click=cancel_leave).props("flat dense color=negative")
 
@@ -1422,6 +1464,7 @@ def rosters_page() -> None:
                             leave_reason.value = ""
                             leave_reason.update()
                             refresh_leave_list()
+                            refresh_requirements_after_leave_change()
                             ui.notify(t("leave_declared"), type="positive")
                         else:
                             declare_leave_button.set_icon("event_busy")

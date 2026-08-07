@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import Enum
-from typing import Iterable, Mapping
+from typing import Iterable, Literal, Mapping
 
 from roster_policy import (
     DUTY_SERVICE_TIME_WINDOWS,
@@ -111,7 +111,7 @@ def roster_display_label(post_code: str | DutyPost, slot_index: int = 1) -> str:
 class RosterScheduleDay:
     day: SchoolDay
     duty_date: date | None
-    state: str = "open"
+    state: Literal["open", "day_closed"] = "open"
 
     @property
     def label_zh(self) -> str:
@@ -339,8 +339,17 @@ def _build_rows(
             if strict:
                 raise RosterPresentationError("The roster contains an invalid assignment.") from error
             continue
-        if key in indexed and strict:
-            raise RosterPresentationError("The roster contains a duplicate duty slot.")
+        existing = indexed.get(key)
+        if existing is not None:
+            existing_status = str(existing.get("status") or "")
+            item_status = str(item.get("status") or "")
+            if existing_status == "active" and item_status == "replaced":
+                continue
+            if existing_status == "replaced" and item_status == "active":
+                indexed[key] = item
+                continue
+            if strict:
+                raise RosterPresentationError("The roster contains a duplicate duty slot.")
         indexed[key] = item
 
     rows: list[RosterScheduleRow] = []

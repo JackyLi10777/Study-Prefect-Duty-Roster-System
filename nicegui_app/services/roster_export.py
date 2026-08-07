@@ -243,7 +243,7 @@ def _schedule_grid(
             if cell.state is RosterCellState.DAY_CLOSED:
                 row.append(
                     Paragraph(
-                        ("全日不開放" if language == "zh" else "Day closed")
+                        ("全天不開放" if language == "zh" else "Closed all day")
                         if row_index == 1
                         else "",
                         styles["closed_cell"],

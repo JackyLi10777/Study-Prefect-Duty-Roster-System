@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
+import re
 
 import pytest
 
@@ -15,7 +16,7 @@ from nicegui_app.services.roster_workflow import (
 )
 from nicegui_app.services.workflow_types import DraftCellEdit, DraftDayEdit
 from roster_core import Prefect, generate_weekly_roster, validate_assignments
-from roster_policy import DAYS, DutyPost, PrefectRole, SchoolDay
+from roster_policy import DAYS, DutyPost, PrefectRole, RosterPolicyError, SchoolDay
 
 
 WEEK_START = date(2026, 9, 7)
@@ -236,7 +237,10 @@ def test_reopening_without_cell_edits_leaves_vacancies_and_publish_stays_blocked
 
     assert reopened.closed_days == ()
     assert len(workflow.assignments(draft.id)) == 20
-    with pytest.raises((WorkflowError, ValueError), match="coverage|Incorrect"):
+    with pytest.raises(
+        RosterPolicyError,
+        match=r"^Incorrect post coverage on MONDAY\.$",
+    ):
         workflow.publish(
             draft.id,
             expected_week_version=reopened.version,
@@ -399,7 +403,10 @@ def test_guest_failed_patch_does_not_leak_partial_mutation() -> None:
     before_assignments = adapter.assignments(draft.id)
     before_fairness = adapter.prefect_loads()
 
-    with pytest.raises(WorkflowError):
+    with pytest.raises(
+        WorkflowError,
+        match=rf"^{re.escape(str(assistant['nameZh']))} cannot be assigned to Room 303\.$",
+    ):
         adapter.apply_draft_patch(
             roster_week_id=draft.id,
             expected_week_version=draft.version,

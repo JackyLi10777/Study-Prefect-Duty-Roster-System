@@ -90,6 +90,26 @@ def test_navigation_timing_summary_reports_only_available_aggregate_values() -> 
     assert "route" not in summary
 
 
+def test_navigation_timing_summary_handles_empty_samples() -> None:
+    assert summarize_navigation_timings([]) == {}
+
+
+def test_navigation_timing_summary_handles_one_available_sample() -> None:
+    summary = summarize_navigation_timings(
+        [{"route": "/", "ttfbMs": 42.0, "loadEventEndMs": None}]
+    )
+
+    assert summary == {
+        "ttfbMs": {
+            "sampleCount": 1,
+            "minMs": 42.0,
+            "p50Ms": 42.0,
+            "p95Ms": 42.0,
+            "maxMs": 42.0,
+        }
+    }
+
+
 def test_runtime_verifier_measures_real_navigation_milestones_without_claiming_web_vitals() -> None:
     source = (Path(__file__).resolve().parents[1] / "scripts" / "verify_runtime_performance.py").read_text(
         encoding="utf-8"

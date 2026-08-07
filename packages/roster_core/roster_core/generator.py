@@ -927,12 +927,13 @@ def validate_assignments(
             raise RosterPolicyError(f"Duplicate prefect assignment on {day.name}.")
         actual_posts = Counter(assignment.post for assignment in day_assignments)
         expected_posts = Counter() if day in normalized_closed_days else Counter(required_posts_for_day(day))
-        coverage_invalid = (
-            actual_posts != expected_posts
-            if require_complete
-            else any(actual_posts[post] > count for post, count in expected_posts.items())
-            or any(post not in expected_posts for post in actual_posts)
-        )
+        if require_complete:
+            coverage_invalid = actual_posts != expected_posts
+        else:
+            coverage_invalid = (
+                any(actual_posts[post] > count for post, count in expected_posts.items())
+                or any(post not in expected_posts for post in actual_posts)
+            )
         if coverage_invalid:
             raise RosterPolicyError(f"Incorrect post coverage on {day.name}.")
 

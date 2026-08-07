@@ -187,7 +187,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
    由公開 `vars` 首次遷移 allowlist 時，先在 Windows `%TEMP%` 建立只用一次的 `sing-yin-worker-secrets-<random>.json`，只包含 `ADMIN_IDENTITY_ALLOWLIST` 及 secret 字串；再加上 `-SecretOverlayPath "<absolute-temp-path>"`。腳本會把它與新程式放進同一個未分流 version，先以 0% traffic 驗證，再覆寫及刪除臨時檔。不要先用普通 `wrangler secret put` 改動 live binding，否則尚在運行、仍預期物件格式的舊 Worker 會拒絕管理員登入。
 
-   腳本只使用鎖定的 Wrangler 4.110.0：先保存目前 100% version ID，再上傳新 version，以「舊版 100%／新版 0%」建立 deployment；指定版本標頭的 smoke checks 通過後，才把新版提升至 100%。任何遠端切換開始後的失敗都會精確 rollback 到原 version ID，結果寫入 `logs/cloudflare-worker-deployment-<tag>.json`，不記錄 cookie、token 或 secret 值。
+   腳本只使用鎖定的 Wrangler 4.116.0：先保存目前 100% version ID，再上傳新 version，以「舊版 100%／新版 0%」建立 deployment；指定版本標頭的 smoke checks 通過後，才把新版提升至 100%。任何遠端切換開始後的失敗都會精確 rollback 到原 version ID，結果寫入 `logs/cloudflare-worker-deployment-<tag>.json`，不記錄 cookie、token 或 secret 值。
 5. 在新版仍為 0% 時核對：
    - `/` 公開入口；
    - `/auth/admin/start` 正確進入 Access；

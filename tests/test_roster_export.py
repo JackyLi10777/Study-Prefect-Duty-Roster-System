@@ -144,7 +144,7 @@ def test_schedule_pdf_renders_a_whole_day_closure_as_one_distinct_column(tmp_pat
             BytesIO(build_roster_pdf(workflow, draft.id, language="zh").content)
         ).pages
     )
-    assert extracted_text.count("全日不開放") == 1
+    assert extracted_text.count("全天不開放") == 1
 
 
 def test_group_schedule_crest_and_footer_are_explicit_export_options(tmp_path) -> None:

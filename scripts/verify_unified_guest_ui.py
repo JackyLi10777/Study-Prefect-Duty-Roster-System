@@ -853,19 +853,61 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
 
     draft_grid = page.get_by_test_id("draft-grid-editor")
     editable_cells = draft_grid.locator('[data-cell-key].sy-draft-grid-cell--assigned')
-    editable_cells.first.click()
-    candidate_search = page.get_by_test_id("draft-candidate-search")
+    editable_cell = editable_cells.first
+    draft_cell_key = editable_cell.get_attribute("data-cell-key")
+    if not draft_cell_key:
+        raise UnifiedGuestVerificationError("The selected Guest draft cell has no stable key.")
+    original_draft_name = " ".join(
+        editable_cell.locator(".sy-draft-cell-name").inner_text().split()
+    )
+    editable_cell.click()
+    candidate_search = page.locator(
+        f'[data-testid="draft-candidate-search"][data-cell-key="{draft_cell_key}"]'
+    )
     candidate_search.wait_for(state="visible", timeout=10_000)
     chosen_draft_candidate = _select_option(
         page,
         candidate_search,
-        exclude=re.compile(r"目前安排|Current assignment|空缺|Vacant|unassigned"),
+        exclude=re.compile(
+            rf"^{re.escape(original_draft_name)}(?:\s|·|\(|$)"
+            r"|目前安排|Current assignment|空缺|Vacant|unassigned",
+            re.IGNORECASE,
+        ),
     )
+    replacement_draft_name = next(
+        (
+            name
+            for name in FIXTIONAL_PREFECT_NAMES
+            if re.search(
+                rf"^{re.escape(name)}(?:\s|·|\(|$)",
+                chosen_draft_candidate,
+            )
+        ),
+        "",
+    )
+    if not replacement_draft_name or replacement_draft_name == original_draft_name:
+        raise UnifiedGuestVerificationError(
+            "The Guest draft verifier did not choose a different prefect."
+        )
     draft_reason = page.locator("textarea[name='draft-batch-reason']")
     if draft_reason.input_value() != "":
         raise UnifiedGuestVerificationError("The optional draft-batch reason did not start blank.")
     page.get_by_test_id("draft-save-all").click()
     _wait_for_draft_version(page, 5)
+    changed_draft_cell = page.locator(
+        f'[data-cell-key="{draft_cell_key}"].sy-draft-grid-cell--assigned:visible'
+    ).first
+    changed_draft_cell.wait_for(state="visible", timeout=10_000)
+    changed_draft_name = " ".join(
+        changed_draft_cell.locator(".sy-draft-cell-name").inner_text().split()
+    )
+    if (
+        changed_draft_name != replacement_draft_name
+        or changed_draft_name == original_draft_name
+    ):
+        raise UnifiedGuestVerificationError(
+            "The saved Guest draft cell did not display the selected replacement prefect."
+        )
 
     page.get_by_role("button", name=re.compile(r"發布週表|Publish roster")).click()
     page.get_by_role(
@@ -918,6 +960,8 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
         "manualDraftChange": {
             "reasonOptional": True,
             "candidate": chosen_draft_candidate,
+            "originalName": original_draft_name,
+            "replacementName": replacement_draft_name,
         },
         "dayClosure": {
             "saved": True,

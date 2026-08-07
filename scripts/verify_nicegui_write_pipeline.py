@@ -543,8 +543,17 @@ def main() -> None:
                 f'{assignment["slotIndex"]}'
             )
             candidates = workflow.draft_cell_candidates(roster_week_id, cell_key)
-            if candidates:
-                editable_assignment = (assignment, cell_key, candidates[0])
+            replacement_candidate = next(
+                (
+                    candidate
+                    for candidate in candidates
+                    if candidate["id"] != assignment["prefectId"]
+                    and candidate["nameZh"] != assignment["prefectName"]
+                ),
+                None,
+            )
+            if replacement_candidate is not None:
+                editable_assignment = (assignment, cell_key, replacement_candidate)
                 break
         assert editable_assignment is not None, "Generated draft has no legally editable cell."
         manual_assignment, manual_cell_key, manual_candidate = editable_assignment
@@ -564,6 +573,9 @@ def main() -> None:
         workflow = _workflow(database_path, backup_dir)
         changed_assignment = next(item for item in workflow.assignments(roster_week_id) if item["id"] == manual_assignment["id"])
         assert changed_assignment["prefectId"] == manual_candidate["id"]
+        assert changed_assignment["prefectId"] != manual_assignment["prefectId"]
+        assert changed_assignment["prefectName"] == manual_candidate["nameZh"]
+        assert changed_assignment["prefectName"] != manual_assignment["prefectName"]
         assert workflow.prefect_loads() == before_publish_loads
         log_content = (log_dir / "app.log").read_text(encoding="utf-8")
         assert "progress_draft_change_working" in log_content

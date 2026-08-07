@@ -77,6 +77,48 @@ function Invoke-Native {
     }
 }
 
+function Invoke-ReleaseDatabaseSafety {
+    param(
+        [Parameter(Mandatory = $true)][string]$Python,
+        [Parameter(Mandatory = $true)][string]$ScriptPath,
+        [Parameter(Mandatory = $true)][string]$WorkingDirectory,
+        [Parameter(Mandatory = $true)][string[]]$CommandArguments
+    )
+    if (-not (Test-Path -LiteralPath $Python -PathType Leaf)) {
+        throw "The release database safety Python runtime is missing."
+    }
+    if (-not (Test-Path -LiteralPath $ScriptPath -PathType Leaf)) {
+        throw "The release database safety helper is missing."
+    }
+    $nativeArguments = @(
+        "-B"
+        "-X"
+        "utf8"
+        $ScriptPath
+    ) + $CommandArguments
+    $output = @(Invoke-Native `
+        -Executable $Python `
+        -Arguments $nativeArguments `
+        -WorkingDirectory $WorkingDirectory)
+    $jsonLines = @(
+        $output |
+            ForEach-Object { $_.ToString().Trim() } |
+            Where-Object { $_.StartsWith("{") -and $_.EndsWith("}") }
+    )
+    if ($jsonLines.Count -lt 1) {
+        throw "The release database safety helper returned no JSON evidence."
+    }
+    try {
+        $payload = $jsonLines[-1] | ConvertFrom-Json
+    } catch {
+        throw "The release database safety helper returned invalid JSON evidence."
+    }
+    if ([string]$payload.status -cne "pass") {
+        throw "The release database safety helper did not report pass."
+    }
+    return $payload
+}
+
 function Get-GitValue {
     param(
         [Parameter(Mandatory = $true)][string]$Repository,
@@ -1680,6 +1722,26 @@ try {
     $legacyNiceGuiStorageMigrated = 0
     $legacyNiceGuiStorageRoot = $null
     $backupReport = $null
+    $releaseDatabaseSafetyScript = Join-Path $SourceRoot "scripts\release_database_safety.py"
+    $previousBundlePath = $null
+    $previousPython = $null
+    $previousMigrationHead = $null
+    $releaseMigrationHead = $null
+    $databasePath = Join-Path $HostRoot "data\runtime\sing-yin-roster.sqlite3"
+    $backupDirectory = Join-Path $HostRoot "data\backups"
+    $rollbackSnapshotPath = $null
+    $rollbackManifestPath = $null
+    $rollbackSnapshotSha256 = $null
+    $rollbackManifestSha256 = $null
+    $currentRecoveryBaseline = $null
+    $currentRecoverySnapshotPath = $null
+    $currentRecoveryManifestPath = $null
+    $currentRecoverySnapshotSha256 = $null
+    $currentRecoveryManifestSha256 = $null
+    $releaseTaskStartAttempted = $false
+    $databaseRollbackAttempted = $false
+    $databaseRollbackSucceeded = $false
+    $databaseRollbackEvidence = $null
     $taskInitiallyRunning = $false
     $taskInitiallyEnabled = $false
     $taskStopped = $false
@@ -1863,10 +1925,52 @@ try {
         -HostRoot $HostRoot `
         -TaskWorkingDirectory $previousTaskAction.WorkingDirectory `
         -ExpectedEnvironmentHash $previousEnvironmentHash
+    if (
+        [string]$previousReleaseIdentity.Source -ceq "legacy-host-checkout" -or
+        [string]::IsNullOrWhiteSpace([string]$previousReleaseIdentity.Bundle)
+    ) {
+        throw (
+            "The existing task is not bound to an immutable release bundle. " +
+            "Establish and verify an immutable release baseline before controlled deployment."
+        )
+    }
     $previousCommit = [string]$previousReleaseIdentity.Commit
     $previousReleaseRef = $previousReleaseIdentity.ReleaseRef
     $previousReleaseSource = [string]$previousReleaseIdentity.Source
     $previousReleaseRepairCount = [int]$previousReleaseIdentity.RepairCount
+    $previousBundlePath = [string]$previousReleaseIdentity.Bundle
+    $previousPython = Join-Path $previousBundlePath ".venv\Scripts\python.exe"
+
+    Write-Step "Binding rollback evidence to the previous and candidate migration heads"
+    $previousHeadEvidence = Invoke-ReleaseDatabaseSafety `
+        -Python $previousPython `
+        -ScriptPath $releaseDatabaseSafetyScript `
+        -WorkingDirectory $SourceRoot `
+        -CommandArguments @(
+            "head",
+            "--release-root", $previousBundlePath
+        )
+    $releaseHeadEvidence = Invoke-ReleaseDatabaseSafety `
+        -Python $sourcePython `
+        -ScriptPath $releaseDatabaseSafetyScript `
+        -WorkingDirectory $SourceRoot `
+        -CommandArguments @(
+            "head",
+            "--release-root", $SourceRoot
+        )
+    $previousHeads = @($previousHeadEvidence.migrationHeads)
+    $releaseHeads = @($releaseHeadEvidence.migrationHeads)
+    if ($previousHeads.Count -ne 1 -or $releaseHeads.Count -ne 1) {
+        throw "Windows release deployment requires one previous and one candidate migration head."
+    }
+    $previousMigrationHead = [string]$previousHeads[0]
+    $releaseMigrationHead = [string]$releaseHeads[0]
+    if (
+        $previousMigrationHead -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' -or
+        $releaseMigrationHead -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'
+    ) {
+        throw "The release migration-head evidence is malformed."
+    }
 
     Write-Step "Preflighting host and Worker gateway identity without changing the host"
     $currentHostEnvironment = Read-HostEnvironmentValues -EnvironmentPath $environmentPath
@@ -2024,21 +2128,28 @@ try {
         }
     }
 
-    Write-Step "Creating a fresh verified backup and isolated restore proof"
+    Write-Step "Creating a previous-schema rollback snapshot with the previous immutable release"
     $env:SING_YIN_APP_MODE = "official"
-    $env:SING_YIN_DATABASE_PATH = Join-Path $HostRoot "data\runtime\sing-yin-roster.sqlite3"
-    $env:SING_YIN_BACKUP_DIR = Join-Path $HostRoot "data\backups"
+    $env:SING_YIN_DATABASE_PATH = $databasePath
+    $env:SING_YIN_BACKUP_DIR = $backupDirectory
     $env:SING_YIN_LOG_DIR = Join-Path $HostRoot "logs"
     $backupStartedAt = [DateTimeOffset]::UtcNow
-    Invoke-Native -Executable $sourcePython -Arguments @(
-        "-X",
-        "utf8",
-        "scripts\verify_formal_backup_restore.py"
-    ) -WorkingDirectory $SourceRoot | Out-Null
-    $backupReportPath = Join-Path $SourceRoot "logs\formal-backup-restore-report.json"
+    $backupReportPath = Join-Path $SourceRoot "logs\release-rollback-snapshot-$safeReleaseName.json"
+    $preparedRollbackEvidence = Invoke-ReleaseDatabaseSafety `
+        -Python $previousPython `
+        -ScriptPath $releaseDatabaseSafetyScript `
+        -WorkingDirectory $SourceRoot `
+        -CommandArguments @(
+            "prepare",
+            "--release-root", $previousBundlePath,
+            "--database-path", $databasePath,
+            "--backup-dir", $backupDirectory,
+            "--report-path", $backupReportPath,
+            "--expected-revision", $previousMigrationHead
+        )
     $backupReportFile = Get-Item -LiteralPath $backupReportPath -ErrorAction Stop
     if ([DateTimeOffset]$backupReportFile.LastWriteTimeUtc -lt $backupStartedAt.AddSeconds(-2)) {
-        throw "The formal backup report was not refreshed by this deployment."
+        throw "The rollback snapshot report was not refreshed by this deployment."
     }
     $backupReport = Get-Content -LiteralPath $backupReportPath -Raw -Encoding UTF8 |
         ConvertFrom-Json
@@ -2049,15 +2160,25 @@ try {
         -not [bool]$backupReport.rowCountsMatched -or
         -not [bool]$backupReport.restoreAuditAppended -or
         [string]$backupReport.integrity -cne "ok" -or
-        [string]$backupReport.sha256 -notmatch '^[0-9a-f]{64}$'
+        [string]$backupReport.schemaRevision -cne $previousMigrationHead -or
+        [string]$backupReport.sha256 -notmatch '^[0-9a-f]{64}$' -or
+        [string]$backupReport.manifestSha256 -notmatch '^[0-9a-f]{64}$'
     ) {
-        throw "The fresh backup and isolated restore proof is incomplete."
+        throw "The previous-schema rollback snapshot proof is incomplete."
+    }
+    if (
+        [string]$preparedRollbackEvidence.snapshotFile -cne [string]$backupReport.snapshotFile -or
+        [string]$preparedRollbackEvidence.sha256 -cne [string]$backupReport.sha256 -or
+        [string]$preparedRollbackEvidence.manifestSha256 -cne [string]$backupReport.manifestSha256 -or
+        [string]$preparedRollbackEvidence.schemaRevision -cne [string]$backupReport.schemaRevision
+    ) {
+        throw "The rollback snapshot report does not match the helper evidence."
     }
     $snapshotName = [IO.Path]::GetFileName([string]$backupReport.snapshotFile)
     if ($snapshotName -cne [string]$backupReport.snapshotFile) {
-        throw "The formal backup report contains an unsafe snapshot path."
+        throw "The rollback snapshot report contains an unsafe snapshot path."
     }
-    $snapshotPath = Join-Path $env:SING_YIN_BACKUP_DIR $snapshotName
+    $snapshotPath = Join-Path $backupDirectory $snapshotName
     $manifestPath = [IO.Path]::ChangeExtension($snapshotPath, ".manifest.json")
     if (
         -not (Test-Path -LiteralPath $snapshotPath -PathType Leaf) -or
@@ -2067,8 +2188,24 @@ try {
     }
     $snapshotHash = (Get-FileHash -LiteralPath $snapshotPath -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($snapshotHash -cne ([string]$backupReport.sha256).ToLowerInvariant()) {
-        throw "The verified snapshot checksum no longer matches the backup report."
+        throw "The rollback snapshot checksum no longer matches its report."
     }
+    $manifestHash = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($manifestHash -cne ([string]$backupReport.manifestSha256).ToLowerInvariant()) {
+        throw "The rollback snapshot manifest checksum no longer matches its report."
+    }
+    $snapshotManifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 |
+        ConvertFrom-Json
+    if (
+        [string]$snapshotManifest.sha256 -cne $snapshotHash -or
+        [string]$snapshotManifest.schemaRevision -cne $previousMigrationHead
+    ) {
+        throw "The rollback snapshot manifest is not bound to its checksum and previous schema."
+    }
+    $rollbackSnapshotPath = $snapshotPath
+    $rollbackManifestPath = $manifestPath
+    $rollbackSnapshotSha256 = $snapshotHash
+    $rollbackManifestSha256 = $manifestHash
 
     Write-Step "Atomically switching the owned task to the immutable release bundle"
     $hostPython = Join-Path $releaseBundlePath ".venv\Scripts\python.exe"
@@ -2119,6 +2256,7 @@ try {
 
     Write-Step "Starting the official origin and enforcing health and write-readiness"
     Enable-ScheduledTask -TaskName $TaskName | Out-Null
+    $releaseTaskStartAttempted = $true
     Start-ScheduledTask -TaskName $TaskName
     $health = Wait-LoopbackHealth -Port $deploymentPort
     $readiness = Wait-LoopbackReadiness -Port $deploymentPort
@@ -2130,6 +2268,141 @@ try {
         "--allow-pending-cloudflare-access"
     ) -WorkingDirectory $releaseBundlePath | Out-Null
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+
+    Write-Step "Creating a current-schema recovery baseline with the candidate immutable release"
+    $candidateDatabaseSafetyScript = Join-Path $releaseBundlePath "scripts\release_database_safety.py"
+    $currentRecoveryStartedAt = [DateTimeOffset]::UtcNow
+    $currentRecoveryReportPath = Join-Path `
+        $SourceRoot `
+        "logs\current-recovery-baseline-$safeReleaseName.json"
+    $currentRecoveryEvidence = Invoke-ReleaseDatabaseSafety `
+        -Python $hostPython `
+        -ScriptPath $candidateDatabaseSafetyScript `
+        -WorkingDirectory $releaseBundlePath `
+        -CommandArguments @(
+            "prepare",
+            "--release-root", $releaseBundlePath,
+            "--database-path", $databasePath,
+            "--backup-dir", $backupDirectory,
+            "--report-path", $currentRecoveryReportPath,
+            "--expected-revision", $releaseMigrationHead
+        )
+    $currentRecoveryReportFile = Get-Item `
+        -LiteralPath $currentRecoveryReportPath `
+        -ErrorAction Stop
+    if (
+        [DateTimeOffset]$currentRecoveryReportFile.LastWriteTimeUtc -lt
+            $currentRecoveryStartedAt.AddSeconds(-2)
+    ) {
+        throw "The current-schema recovery baseline report was not refreshed by this deployment."
+    }
+    $currentRecoveryReport = Get-Content `
+        -LiteralPath $currentRecoveryReportPath `
+        -Raw `
+        -Encoding UTF8 | ConvertFrom-Json
+    if (
+        $currentRecoveryReport.status -cne "pass" -or
+        -not [bool]$currentRecoveryReport.isolatedRestore -or
+        -not [bool]$currentRecoveryReport.fairnessBalanced -or
+        -not [bool]$currentRecoveryReport.rowCountsMatched -or
+        -not [bool]$currentRecoveryReport.restoreAuditAppended -or
+        [string]$currentRecoveryReport.integrity -cne "ok" -or
+        [string]$currentRecoveryReport.schemaRevision -cne $releaseMigrationHead -or
+        [string]$currentRecoveryReport.sha256 -notmatch '^[0-9a-f]{64}$' -or
+        [string]$currentRecoveryReport.manifestSha256 -notmatch '^[0-9a-f]{64}$'
+    ) {
+        throw "The current-schema recovery baseline proof is incomplete."
+    }
+    if (
+        [string]$currentRecoveryEvidence.snapshotFile -cne
+            [string]$currentRecoveryReport.snapshotFile -or
+        [string]$currentRecoveryEvidence.sha256 -cne
+            [string]$currentRecoveryReport.sha256 -or
+        [string]$currentRecoveryEvidence.manifestSha256 -cne
+            [string]$currentRecoveryReport.manifestSha256 -or
+        [string]$currentRecoveryEvidence.schemaRevision -cne
+            [string]$currentRecoveryReport.schemaRevision
+    ) {
+        throw "The current-schema recovery report does not match the candidate helper evidence."
+    }
+    $currentRecoverySnapshotName = [IO.Path]::GetFileName(
+        [string]$currentRecoveryReport.snapshotFile
+    )
+    if ($currentRecoverySnapshotName -cne [string]$currentRecoveryReport.snapshotFile) {
+        throw "The current-schema recovery report contains an unsafe snapshot path."
+    }
+    $currentRecoverySnapshotPath = Join-Path `
+        $backupDirectory `
+        $currentRecoverySnapshotName
+    $currentRecoveryManifestPath = [IO.Path]::ChangeExtension(
+        $currentRecoverySnapshotPath,
+        ".manifest.json"
+    )
+    if (
+        $currentRecoverySnapshotPath -ieq $rollbackSnapshotPath -or
+        $currentRecoveryManifestPath -ieq $rollbackManifestPath
+    ) {
+        throw "The current-schema recovery baseline must not replace the pre-switch rollback snapshot."
+    }
+    if (
+        -not (Test-Path -LiteralPath $currentRecoverySnapshotPath -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $currentRecoveryManifestPath -PathType Leaf)
+    ) {
+        throw "The current-schema recovery snapshot or checksum manifest is missing."
+    }
+    $currentRecoverySnapshotSha256 = (
+        Get-FileHash -LiteralPath $currentRecoverySnapshotPath -Algorithm SHA256
+    ).Hash.ToLowerInvariant()
+    if (
+        $currentRecoverySnapshotSha256 -cne
+            ([string]$currentRecoveryReport.sha256).ToLowerInvariant()
+    ) {
+        throw "The current-schema recovery snapshot checksum no longer matches its report."
+    }
+    $currentRecoveryManifestSha256 = (
+        Get-FileHash -LiteralPath $currentRecoveryManifestPath -Algorithm SHA256
+    ).Hash.ToLowerInvariant()
+    if (
+        $currentRecoveryManifestSha256 -cne
+            ([string]$currentRecoveryReport.manifestSha256).ToLowerInvariant()
+    ) {
+        throw "The current-schema recovery manifest checksum no longer matches its report."
+    }
+    $currentRecoveryManifest = Get-Content `
+        -LiteralPath $currentRecoveryManifestPath `
+        -Raw `
+        -Encoding UTF8 | ConvertFrom-Json
+    if (
+        [string]$currentRecoveryManifest.sha256 -cne
+            $currentRecoverySnapshotSha256 -or
+        [string]$currentRecoveryManifest.schemaRevision -cne
+            $releaseMigrationHead
+    ) {
+        throw "The current-schema recovery manifest is not bound to its checksum and candidate schema."
+    }
+    if (
+        (Get-FileHash -LiteralPath $rollbackSnapshotPath -Algorithm SHA256).Hash.ToLowerInvariant() -cne
+            $rollbackSnapshotSha256 -or
+        (Get-FileHash -LiteralPath $rollbackManifestPath -Algorithm SHA256).Hash.ToLowerInvariant() -cne
+            $rollbackManifestSha256
+    ) {
+        throw "The pre-switch rollback snapshot changed while creating the current recovery baseline."
+    }
+    $currentRecoveryBaseline = [ordered]@{
+        sourceRelease = $ReleaseRef
+        sourceCommit = $releaseCommit
+        sourceBundle = $releaseBundlePath
+        snapshotFile = $currentRecoverySnapshotName
+        snapshotSha256 = $currentRecoverySnapshotSha256
+        manifestFile = [IO.Path]::GetFileName($currentRecoveryManifestPath)
+        manifestSha256 = $currentRecoveryManifestSha256
+        schemaRevision = $releaseMigrationHead
+        integrity = [string]$currentRecoveryReport.integrity
+        isolatedRestore = [bool]$currentRecoveryReport.isolatedRestore
+        fairnessBalanced = [bool]$currentRecoveryReport.fairnessBalanced
+        rowCountsMatched = [bool]$currentRecoveryReport.rowCountsMatched
+        restoreAuditAppended = [bool]$currentRecoveryReport.restoreAuditAppended
+    }
 
     Write-DeploymentReport -Payload ([ordered]@{
         schemaVersion = 1
@@ -2150,12 +2423,20 @@ try {
         sourceFingerprint = [string]$currentFingerprint.fingerprint
         sourceFileCount = [int]$currentFingerprint.fileCount
         releaseChecksPassed = $requiredCheckCount
+        migrationHeads = [ordered]@{
+            previous = $previousMigrationHead
+            candidate = $releaseMigrationHead
+        }
         snapshotFile = $snapshotName
         snapshotSha256 = [string]$backupReport.sha256
+        snapshotManifestSha256 = [string]$backupReport.manifestSha256
+        snapshotSchemaRevision = [string]$backupReport.schemaRevision
+        snapshotSourceRelease = $previousReleaseRef
         isolatedRestore = [bool]$backupReport.isolatedRestore
         fairnessBalanced = [bool]$backupReport.fairnessBalanced
         rowCountsMatched = [bool]$backupReport.rowCountsMatched
         restoreAuditAppended = [bool]$backupReport.restoreAuditAppended
+        currentRecoveryBaseline = $currentRecoveryBaseline
         environmentProtected = $true
         endpoint = [ordered]@{
             host = "127.0.0.1"
@@ -2194,6 +2475,14 @@ try {
             succeeded = $false
             commit = $null
             error = $null
+            database = [ordered]@{
+                attempted = $false
+                succeeded = $false
+                required = $false
+                schemaRevision = $previousMigrationHead
+                snapshotSha256 = $rollbackSnapshotSha256
+                atomicReplace = $false
+            }
         }
     })
     Write-Host "`nWindows release deployment passed. Report: $script:ReportPath" -ForegroundColor Green
@@ -2209,6 +2498,55 @@ try {
                 # Fail closed: never mutate source or dependencies while the
                 # previous process may still own the production port.
                 Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 15
+                if ($releaseTaskStartAttempted) {
+                    $databaseRollbackAttempted = $true
+                    if (
+                        [string]::IsNullOrWhiteSpace($previousMigrationHead) -or
+                        [string]::IsNullOrWhiteSpace($rollbackSnapshotPath) -or
+                        [string]::IsNullOrWhiteSpace($rollbackManifestPath) -or
+                        [string]::IsNullOrWhiteSpace($rollbackSnapshotSha256)
+                    ) {
+                        throw "The candidate may have migrated the database, but exact rollback evidence is incomplete."
+                    }
+                    Write-Host "Restoring and proving the previous-schema database snapshot ..." -ForegroundColor Yellow
+                    $databaseRollbackEvidence = Invoke-ReleaseDatabaseSafety `
+                        -Python $sourcePython `
+                        -ScriptPath $releaseDatabaseSafetyScript `
+                        -WorkingDirectory $SourceRoot `
+                        -CommandArguments @(
+                            "restore",
+                            "--database-path", $databasePath,
+                            "--snapshot-path", $rollbackSnapshotPath,
+                            "--manifest-path", $rollbackManifestPath,
+                            "--expected-sha256", $rollbackSnapshotSha256,
+                            "--expected-revision", $previousMigrationHead
+                        )
+                    if (
+                        -not [bool]$databaseRollbackEvidence.restored -or
+                        -not [bool]$databaseRollbackEvidence.atomicReplace -or
+                        [string]$databaseRollbackEvidence.integrity -cne "ok" -or
+                        [string]$databaseRollbackEvidence.sha256 -cne $rollbackSnapshotSha256 -or
+                        [string]$databaseRollbackEvidence.schemaRevision -cne $previousMigrationHead
+                    ) {
+                        throw "The previous-schema database rollback proof is incomplete."
+                    }
+                    $restoredDatabaseHash = (
+                        Get-FileHash -LiteralPath $databasePath -Algorithm SHA256
+                    ).Hash.ToLowerInvariant()
+                    if ($restoredDatabaseHash -cne $rollbackSnapshotSha256) {
+                        throw "The restored production database no longer matches the rollback snapshot."
+                    }
+                    Protect-SingYinSensitivePath `
+                        -Path $databasePath `
+                        -RuntimeUser $runtimeAccount.Name
+                    $databaseAclStatus = Get-SingYinAclStatus `
+                        -Paths @($databasePath) `
+                        -RequiredIdentitySid $runtimeAccount.Sid.Value
+                    if (-not $databaseAclStatus.Compliant) {
+                        throw "The restored production database ACL is not compliant."
+                    }
+                    $databaseRollbackSucceeded = $true
+                }
                 if (
                     ($taskTargetSwitched -or $taskCredentialRotated) -and
                     $null -ne $previousTaskAction
@@ -2284,6 +2622,10 @@ try {
             storageRoot = $legacyNiceGuiStorageRoot
         }
         releaseBundle = $releaseBundlePath
+        migrationHeads = [ordered]@{
+            previous = $previousMigrationHead
+            candidate = $releaseMigrationHead
+        }
         failure = $failure
         nativeLog = [IO.Path]::GetFileName($script:NativeLogPath)
         rollback = [ordered]@{
@@ -2296,6 +2638,24 @@ try {
                 $null
             }
             error = $rollbackError
+            database = [ordered]@{
+                required = $releaseTaskStartAttempted
+                attempted = $databaseRollbackAttempted
+                succeeded = $databaseRollbackSucceeded
+                snapshotFile = if (-not [string]::IsNullOrWhiteSpace($rollbackSnapshotPath)) {
+                    [IO.Path]::GetFileName($rollbackSnapshotPath)
+                } else {
+                    $null
+                }
+                snapshotSha256 = $rollbackSnapshotSha256
+                manifestSha256 = $rollbackManifestSha256
+                schemaRevision = $previousMigrationHead
+                atomicReplace = if ($null -ne $databaseRollbackEvidence) {
+                    [bool]$databaseRollbackEvidence.atomicReplace
+                } else {
+                    $false
+                }
+            }
         }
         taskCredentialRotated = $taskCredentialRotated
     })

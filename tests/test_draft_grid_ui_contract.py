@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import ast
+from datetime import date
+
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.ui.page_routes.weekly import (
+    _generation_requirements_query_key,
     _normalize_draft_candidate_value,
     _stage_atomic_draft_selection,
 )
@@ -24,13 +28,80 @@ I18N_SOURCE = (
     / "i18n_catalog"
     / "stewardship.py"
 ).read_text(encoding="utf-8")
+WEEKLY_TREE = ast.parse(WEEKLY_SOURCE)
+
+
+def _calls_named(name: str) -> list[ast.Call]:
+    return [
+        node
+        for node in ast.walk(WEEKLY_TREE)
+        if isinstance(node, ast.Call)
+        and (
+            (isinstance(node.func, ast.Name) and node.func.id == name)
+            or (isinstance(node.func, ast.Attribute) and node.func.attr == name)
+        )
+    ]
+
+
+def _function_named(name: str) -> ast.FunctionDef | ast.AsyncFunctionDef:
+    matches = [
+        node
+        for node in ast.walk(WEEKLY_TREE)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name == name
+    ]
+    assert len(matches) == 1
+    return matches[0]
+
+
+def _function_calls(function: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
+    return {
+        node.func.id
+        for node in ast.walk(function)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
 
 
 def test_generation_records_explicit_whole_day_closures_atomically() -> None:
     assert "pre-generation-day-closures" in WEEKLY_SOURCE
-    assert "generation_requirements(\n                                week_start,\n                                closed_days=" in WEEKLY_SOURCE
-    assert "generate_and_save_draft(" in WEEKLY_SOURCE
-    assert "closed_days=tuple(day_closure_select.value or ())" in WEEKLY_SOURCE
+    requirements_calls = _calls_named("generation_requirements")
+    generation_calls = _calls_named("generate_and_save_draft")
+    assert any(
+        any(keyword.arg == "closed_days" for keyword in call.keywords)
+        for call in requirements_calls
+    )
+    assert any(
+        any(keyword.arg == "closed_days" for keyword in call.keywords)
+        for call in generation_calls
+    )
+
+
+def test_generation_requirements_query_key_deduplicates_equivalent_week_context() -> None:
+    week_start = date(2026, 8, 10)
+    assert _generation_requirements_query_key(
+        week_start,
+        ["FRIDAY", "MONDAY"],
+    ) == _generation_requirements_query_key(
+        week_start,
+        ["MONDAY", "FRIDAY"],
+    )
+    assert 'requirements_state["rendered_key"] == query_key' in WEEKLY_SOURCE
+
+
+def test_leave_mutations_invalidate_and_refresh_generation_requirements() -> None:
+    refresh_after_change = _function_named("refresh_requirements_after_leave_change")
+    assignment = next(
+        node
+        for node in ast.walk(refresh_after_change)
+        if isinstance(node, ast.Assign)
+    )
+    assert isinstance(assignment.value, ast.Constant)
+    assert assignment.value.value is None
+    assert "refresh_requirements" in _function_calls(refresh_after_change)
+
+    for callback_name in ("declare_leave", "cancel_leave"):
+        callback = _function_named(callback_name)
+        assert "refresh_requirements_after_leave_change" in _function_calls(callback)
 
 
 def test_draft_editor_uses_one_canonical_matrix_and_one_batch_patch() -> None:
@@ -131,10 +202,14 @@ def test_draft_matrix_has_desktop_mobile_and_accessible_interaction_contracts() 
     assert "min-height: 52px" in COMPONENT_SOURCE
     assert 'role="grid"' in WEEKLY_SOURCE
     assert 'role="gridcell" tabindex="0"' in WEEKLY_SOURCE
+    assert 'aria-disabled="true" tabindex="-1"' in WEEKLY_SOURCE
     assert "['Enter', 'F2', 'Escape']" in WEEKLY_SOURCE
     assert "event.preventDefault(); event.stopPropagation()" in WEEKLY_SOURCE
     assert '"__vacant__": t("draft_explicit_vacancy")' in WEEKLY_SOURCE
     assert 'new_value_mode="add-unique"' not in WEEKLY_SOURCE
+    assert 'ui.notify(t("draft_candidate_invalid"), type="warning")' in WEEKLY_SOURCE
+    assert ":not(.sy-draft-grid-cell--closed):hover" in COMPONENT_SOURCE
+    assert ":not(.sy-draft-mobile-cell--closed):hover" in COMPONENT_SOURCE
     assert 'aria-live=polite data-testid=draft-pending-bar' in WEEKLY_SOURCE
     assert "draft-day-confirm-close-" in WEEKLY_SOURCE
     assert "draft-day-confirm-reopen-" in WEEKLY_SOURCE
@@ -148,6 +223,7 @@ def test_draft_editor_copy_is_bilingual_and_keeps_duty_posts_in_english() -> Non
         "draft_pending_count",
         "draft_day_closed",
         "draft_candidate_swap_suffix",
+        "draft_candidate_invalid",
         "draft_conflict_reapply",
         "pre_generation_day_closure",
     ):

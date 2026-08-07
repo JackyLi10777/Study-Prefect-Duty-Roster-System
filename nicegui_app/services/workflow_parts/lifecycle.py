@@ -882,15 +882,18 @@ class RosterLifecycleMixin:
                     for edit, _, _, _ in parsed_cells
                     if edit.replacement_prefect_id is not None
                 }
-                prefect_records = {
-                    record.id: record
-                    for record in session.scalars(
+                if requested_prefect_ids:
+                    selected_prefect_records = session.scalars(
                         select(PrefectRecord).where(
                             PrefectRecord.id.in_(requested_prefect_ids),
                             PrefectRecord.active.is_(True),
                         )
                     ).all()
-                } if requested_prefect_ids else {}
+                    prefect_records = {
+                        record.id: record for record in selected_prefect_records
+                    }
+                else:
+                    prefect_records = {}
                 if set(prefect_records) != requested_prefect_ids:
                     raise WorkflowError("A selected prefect no longer exists or is inactive.")
 

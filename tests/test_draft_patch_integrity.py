@@ -254,4 +254,3 @@ def test_guest_day_closures_are_isolated_between_workspaces_in_one_session() -> 
     assert not any(row["day"] == "MONDAY" for row in first.assignments(first_draft.id))
     assert second.roster_week(second_draft.id)["closedDays"] == []
     assert second.assignments(second_draft.id) == second_before
-
