@@ -541,12 +541,24 @@ def _restore(args: argparse.Namespace) -> dict[str, Any]:
             label="Installed rollback database",
         )
         committed = True
-        database_quarantine.unlink()
-        original_quarantined = False
+        database_quarantine_removed = False
+        try:
+            database_quarantine.unlink()
+            database_quarantine_removed = True
+            original_quarantined = False
+        except OSError:
+            # The installed database has already passed checksum, schema, and
+            # integrity verification.  A Windows scanner can still hold the
+            # old quarantine briefly; that cleanup failure must not make the
+            # proven rollback appear to have failed or trigger a second
+            # database replacement.  Keep the outcome explicit so operators
+            # can remove the stale quarantine after the lock is released.
+            pass
         for _original, quarantine in sidecar_quarantines:
             quarantine.unlink(missing_ok=True)
         return {
             "atomicReplace": True,
+            "databaseQuarantineRemoved": database_quarantine_removed,
             "integrity": str(inspection["integrity"]),
             "restored": True,
             "schemaRevision": expected_revision,

@@ -78,6 +78,44 @@ $results = @(
     return json.loads(json_lines[-1])
 
 
+def _run_wrangler_version_contract() -> list[bool]:
+    if not POWERSHELL:
+        pytest.skip("Windows PowerShell is required for the production deployment script")
+    function_source = _powershell_function_source("Get-WranglerSemanticVersion")
+    command = f"""
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+{function_source}
+$payloads = @(
+    '4.116.0',
+    'wrangler 4.116.0',
+    'wrangler 14.116.0',
+    'wrangler 4.116.0-beta',
+    'wrangler 4.116.0+build.1',
+    'wrangler 4.116.0 and 4.115.0'
+)
+@(
+    foreach ($payload in $payloads) {{
+        $candidate = Get-WranglerSemanticVersion -Output $payload
+        [bool]($null -ne $candidate -and $candidate -ceq '4.116.0')
+    }}
+) | ConvertTo-Json -Compress
+"""
+    encoded = base64.b64encode(command.encode("utf-16-le")).decode("ascii")
+    result = subprocess.run(
+        [POWERSHELL, "-NoLogo", "-NoProfile", "-EncodedCommand", encoded],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8-sig",
+        errors="replace",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    json_lines = [line for line in result.stdout.splitlines() if line.strip().startswith("[")]
+    assert json_lines, f"PowerShell Wrangler validator emitted no JSON payload: {result.stdout!r}"
+    return json.loads(json_lines[-1])
+
+
 def test_worker_deployment_is_bound_to_an_immutable_published_release() -> None:
     source = _source()
     assert '"status", "--porcelain", "--untracked-files=all"' in source
@@ -133,6 +171,9 @@ def test_worker_deployment_derives_its_default_source_from_its_own_checkout() ->
 def test_worker_deployment_uses_pinned_wrangler_and_structured_events() -> None:
     source = _source()
     assert 'package.devDependencies.wrangler -cne "4.116.0"' in source
+    assert "$activeWranglerVersion = Get-WranglerSemanticVersion -Output $wranglerVersion" in source
+    assert '$activeWranglerVersion -cne "4.116.0"' in source
+    assert "The active Wrangler executable is not version 4.116.0." in source
     assert "WRANGLER_OUTPUT_FILE_PATH" in source
     assert 'Read-WranglerEvent -Path $uploadOutput -Type "version-upload"' in source
     assert 'Read-WranglerEvent -Path $stageOutput -Type "version-deploy"' in source
@@ -144,6 +185,10 @@ def test_worker_deployment_uses_pinned_wrangler_and_structured_events() -> None:
     assert "Remove-SecretOverlay -Path $secretOverlayPathToDelete" in source
     assert "Assert-AdminIdentityAllowlistValue" in source
     assert "sing-yin-worker-secrets-" in source
+
+
+def test_worker_deployment_accepts_only_the_exact_stable_wrangler_version() -> None:
+    assert _run_wrangler_version_contract() == [True, True, False, False, False, False]
 
 
 def test_worker_secret_inventory_is_flattened_in_windows_powershell_51(tmp_path: Path) -> None:

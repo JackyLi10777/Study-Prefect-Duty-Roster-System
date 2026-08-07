@@ -1175,6 +1175,9 @@ def test_deployment_rejects_legacy_or_missing_previous_bundle_before_path_use() 
     ) in guard_block
     assert "Establish and verify an immutable release baseline" in guard_block
     assert "$previousBundlePath = [string]$previousReleaseIdentity.Bundle" in guard_block
+    assert source.count(
+        "$previousBundlePath = [string]$previousReleaseIdentity.Bundle"
+    ) == 1
 
 
 def test_deployment_rotates_runtime_task_credential_without_persisting_it() -> None:
@@ -1590,20 +1593,105 @@ def test_deployment_proves_a_distinct_candidate_recovery_baseline_before_pass() 
     source = _source()
     candidate_start = source.index("$releaseTaskStartAttempted = $true")
     strict_gate = source.index('"--allow-pending-cloudflare-access"', candidate_start)
+    quiesce_step = source.index(
+        'Write-Step "Stopping the candidate before current-schema recovery proof"',
+        strict_gate,
+    )
+    candidate_disable = source.index(
+        "Disable-ScheduledTask -TaskName $TaskName",
+        quiesce_step,
+    )
+    candidate_stop = source.index(
+        "Stop-ScheduledTask -TaskName $TaskName",
+        candidate_disable,
+    )
+    candidate_fence = source.index(
+        "Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 30",
+        candidate_stop,
+    )
     baseline_step = source.index(
         'Write-Step "Creating a current-schema recovery baseline',
-        strict_gate,
+        candidate_fence,
     )
     baseline_prepare = source.index(
         "$currentRecoveryEvidence = Invoke-ReleaseDatabaseSafety",
         baseline_step,
     )
-    success_report = source.index("Write-DeploymentReport -Payload", baseline_prepare)
-    baseline_block = source[baseline_step:success_report]
+    baseline_proof = source.index(
+        "$currentRecoveryBaselineProved = $true",
+        baseline_prepare,
+    )
+    restart_step = source.index(
+        'Write-Step "Restarting the candidate and repeating health and write-readiness"',
+        baseline_proof,
+    )
+    candidate_restart = source.index(
+        "Start-ScheduledTask -TaskName $TaskName",
+        restart_step,
+    )
+    post_health = source.index(
+        "$health = Wait-LoopbackHealth -Port $deploymentPort",
+        candidate_restart,
+    )
+    post_readiness = source.index(
+        "$readiness = Wait-LoopbackReadiness -Port $deploymentPort",
+        post_health,
+    )
+    post_strict = source.index(
+        '"--allow-pending-cloudflare-access"',
+        post_readiness,
+    )
+    post_gate_proof = source.index(
+        "$candidatePostBaselineGatesPassed = $true",
+        post_strict,
+    )
+    post_task_state = source.index(
+        "The candidate task stopped after its post-baseline gates passed.",
+        post_gate_proof,
+    )
+    success_report = source.index("Write-DeploymentReport -Payload", post_task_state)
+    baseline_block = source[baseline_step:restart_step]
     normalized_baseline = " ".join(baseline_block.split())
-    report_block = source[success_report : source.index("} catch {", success_report)]
+    outer_catch = source.index(
+        "\n    } catch {\n    $failedPhase = $deploymentPhase",
+        success_report,
+    )
+    report_block = source[success_report:outer_catch]
+    failure_report = source.index('status = "fail"', outer_catch)
+    failure_block = source[
+        failure_report : source.index("$deploymentExitCode = 1", failure_report)
+    ]
 
-    assert candidate_start < strict_gate < baseline_step < baseline_prepare < success_report
+    assert (
+        candidate_start
+        < strict_gate
+        < quiesce_step
+        < candidate_disable
+        < candidate_stop
+        < candidate_fence
+        < baseline_step
+        < baseline_prepare
+        < baseline_proof
+        < restart_step
+        < candidate_restart
+        < post_health
+        < post_readiness
+        < post_strict
+        < post_gate_proof
+        < post_task_state
+        < success_report
+    )
+    assert source[candidate_start:success_report].count(
+        '"--allow-pending-cloudflare-access"'
+    ) == 2
+    assert (
+        "$candidateInitialGatesPassed = $true"
+        in source[strict_gate:quiesce_step]
+    )
+    assert (
+        "$currentRecoveryDatabaseQuiesced = $true"
+        in source[candidate_fence:baseline_step]
+    )
     assert (
         '$candidateDatabaseSafetyScript = Join-Path $releaseBundlePath '
         '"scripts\\release_database_safety.py"'
@@ -1641,6 +1729,15 @@ def test_deployment_proves_a_distinct_candidate_recovery_baseline_before_pass() 
     ) in normalized_baseline
     assert "$currentRecoveryBaseline = [ordered]@{" in baseline_block
     assert "currentRecoveryBaseline = $currentRecoveryBaseline" in report_block
+    for phase_field in (
+        "initialGatesPassed = $candidateInitialGatesPassed",
+        "databaseQuiesced = $currentRecoveryDatabaseQuiesced",
+        "baselineProved = $currentRecoveryBaselineProved",
+        "postBaselineGatesPassed = $candidatePostBaselineGatesPassed",
+    ):
+        assert phase_field in report_block
+        assert phase_field in failure_block
+    assert "failedPhase = $failedPhase" in source
 
 
 def test_deployment_script_consumes_only_a_protected_one_use_environment_overlay() -> None:
@@ -1756,6 +1853,7 @@ def test_deployment_script_rolls_back_task_target_environment_and_task_state() -
     source = _source()
     outer_catch = (
         "\n    } catch {\n"
+        "    $failedPhase = $deploymentPhase\n"
         "    $failure = Protect-ReportText $_.Exception.Message"
     )
     assert outer_catch in source
@@ -1788,7 +1886,14 @@ def test_deployment_script_rolls_back_task_target_environment_and_task_state() -
 
 def test_rollback_never_switches_task_target_until_the_production_port_is_released() -> None:
     source = _source()
-    rollback = source.split("$rollbackAttempted = $true", 1)[1]
+    outer_catch = source.index(
+        "\n    } catch {\n"
+        "    $failedPhase = $deploymentPhase\n"
+        "    $failure = Protect-ReportText $_.Exception.Message"
+    )
+    rollback_start = source.index("$rollbackAttempted = $true", outer_catch)
+    rollback_catch = source.index("\n        } catch {", rollback_start)
+    rollback = source[rollback_start:rollback_catch]
     wait_index = rollback.index("Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 15")
     database_restore_index = rollback.index('"restore",')
     database_proof_index = rollback.index("$databaseRollbackSucceeded = $true")
@@ -1815,7 +1920,14 @@ def test_rollback_never_switches_task_target_until_the_production_port_is_releas
 
 def test_database_rollback_failure_is_fail_closed_before_the_previous_task() -> None:
     source = _source()
-    rollback = source.split("$rollbackAttempted = $true", 1)[1]
+    outer_catch = source.index(
+        "\n    } catch {\n"
+        "    $failedPhase = $deploymentPhase\n"
+        "    $failure = Protect-ReportText $_.Exception.Message"
+    )
+    rollback_start = source.index("$rollbackAttempted = $true", outer_catch)
+    rollback_catch = source.index("\n        } catch {", rollback_start)
+    rollback = source[rollback_start:rollback_catch]
     guarded_restore = rollback.split("if ($releaseTaskStartAttempted) {", 1)[1]
     restore_index = guarded_restore.index("Invoke-ReleaseDatabaseSafety")
     proof_index = guarded_restore.index("$databaseRollbackSucceeded = $true")
@@ -1826,10 +1938,10 @@ def test_database_rollback_failure_is_fail_closed_before_the_previous_task() -> 
         "Start-ScheduledTask -TaskName $TaskName",
         task_switch_index,
     )
-    rollback_catch_index = guarded_restore.index("\n        } catch {")
-
+    rollback_success_index = guarded_restore.index("$rollbackSucceeded = $true")
     assert restore_index < proof_index < task_switch_index < previous_task_start_index
-    assert previous_task_start_index < rollback_catch_index
+    assert previous_task_start_index < rollback_success_index
+    assert "Write-DeploymentReport -Payload" not in rollback
     assert "The candidate may have migrated the database" in guarded_restore
     assert "database = [ordered]@{" in source
     assert "required = $releaseTaskStartAttempted" in source

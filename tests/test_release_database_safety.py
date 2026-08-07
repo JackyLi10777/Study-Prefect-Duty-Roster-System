@@ -69,13 +69,20 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _single_migration_head() -> str:
+    heads = sorted(str(head) for head in current_migration_heads())
+    assert len(heads) == 1
+    return heads[0]
+
+
 def test_head_is_loaded_from_the_requested_release_root() -> None:
+    expected_revision = _single_migration_head()
     result = _run_helper("head", "--release-root", PROJECT_ROOT)
 
     assert result.returncode == 0, result.stdout + result.stderr
     payload = _payload(result)
     assert payload == {
-        "migrationHeads": sorted(current_migration_heads()),
+        "migrationHeads": [expected_revision],
         "status": "pass",
     }
 
@@ -91,7 +98,7 @@ def test_prepare_uses_release_code_and_proves_an_exact_head_snapshot(
     engine.dispose()
     backup_dir = tmp_path / "backups"
     report_path = tmp_path / "reports" / "rollback-snapshot.json"
-    expected_revision = next(iter(current_migration_heads()))
+    expected_revision = _single_migration_head()
 
     result = _run_helper(
         "prepare",
@@ -127,13 +134,16 @@ def test_prepare_uses_release_code_and_proves_an_exact_head_snapshot(
     assert manifest["schemaRevision"] == expected_revision
     assert hashlib.sha256(manifest_bytes).hexdigest() == payload["manifestSha256"]
     assert json.loads(report_path.read_text(encoding="utf-8")) == payload
-    with sqlite3.connect(
+    connection = sqlite3.connect(
         f"file:{snapshot_path.resolve().as_posix()}?mode=ro&immutable=1",
         uri=True,
-    ) as connection:
+    )
+    try:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchall() == [
             (expected_revision,)
         ]
+    finally:
+        connection.close()
 
 
 def test_restore_atomically_installs_exact_snapshot_and_removes_old_sidecars(
@@ -172,6 +182,7 @@ def test_restore_atomically_installs_exact_snapshot_and_removes_old_sidecars(
     payload = _payload(result)
     assert payload == {
         "atomicReplace": True,
+        "databaseQuarantineRemoved": True,
         "integrity": "ok",
         "restored": True,
         "schemaRevision": "0012",
@@ -182,16 +193,75 @@ def test_restore_atomically_installs_exact_snapshot_and_removes_old_sidecars(
     assert _sha256(database_path) == snapshot_sha256
     for suffix in ("-wal", "-shm", "-journal"):
         assert not Path(f"{database_path}{suffix}").exists()
-    with sqlite3.connect(
+    connection = sqlite3.connect(
         f"file:{database_path.resolve().as_posix()}?mode=ro&immutable=1",
         uri=True,
-    ) as connection:
+    )
+    try:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
             "0012",
         )
         assert connection.execute("SELECT value FROM payload").fetchone() == (
             "pre-switch",
         )
+    finally:
+        connection.close()
+
+
+def test_restore_reports_success_when_verified_database_quarantine_cleanup_is_locked(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    snapshot_path = tmp_path / "backups" / "pre-switch.sqlite3"
+    snapshot_path.parent.mkdir()
+    _write_database(snapshot_path, revision="0012", value="pre-switch")
+    snapshot_sha256 = _sha256(snapshot_path)
+    manifest_path = snapshot_path.with_suffix(".manifest.json")
+    manifest_path.write_text(
+        json.dumps({"schemaRevision": "0012", "sha256": snapshot_sha256}),
+        encoding="utf-8",
+    )
+    database_path = tmp_path / "runtime" / "roster.sqlite3"
+    database_path.parent.mkdir()
+    _write_database(database_path, revision="0013", value="migrated")
+    sidecar_paths = [Path(f"{database_path}{suffix}") for suffix in ("-wal", "-shm")]
+    for sidecar in sidecar_paths:
+        sidecar.write_bytes(b"old-sidecar")
+
+    original_unlink = Path.unlink
+
+    def reject_database_quarantine_unlink(
+        path: Path,
+        missing_ok: bool = False,
+    ) -> None:
+        if (
+            path.parent == database_path.parent
+            and path.name.startswith(f".{database_path.name}.release-rollback-")
+            and path.name.endswith(".quarantine")
+        ):
+            raise PermissionError("Injected database quarantine lock.")
+        original_unlink(path, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", reject_database_quarantine_unlink)
+    arguments = argparse.Namespace(
+        database_path=database_path,
+        snapshot_path=snapshot_path,
+        manifest_path=manifest_path,
+        expected_sha256=snapshot_sha256,
+        expected_revision="0012",
+    )
+
+    payload = release_database_safety._restore(arguments)
+
+    assert payload["status"] == "pass"
+    assert payload["restored"] is True
+    assert payload["databaseQuarantineRemoved"] is False
+    assert payload["sidecarsRemoved"] == len(sidecar_paths)
+    assert _sha256(database_path) == snapshot_sha256
+    assert all(not sidecar.exists() for sidecar in sidecar_paths)
+    quarantines = list(database_path.parent.glob("*.release-rollback-*.quarantine"))
+    assert len(quarantines) == 1
+    assert _sha256(quarantines[0]) != snapshot_sha256
 
 
 def test_restore_fails_before_target_mutation_when_manifest_is_not_bound(
@@ -335,11 +405,14 @@ def test_restore_reinstalls_original_database_when_post_install_proof_fails(
     assert _sha256(database_path) == database_sha256
     for suffix, payload in sidecar_payloads.items():
         assert Path(f"{database_path}{suffix}").read_bytes() == payload
-    with sqlite3.connect(database_path) as connection:
+    connection = sqlite3.connect(database_path)
+    try:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
             "0013",
         )
         assert connection.execute("SELECT value FROM payload").fetchone() == (
             "migrated",
         )
+    finally:
+        connection.close()
     assert not list(database_path.parent.glob("*.release-rollback-*"))

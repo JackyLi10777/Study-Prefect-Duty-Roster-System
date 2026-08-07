@@ -1738,6 +1738,12 @@ try {
     $currentRecoveryManifestPath = $null
     $currentRecoverySnapshotSha256 = $null
     $currentRecoveryManifestSha256 = $null
+    $candidateInitialGatesPassed = $false
+    $currentRecoveryDatabaseQuiesced = $false
+    $currentRecoveryBaselineProved = $false
+    $candidatePostBaselineGatesPassed = $false
+    $deploymentPhase = "preflight"
+    $failedPhase = $null
     $releaseTaskStartAttempted = $false
     $databaseRollbackAttempted = $false
     $databaseRollbackSucceeded = $false
@@ -2078,7 +2084,6 @@ try {
     Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 30
 
     Write-Step "Reconciling bounded legacy runtime preferences after process stop"
-    $previousBundlePath = [string]$previousReleaseIdentity.Bundle
     if (-not [string]::IsNullOrWhiteSpace($previousBundlePath)) {
         $pendingNiceGuiStorage = @(
             Get-SingYinStoppedNiceGuiStoragePaths `
@@ -2254,12 +2259,13 @@ try {
         throw "The startup task no longer matches the updated release host."
     }
 
-    Write-Step "Starting the official origin and enforcing health and write-readiness"
+    Write-Step "Starting the official origin and enforcing initial health and write-readiness"
+    $deploymentPhase = "candidate-initial-gates"
     Enable-ScheduledTask -TaskName $TaskName | Out-Null
     $releaseTaskStartAttempted = $true
     Start-ScheduledTask -TaskName $TaskName
-    $health = Wait-LoopbackHealth -Port $deploymentPort
-    $readiness = Wait-LoopbackReadiness -Port $deploymentPort
+    $initialHealth = Wait-LoopbackHealth -Port $deploymentPort
+    $initialReadiness = Wait-LoopbackReadiness -Port $deploymentPort
     Invoke-Native -Executable $hostPython -Arguments @(
         "-X",
         "utf8",
@@ -2267,9 +2273,21 @@ try {
         "--strict",
         "--allow-pending-cloudflare-access"
     ) -WorkingDirectory $releaseBundlePath | Out-Null
+    $candidateInitialGatesPassed = $true
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    if ([string]$task.State -cne "Running") {
+        throw "The candidate task stopped before its recovery baseline could be created."
+    }
+
+    Write-Step "Stopping the candidate before current-schema recovery proof"
+    $deploymentPhase = "candidate-quiesce-current-recovery"
+    Disable-ScheduledTask -TaskName $TaskName | Out-Null
+    Stop-ScheduledTask -TaskName $TaskName
+    Wait-PortReleased -Port $deploymentPort -TimeoutSeconds 30
+    $currentRecoveryDatabaseQuiesced = $true
 
     Write-Step "Creating a current-schema recovery baseline with the candidate immutable release"
+    $deploymentPhase = "current-recovery-baseline"
     $candidateDatabaseSafetyScript = Join-Path $releaseBundlePath "scripts\release_database_safety.py"
     $currentRecoveryStartedAt = [DateTimeOffset]::UtcNow
     $currentRecoveryReportPath = Join-Path `
@@ -2402,11 +2420,34 @@ try {
         fairnessBalanced = [bool]$currentRecoveryReport.fairnessBalanced
         rowCountsMatched = [bool]$currentRecoveryReport.rowCountsMatched
         restoreAuditAppended = [bool]$currentRecoveryReport.restoreAuditAppended
+        databaseQuiesced = $currentRecoveryDatabaseQuiesced
+    }
+    $currentRecoveryBaselineProved = $true
+
+    Write-Step "Restarting the candidate and repeating health and write-readiness"
+    $deploymentPhase = "candidate-post-baseline-gates"
+    Enable-ScheduledTask -TaskName $TaskName | Out-Null
+    Start-ScheduledTask -TaskName $TaskName
+    $health = Wait-LoopbackHealth -Port $deploymentPort
+    $readiness = Wait-LoopbackReadiness -Port $deploymentPort
+    Invoke-Native -Executable $hostPython -Arguments @(
+        "-X",
+        "utf8",
+        "scripts\check_deployment_readiness.py",
+        "--strict",
+        "--allow-pending-cloudflare-access"
+    ) -WorkingDirectory $releaseBundlePath | Out-Null
+    $candidatePostBaselineGatesPassed = $true
+    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    if ([string]$task.State -cne "Running") {
+        throw "The candidate task stopped after its post-baseline gates passed."
     }
 
+    $deploymentPhase = "success-report"
     Write-DeploymentReport -Payload ([ordered]@{
         schemaVersion = 1
         status = "pass"
+        deploymentPhase = "complete"
         startedAt = $startedAt.ToString("o")
         finishedAt = [DateTimeOffset]::UtcNow.ToString("o")
         releaseRef = $ReleaseRef
@@ -2437,6 +2478,12 @@ try {
         rowCountsMatched = [bool]$backupReport.rowCountsMatched
         restoreAuditAppended = [bool]$backupReport.restoreAuditAppended
         currentRecoveryBaseline = $currentRecoveryBaseline
+        candidateVerificationPhases = [ordered]@{
+            initialGatesPassed = $candidateInitialGatesPassed
+            databaseQuiesced = $currentRecoveryDatabaseQuiesced
+            baselineProved = $currentRecoveryBaselineProved
+            postBaselineGatesPassed = $candidatePostBaselineGatesPassed
+        }
         environmentProtected = $true
         endpoint = [ordered]@{
             host = "127.0.0.1"
@@ -2488,6 +2535,7 @@ try {
     Write-Host "`nWindows release deployment passed. Report: $script:ReportPath" -ForegroundColor Green
     $deploymentExitCode = 0
     } catch {
+    $failedPhase = $deploymentPhase
     $failure = Protect-ReportText $_.Exception.Message
     Write-Host "`nDEPLOYMENT FAILED: $failure" -ForegroundColor Red
     if ($taskStopped -or $null -ne $environmentBytes) {
@@ -2625,6 +2673,13 @@ try {
         migrationHeads = [ordered]@{
             previous = $previousMigrationHead
             candidate = $releaseMigrationHead
+        }
+        failedPhase = $failedPhase
+        candidateVerificationPhases = [ordered]@{
+            initialGatesPassed = $candidateInitialGatesPassed
+            databaseQuiesced = $currentRecoveryDatabaseQuiesced
+            baselineProved = $currentRecoveryBaselineProved
+            postBaselineGatesPassed = $candidatePostBaselineGatesPassed
         }
         failure = $failure
         nativeLog = [IO.Path]::GetFileName($script:NativeLogPath)
