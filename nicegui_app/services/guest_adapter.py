@@ -750,17 +750,7 @@ class GuestWorkspaceAdapter:
             or post is not DutyPost.ASSIST_IN_CHARGE
         ):
             return candidates
-        fixed_owner = next(
-            (
-                str(row["id"])
-                for row in state.get("prefects", [])
-                if row.get("active", True)
-                and str(row.get("roleCode", row.get("role", "")))
-                == PrefectRole.ASSISTANT_HEAD.value
-                and str(row.get("fixedGeneralDuty", "NONE")) == day.name
-            ),
-            None,
-        )
+        fixed_owner = self._required_legacy_assist_owners(state, week).get(day.name)
         if fixed_owner is None:
             return candidates
         return [candidate for candidate in candidates if candidate["id"] == fixed_owner]
@@ -939,14 +929,7 @@ class GuestWorkspaceAdapter:
         week["dayClosures"] = [closures[day] for day in sorted(closures, key=int)]
         self._validate_week_assignments(state, week, require_complete=False)
         if str(week.get("assistAssignmentMode", LEGACY_FIXED_WEEKDAY)) == LEGACY_FIXED_WEEKDAY:
-            fixed_owners = {
-                str(row.get("fixedGeneralDuty")): str(row["id"])
-                for row in state.get("prefects", [])
-                if row.get("active", True)
-                and str(row.get("roleCode", row.get("role", "")))
-                == PrefectRole.ASSISTANT_HEAD.value
-                and str(row.get("fixedGeneralDuty", "NONE")) in SchoolDay.__members__
-            }
+            fixed_owners = self._required_legacy_assist_owners(state, week)
             for row in week.get("assignments", []):
                 if row["status"] != "active" or row["postCode"] != DutyPost.ASSIST_IN_CHARGE.name:
                     continue
@@ -2115,6 +2098,34 @@ class GuestWorkspaceAdapter:
                 )
             outputs.append(output)
         return outputs
+
+    def _required_legacy_assist_owners(
+        self,
+        state: Mapping[str, Any],
+        week: Mapping[str, Any],
+    ) -> dict[str, str]:
+        """Mirror the formal legacy-owner eligibility rule in demo memory."""
+
+        week_start = date.fromisoformat(str(week["weekStart"]))
+        leave_days = self._leave_days(state, week_start)
+        owners: dict[str, str] = {}
+        for row in state.get("prefects", []):
+            day_code = str(row.get("fixedGeneralDuty", "NONE"))
+            if (
+                not row.get("active", True)
+                or str(row.get("roleCode", row.get("role", "")))
+                != PrefectRole.ASSISTANT_HEAD.value
+                or day_code not in SchoolDay.__members__
+            ):
+                continue
+            day = SchoolDay[day_code]
+            if day_code not in row.get("availableDays", []):
+                continue
+            prefect_id = str(row["id"])
+            if day in leave_days.get(prefect_id, set()):
+                continue
+            owners[day_code] = prefect_id
+        return owners
 
     @staticmethod
     def _ensure_history_anchor(prefect: dict[str, Any], state: Mapping[str, Any]) -> None:

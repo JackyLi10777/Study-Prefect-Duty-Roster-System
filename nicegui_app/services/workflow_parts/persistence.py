@@ -473,6 +473,38 @@ class PersistenceWorkflowMixin:
             leave_days[row.prefect_id].add(SchoolDay[row.day])
         return leave_days
 
+    def _required_legacy_assist_owners(
+        self,
+        session: Session,
+        *,
+        week_start: date,
+    ) -> dict[str, str]:
+        """Return fixed Assist owners who are genuinely eligible this week.
+
+        Legacy ownership is a long-term preference, not an instruction to
+        schedule someone through an availability conflict or registered leave.
+        The generator uses the same distinction: it locks an available fixed
+        owner and uses a temporary substitute only for an unavailable owner.
+        """
+
+        availability = self._availability_by_prefect(session)
+        leave_days = self._leave_days_for_week(session, week_start)
+        owners: dict[str, str] = {}
+        for record in self._active_prefect_records(session):
+            day_code = str(record.fixed_general_duty or "NONE")
+            if (
+                record.role_code != PrefectRole.ASSISTANT_HEAD.value
+                or day_code not in SchoolDay.__members__
+            ):
+                continue
+            day = SchoolDay[day_code]
+            if day not in availability.get(record.id, set()):
+                continue
+            if day in leave_days.get(record.id, set()):
+                continue
+            owners[day_code] = record.id
+        return owners
+
     @staticmethod
     def _leave_declaration_output(declaration: LeaveDeclarationRecord, prefect: PrefectRecord) -> dict[str, object]:
         return {

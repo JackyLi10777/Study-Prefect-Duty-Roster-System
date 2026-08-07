@@ -765,10 +765,13 @@ Buttons must say what happens: “生成並儲存草稿”, “確認發布並�
 
 Waiting feedback is a state explanation, not entertainment and not a substitute for performance. The shared owners are the public-entry controller for identity navigation and the NiceGUI progress coordinator for workbench operations. Pages may request a presentation; they may not create independent spinner timers, percentages or progress-dialog styles.
 
+The NiceGUI workbench reveal threshold is `140ms`; public identity entry and route navigation retain their separately measured `150ms` threshold. A completed result is never held back to satisfy an animation or minimum display duration.
+
 | Measured wait／work type | Presentation | Truth and recovery contract |
 |---|---|---|
-| `0–150ms` | Existing press／glyph acknowledgement only | Never delay completion so that a loader becomes visible. |
-| Pending beyond `150ms` | Button-local busy state and a narrow indeterminate track | Preserve the label／role, set `aria-busy`, prevent duplicate activation and omit percentage. |
+| Workbench operation `0–140ms` | Existing press／glyph acknowledgement only | Show no loader and never delay completion so that one becomes visible. |
+| Workbench operation pending beyond `140ms` | Button-local busy state and an honest indeterminate phased surface | Preserve the label／role, set `aria-busy`, prevent duplicate activation and omit percentage. |
+| Identity／route pending beyond `150ms` | Narrow indeterminate track | Keep its separate navigation lifecycle; clear timer, ARIA and visual state on completion, return or replacement. |
 | Read pending beyond `800ms` | Inline progress state or a geometry-preserving skeleton | Skeleton requires a known final shape; it never represents a write. |
 | Consequential local operation | Persistent bilingual phase dialog | Snapshot inputs before the async boundary; do not offer cancel after an irreversible write begins. |
 | Measurable batch／transfer | Determinate progress | Requires real monotonic `completed／total`; expose bounded `aria-valuenow` and a meaningful unit. |

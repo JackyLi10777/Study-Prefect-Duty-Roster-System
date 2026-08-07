@@ -37,7 +37,7 @@
 | 我現在是／我要做 | 第一個入口 | 然後閱讀 |
 |---|---|---|
 | 同學、師兄弟或訪客，想完整試用但不保存資料 | [正式網站](https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/) →「進入訪客示範」 | [單一網站存取手冊](docs/PUBLIC_ROSTER_VIEWER.md) |
-| 首席導學風紀，要處理本週正式值班 | [正式網站](https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/) →「管理員登入」 | [操作手冊](docs/OPERATOR_GUIDE.md) |
+| 首席導學風紀，要處理本週正式值班 | [正式網站](https://sing-yin-roster-viewer.singyin-study-prefect.workers.dev/) →「管理員登入」 | [操作手冊](docs/OPERATOR_GUIDE.md)及[草稿試算表與全天停開操作](docs/ROSTER_DRAFT_EDITING.md) |
 | 顧問老師，要核對發布、公平或交接證據 | [正式驗收證據矩陣](docs/ACCEPTANCE_EVIDENCE.md) | [首次發布與交接手冊](docs/RELEASE_HANDOVER.md) |
 | 任何使用者，遇到錯誤、下載失敗或顯示異常 | 正式網站 →「問題回報／Support」 | [本機問題回報與事故處理](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md) |
 | 新任首席導學風紀，要先安全演練 | `START_PRACTICE_MODE.cmd` | [快速啟動](docs/QUICKSTART.md)及[操作手冊](docs/OPERATOR_GUIDE.md) |
@@ -59,7 +59,7 @@
 
 Admin／Guest 入口共用同一狀態流程。按下後會立即鎖定重複身份選擇並顯示相應文案；超過 150ms 才出現細型進度軌，若 8 秒後仍未離頁則解鎖重試，並保留「收不到驗證碼？」及不含電郵、Token 或內部堆疊的支援參考編號。音樂嘗試仍與登入分離，播放失敗永遠不能阻塞所選身份。
 
-工作台的正式寫入、報告、匯出、備份及還原使用共用階段式進度：**準備 → 安全處理 → 完成**。未能量度的工作只顯示 indeterminate／phase，不再以 14% 或 56% 假裝真實百分比；只有服務提供實際 `completed／total` 時才顯示數值。跨頁跳轉只在超過 150ms 時出現頂部細軌，完成、返回或離頁即清理。若正式寫入逾時，不代表操作失敗，系統不會自動重送；先依畫面狀態及 OP／REQ 編號核對。Guest 禁止的匯入、上載、正式保存或高成本功能會在 loading 前被權限層拒絕。所有狀態均保留鍵盤、forced-colours 及 reduced-motion 的靜態等價呈現。
+工作台的正式寫入、報告、匯出、備份及還原使用共用階段式進度：**準備 → 安全處理 → 完成**。在 140ms 內完成的操作只保留按壓／圖標回饋，不閃現載入視窗；仍在處理的操作才顯示誠實的 indeterminate／phase。未能量度的工作不再以 14% 或 56% 假裝真實百分比，只有服務提供實際 `completed／total` 時才顯示數值。結果一旦可用便立即呈現，系統不會為了播放動畫而加入最低等待時間。跨頁跳轉另以 150ms 為頂部細軌門檻，完成、返回或離頁即清理。若正式寫入逾時，不代表操作失敗，系統不會自動重送；先依畫面狀態及 OP／REQ 編號核對。Guest 禁止的匯入、上載、正式保存或高成本功能會在 loading 前被權限層拒絕。所有狀態均保留鍵盤、forced-colours 及 reduced-motion 的靜態等價呈現。
 
 完整的文件責任、資料生命週期、設定分類、驗證層級、已知限制及「何時要同步更新哪一份文件」見[完整文件索引](docs/DOCUMENTATION_INDEX.md)。
 

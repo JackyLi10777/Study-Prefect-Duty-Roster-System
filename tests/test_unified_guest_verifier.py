@@ -7,6 +7,7 @@ import sqlite3
 import pytest
 
 from nicegui_app.release_evidence import RELEASE_SOURCE_FILES
+from nicegui_app.services.guest_workspace import demo_fixture
 from scripts import verify_release_candidate, verify_unified_guest_ui
 from scripts.verify_unified_guest_ui import (
     EDITORIAL_PARITY_ROUTES,
@@ -38,6 +39,12 @@ def _isolated_guest_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
     support_dir.mkdir()
     monkeypatch.setenv("SING_YIN_ADMIN_SUPPORT_DIR", str(support_dir))
     return database_path
+
+
+def test_verifier_tracks_every_fictional_name_in_the_demo_fixture() -> None:
+    fixture_names = {str(row["nameZh"]) for row in demo_fixture()["prefects"]}
+
+    assert set(FIXTIONAL_PREFECT_NAMES) == fixture_names
 
 
 def test_unified_guest_verifier_accepts_only_explicit_disposable_inputs(
@@ -144,8 +151,11 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         ".sy-draft-grid-day-closed",
         ".sy-draft-mobile-day:visible",
         ".sy-draft-mobile-cell--assigned:visible",
-        'candidate_input.fill("X")',
+        'mobile_assignment.get_attribute("data-cell-key")',
+        '[data-testid="draft-candidate-search"][data-cell-key="{mobile_cell_key}"]',
+        'page.keyboard.type("X")',
         ".sy-draft-mobile-cell--vacant.sy-draft-mobile-cell--pending:visible",
+        '.sy-draft-grid-cell--pending:visible',
         '"vacancyAliasEntered": "X"',
         '"officialSqliteUnchanged"',
         "leave-adjustment-reason",
@@ -169,6 +179,10 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         'page.reload(wait_until="domcontentloaded")'
     )
     assert weekly_flow.index('page.reload(wait_until="domcontentloaded")') < weekly_flow.index(
+        'get_by_test_id("draft-day-confirm-reopen-monday")'
+    )
+    after_reload = weekly_flow.split('page.reload(wait_until="domcontentloaded")', 1)[1]
+    assert after_reload.index('get_by_test_id("draft-day-toggle-monday").click()') < after_reload.index(
         'get_by_test_id("draft-day-confirm-reopen-monday")'
     )
     assert weekly_flow.index('get_by_test_id("draft-day-confirm-reopen-monday")') < weekly_flow.index(

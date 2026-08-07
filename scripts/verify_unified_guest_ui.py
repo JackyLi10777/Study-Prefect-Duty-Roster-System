@@ -53,6 +53,16 @@ FIXTIONAL_PREFECT_NAMES = (
     "周恩言",
     "張樂晴",
     "郭善恩",
+    "謝頌賢",
+    "鄭思朗",
+    "梁樂謙",
+    "吳善晴",
+    "許頌言",
+    "馬思賢",
+    "杜樂恩",
+    "葉善澄",
+    "馮頌朗",
+    "羅思言",
 )
 
 SHARED_ROUTES = (
@@ -751,13 +761,12 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
     _wait_for_app(page)
     page.get_by_test_id("draft-grid-editor").wait_for(state="visible", timeout=10_000)
     page.locator(".sy-draft-grid-day-closed").wait_for(state="visible", timeout=10_000)
-    reopen_monday = page.get_by_test_id("draft-day-confirm-reopen-monday")
-    if reopen_monday.count() != 1:
-        raise UnifiedGuestVerificationError(
-            "The saved Guest closed day did not survive a same-session reload."
-        )
-
+    # The confirmation dialog is created only after the operator asks to
+    # reopen the persisted closed day.  The closed column above is the durable
+    # state proof; requiring an unopened dialog here would test an impossible
+    # DOM state rather than snapshot restoration.
     page.get_by_test_id("draft-day-toggle-monday").click()
+    reopen_monday = page.get_by_test_id("draft-day-confirm-reopen-monday")
     reopen_monday.wait_for(state="visible", timeout=10_000)
     reopen_monday.click()
     page.get_by_test_id("draft-save-all").click()
@@ -775,16 +784,26 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
     # an explicit pending vacancy, then undo it so the publish flow remains
     # complete. Blank input is covered separately and must never clear a cell.
     page.set_viewport_size({"width": 768, "height": 1024})
+    page.locator(".q-drawer__backdrop").wait_for(state="hidden", timeout=5_000)
     mobile_day = page.locator(".sy-draft-mobile-day:visible").first
     mobile_day.wait_for(state="visible", timeout=10_000)
     mobile_assignment = page.locator(".sy-draft-mobile-cell--assigned:visible").first
     mobile_assignment.wait_for(state="visible", timeout=10_000)
+    mobile_cell_key = mobile_assignment.get_attribute("data-cell-key")
+    if not mobile_cell_key:
+        raise UnifiedGuestVerificationError(
+            "The compact draft card did not expose a stable cell key."
+        )
     mobile_assignment.click()
-    mobile_candidate_search = page.get_by_test_id("draft-candidate-search")
+    mobile_candidate_search = page.locator(
+        f'[data-testid="draft-candidate-search"][data-cell-key="{mobile_cell_key}"]'
+    )
     mobile_candidate_search.wait_for(state="visible", timeout=10_000)
     mobile_candidate_search.click()
-    candidate_input = mobile_candidate_search.locator("input")
-    candidate_input.fill("X")
+    # Quasar creates and replaces the searchable input as the select gains
+    # focus.  Typing through the focused control exercises the real keyboard
+    # contract without retaining a locator to a transient input node.
+    page.keyboard.type("X")
     vacancy_option = page.locator(".q-menu .q-item:visible").filter(
         has_text=re.compile(r"X\s*/\s*×", re.IGNORECASE)
     ).first
@@ -803,14 +822,25 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
     # publishing. This keeps the verifier honest: reopening creates vacancies,
     # while a complete schedule only returns after an explicit batch save.
     for cell_key, prefect_name in original_monday:
-        page.locator(f'[data-cell-key="{cell_key}"]').click()
-        restore_candidate = page.get_by_test_id("draft-candidate-search")
+        page.locator(
+            f'[data-cell-key="{cell_key}"].sy-draft-grid-cell:visible'
+        ).click()
+        restore_candidate = page.locator(
+            f'[data-testid="draft-candidate-search"][data-cell-key="{cell_key}"]'
+        )
         restore_candidate.wait_for(state="visible", timeout=10_000)
         _select_option(
             page,
             restore_candidate,
             text=re.compile(rf"^{re.escape(prefect_name)}(?:\s|·|$)"),
         )
+        # NiceGUI applies the select change over its websocket and refreshes
+        # the shared editor panel.  Wait for the durable pending-cell render
+        # before opening the next cell; otherwise the previous refresh can
+        # replace the next selector after it has been clicked.
+        page.locator(
+            f'[data-cell-key="{cell_key}"].sy-draft-grid-cell--pending:visible'
+        ).wait_for(state="visible", timeout=10_000)
     page.get_by_test_id("draft-save-all").click()
     _wait_for_draft_version(page, 4)
     restored_monday = page.locator(

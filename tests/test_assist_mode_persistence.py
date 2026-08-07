@@ -23,6 +23,7 @@ from nicegui_app.services.roster_workflow import (
     WorkflowConflictError,
     WorkflowError,
 )
+from nicegui_app.services.workflow_types import DraftCellEdit, DraftDayEdit
 
 
 WEEK_START = date(2026, 9, 7)
@@ -421,3 +422,195 @@ def test_guest_legacy_leave_substitute_does_not_change_session_fixed_owners() ->
 
     assert str(monday_assist["prefectId"]) != absent_id
     assert after == before
+
+
+def test_formal_legacy_draft_editor_allows_only_a_leave_substitute(tmp_path: Path) -> None:
+    workflow = _workflow(tmp_path)
+    baseline = workflow.generate_and_save_draft(
+        WEEK_START,
+        assist_assignment_mode="legacy_fixed_weekday",
+        expected_week_version=0,
+        command_id="formal-editor-owner-baseline",
+    )
+    fixed_owners = {
+        str(row["fixedGeneralDuty"]): str(row["id"])
+        for row in workflow.prefects()
+        if row["roleCode"] == "assistant_head" and row["fixedGeneralDuty"] != "NONE"
+    }
+    absent_id = fixed_owners["MONDAY"]
+    baseline_closed = workflow.apply_draft_patch(
+        roster_week_id=baseline.id,
+        expected_week_version=baseline.version,
+        day_edits=(DraftDayEdit(day="MONDAY", closed=True),),
+        command_id="formal-editor-close-owner-monday",
+    )
+    workflow.apply_draft_patch(
+        roster_week_id=baseline.id,
+        expected_week_version=baseline_closed.version,
+        day_edits=(DraftDayEdit(day="MONDAY", closed=False),),
+        command_id="formal-editor-reopen-owner-monday",
+    )
+    assert {
+        str(row["id"])
+        for row in workflow.draft_cell_candidates(
+            baseline.id,
+            "MONDAY:ASSIST_IN_CHARGE:1",
+        )
+    } == {absent_id}
+    workflow.declare_leave(
+        week_start=SECOND_WEEK,
+        prefect_id=absent_id,
+        day="MONDAY",
+        reason=None,
+        command_id="formal-editor-owner-leave",
+    )
+    draft = workflow.generate_and_save_draft(
+        SECOND_WEEK,
+        assist_assignment_mode="legacy_fixed_weekday",
+        expected_week_version=0,
+        command_id="formal-editor-owner-leave-draft",
+    )
+    generated_substitute = next(
+        str(row["prefectId"])
+        for row in workflow.assignments(draft.id)
+        if row["day"] == "MONDAY" and row["postCode"] == "ASSIST_IN_CHARGE"
+    )
+    closed = workflow.apply_draft_patch(
+        roster_week_id=draft.id,
+        expected_week_version=draft.version,
+        day_edits=(DraftDayEdit(day="MONDAY", closed=True),),
+        command_id="formal-editor-close-leave-monday",
+    )
+    reopened = workflow.apply_draft_patch(
+        roster_week_id=draft.id,
+        expected_week_version=closed.version,
+        day_edits=(DraftDayEdit(day="MONDAY", closed=False),),
+        command_id="formal-editor-reopen-leave-monday",
+    )
+
+    candidates = workflow.draft_cell_candidates(
+        draft.id,
+        "MONDAY:ASSIST_IN_CHARGE:1",
+    )
+    candidate_ids = {str(row["id"]) for row in candidates}
+    assert generated_substitute in candidate_ids
+    assert absent_id not in candidate_ids
+
+    saved = workflow.apply_draft_patch(
+        roster_week_id=draft.id,
+        expected_week_version=reopened.version,
+        cell_edits=(
+            DraftCellEdit(
+                cell_key="MONDAY:ASSIST_IN_CHARGE:1",
+                replacement_prefect_id=generated_substitute,
+            ),
+        ),
+        command_id="formal-editor-restore-leave-substitute",
+    )
+    assert saved.version == reopened.version + 1
+    assert {
+        str(row["fixedGeneralDuty"]): str(row["id"])
+        for row in workflow.prefects()
+        if row["roleCode"] == "assistant_head" and row["fixedGeneralDuty"] != "NONE"
+    } == fixed_owners
+
+
+def test_guest_legacy_draft_editor_allows_only_a_leave_substitute() -> None:
+    registry = GuestWorkspaceRegistry(b"guest-editor-owner-regression-secret")
+    context = PageContext.create(
+        Principal(
+            mode=AccessMode.GUEST,
+            subject="guest:legacy-editor-regression",
+            session_id="legacy-editor-regression",
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=30),
+        ),
+        request_reference="LEGACY-EDITOR-GUEST",
+    )
+    adapter = GuestWorkspaceAdapter(
+        context,
+        registry,
+        workspace_id="legacy-editor-workspace",
+        tab_id="legacy-editor-tab",
+    )
+    baseline = adapter.generate_and_save_draft(
+        WEEK_START,
+        assist_assignment_mode="legacy_fixed_weekday",
+    )
+    fixed_owners = {
+        str(row["fixedGeneralDuty"]): str(row["id"])
+        for row in adapter.prefects()
+        if row["roleCode"] == "assistant_head" and row["fixedGeneralDuty"] != "NONE"
+    }
+    absent_id = fixed_owners["MONDAY"]
+    baseline_closed = adapter.apply_draft_patch(
+        roster_week_id=baseline.id,
+        expected_week_version=baseline.version,
+        day_edits=(DraftDayEdit(day="MONDAY", closed=True),),
+        command_id="guest-editor-close-owner-monday",
+    )
+    adapter.apply_draft_patch(
+        roster_week_id=baseline.id,
+        expected_week_version=baseline_closed.version,
+        day_edits=(DraftDayEdit(day="MONDAY", closed=False),),
+        command_id="guest-editor-reopen-owner-monday",
+    )
+    assert {
+        str(row["id"])
+        for row in adapter.draft_cell_candidates(
+            baseline.id,
+            "MONDAY:ASSIST_IN_CHARGE:1",
+        )
+    } == {absent_id}
+    adapter.declare_leave(
+        week_start=SECOND_WEEK,
+        prefect_id=absent_id,
+        day="MONDAY",
+        reason=None,
+    )
+    draft = adapter.generate_and_save_draft(
+        SECOND_WEEK,
+        assist_assignment_mode="legacy_fixed_weekday",
+    )
+    generated_substitute = next(
+        str(row["prefectId"])
+        for row in adapter.assignments(draft.id)
+        if row["day"] == "MONDAY" and row["postCode"] == "ASSIST_IN_CHARGE"
+    )
+    closed = adapter.apply_draft_patch(
+        roster_week_id=draft.id,
+        expected_week_version=draft.version,
+        day_edits=(DraftDayEdit(day="MONDAY", closed=True),),
+        command_id="guest-editor-close-leave-monday",
+    )
+    reopened = adapter.apply_draft_patch(
+        roster_week_id=draft.id,
+        expected_week_version=closed.version,
+        day_edits=(DraftDayEdit(day="MONDAY", closed=False),),
+        command_id="guest-editor-reopen-leave-monday",
+    )
+
+    candidates = adapter.draft_cell_candidates(
+        draft.id,
+        "MONDAY:ASSIST_IN_CHARGE:1",
+    )
+    candidate_ids = {str(row["id"]) for row in candidates}
+    assert generated_substitute in candidate_ids
+    assert absent_id not in candidate_ids
+
+    saved = adapter.apply_draft_patch(
+        roster_week_id=draft.id,
+        expected_week_version=reopened.version,
+        cell_edits=(
+            DraftCellEdit(
+                cell_key="MONDAY:ASSIST_IN_CHARGE:1",
+                replacement_prefect_id=generated_substitute,
+            ),
+        ),
+        command_id="guest-editor-restore-leave-substitute",
+    )
+    assert saved.version == reopened.version + 1
+    assert {
+        str(row["fixedGeneralDuty"]): str(row["id"])
+        for row in adapter.prefects()
+        if row["roleCode"] == "assistant_head" and row["fixedGeneralDuty"] != "NONE"
+    } == fixed_owners

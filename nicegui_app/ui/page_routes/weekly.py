@@ -787,7 +787,9 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                             cell_key, event.value
                         ),
                     ).classes("w-full").props(
-                        "use-input input-debounce=0 data-testid=draft-candidate-search"
+                        "use-input input-debounce=0 "
+                        "data-testid=draft-candidate-search "
+                        f'data-cell-key="{attr(key)}"'
                     )
                     candidate_selector_ref["control"] = selector
                     if candidates is None:

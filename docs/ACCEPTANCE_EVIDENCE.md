@@ -56,6 +56,7 @@
 - [ ] 在桌面及手機分別按 Admin／Guest，確認只有所選角色顯示相應 busy 文案，另一入口暫時鎖定，返回上一頁後可再次操作。
 - [ ] 模擬 200ms、1s 及 8s 導向：150ms 前沒有閃爍進度；延遲時顯示細軌；8s 後解鎖重試並保留登入協助，且不顯示完整電郵、Token 或內部錯誤。
 - [ ] 在長操作確認只顯示真實階段；沒有實際 `completed／total` 時不得顯示百分比，也不得提供不能履行的取消鍵。
+- [ ] 在工作台分別觸發一個 140ms 內完成及一個超過 140ms 的操作：前者不閃現載入視窗，後者只顯示誠實的 indeterminate 階段；兩者均不得為動畫加入最低等待時間。身份導向及跨頁細軌仍按各自的 150ms 門檻驗收。
 - [ ] 確認慢速或逾時的正式寫入不會自動重送；完成、失敗、返回及 reconnect 後沒有殘留 busy、transform、timer 或重疊進度。
 - [ ] 在 reduced-motion、forced-colours、鍵盤及讀屏模式重做一次；階段只在變更時宣告，停止後不再播放動畫。
 
@@ -82,6 +83,7 @@
 | H-19 | 公開入口在手機首屏提供清楚且唯一可見的 Admin／fictional Guest 入口，桌面排列及身份邊界不漂移 | rc26 source-matched release report 以 `test_cloudflare_roster_viewer.py` 鎖定結構與權限契約；部署後 canonical smoke 另以 `verify_public_roster_viewer.py` 證明入口及 Guest Platform 正確。Admin／Guest 各一個 visible CTA、first viewport、至少 48px（設計值 52px）、desktop access panel、mobile 不重複顯示、light／dark、reduced motion、forced colours、console／pageerror 仍屬同一契約 | 以 320px／390px 實體手機先確認兩個入口毋須捲動，再各進入一次並使用返回鍵；核對沒有重複 CTA、錯誤身份、被音樂／鍵盤遮擋或只在單一 theme 可見 |
 | H-20 | 新週預設 `legacy_fixed_weekday`；固定模式維持 AHP 原有星期，`flexible_weekly` 只在可值班日輪換並在可行情況避免重複上週同日；每份週表保存所選模式 | `test_assist_assignment_modes.py`、`test_assist_mode_persistence.py`、`test_assist_mode_guardrails.py`、`test_assist_assignment_mode_ui_contract.py` 鎖定 AHP-only、可值班日、請假、固定擁有者、靈活輪換、模式持久化、重複固定日拒絕、Admin／Guest UI parity 及 migration `0011_assist_assignment_mode` 的舊資料回填契約 | 以虛構 AHP 連續生成兩週固定模式及兩週靈活模式；核對固定星期不漂移、請假只替補該次、靈活模式有輪換、不可當值日從不被使用，並確認中英文模式說明容易理解 |
 | H-21 | Admin／Guest／Public／Viewer 有一致、可恢復且不污染排班交易的問題回報路徑 | `test_support_incidents.py`、`test_support_feedback_ui.py`、`test_host_security_summary.py` 及 Worker contract 驗證 Admin 明確同意、本機原子收件匣、redaction／quota／integrity／cleanup、Guest browser-only 及 Public／Viewer 無 fetch／XHR／WebSocket／storage；`test_content_design_contract.py` 鎖定漸進披露及文件入口 | 分別以 Admin、Guest、Public 及一個 Viewer 頁進入 `/support`：核對核心欄位先顯示；Admin 可選擇有限附件並在確認後得到編號；其餘三種模式只能下載／複製／電郵，重新載入後沒有網站保存的內容；所有錯誤均提供下一步且不改週表、公平帳本或備份 |
+| H-22 | 草稿以同一呈現模型清楚區分 `assigned`、`vacant`、`room_closed` 及 `day_closed`；格子修改／交換及星期停開以一個版本化交易整批保存，衝突不靜默覆寫；Guest 只修改虛構記憶體工作區；網頁、雙語 PDF 及公開分享保持相同星期、日期、英文崗位、中文姓名及狀態 | 候選來源的 `test_roster_day_closures.py`、`test_draft_patch_integrity.py`、`test_draft_grid_ui_contract.py` 及 `test_roster_export.py` 提供聚焦證據；正式 exact-source gate、migration／備份／隔離還原、部署及真人驗收仍須另行完成，不能由這列推定已上線 | 以虛構週表用滑鼠、鍵盤及觸控各完成一次姓名聯想、設為空缺、原子交換、單日／多日／全星期停開、重新開放及版本衝突恢復；再核對桌面矩陣、手機卡片、繁中／英文 PDF 與公開分享，確認空缺、個別房間停開和全天停開不被混淆 |
 
 ## 教師顧問
 

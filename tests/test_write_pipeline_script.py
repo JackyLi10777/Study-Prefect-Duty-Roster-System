@@ -121,7 +121,8 @@ def test_write_pipeline_uses_the_batch_draft_matrix_contract() -> None:
 
     for contract in (
         "data-cell-key",
-        'get_by_test_id("draft-candidate-search")',
+        'data-testid="draft-candidate-search"',
+        "_draft_candidate_menu(",
         "textarea[name='draft-batch-reason']",
         'get_by_test_id("draft-save-all")',
         'get_by_test_id("draft-day-toggle-monday")',
@@ -133,6 +134,10 @@ def test_write_pipeline_uses_the_batch_draft_matrix_contract() -> None:
         'page.reload(wait_until="domcontentloaded")',
     ):
         assert contract in script
+    assert '"draft_patch_applied"' in script
+    assert '"draft_assignment_changed"' not in script
+    assert '"Generated draft has no legally editable cell."' in script
+    assert 'backup_inventory(limit=100)' in script
     assert "載入合資格人選" not in script
     assert "儲存草稿修改" not in script
     assert "draft-change-reason" not in script

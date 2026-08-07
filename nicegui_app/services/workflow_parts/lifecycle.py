@@ -707,13 +707,10 @@ class RosterLifecycleMixin:
             )
             if week.assist_assignment_mode != LEGACY_FIXED_WEEKDAY or post is not DutyPost.ASSIST_IN_CHARGE:
                 return candidates
-            fixed_owner = session.scalar(
-                select(PrefectRecord.id).where(
-                    PrefectRecord.active.is_(True),
-                    PrefectRecord.role_code == PrefectRole.ASSISTANT_HEAD.value,
-                    PrefectRecord.fixed_general_duty == day.name,
-                )
-            )
+            fixed_owner = self._required_legacy_assist_owners(
+                session,
+                week_start=week.week_start,
+            ).get(day.name)
             if fixed_owner is None:
                 return candidates
             return [candidate for candidate in candidates if candidate["id"] == fixed_owner]
@@ -947,12 +944,10 @@ class RosterLifecycleMixin:
                 )
 
                 if week.assist_assignment_mode == LEGACY_FIXED_WEEKDAY:
-                    fixed_owners = {
-                        record.fixed_general_duty: record.id
-                        for record in self._active_prefect_records(session)
-                        if record.role_code == PrefectRole.ASSISTANT_HEAD.value
-                        and record.fixed_general_duty in SchoolDay.__members__
-                    }
+                    fixed_owners = self._required_legacy_assist_owners(
+                        session,
+                        week_start=week.week_start,
+                    )
                     for row in final_rows:
                         if row.status != "active" or row.post_code != DutyPost.ASSIST_IN_CHARGE.name:
                             continue

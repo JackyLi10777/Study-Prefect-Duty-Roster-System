@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 
 from playwright.sync_api import Page, sync_playwright
@@ -35,6 +36,15 @@ REPRESENTATIVE_ROUTES = (
     "/handover",
     "/engineering",
     "/system-architecture",
+)
+
+NAVIGATION_TIMING_FIELDS = (
+    "responseStartMs",
+    "ttfbMs",
+    "domContentLoadedMs",
+    "loadEventEndMs",
+    "navigationDurationMs",
+    "appReadyElapsedMs",
 )
 
 
@@ -102,7 +112,7 @@ def _dom_shape(page: Page) -> dict[str, int]:
     return {selector: page.locator(selector).count() for selector in selectors}
 
 
-def _wait_for_app(page: Page) -> None:
+def _wait_for_app(page: Page, *, settle_ms: int = 250) -> None:
     page.wait_for_selector("main#main-content", timeout=15_000)
     page.wait_for_function(
         "document.documentElement.dataset.syMotion === 'ready' || "
@@ -110,7 +120,90 @@ def _wait_for_app(page: Page) -> None:
         timeout=8_000,
     )
     page.evaluate("document.fonts?.ready || Promise.resolve()")
+    if settle_ms > 0:
+        page.wait_for_timeout(settle_ms)
+
+
+def _navigation_timing(page: Page) -> dict[str, float | None]:
+    """Return payload-free Navigation Timing values relative to navigation start."""
+    timing = page.evaluate(
+        """
+        () => {
+          const entry = performance.getEntriesByType('navigation')[0];
+          if (!entry) return null;
+          const available = (value) => Number.isFinite(value) && value > 0 ? value : null;
+          return {
+            responseStartMs: available(entry.responseStart),
+            domContentLoadedMs: available(entry.domContentLoadedEventEnd),
+            loadEventEndMs: available(entry.loadEventEnd),
+            navigationDurationMs: available(entry.duration),
+          };
+        }
+        """
+    )
+    if not isinstance(timing, dict):
+        timing = {}
+
+    def rounded(name: str) -> float | None:
+        value = timing.get(name)
+        return round(float(value), 1) if isinstance(value, (int, float)) else None
+
+    response_start = rounded("responseStartMs")
+    return {
+        "responseStartMs": response_start,
+        # For a top-level navigation, responseStart is measured from the
+        # navigation start and is the browser's standard TTFB approximation.
+        "ttfbMs": response_start,
+        "domContentLoadedMs": rounded("domContentLoadedMs"),
+        "loadEventEndMs": rounded("loadEventEndMs"),
+        "navigationDurationMs": rounded("navigationDurationMs"),
+    }
+
+
+def _navigate_and_measure(page: Page, *, route: str) -> dict[str, float | str | None]:
+    """Navigate once and measure the point at which the application is usable."""
+    started = perf_counter()
+    page.goto(f"{BASE_URL}{route}", wait_until="domcontentloaded")
+    # Do not include the verifier's optional settling pause in the ready time.
+    _wait_for_app(page, settle_ms=0)
+    app_ready_elapsed_ms = round((perf_counter() - started) * 1000, 1)
+    timing = _navigation_timing(page)
+    # Preserve the existing short settle before memory/DOM sampling without
+    # presenting that pause as application work.
     page.wait_for_timeout(250)
+    return {"route": route, **timing, "appReadyElapsedMs": app_ready_elapsed_ms}
+
+
+def summarize_navigation_timings(
+    samples: list[dict[str, float | str | None]],
+) -> dict[str, dict[str, float | int]]:
+    """Summarize only available aggregate timings; no URLs or payloads are retained."""
+
+    def percentile(values: list[float], fraction: float) -> float:
+        ordered = sorted(values)
+        position = (len(ordered) - 1) * fraction
+        lower = int(position)
+        upper = min(len(ordered) - 1, lower + 1)
+        weight = position - lower
+        return round(ordered[lower] + (ordered[upper] - ordered[lower]) * weight, 1)
+
+    summary: dict[str, dict[str, float | int]] = {}
+    for field in NAVIGATION_TIMING_FIELDS:
+        values = [
+            float(sample[field])
+            for sample in samples
+            if isinstance(sample.get(field), (int, float))
+        ]
+        if not values:
+            continue
+        summary[field] = {
+            "sampleCount": len(values),
+            "minMs": round(min(values), 1),
+            "p50Ms": percentile(values, 0.50),
+            "p95Ms": percentile(values, 0.95),
+            "maxMs": round(max(values), 1),
+        }
+    return summary
 
 
 def _exercise_repeated_interactions(page: Page, cycles: int = 10) -> None:
@@ -131,7 +224,7 @@ def main() -> int:
     console_errors: list[str] = []
     page_errors: list[str] = []
     report: dict[str, Any] = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "status": "running",
         "startedAt": datetime.now(timezone.utc).isoformat(),
         "baseUrl": "loopback-test-origin",
@@ -148,8 +241,7 @@ def main() -> int:
             cdp.send("Performance.enable")
             cdp.send("HeapProfiler.enable")
 
-            page.goto(f"{BASE_URL}/", wait_until="domcontentloaded")
-            _wait_for_app(page)
+            initial_navigation = _navigate_and_measure(page, route="/")
             resources = _resource_summary(page)
 
             # One cycle warms lazily-created dialog and pointer surfaces before
@@ -162,12 +254,13 @@ def main() -> int:
             after_interactions = _runtime_counters(cdp)
             after_shape = _dom_shape(page)
 
-            route_samples: list[dict[str, int | str]] = []
+            route_samples: list[dict[str, Any]] = []
+            route_navigation_timings: list[dict[str, float | str | None]] = []
             for route in REPRESENTATIVE_ROUTES:
-                page.goto(f"{BASE_URL}{route}", wait_until="domcontentloaded")
-                _wait_for_app(page)
+                navigation_timing = _navigate_and_measure(page, route=route)
                 sample = _runtime_counters(cdp)
-                route_samples.append({"route": route, **sample})
+                route_samples.append({"route": route, **sample, "navigation": navigation_timing})
+                route_navigation_timings.append(navigation_timing)
 
             page.set_viewport_size({"width": 390, "height": 844})
             mobile_overflow: list[dict[str, Any]] = []
@@ -231,7 +324,9 @@ def main() -> int:
                 "afterInteractions": after_interactions,
                 "afterInteractionDomShape": after_shape,
                 "finalHome": final_home,
+                "initialNavigationTiming": initial_navigation,
                 "routeSamples": route_samples,
+                "navigationTimingSummary": summarize_navigation_timings(route_navigation_timings),
                 "mobileOverflow": mobile_overflow,
                 "largestResources": resources["largest"],
                 "consoleErrorCount": len(console_errors),

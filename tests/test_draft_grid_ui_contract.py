@@ -42,6 +42,7 @@ def test_draft_editor_uses_one_canonical_matrix_and_one_batch_patch() -> None:
     assert "workflow.update_draft_assignment(" not in WEEKLY_SOURCE
     assert 'with_input=True' in WEEKLY_SOURCE
     assert '"__vacant__": t("draft_explicit_vacancy")' in WEEKLY_SOURCE
+    assert 'f\'data-cell-key="{attr(key)}"\'' in WEEKLY_SOURCE
 
 
 def test_unsaved_changes_support_undo_discard_and_conflict_preservation() -> None:

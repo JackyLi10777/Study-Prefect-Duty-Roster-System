@@ -1,8 +1,8 @@
 # 草稿試算表與全天停開操作 / Draft grid and whole-day closure
 
-> **發布狀態：**本頁描述 `codex/roster-grid-day-closure` 的候選來源。正式網站的精確版本、migration 及 Worker 只以[目前系統狀態](status/CURRENT_STATUS.md)為準；本功能使用 additive migration `0013_roster_day_closures`，在完成正式驗證、備份、隔離還原、合併及受控發布前，不應視為已上線。
+> **發布狀態：**本頁描述 `codex/roster-grid-day-closure-release` 的候選來源。正式網站的精確版本、migration 及 Worker 只以[目前系統狀態](status/CURRENT_STATUS.md)為準；本功能使用 additive migration `0013_roster_day_closures`，在完成正式驗證、備份、隔離還原、合併及受控發布前，不應視為已上線。
 >
-> **Release status:** This page describes candidate source on `codex/roster-grid-day-closure`. The exact production release, migration, and Worker are owned by [current system status](status/CURRENT_STATUS.md). This feature uses additive migration `0013_roster_day_closures` and is not live until formal verification, backup, isolated restore, merge, and controlled deployment are complete.
+> **Release status:** This page describes candidate source on `codex/roster-grid-day-closure-release`. The exact production release, migration, and Worker are owned by [current system status](status/CURRENT_STATUS.md). This feature uses additive migration `0013_roster_day_closures` and is not live until formal verification, backup, isolated restore, merge, and controlled deployment are complete.
 
 這個功能讓草稿像試算表一樣直接核對及修改，但所有格子會先留在目前頁面，按「核對並保存」後才以一個交易寫入。逐格點擊不會逐格更新資料庫，也不會改動公平帳本；`history_weight` 仍只在正式發布時按最終有效安排入帳。
 
@@ -64,6 +64,13 @@ Whole-day closure is a week-specific override, not a permanent school calendar a
 - **重新載入：**放棄本頁變更並採用最新版本；
 - **比較變更：**查看目前輸入與最新版本的差異；
 - **重新套用：**在最新版本上重新核對並套用仍有效的修改。
+
+### 誠實等待回饋 / Honest waiting feedback
+
+- 核對及保存若在 140ms 內完成，只顯示按壓／圖標回饋，不閃現載入視窗。
+- 超過 140ms 時才顯示「準備 → 安全處理 → 完成」的 indeterminate 階段；沒有實際 `completed／total` 就不顯示百分比。
+- 結果一旦可用便立即呈現，不為動畫加入假進度或最低等待時間。
+- 版本衝突、驗證失敗或備份義務未完成時，保留輸入及安全下一步，不以動畫掩蓋結果。
 
 ## 發布後限制 / Published-roster restriction
 
