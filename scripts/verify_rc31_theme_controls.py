@@ -872,8 +872,7 @@ def _is_expected_gateway_handoff_request_failure(
         or failure == f"public: GET {disposable_http_root}: net::ERR_ABORTED"
         or failure == f"origin: GET {origin_status}: net::ERR_ABORTED"
         or (
-            failure.startswith("public: GET ")
-            and "/welcome-audio/" in failure
+            failure.startswith(f"public: GET {worker_url}/welcome-audio/")
             and failure.endswith(": net::ERR_ABORTED")
         )
     )

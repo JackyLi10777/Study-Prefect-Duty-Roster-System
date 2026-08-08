@@ -247,6 +247,11 @@ def test_rc31_gateway_handoff_ignores_only_proven_disposable_transport_noise() -
         worker_url=worker_url,
         origin_url=origin_url,
     )
+    assert not _is_expected_gateway_handoff_request_failure(
+        "public: GET https://other.example/welcome-audio/ubi-caritas: net::ERR_ABORTED",
+        worker_url=worker_url,
+        origin_url=origin_url,
+    )
 
 
 def test_rc31_worker_harness_injects_one_use_credentials_only_through_subprocess_environment(
