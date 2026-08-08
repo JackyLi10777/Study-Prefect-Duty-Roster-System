@@ -257,7 +257,7 @@ def _schedule_grid(
             if cell.state is RosterCellState.UNAVAILABLE:
                 row.append(
                     Paragraph(
-                        "不開放" if language == "zh" else "Unavailable",
+                        "本週不開放" if language == "zh" else "Unavailable",
                         styles["closed_cell"],
                     )
                 )

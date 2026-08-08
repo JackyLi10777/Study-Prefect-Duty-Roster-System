@@ -647,7 +647,17 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             }
             for cell_key in pending_slots:
                 if (cell_key in previous_unavailable) != (cell_key in latest_unavailable):
-                    changes.append(t("draft_conflict_slot_changed", cell=cell_key))
+                    slot_cell = cells_by_key.get(cell_key)
+                    slot_label = cell_key
+                    if slot_cell is not None:
+                        slot_row = next(
+                            row_item
+                            for row_item in presentation.rows
+                            if row_item.spec.post == slot_cell.post
+                            and row_item.spec.slot_index == slot_cell.slot_index
+                        )
+                        slot_label = f"{day_label(slot_cell.day)} · {slot_row.spec.display_label}"
+                    changes.append(t("draft_conflict_slot_changed", cell=slot_label))
             conflict_state["latest_version"] = int(latest_week["version"])
             conflict_state["changes"] = changes
         reapply_control = conflict_reapply_ref["control"]
@@ -775,6 +785,16 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
     def editor() -> None:
         candidate_selector_ref["control"] = None
         day_dialogs: dict[SchoolDay, Any] = {}
+        visible_navigable_keys = [
+            key
+            for key in navigable_keys
+            if not day_is_closed(cells_by_key[key].day)
+        ]
+        active_key = (
+            selected_cell["key"]
+            if selected_cell["key"] in visible_navigable_keys
+            else (visible_navigable_keys[0] if visible_navigable_keys else None)
+        )
         with ui.element("section").classes("sy-draft-editor").props(
             "data-testid=draft-grid-editor"
         ):
@@ -915,9 +935,6 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                 if move_source["key"] == cell.cell_key:
                                     classes += " sy-draft-grid-cell--move-source"
                                 aria = f"{day_label(cell.day)}, {row.spec.display_label}, {name}"
-                                active_key = selected_cell["key"] or (
-                                    navigable_keys[0] if navigable_keys else None
-                                )
                                 interaction_props = (
                                     'role="gridcell" aria-disabled="true" tabindex="-1"'
                                     if state == "closed"

@@ -310,7 +310,7 @@ MESSAGES = {'backup_restore': {'zh-HK': '備份還原', 'en': 'Backup restore'},
      'zh-HK': '這次移動不符合職務、可值班日或同日安排規則；草稿沒有改動。',
      'en': 'This move conflicts with role, availability, or same-day rules. The draft was not changed.',
  },
- 'draft_slot_unavailable': {'zh-HK': '不開放', 'en': 'Unavailable'},
+ 'draft_slot_unavailable': {'zh-HK': '本週不開放', 'en': 'Unavailable'},
  'draft_slot_unavailable_meta': {
      'zh-HK': '本週單格例外',
      'en': 'Week-specific slot exception',

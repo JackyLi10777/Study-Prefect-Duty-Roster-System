@@ -130,25 +130,29 @@ def test_batch_patch_validates_every_row_before_the_first_write() -> None:
     writes: list[str] = []
     workflow = _Workflow(invalid_id="p2", writes=writes)
 
-    with pytest.raises(WorkflowError, match="invalid row"):
-        _apply_prefect_patch_batch(
-            workflow,
-            (
-                {
-                    "prefectId": "p1",
-                    "changes": {"className": "5A"},
-                    "expectedVersion": 2,
-                    "commandId": "cmd-1",
-                },
-                {
-                    "prefectId": "p2",
-                    "changes": {"form": "F.7"},
-                    "expectedVersion": 3,
-                    "commandId": "cmd-2",
-                },
-            ),
-        )
+    result = _apply_prefect_patch_batch(
+        workflow,
+        (
+            {
+                "prefectId": "p1",
+                "changes": {"className": "5A"},
+                "expectedVersion": 2,
+                "commandId": "cmd-1",
+            },
+            {
+                "prefectId": "p2",
+                "changes": {"form": "F.7"},
+                "expectedVersion": 3,
+                "commandId": "cmd-2",
+            },
+        ),
+    )
 
+    assert result == {
+        "updated": [],
+        "conflicts": [],
+        "errors": [{"prefectId": "p2", "message": "invalid row"}],
+    }
     assert writes == []
 
 

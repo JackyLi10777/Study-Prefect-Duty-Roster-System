@@ -2968,7 +2968,7 @@ function renderRoster(snapshot, expiresAt) {
         tableCell.append(textElement('span', 'cell-status', '全天不開放 · Closed all day'));
       } else if (cell?.state === 'unavailable') {
         tableCell.className = 'cell--closed cell--unavailable';
-        tableCell.append(textElement('span', 'cell-status', '不開放 · Unavailable'));
+        tableCell.append(textElement('span', 'cell-status', '本週不開放 · Unavailable'));
       } else if (status === 'closed') {
         tableCell.className = 'cell--closed';
         tableCell.append(textElement('span', 'cell-status', '不開放 · Closed'));

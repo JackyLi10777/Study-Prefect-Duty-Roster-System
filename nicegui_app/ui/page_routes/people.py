@@ -139,12 +139,19 @@ def _apply_prefect_patch_batch(
     updated: list[dict[str, object]] = []
     conflicts: list[dict[str, object]] = []
     errors: list[dict[str, object]] = []
+    invalid: list[dict[str, object]] = []
     for patch in patches:
-        workflow.validate_prefect_patch(  # type: ignore[attr-defined]
-            str(patch["prefectId"]),
-            dict(patch["changes"]),
-            expected_version=int(patch["expectedVersion"]),
-        )
+        prefect_id = str(patch["prefectId"])
+        try:
+            workflow.validate_prefect_patch(  # type: ignore[attr-defined]
+                prefect_id,
+                dict(patch["changes"]),
+                expected_version=int(patch["expectedVersion"]),
+            )
+        except WorkflowError as error:
+            invalid.append({"prefectId": prefect_id, "message": str(error)})
+    if invalid:
+        return {"updated": [], "conflicts": [], "errors": invalid}
     for patch in patches:
         prefect_id = str(patch["prefectId"])
         try:

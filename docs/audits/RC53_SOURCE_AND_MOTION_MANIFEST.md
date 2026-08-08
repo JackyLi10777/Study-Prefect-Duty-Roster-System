@@ -33,7 +33,7 @@ Every editable row is keyed by immutable prefect ID and retains its original ver
 | `assigned` | 已安排 | Assigned | A named prefect occupies the cell. |
 | `vacant` | 空缺（待安排） | Vacant | Duty is required but no prefect is assigned. |
 | `room_closed` | 不開放 | Closed | Fixed policy closes this room/slot. |
-| `unavailable` | 不開放 | Unavailable | Operator closes this one weekly cell. |
+| `unavailable` | 本週不開放 | Unavailable | Operator closes this one weekly cell. |
 | `day_closed` | 全天不開放 | Closed all day | The complete weekday is closed. |
 
 Precedence: `day_closed > room_closed > unavailable > assigned/vacant`.

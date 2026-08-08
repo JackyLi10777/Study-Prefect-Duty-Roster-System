@@ -1005,4 +1005,16 @@ button.sy-draft-mobile-cell--closed {
     outline: 3px solid Highlight;
     outline-offset: -3px;
   }
+
+  .sy-draft-grid-cell--unavailable,
+  .sy-draft-mobile-cell--unavailable {
+    outline: 2px dashed CanvasText;
+    outline-offset: -4px;
+  }
+
+  .sy-draft-grid-cell--move-source,
+  .sy-draft-mobile-cell--move-source {
+    outline: 3px solid Highlight;
+    outline-offset: -3px;
+  }
 }

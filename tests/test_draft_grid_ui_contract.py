@@ -247,6 +247,9 @@ def test_draft_matrix_has_desktop_mobile_and_accessible_interaction_contracts() 
     assert '"pointerdown"' in WEEKLY_SOURCE
     assert '"pointerup"' in WEEKLY_SOURCE
     assert "distance > 8" in WEEKLY_SOURCE
+    assert "visible_navigable_keys = [" in WEEKLY_SOURCE
+    assert 'selected_cell["key"] in visible_navigable_keys' in WEEKLY_SOURCE
+    assert 'draft_conflict_slot_changed", cell=slot_label' in WEEKLY_SOURCE
     assert "event.preventDefault(); event.stopPropagation()" in WEEKLY_SOURCE
     assert '"__vacant__": t("draft_explicit_vacancy")' in WEEKLY_SOURCE
     assert 'new_value_mode="add-unique"' not in WEEKLY_SOURCE
@@ -261,6 +264,8 @@ def test_draft_matrix_has_desktop_mobile_and_accessible_interaction_contracts() 
     assert "and cell.prefect_id" in WEEKLY_SOURCE
     assert "sy-draft-grid-cell--unavailable" in COMPONENT_SOURCE
     assert "sy-draft-grid-cell--move-source" in COMPONENT_SOURCE
+    assert "outline: 2px dashed CanvasText" in COMPONENT_SOURCE
+    assert "outline: 3px solid Highlight" in COMPONENT_SOURCE
 
 
 def test_draft_editor_copy_is_bilingual_and_keeps_duty_posts_in_english() -> None:

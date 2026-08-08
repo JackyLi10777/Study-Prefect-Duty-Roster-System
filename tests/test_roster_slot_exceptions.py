@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import closing
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 import sqlite3
@@ -253,7 +254,7 @@ def test_0014_migration_round_trip_preserves_0013_database(tmp_path: Path) -> No
     command.upgrade(config, "0013")
 
     command.upgrade(config, "0014")
-    with sqlite3.connect(database_path) as connection:
+    with closing(sqlite3.connect(database_path)) as connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0014",)
         columns = {
             row[1] for row in connection.execute("PRAGMA table_info(roster_slot_exceptions)")
@@ -275,7 +276,7 @@ def test_0014_migration_round_trip_preserves_0013_database(tmp_path: Path) -> No
         assert "slot_index IN (1, 2)" in table_sql
 
     command.downgrade(config, "0013")
-    with sqlite3.connect(database_path) as connection:
+    with closing(sqlite3.connect(database_path)) as connection:
         assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0013",)
         assert connection.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='roster_slot_exceptions'"

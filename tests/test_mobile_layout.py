@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.ui.i18n import EN, MESSAGES, ZH_HK
 from nicegui_app.ui.page_catalog import PAGE_DEFINITIONS
@@ -235,7 +237,10 @@ def test_sidebar_uses_fixed_brand_scrollable_navigation_and_compact_footer() -> 
     assert "sy-sidebar-brand" in shell
     assert "sy-sidebar-navigation" in shell
     assert "sy-sidebar-footer" in shell
-    assert "data-testid=sidebar-feedback" not in shell
+    assert not re.search(
+        r'''data-testid\s*=\s*[\'\"]?sidebar-feedback[\'\"]?''',
+        shell,
+    )
     assert "grid-template-rows: auto minmax(0, 1fr) auto" in command_center
     assert "height: 100dvh" in command_center
     assert "overflow-y: auto" in command_center

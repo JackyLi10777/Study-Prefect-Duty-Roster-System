@@ -405,6 +405,7 @@ def test_roster_forms_repair_predictable_input_before_background_work() -> None:
     assert "if not cell_values and not day_values and not slot_values:" in draft_handler
     assert draft_handler.index("cell_values = tuple(") < draft_handler.index("await _run_with_progress")
     assert draft_handler.index("day_values = tuple(") < draft_handler.index("await _run_with_progress")
+    assert draft_handler.index("slot_values = tuple(") < draft_handler.index("await _run_with_progress")
 
 
 def test_history_priority_slider_marks_match_the_nonlinear_numeric_range() -> None:
@@ -471,6 +472,7 @@ def test_durable_handlers_snapshot_visible_form_values_before_the_first_await() 
         'reason = str(reason_input.value or "").strip()',
         "cell_values = tuple(",
         "day_values = tuple(",
+        "slot_values = tuple(",
         'reason = reason_state["value"].strip() or None',
     ):
         assert snapshot in pages

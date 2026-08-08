@@ -15,7 +15,7 @@ This feature makes the draft directly reviewable and editable like a spreadsheet
 | `assigned` | 已安排 | Assigned | 格內有一位合資格導學風紀；姓名在所有語言中保持中文。 |
 | `vacant` | 空缺（待安排） | Vacant | 該崗位應當值但尚未有人選，可開啟格子選擇合資格人選。 |
 | `room_closed` | 不開放 | Closed | 長期房間政策令該崗位當日不開放，例如 Room 202 星期二及星期五。 |
-| `unavailable` | 不開放 | Unavailable | 操作員只對所選週次的指定格子停開；它不是空缺，也不會被生成器填入。 |
+| `unavailable` | 本週不開放 | Unavailable | 操作員只對所選週次的指定格子停開；它不是空缺，也不會被生成器填入。 |
 | `day_closed` | 全天不開放 | Closed all day | 本週指定日期整天停開，該星期欄不可安排任何人。 |
 
 **空白輸入不是第五種狀態。** 清空搜尋框只代表尚未完成搜尋，不會自動刪除原安排、設為空缺或停開。要建立空缺，必須明確選擇「設為空缺」。
@@ -93,7 +93,7 @@ Published rosters cannot be patched or closed directly. Withdraw an incorrectly 
 
 - 已部署 Alembic revision: `0013_roster_day_closures`（additive）。來源候選 revision: `0014_roster_slot_exceptions`（additive）。
 - `roster_day_closures` 使用穩定星期代碼，限制每個週表／星期唯一；翻譯文字不是資料庫鍵值。
-- `roster_slot_exceptions` 使用穩定 `day_code / post_code / slot_index`，限制每週每格唯一；原因及備註均為選填。
+- `roster_slot_exceptions` 使用穩定資料庫欄位 `day / post_code / slot_index`，限制每週每格唯一；API 的 `cell_key` 內星期代碼會映射至 `day`，原因及備註均為選填。
 - 公開型別：`WeekScheduleOverrides`、`DraftCellEdit`、`DraftDayEdit`、`DraftSlotStateEdit`。
 - 交易入口：`apply_draft_patch(roster_week_id, expected_week_version, cell_edits, day_edits, slot_edits, reason?, command_id)`。
 - 共用輸出：`RosterSchedulePresentation`，狀態只限 `assigned / vacant / room_closed / unavailable / day_closed`。

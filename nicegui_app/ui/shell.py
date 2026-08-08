@@ -1197,9 +1197,7 @@ def page_shell(active_path: str) -> Iterator[None]:
                     theme_controls,
                     sound_controls,
                 )
-            with ui.element("nav").classes("sy-sidebar-navigation").props(
-                f'aria-label="{attr(t("main_navigation"))}"'
-            ):
+            with ui.element("div").classes("sy-sidebar-navigation"):
                 for group_index, (group_key, pages) in enumerate(
                     navigation_groups_for(access_mode), start=1
                 ):
@@ -1234,7 +1232,7 @@ def page_shell(active_path: str) -> Iterator[None]:
                             ).style("color: var(--sy-nav-ink) !important")
                             if page.route == active_path:
                                 button.classes("sy-nav-active").props("aria-current=page")
-            with ui.element("footer").classes("sy-sidebar-footer").props("role=contentinfo"):
+            with ui.element("div").classes("sy-sidebar-footer"):
                 ui.label(t("copyright_notice")).classes("sy-sidebar-footer-copy")
     with ui.header(elevated=False).classes("sy-app-header bg-[var(--sy-surface)] border-b border-[var(--sy-line)]"):
         skip_link = ui.link(t("skip_to_content"), "#main-content").classes("sy-skip-link")
