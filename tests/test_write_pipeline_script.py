@@ -131,6 +131,7 @@ def test_write_pipeline_uses_the_batch_draft_matrix_contract() -> None:
         'page.locator(".sy-draft-grid-day-closed")',
         'week_schedule_overrides(roster_week_id).closed_days',
         'data-cell-key^="MONDAY:"',
+        '.sy-draft-grid-cell--pending:visible',
         'page.reload(wait_until="domcontentloaded")',
     ):
         assert contract in script
