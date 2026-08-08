@@ -50,6 +50,7 @@ class RosterCellState(str, Enum):
     VACANT = "vacant"
     ROOM_CLOSED = "room_closed"
     DAY_CLOSED = "day_closed"
+    UNAVAILABLE = "unavailable"
 
 
 @dataclass(frozen=True)
@@ -273,6 +274,7 @@ def build_roster_presentation(
     assignments: Iterable[Mapping[str, object]],
     *,
     closed_days: Iterable[str | SchoolDay] = (),
+    unavailable_slots: Iterable[object] = (),
     editable: bool | None = None,
     strict: bool = False,
 ) -> RosterSchedulePresentation:
@@ -283,10 +285,16 @@ def build_roster_presentation(
     if editable is None:
         editable = status == "draft"
     resolved_closed_days = _closed_days(week.get("closedDays"), closed_days, strict=strict)
+    resolved_unavailable_slots = _unavailable_slots(
+        week.get("slotExceptions", week.get("unavailableSlots")),
+        unavailable_slots,
+        strict=strict,
+    )
     rows = _build_rows(
         assignments,
         week_start=week_start,
         closed_days=resolved_closed_days,
+        unavailable_slots=resolved_unavailable_slots,
         editable=bool(editable),
         strict=strict,
     )
@@ -311,6 +319,7 @@ def build_roster_schedule(
     assignments: Iterable[Mapping[str, object]],
     *,
     closed_days: Iterable[str | SchoolDay] = (),
+    unavailable_slots: Iterable[object] = (),
 ) -> tuple[RosterScheduleRow, ...]:
     """Compatibility adapter returning the historical undated row tuple."""
 
@@ -318,6 +327,7 @@ def build_roster_schedule(
         assignments,
         week_start=None,
         closed_days=_closed_days(None, closed_days, strict=False),
+        unavailable_slots=_unavailable_slots(None, unavailable_slots, strict=False),
         editable=True,
         strict=False,
     )
@@ -328,6 +338,7 @@ def _build_rows(
     *,
     week_start: date | None,
     closed_days: frozenset[SchoolDay],
+    unavailable_slots: frozenset[tuple[SchoolDay, DutyPost, int]],
     editable: bool,
     strict: bool,
 ) -> tuple[RosterScheduleRow, ...]:
@@ -372,6 +383,11 @@ def _build_rows(
             if not is_room_open(spec.post, day):
                 cells.append(
                     RosterScheduleCell(**common, state=RosterCellState.ROOM_CLOSED, editable=False)
+                )
+                continue
+            if (day, spec.post, spec.slot_index) in unavailable_slots:
+                cells.append(
+                    RosterScheduleCell(**common, state=RosterCellState.UNAVAILABLE, editable=False)
                 )
                 continue
             item = indexed.get((day.name, spec.post.name, spec.slot_index))
@@ -422,6 +438,64 @@ def _build_rows(
             )
         rows.append(RosterScheduleRow(spec, tuple(cells)))
     return tuple(rows)
+
+
+def _unavailable_slots(
+    week_value: object,
+    explicit: Iterable[object],
+    *,
+    strict: bool,
+) -> frozenset[tuple[SchoolDay, DutyPost, int]]:
+    values: list[object] = []
+    if week_value is not None:
+        if isinstance(week_value, (str, Mapping)):
+            values.append(week_value)
+        else:
+            try:
+                values.extend(iter(week_value))  # type: ignore[arg-type]
+            except TypeError as error:
+                if strict:
+                    raise RosterPresentationError("The roster contains an invalid unavailable-slot list.") from error
+    values.extend(explicit)
+    result: set[tuple[SchoolDay, DutyPost, int]] = set()
+    valid_keys = {
+        (day, spec.post, spec.slot_index)
+        for day in DAY_ORDER
+        for spec in ROSTER_ROWS
+        if is_room_open(spec.post, day)
+    }
+    for value in values:
+        try:
+            if isinstance(value, Mapping):
+                if value.get("kind", "unavailable") != "unavailable":
+                    raise ValueError
+                raw_key = value.get("cellKey")
+                if raw_key:
+                    day_code, post_code, slot_text = str(raw_key).split(":", 2)
+                    slot = (SchoolDay[day_code], DutyPost[post_code], int(slot_text))
+                else:
+                    slot = (
+                        SchoolDay[str(value["day"])],
+                        DutyPost[str(value["postCode"])],
+                        int(value["slotIndex"]),
+                    )
+            elif isinstance(value, tuple) and len(value) == 3:
+                raw_day, raw_post, raw_index = value
+                slot = (
+                    raw_day if isinstance(raw_day, SchoolDay) else SchoolDay[str(raw_day)],
+                    raw_post if isinstance(raw_post, DutyPost) else DutyPost[str(raw_post)],
+                    int(raw_index),
+                )
+            else:
+                day_code, post_code, slot_text = str(value).split(":", 2)
+                slot = (SchoolDay[day_code], DutyPost[post_code], int(slot_text))
+            if slot not in valid_keys:
+                raise ValueError
+            result.add(slot)
+        except (KeyError, TypeError, ValueError):
+            if strict:
+                raise RosterPresentationError("The roster contains an invalid unavailable slot.") from None
+    return frozenset(result)
 
 
 def _closed_days(

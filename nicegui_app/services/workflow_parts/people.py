@@ -26,6 +26,18 @@ from nicegui_app.services.workflow_fencing import fenced_workflow_write
 
 
 class PeopleWorkflowMixin:
+    _PREFECT_PATCH_FIELDS = frozenset(
+        {
+            "nameEn",
+            "form",
+            "className",
+            "availableDays",
+            "needsMentoring",
+            "fixedGeneralDuty",
+            "remarks",
+        }
+    )
+
     def prefect_loads(self) -> dict[str, float]:
         with self._session() as session:
             rows = self._active_prefect_records(session)
@@ -48,6 +60,9 @@ class PeopleWorkflowMixin:
                     "availableDays": [day.name for day in sorted(availability.get(row.id, set()))],
                     "needsMentoring": row.needs_mentoring,
                     "fixedGeneralDuty": row.fixed_general_duty,
+                    "remarks": row.remarks,
+                    "createdAt": row.created_at.isoformat(),
+                    "updatedAt": row.updated_at.isoformat(),
                 }
                 for row in self._active_prefect_records(session)
             ]
@@ -206,6 +221,94 @@ class PeopleWorkflowMixin:
         assert receipt is not None
         self._fulfill_backup_obligation(operation_id)
         return receipt
+
+    def patch_prefect(
+        self,
+        prefect_id: str,
+        changes: dict[str, object],
+        *,
+        expected_version: int,
+        command_id: str | None = None,
+    ) -> dict[str, object]:
+        """Patch low-risk directory fields through the existing CAS transaction.
+
+        Chinese identity, role, fairness anchors, and lifecycle state are
+        intentionally absent from the whitelist and remain dialog-only writes.
+        """
+
+        prefect_input = self.validate_prefect_patch(
+            prefect_id,
+            changes,
+            expected_version=expected_version,
+            check_version=False,
+        )
+        return self.update_prefect(
+            prefect_id,
+            prefect_input,
+            expected_version=expected_version,
+            command_id=command_id,
+        )
+
+    def validate_prefect_patch(
+        self,
+        prefect_id: str,
+        changes: dict[str, object],
+        *,
+        expected_version: int,
+        check_version: bool = True,
+    ) -> PrefectInput:
+        """Validate one buffered row without creating a command or write."""
+
+        if not changes:
+            raise WorkflowError("No prefect changes were provided.")
+        unsupported = sorted(set(changes) - self._PREFECT_PATCH_FIELDS)
+        if unsupported:
+            raise WorkflowError(
+                f"Inline editing is not allowed for: {', '.join(unsupported)}."
+            )
+        current = self.prefect(prefect_id)
+        merged = dict(current)
+        merged.update(changes)
+        available_days = merged.get("availableDays", ())
+        if not isinstance(available_days, (list, tuple)) or any(
+            not isinstance(day, str) for day in available_days
+        ):
+            raise WorkflowError("Available days must be a list of weekday codes.")
+        for boolean_field in ("needsMentoring",):
+            if not isinstance(merged.get(boolean_field), bool):
+                raise WorkflowError(f"{boolean_field} must be true or false.")
+        for text_field in ("form", "className", "fixedGeneralDuty", "remarks"):
+            if not isinstance(merged.get(text_field), str):
+                raise WorkflowError(f"{text_field} must be text.")
+        if merged.get("nameEn") is not None and not isinstance(merged.get("nameEn"), str):
+            raise WorkflowError("nameEn must be text or empty.")
+        if check_version and int(current["version"]) != expected_version:
+            raise WorkflowConflictError(
+                "This prefect record changed in another browser. Refresh and review the latest details before saving."
+            )
+        prefect_input = PrefectInput(
+            name_zh=str(current["nameZh"]),
+            name_en=(str(merged["nameEn"]).strip() or None)
+            if merged.get("nameEn") is not None
+            else None,
+            form=str(merged["form"]),
+            class_name=str(merged["className"]),
+            role_code=str(current["roleCode"]),
+            available_days=tuple(str(day) for day in available_days),
+            needs_mentoring=bool(merged["needsMentoring"]),
+            fixed_general_duty=str(merged["fixedGeneralDuty"]),
+            remarks=str(merged["remarks"]),
+            history_weight=float(current["historyWeight"]),
+            history_duties=int(current["historyDuties"]),
+        )
+        self._validate_prefect_input(prefect_input)
+        with self._session() as session:
+            self._assert_assist_fixed_day_available(
+                session,
+                prefect_input,
+                exclude_prefect_id=prefect_id,
+            )
+        return prefect_input
 
     @fenced_workflow_write
     def archive_prefect(

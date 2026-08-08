@@ -218,23 +218,6 @@ body.body--dark:has(.sy-page-shell) {
   color: inherit !important;
 }
 
-.sy-sidebar .sy-sidebar-feedback {
-  position: relative;
-  overflow: hidden;
-}
-
-.sy-sidebar-feedback::after {
-  position: absolute;
-  right: -32px;
-  bottom: -38px;
-  width: 96px;
-  height: 96px;
-  border: 1px solid color-mix(in srgb, var(--sy-role-action) 22%, transparent);
-  border-radius: 50%;
-  content: "";
-  pointer-events: none;
-}
-
 /* ---------- Header hierarchy ---------- */
 
 .sy-header-leading {

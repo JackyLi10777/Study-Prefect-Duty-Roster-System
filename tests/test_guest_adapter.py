@@ -167,6 +167,42 @@ def test_guest_role_change_preserves_inactive_legacy_assist_metadata() -> None:
     assert fixed_day not in updated["availableDays"]
 
 
+def test_guest_prefect_patch_matches_official_whitelist_and_cas() -> None:
+    adapter = _adapter()
+    original = adapter.prefects()[0]
+    updated = adapter.patch_prefect(
+        str(original["id"]),
+        {
+            "nameEn": "Fictional Prefect",
+            "form": "F.5",
+            "className": "5Z",
+            "availableDays": ["TUESDAY", "FRIDAY"],
+            "needsMentoring": True,
+            "remarks": "Session-only inline edit",
+        },
+        expected_version=int(original["version"]),
+        command_id="guest-patch-prefect",
+    )
+
+    assert updated["nameZh"] == original["nameZh"]
+    assert updated["roleCode"] == original["roleCode"]
+    assert updated["availableDays"] == ["TUESDAY", "FRIDAY"]
+    assert updated["fictional"] is True
+    assert updated["createdAt"] is not None
+    with pytest.raises(WorkflowConflictError, match="changed in another tab"):
+        adapter.patch_prefect(
+            str(original["id"]),
+            {"remarks": "stale"},
+            expected_version=int(original["version"]),
+        )
+    with pytest.raises(WorkflowError, match="not allowed"):
+        adapter.patch_prefect(
+            str(original["id"]),
+            {"roleCode": "assistant_head"},
+            expected_version=int(updated["version"]),
+        )
+
+
 def test_complete_guest_roster_path_uses_real_policy_but_only_demo_fairness() -> None:
     adapter = _adapter()
     original = adapter.prefects()

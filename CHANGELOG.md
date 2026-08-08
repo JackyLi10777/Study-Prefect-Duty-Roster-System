@@ -4,7 +4,11 @@ This file records user-visible, operational and release-significant changes. The
 
 ## Unreleased
 
-- No changes have been recorded after the verified `v1.2.0-rc.52` production release.
+- Added a source-only rc53 candidate for week-local, per-cell `unavailable` roster exceptions through additive Alembic revision `0014_roster_slot_exceptions`. The generator, shared presentation, web draft, bilingual PDF, public Viewer and Guest adapter now share the same five-state contract and never count a closed cell as required coverage or fairness capacity.
+- Extended the existing Excel-style draft matrix with pointer-threshold move／swap, touch two-step movement, roving keyboard navigation, undo／redo, stable retry command IDs, unsaved-change protection and conflict comparison／reapply. Changes remain page-local until one atomic, version-checked save.
+- Added Admin／Guest-parity prefect directory search, filters, stable sorting and allowlisted inline edits with per-row CAS, prevalidation and batch review; identity, role and archival changes remain confirmation-dialog operations.
+- Removed the duplicate sidebar support card, divided the drawer into fixed brand／scrolling navigation／fixed footer regions, and replaced invented operation percentages or fixed phases with delayed truthful indeterminate feedback. An AI-labelled wait indicator is reserved for the optional schema-mapping operation only.
+- This section records source work only. Production remains the verified `v1.2.0-rc.52` release until formal gates, migration backup／restore, protected-main merge and controlled origin／Worker rollout succeed.
 
 ## v1.2.0-rc.52 — released, 2026-08-09
 

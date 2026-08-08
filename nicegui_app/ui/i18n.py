@@ -69,8 +69,8 @@ def language_switch_copy(*, compact: bool) -> tuple[str, str]:
     """Return destination-language autonym and an accessible action label."""
 
     if current_locale() == EN:
-        return ("繁中" if compact else "繁體中文", "Switch to 繁體中文")
-    return ("EN" if compact else "English", "切換至 English")
+        return ("中文", "Switch to 中文")
+    return ("English", "切換至 English")
 
 
 def _localized(messages: dict[str, str]) -> str:

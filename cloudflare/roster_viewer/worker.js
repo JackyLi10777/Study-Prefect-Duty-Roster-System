@@ -2966,6 +2966,9 @@ function renderRoster(snapshot, expiresAt) {
       } else if (cell?.state === 'day_closed') {
         tableCell.className = 'cell--day-closed';
         tableCell.append(textElement('span', 'cell-status', '全天不開放 · Closed all day'));
+      } else if (cell?.state === 'unavailable') {
+        tableCell.className = 'cell--closed cell--unavailable';
+        tableCell.append(textElement('span', 'cell-status', '不開放 · Unavailable'));
       } else if (status === 'closed') {
         tableCell.className = 'cell--closed';
         tableCell.append(textElement('span', 'cell-status', '不開放 · Closed'));

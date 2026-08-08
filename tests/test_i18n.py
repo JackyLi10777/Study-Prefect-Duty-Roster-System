@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from nicegui_app.ui import i18n, page_shared as pages
+from nicegui_app.ui.page_routes import people as people_pages
 from nicegui_app.config import PREFECT_SEED_PATH, PROJECT_ROOT
 from nicegui_app.ui.acceptance_readiness import ACCEPTANCE_SESSIONS
 from nicegui_app.ui.i18n import EN, MESSAGES, OFFICIAL_ROLE_TERMS, POST_LABELS, ROLE_LABELS, ZH_HK
@@ -41,11 +42,11 @@ def test_every_interface_message_has_nonempty_traditional_chinese_and_english_te
 def test_language_destination_uses_autonyms_in_compact_and_full_controls(monkeypatch) -> None:
     monkeypatch.setattr(i18n, "current_locale", lambda: ZH_HK)
     assert i18n.language_switch_copy(compact=False) == ("English", "切換至 English")
-    assert i18n.language_switch_copy(compact=True) == ("EN", "切換至 English")
+    assert i18n.language_switch_copy(compact=True) == ("English", "切換至 English")
 
     monkeypatch.setattr(i18n, "current_locale", lambda: EN)
-    assert i18n.language_switch_copy(compact=False) == ("繁體中文", "Switch to 繁體中文")
-    assert i18n.language_switch_copy(compact=True) == ("繁中", "Switch to 繁體中文")
+    assert i18n.language_switch_copy(compact=False) == ("中文", "Switch to 中文")
+    assert i18n.language_switch_copy(compact=True) == ("中文", "Switch to 中文")
     assert MESSAGES["switch_to_chinese"][EN] == "繁體中文"
 
 
@@ -470,7 +471,7 @@ def test_roster_display_rows_keep_chinese_prefect_names_for_both_responsive_pres
     }
 
 
-def test_prefect_directory_rows_keep_chinese_names_for_table_and_phone_cards(monkeypatch, tmp_path) -> None:
+def test_prefect_directory_rows_keep_chinese_names_for_table_and_phone_cards(tmp_path) -> None:
     from nicegui_app.services.roster_workflow import RosterWorkflow
 
     workflow = RosterWorkflow(
@@ -481,11 +482,11 @@ def test_prefect_directory_rows_keep_chinese_names_for_table_and_phone_cards(mon
     workflow.bootstrap()
     prefects = workflow.prefects()
 
-    monkeypatch.setattr(pages, "role_label", lambda code: f"role:{code}")
-    monkeypatch.setattr(pages, "day_label", lambda code: f"day:{code}")
-    rows = pages._prefect_directory_rows(prefects)
+    rows = people_pages._prefect_directory_view(prefects)
 
     assert len(rows) == len(prefects)
-    assert [row["name"] for row in rows] == [prefect["nameZh"] for prefect in prefects]
-    assert all(str(row["name"]).strip() for row in rows)
-    assert all(str(row["availability"]).startswith("day:") for row in rows)
+    assert {str(row["nameZh"]) for row in rows} == {
+        str(prefect["nameZh"]) for prefect in prefects
+    }
+    assert all(str(row["nameZh"]).strip() for row in rows)
+    assert all(row["availableDays"] for row in rows)

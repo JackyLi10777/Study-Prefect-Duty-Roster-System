@@ -215,7 +215,6 @@ def test_coarse_pointer_desktop_shell_retains_touch_sized_links_and_items() -> N
     theme = combined_theme_source()
 
     coarse_scope = theme.split("@media (hover: none) and (pointer: coarse)", 1)[1]
-    assert ".sy-sidebar-feedback-link" in coarse_scope
     assert "a[href]:not(.sy-skip-link)" in coarse_scope
     assert ".q-toggle" in coarse_scope
     assert ".q-checkbox" in coarse_scope
@@ -225,6 +224,21 @@ def test_coarse_pointer_desktop_shell_retains_touch_sized_links_and_items() -> N
     assert ".q-uploader__header .q-btn" in coarse_scope
     assert "min-height: 44px" in coarse_scope
     assert "min-width: 44px" in coarse_scope
+
+
+def test_sidebar_uses_fixed_brand_scrollable_navigation_and_compact_footer() -> None:
+    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+    command_center = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-command-center-v2.css"
+    ).read_text(encoding="utf-8")
+
+    assert "sy-sidebar-brand" in shell
+    assert "sy-sidebar-navigation" in shell
+    assert "sy-sidebar-footer" in shell
+    assert "data-testid=sidebar-feedback" not in shell
+    assert "grid-template-rows: auto minmax(0, 1fr) auto" in command_center
+    assert "height: 100dvh" in command_center
+    assert "overflow-y: auto" in command_center
 
 
 def test_compact_workflow_navigation_is_a_scroll_snap_sequence() -> None:

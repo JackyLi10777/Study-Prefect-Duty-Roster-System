@@ -402,7 +402,7 @@ def test_roster_forms_repair_predictable_input_before_background_work() -> None:
         assert leave_handler.index(key) < leave_handler.index("_run_with_progress")
     assert "workflow.validate_week_start(selected)" in pages
     assert leave_handler.count('run_method("focus")') == 2
-    assert "if not cell_values and not day_values:" in draft_handler
+    assert "if not cell_values and not day_values and not slot_values:" in draft_handler
     assert draft_handler.index("cell_values = tuple(") < draft_handler.index("await _run_with_progress")
     assert draft_handler.index("day_values = tuple(") < draft_handler.index("await _run_with_progress")
 

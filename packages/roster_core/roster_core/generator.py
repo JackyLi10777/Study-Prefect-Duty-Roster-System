@@ -19,6 +19,9 @@ from roster_policy import (
 from .models import Assignment, Prefect
 
 
+UnavailableSlot = tuple[SchoolDay, DutyPost, int]
+
+
 class RosterGenerationError(RuntimeError):
     """Raised when no valid roster can be generated under school policy."""
 
@@ -693,6 +696,7 @@ def _solve_regular_schedule(
     leave_days: Mapping[str, set[SchoolDay]],
     history_priority_multiplier: float,
     scheduled_days: tuple[SchoolDay, ...],
+    unavailable_slots: frozenset[UnavailableSlot] = frozenset(),
 ) -> dict[tuple[SchoolDay, DutyPost, int], Assignment]:
     """Find a complete regular-prefect schedule with deterministic backtracking.
 
@@ -710,6 +714,10 @@ def _solve_regular_schedule(
             if post is DutyPost.ASSIST_IN_CHARGE:
                 continue
             seat = seat_by_post[post]
+            stable_slot_index = seat + 1
+            if (day, post, stable_slot_index) in unavailable_slots:
+                seat_by_post[post] += 1
+                continue
             slots.append((day, post, seat))
             seat_by_post[post] += 1
     generated_load: dict[str, float] = defaultdict(float)
@@ -813,6 +821,7 @@ def generate_weekly_roster(
     assist_rotation_key: str | None = None,
     previous_assist_assignments: Mapping[SchoolDay, str] | None = None,
     closed_days: Iterable[SchoolDay] | None = None,
+    unavailable_slots: Iterable[UnavailableSlot] | None = None,
 ) -> list[Assignment]:
     if not prefects:
         raise RosterGenerationError("Cannot generate roster without prefects.")
@@ -832,6 +841,15 @@ def generate_weekly_roster(
     if any(not isinstance(day, SchoolDay) for day in normalized_closed_days):
         raise RosterGenerationError("Closed days must use stable SchoolDay values.")
     scheduled_days = tuple(day for day in DAYS if day not in normalized_closed_days)
+    normalized_unavailable_slots = _normalize_unavailable_slots(
+        unavailable_slots,
+        closed_days=normalized_closed_days,
+    )
+    assist_days = tuple(
+        day
+        for day in scheduled_days
+        if (day, DutyPost.ASSIST_IN_CHARGE, 1) not in normalized_unavailable_slots
+    )
     assignments: list[Assignment] = []
     excluded_days = leave_days or {}
     assist_by_day = _assist_schedule(
@@ -841,7 +859,7 @@ def generate_weekly_roster(
         history_priority_multiplier=normalized_multiplier,
         rotation_key=normalized_rotation_key or "legacy-fixed-weekday",
         previous_assist_assignments=previous_assist_assignments or {},
-        scheduled_days=scheduled_days,
+        scheduled_days=assist_days,
     )
 
     regular_assignments = _solve_regular_schedule(
@@ -849,11 +867,15 @@ def generate_weekly_roster(
         leave_days=excluded_days,
         history_priority_multiplier=normalized_multiplier,
         scheduled_days=scheduled_days,
+        unavailable_slots=normalized_unavailable_slots,
     )
-    regular_seat_by_post: dict[tuple[SchoolDay, DutyPost], int] = defaultdict(int)
-
     for day in scheduled_days:
+        seat_by_post: dict[DutyPost, int] = defaultdict(int)
         for post in required_posts_for_day(day):
+            seat_by_post[post] += 1
+            stable_slot_index = seat_by_post[post]
+            if (day, post, stable_slot_index) in normalized_unavailable_slots:
+                continue
             if post is DutyPost.ASSIST_IN_CHARGE:
                 prefect = assist_by_day[day]
                 assignment = Assignment(
@@ -864,10 +886,7 @@ def generate_weekly_roster(
                     weight=duty_weight(post),
                 )
             else:
-                seat_key = (day, post)
-                seat = regular_seat_by_post[seat_key]
-                assignment = regular_assignments[(day, post, seat)]
-                regular_seat_by_post[seat_key] += 1
+                assignment = regular_assignments[(day, post, stable_slot_index - 1)]
             assignments.append(assignment)
 
     validate_assignments(
@@ -875,6 +894,7 @@ def generate_weekly_roster(
         prefects,
         leave_days=excluded_days,
         closed_days=normalized_closed_days,
+        unavailable_slots=normalized_unavailable_slots,
     )
     return assignments
 
@@ -885,6 +905,7 @@ def validate_assignments(
     *,
     leave_days: Mapping[str, set[SchoolDay]] | None = None,
     closed_days: Iterable[SchoolDay] | None = None,
+    unavailable_slots: Iterable[UnavailableSlot] | None = None,
     require_complete: bool = True,
 ) -> None:
     prefect_by_id = {prefect.id: prefect for prefect in prefects}
@@ -894,9 +915,22 @@ def validate_assignments(
     normalized_closed_days = frozenset(closed_days or ())
     if any(not isinstance(day, SchoolDay) for day in normalized_closed_days):
         raise RosterPolicyError("Closed days must use stable SchoolDay values.")
+    normalized_unavailable_slots = _normalize_unavailable_slots(
+        unavailable_slots,
+        closed_days=normalized_closed_days,
+        error_type=RosterPolicyError,
+    )
 
-    if not assignments and require_complete and len(normalized_closed_days) != len(DAYS):
-        raise RosterPolicyError("Roster assignments cannot be empty.")
+    if not assignments and require_complete:
+        remaining_required_slots = sum(
+            1
+            for day in DAYS
+            if day not in normalized_closed_days
+            for post, slot_index in _required_slots_for_day(day)
+            if (day, post, slot_index) not in normalized_unavailable_slots
+        )
+        if remaining_required_slots:
+            raise RosterPolicyError("Roster assignments cannot be empty.")
 
     for assignment in assignments:
         if assignment.prefect_id not in prefect_by_id:
@@ -927,6 +961,11 @@ def validate_assignments(
             raise RosterPolicyError(f"Duplicate prefect assignment on {day.name}.")
         actual_posts = Counter(assignment.post for assignment in day_assignments)
         expected_posts = Counter() if day in normalized_closed_days else Counter(required_posts_for_day(day))
+        for unavailable_day, unavailable_post, _slot_index in normalized_unavailable_slots:
+            if unavailable_day == day:
+                expected_posts[unavailable_post] -= 1
+                if expected_posts[unavailable_post] <= 0:
+                    del expected_posts[unavailable_post]
         if require_complete:
             coverage_invalid = actual_posts != expected_posts
         else:
@@ -941,3 +980,42 @@ def validate_assignments(
         for day in days:
             if _has_consecutive_assignment(days - {day}, day):
                 raise RosterPolicyError(f"{prefect_id} has consecutive-day assignments.")
+
+
+def _normalize_unavailable_slots(
+    values: Iterable[UnavailableSlot] | None,
+    *,
+    closed_days: frozenset[SchoolDay],
+    error_type: type[Exception] = RosterGenerationError,
+) -> frozenset[UnavailableSlot]:
+    """Validate week-local slot exceptions against the canonical policy grid."""
+
+    normalized: set[UnavailableSlot] = set()
+    expected: set[UnavailableSlot] = set()
+    for day in DAYS:
+        seat_by_post: dict[DutyPost, int] = defaultdict(int)
+        for post in required_posts_for_day(day):
+            seat_by_post[post] += 1
+            expected.add((day, post, seat_by_post[post]))
+    for value in values or ():
+        if not isinstance(value, tuple) or len(value) != 3:
+            raise error_type("Unavailable slots must use stable day, post and slot values.")
+        day, post, slot_index = value
+        if not isinstance(day, SchoolDay) or not isinstance(post, DutyPost) or not isinstance(slot_index, int):
+            raise error_type("Unavailable slots must use stable day, post and slot values.")
+        slot = (day, post, slot_index)
+        if slot not in expected:
+            raise error_type("Unavailable slot does not exist in the roster policy grid.")
+        if day in closed_days:
+            raise error_type("A whole-day closure cannot also contain an unavailable slot.")
+        normalized.add(slot)
+    return frozenset(normalized)
+
+
+def _required_slots_for_day(day: SchoolDay) -> tuple[tuple[DutyPost, int], ...]:
+    seat_by_post: dict[DutyPost, int] = defaultdict(int)
+    slots: list[tuple[DutyPost, int]] = []
+    for post in required_posts_for_day(day):
+        seat_by_post[post] += 1
+        slots.append((post, seat_by_post[post]))
+    return tuple(slots)

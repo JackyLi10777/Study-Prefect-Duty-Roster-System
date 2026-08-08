@@ -254,6 +254,15 @@ def _schedule_grid(
                 row.append(Paragraph("不開放" if language == "zh" else "Closed", styles["closed_cell"]))
                 cell_backgrounds.append((column_index, row_index, CLOSED))
                 continue
+            if cell.state is RosterCellState.UNAVAILABLE:
+                row.append(
+                    Paragraph(
+                        "不開放" if language == "zh" else "Unavailable",
+                        styles["closed_cell"],
+                    )
+                )
+                cell_backgrounds.append((column_index, row_index, CLOSED))
+                continue
             if cell.state is RosterCellState.VACANT:
                 row.append(Paragraph("空缺" if language == "zh" else "Vacant", styles["vacant_cell"]))
                 cell_backgrounds.append((column_index, row_index, ROW_BACKGROUNDS[post]))

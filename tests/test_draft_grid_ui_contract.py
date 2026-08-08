@@ -8,6 +8,7 @@ from nicegui_app.ui.page_routes.weekly import (
     _generation_requirements_query_key,
     _normalize_draft_candidate_value,
     _stage_atomic_draft_selection,
+    _stage_draft_move,
 )
 
 
@@ -109,6 +110,8 @@ def test_draft_editor_uses_one_canonical_matrix_and_one_batch_patch() -> None:
     assert "workflow.roster_schedule_snapshot(roster_week_id)" in WEEKLY_SOURCE
     assert "DraftCellEdit(cell_key=key, replacement_prefect_id=value)" in WEEKLY_SOURCE
     assert "DraftDayEdit(day=day, closed=closed)" in WEEKLY_SOURCE
+    assert "DraftSlotStateEdit(" in WEEKLY_SOURCE
+    assert 'state="unavailable" if unavailable else "open"' in WEEKLY_SOURCE
     assert "workflow.apply_draft_patch(" in WEEKLY_SOURCE
     assert "workflow.update_draft_assignment(" not in WEEKLY_SOURCE
     assert 'with_input=True' in WEEKLY_SOURCE
@@ -119,6 +122,9 @@ def test_draft_editor_uses_one_canonical_matrix_and_one_batch_patch() -> None:
 def test_unsaved_changes_support_undo_discard_and_conflict_preservation() -> None:
     assert "pending_cells: dict[str, str | None]" in WEEKLY_SOURCE
     assert "undo_stack:" in WEEKLY_SOURCE
+    assert "redo_stack:" in WEEKLY_SOURCE
+    assert "command_state" in WEEKLY_SOURCE
+    assert "window.__syDraftDirty" in WEEKLY_SOURCE
     assert "ui.keyboard(" in WEEKLY_SOURCE
     assert 'ignore=["input", "select", "textarea"]' in WEEKLY_SOURCE
     assert "key_name = event.key.name.lower()" in WEEKLY_SOURCE
@@ -178,6 +184,40 @@ def test_vacancy_selection_does_not_affect_another_cell() -> None:
     assert pending == {"MONDAY:ROOM_302:0": None}
 
 
+def test_move_and_exchange_are_one_atomic_pending_state() -> None:
+    originals = {
+        "MONDAY:ROOM_302:1": "prefect-a",
+        "MONDAY:ROOM_303:1": "prefect-b",
+        "MONDAY:ROOM_303:2": None,
+    }
+    pending: dict[str, str | None] = {}
+
+    moved, exchanged = _stage_draft_move(
+        "MONDAY:ROOM_302:1",
+        "MONDAY:ROOM_303:2",
+        original_assignments=originals,
+        pending_cells=pending,
+    )
+    assert (moved, exchanged) == ("prefect-a", None)
+    assert pending == {
+        "MONDAY:ROOM_302:1": None,
+        "MONDAY:ROOM_303:2": "prefect-a",
+    }
+
+    pending.clear()
+    moved, exchanged = _stage_draft_move(
+        "MONDAY:ROOM_302:1",
+        "MONDAY:ROOM_303:1",
+        original_assignments=originals,
+        pending_cells=pending,
+    )
+    assert (moved, exchanged) == ("prefect-a", "prefect-b")
+    assert pending == {
+        "MONDAY:ROOM_302:1": "prefect-b",
+        "MONDAY:ROOM_303:1": "prefect-a",
+    }
+
+
 def test_vacancy_aliases_normalize_without_treating_blank_input_as_vacant() -> None:
     for alias in ("X", "x", "×", "空缺", "待安排", "Vacant", "unassigned"):
         assert _normalize_draft_candidate_value(alias) == "__vacant__"
@@ -203,7 +243,10 @@ def test_draft_matrix_has_desktop_mobile_and_accessible_interaction_contracts() 
     assert 'role="grid"' in WEEKLY_SOURCE
     assert 'role="gridcell" tabindex="0"' in WEEKLY_SOURCE
     assert 'aria-disabled="true" tabindex="-1"' in WEEKLY_SOURCE
-    assert "['Enter', 'F2', 'Escape']" in WEEKLY_SOURCE
+    assert "'ArrowDown', 'ArrowLeft', 'ArrowRight'" in WEEKLY_SOURCE
+    assert '"pointerdown"' in WEEKLY_SOURCE
+    assert '"pointerup"' in WEEKLY_SOURCE
+    assert "distance > 8" in WEEKLY_SOURCE
     assert "event.preventDefault(); event.stopPropagation()" in WEEKLY_SOURCE
     assert '"__vacant__": t("draft_explicit_vacancy")' in WEEKLY_SOURCE
     assert 'new_value_mode="add-unique"' not in WEEKLY_SOURCE
@@ -211,9 +254,13 @@ def test_draft_matrix_has_desktop_mobile_and_accessible_interaction_contracts() 
     assert ":not(.sy-draft-grid-cell--closed):hover" in COMPONENT_SOURCE
     assert ":not(.sy-draft-mobile-cell--closed):hover" in COMPONENT_SOURCE
     assert 'aria-live=polite data-testid=draft-pending-bar' in WEEKLY_SOURCE
+    assert 'role=status aria-live=polite aria-atomic=true' in WEEKLY_SOURCE
+    assert 'data-testid=draft-grid-announcement' in WEEKLY_SOURCE
     assert "draft-day-confirm-close-" in WEEKLY_SOURCE
     assert "draft-day-confirm-reopen-" in WEEKLY_SOURCE
     assert "and cell.prefect_id" in WEEKLY_SOURCE
+    assert "sy-draft-grid-cell--unavailable" in COMPONENT_SOURCE
+    assert "sy-draft-grid-cell--move-source" in COMPONENT_SOURCE
 
 
 def test_draft_editor_copy_is_bilingual_and_keeps_duty_posts_in_english() -> None:
@@ -226,6 +273,9 @@ def test_draft_editor_copy_is_bilingual_and_keeps_duty_posts_in_english() -> Non
         "draft_candidate_invalid",
         "draft_conflict_reapply",
         "pre_generation_day_closure",
+        "draft_slot_unavailable",
+        "draft_slot_reopen_action",
+        "draft_redo",
     ):
         assert f"'{key}'" in I18N_SOURCE
     assert "Assist. in charge" not in I18N_SOURCE

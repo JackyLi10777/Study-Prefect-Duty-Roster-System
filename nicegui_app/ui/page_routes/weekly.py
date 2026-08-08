@@ -19,7 +19,11 @@ from nicegui_app.services.roster_workflow import (
     LEGACY_FIXED_WEEKDAY,
     WorkflowError,
 )
-from nicegui_app.services.workflow_types import DraftCellEdit, DraftDayEdit
+from nicegui_app.services.workflow_types import (
+    DraftCellEdit,
+    DraftDayEdit,
+    DraftSlotStateEdit,
+)
 from nicegui_app.ui.access_control import render_roster_share_action, revoke_roster_shares
 from nicegui_app.ui.components import action
 from nicegui_app.ui.html_safety import attr
@@ -143,6 +147,36 @@ def _stage_atomic_draft_selection(
     return occupied_cell_key
 
 
+def _stage_draft_move(
+    source_key: str,
+    target_key: str,
+    *,
+    original_assignments: dict[str, str | None],
+    pending_cells: dict[str, str | None],
+) -> tuple[str | None, str | None]:
+    """Stage one atomic move or exchange and return the prior cell values."""
+
+    if source_key == target_key:
+        return None, None
+
+    def effective(cell_key: str) -> str | None:
+        return pending_cells.get(cell_key, original_assignments.get(cell_key))
+
+    def stage(cell_key: str, prefect_id: str | None) -> None:
+        if prefect_id == original_assignments.get(cell_key):
+            pending_cells.pop(cell_key, None)
+        else:
+            pending_cells[cell_key] = prefect_id
+
+    source_prefect_id = effective(source_key)
+    target_prefect_id = effective(target_key)
+    if source_prefect_id is None:
+        return None, target_prefect_id
+    stage(source_key, target_prefect_id)
+    stage(target_key, source_prefect_id)
+    return source_prefect_id, target_prefect_id
+
+
 def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
     """Render one batch-safe draft editor around the canonical roster matrix."""
 
@@ -168,10 +202,20 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
     }
     pending_cells: dict[str, str | None] = {}
     pending_days: dict[str, bool] = {}
-    undo_stack: list[tuple[dict[str, str | None], dict[str, bool]]] = []
+    pending_slots: dict[str, bool] = {}
+    history_state = tuple[
+        dict[str, str | None],
+        dict[str, bool],
+        dict[str, bool],
+    ]
+    undo_stack: list[history_state] = []
+    redo_stack: list[history_state] = []
     selected_cell: dict[str, str | None] = {"key": None}
+    move_source: dict[str, str | None] = {"key": None}
     candidate_selector_ref: dict[str, Any | None] = {"control": None}
     reason_state: dict[str, str] = {"value": ""}
+    announcement_state: dict[str, str] = {"value": ""}
+    command_state: dict[str, str | None] = {"value": None}
     candidate_cache: dict[str, list[dict[str, object]] | None] = {}
     conflict_state: dict[str, Any] = {"latest_version": None, "changes": []}
     conflict_reapply_ref: dict[str, Any | None] = {"control": None}
@@ -184,6 +228,18 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         cell_key: (str(cell.prefect_id) if cell.prefect_id else None)
         for cell_key, cell in cells_by_key.items()
     }
+    original_unavailable = {
+        cell_key
+        for cell_key, cell in cells_by_key.items()
+        if cell.state is RosterCellState.UNAVAILABLE
+    }
+    navigable_keys = [
+        cell.cell_key
+        for row in presentation.rows
+        for cell in row.cells
+        if cell.cell_key
+        and cell.state not in {RosterCellState.ROOM_CLOSED, RosterCellState.DAY_CLOSED}
+    ]
 
     def day_is_closed(day: SchoolDay) -> bool:
         if day.name in pending_days:
@@ -191,13 +247,34 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         source = next(item for item in presentation.days if item.day == day)
         return source.state == "day_closed"
 
+    def current_pending_state() -> history_state:
+        return pending_cells.copy(), pending_days.copy(), pending_slots.copy()
+
+    def restore_pending_state(state: history_state) -> None:
+        cells, days, slots = state
+        pending_cells.clear()
+        pending_cells.update(cells)
+        pending_days.clear()
+        pending_days.update(days)
+        pending_slots.clear()
+        pending_slots.update(slots)
+
     def snapshot_pending() -> None:
-        undo_stack.append((pending_cells.copy(), pending_days.copy()))
+        undo_stack.append(current_pending_state())
+        redo_stack.clear()
+        command_state["value"] = None
 
     def pending_count() -> int:
-        return len(pending_cells) + len(pending_days)
+        return len(pending_cells) + len(pending_days) + len(pending_slots)
+
+    def slot_is_unavailable(cell_key: str) -> bool:
+        if cell_key in pending_slots:
+            return pending_slots[cell_key]
+        return cell_key in original_unavailable
 
     def cell_display(cell: Any) -> tuple[str, str, str]:
+        if slot_is_unavailable(cell.cell_key):
+            return t("draft_slot_unavailable"), t("draft_slot_unavailable_meta"), "unavailable"
         if cell.cell_key in pending_cells:
             replacement_id = pending_cells[cell.cell_key]
             if replacement_id is None:
@@ -227,7 +304,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                 service_time_by_cell.get(cell.cell_key, ""),
                 "assigned",
             )
-        if effective_state is RosterCellState.VACANT:
+        if effective_state in {RosterCellState.VACANT, RosterCellState.UNAVAILABLE}:
             return t("vacant"), service_time_by_cell.get(cell.cell_key, ""), "vacant"
         return t("closed"), "", "closed"
 
@@ -259,22 +336,88 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         return candidate_cache[cell.cell_key]
 
     def open_cell_editor(cell_key: str) -> None:
+        if move_source["key"] and move_source["key"] != cell_key:
+            stage_move(str(move_source["key"]), cell_key)
+            return
         selected_cell["key"] = cell_key
         editor.refresh()
         selector = candidate_selector_ref["control"]
         if selector is not None:
             selector.run_method("focus")
 
+    def focus_cell(cell_key: str) -> None:
+        selected_cell["key"] = cell_key
+        editor.refresh()
+        ui.run_javascript(
+            "requestAnimationFrame(() => document.querySelector("
+            f"'[data-cell-key=\"{attr(cell_key)}\"]'"
+            ")?.focus())"
+        )
+
+    def neighboring_cell(cell_key: str, key_name: str) -> str | None:
+        cell = cells_by_key[cell_key]
+        row_index = next(
+            index
+            for index, row in enumerate(presentation.rows)
+            if row.spec.post == cell.post and row.spec.slot_index == cell.slot_index
+        )
+        day_index = next(
+            index for index, day in enumerate(presentation.days) if day.day == cell.day
+        )
+        row_delta, day_delta = {
+            "arrowup": (-1, 0),
+            "arrowdown": (1, 0),
+            "arrowleft": (0, -1),
+            "arrowright": (0, 1),
+        }.get(key_name, (0, 0))
+        next_row = row_index + row_delta
+        next_day = day_index + day_delta
+        while 0 <= next_row < len(presentation.rows) and 0 <= next_day < len(presentation.days):
+            target = next(
+                item
+                for item in presentation.rows[next_row].cells
+                if item.day == presentation.days[next_day].day
+            )
+            if target.cell_key in navigable_keys and not day_is_closed(target.day):
+                return target.cell_key
+            next_row += row_delta
+            next_day += day_delta
+        return None
+
     def handle_cell_key(event: Any, cell_key: str) -> None:
         event_args = event.args if isinstance(event.args, dict) else {}
         key_name = str(event_args.get("key", "")).lower()
-        if key_name in {"enter", "f2"}:
+        if key_name in {"arrowup", "arrowdown", "arrowleft", "arrowright"}:
+            neighbor = neighboring_cell(cell_key, key_name)
+            if neighbor:
+                focus_cell(neighbor)
+        elif key_name == " ":
+            if move_source["key"] == cell_key:
+                move_source["key"] = None
+            elif move_source["key"]:
+                stage_move(str(move_source["key"]), cell_key)
+            elif not slot_is_unavailable(cell_key) and (
+                pending_cells.get(cell_key, original_assignments.get(cell_key)) is not None
+            ):
+                move_source["key"] = cell_key
+                editor.refresh()
+        elif key_name in {"enter", "f2"}:
             open_cell_editor(cell_key)
         elif key_name == "escape" and selected_cell["key"] == cell_key:
             selected_cell["key"] = None
             editor.refresh()
 
+    def handle_pointer_move(event: Any) -> None:
+        event_args = event.args if isinstance(event.args, dict) else {}
+        source_key = str(event_args.get("source", ""))
+        target_key = str(event_args.get("target", ""))
+        if source_key in cells_by_key and target_key in cells_by_key:
+            stage_move(source_key, target_key)
+
     def stage_candidate(cell_key: str, raw_value: object) -> None:
+        if slot_is_unavailable(cell_key):
+            ui.notify(t("draft_slot_reopen_before_assign"), type="warning")
+            return
         normalized_value = _normalize_draft_candidate_value(raw_value)
         if normalized_value in (None, ""):
             return
@@ -305,10 +448,71 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             pending_cells=pending_cells,
         )
         if occupied_cell_key:
-            ui.notify(
-                t("draft_swap_staged", name=prefect_names.get(replacement_id, "")),
-                type="info",
-            )
+            message = t("draft_swap_staged", name=prefect_names.get(replacement_id, ""))
+            announcement_state["value"] = message
+            ui.notify(message, type="info")
+        else:
+            announcement_state["value"] = t("draft_assignment_staged")
+        editor.refresh()
+
+    def stage_move(source_key: str, target_key: str) -> None:
+        move_source["key"] = None
+        if source_key == target_key or slot_is_unavailable(target_key):
+            ui.notify(t("draft_move_invalid_target"), type="warning")
+            editor.refresh()
+            return
+        source_id = pending_cells.get(source_key, original_assignments.get(source_key))
+        target_id = pending_cells.get(target_key, original_assignments.get(target_key))
+        if source_id is None:
+            ui.notify(t("draft_move_source_empty"), type="warning")
+            editor.refresh()
+            return
+        target_candidates = load_candidates(cells_by_key[target_key])
+        source_candidates = load_candidates(cells_by_key[source_key]) if target_id else []
+        target_ids = {
+            str(candidate["id"])
+            for candidate in (target_candidates or [])
+            if candidate.get("id")
+        }
+        source_ids = {
+            str(candidate["id"])
+            for candidate in (source_candidates or [])
+            if candidate.get("id")
+        }
+        if source_id not in target_ids or (target_id is not None and target_id not in source_ids):
+            ui.notify(t("draft_move_policy_rejected"), type="warning")
+            editor.refresh()
+            return
+        snapshot_pending()
+        moved_id, exchanged_id = _stage_draft_move(
+            source_key,
+            target_key,
+            original_assignments=original_assignments,
+            pending_cells=pending_cells,
+        )
+        selected_cell["key"] = target_key
+        message = t("draft_exchange_staged") if exchanged_id else t("draft_move_staged")
+        announcement_state["value"] = message
+        ui.notify(message, type="info")
+        editor.refresh()
+
+    def stage_slot(cell_key: str, unavailable: bool) -> None:
+        original_state = cell_key in original_unavailable
+        snapshot_pending()
+        if unavailable == original_state:
+            pending_slots.pop(cell_key, None)
+        else:
+            pending_slots[cell_key] = unavailable
+        if unavailable:
+            pending_cells.pop(cell_key, None)
+            if move_source["key"] == cell_key:
+                move_source["key"] = None
+        announcement_state["value"] = t(
+            "draft_slot_state_staged_unavailable"
+            if unavailable
+            else "draft_slot_state_staged_open"
+        )
+        command_state["value"] = None
         editor.refresh()
 
     def stage_day(day: SchoolDay, closed: bool) -> None:
@@ -324,26 +528,46 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             for cell_key in tuple(pending_cells):
                 if cell_key.startswith(f"{day.name}:"):
                     pending_cells.pop(cell_key, None)
+            for cell_key in tuple(pending_slots):
+                if cell_key.startswith(f"{day.name}:"):
+                    pending_slots.pop(cell_key, None)
             if selected_cell["key"] and selected_cell["key"].startswith(f"{day.name}:"):
                 selected_cell["key"] = None
+        announcement_state["value"] = t(
+            "draft_day_state_staged_closed" if closed else "draft_day_state_staged_open",
+            day=day_label(day),
+        )
         editor.refresh()
 
     def undo_pending() -> None:
         if not undo_stack:
             return
-        cells, days = undo_stack.pop()
-        pending_cells.clear()
-        pending_cells.update(cells)
-        pending_days.clear()
-        pending_days.update(days)
+        redo_stack.append(current_pending_state())
+        restore_pending_state(undo_stack.pop())
+        command_state["value"] = None
+        announcement_state["value"] = t("draft_undo_announced")
+        editor.refresh()
+
+    def redo_pending() -> None:
+        if not redo_stack:
+            return
+        undo_stack.append(current_pending_state())
+        restore_pending_state(redo_stack.pop())
+        command_state["value"] = None
+        announcement_state["value"] = t("draft_redo_announced")
         editor.refresh()
 
     def discard_pending() -> None:
         pending_cells.clear()
         pending_days.clear()
+        pending_slots.clear()
         undo_stack.clear()
+        redo_stack.clear()
+        command_state["value"] = None
+        move_source["key"] = None
         selected_cell["key"] = None
         reason_state["value"] = ""
+        ui.run_javascript("window.__syDraftDirty = false")
         discard_dialog.close()
         editor.refresh()
 
@@ -411,6 +635,19 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                             day=day_label(SchoolDay[day_name]),
                         )
                     )
+            previous_unavailable = {
+                cell_key
+                for cell_key, cell in cells_by_key.items()
+                if cell.state is RosterCellState.UNAVAILABLE
+            }
+            latest_unavailable = {
+                cell_key
+                for cell_key, cell in latest_cells.items()
+                if cell.state is RosterCellState.UNAVAILABLE
+            }
+            for cell_key in pending_slots:
+                if (cell_key in previous_unavailable) != (cell_key in latest_unavailable):
+                    changes.append(t("draft_conflict_slot_changed", cell=cell_key))
             conflict_state["latest_version"] = int(latest_week["version"])
             conflict_state["changes"] = changes
         reapply_control = conflict_reapply_ref["control"]
@@ -500,17 +737,27 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             DraftDayEdit(day=day, closed=closed)
             for day, closed in pending_days.items()
         )
-        if not cell_values and not day_values:
+        slot_values = tuple(
+            DraftSlotStateEdit(
+                cell_key=cell_key,
+                state="unavailable" if unavailable else "open",
+            )
+            for cell_key, unavailable in pending_slots.items()
+        )
+        if not cell_values and not day_values and not slot_values:
             return
         expected_week_version = reviewed_version["value"]
         reason = reason_state["value"].strip() or None
-        command_id = f"draft-patch-ui:{uuid4().hex}"
+        if command_state["value"] is None:
+            command_state["value"] = f"draft-patch-ui:{uuid4().hex}"
+        command_id = str(command_state["value"])
         result = await _run_with_progress(
             lambda: workflow.apply_draft_patch(
                 roster_week_id=roster_week_id,
                 expected_week_version=expected_week_version,
                 cell_edits=cell_values,
                 day_edits=day_values,
+                slot_edits=slot_values,
                 reason=reason,
                 command_id=command_id,
             ),
@@ -521,6 +768,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         )
         if result is not _OPERATION_FAILED:
             ui.notify(t("draft_batch_saved"), type="positive")
+            ui.run_javascript("window.__syDraftDirty = false")
             ui.navigate.reload()
 
     @ui.refreshable
@@ -534,6 +782,14 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             ui.label(t("draft_schedule_intro")).classes(
                 "text-sm leading-6 text-[var(--sy-muted)]"
             )
+            ui.label(announcement_state["value"]).classes("sr-only").props(
+                "role=status aria-live=polite aria-atomic=true "
+                "data-testid=draft-grid-announcement"
+            )
+            if move_source["key"]:
+                ui.label(t("draft_move_choose_target")).classes(
+                    "sy-draft-move-guidance text-sm font-semibold"
+                ).props("role=status aria-live=polite")
 
             with ui.element("div").classes("sy-draft-grid-shell"):
                 with ui.element("div").classes("sy-draft-grid-scroll"):
@@ -654,11 +910,22 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                     classes += " sy-draft-grid-cell--selected"
                                 if cell.cell_key in pending_cells:
                                     classes += " sy-draft-grid-cell--pending"
+                                if cell.cell_key in pending_slots:
+                                    classes += " sy-draft-grid-cell--pending"
+                                if move_source["key"] == cell.cell_key:
+                                    classes += " sy-draft-grid-cell--move-source"
                                 aria = f"{day_label(cell.day)}, {row.spec.display_label}, {name}"
+                                active_key = selected_cell["key"] or (
+                                    navigable_keys[0] if navigable_keys else None
+                                )
                                 interaction_props = (
                                     'role="gridcell" aria-disabled="true" tabindex="-1"'
                                     if state == "closed"
-                                    else 'role="gridcell" tabindex="0"'
+                                    else (
+                                        'role="gridcell" tabindex="0"'
+                                        if cell.cell_key == active_key
+                                        else 'role="gridcell" tabindex="-1"'
+                                    )
                                 )
                                 button = ui.element("button").classes(classes).style(
                                     f"grid-column:{day_index};grid-row:{row_index}"
@@ -675,13 +942,40 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                     button.on(
                                         "click",
                                         lambda _event=None, key=cell.cell_key: open_cell_editor(key),
+                                        js_handler=(
+                                            "(event) => { if (window.__syDraftSuppressClick) { "
+                                            "window.__syDraftSuppressClick = false; return; } emit({}); }"
+                                        ),
+                                    )
+                                    button.on(
+                                        "pointerdown",
+                                        lambda _event=None: None,
+                                        js_handler=(
+                                            "(event) => { if (event.pointerType !== 'mouse') return; "
+                                            "window.__syDraftPointerMove = { source: event.currentTarget.dataset.cellKey, "
+                                            "x: event.clientX, y: event.clientY }; }"
+                                        ),
+                                    )
+                                    button.on(
+                                        "pointerup",
+                                        handle_pointer_move,
+                                        args=["source", "target"],
+                                        js_handler=(
+                                            "(event) => { const state = window.__syDraftPointerMove; "
+                                            "window.__syDraftPointerMove = null; if (!state) return; "
+                                            "const distance = Math.hypot(event.clientX - state.x, event.clientY - state.y); "
+                                            "const target = event.currentTarget.dataset.cellKey; "
+                                            "if (distance > 8 && state.source !== target) { "
+                                            "window.__syDraftSuppressClick = true; emit({source: state.source, target}); } }"
+                                        ),
                                     )
                                     button.on(
                                         "keydown",
                                         lambda event, key=cell.cell_key: handle_cell_key(event, key),
                                         args=["key"],
                                         js_handler=(
-                                            "(event) => { if (['Enter', 'F2', 'Escape'].includes(event.key)) { "
+                                            "(event) => { if (['Enter', 'F2', 'Escape', ' ', 'ArrowUp', "
+                                            "'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) { "
                                             "event.preventDefault(); event.stopPropagation(); "
                                             "emit({key: event.key}); } }"
                                         ),
@@ -724,6 +1018,10 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                         classes += " sy-draft-mobile-cell--selected"
                                     if cell.cell_key in pending_cells:
                                         classes += " sy-draft-mobile-cell--pending"
+                                    if cell.cell_key in pending_slots:
+                                        classes += " sy-draft-mobile-cell--pending"
+                                    if move_source["key"] == cell.cell_key:
+                                        classes += " sy-draft-mobile-cell--move-source"
                                     interaction_props = (
                                         'role="gridcell" aria-disabled="true" tabindex="-1"'
                                         if state == "closed"
@@ -750,7 +1048,8 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                             lambda event, key=cell.cell_key: handle_cell_key(event, key),
                                             args=["key"],
                                             js_handler=(
-                                                "(event) => { if (['Enter', 'F2', 'Escape'].includes(event.key)) { "
+                                                "(event) => { if (['Enter', 'F2', 'Escape', ' ', 'ArrowUp', "
+                                                "'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) { "
                                                 "event.preventDefault(); event.stopPropagation(); "
                                                 "emit({key: event.key}); } }"
                                             ),
@@ -776,52 +1075,91 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                             cell=f"{day_label(cell.day)} · {row.spec.display_label}",
                         )
                     ).classes("font-semibold")
-                    candidates = load_candidates(cell)
-                    options: dict[str, str] = {
-                        "__vacant__": t("draft_explicit_vacancy")
-                    }
-                    if cell.prefect_id:
-                        options[str(cell.prefect_id)] = (
-                            f"{cell.prefect_name} · {t('draft_current_assignment')}"
+                    if slot_is_unavailable(key):
+                        ui.label(t("draft_slot_unavailable_body")).classes(
+                            "text-sm leading-6 text-[var(--sy-muted)]"
                         )
-                    for candidate in candidates or []:
-                        swap_suffix = (
-                            f" · {t('draft_candidate_swap_suffix')}"
-                            if candidate.get("requiresSwap")
-                            else ""
+                        action(
+                            t("draft_slot_reopen_action"),
+                            icon="event_available",
+                            on_click=lambda cell_key=key: stage_slot(cell_key, False),
+                            variant="secondary",
+                            test_id="draft-slot-reopen",
                         )
-                        options[str(candidate["id"])] = (
-                            f"{candidate['nameZh']} ({candidate['form']} {candidate['className']})"
-                            f"{swap_suffix}"
-                        )
-                    selected_value: str | None
-                    if key in pending_cells:
-                        selected_value = pending_cells[key] or "__vacant__"
                     else:
-                        selected_value = str(cell.prefect_id) if cell.prefect_id else None
-                    selector = ui.select(
-                        label=t("draft_candidate_search"),
-                        options=options,
-                        value=selected_value,
-                        with_input=True,
-                        clearable=True,
-                        on_change=lambda event, cell_key=key: stage_candidate(
-                            cell_key, event.value
-                        ),
-                    ).classes("w-full").props(
-                        "use-input input-debounce=0 "
-                        "data-testid=draft-candidate-search "
-                        f'data-cell-key="{attr(key)}"'
-                    )
-                    candidate_selector_ref["control"] = selector
-                    if candidates is None:
-                        selector.disable()
-                        ui.label(t("draft_candidate_unavailable")).classes(
-                            "sy-fg-attention text-sm leading-6"
+                        candidates = load_candidates(cell)
+                        options: dict[str, str] = {
+                            "__vacant__": t("draft_explicit_vacancy")
+                        }
+                        if cell.prefect_id:
+                            options[str(cell.prefect_id)] = (
+                                f"{cell.prefect_name} · {t('draft_current_assignment')}"
+                            )
+                        for candidate in candidates or []:
+                            swap_suffix = (
+                                f" · {t('draft_candidate_swap_suffix')}"
+                                if candidate.get("requiresSwap")
+                                else ""
+                            )
+                            options[str(candidate["id"])] = (
+                                f"{candidate['nameZh']} ({candidate['form']} {candidate['className']})"
+                                f"{swap_suffix}"
+                            )
+                        selected_value: str | None
+                        if key in pending_cells:
+                            selected_value = pending_cells[key] or "__vacant__"
+                        else:
+                            selected_value = str(cell.prefect_id) if cell.prefect_id else None
+                        selector = ui.select(
+                            label=t("draft_candidate_search"),
+                            options=options,
+                            value=selected_value,
+                            with_input=True,
+                            clearable=True,
+                            on_change=lambda event, cell_key=key: stage_candidate(
+                                cell_key, event.value
+                            ),
+                        ).classes("w-full").props(
+                            "use-input input-debounce=0 "
+                            "data-testid=draft-candidate-search "
+                            f'data-cell-key="{attr(key)}"'
                         )
-                    ui.label(t("draft_candidate_search_hint")).classes(
-                        "text-xs leading-5 text-[var(--sy-muted)]"
-                    )
+                        candidate_selector_ref["control"] = selector
+                        if candidates is None:
+                            selector.disable()
+                            ui.label(t("draft_candidate_unavailable")).classes(
+                                "sy-fg-attention text-sm leading-6"
+                            )
+                        ui.label(t("draft_candidate_search_hint")).classes(
+                            "text-xs leading-5 text-[var(--sy-muted)]"
+                        )
+                        with ui.row().classes("sy-mobile-actions gap-2 flex-wrap"):
+                            effective_prefect = pending_cells.get(
+                                key, original_assignments.get(key)
+                            )
+                            action(
+                                t("draft_move_cancel")
+                                if move_source["key"] == key
+                                else t("draft_move_start"),
+                                icon="close" if move_source["key"] == key else "open_with",
+                                on_click=lambda cell_key=key: (
+                                    move_source.__setitem__(
+                                        "key",
+                                        None if move_source["key"] == cell_key else cell_key,
+                                    ),
+                                    editor.refresh(),
+                                ),
+                                variant="quiet",
+                                disabled=effective_prefect is None,
+                                test_id="draft-move-start",
+                            )
+                            action(
+                                t("draft_slot_unavailable_action"),
+                                icon="block",
+                                on_click=lambda cell_key=key: stage_slot(cell_key, True),
+                                variant="attention",
+                                test_id="draft-slot-unavailable",
+                            )
 
                 ui.textarea(
                     label=t("draft_batch_reason"),
@@ -832,6 +1170,9 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                 ).props("name=draft-batch-reason autocomplete=off").classes("w-full")
 
             count = pending_count()
+            ui.run_javascript(
+                f"window.__syDraftDirty = {'true' if count else 'false'}"
+            )
             with ui.element("div").classes("sy-draft-pending-bar").props(
                 "aria-live=polite data-testid=draft-pending-bar"
             ):
@@ -854,6 +1195,14 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                         test_id="draft-undo",
                     )
                     action(
+                        t("draft_redo"),
+                        icon="redo",
+                        on_click=redo_pending,
+                        variant="quiet",
+                        disabled=not redo_stack,
+                        test_id="draft-redo",
+                    )
+                    action(
                         t("draft_discard_all"),
                         icon="delete_sweep",
                         on_click=discard_dialog.open,
@@ -872,7 +1221,15 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         if not event.action.keydown or event.action.repeat:
             return
         key_name = event.key.name.lower()
-        if key_name == "z" and (event.modifiers.ctrl or event.modifiers.meta):
+        if (
+            key_name == "z"
+            and (event.modifiers.ctrl or event.modifiers.meta)
+            and event.modifiers.shift
+        ):
+            redo_pending()
+        elif key_name == "y" and (event.modifiers.ctrl or event.modifiers.meta):
+            redo_pending()
+        elif key_name == "z" and (event.modifiers.ctrl or event.modifiers.meta):
             undo_pending()
         elif key_name in {"f2", "enter"} and selected_cell["key"] is not None:
             selector = candidate_selector_ref["control"]
@@ -886,6 +1243,19 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         on_key=handle_undo_key,
         repeating=False,
         ignore=["input", "select", "textarea"],
+    )
+    ui.run_javascript(
+        """
+        window.__syDraftDirty = false;
+        if (!window.__syDraftBeforeUnload) {
+          window.__syDraftBeforeUnload = (event) => {
+            if (!window.__syDraftDirty) return;
+            event.preventDefault();
+            event.returnValue = '';
+          };
+          window.addEventListener('beforeunload', window.__syDraftBeforeUnload);
+        }
+        """
     )
     editor()
 

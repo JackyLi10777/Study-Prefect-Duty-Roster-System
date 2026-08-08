@@ -151,10 +151,21 @@ class DraftDayEdit:
 
 
 @dataclass(frozen=True)
+class DraftSlotStateEdit:
+    """Open or close one week-local duty slot without overloading vacancy."""
+
+    cell_key: str
+    state: str
+    reason_code: str | None = None
+    note: str | None = None
+
+
+@dataclass(frozen=True)
 class WeekScheduleOverrides:
     """Stable-code schedule exceptions stored with one roster week."""
 
     closed_days: tuple[str, ...] = ()
+    unavailable_slots: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -163,6 +174,7 @@ class DraftPatchResult:
     version: int
     changed_cell_count: int
     closed_days: tuple[str, ...]
+    unavailable_slots: tuple[str, ...]
     backup_path: Path | None
     idempotent: bool = False
 
@@ -285,6 +297,7 @@ __all__ = [
     "DraftCellEdit",
     "DraftDayEdit",
     "DraftPatchResult",
+    "DraftSlotStateEdit",
     "DutyAllocationEntry",
     "FairnessDiscrepancy",
     "FairnessReconciliationReport",

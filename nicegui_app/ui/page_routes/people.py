@@ -19,7 +19,12 @@ from nicegui_app.services.prefect_import_assistant import (
     import_assistant_status,
     suggest_deepseek_column_mapping,
 )
-from nicegui_app.services.roster_workflow import PeriodSummaryReport, PrefectInput
+from nicegui_app.services.roster_workflow import (
+    PeriodSummaryReport,
+    PrefectInput,
+    WorkflowConflictError,
+    WorkflowError,
+)
 from nicegui_app.services.summary_report_export import (
     build_duty_allocation_statement_pdf,
     build_summary_report_json,
@@ -36,8 +41,6 @@ from nicegui_app.ui.page_access import (
 from nicegui_app.ui.page_shared import (
     _OPERATION_FAILED,
     _delete_dialog_after_close,
-    _prefect_directory_rows,
-    _render_mobile_prefect_cards,
     _render_operation_hint,
     _render_responsive_table,
     _run_with_progress,
@@ -62,6 +65,108 @@ from nicegui_app.utils.prefect_import import (
     prefect_import_template_csv,
 )
 from roster_policy import SchoolDay
+
+
+_PREFECT_ROLE_ORDER = {"assistant_head": 0, "study_prefect": 1}
+
+
+def _prefect_directory_view(
+    prefects: list[dict[str, object]],
+    *,
+    query: str = "",
+    form_filter: str = "all",
+    role_filter: str = "all",
+    support_filter: str = "all",
+    sort_code: str = "name_asc",
+) -> list[dict[str, object]]:
+    """Filter and stably sort one shared desktop/mobile directory model."""
+
+    term = query.strip().casefold()
+
+    def matches(item: dict[str, object]) -> bool:
+        if form_filter != "all" and str(item["form"]) != form_filter:
+            return False
+        if role_filter != "all" and str(item["roleCode"]) != role_filter:
+            return False
+        if support_filter == "needs_mentoring" and not bool(item["needsMentoring"]):
+            return False
+        if support_filter == "new" and not (
+            float(item["historyWeight"]) == 0 and int(item["historyDuties"]) == 0
+        ):
+            return False
+        if not term:
+            return True
+        haystack = " ".join(
+            (
+                str(item["nameZh"]),
+                str(item.get("nameEn") or ""),
+                str(item["form"]),
+                str(item["className"]),
+            )
+        ).casefold()
+        return term in haystack
+
+    filtered = [item for item in prefects if matches(item)]
+
+    def grade_key(item: dict[str, object]) -> tuple[int, str]:
+        digits = "".join(character for character in str(item["form"]) if character.isdigit())
+        return (int(digits or 99), str(item["className"]).casefold())
+
+    key_map: dict[str, tuple[Callable[[dict[str, object]], object], bool]] = {
+        "name_asc": (lambda item: str(item["nameZh"]), False),
+        "name_desc": (lambda item: str(item["nameZh"]), True),
+        "grade_asc": (grade_key, False),
+        "grade_desc": (grade_key, True),
+        "role_asc": (lambda item: _PREFECT_ROLE_ORDER.get(str(item["roleCode"]), 99), False),
+        "role_desc": (lambda item: _PREFECT_ROLE_ORDER.get(str(item["roleCode"]), 99), True),
+        "weight_asc": (lambda item: float(item["historyWeight"]), False),
+        "weight_desc": (lambda item: float(item["historyWeight"]), True),
+        "duties_asc": (lambda item: int(item["historyDuties"]), False),
+        "duties_desc": (lambda item: int(item["historyDuties"]), True),
+        "created_asc": (lambda item: str(item.get("createdAt") or ""), False),
+        "created_desc": (lambda item: str(item.get("createdAt") or ""), True),
+    }
+    key, reverse = key_map.get(sort_code, key_map["name_asc"])
+    return sorted(filtered, key=lambda item: (key(item), str(item["id"])), reverse=reverse)
+
+
+def _apply_prefect_patch_batch(
+    workflow: object,
+    patches: tuple[dict[str, object], ...],
+) -> dict[str, object]:
+    """Apply row-scoped CAS writes while returning conflicts without data loss."""
+
+    updated: list[dict[str, object]] = []
+    conflicts: list[dict[str, object]] = []
+    errors: list[dict[str, object]] = []
+    for patch in patches:
+        workflow.validate_prefect_patch(  # type: ignore[attr-defined]
+            str(patch["prefectId"]),
+            dict(patch["changes"]),
+            expected_version=int(patch["expectedVersion"]),
+        )
+    for patch in patches:
+        prefect_id = str(patch["prefectId"])
+        try:
+            updated.append(
+                workflow.patch_prefect(  # type: ignore[attr-defined]
+                    prefect_id,
+                    dict(patch["changes"]),
+                    expected_version=int(patch["expectedVersion"]),
+                    command_id=str(patch["commandId"]),
+                )
+            )
+        except WorkflowConflictError:
+            conflicts.append(
+                {
+                    "prefectId": prefect_id,
+                    "latest": workflow.prefect(prefect_id),  # type: ignore[attr-defined]
+                    "changes": dict(patch["changes"]),
+                }
+            )
+        except WorkflowError as error:
+            errors.append({"prefectId": prefect_id, "message": str(error)})
+    return {"updated": updated, "conflicts": conflicts, "errors": errors}
 
 
 def _prefect_file_preview_fingerprint(
@@ -697,6 +802,298 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
     display_report(workflow.build_period_report())
 
 
+def _render_inline_prefect_directory(
+    workflow: object,
+    prefects: list[dict[str, object]],
+    *,
+    on_full_edit: Callable[[dict[str, object]], None],
+) -> None:
+    """Render one responsive, buffered directory editor for Admin and Guest."""
+
+    originals = {str(item["id"]): dict(item) for item in prefects}
+    pending: dict[str, dict[str, object]] = {}
+    command_ids: dict[str, str] = {}
+    conflicts: dict[str, dict[str, object]] = {}
+    filter_state = {
+        "query": "",
+        "form": "all",
+        "role": "all",
+        "support": "all",
+        "sort": "name_asc",
+    }
+    control_refs: dict[str, object] = {}
+    day_options = {day.name: day_label(day) for day in SchoolDay}
+
+    def stage(prefect_id: str, field: str, value: object) -> None:
+        original_value = originals[prefect_id].get(field)
+        normalized = (
+            [day.name for day in SchoolDay if day.name in set(value or [])]
+            if field == "availableDays"
+            else value
+        )
+        if normalized == original_value:
+            pending.setdefault(prefect_id, {}).pop(field, None)
+            if not pending[prefect_id]:
+                pending.pop(prefect_id, None)
+                command_ids.pop(prefect_id, None)
+        else:
+            pending.setdefault(prefect_id, {})[field] = normalized
+            command_ids[prefect_id] = f"prefect-patch-ui:{uuid4().hex}"
+        conflicts.pop(prefect_id, None)
+        pending_status.refresh()
+
+    def update_filter(key: str, value: object) -> None:
+        filter_state[key] = str(value or "")
+        directory_rows.refresh()
+
+    def discard_conflicted_row(prefect_id: str) -> None:
+        conflict = conflicts.pop(prefect_id, None)
+        if conflict is None:
+            return
+        originals[prefect_id] = dict(conflict["latest"])
+        pending.pop(prefect_id, None)
+        command_ids.pop(prefect_id, None)
+        directory_rows.refresh()
+        pending_status.refresh()
+
+    def reapply_conflicted_row(prefect_id: str) -> None:
+        conflict = conflicts.pop(prefect_id, None)
+        if conflict is None:
+            return
+        originals[prefect_id] = dict(conflict["latest"])
+        command_ids[prefect_id] = f"prefect-patch-ui:{uuid4().hex}"
+        directory_rows.refresh()
+        pending_status.refresh()
+
+    async def save_pending_prefect_rows() -> None:
+        if not pending:
+            return
+        patches = tuple(
+            {
+                "prefectId": prefect_id,
+                "changes": dict(changes),
+                "expectedVersion": int(originals[prefect_id]["version"]),
+                "commandId": command_ids[prefect_id],
+            }
+            for prefect_id, changes in pending.items()
+        )
+        result = await _run_with_progress(
+            lambda: _apply_prefect_patch_batch(workflow, patches),
+            title_key="progress_prefect_save_title",
+            working_key="progress_prefect_save_working",
+            icon="save",
+        )
+        if result is _OPERATION_FAILED:
+            return
+        for updated in result["updated"]:
+            prefect_id = str(updated["id"])
+            originals[prefect_id] = dict(updated)
+            pending.pop(prefect_id, None)
+            command_ids.pop(prefect_id, None)
+        conflicts.clear()
+        for conflict in result["conflicts"]:
+            conflicts[str(conflict["prefectId"])] = dict(conflict)
+        if result["errors"]:
+            ui.notify(
+                t("prefect_inline_validation_notice", count=len(result["errors"])),
+                type="warning",
+                timeout=8_000,
+            )
+        elif conflicts:
+            ui.notify(t("prefect_inline_conflict_notice", count=len(conflicts)), type="warning", timeout=8_000)
+        else:
+            ui.notify(t("prefect_inline_saved"), type="positive")
+        directory_rows.refresh()
+        pending_status.refresh()
+
+    @ui.refreshable
+    def pending_status() -> None:
+        with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
+            if pending:
+                ui.label(t("prefect_inline_pending", count=len(pending))).classes(
+                    "text-sm font-semibold text-[var(--sy-attention-strong)]"
+                ).props("role=status aria-live=polite")
+            else:
+                ui.label(t("prefect_inline_clean")).classes(
+                    "text-sm text-[var(--sy-muted)]"
+                ).props("role=status aria-live=polite")
+            save = ui.button(
+                t("prefect_inline_save_all"),
+                icon="save",
+                on_click=save_pending_prefect_rows,
+            ).props("color=primary data-testid=save-prefect-inline-changes")
+            if not pending:
+                save.disable()
+            control_refs["save"] = save
+
+    @ui.refreshable
+    def directory_rows() -> None:
+        visible = _prefect_directory_view(
+            list(originals.values()),
+            query=filter_state["query"],
+            form_filter=filter_state["form"],
+            role_filter=filter_state["role"],
+            support_filter=filter_state["support"],
+            sort_code=filter_state["sort"],
+        )
+        ui.label(t("prefect_filter_result_count", count=len(visible))).classes(
+            "text-sm text-[var(--sy-muted)]"
+        ).props("role=status aria-live=polite")
+        if not visible:
+            with ui.element("section").classes("sy-empty-state w-full").props("role=status"):
+                ui.icon("person_search").props("aria-hidden=true")
+                ui.label(t("prefect_filter_empty")).classes("font-semibold")
+            return
+        with ui.element("section").classes("sy-prefect-inline-directory").props(
+            f'aria-label="{attr(t("directory"))}" data-testid="prefect-inline-directory"'
+        ):
+            for item in visible:
+                prefect_id = str(item["id"])
+                merged = dict(item)
+                merged.update(pending.get(prefect_id, {}))
+                with ui.element("article").classes("sy-prefect-inline-row").props(
+                    f'data-prefect-id="{attr(prefect_id)}"'
+                ):
+                    with ui.column().classes("sy-prefect-inline-identity gap-1"):
+                        ui.label(str(item["nameZh"])).classes("font-semibold")
+                        ui.label(role_label(str(item["roleCode"]))).classes(
+                            "text-xs text-[var(--sy-muted)]"
+                        )
+                        ui.button(
+                            t("prefect_inline_full_edit"),
+                            icon="manage_accounts",
+                            on_click=lambda row=dict(item): on_full_edit(row),
+                        ).props("flat dense color=primary")
+                    ui.input(
+                        label=t("name_en"),
+                        value=str(merged.get("nameEn") or ""),
+                    ).classes("sy-prefect-inline-field").on_value_change(
+                        lambda event, pid=prefect_id: stage(pid, "nameEn", event.value or None)
+                    )
+                    ui.select(
+                        label=t("form"),
+                        options=["F.3", "F.4", "F.5", "F.6"],
+                        value=str(merged["form"]),
+                    ).classes("sy-prefect-inline-field").on_value_change(
+                        lambda event, pid=prefect_id: stage(pid, "form", event.value)
+                    )
+                    ui.input(
+                        label=t("class_name"),
+                        value=str(merged["className"]),
+                    ).classes("sy-prefect-inline-field").on_value_change(
+                        lambda event, pid=prefect_id: stage(pid, "className", event.value)
+                    )
+                    ui.select(
+                        label=t("availability"),
+                        options=day_options,
+                        value=list(merged["availableDays"]),
+                        multiple=True,
+                    ).props("use-chips").classes("sy-prefect-inline-days").on_value_change(
+                        lambda event, pid=prefect_id: stage(pid, "availableDays", event.value)
+                    )
+                    with ui.column().classes("sy-prefect-inline-support gap-2"):
+                        ui.switch(
+                            t("needs_mentoring"),
+                            value=bool(merged["needsMentoring"]),
+                        ).on_value_change(
+                            lambda event, pid=prefect_id: stage(pid, "needsMentoring", bool(event.value))
+                        )
+                        if str(item["roleCode"]) == "assistant_head":
+                            ui.select(
+                                label=t("fixed_assist_day"),
+                                options={"NONE": t("fixed_assist_day_auto"), **day_options},
+                                value=str(merged["fixedGeneralDuty"]),
+                            ).on_value_change(
+                                lambda event, pid=prefect_id: stage(pid, "fixedGeneralDuty", event.value)
+                            )
+                    ui.input(
+                        label=t("remarks"),
+                        value=str(merged.get("remarks") or ""),
+                    ).classes("sy-prefect-inline-remarks").on_value_change(
+                        lambda event, pid=prefect_id: stage(pid, "remarks", event.value or "")
+                    )
+                    with ui.column().classes("sy-prefect-inline-metrics gap-1"):
+                        ui.label(f"{t('history_weight')} · {item['historyWeight']}")
+                        ui.label(f"{t('history_duties')} · {item['historyDuties']}")
+                        if prefect_id in pending:
+                            _tone_badge(t("prefect_inline_unsaved"), "attention")
+                        if prefect_id in conflicts:
+                            _tone_badge(t("prefect_inline_conflict"), "danger")
+                            latest = conflicts[prefect_id]["latest"]
+                            ui.label(
+                                t(
+                                    "prefect_inline_conflict_detail",
+                                    version=latest["version"],
+                                )
+                            ).classes("text-xs text-[var(--sy-danger-strong)]")
+                            ui.label(
+                                t(
+                                    "prefect_inline_conflict_local",
+                                    fields=", ".join(sorted(pending.get(prefect_id, {}))),
+                                )
+                            ).classes("text-xs text-[var(--sy-muted)]")
+                            with ui.row().classes("gap-1 flex-wrap"):
+                                ui.button(
+                                    t("prefect_inline_use_latest"),
+                                    icon="refresh",
+                                    on_click=lambda pid=prefect_id: discard_conflicted_row(pid),
+                                ).props("flat dense color=primary")
+                                ui.button(
+                                    t("prefect_inline_reapply"),
+                                    icon="replay",
+                                    on_click=lambda pid=prefect_id: reapply_conflicted_row(pid),
+                                ).props("flat dense color=primary")
+
+    with ui.card().classes("sy-surface sy-prefect-directory-workbench w-full p-5 mb-4"):
+        ui.label(t("prefect_directory_tools_title")).classes("text-lg font-semibold")
+        ui.label(t("prefect_directory_tools_detail")).classes(
+            "text-sm leading-6 text-[var(--sy-muted)]"
+        )
+        with ui.row().classes("sy-prefect-filter-bar w-full gap-3 items-end flex-wrap mt-3"):
+            ui.input(label=t("prefect_search"), placeholder=t("prefect_search_hint")).props(
+                "clearable debounce=180"
+            ).classes("grow min-w-[220px]").on_value_change(
+                lambda event: update_filter("query", event.value)
+            )
+            ui.select(
+                label=t("prefect_filter_form"),
+                options={"all": t("all"), "F.3": "F.3", "F.4": "F.4", "F.5": "F.5", "F.6": "F.6"},
+                value="all",
+            ).classes("min-w-[150px]").on_value_change(
+                lambda event: update_filter("form", event.value)
+            )
+            ui.select(
+                label=t("prefect_filter_role"),
+                options={"all": t("all"), "assistant_head": role_label("assistant_head"), "study_prefect": role_label("study_prefect")},
+                value="all",
+            ).classes("min-w-[180px]").on_value_change(
+                lambda event: update_filter("role", event.value)
+            )
+            ui.select(
+                label=t("prefect_filter_support"),
+                options={"all": t("all"), "needs_mentoring": t("needs_mentoring"), "new": t("new_prefect")},
+                value="all",
+            ).classes("min-w-[180px]").on_value_change(
+                lambda event: update_filter("support", event.value)
+            )
+            ui.select(
+                label=t("prefect_sort"),
+                options={
+                    "name_asc": t("sort_name_asc"), "name_desc": t("sort_name_desc"),
+                    "grade_asc": t("sort_grade_asc"), "grade_desc": t("sort_grade_desc"),
+                    "role_asc": t("sort_role_asc"), "role_desc": t("sort_role_desc"),
+                    "weight_asc": t("sort_weight_asc"), "weight_desc": t("sort_weight_desc"),
+                    "duties_asc": t("sort_duties_asc"), "duties_desc": t("sort_duties_desc"),
+                    "created_asc": t("sort_created_asc"), "created_desc": t("sort_created_desc"),
+                },
+                value="name_asc",
+            ).classes("min-w-[220px]").on_value_change(
+                lambda event: update_filter("sort", event.value)
+            )
+        pending_status()
+    directory_rows()
+
+
 @ui.page("/prefects")
 def prefects_page() -> None:
     workflow = get_workflow()
@@ -799,24 +1196,12 @@ def prefects_page() -> None:
                         selected.disable()
                         edit_button.disable()
                         archive_button.disable()
-                rows = _prefect_directory_rows(prefects)
-                for row in rows:
-                    row["supportStatus"] = _report_status_text(tuple(row["supportCodes"]))
-                columns = [
-                    {"name": "name", "label": t("prefect"), "field": "name", "align": "left"},
-                    {"name": "form", "label": t("form"), "field": "form", "align": "left"},
-                    {"name": "class", "label": t("class_name"), "field": "class", "align": "left"},
-                    {"name": "role", "label": t("role"), "field": "role", "align": "left"},
-                    {"name": "availability", "label": t("availability"), "field": "availability", "align": "left"},
-                    {"name": "weight", "label": t("history_weight"), "field": "weight", "align": "right"},
-                    {"name": "duties", "label": t("history_duties"), "field": "duties", "align": "right"},
-                    {"name": "supportStatus", "label": t("support_status"), "field": "supportStatus", "align": "left"},
-                ]
-                directory_table_classes = "sy-table sy-prefect-directory-desktop w-full"
-                if not prefects:
-                    directory_table_classes += " hidden"
-                ui.table(rows=rows, columns=columns, row_key="name").classes(directory_table_classes)
-                _render_mobile_prefect_cards(rows)
+                if prefects:
+                    _render_inline_prefect_directory(
+                        workflow,
+                        prefects,
+                        on_full_edit=_show_prefect_dialog,
+                    )
             with ui.tab_panel("ai_import").classes("px-0"):
                 _render_operation_hint("hint_prefect_import", icon="upload_file")
                 import_allowed = _allows(Capability.DATA_IMPORT) and _allows(Capability.FILE_UPLOAD)
@@ -1024,6 +1409,7 @@ def prefects_page() -> None:
                                         title_key="progress_deepseek_mapping_title",
                                         working_key="progress_deepseek_mapping_working",
                                         icon="auto_fix_high",
+                                        wait_kind="ai",
                                     )
                                     if revision != file_state["revision"] or file_state["parsed"] is not parsed:
                                         return

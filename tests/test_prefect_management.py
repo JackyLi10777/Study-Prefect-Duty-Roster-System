@@ -94,6 +94,56 @@ def test_prefect_can_be_created_updated_and_archived_without_erasing_history(tmp
     assert len(list((tmp_path / "backups").glob("*.sqlite3"))) == 3
 
 
+def test_prefect_patch_updates_only_whitelisted_fields_with_cas_and_replay(tmp_path) -> None:
+    workflow = _workflow(tmp_path)
+    original = workflow.prefects()[0]
+    prefect_id = str(original["id"])
+    changes = {
+        "nameEn": "Demo Name",
+        "className": "5Z",
+        "form": "F.5",
+        "availableDays": ["MONDAY", "THURSDAY"],
+        "needsMentoring": True,
+        "remarks": "Inline review",
+    }
+
+    updated = workflow.patch_prefect(
+        prefect_id,
+        changes,
+        expected_version=int(original["version"]),
+        command_id="patch-prefect-once",
+    )
+    replayed = workflow.patch_prefect(
+        prefect_id,
+        changes,
+        expected_version=int(original["version"]),
+        command_id="patch-prefect-once",
+    )
+
+    assert replayed == updated
+    assert updated["id"] == prefect_id
+    assert updated["nameZh"] == original["nameZh"]
+    assert updated["roleCode"] == original["roleCode"]
+    assert updated["historyWeight"] == original["historyWeight"]
+    assert updated["historyDuties"] == original["historyDuties"]
+    assert updated["availableDays"] == ["MONDAY", "THURSDAY"]
+    assert updated["createdAt"] is not None
+
+    with pytest.raises(WorkflowConflictError, match="changed in another browser"):
+        workflow.patch_prefect(
+            prefect_id,
+            {"remarks": "stale"},
+            expected_version=int(original["version"]),
+            command_id="patch-prefect-stale",
+        )
+    with pytest.raises(WorkflowError, match="not allowed"):
+        workflow.patch_prefect(
+            prefect_id,
+            {"nameZh": "不可行內修改"},
+            expected_version=int(updated["version"]),
+        )
+
+
 def test_role_change_preserves_inactive_legacy_assist_metadata_without_blocking_availability(tmp_path) -> None:
     workflow = _workflow(tmp_path)
     assistant = next(row for row in workflow.prefects() if row["roleCode"] == "assistant_head")

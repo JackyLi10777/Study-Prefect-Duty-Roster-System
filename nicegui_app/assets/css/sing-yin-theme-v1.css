@@ -337,24 +337,14 @@ body .q-btn.sy-button-attention::before { border-color: color-mix(in srgb, var(-
 .body--dark .sy-partial-success-icon { color: #F2D393; background: rgba(168,132,73,.22); }
 .sy-progress-dialog-icon { display: inline-grid; flex: 0 0 42px; place-items: center; width: 42px; height: 42px; border-radius: 14px; color: var(--sy-role-action); background: var(--sy-role-action-soft); font-size: 22px; overflow: hidden; }
 .sy-progress-dialog-icon-work, .sy-progress-dialog-icon-success { grid-area: 1 / 1; transition: opacity var(--sy-motion-state) var(--sy-ease), transform var(--sy-motion-state) var(--sy-ease); }
+.sy-progress-dialog-thinking { grid-area: 1 / 1; }
+.sy-progress-dialog[data-phase="complete"] .sy-progress-dialog-thinking { opacity: 0; }
 .sy-progress-dialog-icon-success { color: var(--sy-progress-success); opacity: 0; transform: scale(.72); }
 .sy-progress-dialog[data-phase="complete"] .sy-progress-dialog-icon-work { opacity: 0; transform: scale(.72); }
 .sy-progress-dialog[data-phase="complete"] .sy-progress-dialog-icon-success { opacity: 1; transform: scale(1); }
 .sy-progress-dialog-title { color: var(--sy-ink); font-size: 17px; font-weight: 750; letter-spacing: -.01em; }
 .sy-progress-dialog-status { color: var(--sy-muted); font-size: 13px; line-height: 1.55; }
 .sy-progress-dialog-note { color: var(--sy-muted); font-size: 12px; line-height: 1.55; }
-.sy-progress-dialog-phases { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 20px 0 0; padding: 0; list-style: none; }
-.sy-progress-dialog-phase { position: relative; display: grid; gap: 6px; min-width: 0; color: var(--sy-muted); font-size: 11px; font-weight: 680; line-height: 1.35; }
-.sy-progress-dialog-phase::before { width: 100%; height: 3px; border-radius: 999px; background: var(--sy-progress-track); content: ""; transition: background-color var(--sy-motion-state) var(--sy-ease); }
-.sy-progress-dialog[data-phase="preparing"] [data-phase-marker="preparing"],
-.sy-progress-dialog[data-phase="working"] [data-phase-marker="preparing"],
-.sy-progress-dialog[data-phase="working"] [data-phase-marker="working"],
-.sy-progress-dialog[data-phase="complete"] .sy-progress-dialog-phase { color: var(--sy-ink); }
-.sy-progress-dialog[data-phase="preparing"] [data-phase-marker="preparing"]::before,
-.sy-progress-dialog[data-phase="working"] [data-phase-marker="preparing"]::before,
-.sy-progress-dialog[data-phase="working"] [data-phase-marker="working"]::before,
-.sy-progress-dialog[data-phase="complete"] .sy-progress-dialog-phase::before { background: var(--sy-progress-fill); }
-.sy-progress-dialog[data-phase="complete"] .sy-progress-dialog-phase::before { background: var(--sy-progress-success); }
 .sy-progress-dialog .q-linear-progress { height: 6px; border-radius: 999px; overflow: hidden; background: var(--sy-progress-track); }
 .sy-progress-dialog .q-linear-progress__track { opacity: 1; background: var(--sy-progress-track) !important; }
 .sy-progress-dialog .q-linear-progress__model { background: var(--sy-progress-fill) !important; transition: transform var(--sy-motion-layer) var(--sy-ease); }
@@ -802,19 +792,9 @@ body .q-badge.sy-status-badge.sy-tone-neutral { color: var(--sy-status-neutral-f
 .sy-feedback-channel-address { color: var(--sy-ink); font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
 .sy-feedback-channel-note { max-width: 850px; margin-top: 7px; padding-top: 10px; border-top: 1px solid var(--sy-line); color: var(--sy-muted); font-size: 11px; line-height: 1.58; }
 .body--dark .sy-feedback-channel { background: linear-gradient(145deg, var(--sy-surface), color-mix(in srgb, var(--sy-surface) 92%, #132331)); }
-.sy-sidebar-feedback { display: grid; gap: 8px; margin-top: 18px; padding: 14px; border: 1px solid var(--sy-line); border-radius: 15px; background: color-mix(in srgb, var(--sy-surface) 90%, var(--sy-action-soft)); }
-.sy-sidebar-feedback-icon { color: var(--sy-accent); font-size: 18px; }
-.sy-sidebar-feedback-title { color: var(--sy-nav-ink); font-size: 12px; font-weight: 780; }
-.sy-sidebar-feedback-copy { color: var(--sy-muted); font-size: 10px; line-height: 1.52; }
-.sy-sidebar-feedback-link { min-height: 28px; color: var(--sy-accent) !important; font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace; font-size: 10px; font-weight: 720; overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 3px; }
 @media (hover: none) and (pointer: coarse) {
   a[href]:not(.sy-skip-link) {
     min-width: 44px;
-    min-height: 44px;
-  }
-  .sy-sidebar-feedback-link {
-    display: inline-flex;
-    align-items: center;
     min-height: 44px;
   }
   .q-toggle,
