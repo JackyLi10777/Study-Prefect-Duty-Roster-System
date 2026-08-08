@@ -469,6 +469,10 @@ def test_public_support_keeps_core_fields_visible_and_optional_details_collapsed
     assert "--warning-line" not in source
     assert "--warning-soft" not in source
     assert "staticResponse(request, PUBLIC_SUPPORT_JS" in source
+    assert source.count('<script src="/theme-bootstrap.js"></script>') == 2
+    assert "const PUBLIC_THEME_BOOTSTRAP_JS" in source
+    assert "staticResponse(request, PUBLIC_THEME_BOOTSTRAP_JS" in source
+    assert "<script>\n    (() =>" not in source
     unauthenticated = source.index("if (!principal)")
     support_route = source.index("if (path === '/support')", unauthenticated)
     public_fallback = source.index("return path.startsWith('/auth/')", support_route)

@@ -184,6 +184,7 @@ const env = {{
   ORIGIN_PORT: {origin_port},
   GUEST_START_RATE_LIMITER: rateLimiter,
   PUBLIC_VIEW_RATE_LIMITER: rateLimiter,
+  PUBLIC_SUPPORT_RATE_LIMITER: rateLimiter,
   ROSTER_SHARES: shares,
   ROSTER_ORIGIN: {{
     async fetch(request) {{
@@ -292,12 +293,13 @@ def _start_worker_harness(
     # is required for the production ``Secure`` + ``__Host-`` gateway cookies.
     # The server remains bound to loopback-only 127.0.0.1.
     worker_url = f"http://localhost:{worker_port}"
+    readiness_url = f"http://127.0.0.1:{worker_port}/healthz"
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         if process.poll() is not None:
             break
         try:
-            with urlopen(f"{worker_url}/healthz", timeout=1) as response:  # noqa: S310 - loopback only
+            with urlopen(readiness_url, timeout=1) as response:  # noqa: S310 - loopback only
                 if response.status == 200:
                     return process, output, worker_url, worker_log
         except (URLError, TimeoutError):

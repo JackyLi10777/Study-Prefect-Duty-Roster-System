@@ -1685,13 +1685,27 @@ Deno.test('public support page stays edge-served while bounded reports reach the
   assertEquals(publicResponse.status, 200);
   assert(publicBody.includes('提交到本機安全收件匣，並取得追溯碼'));
   assert(publicBody.includes('id="supportTheme"'));
-  assert(publicBody.includes('sing-yin-roster-viewer-theme-v1'));
+  assert(publicBody.includes('<script src="/theme-bootstrap.js"></script>'));
   assert(publicBody.includes('服事方向 · 非以役人，乃役於人（可 10:45）'));
   assert(publicBody.includes('Why we serve · Not to be served, but to serve (Mark 10:45)'));
   assert(publicBody.includes('服事良心 · 對神對人，常存無虧的良心（徒 24:16）'));
   assert(publicBody.includes('How we serve · A conscience without offense toward God and men (Acts 24:16)'));
   assertEquals(publicResponse.headers.get('Cache-Control'), 'no-store');
   assertEquals(observed.length, 0, 'public support must not reach the origin');
+
+  const themeBootstrapResponse = await worker.fetch(
+    new Request('https://gateway.example/theme-bootstrap.js'),
+    env,
+    { waitUntil() {} },
+  );
+  const themeBootstrapBody = await themeBootstrapResponse.text();
+  assertEquals(themeBootstrapResponse.status, 200);
+  assertEquals(themeBootstrapResponse.headers.get('Content-Type'), 'text/javascript; charset=utf-8');
+  assertEquals(themeBootstrapResponse.headers.get('Cache-Control'), 'no-store');
+  assert(themeBootstrapBody.includes('sing-yin-roster-viewer-theme-v1'));
+  assert(themeBootstrapBody.includes('localStorage.getItem(key)'));
+  assert(themeBootstrapBody.includes('document.documentElement.dataset.themePreference'));
+  assertEquals(observed.length, 0, 'the public theme bootstrap must stay edge-served');
 
   const submission = await worker.fetch(new Request('https://gateway.example/api/support/incidents', {
     method: 'POST',
