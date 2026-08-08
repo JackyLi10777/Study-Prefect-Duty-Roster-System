@@ -1649,6 +1649,7 @@ function New-SingYinReleaseBundle {
 
 $resolvedOverlayPath = $null
 $overlayPathToDelete = $null
+$candidateProofParent = $null
 $deploymentExitCode = 1
 $controlledEnvironmentNames = @()
 $processEnvironmentSnapshot = @{}
@@ -1770,7 +1771,6 @@ try {
     $candidateIsolatedReadinessPassed = $false
     $candidateReadinessEvidence = $null
     $candidateReadinessReportPath = $null
-    $candidateProofParent = $null
     $currentRecoveryDatabaseQuiesced = $false
     $currentRecoveryBaselineProved = $false
     $candidatePostBaselineGatesPassed = $false
@@ -2881,10 +2881,17 @@ try {
     ) {
         $residualProofItems = @(Get-ChildItem -LiteralPath $candidateProofParent -Force)
         if ($residualProofItems.Count -eq 0) {
-            Remove-Item `
-                -LiteralPath $candidateProofParent `
-                -Force `
-                -ErrorAction Stop
+            try {
+                Remove-Item `
+                    -LiteralPath $candidateProofParent `
+                    -Force `
+                    -ErrorAction Stop
+            } catch {
+                Write-Warning (
+                    "Empty candidate proof workspace could not be removed; " +
+                    "remove it manually: $candidateProofParent"
+                )
+            }
         } else {
             Write-Warning (
                 "Protected candidate proof residue requires manual review: " +

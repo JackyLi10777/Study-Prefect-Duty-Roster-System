@@ -258,6 +258,22 @@ def test_candidate_readiness_rejects_wrong_source_revision_before_workspace_use(
     assert list(workspace_parent.iterdir()) == []
 
 
+def test_candidate_readiness_preserves_subprocess_and_cleanup_failure_causes() -> None:
+    source = SCRIPT.read_text(encoding="utf-8")
+    candidate_start = source.index("def _candidate_readiness(")
+    candidate_end = source.index("\ndef _validated_restore_source(", candidate_start)
+    candidate = source[candidate_start:candidate_end]
+
+    returncode_check = candidate.index("if readiness.returncode != 0:")
+    stdout_parse = candidate.index("readiness_payload = _read_json_stdout")
+    assert returncode_check < stdout_parse
+    assert "exit code {readiness.returncode}" in candidate
+    assert "readiness.stderr" in candidate
+    assert "active_error = sys.exc_info()[1]" in candidate
+    assert "if active_error is None:" in candidate
+    assert "file=sys.stderr" in candidate
+
+
 def test_restore_atomically_installs_exact_snapshot_and_removes_old_sidecars(
     tmp_path: Path,
 ) -> None:

@@ -564,11 +564,14 @@ def _candidate_readiness(args: argparse.Namespace) -> dict[str, Any]:
             encoding="utf-8",
             env=child_environment,
         )
-        readiness_payload = _read_json_stdout(readiness.stdout)
         if readiness.returncode != 0:
+            detail = " ".join((readiness.stderr or "").strip().split())[-500:]
+            suffix = f": {detail}" if detail else ""
             raise ReleaseDatabaseSafetyError(
-                "Candidate strict readiness failed on the isolated migrated snapshot."
+                "Candidate strict readiness failed on the isolated migrated snapshot "
+                f"(exit code {readiness.returncode}){suffix}"
             )
+        readiness_payload = _read_json_stdout(readiness.stdout)
         readiness_checks = readiness_payload.get("checks")
         if not isinstance(readiness_checks, list) or not readiness_checks:
             raise ReleaseDatabaseSafetyError(
@@ -629,14 +632,21 @@ def _candidate_readiness(args: argparse.Namespace) -> dict[str, Any]:
         _write_report(report_path, payload)
         return payload
     finally:
+        active_error = sys.exc_info()[1]
         _dispose_workflow(isolated)
         _dispose_workflow(candidate)
         try:
             shutil.rmtree(workspace)
         except OSError as error:
-            raise ReleaseDatabaseSafetyError(
-                "Candidate-readiness workspace could not be removed safely."
-            ) from error
+            if active_error is None:
+                raise ReleaseDatabaseSafetyError(
+                    "Candidate-readiness workspace could not be removed safely."
+                ) from error
+            print(
+                "Candidate-readiness workspace could not be removed safely: "
+                f"{error}",
+                file=sys.stderr,
+            )
 
 
 def _validated_restore_source(args: argparse.Namespace) -> tuple[Path, Path, str, str]:

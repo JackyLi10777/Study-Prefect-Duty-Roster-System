@@ -1824,6 +1824,16 @@ def test_candidate_readiness_evidence_is_reported_on_success_and_failure() -> No
     assert "$candidateProofParent" in finally_block
     assert "$residualProofItems.Count -eq 0" in finally_block
     assert "Protected candidate proof residue requires manual review" in finally_block
+    outer_try = source.index("\ntry {", source.index("$resolvedOverlayPath = $null"))
+    outer_initialization = source[source.index("$resolvedOverlayPath = $null"):outer_try]
+    assert "$candidateProofParent = $null" in outer_initialization
+    assert "Empty candidate proof workspace could not be removed" in finally_block
+    cleanup_warning = finally_block.index(
+        "Empty candidate proof workspace could not be removed"
+    )
+    password_cleanup = finally_block.index("$runtimeTaskSecurePassword.Dispose()")
+    environment_cleanup = finally_block.index("$processEnvironmentCaptured")
+    assert cleanup_warning < password_cleanup < environment_cleanup
 
 
 def test_deployment_script_consumes_only_a_protected_one_use_environment_overlay() -> None:
