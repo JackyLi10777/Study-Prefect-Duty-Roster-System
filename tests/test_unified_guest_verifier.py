@@ -154,6 +154,7 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         'mobile_assignment.get_attribute("data-cell-key")',
         '[data-testid="draft-candidate-search"][data-cell-key="{mobile_cell_key}"]',
         'page.keyboard.type("X")',
+        '_wait_for_enabled_test_control(page, "draft-save-all")',
         ".sy-draft-mobile-cell--vacant.sy-draft-mobile-cell--pending:visible",
         '.sy-draft-grid-cell--pending:visible',
         '"vacancyAliasEntered": "X"',
