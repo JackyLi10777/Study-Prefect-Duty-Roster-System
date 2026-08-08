@@ -9,9 +9,11 @@ import sqlite3
 import subprocess
 import sys
 
+from alembic import command
 import pytest
 
 from nicegui_app.persistence.database import (
+    _alembic_config,
     create_session_factory,
     current_migration_heads,
 )
@@ -22,9 +24,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = PROJECT_ROOT / "scripts" / "release_database_safety.py"
 
 
-def _run_helper(*arguments: object) -> subprocess.CompletedProcess[str]:
+def _run_helper(
+    *arguments: object,
+    environment_overrides: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
     environment = os.environ.copy()
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment.update(environment_overrides or {})
     return subprocess.run(
         [
             sys.executable,
@@ -144,6 +150,128 @@ def test_prepare_uses_release_code_and_proves_an_exact_head_snapshot(
         ]
     finally:
         connection.close()
+
+
+def test_candidate_readiness_proves_live_schema_upgrade_without_mutating_source(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "runtime" / "roster.sqlite3"
+    database_path.parent.mkdir()
+    sessions = create_session_factory(database_path)
+    engine = sessions.kw.get("bind")
+    assert engine is not None
+    engine.dispose()
+    command.downgrade(_alembic_config(database_path), "0012")
+    source_sha256 = _sha256(database_path)
+    source_mtime_ns = database_path.stat().st_mtime_ns
+    report_path = tmp_path / "reports" / "candidate-readiness.json"
+    workspace_parent = tmp_path / "candidate-workspaces"
+    workspace_parent.mkdir()
+
+    result = _run_helper(
+        "candidate-readiness",
+        "--release-root",
+        PROJECT_ROOT,
+        "--database-path",
+        database_path,
+        "--report-path",
+        report_path,
+        "--expected-source-revision",
+        "0012",
+        "--expected-candidate-revision",
+        "0013",
+        "--workspace-parent",
+        workspace_parent,
+        environment_overrides={
+            "SING_YIN_APP_MODE": "official",
+            "SING_YIN_DEPLOYMENT_MODE": "local",
+            "SING_YIN_HOST": "127.0.0.1",
+            "SING_YIN_PORT": "8080",
+            "SING_YIN_REMOTE_ACCESS_ENABLED": "0",
+            "SING_YIN_STORAGE_SECRET": "candidate-readiness-test-secret-0123456789abcdef",
+        },
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = _payload(result)
+    assert payload["status"] == "pass"
+    assert payload["sourceSchemaRevision"] == "0012"
+    assert payload["candidateSchemaRevision"] == "0013"
+    assert payload["onlineSnapshot"] is True
+    assert payload["migrationProved"] is True
+    assert payload["strictReadiness"] is True
+    assert payload["verifiedBackup"] is True
+    assert payload["isolatedRestore"] is True
+    assert payload["fairnessBalanced"] is True
+    assert payload["rowCountsMatched"] is True
+    assert payload["restoreAuditAppended"] is True
+    assert int(payload["readinessCheckCount"]) > 0
+    assert json.loads(report_path.read_text(encoding="utf-8")) == payload
+    assert _sha256(database_path) == source_sha256
+    assert database_path.stat().st_mtime_ns == source_mtime_ns
+    connection = sqlite3.connect(database_path)
+    try:
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchall() == [
+            ("0012",)
+        ]
+        assert "roster_day_closures" not in {
+            str(row[0])
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            ).fetchall()
+        }
+    finally:
+        connection.close()
+    assert list(workspace_parent.iterdir()) == []
+
+
+def test_candidate_readiness_rejects_wrong_source_revision_before_workspace_use(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "runtime" / "roster.sqlite3"
+    database_path.parent.mkdir()
+    sessions = create_session_factory(database_path)
+    engine = sessions.kw.get("bind")
+    assert engine is not None
+    engine.dispose()
+    workspace_parent = tmp_path / "candidate-workspaces"
+    workspace_parent.mkdir()
+
+    result = _run_helper(
+        "candidate-readiness",
+        "--release-root",
+        PROJECT_ROOT,
+        "--database-path",
+        database_path,
+        "--report-path",
+        tmp_path / "reports" / "candidate-readiness.json",
+        "--expected-source-revision",
+        "0012",
+        "--expected-candidate-revision",
+        "0013",
+        "--workspace-parent",
+        workspace_parent,
+    )
+
+    assert result.returncode == 1
+    assert "schema revision" in result.stderr.lower()
+    assert list(workspace_parent.iterdir()) == []
+
+
+def test_candidate_readiness_preserves_subprocess_and_cleanup_failure_causes() -> None:
+    source = SCRIPT.read_text(encoding="utf-8")
+    candidate_start = source.index("def _candidate_readiness(")
+    candidate_end = source.index("\ndef _validated_restore_source(", candidate_start)
+    candidate = source[candidate_start:candidate_end]
+
+    returncode_check = candidate.index("if readiness.returncode != 0:")
+    stdout_parse = candidate.index("readiness_payload = _read_json_stdout")
+    assert returncode_check < stdout_parse
+    assert "exit code {readiness.returncode}" in candidate
+    assert "readiness.stderr" in candidate
+    assert "active_error = sys.exc_info()[1]" in candidate
+    assert "if active_error is None:" in candidate
+    assert "file=sys.stderr" in candidate
 
 
 def test_restore_atomically_installs_exact_snapshot_and_removes_old_sidecars(

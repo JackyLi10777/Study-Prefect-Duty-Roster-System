@@ -1740,6 +1740,102 @@ def test_deployment_proves_a_distinct_candidate_recovery_baseline_before_pass() 
     assert "failedPhase = $failedPhase" in source
 
 
+def test_release_bundle_build_does_not_probe_the_live_database_with_candidate_code() -> None:
+    bundle_source = _source().split("function New-SingYinReleaseBundle", 1)[1].split(
+        "$resolvedOverlayPath = $null",
+        1,
+    )[0]
+
+    assert (
+        "from nicegui_app.launcher import configure_nicegui_storage_path; "
+        "configure_nicegui_storage_path(); import nicegui; import nicegui_app.main"
+    ) in bundle_source
+    assert "check_deployment_readiness.py" not in bundle_source
+    assert "candidate-readiness" not in bundle_source
+
+
+def test_isolated_candidate_readiness_runs_for_every_bundle_before_downtime() -> None:
+    source = _source()
+    bundle_call = source.index("$releaseBundlePath = New-SingYinReleaseBundle")
+    safe_bundle = source.index(
+        "$releaseBundlePath = Assert-SafeReleaseBundlePath",
+        bundle_call,
+    )
+    isolated_step = source.index(
+        'Write-Step "Proving candidate migration and strict readiness on an isolated live-data copy"',
+        safe_bundle,
+    )
+    isolated_call = source.index(
+        "$candidateReadinessEvidence = Invoke-ReleaseDatabaseSafety",
+        isolated_step,
+    )
+    isolated_proof = source.index(
+        "$candidateIsolatedReadinessPassed = $true",
+        isolated_call,
+    )
+    task_stop = source.index(
+        'Write-Step "Stopping the owned task and fencing port $deploymentPort"',
+        isolated_proof,
+    )
+    block = source[isolated_step:task_stop]
+    normalized = " ".join(block.split())
+
+    assert bundle_call < safe_bundle < isolated_step < isolated_call < isolated_proof < task_stop
+    assert 'Join-Path $HostRoot "data\\deployment-proofs"' in block
+    assert "$candidateProofParent = Assert-SafeDeploymentProofPath" in block
+    assert "Protect-SingYinSensitivePath" in block
+    assert "Get-SingYinAclStatus" in block
+    assert 'Join-Path $releaseBundlePath ".venv\\Scripts\\python.exe"' in block
+    assert "$candidateDatabaseSafetyScript = Join-Path" in block
+    assert '"scripts\\release_database_safety.py"' in block
+    assert "-Python $candidateBundlePython" in block
+    assert "-ScriptPath $candidateDatabaseSafetyScript" in block
+    assert "-WorkingDirectory $releaseBundlePath" in block
+    assert '"candidate-readiness",' in block
+    assert '"--database-path", $databasePath' in block
+    assert '"--expected-source-revision", $previousMigrationHead' in block
+    assert '"--expected-candidate-revision", $releaseMigrationHead' in block
+    assert '"--workspace-parent", $candidateProofParent' in block
+    assert "Get-SingYinReleaseBundleFingerprint" in block
+    assert "Candidate isolated readiness changed the immutable release bundle." in block
+    assert "Remove-Item -LiteralPath $candidateProofParent -Force -ErrorAction Stop" in normalized
+
+
+def test_candidate_readiness_evidence_is_reported_on_success_and_failure() -> None:
+    source = _source()
+    success_report = source.index('status = "pass"')
+    outer_catch = source.index(
+        "\n    } catch {\n    $failedPhase = $deploymentPhase",
+        success_report,
+    )
+    success_block = source[success_report:outer_catch]
+    failure_report = source.index('status = "fail"', outer_catch)
+    failure_block = source[
+        failure_report : source.index("$deploymentExitCode = 1", failure_report)
+    ]
+
+    for block in (success_block, failure_block):
+        assert "candidateIsolatedReadiness = $candidateReadinessEvidence" in block
+        assert (
+            "isolatedReadinessPassed = $candidateIsolatedReadinessPassed"
+            in block
+        )
+    finally_block = source.split("\n} finally {", 1)[1]
+    assert "$candidateProofParent" in finally_block
+    assert "$residualProofItems.Count -eq 0" in finally_block
+    assert "Protected candidate proof residue requires manual review" in finally_block
+    outer_try = source.index("\ntry {", source.index("$resolvedOverlayPath = $null"))
+    outer_initialization = source[source.index("$resolvedOverlayPath = $null"):outer_try]
+    assert "$candidateProofParent = $null" in outer_initialization
+    assert "Empty candidate proof workspace could not be removed" in finally_block
+    cleanup_warning = finally_block.index(
+        "Empty candidate proof workspace could not be removed"
+    )
+    password_cleanup = finally_block.index("$runtimeTaskSecurePassword.Dispose()")
+    environment_cleanup = finally_block.index("$processEnvironmentCaptured")
+    assert cleanup_warning < password_cleanup < environment_cleanup
+
+
 def test_deployment_script_consumes_only_a_protected_one_use_environment_overlay() -> None:
     source = _source()
 
