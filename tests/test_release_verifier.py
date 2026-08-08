@@ -268,6 +268,10 @@ def test_rc31_worker_harness_injects_one_use_credentials_only_through_subprocess
         captured["environment"] = kwargs["env"]
         return FakeProcess()
 
+    def fake_urlopen(url: str, **_kwargs: object) -> ReadyResponse:
+        captured["readiness_url"] = url
+        return ReadyResponse()
+
     secret_values = _gateway_test_secrets()
     case_root = tmp_path / "worker-harness"
     case_root.mkdir()
@@ -285,7 +289,7 @@ def test_rc31_worker_harness_injects_one_use_credentials_only_through_subprocess
     )
     monkeypatch.setattr(
         "scripts.verify_rc31_theme_controls.urlopen",
-        lambda *_args, **_kwargs: ReadyResponse(),
+        fake_urlopen,
     )
 
     _process, output, worker_url, _log_path = _start_worker_harness(
@@ -301,7 +305,9 @@ def test_rc31_worker_harness_injects_one_use_credentials_only_through_subprocess
     assert environment["SING_YIN_TEST_GUEST_SESSION_SECRET"] == secret_values["guest_session"]
     assert environment["SING_YIN_TEST_ORIGIN_PRINCIPAL_SECRET"] == secret_values["origin_principal"]
     assert worker_url == "http://localhost:18767"
+    assert captured["readiness_url"] == "http://127.0.0.1:18767/healthz"
     harness = (case_root / "worker-theme-harness.mjs").read_text(encoding="utf-8")
+    assert "PUBLIC_SUPPORT_RATE_LIMITER: rateLimiter" in harness
     assert all(value not in harness for value in secret_values.values())
 
 

@@ -314,6 +314,18 @@ const WORKBENCH_SECURITY_HEADERS = Object.freeze({
   'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',
 });
 
+const PUBLIC_THEME_BOOTSTRAP_JS = `(() => {
+  const key = 'sing-yin-roster-viewer-theme-v1';
+  let preference = 'system';
+  try { preference = localStorage.getItem(key) || 'system'; } catch {}
+  if (!['system', 'light', 'dark'].includes(preference)) preference = 'system';
+  const resolved = preference === 'system'
+    ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : preference;
+  document.documentElement.dataset.themePreference = preference;
+  document.documentElement.dataset.theme = resolved;
+})();`;
+
 const VIEWER_HTML = `<!doctype html>
 <html lang="zh-Hant-HK">
 <head>
@@ -322,19 +334,7 @@ const VIEWER_HTML = `<!doctype html>
   <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
-  <script>
-    (() => {
-      const key = 'sing-yin-roster-viewer-theme-v1';
-      let preference = 'system';
-      try { preference = localStorage.getItem(key) || 'system'; } catch {}
-      if (!['system', 'light', 'dark'].includes(preference)) preference = 'system';
-      const resolved = preference === 'system'
-        ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        : preference;
-      document.documentElement.dataset.themePreference = preference;
-      document.documentElement.dataset.theme = resolved;
-    })();
-  </script>
+  <script src="/theme-bootstrap.js"></script>
   <title>導學風紀值班表生成系統 · Study Prefect Duty Roster System</title>
   <link rel="icon" href="/favicon.png" type="image/png">
   <link rel="stylesheet" href="/viewer.css">
@@ -619,19 +619,7 @@ const PUBLIC_SUPPORT_HTML = `<!doctype html>
   <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
-  <script>
-    (() => {
-      const key = 'sing-yin-roster-viewer-theme-v1';
-      let preference = 'system';
-      try { preference = localStorage.getItem(key) || 'system'; } catch {}
-      if (!['system', 'light', 'dark'].includes(preference)) preference = 'system';
-      const resolved = preference === 'system'
-        ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        : preference;
-      document.documentElement.dataset.themePreference = preference;
-      document.documentElement.dataset.theme = resolved;
-    })();
-  </script>
+  <script src="/theme-bootstrap.js"></script>
   <title>報告問題 · Report a problem</title>
   <link rel="icon" href="/favicon.png" type="image/png">
   <link rel="stylesheet" href="/viewer.css">
@@ -4593,6 +4581,13 @@ async function route(request, env, context) {
   }
   if (path.startsWith('/try/')) {
     return response('Not found', 404, { 'Content-Type': 'text/plain; charset=utf-8' });
+  }
+  if (path === '/theme-bootstrap.js') {
+    if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
+    return staticResponse(request, PUBLIC_THEME_BOOTSTRAP_JS, 200, {
+      'Content-Type': 'text/javascript; charset=utf-8',
+      'Cache-Control': 'no-store',
+    });
   }
   if (path === '/support-feedback.js') {
     if (!['GET', 'HEAD'].includes(request.method)) return methodNotAllowed('GET, HEAD');
