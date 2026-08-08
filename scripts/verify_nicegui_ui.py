@@ -660,7 +660,7 @@ def main() -> None:
         page.wait_for_function("document.activeElement?.id === 'main-content'")
         # User storage can retain the previous smoke run's language preference.
         language_control = page.get_by_test_id("language-control")
-        chinese_label = language_control.get_by_text("繁中", exact=True)
+        chinese_label = language_control.get_by_text("中文", exact=True)
         if chinese_label.count() == 1 and chinese_label.is_visible():
             language_control.click()
             page.wait_for_load_state("domcontentloaded")
@@ -1491,15 +1491,15 @@ def main() -> None:
         page.screenshot(path=str(FAIRNESS_REPORT_SCREENSHOT), full_page=True)
         page.goto(BASE_URL, wait_until="domcontentloaded")
         page.screenshot(path=str(LIGHT_SCREENSHOT), full_page=True)
-        language_button = page.get_by_role("button", name="EN")
+        language_button = page.get_by_role("button", name="English")
         language_button.click()
         page.wait_for_load_state("domcontentloaded")
         page.get_by_text("Dashboard", exact=True).first.wait_for(timeout=10_000)
         chinese_button = page.get_by_test_id("language-control")
-        chinese_label = chinese_button.get_by_text("繁中", exact=True)
+        chinese_label = chinese_button.get_by_text("中文", exact=True)
         assert chinese_label.count() == 1
         assert chinese_label.is_visible()
-        assert chinese_button.get_attribute("aria-label") == "Switch to 繁體中文"
+        assert chinese_button.get_attribute("aria-label") == "Switch to 中文"
         chinese_button.click()
         page.wait_for_load_state("domcontentloaded")
         page.get_by_text("總覽", exact=True).first.wait_for(timeout=10_000)

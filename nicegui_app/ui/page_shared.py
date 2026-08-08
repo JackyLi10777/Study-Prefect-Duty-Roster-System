@@ -177,6 +177,7 @@ async def _run_with_progress(
     title_key: str,
     working_key: str,
     icon: str,
+    wait_kind: str = "operation",
     on_conflict: Callable[[WorkflowConflictError], None] | None = None,
 ) -> _OperationResult | object:
     """Run a durable local operation without leaving the operator guessing.
@@ -216,28 +217,25 @@ async def _run_with_progress(
             return_when=asyncio.FIRST_COMPLETED,
         )
         if not operation_task.done():
+            normalized_wait_kind = "ai" if wait_kind == "ai" else "operation"
             with ui.dialog().props("persistent") as dialog, ui.card().classes(
                 "sy-progress-dialog w-full max-w-sm p-6"
             ).props(
-                "aria-busy=true data-progress-mode=phased data-phase=working"
+                f"aria-busy=true data-progress-mode=indeterminate data-phase=working "
+                f"data-wait-kind={normalized_wait_kind}"
             ) as progress_shell:
                 with ui.row().classes("items-center gap-3"):
                     with ui.element("span").classes("sy-progress-dialog-icon").props("aria-hidden=true"):
-                        ui.icon(icon).classes("sy-progress-dialog-icon-work")
+                        if normalized_wait_kind == "ai":
+                            ui.spinner(size="sm", color="primary").classes(
+                                "sy-progress-dialog-thinking"
+                            )
+                        else:
+                            ui.icon(icon).classes("sy-progress-dialog-icon-work")
                         ui.icon("task_alt").classes("sy-progress-dialog-icon-success")
                     with ui.column().classes("gap-0"):
                         ui.label(t(title_key)).classes("sy-progress-dialog-title")
                         status = ui.label(t(working_key)).classes("sy-progress-dialog-status").props("aria-live=polite")
-                with ui.element("ol").classes("sy-progress-dialog-phases").props(
-                    f'aria-label="{attr(t("progress_phase_label"))}"'
-                ):
-                    for phase, label_key in (
-                        ("preparing", "progress_phase_preparing"),
-                        ("working", "progress_phase_processing"),
-                        ("complete", "progress_phase_complete"),
-                    ):
-                        with ui.element("li").classes("sy-progress-dialog-phase").props(f"data-phase-marker={phase}"):
-                            ui.label(t(label_key))
                 progress = ui.linear_progress(show_value=False, color="primary").classes("w-full mt-4").props(
                     f'indeterminate aria-label="{attr(t("progress_indeterminate"))}"'
                 )
@@ -373,53 +371,6 @@ def _render_mobile_roster_cards(rows: list[dict[str, object]]) -> None:
                         with ui.row().classes("w-full items-center justify-between gap-3"):
                             ui.label(t("prefect")).classes("sy-roster-mobile-meta-label")
                             ui.label(f"{t('weight')} · {row['weight']}").classes("sy-roster-mobile-meta")
-
-
-def _prefect_directory_rows(prefects: list[dict[str, object]]) -> list[dict[str, object]]:
-    """Create one localized directory model for desktop columns and phone cards."""
-    return [
-        {
-            "name": item["nameZh"],
-            "form": item["form"],
-            "class": item["className"],
-            "role": role_label(item["roleCode"]),
-            "availability": " / ".join(day_label(day) for day in item["availableDays"]),
-            "weight": item["historyWeight"],
-            "duties": item["historyDuties"],
-            "supportCodes": _prefect_support_codes(item),
-        }
-        for item in prefects
-    ]
-
-
-def _prefect_support_codes(item: dict[str, object]) -> tuple[str, ...]:
-    codes: list[str] = []
-    if float(item["historyWeight"]) == 0 and int(item["historyDuties"]) == 0:
-        codes.append("new_prefect")
-    if bool(item["needsMentoring"]):
-        codes.append("needs_mentoring")
-    return tuple(codes)
-
-
-def _render_mobile_prefect_cards(rows: list[dict[str, object]]) -> None:
-    """Keep a person's identity and availability readable without clipped columns."""
-    with ui.element("section").classes("sy-prefect-mobile").props(f'aria-label="{attr(t("directory"))}"'):
-        ui.label(t("mobile_directory_notice")).classes("sy-prefect-mobile-notice")
-        for row in rows:
-            card_label = f"{row['name']} · {row['form']} {row['class']} · {row['role']}"
-            with ui.element("article").classes("sy-prefect-mobile-card").props(
-                f'aria-label="{attr(card_label)}" data-testid="mobile-prefect-card"'
-            ):
-                with ui.row().classes("w-full items-start justify-between gap-3"):
-                    with ui.column().classes("gap-0 min-w-0"):
-                        ui.label(str(row["name"])).classes("sy-prefect-mobile-name")
-                        ui.label(f"{row['form']} {row['class']}").classes("sy-prefect-mobile-class")
-                    ui.label(str(row["role"])).classes("sy-prefect-mobile-role")
-                ui.label(f"{t('availability')} · {row['availability']}").classes("sy-prefect-mobile-availability")
-                ui.label(f"{t('support_status')} · {row['supportStatus']}").classes("sy-prefect-mobile-availability")
-                with ui.row().classes("w-full items-center justify-between gap-3"):
-                    ui.label(f"{t('history_weight')} · {row['weight']}").classes("sy-prefect-mobile-metric")
-                    ui.label(f"{t('history_duties')} · {row['duties']}").classes("sy-prefect-mobile-metric")
 
 
 def _render_roster_table(roster_week_id: int) -> None:
@@ -913,12 +864,10 @@ __all__ = (
     "_navigate_with_feedback",
     "_next_monday",
     "_open_roster_export_dialog",
-    "_prefect_directory_rows",
     "_render_co_creation",
     "_render_empty_state",
     "_render_feedback_channel",
     "_render_flow_step",
-    "_render_mobile_prefect_cards",
     "_render_operation_hint",
     "_render_responsive_table",
     "_render_roster_route_state",

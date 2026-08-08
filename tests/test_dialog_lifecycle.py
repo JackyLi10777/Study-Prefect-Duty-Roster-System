@@ -148,15 +148,16 @@ def test_runtime_created_dialogs_register_cleanup_but_reusable_archive_dialog_do
     assert "_delete_dialog_after_close(archive_dialog)" not in archive
 
 
-def test_shared_progress_uses_honest_phases_without_invented_percentages() -> None:
+def test_shared_progress_uses_indeterminate_mode_without_invented_stages() -> None:
     shared = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_shared.py").read_text(encoding="utf-8")
     progress = shared.split("async def _run_with_progress(", 1)[1].split("def _navigate_with_feedback", 1)[0]
 
-    assert "data-progress-mode=phased" in progress
+    assert "data-progress-mode=indeterminate" in progress
+    assert "data-wait-kind={normalized_wait_kind}" in progress
+    assert 'normalized_wait_kind = "ai" if wait_kind == "ai" else "operation"' in progress
     assert "indeterminate aria-label=" in progress
-    assert "progress_phase_preparing" in progress
-    assert "progress_phase_processing" in progress
-    assert "progress_phase_complete" in progress
+    assert "sy-progress-dialog-phases" not in progress
+    assert "progress_phase_preparing" not in progress
     assert 'progress.props(remove="indeterminate")' in progress
     assert "value=0.14" not in progress
     assert "progress.value = 0.56" not in progress

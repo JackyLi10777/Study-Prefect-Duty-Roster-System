@@ -8,6 +8,7 @@ from nicegui_app.services.workflow_dependencies import (
     DraftCellEdit,
     DraftDayEdit,
     DraftPatchResult,
+    DraftSlotStateEdit,
     DutyPost,
     ExternalShareOutboxRecord,
     FairnessLedgerRecord,
@@ -21,6 +22,7 @@ from nicegui_app.services.workflow_dependencies import (
     PrefectRole,
     RosterAssignmentRecord,
     RosterDayClosureRecord,
+    RosterSlotExceptionRecord,
     RosterGenerationError,
     RosterWeekRecord,
     RosterWeekResult,
@@ -46,7 +48,7 @@ from nicegui_app.services.workflow_dependencies import (
     WeekScheduleOverrides,
 )
 from nicegui_app.services.workflow_fencing import fenced_workflow_write
-from roster_policy import AssistAssignmentMode
+from roster_policy import AssistAssignmentMode, is_room_open
 
 
 def _assist_assignment_mode_code(value: object) -> str:
@@ -223,6 +225,14 @@ class RosterLifecycleMixin:
                     session,
                     week_start,
                 )
+                existing_unavailable_slots = (
+                    self._unavailable_slots(session, existing_week.id)
+                    if existing_week is not None and existing_week.status == "draft"
+                    else ()
+                )
+                unavailable_slots = tuple(
+                    slot for slot in existing_unavailable_slots if slot[0] not in normalized_closed_days
+                )
                 try:
                     assignments = generate_weekly_roster(
                         prefects,
@@ -232,6 +242,7 @@ class RosterLifecycleMixin:
                         assist_rotation_key=week_start.isoformat(),
                         previous_assist_assignments=previous_assist_assignments,
                         closed_days=normalized_closed_days,
+                        unavailable_slots=unavailable_slots,
                     )
                 except RosterGenerationError as error:
                     raise WorkflowError(f"Draft generation needs attention: {error}") from error
@@ -276,6 +287,15 @@ class RosterLifecycleMixin:
                             RosterDayClosureRecord.roster_week_id == week.id
                         )
                     )
+                    if normalized_closed_days:
+                        session.execute(
+                            delete(RosterSlotExceptionRecord).where(
+                                RosterSlotExceptionRecord.roster_week_id == week.id,
+                                RosterSlotExceptionRecord.day.in_(
+                                    [day.name for day in normalized_closed_days]
+                                ),
+                            )
+                        )
                     session.flush()
 
                 for closed_day in normalized_closed_days:
@@ -289,7 +309,13 @@ class RosterLifecycleMixin:
                             updated_at=now,
                         )
                     )
-                self._store_assignments(session, week.id, assignments, prefects)
+                self._store_assignments(
+                    session,
+                    week.id,
+                    assignments,
+                    prefects,
+                    unavailable_slots=unavailable_slots,
+                )
                 receipt = {
                     "id": week.id,
                     "weekStart": week.week_start.isoformat(),
@@ -299,6 +325,10 @@ class RosterLifecycleMixin:
                     "historyPriorityMultiplier": week.history_priority_multiplier,
                     "assistAssignmentMode": week.assist_assignment_mode,
                     "closedDays": [day.name for day in normalized_closed_days],
+                    "unavailableSlots": [
+                        f"{day.name}:{post.name}:{slot_index}"
+                        for day, post, slot_index in unavailable_slots
+                    ],
                 }
                 self._audit(
                     session,
@@ -312,6 +342,10 @@ class RosterLifecycleMixin:
                         "previousAssistWeekdayCount": len(previous_assist_assignments),
                         "fixedWeekdayAssignmentsInitialized": initialized_fixed_weekdays,
                         "closedDays": [day.name for day in normalized_closed_days],
+                        "unavailableSlots": [
+                            f"{day.name}:{post.name}:{slot_index}"
+                            for day, post, slot_index in unavailable_slots
+                        ],
                         "version": week.version,
                     },
                 )
@@ -399,12 +433,14 @@ class RosterLifecycleMixin:
                 week = self._week_or_error(session, roster_week_id)
                 assignment_rows = self._assignment_rows(session, week.id)
                 closed_days = self._closed_days(session, week.id)
+                unavailable_slots = self._unavailable_slots(session, week.id)
                 ledger_operation_id = f"roster-publish:{week.id}"
                 self._validate_persisted_assignments(
                     session,
                     assignment_rows,
                     week_start=week.week_start,
                     closed_days=closed_days,
+                    unavailable_slots=unavailable_slots,
                 )
                 for row in assignment_rows:
                     if row.prefect_id is None or row.status != "active":
@@ -723,6 +759,7 @@ class RosterLifecycleMixin:
         expected_week_version: int,
         cell_edits: Iterable[DraftCellEdit] = (),
         day_edits: Iterable[DraftDayEdit] = (),
+        slot_edits: Iterable[DraftSlotStateEdit] = (),
         reason: str | None = None,
         command_id: str | None = None,
     ) -> DraftPatchResult:
@@ -742,8 +779,9 @@ class RosterLifecycleMixin:
 
         materialized_cells = tuple(cell_edits)
         materialized_days = tuple(day_edits)
-        if not materialized_cells and not materialized_days:
-            raise WorkflowError("Choose at least one draft cell or weekday to change.")
+        materialized_slots = tuple(slot_edits)
+        if not materialized_cells and not materialized_days and not materialized_slots:
+            raise WorkflowError("Choose at least one draft cell, slot state or weekday to change.")
 
         parsed_cells: list[tuple[DraftCellEdit, SchoolDay, DutyPost, int]] = []
         seen_cells: set[str] = set()
@@ -774,12 +812,43 @@ class RosterLifecycleMixin:
             seen_days.add(day)
             normalized_days.append((edit, day, reason_code, note))
 
+        normalized_slots: list[
+            tuple[DraftSlotStateEdit, SchoolDay, DutyPost, int, str | None, str | None]
+        ] = []
+        seen_slot_states: set[str] = set()
+        for edit in materialized_slots:
+            day, post, slot_index = _parse_cell_key(edit.cell_key)
+            if not is_room_open(post, day):
+                raise WorkflowError("A fixed room-policy closure cannot be overridden per slot.")
+            stable_key = f"{day.name}:{post.name}:{slot_index}"
+            if stable_key in seen_slot_states:
+                raise WorkflowError("A draft patch cannot change the same slot state twice.")
+            state = str(edit.state).strip().lower()
+            if state not in {"open", "unavailable"}:
+                raise WorkflowError("A draft slot state must be open or unavailable.")
+            reason_code = (edit.reason_code or "").strip() or None
+            note = (edit.note or "").strip() or None
+            if reason_code is not None and reason_code not in _DAY_CLOSURE_REASON_CODES:
+                raise WorkflowError("A slot exception must use a stable reason code.")
+            if note is not None and len(note) > 1000:
+                raise WorkflowError("A slot exception note is too long.")
+            seen_slot_states.add(stable_key)
+            normalized_slots.append((edit, day, post, slot_index, reason_code, note))
+
         closing_days = {
             day for edit, day, _, _ in normalized_days if edit.closed
         }
         if any(day in closing_days for _, day, _, _ in parsed_cells):
             raise WorkflowError(
                 "A cell cannot be assigned in the same patch which closes its weekday."
+            )
+        if any(day in closing_days for _, day, _, _, _, _ in normalized_slots):
+            raise WorkflowError(
+                "A slot state cannot be changed in the same patch which closes its weekday."
+            )
+        if seen_cells.intersection(seen_slot_states):
+            raise WorkflowError(
+                "Assigning a prefect and changing the same slot state must be separate reviewed decisions."
             )
 
         operation_type = "draft_patch_applied"
@@ -802,6 +871,15 @@ class RosterLifecycleMixin:
                     "note": note,
                 }
                 for edit, day, reason_code, note in normalized_days
+            ],
+            "slotEdits": [
+                {
+                    "cellKey": f"{day.name}:{post.name}:{slot_index}",
+                    "state": str(edit.state).strip().lower(),
+                    "reasonCode": reason_code,
+                    "note": note,
+                }
+                for edit, day, post, slot_index, reason_code, note in normalized_slots
             ],
             "reason": normalized_reason,
         }
@@ -849,6 +927,15 @@ class RosterLifecycleMixin:
                     )
                 ).all()
                 closures = {SchoolDay[row.day]: row for row in closure_rows}
+                exception_rows = session.scalars(
+                    select(RosterSlotExceptionRecord).where(
+                        RosterSlotExceptionRecord.roster_week_id == roster_week_id
+                    )
+                ).all()
+                slot_exceptions = {
+                    (SchoolDay[row.day], DutyPost[row.post_code], int(row.slot_index)): row
+                    for row in exception_rows
+                }
                 for edit, day, reason_code, note in normalized_days:
                     existing = closures.get(day)
                     if edit.closed:
@@ -873,6 +960,15 @@ class RosterLifecycleMixin:
                                 RosterAssignmentRecord.day == day.name,
                             )
                         )
+                        session.execute(
+                            delete(RosterSlotExceptionRecord).where(
+                                RosterSlotExceptionRecord.roster_week_id == roster_week_id,
+                                RosterSlotExceptionRecord.day == day.name,
+                            )
+                        )
+                        slot_exceptions = {
+                            key: value for key, value in slot_exceptions.items() if key[0] != day
+                        }
                     elif existing is not None:
                         session.delete(existing)
                         closures.pop(day, None)
@@ -902,10 +998,43 @@ class RosterLifecycleMixin:
                     (SchoolDay[row.day], DutyPost[row.post_code], row.slot_index): row
                     for row in assignment_rows
                 }
+                for edit, day, post, slot_index, reason_code, note in normalized_slots:
+                    if day in closures:
+                        raise WorkflowError("A closed weekday cannot contain a slot exception.")
+                    key = (day, post, slot_index)
+                    existing_exception = slot_exceptions.get(key)
+                    state = str(edit.state).strip().lower()
+                    if state == "unavailable":
+                        if existing_exception is None:
+                            existing_exception = RosterSlotExceptionRecord(
+                                roster_week_id=roster_week_id,
+                                day=day.name,
+                                post_code=post.name,
+                                slot_index=slot_index,
+                                kind="unavailable",
+                                reason_code=reason_code,
+                                note=note,
+                                created_at=now,
+                                updated_at=now,
+                            )
+                            session.add(existing_exception)
+                            slot_exceptions[key] = existing_exception
+                        else:
+                            existing_exception.reason_code = reason_code
+                            existing_exception.note = note
+                            existing_exception.updated_at = now
+                        existing_assignment = rows_by_cell.pop(key, None)
+                        if existing_assignment is not None:
+                            session.delete(existing_assignment)
+                    elif existing_exception is not None:
+                        session.delete(existing_exception)
+                        slot_exceptions.pop(key, None)
                 for edit, day, post, slot_index in parsed_cells:
                     if day in closures:
                         raise WorkflowError("A closed weekday cannot contain an assignment.")
                     key = (day, post, slot_index)
+                    if key in slot_exceptions:
+                        raise WorkflowError("An unavailable slot cannot contain an assignment.")
                     existing = rows_by_cell.get(key)
                     replacement_id = edit.replacement_prefect_id
                     if replacement_id is None:
@@ -936,6 +1065,9 @@ class RosterLifecycleMixin:
                         existing.status = "active"
 
                 final_closed_days = tuple(sorted(closures, key=int))
+                final_unavailable_slots = tuple(
+                    sorted(slot_exceptions, key=lambda item: (int(item[0]), item[1].name, item[2]))
+                )
                 session.flush()
                 final_rows = self._assignment_rows(session, roster_week_id)
                 self._validate_persisted_assignments(
@@ -943,6 +1075,7 @@ class RosterLifecycleMixin:
                     final_rows,
                     week_start=week.week_start,
                     closed_days=final_closed_days,
+                    unavailable_slots=final_unavailable_slots,
                     require_complete=False,
                 )
 
@@ -965,6 +1098,10 @@ class RosterLifecycleMixin:
                     "version": week.version,
                     "changedCellCount": len(parsed_cells),
                     "closedDays": [day.name for day in final_closed_days],
+                    "unavailableSlots": [
+                        f"{day.name}:{post.name}:{slot_index}"
+                        for day, post, slot_index in final_unavailable_slots
+                    ],
                 }
                 self._audit(
                     session,
@@ -978,6 +1115,14 @@ class RosterLifecycleMixin:
                         "dayEdits": [
                             {"day": day.name, "closed": edit.closed, "reasonCode": reason_code}
                             for edit, day, reason_code, _ in normalized_days
+                        ],
+                        "slotEdits": [
+                            {
+                                "cellKey": f"{day.name}:{post.name}:{slot_index}",
+                                "state": str(edit.state).strip().lower(),
+                                "reasonCode": reason_code,
+                            }
+                            for edit, day, post, slot_index, reason_code, _ in normalized_slots
                         ],
                         "reason": normalized_reason,
                         "version": week.version,
@@ -997,6 +1142,9 @@ class RosterLifecycleMixin:
             version=int(receipt["version"]),
             changed_cell_count=int(receipt["changedCellCount"]),
             closed_days=tuple(str(day) for day in receipt.get("closedDays", [])),
+            unavailable_slots=tuple(
+                str(cell_key) for cell_key in receipt.get("unavailableSlots", [])
+            ),
             backup_path=self._fulfill_backup_obligation(operation_key),
             idempotent=replayed,
         )
@@ -1497,7 +1645,13 @@ class RosterLifecycleMixin:
             return WeekScheduleOverrides(
                 closed_days=tuple(
                     day.name for day in self._closed_days(session, roster_week_id)
-                )
+                ),
+                unavailable_slots=tuple(
+                    f"{day.name}:{post.name}:{slot_index}"
+                    for day, post, slot_index in self._unavailable_slots(
+                        session, roster_week_id
+                    )
+                ),
             )
 
     def assignments(self, roster_week_id: int) -> list[dict[str, object]]:
@@ -1541,6 +1695,9 @@ class RosterLifecycleMixin:
                     "publishedAt": week.published_at,
                     "closedDays": [day.name for day in closed_days],
                     "dayClosures": self._closure_outputs(session, roster_week_id),
+                    "slotExceptions": self._slot_exception_outputs(
+                        session, roster_week_id
+                    ),
                 },
                 [
                     {

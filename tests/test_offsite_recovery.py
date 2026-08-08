@@ -76,7 +76,7 @@ def test_exported_bundle_restores_after_the_original_host_data_is_gone(tmp_path:
         "kind": "bitlocker_external",
     }
     assert receipt["release"]["releaseRef"] == "v1.2.0-test"
-    assert receipt["sourceSnapshot"]["schemaRevision"] == "0013"
+    assert receipt["sourceSnapshot"]["schemaRevision"] == "0014"
     assert receipt["rpoSecondsAtExport"] >= 0
     assert str(original_host) not in serialized_receipt
     assert str(destination) not in serialized_receipt

@@ -35,6 +35,7 @@ from nicegui_app.persistence.models import (
     PrefectRecord,
     RosterAssignmentRecord,
     RosterDayClosureRecord,
+    RosterSlotExceptionRecord,
     RosterWeekRecord,
 )
 from nicegui_app.services.maintenance import MaintenanceModeError, MaintenanceStatus, maintenance_coordinator
@@ -47,6 +48,7 @@ from nicegui_app.services.workflow_types import (
     DraftCellEdit,
     DraftDayEdit,
     DraftPatchResult,
+    DraftSlotStateEdit,
     DutyAllocationEntry,
     FLEXIBLE_WEEKLY,
     FairnessDiscrepancy,

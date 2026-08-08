@@ -23,6 +23,7 @@ from nicegui_app.services.workflow_dependencies import (
     ROLE_CODES,
     RosterAssignmentRecord,
     RosterDayClosureRecord,
+    RosterSlotExceptionRecord,
     RosterWeekRecord,
     SchoolDay,
     Session,
@@ -346,6 +347,8 @@ class PersistenceWorkflowMixin:
             "remarks": record.remarks,
             "version": record.version,
             "active": record.active,
+            "createdAt": record.created_at.isoformat(),
+            "updatedAt": record.updated_at.isoformat(),
         }
 
     @staticmethod
@@ -408,12 +411,27 @@ class PersistenceWorkflowMixin:
                 "Another active Assistant Head Study Prefect already owns this fixed weekday."
             )
 
-    def _store_assignments(self, session: Session, roster_week_id: int, assignments: Iterable[Assignment], prefects: list[Prefect]) -> None:
+    def _store_assignments(
+        self,
+        session: Session,
+        roster_week_id: int,
+        assignments: Iterable[Assignment],
+        prefects: list[Prefect],
+        *,
+        unavailable_slots: Iterable[tuple[SchoolDay, DutyPost, int]] = (),
+    ) -> None:
         role_by_id = {prefect.id: prefect.role for prefect in prefects}
         slot_counts: dict[tuple[str, str], int] = defaultdict(int)
+        unavailable = set(unavailable_slots)
         for assignment in assignments:
             key = (assignment.day.name, assignment.post.name)
             slot_counts[key] += 1
+            while (
+                assignment.day,
+                assignment.post,
+                slot_counts[key],
+            ) in unavailable:
+                slot_counts[key] += 1
             session.add(
                 RosterAssignmentRecord(
                     roster_week_id=roster_week_id,
@@ -526,6 +544,7 @@ class PersistenceWorkflowMixin:
         *,
         week_start: date,
         closed_days: Iterable[SchoolDay] = (),
+        unavailable_slots: Iterable[tuple[SchoolDay, DutyPost, int]] = (),
         require_complete: bool = True,
     ) -> None:
         prefects = self._active_prefects(session)
@@ -549,6 +568,7 @@ class PersistenceWorkflowMixin:
             prefects,
             leave_days=self._leave_days_for_week(session, week_start),
             closed_days=closed_days,
+            unavailable_slots=unavailable_slots,
             require_complete=require_complete,
         )
 
@@ -603,6 +623,60 @@ class PersistenceWorkflowMixin:
                 "note": row.note,
             }
             for row in sorted(rows, key=lambda item: int(SchoolDay[item.day]))
+        ]
+
+    @staticmethod
+    def _unavailable_slots(
+        session: Session,
+        roster_week_id: int,
+    ) -> tuple[tuple[SchoolDay, DutyPost, int], ...]:
+        rows = session.scalars(
+            select(RosterSlotExceptionRecord)
+            .where(RosterSlotExceptionRecord.roster_week_id == roster_week_id)
+            .order_by(
+                RosterSlotExceptionRecord.day,
+                RosterSlotExceptionRecord.post_code,
+                RosterSlotExceptionRecord.slot_index,
+            )
+        ).all()
+        return tuple(
+            sorted(
+                (
+                    (SchoolDay[row.day], DutyPost[row.post_code], int(row.slot_index))
+                    for row in rows
+                ),
+                key=lambda item: (int(item[0]), item[1].name, item[2]),
+            )
+        )
+
+    @staticmethod
+    def _slot_exception_outputs(
+        session: Session,
+        roster_week_id: int,
+    ) -> list[dict[str, object]]:
+        rows = session.scalars(
+            select(RosterSlotExceptionRecord).where(
+                RosterSlotExceptionRecord.roster_week_id == roster_week_id
+            )
+        ).all()
+        return [
+            {
+                "cellKey": f"{row.day}:{row.post_code}:{row.slot_index}",
+                "day": row.day,
+                "postCode": row.post_code,
+                "slotIndex": int(row.slot_index),
+                "kind": row.kind,
+                "reasonCode": row.reason_code,
+                "note": row.note,
+            }
+            for row in sorted(
+                rows,
+                key=lambda item: (
+                    int(SchoolDay[item.day]),
+                    item.post_code,
+                    int(item.slot_index),
+                ),
+            )
         ]
 
     def _assignment_rows(self, session: Session, roster_week_id: int) -> list[RosterAssignmentRecord]:

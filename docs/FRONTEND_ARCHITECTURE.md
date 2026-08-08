@@ -56,7 +56,7 @@ No CSS file, page route or animation runtime may become an owner for authenticat
 ### Application shell
 
 - Desktop navigation is a `264px` institutional rail; the main canvas uses the remaining viewport. The compact `64px` header contains route identity and global controls only.
-- Routine support links are compact and secondary; full explanation lives on `/support` and in documentation.
+- The drawer is a `100dvh` three-row layout: fixed brand/tools, `minmax(0, 1fr)` scrolling navigation, and a compact copyright footer. The former duplicate feedback card is prohibited; email, repository and reporting actions belong to `/support`.
 - Shell atmosphere is a compact contextual band with a `90px` rendered minimum. It never competes with the page task.
 - Visual-viewport keyboard mode is enabled only when a focused editable control and a material viewport reduction are both present.
 
@@ -73,7 +73,7 @@ No CSS file, page route or animation runtime may become an owner for authenticat
 - Tables and forms use solid, high-contrast surfaces.
 - One route has one dominant task; secondary evidence uses expansions, side rails or progressive disclosure.
 - Consequential actions state the result and recovery path before confirmation.
-- Waiting UI reports real busy state, phase or measured progress; it never delays completion to display animation.
+- Waiting UI starts the operation immediately. Unknown duration is indeterminate and appears only after the anti-flicker reveal threshold; determinate or phased progress is permitted only when the backend emits real measured progress or stage events. It never delays completion to display animation.
 
 ### Settings and recovery
 
@@ -93,6 +93,8 @@ No CSS file, page route or animation runtime may become an owner for authenticat
 ## Motion and dependency policy
 
 CSS owns immediate hover, focus, press and reduced-motion fallbacks. The vendored GSAP Core runtime may coordinate bounded semantic sequences after the interface is usable. Animation code must use transform and opacity, kill replaced timelines, clean up on navigation/reconnect and stop while disabled or busy. ScrollTrigger, framework adapters and extra plugins are not installed unless a measured interaction cannot be implemented accessibly with the existing runtime.
+
+`docs/audits/RC53_SOURCE_AND_MOTION_MANIFEST.md` records the rc53 source boundary, interaction matrix, vocabulary and external motion-source decisions. It is a candidate contract, not production status evidence.
 
 ## Change protocol
 

@@ -17,12 +17,10 @@ EXPECTED_SHARED_ROUTE_API = {
     "_navigate_with_feedback",
     "_next_monday",
     "_open_roster_export_dialog",
-    "_prefect_directory_rows",
     "_render_co_creation",
     "_render_empty_state",
     "_render_feedback_channel",
     "_render_flow_step",
-    "_render_mobile_prefect_cards",
     "_render_operation_hint",
     "_render_responsive_table",
     "_render_roster_route_state",
@@ -126,7 +124,7 @@ def test_route_package_imports_cleanly_in_a_fresh_process() -> None:
             (
                 "import nicegui_app.ui.page_shared as shared; "
                 "import nicegui_app.ui.page_routes as routes; "
-                "assert len(shared.__all__) == 19; "
+                    "assert len(shared.__all__) == 17; "
                 "assert len(routes.__all__) == 7"
             ),
         ],

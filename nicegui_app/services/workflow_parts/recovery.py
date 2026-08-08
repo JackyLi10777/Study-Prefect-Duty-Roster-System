@@ -68,6 +68,9 @@ _V12_PERSISTENCE_TABLES = _RESTORABLE_CORE_TABLES | frozenset(
 _DAY_CLOSURE_TABLES = _V12_PERSISTENCE_TABLES | frozenset(
     {"roster_day_closures"}
 )
+_SLOT_EXCEPTION_TABLES = _DAY_CLOSURE_TABLES | frozenset(
+    {"roster_slot_exceptions"}
+)
 # A backup must satisfy the table contract of the revision it claims to be.
 # Keeping the map explicit forces future table-creating migrations to state
 # which historical revisions legitimately predate the new table.
@@ -79,6 +82,7 @@ _REQUIRED_TABLES_BY_REVISION: dict[str, frozenset[str]] = {
     "0011": _V12_PERSISTENCE_TABLES,
     "0012": _V12_PERSISTENCE_TABLES,
     "0013": _DAY_CLOSURE_TABLES,
+    "0014": _SLOT_EXCEPTION_TABLES,
 }
 
 

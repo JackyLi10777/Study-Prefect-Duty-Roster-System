@@ -276,9 +276,65 @@ MESSAGES = {'backup_restore': {'zh-HK': '備份還原', 'en': 'Backup restore'},
      'zh-HK': '會同步交換同日崗位',
      'en': 'same-day duty will be exchanged',
  },
- 'draft_swap_staged': {
-     'zh-HK': '已把 {name} 與原格人選設為同日交換；兩格會一併儲存及驗證。',
-     'en': 'A same-day exchange with {name} is pending. Both cells will be saved and validated together.',
+  'draft_swap_staged': {
+      'zh-HK': '已把 {name} 與原格人選設為同日交換；兩格會一併儲存及驗證。',
+      'en': 'A same-day exchange with {name} is pending. Both cells will be saved and validated together.',
+  },
+  'draft_assignment_staged': {
+      'zh-HK': '人選修改已加入本頁待儲存項目。',
+      'en': 'The assignment change is now pending on this page.',
+  },
+ 'draft_move_start': {'zh-HK': '移動／交換此安排', 'en': 'Move or exchange this assignment'},
+ 'draft_move_cancel': {'zh-HK': '取消移動', 'en': 'Cancel move'},
+ 'draft_move_choose_target': {
+     'zh-HK': '已選擇來源格；請點選目的地完成移動或交換，按 Esc 取消。',
+     'en': 'Source cell selected. Choose a destination to move or exchange, or press Esc to cancel.',
+ },
+ 'draft_move_staged': {
+     'zh-HK': '移動已加入本頁修改；儲存前仍可復原。',
+     'en': 'The move is pending on this page and can still be undone before saving.',
+ },
+ 'draft_exchange_staged': {
+     'zh-HK': '兩個安排已設為原子交換；儲存時會一併核對。',
+     'en': 'The two assignments are staged as one atomic exchange and will be validated together.',
+ },
+ 'draft_move_invalid_target': {
+     'zh-HK': '這個目的格不能接受移動；原有草稿沒有改動。',
+     'en': 'This destination cannot accept a move. The draft was not changed.',
+ },
+ 'draft_move_source_empty': {
+     'zh-HK': '空缺格不能作為移動來源。',
+     'en': 'A vacant cell cannot be used as a move source.',
+ },
+ 'draft_move_policy_rejected': {
+     'zh-HK': '這次移動不符合職務、可值班日或同日安排規則；草稿沒有改動。',
+     'en': 'This move conflicts with role, availability, or same-day rules. The draft was not changed.',
+ },
+ 'draft_slot_unavailable': {'zh-HK': '本週不開放', 'en': 'Unavailable'},
+ 'draft_slot_unavailable_meta': {
+     'zh-HK': '本週單格例外',
+     'en': 'Week-specific slot exception',
+ },
+ 'draft_slot_unavailable_action': {
+     'zh-HK': '設為不開放',
+     'en': 'Mark unavailable',
+ },
+  'draft_slot_reopen_action': {'zh-HK': '重新開放此格', 'en': 'Reopen this slot'},
+  'draft_slot_state_staged_unavailable': {
+      'zh-HK': '此格已暫設為不開放，尚未儲存。',
+      'en': 'This slot is staged as unavailable and has not been saved yet.',
+  },
+  'draft_slot_state_staged_open': {
+      'zh-HK': '此格已暫設為重新開放，尚未儲存。',
+      'en': 'This slot is staged to reopen and has not been saved yet.',
+  },
+ 'draft_slot_unavailable_body': {
+     'zh-HK': '這是指定週次的單格不開放狀態，不是空缺。重新開放後會顯示為待安排，不會自動恢復舊人選。',
+     'en': 'This is a week-specific unavailable slot, not a vacancy. Reopening returns it to Vacant and never restores the prior assignment automatically.',
+ },
+ 'draft_slot_reopen_before_assign': {
+     'zh-HK': '請先重新開放此格並儲存，再安排人選。',
+     'en': 'Reopen and save this slot before assigning a prefect.',
  },
  'draft_pending_none': {'zh-HK': '尚未有待儲存修改', 'en': 'No unsaved changes'},
  'draft_pending_count': {'zh-HK': '有 {count} 項修改尚未儲存', 'en': '{count} unsaved changes'},
@@ -291,7 +347,13 @@ MESSAGES = {'backup_restore': {'zh-HK': '備份還原', 'en': 'Backup restore'},
      'en': 'This clears only the unsaved changes on this page; the saved draft in the database is unchanged.',
  },
  'draft_undo': {'zh-HK': '復原上一步', 'en': 'Undo last change'},
- 'draft_undo_hint': {'zh-HK': '可按 Ctrl+Z 復原最近一次未儲存修改。', 'en': 'Press Ctrl+Z to undo the latest unsaved change.'},
+  'draft_redo': {'zh-HK': '重做上一步', 'en': 'Redo last change'},
+  'draft_undo_announced': {'zh-HK': '已復原上一步本頁修改。', 'en': 'The last page change was undone.'},
+  'draft_redo_announced': {'zh-HK': '已重做上一步本頁修改。', 'en': 'The last page change was redone.'},
+ 'draft_undo_hint': {
+     'zh-HK': 'Ctrl+Z 復原；Ctrl+Y 或 Ctrl/Cmd+Shift+Z 重做。',
+     'en': 'Use Ctrl+Z to undo; Ctrl+Y or Ctrl/Cmd+Shift+Z to redo.',
+ },
  'draft_batch_reason': {'zh-HK': '本批修改原因（選填）', 'en': 'Reason for these changes (optional)'},
  'draft_batch_saved': {
      'zh-HK': '草稿修改已一次過儲存、重新核對校規並完成備份；公平帳本未受影響。',
@@ -320,10 +382,22 @@ MESSAGES = {'backup_restore': {'zh-HK': '備份還原', 'en': 'Backup restore'},
      'zh-HK': '{day} 的全日開放狀態已被另一個分頁修改。',
      'en': 'The whole-day opening state for {day} was changed in another tab.',
  },
+ 'draft_conflict_slot_changed': {
+     'zh-HK': '{cell} 的單格開放狀態已被另一個分頁修改。',
+     'en': 'The slot availability state for {cell} was changed in another tab.',
+ },
  'draft_conflict_reapply': {'zh-HK': '在最新版本重新套用', 'en': 'Reapply to latest version'},
  'draft_conflict_reload': {'zh-HK': '放棄修改並載入最新草稿', 'en': 'Discard changes and load latest draft'},
  'draft_day_close_action': {'zh-HK': '關閉整天', 'en': 'Close whole day'},
  'draft_day_reopen_action': {'zh-HK': '重新開放整天', 'en': 'Reopen whole day'},
+ 'draft_day_state_staged_closed': {
+     'zh-HK': '{day} 已暫設為全天不開放，尚未儲存。',
+     'en': '{day} is staged as closed all day and has not been saved yet.',
+ },
+ 'draft_day_state_staged_open': {
+     'zh-HK': '{day} 已暫設為重新開放，尚未儲存。',
+     'en': '{day} is staged to reopen and has not been saved yet.',
+ },
  'draft_day_closed': {'zh-HK': '全天不開放', 'en': 'Closed all day'},
  'draft_day_close_confirm_title': {'zh-HK': '關閉 {day} 全部值班？', 'en': 'Close all duties on {day}?'},
  'draft_day_close_confirm_body': {

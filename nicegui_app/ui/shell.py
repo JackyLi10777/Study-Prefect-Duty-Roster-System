@@ -5,13 +5,11 @@ from __future__ import annotations
 from contextlib import contextmanager
 from collections.abc import Iterator
 import json
-from urllib.parse import quote
 
 from nicegui import ui
 
 from nicegui_app.access_context import AccessMode
 from nicegui_app.application_mode import current_application_mode
-from nicegui_app.contact import FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL, GITHUB_REPOSITORY_URL
 from nicegui_app.runtime import current_page_context, get_workflow
 from nicegui_app.ui.brand import render_service_weave_mark
 from nicegui_app.ui.html_safety import attr
@@ -1186,70 +1184,56 @@ def page_shell(active_path: str) -> Iterator[None]:
     ).classes("sy-sidebar bg-[var(--sy-surface)]")
     with drawer:
         with ui.column().classes("sy-sidebar-body w-full gap-1 p-4"):
-            with ui.row().classes("sy-brand-lockup items-center gap-3 mb-2"):
-                render_service_weave_mark(context="navigation", test_id="navigation-product-mark")
-                with ui.column().classes("sy-brand-copy gap-0 min-w-0"):
-                    ui.label(t("service_weave_name")).classes("sy-brand-eyebrow")
-                    ui.label(t("app_name")).classes("text-base font-bold leading-tight sy-fg-stable")
-            ui.label(t("service_principle")).classes("sy-brand-principle text-xs italic text-[var(--sy-muted)] mb-5")
-            _render_mobile_drawer_tools(
-                access_mode,
-                dark_mode,
-                theme_controls,
-                sound_controls,
-            )
-            for group_index, (group_key, pages) in enumerate(
-                navigation_groups_for(access_mode), start=1
-            ):
-                ui.label(t(group_key)).classes("sy-nav-section").props(
-                    f'data-sy-section="{group_index:02d}"'
+            with ui.element("section").classes("sy-sidebar-brand"):
+                with ui.row().classes("sy-brand-lockup items-center gap-3 mb-2"):
+                    render_service_weave_mark(context="navigation", test_id="navigation-product-mark")
+                    with ui.column().classes("sy-brand-copy gap-0 min-w-0"):
+                        ui.label(t("service_weave_name")).classes("sy-brand-eyebrow")
+                        ui.label(t("app_name")).classes("text-base font-bold leading-tight sy-fg-stable")
+                ui.label(t("service_principle")).classes("sy-brand-principle text-xs italic text-[var(--sy-muted)] mb-5")
+                _render_mobile_drawer_tools(
+                    access_mode,
+                    dark_mode,
+                    theme_controls,
+                    sound_controls,
                 )
-                for page in pages:
-                    button = ui.button(
-                        t(page.title_key),
-                        icon=page.icon,
-                        on_click=lambda target=page.route: _navigate_with_sound(target),
-                    ).props("flat align=left").classes(
-                        "sy-nav-control w-full justify-start"
-                    ).style("color: var(--sy-nav-ink) !important")
-                    if page.route == active_path:
-                        button.classes("sy-nav-active").props("aria-current=page")
-            portal_pages = portal_pages_for(access_mode)
-            if portal_pages:
-                with ui.element("aside").classes("sy-sidebar-portals").props(
-                    f'aria-label="{attr(t("nav_trust_resources"))}" data-testid=sidebar-portals'
+            with ui.element("div").classes("sy-sidebar-navigation"):
+                for group_index, (group_key, pages) in enumerate(
+                    navigation_groups_for(access_mode), start=1
                 ):
-                    ui.label(t("nav_trust_resources")).classes("sy-nav-section").props(
-                        'data-sy-section="07"'
+                    ui.label(t(group_key)).classes("sy-nav-section").props(
+                        f'data-sy-section="{group_index:02d}"'
                     )
-                    for page in portal_pages:
+                    for page in pages:
                         button = ui.button(
                             t(page.title_key),
                             icon=page.icon,
                             on_click=lambda target=page.route: _navigate_with_sound(target),
                         ).props("flat align=left").classes(
-                            "sy-nav-control sy-nav-portal w-full justify-start"
+                            "sy-nav-control w-full justify-start"
                         ).style("color: var(--sy-nav-ink) !important")
                         if page.route == active_path:
                             button.classes("sy-nav-active").props("aria-current=page")
-            with ui.element("aside").classes("sy-sidebar-feedback").props(
-                f'aria-label="{attr(t("feedback_channel_title"))}" data-testid=sidebar-feedback'
-            ):
-                with ui.row().classes("items-center gap-2 no-wrap"):
-                    ui.icon("mail_outline").classes("sy-sidebar-feedback-icon").props("aria-hidden=true")
-                    ui.label(t("feedback_channel_short")).classes("sy-sidebar-feedback-title")
-                ui.label(t("feedback_channel_sidebar_body")).classes("sy-sidebar-feedback-copy")
-                feedback_email_label = f'{t("feedback_email_action")}: {FEEDBACK_EMAIL}'
-                ui.link(FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL).classes("sy-sidebar-feedback-link").props(
-                    f'aria-label="{attr(feedback_email_label)}"'
-                )
-                ui.link(t("github_repository_short"), GITHUB_REPOSITORY_URL).classes("sy-sidebar-feedback-link").props(
-                    f'target=_blank rel="noopener noreferrer" aria-label="{attr(t("github_repository_action"))}"'
-                )
-                support_href = f"/support?source={quote(active_path, safe='')}"
-                ui.link(t("report_problem"), support_href).classes("sy-sidebar-feedback-link").props(
-                    f'aria-label="{attr(t("report_problem"))}"'
-                )
+                portal_pages = portal_pages_for(access_mode)
+                if portal_pages:
+                    with ui.element("section").classes("sy-sidebar-portals").props(
+                        f'aria-label="{attr(t("nav_trust_resources"))}" data-testid=sidebar-portals'
+                    ):
+                        ui.label(t("nav_trust_resources")).classes("sy-nav-section").props(
+                            'data-sy-section="07"'
+                        )
+                        for page in portal_pages:
+                            button = ui.button(
+                                t(page.title_key),
+                                icon=page.icon,
+                                on_click=lambda target=page.route: _navigate_with_sound(target),
+                            ).props("flat align=left").classes(
+                                "sy-nav-control sy-nav-portal w-full justify-start"
+                            ).style("color: var(--sy-nav-ink) !important")
+                            if page.route == active_path:
+                                button.classes("sy-nav-active").props("aria-current=page")
+            with ui.element("div").classes("sy-sidebar-footer"):
+                ui.label(t("copyright_notice")).classes("sy-sidebar-footer-copy")
     with ui.header(elevated=False).classes("sy-app-header bg-[var(--sy-surface)] border-b border-[var(--sy-line)]"):
         skip_link = ui.link(t("skip_to_content"), "#main-content").classes("sy-skip-link")
         skip_link.on(

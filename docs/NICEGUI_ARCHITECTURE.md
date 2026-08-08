@@ -13,7 +13,7 @@
 > **Verified production truth (2026-08-09):** the live Windows origin is clean annotated `v1.2.0-rc.52` at `72621076f74caf9568fda1576d62311e0a26043c` and runs an immutable bundle. Its 314-file fingerprint `c4f224140c3b2bb935f4d367bf0fccf55800fd28a6a697e66bd261b70e097b6f` passed 15/15 gates. SQLite is at Alembic `0013`; verified backup `20260808-164321-281874-manual_verified_backup.sqlite3` with SHA-256 `1d542f5aac6b25eff4abf5f79cddd295ebc04a6ef797a7ac8b8f88f22d13928a`, isolated restore, health, `writeReady=true`, `maintenance=false`, `recoveryRequired=false`, and `pendingBackups=0` passed. Worker source changed and was promoted; canonical Worker `3bac2eee-246f-4524-9725-4249770017b0` remains healthy at 100% traffic. `v1.2.0-rc.51` is historical source evidence, not a code-only rollback after migration `0013`; recovery requires the controlled compatible database restore. Supervised human acceptance remains `pending`, and the physical off-site BitLocker recovery drill remains `pending`. See [current system status](status/CURRENT_STATUS.md) for the exact state and update contract.
 <!-- SING_YIN_CURRENT_STATUS:END -->
 
-> **Source-only candidate:** `codex/roster-grid-day-closure-release` adds the shared draft-grid presentation and additive Alembic revision `0013_roster_day_closures`. Production remains exactly as recorded in the generated status block above. This source is not deployed evidence, and revision `0013` must not be treated as live until the formal release, backup, isolated-restore, and controlled-rollout sequence completes.
+> **Source-only candidate:** production already includes the shared draft-grid and additive Alembic revision `0013_roster_day_closures` recorded above. `codex/rc53-spreadsheet-prefect-motion` adds source-only revision `0014_roster_slot_exceptions`, per-cell unavailability, and extended spreadsheet interaction. Production remains exactly as recorded in the generated status block above; revision `0014` is not deployed evidence until formal release, backup, isolated restore, and controlled rollout complete.
 >
 ## Purpose
 
@@ -253,20 +253,23 @@ Prefect creation, update, archive, and bulk import follow the same backup rule. 
 
 `fixed_general_duty`／`fixedGeneralDuty` remains stable compatibility metadata for canonical AHP weekday mapping. The prefect dialog exposes it only for Assistant Head Study Prefects as an optional fixed weekday in legacy mode; flexible mode ignores it. The first accepted automatic legacy mapping persists every one-person／one-day assignment into this field in the same draft transaction, so later directory additions cannot silently move existing owners. When the dialog edits an ordinary prefect or unrelated fields, it must round-trip any existing value rather than replace it with `NONE`. The visible availability selector is authoritative: a fixed weekday must also be selected as available, and unselected days are unavailable to both Assist. modes and room generation.
 
-### Draft matrix and week-local whole-day closures
+### Draft matrix, whole-day closures, and week-local slot exceptions
 
-Alembic `0013_roster_day_closures` is an additive candidate migration. It introduces `roster_day_closures`, keyed by the roster week and stable weekday code with one row per week／day. Optional `reason_code` and `note` are audit context only; translated UI text is never a key. This table is a week-local override layer. It does not replace the permanent room-opening rules owned by `roster_policy` and does not create a school-wide holiday calendar.
+Alembic `0013_roster_day_closures` is the deployed additive whole-day migration. It introduces `roster_day_closures`, keyed by the roster week and stable weekday code with one row per week／day. Source-only additive migration `0014_roster_slot_exceptions` adds `roster_slot_exceptions`, uniquely keyed by roster week, stable weekday, post code, and slot index. Optional `reason_code` and `note` are audit context only; translated UI text is never a key. These tables are week-local override layers. They do not replace the permanent room-opening rules owned by `roster_policy` and do not create a school-wide holiday calendar.
 
 `RosterSchedulePresentation` is the shared read model for NiceGUI draft／published views, the bilingual PDF, the public share whitelist, and the Guest adapter. It contains the roster week, version, status, weekday and date, stable post code and slot, English duty-post label, service time, Chinese display name, assignment／prefect identifiers, editability, and exactly one of these states:
 
 - `assigned`: one eligible prefect is assigned;
 - `vacant`: the post is open and requires a prefect;
 - `room_closed`: the long-term room policy closes this post on this weekday;
+- `unavailable`: the operator closes only this slot for the selected roster week;
 - `day_closed`: the whole weekday is closed for this roster week.
+
+Precedence is fixed: `day_closed` overrides `room_closed`, which overrides `unavailable`, which overrides `assigned`／`vacant`. An unavailable slot is excluded from generation, required coverage, and fairness denominators; reopening it produces a vacancy and never restores a previous assignment.
 
 Blank editor input is not serialized as a state. The presentation builder, PDF exporter, Viewer/public-share serializer, and responsive day-card adapter must consume this same state model; they may change layout and localized labels but not derive a second interpretation of the roster.
 
-The public draft-edit contract consists of `WeekScheduleOverrides`, `DraftCellEdit`, `DraftDayEdit`, and:
+The public draft-edit contract consists of `WeekScheduleOverrides`, `DraftCellEdit`, `DraftDayEdit`, `DraftSlotStateEdit`, and:
 
 ```text
 apply_draft_patch(
@@ -275,14 +278,15 @@ apply_draft_patch(
     expected_week_version,
     cell_edits=(),
     day_edits=(),
+    slot_edits=(),
     reason=None,
     command_id=None,
 )
 ```
 
-`reason` and `command_id` are optional at the API boundary. The UI presents the reason as optional; the workflow normalizes a missing reason to an empty audit note while still requiring at least one explicit cell or weekday edit. Production callers should provide a unique `command_id` whenever an operation may be retried so the same decision remains idempotent.
+`reason` and `command_id` are optional at the API boundary. The UI presents the reason as optional; the workflow normalizes a missing reason to an empty audit note while still requiring at least one explicit cell, weekday, or slot edit. Production callers should provide a unique `command_id` whenever an operation may be retried so the same decision remains idempotent. The UI retains that ID across a retry and creates a new one only after the local patch changes.
 
-NiceGUI keeps cell and day edits local until the operator selects **Review and save**. The workflow then enters one `BEGIN IMMEDIATE` transaction, claims the idempotent command receipt, compares the expected roster version, constructs the final matrix, and revalidates role eligibility, selected availability, pre-generation leave, same-day uniqueness, non-consecutive duties, legacy fixed Assist ownership, and canonical slot coverage after applying whole-day closures. A same-day two-cell swap is therefore atomic. The transaction updates the roster version and closure rows, creates the audit and backup obligation, and commits all or none of the patch. Draft edits never post to the fairness ledger; publication remains the only initial fairness-posting boundary.
+NiceGUI keeps cell, day, and slot edits local until the operator selects **Review and save**. Pointer drag, touch two-step move, keyboard move/exchange, undo, and redo only alter this local patch. The workflow then enters one `BEGIN IMMEDIATE` transaction, claims the idempotent command receipt, compares the expected roster version, constructs the final matrix, and revalidates role eligibility, selected availability, pre-generation leave, same-day uniqueness, non-consecutive duties, legacy fixed Assist ownership, and canonical slot coverage after applying whole-day and slot closures. A same-day two-cell swap is therefore atomic. The transaction updates the roster version and closure／slot rows, creates the audit and backup obligation, and commits all or none of the patch. Draft edits never post to the fairness ledger; publication remains the only initial fairness-posting boundary.
 
 Closing a day clears every draft assignment for that weekday inside the same transaction. Reopening the day removes the override but deliberately returns open cells as `vacant`; it never restores assignments whose availability, leave, fairness context, or role may have changed. A completely closed week is a valid zero-assignment draft and may be published with zero fairness points and zero scheduled service time. Published rosters reject `apply_draft_patch`; the operator must use the audited withdrawal transaction before rebuilding a wrongly published week. A late individual absence continues to use the published-duty adjustment workflow instead.
 
@@ -343,7 +347,7 @@ Recent snapshot verification is parallel but never cached. `backups()` captures 
 
 ## Long-operation feedback
 
-Roster generation, publication, manual draft changes, published-duty leave adjustment, pre-generation leave declaration/cancellation, prefect creation/update/archive, bulk import, PDF/report creation, verified snapshot/handover packaging, restore, and host-local support persistence run through one bilingual progress coordinator. The coordinator waits 140ms before constructing a loading surface: faster operations finish with press／glyph acknowledgement only, while longer operations use honest phased progress—preparing, safely processing, and complete—with an indeterminate track. Results render as soon as they are available; there is no fake minimum delay. The former fixed 14%／56% values are prohibited, and determinate progress is valid only when a service supplies real monotonic `completed／total` data. The durable work runs outside the NiceGUI UI event loop; the existing workflow service remains the sole owner of transactions, fairness changes, and snapshot timing. `_safe_read_action` is reserved for short, bounded, read-only candidate and preview lookups and must not become a write path.
+Roster generation, publication, manual draft changes, published-duty leave adjustment, pre-generation leave declaration/cancellation, prefect creation/update/archive, bulk import, PDF/report creation, verified snapshot/handover packaging, restore, and host-local support persistence run through one bilingual progress coordinator. The coordinator waits 140ms before constructing a loading surface: faster operations finish with press／glyph acknowledgement only, while longer operations whose progress cannot be measured use an honest indeterminate state. Phase names appear only when the backend supplies actual operation events; determinate progress is valid only for real monotonic `completed／total` data. Results render as soon as they are available, with no fake minimum delay or fixed 14%／56% values. The durable work runs outside the NiceGUI UI event loop; the existing workflow service remains the sole owner of transactions, fairness changes, and snapshot timing. `_safe_read_action` is reserved for short, bounded, read-only candidate and preview lookups and must not become a write path.
 
 `nicegui_app.ui.navigation` owns a separate route-progress runtime. Navigation records the existing focus intent immediately but reveals the top track only after 150ms, then clears timer, ARIA and visual state on `pageshow`, `pagehide` or replacement. It never supplies a percentage and does not compete with a consequential-operation dialog. The public Worker has an independent but equivalent Admin／Guest entry controller: role-specific `starting／navigating／slow／error` states drive both desktop and mobile duplicates, while a delayed eight-second slow state invalidates late playback settlement and unlocks an explicit retry. Welcome audio remains a trusted-click enhancement and cannot gate navigation.
 

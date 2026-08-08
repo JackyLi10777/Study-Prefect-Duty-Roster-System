@@ -73,10 +73,39 @@ body {
 }
 
 .sy-sidebar-body {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: 100%;
+  height: 100dvh;
   min-height: 0;
   padding: 18px 12px 24px !important;
-  overflow: visible !important;
+  overflow: hidden !important;
   scrollbar-width: thin;
+}
+
+.sy-sidebar-brand,
+.sy-sidebar-footer {
+  min-width: 0;
+}
+
+.sy-sidebar-navigation {
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+}
+
+.sy-sidebar-footer {
+  padding: 10px 8px calc(2px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--sy-v2-hairline);
+}
+
+.sy-sidebar-footer-copy {
+  color: var(--sy-muted);
+  font-size: 9px;
+  line-height: 1.45;
 }
 
 .sy-brand-lockup {
@@ -204,43 +233,6 @@ body {
   margin-top: 6px;
   padding-top: 4px;
   border-top: 1px solid var(--sy-v2-hairline);
-}
-
-.sy-sidebar-feedback {
-  gap: 5px !important;
-  margin: auto 2px 0 !important;
-  padding: 14px 8px 0 !important;
-  border: 0 !important;
-  border-top: 1px solid var(--sy-v2-hairline) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-.sy-sidebar-feedback-copy {
-  display: none;
-}
-
-.sy-sidebar-feedback-title {
-  color: var(--sy-muted);
-  font-size: 10px;
-}
-
-.sy-sidebar-feedback-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  color: var(--sy-v2-ink-soft) !important;
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: 650;
-  text-decoration: none;
-}
-
-.sy-sidebar-feedback-link:hover {
-  color: var(--sy-role-action) !important;
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 /* ---------- Compact global header ---------- */
@@ -893,8 +885,7 @@ body {
   }
 
   .sy-nav-control,
-  .sy-main .q-btn,
-  .sy-sidebar-feedback-link {
+  .sy-main .q-btn {
     min-height: 44px !important;
   }
 }
@@ -929,14 +920,6 @@ body {
   .sy-brand-principle {
     padding-left: 0;
     margin: 4px 4px 14px !important;
-  }
-
-  .sy-sidebar-feedback-copy {
-    display: block;
-  }
-
-  .sy-sidebar-feedback-link {
-    min-height: 44px;
   }
 
   .sy-nav-control {

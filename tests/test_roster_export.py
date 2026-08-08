@@ -18,7 +18,7 @@ from nicegui_app.services.roster_export import (
     build_roster_pdf,
 )
 from nicegui_app.services.roster_workflow import RosterWorkflow
-from nicegui_app.services.workflow_types import DraftDayEdit
+from nicegui_app.services.workflow_types import DraftDayEdit, DraftSlotStateEdit
 
 
 def _embedded_font_names(reader: PdfReader) -> set[str]:
@@ -145,6 +145,39 @@ def test_schedule_pdf_renders_a_whole_day_closure_as_one_distinct_column(tmp_pat
         ).pages
     )
     assert extracted_text.count("全天不開放") == 1
+
+
+def test_chinese_schedule_pdf_distinguishes_week_local_unavailable_from_room_closed(
+    tmp_path: Path,
+) -> None:
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "live.sqlite3",
+        backup_dir=tmp_path / "backups",
+        seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    draft = workflow.generate_and_save_draft(date(2026, 9, 7))
+    workflow.apply_draft_patch(
+        roster_week_id=draft.id,
+        expected_week_version=draft.version,
+        slot_edits=(
+            DraftSlotStateEdit(
+                cell_key="MONDAY:ROOM_302:1",
+                state="unavailable",
+            ),
+        ),
+        command_id="close-one-slot-for-pdf",
+    )
+
+    chinese_text = "\n".join(
+        page.extract_text()
+        for page in PdfReader(
+            BytesIO(build_roster_pdf(workflow, draft.id, language="zh").content)
+        ).pages
+    )
+
+    assert chinese_text.count("本週不開放") == 1
+    assert chinese_text.count("不開放") == 5
 
 
 def test_group_schedule_crest_and_footer_are_explicit_export_options(tmp_path) -> None:

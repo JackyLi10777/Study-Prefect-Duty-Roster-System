@@ -156,6 +156,44 @@ class RosterDayClosureRecord(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime)
 
 
+class RosterSlotExceptionRecord(Base):
+    """An operator-approved unavailable duty slot for one roster week."""
+
+    __tablename__ = "roster_slot_exceptions"
+    __table_args__ = (
+        UniqueConstraint(
+            "roster_week_id",
+            "day",
+            "post_code",
+            "slot_index",
+            name="uq_roster_slot_exception",
+        ),
+        CheckConstraint(
+            "day IN ('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY')",
+            name="ck_roster_slot_exception_day",
+        ),
+        CheckConstraint("kind = 'unavailable'", name="ck_roster_slot_exception_kind"),
+        CheckConstraint(
+            "(post_code IN ('ASSIST_IN_CHARGE', 'ROOM_302') AND slot_index = 1) OR "
+            "(post_code IN ('ROOM_303', 'ROOM_202') AND slot_index IN (1, 2))",
+            name="ck_roster_slot_exception_cell",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    roster_week_id: Mapped[int] = mapped_column(
+        ForeignKey("roster_weeks.id", ondelete="CASCADE")
+    )
+    day: Mapped[str] = mapped_column(String(16))
+    post_code: Mapped[str] = mapped_column(String(32))
+    slot_index: Mapped[int] = mapped_column(Integer)
+    kind: Mapped[str] = mapped_column(String(24), default="unavailable", server_default="unavailable")
+    reason_code: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+
+
 class FairnessLedgerRecord(Base):
     __tablename__ = "fairness_ledger"
     __table_args__ = (

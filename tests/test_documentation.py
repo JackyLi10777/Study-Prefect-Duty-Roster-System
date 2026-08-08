@@ -960,7 +960,8 @@ def test_feedback_channel_is_consistent_bilingual_and_scopes_diagnostic_attachme
     assert 'GITHUB_REPOSITORY_URL = "https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System"' in contact
     assert 'INSTAGRAM_PROFILE_URL = "https://www.instagram.com/5662jacky/"' in contact
     assert "mailto:" in contact and "urlencode" in contact
-    assert "data-testid=sidebar-feedback" in shell
+    assert "data-testid=sidebar-feedback" not in shell
+    assert "sy-sidebar-navigation" in shell
     assert "data-testid=feedback-channel" in pages
     assert "feedback_channel_safe_note" in messages
     assert "github_repository_action" in messages
