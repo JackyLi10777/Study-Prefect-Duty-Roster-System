@@ -127,7 +127,7 @@ support/
 - **路由邊界**：未登入的 `GET /support` 留在 Worker 靜態頁；只有完全相符的 `POST /api/support/incidents` 可取得 60 秒、只含 `support.report.submit` 的簽署 Public principal 並到達 origin。已驗證 Admin／Guest 的 `/support` 才代理到共同 NiceGUI 工作台。UI 路由不能取代服務層能力核對。
 - **Admin**：伺服器再次驗證 `PERSISTENT_WRITE`，可預覽 metadata、選擇允許的附件、確認後保存至 Inbox；獲得 Incident ID、按 `INC-…` 重新核對完整性、下載本機 bundle及開啟 mailto。任何寫入失敗只顯示安全原因及 OP reference，不阻斷值班工作。
 - **Guest**：相同資訊架構，但所有輸入和產物只存在當前 browser memory／download；不可上載附件、呼叫持久服務或建立 background job。
-- **Public／Viewer**：只接受預期、實際、重現步驟及選填影響的純文字 allowlist；同源、16 KiB、每 IP 每分鐘 6 次及本機 quota 均 fail closed。成功得到 `INC-…`；網絡／origin 失敗時保留內容並回退到只存在目前分頁的 `FB-…`，之後仍可 copy／download／mailto。不能上載附件、讀取收件匣或取得其他能力。
+- **Public／Viewer**：只接受預期、實際、重現步驟及選填影響的純文字 allowlist；同源、16 KiB、每 IP 每分鐘 6 次及本機 quota 均 fail closed。成功得到 `INC-…`；網絡、origin 或收件匣失敗時保留內容並回退到只存在目前分頁的 `FB-…`，並按限流、內容過長或服務不可用顯示準確下一步，之後仍可 copy／download／mailto。不能上載附件、讀取收件匣或取得其他能力。
 - **GitHub**：一般 bug 只提交最小、已刪節、可重現內容；疑似安全問題使用 Private Vulnerability Reporting。兩者均不可附完整 log、bundle、資料庫、backup 或 credentials。
 
 ## Codex 安全交接
@@ -148,7 +148,7 @@ Application Incident Bundle 不直接收集 Windows raw logs。主機證據工�
 
 1. Public／Viewer 或 Admin 在「報告問題」輸入預期、實際、重現及選填影響；Admin 亦可加入選填 OP／REQ。
 2. Public／Viewer 直接提交受限純文字；Admin 先核對預覽及每個選填附件。
-3. 保存後抄下 `INC-...`。Admin 可在同頁按追溯碼核對及下載；網絡失敗所得 `FB-...` 尚未進入收件匣，須重試或以電郵交接。
+3. 保存後抄下 `INC-...`。Admin 可在同頁按追溯碼核對及下載；網絡、origin 或收件匣失敗所得 `FB-...` 尚未進入收件匣，須按畫面原因重試或以電郵交接。
 4. 要求 Codex「檢視 Support Inbox 的 INC-...」；不要要求它執行 bundle。
 5. Codex 先執行 list／validate／summary，再以虛構或隔離資料重現。
 6. 修正完成後把 root cause、tests、release、deployment 及 residual risk 寫入 `resolution.md`；只有線上核對成功才 close。

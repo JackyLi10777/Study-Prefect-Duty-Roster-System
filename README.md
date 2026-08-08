@@ -28,7 +28,7 @@
 
 [English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)
 
-**反饋與聯絡：** 遇到問題時，先在網站開啟 **「問題回報／Support」**。未登入的 Public／Viewer 可把三項純文字資料安全提交到主機本機支援收件匣並取得 `INC-…` 追溯碼；網絡中斷時表單會保留內容並提供只存在目前分頁的 `FB-…` 臨時碼。管理員可在站內按 `INC-…` 核對事件包並下載安全副本，也可在明確同意後加入有限大小的 TXT／JSON／PNG 證據；Guest 仍只在瀏覽器建立臨時報告。電郵只是保存後的可選交接：[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk)。不要提交密碼、token、cookie、完整資料庫或完整備份；姓名、請假內容、值班表、PDF、截圖或日誌只在確實有助調查時提供最少相關部分。完整程序見[本機問題回報與事故處理](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md)。
+**反饋與聯絡：** 遇到問題時，先在網站開啟 **「問題回報／Support」**。未登入的 Public／Viewer 可把三項純文字資料安全提交到主機本機支援收件匣並取得 `INC-…` 追溯碼；網絡、origin 或本機收件匣失敗時，表單會保留內容並提供只存在目前分頁的 `FB-…` 臨時碼。管理員可在站內按 `INC-…` 核對事件包並下載安全副本，也可在明確同意後加入有限大小的 TXT／JSON／PNG 證據；Guest 仍只在瀏覽器建立臨時報告。電郵只是保存後的可選交接：[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk)。不要提交密碼、token、cookie、完整資料庫或完整備份；姓名、請假內容、值班表、PDF、截圖或日誌只在確實有助調查時提供最少相關部分。完整程序見[本機問題回報與事故處理](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md)。
 
 ## 先從這裡開始
 

@@ -685,6 +685,7 @@ const PUBLIC_SUPPORT_HTML = `<!doctype html>
       </div>
     </form>
 
+    <p id="supportStatus" class="site-share-status" role="status" aria-live="polite"></p>
     <section id="supportResult" class="support-result" hidden aria-live="polite">
       <h2 id="supportResultTitle">報告已保存</h2>
       <p>事件編號 · Incident ID: <strong id="supportIncidentId"></strong></p>
@@ -695,7 +696,6 @@ const PUBLIC_SUPPORT_HTML = `<!doctype html>
         <button id="supportCopy" class="guest-enter" type="button">複製摘要 <span lang="en">· Copy summary</span></button>
         <a id="supportEmail" class="guest-enter" href="mailto:s10777@syss.edu.hk">開啟電郵 <span lang="en">· Open email</span></a>
       </div>
-      <p id="supportStatus" class="site-share-status" role="status"></p>
     </section>
   </main>
   <footer class="site-footer">
@@ -784,6 +784,8 @@ form.addEventListener('submit', async event => {
   statusNode.textContent = '正在安全提交… · Submitting securely…';
   let persisted = false;
   let incidentId = '';
+  let failureTitle = '未能提交 · Browser fallback ready';
+  let failureReason = '連線中斷；輸入仍然保留。 · The connection was interrupted; your input is preserved.';
   try {
     const response = await fetch('/api/support/incidents', {
       method: 'POST',
@@ -792,7 +794,23 @@ form.addEventListener('submit', async event => {
       body: JSON.stringify(reportPayload),
     });
     const responsePayload = await response.json().catch(() => ({}));
-    if (!response.ok || !/^INC-\\d{8}-[A-F0-9]{8}$/.test(responsePayload.incidentId || '')) {
+    if (!response.ok) {
+      if (response.status === 429) {
+        failureTitle = '提交過於頻密 · Browser fallback ready';
+        failureReason = '一分鐘內提交次數過多；請保留本機備援並稍後重試。 · Too many submissions in one minute; keep the browser fallback and retry later.';
+      } else if (response.status === 413) {
+        failureTitle = '報告內容過長 · Browser fallback ready';
+        failureReason = '報告超出安全大小；請刪減至真正相關內容後重試。 · The report exceeded the safe size; shorten it to the relevant details and retry.';
+      } else if (response.status === 503) {
+        failureTitle = '本機收件匣暫時不可用 · Browser fallback ready';
+        failureReason = '伺服器或本機支援收件匣暫時不可用；請保留備援並稍後重試。 · The server or local support inbox is unavailable; keep the fallback and retry later.';
+      } else {
+        failureReason = '伺服器未接受這份報告；請核對內容後重試。 · The server did not accept this report; review the content and retry.';
+      }
+      throw new Error(responsePayload.reference || 'submission_failed');
+    }
+    if (!/^INC-\\d{8}-[A-F0-9]{8}$/.test(responsePayload.incidentId || '')) {
+      failureReason = '伺服器回應缺少有效追溯碼；請保留本機備援。 · The server response did not contain a valid trace ID; keep the browser fallback.';
       throw new Error(responsePayload.reference || 'submission_failed');
     }
     persisted = true;
@@ -813,7 +831,7 @@ form.addEventListener('submit', async event => {
   });
   incidentIdNode.textContent = preparedReport.incident_id;
   emailLink.href = 'mailto:s10777@syss.edu.hk?subject=' + encodeURIComponent('Service Weave support ' + preparedReport.incident_id);
-  resultTitle.textContent = persisted ? '報告已保存 · Report saved' : '網絡未能提交 · Browser fallback ready';
+  resultTitle.textContent = persisted ? '報告已保存 · Report saved' : failureTitle;
   resultGuidance.textContent = persisted
     ? '請記下追溯碼；管理員或維護 AI 可在本機支援收件匣按此代碼查詢。'
     : '輸入仍然保留；請下載本機備援，稍後重試或以電郵傳送追溯碼。';
@@ -822,7 +840,7 @@ form.addEventListener('submit', async event => {
     : 'Your input is preserved. Download the browser fallback, retry later, or email its reference.';
   statusNode.textContent = persisted
     ? '已安全保存；沒有上傳附件。 · Saved securely; no attachments were uploaded.'
-    : '未寫入伺服器；已建立 FB 本機備援。 · Not stored on the server; an FB browser fallback was created.';
+    : failureReason + ' 未寫入伺服器；已建立 FB 本機備援。 · Not stored on the server; an FB browser fallback was created.';
   result.hidden = false;
   result.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
 });
