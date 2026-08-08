@@ -843,9 +843,11 @@ def _install_mobile_drawer_accessibility() -> None:
           window.__syDrawerA11yCleanup?.();
           const controller = new AbortController();
           let settleFrame = 0;
+          let breakpointFrame = 0;
+          const isMobile = () => matchMedia('(max-width: 900px)').matches;
+          let mobileViewport = isMobile();
           button.dataset.syDrawerA11y = 'ready';
           window.__syDrawerA11yOwner = button;
-          const isMobile = () => matchMedia('(max-width: 900px)').matches;
           const currentBackdrop = () => document.querySelector('.q-drawer__backdrop');
           const backdropVisible = () => {
             const backdrop = currentBackdrop();
@@ -981,10 +983,43 @@ def _install_mobile_drawer_accessibility() -> None:
               event.preventDefault(); first.focus({preventScroll: true});
             }
           }, {signal: controller.signal});
-          window.addEventListener('resize', () => sync(false), {passive: true, signal: controller.signal});
+          const reconcileBreakpoint = () => {
+            const nextMobileViewport = isMobile();
+            if (nextMobileViewport && !mobileViewport) {
+              const startedAt = performance.now();
+              let requestedClose = false;
+              const tick = () => {
+                if (controller.signal.aborted) return;
+                if (!requestedClose && isOpen()) {
+                  const trigger = document.querySelector('.sy-desktop-drawer-trigger');
+                  if (trigger instanceof HTMLElement) {
+                    requestedClose = true;
+                    trigger.click();
+                    settle(false, false);
+                    breakpointFrame = 0;
+                    return;
+                  }
+                }
+                if (performance.now() - startedAt < 500) {
+                  breakpointFrame = requestAnimationFrame(tick);
+                  return;
+                }
+                breakpointFrame = 0;
+                sync(false);
+              };
+              if (breakpointFrame) cancelAnimationFrame(breakpointFrame);
+              breakpointFrame = requestAnimationFrame(tick);
+            } else {
+              sync(false);
+            }
+            mobileViewport = nextMobileViewport;
+          };
+          window.addEventListener('resize', reconcileBreakpoint, {passive: true, signal: controller.signal});
           window.__syDrawerA11yCleanup = () => {
             if (settleFrame) cancelAnimationFrame(settleFrame);
+            if (breakpointFrame) cancelAnimationFrame(breakpointFrame);
             settleFrame = 0;
+            breakpointFrame = 0;
             observer.disconnect();
             observedShell = null;
             observedBackdrop = null;

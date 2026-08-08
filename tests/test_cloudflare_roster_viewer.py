@@ -93,12 +93,14 @@ def test_worker_toolchain_is_project_pinned() -> None:
     assert package["packageManager"] == "pnpm@11.7.0"
     assert package["engines"] == {"node": ">=22"}
     assert package["devDependencies"] == {
-        "miniflare": "4.20260708.1",
-        "wrangler": "4.110.0",
+        "miniflare": "4.20260730.0",
+        "wrangler": "4.116.0",
     }
     assert package["scripts"]["deploy:dry-run"].startswith("wrangler deploy --dry-run --strict")
-    assert "miniflare@4.20260708.1" in lock
-    assert "wrangler@4.110.0" in lock
+    assert "miniflare@4.20260730.0" in lock
+    assert "wrangler@4.116.0" in lock
+    assert "undici@7.29.0" in lock
+    assert "undici@7.28.0" not in lock
     assert "sharp@0.35.0" in lock
     assert "sharp@0.34.5" not in lock
     assert workspace.splitlines() == [
@@ -109,6 +111,7 @@ def test_worker_toolchain_is_project_pinned() -> None:
         "strictDepBuilds: true",
         "overrides:",
         "  sharp: 0.35.0",
+        "  undici: 7.29.0",
     ]
     assert _jsonc(VIEWER_ROOT / "wrangler.jsonc")["$schema"] == "./node_modules/wrangler/config-schema.json"
 
@@ -326,7 +329,9 @@ def test_viewer_is_bilingual_responsive_theme_aware_printable_and_reduced_motion
     assert 'lang="zh-Hant-HK"' in source
     assert "導學風紀值班表" in source
     assert "Study Prefect Duty Roster" in source
-    assert "休室 · Closed" in source
+    assert "不開放 · Closed" in source
+    assert "全天不開放 · Closed all day" in source
+    assert "cell?.state === 'day_closed'" in source
     assert "待補 · Vacancy" in source
     assert "@media (prefers-color-scheme: dark)" in source
     assert ':root[data-theme="dark"]' in source

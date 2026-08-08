@@ -53,6 +53,16 @@ FIXTIONAL_PREFECT_NAMES = (
     "周恩言",
     "張樂晴",
     "郭善恩",
+    "謝頌賢",
+    "鄭思朗",
+    "梁樂謙",
+    "吳善晴",
+    "許頌言",
+    "馬思賢",
+    "杜樂恩",
+    "葉善澄",
+    "馮頌朗",
+    "羅思言",
 )
 
 SHARED_ROUTES = (
@@ -547,6 +557,20 @@ def _selected_text(select: Locator) -> str:
     return " ".join(select.locator(".q-field__native").inner_text().split())
 
 
+def _wait_for_draft_version(page: Page, version: int) -> None:
+    page.wait_for_function(
+        r"""
+        (expectedVersion) => {
+          const text = document.querySelector('.sy-roster-detail-head')?.innerText || '';
+          const match = text.match(/(?:版本|Version)\s*(\d+)/);
+          return match !== null && Number(match[1]) === expectedVersion;
+        }
+        """,
+        arg=version,
+        timeout=30_000,
+    )
+
+
 def _download_bytes(page: Page, trigger: Locator) -> tuple[str, bytes]:
     with page.expect_download(timeout=30_000) as download_info:
         trigger.click()
@@ -699,23 +723,191 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
     _wait_for_app(page)
     roster_week_id = int(page.url.rstrip("/").rsplit("/", 1)[-1])
 
-    page.get_by_role(
-        "button",
-        name=re.compile(r"載入合資格人選|Load eligible candidates"),
-    ).click()
-    draft_selects = page.locator("main#main-content .q-select:visible")
-    chosen_draft_candidate = _select_option(page, draft_selects.nth(1))
-    draft_reason = page.locator("textarea[name='draft-change-reason']")
-    if draft_reason.input_value() != "":
-        raise UnifiedGuestVerificationError("The optional draft-change reason did not start blank.")
-    page.get_by_role(
-        "button",
-        name=re.compile(r"儲存草稿修改|Save draft change"),
-    ).click()
-    page.wait_for_function(
-        "() => /(?:版本|Version)\\s*2/.test(document.querySelector('.sy-roster-detail-head')?.innerText || '')",
-        timeout=30_000,
+    draft_grid = page.get_by_test_id("draft-grid-editor")
+    draft_grid.wait_for(state="visible", timeout=10_000)
+    editable_cells = draft_grid.locator('[data-cell-key].sy-draft-grid-cell--assigned')
+    editable_cells.first.wait_for(state="visible", timeout=10_000)
+    if editable_cells.count() < 1:
+        raise UnifiedGuestVerificationError("The draft matrix exposed no editable assigned cells.")
+
+    original_monday_cells = draft_grid.locator(
+        '[data-cell-key^="MONDAY:"].sy-draft-grid-cell--assigned'
     )
+    original_monday_cells.first.wait_for(state="visible", timeout=10_000)
+    original_monday: list[tuple[str, str]] = []
+    for index in range(original_monday_cells.count()):
+        cell = original_monday_cells.nth(index)
+        cell_key = cell.get_attribute("data-cell-key")
+        prefect_name = " ".join(cell.locator(".sy-draft-cell-name").inner_text().split())
+        if not cell_key or prefect_name not in FIXTIONAL_PREFECT_NAMES:
+            raise UnifiedGuestVerificationError(
+                "The original Monday matrix did not expose a stable fictional assignment."
+            )
+        original_monday.append((cell_key, prefect_name))
+
+    day_toggle = page.get_by_test_id("draft-day-toggle-monday")
+    day_toggle.wait_for(state="visible", timeout=10_000)
+    day_toggle.click()
+    day_confirm = page.get_by_test_id("draft-day-confirm-close-monday")
+    day_confirm.wait_for(state="visible", timeout=10_000)
+    day_confirm.click()
+    page.get_by_test_id("draft-save-all").click()
+    _wait_for_draft_version(page, 2)
+    page.locator(".sy-draft-grid-day-closed").wait_for(state="visible", timeout=10_000)
+
+    # A full reload in the same authenticated Guest session must restore the
+    # signed in-memory snapshot, including the persisted closed-day override.
+    page.reload(wait_until="domcontentloaded")
+    _wait_for_app(page)
+    page.get_by_test_id("draft-grid-editor").wait_for(state="visible", timeout=10_000)
+    page.locator(".sy-draft-grid-day-closed").wait_for(state="visible", timeout=10_000)
+    # The confirmation dialog is created only after the operator asks to
+    # reopen the persisted closed day.  The closed column above is the durable
+    # state proof; requiring an unopened dialog here would test an impossible
+    # DOM state rather than snapshot restoration.
+    page.get_by_test_id("draft-day-toggle-monday").click()
+    reopen_monday = page.get_by_test_id("draft-day-confirm-reopen-monday")
+    reopen_monday.wait_for(state="visible", timeout=10_000)
+    reopen_monday.click()
+    page.get_by_test_id("draft-save-all").click()
+    _wait_for_draft_version(page, 3)
+    monday_vacancies = page.locator(
+        '[data-cell-key^="MONDAY:"].sy-draft-grid-cell--vacant'
+    )
+    if monday_vacancies.count() != len(original_monday):
+        raise UnifiedGuestVerificationError(
+            "Reopening the Guest closed day did not reset every removed assignment to vacancy."
+        )
+
+    # Compact tablet evidence uses the same underlying cells and editor. Enter
+    # the documented X alias from a touch-sized day card, prove that it becomes
+    # an explicit pending vacancy, then undo it so the publish flow remains
+    # complete. Blank input is covered separately and must never clear a cell.
+    page.set_viewport_size({"width": 768, "height": 1024})
+    page.locator(".q-drawer__backdrop").wait_for(state="hidden", timeout=5_000)
+    mobile_day = page.locator(".sy-draft-mobile-day:visible").first
+    mobile_day.wait_for(state="visible", timeout=10_000)
+    mobile_assignment = page.locator(".sy-draft-mobile-cell--assigned:visible").first
+    mobile_assignment.wait_for(state="visible", timeout=10_000)
+    mobile_cell_key = mobile_assignment.get_attribute("data-cell-key")
+    if not mobile_cell_key:
+        raise UnifiedGuestVerificationError(
+            "The compact draft card did not expose a stable cell key."
+        )
+    mobile_assignment.click()
+    mobile_candidate_search = page.locator(
+        f'[data-testid="draft-candidate-search"][data-cell-key="{mobile_cell_key}"]'
+    )
+    mobile_candidate_search.wait_for(state="visible", timeout=10_000)
+    mobile_candidate_search.click()
+    # Quasar creates and replaces the searchable input as the select gains
+    # focus.  Typing through the focused control exercises the real keyboard
+    # contract without retaining a locator to a transient input node.
+    page.keyboard.type("X")
+    vacancy_option = page.locator(".q-menu .q-item:visible").filter(
+        has_text=re.compile(r"X\s*/\s*×", re.IGNORECASE)
+    ).first
+    vacancy_option.wait_for(state="visible", timeout=10_000)
+    vacancy_option.click()
+    page.locator(
+        ".sy-draft-mobile-cell--vacant.sy-draft-mobile-cell--pending:visible"
+    ).first.wait_for(
+        state="visible",
+        timeout=10_000,
+    )
+    page.get_by_test_id("draft-undo").click()
+    page.set_viewport_size({"width": 1440, "height": 1024})
+
+    # Restore the removed assignments through the same browser editor before
+    # publishing. This keeps the verifier honest: reopening creates vacancies,
+    # while a complete schedule only returns after an explicit batch save.
+    for cell_key, prefect_name in original_monday:
+        page.locator(
+            f'[data-cell-key="{cell_key}"].sy-draft-grid-cell:visible'
+        ).click()
+        restore_candidate = page.locator(
+            f'[data-testid="draft-candidate-search"][data-cell-key="{cell_key}"]'
+        )
+        restore_candidate.wait_for(state="visible", timeout=10_000)
+        _select_option(
+            page,
+            restore_candidate,
+            text=re.compile(rf"^{re.escape(prefect_name)}(?:\s|·|$)"),
+        )
+        # NiceGUI applies the select change over its websocket and refreshes
+        # the shared editor panel.  Wait for the durable pending-cell render
+        # before opening the next cell; otherwise the previous refresh can
+        # replace the next selector after it has been clicked.
+        page.locator(
+            f'[data-cell-key="{cell_key}"].sy-draft-grid-cell--pending:visible'
+        ).wait_for(state="visible", timeout=10_000)
+    page.get_by_test_id("draft-save-all").click()
+    _wait_for_draft_version(page, 4)
+    restored_monday = page.locator(
+        '[data-cell-key^="MONDAY:"].sy-draft-grid-cell--assigned'
+    )
+    if restored_monday.count() != len(original_monday):
+        raise UnifiedGuestVerificationError(
+            "The Guest browser did not restore every Monday assignment before publish."
+        )
+
+    draft_grid = page.get_by_test_id("draft-grid-editor")
+    editable_cells = draft_grid.locator('[data-cell-key].sy-draft-grid-cell--assigned')
+    editable_cell = editable_cells.first
+    draft_cell_key = editable_cell.get_attribute("data-cell-key")
+    if not draft_cell_key:
+        raise UnifiedGuestVerificationError("The selected Guest draft cell has no stable key.")
+    original_draft_name = " ".join(
+        editable_cell.locator(".sy-draft-cell-name").inner_text().split()
+    )
+    editable_cell.click()
+    candidate_search = page.locator(
+        f'[data-testid="draft-candidate-search"][data-cell-key="{draft_cell_key}"]'
+    )
+    candidate_search.wait_for(state="visible", timeout=10_000)
+    chosen_draft_candidate = _select_option(
+        page,
+        candidate_search,
+        exclude=re.compile(
+            rf"^{re.escape(original_draft_name)}(?:\s|·|\(|$)"
+            r"|目前安排|Current assignment|空缺|Vacant|unassigned",
+            re.IGNORECASE,
+        ),
+    )
+    replacement_draft_name = next(
+        (
+            name
+            for name in FIXTIONAL_PREFECT_NAMES
+            if re.search(
+                rf"^{re.escape(name)}(?:\s|·|\(|$)",
+                chosen_draft_candidate,
+            )
+        ),
+        "",
+    )
+    if not replacement_draft_name or replacement_draft_name == original_draft_name:
+        raise UnifiedGuestVerificationError(
+            "The Guest draft verifier did not choose a different prefect."
+        )
+    draft_reason = page.locator("textarea[name='draft-batch-reason']")
+    if draft_reason.input_value() != "":
+        raise UnifiedGuestVerificationError("The optional draft-batch reason did not start blank.")
+    page.get_by_test_id("draft-save-all").click()
+    _wait_for_draft_version(page, 5)
+    changed_draft_cell = page.locator(
+        f'[data-cell-key="{draft_cell_key}"].sy-draft-grid-cell--assigned:visible'
+    ).first
+    changed_draft_cell.wait_for(state="visible", timeout=10_000)
+    changed_draft_name = " ".join(
+        changed_draft_cell.locator(".sy-draft-cell-name").inner_text().split()
+    )
+    if (
+        changed_draft_name != replacement_draft_name
+        or changed_draft_name == original_draft_name
+    ):
+        raise UnifiedGuestVerificationError(
+            "The saved Guest draft cell did not display the selected replacement prefect."
+        )
 
     page.get_by_role("button", name=re.compile(r"發布週表|Publish roster")).click()
     page.get_by_role(
@@ -768,6 +960,16 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
         "manualDraftChange": {
             "reasonOptional": True,
             "candidate": chosen_draft_candidate,
+            "originalName": original_draft_name,
+            "replacementName": replacement_draft_name,
+        },
+        "dayClosure": {
+            "saved": True,
+            "sameSessionReloaded": True,
+            "reopenedAsVacant": True,
+            "restoredForPublish": True,
+            "tabletDayCardEdited": True,
+            "vacancyAliasEntered": "X",
         },
         "demoPublish": True,
         "rosterDownloads": roster_downloads,
@@ -1194,6 +1396,9 @@ def main() -> int:
     after_fingerprint, after_counts = logical_database_fingerprint(database_path)
     if after_fingerprint != before_fingerprint or after_counts != before_counts:
         raise UnifiedGuestVerificationError("Guest browsing changed the disposable official SQLite content.")
+    day_closure_evidence = workflow_evidence.get("dayClosure")
+    if isinstance(day_closure_evidence, dict):
+        day_closure_evidence["officialSqliteUnchanged"] = True
     _assert_clean_browser(console_errors, page_errors)
 
     report = {

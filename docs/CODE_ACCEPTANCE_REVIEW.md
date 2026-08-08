@@ -72,6 +72,8 @@ python -X utf8 scripts\verify_mixed_gateway_load.py
 
 The repository keeps one locked Python dependency set and locally governed front-end assets. A dependency is not justified by convenience alone; it must remove more risk or work than it introduces.
 
+安全公告涉及直接或傳遞依賴時，必須同時核對正式 Python lock、開發 Python lock 及 Worker lock，分別執行 Python 與 Node 漏洞掃描，並以完整測試證明修復版本沒有改變排班、交易、PDF、Guest 或部署契約。只更新 `requirements.txt`、只更新其中一份 lock，或只看功能測試均不是完整修復；未完成 exact-source gate 前只能記錄為候選來源，不能寫成已部署。
+
 `cloudflare/roster_viewer` 直接鎖定 dev-only Miniflare，因為混合 gateway verifier 直接使用其 API 啟動 workerd、KV、rate limits 及 service binding；只依賴 Wrangler 的傳遞性版本會隱藏真正 owner。它不進入 production Worker bundle 或 NiceGUI runtime。相反，React adapter、ScrollTrigger 或額外 GSAP plugins 只有出現對應產品需求及可量度收益時才可加入；「skill 存在」或裝飾性動畫本身不是依賴理由。
 
 ## 6. 驗證深度按風險分級／Scale verification to risk

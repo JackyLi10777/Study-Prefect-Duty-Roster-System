@@ -37,9 +37,20 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert "event.target.closest('.q-drawer__backdrop')" in shell
     assert "const settle = (expectedOpen, focusDrawer = false)" in shell
     assert "return isMobile() ? open : drawerVisible" in shell
+    drawer_accessibility = shell.split("def _install_mobile_drawer_accessibility", 1)[1].split(
+        "def _install_mobile_viewport_accessibility", 1
+    )[0]
+    assert drawer_accessibility.index("const isMobile =") < drawer_accessibility.index(
+        "let mobileViewport = isMobile()"
+    )
     assert "drawerButtons().forEach(trigger =>" in shell
     assert "settle(expectedOpen, trigger === button && expectedOpen)" in shell
     assert "settleFrame = requestAnimationFrame(tick)" in shell
+    assert "const reconcileBreakpoint = () =>" in shell
+    assert "nextMobileViewport && !mobileViewport" in shell
+    assert "document.querySelector('.sy-desktop-drawer-trigger')" in shell
+    assert "window.addEventListener('resize', reconcileBreakpoint" in shell
+    assert "if (breakpointFrame) cancelAnimationFrame(breakpointFrame)" in shell
     assert "performance.now() - startedAt >= 3000" in shell
     assert "setTimeout(() => sync(true), 220)" not in shell
     assert "setTimeout(() => sync(false), 260)" not in shell

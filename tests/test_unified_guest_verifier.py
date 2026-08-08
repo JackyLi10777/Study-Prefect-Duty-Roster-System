@@ -7,6 +7,7 @@ import sqlite3
 import pytest
 
 from nicegui_app.release_evidence import RELEASE_SOURCE_FILES
+from nicegui_app.services.guest_workspace import demo_fixture
 from scripts import verify_release_candidate, verify_unified_guest_ui
 from scripts.verify_unified_guest_ui import (
     EDITORIAL_PARITY_ROUTES,
@@ -38,6 +39,12 @@ def _isolated_guest_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
     support_dir.mkdir()
     monkeypatch.setenv("SING_YIN_ADMIN_SUPPORT_DIR", str(support_dir))
     return database_path
+
+
+def test_verifier_tracks_every_fictional_name_in_the_demo_fixture() -> None:
+    fixture_names = {str(row["nameZh"]) for row in demo_fixture()["prefects"]}
+
+    assert set(FIXTIONAL_PREFECT_NAMES) == fixture_names
 
 
 def test_unified_guest_verifier_accepts_only_explicit_disposable_inputs(
@@ -134,7 +141,23 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         "guest-restricted-state",
         "pre-generation-leave-prefect",
         "pre-generation-leave-reason",
-        "draft-change-reason",
+        "data-cell-key",
+        "draft-candidate-search",
+        "draft-batch-reason",
+        "draft-save-all",
+        "draft-day-toggle-monday",
+        "draft-day-confirm-close-monday",
+        "draft-day-confirm-reopen-monday",
+        ".sy-draft-grid-day-closed",
+        ".sy-draft-mobile-day:visible",
+        ".sy-draft-mobile-cell--assigned:visible",
+        'mobile_assignment.get_attribute("data-cell-key")',
+        '[data-testid="draft-candidate-search"][data-cell-key="{mobile_cell_key}"]',
+        'page.keyboard.type("X")',
+        ".sy-draft-mobile-cell--vacant.sy-draft-mobile-cell--pending:visible",
+        '.sy-draft-grid-cell--pending:visible',
+        '"vacancyAliasEntered": "X"',
+        '"officialSqliteUnchanged"',
         "leave-adjustment-reason",
         "download-summary-json",
         "school-year-rollover-confirmation",
@@ -144,12 +167,44 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         "main#main-content .q-select:visible",
     ):
         assert contract in source
-    assert source.count('page.locator("main#main-content .q-select:visible")') == 2
+    assert source.count('page.locator("main#main-content .q-select:visible")') == 1
+    assert "draft-change-reason" not in source
+    assert "載入合資格人選" not in source
+    assert "儲存草稿修改" not in source
+
+    weekly_flow = source.split("def _exercise_weekly_workflow", 1)[1].split(
+        "def _exercise_summary_downloads", 1
+    )[0]
+    assert weekly_flow.index('get_by_test_id("draft-day-confirm-close-monday")') < weekly_flow.index(
+        'page.reload(wait_until="domcontentloaded")'
+    )
+    assert weekly_flow.index('page.reload(wait_until="domcontentloaded")') < weekly_flow.index(
+        'get_by_test_id("draft-day-confirm-reopen-monday")'
+    )
+    after_reload = weekly_flow.split('page.reload(wait_until="domcontentloaded")', 1)[1]
+    assert after_reload.index('get_by_test_id("draft-day-toggle-monday").click()') < after_reload.index(
+        'get_by_test_id("draft-day-confirm-reopen-monday")'
+    )
+    assert weekly_flow.index('get_by_test_id("draft-day-confirm-reopen-monday")') < weekly_flow.index(
+        '.sy-draft-mobile-day:visible'
+    )
+    assert weekly_flow.index('.sy-draft-mobile-day:visible') < weekly_flow.index(
+        'name=re.compile(r"發布週表|Publish roster")'
+    )
 
     weekly_source = (
         Path(__file__).parents[1] / "nicegui_app" / "ui" / "page_routes" / "weekly.py"
     ).read_text(encoding="utf-8")
-    assert "data-testid=pre-generation-leave-prefect" in weekly_source
+    for contract in (
+        "data-testid=pre-generation-leave-prefect",
+        "data-cell-key",
+        "data-testid=draft-candidate-search",
+        "name=draft-batch-reason",
+        'test_id="draft-save-all"',
+        'f"draft-day-toggle-',
+        '"draft-day-confirm-close-"',
+    ):
+        assert contract in weekly_source
 
 
 def test_unified_guest_verifier_accepts_only_explicit_fictional_demo_json() -> None:

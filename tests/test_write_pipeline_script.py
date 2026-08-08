@@ -114,6 +114,35 @@ def test_write_pipeline_uses_semantic_readiness_instead_of_network_quiet() -> No
     assert "expect(confirm_rollover).to_be_enabled(timeout=10_000)" in script
 
 
+def test_write_pipeline_uses_the_batch_draft_matrix_contract() -> None:
+    script = (Path(__file__).parents[1] / "scripts" / "verify_nicegui_write_pipeline.py").read_text(
+        encoding="utf-8"
+    )
+
+    for contract in (
+        "data-cell-key",
+        'data-testid="draft-candidate-search"',
+        "_draft_candidate_menu(",
+        "textarea[name='draft-batch-reason']",
+        'get_by_test_id("draft-save-all")',
+        'get_by_test_id("draft-day-toggle-monday")',
+        'get_by_test_id("draft-day-confirm-close-monday")',
+        'get_by_test_id("draft-day-confirm-reopen-monday")',
+        'page.locator(".sy-draft-grid-day-closed")',
+        'week_schedule_overrides(roster_week_id).closed_days',
+        'data-cell-key^="MONDAY:"',
+        'page.reload(wait_until="domcontentloaded")',
+    ):
+        assert contract in script
+    assert '"draft_patch_applied"' in script
+    assert '"draft_assignment_changed"' not in script
+    assert '"Generated draft has no legally editable cell."' in script
+    assert 'backup_inventory(limit=100)' in script
+    assert "載入合資格人選" not in script
+    assert "儲存草稿修改" not in script
+    assert "draft-change-reason" not in script
+
+
 def test_write_pipeline_has_a_unique_reviewed_new_school_year_import() -> None:
     preview = parse_prefect_import_text(_new_school_year_import_csv())
 

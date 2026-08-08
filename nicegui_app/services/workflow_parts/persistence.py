@@ -22,6 +22,7 @@ from nicegui_app.services.workflow_dependencies import (
     PrefectRole,
     ROLE_CODES,
     RosterAssignmentRecord,
+    RosterDayClosureRecord,
     RosterWeekRecord,
     SchoolDay,
     Session,
@@ -35,6 +36,7 @@ from nicegui_app.services.workflow_dependencies import (
     datetime,
     defaultdict,
     delete,
+    duty_weight,
     func,
     hashlib,
     is_chinese_display_name,
@@ -471,6 +473,38 @@ class PersistenceWorkflowMixin:
             leave_days[row.prefect_id].add(SchoolDay[row.day])
         return leave_days
 
+    def _required_legacy_assist_owners(
+        self,
+        session: Session,
+        *,
+        week_start: date,
+    ) -> dict[str, str]:
+        """Return fixed Assist owners who are genuinely eligible this week.
+
+        Legacy ownership is a long-term preference, not an instruction to
+        schedule someone through an availability conflict or registered leave.
+        The generator uses the same distinction: it locks an available fixed
+        owner and uses a temporary substitute only for an unavailable owner.
+        """
+
+        availability = self._availability_by_prefect(session)
+        leave_days = self._leave_days_for_week(session, week_start)
+        owners: dict[str, str] = {}
+        for record in self._active_prefect_records(session):
+            day_code = str(record.fixed_general_duty or "NONE")
+            if (
+                record.role_code != PrefectRole.ASSISTANT_HEAD.value
+                or day_code not in SchoolDay.__members__
+            ):
+                continue
+            day = SchoolDay[day_code]
+            if day not in availability.get(record.id, set()):
+                continue
+            if day in leave_days.get(record.id, set()):
+                continue
+            owners[day_code] = record.id
+        return owners
+
     @staticmethod
     def _leave_declaration_output(declaration: LeaveDeclarationRecord, prefect: PrefectRecord) -> dict[str, object]:
         return {
@@ -491,12 +525,16 @@ class PersistenceWorkflowMixin:
         rows: list[RosterAssignmentRecord],
         *,
         week_start: date,
+        closed_days: Iterable[SchoolDay] = (),
+        require_complete: bool = True,
     ) -> None:
         prefects = self._active_prefects(session)
         domain_rows: list[Assignment] = []
         for row in rows:
-            if row.prefect_id is None or row.status != "active":
+            if (row.prefect_id is None or row.status != "active") and require_complete:
                 raise WorkflowError("A draft with missing assignments cannot be published.")
+            if row.prefect_id is None or row.status != "active":
+                continue
             domain_rows.append(
                 Assignment(
                     day=SchoolDay[row.day],
@@ -506,7 +544,66 @@ class PersistenceWorkflowMixin:
                     weight=row.weight,
                 )
             )
-        validate_assignments(domain_rows, prefects, leave_days=self._leave_days_for_week(session, week_start))
+        validate_assignments(
+            domain_rows,
+            prefects,
+            leave_days=self._leave_days_for_week(session, week_start),
+            closed_days=closed_days,
+            require_complete=require_complete,
+        )
+
+    @staticmethod
+    def _closed_days(
+        session: Session,
+        roster_week_id: int,
+    ) -> tuple[SchoolDay, ...]:
+        codes = session.scalars(
+            select(RosterDayClosureRecord.day)
+            .where(RosterDayClosureRecord.roster_week_id == roster_week_id)
+            .order_by(RosterDayClosureRecord.day)
+        ).all()
+        return tuple(sorted((SchoolDay[code] for code in codes), key=int))
+
+    @staticmethod
+    def _closed_days_by_week(
+        session: Session,
+        roster_week_ids: Iterable[int],
+    ) -> dict[int, tuple[SchoolDay, ...]]:
+        week_ids = tuple(dict.fromkeys(int(value) for value in roster_week_ids))
+        if not week_ids:
+            return {}
+        rows = session.execute(
+            select(
+                RosterDayClosureRecord.roster_week_id,
+                RosterDayClosureRecord.day,
+            ).where(RosterDayClosureRecord.roster_week_id.in_(week_ids))
+        ).all()
+        grouped: dict[int, list[SchoolDay]] = defaultdict(list)
+        for roster_week_id, day_code in rows:
+            grouped[int(roster_week_id)].append(SchoolDay[str(day_code)])
+        return {
+            week_id: tuple(sorted(grouped.get(week_id, []), key=int))
+            for week_id in week_ids
+        }
+
+    @staticmethod
+    def _closure_outputs(
+        session: Session,
+        roster_week_id: int,
+    ) -> list[dict[str, object]]:
+        rows = session.scalars(
+            select(RosterDayClosureRecord)
+            .where(RosterDayClosureRecord.roster_week_id == roster_week_id)
+            .order_by(RosterDayClosureRecord.day)
+        ).all()
+        return [
+            {
+                "day": row.day,
+                "reasonCode": row.reason_code,
+                "note": row.note,
+            }
+            for row in sorted(rows, key=lambda item: int(SchoolDay[item.day]))
+        ]
 
     def _assignment_rows(self, session: Session, roster_week_id: int) -> list[RosterAssignmentRecord]:
         rows = session.scalars(
@@ -529,6 +626,8 @@ class PersistenceWorkflowMixin:
         session: Session,
         week: RosterWeekRecord,
         assignment: RosterAssignmentRecord,
+        *,
+        include_same_day_assigned: bool = False,
     ) -> list[dict[str, object]]:
         if assignment.status != "active" or assignment.prefect_id is None:
             raise WorkflowError("Only an active assignment can be changed manually.")
@@ -536,7 +635,7 @@ class PersistenceWorkflowMixin:
         post = DutyPost[assignment.post_code]
         assigned_rows = self._assignment_rows(session, week.id)
         assigned_today = {
-            row.prefect_id
+            str(row.prefect_id): row
             for row in assigned_rows
             if row.id != assignment.id and row.status == "active" and row.day == assignment.day and row.prefect_id
         }
@@ -550,7 +649,7 @@ class PersistenceWorkflowMixin:
         for prefect in self._active_prefect_records(session):
             if prefect.id == assignment.prefect_id:
                 continue
-            if prefect.id in assigned_today:
+            if prefect.id in assigned_today and not include_same_day_assigned:
                 continue
             if day not in availability.get(prefect.id, set()):
                 continue
@@ -562,16 +661,25 @@ class PersistenceWorkflowMixin:
                 continue
             candidates.append(prefect)
         candidates.sort(key=lambda candidate: (candidate.history_weight, self._form_rank(candidate.form), candidate.history_duties, candidate.name_zh))
-        return [
-            {
+        outputs: list[dict[str, object]] = []
+        for candidate in candidates:
+            output: dict[str, object] = {
                 "id": candidate.id,
                 "nameZh": candidate.name_zh,
                 "form": candidate.form,
                 "className": candidate.class_name,
                 "historyWeight": candidate.history_weight,
             }
-            for candidate in candidates
-        ]
+            occupied = assigned_today.get(candidate.id)
+            if include_same_day_assigned:
+                output["requiresSwap"] = occupied is not None
+                output["occupiedCellKey"] = (
+                    f"{occupied.day}:{occupied.post_code}:{occupied.slot_index}"
+                    if occupied is not None
+                    else None
+                )
+            outputs.append(output)
+        return outputs
 
     def _week_or_error(self, session: Session, roster_week_id: int) -> RosterWeekRecord:
         week = session.get(RosterWeekRecord, roster_week_id)

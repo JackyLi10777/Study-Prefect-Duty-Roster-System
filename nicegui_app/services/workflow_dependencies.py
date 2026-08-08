@@ -34,6 +34,7 @@ from nicegui_app.persistence.models import (
     PrefectAvailabilityRecord,
     PrefectRecord,
     RosterAssignmentRecord,
+    RosterDayClosureRecord,
     RosterWeekRecord,
 )
 from nicegui_app.services.maintenance import MaintenanceModeError, MaintenanceStatus, maintenance_coordinator
@@ -43,6 +44,9 @@ from nicegui_app.services.workflow_types import (
     BackupResult,
     CommittedWriteBackupError,
     DraftAssignmentUpdateResult,
+    DraftCellEdit,
+    DraftDayEdit,
+    DraftPatchResult,
     DutyAllocationEntry,
     FLEXIBLE_WEEKLY,
     FairnessDiscrepancy,
@@ -61,6 +65,7 @@ from nicegui_app.services.workflow_types import (
     WorkflowConflictError,
     WorkflowError,
     WorkflowMaintenanceError,
+    WeekScheduleOverrides,
 )
 from roster_core.generator import (
     RosterGenerationError,
@@ -74,6 +79,7 @@ from roster_policy import (
     PrefectRole,
     SchoolDay,
     can_assign_role,
+    duty_weight,
     is_chinese_display_name,
     required_posts_for_day,
 )

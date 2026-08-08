@@ -115,6 +115,59 @@ class DraftAssignmentUpdateResult:
 
 
 @dataclass(frozen=True)
+class DraftCellEdit:
+    """One explicit stable-code cell decision in a draft patch.
+
+    ``replacement_prefect_id=None`` is an explicit vacancy.  Callers must not
+    translate an empty text field into this value implicitly.
+    """
+
+    cell_key: str
+    replacement_prefect_id: str | None
+
+    @classmethod
+    def from_parts(
+        cls,
+        *,
+        day: str,
+        post_code: str,
+        slot_index: int,
+        replacement_prefect_id: str | None,
+    ) -> "DraftCellEdit":
+        return cls(
+            cell_key=f"{day}:{post_code}:{slot_index}",
+            replacement_prefect_id=replacement_prefect_id,
+        )
+
+
+@dataclass(frozen=True)
+class DraftDayEdit:
+    """Open or close one whole weekday without overloading assignment text."""
+
+    day: str
+    closed: bool
+    reason_code: str | None = None
+    note: str | None = None
+
+
+@dataclass(frozen=True)
+class WeekScheduleOverrides:
+    """Stable-code schedule exceptions stored with one roster week."""
+
+    closed_days: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class DraftPatchResult:
+    roster_week_id: int
+    version: int
+    changed_cell_count: int
+    closed_days: tuple[str, ...]
+    backup_path: Path | None
+    idempotent: bool = False
+
+
+@dataclass(frozen=True)
 class ReportRosterSource:
     """One published roster version used to build a period report."""
 
@@ -229,6 +282,9 @@ __all__ = [
     "BackupResult",
     "CommittedWriteBackupError",
     "DraftAssignmentUpdateResult",
+    "DraftCellEdit",
+    "DraftDayEdit",
+    "DraftPatchResult",
     "DutyAllocationEntry",
     "FairnessDiscrepancy",
     "FairnessReconciliationReport",
@@ -247,4 +303,5 @@ __all__ = [
     "WorkflowConflictError",
     "WorkflowError",
     "WorkflowMaintenanceError",
+    "WeekScheduleOverrides",
 ]

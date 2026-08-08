@@ -218,6 +218,17 @@ function Invoke-Wrangler {
     }
 }
 
+function Get-WranglerSemanticVersion([string]$Output) {
+    $matches = [regex]::Matches(
+        $Output,
+        '(?<![0-9A-Za-z.+-])(?<version>(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?![0-9A-Za-z.+-])'
+    )
+    if ($matches.Count -ne 1) {
+        return $null
+    }
+    return $matches[0].Groups["version"].Value
+}
+
 function Read-WranglerEvent {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
@@ -525,12 +536,13 @@ try {
         throw "Pinned Wrangler is not installed in the Worker workspace."
     }
     $package = Get-Content -LiteralPath (Join-Path $script:WorkerRoot "package.json") -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ([string]$package.devDependencies.wrangler -cne "4.110.0") {
-        throw "Worker deployment requires pinned Wrangler 4.110.0."
+    if ([string]$package.devDependencies.wrangler -cne "4.116.0") {
+        throw "Worker deployment requires pinned Wrangler 4.116.0."
     }
     $wranglerVersion = ((Invoke-Wrangler -Arguments @("--version")) | Out-String).Trim()
-    if ($wranglerVersion -notmatch '4\.110\.0') {
-        throw "The active Wrangler executable is not version 4.110.0."
+    $activeWranglerVersion = Get-WranglerSemanticVersion -Output $wranglerVersion
+    if ($activeWranglerVersion -cne "4.116.0") {
+        throw "The active Wrangler executable is not version 4.116.0."
     }
     $null = New-Item -ItemType Directory -Path $outputDirectory -Force
     $dryRunArguments = @("versions", "upload", "--dry-run", "--strict", "--config", $script:ConfigPath) + $secretUploadArguments

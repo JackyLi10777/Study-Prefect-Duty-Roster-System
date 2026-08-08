@@ -45,6 +45,7 @@ If prose conflicts with executable policy, transactional behavior, security chec
 | [`QUICKSTART.md`](QUICKSTART.md) | 雙擊啟動、Practice Mode、埠號衝突、最快安全入口 | launcher、port selection、practice identity 或初次啟動改變 |
 | [`OPERATOR_GUIDE.md`](OPERATOR_GUIDE.md) | 每週端到端操作、錯誤復原、名冊、發布、PDF、Viewer、請假、公平 | 任何可見工作流程、按鈕名稱、確認語句或恢復步驟改變 |
 | [`ROSTER_POLICY_MODES.md`](ROSTER_POLICY_MODES.md) | 固定星期／每週靈活 Assist. in charge 模式、固定日維護及相容資料 | mode code、預設模式、輪換、固定星期、可當值日或請假替補規則改變 |
+| [`ROSTER_DRAFT_EDITING.md`](ROSTER_DRAFT_EDITING.md) | 試算表式草稿編輯、四種格子狀態、每週全天停開、整批保存及衝突復原 | 草稿矩陣、格子狀態、停開覆蓋、批次 patch、PDF／公開呈現或衝突流程改變 |
 | [`RELEASE_HANDOVER.md`](RELEASE_HANDOVER.md) | 本機已驗證快照、受控還原、正式部署、相容回退及下一任交接 | release gate、tag、managed restore、deployment 或 rollback 改變 |
 | [`OFFSITE_DISASTER_RECOVERY.md`](OFFSITE_DISASTER_RECOVERY.md) | 外置 BitLocker 目標、RPO／RTO、離機保留、密鑰責任、host-loss 及 replacement-location drill | off-site target、export receipt、retention、custody、disaster restore 或 drill contract 改變 |
 | [`ACCEPTANCE_EVIDENCE.md`](ACCEPTANCE_EVIDENCE.md) | 自動證據與首席導學風紀／顧問老師真人責任的逐項矩陣 | gate、acceptance criterion、證據位置或人手責任改變 |

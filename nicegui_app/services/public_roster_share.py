@@ -27,16 +27,11 @@ from zoneinfo import ZoneInfo
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from nicegui_app.access_context import AccessMode, Capability, CapabilityPolicy
-from roster_policy import (
-    DUTY_SERVICE_TIME_WINDOWS,
-    DutyPost,
-    SchoolDay,
-    is_chinese_display_name,
-    is_room_open,
-)
-
 from nicegui_app.services.workflow_types import WorkflowError
-from nicegui_app.services.roster_presentation import roster_row_spec
+from nicegui_app.services.roster_presentation import (
+    RosterPresentationError,
+    build_roster_presentation,
+)
 
 
 SNAPSHOT_SCHEMA_VERSION = "sing-yin-public-roster-v1"
@@ -46,30 +41,6 @@ _SHARE_ID = re.compile(r"^[A-Za-z0-9_-]{20,64}$")
 _CONTENT_DIGEST = re.compile(r"^[a-f0-9]{64}$")
 _MAX_RESPONSE_BYTES = 1_000_000
 _VISIBILITY_POLL_SECONDS = 2.0
-
-_DAYS: tuple[SchoolDay, ...] = (
-    SchoolDay.MONDAY,
-    SchoolDay.TUESDAY,
-    SchoolDay.WEDNESDAY,
-    SchoolDay.THURSDAY,
-    SchoolDay.FRIDAY,
-)
-_DAY_LABELS: Mapping[SchoolDay, tuple[str, str]] = {
-    SchoolDay.MONDAY: ("星期一", "Monday"),
-    SchoolDay.TUESDAY: ("星期二", "Tuesday"),
-    SchoolDay.WEDNESDAY: ("星期三", "Wednesday"),
-    SchoolDay.THURSDAY: ("星期四", "Thursday"),
-    SchoolDay.FRIDAY: ("星期五", "Friday"),
-}
-_ROW_LAYOUT: tuple[tuple[DutyPost, int], ...] = (
-    (DutyPost.ASSIST_IN_CHARGE, 1),
-    (DutyPost.ROOM_302, 1),
-    (DutyPost.ROOM_303, 1),
-    (DutyPost.ROOM_303, 2),
-    (DutyPost.ROOM_202, 1),
-    (DutyPost.ROOM_202, 2),
-)
-
 
 class PublicRosterShareError(WorkflowError):
     """A safe operator-facing failure at the public-sharing boundary."""
@@ -583,75 +554,25 @@ class PublicRosterShareService:
         CapabilityPolicy.require(mode, Capability.EXTERNAL_DELIVERY)
 
     def _build_snapshot(self, roster_week_id: int) -> dict[str, object]:
-        week = self.workflow.roster_week(roster_week_id)
+        week, assignments = self.workflow.roster_schedule_snapshot(roster_week_id)
         if str(week.get("status")) != "published":
             raise PublicRosterShareError("Only a published roster can receive a public view link.")
-        week_start = _coerce_date(week.get("weekStart"))
-        assignments = self.workflow.assignments(roster_week_id)
-        assignment_index: dict[tuple[str, str, int], Mapping[str, object]] = {}
-        for item in assignments:
-            if not isinstance(item, Mapping):
-                raise PublicRosterShareError("The published roster contains an invalid assignment.")
-            try:
-                key = (str(item["day"]), str(item["postCode"]), int(item["slotIndex"]))
-            except (KeyError, TypeError, ValueError) as error:
-                raise PublicRosterShareError("The published roster contains an invalid assignment.") from error
-            if key in assignment_index:
-                raise PublicRosterShareError("The published roster contains a duplicate duty slot.")
-            assignment_index[key] = item
-
-        day_items = [
-            {
-                "code": day.name,
-                "date": (week_start + timedelta(days=int(day))).isoformat(),
-                "labelZh": _DAY_LABELS[day][0],
-                "labelEn": _DAY_LABELS[day][1],
-            }
-            for day in _DAYS
-        ]
-        rows: list[dict[str, object]] = []
-        for post, slot_index in _ROW_LAYOUT:
-            start_time, end_time = DUTY_SERVICE_TIME_WINDOWS[post]
-            cells: list[dict[str, str]] = []
-            for day in _DAYS:
-                if not is_room_open(post, day):
-                    cells.append({"status": "closed"})
-                    continue
-                assignment = assignment_index.get((day.name, post.name, slot_index))
-                if assignment is None:
-                    raise PublicRosterShareError("The published roster is missing a required duty slot.")
-                assignment_status = str(assignment.get("status"))
-                if assignment_status == "vacant":
-                    cells.append({"status": "vacant"})
-                    continue
-                if assignment_status not in {"active", "replaced"}:
-                    raise PublicRosterShareError("The published roster contains an invalid assignment status.")
-                name_zh = str(assignment.get("prefectName") or "").strip()
-                if not is_chinese_display_name(name_zh):
-                    raise PublicRosterShareError("Every name in a public roster must be a valid Chinese display name.")
-                cells.append({"status": "assigned", "nameZh": name_zh})
-            rows.append(
-                {
-                    "postCode": post.name,
-                    "slotIndex": slot_index,
-                    # The viewer schema keeps both fields for compatibility,
-                    # but operational duty names are intentionally English.
-                    "labelZh": roster_row_spec(post, slot_index).display_label,
-                    "labelEn": roster_row_spec(post, slot_index).display_label,
-                    "dutyTime": {"start": start_time, "end": end_time},
-                    "cells": cells,
-                }
-            )
+        try:
+            public_matrix = build_roster_presentation(
+                week,
+                assignments,
+                editable=False,
+                strict=True,
+            ).to_public_dict()
+        except RosterPresentationError as error:
+            raise PublicRosterShareError(str(error)) from error
         return {
             "schemaVersion": SNAPSHOT_SCHEMA_VERSION,
             "schoolNameZh": "聖言中學",
             "schoolNameEn": "Sing Yin Secondary School",
             "titleZh": "導學風紀值班表",
             "titleEn": "Study Prefect Duty Roster",
-            "weekStart": week_start.isoformat(),
-            "version": int(week.get("version") or 1),
-            "days": day_items,
-            "rows": rows,
+            **public_matrix,
         }
 
 

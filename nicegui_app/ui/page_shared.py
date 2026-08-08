@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import weakref
-from collections.abc import Callable
+from collections.abc import Callable, MutableMapping
 from datetime import date, timedelta
+from functools import partial
 from time import perf_counter
 from typing import TypeVar
 
@@ -45,6 +46,7 @@ _OPERATION_FAILED = object()
 _OperationResult = TypeVar("_OperationResult")
 _ReadResult = TypeVar("_ReadResult")
 _DIALOG_DISMISSAL_SECONDS = 0.35
+_PROGRESS_REVEAL_DELAY_SECONDS = 0.14
 
 
 def _operation_error_message(reference: str) -> str:
@@ -77,6 +79,27 @@ def _delete_dialog_after_close(dialog, *, delay_seconds: float = _DIALOG_DISMISS
         asyncio.get_running_loop().call_later(max(0.0, delay_seconds), delete_dialog)
 
     dialog.on_value_change(handle_value_change)
+
+
+def _release_operation_after_task_settles(
+    operation_task: asyncio.Task[object],
+    *,
+    operation_state: MutableMapping[str, object],
+) -> None:
+    """Release a client operation claim only after its worker task is terminal.
+
+    ``run.io_bound`` work can keep running in its executor after the page
+    callback is cancelled or fails while constructing progress UI.  Retrieving
+    the task exception prevents a detached failure from becoming an unhandled
+    task warning; the workflow's transaction and audit log remain the durable
+    source of the operation outcome.
+    """
+    try:
+        operation_task.exception()
+    except asyncio.CancelledError:
+        pass
+    finally:
+        release_durable_operation(operation_state)
 
 
 def _show_committed_without_backup(reference: str, *, recovery_required: bool = False) -> None:
@@ -170,44 +193,60 @@ async def _run_with_progress(
         return _OPERATION_FAILED
 
     dialog = None
+    status = None
+    progress_shell = None
+    progress = None
+    operation_task: asyncio.Task[_OperationResult] | None = None
+    task_owns_operation_claim = False
     reference = new_operation_reference()
     started_at = perf_counter()
     record_operator_event(action=working_key, outcome="started", reference=reference)
     try:
-        with ui.dialog().props("persistent") as dialog, ui.card().classes(
-            "sy-progress-dialog w-full max-w-sm p-6"
-        ).props(
-            "aria-busy=true data-progress-mode=phased data-phase=preparing"
-        ) as progress_shell:
-            with ui.row().classes("items-center gap-3"):
-                with ui.element("span").classes("sy-progress-dialog-icon").props("aria-hidden=true"):
-                    ui.icon(icon).classes("sy-progress-dialog-icon-work")
-                    ui.icon("task_alt").classes("sy-progress-dialog-icon-success")
-                with ui.column().classes("gap-0"):
-                    ui.label(t(title_key)).classes("sy-progress-dialog-title")
-                    status = ui.label(t("progress_preparing")).classes("sy-progress-dialog-status").props("aria-live=polite")
-            with ui.element("ol").classes("sy-progress-dialog-phases").props(
-                f'aria-label="{attr(t("progress_phase_label"))}"'
-            ):
-                for phase, label_key in (
-                    ("preparing", "progress_phase_preparing"),
-                    ("working", "progress_phase_processing"),
-                    ("complete", "progress_phase_complete"),
-                ):
-                    with ui.element("li").classes("sy-progress-dialog-phase").props(f"data-phase-marker={phase}"):
-                        ui.label(t(label_key))
-            progress = ui.linear_progress(show_value=False, color="primary").classes("w-full mt-4").props(
-                f'indeterminate aria-label="{attr(t("progress_indeterminate"))}"'
+        operation_task = asyncio.create_task(run.io_bound(action))
+        operation_task.add_done_callback(
+            partial(
+                _release_operation_after_task_settles,
+                operation_state=operation_state,
             )
-            ui.label(t("progress_keep_open")).classes("sy-progress-dialog-note mt-3")
+        )
+        task_owns_operation_claim = True
+        await asyncio.wait(
+            {operation_task},
+            timeout=_PROGRESS_REVEAL_DELAY_SECONDS,
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        if not operation_task.done():
+            with ui.dialog().props("persistent") as dialog, ui.card().classes(
+                "sy-progress-dialog w-full max-w-sm p-6"
+            ).props(
+                "aria-busy=true data-progress-mode=phased data-phase=working"
+            ) as progress_shell:
+                with ui.row().classes("items-center gap-3"):
+                    with ui.element("span").classes("sy-progress-dialog-icon").props("aria-hidden=true"):
+                        ui.icon(icon).classes("sy-progress-dialog-icon-work")
+                        ui.icon("task_alt").classes("sy-progress-dialog-icon-success")
+                    with ui.column().classes("gap-0"):
+                        ui.label(t(title_key)).classes("sy-progress-dialog-title")
+                        status = ui.label(t(working_key)).classes("sy-progress-dialog-status").props("aria-live=polite")
+                with ui.element("ol").classes("sy-progress-dialog-phases").props(
+                    f'aria-label="{attr(t("progress_phase_label"))}"'
+                ):
+                    for phase, label_key in (
+                        ("preparing", "progress_phase_preparing"),
+                        ("working", "progress_phase_processing"),
+                        ("complete", "progress_phase_complete"),
+                    ):
+                        with ui.element("li").classes("sy-progress-dialog-phase").props(f"data-phase-marker={phase}"):
+                            ui.label(t(label_key))
+                progress = ui.linear_progress(show_value=False, color="primary").classes("w-full mt-4").props(
+                    f'indeterminate aria-label="{attr(t("progress_indeterminate"))}"'
+                )
+                ui.label(t("progress_keep_open")).classes("sy-progress-dialog-note mt-3")
 
-        _delete_dialog_after_close(dialog)
-        dialog.open()
-        play_interface_sound("working")
-        await asyncio.sleep(0.08)  # Allow the dialog to paint before work begins.
-        status.set_text(t(working_key))
-        progress_shell.props("data-phase=working")
-        result = await run.io_bound(action)
+            _delete_dialog_after_close(dialog)
+            dialog.open()
+            play_interface_sound("working")
+        result = await asyncio.shield(operation_task)
     except CommittedWriteBackupError as error:
         if dialog is not None:
             dialog.close()
@@ -234,19 +273,20 @@ async def _run_with_progress(
         ui.notify(_operation_error_message(reference), type="negative", timeout=8_000)
         return _OPERATION_FAILED
     else:
-        status.set_text(t("progress_complete"))
-        progress_shell.props("data-phase=complete aria-busy=false")
-        progress.props(remove="indeterminate")
-        progress.value = 1.0
-        progress.update()
-        await asyncio.sleep(0.13)
+        if status is not None and progress_shell is not None and progress is not None:
+            status.set_text(t("progress_complete"))
+            progress_shell.props("data-phase=complete aria-busy=false")
+            progress.props(remove="indeterminate")
+            progress.value = 1.0
+            progress.update()
         record_operator_event(action=working_key, outcome="completed", reference=reference, started_at=started_at)
         play_interface_sound("success")
         return result
     finally:
         if dialog is not None:
             dialog.close()
-        release_durable_operation(operation_state)
+        if not task_owns_operation_claim:
+            release_durable_operation(operation_state)
 
 
 def _navigate_with_feedback(path: str) -> None:

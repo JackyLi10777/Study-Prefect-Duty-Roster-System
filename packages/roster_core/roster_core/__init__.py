@@ -12,6 +12,7 @@ from .generator import (
     RosterGenerationError,
     generate_weekly_roster,
     legacy_assist_weekday_mapping,
+    validate_assignments,
 )
 from .models import Assignment, Prefect, parse_prefect_role
 
@@ -26,6 +27,7 @@ __all__ = [
     "RosterGenerationError",
     "generate_weekly_roster",
     "legacy_assist_weekday_mapping",
+    "validate_assignments",
     "get_foundational_verse",
     "load_devotional_seed",
     "select_daily_verse",

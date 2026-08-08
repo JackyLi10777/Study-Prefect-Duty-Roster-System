@@ -133,6 +133,29 @@ class RosterAssignmentRecord(Base):
     status: Mapped[str] = mapped_column(String(16), default="active")
 
 
+class RosterDayClosureRecord(Base):
+    """An operator-approved whole-day exception for one roster week."""
+
+    __tablename__ = "roster_day_closures"
+    __table_args__ = (
+        UniqueConstraint("roster_week_id", "day", name="uq_roster_day_closure"),
+        CheckConstraint(
+            "day IN ('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY')",
+            name="ck_roster_day_closure_day",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    roster_week_id: Mapped[int] = mapped_column(
+        ForeignKey("roster_weeks.id", ondelete="CASCADE")
+    )
+    day: Mapped[str] = mapped_column(String(16))
+    reason_code: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+
+
 class FairnessLedgerRecord(Base):
     __tablename__ = "fairness_ledger"
     __table_args__ = (

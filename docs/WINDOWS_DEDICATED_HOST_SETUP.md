@@ -650,7 +650,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -RuntimeUser SingYinRosterSvc
 ```
 
-腳本在停止服務前核對正式報告、來源指紋、host／Worker identity parity、主機工作樹、排程 owner 及現有 task target。它從排程工作的實際 immutable bundle marker 取得上一版本，重算整個 bundle fingerprint，並把 marker 的 release／commit／tree／environment 交叉綁定至 `origin` 上的 annotated tag、tag-resolved Git tree、切換前受保護 `.env` 的 SHA-256 及確定性的 bundle 目錄名稱。其後才建立新 bundle／獨立 `.venv`、正式備份及隔離還原，最後原子切換排程；不得同時手動停止、安裝套件或切換 checkout。
+腳本在停止服務前核對正式報告、來源指紋、host／Worker identity parity、主機工作樹、排程 owner 及現有 task target。它從排程工作的實際 immutable bundle marker 取得上一版本，重算整個 bundle fingerprint，並把 marker 的 release／commit／tree／environment 交叉綁定至 `origin` 上的 annotated tag、tag-resolved Git tree、切換前受保護 `.env` 的 SHA-256 及確定性的 bundle 目錄名稱；同時分別以舊 bundle 與候選來源讀取唯一 Alembic head。若現有 task 仍指向 legacy host checkout，或沒有可驗證的 bundle 路徑，部署器會在任何 bundle path 組合及停止服務前 fail closed；必須先以另一次受控程序建立並驗證 immutable release baseline，不可讓本次 migration deployment 猜測舊程式身分。
+
+停止工作並再次核對舊 bundle 後，部署器必須使用**舊 bundle 的實際 Python 與程式碼**建立舊 schema 的切換前快照，把 manifest 同時綁定 snapshot SHA-256 與 schema revision，並以舊程式完成隔離還原、公平、行數及 restore-audit 證明，才可切換及啟動候選。候選先通過初次 health、write-readiness 及 strict deployment gate；部署器隨即 disable／stop candidate 並等到 origin port 完全釋放，才以**候選 immutable bundle 的 Python 與 helper**在靜止的 production DB 上建立另一份 current-head verified snapshot、完成隔離還原，並重新核對 report、snapshot、manifest SHA-256 與 candidate schema。此檔使用獨立路徑，不得覆寫切換前舊 schema rollback snapshot，且舊 snapshot／manifest 會再次驗 hash。證明完成後仍須重啟 candidate，重新通過 health、write-readiness 及 strict gate，deployment JSON 才可為 `pass`；報告以 `candidateVerificationPhases` 分別記錄初次 gates、DB quiesce、baseline proof 及重啟後 gates，並在獨立的 `currentRecoveryBaseline` 物件記錄 candidate release／commit／bundle、snapshot／manifest、schema、integrity 及還原證明。
+
+候選一旦曾嘗試啟動，任何後續失敗都先停止候選、等待連接埠釋放，再把現有 main DB 及 sidecars 移入同目錄 quarantine、安裝並重驗精確舊 schema snapshot；只有 checksum、schema、integrity 及 ACL 全部通過後，才恢復舊 task action、`.env` 並啟動舊版本。若 DB 還原或證明有任何不確定，排程保持停止，禁止 code-only rollback。不得同時手動停止、安裝套件、覆寫 SQLite 或切換 checkout。
 
 Bundle 指紋包含所有普通檔案，包括 `.venv` 內既有的 Python bytecode；`.sing-yin-release.json` 是唯一固定排除項。正式排程、受控 rollback 及離機復原工具均以 Python `-B` 執行，避免在 marker 建立後寫入 `__pycache__`；正式入口則先由 `nicegui_app.launcher` 把管理員偏好綁定至 `C:\SingYinRoster\data\runtime\nicegui-storage`，再載入 NiceGUI，避免 runtime JSON 進入不可變 bundle。
 
@@ -671,7 +675,7 @@ Get-Content -LiteralPath (Join-Path $Action.WorkingDirectory ".sing-yin-release.
 
 ### 步驟 12.4：核對資料、健康及報告
 
-1. 確認 deployment JSON 為 `pass`，正式備份檔名、SHA-256、隔離還原、公平、行數及 restore audit 全部成功。
+1. 確認 deployment JSON 為 `pass`，`migrationHeads.previous`／`candidate`、切換前 snapshot 檔名、snapshot／manifest SHA-256、`snapshotSchemaRevision`、舊程式隔離還原、公平、行數及 restore audit 全部一致且成功；另核對 `candidateVerificationPhases` 四項均為 `true`，以及 `currentRecoveryBaseline` 的 `databaseQuiesced`、release／commit／bundle、獨立 snapshot／manifest SHA-256、candidate schema、integrity、隔離還原、公平、行數及 restore audit。兩個 snapshot 檔名必須不同。
 2. 核對 `http://127.0.0.1:8080/healthz` 與 `/readyz`；必須為 healthy／ready、`writeReady=true`，且沒有 maintenance、recovery 或 pending backup obligation。
 3. 核對排程由 `SingYinRosterSvc` 運行，實際 Python process command line 指向同一不可變 bundle。
 4. 核對名單、最近週表、最新備份及一份中文 PDF；再依正式裝置矩陣驗收畫面。單獨 HTTP 200 不足以接受發布。
@@ -685,8 +689,8 @@ rc20 的自動化裝置矩陣已包含手機／平板／桌面與 accessibility�
 ### 步驟 12.6：使用者畫面回歸時受控回退
 
 1. 立即停止接受正式寫入，記錄時間、canonical route、裝置、release tag／commit、Worker version 及非敏感畫面；不要重複提交可能已完成的操作。
-2. 先閱讀 Windows／Worker deployment JSON 的 rollback `attempted`、`succeeded`、previous commit／version。受控腳本已開始回退時，不要同時再跑第二次或手動覆寫檔案。
-3. 若目前線上 origin 發現回歸，第一個復原選擇是保留當前程式並以本頁頂部所列的已驗證正式備份執行受控還原。若事故需要回復更舊程式，必須先停止正式寫入並確認目標程式支援的 Alembic revision；rc43／rc41 等 pre-0012 程式只可配對已驗證的 pre-0012 正式快照，禁止把 `0012` 資料庫交給舊程式。完成 checksum、公平、行數、restore-audit 及隔離副本的完整應用驗證後，才由事故負責人批准程式與必要的 Worker 切換。歷史 deployment report 的 legacy `previousCommit` 不可單獨作 rollback 身分；以 captured task target、marker、fingerprint 及資料庫相容性證據為準。禁止 `git reset --hard`、直接複製開發樹、只切換 task action 或留下未經證明的混合版本。
+2. 先閱讀 Windows／Worker deployment JSON 的 rollback `attempted`、`succeeded`、previous commit／version；Windows 報告還須核對 `rollback.database.required`／`attempted`／`succeeded`、snapshot／manifest checksum、schema revision 及 `atomicReplace`。受控腳本已開始回退時，不要同時再跑第二次或手動覆寫檔案；若 database rollback 未明確成功，舊 task 必須保持停止。
+3. 若目前線上 origin 發現回歸，第一個復原選擇是保留當前程式並以該次 `pass` deployment report 的 `currentRecoveryBaseline`（或本頁頂部較新的已驗證正式備份）執行同 schema 受控還原。若事故需要回復更舊程式，必須先停止正式寫入並確認目標程式支援的 Alembic revision；rc43／rc41 等 pre-0012 程式只可配對已驗證的 pre-0012 正式快照，禁止把 `0012` 資料庫交給舊程式。完成 checksum、公平、行數、restore-audit 及隔離副本的完整應用驗證後，才由事故負責人批准程式與必要的 Worker 切換。歷史 deployment report 的 legacy `previousCommit` 不可單獨作 rollback 身分；以 captured task target、marker、fingerprint 及資料庫相容性證據為準。禁止 `git reset --hard`、直接複製開發樹、只切換 task action 或留下未經證明的混合版本。
 4. 回退後核對實際回退層、工作排程 owner、受保護 loopback endpoint、`/healthz`、`/readyz`／`writeReady=true`、無 maintenance／recovery／pending backup obligation，以及 canonical Public／Guest／Admin／Viewer／WebSocket／登出和完整使用者流程。
 5. 只有上述結果全部一致才恢復操作；不能證明 rollback 成功時保持 maintenance／唯讀並交由 IT 處理。
 

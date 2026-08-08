@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Any
 from uuid import uuid4
 
 from nicegui import ui
 
 from nicegui_app.runtime import get_workflow
-from nicegui_app.services.roster_presentation import roster_display_label
+from nicegui_app.services.roster_presentation import (
+    RosterCellState,
+    build_roster_presentation,
+    roster_display_label,
+)
 from nicegui_app.services.roster_workflow import (
     FLEXIBLE_WEEKLY,
     LEGACY_FIXED_WEEKDAY,
     WorkflowError,
 )
+from nicegui_app.services.workflow_types import DraftCellEdit, DraftDayEdit
 from nicegui_app.ui.access_control import render_roster_share_action, revoke_roster_shares
 from nicegui_app.ui.components import action
 from nicegui_app.ui.html_safety import attr
@@ -43,7 +49,7 @@ from nicegui_app.ui.workflow_navigation import (
     render_workflow_navigation,
 )
 from roster_core import HISTORY_PRIORITY_MULTIPLIER_MAX, HISTORY_PRIORITY_MULTIPLIER_MIN
-from roster_policy import SchoolDay
+from roster_policy import SchoolDay, is_room_open
 
 
 _ASSIST_MODE_LABEL_KEYS = {
@@ -54,6 +60,33 @@ _ASSIST_MODE_DETAIL_KEYS = {
     LEGACY_FIXED_WEEKDAY: "assist_assignment_mode_legacy_detail",
     FLEXIBLE_WEEKLY: "assist_assignment_mode_flexible_detail",
 }
+_DRAFT_VACANCY_VALUE = "__vacant__"
+_DRAFT_VACANCY_ALIASES = frozenset(
+    {"x", "×", "空缺", "待安排", "vacant", "unassigned", _DRAFT_VACANCY_VALUE}
+)
+
+
+def _normalize_draft_candidate_value(value: object) -> str | None:
+    """Normalize explicit vacancy aliases without treating blank input as a change."""
+
+    if value is None:
+        return None
+    normalized = str(value).strip()
+    if not normalized:
+        return ""
+    if normalized.casefold() in _DRAFT_VACANCY_ALIASES:
+        return _DRAFT_VACANCY_VALUE
+    return normalized
+
+
+def _generation_requirements_query_key(
+    week_start: date,
+    closed_days: object,
+) -> tuple[str, tuple[str, ...]]:
+    """Return one stable key for a rendered generation-requirements result."""
+
+    normalized_days = tuple(sorted(str(day) for day in (closed_days or ())))
+    return week_start.isoformat(), normalized_days
 
 
 def _assist_assignment_mode_code(value: object, *, fallback: str) -> str:
@@ -66,6 +99,795 @@ def _assist_assignment_mode_code(value: object, *, fallback: str) -> str:
 def _assist_assignment_mode_label(value: object) -> str:
     mode = _assist_assignment_mode_code(value, fallback=FLEXIBLE_WEEKLY)
     return t(_ASSIST_MODE_LABEL_KEYS[mode])
+
+
+def _stage_atomic_draft_selection(
+    cell_key: str,
+    replacement_prefect_id: str | None,
+    *,
+    original_assignments: dict[str, str | None],
+    pending_cells: dict[str, str | None],
+) -> str | None:
+    """Stage one selection and exchange an occupied same-day cell in the same patch."""
+
+    def effective_prefect_id(candidate_key: str) -> str | None:
+        return pending_cells.get(candidate_key, original_assignments.get(candidate_key))
+
+    def stage_value(candidate_key: str, prefect_id: str | None) -> None:
+        if prefect_id == original_assignments.get(candidate_key):
+            pending_cells.pop(candidate_key, None)
+        else:
+            pending_cells[candidate_key] = prefect_id
+
+    current_id = effective_prefect_id(cell_key)
+    if replacement_prefect_id == current_id:
+        return None
+    day_name = cell_key.partition(":")[0]
+    occupied_cell_key = (
+        next(
+            (
+                candidate_key
+                for candidate_key in original_assignments
+                if candidate_key != cell_key
+                and candidate_key.partition(":")[0] == day_name
+                and effective_prefect_id(candidate_key) == replacement_prefect_id
+            ),
+            None,
+        )
+        if replacement_prefect_id is not None
+        else None
+    )
+    stage_value(cell_key, replacement_prefect_id)
+    if occupied_cell_key:
+        stage_value(occupied_cell_key, current_id)
+    return occupied_cell_key
+
+
+def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
+    """Render one batch-safe draft editor around the canonical roster matrix."""
+
+    week_snapshot, assignments = workflow.roster_schedule_snapshot(roster_week_id)
+    presentation = build_roster_presentation(
+        week_snapshot,
+        assignments,
+        closed_days=week_snapshot.get("closedDays", ()),
+        editable=True,
+    )
+    reviewed_version = {"value": int(week_snapshot["version"])}
+    cells_by_key = {
+        cell.cell_key: cell
+        for row in presentation.rows
+        for cell in row.cells
+        if cell.cell_key
+    }
+    service_time_by_cell = {
+        cell.cell_key: "–".join(row.spec.service_time)
+        for row in presentation.rows
+        for cell in row.cells
+        if cell.cell_key
+    }
+    pending_cells: dict[str, str | None] = {}
+    pending_days: dict[str, bool] = {}
+    undo_stack: list[tuple[dict[str, str | None], dict[str, bool]]] = []
+    selected_cell: dict[str, str | None] = {"key": None}
+    candidate_selector_ref: dict[str, Any | None] = {"control": None}
+    reason_state: dict[str, str] = {"value": ""}
+    candidate_cache: dict[str, list[dict[str, object]] | None] = {}
+    conflict_state: dict[str, Any] = {"latest_version": None, "changes": []}
+    conflict_reapply_ref: dict[str, Any | None] = {"control": None}
+    prefect_names = {
+        str(cell.prefect_id): str(cell.prefect_name)
+        for cell in cells_by_key.values()
+        if cell.prefect_id and cell.prefect_name
+    }
+    original_assignments = {
+        cell_key: (str(cell.prefect_id) if cell.prefect_id else None)
+        for cell_key, cell in cells_by_key.items()
+    }
+
+    def day_is_closed(day: SchoolDay) -> bool:
+        if day.name in pending_days:
+            return pending_days[day.name]
+        source = next(item for item in presentation.days if item.day == day)
+        return source.state == "day_closed"
+
+    def snapshot_pending() -> None:
+        undo_stack.append((pending_cells.copy(), pending_days.copy()))
+
+    def pending_count() -> int:
+        return len(pending_cells) + len(pending_days)
+
+    def cell_display(cell: Any) -> tuple[str, str, str]:
+        if cell.cell_key in pending_cells:
+            replacement_id = pending_cells[cell.cell_key]
+            if replacement_id is None:
+                return t("vacant"), t("draft_pending_value"), "vacant"
+            candidates = candidate_cache.get(cell.cell_key) or []
+            replacement = next(
+                (item for item in candidates if str(item.get("id")) == replacement_id),
+                None,
+            )
+            return (
+                str(replacement.get("nameZh"))
+                if replacement
+                else prefect_names.get(replacement_id, t("draft_pending_value")),
+                t("draft_pending_value"),
+                "assigned",
+            )
+        effective_state = cell.state
+        if cell.state is RosterCellState.DAY_CLOSED:
+            effective_state = (
+                RosterCellState.VACANT
+                if is_room_open(cell.post, cell.day)
+                else RosterCellState.ROOM_CLOSED
+            )
+        if effective_state is RosterCellState.ASSIGNED:
+            return (
+                str(cell.prefect_name or ""),
+                service_time_by_cell.get(cell.cell_key, ""),
+                "assigned",
+            )
+        if effective_state is RosterCellState.VACANT:
+            return t("vacant"), service_time_by_cell.get(cell.cell_key, ""), "vacant"
+        return t("closed"), "", "closed"
+
+    def load_candidates(cell: Any) -> list[dict[str, object]] | None:
+        if cell.cell_key in candidate_cache:
+            return candidate_cache[cell.cell_key]
+
+        def read() -> list[dict[str, object]]:
+            by_cell = getattr(workflow, "draft_cell_candidates", None)
+            if callable(by_cell):
+                return list(by_cell(roster_week_id, cell.cell_key))
+            if cell.assignment_id is None:
+                raise WorkflowError("This reopened duty cell must be saved before candidates can be loaded.")
+            return list(
+                workflow.draft_assignment_candidates(roster_week_id, int(cell.assignment_id))
+            )
+
+        candidates = _safe_read_action(read, action_name="load_draft_cell_candidates")
+        if candidates is None:
+            return None
+        candidate_cache[cell.cell_key] = list(candidates)
+        prefect_names.update(
+            {
+                str(candidate["id"]): str(candidate["nameZh"])
+                for candidate in candidates
+                if candidate.get("id") and candidate.get("nameZh")
+            }
+        )
+        return candidate_cache[cell.cell_key]
+
+    def open_cell_editor(cell_key: str) -> None:
+        selected_cell["key"] = cell_key
+        editor.refresh()
+        selector = candidate_selector_ref["control"]
+        if selector is not None:
+            selector.run_method("focus")
+
+    def handle_cell_key(event: Any, cell_key: str) -> None:
+        event_args = event.args if isinstance(event.args, dict) else {}
+        key_name = str(event_args.get("key", "")).lower()
+        if key_name in {"enter", "f2"}:
+            open_cell_editor(cell_key)
+        elif key_name == "escape" and selected_cell["key"] == cell_key:
+            selected_cell["key"] = None
+            editor.refresh()
+
+    def stage_candidate(cell_key: str, raw_value: object) -> None:
+        normalized_value = _normalize_draft_candidate_value(raw_value)
+        if normalized_value in (None, ""):
+            return
+        replacement_id = (
+            None if normalized_value == _DRAFT_VACANCY_VALUE else normalized_value
+        )
+        if replacement_id is not None:
+            candidate_ids = {
+                str(candidate["id"])
+                for candidate in (candidate_cache.get(cell_key) or [])
+                if candidate.get("id")
+            }
+            original_id = original_assignments.get(cell_key)
+            if original_id is not None:
+                candidate_ids.add(original_id)
+            if replacement_id not in candidate_ids:
+                ui.notify(t("draft_candidate_invalid"), type="warning")
+                editor.refresh()
+                return
+        current_id = pending_cells.get(cell_key, original_assignments[cell_key])
+        if replacement_id == current_id:
+            return
+        snapshot_pending()
+        occupied_cell_key = _stage_atomic_draft_selection(
+            cell_key,
+            replacement_id,
+            original_assignments=original_assignments,
+            pending_cells=pending_cells,
+        )
+        if occupied_cell_key:
+            ui.notify(
+                t("draft_swap_staged", name=prefect_names.get(replacement_id, "")),
+                type="info",
+            )
+        editor.refresh()
+
+    def stage_day(day: SchoolDay, closed: bool) -> None:
+        original_closed = next(
+            item.state == "day_closed" for item in presentation.days if item.day == day
+        )
+        snapshot_pending()
+        if closed == original_closed:
+            pending_days.pop(day.name, None)
+        else:
+            pending_days[day.name] = closed
+        if closed:
+            for cell_key in tuple(pending_cells):
+                if cell_key.startswith(f"{day.name}:"):
+                    pending_cells.pop(cell_key, None)
+            if selected_cell["key"] and selected_cell["key"].startswith(f"{day.name}:"):
+                selected_cell["key"] = None
+        editor.refresh()
+
+    def undo_pending() -> None:
+        if not undo_stack:
+            return
+        cells, days = undo_stack.pop()
+        pending_cells.clear()
+        pending_cells.update(cells)
+        pending_days.clear()
+        pending_days.update(days)
+        editor.refresh()
+
+    def discard_pending() -> None:
+        pending_cells.clear()
+        pending_days.clear()
+        undo_stack.clear()
+        selected_cell["key"] = None
+        reason_state["value"] = ""
+        discard_dialog.close()
+        editor.refresh()
+
+    def reload_latest() -> None:
+        conflict_dialog.close()
+        ui.navigate.reload()
+
+    def compare_latest(_error: Exception | None = None) -> None:
+        latest = _safe_read_action(
+            lambda: workflow.roster_schedule_snapshot(roster_week_id),
+            action_name="compare_draft_conflict",
+        )
+        if latest is None:
+            conflict_state["latest_version"] = None
+            conflict_state["changes"] = [t("draft_conflict_compare_unavailable")]
+        else:
+            latest_week, latest_assignments = latest
+            latest_presentation = build_roster_presentation(
+                latest_week,
+                latest_assignments,
+                closed_days=latest_week.get("closedDays", ()),
+                editable=True,
+            )
+            latest_cells = {
+                candidate.cell_key: candidate
+                for candidate_row in latest_presentation.rows
+                for candidate in candidate_row.cells
+                if candidate.cell_key
+            }
+            changes: list[str] = []
+            for cell_key in pending_cells:
+                previous = cells_by_key.get(cell_key)
+                current = latest_cells.get(cell_key)
+                previous_id = str(previous.prefect_id) if previous and previous.prefect_id else None
+                current_id = str(current.prefect_id) if current and current.prefect_id else None
+                if previous_id != current_id:
+                    label = cell_key
+                    if previous:
+                        row = next(
+                            row_item
+                            for row_item in presentation.rows
+                            if row_item.spec.post == previous.post
+                            and row_item.spec.slot_index == previous.slot_index
+                        )
+                        label = f"{day_label(previous.day)} · {row.spec.display_label}"
+                    changes.append(
+                        t(
+                            "draft_conflict_cell_changed",
+                            cell=label,
+                            before=(previous.prefect_name if previous and previous.prefect_name else t("vacant")),
+                            after=(current.prefect_name if current and current.prefect_name else t("vacant")),
+                        )
+                    )
+            previous_closed_days = {
+                item.day.name for item in presentation.days if item.state == "day_closed"
+            }
+            latest_closed_days = {
+                item.day.name for item in latest_presentation.days if item.state == "day_closed"
+            }
+            for day_name in pending_days:
+                if (day_name in previous_closed_days) != (day_name in latest_closed_days):
+                    changes.append(
+                        t(
+                            "draft_conflict_day_changed",
+                            day=day_label(SchoolDay[day_name]),
+                        )
+                    )
+            conflict_state["latest_version"] = int(latest_week["version"])
+            conflict_state["changes"] = changes
+        reapply_control = conflict_reapply_ref["control"]
+        if reapply_control is not None:
+            if conflict_state.get("latest_version") is None:
+                reapply_control.disable()
+            else:
+                reapply_control.enable()
+        conflict_comparison.refresh()
+        conflict_dialog.open()
+
+    async def reapply_latest() -> None:
+        latest_version = conflict_state.get("latest_version")
+        if latest_version is None:
+            compare_latest()
+            return
+        reviewed_version["value"] = int(latest_version)
+        conflict_dialog.close()
+        await save_pending()
+
+    with ui.dialog().props("persistent") as conflict_dialog, ui.card().classes(
+        "sy-surface w-full max-w-lg p-6"
+    ):
+        ui.label(t("draft_conflict_preserved_title")).classes("text-lg font-semibold")
+        ui.label(t("draft_conflict_preserved_body")).classes(
+            "text-sm leading-6 text-[var(--sy-muted)] mt-2"
+        )
+
+        @ui.refreshable
+        def conflict_comparison() -> None:
+            ui.label(t("draft_conflict_comparison_title")).classes(
+                "font-semibold mt-4"
+            )
+            changes = list(conflict_state.get("changes") or [])
+            if not changes:
+                ui.label(t("draft_conflict_no_overlap")).classes(
+                    "text-sm leading-6 text-[var(--sy-muted)]"
+                )
+            else:
+                with ui.element("ul").classes("list-disc pl-5 text-sm leading-6"):
+                    for change in changes:
+                        ui.label(str(change)).classes("list-item")
+
+        conflict_comparison()
+        with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
+            action(
+                t("draft_conflict_keep_editing"),
+                icon="arrow_back",
+                on_click=conflict_dialog.close,
+                variant="secondary",
+            )
+            conflict_reapply_ref["control"] = action(
+                t("draft_conflict_reapply"),
+                icon="difference",
+                on_click=reapply_latest,
+                variant="attention",
+                disabled=conflict_state.get("latest_version") is None,
+                test_id="draft-conflict-reapply",
+            )
+            action(
+                t("draft_conflict_reload"),
+                icon="refresh",
+                on_click=reload_latest,
+                variant="danger",
+            )
+
+    with ui.dialog() as discard_dialog, ui.card().classes("sy-surface w-full max-w-md p-6"):
+        ui.label(t("draft_discard_confirm_title")).classes("text-lg font-semibold")
+        ui.label(t("draft_discard_confirm_body")).classes(
+            "text-sm leading-6 text-[var(--sy-muted)] mt-2"
+        )
+        with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
+            action(t("cancel"), icon="close", on_click=discard_dialog.close, variant="quiet")
+            action(
+                t("draft_discard_all"),
+                icon="delete_sweep",
+                on_click=discard_pending,
+                variant="danger",
+            )
+
+    async def save_pending() -> None:
+        cell_values = tuple(
+            DraftCellEdit(cell_key=key, replacement_prefect_id=value)
+            for key, value in pending_cells.items()
+        )
+        day_values = tuple(
+            DraftDayEdit(day=day, closed=closed)
+            for day, closed in pending_days.items()
+        )
+        if not cell_values and not day_values:
+            return
+        expected_week_version = reviewed_version["value"]
+        reason = reason_state["value"].strip() or None
+        command_id = f"draft-patch-ui:{uuid4().hex}"
+        result = await _run_with_progress(
+            lambda: workflow.apply_draft_patch(
+                roster_week_id=roster_week_id,
+                expected_week_version=expected_week_version,
+                cell_edits=cell_values,
+                day_edits=day_values,
+                reason=reason,
+                command_id=command_id,
+            ),
+            title_key="progress_draft_change_title",
+            working_key="progress_draft_change_working",
+            icon="edit_note",
+            on_conflict=compare_latest,
+        )
+        if result is not _OPERATION_FAILED:
+            ui.notify(t("draft_batch_saved"), type="positive")
+            ui.navigate.reload()
+
+    @ui.refreshable
+    def editor() -> None:
+        candidate_selector_ref["control"] = None
+        day_dialogs: dict[SchoolDay, Any] = {}
+        with ui.element("section").classes("sy-draft-editor").props(
+            "data-testid=draft-grid-editor"
+        ):
+            ui.label(t("draft_schedule_title")).classes("text-xl font-semibold")
+            ui.label(t("draft_schedule_intro")).classes(
+                "text-sm leading-6 text-[var(--sy-muted)]"
+            )
+
+            with ui.element("div").classes("sy-draft-grid-shell"):
+                with ui.element("div").classes("sy-draft-grid-scroll"):
+                    with ui.element("div").classes("sy-draft-grid-desktop").props(
+                        'role="grid" aria-label="' + attr(t("draft_schedule_title")) + '"'
+                    ):
+                        with ui.element("div").classes("sy-draft-grid-corner").style(
+                            "grid-column:1;grid-row:1"
+                        ):
+                            ui.label(t("duty_position"))
+                        for day_index, day_item in enumerate(presentation.days, start=2):
+                            day = day_item.day
+                            effective_closed = day_is_closed(day)
+                            with ui.element("div").classes("sy-draft-grid-day-head").style(
+                                f"grid-column:{day_index};grid-row:1"
+                            ):
+                                ui.label(day_label(day)).classes("font-semibold")
+                                if day_item.duty_date:
+                                    ui.label(day_item.duty_date.strftime("%m/%d")).classes("text-xs")
+                                day_action = action(
+                                    t(
+                                        "draft_day_reopen_action"
+                                        if effective_closed
+                                        else "draft_day_close_action"
+                                    ),
+                                    icon="event_available" if effective_closed else "event_busy",
+                                    variant="quiet",
+                                    classes="sy-draft-grid-day-action",
+                                    test_id=f"draft-day-toggle-{day.name.lower()}",
+                                )
+                                affected = sum(
+                                    1
+                                    for row in presentation.rows
+                                    for cell in row.cells
+                                    if cell.day == day
+                                    and cell.prefect_id
+                                )
+                                with ui.dialog() as day_dialog, ui.card().classes(
+                                    "sy-surface w-full max-w-md p-6"
+                                ):
+                                    day_dialogs[day] = day_dialog
+                                    ui.label(
+                                        t(
+                                            "draft_day_reopen_confirm_title"
+                                            if effective_closed
+                                            else "draft_day_close_confirm_title",
+                                            day=day_label(day),
+                                        )
+                                    ).classes("text-lg font-semibold")
+                                    ui.label(
+                                        t(
+                                            "draft_day_reopen_confirm_body"
+                                            if effective_closed
+                                            else "draft_day_close_confirm_body",
+                                            day=day_label(day),
+                                            count=affected,
+                                        )
+                                    ).classes("text-sm leading-6 text-[var(--sy-muted)] mt-2")
+                                    with ui.row().classes(
+                                        "sy-mobile-actions w-full justify-end gap-3 mt-5"
+                                    ):
+                                        action(
+                                            t("cancel"),
+                                            icon="close",
+                                            on_click=day_dialog.close,
+                                            variant="quiet",
+                                        )
+
+                                        def confirm_day_change(
+                                            selected_day: SchoolDay = day,
+                                            close_day: bool = not effective_closed,
+                                            dialog: Any = day_dialog,
+                                        ) -> None:
+                                            dialog.close()
+                                            stage_day(selected_day, close_day)
+
+                                        action(
+                                            t(
+                                                "draft_day_reopen_action"
+                                                if effective_closed
+                                                else "draft_day_close_action"
+                                            ),
+                                            icon="event_available"
+                                            if effective_closed
+                                            else "event_busy",
+                                            on_click=confirm_day_change,
+                                            variant="attention",
+                                            test_id=(
+                                                "draft-day-confirm-reopen-"
+                                                if effective_closed
+                                                else "draft-day-confirm-close-"
+                                            )
+                                            + day.name.lower(),
+                                        )
+                                day_action.on_click(day_dialog.open)
+
+                        for row_index, row in enumerate(presentation.rows, start=2):
+                            with ui.element("div").classes("sy-draft-grid-row-head").style(
+                                f"grid-column:1;grid-row:{row_index}"
+                            ):
+                                ui.label(row.spec.display_label).classes("font-semibold")
+                                ui.label("–".join(row.spec.service_time)).classes("text-xs")
+                            for day_index, cell in enumerate(row.cells, start=2):
+                                if day_is_closed(cell.day):
+                                    if row_index == 2:
+                                        with ui.element("div").classes(
+                                            "sy-draft-grid-day-closed"
+                                        ).style(
+                                            f"grid-column:{day_index};grid-row:2 / span {len(presentation.rows)}"
+                                        ):
+                                            ui.icon("event_busy").props("aria-hidden=true")
+                                            ui.label(t("draft_day_closed")).classes("font-semibold")
+                                            ui.label(day_label(cell.day)).classes("text-sm")
+                                    continue
+                                name, meta, state = cell_display(cell)
+                                classes = f"sy-draft-grid-cell sy-draft-grid-cell--{state}"
+                                if selected_cell["key"] == cell.cell_key:
+                                    classes += " sy-draft-grid-cell--selected"
+                                if cell.cell_key in pending_cells:
+                                    classes += " sy-draft-grid-cell--pending"
+                                aria = f"{day_label(cell.day)}, {row.spec.display_label}, {name}"
+                                interaction_props = (
+                                    'role="gridcell" aria-disabled="true" tabindex="-1"'
+                                    if state == "closed"
+                                    else 'role="gridcell" tabindex="0"'
+                                )
+                                button = ui.element("button").classes(classes).style(
+                                    f"grid-column:{day_index};grid-row:{row_index}"
+                                ).props(
+                                    f'type="button" aria-label="{attr(aria)}" '
+                                    f'data-cell-key="{attr(cell.cell_key)}" '
+                                    + interaction_props
+                                )
+                                with button:
+                                    ui.label(name).classes("sy-draft-cell-name")
+                                    if meta:
+                                        ui.label(meta).classes("sy-draft-cell-meta")
+                                if state != "closed":
+                                    button.on(
+                                        "click",
+                                        lambda _event=None, key=cell.cell_key: open_cell_editor(key),
+                                    )
+                                    button.on(
+                                        "keydown",
+                                        lambda event, key=cell.cell_key: handle_cell_key(event, key),
+                                        args=["key"],
+                                        js_handler=(
+                                            "(event) => { if (['Enter', 'F2', 'Escape'].includes(event.key)) { "
+                                            "event.preventDefault(); event.stopPropagation(); "
+                                            "emit({key: event.key}); } }"
+                                        ),
+                                    )
+
+                ui.label(t("draft_grid_mobile_notice")).classes(
+                    "sy-draft-mobile text-xs leading-5 text-[var(--sy-muted)] px-4 pt-4"
+                )
+                with ui.element("div").classes("sy-draft-mobile p-3"):
+                    for day_item in presentation.days:
+                        day = day_item.day
+                        with ui.element("section").classes("sy-draft-mobile-day"):
+                            with ui.row().classes("w-full items-center justify-between gap-3"):
+                                with ui.column().classes("gap-0"):
+                                    ui.label(day_label(day)).classes("font-semibold")
+                                    if day_item.duty_date:
+                                        ui.label(day_item.duty_date.strftime("%Y-%m-%d")).classes(
+                                            "text-xs text-[var(--sy-muted)]"
+                                        )
+                                action(
+                                    t(
+                                        "draft_day_reopen_action"
+                                        if day_is_closed(day)
+                                        else "draft_day_close_action"
+                                    ),
+                                    icon="event_available" if day_is_closed(day) else "event_busy",
+                                    on_click=day_dialogs[day].open,
+                                    variant="quiet",
+                                )
+                            if day_is_closed(day):
+                                ui.label(t("draft_day_closed")).classes(
+                                    "sy-fg-attention font-semibold py-4"
+                                )
+                            else:
+                                for row in presentation.rows:
+                                    cell = next(item for item in row.cells if item.day == day)
+                                    name, meta, state = cell_display(cell)
+                                    classes = f"sy-draft-mobile-cell sy-draft-mobile-cell--{state}"
+                                    if selected_cell["key"] == cell.cell_key:
+                                        classes += " sy-draft-mobile-cell--selected"
+                                    if cell.cell_key in pending_cells:
+                                        classes += " sy-draft-mobile-cell--pending"
+                                    interaction_props = (
+                                        'role="gridcell" aria-disabled="true" tabindex="-1"'
+                                        if state == "closed"
+                                        else 'role="gridcell" tabindex="0"'
+                                    )
+                                    button = ui.element("button").classes(classes).props(
+                                        f'type="button" aria-label="{attr(row.spec.display_label + ", " + name)}" '
+                                        f'data-cell-key="{attr(cell.cell_key)}" '
+                                        + interaction_props
+                                    )
+                                    with button:
+                                        ui.label(row.spec.display_label).classes("text-sm font-semibold")
+                                        with ui.column().classes("gap-0"):
+                                            ui.label(name).classes("sy-draft-cell-name")
+                                            if meta:
+                                                ui.label(meta).classes("sy-draft-cell-meta")
+                                    if state != "closed":
+                                        button.on(
+                                            "click",
+                                            lambda _event=None, key=cell.cell_key: open_cell_editor(key),
+                                        )
+                                        button.on(
+                                            "keydown",
+                                            lambda event, key=cell.cell_key: handle_cell_key(event, key),
+                                            args=["key"],
+                                            js_handler=(
+                                                "(event) => { if (['Enter', 'F2', 'Escape'].includes(event.key)) { "
+                                                "event.preventDefault(); event.stopPropagation(); "
+                                                "emit({key: event.key}); } }"
+                                            ),
+                                        )
+
+            with ui.element("div").classes("sy-draft-editor-panel"):
+                key = selected_cell["key"]
+                if not key:
+                    ui.label(t("draft_select_cell")).classes("font-semibold")
+                    ui.label(t("draft_candidate_search_hint")).classes(
+                        "text-sm leading-6 text-[var(--sy-muted)]"
+                    )
+                else:
+                    cell = cells_by_key[key]
+                    row = next(
+                        item
+                        for item in presentation.rows
+                        if item.spec.post == cell.post and item.spec.slot_index == cell.slot_index
+                    )
+                    ui.label(
+                        t(
+                            "draft_selected_cell",
+                            cell=f"{day_label(cell.day)} · {row.spec.display_label}",
+                        )
+                    ).classes("font-semibold")
+                    candidates = load_candidates(cell)
+                    options: dict[str, str] = {
+                        "__vacant__": t("draft_explicit_vacancy")
+                    }
+                    if cell.prefect_id:
+                        options[str(cell.prefect_id)] = (
+                            f"{cell.prefect_name} · {t('draft_current_assignment')}"
+                        )
+                    for candidate in candidates or []:
+                        swap_suffix = (
+                            f" · {t('draft_candidate_swap_suffix')}"
+                            if candidate.get("requiresSwap")
+                            else ""
+                        )
+                        options[str(candidate["id"])] = (
+                            f"{candidate['nameZh']} ({candidate['form']} {candidate['className']})"
+                            f"{swap_suffix}"
+                        )
+                    selected_value: str | None
+                    if key in pending_cells:
+                        selected_value = pending_cells[key] or "__vacant__"
+                    else:
+                        selected_value = str(cell.prefect_id) if cell.prefect_id else None
+                    selector = ui.select(
+                        label=t("draft_candidate_search"),
+                        options=options,
+                        value=selected_value,
+                        with_input=True,
+                        clearable=True,
+                        on_change=lambda event, cell_key=key: stage_candidate(
+                            cell_key, event.value
+                        ),
+                    ).classes("w-full").props(
+                        "use-input input-debounce=0 "
+                        "data-testid=draft-candidate-search "
+                        f'data-cell-key="{attr(key)}"'
+                    )
+                    candidate_selector_ref["control"] = selector
+                    if candidates is None:
+                        selector.disable()
+                        ui.label(t("draft_candidate_unavailable")).classes(
+                            "sy-fg-attention text-sm leading-6"
+                        )
+                    ui.label(t("draft_candidate_search_hint")).classes(
+                        "text-xs leading-5 text-[var(--sy-muted)]"
+                    )
+
+                ui.textarea(
+                    label=t("draft_batch_reason"),
+                    value=reason_state["value"],
+                    on_change=lambda event: reason_state.__setitem__(
+                        "value", str(event.value or "")
+                    ),
+                ).props("name=draft-batch-reason autocomplete=off").classes("w-full")
+
+            count = pending_count()
+            with ui.element("div").classes("sy-draft-pending-bar").props(
+                "aria-live=polite data-testid=draft-pending-bar"
+            ):
+                with ui.column().classes("gap-0"):
+                    ui.label(
+                        t("draft_pending_count", count=count)
+                        if count
+                        else t("draft_pending_none")
+                    ).classes("font-semibold")
+                    ui.label(t("draft_undo_hint")).classes(
+                        "text-xs text-[var(--sy-muted)]"
+                    )
+                with ui.row().classes("sy-mobile-actions gap-2 flex-wrap"):
+                    action(
+                        t("draft_undo"),
+                        icon="undo",
+                        on_click=undo_pending,
+                        variant="quiet",
+                        disabled=not undo_stack,
+                        test_id="draft-undo",
+                    )
+                    action(
+                        t("draft_discard_all"),
+                        icon="delete_sweep",
+                        on_click=discard_dialog.open,
+                        variant="secondary",
+                        disabled=not count,
+                    )
+                    action(
+                        t("draft_save_all"),
+                        icon="save",
+                        on_click=save_pending,
+                        disabled=not count,
+                        test_id="draft-save-all",
+                    )
+
+    def handle_undo_key(event: Any) -> None:
+        if not event.action.keydown or event.action.repeat:
+            return
+        key_name = event.key.name.lower()
+        if key_name == "z" and (event.modifiers.ctrl or event.modifiers.meta):
+            undo_pending()
+        elif key_name in {"f2", "enter"} and selected_cell["key"] is not None:
+            selector = candidate_selector_ref["control"]
+            if selector is not None:
+                selector.run_method("focus")
+        elif key_name == "escape" and selected_cell["key"] is not None:
+            selected_cell["key"] = None
+            editor.refresh()
+
+    ui.keyboard(
+        on_key=handle_undo_key,
+        repeating=False,
+        ignore=["input", "select", "textarea"],
+    )
+    editor()
 
 
 def _roster_workflow_steps(
@@ -225,6 +1047,13 @@ def rosters_page() -> None:
                         )
                         for week in weeks
                     }
+                    closed_days_by_week = {
+                        week["weekStart"]: tuple(
+                            day.name if isinstance(day, SchoolDay) else str(day)
+                            for day in week.get("closedDays", ())
+                        )
+                        for week in weeks
+                    }
                     version_by_week = {
                         week["weekStart"]: int(week["version"])
                         for week in weeks
@@ -237,6 +1066,22 @@ def rosters_page() -> None:
                         initial_week.isoformat(),
                         LEGACY_FIXED_WEEKDAY,
                     )
+                    with ui.element("section").classes(
+                        "sy-surface-subtle sy-policy-panel w-full p-4 mt-4"
+                    ).props("data-testid=pre-generation-day-closure-panel"):
+                        ui.label(t("pre_generation_day_closure")).classes("font-semibold")
+                        ui.label(t("pre_generation_day_closure_detail")).classes(
+                            "text-sm leading-6 text-[var(--sy-muted)] mt-1"
+                        )
+                        day_closure_select = ui.select(
+                            options={day.name: day_label(day) for day in SchoolDay},
+                            value=list(
+                                closed_days_by_week.get(initial_week.isoformat(), ())
+                            ),
+                            multiple=True,
+                        ).props(
+                            "use-chips clearable data-testid=pre-generation-day-closures"
+                        ).classes("w-full mt-3")
                     with ui.element("section").classes(
                         "sy-surface-subtle sy-policy-panel w-full p-4 mt-4"
                     ).props(
@@ -424,19 +1269,44 @@ def rosters_page() -> None:
                         assist_assignment_mode.update()
                         update_assist_mode_explanation(mode)
 
+                    def refresh_day_closures() -> None:
+                        selected = selected_week_start()
+                        day_closure_select.value = list(
+                            closed_days_by_week.get(
+                                selected.isoformat() if selected else "",
+                                (),
+                            )
+                        )
+                        day_closure_select.update()
+
                     requirements_area = ui.column().classes("w-full gap-2 mt-4")
+                    requirements_state: dict[str, tuple[str, tuple[str, ...]] | None] = {
+                        "rendered_key": None
+                    }
 
                     def refresh_requirements() -> None:
-                        requirements_area.clear()
                         week_start = selected_week_start()
                         if week_start is None:
+                            requirements_state["rendered_key"] = None
+                            requirements_area.clear()
                             return
+                        query_key = _generation_requirements_query_key(
+                            week_start,
+                            day_closure_select.value,
+                        )
+                        if requirements_state["rendered_key"] == query_key:
+                            return
+                        requirements_area.clear()
                         requirements = _safe_read_action(
-                            lambda: workflow.generation_requirements(week_start),
+                            lambda: workflow.generation_requirements(
+                                week_start,
+                                closed_days=tuple(day_closure_select.value or ()),
+                            ),
                             action_name="load_generation_requirements",
                         )
                         if requirements is None:
                             return
+                        requirements_state["rendered_key"] = query_key
                         with requirements_area:
                             with ui.expansion(t("generation_requirements"), icon="assignment_late").classes("w-full"):
                                 ui.label(t("generation_requirements_notice")).classes("p-4 pb-1 text-sm text-[var(--sy-muted)]")
@@ -466,7 +1336,17 @@ def rosters_page() -> None:
                                     row_key="id",
                                     classes="p-4",
                                 )
+
+                    def refresh_requirements_after_leave_change() -> None:
+                        """Invalidate the rendered preflight before leave-dependent refresh."""
+
+                        requirements_state["rendered_key"] = None
+                        refresh_requirements()
+
                     refresh_requirements()
+                    day_closure_select.on_value_change(
+                        lambda _event: refresh_requirements()
+                    )
 
                     ui.separator().classes("my-5")
                     ui.label(t("pre_generation_leave")).classes("text-base font-semibold")
@@ -539,6 +1419,7 @@ def rosters_page() -> None:
                                         if result is not _OPERATION_FAILED:
                                             ui.notify(t("leave_cancelled"), type="positive")
                                             refresh_leave_list()
+                                            refresh_requirements_after_leave_change()
 
                                     ui.button(t("cancel_leave"), icon="close", on_click=cancel_leave).props("flat dense color=negative")
 
@@ -583,6 +1464,7 @@ def rosters_page() -> None:
                             leave_reason.value = ""
                             leave_reason.update()
                             refresh_leave_list()
+                            refresh_requirements_after_leave_change()
                             ui.notify(t("leave_declared"), type="positive")
                         else:
                             declare_leave_button.set_icon("event_busy")
@@ -604,9 +1486,10 @@ def rosters_page() -> None:
                         "change",
                         lambda _event: (
                             refresh_leave_list(),
-                            refresh_requirements(),
                             refresh_history_priority(),
                             refresh_assist_assignment_mode(),
+                            refresh_day_closures(),
+                            refresh_requirements(),
                         ),
                     )
                     refresh_leave_list()
@@ -627,6 +1510,7 @@ def rosters_page() -> None:
                                     assist_assignment_mode.value,
                                     fallback=LEGACY_FIXED_WEEKDAY,
                                 ),
+                                closed_days=tuple(day_closure_select.value or ()),
                                 expected_week_version=expected_week_version,
                                 command_id=generation_command_id,
                             ),
@@ -797,97 +1681,7 @@ def roster_detail_page(roster_week_id: int) -> None:
         if week["status"] == "draft":
             ui.label(t("draft_preview")).classes("text-xl font-semibold mt-2")
             ui.label(t("draft_preview_notice")).classes("text-sm text-[var(--sy-muted)]")
-            draft_assignments = workflow.assignments(roster_week_id)
-            assignment_options = {
-                str(item["id"]): (
-                    f"{day_label(item['day'])} | "
-                    f"{roster_display_label(str(item['postCode']), int(item.get('slotIndex', 1)))} | "
-                    f"{item['prefectName']}"
-                )
-                for item in draft_assignments
-                if item["status"] == "active"
-            }
-            with ui.card().classes("sy-surface sy-operations-panel w-full p-6"):
-                ui.label(t("manual_draft_change")).classes("text-lg font-semibold")
-                _render_operation_hint("hint_draft_change", icon="edit_note")
-                ui.label(t("manual_draft_change_notice")).classes("text-sm text-[var(--sy-muted)] mt-3")
-                with ui.dialog() as draft_change_conflict_dialog, ui.card().classes(
-                    "sy-surface w-full max-w-md p-6"
-                ):
-                    ui.label(t("draft_change_conflict_title")).classes("text-lg font-semibold")
-                    ui.label(t("draft_change_conflict_body", version=reviewed_version)).classes(
-                        "text-sm text-[var(--sy-muted)] mt-2"
-                    )
-
-                    def reload_after_draft_change_conflict() -> None:
-                        draft_change_conflict_dialog.close()
-                        ui.navigate.reload()
-
-                    with ui.row().classes("sy-mobile-actions w-full justify-end mt-5"):
-                        ui.button(
-                            t("draft_change_conflict_action"),
-                            icon="refresh",
-                            on_click=reload_after_draft_change_conflict,
-                        ).props("color=primary")
-                assignment_select = ui.select(
-                    label=t("select_draft_assignment"),
-                    options=assignment_options,
-                    value=next(iter(assignment_options), None),
-                ).classes("w-full mt-4")
-                candidate_select = ui.select(label=t("replacement"), options={}).classes("w-full")
-                reason_input = ui.textarea(label=t("draft_change_reason")).props(
-                    "name=draft-change-reason autocomplete=off"
-                ).classes("w-full")
-
-                def load_draft_candidates() -> None:
-                    def action() -> None:
-                        if not assignment_select.value:
-                            raise WorkflowError("No draft assignment was selected.")
-                        candidates = workflow.draft_assignment_candidates(roster_week_id, int(assignment_select.value))
-                        candidate_select.options = {
-                            str(candidate["id"]): f"{candidate['nameZh']} ({candidate['form']} {candidate['className']}; {candidate['historyWeight']:.1f})"
-                            for candidate in candidates
-                        }
-                        candidate_select.value = next(iter(candidate_select.options), None)
-                        candidate_select.update()
-                        ui.notify(t("eligible_substitutes") if candidates else t("no_substitutes"), type="info")
-
-                    _safe_read_action(action, action_name="load_draft_candidates")
-
-                async def save_draft_change() -> None:
-                    if not assignment_select.value:
-                        ui.notify(t("draft_assignment_required"), type="warning")
-                        assignment_select.run_method("focus")
-                        return
-                    if not candidate_select.value:
-                        ui.notify(t("draft_candidate_required"), type="warning")
-                        candidate_select.run_method("focus")
-                        return
-                    reason = str(reason_input.value or "").strip()
-                    assignment_id = int(assignment_select.value)
-                    replacement_prefect_id = str(candidate_select.value)
-                    draft_change_command_id = f"draft-change-ui:{uuid4().hex}"
-                    result = await _run_with_progress(
-                        lambda: workflow.update_draft_assignment(
-                            roster_week_id=roster_week_id,
-                            assignment_id=assignment_id,
-                            replacement_prefect_id=replacement_prefect_id,
-                            reason=reason,
-                            expected_week_version=reviewed_version,
-                            command_id=draft_change_command_id,
-                        ),
-                        title_key="progress_draft_change_title",
-                        working_key="progress_draft_change_working",
-                        icon="edit_note",
-                        on_conflict=lambda _error: draft_change_conflict_dialog.open(),
-                    )
-                    if result is not _OPERATION_FAILED:
-                        ui.notify(t("draft_changed"), type="positive")
-                        ui.navigate.reload()
-
-                with ui.row().classes("sy-mobile-actions gap-3 mt-4"):
-                    ui.button(t("load_draft_candidates"), icon="group_add", on_click=load_draft_candidates).props("outline color=primary")
-                    ui.button(t("save_draft_change"), icon="save", on_click=save_draft_change).props("color=primary")
+            _render_draft_grid_editor(workflow, roster_week_id)
         elif week["status"] == "published":
             with ui.card().classes("sy-surface sy-border-attention sy-operations-panel w-full border-l-4 p-6"):
                 ui.label(t("post_publication_leave")).classes("text-lg font-semibold")
@@ -914,7 +1708,8 @@ def roster_detail_page(roster_week_id: int) -> None:
                     ui.label(
                         f"{day_label(str(declaration['day']))} | {declaration['prefectName']} | {declaration['reason']}"
                     ).classes("text-sm text-[var(--sy-muted)] mt-1")
-        _render_roster_table(roster_week_id)
+        if week["status"] != "draft":
+            _render_roster_table(roster_week_id)
 
 
 @ui.page("/adjustments")

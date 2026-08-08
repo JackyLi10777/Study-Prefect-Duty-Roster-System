@@ -6,6 +6,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+import nicegui_app.observability as observability_module
 from nicegui_app.persistence.database import migrate_database
 from nicegui_app.observability import (
     LOGGER_NAME,
@@ -170,13 +171,15 @@ def test_fast_successful_framework_asset_and_health_requests_are_debug_only(tmp_
 
 def test_slow_successful_asset_request_remains_visible(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("SING_YIN_SLOW_REQUEST_MS", "1")
+    timestamps = iter((100.0, 100.01))
+    monkeypatch.setattr(observability_module, "perf_counter", lambda: next(timestamps))
     log_path = configure_local_logging(tmp_path / "slow-asset" / "app.log")
     application = FastAPI()
     install_request_tracing(application)
 
     @application.get("/assets/slow.css")
     async def slow_asset() -> dict[str, bool]:
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0)
         return {"ok": True}
 
     response = TestClient(application).get("/assets/slow.css")

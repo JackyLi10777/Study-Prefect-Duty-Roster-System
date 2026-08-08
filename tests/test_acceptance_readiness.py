@@ -26,7 +26,7 @@ def test_acceptance_session_catalog_covers_the_authoritative_matrix_without_drif
     assert len(document_ids) == len(set(document_ids))
     assert len(catalog_ids) == len(set(catalog_ids))
     assert set(catalog_ids) == set(document_ids)
-    assert acceptance_check_counts() == (21, 4)
+    assert acceptance_check_counts() == (22, 4)
 
 
 def test_acceptance_sessions_only_link_to_registered_workspaces_and_translated_copy() -> None:

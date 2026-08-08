@@ -74,7 +74,7 @@ ACCEPTANCE_SESSIONS = (
         icon="published_with_changes",
         route="/rosters",
         destination_key="rosters",
-        operator_checks=("H-07", "H-08", "H-16"),
+        operator_checks=("H-07", "H-08", "H-16", "H-22"),
     ),
     AcceptanceSession(
         key="outputs-privacy",
