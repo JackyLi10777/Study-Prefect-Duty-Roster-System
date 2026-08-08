@@ -232,6 +232,11 @@ def test_rc31_gateway_handoff_ignores_only_proven_disposable_transport_noise() -
         worker_url=worker_url,
         origin_url=origin_url,
     )
+    assert _is_expected_gateway_handoff_request_failure(
+        "public: GET http://localhost:18767/welcome-audio/ubi-caritas: net::ERR_ABORTED",
+        worker_url=worker_url,
+        origin_url=origin_url,
+    )
     assert not _is_expected_gateway_handoff_request_failure(
         "origin: GET http://127.0.0.1:18768/readyz: net::ERR_CONNECTION_RESET",
         worker_url=worker_url,
