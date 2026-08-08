@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import re
@@ -44,6 +45,16 @@ from nicegui_app.services.guest_downloads import (
     guest_download_registry,
 )
 from nicegui_app.services.guest_workspace import DEFAULT_MAX_SNAPSHOT_BYTES
+from nicegui_app.services.public_support import (
+    PUBLIC_SUPPORT_MAX_BODY_BYTES,
+    PublicSupportRequestTooLarge,
+    create_public_support_incident,
+    read_bounded_public_support_body,
+)
+from nicegui_app.services.support_incidents import (
+    IncidentValidationError,
+    SupportStorageError,
+)
 from nicegui_app.ui import pages as _pages  # noqa: F401 - registers @ui.page routes
 from nicegui_app.ui.product_identity import PRODUCT_IDENTITY
 
@@ -112,6 +123,66 @@ def _guest_download_not_found() -> JSONResponse:
         {"error": "not_found"},
         status_code=404,
         headers={"Cache-Control": "no-store, max-age=0"},
+    )
+
+
+def _public_support_response(payload: dict[str, object], status_code: int) -> JSONResponse:
+    return JSONResponse(
+        payload,
+        status_code=status_code,
+        headers={
+            "Cache-Control": "no-store, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+            "Cross-Origin-Resource-Policy": "same-origin",
+            "Referrer-Policy": "no-referrer",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@app.post("/api/support/incidents", include_in_schema=False)
+async def submit_public_support_incident(request: Request) -> Response:
+    """Store one bounded public report in the local, redacted support inbox."""
+
+    reference = current_request_reference() or "REQ-UNAVAILABLE"
+    try:
+        content_length = int(request.headers.get("content-length", "0") or 0)
+    except ValueError:
+        return _public_support_response({"error": "invalid_request", "reference": reference}, 400)
+    if content_length > PUBLIC_SUPPORT_MAX_BODY_BYTES:
+        return _public_support_response({"error": "request_too_large", "reference": reference}, 413)
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if content_type != "application/json":
+        return _public_support_response({"error": "invalid_content_type", "reference": reference}, 415)
+    try:
+        principal = principal_from_request(request)
+        require_runtime_principal_active(principal)
+        CapabilityPolicy.require(principal.mode, Capability.SUPPORT_REPORT_SUBMIT)
+        if principal.mode is not AccessMode.PUBLIC:
+            raise PermissionError("public support endpoint requires a public principal")
+        body = await read_bounded_public_support_body(request.stream())
+        payload = json.loads(body)
+        submission = await asyncio.to_thread(
+            create_public_support_incident,
+            payload,
+            request_reference=reference,
+        )
+    except (OriginPrincipalError, PermissionError):
+        return _public_support_response({"error": "not_found"}, 404)
+    except PublicSupportRequestTooLarge:
+        return _public_support_response({"error": "request_too_large", "reference": reference}, 413)
+    except (UnicodeDecodeError, json.JSONDecodeError, IncidentValidationError):
+        return _public_support_response({"error": "invalid_report", "reference": reference}, 400)
+    except SupportStorageError:
+        logger().warning("public support storage unavailable reference=%s", reference)
+        return _public_support_response(
+            {"error": "support_temporarily_unavailable", "reference": reference},
+            503,
+        )
+    return _public_support_response(
+        {"status": "saved", "incidentId": submission.incident_id},
+        201,
     )
 
 

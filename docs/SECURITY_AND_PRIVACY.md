@@ -137,7 +137,7 @@ before narrowing.
 
 Gateway and snapshot HMAC secrets must be cryptographically generated and must not equal documented placeholders or a repeated single character. This is a deterministic weak-placeholder policy, not a claim that one supplied string's entropy can be measured reliably.
 
-- Public has no application capability.
+- Public receives only the short-lived `support.report.submit` capability for the exact bounded text-report endpoint. It cannot read, list, download, mutate, or attach to support records and has no roster capability.
 - Guest receives only fictional read, in-memory modification, demo download,
   and bounded session preference capabilities.
 - AI, import, upload, clipboard ingestion, integrations, sync, official writes,
@@ -243,7 +243,7 @@ data is recoverable from verified host backups, not from GitHub.
 
 Formal report schema 2 records the exact source commit and tree, clean/dirty state, fingerprint and file count, planned annotated tag, required check identities, start/finish times, tool versions, and `humanAcceptanceRequired`. Origin and Worker deployment scripts compare those fields with the clean tagged `origin/main` source before any switch. A locally editable report is evidence with provenance checks, not a cryptographic attestation; protected GitHub review, immutable annotated tag, controlled deployment, and observed runtime identity remain separate gates.
 
-Admin incident PNG attachments are parsed under compressed-byte, chunk, dimension, decoded-pixel, and sanitized-output limits, converted to RGB/RGBA, and re-encoded without ancillary metadata before their manifest digest is calculated. Signature-only, truncated, malformed, trailing-polyglot, or unsanitizable files fail closed. Guest, Public, and Viewer support remains browser-only.
+Admin incident PNG attachments are parsed under compressed-byte, chunk, dimension, decoded-pixel, and sanitized-output limits, converted to RGB/RGBA, and re-encoded without ancillary metadata before their manifest digest is calculated. Signature-only, truncated, malformed, trailing-polyglot, or unsanitizable files fail closed. Guest support remains browser-only. Public／Viewer may submit only bounded text through the exact support endpoint; no attachment, inbox read, listing, download or roster capability is granted.
 
 No security-sensitive candidate is deployed from a dirty tree, unpushed commit,
 mutable branch name, or report from another fingerprint. The formal verifier,
@@ -281,7 +281,7 @@ Actions output, screenshots, chat, or incident documents.
 
 The product's `/support` flow is the preferred first report. Admin persistence
 is opt-in, host-local, size-limited, integrity-hashed, and outside roster
-transactions and backups. Guest, Public, and Viewer reports are browser-only.
+transactions and backups. Guest reports are browser-only; Public／Viewer text incidents are local-only, redacted, quota-bound, and isolated from those transactions and backups.
 The detailed operator steps are in
 [`SUPPORT_AND_INCIDENT_WORKFLOW.md`](SUPPORT_AND_INCIDENT_WORKFLOW.md); attack
 surface, trust assumptions, retention, quarantine, and residual risks are in

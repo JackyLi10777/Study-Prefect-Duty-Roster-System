@@ -25,7 +25,9 @@ from nicegui_app.services.support_incidents import (
     ALLOWED_WORKFLOW_ACTIONS,
     AttachmentInput,
     IncidentReportInput,
+    IncidentNotFoundError,
     IncidentValidationError,
+    INCIDENT_ID_PATTERN,
     MAX_ATTACHMENT_BYTES,
     MAX_ATTACHMENTS,
     OP_REFERENCE_PATTERN,
@@ -421,6 +423,73 @@ def _render_admin_support(source_path: str) -> None:
             variant="primary",
             test_id="preview-support-incident",
         ).classes("mt-2")
+
+    with ui.element("section").classes("sy-operations-panel sy-support-lookup w-full"):
+        ui.label(t("support_lookup_title")).classes("text-lg font-semibold")
+        ui.label(t("support_lookup_body")).classes(
+            "sy-reading-measure text-sm leading-6 text-[var(--sy-muted)]"
+        )
+        lookup_id = ui.input(label=t("support_lookup_label")).props(
+            "maxlength=21 autocomplete=off spellcheck=false data-testid=support-lookup-id"
+        ).classes("w-full max-w-md font-mono")
+        lookup_result = ui.column().classes("w-full")
+
+        async def lookup_incident() -> None:
+            incident_id = str(lookup_id.value or "").strip().upper()
+            lookup_result.clear()
+            if not INCIDENT_ID_PATTERN.fullmatch(incident_id):
+                ui.notify(t("support_lookup_invalid"), type="warning")
+                return
+
+            def inspect_incident():  # type: ignore[no-untyped-def]
+                try:
+                    return SupportInbox().validate_bundle(incident_id)
+                except IncidentNotFoundError:
+                    return None
+
+            summary = await _run_with_progress(
+                inspect_incident,
+                title_key="progress_support_lookup_title",
+                working_key="progress_support_lookup_working",
+                icon="manage_search",
+            )
+            if summary is _OPERATION_FAILED:
+                return
+            if summary is None:
+                ui.notify(t("support_lookup_not_found"), type="warning")
+                return
+            with lookup_result:
+                with ui.element("section").classes("sy-support-result w-full").props(
+                    "role=status aria-live=polite data-testid=support-lookup-result"
+                ):
+                    status(t("support_lookup_verified"), "stable")
+                    ui.label(summary.incident_id).classes("text-xl font-semibold font-mono")
+                    ui.label(
+                        t(
+                            "support_lookup_summary",
+                            page=_option_label(summary.route_category),
+                            action=_option_label(summary.workflow_action),
+                            state=summary.lifecycle_status,
+                        )
+                    ).classes("text-sm leading-6 text-[var(--sy-muted)]")
+                    action(
+                        t("support_download_bundle"),
+                        icon="archive",
+                        variant="secondary",
+                        on_click=lambda incident_id=summary.incident_id: deliver_generated_download(
+                            SupportInbox().export_bundle_bytes(incident_id),
+                            f"{incident_id}.zip",
+                            media_type="application/zip",
+                        ),
+                    )
+
+        action(
+            t("support_lookup_action"),
+            icon="manage_search",
+            on_click=lookup_incident,
+            variant="secondary",
+            test_id="lookup-support-incident",
+        )
 
 
 @ui.page("/support")

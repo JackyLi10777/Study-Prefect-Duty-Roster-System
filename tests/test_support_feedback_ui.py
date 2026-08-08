@@ -63,6 +63,16 @@ def test_admin_support_clears_consumed_attachments_after_save() -> None:
     assert success.index("attachment_summary.clear()") < success.index('ui.notify(t("support_saved")')
 
 
+def test_admin_support_offers_exact_trace_lookup_and_safe_bundle_download() -> None:
+    source = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_routes" / "support.py").read_text(encoding="utf-8")
+
+    assert "INCIDENT_ID_PATTERN.fullmatch(incident_id)" in source
+    assert "SupportInbox().validate_bundle(incident_id)" in source
+    assert "data-testid=support-lookup-result" in source
+    assert "SupportInbox().export_bundle_bytes(incident_id)" in source
+    assert "support_lookup_not_found" in source
+
+
 def test_admin_support_rejects_guest_before_showing_shared_progress() -> None:
     source = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_routes" / "support.py").read_text(encoding="utf-8")
     handler = source[source.index("async def save_incident"):source.index('save_button.on("click", save_incident)')]

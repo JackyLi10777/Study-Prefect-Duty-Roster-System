@@ -11,8 +11,10 @@ const REVOKED_SHARE_KEY_PREFIX = 'share:revoked:';
 const CONTENT_DIGEST_PATTERN = /^[a-f0-9]{64}$/;
 const MAX_ADMIN_BODY_BYTES = 196_608;
 const MAX_VIEW_BODY_BYTES = 2_048;
+const MAX_PUBLIC_SUPPORT_BODY_BYTES = 16_384;
 const GUEST_START_RATE_LIMIT_BINDING = 'GUEST_START_RATE_LIMITER';
 const PUBLIC_VIEW_RATE_LIMIT_BINDING = 'PUBLIC_VIEW_RATE_LIMITER';
+const PUBLIC_SUPPORT_RATE_LIMIT_BINDING = 'PUBLIC_SUPPORT_RATE_LIMITER';
 const RATE_LIMIT_RETRY_AFTER_SECONDS = 60;
 const RATE_LIMIT_FAILURE_RETRY_AFTER_SECONDS = 15;
 const MAX_SHARE_LIFETIME_MS = 31 * 24 * 60 * 60 * 1_000;
@@ -320,6 +322,19 @@ const VIEWER_HTML = `<!doctype html>
   <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
+  <script>
+    (() => {
+      const key = 'sing-yin-roster-viewer-theme-v1';
+      let preference = 'system';
+      try { preference = localStorage.getItem(key) || 'system'; } catch {}
+      if (!['system', 'light', 'dark'].includes(preference)) preference = 'system';
+      const resolved = preference === 'system'
+        ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : preference;
+      document.documentElement.dataset.themePreference = preference;
+      document.documentElement.dataset.theme = resolved;
+    })();
+  </script>
   <title>導學風紀值班表生成系統 · Study Prefect Duty Roster System</title>
   <link rel="icon" href="/favicon.png" type="image/png">
   <link rel="stylesheet" href="/viewer.css">
@@ -604,6 +619,19 @@ const PUBLIC_SUPPORT_HTML = `<!doctype html>
   <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
+  <script>
+    (() => {
+      const key = 'sing-yin-roster-viewer-theme-v1';
+      let preference = 'system';
+      try { preference = localStorage.getItem(key) || 'system'; } catch {}
+      if (!['system', 'light', 'dark'].includes(preference)) preference = 'system';
+      const resolved = preference === 'system'
+        ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : preference;
+      document.documentElement.dataset.themePreference = preference;
+      document.documentElement.dataset.theme = resolved;
+    })();
+  </script>
   <title>報告問題 · Report a problem</title>
   <link rel="icon" href="/favicon.png" type="image/png">
   <link rel="stylesheet" href="/viewer.css">
@@ -611,10 +639,13 @@ const PUBLIC_SUPPORT_HTML = `<!doctype html>
 <body class="support-page">
   <main class="page-shell support-shell">
     <header class="support-heading">
-      <a class="support-back" href="/">← 返回網站入口 <span lang="en">· Return to entrance</span></a>
-      <h1>安全地整理問題資料</h1>
-      <p>這個公開表單只會在你的瀏覽器產生一份經整理的報告，不會上傳、儲存或自動傳送任何內容。</p>
-      <p lang="en">This public form creates a redacted report only in your browser. Nothing is uploaded, stored, or sent automatically.</p>
+      <div class="support-heading-actions">
+        <a class="support-back" href="/">← 返回網站入口 <span lang="en">· Return to entrance</span></a>
+        <button id="supportTheme" class="guest-enter" type="button" aria-label="切換外觀 · Change appearance">自動 · Auto</button>
+      </div>
+      <h1>三項資料，建立可追溯的問題報告</h1>
+      <p>描述預期、實際情況及最少重現步驟；確認內容後才會提交到本機安全收件匣，並取得追溯碼。</p>
+      <p lang="en">Describe the expected result, what happened, and the shortest reproduction steps. Nothing is submitted until you confirm; a saved report returns a traceable incident ID.</p>
     </header>
 
     <form id="publicSupportForm" class="support-form" novalidate>
@@ -649,16 +680,16 @@ const PUBLIC_SUPPORT_HTML = `<!doctype html>
         </div>
       </details>
       <div class="support-actions">
-        <button id="supportBuild" class="admin-login" type="submit">產生安全報告 <span lang="en">· Build safe report</span></button>
+        <button id="supportBuild" class="admin-login" type="submit">提交安全報告 <span lang="en">· Submit safe report</span></button>
         <button id="supportReset" class="guest-enter" type="reset">清除 <span lang="en">· Clear</span></button>
       </div>
     </form>
 
     <section id="supportResult" class="support-result" hidden aria-live="polite">
-      <h2>報告已在瀏覽器準備好</h2>
+      <h2 id="supportResultTitle">報告已保存</h2>
       <p>事件編號 · Incident ID: <strong id="supportIncidentId"></strong></p>
-      <p>下載或複製後，由你自行選擇安全的傳送方式；系統不會自動提交。</p>
-      <p lang="en">Download or copy the report, then choose an appropriate channel yourself. The system never submits it automatically.</p>
+      <p id="supportResultGuidance">請記下追溯碼；管理員或維護 AI 可在本機支援收件匣按此代碼查詢。</p>
+      <p id="supportResultGuidanceEn" lang="en">Keep this incident ID. An administrator or maintenance AI can locate the local report by this reference.</p>
       <div class="support-actions">
         <button id="supportDownload" class="admin-login" type="button">下載 JSON <span lang="en">· Download JSON</span></button>
         <button id="supportCopy" class="guest-enter" type="button">複製摘要 <span lang="en">· Copy summary</span></button>
@@ -682,7 +713,36 @@ const statusNode = document.getElementById('supportStatus');
 const downloadButton = document.getElementById('supportDownload');
 const copyButton = document.getElementById('supportCopy');
 const emailLink = document.getElementById('supportEmail');
+const submitButton = document.getElementById('supportBuild');
+const themeButton = document.getElementById('supportTheme');
+const resultTitle = document.getElementById('supportResultTitle');
+const resultGuidance = document.getElementById('supportResultGuidance');
+const resultGuidanceEn = document.getElementById('supportResultGuidanceEn');
 let preparedReport = null;
+
+const THEME_KEY = 'sing-yin-roster-viewer-theme-v1';
+const themeStates = ['system', 'light', 'dark'];
+const themeLabels = { system: '自動 · Auto', light: '淺色 · Light', dark: '深色 · Dark' };
+let themePreference = document.documentElement.dataset.themePreference || 'system';
+const applyTheme = (preference, persist = true) => {
+  themePreference = themeStates.includes(preference) ? preference : 'system';
+  const resolved = themePreference === 'system'
+    ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : themePreference;
+  document.documentElement.dataset.themePreference = themePreference;
+  document.documentElement.dataset.theme = resolved;
+  themeButton.textContent = themeLabels[themePreference];
+  themeButton.setAttribute('aria-pressed', themePreference === 'system' ? 'false' : 'true');
+  if (persist) try { localStorage.setItem(THEME_KEY, themePreference); } catch {}
+};
+applyTheme(themePreference, false);
+themeButton.addEventListener('click', () => applyTheme(themeStates[(themeStates.indexOf(themePreference) + 1) % themeStates.length]));
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (themePreference === 'system') applyTheme('system', false);
+});
+window.addEventListener('storage', event => {
+  if (event.key === THEME_KEY) applyTheme(event.newValue || 'system', false);
+});
 
 const normalizedText = (id, maximum) => document.getElementById(id).value
   .replace(/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F]/g, ' ')
@@ -707,26 +767,62 @@ const reportSummary = report => [
   'Impact:', report.impact || '(not supplied)',
 ].join('\\n');
 
-form.addEventListener('submit', event => {
+form.addEventListener('submit', async event => {
   event.preventDefault();
   if (!form.reportValidity()) return;
   const source = location.hash === '#viewer' ? 'public_viewer' : 'public_entrance';
-  preparedReport = Object.freeze({
-    schema_version: 'sing-yin-browser-support-report-v1',
-    incident_id: newIncidentId(),
-    created_at_utc: new Date().toISOString(),
+  const reportPayload = Object.freeze({
     source,
-    actor_mode: 'public',
     category: document.getElementById('supportCategory').value,
     expected_behavior: normalizedText('supportExpected', 1200),
     actual_behavior: normalizedText('supportActual', 1200),
     reproduction_steps: normalizedText('supportSteps', 1600),
     impact: normalizedText('supportImpact', 800),
-    collection: Object.freeze({ server_persistence: false, attachments: false, automatic_transmission: false }),
+  });
+  submitButton.disabled = true;
+  submitButton.setAttribute('aria-busy', 'true');
+  statusNode.textContent = '正在安全提交… · Submitting securely…';
+  let persisted = false;
+  let incidentId = '';
+  try {
+    const response = await fetch('/api/support/incidents', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reportPayload),
+    });
+    const responsePayload = await response.json().catch(() => ({}));
+    if (!response.ok || !/^INC-\\d{8}-[A-F0-9]{8}$/.test(responsePayload.incidentId || '')) {
+      throw new Error(responsePayload.reference || 'submission_failed');
+    }
+    persisted = true;
+    incidentId = responsePayload.incidentId;
+  } catch {
+    incidentId = newIncidentId();
+  } finally {
+    submitButton.disabled = false;
+    submitButton.removeAttribute('aria-busy');
+  }
+  preparedReport = Object.freeze({
+    schema_version: 'sing-yin-browser-support-report-v1',
+    incident_id: incidentId,
+    created_at_utc: new Date().toISOString(),
+    ...reportPayload,
+    actor_mode: 'public',
+    collection: Object.freeze({ server_persistence: persisted, attachments: false, automatic_transmission: false }),
   });
   incidentIdNode.textContent = preparedReport.incident_id;
   emailLink.href = 'mailto:s10777@syss.edu.hk?subject=' + encodeURIComponent('Service Weave support ' + preparedReport.incident_id);
-  statusNode.textContent = '';
+  resultTitle.textContent = persisted ? '報告已保存 · Report saved' : '網絡未能提交 · Browser fallback ready';
+  resultGuidance.textContent = persisted
+    ? '請記下追溯碼；管理員或維護 AI 可在本機支援收件匣按此代碼查詢。'
+    : '輸入仍然保留；請下載本機備援，稍後重試或以電郵傳送追溯碼。';
+  resultGuidanceEn.textContent = persisted
+    ? 'Keep this incident ID. An administrator or maintenance AI can locate the local report by this reference.'
+    : 'Your input is preserved. Download the browser fallback, retry later, or email its reference.';
+  statusNode.textContent = persisted
+    ? '已安全保存；沒有上傳附件。 · Saved securely; no attachments were uploaded.'
+    : '未寫入伺服器；已建立 FB 本機備援。 · Not stored on the server; an FB browser fallback was created.';
   result.hidden = false;
   result.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
 });
@@ -1690,6 +1786,8 @@ tbody td {
 .support-page { align-items: stretch; }
 .support-shell { width: min(100% - 32px, 860px); margin-inline: auto; padding-top: clamp(28px, 7vw, 72px); }
 .support-heading { display: grid; gap: 10px; margin-bottom: 20px; }
+.support-heading-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.support-heading-actions .guest-enter { width: auto; min-width: 112px; min-height: 44px; justify-content: center; }
 .support-heading h1 { margin: 4px 0 0; font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.06; letter-spacing: -0.035em; }
 .support-heading p { max-width: 720px; margin: 0; color: var(--ink-muted); line-height: 1.65; }
 .support-back { width: fit-content; color: var(--action); font-size: 0.76rem; font-weight: 720; }
@@ -1735,6 +1833,8 @@ tbody td {
 .support-result .support-actions { margin-top: 16px; }
 
 @media (max-width: 640px) {
+  .support-heading-actions { align-items: stretch; }
+  .support-heading-actions .guest-enter { min-width: 0; }
   .support-form { grid-template-columns: 1fr; }
   .support-form label { grid-column: 1 / -1; }
   .support-actions > * { width: 100% !important; justify-content: center; }
@@ -3334,6 +3434,7 @@ function normalizeRateLimitConfiguration(env) {
   return {
     guestStart: rateLimitBinding(env, GUEST_START_RATE_LIMIT_BINDING),
     publicView: rateLimitBinding(env, PUBLIC_VIEW_RATE_LIMIT_BINDING),
+    publicSupport: rateLimitBinding(env, PUBLIC_SUPPORT_RATE_LIMIT_BINDING),
   };
 }
 
@@ -3572,7 +3673,7 @@ async function createOriginPrincipalToken(request, principal, env, options = {})
   const sessionExpiresAt = Number(principal?.exp);
   if (
     !principal
-    || !['admin', 'guest'].includes(principal.mode)
+    || !['admin', 'guest', 'public'].includes(principal.mode)
     || typeof principal.subject !== 'string'
     || !principal.subject
     || principal.subject.length > 320
@@ -4539,6 +4640,46 @@ async function route(request, env, context) {
     );
     if (limited) return limited;
     return viewShare(request, env, context);
+  }
+  if (path === '/api/support/incidents') {
+    if (request.method !== 'POST') return methodNotAllowed('POST');
+    if (url.search || !authenticatedProxyRequestAllowed(request)) return accessFailureResponse();
+    const limited = await enforcePublicRateLimit(
+      request,
+      env,
+      PUBLIC_SUPPORT_RATE_LIMIT_BINDING,
+      'public-support',
+    );
+    if (limited) return limited;
+    const contentLength = Number(request.headers.get('Content-Length') || 0);
+    if (!Number.isFinite(contentLength) || contentLength > MAX_PUBLIC_SUPPORT_BODY_BYTES) {
+      return jsonResponse({ error: 'request_too_large' }, 413);
+    }
+    let boundedBody;
+    try {
+      boundedBody = await readBoundedUtf8(request, MAX_PUBLIC_SUPPORT_BODY_BYTES);
+    } catch (error) {
+      return jsonResponse(
+        { error: error instanceof RangeError ? 'request_too_large' : 'invalid_report' },
+        error instanceof RangeError ? 413 : 400,
+      );
+    }
+    const boundedRequest = new Request(request.url, {
+      method: 'POST',
+      headers: request.headers,
+      body: boundedBody,
+    });
+    const publicPrincipal = {
+      mode: 'public',
+      subject: 'public-support',
+      sid: encodeBase64Url(crypto.getRandomValues(new Uint8Array(16))).slice(0, 22),
+      exp: Math.floor(Date.now() / 1_000) + 60,
+    };
+    try {
+      return originProxyResult(await proxyToRosterOrigin(boundedRequest, env, publicPrincipal));
+    } catch {
+      return jsonResponse({ error: 'support_temporarily_unavailable' }, 503);
+    }
   }
 
   if (path === '/api/admin/shares' || path.startsWith('/api/admin/shares/')) {

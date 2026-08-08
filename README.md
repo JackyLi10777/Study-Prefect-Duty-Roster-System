@@ -28,7 +28,7 @@
 
 [English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)
 
-**反饋與聯絡：** 遇到問題時，先在網站開啟 **「問題回報／Support」**，取得支援編號及已刪減的診斷摘要，再電郵我：[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk)。管理員可在明確同意後，把有限大小的 TXT／JSON／PNG 證據保存到主機本機支援收件匣；Guest、Public 及 Viewer 只會在瀏覽器建立報告，不會上載或長期保存。不要提交密碼、token、cookie、完整資料庫或完整備份；姓名、請假內容、值班表、PDF、截圖或日誌只在確實有助調查時提供最少相關部分。完整程序見[本機問題回報與事故處理](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md)。
+**反饋與聯絡：** 遇到問題時，先在網站開啟 **「問題回報／Support」**。未登入的 Public／Viewer 可把三項純文字資料安全提交到主機本機支援收件匣並取得 `INC-…` 追溯碼；網絡中斷時表單會保留內容並提供只存在目前分頁的 `FB-…` 臨時碼。管理員可在站內按 `INC-…` 核對事件包並下載安全副本，也可在明確同意後加入有限大小的 TXT／JSON／PNG 證據；Guest 仍只在瀏覽器建立臨時報告。電郵只是保存後的可選交接：[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk)。不要提交密碼、token、cookie、完整資料庫或完整備份；姓名、請假內容、值班表、PDF、截圖或日誌只在確實有助調查時提供最少相關部分。完整程序見[本機問題回報與事故處理](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md)。
 
 ## 先從這裡開始
 
@@ -65,7 +65,7 @@ Admin／Guest 入口共用同一狀態流程。按下後會立即鎖定重複身
 
 ### 本機問題回報與診斷
 
-`/support` 是唯一問題回報入口。未登入的 Public／Viewer 由 Worker 顯示純瀏覽器表單；已驗證的 Admin／Guest 則進入共同 NiceGUI 支援工作台。它把「發生甚麼、在哪一頁、預期甚麼」放在首層；路由、操作、影響及附件只在需要時展開。Admin 提交前必須再次確認本機保存，支援資料不會進入排班交易、正式 SQLite、公平帳本或備份；Guest、Public 及 Viewer 只會下載或複製一份瀏覽器內報告。維護者以 `scripts/inspect_support_inbox.py` 讀取本機收件匣，並可用 `scripts/collect_host_security_summary.ps1` 產生不含秘密值的主機狀態摘要。威脅邊界見[支援收件匣威脅模型](docs/THREAT_MODEL_SUPPORT_INBOX.md)，全站內容取捨及保留規則見[內容設計審計](docs/CONTENT_DESIGN_AUDIT.md)。
+`/support` 是唯一問題回報入口。未登入的 Public／Viewer 由 Worker 顯示與入口共用外觀偏好的純文字表單；提交時只可使用短效、簽署的 `support.report.submit` 能力，經大小、來源、頻率與欄位白名單核對後寫入主機本機 Support Inbox。成功回傳 `INC-…`，失敗則保留表單並建立本分頁 `FB-…` 後備碼。已驗證的 Admin／Guest 進入共同 NiceGUI 支援工作台：Admin 可預覽、保存有限附件、按追溯碼核對及下載；Guest 仍只建立臨時瀏覽器報告。所有支援資料均在正式 SQLite、排班交易、公平帳本及備份之外。維護者以 `scripts/inspect_support_inbox.py` 讀取本機收件匣，並可用 `scripts/collect_host_security_summary.ps1` 產生不含秘密值的主機狀態摘要。威脅邊界見[支援收件匣威脅模型](docs/THREAT_MODEL_SUPPORT_INBOX.md)，全站內容取捨及保留規則見[內容設計審計](docs/CONTENT_DESIGN_AUDIT.md)。
 
 ### 一個產品，四個清楚區域
 

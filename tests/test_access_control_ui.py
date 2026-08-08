@@ -104,6 +104,8 @@ def test_live_viewer_verifier_covers_the_release_entry_contract() -> None:
     for helper in (
         "_assert_page_identity",
         "_assert_guest_landing",
+        "_assert_public_support",
+        "_assert_public_support_network_fallback",
         "_assert_theme_selection",
         "_assert_manual_verse_refresh",
         "_assert_reduced_motion",
@@ -119,6 +121,10 @@ def test_live_viewer_verifier_covers_the_release_entry_contract() -> None:
     assert 'reduced_motion="reduce"' in source
     assert 'page.locator("#refreshLandingVerse").click()' in source
     assert 'page.locator("#shareSite")' in source
+    assert "sing-yin-roster-viewer-theme-v1" in source
+    assert 'r"INC-\\d{8}-[A-F0-9]{8}"' in source
+    assert 'r"FB-[A-F0-9]{16}"' in source
+    assert 'route.abort("connectionfailed")' in source
     assert '"不包含任何值班表"' in source
     assert 'login_box["height"] < 48' in source
     assert "document.documentElement.scrollWidth" in source

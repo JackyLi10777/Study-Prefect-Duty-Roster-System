@@ -2,12 +2,12 @@
 
 ## 1. Scope and security objectives
 
-本威脅模型涵蓋 Admin 問題回報、Guest／Public 瀏覽器內回報、Incident Bundle、Support Inbox、檢視／quarantine 工具、Codex handoff 及有界主機安全摘要。既有 roster database、backup、PDF、Cloudflare Access／Worker 及正式值班工作流只在它們與回報系統接觸的邊界內討論。
+本威脅模型涵蓋 Admin 問題回報、Public／Viewer 有界文字提交、Guest 瀏覽器內回報、Incident Bundle、Support Inbox、檢視／quarantine 工具、Codex handoff 及有界主機安全摘要。既有 roster database、backup、PDF、Cloudflare Access／Worker 及正式值班工作流只在它們與回報系統接觸的邊界內討論。
 
 安全目標：
 
 1. 診斷系統故障不能令值班工作流失敗。
-2. Guest／Public／Viewer 不得在 origin 留下持久回報內容。
+2. Guest 不得在 origin 留下持久回報內容；Public／Viewer 只可經短效簽署能力建立受限、純文字、已遮蔽 incident，不能讀取、列出、下載或修改任何 incident。
 3. Incident 只收集 allowlisted、已清理、最小必要證據。
 4. 不可信 bundle 不得造成 code execution、path escape、stored XSS、prompt-driven action 或跨 incident 泄漏。
 5. bundle 的建立、狀態轉移及 resolution 具完整性、並行安全及可審計性。
@@ -16,9 +16,10 @@
 ## 2. Architecture and trust boundaries
 
 ```text
-Public browser ── Cloudflare Worker ── signed principal ── NiceGUI origin
+Public browser ── Cloudflare Worker ── 60s support-only principal ── NiceGUI origin
      │                                                    │
-     └─ browser-only report (untrusted, ephemeral)        ├─ Admin report service
+     ├─ bounded text POST ────────────────────────────────┤
+     └─ network-failure fallback (untrusted, ephemeral)   ├─ Admin report service
                                                           │    │
 Windows authenticated Admin browser ─────────────────────┘    ├─ redactor/schema validator
                                                                ├─ same-volume staging
@@ -59,7 +60,8 @@ Assumptions：Windows service account和管理員帳戶分離；support root 位
 
 | Threat | Attack path | Primary controls | Residual risk / follow-up |
 |---|---|---|---|
-| Guest persistence bypass | 直接呼叫 Admin save endpoint／callback | `AccessMode` + deny-by-default `CapabilityPolicy`；save service 重新要求 `PERSISTENT_WRITE`；Guest 只使用 browser JS | 被盜 Admin session 仍可建立 incident；由 Access expiry／revocation處理 |
+| Guest persistence bypass | 直接呼叫 Admin save endpoint／callback | `AccessMode` + deny-by-default `CapabilityPolicy`；Admin save service 重新要求 `PERSISTENT_WRITE`；Guest 只使用 browser JS | 被盜 Admin session 仍可建立 incident；由 Access expiry／revocation處理 |
+| Public support flooding | 重複呼叫公開提交 API 消耗磁碟或 quota | exact route／method、same-origin、16 KiB body、60 秒 signed capability、6/min edge limit、20/day／200-count／50-MiB inbox quota | 分散來源仍可耗盡每日 quota；只令回報暫停，不得影響值班流程 |
 | Cross-session leakage | 猜 Incident ID、download token 或引用另一 session | Incident ID 不作授權；Admin-only list/read；download token綁 session、單次、限時；no-store | 本機有 ACL 權限者仍可讀；由 NTFS ACL 限制 |
 | Sensitive attachment | Operator 加入名單、截圖、log、database | 預設無附件；explicit preview/consent；嚴格 type／size／count；redaction；禁 PDF／Office／archive | PNG 仍可能含個資；v1 提醒且需人工核對，不承諾 OCR 完全遮罩 |
 | CRLF／log injection | 描述或 reference 注入新 event line | 移除 control chars、normalize newline；reference strict regex；user text不寫 app.log | 允許文字仍可能誤導人，故 UI／CLI 標示 untrusted |

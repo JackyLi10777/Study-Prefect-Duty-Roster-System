@@ -34,7 +34,9 @@ INCIDENT_SCHEMA_VERSION = 1
 INCIDENT_ID_PATTERN = re.compile(r"^INC-\d{8}-[A-F0-9]{8}$")
 OP_REFERENCE_PATTERN = re.compile(r"^OP-[A-F0-9]{8}$")
 REQ_REFERENCE_PATTERN = re.compile(r"^REQ-[A-F0-9]{8}$")
-ALLOWED_SOURCES = frozenset({"admin_ui", "browser_export", "synthetic_test", "inbox_import"})
+ALLOWED_SOURCES = frozenset(
+    {"admin_ui", "browser_export", "public_ui", "synthetic_test", "inbox_import"}
+)
 ALLOWED_ACTOR_MODES = frozenset({"admin", "guest", "public", "local_maintenance", "synthetic"})
 ALLOWED_LIFECYCLE_STATES = frozenset(
     {

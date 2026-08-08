@@ -40,6 +40,7 @@ class Capability(str, Enum):
     EXTERNAL_DELIVERY = "external_delivery.execute"
     EXPENSIVE_PROCESSING = "expensive_processing.execute"
     REAL_EXPORT = "real_export.download"
+    SUPPORT_REPORT_SUBMIT = "support.report.submit"
 
 
 GUEST_ALLOWED_CAPABILITIES = frozenset(
@@ -69,13 +70,14 @@ class PrincipalExpiredError(PermissionError):
 class CapabilityPolicy:
     """Explicit capability matrix.
 
-    Missing modes and missing capabilities are denied.  Public traffic receives
-    no application capability.  Administrative and local-maintenance
-    principals are still subject to domain policy after this access check.
+    Missing modes and missing capabilities are denied. Public traffic receives
+    only the narrow, text-only support submission capability. Administrative
+    and local-maintenance principals are still subject to domain policy after
+    this access check.
     """
 
     _CAPABILITIES_BY_MODE: dict[AccessMode, frozenset[Capability]] = {
-        AccessMode.PUBLIC: frozenset(),
+        AccessMode.PUBLIC: frozenset({Capability.SUPPORT_REPORT_SUBMIT}),
         AccessMode.GUEST: GUEST_ALLOWED_CAPABILITIES,
         AccessMode.ADMIN: frozenset(Capability),
         AccessMode.LOCAL_MAINTENANCE: frozenset(Capability),

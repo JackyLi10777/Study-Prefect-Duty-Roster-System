@@ -56,6 +56,16 @@ def test_guest_preferences_reject_unbounded_or_unknown_values() -> None:
 
     with pytest.raises(ValueError):
         store["unapproved_setting"] = "value"
+
+
+def test_verified_guest_music_autoplay_round_trips_under_the_runtime_key() -> None:
+    store = GuestPreferenceRegistry().store_for("guest-music-session")
+
+    store["music_autoplay"] = False
+
+    assert store["music_autoplay"] is False
+    with pytest.raises(ValueError):
+        store["music_autoplay_enabled"] = True
     with pytest.raises(ValueError):
         store["music_track_dashboard"] = "x" * 257
     with pytest.raises(ValueError):

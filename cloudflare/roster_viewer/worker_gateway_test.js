@@ -91,6 +91,7 @@ function rateLimitEnvironment() {
     GUEST_SESSION_SECRET: 'test-only-guest-session-secret-with-more-than-32-characters', // pragma: allowlist secret -- deterministic test fixture
     GUEST_START_RATE_LIMITER: allowingRateLimiter,
     PUBLIC_VIEW_RATE_LIMITER: allowingRateLimiter,
+    PUBLIC_SUPPORT_RATE_LIMITER: allowingRateLimiter,
   };
 }
 
@@ -988,8 +989,8 @@ Deno.test('gateway health fails closed when the private administrator allowlist 
   assert(!body.includes(env.ACCESS_TEAM_DOMAIN));
 });
 
-Deno.test('gateway health fails closed when either edge rate-limit binding is missing', async () => {
-  for (const bindingName of ['GUEST_START_RATE_LIMITER', 'PUBLIC_VIEW_RATE_LIMITER']) {
+Deno.test('gateway health fails closed when any edge rate-limit binding is missing', async () => {
+  for (const bindingName of ['GUEST_START_RATE_LIMITER', 'PUBLIC_VIEW_RATE_LIMITER', 'PUBLIC_SUPPORT_RATE_LIMITER']) {
     const env = accessEnvironment(`sing-yin-runtime-missing-${bindingName.toLowerCase()}`);
     delete env[bindingName];
     const health = await worker.fetch(
@@ -1628,7 +1629,7 @@ Deno.test('authenticated app routes return the VPC response directly without clo
   }
 });
 
-Deno.test('public support stays browser-only while authenticated support reaches the workbench', async () => {
+Deno.test('public support page stays edge-served while bounded reports reach the local inbox', async () => {
   const env = accessEnvironment('sing-yin-runtime-support-routing');
   const nowSeconds = Math.floor(Date.now() / 1_000);
   const credentials = [
@@ -1647,13 +1648,27 @@ Deno.test('public support stays browser-only while authenticated support reaches
   ];
   const observed = [];
   env.ROSTER_ORIGIN = {
-    fetch(request) {
+    async fetch(request) {
+      const principal = signedPayload(
+        request.headers.get('X-Sing-Yin-Origin-Principal') || '',
+      );
       observed.push({
         url: request.url,
-        principal: signedPayload(
-          request.headers.get('X-Sing-Yin-Origin-Principal') || '',
-        ),
+        principal,
       });
+      if (new URL(request.url).pathname === '/api/support/incidents') {
+        assertEquals(request.method, 'POST');
+        assertEquals(request.headers.get('Cookie'), null);
+        const supportPayload = await request.json();
+        assertEquals(supportPayload.actual_behavior, 'light theme');
+        assertEquals(principal.mode, 'public');
+        assertEquals(principal.subject, 'public-support');
+        assertEquals(principal.exp - principal.iat <= 60, true);
+        return new Response(JSON.stringify({ status: 'saved', incidentId: 'INC-20260808-1234ABCD' }), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        });
+      }
       return new Response('<main>workbench support</main>', {
         status: 200,
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -1668,13 +1683,48 @@ Deno.test('public support stays browser-only while authenticated support reaches
   );
   const publicBody = await publicResponse.text();
   assertEquals(publicResponse.status, 200);
-  assert(publicBody.includes('only in your browser'));
+  assert(publicBody.includes('提交到本機安全收件匣，並取得追溯碼'));
+  assert(publicBody.includes('id="supportTheme"'));
+  assert(publicBody.includes('sing-yin-roster-viewer-theme-v1'));
   assert(publicBody.includes('服事方向 · 非以役人，乃役於人（可 10:45）'));
   assert(publicBody.includes('Why we serve · Not to be served, but to serve (Mark 10:45)'));
   assert(publicBody.includes('服事良心 · 對神對人，常存無虧的良心（徒 24:16）'));
   assert(publicBody.includes('How we serve · A conscience without offense toward God and men (Acts 24:16)'));
   assertEquals(publicResponse.headers.get('Cache-Control'), 'no-store');
   assertEquals(observed.length, 0, 'public support must not reach the origin');
+
+  const submission = await worker.fetch(new Request('https://gateway.example/api/support/incidents', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Origin: 'https://gateway.example',
+      'Sec-Fetch-Site': 'same-origin',
+    },
+    body: JSON.stringify({
+      source: 'public_entrance',
+      category: 'access',
+      expected_behavior: 'dark theme',
+      actual_behavior: 'light theme',
+      reproduction_steps: 'open support',
+      impact: '',
+    }),
+  }), env, { waitUntil() {} });
+  assertEquals(submission.status, 201);
+  assertEquals(
+    JSON.stringify(await submission.json()),
+    JSON.stringify({ status: 'saved', incidentId: 'INC-20260808-1234ABCD' }),
+  );
+  const oversizedSubmission = await worker.fetch(new Request('https://gateway.example/api/support/incidents', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Origin: 'https://gateway.example',
+      'Sec-Fetch-Site': 'same-origin',
+    },
+    body: 'x'.repeat(16_385),
+  }), env, { waitUntil() {} });
+  assertEquals(oversizedSubmission.status, 413);
+  assertEquals(observed.length, 1, 'oversized public support bodies must not reach the origin');
 
   for (const credential of credentials) {
     const response = await worker.fetch(new Request('https://gateway.example/support', {
@@ -1684,10 +1734,11 @@ Deno.test('public support stays browser-only while authenticated support reaches
     assertEquals(await response.text(), '<main>workbench support</main>');
   }
 
-  assertEquals(observed.length, 2);
-  for (let index = 0; index < observed.length; index += 1) {
-    assertEquals(observed[index].url, 'http://127.0.0.1:8080/support');
-    assertEquals(observed[index].principal.mode, credentials[index].mode);
+  assertEquals(observed.length, 3);
+  assertEquals(observed[0].url, 'http://127.0.0.1:8080/api/support/incidents');
+  for (let index = 0; index < credentials.length; index += 1) {
+    assertEquals(observed[index + 1].url, 'http://127.0.0.1:8080/support');
+    assertEquals(observed[index + 1].principal.mode, credentials[index].mode);
   }
 });
 
