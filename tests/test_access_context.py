@@ -26,7 +26,9 @@ def test_guest_capability_matrix_is_exact_and_deny_by_default() -> None:
         Capability.SESSION_PREFERENCES_MODIFY,
     }
     assert GUEST_DENIED_CAPABILITIES == frozenset(set(Capability) - set(GUEST_ALLOWED_CAPABILITIES))
-    assert CapabilityPolicy.capabilities_for(AccessMode.PUBLIC) == frozenset()
+    assert CapabilityPolicy.capabilities_for(AccessMode.PUBLIC) == frozenset(
+        {Capability.SUPPORT_REPORT_SUBMIT}
+    )
 
     for capability in GUEST_ALLOWED_CAPABILITIES:
         assert CapabilityPolicy.allows(AccessMode.GUEST, capability)

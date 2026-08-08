@@ -24,7 +24,7 @@ _ALLOWED_KEYS = frozenset(
         "dashboard_verse_offset",
         "devotional_tone",
         "locale",
-        "music_autoplay_enabled",
+        "music_autoplay",
         "music_playback_mode",
         "music_profile",
         "music_volume",

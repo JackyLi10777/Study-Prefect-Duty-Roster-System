@@ -50,6 +50,14 @@
         "limit": 120,
         "period": 60
       }
+    },
+    {
+      "name": "PUBLIC_SUPPORT_RATE_LIMITER",
+      "namespace_id": "1077703",
+      "simple": {
+        "limit": 6,
+        "period": 60
+      }
     }
   ],
   "kv_namespaces": [

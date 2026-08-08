@@ -24,14 +24,20 @@ ENV = {
 
 
 def _payload(*, mode: str = "guest", now: int = 10_000) -> dict[str, object]:
+    duration = {"guest": 1_800, "admin": 28_800, "public": 60}[mode]
+    subject = {
+        "guest": "guest",
+        "admin": "admin@example.test",
+        "public": "public-support",
+    }[mode]
     return {
         "v": 1,
         "aud": ORIGIN_PRINCIPAL_AUDIENCE,
         "mode": mode,
-        "subject": "guest" if mode == "guest" else "admin@example.test",
+        "subject": subject,
         "sid": "abcdefghijklmnopqrstuv",
         "iat": now,
-        "exp": now + (1_800 if mode == "guest" else 28_800),
+        "exp": now + duration,
         "auth_epoch": 4,
         "kid": "origin-v2",
         "request_binding": origin_request_binding(
@@ -40,6 +46,28 @@ def _payload(*, mode: str = "guest", now: int = 10_000) -> dict[str, object]:
             path_and_query="/rosters?week=1",
         ),
     }
+
+
+def test_origin_accepts_only_a_short_lived_request_bound_public_principal() -> None:
+    payload = _payload(mode="public")
+    principal = verify_origin_principal(
+        seal_origin_principal_for_test(payload, environment=ENV),
+        expected_binding=str(payload["request_binding"]),
+        environment=ENV,
+        now=10_000,
+    )
+    assert principal.mode is AccessMode.PUBLIC
+    assert principal.subject == "public-support"
+    assert principal.session_id == "abcdefghijklmnopqrstuv"
+
+    overlong = {**payload, "exp": 10_061}
+    with pytest.raises(OriginPrincipalError, match="stale"):
+        verify_origin_principal(
+            seal_origin_principal_for_test(overlong, environment=ENV),
+            expected_binding=str(overlong["request_binding"]),
+            environment=ENV,
+            now=10_000,
+        )
 
 
 def test_origin_principal_is_hmac_verified_request_bound_and_session_lived() -> None:

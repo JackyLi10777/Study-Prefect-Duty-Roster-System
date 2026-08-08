@@ -45,8 +45,8 @@ Worker 是唯一外部前門。Windows 不開放 NiceGUI 公網連接埠，不�
 只有獲准身份可取得相應的 Guest 或 Admin 能力。
 
 `/support` 亦遵守同一身份邊界：Worker 必須先解析並驗證 principal；沒有
-principal 的 Public／Viewer 請求只取得 `Cache-Control: no-store` 的靜態瀏覽器
-表單，不能到達 origin；有效 Admin／Guest 請求才可連同簽署 principal 代理到
+principal 的 Public／Viewer `GET` 只取得 `Cache-Control: no-store` 的靜態瀏覽器
+表單；只有同源、限量的 `POST /api/support/incidents` 會得到 60 秒、support-only 的簽署 principal 到達 origin。有效 Admin／Guest 請求才可連同完整簽署 principal 代理到
 NiceGUI 支援工作台。部署後必須分別核對這兩條路徑，不能只測未登入頁面。
 
 ## 3. v1.2 必需設定
@@ -194,7 +194,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
    - `POST /auth/guest/start` 建立 Guest session；
    - `/auth/status` 正確回報 public／guest／admin；
    - `/guest`、`/try` 兼容重定向；
-   - `/support` Public／Viewer browser-only 報告，以及 Guest origin 頁的非持久化限制；
+   - `/support` Public／Viewer 有界文字提交及 `INC-…`／`FB-…` 回復，以及 Guest origin 頁的非持久化限制；
    - `/view#…` Viewer；
    - VPC WebSocket 及 origin `/healthz`。
 6. 只有上述核對及 deployment traffic 查詢全部相符，才提高流量；完成後再用不帶版本標頭的正式網址核對一次。
@@ -247,7 +247,7 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 ### Support
 
-- [ ] Public／Viewer `/support` 不發出 fetch、XHR、WebSocket 或 storage 寫入。
+- [ ] Public／Viewer `/support` 只向 exact same-origin support API 發出一個有界 POST；成功為 `INC-…`，失敗保留內容並產生 `FB-…`，且不使用持久 browser storage。
 - [ ] Guest `/support` 不能呼叫 Admin 收件匣服務或保存附件。
 - [ ] Admin 必須明確同意才建立主機本機 incident；結果不進入排班交易或備份。
 - [ ] Worker、origin、README、操作手冊及威脅模型使用同一資料邊界。

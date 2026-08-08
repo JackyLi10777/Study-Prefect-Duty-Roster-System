@@ -128,15 +128,22 @@ Cloudflare 暫時不可用時，只有維護者才使用 localhost 或已核准 
 
 ## 問題回報／Support
 
-公開入口及 Viewer 可開啟 `/support`，但報告只在目前瀏覽器建立。頁面不會
-呼叫 origin、建立 WebSocket、寫入 Cookie／localStorage／IndexedDB，亦不會
-把 Viewer fragment、週表內容或身份資料加入報告。使用者可下載 JSON、複製
-已刪減摘要，或以預先填好的電郵草稿聯絡支援；離開頁面後網站不會保留內容。
-完整分享連結仍是 bearer capability，不應貼入報告或公開 Issue。
+公開入口及 Viewer 可開啟 edge-served `/support`；頁面在首次繪製前使用與入口
+相同的瀏覽器本機 `system`／light／dark 偏好，並跟隨裝置外觀變化。提交時只把
+有長度上限、欄位白名單及已刪減的文字送到主機本機 Support Inbox，成功後回傳
+`INC-…` 追溯碼。網絡中斷或收件匣暫時不可用時，表單內容不會消失，頁面改發
+一個只在目前分頁有效的 `FB-…` 備用碼。頁面不接受附件，也不會加入 Viewer
+fragment、週表內容、姓名、完整網址或身份資料；完整分享連結仍是 bearer
+capability，不應貼入報告或公開 Issue。下載 JSON、複製摘要及開啟預填電郵都
+只是提交後的可選交接方式。
 
-The Public and Viewer support route builds a report entirely in the browser. It
-does not upload, persist, or include a Viewer fragment or roster payload. The
-user may download JSON, copy the redacted summary, or open a prefilled email.
+The edge-served Public and Viewer support route resolves the same browser-local
+system/light/dark preference before paint. Submission sends only bounded,
+allowlisted and redacted text to the host-local Support Inbox and returns an
+`INC-…` trace code. If the network or inbox is unavailable, the form is kept and
+an `FB-…` tab-only fallback is produced. Attachments, Viewer fragments, roster
+payloads, names and full URLs are not accepted. JSON download, copy and prefilled
+email remain optional handoff paths after submission.
 
 ## English quick guide
 

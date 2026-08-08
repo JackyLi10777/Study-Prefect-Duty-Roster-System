@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 import json
 from pathlib import Path
+import re
 import shutil
 import sys
 import tempfile
@@ -152,17 +153,26 @@ def _assert_guest_landing(page: Page, *, label: str) -> None:
     _assert_document_fits_viewport(page, label=label)
 
 
-def _assert_browser_only_support(
+def _fill_support_report(page: Page) -> None:
+    page.locator("#supportExpected").fill("The shared fictional roster should remain readable.")
+    page.locator("#supportActual").fill("The fictional roster displayed an unexpected empty state.")
+    page.locator("#supportSteps").fill("Open the shared link.\nReview the fictional roster.")
+
+
+def _assert_public_support(
     page: Page,
     *,
     base_url: str,
     source: str,
     verify_download: bool,
 ) -> dict[str, object]:
-    """Exercise the public/viewer report without any network persistence."""
+    """Exercise persisted public/viewer support and its shared theme preference."""
 
     if source not in {"public", "viewer"}:
         raise ValueError(f"Unsupported support source: {source}")
+    page.add_init_script(
+        """() => localStorage.setItem('sing-yin-roster-viewer-theme-v1', 'dark')"""
+    )
     response = page.goto(f"{base_url.rstrip('/')}/support#{source}", wait_until="networkidle")
     if response is None or response.status != 200:
         raise RuntimeError(f"{source} support route did not return HTTP 200.")
@@ -170,22 +180,37 @@ def _assert_browser_only_support(
         raise RuntimeError(f"{source} support route is not protected by Cache-Control: no-store.")
     form = page.locator("#publicSupportForm")
     form.wait_for(state="visible")
+    theme_state = page.evaluate(
+        """() => ({
+          preference: document.documentElement.dataset.themePreference,
+          resolved: document.documentElement.dataset.theme,
+          stored: localStorage.getItem('sing-yin-roster-viewer-theme-v1'),
+        })"""
+    )
+    if theme_state != {"preference": "dark", "resolved": "dark", "stored": "dark"}:
+        raise RuntimeError(f"{source} support did not inherit the entrance theme: {theme_state}")
+    theme_button = page.locator("#supportTheme")
+    for expected_preference in ("system", "light", "dark"):
+        theme_button.click()
+        page.wait_for_function(
+            "expected => document.documentElement.dataset.themePreference === expected",
+            arg=expected_preference,
+        )
+    if page.evaluate("() => localStorage.getItem('sing-yin-roster-viewer-theme-v1')") != "dark":
+        raise RuntimeError(f"{source} support theme changes were not stored under the shared key.")
     if page.locator(".support-details").get_attribute("open") is not None:
         raise RuntimeError(f"{source} support optional details were expanded by default.")
     page.locator("#supportBuild").click()
     if not page.locator("#supportResult").is_hidden():
         raise RuntimeError(f"{source} support accepted missing required fields.")
 
-    resources_before = page.evaluate("() => performance.getEntriesByType('resource').length")
-    page.locator("#supportExpected").fill("The shared fictional roster should remain readable.")
-    page.locator("#supportActual").fill("The fictional roster displayed an unexpected empty state.")
-    page.locator("#supportSteps").fill("Open the shared link.\nReview the fictional roster.")
+    _fill_support_report(page)
     page.locator("#supportBuild").click()
     result = page.locator("#supportResult")
     result.wait_for(state="visible")
     incident_id = page.locator("#supportIncidentId").inner_text().strip()
-    if not incident_id.startswith("FB-"):
-        raise RuntimeError(f"{source} support did not create a browser incident reference.")
+    if not re.fullmatch(r"INC-\d{8}-[A-F0-9]{8}", incident_id):
+        raise RuntimeError(f"{source} support was not saved to the local incident inbox: {incident_id!r}")
     expected_source = "public_viewer" if source == "viewer" else "public_entrance"
     if verify_download:
         with page.expect_download() as download_info:
@@ -195,30 +220,58 @@ def _assert_browser_only_support(
         if payload.get("source") != expected_source or payload.get("incident_id") != incident_id:
             raise RuntimeError(f"{source} support download does not identify its browser context.")
 
-    page.wait_for_timeout(150)
-    resources_after = page.evaluate("() => performance.getEntriesByType('resource').length")
-    if resources_after != resources_before:
-        raise RuntimeError(f"{source} support interaction created a network resource.")
     storage = page.evaluate(
         """async () => ({
-          local: localStorage.length,
+          localKeys: Object.keys(localStorage),
           session: sessionStorage.length,
           indexed: typeof indexedDB.databases === 'function' ? (await indexedDB.databases()).length : 0,
           caches: 'caches' in window ? (await caches.keys()).length : 0,
         })"""
     )
-    if any(storage.values()):
+    if storage["localKeys"] != ["sing-yin-roster-viewer-theme-v1"] or any(
+        storage[key] for key in ("session", "indexed", "caches")
+    ):
         raise RuntimeError(f"{source} support created persistent browser storage: {storage}")
 
     page.reload(wait_until="networkidle")
     if page.locator("#supportExpected").input_value() or not page.locator("#supportResult").is_hidden():
         raise RuntimeError(f"{source} support state survived reload.")
+    if page.evaluate("() => document.documentElement.dataset.theme") != "dark":
+        raise RuntimeError(f"{source} support theme did not survive reload.")
     return {
         "source": expected_source,
         "incidentReference": incident_id,
-        "browserOnly": True,
+        "serverPersisted": True,
+        "themeSynchronized": True,
         "downloadVerified": verify_download,
         "clearedOnReload": True,
+    }
+
+
+def _assert_public_support_network_fallback(page: Page, *, base_url: str) -> dict[str, object]:
+    """Prove a failed submission preserves input and creates an explicit FB reference."""
+
+    page.route("**/api/support/incidents", lambda route: route.abort("connectionfailed"))
+    response = page.goto(f"{base_url.rstrip('/')}/support#public", wait_until="networkidle")
+    if response is None or response.status != 200:
+        raise RuntimeError("Public support fallback route did not return HTTP 200.")
+    _fill_support_report(page)
+    expected = page.locator("#supportExpected").input_value()
+    page.locator("#supportBuild").click()
+    page.locator("#supportResult").wait_for(state="visible")
+    incident_id = page.locator("#supportIncidentId").inner_text().strip()
+    if not re.fullmatch(r"FB-[A-F0-9]{16}", incident_id):
+        raise RuntimeError(f"Network failure did not create an FB reference: {incident_id!r}")
+    if page.locator("#supportExpected").input_value() != expected:
+        raise RuntimeError("Network failure discarded the reporter's input.")
+    if "Not stored on the server" not in page.locator("#supportStatus").inner_text():
+        raise RuntimeError("Network failure did not explain the browser-only fallback state.")
+    page.unroute("**/api/support/incidents")
+    return {
+        "source": "public_entrance",
+        "incidentReference": incident_id,
+        "serverPersisted": False,
+        "inputPreserved": True,
     }
 
 
@@ -453,7 +506,7 @@ def main() -> int:
                     page_errors=page_errors,
                 )
                 support_evidence.append(
-                    _assert_browser_only_support(
+                    _assert_public_support(
                         support_page,
                         base_url=settings.base_url,
                         source=source,
@@ -462,12 +515,26 @@ def main() -> int:
                 )
                 if source == "public":
                     support_page.screenshot(
-                        path=str(GATEWAY_EVIDENCE_DIR / "public-support-browser-only.png"),
+                        path=str(GATEWAY_EVIDENCE_DIR / "public-support-traceable-inbox.png"),
                         full_page=True,
                     )
                 support_page.close()
+            fallback_page = support_context.new_page()
+            _attach_error_collectors(
+                fallback_page,
+                label="public-support-network-fallback",
+                console_errors=console_errors,
+                page_errors=page_errors,
+            )
+            support_evidence.append(
+                _assert_public_support_network_fallback(
+                    fallback_page,
+                    base_url=settings.base_url,
+                )
+            )
+            fallback_page.close()
             if support_websockets:
-                raise RuntimeError(f"Browser-only support opened WebSockets: {support_websockets}")
+                raise RuntimeError(f"Public support opened WebSockets: {support_websockets}")
             support_context.close()
 
             blocked_audio = browser.new_context(

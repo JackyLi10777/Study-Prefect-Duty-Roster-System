@@ -21,6 +21,7 @@ ORIGIN_PRINCIPAL_MAX_BYTES = 4_096
 ORIGIN_PRINCIPAL_FRESHNESS_SECONDS = 60
 GUEST_SESSION_MAX_SECONDS = 30 * 60
 ADMIN_SESSION_MAX_SECONDS = 8 * 60 * 60
+PUBLIC_PRINCIPAL_MAX_SECONDS = 60
 _SESSION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{22}$")
 _KEY_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 _E2E_RUN_ID_PATTERN = re.compile(r"^E2E-[A-F0-9]{12}$")
@@ -176,9 +177,13 @@ def verify_origin_principal(
         mode = AccessMode(mode_value)
     except (TypeError, ValueError) as error:
         raise OriginPrincipalError("origin principal mode is invalid") from error
-    if mode not in {AccessMode.ADMIN, AccessMode.GUEST}:
+    if mode not in {AccessMode.ADMIN, AccessMode.GUEST, AccessMode.PUBLIC}:
         raise OriginPrincipalError("origin principal mode is invalid")
-    maximum_session = GUEST_SESSION_MAX_SECONDS if mode is AccessMode.GUEST else ADMIN_SESSION_MAX_SECONDS
+    maximum_session = {
+        AccessMode.GUEST: GUEST_SESSION_MAX_SECONDS,
+        AccessMode.ADMIN: ADMIN_SESSION_MAX_SECONDS,
+        AccessMode.PUBLIC: PUBLIC_PRINCIPAL_MAX_SECONDS,
+    }[mode]
     if (
         payload["v"] != ORIGIN_PRINCIPAL_VERSION
         or payload["aud"] != ORIGIN_PRINCIPAL_AUDIENCE

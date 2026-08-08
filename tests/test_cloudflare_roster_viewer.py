@@ -68,6 +68,11 @@ def test_public_viewer_is_a_workers_dev_kv_adapter() -> None:
             "namespace_id": "1077702",
             "simple": {"limit": 120, "period": 60},
         },
+        {
+            "name": "PUBLIC_SUPPORT_RATE_LIMITER",
+            "namespace_id": "1077703",
+            "simple": {"limit": 6, "period": 60},
+        },
     ]
     assert configuration["kv_namespaces"] == [
         {
@@ -153,6 +158,7 @@ def test_public_entry_rate_limits_use_privacy_safe_hashed_actor_keys() -> None:
     for required in (
         "GUEST_START_RATE_LIMITER",
         "PUBLIC_VIEW_RATE_LIMITER",
+        "PUBLIC_SUPPORT_RATE_LIMITER",
         "CF-Connecting-IP",
         "crypto.subtle.sign('HMAC'",
         "rate_limited",
@@ -444,7 +450,19 @@ def test_public_support_keeps_core_fields_visible_and_optional_details_collapsed
 
     assert expected < actual < steps < details < category < impact < submit
     assert 'id="supportResult" class="support-result" hidden' in source
-    assert "fetch(" not in source[source.index("const PUBLIC_SUPPORT_JS"):source.index("const VIEWER_CSS")]
+    assert source.index('id="supportStatus"') < source.index('id="supportResult"')
+    support_script = source[source.index("const PUBLIC_SUPPORT_JS"):source.index("const VIEWER_CSS")]
+    assert "fetch('/api/support/incidents'" in support_script
+    assert "sing-yin-roster-viewer-theme-v1" in support_script
+    assert "themeStates = ['system', 'light', 'dark']" in support_script
+    assert "Browser fallback ready" in support_script
+    assert "response.status === 429" in support_script
+    assert "response.status === 413" in support_script
+    assert "response.status === 503" in support_script
+    assert "Too many submissions in one minute" in support_script
+    assert "The report exceeded the safe size" in support_script
+    assert "local support inbox is unavailable" in support_script
+    assert "server_persistence: persisted" in support_script
     assert "if (path === '/support')" in source
     assert "staticResponse(request, PUBLIC_SUPPORT_HTML" in source
     assert "if (path === '/support-feedback.js')" in source
