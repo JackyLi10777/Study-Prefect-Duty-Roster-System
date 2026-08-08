@@ -1,7 +1,7 @@
 # 聖言中學導學風紀值班表生成系統
 
 <!-- SING_YIN_CURRENT_STATUS:START -->
-> **已核實線上來源（2026-08-02）：** Windows origin 正運行 clean annotated `v1.2.0-rc.49`／`21928e38a0df6fd217a8ba449eb675b94a282f01` 的不可變 bundle；312-file 指紋 `e350497ba121e2420f00cbae3725334e8c45267e140388bbd0b5530e84135878` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260802-091628-350429-manual_verified_backup.sqlite3`／SHA-256 `f827c8932bd78ca2b2528728e6770c539c6f2ad8adfa64a3ec85cd69485e8fd9`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `99ed9a4e-8167-44bd-b478-562ff8f4d17e` 維持 100% 流量且健康。`v1.2.0-rc.47` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`，實體離線 BitLocker 復原演練仍為 `pending`。精確狀態及更新規則見[目前系統狀態](docs/status/CURRENT_STATUS.md)。
+> **已核實線上來源（2026-08-09）：** Windows origin 正運行 clean annotated `v1.2.0-rc.52`／`72621076f74caf9568fda1576d62311e0a26043c` 的不可變 bundle；314-file 指紋 `c4f224140c3b2bb935f4d367bf0fccf55800fd28a6a697e66bd261b70e097b6f` 通過 15／15 gate。SQLite 位於 Alembic `0013`；正式備份 `20260808-164321-281874-manual_verified_backup.sqlite3`／SHA-256 `1d542f5aac6b25eff4abf5f79cddd295ebc04a6ef797a7ac8b8f88f22d13928a`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `3bac2eee-246f-4524-9725-4249770017b0` 維持 100% 流量且健康。`v1.2.0-rc.51` 只屬歷史來源，migration `0013` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`，實體離線 BitLocker 復原演練仍為 `pending`。精確狀態及更新規則見[目前系統狀態](docs/status/CURRENT_STATUS.md)。
 <!-- SING_YIN_CURRENT_STATUS:END -->
 >
 > **rc45 完成範圍（歷史發布能力）：** 保留 SQLite，按真實查詢計劃增加索引及有界查詢，消除名單匯入／撤回流程的 N+1，加入不記錄參數或學生內容的可選慢 SQL 診斷，並把備份核對移出 UI event loop。完整合成規模證據涵蓋 2,400 名虛構風紀／5,200 週；是否仍在正式環境運行以上方生成狀態為準。

@@ -1,7 +1,7 @@
 # 部署與遠端存取決策指南 / Deployment decision
 
 <!-- SING_YIN_CURRENT_STATUS:START -->
-> **已核實線上來源（2026-08-02）：** Windows origin 正運行 clean annotated `v1.2.0-rc.49`／`21928e38a0df6fd217a8ba449eb675b94a282f01` 的不可變 bundle；312-file 指紋 `e350497ba121e2420f00cbae3725334e8c45267e140388bbd0b5530e84135878` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260802-091628-350429-manual_verified_backup.sqlite3`／SHA-256 `f827c8932bd78ca2b2528728e6770c539c6f2ad8adfa64a3ec85cd69485e8fd9`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `99ed9a4e-8167-44bd-b478-562ff8f4d17e` 維持 100% 流量且健康。`v1.2.0-rc.47` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`，實體離線 BitLocker 復原演練仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
+> **已核實線上來源（2026-08-09）：** Windows origin 正運行 clean annotated `v1.2.0-rc.52`／`72621076f74caf9568fda1576d62311e0a26043c` 的不可變 bundle；314-file 指紋 `c4f224140c3b2bb935f4d367bf0fccf55800fd28a6a697e66bd261b70e097b6f` 通過 15／15 gate。SQLite 位於 Alembic `0013`；正式備份 `20260808-164321-281874-manual_verified_backup.sqlite3`／SHA-256 `1d542f5aac6b25eff4abf5f79cddd295ebc04a6ef797a7ac8b8f88f22d13928a`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `3bac2eee-246f-4524-9725-4249770017b0` 維持 100% 流量且健康。`v1.2.0-rc.51` 只屬歷史來源，migration `0013` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`，實體離線 BitLocker 復原演練仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
 <!-- SING_YIN_CURRENT_STATUS:END -->
 >
 > **歷史 rc30 乾淨發布證據：**受控 Windows origin 曾運行 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；canonical Worker 是已驗證 version `11763f08-d40d-46d5-93dc-5ca2599d4154`。296 個 runtime 來源檔以 fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 通過 14／14 release gate；切換前備份 `20260727-023041-069097-manual_verified_backup.sqlite3`／SHA-256 `6e2f44d2e577389d19de2feb5dd0a36260794ef2188551d6f604e46b7ac74e1b` 完成 checksum、公平對帳、行數核對、還原審計及隔離還原。Worker 通過 0% version smoke 後升至 100%；origin readiness 與 canonical rendered smoke 通過。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前線上版本及 migration 後的受控復原限制以本頁頂部生成狀態為準。Head Study Prefect／teacher-advisor 真人驗收仍待簽署。
@@ -38,7 +38,7 @@ NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另�
 | Cloudflare Worker／Access／Tunnel | Worker 來源已更新，經 0% version smoke 後推廣至新的 100% canonical version；`wrangler.jsonc`、Access scope、Tunnel route、binding 與 secret-name contract 未更改，OTP fail-closed 及 gateway health 已重新核對 |
 | 目前來源與部署證據 | 精確 tag、gate、migration、正式備份／隔離還原及 canonical checks 只由頁首生成狀態與 [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md) 擁有 |
 | 第一個已驗證復原目標 | 保留目前程式並使用 [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md) 記錄的已驗證正式備份進行受控還原；先在隔離資料庫核對 checksum、公平、行數及 restore audit |
-| 舊程式相容復原 | migration `0012` 後，rc43／rc41 等舊程式不得作 code-only rollback；必須先選取相容的 pre-0012 快照並完成受控隔離還原，再由事故負責人批准切換 |
+| 舊程式相容復原 | migration `0013` 後，rc51 及所有較舊程式不得作 code-only rollback；必須先選取與目標程式相容的已驗證快照並完成受控隔離還原，再由事故負責人批准切換 |
 | 更深歷史復原來源 | rc43／rc41／rc40／rc39／rc35／rc30／rc27／rc26 及其 Worker 只屬歷史來源；只有頁首所列的原地復原不能安全恢復且事故負責人批准時使用 |
 | `codex/frontend-guest-performance-rc16` | rc17 來源分支；14 項 gate、標籤、Windows bundle 及 Worker staged rollout 已完成 |
 | `SING_YIN_UNIFIED_GUEST` | 正式環境的受保護設定必須為 `1`；後續候選不得以切換旗標取代完整驗證 |
@@ -131,7 +131,7 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 7. 以虛構資料核對 Public、Admin、Guest、Viewer、PDF、登出、到期及多分頁隔離；
 8. 完成真人驗收後才結束 maintenance 並宣布候選上線。
 
-任何新候選 origin／線上 gate 失敗，先保存失敗證據，再把排程工作回復至切換前已捕獲、已驗證且與目前 schema 相容的 task target。若事故需要回復至 rc43／rc41 或更舊程式，必須先停止正式寫入，選取相容的 pre-0012 正式快照，完成 checksum、公平、行數、restore-audit 及隔離還原，再由事故負責人批准程式及必要的 Worker 切換。不得把 rc43／rc41 當作 code-only rollback，也不得假設 additive migration 自動保證舊程式可讀新 schema。
+任何新候選 origin／線上 gate 失敗，先保存失敗證據，再把資料庫還原至切換前已捕獲、已驗證且與舊 task target 相容的快照；只有資料庫 checksum、schema、integrity 與 ACL 證明通過後，才恢復並啟動舊 task target。若事故需要回復至 rc51 或更舊程式，必須先停止正式寫入，選取相容快照，完成 checksum、公平、行數、restore-audit 及隔離還原，再由事故負責人批准程式及必要的 Worker 切換。不得把任何舊程式當作 code-only rollback，也不得假設 additive migration 自動保證舊程式可讀新 schema。
 
 逐步 Cloudflare 設定、staged rollout、驗收及回退命令見
 [`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)。
@@ -158,6 +158,6 @@ and canonical Public／Guest／Admin handoff／Viewer checks. That evidence rema
 historical. Current release, migration, gateway, and backup identity are generated
 at the top of this guide. The first recovery path keeps the current application
 and restores the verified backup named there under the controlled procedure.
-Rc43, rc41 and older applications require a compatible pre-0012 database
-restore and are not code-only rollback targets. Supervised human acceptance
+Rc51 and every older application require a database snapshot compatible with
+that exact application and are not code-only rollback targets. Supervised human acceptance
 remains outstanding.

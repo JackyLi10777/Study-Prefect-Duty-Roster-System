@@ -299,8 +299,8 @@ def test_release_truth_docs_separate_active_drift_from_verified_history() -> Non
     formal_switch = decision.split("## 正式切換程序", 1)[1].split("## English", 1)[0]
     assert "本頁頂部生成狀態" in formal_switch
     assert "current rc" not in formal_switch.lower()
-    assert "0012" in formal_switch
-    assert "pre-0012" in formal_switch
+    assert "與舊 task target 相容" in formal_switch
+    assert "不得把任何舊程式當作 code-only rollback" in formal_switch
     assert "code-only rollback" in formal_switch
 
     # Detailed historical rc20 provenance belongs in the status and handover
@@ -522,7 +522,8 @@ def test_operator_deployment_docs_use_observed_drift_and_recovery_hierarchy() ->
     assert "Worker 來源及受保護設定未改動" not in decision
 
     assert "保存及歸屬差異" in cloudflare
-    assert "依序考慮 rc27、rc26 及 rc24" in cloudflare
+    assert "每個舊程式都必須先配對相容資料庫快照" in cloudflare
+    assert "不可作 code-only rollback" in cloudflare
     assert "restore the recorded rc17 host bundle" not in cloudflare
 
     assert "schema-compatible rc4" not in quickstart

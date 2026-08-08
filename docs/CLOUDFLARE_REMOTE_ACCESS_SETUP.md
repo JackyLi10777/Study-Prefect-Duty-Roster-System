@@ -1,7 +1,7 @@
 # Cloudflare 單一網址遠端存取手冊（Windows 專用主機）
 
 <!-- SING_YIN_CURRENT_STATUS:START -->
-> **已核實線上來源（2026-08-02）：** Windows origin 正運行 clean annotated `v1.2.0-rc.49`／`21928e38a0df6fd217a8ba449eb675b94a282f01` 的不可變 bundle；312-file 指紋 `e350497ba121e2420f00cbae3725334e8c45267e140388bbd0b5530e84135878` 通過 15／15 gate。SQLite 位於 Alembic `0012`；正式備份 `20260802-091628-350429-manual_verified_backup.sqlite3`／SHA-256 `f827c8932bd78ca2b2528728e6770c539c6f2ad8adfa64a3ec85cd69485e8fd9`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `99ed9a4e-8167-44bd-b478-562ff8f4d17e` 維持 100% 流量且健康。`v1.2.0-rc.47` 只屬歷史來源，migration `0012` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`，實體離線 BitLocker 復原演練仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
+> **已核實線上來源（2026-08-09）：** Windows origin 正運行 clean annotated `v1.2.0-rc.52`／`72621076f74caf9568fda1576d62311e0a26043c` 的不可變 bundle；314-file 指紋 `c4f224140c3b2bb935f4d367bf0fccf55800fd28a6a697e66bd261b70e097b6f` 通過 15／15 gate。SQLite 位於 Alembic `0013`；正式備份 `20260808-164321-281874-manual_verified_backup.sqlite3`／SHA-256 `1d542f5aac6b25eff4abf5f79cddd295ebc04a6ef797a7ac8b8f88f22d13928a`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `3bac2eee-246f-4524-9725-4249770017b0` 維持 100% 流量且健康。`v1.2.0-rc.51` 只屬歷史來源，migration `0013` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`，實體離線 BitLocker 復原演練仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
 <!-- SING_YIN_CURRENT_STATUS:END -->
 >
 > **歷史 rc30 乾淨發布證據：** Windows origin 曾以受控方式運行並驗證健康、ready 的 `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`；其 296-file runtime fingerprint `15d155d8d745b14b574b08d793150c93aa77946e7d17a63030844c44adededbc` 已通過 14／14 gate，並完成正式備份、隔離還原及受控切換。canonical Worker `11763f08-d40d-46d5-93dc-5ca2599d4154` 通過 0% version smoke 後承接 100% 流量。canonical root、capability health 與 rendered desktop／320px／Guest Engineering checks 通過，private readiness 保持預期 redirect。當時的下一層 origin／edge 回退分別是 rc27／`c4c728aa…` 與 `d7b51f21…`；目前復原先使用較近的乾淨 rc30／`11763f08…`。真人 Admin／Viewer／長連線及操作驗收仍須依清單完成。
@@ -258,13 +258,13 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 1. 恢復 maintenance；
 2. 以受控部署報告確認自動 rollback 的 `attempted`／`succeeded`、previous commit 及 previous Worker version；
-3. 在現行 origin／Worker 來源已漂移或未歸屬時，先保存及歸屬差異，再把 origin 回復至受控 clean bundle `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`，並把 Worker traffic 回復至配對驗證的 `11763f08-d40d-46d5-93dc-5ca2599d4154`；不得單側回退而形成未驗證組合；
+3. 在現行 origin／Worker 來源已漂移或未歸屬時，先保存及歸屬差異；第一個復原選擇是保留頁首所列 rc52 程式與 Worker，使用其已驗證 schema-`0013` 備份執行受控還原；不得直接回退至 rc30，也不得單側回退而形成未驗證組合；
 4. 只有來源指紋、身份參數、路由契約及相容性 gate 已證明另一側仍與目標版本相容時，事故負責人才可批准單側 origin 或 Worker 回退；報告必須記錄所用證據及配對版本；
 5. 核對 host commit、`/healthz`、`/readyz`／`writeReady=true`、Admin、Guest、Viewer、WebSocket、登出及資料狀態；
-6. 只有乾淨 rc30 無法安全恢復，且事故負責人明確批准更深復原時，才依序考慮 rc27、rc26 及 rc24 已驗證歷史；更舊版本只保留為證據；
+6. 只有頁首生成狀態所列的現行版本無法安全原地恢復，且事故負責人明確批准更深復原時，才考慮歷史 bundle；每個舊程式都必須先配對相容資料庫快照並通過隔離驗證，歷史 rc30／rc27／rc26／rc24 不可作 code-only rollback；
 7. 如資料完整性受疑，使用受控 restore，而非手動覆寫 SQLite。
 
-additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，部署前 gate 應已拒絕該 migration。
+additive migration 不代表舊 bundle 必然可讀新 schema。部署前 gate 必須證明候選升級及回復契約；事故回復必須先還原與目標 bundle 相容的資料庫，再啟動該 bundle。
 
 ## 11. 故障排查
 
