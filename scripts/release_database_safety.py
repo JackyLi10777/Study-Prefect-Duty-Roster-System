@@ -19,6 +19,7 @@ from pathlib import Path
 import re
 import shutil
 import sqlite3
+import subprocess
 import sys
 import tempfile
 from typing import Any
@@ -176,6 +177,56 @@ def _audit_count(path: Path) -> int:
         return int(connection.execute("SELECT COUNT(*) FROM audit_events").fetchone()[0])
     finally:
         connection.close()
+
+
+def _online_sqlite_backup(source_path: Path, destination_path: Path) -> None:
+    """Create one WAL-consistent read-only copy without touching source bytes."""
+
+    source = sqlite3.connect(
+        f"file:{source_path.resolve(strict=True).as_posix()}?mode=ro",
+        uri=True,
+    )
+    destination = sqlite3.connect(destination_path)
+    try:
+        source.execute("PRAGMA query_only=ON")
+        source.backup(destination)
+    finally:
+        destination.close()
+        source.close()
+
+
+def _controlled_workspace_parent(argument: Path | None) -> Path:
+    raw_parent = Path(tempfile.gettempdir()) if argument is None else Path(argument)
+    is_junction = getattr(raw_parent, "is_junction", lambda: False)
+    if raw_parent.is_symlink() or is_junction():
+        raise ReleaseDatabaseSafetyError(
+            "Candidate-readiness workspace parent must not be a reparse point."
+        )
+    parent = raw_parent.resolve(strict=True)
+    if not parent.is_dir():
+        raise ReleaseDatabaseSafetyError(
+            "Candidate-readiness workspace parent must be an ordinary directory."
+        )
+    return parent
+
+
+def _read_json_stdout(stdout: str) -> dict[str, Any]:
+    start = stdout.find("{")
+    if start < 0:
+        raise ReleaseDatabaseSafetyError(
+            "Candidate strict readiness did not return a JSON report."
+        )
+    try:
+        payload = json.loads(stdout[start:])
+    except json.JSONDecodeError as error:
+        raise ReleaseDatabaseSafetyError(
+            "Candidate strict readiness returned malformed JSON."
+        ) from error
+    if not isinstance(payload, dict):
+        raise ReleaseDatabaseSafetyError(
+            "Candidate strict readiness did not return a JSON object."
+        )
+    return payload
 
 
 def _write_report(path: Path, payload: dict[str, Any]) -> None:
@@ -361,6 +412,231 @@ def _prepare(args: argparse.Namespace) -> dict[str, Any]:
         _dispose_workflow(official)
         if workspace is not None:
             shutil.rmtree(workspace, ignore_errors=True)
+
+
+def _candidate_readiness(args: argparse.Namespace) -> dict[str, Any]:
+    """Prove a candidate against a coherent clone of the live old-schema DB."""
+
+    release_root = Path(args.release_root).resolve(strict=True)
+    database_path = _require_plain_file(
+        Path(args.database_path),
+        label="Production database",
+    )
+    report_path = Path(args.report_path).resolve()
+    source_revision = str(args.expected_source_revision)
+    candidate_revision = str(args.expected_candidate_revision)
+    for revision, label in (
+        (source_revision, "Expected source revision"),
+        (candidate_revision, "Expected candidate revision"),
+    ):
+        if not REVISION_PATTERN.fullmatch(revision):
+            raise ReleaseDatabaseSafetyError(
+                f"{label} is not a simple Alembic revision."
+            )
+
+    workflow_type, current_migration_heads = _activate_release_root(release_root)
+    candidate_heads = sorted(str(head) for head in current_migration_heads())
+    if candidate_heads != [candidate_revision]:
+        raise ReleaseDatabaseSafetyError(
+            "The candidate immutable release does not match the expected migration head."
+        )
+    _require_database_revision(
+        database_path,
+        expected_revision=source_revision,
+        immutable=False,
+        label="Live source database",
+    )
+
+    workspace_parent = _controlled_workspace_parent(args.workspace_parent)
+    workspace = Path(
+        tempfile.mkdtemp(
+            prefix="sing-yin-candidate-readiness-",
+            dir=workspace_parent,
+        )
+    ).resolve(strict=True)
+    try:
+        workspace.relative_to(workspace_parent)
+    except ValueError as error:  # pragma: no cover - tempfile contract defense
+        raise ReleaseDatabaseSafetyError(
+            "Candidate-readiness workspace escaped its controlled parent."
+        ) from error
+
+    candidate = None
+    isolated = None
+    try:
+        cloned_database = workspace / "candidate.sqlite3"
+        candidate_backups = workspace / "backups"
+        candidate_logs = workspace / "logs"
+        candidate_support = workspace / "support"
+        nicegui_storage = workspace / "nicegui-storage"
+        for directory in (
+            candidate_backups,
+            candidate_logs,
+            candidate_support,
+            nicegui_storage,
+        ):
+            directory.mkdir()
+
+        _online_sqlite_backup(database_path, cloned_database)
+        _require_database_revision(
+            cloned_database,
+            expected_revision=source_revision,
+            immutable=False,
+            label="Online source snapshot",
+        )
+        source_counts = _table_counts(cloned_database)
+
+        candidate = workflow_type(
+            database_path=cloned_database,
+            backup_dir=candidate_backups,
+            seed_path=None,
+        )
+        candidate.bootstrap()
+        if candidate.sessions is None or bool(
+            getattr(candidate, "diagnostic_only", False)
+        ):
+            raise ReleaseDatabaseSafetyError(
+                "The candidate could not open the migrated snapshot write-ready."
+            )
+        _require_database_revision(
+            cloned_database,
+            expected_revision=candidate_revision,
+            immutable=False,
+            label="Migrated candidate snapshot",
+        )
+        fairness = candidate.reconcile_fairness()
+        if not fairness.balanced:
+            raise ReleaseDatabaseSafetyError(
+                "Candidate readiness refused because fairness reconciliation failed."
+            )
+        migrated_counts = _table_counts(cloned_database)
+        if migrated_counts != source_counts:
+            raise ReleaseDatabaseSafetyError(
+                "Candidate migration changed existing operational row counts."
+            )
+
+        snapshot_path = Path(candidate.create_verified_backup()).resolve(strict=True)
+        try:
+            snapshot_path.relative_to(candidate_backups)
+        except ValueError as error:
+            raise ReleaseDatabaseSafetyError(
+                "Candidate readiness wrote its backup outside the controlled workspace."
+            ) from error
+        verification = candidate.verify_backup(snapshot_path)
+        if not verification.get("valid"):
+            raise ReleaseDatabaseSafetyError(
+                "Candidate readiness could not verify its isolated backup."
+            )
+        if verification.get("schemaRevision") != candidate_revision:
+            raise ReleaseDatabaseSafetyError(
+                "Candidate readiness backup has the wrong schema revision."
+            )
+        if verification.get("migrationRequired"):
+            raise ReleaseDatabaseSafetyError(
+                "Candidate readiness backup unexpectedly requires migration."
+            )
+
+        child_environment = os.environ.copy()
+        child_environment.update(
+            {
+                "NICEGUI_STORAGE_PATH": str(nicegui_storage),
+                "PYTHONDONTWRITEBYTECODE": "1",
+                "SING_YIN_BACKUP_DIR": str(candidate_backups),
+                "SING_YIN_DATABASE_PATH": str(cloned_database),
+                "SING_YIN_LOG_DIR": str(candidate_logs),
+                "SING_YIN_SUPPORT_DIR": str(candidate_support),
+            }
+        )
+        readiness = subprocess.run(
+            [
+                sys.executable,
+                "-B",
+                "-X",
+                "utf8",
+                str(release_root / "scripts" / "check_deployment_readiness.py"),
+                "--strict",
+                "--allow-pending-cloudflare-access",
+            ],
+            cwd=release_root,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            env=child_environment,
+        )
+        readiness_payload = _read_json_stdout(readiness.stdout)
+        if readiness.returncode != 0:
+            raise ReleaseDatabaseSafetyError(
+                "Candidate strict readiness failed on the isolated migrated snapshot."
+            )
+        readiness_checks = readiness_payload.get("checks")
+        if not isinstance(readiness_checks, list) or not readiness_checks:
+            raise ReleaseDatabaseSafetyError(
+                "Candidate strict readiness returned no decision checks."
+            )
+
+        isolated_backups = workspace / "restore-backups"
+        isolated_backups.mkdir()
+        copied_snapshot = isolated_backups / snapshot_path.name
+        copied_manifest = copied_snapshot.with_suffix(".manifest.json")
+        shutil.copy2(snapshot_path, copied_snapshot)
+        shutil.copy2(snapshot_path.with_suffix(".manifest.json"), copied_manifest)
+        isolated_database = workspace / "restored.sqlite3"
+        isolated = workflow_type(
+            database_path=isolated_database,
+            backup_dir=isolated_backups,
+            seed_path=None,
+        )
+        isolated.bootstrap()
+        isolated.restore_backup(copied_snapshot)
+        isolated_fairness = isolated.reconcile_fairness()
+        if not isolated_fairness.balanced:
+            raise ReleaseDatabaseSafetyError(
+                "Candidate readiness isolated restore failed fairness reconciliation."
+            )
+        if _table_counts(isolated_database) != migrated_counts:
+            raise ReleaseDatabaseSafetyError(
+                "Candidate readiness isolated restore changed operational row counts."
+            )
+        source_audits = _audit_count(cloned_database)
+        restored_audits = _audit_count(isolated_database)
+        if restored_audits != source_audits + 1:
+            raise ReleaseDatabaseSafetyError(
+                "Candidate readiness isolated restore did not append one restore audit."
+            )
+        _require_database_revision(
+            isolated_database,
+            expected_revision=candidate_revision,
+            immutable=False,
+            label="Candidate readiness restored database",
+        )
+
+        payload: dict[str, Any] = {
+            "candidateSchemaRevision": candidate_revision,
+            "checkedAt": datetime.now(timezone.utc).isoformat(),
+            "fairnessBalanced": True,
+            "isolatedRestore": True,
+            "migrationProved": True,
+            "onlineSnapshot": True,
+            "readinessCheckCount": len(readiness_checks),
+            "restoreAuditAppended": True,
+            "rowCountsMatched": True,
+            "sourceSchemaRevision": source_revision,
+            "status": "pass",
+            "strictReadiness": True,
+            "verifiedBackup": True,
+        }
+        _write_report(report_path, payload)
+        return payload
+    finally:
+        _dispose_workflow(isolated)
+        _dispose_workflow(candidate)
+        try:
+            shutil.rmtree(workspace)
+        except OSError as error:
+            raise ReleaseDatabaseSafetyError(
+                "Candidate-readiness workspace could not be removed safely."
+            ) from error
 
 
 def _validated_restore_source(args: argparse.Namespace) -> tuple[Path, Path, str, str]:
@@ -600,6 +876,20 @@ def _parser() -> argparse.ArgumentParser:
     prepare.add_argument("--report-path", required=True, type=Path)
     prepare.add_argument("--expected-revision", required=True)
 
+    candidate_readiness = subparsers.add_parser(
+        "candidate-readiness",
+        help=(
+            "Prove candidate migration/readiness against a temporary online copy "
+            "of the live database."
+        ),
+    )
+    candidate_readiness.add_argument("--release-root", required=True, type=Path)
+    candidate_readiness.add_argument("--database-path", required=True, type=Path)
+    candidate_readiness.add_argument("--report-path", required=True, type=Path)
+    candidate_readiness.add_argument("--expected-source-revision", required=True)
+    candidate_readiness.add_argument("--expected-candidate-revision", required=True)
+    candidate_readiness.add_argument("--workspace-parent", type=Path)
+
     restore = subparsers.add_parser(
         "restore",
         help="Atomically install exact schema-bound rollback snapshot bytes.",
@@ -622,6 +912,8 @@ def main() -> int:
             }
         elif args.command == "prepare":
             payload = _prepare(args)
+        elif args.command == "candidate-readiness":
+            payload = _candidate_readiness(args)
         elif args.command == "restore":
             payload = _restore(args)
         else:  # pragma: no cover - argparse constrains this branch

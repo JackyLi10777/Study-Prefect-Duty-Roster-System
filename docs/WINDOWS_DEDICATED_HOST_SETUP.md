@@ -652,6 +652,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 腳本在停止服務前核對正式報告、來源指紋、host／Worker identity parity、主機工作樹、排程 owner 及現有 task target。它從排程工作的實際 immutable bundle marker 取得上一版本，重算整個 bundle fingerprint，並把 marker 的 release／commit／tree／environment 交叉綁定至 `origin` 上的 annotated tag、tag-resolved Git tree、切換前受保護 `.env` 的 SHA-256 及確定性的 bundle 目錄名稱；同時分別以舊 bundle 與候選來源讀取唯一 Alembic head。若現有 task 仍指向 legacy host checkout，或沒有可驗證的 bundle 路徑，部署器會在任何 bundle path 組合及停止服務前 fail closed；必須先以另一次受控程序建立並驗證 immutable release baseline，不可讓本次 migration deployment 猜測舊程式身分。
 
+若前後版本的 Alembic head 不同，部署器不會以候選程式直接檢查仍屬舊 schema 的正式資料庫。它在 `C:\SingYinRoster\data\deployment-proofs` 下建立單層、受 ACL 保護的隨機工作目錄，以 SQLite online backup API 從唯讀連線取得含 WAL 已提交交易的一致副本；再使用**候選 immutable bundle 自己的 Python 與 helper**只遷移副本，完成 fairness、verified backup、第二個隔離還原及真正的 strict readiness。子程序的 database／backup／log／support／NiceGUI storage 路徑全指向該工作目錄，來源 DB 的 schema、bytes 及 mtime 不得改變。證據完成後工作目錄必須為空並刪除，bundle fingerprint 亦須重新吻合 marker，才可停止正式 task。這項證明在新建或重用既有 bundle 時均重跑；失敗屬停機前失敗，舊 origin 繼續運行。
+
 停止工作並再次核對舊 bundle 後，部署器必須使用**舊 bundle 的實際 Python 與程式碼**建立舊 schema 的切換前快照，把 manifest 同時綁定 snapshot SHA-256 與 schema revision，並以舊程式完成隔離還原、公平、行數及 restore-audit 證明，才可切換及啟動候選。候選先通過初次 health、write-readiness 及 strict deployment gate；部署器隨即 disable／stop candidate 並等到 origin port 完全釋放，才以**候選 immutable bundle 的 Python 與 helper**在靜止的 production DB 上建立另一份 current-head verified snapshot、完成隔離還原，並重新核對 report、snapshot、manifest SHA-256 與 candidate schema。此檔使用獨立路徑，不得覆寫切換前舊 schema rollback snapshot，且舊 snapshot／manifest 會再次驗 hash。證明完成後仍須重啟 candidate，重新通過 health、write-readiness 及 strict gate，deployment JSON 才可為 `pass`；報告以 `candidateVerificationPhases` 分別記錄初次 gates、DB quiesce、baseline proof 及重啟後 gates，並在獨立的 `currentRecoveryBaseline` 物件記錄 candidate release／commit／bundle、snapshot／manifest、schema、integrity 及還原證明。
 
 候選一旦曾嘗試啟動，任何後續失敗都先停止候選、等待連接埠釋放，再把現有 main DB 及 sidecars 移入同目錄 quarantine、安裝並重驗精確舊 schema snapshot；只有 checksum、schema、integrity 及 ACL 全部通過後，才恢復舊 task action、`.env` 並啟動舊版本。若 DB 還原或證明有任何不確定，排程保持停止，禁止 code-only rollback。不得同時手動停止、安裝套件、覆寫 SQLite 或切換 checkout。
@@ -675,7 +677,7 @@ Get-Content -LiteralPath (Join-Path $Action.WorkingDirectory ".sing-yin-release.
 
 ### 步驟 12.4：核對資料、健康及報告
 
-1. 確認 deployment JSON 為 `pass`，`migrationHeads.previous`／`candidate`、切換前 snapshot 檔名、snapshot／manifest SHA-256、`snapshotSchemaRevision`、舊程式隔離還原、公平、行數及 restore audit 全部一致且成功；另核對 `candidateVerificationPhases` 四項均為 `true`，以及 `currentRecoveryBaseline` 的 `databaseQuiesced`、release／commit／bundle、獨立 snapshot／manifest SHA-256、candidate schema、integrity、隔離還原、公平、行數及 restore audit。兩個 snapshot 檔名必須不同。
+1. 確認 deployment JSON 為 `pass`，`candidateIsolatedReadiness` 的來源／候選 schema、online snapshot、migration、strict readiness、verified backup、隔離還原、公平、行數及 restore audit 全部成功，且 `candidateVerificationPhases.isolatedReadinessPassed` 為 `true`。再核對 `migrationHeads.previous`／`candidate`、切換前 snapshot 檔名、snapshot／manifest SHA-256、`snapshotSchemaRevision`、舊程式隔離還原、公平、行數及 restore audit 全部一致且成功；其餘 `candidateVerificationPhases` 亦須全為 `true`，並核對 `currentRecoveryBaseline` 的 `databaseQuiesced`、release／commit／bundle、獨立 snapshot／manifest SHA-256、candidate schema、integrity、隔離還原、公平、行數及 restore audit。兩個正式 snapshot 檔名必須不同。
 2. 核對 `http://127.0.0.1:8080/healthz` 與 `/readyz`；必須為 healthy／ready、`writeReady=true`，且沒有 maintenance、recovery 或 pending backup obligation。
 3. 核對排程由 `SingYinRosterSvc` 運行，實際 Python process command line 指向同一不可變 bundle。
 4. 核對名單、最近週表、最新備份及一份中文 PDF；再依正式裝置矩陣驗收畫面。單獨 HTTP 200 不足以接受發布。

@@ -819,6 +819,38 @@ function Assert-SafeReleaseBundlePath {
     return $candidate
 }
 
+function Assert-SafeDeploymentProofPath {
+    param(
+        [Parameter(Mandatory = $true)][string]$ProofRoot,
+        [Parameter(Mandatory = $true)][string]$CandidatePath
+    )
+
+    $root = [IO.Path]::GetFullPath($ProofRoot).TrimEnd('\')
+    $candidate = [IO.Path]::GetFullPath($CandidatePath).TrimEnd('\')
+    $prefix = "$root\"
+    if (-not $candidate.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "The deployment proof path escaped the controlled proof root."
+    }
+    $leaf = $candidate.Substring($prefix.Length)
+    if (
+        [string]::IsNullOrWhiteSpace($leaf) -or
+        $leaf -match '[\\/]' -or
+        $leaf -notmatch '^[A-Za-z0-9._-]+$'
+    ) {
+        throw "The deployment proof path is not a single safe child directory."
+    }
+    if (Test-Path -LiteralPath $candidate) {
+        $candidateItem = Get-Item -LiteralPath $candidate -Force
+        if (
+            -not $candidateItem.PSIsContainer -or
+            ($candidateItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0
+        ) {
+            throw "The deployment proof path must be an ordinary directory."
+        }
+    }
+    return $candidate
+}
+
 function New-SingYinRuntimeTaskPassword {
     param(
         [ValidateRange(32, 96)][int]$Length = 48
@@ -1576,10 +1608,6 @@ function New-SingYinReleaseBundle {
             "-X", "utf8", "-c",
             "from nicegui_app.launcher import configure_nicegui_storage_path; configure_nicegui_storage_path(); import nicegui; import nicegui_app.main"
         ) -WorkingDirectory $stagingPath | Out-Null
-        Invoke-Native -Executable $bundlePython -Arguments @(
-            "-X", "utf8", "scripts\check_deployment_readiness.py",
-            "--strict", "--allow-pending-cloudflare-access"
-        ) -WorkingDirectory $stagingPath | Out-Null
 
         $bundleFingerprint = Get-SingYinReleaseBundleFingerprint -Path $stagingPath
         $marker = [ordered]@{
@@ -1739,6 +1767,10 @@ try {
     $currentRecoverySnapshotSha256 = $null
     $currentRecoveryManifestSha256 = $null
     $candidateInitialGatesPassed = $false
+    $candidateIsolatedReadinessPassed = $false
+    $candidateReadinessEvidence = $null
+    $candidateReadinessReportPath = $null
+    $candidateProofParent = $null
     $currentRecoveryDatabaseQuiesced = $false
     $currentRecoveryBaselineProved = $false
     $candidatePostBaselineGatesPassed = $false
@@ -2074,6 +2106,128 @@ try {
     $releaseBundlePath = Assert-SafeReleaseBundlePath `
         -ReleaseRoot (Join-Path $HostRoot "releases") `
         -CandidatePath $releaseBundlePath
+
+    Write-Step "Proving candidate migration and strict readiness on an isolated live-data copy"
+    $deploymentPhase = "candidate-isolated-readiness"
+    $candidateProofRoot = Join-Path $HostRoot "data\deployment-proofs"
+    $null = New-Item -ItemType Directory -Path $candidateProofRoot -Force
+    $candidateProofRootItem = Get-Item -LiteralPath $candidateProofRoot -Force
+    if (
+        -not $candidateProofRootItem.PSIsContainer -or
+        ($candidateProofRootItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0
+    ) {
+        throw "The deployment proof root must be an ordinary directory."
+    }
+    Protect-SingYinSensitivePath `
+        -Path $candidateProofRoot `
+        -RuntimeUser $runtimeAccount.Name
+    $candidateProofParent = Assert-SafeDeploymentProofPath `
+        -ProofRoot $candidateProofRoot `
+        -CandidatePath (Join-Path $candidateProofRoot (
+            "$safeReleaseName-$([Guid]::NewGuid().ToString('N'))"
+        ))
+    $null = New-Item -ItemType Directory -Path $candidateProofParent
+    Protect-SingYinSensitivePath `
+        -Path $candidateProofParent `
+        -RuntimeUser $runtimeAccount.Name
+    $candidateProofAcl = Get-SingYinAclStatus `
+        -Paths @($candidateProofParent) `
+        -RequiredIdentitySid $runtimeAccount.Sid.Value
+    if (-not $candidateProofAcl.Compliant) {
+        throw "The candidate proof workspace ACL is not compliant."
+    }
+
+    $candidateReadinessStartedAt = [DateTimeOffset]::UtcNow
+    $candidateReadinessReportPath = Join-Path `
+        $SourceRoot `
+        "logs\candidate-isolated-readiness-$safeReleaseName.json"
+    Remove-Item `
+        -LiteralPath $candidateReadinessReportPath `
+        -Force `
+        -ErrorAction SilentlyContinue
+    $candidateBundlePython = Join-Path $releaseBundlePath ".venv\Scripts\python.exe"
+    $candidateDatabaseSafetyScript = Join-Path `
+        $releaseBundlePath `
+        "scripts\release_database_safety.py"
+    $candidateReadinessEvidence = Invoke-ReleaseDatabaseSafety `
+        -Python $candidateBundlePython `
+        -ScriptPath $candidateDatabaseSafetyScript `
+        -WorkingDirectory $releaseBundlePath `
+        -CommandArguments @(
+            "candidate-readiness",
+            "--release-root", $releaseBundlePath,
+            "--database-path", $databasePath,
+            "--report-path", $candidateReadinessReportPath,
+            "--expected-source-revision", $previousMigrationHead,
+            "--expected-candidate-revision", $releaseMigrationHead,
+            "--workspace-parent", $candidateProofParent
+        )
+    $candidateReadinessReportFile = Get-Item `
+        -LiteralPath $candidateReadinessReportPath `
+        -ErrorAction Stop
+    if (
+        [DateTimeOffset]$candidateReadinessReportFile.LastWriteTimeUtc -lt
+            $candidateReadinessStartedAt.AddSeconds(-2)
+    ) {
+        throw "The candidate isolated-readiness report was not refreshed by this deployment."
+    }
+    $candidateReadinessReport = Get-Content `
+        -LiteralPath $candidateReadinessReportPath `
+        -Raw `
+        -Encoding UTF8 | ConvertFrom-Json
+    foreach ($property in @(
+        "onlineSnapshot",
+        "migrationProved",
+        "strictReadiness",
+        "verifiedBackup",
+        "isolatedRestore",
+        "fairnessBalanced",
+        "rowCountsMatched",
+        "restoreAuditAppended"
+    )) {
+        if (
+            -not [bool]$candidateReadinessEvidence.$property -or
+            -not [bool]$candidateReadinessReport.$property
+        ) {
+            throw "Candidate isolated-readiness evidence is incomplete: $property."
+        }
+    }
+    if (
+        [string]$candidateReadinessEvidence.sourceSchemaRevision -cne
+            $previousMigrationHead -or
+        [string]$candidateReadinessEvidence.candidateSchemaRevision -cne
+            $releaseMigrationHead -or
+        [string]$candidateReadinessReport.sourceSchemaRevision -cne
+            $previousMigrationHead -or
+        [string]$candidateReadinessReport.candidateSchemaRevision -cne
+            $releaseMigrationHead -or
+        [int]$candidateReadinessEvidence.readinessCheckCount -lt 1 -or
+        [int]$candidateReadinessReport.readinessCheckCount -ne
+            [int]$candidateReadinessEvidence.readinessCheckCount
+    ) {
+        throw "Candidate isolated-readiness schema or strict-check evidence is inconsistent."
+    }
+    if (@(Get-ChildItem -LiteralPath $candidateProofParent -Force).Count -ne 0) {
+        throw "Candidate isolated-readiness left data in the protected proof workspace."
+    }
+    Remove-Item -LiteralPath $candidateProofParent -Force -ErrorAction Stop
+    $candidateProofParent = $null
+
+    $candidateMarker = Get-Content `
+        -LiteralPath (Join-Path $releaseBundlePath ".sing-yin-release.json") `
+        -Raw `
+        -Encoding UTF8 | ConvertFrom-Json
+    $candidatePostReadinessFingerprint = Get-SingYinReleaseBundleFingerprint `
+        -Path $releaseBundlePath
+    if (
+        [string]$candidateMarker.bundleContentSha256 -cne
+            [string]$candidatePostReadinessFingerprint.Sha256 -or
+        [int]$candidateMarker.bundleFileCount -ne
+            [int]$candidatePostReadinessFingerprint.FileCount
+    ) {
+        throw "Candidate isolated readiness changed the immutable release bundle."
+    }
+    $candidateIsolatedReadinessPassed = $true
 
     Write-Step "Stopping the owned task and fencing port $deploymentPort"
     if ([string]$task.State -ceq "Running") {
@@ -2478,7 +2632,9 @@ try {
         rowCountsMatched = [bool]$backupReport.rowCountsMatched
         restoreAuditAppended = [bool]$backupReport.restoreAuditAppended
         currentRecoveryBaseline = $currentRecoveryBaseline
+        candidateIsolatedReadiness = $candidateReadinessEvidence
         candidateVerificationPhases = [ordered]@{
+            isolatedReadinessPassed = $candidateIsolatedReadinessPassed
             initialGatesPassed = $candidateInitialGatesPassed
             databaseQuiesced = $currentRecoveryDatabaseQuiesced
             baselineProved = $currentRecoveryBaselineProved
@@ -2675,7 +2831,9 @@ try {
             candidate = $releaseMigrationHead
         }
         failedPhase = $failedPhase
+        candidateIsolatedReadiness = $candidateReadinessEvidence
         candidateVerificationPhases = [ordered]@{
+            isolatedReadinessPassed = $candidateIsolatedReadinessPassed
             initialGatesPassed = $candidateInitialGatesPassed
             databaseQuiesced = $currentRecoveryDatabaseQuiesced
             baselineProved = $currentRecoveryBaselineProved
@@ -2717,6 +2875,23 @@ try {
     $deploymentExitCode = 1
     }
 } finally {
+    if (
+        -not [string]::IsNullOrWhiteSpace($candidateProofParent) -and
+        (Test-Path -LiteralPath $candidateProofParent -PathType Container)
+    ) {
+        $residualProofItems = @(Get-ChildItem -LiteralPath $candidateProofParent -Force)
+        if ($residualProofItems.Count -eq 0) {
+            Remove-Item `
+                -LiteralPath $candidateProofParent `
+                -Force `
+                -ErrorAction Stop
+        } else {
+            Write-Warning (
+                "Protected candidate proof residue requires manual review: " +
+                $candidateProofParent
+            )
+        }
+    }
     if ($null -ne $runtimeTaskSecurePassword) {
         $runtimeTaskSecurePassword.Dispose()
         $runtimeTaskSecurePassword = $null
