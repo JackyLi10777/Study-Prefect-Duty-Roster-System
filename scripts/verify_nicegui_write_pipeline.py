@@ -520,6 +520,14 @@ def main() -> None:
             ).locator(".q-item:visible")
             candidate_options.first.wait_for(state="visible", timeout=10_000)
             candidate_options.filter(has_text=str(original["prefectName"])).first.click()
+            # NiceGUI applies the select change over its websocket and then
+            # refreshes the shared editor.  The option click alone does not
+            # prove that durable pending state has reached the matrix; opening
+            # the next cell too early can let the previous refresh replace it.
+            page.locator(
+                f'[data-cell-key="{original_cell_key}"]'
+                ".sy-draft-grid-cell--pending:visible"
+            ).wait_for(state="visible", timeout=10_000)
         with page.expect_navigation(wait_until="domcontentloaded", timeout=20_000):
             page.get_by_test_id("draft-save-all").click()
         page.get_by_text("草稿預覽", exact=True).wait_for(timeout=10_000)
@@ -565,6 +573,10 @@ def main() -> None:
         ).locator(".q-item:visible")
         candidate_options.first.wait_for(state="visible", timeout=10_000)
         candidate_options.filter(has_text=str(manual_candidate["nameZh"])).first.click()
+        page.locator(
+            f'[data-cell-key="{manual_cell_key}"]'
+            ".sy-draft-grid-cell--pending:visible"
+        ).wait_for(state="visible", timeout=10_000)
         batch_reason = page.locator("textarea[name='draft-batch-reason']")
         assert batch_reason.input_value() == ""
         with page.expect_navigation(wait_until="domcontentloaded", timeout=20_000):
