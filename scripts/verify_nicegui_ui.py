@@ -1044,11 +1044,7 @@ def main() -> None:
         github_box = github_link.bounding_box()
         assert github_box is not None and github_box["height"] >= 44
         assert github_link.get_attribute("target") == "_blank"
-        sidebar_feedback_links = page.get_by_test_id("sidebar-feedback").locator("a")
-        assert sidebar_feedback_links.count() == 3
-        assert (sidebar_feedback_links.nth(0).get_attribute("href") or "").startswith("mailto:s10777@syss.edu.hk")
-        assert (sidebar_feedback_links.nth(1).get_attribute("href") or "").startswith("https://github.com/JackyLi10777/")
-        assert (sidebar_feedback_links.nth(2).get_attribute("href") or "").startswith("/support?source=")
+        assert page.get_by_test_id("sidebar-feedback").count() == 0
         assert page.get_by_test_id("platform-live-summary").locator(".sy-platform-metric").count() == 4
         assert page.get_by_test_id("team-operating-model").locator(".sy-team-role").count() == 4
         assert page.get_by_test_id("capability-map").locator(".sy-capability-card").count() == 4

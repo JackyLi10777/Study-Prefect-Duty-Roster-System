@@ -230,6 +230,7 @@ def test_coarse_pointer_desktop_shell_retains_touch_sized_links_and_items() -> N
 
 def test_sidebar_uses_fixed_brand_scrollable_navigation_and_compact_footer() -> None:
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+    verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_ui.py").read_text(encoding="utf-8")
     command_center = (
         PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-command-center-v2.css"
     ).read_text(encoding="utf-8")
@@ -241,6 +242,9 @@ def test_sidebar_uses_fixed_brand_scrollable_navigation_and_compact_footer() -> 
         r'''data-testid\s*=\s*[\'\"]?sidebar-feedback[\'\"]?''',
         shell,
     )
+    assert 'page.get_by_test_id("sidebar-feedback").count() == 0' in verifier
+    assert "sidebar_feedback_links" not in verifier
+    assert 'page.goto(f"{BASE_URL}/support"' in verifier
     assert "grid-template-rows: auto minmax(0, 1fr) auto" in command_center
     assert "height: 100dvh" in command_center
     assert "overflow-y: auto" in command_center
