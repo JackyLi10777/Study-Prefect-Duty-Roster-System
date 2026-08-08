@@ -571,6 +571,24 @@ def _wait_for_draft_version(page: Page, version: int) -> None:
     )
 
 
+def _wait_for_enabled_test_control(page: Page, test_id: str) -> None:
+    """Wait until a websocket-staged edit has enabled its durable action."""
+    page.wait_for_function(
+        r"""
+        (expectedTestId) => {
+          const control = document.querySelector(`[data-testid="${expectedTestId}"]`);
+          return Boolean(
+            control
+            && !control.disabled
+            && control.getAttribute('aria-disabled') !== 'true'
+          );
+        }
+        """,
+        arg=test_id,
+        timeout=10_000,
+    )
+
+
 def _download_bytes(page: Page, trigger: Locator) -> tuple[str, bytes]:
     with page.expect_download(timeout=30_000) as download_info:
         trigger.click()
@@ -751,6 +769,7 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
     day_confirm = page.get_by_test_id("draft-day-confirm-close-monday")
     day_confirm.wait_for(state="visible", timeout=10_000)
     day_confirm.click()
+    _wait_for_enabled_test_control(page, "draft-save-all")
     page.get_by_test_id("draft-save-all").click()
     _wait_for_draft_version(page, 2)
     page.locator(".sy-draft-grid-day-closed").wait_for(state="visible", timeout=10_000)
@@ -769,6 +788,7 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
     reopen_monday = page.get_by_test_id("draft-day-confirm-reopen-monday")
     reopen_monday.wait_for(state="visible", timeout=10_000)
     reopen_monday.click()
+    _wait_for_enabled_test_control(page, "draft-save-all")
     page.get_by_test_id("draft-save-all").click()
     _wait_for_draft_version(page, 3)
     monday_vacancies = page.locator(
