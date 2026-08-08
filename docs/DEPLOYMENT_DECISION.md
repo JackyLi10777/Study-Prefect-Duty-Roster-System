@@ -38,7 +38,7 @@ NiceGUI 正式 origin 固定為 `127.0.0.1:8080`。Windows SSH 維護服務另�
 | Cloudflare Worker／Access／Tunnel | Worker 來源已更新，經 0% version smoke 後推廣至新的 100% canonical version；`wrangler.jsonc`、Access scope、Tunnel route、binding 與 secret-name contract 未更改，OTP fail-closed 及 gateway health 已重新核對 |
 | 目前來源與部署證據 | 精確 tag、gate、migration、正式備份／隔離還原及 canonical checks 只由頁首生成狀態與 [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md) 擁有 |
 | 第一個已驗證復原目標 | 保留目前程式並使用 [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md) 記錄的已驗證正式備份進行受控還原；先在隔離資料庫核對 checksum、公平、行數及 restore audit |
-| 舊程式相容復原 | migration `0012` 後，rc43／rc41 等舊程式不得作 code-only rollback；必須先選取相容的 pre-0012 快照並完成受控隔離還原，再由事故負責人批准切換 |
+| 舊程式相容復原 | migration `0013` 後，rc51 及所有較舊程式不得作 code-only rollback；必須先選取與目標程式相容的已驗證快照並完成受控隔離還原，再由事故負責人批准切換 |
 | 更深歷史復原來源 | rc43／rc41／rc40／rc39／rc35／rc30／rc27／rc26 及其 Worker 只屬歷史來源；只有頁首所列的原地復原不能安全恢復且事故負責人批准時使用 |
 | `codex/frontend-guest-performance-rc16` | rc17 來源分支；14 項 gate、標籤、Windows bundle 及 Worker staged rollout 已完成 |
 | `SING_YIN_UNIFIED_GUEST` | 正式環境的受保護設定必須為 `1`；後續候選不得以切換旗標取代完整驗證 |
@@ -131,7 +131,7 @@ v1.2 不再把 `/guest`、`/try` 維護成另一套靜態產品；兩者只作�
 7. 以虛構資料核對 Public、Admin、Guest、Viewer、PDF、登出、到期及多分頁隔離；
 8. 完成真人驗收後才結束 maintenance 並宣布候選上線。
 
-任何新候選 origin／線上 gate 失敗，先保存失敗證據，再把排程工作回復至切換前已捕獲、已驗證且與目前 schema 相容的 task target。若事故需要回復至 rc43／rc41 或更舊程式，必須先停止正式寫入，選取相容的 pre-0012 正式快照，完成 checksum、公平、行數、restore-audit 及隔離還原，再由事故負責人批准程式及必要的 Worker 切換。不得把 rc43／rc41 當作 code-only rollback，也不得假設 additive migration 自動保證舊程式可讀新 schema。
+任何新候選 origin／線上 gate 失敗，先保存失敗證據，再把資料庫還原至切換前已捕獲、已驗證且與舊 task target 相容的快照；只有資料庫 checksum、schema、integrity 與 ACL 證明通過後，才恢復並啟動舊 task target。若事故需要回復至 rc51 或更舊程式，必須先停止正式寫入，選取相容快照，完成 checksum、公平、行數、restore-audit 及隔離還原，再由事故負責人批准程式及必要的 Worker 切換。不得把任何舊程式當作 code-only rollback，也不得假設 additive migration 自動保證舊程式可讀新 schema。
 
 逐步 Cloudflare 設定、staged rollout、驗收及回退命令見
 [`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md)。
@@ -158,6 +158,6 @@ and canonical Public／Guest／Admin handoff／Viewer checks. That evidence rema
 historical. Current release, migration, gateway, and backup identity are generated
 at the top of this guide. The first recovery path keeps the current application
 and restores the verified backup named there under the controlled procedure.
-Rc43, rc41 and older applications require a compatible pre-0012 database
-restore and are not code-only rollback targets. Supervised human acceptance
+Rc51 and every older application require a database snapshot compatible with
+that exact application and are not code-only rollback targets. Supervised human acceptance
 remains outstanding.

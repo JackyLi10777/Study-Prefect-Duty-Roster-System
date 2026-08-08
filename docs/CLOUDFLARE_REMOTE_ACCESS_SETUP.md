@@ -258,13 +258,13 @@ Invoke-RestMethod http://127.0.0.1:8080/readyz
 
 1. 恢復 maintenance；
 2. 以受控部署報告確認自動 rollback 的 `attempted`／`succeeded`、previous commit 及 previous Worker version；
-3. 在現行 origin／Worker 來源已漂移或未歸屬時，先保存及歸屬差異，再把 origin 回復至受控 clean bundle `v1.2.0-rc.30`／`74b84f43786b00feb15b51a6270ff71c9430773f`，並把 Worker traffic 回復至配對驗證的 `11763f08-d40d-46d5-93dc-5ca2599d4154`；不得單側回退而形成未驗證組合；
+3. 在現行 origin／Worker 來源已漂移或未歸屬時，先保存及歸屬差異；第一個復原選擇是保留頁首所列 rc52 程式與 Worker，使用其已驗證 schema-`0013` 備份執行受控還原；不得直接回退至 rc30，也不得單側回退而形成未驗證組合；
 4. 只有來源指紋、身份參數、路由契約及相容性 gate 已證明另一側仍與目標版本相容時，事故負責人才可批准單側 origin 或 Worker 回退；報告必須記錄所用證據及配對版本；
 5. 核對 host commit、`/healthz`、`/readyz`／`writeReady=true`、Admin、Guest、Viewer、WebSocket、登出及資料狀態；
-6. 只有乾淨 rc30 無法安全恢復，且事故負責人明確批准更深復原時，才依序考慮 rc27、rc26 及 rc24 已驗證歷史；更舊版本只保留為證據；
+6. 只有頁首生成狀態所列的現行版本無法安全原地恢復，且事故負責人明確批准更深復原時，才考慮歷史 bundle；每個舊程式都必須先配對相容資料庫快照並通過隔離驗證，歷史 rc30／rc27／rc26／rc24 不可作 code-only rollback；
 7. 如資料完整性受疑，使用受控 restore，而非手動覆寫 SQLite。
 
-additive migration 必須讓舊 bundle 可讀原有資料。若不能證明，部署前 gate 應已拒絕該 migration。
+additive migration 不代表舊 bundle 必然可讀新 schema。部署前 gate 必須證明候選升級及回復契約；事故回復必須先還原與目標 bundle 相容的資料庫，再啟動該 bundle。
 
 ## 11. 故障排查
 
