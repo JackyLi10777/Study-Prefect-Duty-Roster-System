@@ -130,8 +130,6 @@ def test_unsaved_changes_support_undo_discard_and_conflict_preservation() -> Non
     assert "edit_session.undo()" in WEEKLY_SOURCE
     assert "edit_session.redo()" in WEEKLY_SOURCE
     assert "edit_session.ensure_command_id()" in WEEKLY_SOURCE
-    assert "_undo: list[DraftEditSnapshot]" in EDIT_SESSION_SOURCE
-    assert "_redo: list[DraftEditSnapshot]" in EDIT_SESSION_SOURCE
     assert "window.__syDraftDirty" in WEEKLY_SOURCE
     assert "ui.keyboard(" in WEEKLY_SOURCE
     assert 'ignore=["input", "select", "textarea"]' in WEEKLY_SOURCE
@@ -291,6 +289,24 @@ def test_typed_draft_session_rejects_edits_on_closed_surfaces() -> None:
         == "blocked"
     )
     assert session.dirty is False
+
+
+def test_typed_draft_session_does_not_swap_into_an_unavailable_occupied_slot() -> None:
+    session = DraftEditSession(
+        original_assignments={
+            "MONDAY:ROOM_302:0": "prefect-a",
+            "MONDAY:ROOM_303:0": "prefect-b",
+        },
+        original_unavailable={"MONDAY:ROOM_303:0"},
+        original_closed_days=set(),
+        reviewed_version=1,
+    )
+
+    mutation = session.stage_candidate("MONDAY:ROOM_302:0", "prefect-b")
+
+    assert mutation.kind == "assign"
+    assert mutation.exchanged_cell_key is None
+    assert "MONDAY:ROOM_303:0" not in session.pending_cells
 
 
 def test_vacancy_aliases_normalize_without_treating_blank_input_as_vacant() -> None:

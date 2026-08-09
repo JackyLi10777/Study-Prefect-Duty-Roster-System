@@ -73,6 +73,17 @@ from nicegui_app.utils.prefect_import import (
 from roster_policy import SchoolDay
 
 
+_INLINE_FIELD_LABEL_KEYS = {
+    "nameEn": "name_en",
+    "form": "form",
+    "className": "class_name",
+    "availableDays": "availability",
+    "needsMentoring": "needs_mentoring",
+    "fixedGeneralDuty": "fixed_assist_day",
+    "remarks": "remarks",
+}
+
+
 def _prefect_directory_view(
     prefects: list[dict[str, object]],
     *,
@@ -778,11 +789,13 @@ def _render_inline_prefect_directory(
     async def save_pending_prefect_rows() -> None:
         if not edit_session.dirty:
             return
+        patches = edit_session.patches()
+        command_id = edit_session.ensure_command_id()
         result = await _run_with_progress(
             lambda: _apply_prefect_patch_batch(
                 workflow,
-                edit_session.patches(),
-                command_id=edit_session.ensure_command_id(),
+                patches,
+                command_id=command_id,
             ),
             title_key="progress_prefect_save_title",
             working_key="progress_prefect_save_working",
@@ -929,17 +942,9 @@ def _render_inline_prefect_directory(
                                 t(
                                     "prefect_inline_conflict_local",
                                     fields=", ".join(
-                                        t(
-                                            {
-                                                "nameEn": "name_en",
-                                                "form": "form",
-                                                "className": "class_name",
-                                                "availableDays": "availability",
-                                                "needsMentoring": "needs_mentoring",
-                                                "fixedGeneralDuty": "fixed_assist_day",
-                                                "remarks": "remarks",
-                                            }[field]
-                                        )
+                                        t(_INLINE_FIELD_LABEL_KEYS[field])
+                                        if field in _INLINE_FIELD_LABEL_KEYS
+                                        else field
                                         for field in sorted(
                                             edit_session.pending.get(prefect_id, {})
                                         )

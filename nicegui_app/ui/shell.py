@@ -967,6 +967,9 @@ def _install_mobile_drawer_accessibility() -> None:
           };
           const settle = (expectedOpen, focusDrawer = false) => {
             if (settleFrame) cancelAnimationFrame(settleFrame);
+            const returnFocusTarget = expectedOpen === false && isMobile() && isOpen()
+              ? button
+              : null;
             requestedOpen = typeof expectedOpen === 'boolean' ? expectedOpen : null;
             sync(false);
             const startedAt = performance.now();
@@ -976,6 +979,9 @@ def _install_mobile_drawer_accessibility() -> None:
               if (expectedOpen === undefined || open === expectedOpen || performance.now() - startedAt >= 3000) {
                 requestedOpen = null;
                 sync(focusDrawer && expectedOpen === true);
+                if (expectedOpen === false && returnFocusTarget?.isConnected) {
+                  returnFocusTarget.focus({preventScroll: true});
+                }
                 settleFrame = 0;
                 return;
               }

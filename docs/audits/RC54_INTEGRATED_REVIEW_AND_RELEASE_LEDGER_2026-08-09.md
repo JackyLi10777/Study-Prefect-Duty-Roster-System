@@ -2,7 +2,7 @@
 
 **Status:** source candidate under verification; not production evidence.
 
-**Review date:** 2026-08-09
+**Review date:** 2026-08-09 (Asia/Shanghai, UTC+08:00)
 **Protected-main baseline:** `f6d602131714bd356769cf6ca04c06eba69f12b1`
 **Production truth:** remains owned by `docs/status/current-release.json` and fresh host／Worker evidence. At the start of this review, the generated status still identified `v1.2.0-rc.52`, Alembic `0013` and Worker `3bac2eee-246f-4524-9725-4249770017b0` as live. Nothing in this candidate section changes that claim.
 
@@ -50,10 +50,11 @@ Items not named above remain governed by their latest adjudication, current test
 
 ## Verification recorded before formal release
 
-- Post-rebase focused integration: 147 tests passed across draft grid, prefect directory／workflow, Guest adapter／workspace, Worker, mobile drawer and icon interaction contracts.
+- Pre-review checkpoint commit `8c4cbf99b42b49d3ad40ffd8c5121ea309460e16`: 1,268 Python tests passed; 53 Deno Worker contracts passed; the staged `full` profile passed whitespace, governance, the complete suite, Worker contracts, repository hygiene and security gates. The machine-readable pre-push report is `logs/change-verification-report.json`.
+- Earlier post-rebase focused integration: 147 tests passed across draft grid, prefect directory／workflow, Guest adapter／workspace, Worker, mobile drawer and icon interaction contracts.
 - Security／i18n／accessibility／documentation／release-script focused suite: passed after replacing three stale source-string assertions with typed-session and single-state equivalents.
 - Additional typed-session checks cover filtering against pending values and refusal to mutate closed days or unavailable slots.
-- `python -m compileall -q nicegui_app tests` and `git diff --check` passed at the earlier integrated checkpoint; both must be repeated on the final clean tree.
+- `python -m compileall -q nicegui_app tests` and `git diff --check` passed at the earlier integrated checkpoint. Code-review fixes after `8c4cbf99` must receive fresh staged evidence; only the later clean protected-main `--release` report can become formal release evidence.
 
 These are development findings, not the formal 15-gate release report.
 

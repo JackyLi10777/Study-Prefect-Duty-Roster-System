@@ -40,24 +40,27 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert "const settle = (expectedOpen, focusDrawer = false)" in shell
     assert "const renderedState = isMobile() ? renderedOpen : renderedVisible" in shell
     assert "return renderedState" in shell
+    assert "def _install_mobile_drawer_accessibility" in shell
     drawer_accessibility = shell.split("def _install_mobile_drawer_accessibility", 1)[1].split(
         "def _install_mobile_viewport_accessibility", 1
     )[0]
     assert "let requestedOpen = null" in drawer_accessibility
     assert "let syncFrame = 0" in drawer_accessibility
-    assert "drawerButtons().forEach(trigger =>" in shell
+    assert "drawerButtons().forEach(trigger =>" in drawer_accessibility
     assert 'data-testid=mobile-drawer-close data-sy-drawer-trigger=close' in shell
     assert "const closeOnly = trigger.matches('[data-sy-drawer-trigger=\"close\"]')" in shell
     assert "closeOnly || open ? 'close' : 'menu'" in shell
-    assert "settle(expectedOpen, trigger === button && expectedOpen)" in shell
-    assert "settleFrame = requestAnimationFrame(tick)" in shell
-    assert "const reconcileBreakpoint = () =>" in shell
-    assert "requestedOpen = null" in shell
-    assert "scheduleSync(false)" in shell
+    assert "settle(expectedOpen, trigger === button && expectedOpen)" in drawer_accessibility
+    assert "settleFrame = requestAnimationFrame(tick)" in drawer_accessibility
+    assert "const returnFocusTarget" in drawer_accessibility
+    assert "returnFocusTarget.focus({preventScroll: true})" in drawer_accessibility
+    assert "const reconcileBreakpoint = () =>" in drawer_accessibility
+    assert "requestedOpen = null" in drawer_accessibility
+    assert "scheduleSync(false)" in drawer_accessibility
     assert "document.querySelector('.sy-desktop-drawer-trigger')?.click()" not in shell
     assert "window.addEventListener('resize', reconcileBreakpoint" in shell
-    assert "if (syncFrame) cancelAnimationFrame(syncFrame)" in shell
-    assert "performance.now() - startedAt >= 3000" in shell
+    assert "if (syncFrame) cancelAnimationFrame(syncFrame)" in drawer_accessibility
+    assert "performance.now() - startedAt >= 3000" in drawer_accessibility
     assert "setTimeout(() => sync(true), 220)" not in shell
     assert "setTimeout(() => sync(false), 260)" not in shell
     assert "window.__syDrawerA11yCleanup?.()" in shell

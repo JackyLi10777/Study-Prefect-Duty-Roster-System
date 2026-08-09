@@ -472,6 +472,8 @@ def test_durable_handlers_snapshot_visible_form_values_before_the_first_await() 
         'replacement_id = None if replacement_select.value == "__vacant__" else str(replacement_select.value)',
         'reason = str(reason_input.value or "").strip()',
         "cell_values, day_values, slot_values = edit_session.patch_edits()",
+        "patches = edit_session.patches()",
+        "command_id = edit_session.ensure_command_id()",
         'reason = reason_state["value"].strip() or None',
     ):
         assert snapshot in pages

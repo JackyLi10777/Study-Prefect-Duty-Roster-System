@@ -419,6 +419,10 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             editor.refresh()
             return
         mutation = edit_session.stage_move(source_key, target_key)
+        if mutation.kind in {"blocked", "noop", "empty"}:
+            ui.notify(t("draft_move_invalid_target"), type="warning")
+            editor.refresh()
+            return
         message = (
             t("draft_exchange_staged")
             if mutation.kind == "swap"

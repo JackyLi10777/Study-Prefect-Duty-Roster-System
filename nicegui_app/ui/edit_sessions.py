@@ -343,6 +343,7 @@ class DraftEditSession:
                     for candidate_key in self.original_assignments
                     if candidate_key != cell_key
                     and candidate_key.partition(":")[0] == day_name
+                    and not self.slot_is_unavailable(candidate_key)
                     and self.effective_assignment(candidate_key)
                     == replacement_prefect_id
                 ),
