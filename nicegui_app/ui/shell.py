@@ -955,6 +955,10 @@ def _install_mobile_drawer_accessibility() -> None:
           let requestedOpen = null;
           const isMobile = () => matchMedia('(max-width: 900px)').matches;
           let mobileViewport = isMobile();
+          const root = document.documentElement;
+          const setMobileDrawerIntent = open => {
+            root.classList.toggle('sy-mobile-drawer-intent-open', Boolean(open) && isMobile());
+          };
           button.dataset.syDrawerA11y = 'ready';
           window.__syDrawerA11yOwner = button;
           const currentBackdrop = () => document.querySelector('.q-drawer__backdrop');
@@ -1083,6 +1087,9 @@ def _install_mobile_drawer_accessibility() -> None:
               if (controller.signal.aborted) return;
               const open = sync(focusDrawer && expectedOpen === true);
               if (expectedOpen === undefined || open === expectedOpen || performance.now() - startedAt >= 3000) {
+                if (expectedOpen === false || (expectedOpen === true && !open)) {
+                  setMobileDrawerIntent(false);
+                }
                 requestedOpen = null;
                 sync(focusDrawer && expectedOpen === true);
                 if (expectedOpen === false && returnFocusTarget?.isConnected) {
@@ -1104,11 +1111,13 @@ def _install_mobile_drawer_accessibility() -> None:
                 ? false
                 : !currentIntent;
               settle(expectedOpen, trigger === button && expectedOpen);
+              setMobileDrawerIntent(expectedOpen);
             }, {signal: controller.signal});
           });
           document.addEventListener('click', event => {
             if (!(event.target instanceof Element) || !event.target.closest('.q-drawer__backdrop')) return;
             settle(false, false);
+            setMobileDrawerIntent(false);
           }, {capture: true, signal: controller.signal});
           document.addEventListener('keydown', event => {
             if (!isOpen()) return;
@@ -1136,9 +1145,11 @@ def _install_mobile_drawer_accessibility() -> None:
             breakpointFrame = requestAnimationFrame(() => {
               breakpointFrame = 0;
               const nextMobileViewport = isMobile();
+              const viewportChanged = nextMobileViewport !== mobileViewport;
               const enteredMobileViewport = nextMobileViewport && !mobileViewport;
               mobileViewport = nextMobileViewport;
               requestedOpen = null;
+              if (viewportChanged) setMobileDrawerIntent(false);
               if (enteredMobileViewport) {
                 const close = document.querySelector('[data-testid="mobile-drawer-close"]');
                 if (close instanceof HTMLElement) close.click();
@@ -1157,6 +1168,7 @@ def _install_mobile_drawer_accessibility() -> None:
             syncFrame = 0;
             breakpointFrame = 0;
             requestedOpen = null;
+            setMobileDrawerIntent(false);
             observer.disconnect();
             observedShell = null;
             observedBackdrop = null;

@@ -11,6 +11,9 @@ from tests.ui_source import combined_page_source, combined_theme_source
 
 def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+    mobile_css = (PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-mobile-v1.css").read_text(
+        encoding="utf-8"
+    )
     main = (PROJECT_ROOT / "nicegui_app" / "main.py").read_text(encoding="utf-8")
     pages = combined_page_source()
 
@@ -60,6 +63,9 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert "const reconcileBreakpoint = () =>" in drawer_accessibility
     assert "let mobileViewport = isMobile()" in drawer_accessibility
     assert "const enteredMobileViewport = nextMobileViewport && !mobileViewport" in drawer_accessibility
+    assert "const setMobileDrawerIntent = open =>" in drawer_accessibility
+    assert "if (viewportChanged) setMobileDrawerIntent(false)" in drawer_accessibility
+    assert "setMobileDrawerIntent(expectedOpen)" in drawer_accessibility
     assert "if (close instanceof HTMLElement) close.click()" in drawer_accessibility
     assert "let breakpointFrame = 0" in drawer_accessibility
     assert "if (breakpointFrame) cancelAnimationFrame(breakpointFrame)" in drawer_accessibility
@@ -76,6 +82,8 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert "if (settleFrame) cancelAnimationFrame(settleFrame)" in shell
     assert "controller.abort()" in shell
     assert "show-if-above breakpoint=900" in shell
+    assert "html:not(.sy-mobile-drawer-intent-open) #main-navigation-drawer" in mobile_css
+    assert "html:not(.sy-mobile-drawer-intent-open) .q-drawer__backdrop" in mobile_css
     assert shell.index('with ui.element("main")') < shell.index(
         "_render_mobile_tabbar(drawer, active_path, access_mode)"
     )

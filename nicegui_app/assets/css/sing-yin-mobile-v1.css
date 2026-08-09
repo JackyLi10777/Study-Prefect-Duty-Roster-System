@@ -1,5 +1,22 @@
 /* Phone-specific composition. The routes, workflow and data model remain shared. */
 @media (max-width: 900px) {
+  /* A desktop `show-if-above` drawer can briefly retain its visible model
+     while Quasar changes into overlay mode.  Mobile navigation is therefore
+     rendered only after the explicit More-button intent is recorded in the
+     browser.  This prevents a transient backdrop from covering the roster
+     workflow without weakening the real keyboard focus treatment. */
+  html:not(.sy-mobile-drawer-intent-open) #main-navigation-drawer {
+    transform: translateX(-100%) !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  html:not(.sy-mobile-drawer-intent-open) .q-drawer__backdrop {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
   .sy-support-hero {
     grid-template-columns: minmax(0, 1fr);
     min-height: 0;
