@@ -697,7 +697,16 @@ def main() -> None:
         assert page.locator('[role="navigation"][aria-label="主要導覽"]').count() == 1
         assert page.locator('[role="heading"][aria-level="1"]').count() == 1
         assert page.locator('[aria-current="page"]:visible').count() == 1
-        assert page.get_by_role("button", name="開啟主要導覽").count() == 1
+        navigation_trigger = page.get_by_test_id("desktop-drawer-trigger")
+        assert navigation_trigger.count() == 1
+        navigation_expanded = navigation_trigger.get_attribute("aria-expanded")
+        assert navigation_expanded in {"true", "false"}
+        expected_navigation_label = (
+            "關閉主要導覽" if navigation_expanded == "true" else "開啟主要導覽"
+        )
+        assert page.get_by_role(
+            "button", name=expected_navigation_label, exact=True
+        ).count() == 1
         sound_toggle = page.get_by_role("button", name="關閉提示音")
         assert sound_toggle.count() == 1
         assert sound_toggle.get_attribute("aria-pressed") == "true"
@@ -1003,6 +1012,7 @@ def main() -> None:
         acceptance_steps.locator(".q-item").click()
         session_cards = acceptance_steps.locator(".sy-acceptance-session-card")
         assert session_cards.count() == len(ACCEPTANCE_SESSIONS)
+        session_cards.first.wait_for(state="visible", timeout=10_000)
         rendered_acceptance = acceptance_steps.inner_text()
         for check_id in acceptance_check_ids():
             assert rendered_acceptance.count(check_id) == 1
@@ -1362,9 +1372,6 @@ def main() -> None:
         page.get_by_text("備註（選填）", exact=True).last.wait_for(timeout=10_000)
         page.get_by_role("button", name="取消", exact=True).last.click()
         page.get_by_text("備註（選填）", exact=True).last.wait_for(state="hidden", timeout=10_000)
-        static_table = page.locator(".sy-table").first
-        assert static_table.evaluate("element => getComputedStyle(element).cursor") != "pointer"
-        assert static_table.evaluate("element => getComputedStyle(element).transform") == "none"
         page.get_by_text("資料匯入", exact=True).click()
         page.get_by_role("button", name="下載名單 CSV 格式範例").wait_for(timeout=10_000)
         page.get_by_text("上載 CSV／XLSX 或貼上 JSON／CSV", exact=False).wait_for(timeout=10_000)
@@ -1381,6 +1388,9 @@ def main() -> None:
         assert page.get_by_test_id("import-prefect-file").is_disabled()
         page.get_by_test_id("preview-prefect-file").click()
         page.get_by_text("資料已通過驗證，可安全匯入。", exact=True).first.wait_for(timeout=10_000)
+        static_table = page.locator(".sy-table").first
+        assert static_table.evaluate("element => getComputedStyle(element).cursor") != "pointer"
+        assert static_table.evaluate("element => getComputedStyle(element).transform") == "none"
         assert page.get_by_test_id("import-prefect-file").is_enabled()
         page.get_by_test_id("prefect-file-upload").locator('input[type="file"]').set_input_files(
             {
