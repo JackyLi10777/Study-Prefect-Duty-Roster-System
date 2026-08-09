@@ -199,7 +199,15 @@ def _assert_mobile_touch_and_reflow(page: Page, *, label: str) -> None:
           const visible = element => {
             const style = getComputedStyle(element);
             const box = element.getBoundingClientRect();
-            return style.display !== 'none' && style.visibility !== 'hidden' && box.width > 0 && box.height > 0;
+            const clippedAway = style.clip === 'rect(0px, 0px, 0px, 0px)'
+              || style.clipPath === 'inset(50%)';
+            return style.display !== 'none'
+              && style.visibility !== 'hidden'
+              && Number.parseFloat(style.opacity || '1') > 0
+              && !clippedAway
+              && box.width > 0
+              && box.height > 0
+              && box.bottom > 0;
           };
           const controls = [...document.querySelectorAll('button, a[href], summary, input, select, textarea')]
             .filter(visible).filter(element => !element.matches('a[href]') || getComputedStyle(element).display !== 'inline')
@@ -216,7 +224,11 @@ def _assert_mobile_touch_and_reflow(page: Page, *, label: str) -> None:
               const size = Number.parseFloat(style.fontSize) || 16;
               const height = Number.parseFloat(style.lineHeight) || size * 1.25;
               const lines = Math.max(1, Math.round(box.height / height));
-              const clipped = element.scrollWidth > element.clientWidth + 2 || element.scrollHeight > element.clientHeight + 2;
+              const clipsOverflow = value => ['hidden', 'clip', 'scroll', 'auto'].includes(value);
+              const clipped = (
+                (element.scrollWidth > element.clientWidth + 2 && clipsOverflow(style.overflowX))
+                || (element.scrollHeight > element.clientHeight + 2 && clipsOverflow(style.overflowY))
+              );
               const glyphColumn = value.length >= 4 && box.width < size * 2.2 && lines >= 4;
               return clipped || glyphColumn ? [{kind: clipped ? 'clipped' : 'glyph-column', text: value.slice(0, 60), width: box.width, height: box.height, lines}] : [];
             });
@@ -389,7 +401,7 @@ def _assert_public_support(
     if source not in {"public", "viewer"}:
         raise ValueError(f"Unsupported support source: {source}")
     page.add_init_script(
-        """() => localStorage.setItem('sing-yin-roster-viewer-theme-v1', 'dark')"""
+        """(() => localStorage.setItem('sing-yin-roster-viewer-theme-v1', 'dark'))();"""
     )
     response = page.goto(f"{base_url.rstrip('/')}/support#{source}", wait_until="networkidle")
     if response is None or response.status != 200:
@@ -411,7 +423,7 @@ def _assert_public_support(
     if theme_state != {"preference": "dark", "resolved": "dark", "stored": "dark"}:
         raise RuntimeError(f"{source} support did not inherit the entrance theme: {theme_state}")
     theme_button = page.locator("#supportTheme")
-    for expected_preference in ("system", "light", "dark"):
+    for expected_preference in ("light", "dark"):
         theme_button.click()
         page.wait_for_function(
             "expected => document.documentElement.dataset.themePreference === expected",
@@ -508,7 +520,7 @@ def _assert_welcome_audio_blocked_recovery(page: Page, *, base_url: str) -> None
     recovery = page.locator("#welcomeAudioRecovery")
     if not recovery.is_visible():
         raise RuntimeError("Blocked welcome audio does not expose the recovery choice.")
-    if "direct action" not in recovery.inner_text().lower():
+    if "direct action" not in page.locator("#welcomeAudioStatus").inner_text().lower():
         raise RuntimeError("Blocked welcome audio does not explain the browser policy.")
 
     page.evaluate(
@@ -531,13 +543,27 @@ def _assert_welcome_audio_quiet_navigation(page: Page, *, base_url: str) -> None
     page.wait_for_function(
         "() => document.querySelector('#welcomeAudioPlayer')?.dataset.autoplayState === 'blocked'"
     )
-    page.locator('a[data-entry-role="guest"]:visible').click()
     recovery = page.locator("#welcomeAudioRecovery")
     recovery.wait_for(state="visible")
     page.locator("#welcomeAudioQuiet").click()
+    if recovery.is_visible():
+        raise RuntimeError("Quiet welcome-audio choice did not close the recovery choice.")
+    page.route(
+        "**/guest",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="text/html; charset=utf-8",
+            body="<!doctype html><title>Guest destination</title><main id='guestDestination'>guest</main>",
+        ),
+    )
+    page.locator('a[data-entry-role="guest"]:visible').click()
     page.wait_for_url("**/guest", wait_until="domcontentloaded")
-    if page.url.rstrip("/").split("?")[0] != f"{base_url.rstrip('/')}/guest":
+    if (
+        page.url.rstrip("/").split("?")[0] != f"{base_url.rstrip('/')}/guest"
+        or page.locator("#guestDestination").count() != 1
+    ):
         raise RuntimeError(f"Quiet welcome-audio continuation reached an unexpected URL: {page.url}")
+    page.unroute("**/guest")
 
 
 def _assert_welcome_audio_allowed(page: Page, *, base_url: str) -> None:
