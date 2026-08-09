@@ -931,7 +931,10 @@ def _install_mobile_drawer_accessibility() -> None:
             const renderedOpen = isOpen();
             const renderedVisible = isDrawerVisible();
             const renderedState = isMobile() ? renderedOpen : renderedVisible;
-            const open = typeof requestedOpen === 'boolean' ? requestedOpen : renderedState;
+            const transitionOpen = typeof requestedOpen === 'boolean'
+              ? requestedOpen
+              : renderedState;
+            const open = renderedState;
             drawerButtons().forEach(trigger => {
               const closeOnly = trigger.matches('[data-sy-drawer-trigger="close"]');
               trigger.setAttribute('aria-expanded', String(open));
@@ -945,10 +948,10 @@ def _install_mobile_drawer_accessibility() -> None:
               const previous = trigger.dataset.syDrawerVisualOpen;
               window.__syIconMotion?.setPersistentGlyph(
                 trigger,
-                closeOnly || open ? 'close' : 'menu',
-                {animate: !closeOnly && previous !== undefined && previous !== String(open)}
+                closeOnly || transitionOpen ? 'close' : 'menu',
+                {animate: !closeOnly && previous !== undefined && previous !== String(transitionOpen)}
               );
-              trigger.dataset.syDrawerVisualOpen = String(open);
+              trigger.dataset.syDrawerVisualOpen = String(transitionOpen);
             });
             setBackgroundInert(isMobile() && open);
             if (focusDrawer && renderedState) {
@@ -991,9 +994,12 @@ def _install_mobile_drawer_accessibility() -> None:
           };
           drawerButtons().forEach(trigger => {
             trigger.addEventListener('click', () => {
+              const currentIntent = typeof requestedOpen === 'boolean'
+                ? requestedOpen
+                : trigger.getAttribute('aria-expanded') === 'true';
               const expectedOpen = trigger.matches('[data-sy-drawer-trigger="close"]')
                 ? false
-                : trigger.getAttribute('aria-expanded') !== 'true';
+                : !currentIntent;
               settle(expectedOpen, trigger === button && expectedOpen);
             }, {signal: controller.signal});
           });

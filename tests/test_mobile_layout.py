@@ -39,6 +39,8 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert "event.target.closest('.q-drawer__backdrop')" in shell
     assert "const settle = (expectedOpen, focusDrawer = false)" in shell
     assert "const renderedState = isMobile() ? renderedOpen : renderedVisible" in shell
+    assert "const transitionOpen = typeof requestedOpen === 'boolean'" in shell
+    assert "const open = renderedState" in shell
     assert "return renderedState" in shell
     assert "def _install_mobile_drawer_accessibility" in shell
     drawer_accessibility = shell.split("def _install_mobile_drawer_accessibility", 1)[1].split(
@@ -49,8 +51,9 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert "drawerButtons().forEach(trigger =>" in drawer_accessibility
     assert 'data-testid=mobile-drawer-close data-sy-drawer-trigger=close' in shell
     assert "const closeOnly = trigger.matches('[data-sy-drawer-trigger=\"close\"]')" in shell
-    assert "closeOnly || open ? 'close' : 'menu'" in shell
+    assert "closeOnly || transitionOpen ? 'close' : 'menu'" in shell
     assert "settle(expectedOpen, trigger === button && expectedOpen)" in drawer_accessibility
+    assert "const currentIntent = typeof requestedOpen === 'boolean'" in drawer_accessibility
     assert "settleFrame = requestAnimationFrame(tick)" in drawer_accessibility
     assert "const returnFocusTarget" in drawer_accessibility
     assert "returnFocusTarget.focus({preventScroll: true})" in drawer_accessibility

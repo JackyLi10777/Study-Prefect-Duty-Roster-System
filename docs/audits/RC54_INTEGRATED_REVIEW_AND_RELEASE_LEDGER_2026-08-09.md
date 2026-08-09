@@ -58,6 +58,12 @@ Items not named above remain governed by their latest adjudication, current test
 
 These are development findings, not the formal 15-gate release report.
 
+### First protected-main release-gate attempt
+
+The first clean protected-main run at `1689aa2b442c88db78c5d2375a658de76efe6cfe` was correctly blocked by the `rc31_theme_control_browser` gate. The mobile trigger exposed `aria-expanded=true` from requested transition intent before the drawer had actually rendered and moved focus, so the browser observed an open navigation state while focus still remained outside it. No tag or deployment was created.
+
+The follow-up separates visual transition intent from rendered accessibility state: icon feedback may anticipate the requested direction, while `aria-expanded`, background `inert` and focus ownership follow the real drawer geometry. The exact failing verifier then passed all 16 Admin／Guest, desktop／mobile and light／dark cases, alongside 60 focused mobile／accessibility／theme tests. This is regression evidence only; the complete clean-source release gate must be rerun after the follow-up reaches protected main.
+
 ## Release blockers and completion rule
 
 The candidate remains blocked from a production-complete claim until all of the following are true:
