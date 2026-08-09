@@ -820,6 +820,32 @@
   };
   window.__disposeSingYinMotion = dispose;
 
+  window.__syIconMotion = Object.freeze({
+    setPersistentGlyph,
+    hydrate: hydrateIconMotion,
+    classify: target => {
+      const host = target instanceof Element
+        ? (target.matches(interactiveIconHostSelector) ? target : target.closest(interactiveIconHostSelector))
+        : null;
+      const icon = host?.querySelector(interactiveIconSelector);
+      if (!(host instanceof HTMLElement) || !(icon instanceof HTMLElement)) return null;
+      return Object.freeze({
+        category: icon.dataset.syIconStoryCategory || 'role',
+        role: icon.dataset.syIconMotion || 'signal',
+        motionMode: host.dataset.syIconMotionMode || icon.dataset.syIconMotionMode || 'role-only',
+        rotationDirection: icon.dataset.syIconRotationDirection || '',
+        previewDegrees: Number(icon.dataset.syIconPreviewDegrees || 0),
+        activationDegrees: Number(icon.dataset.syIconActivationDegrees || 0),
+        source: icon.dataset.syIconName || icon.textContent?.trim() || '',
+        destination: icon.dataset.syIconStoryTo || '',
+      });
+    },
+    storySources: Object.freeze([...iconStoryGlyphs.keys()]),
+    lifecycleSources: Object.freeze([...operationLifecycleGlyphs.keys()]),
+    persistentPairs: Object.freeze([...persistentIconPairs.entries()]),
+    rotationAllowlist: Object.freeze(['settings', 'light_mode', 'dark_mode', 'settings_backup_restore', 'history', 'undo'])
+  });
+
   const installMutationHydrator = () => {
     if (mutationObserver || !document.body) return;
     mutationObserver = new MutationObserver((mutations) => {
@@ -958,31 +984,6 @@
       }, 260);
     };
     document.addEventListener('click', disclosureHandler, true);
-    window.__syIconMotion = Object.freeze({
-      setPersistentGlyph,
-      hydrate: hydrateIconMotion,
-      classify: target => {
-        const host = target instanceof Element
-          ? (target.matches(interactiveIconHostSelector) ? target : target.closest(interactiveIconHostSelector))
-          : null;
-        const icon = host?.querySelector(interactiveIconSelector);
-        if (!(host instanceof HTMLElement) || !(icon instanceof HTMLElement)) return null;
-        return Object.freeze({
-          category: icon.dataset.syIconStoryCategory || 'role',
-          role: icon.dataset.syIconMotion || 'signal',
-          motionMode: host.dataset.syIconMotionMode || icon.dataset.syIconMotionMode || 'role-only',
-          rotationDirection: icon.dataset.syIconRotationDirection || '',
-          previewDegrees: Number(icon.dataset.syIconPreviewDegrees || 0),
-          activationDegrees: Number(icon.dataset.syIconActivationDegrees || 0),
-          source: icon.dataset.syIconName || icon.textContent?.trim() || '',
-          destination: icon.dataset.syIconStoryTo || '',
-        });
-      },
-      storySources: Object.freeze([...iconStoryGlyphs.keys()]),
-      lifecycleSources: Object.freeze([...operationLifecycleGlyphs.keys()]),
-      persistentPairs: Object.freeze([...persistentIconPairs.entries()]),
-      rotationAllowlist: Object.freeze(['settings', 'light_mode', 'dark_mode', 'settings_backup_restore', 'history', 'undo'])
-    });
   };
 
   if (document.readyState === 'loading') {

@@ -83,6 +83,9 @@ def test_motion_assets_are_loaded_from_same_origin_only() -> None:
     )[1].split("\n  };", 1)[0]
     assert "new MutationObserver" in mutation_hydrator
     assert "installMutationHydrator();" not in mutation_hydrator
+    assert motion_source.index("window.__syIconMotion = Object.freeze") < motion_source.index(
+        "if (!window.gsap && reducedMotion())"
+    )
     assert 'url_path="/assets/motion"' in main
     assert 'url_path="/assets/vendor"' in main
     assert 'url_path="/assets/css"' in main
