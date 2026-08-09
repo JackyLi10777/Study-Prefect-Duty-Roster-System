@@ -107,9 +107,9 @@ def _close_open_menus(page: Page) -> None:
     )
 
 
-def _select_option(page: Page, label: str, option_text: str) -> None:
+def _select_option(page: Page, label: str, option_text: str, *, scope=None) -> None:  # type: ignore[no-untyped-def]
     _close_open_menus(page)
-    field = page.locator(".q-field").filter(has_text=label).first
+    field = (scope or page).locator(".q-field").filter(has_text=label).first
     field.click()
     visible_menu = page.locator(".q-menu:visible").last
     visible_menu.wait_for(state="visible", timeout=10_000)
@@ -365,22 +365,25 @@ def main() -> None:
         # The route title can exist before the refreshed table is mounted. The
         # imported row is the durable completion signal; the progress dialog
         # can legitimately finish between two browser frames.
-        page.locator(".sy-prefect-directory-desktop:visible td", has_text="虛構驗證風紀").wait_for(
-            timeout=15_000
-        )
+        inline_directory = page.get_by_test_id("prefect-inline-directory")
+        inline_directory.locator(
+            ".sy-prefect-inline-row", has_text="虛構驗證風紀"
+        ).wait_for(timeout=15_000)
         _wait_for_progress_cycle(page)
         workflow = _workflow(database_path, backup_dir)
         assert any(item["nameZh"] == "虛構驗證風紀" for item in workflow.prefects())
 
         page.get_by_role("button", name="新增風紀").click()
-        page.get_by_role("button", name="儲存", exact=True).click()
+        prefect_dialog = page.locator(".q-dialog:visible").last
+        prefect_dialog.wait_for(state="visible", timeout=10_000)
+        prefect_dialog.get_by_role("button", name="儲存", exact=True).click()
         page.get_by_text("請先填寫中文姓名。", exact=True).wait_for(timeout=10_000)
         assert page.locator(".sy-progress-dialog").count() == 0
-        page.get_by_label("中文姓名").fill("虛構非阻塞風紀")
-        page.get_by_label("班別").fill("3U")
-        _select_option(page, "可值班日", "星期一")
-        _select_option(page, "可值班日", "星期三")
-        page.get_by_role("button", name="儲存", exact=True).click()
+        prefect_dialog.get_by_label("中文姓名").fill("虛構非阻塞風紀")
+        prefect_dialog.get_by_label("班別").fill("3U")
+        _select_option(page, "可值班日", "星期一", scope=prefect_dialog)
+        _select_option(page, "可值班日", "星期三", scope=prefect_dialog)
+        prefect_dialog.get_by_role("button", name="儲存", exact=True).click()
         _wait_for_progress_cycle(page)
         page.get_by_text("虛構非阻塞風紀", exact=True).first.wait_for(timeout=15_000)
 
@@ -388,8 +391,10 @@ def main() -> None:
         created_prefect = next(item for item in workflow.prefects() if item["nameZh"] == "虛構非阻塞風紀")
         _select_option(page, "選擇風紀", "虛構非阻塞風紀 (F.3 3U)")
         page.get_by_role("button", name="編輯風紀").click()
-        page.get_by_label("備註").fill("虛構非阻塞修改")
-        page.get_by_role("button", name="儲存", exact=True).click()
+        edit_dialog = page.locator(".q-dialog:visible").last
+        edit_dialog.wait_for(state="visible", timeout=10_000)
+        edit_dialog.get_by_label("備註").fill("虛構非阻塞修改")
+        edit_dialog.get_by_role("button", name="儲存", exact=True).click()
         _wait_for_progress_cycle(page)
         page.get_by_text("名單管理", exact=True).wait_for(timeout=15_000)
         workflow = _workflow(database_path, backup_dir)
@@ -799,10 +804,11 @@ def main() -> None:
         page.wait_for_load_state("domcontentloaded")
         page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
         page.get_by_text("名單管理", exact=True).wait_for(timeout=10_000)
-        mobile_prefect_cards = page.locator('[data-testid="mobile-prefect-card"]')
-        assert mobile_prefect_cards.count() == len(workflow.prefects())
-        assert not page.locator(".sy-prefect-directory-desktop").is_visible()
-        assert mobile_prefect_cards.filter(has_text="虛構驗證風紀").count() == 1
+        mobile_prefect_directory = page.get_by_test_id("prefect-inline-directory")
+        mobile_prefect_rows = mobile_prefect_directory.locator(".sy-prefect-inline-row")
+        assert mobile_prefect_directory.is_visible()
+        assert mobile_prefect_rows.count() == len(workflow.prefects())
+        assert mobile_prefect_rows.filter(has_text="虛構驗證風紀").count() == 1
         page.screenshot(path=str(MOBILE_DIRECTORY_SCREENSHOT), full_page=True)
 
         page.goto(f"{BASE_URL}/rosters/{roster_week_id}/adjustments", wait_until="domcontentloaded")

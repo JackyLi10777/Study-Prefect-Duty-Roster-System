@@ -105,6 +105,20 @@ def test_write_pipeline_uses_current_reviewed_import_label() -> None:
     assert 'get_by_text("AI 匯入", exact=True)' not in script
 
 
+def test_write_pipeline_uses_the_current_responsive_inline_directory() -> None:
+    script = (Path(__file__).parents[1] / "scripts" / "verify_nicegui_write_pipeline.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'get_by_test_id("prefect-inline-directory")' in script
+    assert 'locator(".sy-prefect-inline-row"' in script
+    assert 'prefect_dialog = page.locator(".q-dialog:visible").last' in script
+    assert 'scope=prefect_dialog' in script
+    assert 'edit_dialog = page.locator(".q-dialog:visible").last' in script
+    assert "sy-prefect-directory-desktop" not in script
+    assert "mobile-prefect-card" not in script
+
+
 def test_write_pipeline_uses_semantic_readiness_instead_of_network_quiet() -> None:
     script = (Path(__file__).parents[1] / "scripts" / "verify_nicegui_write_pipeline.py").read_text(encoding="utf-8")
 
