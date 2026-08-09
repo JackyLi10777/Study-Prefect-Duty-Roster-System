@@ -128,6 +128,17 @@ def test_write_pipeline_uses_semantic_readiness_instead_of_network_quiet() -> No
     assert "expect(confirm_rollover).to_be_enabled(timeout=10_000)" in script
 
 
+def test_write_pipeline_targets_named_mobile_preferences_instead_of_grid_positions() -> None:
+    script = (Path(__file__).parents[1] / "scripts" / "verify_nicegui_write_pipeline.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '_click_mobile_drawer_control(page, "mobile-language-control")' in script
+    assert 'get_by_test_id(test_id)' in script
+    assert 'locator(".sy-mobile-drawer-tool")' not in script
+    assert "_click_mobile_drawer_tool" not in script
+
+
 def test_write_pipeline_uses_the_batch_draft_matrix_contract() -> None:
     script = (Path(__file__).parents[1] / "scripts" / "verify_nicegui_write_pipeline.py").read_text(
         encoding="utf-8"

@@ -178,7 +178,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
     mobile_candidate_selector_ref: dict[str, Any | None] = {"control": None}
     cell_editor_dialog_ref: dict[str, Any | None] = {"control": None}
     save_review_dialog_ref: dict[str, Any | None] = {"control": None}
-    mobile_dialog_state: dict[str, bool] = {"open": False, "refreshing": False}
+    mobile_dialog_state: dict[str, bool] = {"open": False}
     mobile_day_state: dict[str, str] = {
         "value": presentation.days[0].day.name if presentation.days else ""
     }
@@ -310,7 +310,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         )
         selector = selector_ref["control"]
         if selector is not None:
-            ui.timer(0.05, lambda: selector.run_method("focus"), once=True)
+            selector.run_method("focus")
 
     def focus_cell(cell_key: str) -> None:
         edit_session.selected_cell = cell_key
@@ -1445,19 +1445,11 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
 
     def refresh_editor() -> None:
         reopen_mobile_editor = mobile_dialog_state["open"]
-        mobile_dialog_state["refreshing"] = reopen_mobile_editor
         editor.refresh()
         if reopen_mobile_editor:
             dialog = cell_editor_dialog_ref["control"]
             if dialog is not None:
                 dialog.open()
-            ui.timer(
-                0.05,
-                lambda: mobile_dialog_state.__setitem__("refreshing", False),
-                once=True,
-            )
-        else:
-            mobile_dialog_state["refreshing"] = False
 
     def handle_undo_key(event: Any) -> None:
         if not event.action.keydown or event.action.repeat:

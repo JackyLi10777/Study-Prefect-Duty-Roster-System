@@ -93,6 +93,8 @@ def test_mobile_roster_editor_is_a_shared_sheet_with_one_dirty_dock() -> None:
     assert WEEKLY_SOURCE.count("data-testid=draft-mobile-save-dock") == 1
     assert "cell.focus({preventScroll: true})" in WEEKLY_SOURCE
     assert "cell.scrollIntoView({block: 'nearest', inline: 'nearest'})" in WEEKLY_SOURCE
+    assert "ui.timer(" not in WEEKLY_SOURCE
+    assert 'selector.run_method("focus")' in WEEKLY_SOURCE
 
 
 def test_mobile_day_tabs_report_operational_risk_not_only_the_day_name() -> None:
