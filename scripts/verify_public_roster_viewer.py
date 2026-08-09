@@ -4,14 +4,15 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 import json
+import os
 from pathlib import Path
 import re
 import shutil
 import sys
 import tempfile
-from typing import Final
+from typing import Any, Final
 
-from playwright.sync_api import Page, sync_playwright
+from playwright.sync_api import Browser, Error, Page, Playwright, sync_playwright
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -26,6 +27,98 @@ from nicegui_app.services.roster_workflow import RosterWorkflow
 EVIDENCE_DIR = PROJECT_ROOT / "test-results" / "public-roster-viewer"
 GATEWAY_EVIDENCE_DIR = PROJECT_ROOT / "test-results" / "unified-access-gateway"
 EXPLICIT_THEME_STATES: Final = ("light", "dark")
+PERFORMANCE_EVIDENCE_PATH = GATEWAY_EVIDENCE_DIR / "public-mobile-performance.json"
+PERFORMANCE_EVIDENCE: list[dict[str, Any]] = []
+PERFORMANCE_OBSERVER_SCRIPT = r"""
+(() => {
+  const evidence = {largestContentfulPaint: 0, cumulativeLayoutShift: 0, longestTask: 0, longTaskCount: 0};
+  window.__syPublicPerformanceEvidence = evidence;
+  const observe = (type, callback) => {
+    try {
+      const observer = new PerformanceObserver(list => callback(list.getEntries()));
+      observer.observe({type, buffered: true});
+    } catch (_) {}
+  };
+  observe('largest-contentful-paint', entries => entries.forEach(entry => {
+    evidence.largestContentfulPaint = Math.max(evidence.largestContentfulPaint, entry.startTime || 0);
+  }));
+  observe('layout-shift', entries => entries.forEach(entry => {
+    if (!entry.hadRecentInput) evidence.cumulativeLayoutShift += entry.value || 0;
+  }));
+  observe('longtask', entries => entries.forEach(entry => {
+    evidence.longTaskCount += 1;
+    evidence.longestTask = Math.max(evidence.longestTask, entry.duration || 0);
+  }));
+})();
+"""
+
+
+def _launch_real_chrome(playwright: Playwright) -> Browser:
+    channel = os.getenv("SING_YIN_PLAYWRIGHT_CHANNEL", "chrome").strip() or "chrome"
+    try:
+        return playwright.chromium.launch(headless=True, channel=channel)
+    except Error as exc:
+        if os.getenv("SING_YIN_PLAYWRIGHT_ALLOW_BUNDLED_CHROMIUM") == "1":
+            return playwright.chromium.launch(headless=True)
+        raise RuntimeError(
+            f"Public mobile verification requires the Playwright {channel!r} browser channel; "
+            "bundled Chromium is allowed only when isolated CI explicitly sets "
+            "SING_YIN_PLAYWRIGHT_ALLOW_BUNDLED_CHROMIUM=1."
+        ) from exc
+
+
+def _new_mobile_context(
+    browser: Browser,
+    *,
+    width: int,
+    height: int,
+    color_scheme: str = "light",
+    reduced_motion: str = "no-preference",
+    forced_colors: str = "none",
+    accept_downloads: bool = False,
+):  # type: ignore[no-untyped-def]
+    context = browser.new_context(
+        viewport={"width": width, "height": height},
+        color_scheme=color_scheme,  # type: ignore[arg-type]
+        reduced_motion=reduced_motion,  # type: ignore[arg-type]
+        forced_colors=forced_colors,  # type: ignore[arg-type]
+        is_mobile=True,
+        has_touch=True,
+        device_scale_factor=2,
+        accept_downloads=accept_downloads,
+    )
+    context.add_init_script(PERFORMANCE_OBSERVER_SCRIPT)
+    return context
+
+
+def _collect_performance_evidence(page: Page, *, label: str) -> None:
+    page.wait_for_timeout(120)
+    evidence = page.evaluate(
+        """() => {
+          const navigation = performance.getEntriesByType('navigation')[0];
+          const resources = performance.getEntriesByType('resource');
+          const paints = Object.fromEntries(performance.getEntriesByType('paint').map(e => [e.name, e.startTime]));
+          const observed = window.__syPublicPerformanceEvidence || {};
+          return {
+            ttfb: navigation ? navigation.responseStart - navigation.requestStart : null,
+            firstContentfulPaint: paints['first-contentful-paint'] || null,
+            largestContentfulPaint: observed.largestContentfulPaint || null,
+            cumulativeLayoutShift: observed.cumulativeLayoutShift || 0,
+            longestTask: observed.longestTask || 0,
+            longTaskCount: observed.longTaskCount || 0,
+            resourceCount: resources.length,
+            resourceBytes: resources.reduce((total, e) => total + (e.transferSize || e.encodedBodySize || 0), 0),
+          };
+        }"""
+    )
+    evidence["label"] = label
+    if evidence["cumulativeLayoutShift"] > 0.15:
+        raise RuntimeError(f"{label} exceeds the mobile CLS contract: {evidence}")
+    if evidence["longestTask"] > 1_000:
+        raise RuntimeError(f"{label} contains a blocking task longer than one second: {evidence}")
+    if evidence["resourceBytes"] > 25 * 1024 * 1024:
+        raise RuntimeError(f"{label} transferred more than the 25 MiB ceiling: {evidence}")
+    PERFORMANCE_EVIDENCE.append(evidence)
 
 
 def _attach_error_collectors(
@@ -90,6 +183,118 @@ def _assert_document_fits_viewport(page: Page, *, label: str) -> None:
         raise RuntimeError(f"{label} has a horizontally displaced landing story: {metrics}")
 
 
+def _assert_mobile_touch_and_reflow(page: Page, *, label: str) -> None:
+    failures = page.evaluate(
+        r"""() => {
+          const visible = element => {
+            const style = getComputedStyle(element);
+            const box = element.getBoundingClientRect();
+            return style.display !== 'none' && style.visibility !== 'hidden' && box.width > 0 && box.height > 0;
+          };
+          const controls = [...document.querySelectorAll('button, a[href], summary, input, select, textarea')]
+            .filter(visible).filter(element => !element.matches('a[href]') || getComputedStyle(element).display !== 'inline')
+            .map(element => {
+              const box = element.getBoundingClientRect();
+              return {kind: 'target', text: (element.textContent || element.getAttribute('aria-label') || '').trim().slice(0, 60), width: box.width, height: box.height};
+            }).filter(item => item.width < 44 || item.height < 44);
+          const text = [...document.querySelectorAll('button, a[href], h1, h2, h3, label, p')]
+            .filter(visible).flatMap(element => {
+              const value = (element.textContent || '').replace(/\s+/g, ' ').trim();
+              if (!value) return [];
+              const box = element.getBoundingClientRect();
+              const style = getComputedStyle(element);
+              const size = Number.parseFloat(style.fontSize) || 16;
+              const height = Number.parseFloat(style.lineHeight) || size * 1.25;
+              const lines = Math.max(1, Math.round(box.height / height));
+              const clipped = element.scrollWidth > element.clientWidth + 2 || element.scrollHeight > element.clientHeight + 2;
+              const glyphColumn = value.length >= 4 && box.width < size * 2.2 && lines >= 4;
+              return clipped || glyphColumn ? [{kind: clipped ? 'clipped' : 'glyph-column', text: value.slice(0, 60), width: box.width, height: box.height, lines}] : [];
+            });
+          return [...controls, ...text].slice(0, 12);
+        }"""
+    )
+    if failures:
+        raise RuntimeError(f"{label} has undersized controls, clipped text, or glyph columns: {failures}")
+
+
+def _assert_support_keyboard_flow(page: Page, *, label: str) -> None:
+    """Required fields must remain keyboard reachable and visibly scrolled into view."""
+
+    expected_order = ("supportExpected", "supportActual", "supportSteps")
+    page.locator("#supportExpected").focus()
+    for index, expected in enumerate(expected_order):
+        active = page.evaluate("document.activeElement?.id")
+        if active != expected:
+            raise RuntimeError(f"{label} keyboard order expected {expected!r}, found {active!r}.")
+        field = page.locator(f"#{expected}")
+        field.scroll_into_view_if_needed()
+        box = field.bounding_box()
+        viewport_height = int((page.viewport_size or {}).get("height", 0))
+        if box is None or box["y"] < 0 or box["y"] + min(box["height"], 44) > viewport_height:
+            raise RuntimeError(f"{label} keyboard field is obscured outside the viewport: {expected} {box}")
+        if index < len(expected_order) - 1:
+            page.keyboard.press("Tab")
+
+
+def _assert_viewer_horizontal_context(page: Page, *, label: str) -> None:
+    """The phone viewer must support touch and keyboard access to every weekday."""
+
+    table_scroll = page.locator(".table-scroll")
+    table_scroll.wait_for(state="visible")
+    metrics = table_scroll.evaluate(
+        """element => ({
+          clientWidth: element.clientWidth,
+          scrollWidth: element.scrollWidth,
+          tabIndex: element.tabIndex,
+          before: element.scrollLeft,
+        })"""
+    )
+    if metrics["scrollWidth"] <= metrics["clientWidth"] or metrics["tabIndex"] != 0:
+        raise RuntimeError(f"{label} does not expose a focusable horizontal roster viewport: {metrics}")
+    table_scroll.focus()
+    focus_state = table_scroll.evaluate(
+        """element => ({
+          focusVisible: element.matches(':focus-visible'),
+          outlineWidth: Number.parseFloat(getComputedStyle(element).outlineWidth) || 0,
+          boxShadow: getComputedStyle(element).boxShadow,
+        })"""
+    )
+    if not focus_state["focusVisible"] or (
+        focus_state["outlineWidth"] < 1 and focus_state["boxShadow"] in {"", "none"}
+    ):
+        raise RuntimeError(f"{label} horizontal viewer lacks a visible keyboard focus state: {focus_state}")
+    for _ in range(6):
+        page.keyboard.press("ArrowRight")
+    page.wait_for_timeout(80)
+    after_keyboard = table_scroll.evaluate("element => element.scrollLeft")
+    if after_keyboard <= 0:
+        raise RuntimeError(f"{label} cannot reach later weekdays with the keyboard: {metrics}")
+    table_scroll.evaluate("element => { element.scrollLeft = element.scrollWidth; }")
+    sticky_overlaps = table_scroll.evaluate(
+        """root => {
+          const sticky = [...root.querySelectorAll('*')].filter(element => getComputedStyle(element).position === 'sticky');
+          return sticky.flatMap((first, i) => sticky.slice(i + 1).flatMap(second => {
+            const a = first.getBoundingClientRect(); const b = second.getBoundingClientRect();
+            const w = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+            const h = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+            return w * h > 4 ? [{first: first.textContent?.trim().slice(0, 30), second: second.textContent?.trim().slice(0, 30), area: w * h}] : [];
+          })).slice(0, 6);
+        }"""
+    )
+    if sticky_overlaps:
+        raise RuntimeError(f"{label} sticky roster context overlaps while scrolling: {sticky_overlaps}")
+
+
+def _assert_200_percent_public_reflow(page: Page, *, url: str, label: str) -> None:
+    response = page.goto(url, wait_until="networkidle")
+    if response is None or response.status != 200:
+        raise RuntimeError(f"{label} returned an unexpected response: {response}")
+    page.add_style_tag(content="html { font-size: 200% !important; }")
+    page.evaluate("new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
+    _assert_document_fits_viewport(page, label=label)
+    _assert_mobile_touch_and_reflow(page, label=label)
+
+
 def _assert_guest_landing(page: Page, *, label: str) -> None:
     page.locator("#guestState").wait_for(state="visible")
     _assert_page_identity(page, label=label)
@@ -151,6 +356,9 @@ def _assert_guest_landing(page: Page, *, label: str) -> None:
         if control_box is None or control_box["width"] < 43.5 or control_box["height"] < 43.5:
             raise RuntimeError(f"{label} welcome-music control is smaller than the 44 CSS pixel target: {control_box}")
     _assert_document_fits_viewport(page, label=label)
+    if int((page.viewport_size or {}).get("width", 0)) <= 900:
+        _assert_mobile_touch_and_reflow(page, label=label)
+    _collect_performance_evidence(page, label=label)
 
 
 def _fill_support_report(page: Page) -> None:
@@ -180,6 +388,9 @@ def _assert_public_support(
         raise RuntimeError(f"{source} support route is not protected by Cache-Control: no-store.")
     form = page.locator("#publicSupportForm")
     form.wait_for(state="visible")
+    if int((page.viewport_size or {}).get("width", 0)) <= 900:
+        _assert_mobile_touch_and_reflow(page, label=f"{source} support")
+        _assert_support_keyboard_flow(page, label=f"{source} support")
     theme_state = page.evaluate(
         """() => ({
           preference: document.documentElement.dataset.themePreference,
@@ -232,6 +443,8 @@ def _assert_public_support(
         storage[key] for key in ("session", "indexed", "caches")
     ):
         raise RuntimeError(f"{source} support created persistent browser storage: {storage}")
+
+    _collect_performance_evidence(page, label=f"{source} support")
 
     page.reload(wait_until="networkidle")
     if page.locator("#supportExpected").input_value() or not page.locator("#supportResult").is_hidden():
@@ -453,7 +666,10 @@ def _assert_read_only_roster(page: Page, *, expected_names: set[str], label: str
             raise RuntimeError(f"{label} does not explain how to reach every weekday on a phone.")
         if page.locator(".table-scroll").get_attribute("aria-describedby") != "rosterScrollHint":
             raise RuntimeError(f"{label} does not associate its mobile scroll instruction with the roster.")
+        _assert_viewer_horizontal_context(page, label=label)
+        _assert_mobile_touch_and_reflow(page, label=label)
     _assert_document_fits_viewport(page, label=label)
+    _collect_performance_evidence(page, label=label)
 
 
 def main() -> int:
@@ -488,10 +704,12 @@ def main() -> int:
         page_errors: list[str] = []
         support_evidence: list[dict[str, object]] = []
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=True)
+            browser = _launch_real_chrome(playwright)
 
-            support_context = browser.new_context(
-                viewport={"width": 1280, "height": 900},
+            support_context = _new_mobile_context(
+                browser,
+                width=390,
+                height=844,
                 color_scheme="light",
                 accept_downloads=True,
             )
@@ -634,7 +852,12 @@ def main() -> int:
             page.screenshot(path=str(EVIDENCE_DIR / "desktop-dark.png"), full_page=True)
             desktop.close()
 
-            mobile = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="light")
+            mobile = _new_mobile_context(
+                browser,
+                width=390,
+                height=844,
+                color_scheme="light",
+            )
             mobile_page = mobile.new_page()
             _attach_error_collectors(
                 mobile_page,
@@ -660,8 +883,10 @@ def main() -> int:
             mobile_page.screenshot(path=str(EVIDENCE_DIR / "mobile-light.png"), full_page=True)
             mobile.close()
 
-            compact = browser.new_context(
-                viewport={"width": 320, "height": 760},
+            compact = _new_mobile_context(
+                browser,
+                width=320,
+                height=760,
                 color_scheme="dark",
                 reduced_motion="reduce",
             )
@@ -696,6 +921,90 @@ def main() -> int:
                 full_page=True,
             )
             compact.close()
+
+            for width, height, label in (
+                (360, 800, "mobile-360"),
+                (430, 932, "mobile-430"),
+                (768, 1024, "tablet-768"),
+                (820, 1180, "tablet-820"),
+                (844, 390, "mobile-landscape-844x390"),
+            ):
+                context = _new_mobile_context(
+                    browser,
+                    width=width,
+                    height=height,
+                    color_scheme="light",
+                )
+                context_page = context.new_page()
+                _attach_error_collectors(
+                    context_page,
+                    label=label,
+                    console_errors=console_errors,
+                    page_errors=page_errors,
+                )
+                context_page.goto(settings.base_url, wait_until="networkidle")
+                _assert_guest_landing(context_page, label=f"{label} guest landing")
+                context_page.goto(receipt.share_url, wait_until="networkidle")
+                _assert_read_only_roster(
+                    context_page,
+                    expected_names=expected_names,
+                    label=f"{label} shared roster",
+                )
+                context.close()
+
+            forced = _new_mobile_context(
+                browser,
+                width=412,
+                height=915,
+                color_scheme="light",
+                forced_colors="active",
+            )
+            forced_page = forced.new_page()
+            _attach_error_collectors(
+                forced_page,
+                label="mobile-412-forced-colours",
+                console_errors=console_errors,
+                page_errors=page_errors,
+            )
+            forced_page.goto(settings.base_url, wait_until="networkidle")
+            _assert_guest_landing(forced_page, label="412px forced-colours guest landing")
+            if not forced_page.evaluate("matchMedia('(forced-colors: active)').matches"):
+                raise RuntimeError("412px public page did not enter forced-colours mode.")
+            theme_control = forced_page.get_by_test_id("public-theme-control")
+            theme_control.focus()
+            forced_focus = theme_control.evaluate(
+                """element => ({
+                  focusVisible: element.matches(':focus-visible'),
+                  outlineWidth: Number.parseFloat(getComputedStyle(element).outlineWidth) || 0,
+                  borderWidth: Number.parseFloat(getComputedStyle(element).borderWidth) || 0,
+                })"""
+            )
+            if not forced_focus["focusVisible"] or max(
+                forced_focus["outlineWidth"], forced_focus["borderWidth"]
+            ) < 1:
+                raise RuntimeError(f"Forced-colours theme control lost focus affordance: {forced_focus}")
+            forced.close()
+
+            zoom = _new_mobile_context(
+                browser,
+                width=360,
+                height=800,
+                color_scheme="light",
+            )
+            zoom_page = zoom.new_page()
+            _attach_error_collectors(
+                zoom_page,
+                label="mobile-360-text-200",
+                console_errors=console_errors,
+                page_errors=page_errors,
+            )
+            for url, label in (
+                (settings.base_url, "360px 200% public entrance"),
+                (f"{settings.base_url.rstrip('/')}/support#public", "360px 200% public support"),
+                (receipt.share_url, "360px 200% public viewer"),
+            ):
+                _assert_200_percent_public_reflow(zoom_page, url=url, label=label)
+            zoom.close()
             browser.close()
 
         if console_errors or page_errors:
@@ -706,8 +1015,14 @@ def main() -> int:
 
         service.revoke_share(receipt.share_id)
         receipt = None
+        PERFORMANCE_EVIDENCE_PATH.write_text(
+            json.dumps(PERFORMANCE_EVIDENCE, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
         print(
-            "PASS public gateway: browser-only public/viewer support, entrance/read-only share flow, system-resolved binary Light/Dark themes, "
+            "PASS public gateway in a real Chrome channel: browser-only public/viewer support, entrance/read-only share flow, "
+            "320/360/390/412/430px phones, 768/820px tablets, 844x390 landscape, 200% text, forced colours, "
+            "focusable horizontal viewer context, performance evidence, system-resolved binary Light/Dark themes, "
             "manual verse refresh, resolved/blocked welcome-audio paths, one-action recovery, quiet continuation navigation, "
             "48px CTAs, reduced motion, no page overflow, and no browser errors. "
             "Unified Guest behavior is verified separately by "
@@ -716,6 +1031,7 @@ def main() -> int:
         print(f"Gateway evidence: {GATEWAY_EVIDENCE_DIR}")
         print(f"Viewer evidence: {EVIDENCE_DIR}")
         print(f"Support evidence: {support_evidence}")
+        print(f"Performance evidence: {PERFORMANCE_EVIDENCE_PATH}")
         return 0
     finally:
         if receipt is not None and workflow is not None and service is not None:

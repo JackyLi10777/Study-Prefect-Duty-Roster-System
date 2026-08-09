@@ -157,7 +157,8 @@ def test_mobile_keyboard_uses_visual_viewport_and_disposes_route_listeners() -> 
     assert "signal: controller.signal" in shell
     assert "controller.abort()" in shell
     assert "sy-mobile-keyboard-open" in shell
-    assert "tabbar.inert = unavailable" in shell
+    assert "const effectiveUnavailable = unavailable || drawerOwnsTabbar" in shell
+    assert "tabbar.inert = effectiveUnavailable" in shell
     assert "tabbar.setAttribute('aria-hidden', 'true')" in shell
     assert "setTabbarUnavailable(false)" in shell
     assert "window.clearTimeout(revealTimer)" in shell
@@ -360,3 +361,74 @@ def test_concurrent_statuses_share_one_non_overlapping_stack() -> None:
     assert ".sy-status-stack { position: sticky" in theme
     assert ".sy-practice-banner { position: relative" in theme
     assert ".sy-maintenance-banner { position: relative" in theme
+
+
+def test_mobile_browser_verifier_catches_quick_setting_shape_and_drawer_leaks() -> None:
+    verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_mobile.py").read_text(
+        encoding="utf-8"
+    )
+
+    for contract in (
+        "_assert_drawer_quick_settings_contract",
+        "borderTopLeftRadius",
+        "single-glyph-column",
+        "duplicate bottom X controls",
+        "element.matches(':focus-visible')",
+        "_assert_no_interactive_overlap",
+        "_assert_drawer_cleanup_cycles",
+        "cycles=20",
+        "pointerLights",
+        "mobile-drawer-close",
+    ):
+        assert contract in verifier
+
+
+def test_mobile_verifiers_use_real_touch_chrome_and_collect_release_evidence() -> None:
+    nicegui = (PROJECT_ROOT / "scripts" / "verify_nicegui_mobile.py").read_text(
+        encoding="utf-8"
+    )
+    public = (PROJECT_ROOT / "scripts" / "verify_public_roster_viewer.py").read_text(
+        encoding="utf-8"
+    )
+
+    for source in (nicegui, public):
+        assert 'os.getenv("SING_YIN_PLAYWRIGHT_CHANNEL", "chrome")' in source
+        assert "SING_YIN_PLAYWRIGHT_ALLOW_BUNDLED_CHROMIUM" in source
+        assert "is_mobile=True" in source
+        assert "has_touch=True" in source
+        assert "device_scale_factor=2" in source
+        assert "largest-contentful-paint" in source
+        assert "layout-shift" in source
+        assert "longtask" in source
+        assert "resourceBytes" in source
+        assert "forced_colors" in source
+        assert "font-size: 200%" in source
+
+    for width in (320, 360, 390, 412, 430, 768, 820, 844):
+        assert str(width) in nicegui
+        assert str(width) in public
+    assert "VISUAL_VIEWPORT_TEST_DOUBLE" in nicegui
+    assert "__sySetTestVisualViewport" in nicegui
+    assert "sy-mobile-keyboard-open" in nicegui
+    assert "_assert_gsap_failure_static_end_state" in nicegui
+    assert "dataset.syMotion === 'unavailable'" in nicegui
+
+
+def test_public_mobile_verifier_exercises_support_keyboard_and_viewer_context() -> None:
+    verifier = (PROJECT_ROOT / "scripts" / "verify_public_roster_viewer.py").read_text(
+        encoding="utf-8"
+    )
+
+    for contract in (
+        "_assert_support_keyboard_flow",
+        "supportExpected",
+        "supportActual",
+        "supportSteps",
+        "_assert_viewer_horizontal_context",
+        "scrollWidth",
+        "scrollLeft",
+        "focus-visible",
+        "sticky roster context overlaps",
+        "_assert_200_percent_public_reflow",
+    ):
+        assert contract in verifier

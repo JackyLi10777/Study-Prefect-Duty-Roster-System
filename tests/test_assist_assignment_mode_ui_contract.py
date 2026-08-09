@@ -40,7 +40,9 @@ def test_roster_generation_uses_stable_mode_code_and_preserves_existing_mode() -
     assert mode_keywords[0].value.func.id == "_assist_assignment_mode_code"
 
     assert 'week.get("assistAssignmentMode")' in source
-    assert "initial_week.isoformat(),\n                        LEGACY_FIXED_WEEKDAY" in source
+    assert 'initial_record.get("assistAssignmentMode") if initial_record else None' in source
+    assert "record = selected_week_record(selected)" in source
+    assert 'record.get("assistAssignmentMode") if record else None' in source
     assert "LEGACY_FIXED_WEEKDAY: t(\"assist_assignment_mode_legacy\")" in source
     assert "FLEXIBLE_WEEKLY: t(\"assist_assignment_mode_flexible\")" in source
     assert "aria-describedby=assist-mode-description" in source

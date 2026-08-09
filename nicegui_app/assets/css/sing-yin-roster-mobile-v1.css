@@ -1,0 +1,279 @@
+/* Mobile-first roster operations -----------------------------------------
+   This route-owned layer adapts the existing roster workflow without
+   changing the shared shell, domain policy, or transaction model. */
+
+.sy-roster-rules-toggle,
+.sy-draft-mobile--phone,
+.sy-draft-mobile--tablet,
+.sy-draft-mobile-save-dock,
+.sy-draft-mobile-save-dock--empty {
+  display: none;
+}
+
+.sy-draft-mobile-save-dock.sy-draft-mobile-save-dock--empty {
+  display: none !important;
+}
+
+.sy-roster-generation-card {
+  container-type: inline-size;
+}
+
+.sy-roster-history-cta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.sy-draft-mobile-day-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.sy-draft-mobile-day-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.sy-draft-mobile-day-tab {
+  flex: 0 0 auto;
+  min-width: 76px !important;
+  min-height: 48px !important;
+  padding-inline: 12px !important;
+  border: 1px solid var(--sy-line) !important;
+  border-radius: 14px !important;
+  color: var(--sy-muted) !important;
+  background: var(--sy-surface) !important;
+  scroll-snap-align: start;
+}
+
+.sy-draft-mobile-day-tab .q-btn__content {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  text-align: start;
+}
+
+.sy-draft-mobile-day-tab-title {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.sy-draft-mobile-day-tab-summary {
+  color: var(--sy-muted);
+  font-size: 0.69rem;
+  line-height: 1.25;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sy-draft-mobile-day-tab--active {
+  border-color: var(--sy-role-action) !important;
+  color: var(--sy-role-action-strong) !important;
+  background: var(--sy-role-action-soft) !important;
+  box-shadow: inset 0 -3px 0 var(--sy-role-action);
+}
+
+.sy-draft-mobile-day-tab .q-badge {
+  min-width: 20px;
+  justify-content: center;
+}
+
+.sy-draft-editor-sheet {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  padding: 20px;
+}
+
+.sy-draft-editor-sheet-header {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--sy-line);
+  background: var(--sy-surface);
+}
+
+@media (max-width: 900px) {
+  .sy-roster-generation-card {
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  .sy-roster-step-week { order: 1; }
+  .sy-roster-step-availability { order: 2; }
+  .sy-roster-rules-toggle,
+  .sy-roster-step-rules { order: 3; }
+  .sy-roster-step-readiness { order: 4; }
+  .sy-roster-step-generate { order: 5; }
+
+  .sy-roster-rules-toggle {
+    display: inline-flex;
+    width: 100%;
+    min-height: 48px;
+    margin-top: 14px;
+  }
+
+  .sy-roster-step-rules {
+    display: none;
+  }
+
+  .sy-roster-generation-card.sy-roster-rules-open .sy-roster-step-rules {
+    display: block;
+  }
+
+  .sy-roster-advanced-chart {
+    display: none !important;
+  }
+
+  .sy-draft-grid-scroll,
+  .sy-draft-mobile,
+  .sy-draft-editor-panel--desktop,
+  .sy-draft-pending-bar--desktop {
+    display: none !important;
+  }
+
+  .sy-draft-mobile-save-dock {
+    position: sticky;
+    z-index: 12;
+    bottom: calc(var(--sy-mobile-tabbar-height) + env(safe-area-inset-bottom) + 8px);
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--sy-line-strong);
+    border-radius: 16px;
+    color: var(--sy-ink);
+    background: var(--sy-surface);
+    box-shadow: 0 12px 34px rgba(20, 35, 48, .18);
+  }
+
+  .sy-draft-mobile-save-dock .q-btn {
+    flex: 0 0 auto;
+    min-height: 46px;
+  }
+
+  .sy-mobile-keyboard-open .sy-draft-mobile-save-dock {
+    position: static;
+    box-shadow: none;
+  }
+
+  .sy-roster-generate-dock {
+    position: sticky;
+    z-index: 10;
+    bottom: calc(var(--sy-mobile-tabbar-height) + env(safe-area-inset-bottom) + 8px);
+    width: 100%;
+    min-height: 50px !important;
+    box-shadow: 0 12px 28px rgba(20, 35, 48, .18);
+  }
+
+  .sy-mobile-keyboard-open .sy-roster-generate-dock {
+    position: static;
+    box-shadow: none;
+  }
+
+  .sy-roster-history-cta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sy-roster-history-cta .q-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  .sy-draft-mobile--phone {
+    display: grid !important;
+    gap: 12px;
+  }
+
+  .sy-draft-mobile-day-tabs {
+    position: sticky;
+    z-index: 4;
+    top: 64px;
+    background: var(--sy-v2-canvas);
+  }
+
+  .sy-draft-mobile-save-dock {
+    display: flex;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 900px) {
+  .sy-draft-mobile--tablet {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 14px;
+  }
+
+  .sy-draft-mobile-save-dock {
+    display: flex;
+  }
+}
+
+@media (max-width: 430px) {
+  .sy-draft-mobile-day-tab {
+    min-width: 68px !important;
+    padding-inline: 10px !important;
+  }
+
+  .sy-draft-mobile-save-dock {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sy-draft-mobile-save-dock .q-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .sy-draft-mobile-day-tabs {
+    top: 56px;
+  }
+
+  .sy-draft-mobile-save-dock,
+  .sy-roster-generate-dock {
+    bottom: calc(var(--sy-mobile-tabbar-height) + env(safe-area-inset-bottom) + 4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sy-draft-mobile-day-tab,
+  .sy-draft-mobile-save-dock,
+  .sy-roster-generate-dock {
+    scroll-behavior: auto;
+    transition: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .sy-draft-mobile-day-tab,
+  .sy-draft-mobile-save-dock,
+  .sy-draft-editor-sheet,
+  .sy-roster-history-cta {
+    border-color: CanvasText !important;
+    color: CanvasText !important;
+    background: Canvas !important;
+    box-shadow: none !important;
+  }
+
+  .sy-draft-mobile-day-tab--active {
+    outline: 3px solid Highlight;
+    outline-offset: -3px;
+  }
+}

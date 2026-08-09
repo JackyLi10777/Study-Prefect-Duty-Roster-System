@@ -1601,6 +1601,22 @@ class RosterLifecycleMixin:
                 else None
             )
 
+    def roster_week_for_start(self, week_start: date) -> dict[str, object] | None:
+        """Return the exact week selected by an operator without scanning history."""
+
+        with self._session() as session:
+            row = session.scalar(
+                select(RosterWeekRecord)
+                .where(RosterWeekRecord.week_start == week_start)
+                .order_by(RosterWeekRecord.id.desc())
+                .limit(1)
+            )
+            return (
+                self._roster_week_output(row, self._closed_days(session, row.id))
+                if row is not None
+                else None
+            )
+
     def roster_week_history(
         self,
         *,

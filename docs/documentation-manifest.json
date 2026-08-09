@@ -28,6 +28,7 @@
     ],
     "runbook": [
       "docs/CLOUDFLARE_REMOTE_ACCESS_SETUP.md",
+      "docs/MOBILE_OPERATIONS_ACCEPTANCE.md",
       "docs/OFFSITE_DISASTER_RECOVERY.md",
       "docs/OPERATOR_GUIDE.md",
       "docs/PUBLIC_ROSTER_VIEWER.md",
@@ -95,6 +96,7 @@
     "design-language": "Professional_Design_System.md",
     "frontend-composition-and-iteration": "docs/FRONTEND_ARCHITECTURE.md",
     "operator-workflow": "docs/OPERATOR_GUIDE.md",
+    "mobile-operations-acceptance": "docs/MOBILE_OPERATIONS_ACCEPTANCE.md",
     "draft-grid-and-week-closure-workflow": "docs/ROSTER_DRAFT_EDITING.md",
     "public-viewer-share-lifecycle": "docs/PUBLIC_ROSTER_VIEWER.md",
     "release-deployment-and-compatible-rollback": "docs/RELEASE_HANDOVER.md",

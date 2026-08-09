@@ -66,6 +66,15 @@ _DRAFT_VACANCY_ALIASES = frozenset(
 )
 
 
+def _install_roster_mobile_styles() -> None:
+    """Install the route-owned responsive layer after the shared design system."""
+
+    ui.add_head_html(
+        '<link rel="stylesheet" href="/assets/css/sing-yin-roster-mobile-v1.css" '
+        'data-sy-style-layer="roster-mobile">'
+    )
+
+
 def _normalize_draft_candidate_value(value: object) -> str | None:
     """Normalize explicit vacancy aliases without treating blank input as a change."""
 
@@ -165,7 +174,14 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         for cell in row.cells
         if cell.cell_key
     }
-    candidate_selector_ref: dict[str, Any | None] = {"control": None}
+    desktop_candidate_selector_ref: dict[str, Any | None] = {"control": None}
+    mobile_candidate_selector_ref: dict[str, Any | None] = {"control": None}
+    cell_editor_dialog_ref: dict[str, Any | None] = {"control": None}
+    save_review_dialog_ref: dict[str, Any | None] = {"control": None}
+    mobile_dialog_state: dict[str, bool] = {"open": False, "refreshing": False}
+    mobile_day_state: dict[str, str] = {
+        "value": presentation.days[0].day.name if presentation.days else ""
+    }
     reason_state: dict[str, str] = {"value": ""}
     announcement_state: dict[str, str] = {"value": ""}
     candidate_cache: dict[str, list[dict[str, object]] | None] = {}
@@ -276,19 +292,30 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         )
         return candidate_cache[cell.cell_key]
 
-    def open_cell_editor(cell_key: str) -> None:
+    def open_cell_editor(cell_key: str, *, compact: bool = False) -> None:
         if edit_session.move_source and edit_session.move_source != cell_key:
             stage_move(edit_session.move_source, cell_key)
             return
         edit_session.selected_cell = cell_key
-        editor.refresh()
-        selector = candidate_selector_ref["control"]
+        mobile_dialog_state["open"] = compact
+        refresh_editor()
+        if compact:
+            dialog = cell_editor_dialog_ref["control"]
+            if dialog is not None:
+                dialog.open()
+        selector_ref = (
+            mobile_candidate_selector_ref
+            if compact
+            else desktop_candidate_selector_ref
+        )
+        selector = selector_ref["control"]
         if selector is not None:
-            selector.run_method("focus")
+            ui.timer(0.05, lambda: selector.run_method("focus"), once=True)
 
     def focus_cell(cell_key: str) -> None:
         edit_session.selected_cell = cell_key
-        editor.refresh()
+        mobile_dialog_state["open"] = False
+        refresh_editor()
         ui.run_javascript(
             "requestAnimationFrame(() => document.querySelector("
             f"'[data-cell-key=\"{attr(cell_key)}\"]'"
@@ -328,6 +355,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
     def handle_cell_key(event: Any, cell_key: str) -> None:
         event_args = event.args if isinstance(event.args, dict) else {}
         key_name = str(event_args.get("key", "")).lower()
+        compact = bool(event_args.get("compact", False))
         if key_name in {"arrowup", "arrowdown", "arrowleft", "arrowright"}:
             neighbor = neighboring_cell(cell_key, key_name)
             if neighbor:
@@ -341,12 +369,13 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                 pending_cells.get(cell_key, original_assignments.get(cell_key)) is not None
             ):
                 edit_session.move_source = cell_key
-                editor.refresh()
+                refresh_editor()
         elif key_name in {"enter", "f2"}:
-            open_cell_editor(cell_key)
+            open_cell_editor(cell_key, compact=compact)
         elif key_name == "escape" and edit_session.selected_cell == cell_key:
+            mobile_dialog_state["open"] = False
             edit_session.selected_cell = None
-            editor.refresh()
+            refresh_editor()
 
     def handle_pointer_move(event: Any) -> None:
         event_args = event.args if isinstance(event.args, dict) else {}
@@ -376,7 +405,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                 candidate_ids.add(original_id)
             if replacement_id not in candidate_ids:
                 ui.notify(t("draft_candidate_invalid"), type="warning")
-                editor.refresh()
+                refresh_editor()
                 return
         current_id = pending_cells.get(cell_key, original_assignments[cell_key])
         if replacement_id == current_id:
@@ -388,19 +417,19 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             ui.notify(message, type="info")
         else:
             announcement_state["value"] = t("draft_assignment_staged")
-        editor.refresh()
+        refresh_editor()
 
     def stage_move(source_key: str, target_key: str) -> None:
         edit_session.move_source = None
         if source_key == target_key or slot_is_unavailable(target_key):
             ui.notify(t("draft_move_invalid_target"), type="warning")
-            editor.refresh()
+            refresh_editor()
             return
         source_id = edit_session.effective_assignment(source_key)
         target_id = edit_session.effective_assignment(target_key)
         if source_id is None:
             ui.notify(t("draft_move_source_empty"), type="warning")
-            editor.refresh()
+            refresh_editor()
             return
         target_candidates = load_candidates(cells_by_key[target_key])
         source_candidates = load_candidates(cells_by_key[source_key]) if target_id else []
@@ -416,12 +445,12 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         }
         if source_id not in target_ids or (target_id is not None and target_id not in source_ids):
             ui.notify(t("draft_move_policy_rejected"), type="warning")
-            editor.refresh()
+            refresh_editor()
             return
         mutation = edit_session.stage_move(source_key, target_key)
         if mutation.kind in {"blocked", "noop", "empty"}:
             ui.notify(t("draft_move_invalid_target"), type="warning")
-            editor.refresh()
+            refresh_editor()
             return
         message = (
             t("draft_exchange_staged")
@@ -430,13 +459,13 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         )
         announcement_state["value"] = message
         ui.notify(message, type="info")
-        editor.refresh()
+        refresh_editor()
 
     def toggle_move_source(cell_key: str) -> None:
         edit_session.move_source = (
             None if edit_session.move_source == cell_key else cell_key
         )
-        editor.refresh()
+        refresh_editor()
 
     def stage_slot(cell_key: str, unavailable: bool) -> None:
         if not edit_session.stage_slot(cell_key, unavailable):
@@ -446,7 +475,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             if unavailable
             else "draft_slot_state_staged_open"
         )
-        editor.refresh()
+        refresh_editor()
 
     def stage_day(day: SchoolDay, closed: bool) -> None:
         if not edit_session.stage_day(day.name, closed):
@@ -455,26 +484,26 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             "draft_day_state_staged_closed" if closed else "draft_day_state_staged_open",
             day=day_label(day),
         )
-        editor.refresh()
+        refresh_editor()
 
     def undo_pending() -> None:
         if not edit_session.undo():
             return
         announcement_state["value"] = t("draft_undo_announced")
-        editor.refresh()
+        refresh_editor()
 
     def redo_pending() -> None:
         if not edit_session.redo():
             return
         announcement_state["value"] = t("draft_redo_announced")
-        editor.refresh()
+        refresh_editor()
 
     def discard_pending() -> None:
         edit_session.discard()
         reason_state["value"] = ""
         ui.run_javascript("window.__syDraftDirty = false")
         discard_dialog.close()
-        editor.refresh()
+        refresh_editor()
 
     def reload_latest() -> None:
         conflict_dialog.close()
@@ -672,9 +701,28 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             ui.run_javascript("window.__syDraftDirty = false")
             ui.navigate.reload()
 
+    def close_mobile_editor() -> None:
+        cell_key = edit_session.selected_cell
+        mobile_dialog_state["open"] = False
+        dialog = cell_editor_dialog_ref["control"]
+        if dialog is not None:
+            dialog.close()
+        edit_session.selected_cell = None
+        refresh_editor()
+        if cell_key:
+            ui.run_javascript(
+                "requestAnimationFrame(() => { const cell=document.querySelector("
+                f"'[data-cell-key=\"{attr(cell_key)}\"]'"
+                "); if (!cell) return; cell.focus({preventScroll: true}); "
+                "cell.scrollIntoView({block: 'nearest', inline: 'nearest'}); })"
+            )
+
     @ui.refreshable
     def editor() -> None:
-        candidate_selector_ref["control"] = None
+        desktop_candidate_selector_ref["control"] = None
+        mobile_candidate_selector_ref["control"] = None
+        cell_editor_dialog_ref["control"] = None
+        save_review_dialog_ref["control"] = None
         day_dialogs: dict[SchoolDay, Any] = {}
         visible_navigable_keys = [
             key
@@ -889,81 +937,168 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                         ),
                                     )
 
-                ui.label(t("draft_grid_mobile_notice")).classes(
-                    "sy-draft-mobile text-xs leading-5 text-[var(--sy-muted)] px-4 pt-4"
-                )
-                with ui.element("div").classes("sy-draft-mobile p-3"):
-                    for day_item in presentation.days:
-                        day = day_item.day
-                        with ui.element("section").classes("sy-draft-mobile-day"):
-                            with ui.row().classes("w-full items-center justify-between gap-3"):
-                                with ui.column().classes("gap-0"):
-                                    ui.label(day_label(day)).classes("font-semibold")
-                                    if day_item.duty_date:
-                                        ui.label(day_item.duty_date.strftime("%Y-%m-%d")).classes(
-                                            "text-xs text-[var(--sy-muted)]"
-                                        )
-                                action(
-                                    t(
-                                        "draft_day_reopen_action"
-                                        if day_is_closed(day)
-                                        else "draft_day_close_action"
-                                    ),
-                                    icon="event_available" if day_is_closed(day) else "event_busy",
-                                    on_click=day_dialogs[day].open,
-                                    variant="quiet",
-                                )
-                            if day_is_closed(day):
-                                ui.label(t("draft_day_closed")).classes(
-                                    "sy-fg-attention font-semibold py-4"
-                                )
-                            else:
-                                for row in presentation.rows:
-                                    cell = next(item for item in row.cells if item.day == day)
-                                    name, meta, state = cell_display(cell)
-                                    classes = f"sy-draft-mobile-cell sy-draft-mobile-cell--{state}"
-                                    if edit_session.selected_cell == cell.cell_key:
-                                        classes += " sy-draft-mobile-cell--selected"
-                                    if cell.cell_key in pending_cells:
-                                        classes += " sy-draft-mobile-cell--pending"
-                                    if cell.cell_key in pending_slots:
-                                        classes += " sy-draft-mobile-cell--pending"
-                                    if edit_session.move_source == cell.cell_key:
-                                        classes += " sy-draft-mobile-cell--move-source"
-                                    interaction_props = (
-                                        'role="gridcell" aria-disabled="true" tabindex="-1"'
-                                        if state == "closed"
-                                        else 'role="gridcell" tabindex="0"'
-                                    )
-                                    button = ui.element("button").classes(classes).props(
-                                        f'type="button" aria-label="{attr(row.spec.display_label + ", " + name)}" '
-                                        f'data-cell-key="{attr(cell.cell_key)}" '
-                                        + interaction_props
-                                    )
-                                    with button:
-                                        ui.label(row.spec.display_label).classes("text-sm font-semibold")
-                                        with ui.column().classes("gap-0"):
-                                            ui.label(name).classes("sy-draft-cell-name")
-                                            if meta:
-                                                ui.label(meta).classes("sy-draft-cell-meta")
-                                    if state != "closed":
-                                        button.on(
-                                            "click",
-                                            lambda _event=None, key=cell.cell_key: open_cell_editor(key),
-                                        )
-                                        button.on(
-                                            "keydown",
-                                            lambda event, key=cell.cell_key: handle_cell_key(event, key),
-                                            args=["key"],
-                                            js_handler=(
-                                                "(event) => { if (['Enter', 'F2', 'Escape', ' ', 'ArrowUp', "
-                                                "'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) { "
-                                                "event.preventDefault(); event.stopPropagation(); "
-                                                "emit({key: event.key}); } }"
-                                            ),
-                                        )
+                def select_mobile_day(day_name: str) -> None:
+                    mobile_day_state["value"] = day_name
+                    refresh_editor()
+                    ui.run_javascript(
+                        "requestAnimationFrame(() => document.querySelector("
+                        f"'[data-mobile-day-tab=\"{attr(day_name)}\"]'"
+                        ")?.focus({preventScroll: true}))"
+                    )
 
-            with ui.element("div").classes("sy-draft-editor-panel"):
+                def mobile_day_summary(day: SchoolDay) -> tuple[int, int, int, bool]:
+                    cells = [
+                        cell
+                        for row in presentation.rows
+                        for cell in row.cells
+                        if cell.day == day and cell.cell_key
+                    ]
+                    keys = {cell.cell_key for cell in cells}
+                    pending = (
+                        len(keys.intersection(pending_cells))
+                        + len(keys.intersection(pending_slots))
+                        + int(day.name in pending_days)
+                    )
+                    closed_all_day = day_is_closed(day)
+                    unavailable = sum(
+                        1 for cell in cells if slot_is_unavailable(cell.cell_key)
+                    )
+                    vacancies = sum(
+                        1
+                        for cell in cells
+                        if not slot_is_unavailable(cell.cell_key)
+                        and cell_display(cell)[2] == "vacant"
+                    )
+                    return pending, vacancies, unavailable, closed_all_day
+
+                def render_mobile_day(day_item: Any) -> None:
+                    day = day_item.day
+                    with ui.element("section").classes("sy-draft-mobile-day").props(
+                        f'data-testid="draft-mobile-day-{attr(day.name.lower())}"'
+                    ):
+                        with ui.row().classes("w-full items-center justify-between gap-3"):
+                            with ui.column().classes("gap-0"):
+                                ui.label(day_label(day)).classes("font-semibold")
+                                if day_item.duty_date:
+                                    ui.label(day_item.duty_date.strftime("%Y-%m-%d")).classes(
+                                        "text-xs text-[var(--sy-muted)]"
+                                    )
+                            action(
+                                t(
+                                    "draft_day_reopen_action"
+                                    if day_is_closed(day)
+                                    else "draft_day_close_action"
+                                ),
+                                icon="event_available" if day_is_closed(day) else "event_busy",
+                                on_click=day_dialogs[day].open,
+                                variant="quiet",
+                            )
+                        if day_is_closed(day):
+                            ui.label(t("draft_day_closed")).classes(
+                                "sy-fg-attention font-semibold py-4"
+                            )
+                            return
+                        for row in presentation.rows:
+                            cell = next(item for item in row.cells if item.day == day)
+                            name, meta, state = cell_display(cell)
+                            classes = f"sy-draft-mobile-cell sy-draft-mobile-cell--{state}"
+                            if edit_session.selected_cell == cell.cell_key:
+                                classes += " sy-draft-mobile-cell--selected"
+                            if cell.cell_key in pending_cells or cell.cell_key in pending_slots:
+                                classes += " sy-draft-mobile-cell--pending"
+                            if edit_session.move_source == cell.cell_key:
+                                classes += " sy-draft-mobile-cell--move-source"
+                            interaction_props = (
+                                'role="gridcell" aria-disabled="true" tabindex="-1"'
+                                if state == "closed"
+                                else 'role="gridcell" tabindex="0"'
+                            )
+                            button = ui.element("button").classes(classes).props(
+                                f'type="button" aria-label="{attr(day_label(day) + ", " + row.spec.display_label + ", " + name)}" '
+                                f'data-cell-key="{attr(cell.cell_key)}" '
+                                + interaction_props
+                            )
+                            with button:
+                                ui.label(row.spec.display_label).classes("text-sm font-semibold")
+                                with ui.column().classes("gap-0"):
+                                    ui.label(name).classes("sy-draft-cell-name")
+                                    if meta:
+                                        ui.label(meta).classes("sy-draft-cell-meta")
+                            if state != "closed":
+                                button.on(
+                                    "click",
+                                    lambda _event=None, key=cell.cell_key: open_cell_editor(
+                                        key, compact=True
+                                    ),
+                                )
+                                button.on(
+                                    "keydown",
+                                    lambda event, key=cell.cell_key: handle_cell_key(event, key),
+                                    args=["key", "compact"],
+                                    js_handler=(
+                                        "(event) => { if (['Enter', 'F2', 'Escape', ' ', 'ArrowUp', "
+                                        "'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) { "
+                                        "event.preventDefault(); event.stopPropagation(); "
+                                        "emit({key: event.key, compact: true}); } }"
+                                    ),
+                                )
+
+                ui.label(t("draft_grid_mobile_notice")).classes(
+                    "sy-draft-mobile--phone text-xs leading-5 text-[var(--sy-muted)] px-1"
+                )
+                with ui.element("div").classes("sy-draft-mobile--phone"):
+                    with ui.element("nav").classes("sy-draft-mobile-day-tabs").props(
+                        f'aria-label="{attr(t("draft_preview"))}" data-testid=draft-mobile-day-tabs'
+                    ):
+                        for day_item in presentation.days:
+                            day = day_item.day
+                            pending, vacancies, unavailable, closed_all_day = (
+                                mobile_day_summary(day)
+                            )
+                            classes = "sy-draft-mobile-day-tab"
+                            if mobile_day_state["value"] == day.name:
+                                classes += " sy-draft-mobile-day-tab--active"
+                            summary = (
+                                t("draft_mobile_day_closed_summary", pending=pending)
+                                if closed_all_day
+                                else t(
+                                    "draft_mobile_day_summary",
+                                    pending=pending,
+                                    vacancies=vacancies,
+                                    unavailable=unavailable,
+                                )
+                            )
+                            tab = ui.button(
+                                on_click=lambda day_name=day.name: select_mobile_day(day_name),
+                            ).classes(classes).props(
+                                f'flat no-caps data-mobile-day-tab="{attr(day.name)}" '
+                                f'aria-label="{attr(day_label(day) + ", " + summary)}" '
+                                f'aria-current={"page" if mobile_day_state["value"] == day.name else "false"}'
+                            )
+                            with tab:
+                                ui.label(day_label(day)).classes(
+                                    "sy-draft-mobile-day-tab-title"
+                                )
+                                ui.label(summary).classes(
+                                    "sy-draft-mobile-day-tab-summary"
+                                )
+                    selected_day = next(
+                        (
+                            item
+                            for item in presentation.days
+                            if item.day.name == mobile_day_state["value"]
+                        ),
+                        presentation.days[0],
+                    )
+                    render_mobile_day(selected_day)
+
+                with ui.element("div").classes("sy-draft-mobile--tablet"):
+                    for day_item in presentation.days:
+                        render_mobile_day(day_item)
+
+            with ui.element("div").classes(
+                "sy-draft-editor-panel sy-draft-editor-panel--desktop"
+            ):
                 key = edit_session.selected_cell
                 if not key:
                     ui.label(t("draft_select_cell")).classes("font-semibold")
@@ -1032,7 +1167,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                             "data-testid=draft-candidate-search "
                             f'data-cell-key="{attr(key)}"'
                         )
-                        candidate_selector_ref["control"] = selector
+                        desktop_candidate_selector_ref["control"] = selector
                         if candidates is None:
                             selector.disable()
                             ui.label(t("draft_candidate_unavailable")).classes(
@@ -1071,11 +1206,129 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                     ),
                 ).props("name=draft-batch-reason autocomplete=off").classes("w-full")
 
+            with ui.dialog().props("persistent") as cell_editor_dialog, ui.card().classes(
+                "sy-surface sy-draft-editor-sheet"
+            ) as cell_editor_sheet:
+                cell_editor_dialog_ref["control"] = cell_editor_dialog
+                with ui.element("div").classes("sy-draft-editor-sheet-header"):
+                    ui.label(t("draft_select_cell")).classes("font-semibold")
+                    action(
+                        t("close"),
+                        icon="close",
+                        on_click=close_mobile_editor,
+                        variant="quiet",
+                        test_id="draft-mobile-editor-close",
+                    )
+                key = edit_session.selected_cell
+                if key:
+                    cell = cells_by_key[key]
+                    row = next(
+                        item
+                        for item in presentation.rows
+                        if item.spec.post == cell.post and item.spec.slot_index == cell.slot_index
+                    )
+                    ui.label(
+                        t(
+                            "draft_selected_cell",
+                            cell=f"{day_label(cell.day)} · {row.spec.display_label}",
+                        )
+                    ).classes("text-lg font-semibold")
+                    if slot_is_unavailable(key):
+                        ui.label(t("draft_slot_unavailable_body")).classes(
+                            "text-sm leading-6 text-[var(--sy-muted)]"
+                        )
+                        action(
+                            t("draft_slot_reopen_action"),
+                            icon="event_available",
+                            on_click=lambda cell_key=key: stage_slot(cell_key, False),
+                            variant="secondary",
+                            test_id="draft-slot-reopen-mobile",
+                        )
+                    else:
+                        candidates = load_candidates(cell)
+                        options: dict[str, str] = {
+                            "__vacant__": t("draft_explicit_vacancy")
+                        }
+                        if cell.prefect_id:
+                            options[str(cell.prefect_id)] = (
+                                f"{cell.prefect_name} · {t('draft_current_assignment')}"
+                            )
+                        for candidate in candidates or []:
+                            swap_suffix = (
+                                f" · {t('draft_candidate_swap_suffix')}"
+                                if candidate.get("requiresSwap")
+                                else ""
+                            )
+                            options[str(candidate["id"])] = (
+                                f"{candidate['nameZh']} ({candidate['form']} {candidate['className']})"
+                                f"{swap_suffix}"
+                            )
+                        selected_value = (
+                            pending_cells[key] or "__vacant__"
+                            if key in pending_cells
+                            else str(cell.prefect_id) if cell.prefect_id else None
+                        )
+                        selector = ui.select(
+                            label=t("draft_candidate_search"),
+                            options=options,
+                            value=selected_value,
+                            with_input=True,
+                            clearable=True,
+                            on_change=lambda event, cell_key=key: stage_candidate(
+                                cell_key, event.value
+                            ),
+                        ).classes("w-full").props(
+                            "use-input input-debounce=0 "
+                            "data-testid=draft-candidate-search-mobile "
+                            f'data-cell-key="{attr(key)}"'
+                        )
+                        mobile_candidate_selector_ref["control"] = selector
+                        if candidates is None:
+                            selector.disable()
+                            ui.label(t("draft_candidate_unavailable")).classes(
+                                "sy-fg-attention text-sm leading-6"
+                            )
+                        ui.label(t("draft_candidate_search_hint")).classes(
+                            "text-xs leading-5 text-[var(--sy-muted)]"
+                        )
+                        with ui.row().classes("sy-mobile-actions gap-2 flex-wrap"):
+                            effective_prefect = pending_cells.get(
+                                key, original_assignments.get(key)
+                            )
+                            action(
+                                t("draft_move_cancel")
+                                if edit_session.move_source == key
+                                else t("draft_move_start"),
+                                icon="close" if edit_session.move_source == key else "open_with",
+                                on_click=lambda cell_key=key: toggle_move_source(cell_key),
+                                variant="quiet",
+                                disabled=effective_prefect is None,
+                                test_id="draft-move-start-mobile",
+                            )
+                            action(
+                                t("draft_slot_unavailable_action"),
+                                icon="block",
+                                on_click=lambda cell_key=key: stage_slot(cell_key, True),
+                                variant="attention",
+                                test_id="draft-slot-unavailable-mobile",
+                            )
+                cell_editor_sheet.on(
+                    "keydown",
+                    lambda _event=None: close_mobile_editor(),
+                    args=["key"],
+                    js_handler=(
+                        "(event) => { if (event.key === 'Escape') { "
+                        "event.preventDefault(); event.stopPropagation(); emit({key: event.key}); } }"
+                    ),
+                )
+
             count = pending_count()
             ui.run_javascript(
                 f"window.__syDraftDirty = {'true' if count else 'false'}"
             )
-            with ui.element("div").classes("sy-draft-pending-bar").props(
+            with ui.element("div").classes(
+                "sy-draft-pending-bar sy-draft-pending-bar--desktop"
+            ).props(
                 "aria-live=polite data-testid=draft-pending-bar"
             ):
                 with ui.column().classes("gap-0"):
@@ -1119,6 +1372,93 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                         test_id="draft-save-all",
                     )
 
+            with ui.dialog().props("persistent") as save_review_dialog, ui.card().classes(
+                "sy-surface sy-draft-editor-sheet"
+            ):
+                save_review_dialog_ref["control"] = save_review_dialog
+                with ui.element("div").classes("sy-draft-editor-sheet-header"):
+                    ui.label(t("draft_save_all")).classes("font-semibold")
+                    action(
+                        t("close"),
+                        icon="close",
+                        on_click=save_review_dialog.close,
+                        variant="quiet",
+                        test_id="draft-mobile-save-close",
+                    )
+                ui.label(t("draft_pending_count", count=count)).classes(
+                    "text-lg font-semibold"
+                )
+                ui.label(t("draft_undo_hint")).classes(
+                    "text-sm leading-6 text-[var(--sy-muted)]"
+                )
+                ui.textarea(
+                    label=t("draft_batch_reason"),
+                    value=reason_state["value"],
+                    on_change=lambda event: reason_state.__setitem__(
+                        "value", str(event.value or "")
+                    ),
+                ).props(
+                    "name=draft-mobile-batch-reason autocomplete=off"
+                ).classes("w-full")
+
+                async def save_from_mobile() -> None:
+                    save_review_dialog.close()
+                    await save_pending()
+
+                with ui.row().classes("sy-mobile-actions w-full justify-end gap-2"):
+                    action(
+                        t("cancel"),
+                        icon="close",
+                        on_click=save_review_dialog.close,
+                        variant="quiet",
+                    )
+                    action(
+                        t("draft_save_all"),
+                        icon="save",
+                        on_click=save_from_mobile,
+                        disabled=not count,
+                        test_id="draft-save-all-mobile-confirm",
+                    )
+
+            mobile_dock_classes = "sy-draft-mobile-save-dock"
+            if not count:
+                mobile_dock_classes += " sy-draft-mobile-save-dock--empty"
+            with ui.element("div").classes(mobile_dock_classes).props(
+                "aria-live=polite data-testid=draft-mobile-save-dock"
+            ):
+                with ui.column().classes("gap-0 min-w-0"):
+                    ui.label(
+                        t("draft_pending_count", count=count)
+                        if count
+                        else t("draft_pending_none")
+                    ).classes("font-semibold")
+                    ui.label(t("draft_undo_hint")).classes(
+                        "text-xs text-[var(--sy-muted)]"
+                    )
+                action(
+                    t("draft_save_all"),
+                    icon="save",
+                    on_click=save_review_dialog.open,
+                    disabled=not count,
+                    test_id="draft-save-all-mobile",
+                )
+
+    def refresh_editor() -> None:
+        reopen_mobile_editor = mobile_dialog_state["open"]
+        mobile_dialog_state["refreshing"] = reopen_mobile_editor
+        editor.refresh()
+        if reopen_mobile_editor:
+            dialog = cell_editor_dialog_ref["control"]
+            if dialog is not None:
+                dialog.open()
+            ui.timer(
+                0.05,
+                lambda: mobile_dialog_state.__setitem__("refreshing", False),
+                once=True,
+            )
+        else:
+            mobile_dialog_state["refreshing"] = False
+
     def handle_undo_key(event: Any) -> None:
         if not event.action.keydown or event.action.repeat:
             return
@@ -1134,12 +1474,18 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         elif key_name == "z" and (event.modifiers.ctrl or event.modifiers.meta):
             undo_pending()
         elif key_name in {"f2", "enter"} and edit_session.selected_cell is not None:
-            selector = candidate_selector_ref["control"]
+            selector_ref = (
+                mobile_candidate_selector_ref
+                if mobile_dialog_state["open"]
+                else desktop_candidate_selector_ref
+            )
+            selector = selector_ref["control"]
             if selector is not None:
                 selector.run_method("focus")
         elif key_name == "escape" and edit_session.selected_cell is not None:
+            mobile_dialog_state["open"] = False
             edit_session.selected_cell = None
-            editor.refresh()
+            refresh_editor()
 
     ui.keyboard(
         on_key=handle_undo_key,
@@ -1148,15 +1494,26 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
     )
     ui.run_javascript(
         """
+        window.__syDraftBeforeUnloadCleanup?.();
         window.__syDraftDirty = false;
-        if (!window.__syDraftBeforeUnload) {
-          window.__syDraftBeforeUnload = (event) => {
-            if (!window.__syDraftDirty) return;
-            event.preventDefault();
-            event.returnValue = '';
-          };
-          window.addEventListener('beforeunload', window.__syDraftBeforeUnload);
-        }
+        const beforeUnload = (event) => {
+          if (!window.__syDraftDirty) return;
+          event.preventDefault();
+          event.returnValue = '';
+        };
+        const cleanupBeforeUnload = () => {
+          window.removeEventListener('beforeunload', beforeUnload);
+          window.removeEventListener('pagehide', cleanupBeforeUnload);
+          window.__syDraftDirty = false;
+          if (window.__syDraftBeforeUnload === beforeUnload) {
+            delete window.__syDraftBeforeUnload;
+            delete window.__syDraftBeforeUnloadCleanup;
+          }
+        };
+        window.__syDraftBeforeUnload = beforeUnload;
+        window.__syDraftBeforeUnloadCleanup = cleanupBeforeUnload;
+        window.addEventListener('beforeunload', beforeUnload);
+        window.addEventListener('pagehide', cleanupBeforeUnload, {once: true});
         """
     )
     editor()
@@ -1187,7 +1544,7 @@ def _roster_workflow_steps(
             "event_busy",
             "available" if roster_week_id is not None and status == "published" else "locked",
         ),
-        WorkflowStep(t("roster_workflow_history"), "/rosters#roster-history", "history"),
+        WorkflowStep(t("roster_workflow_history"), "/rosters/history", "history"),
     )
 
 
@@ -1268,8 +1625,12 @@ def _render_withdraw_action(workflow, week: dict[str, object], roster_week_id: i
 
 @ui.page("/rosters")
 def rosters_page() -> None:
+    _install_roster_mobile_styles()
+    ui.run_javascript(
+        "if (window.location.hash === '#roster-history') "
+        "window.location.replace('/rosters/history')"
+    )
     workflow = get_workflow()
-    weeks = workflow.roster_week_history(page=1, page_size=100)
     prefects = workflow.prefects()
     with page_shell("/rosters"):
         if not prefects:
@@ -1288,7 +1649,7 @@ def rosters_page() -> None:
                 ).props("color=primary data-testid=roster-open-prefects")
             return
         _render_storage_lifecycle(workflow)
-        latest_week = weeks[0] if weeks else None
+        latest_week = workflow.latest_roster_week()
         render_workflow_navigation(
             _roster_workflow_steps(
                 roster_week_id=int(latest_week["id"]) if latest_week else None,
@@ -1302,44 +1663,45 @@ def rosters_page() -> None:
             adjust_tab = ui.tab("adjust_edit", label=t("adjust_edit"), icon="edit_calendar")
         with ui.tab_panels(tabs, value="generate_view", animated=False, keep_alive=False).classes("w-full bg-transparent"):
             with ui.tab_panel("generate_view").classes("px-0"):
-                with ui.card().classes("sy-surface sy-operations-panel w-full p-6"):
+                with ui.card().classes(
+                    "sy-surface sy-operations-panel sy-roster-generation-card w-full p-6"
+                ):
                     ui.html(t("generate_roster"), tag="h2").classes("text-lg font-semibold")
                     _render_operation_hint("hint_generate_roster", icon="calendar_month")
                     week_input = ui.input(label=t("week_start"), value=_next_monday().isoformat()).props(
                         "type=date name=week-start autocomplete=off"
-                    )
-                    multiplier_by_week = {
-                        week["weekStart"]: float(week.get("historyPriorityMultiplier", 1.0))
-                        for week in weeks
-                    }
-                    assist_mode_by_week = {
-                        week["weekStart"]: _assist_assignment_mode_code(
-                            week.get("assistAssignmentMode"),
-                            fallback=FLEXIBLE_WEEKLY,
-                        )
-                        for week in weeks
-                    }
-                    closed_days_by_week = {
-                        week["weekStart"]: tuple(
-                            day.name if isinstance(day, SchoolDay) else str(day)
-                            for day in week.get("closedDays", ())
-                        )
-                        for week in weeks
-                    }
-                    version_by_week = {
-                        week["weekStart"]: int(week["version"])
-                        for week in weeks
-                    }
+                    ).classes("sy-roster-step-week")
                     try:
                         initial_week = date.fromisoformat(str(week_input.value))
                     except ValueError:
                         initial_week = _next_monday()
-                    initial_assist_mode = assist_mode_by_week.get(
-                        initial_week.isoformat(),
-                        LEGACY_FIXED_WEEKDAY,
+                    selected_week_state: dict[str, object] = {
+                        "week_start": initial_week,
+                        "record": workflow.roster_week_for_start(initial_week),
+                    }
+
+                    def selected_week_record(
+                        selected: date | None,
+                        *,
+                        refresh: bool = False,
+                    ) -> dict[str, object] | None:
+                        if selected is None:
+                            return None
+                        if refresh or selected_week_state["week_start"] != selected:
+                            selected_week_state["week_start"] = selected
+                            selected_week_state["record"] = workflow.roster_week_for_start(
+                                selected
+                            )
+                        record = selected_week_state["record"]
+                        return record if isinstance(record, dict) else None
+
+                    initial_record = selected_week_record(initial_week)
+                    initial_assist_mode = _assist_assignment_mode_code(
+                        initial_record.get("assistAssignmentMode") if initial_record else None,
+                        fallback=LEGACY_FIXED_WEEKDAY,
                     )
                     with ui.element("section").classes(
-                        "sy-surface-subtle sy-policy-panel w-full p-4 mt-4"
+                        "sy-surface-subtle sy-policy-panel sy-roster-step-availability w-full p-4 mt-4"
                     ).props("data-testid=pre-generation-day-closure-panel"):
                         ui.label(t("pre_generation_day_closure")).classes("font-semibold")
                         ui.label(t("pre_generation_day_closure_detail")).classes(
@@ -1348,16 +1710,45 @@ def rosters_page() -> None:
                         day_closure_select = ui.select(
                             options={day.name: day_label(day) for day in SchoolDay},
                             value=list(
-                                closed_days_by_week.get(initial_week.isoformat(), ())
+                                (
+                                    day.name if isinstance(day, SchoolDay) else str(day)
+                                    for day in (
+                                        initial_record.get("closedDays", ())
+                                        if initial_record
+                                        else ()
+                                    )
+                                )
                             ),
                             multiple=True,
                         ).props(
                             "use-chips clearable data-testid=pre-generation-day-closures"
                         ).classes("w-full mt-3")
-                    with ui.element("section").classes(
-                        "sy-surface-subtle sy-policy-panel w-full p-4 mt-4"
+                    def toggle_mobile_rules() -> None:
+                        ui.run_javascript(
+                            "const card=document.querySelector('.sy-roster-generation-card');"
+                            "const trigger=document.querySelector('[data-testid=roster-mobile-rules-toggle]');"
+                            "if(!card||!trigger)return;"
+                            "const open=card.classList.toggle('sy-roster-rules-open');"
+                            "trigger.setAttribute('aria-expanded', String(open));"
+                        )
+
+                    action(
+                        f"{t('assist_assignment_mode_title')} · {t('history_priority_title')}",
+                        icon="tune",
+                        on_click=toggle_mobile_rules,
+                        variant="secondary",
+                        classes="sy-roster-rules-toggle",
+                        test_id="roster-mobile-rules-toggle",
                     ).props(
-                        "data-testid=assist-assignment-mode-panel data-sy-ambient-light=true"
+                        "aria-expanded=false "
+                        "aria-controls=assist-mode-rules history-priority-rules"
+                    )
+
+                    with ui.element("section").classes(
+                        "sy-surface-subtle sy-policy-panel sy-roster-step-rules w-full p-4 mt-4"
+                    ).props(
+                        "id=assist-mode-rules data-testid=assist-assignment-mode-panel "
+                        "data-sy-ambient-light=true"
                     ):
                         ui.label(t("assist_assignment_mode_title")).classes("font-semibold")
                         ui.label(t("assist_assignment_mode_detail")).classes(
@@ -1391,13 +1782,19 @@ def rosters_page() -> None:
                         lambda event: update_assist_mode_explanation(event.value)
                     )
                     with ui.element("section").classes(
-                        "sy-surface-subtle sy-policy-panel w-full p-4 mt-4"
-                    ).props("data-sy-ambient-light=true"):
+                        "sy-surface-subtle sy-policy-panel sy-roster-step-rules w-full p-4 mt-4"
+                    ).props(
+                        "id=history-priority-rules data-sy-ambient-light=true"
+                    ):
                         ui.label(t("history_priority_title")).classes("font-semibold")
                         ui.label(t("history_priority_detail")).classes(
                             "text-sm leading-6 text-[var(--sy-muted)] mt-1"
                         )
-                        initial_multiplier = multiplier_by_week.get(initial_week.isoformat(), 1.0)
+                        initial_multiplier = float(
+                            initial_record.get("historyPriorityMultiplier", 1.0)
+                            if initial_record
+                            else 1.0
+                        )
                         history_priority = ui.slider(
                             min=HISTORY_PRIORITY_MULTIPLIER_MIN,
                             max=HISTORY_PRIORITY_MULTIPLIER_MAX,
@@ -1479,12 +1876,14 @@ def rosters_page() -> None:
                                     }
                                 ],
                             }
-                        ).classes("sy-history-priority-chart w-full").props(
+                        ).classes(
+                            "sy-history-priority-chart sy-roster-advanced-chart w-full"
+                        ).props(
                             f'role=img aria-label="{attr(t("history_priority_chart"))}" '
                             'data-testid=history-priority-chart'
                         )
                         ui.label(t("history_priority_chart_detail")).classes(
-                            "sy-history-priority-chart-note"
+                            "sy-history-priority-chart-note sy-roster-advanced-chart"
                         )
 
                     def update_history_priority_chart(value: float) -> None:
@@ -1505,9 +1904,10 @@ def rosters_page() -> None:
 
                     def refresh_history_priority() -> None:
                         selected = selected_week_start()
-                        history_priority.value = (
-                            multiplier_by_week.get(selected.isoformat(), 1.0)
-                            if selected
+                        record = selected_week_record(selected)
+                        history_priority.value = float(
+                            record.get("historyPriorityMultiplier", 1.0)
+                            if record
                             else 1.0
                         )
                         history_priority.update()
@@ -1532,10 +1932,10 @@ def rosters_page() -> None:
 
                     def refresh_assist_assignment_mode() -> None:
                         selected = selected_week_start()
-                        mode = (
-                            assist_mode_by_week.get(selected.isoformat(), LEGACY_FIXED_WEEKDAY)
-                            if selected
-                            else LEGACY_FIXED_WEEKDAY
+                        record = selected_week_record(selected)
+                        mode = _assist_assignment_mode_code(
+                            record.get("assistAssignmentMode") if record else None,
+                            fallback=LEGACY_FIXED_WEEKDAY,
                         )
                         assist_assignment_mode.value = mode
                         assist_assignment_mode.update()
@@ -1543,15 +1943,18 @@ def rosters_page() -> None:
 
                     def refresh_day_closures() -> None:
                         selected = selected_week_start()
+                        record = selected_week_record(selected)
                         day_closure_select.value = list(
-                            closed_days_by_week.get(
-                                selected.isoformat() if selected else "",
-                                (),
+                            day.name if isinstance(day, SchoolDay) else str(day)
+                            for day in (
+                                record.get("closedDays", ()) if record else ()
                             )
                         )
                         day_closure_select.update()
 
-                    requirements_area = ui.column().classes("w-full gap-2 mt-4")
+                    requirements_area = ui.column().classes(
+                        "sy-roster-step-readiness w-full gap-2 mt-4"
+                    )
                     requirements_state: dict[str, tuple[str, tuple[str, ...]] | None] = {
                         "rendered_key": None
                     }
@@ -1620,14 +2023,20 @@ def rosters_page() -> None:
                         lambda _event: refresh_requirements()
                     )
 
-                    ui.separator().classes("my-5")
-                    ui.label(t("pre_generation_leave")).classes("text-base font-semibold")
-                    ui.label(t("leave_generation_notice")).classes("text-sm text-[var(--sy-muted)]")
+                    ui.separator().classes("sy-roster-step-availability my-5")
+                    ui.label(t("pre_generation_leave")).classes(
+                        "sy-roster-step-availability text-base font-semibold"
+                    )
+                    ui.label(t("leave_generation_notice")).classes(
+                        "sy-roster-step-availability text-sm text-[var(--sy-muted)]"
+                    )
                     prefect_options = {
                         str(prefect["id"]): f"{prefect['nameZh']} ({prefect['form']} {prefect['className']})"
                         for prefect in workflow.prefects()
                     }
-                    with ui.row().classes("sy-mobile-field-row w-full gap-3 flex-wrap"):
+                    with ui.row().classes(
+                        "sy-mobile-field-row sy-roster-step-availability w-full gap-3 flex-wrap"
+                    ):
                         leave_prefect = ui.select(
                             label=t("select_prefect"),
                             options=prefect_options,
@@ -1642,8 +2051,10 @@ def rosters_page() -> None:
                         ).classes("grow min-w-[180px]")
                     leave_reason = ui.input(label=t("leave_reason")).props(
                         "name=pre-generation-leave-reason autocomplete=off"
-                    ).classes("w-full")
-                    leave_list = ui.column().classes("w-full gap-2 mt-3")
+                    ).classes("sy-roster-step-availability w-full")
+                    leave_list = ui.column().classes(
+                        "sy-roster-step-availability w-full gap-2 mt-3"
+                    )
                     leave_versions: dict[tuple[str, str], int] = {}
 
                     def refresh_leave_list() -> None:
@@ -1748,7 +2159,7 @@ def rosters_page() -> None:
                         icon="event_busy",
                         on_click=declare_leave,
                         variant="secondary",
-                        classes="mt-3",
+                        classes="sy-roster-step-availability mt-3",
                         motion_role="edit",
                         icon_story_to="event_note",
                         icon_story_category="lifecycle",
@@ -1757,6 +2168,7 @@ def rosters_page() -> None:
                     week_input.on(
                         "change",
                         lambda _event: (
+                            selected_week_record(selected_week_start(), refresh=True),
                             refresh_leave_list(),
                             refresh_history_priority(),
                             refresh_assist_assignment_mode(),
@@ -1770,9 +2182,8 @@ def rosters_page() -> None:
                         week_start = selected_week_start(announce_error=True)
                         if week_start is None:
                             return
-                        expected_week_version = version_by_week.get(
-                            week_start.isoformat(), 0
-                        )
+                        current_week = selected_week_record(week_start, refresh=True)
+                        expected_week_version = int(current_week["version"]) if current_week else 0
                         generation_command_id = f"draft-generate-ui:{uuid4().hex}"
                         result = await _run_with_progress(
                             lambda: workflow.generate_and_save_draft(
@@ -1794,50 +2205,43 @@ def rosters_page() -> None:
                             ui.notify(t("draft_saved"), type="positive")
                             navigate_to(f"/rosters/{result.id}")
 
-                    ui.button(t("create_draft"), icon="edit_calendar", on_click=generate).props("color=primary").classes("mt-4")
-                with ui.element("section").classes("sy-roster-history w-full scroll-mt-6").props(
+                    ui.button(
+                        t("create_draft"), icon="edit_calendar", on_click=generate
+                    ).props("color=primary").classes(
+                        "sy-roster-step-generate sy-roster-generate-dock mt-4"
+                    )
+                with ui.element("section").classes(
+                    "sy-roster-history-cta sy-surface w-full px-5 py-4 mt-5"
+                ).props(
                     "id=roster-history data-testid=roster-history"
                 ):
-                    ui.html(t("current_rosters"), tag="h2").classes("text-xl font-semibold mt-6")
-                    if not weeks:
-                        _render_empty_state(
-                            title_key="empty_roster_title",
-                            body_key="empty_roster_detail",
-                            icon="event_note",
-                            illustrated=True,
+                    with ui.column().classes("gap-1 min-w-0"):
+                        ui.html(t("current_rosters"), tag="h2").classes(
+                            "text-xl font-semibold"
                         )
-                    for week in weeks:
-                        history_priority_value = f"{float(week.get('historyPriorityMultiplier', 1.0)):.1f}"
-                        with ui.row().classes("sy-surface sy-roster-week-item w-full items-center justify-between px-5 py-4"):
-                            with ui.column().classes("gap-0"):
-                                ui.label(str(week["weekStart"])).classes("text-lg font-semibold")
-                                ui.label(
-                                    f"{t('version')} {week['version']}  |  {t('generated_at')}: {week['generatedAt']:%Y-%m-%d %H:%M}  |  "
-                                    f"{t('history_priority_used', value=history_priority_value)}  |  "
-                                    f"{t('assist_assignment_mode_used', mode=_assist_assignment_mode_label(week.get('assistAssignmentMode')))}"
-                                ).classes("sy-roster-week-meta text-sm text-[var(--sy-muted)]")
-                            status = str(week["status"])
-                            status_tone = "stable" if status == "published" else "attention" if status == "withdrawn" else "action"
-                            _tone_badge(t(status), status_tone)
-                            ui.button(t("view"), icon="arrow_forward", on_click=lambda item=week: navigate_to(f"/rosters/{item['id']}")).props("flat")
-            with ui.tab_panel("adjust_edit").classes("px-0"):
-                ui.label(t("adjustments")).classes("text-lg font-semibold")
-                _render_operation_hint("hint_adjust_roster", icon="event_busy")
-                published_weeks = [week for week in workflow.roster_weeks() if week["status"] == "published"]
-                if not published_weeks:
-                    _render_empty_state(
-                        title_key="empty_published_title",
-                        body_key="empty_published_detail",
-                        icon="fact_check",
+                        ui.label(t("dashboard_history_copy")).classes(
+                            "text-sm leading-6 text-[var(--sy-muted)]"
+                        )
+                    action(
+                        t("roster_workflow_history"),
+                        icon="history",
+                        on_click=lambda: navigate_to("/rosters/history"),
+                        variant="secondary",
+                        test_id="open-roster-history",
                     )
-                for week in published_weeks:
-                    with ui.row().classes("sy-surface sy-roster-week-item w-full items-center justify-between px-5 py-4 mt-4"):
-                        with ui.column().classes("gap-0"):
-                            ui.label(str(week["weekStart"])).classes("text-lg font-semibold")
-                            ui.label(f"{t('version')} {week['version']}").classes("text-sm text-[var(--sy-muted)]")
-                        with ui.row().classes("sy-mobile-actions gap-2"):
-                            ui.button(t("adjust_roster"), icon="swap_horiz", on_click=lambda item=week: navigate_to(f"/rosters/{item['id']}/adjustments")).props("outline color=primary")
-                            _render_withdraw_action(workflow, week, int(week["id"]))
+            with ui.tab_panel("adjust_edit").classes("px-0"):
+                with ui.element("section").classes(
+                    "sy-surface sy-roster-history-cta w-full px-5 py-5"
+                ).props("data-testid=adjustments-history-shortcut"):
+                    ui.label(t("adjustments")).classes("text-lg font-semibold")
+                    _render_operation_hint("hint_adjust_roster", icon="event_busy")
+                    action(
+                        t("roster_workflow_history"),
+                        icon="history",
+                        on_click=lambda: navigate_to("/rosters/history"),
+                        variant="primary",
+                        test_id="adjustments-open-roster-history",
+                    )
 
 
 @ui.page("/rosters/new")
@@ -1845,8 +2249,146 @@ def generate_roster_page() -> None:
     navigate_to("/rosters")
 
 
+@ui.page("/rosters/history")
+def roster_history_page(page: int = 1) -> None:
+    """Render bounded roster history outside the generation critical path."""
+
+    _install_roster_mobile_styles()
+    workflow = get_workflow()
+    try:
+        current_page = max(int(page), 1)
+    except (TypeError, ValueError):
+        current_page = 1
+    page_size = 12
+    page_rows = workflow.roster_week_history(
+        page=current_page,
+        page_size=page_size + 1,
+    )
+    has_next = len(page_rows) > page_size
+    weeks = page_rows[:page_size]
+    with page_shell("/rosters"):
+        render_back_action(
+            t("back_to_roster_hub"),
+            "/rosters",
+            test_id="back-to-roster-hub",
+        )
+        render_route_trail(
+            (
+                (t("rosters"), "/rosters"),
+                (t("roster_workflow_history"), None),
+            ),
+            label=t("roster_route_hierarchy"),
+        )
+        render_workflow_navigation(
+            _roster_workflow_steps(),
+            current_index=4,
+            label=t("roster_workflow_label"),
+        )
+        with ui.row().classes("w-full items-start justify-between gap-4"):
+            with ui.column().classes("gap-1 min-w-0"):
+                ui.html(t("current_rosters"), tag="h1").classes(
+                    "text-2xl font-semibold"
+                )
+                ui.label(t("dashboard_history_copy")).classes(
+                    "text-sm leading-6 text-[var(--sy-muted)]"
+                )
+            _tone_badge(str(current_page), "neutral")
+
+        if not weeks:
+            _render_empty_state(
+                title_key="empty_roster_title",
+                body_key="empty_roster_detail",
+                icon="event_note",
+                illustrated=True,
+            )
+        else:
+            with ui.element("section").classes("w-full grid gap-3 mt-4").props(
+                "data-testid=roster-history-page"
+            ):
+                for week in weeks:
+                    history_priority_value = (
+                        f"{float(week.get('historyPriorityMultiplier', 1.0)):.1f}"
+                    )
+                    with ui.element("article").classes(
+                        "sy-surface sy-roster-week-item w-full px-5 py-4"
+                    ):
+                        with ui.row().classes(
+                            "w-full items-start justify-between gap-3"
+                        ):
+                            with ui.column().classes("gap-1 min-w-0"):
+                                ui.label(str(week["weekStart"])).classes(
+                                    "text-lg font-semibold"
+                                )
+                                ui.label(
+                                    f"{t('version')} {week['version']} · "
+                                    f"{t('history_priority_used', value=history_priority_value)} · "
+                                    f"{t('assist_assignment_mode_used', mode=_assist_assignment_mode_label(week.get('assistAssignmentMode')))}"
+                                ).classes(
+                                    "sy-roster-week-meta text-sm text-[var(--sy-muted)]"
+                                )
+                            status = str(week["status"])
+                            status_tone = (
+                                "stable"
+                                if status == "published"
+                                else "attention"
+                                if status == "withdrawn"
+                                else "action"
+                            )
+                            _tone_badge(t(status), status_tone)
+                        with ui.row().classes(
+                            "sy-mobile-actions w-full justify-end gap-2 mt-3"
+                        ):
+                            action(
+                                t("view"),
+                                icon="arrow_forward",
+                                on_click=lambda item=week: navigate_to(
+                                    f"/rosters/{item['id']}"
+                                ),
+                                variant="secondary",
+                            )
+                            if status == "published":
+                                action(
+                                    t("adjust_roster"),
+                                    icon="swap_horiz",
+                                    on_click=lambda item=week: navigate_to(
+                                        f"/rosters/{item['id']}/adjustments"
+                                    ),
+                                    variant="secondary",
+                                )
+                                _render_withdraw_action(
+                                    workflow,
+                                    week,
+                                    int(week["id"]),
+                                )
+
+        with ui.row().classes(
+            "sy-mobile-actions w-full items-center justify-between gap-3 mt-5"
+        ).props("aria-label=Pagination"):
+            action(
+                t("reference_previous"),
+                icon="arrow_back",
+                on_click=lambda: navigate_to(
+                    f"/rosters/history?page={current_page - 1}"
+                ),
+                variant="quiet",
+                disabled=current_page <= 1,
+                test_id="roster-history-previous",
+            )
+            action(
+                t("reference_next"),
+                icon="arrow_forward",
+                on_click=lambda: navigate_to(
+                    f"/rosters/history?page={current_page + 1}"
+                ),
+                variant="quiet",
+                disabled=not has_next,
+                test_id="roster-history-next",
+            )
+
+
 @ui.page("/rosters/{roster_week_id}")
 def roster_detail_page(roster_week_id: int) -> None:
+    _install_roster_mobile_styles()
     workflow = get_workflow()
     with page_shell("/rosters"):
         try:
@@ -1991,6 +2533,7 @@ def adjustments_page() -> None:
 
 @ui.page("/rosters/{roster_week_id}/adjustments")
 def adjustment_detail_page(roster_week_id: int) -> None:
+    _install_roster_mobile_styles()
     workflow = get_workflow()
     with page_shell("/rosters"):
         try:

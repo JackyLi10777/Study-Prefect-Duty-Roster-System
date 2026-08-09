@@ -434,7 +434,8 @@ def test_history_priority_has_a_live_accessible_explanation_chart() -> None:
     assert '"aria": {' in pages
     assert 'history_priority_chart_aria' in pages
     assert 'history_priority_chart.update()' in pages
-    assert 'multiplier_by_week.get(selected.isoformat(), 1.0)' in pages
+    assert 'record.get("historyPriorityMultiplier", 1.0)' in pages
+    assert "selected_week_record(selected)" in pages
     assert '.sy-history-priority-chart' in theme
 
 
@@ -623,7 +624,8 @@ def test_mobile_drawer_traps_focus_and_hides_background_from_assistive_technolog
     assert "element.inert = true" in shell
     assert "element.setAttribute('aria-hidden', 'true')" in shell
     assert "element.inert = false" in shell
-    assert "setBackgroundInert(isMobile() && open)" in shell
+    assert "const modalOpen = isMobile() && open" in shell
+    assert "setBackgroundInert(modalOpen)" in shell
     assert "setBackgroundInert(false)" in shell
 
 

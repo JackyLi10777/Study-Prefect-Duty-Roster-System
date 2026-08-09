@@ -81,6 +81,9 @@
     border-top: 1px solid var(--sy-line);
     background: var(--sy-surface);
     box-shadow: 0 -10px 28px rgba(28, 28, 30, .10);
+    transition:
+      opacity var(--sy-motion-state) var(--sy-ease),
+      transform var(--sy-motion-layer) var(--sy-ease);
   }
   .body--dark .sy-mobile-tabbar { box-shadow: 0 -12px 30px rgba(0, 0, 0, .34); }
   .sy-mobile-tab {
@@ -98,7 +101,8 @@
 
   /* The fixed primary navigation must never cover a focused field when the
    * on-screen keyboard reduces the visual viewport. */
-  .sy-mobile-keyboard-open .sy-mobile-tabbar {
+  .sy-mobile-keyboard-open .sy-mobile-tabbar,
+  .sy-mobile-drawer-open .sy-mobile-tabbar {
     opacity: 0;
     pointer-events: none;
     transform: translateY(100%);
@@ -108,14 +112,109 @@
     scroll-padding-bottom: 24px;
   }
 
-  .sy-mobile-drawer-tools { display: grid; gap: 8px; margin: 0 0 18px; padding: 12px; border: 1px solid var(--sy-line); border-radius: 16px; background: color-mix(in srgb, var(--sy-surface) 88%, var(--sy-action-soft)); }
-  .sy-mobile-drawer-tools-title { color: var(--sy-muted); font-size: 11px; font-weight: 780; letter-spacing: .06em; text-transform: uppercase; }
-  .sy-mobile-drawer-tools-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-  .sy-mobile-drawer-tool { min-width: 0 !important; min-height: 48px !important; padding: 7px 8px !important; }
-  .sy-mobile-drawer-tool .q-btn__content { flex-wrap: nowrap; gap: 6px; font-size: 12px; line-height: 1.2; }
-  .sy-mobile-drawer-tool .q-icon { flex: 0 0 auto; font-size: 19px; }
+  .sy-mobile-drawer-tools {
+    container-type: inline-size;
+    display: grid;
+    gap: 9px;
+    margin: 2px 2px 16px;
+    padding: 12px;
+    border: 1px solid var(--sy-line);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--sy-surface) 90%, var(--sy-action-soft));
+  }
+  .sy-mobile-drawer-tools-title {
+    color: var(--sy-muted);
+    font-size: 11px;
+    font-weight: 780;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .sy-mobile-drawer-tools-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .sy-mobile-setting-tile {
+    width: 100%;
+    min-width: 0 !important;
+    min-height: 74px !important;
+    padding: 10px !important;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--sy-line) 88%, var(--sy-role-action)) !important;
+    border-radius: 14px !important;
+    background: var(--sy-surface) !important;
+    box-shadow: none !important;
+    color: var(--sy-ink) !important;
+    text-align: left;
+    transform: none !important;
+    transition:
+      border-color var(--sy-motion-state) var(--sy-ease),
+      background-color var(--sy-motion-state) var(--sy-ease),
+      box-shadow var(--sy-motion-state) var(--sy-ease) !important;
+    touch-action: manipulation;
+  }
+  .sy-mobile-setting-tile .q-btn__content {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+    flex-wrap: nowrap;
+    text-align: left;
+  }
+  .sy-mobile-setting-tile .q-icon {
+    width: 30px !important;
+    min-width: 30px;
+    flex: 0 0 30px !important;
+    color: var(--sy-role-action);
+    font-size: 21px;
+  }
+  .sy-mobile-setting-tile-copy {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+    text-align: left;
+  }
+  .sy-mobile-setting-tile-title,
+  .sy-mobile-setting-tile-value {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .sy-mobile-setting-tile-title {
+    color: var(--sy-muted);
+    font-size: 11px;
+    font-weight: 680;
+    line-height: 1.2;
+  }
+  .sy-mobile-setting-tile-value {
+    color: var(--sy-ink);
+    font-size: 13px;
+    font-weight: 760;
+    line-height: 1.25;
+  }
+  .sy-mobile-setting-tile .q-focus-helper { display: none !important; }
+  .sy-mobile-setting-tile .q-icon[data-sy-icon-motion]::after { content: none !important; }
+  .sy-mobile-setting-tile:focus-visible {
+    outline: 3px solid var(--sy-focus) !important;
+    outline-offset: 2px;
+    border-radius: 14px !important;
+  }
+  .sy-mobile-setting-tile:active {
+    border-color: color-mix(in srgb, var(--sy-role-action) 48%, var(--sy-line)) !important;
+    background: color-mix(in srgb, var(--sy-role-action-soft) 72%, var(--sy-surface)) !important;
+    box-shadow: inset 0 2px 5px color-mix(in srgb, var(--sy-role-action) 14%, transparent) !important;
+    transform: none !important;
+  }
 
-  .sy-sidebar { padding-bottom: calc(var(--sy-mobile-tabbar-height) + 18px + env(safe-area-inset-bottom)); }
+  @container (max-width: 16rem) {
+    .sy-mobile-drawer-tools-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .sy-sidebar { padding-bottom: 0; overflow-y: hidden; }
   .sy-sidebar .q-btn { min-height: 48px; }
   .sy-sidebar .q-btn__content { width: 100%; justify-content: flex-start; text-align: left; }
   .sy-sidebar .q-btn__content .q-icon { flex: 0 0 24px; width: 24px; }
@@ -191,6 +290,13 @@
   .sy-adjustment-actions .q-btn { width: 100%; min-height: 48px; }
 }
 
+@media (max-width: 900px) and (hover: hover) and (pointer: fine) {
+  .sy-mobile-setting-tile:hover {
+    border-color: color-mix(in srgb, var(--sy-role-action) 38%, var(--sy-line)) !important;
+    background: color-mix(in srgb, var(--sy-role-action-soft) 48%, var(--sy-surface)) !important;
+  }
+}
+
 @media (max-width: 360px) {
   :root { --sy-mobile-gutter: 12px; }
   .sy-main { gap: 16px; }
@@ -222,6 +328,8 @@
   .sy-mobile-tab { min-height: 64px !important; padding-inline: 1px !important; }
   .sy-mobile-tab .q-icon { font-size: 20px; }
   .sy-mobile-tab .q-btn__content { font-size: 11px; }
+  .sy-mobile-drawer-tools-grid { grid-template-columns: minmax(0, 1fr); }
+  .sy-mobile-setting-tile { min-height: 64px !important; }
   .sy-main .sy-surface.p-6,
   .sy-main .sy-settings-section.p-6,
   .sy-main .sy-surface.p-5 { padding: 12px !important; }
@@ -238,7 +346,7 @@
 @media (forced-colors: active) and (max-width: 900px) {
   .sy-mobile-tabbar,
   .sy-mobile-drawer-tools,
-  .sy-mobile-drawer-tool,
+  .sy-mobile-setting-tile,
   .sy-header-control,
   .sy-table .q-table__grid-item-card {
     border: 1px solid CanvasText;
@@ -251,8 +359,10 @@
     outline-offset: -3px;
     color: Highlight !important;
   }
+  .sy-mobile-setting-tile:focus-visible { outline-color: Highlight !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sy-mobile-tabbar { transition: none !important; }
+  .sy-mobile-tabbar,
+  .sy-mobile-setting-tile { transition: none !important; }
 }

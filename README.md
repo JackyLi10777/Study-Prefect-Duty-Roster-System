@@ -26,6 +26,8 @@
 
 現行前端採用 **Quiet Command Center with Editorial Sacred Restraint**：桌面以清楚的機構式導覽軌、緊湊全域工具列及實體操作面承載日常工作；首頁把當前值班流程放在歷史與每日聖言之前，不製造 KPI、假進度或裝飾警報。手機、平板、200% zoom、深淺模式及中英文仍使用同一語意 DOM、路由、身份與資料契約。設計意圖見 [Professional Design System](Professional_Design_System.md)，composition、CSS layer、route family、viewport runtime 及遷移規則見[前端架構與迭代契約](docs/FRONTEND_ARCHITECTURE.md)。
 
+> **手機優先操作候選（尚未部署）：** `codex/mobile-first-operations` 正把 Android／iPhone 的每週主流程收斂為「選擇週次 → 停開／請假 → 規則摘要 → 準備狀態 → 生成」。手機抽屜使用四個獨立圓角狀態方格，不再繼承桌面圓形旋鈕，因此提示音及外觀按鈕不會出現橢圓光圈或逐字直排；抽屜打開時底部導航會同時視覺隱藏及語意停用。草稿在手機以單日六崗位、星期摘要、共用底部編輯面板及單一未保存操作列呈現；桌面仍保留 PDF 式矩陣，交易、CAS、command ID、公平及 PDF 語意沒有改動。完整候選驗收見[手機操作驗收](docs/MOBILE_OPERATIONS_ACCEPTANCE.md)。這段只描述未部署來源；正式狀態仍以上方生成區塊為準。
+
 [English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)
 
 **反饋與聯絡：** 遇到問題時，先在網站開啟 **「問題回報／Support」**。未登入的 Public／Viewer 可把三項純文字資料安全提交到主機本機支援收件匣並取得 `INC-…` 追溯碼；網絡、origin 或本機收件匣失敗時，表單會保留內容並提供只存在目前分頁的 `FB-…` 臨時碼。管理員可在站內按 `INC-…` 核對事件包並下載安全副本，也可在明確同意後加入有限大小的 TXT／JSON／PNG 證據；Guest 仍只在瀏覽器建立臨時報告。電郵只是保存後的可選交接：[`s10777@syss.edu.hk`](mailto:s10777@syss.edu.hk)。不要提交密碼、token、cookie、完整資料庫或完整備份；姓名、請假內容、值班表、PDF、截圖或日誌只在確實有助調查時提供最少相關部分。完整程序見[本機問題回報與事故處理](docs/SUPPORT_AND_INCIDENT_WORKFLOW.md)。

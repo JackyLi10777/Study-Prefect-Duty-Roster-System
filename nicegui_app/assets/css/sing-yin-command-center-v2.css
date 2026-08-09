@@ -920,18 +920,18 @@ body {
   }
 
   .q-drawer.sy-sidebar {
-    width: min(86vw, 300px) !important;
+    width: min(88vw, 320px) !important;
     box-shadow: 18px 0 48px rgba(0, 0, 0, .20) !important;
   }
 
   .sy-sidebar-body {
-    padding: 16px 12px calc(84px + env(safe-area-inset-bottom)) !important;
+    padding: calc(16px + env(safe-area-inset-top)) 12px 4px !important;
   }
 
   .sy-mobile-drawer-close {
     position: absolute !important;
     z-index: 2;
-    top: max(0px, env(safe-area-inset-top));
+    top: 0;
     right: 0;
     display: inline-flex !important;
     width: 44px !important;

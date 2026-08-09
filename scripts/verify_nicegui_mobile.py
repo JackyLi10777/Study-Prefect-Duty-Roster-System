@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import json
 import re
+from typing import Any
 from urllib.parse import urlsplit
 
-from playwright.sync_api import Browser, BrowserContext, Locator, Page, sync_playwright
+from playwright.sync_api import Browser, BrowserContext, Error, Locator, Page, Playwright, sync_playwright
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -28,6 +30,82 @@ TABLET_SCREENSHOT = SCREENSHOT_DIR / "nicegui-tablet-768.png"
 TALL_TABLET_SCREENSHOT = SCREENSHOT_DIR / "nicegui-tablet-820x1180.png"
 LANDSCAPE_TABLET_SCREENSHOT = SCREENSHOT_DIR / "nicegui-tablet-1024x768.png"
 LANDSCAPE_SCREENSHOT = SCREENSHOT_DIR / "nicegui-mobile-landscape.png"
+PERFORMANCE_EVIDENCE_PATH = SCREENSHOT_DIR / "nicegui-mobile-performance.json"
+PERFORMANCE_EVIDENCE: list[dict[str, Any]] = []
+
+PHONE_SMOKE_VIEWPORTS = (
+    (360, 800, "mobile-360"),
+    (412, 915, "mobile-412-forced-colours"),
+    (430, 932, "mobile-430"),
+)
+
+PERFORMANCE_OBSERVER_SCRIPT = r"""
+(() => {
+  const evidence = {
+    largestContentfulPaint: 0,
+    cumulativeLayoutShift: 0,
+    longestTask: 0,
+    longTaskCount: 0,
+  };
+  window.__syMobilePerformanceEvidence = evidence;
+  const observe = (type, callback) => {
+    try {
+      const observer = new PerformanceObserver((list) => callback(list.getEntries()));
+      observer.observe({type, buffered: true});
+    } catch (_) {
+      // Older engines may not expose every entry type. Missing support is
+      // reported in the collected evidence instead of breaking page startup.
+    }
+  };
+  observe('largest-contentful-paint', entries => {
+    for (const entry of entries) evidence.largestContentfulPaint = Math.max(
+      evidence.largestContentfulPaint,
+      entry.startTime || 0
+    );
+  });
+  observe('layout-shift', entries => {
+    for (const entry of entries) {
+      if (!entry.hadRecentInput) evidence.cumulativeLayoutShift += entry.value || 0;
+    }
+  });
+  observe('longtask', entries => {
+    for (const entry of entries) {
+      evidence.longTaskCount += 1;
+      evidence.longestTask = Math.max(evidence.longestTask, entry.duration || 0);
+    }
+  });
+})();
+"""
+
+VISUAL_VIEWPORT_TEST_DOUBLE = r"""
+(() => {
+  const target = new EventTarget();
+  const state = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    offsetLeft: 0,
+    offsetTop: 0,
+    pageLeft: 0,
+    pageTop: 0,
+    scale: 1,
+  };
+  const viewport = Object.assign(target, state);
+  Object.defineProperty(window, 'visualViewport', {configurable: true, value: viewport});
+  window.__sySetTestVisualViewport = (values) => {
+    Object.assign(viewport, values || {});
+    viewport.dispatchEvent(new Event('resize'));
+  };
+  const nativeScrollIntoView = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView = function (options) {
+    window.__syLastScrollIntoView = {
+      id: this.id || '',
+      testId: this.getAttribute?.('data-testid') || '',
+      block: typeof options === 'object' ? options.block || '' : '',
+    };
+    return nativeScrollIntoView.call(this, options);
+  };
+})();
+"""
 
 PORTRAIT_ROUTES = (
     "/",
@@ -107,6 +185,23 @@ def isolated_paths() -> tuple[Path, Path, Path]:
     return database_path, backup_dir, log_dir
 
 
+def _launch_real_chrome(playwright: Playwright) -> Browser:
+    """Prefer installed Google Chrome; bundled Chromium requires explicit CI opt-in."""
+
+    channel = os.getenv("SING_YIN_PLAYWRIGHT_CHANNEL", "chrome").strip() or "chrome"
+    try:
+        return playwright.chromium.launch(headless=True, channel=channel)
+    except Error as exc:
+        if os.getenv("SING_YIN_PLAYWRIGHT_ALLOW_BUNDLED_CHROMIUM") == "1":
+            return playwright.chromium.launch(headless=True)
+        raise RuntimeError(
+            f"Mobile verification requires the Playwright {channel!r} browser channel. "
+            "Install/repair Chrome, set SING_YIN_PLAYWRIGHT_CHANNEL to another installed "
+            "Chrome channel, or explicitly allow bundled Chromium only in isolated CI with "
+            "SING_YIN_PLAYWRIGHT_ALLOW_BUNDLED_CHROMIUM=1."
+        ) from exc
+
+
 def _attach_error_collectors(
     page: Page,
     *,
@@ -121,6 +216,51 @@ def _attach_error_collectors(
         else None,
     )
     page.on("pageerror", lambda error: page_errors.append(f"{label}: {error}"))
+
+
+def _collect_performance_evidence(page: Page, *, label: str) -> dict[str, Any]:
+    """Collect honest navigation/render evidence without adding artificial delay."""
+
+    page.wait_for_timeout(120)
+    evidence = page.evaluate(
+        """() => {
+          const navigation = performance.getEntriesByType('navigation')[0];
+          const resources = performance.getEntriesByType('resource');
+          const paints = Object.fromEntries(
+            performance.getEntriesByType('paint').map(entry => [entry.name, entry.startTime])
+          );
+          const observed = window.__syMobilePerformanceEvidence || {};
+          return {
+            ttfb: navigation ? navigation.responseStart - navigation.requestStart : null,
+            domContentLoaded: navigation ? navigation.domContentLoadedEventEnd : null,
+            loadEvent: navigation ? navigation.loadEventEnd : null,
+            firstContentfulPaint: paints['first-contentful-paint'] || null,
+            largestContentfulPaint: observed.largestContentfulPaint || null,
+            cumulativeLayoutShift: observed.cumulativeLayoutShift || 0,
+            longestTask: observed.longestTask || 0,
+            longTaskCount: observed.longTaskCount || 0,
+            resourceCount: resources.length,
+            resourceBytes: resources.reduce(
+              (total, entry) => total + (entry.transferSize || entry.encodedBodySize || 0),
+              0
+            ),
+            motionState: document.documentElement.dataset.syMotion || '',
+          };
+        }"""
+    )
+    evidence["label"] = label
+    for key in ("ttfb", "firstContentfulPaint", "largestContentfulPaint"):
+        value = evidence[key]
+        if value is not None and (not isinstance(value, (int, float)) or value < 0):
+            raise AssertionError(f"{label} produced invalid performance timing {key}={value!r}.")
+    if evidence["cumulativeLayoutShift"] > 0.15:
+        raise AssertionError(f"{label} exceeds the mobile CLS contract: {evidence}")
+    if evidence["longestTask"] > 1_000:
+        raise AssertionError(f"{label} contains a blocking task longer than one second: {evidence}")
+    if evidence["resourceBytes"] > 25 * 1024 * 1024:
+        raise AssertionError(f"{label} transferred more than the 25 MiB safety ceiling: {evidence}")
+    PERFORMANCE_EVIDENCE.append(evidence)
+    return evidence
 
 
 def _assert_no_horizontal_overflow(page: Page, *, label: str) -> None:
@@ -221,6 +361,84 @@ def _assert_touch_targets(page: Page, *, label: str, root: str = "body") -> None
         raise AssertionError(f"{label} has touch targets smaller than 44 CSS pixels: {failures[:8]}")
 
 
+def _assert_text_reflow_contract(page: Page, *, label: str, root: str = "body") -> None:
+    """Reject clipped labels and the single-glyph columns hidden by global wrapping."""
+
+    failures = page.evaluate(
+        r"""({rootSelector}) => {
+          const root = document.querySelector(rootSelector);
+          if (!root) return [{reason: 'missing-root', selector: rootSelector}];
+          const candidates = [...root.querySelectorAll([
+            'button', '[role="button"]', '[role="heading"]', '.q-item__label',
+            '.sy-page-lead', '.sy-support-browser-field > span', 'p'
+          ].join(','))];
+          return candidates.flatMap((element) => {
+            const style = getComputedStyle(element);
+            const bounds = element.getBoundingClientRect();
+            const text = (element.textContent || '').replace(/\s+/g, ' ').trim();
+            if (
+              !text || bounds.width <= 0 || bounds.height <= 0 ||
+              style.display === 'none' || style.visibility === 'hidden' ||
+              element.closest('[aria-hidden="true"],[inert]')
+            ) return [];
+            const fontSize = Number.parseFloat(style.fontSize) || 16;
+            const lineHeight = Number.parseFloat(style.lineHeight) || fontSize * 1.25;
+            const estimatedLines = Math.max(1, Math.round(bounds.height / lineHeight));
+            const clipped = element.scrollWidth > element.clientWidth + 2 ||
+              element.scrollHeight > element.clientHeight + 2;
+            const glyphColumn = text.length >= 4 && bounds.width < fontSize * 2.2 && estimatedLines >= 4;
+            if (!clipped && !glyphColumn) return [];
+            return [{
+              reason: clipped ? 'clipped' : 'single-glyph-column',
+              tag: element.tagName.toLowerCase(),
+              testId: element.getAttribute('data-testid') || '',
+              text: text.slice(0, 80),
+              width: Math.round(bounds.width * 10) / 10,
+              height: Math.round(bounds.height * 10) / 10,
+              estimatedLines,
+            }];
+          }).slice(0, 10);
+        }""",
+        {"rootSelector": root},
+    )
+    if failures:
+        raise AssertionError(f"{label} clips text or collapses it into a glyph column: {failures}")
+
+
+def _assert_no_interactive_overlap(page: Page, *, label: str, root: str) -> None:
+    failures = page.evaluate(
+        r"""({rootSelector}) => {
+          const root = document.querySelector(rootSelector);
+          if (!root) return [{reason: 'missing-root'}];
+          const visible = [...root.querySelectorAll('button, a[href]')].filter(element => {
+            const style = getComputedStyle(element);
+            const box = element.getBoundingClientRect();
+            return style.display !== 'none' && style.visibility !== 'hidden' && box.width > 0 && box.height > 0;
+          });
+          const overlaps = [];
+          for (let i = 0; i < visible.length; i += 1) {
+            const a = visible[i].getBoundingClientRect();
+            for (let j = i + 1; j < visible.length; j += 1) {
+              const b = visible[j].getBoundingClientRect();
+              const width = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+              const height = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+              if (width * height <= 4) continue;
+              if (visible[i].contains(visible[j]) || visible[j].contains(visible[i])) continue;
+              overlaps.push({
+                first: visible[i].getAttribute('data-testid') || visible[i].textContent?.trim().slice(0, 32),
+                second: visible[j].getAttribute('data-testid') || visible[j].textContent?.trim().slice(0, 32),
+                area: Math.round(width * height),
+              });
+            }
+          }
+          return overlaps.slice(0, 8);
+        }""",
+        {"rootSelector": root},
+    )
+    if failures:
+        raise AssertionError(f"{label} has overlapping interactive controls: {failures}")
+
+
 def _assert_bottom_navigation(page: Page, *, label: str) -> None:
     navigation = page.get_by_test_id("mobile-bottom-navigation")
     navigation.wait_for(state="visible", timeout=10_000)
@@ -314,7 +532,9 @@ def _assert_mobile_page(page: Page, route: str, *, label: str) -> None:
     _assert_bottom_navigation(page, label=label)
     _assert_no_horizontal_overflow(page, label=label)
     _assert_touch_targets(page, label=label)
+    _assert_text_reflow_contract(page, label=label)
     _assert_shell_not_obscured(page, label=label)
+    _collect_performance_evidence(page, label=label)
 
 
 def _assert_mobile_atmosphere(page: Page, *, route: str, label: str) -> None:
@@ -493,6 +713,267 @@ def _open_mobile_drawer(page: Page) -> Locator:
     return drawer
 
 
+def _assert_drawer_quick_settings_contract(page: Page, *, label: str) -> None:
+    """Catch the circular/vertical quick-setting regression seen on real phones."""
+
+    drawer = _open_mobile_drawer(page)
+    tools = drawer.get_by_test_id("mobile-drawer-tools")
+    tools.wait_for(state="visible", timeout=5_000)
+    metrics = tools.evaluate(
+        r"""(root) => {
+          const visible = element => {
+            const style = getComputedStyle(element);
+            const box = element.getBoundingClientRect();
+            return style.display !== 'none' && style.visibility !== 'hidden' &&
+              Number(style.opacity || 1) > 0 && box.width > 0 && box.height > 0;
+          };
+          const exposed = element => visible(element) && (
+            typeof element.checkVisibility !== 'function' ||
+            element.checkVisibility({checkOpacity: true, checkVisibilityCSS: true})
+          );
+          const lineCount = element => {
+            if (!element) return 0;
+            const range = document.createRange();
+            range.selectNodeContents(element);
+            const tops = [...range.getClientRects()]
+              .filter(rect => rect.width > 0 && rect.height > 0)
+              .map(rect => Math.round(rect.top * 2) / 2);
+            return new Set(tops).size;
+          };
+          const tiles = [...root.querySelectorAll('.sy-mobile-setting-tile')]
+            .filter(visible)
+            .map(tile => {
+              const box = tile.getBoundingClientRect();
+              const style = getComputedStyle(tile);
+              const radius = Number.parseFloat(style.borderTopLeftRadius) || 0;
+              const copy = tile.querySelector('.sy-mobile-setting-tile-copy');
+              const title = tile.querySelector('.sy-mobile-setting-tile-title');
+              const value = tile.querySelector('.sy-mobile-setting-tile-value');
+              return {
+                testId: tile.getAttribute('data-testid') || '',
+                width: box.width,
+                height: box.height,
+                borderRadius: style.borderRadius,
+                effectiveRadius: radius,
+                copyWidth: copy?.getBoundingClientRect().width || 0,
+                titleLines: lineCount(title),
+                valueLines: lineCount(value),
+                text: (copy?.textContent || '').replace(/\s+/g, ' ').trim(),
+              };
+            });
+          const exposedCloseControls = [...document.querySelectorAll(
+            '[aria-controls="main-navigation-drawer"]'
+          )].filter(exposed).filter(control => {
+            const glyph = control.querySelector('.q-icon')?.textContent?.trim();
+            return glyph === 'close';
+          }).map(control => control.getAttribute('data-testid') || 'unnamed');
+          return {tiles, exposedCloseControls};
+        }"""
+    )
+    tiles = metrics["tiles"]
+    if len(tiles) < 3:
+        raise AssertionError(f"{label} exposes fewer than three quick-setting tiles: {metrics}")
+    failures = [
+        tile
+        for tile in tiles
+        if tile["width"] < 44
+        or tile["height"] < 44
+        or tile["copyWidth"] < 56
+        or tile["titleLines"] > 2
+        or tile["valueLines"] > 2
+        or "%" in tile["borderRadius"]
+        or (
+            tile["width"] > tile["height"] * 1.25
+            and tile["effectiveRadius"] >= min(tile["width"], tile["height"]) * 0.45
+        )
+    ]
+    if failures:
+        raise AssertionError(
+            f"{label} quick settings became circular, clipped, or vertically stacked: {failures}"
+        )
+    if len(metrics["exposedCloseControls"]) != 1:
+        raise AssertionError(
+            f"{label} must expose one unambiguous drawer close action, not duplicate bottom X controls: "
+            f"{metrics['exposedCloseControls']}"
+        )
+    _assert_no_interactive_overlap(page, label=f"{label} quick settings", root=".sy-mobile-drawer-tools")
+
+    theme = drawer.get_by_test_id("mobile-theme-control")
+    theme.focus()
+    focus_style = theme.evaluate(
+        """element => ({
+          focusVisible: element.matches(':focus-visible'),
+          outlineWidth: Number.parseFloat(getComputedStyle(element).outlineWidth) || 0,
+          boxShadow: getComputedStyle(element).boxShadow,
+        })"""
+    )
+    if not focus_style["focusVisible"] or (
+        focus_style["outlineWidth"] < 2 and focus_style["boxShadow"] in {"", "none"}
+    ):
+        raise AssertionError(f"{label} keyboard focus is not visibly distinguishable: {focus_style}")
+    page.evaluate("document.activeElement?.blur()")
+    theme.tap()
+    if theme.evaluate("element => element.matches(':focus-visible')"):
+        raise AssertionError(f"{label} leaves a keyboard-style focus halo after a touch tap.")
+
+    drawer.get_by_test_id("mobile-drawer-close").click()
+    drawer.wait_for(state="hidden", timeout=5_000)
+
+
+def _assert_drawer_cleanup_cycles(page: Page, *, label: str, cycles: int = 20) -> None:
+    """Repeated open/close cycles must not accumulate overlays or route listeners."""
+
+    more = page.get_by_test_id("mobile-more")
+    for cycle in range(cycles):
+        drawer = _open_mobile_drawer(page)
+        if cycle % 2:
+            page.keyboard.press("Escape")
+        else:
+            drawer.get_by_test_id("mobile-drawer-close").click()
+        drawer.wait_for(state="hidden", timeout=5_000)
+        page.wait_for_function(
+            """() => {
+              const more = document.querySelector('[data-testid="mobile-more"]');
+              return more?.getAttribute('aria-expanded') === 'false' && document.activeElement === more;
+            }""",
+            timeout=5_000,
+        )
+        state = page.evaluate(
+            """() => ({
+              drawers: document.querySelectorAll('#main-navigation-drawer').length,
+              moreButtons: document.querySelectorAll('[data-testid="mobile-more"]').length,
+              closeButtons: document.querySelectorAll('[data-testid="mobile-drawer-close"]').length,
+              tabbars: document.querySelectorAll('[data-testid="mobile-bottom-navigation"]').length,
+              backdrops: document.querySelectorAll('.q-drawer__backdrop').length,
+              pointerLights: document.querySelectorAll('.sy-pointer-light,[data-sy-pointer-ready]').length,
+              icon: document.querySelector('[data-testid="mobile-more"] .q-icon')?.textContent?.trim(),
+            })"""
+        )
+        if state["drawers"] != 1 or state["moreButtons"] != 1 or state["closeButtons"] != 1:
+            raise AssertionError(f"{label} leaked drawer controls after cycle {cycle + 1}: {state}")
+        if state["tabbars"] != 1 or state["backdrops"] > 1 or state["pointerLights"] > 1:
+            raise AssertionError(f"{label} leaked overlays/listeners after cycle {cycle + 1}: {state}")
+        if state["icon"] != "menu":
+            raise AssertionError(f"{label} retained the close glyph after cycle {cycle + 1}: {state}")
+
+
+def _assert_support_keyboard_visibility(page: Page, *, label: str) -> None:
+    """Use a deterministic VisualViewport test double to exercise phone-keyboard state."""
+
+    _assert_mobile_page(page, "/support", label=label)
+    field = page.locator("main#main-content textarea:visible").first
+    field.wait_for(state="visible", timeout=10_000)
+    field.focus()
+    page.evaluate("window.__sySetTestVisualViewport({height: window.innerHeight - 280})")
+    page.wait_for_function("document.documentElement.classList.contains('sy-mobile-keyboard-open')")
+    state = page.evaluate(
+        """() => {
+          const tabbar = document.querySelector('[data-testid="mobile-bottom-navigation"]');
+          return {
+            inert: tabbar?.inert === true,
+            hidden: tabbar?.getAttribute('aria-hidden'),
+            scroll: window.__syLastScrollIntoView || null,
+            activeTag: document.activeElement?.tagName,
+          };
+        }"""
+    )
+    if not state["inert"] or state["hidden"] != "true" or state["activeTag"] != "TEXTAREA":
+        raise AssertionError(f"{label} keyboard state obscures or deactivates the focused field: {state}")
+    page.wait_for_timeout(220)
+    scroll = page.evaluate("window.__syLastScrollIntoView || null")
+    if not scroll or scroll.get("block") != "center":
+        raise AssertionError(f"{label} did not reveal the focused field above the phone keyboard: {scroll}")
+    page.evaluate("window.__sySetTestVisualViewport({height: window.innerHeight})")
+    field.blur()
+    page.wait_for_function("!document.documentElement.classList.contains('sy-mobile-keyboard-open')")
+    restored = page.evaluate(
+        """() => {
+          const tabbar = document.querySelector('[data-testid="mobile-bottom-navigation"]');
+          return {inert: tabbar?.inert === true, hidden: tabbar?.getAttribute('aria-hidden')};
+        }"""
+    )
+    if restored["inert"] or restored["hidden"] == "true":
+        raise AssertionError(f"{label} did not restore navigation after keyboard dismissal: {restored}")
+
+
+def _assert_200_percent_text_reflow(page: Page, *, route: str, label: str) -> None:
+    response = page.goto(f"{BASE_URL}{route}", wait_until="domcontentloaded")
+    if response is None or response.status != 200:
+        raise AssertionError(f"{label} returned an unexpected response: {response}")
+    page.add_style_tag(content="html { font-size: 200% !important; }")
+    page.locator("main#main-content").wait_for(state="visible", timeout=10_000)
+    page.evaluate(
+        """async () => {
+          if (document.fonts?.ready) await document.fonts.ready;
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        }"""
+    )
+    _assert_no_horizontal_overflow(page, label=label)
+    _assert_text_reflow_contract(page, label=label)
+    _assert_touch_targets(page, label=label)
+
+
+def _assert_forced_colours(page: Page, *, label: str) -> None:
+    _assert_mobile_page(page, "/", label=label)
+    if not page.evaluate("matchMedia('(forced-colors: active)').matches"):
+        raise AssertionError(f"{label} did not enter forced-colours mode.")
+    drawer = _open_mobile_drawer(page)
+    current = drawer.locator('[aria-current="page"]')
+    current.first.focus()
+    state = current.first.evaluate(
+        """element => ({
+          focusVisible: element.matches(':focus-visible'),
+          outlineWidth: Number.parseFloat(getComputedStyle(element).outlineWidth) || 0,
+          borderWidth: Number.parseFloat(getComputedStyle(element).borderWidth) || 0,
+        })"""
+    )
+    if not state["focusVisible"] or max(state["outlineWidth"], state["borderWidth"]) < 1:
+        raise AssertionError(f"{label} loses current/focus affordance in forced colours: {state}")
+    page.keyboard.press("Escape")
+    drawer.wait_for(state="hidden", timeout=5_000)
+
+
+def _assert_gsap_failure_static_end_state(
+    browser: Browser,
+    *,
+    console_errors: list[str],
+    page_errors: list[str],
+) -> None:
+    """If the optional motion asset fails, readable content must render immediately."""
+
+    page, context = _new_mobile_page(
+        browser,
+        width=390,
+        height=844,
+        label="mobile-gsap-unavailable",
+        console_errors=console_errors,
+        page_errors=page_errors,
+        collect_console_errors=False,
+    )
+    page.route("**/assets/vendor/gsap-3.13.0.min.js", lambda route: route.abort())
+    response = page.goto(f"{BASE_URL}/", wait_until="domcontentloaded")
+    if response is None or response.status != 200:
+        raise AssertionError(f"GSAP failure path returned an unexpected response: {response}")
+    page.locator("main#main-content").wait_for(state="visible", timeout=10_000)
+    page.wait_for_function(
+        "document.documentElement.dataset.syMotion === 'unavailable'",
+        timeout=6_000,
+    )
+    hidden = page.evaluate(
+        """() => [...document.querySelectorAll(
+          'main#main-content h1, main#main-content h2, main#main-content p, main#main-content a, main#main-content button'
+        )].filter(element => {
+          const box = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return box.width > 0 && box.height > 0 &&
+            (Number.parseFloat(style.opacity) <= 0.01 || style.visibility === 'hidden');
+        }).slice(0, 8).map(element => ({tag: element.tagName, text: element.textContent?.trim().slice(0, 60)}))"""
+    )
+    if hidden:
+        raise AssertionError(f"GSAP failure leaves readable content hidden: {hidden}")
+    context.close()
+
+
 def _assert_drawer_scrolls(page: Page, *, label: str) -> None:
     drawer = _open_mobile_drawer(page)
     focusables = drawer.locator('a[href]:visible, button:visible, [tabindex]:not([tabindex="-1"]):visible')
@@ -611,7 +1092,7 @@ def _assert_route_focus_transfer(page: Page, *, label: str) -> None:
 
 
 def _assert_coarse_pointer_icon_story(page: Page, *, label: str) -> None:
-    """A touch opens the drawer with a persistent menu-to-close state story."""
+    """The drawer owns one close glyph; the bottom More action must not duplicate it."""
 
     _assert_mobile_page(page, "/", label=f"{label} icon-story origin")
     if page.evaluate("matchMedia('(hover: hover) and (pointer: fine)').matches"):
@@ -627,14 +1108,36 @@ def _assert_coarse_pointer_icon_story(page: Page, *, label: str) -> None:
     page.wait_for_function(
         """() => {
           const host = document.querySelector('[data-testid="mobile-more"]');
-          const icon = host?.querySelector('.q-icon');
+          const drawerClose = document.querySelector('[data-testid="mobile-drawer-close"] .q-icon');
           return host?.getAttribute('aria-expanded') === 'true' &&
-            icon?.textContent?.trim() === 'close' &&
-            icon?.dataset.syIconStoryCategory === 'persistent';
+            drawerClose?.textContent?.trim() === 'close';
         }""",
         timeout=3_000,
     )
-    page.keyboard.press("Escape")
+    open_state = page.evaluate(
+        """() => ({
+          bottomGlyph: document.querySelector('[data-testid="mobile-more"] .q-icon')?.textContent?.trim(),
+          bottomExposed: document.querySelector('[data-testid="mobile-more"]')?.checkVisibility?.({
+            checkOpacity: true,
+            checkVisibilityCSS: true,
+          }) ?? true,
+          closeCount: [...document.querySelectorAll('[aria-controls="main-navigation-drawer"] .q-icon')]
+            .filter(icon => icon.textContent?.trim() === 'close')
+            .filter(icon => {
+              const button = icon.closest('button');
+              const box = button?.getBoundingClientRect();
+              const style = button ? getComputedStyle(button) : null;
+              return box && style && box.width > 0 && box.height > 0 &&
+                style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) > 0 &&
+                (typeof button.checkVisibility !== 'function' || button.checkVisibility({checkOpacity: true, checkVisibilityCSS: true}));
+            }).length,
+        })"""
+    )
+    if (
+        open_state["bottomExposed"] and open_state["bottomGlyph"] == "close"
+    ) or open_state["closeCount"] != 1:
+        raise AssertionError(f"{label} exposes duplicate close glyphs while the drawer is open: {open_state}")
+    page.get_by_test_id("mobile-drawer-close").click()
     page.wait_for_function(
         """() => {
           const host = document.querySelector('[data-testid="mobile-more"]');
@@ -642,6 +1145,20 @@ def _assert_coarse_pointer_icon_story(page: Page, *, label: str) -> None:
           return host?.getAttribute('aria-expanded') === 'false' &&
             icon?.textContent?.trim() === 'menu' &&
             icon?.dataset.syIconStoryCategory === 'persistent';
+        }""",
+        timeout=3_000,
+    )
+    more.click()
+    page.locator("#main-navigation-drawer").wait_for(state="visible", timeout=3_000)
+    page.keyboard.press("Escape")
+    page.wait_for_function(
+        """() => {
+          const host = document.querySelector('[data-testid="mobile-more"]');
+          const drawer = document.querySelector('#main-navigation-drawer');
+          const hidden = !drawer || drawer.getAttribute('aria-hidden') === 'true' ||
+            !drawer.checkVisibility?.({checkOpacity: true, checkVisibilityCSS: true});
+          return hidden && host?.getAttribute('aria-expanded') === 'false' &&
+            document.activeElement === host;
         }""",
         timeout=3_000,
     )
@@ -671,6 +1188,9 @@ def _new_mobile_page(
     console_errors: list[str],
     page_errors: list[str],
     reduced_motion: str = "no-preference",
+    forced_colors: str = "none",
+    fake_visual_viewport: bool = False,
+    collect_console_errors: bool = True,
 ) -> tuple[Page, BrowserContext]:
     context = browser.new_context(
         viewport={"width": width, "height": height},
@@ -678,14 +1198,19 @@ def _new_mobile_page(
         has_touch=True,
         device_scale_factor=2,
         reduced_motion=reduced_motion,  # type: ignore[arg-type]
+        forced_colors=forced_colors,  # type: ignore[arg-type]
     )
+    context.add_init_script(PERFORMANCE_OBSERVER_SCRIPT)
+    if fake_visual_viewport:
+        context.add_init_script(VISUAL_VIEWPORT_TEST_DOUBLE)
     page = context.new_page()
-    _attach_error_collectors(
-        page,
-        label=label,
-        console_errors=console_errors,
-        page_errors=page_errors,
-    )
+    if collect_console_errors:
+        _attach_error_collectors(
+            page,
+            label=label,
+            console_errors=console_errors,
+            page_errors=page_errors,
+        )
     return page, context
 
 
@@ -696,7 +1221,7 @@ def main() -> int:
     page_errors: list[str] = []
 
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
+        browser = _launch_real_chrome(playwright)
 
         portrait_page, portrait = _new_mobile_page(
             browser,
@@ -717,6 +1242,9 @@ def main() -> int:
         # announce each new route through the main landmark.
         _assert_route_focus_transfer(portrait_page, label="390px shared-route navigation")
         _assert_coarse_pointer_icon_story(portrait_page, label="390px touch")
+        _assert_mobile_page(portrait_page, "/", label="390px quick-settings origin")
+        _assert_drawer_quick_settings_contract(portrait_page, label="390px drawer")
+        _assert_drawer_cleanup_cycles(portrait_page, label="390px drawer", cycles=20)
         portrait.close()
 
         tablet_page, tablet = _new_mobile_page(
@@ -856,6 +1384,60 @@ def main() -> int:
         _assert_mobile_page(landscape_page, "/guide", label="844x390 guide screenshot")
         landscape_page.screenshot(path=str(LANDSCAPE_SCREENSHOT), full_page=False)
         landscape.close()
+
+        for width, height, viewport_label in PHONE_SMOKE_VIEWPORTS:
+            phone_page, phone = _new_mobile_page(
+                browser,
+                width=width,
+                height=height,
+                label=viewport_label,
+                console_errors=console_errors,
+                page_errors=page_errors,
+                forced_colors="active" if width == 412 else "none",
+            )
+            if width == 412:
+                _assert_forced_colours(phone_page, label=f"{viewport_label} forced colours")
+            else:
+                for route in ("/", "/rosters", "/support"):
+                    _assert_mobile_page(phone_page, route, label=f"{viewport_label} {route}")
+            phone.close()
+
+        zoom_page, zoom = _new_mobile_page(
+            browser,
+            width=360,
+            height=800,
+            label="mobile-360-text-200",
+            console_errors=console_errors,
+            page_errors=page_errors,
+        )
+        for route in ("/", "/rosters", "/support"):
+            _assert_200_percent_text_reflow(
+                zoom_page,
+                route=route,
+                label=f"360px 200% text {route}",
+            )
+        zoom.close()
+
+        keyboard_page, keyboard = _new_mobile_page(
+            browser,
+            width=390,
+            height=844,
+            label="mobile-390-support-keyboard",
+            console_errors=console_errors,
+            page_errors=page_errors,
+            fake_visual_viewport=True,
+        )
+        _assert_support_keyboard_visibility(
+            keyboard_page,
+            label="390px Support visual-keyboard proxy",
+        )
+        keyboard.close()
+
+        _assert_gsap_failure_static_end_state(
+            browser,
+            console_errors=console_errors,
+            page_errors=page_errors,
+        )
         browser.close()
 
     if console_errors or page_errors:
@@ -863,13 +1445,19 @@ def main() -> int:
         raise RuntimeError(
             f"Mobile browser errors: console={len(console_errors)} page={len(page_errors)}\n{details}"
         )
+    PERFORMANCE_EVIDENCE_PATH.write_text(
+        json.dumps(PERFORMANCE_EVIDENCE, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     print(
-        "Mobile browser verification passed: 390px phone, 768x1024 and 820x1180 adaptive touch tablets, "
+        "Mobile browser verification passed in a real Chrome channel: 320/360/390/412/430px phones, "
+        "forced colours, 200% text, deterministic keyboard-state proxy, 20 drawer cycles, optional-GSAP failure, "
+        "768x1024 and 820x1180 adaptive touch tablets, "
         "1024x768 desktop-shell touch tablet, "
         "320px reduced-motion, 256px reflow, and 844x390 landscape contexts; "
         f"screenshots: {PORTRAIT_SCREENSHOT}, {TABLET_SCREENSHOT}, {TALL_TABLET_SCREENSHOT}, "
         f"{LANDSCAPE_TABLET_SCREENSHOT}, {COMPACT_SCREENSHOT}, "
-        f"{REFLOW_SCREENSHOT}, {LANDSCAPE_SCREENSHOT}",
+        f"{REFLOW_SCREENSHOT}, {LANDSCAPE_SCREENSHOT}; performance: {PERFORMANCE_EVIDENCE_PATH}",
         flush=True,
     )
     return 0
