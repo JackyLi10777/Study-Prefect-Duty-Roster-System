@@ -820,6 +820,45 @@
   };
   window.__disposeSingYinMotion = dispose;
 
+  const installMutationHydrator = () => {
+    if (mutationObserver || !document.body) return;
+    mutationObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.removedNodes.forEach(removePointersWithin);
+        mutation.removedNodes.forEach(removeTocWithin);
+        mutation.removedNodes.forEach(removeIconMotionWithin);
+        if (mutation.type === 'attributes' && mutation.target instanceof Element) {
+          hydrateIconMotion(mutation.target);
+          const host = mutation.target.matches(interactiveIconHostSelector)
+            ? mutation.target : mutation.target.closest(interactiveIconHostSelector);
+          if (host instanceof HTMLElement) {
+            const state = guardStateFor(host);
+            if (!state?.interactive) {
+              const icon = host.querySelector(interactiveIconSelector);
+              cancelIconTimeline(icon);
+              cancelRotaryTimeline(icon);
+            }
+          }
+        }
+        mutation.addedNodes.forEach((node) => {
+          if (!(node instanceof Element)) return;
+          hydrateMotion(node);
+          hydrateIconMotion(node);
+          hydrateToc(node);
+          if (!reducedMotion() && window.matchMedia(FINE_POINTER_QUERY).matches) hydratePointers(node);
+        });
+      });
+      /* A target section can arrive after its TOC in a streamed NiceGUI patch. */
+      hydrateToc();
+    });
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'aria-disabled', 'aria-busy', 'data-sy-icon-motion-role', 'data-sy-icon-motion-mode', 'data-sy-icon-story-to', 'data-sy-icon-story-category']
+    });
+  };
+
   let bootAttempts = 0;
   const boot = () => {
     if (disposed) return;
@@ -828,6 +867,7 @@
       hydrateMotion();
       hydrateIconMotion();
       hydrateToc();
+      installMutationHydrator();
       return;
     }
     if (!window.gsap) {
@@ -894,41 +934,7 @@
       }
     );
 
-    mutationObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.removedNodes.forEach(removePointersWithin);
-        mutation.removedNodes.forEach(removeTocWithin);
-        mutation.removedNodes.forEach(removeIconMotionWithin);
-        if (mutation.type === 'attributes' && mutation.target instanceof Element) {
-          hydrateIconMotion(mutation.target);
-          const host = mutation.target.matches(interactiveIconHostSelector)
-            ? mutation.target : mutation.target.closest(interactiveIconHostSelector);
-          if (host instanceof HTMLElement) {
-            const state = guardStateFor(host);
-            if (!state?.interactive) {
-              const icon = host.querySelector(interactiveIconSelector);
-              cancelIconTimeline(icon);
-              cancelRotaryTimeline(icon);
-            }
-          }
-        }
-        mutation.addedNodes.forEach((node) => {
-          if (!(node instanceof Element)) return;
-          hydrateMotion(node);
-          hydrateIconMotion(node);
-          hydrateToc(node);
-          if (!reducedMotion() && window.matchMedia(FINE_POINTER_QUERY).matches) hydratePointers(node);
-        });
-      });
-      /* A target section can arrive after its TOC in a streamed NiceGUI patch. */
-      hydrateToc();
-    });
-    mutationObserver.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class', 'aria-disabled', 'aria-busy', 'data-sy-icon-motion-role', 'data-sy-icon-motion-mode', 'data-sy-icon-story-to', 'data-sy-icon-story-category']
-    });
+    installMutationHydrator();
     document.fonts?.ready.then(() => {
       if (!disposed) hydrateMotion();
     });
