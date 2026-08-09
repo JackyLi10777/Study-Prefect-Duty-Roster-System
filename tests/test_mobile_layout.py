@@ -495,3 +495,71 @@ def test_public_mobile_verifier_exercises_support_keyboard_and_viewer_context() 
     )
     finalizer = verifier.split("finally:", 1)[1]
     assert "_write_performance_evidence()" in finalizer
+
+
+def test_public_mobile_verifier_only_reports_text_that_can_actually_be_clipped() -> None:
+    verifier = (PROJECT_ROOT / "scripts" / "verify_public_roster_viewer.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "clipsOverflow(style.overflowX)" in verifier
+    assert "clipsOverflow(style.overflowY)" in verifier
+    assert "['hidden', 'clip', 'scroll', 'auto'].includes(value)" in verifier
+    assert "style.clip === 'rect(0px, 0px, 0px, 0px)'" in verifier
+    assert "box.right > 0 && box.left < window.innerWidth" in verifier
+    assert "box.bottom > 0" in verifier
+    assert (
+        "element.scrollWidth > element.clientWidth + 2 || element.scrollHeight > element.clientHeight + 2"
+        not in verifier
+    )
+
+
+def test_public_mobile_entrance_exposes_touch_sized_volume_and_support_controls() -> None:
+    worker = (PROJECT_ROOT / "cloudflare" / "roster_viewer" / "worker.js").read_text(
+        encoding="utf-8"
+    )
+
+    assert ".welcome-audio-volume input { width: 100%; min-height: 44px; height: 44px;" in worker
+    support = worker.split(".support-link {", 1)[1].split("}", 1)[0]
+    assert "min-height: 44px" in support
+    assert "padding-block: 12px" in support
+
+
+def test_public_support_theme_seed_executes_before_document_bootstrap() -> None:
+    verifier = (PROJECT_ROOT / "scripts" / "verify_public_roster_viewer.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "(() => localStorage.setItem('sing-yin-roster-viewer-theme-v1', 'dark'))();" in verifier
+    assert "\"\"\"() => localStorage.setItem('sing-yin-roster-viewer-theme-v1', 'dark')\"\"\"" not in verifier
+    assert 'for expected_preference in ("light", "dark"):' in verifier
+    assert 'for expected_preference in ("system", "light", "dark"):' not in verifier
+    assert "root.dataset.themePreference === expected" in verifier
+    assert "root.dataset.theme === expected" in verifier
+
+
+def test_blocked_welcome_audio_checks_policy_copy_in_the_live_status_region() -> None:
+    verifier = (PROJECT_ROOT / "scripts" / "verify_public_roster_viewer.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'page.locator("#welcomeAudioStatus").inner_text().lower()' in verifier
+    assert '"direct action" not in recovery.inner_text().lower()' not in verifier
+
+
+def test_quiet_welcome_audio_choice_precedes_entry_navigation() -> None:
+    verifier = (PROJECT_ROOT / "scripts" / "verify_public_roster_viewer.py").read_text(
+        encoding="utf-8"
+    )
+    quiet_flow = verifier.split("def _assert_welcome_audio_quiet_navigation", 1)[1].split(
+        "def _assert_welcome_audio_allowed", 1
+    )[0]
+
+    assert quiet_flow.index('page.locator("#welcomeAudioQuiet").click()') < quiet_flow.index(
+        "page.locator('a[data-entry-role=\"guest\"]:visible').click()"
+    )
+    assert 'recovery.wait_for(state="hidden")' in quiet_flow
+    assert 'if recovery.is_visible():' not in quiet_flow
+    assert 'page.route(\n        "**/guest"' in quiet_flow
+    assert 'page.locator("#guestDestination").count() != 1' in quiet_flow
+    assert 'page.unroute("**/guest")' in quiet_flow

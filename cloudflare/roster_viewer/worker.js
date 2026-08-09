@@ -1522,7 +1522,7 @@ button, input, select, textarea { font: inherit; }
 .welcome-audio-volume label,
 .welcome-audio-volume output { color: var(--ink-muted); font-size: 0.61rem; font-weight: 650; }
 .welcome-audio-volume output { text-align: right; font-variant-numeric: tabular-nums; }
-.welcome-audio-volume input { width: 100%; height: 22px; margin: 0; accent-color: var(--action); cursor: pointer; }
+.welcome-audio-volume input { width: 100%; min-height: 44px; height: 44px; margin: 0; accent-color: var(--action); cursor: pointer; touch-action: manipulation; }
 .welcome-audio-status { margin: 7px 0 0; color: var(--ink-muted); font-size: 0.59rem; line-height: 1.45; }
 .welcome-audio-recovery { margin-top: 12px; padding: 12px; border: 1px solid var(--gold); border-radius: 13px; background: var(--devotional-control); color: var(--ink); }
 .welcome-audio-recovery[hidden] { display: none; }
@@ -1817,6 +1817,8 @@ tbody td {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  min-height: 44px;
+  padding-block: 12px;
   margin-top: 12px;
   color: var(--action);
   font-size: 0.72rem;

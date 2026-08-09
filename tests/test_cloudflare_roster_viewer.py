@@ -557,6 +557,7 @@ def test_welcome_music_attempts_every_visit_and_recovers_after_browser_block() -
 
     assert "WELCOME_ENABLED_KEY" not in source
     assert "sing-yin:welcome-audio-enabled:v1" not in source
+    assert ".welcome-audio-volume input { width: 100%; min-height: 44px; height: 44px;" in source
     assert "welcomeDesiredEnabled = true" in source
     assert 'id="welcomeAudioRecovery"' in source
     assert 'id="welcomeAudioEnter"' in source
