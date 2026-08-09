@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.ui import theme
 from nicegui_app.access_context import AccessMode, PageContext, Principal
 
@@ -135,3 +136,13 @@ def test_initial_head_resolves_exactly_one_atmosphere_theme_before_stylesheets()
 
     with pytest.raises(ValueError, match="initial theme preference"):
         theme.initial_theme_head_html("sepia")
+
+
+def test_theme_runtime_coalesces_body_mutations_and_cleans_the_frame() -> None:
+    shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "const scheduleThemeSync = () =>" in shell
+    assert "const observer = new MutationObserver(scheduleThemeSync);" in shell
+    assert "if (themeSyncFrame) cancelAnimationFrame(themeSyncFrame);" in shell

@@ -39,6 +39,7 @@ flowchart LR
 | `nicegui_app/services/offsite_recovery.py` | `export_offsite_recovery`、`drill_offsite_recovery` | exact-copy receipt、digest／ZIP validation、temporary replacement restore | BitLocker discovery、UI、secret storage 或部署切換 |
 | `scripts/export_offsite_recovery.ps1` | Windows external-volume evidence adapter | active immutable bundle、USB／SD、NTFS、BitLocker and host path checks | SQLite policy、custom encryption 或 fallback target |
 | `nicegui_app/ui` | 頁面、共用狀態元件、i18n、design/motion contract | Quasar/NiceGUI 呈現與瀏覽器生命週期 | SQLAlchemy model、直接資料庫寫入或直接建立正式 workflow |
+| `nicegui_app/ui/edit_sessions.py` | `DraftEditSession`、`PrefectEditSession`、篩選／dirty／undo／conflict-reapply 契約 | 單一頁面內尚未提交的 operator intent | 權限、排班資格、SQL、備份或跨 session 同步 |
 | `nicegui_app/main.py`、`runtime.py` | HTTP/runtime composition | 身份接線、啟動、readiness、process lifecycle | 可重用業務規則 |
 | `cloudflare/roster_viewer` | 公開入口、Access gateway、Viewer | Token 驗證、KV 密文、edge lifecycle | 正式名單與排班寫入 |
 
@@ -63,6 +64,7 @@ sequenceDiagram
 ```
 
 - 同一 UI 意圖只建立一次 `command_id`；雙擊或重試重用該值。
+- 名單多列修改是一個意圖：workflow 先驗證所有 ID、欄位及 expected version，再於同一 `BEGIN IMMEDIATE` 交易更新、審計及建立命令收據。任一列失敗時是零列寫入，不可退化成逐列成功／失敗的混合結果。
 - Timeout 不等於失敗；已提交結果不可自動重送。
 - committed-with-obligation 會令新寫入 fail closed，直至備份義務修復。
 - Guest 受限操作在進入 loading 及 workflow 之前拒絕，且 service/storage/integration 層仍再次拒絕。

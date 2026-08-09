@@ -697,7 +697,15 @@ def _install_theme_control_runtime() -> None:
             sync({animate});
             if (broadcast) channel?.postMessage({type: 'appearance', theme});
           };
-          const observer = new MutationObserver(() => sync());
+          let themeSyncFrame = 0;
+          const scheduleThemeSync = () => {
+            if (themeSyncFrame) return;
+            themeSyncFrame = requestAnimationFrame(() => {
+              themeSyncFrame = 0;
+              sync();
+            });
+          };
+          const observer = new MutationObserver(scheduleThemeSync);
           observer.observe(document.body, {attributes: true, attributeFilter: ['class']});
           media.addEventListener('change', () => {
             if (explicitPreference() === 'system') {
@@ -712,6 +720,8 @@ def _install_theme_control_runtime() -> None:
           }, {signal});
           window.__syThemeControls = {resolved, sync, applyExplicit, reconcileSystemResolution};
           window.__syThemeControlsCleanup = () => {
+            if (themeSyncFrame) cancelAnimationFrame(themeSyncFrame);
+            themeSyncFrame = 0;
             observer.disconnect();
             controller.abort();
             channel?.close();
@@ -821,8 +831,10 @@ def _render_mobile_tabbar(
             more_label = f'{more_label}: {t(active_definition.title_key)}'
         more = ui.button(t("mobile_more"), icon="menu", on_click=drawer.toggle).props(
             f'flat no-caps aria-label="{attr(more_label)}" aria-controls=main-navigation-drawer '
-            'aria-expanded=false data-testid=mobile-more data-sy-icon-motion-role=menu '
-            'data-sy-icon-story-category=persistent'
+            f'aria-expanded=false data-testid=mobile-more data-sy-drawer-trigger=toggle '
+            f'data-sy-drawer-open-label="{attr(more_label)}" '
+            f'data-sy-drawer-close-label="{attr(t("close_navigation"))}" '
+            'data-sy-icon-motion-role=menu data-sy-icon-story-category=persistent'
         ).classes("sy-mobile-tab")
         if active_path not in primary_paths:
             more.classes("sy-mobile-tab--active")
@@ -841,9 +853,9 @@ def _install_mobile_drawer_accessibility() -> None:
           window.__syDrawerA11yCleanup?.();
           const controller = new AbortController();
           let settleFrame = 0;
-          let breakpointFrame = 0;
+          let syncFrame = 0;
+          let requestedOpen = null;
           const isMobile = () => matchMedia('(max-width: 900px)').matches;
-          let mobileViewport = isMobile();
           button.dataset.syDrawerA11y = 'ready';
           window.__syDrawerA11yOwner = button;
           const currentBackdrop = () => document.querySelector('.q-drawer__backdrop');
@@ -898,7 +910,7 @@ def _install_mobile_drawer_accessibility() -> None:
           };
           let observedShell = null;
           let observedBackdrop = null;
-          const observer = new MutationObserver(() => sync(false));
+          const observer = new MutationObserver(() => scheduleSync(false));
           const observeShell = () => {
             const drawer = currentDrawer();
             if (!drawer) return;
@@ -916,35 +928,54 @@ def _install_mobile_drawer_accessibility() -> None:
           const sync = (focusDrawer = false) => {
             observeShell();
             const wasOpen = button.getAttribute('aria-expanded') === 'true';
-            const open = isOpen();
-            const drawerVisible = isDrawerVisible();
+            const renderedOpen = isOpen();
+            const renderedVisible = isDrawerVisible();
+            const renderedState = isMobile() ? renderedOpen : renderedVisible;
+            const open = typeof requestedOpen === 'boolean' ? requestedOpen : renderedState;
             drawerButtons().forEach(trigger => {
-              const triggerOpen = trigger.matches('[data-testid="mobile-more"]')
-                ? open : drawerVisible;
-              trigger.setAttribute('aria-expanded', String(triggerOpen));
+              const closeOnly = trigger.matches('[data-sy-drawer-trigger="close"]');
+              trigger.setAttribute('aria-expanded', String(open));
+              const openLabel = trigger.dataset.syDrawerOpenLabel;
+              const closeLabel = trigger.dataset.syDrawerCloseLabel;
+              const accessibleLabel = open ? closeLabel : openLabel;
+              if (!closeOnly && accessibleLabel) {
+                trigger.setAttribute('aria-label', accessibleLabel);
+                trigger.setAttribute('title', accessibleLabel);
+              }
               const previous = trigger.dataset.syDrawerVisualOpen;
               window.__syIconMotion?.setPersistentGlyph(
                 trigger,
-                triggerOpen ? 'close' : 'menu',
-                {animate: previous !== undefined && previous !== String(triggerOpen)}
+                closeOnly || open ? 'close' : 'menu',
+                {animate: !closeOnly && previous !== undefined && previous !== String(open)}
               );
-              trigger.dataset.syDrawerVisualOpen = String(triggerOpen);
+              trigger.dataset.syDrawerVisualOpen = String(open);
             });
-            setBackgroundInert(open);
-            if (focusDrawer && open) {
+            setBackgroundInert(isMobile() && open);
+            if (focusDrawer && renderedState) {
               const first = focusable()[0];
               first?.focus({preventScroll: true});
             }
-            if (wasOpen && !open) button.focus({preventScroll: true});
-            return isMobile() ? open : drawerVisible;
+            if (wasOpen && !open && requestedOpen === null) button.focus({preventScroll: true});
+            return renderedState;
+          };
+          const scheduleSync = (focusDrawer = false) => {
+            if (syncFrame) cancelAnimationFrame(syncFrame);
+            syncFrame = requestAnimationFrame(() => {
+              syncFrame = 0;
+              sync(focusDrawer);
+            });
           };
           const settle = (expectedOpen, focusDrawer = false) => {
             if (settleFrame) cancelAnimationFrame(settleFrame);
+            requestedOpen = typeof expectedOpen === 'boolean' ? expectedOpen : null;
+            sync(false);
             const startedAt = performance.now();
             const tick = () => {
               if (controller.signal.aborted) return;
               const open = sync(focusDrawer && expectedOpen === true);
               if (expectedOpen === undefined || open === expectedOpen || performance.now() - startedAt >= 3000) {
+                requestedOpen = null;
+                sync(focusDrawer && expectedOpen === true);
                 settleFrame = 0;
                 return;
               }
@@ -954,7 +985,9 @@ def _install_mobile_drawer_accessibility() -> None:
           };
           drawerButtons().forEach(trigger => {
             trigger.addEventListener('click', () => {
-              const expectedOpen = trigger.getAttribute('aria-expanded') !== 'true';
+              const expectedOpen = trigger.matches('[data-sy-drawer-trigger="close"]')
+                ? false
+                : trigger.getAttribute('aria-expanded') !== 'true';
               settle(expectedOpen, trigger === button && expectedOpen);
             }, {signal: controller.signal});
           });
@@ -966,7 +999,9 @@ def _install_mobile_drawer_accessibility() -> None:
             if (!isOpen()) return;
             if (event.key === 'Escape') {
               event.preventDefault();
-              button.click();
+              const close = document.querySelector('[data-testid="mobile-drawer-close"]');
+              if (close instanceof HTMLElement) close.click();
+              else button.click();
               return;
             }
             if (event.key !== 'Tab') return;
@@ -982,42 +1017,16 @@ def _install_mobile_drawer_accessibility() -> None:
             }
           }, {signal: controller.signal});
           const reconcileBreakpoint = () => {
-            const nextMobileViewport = isMobile();
-            if (nextMobileViewport && !mobileViewport) {
-              const startedAt = performance.now();
-              let requestedClose = false;
-              const tick = () => {
-                if (controller.signal.aborted) return;
-                if (!requestedClose && isOpen()) {
-                  const trigger = document.querySelector('.sy-desktop-drawer-trigger');
-                  if (trigger instanceof HTMLElement) {
-                    requestedClose = true;
-                    trigger.click();
-                    settle(false, false);
-                    breakpointFrame = 0;
-                    return;
-                  }
-                }
-                if (performance.now() - startedAt < 500) {
-                  breakpointFrame = requestAnimationFrame(tick);
-                  return;
-                }
-                breakpointFrame = 0;
-                sync(false);
-              };
-              if (breakpointFrame) cancelAnimationFrame(breakpointFrame);
-              breakpointFrame = requestAnimationFrame(tick);
-            } else {
-              sync(false);
-            }
-            mobileViewport = nextMobileViewport;
+            requestedOpen = null;
+            scheduleSync(false);
           };
           window.addEventListener('resize', reconcileBreakpoint, {passive: true, signal: controller.signal});
           window.__syDrawerA11yCleanup = () => {
             if (settleFrame) cancelAnimationFrame(settleFrame);
-            if (breakpointFrame) cancelAnimationFrame(breakpointFrame);
+            if (syncFrame) cancelAnimationFrame(syncFrame);
             settleFrame = 0;
-            breakpointFrame = 0;
+            syncFrame = 0;
+            requestedOpen = null;
             observer.disconnect();
             observedShell = null;
             observedBackdrop = null;
@@ -1185,6 +1194,12 @@ def page_shell(active_path: str) -> Iterator[None]:
     with drawer:
         with ui.column().classes("sy-sidebar-body w-full gap-1 p-4"):
             with ui.element("section").classes("sy-sidebar-brand"):
+                ui.button(icon="close", on_click=drawer.toggle).props(
+                    f'flat round aria-label="{attr(t("close_navigation"))}" '
+                    f'title="{attr(t("close_navigation"))}" aria-controls=main-navigation-drawer '
+                    'aria-expanded=false data-testid=mobile-drawer-close data-sy-drawer-trigger=close '
+                    'data-sy-icon-motion-role=menu data-sy-icon-story-category=static'
+                ).classes("sy-icon-control sy-mobile-drawer-close").tooltip(t("close_navigation"))
                 with ui.row().classes("sy-brand-lockup items-center gap-3 mb-2"):
                     render_service_weave_mark(context="navigation", test_id="navigation-product-mark")
                     with ui.column().classes("sy-brand-copy gap-0 min-w-0"):
@@ -1246,8 +1261,11 @@ def page_shell(active_path: str) -> Iterator[None]:
             with ui.row().classes("sy-header-leading items-center gap-2"):
                 ui.button(icon="menu", on_click=drawer.toggle).props(
                     f'flat round aria-label="{attr(t("open_navigation"))}" aria-controls=main-navigation-drawer '
-                    'aria-expanded=true data-sy-icon-motion-role=menu data-sy-icon-story-category=persistent'
-                ).classes("sy-icon-control sy-desktop-drawer-trigger").style("color: var(--sy-nav-ink) !important").tooltip(t("open_navigation"))
+                    f'aria-expanded=true data-testid=desktop-drawer-trigger data-sy-drawer-trigger=toggle '
+                    f'data-sy-drawer-open-label="{attr(t("open_navigation"))}" '
+                    f'data-sy-drawer-close-label="{attr(t("close_navigation"))}" '
+                    'data-sy-icon-motion-role=menu data-sy-icon-story-category=persistent'
+                ).classes("sy-icon-control sy-desktop-drawer-trigger").style("color: var(--sy-nav-ink) !important")
                 with ui.column().classes("sy-header-context gap-0 min-w-0"):
                     ui.label(f"{chapter:02d} · {t(navigation_group_key)}").classes("sy-header-eyebrow")
                     ui.label(t(title_key)).classes("sy-header-title text-lg font-semibold").props("role=heading aria-level=1")

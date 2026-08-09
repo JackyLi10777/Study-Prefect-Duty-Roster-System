@@ -44,6 +44,7 @@ from nicegui_app.services.workflow_types import (
     LeaveAdjustmentResult,
     PeriodSummaryReport,
     PrefectInput,
+    PrefectPatch,
     PrefectPeriodContribution,
     ReportRosterSource,
     RosterWeekResult,
@@ -51,6 +52,7 @@ from nicegui_app.services.workflow_types import (
     WorkflowConflictError,
     WorkflowError,
     WeekScheduleOverrides,
+    prefect_input_from_patch,
 )
 from roster_core.generator import (
     RosterGenerationError,
@@ -376,6 +378,154 @@ class GuestWorkspaceAdapter:
             command_id=command_id,
         )
 
+    def patch_prefects_batch(
+        self,
+        patches: Iterable[PrefectPatch],
+        *,
+        command_id: str | None = None,
+    ) -> dict[str, object]:
+        """Apply the same all-or-none inline contract to one demo workspace."""
+
+        self._require_modify()
+        normalized = tuple(sorted(tuple(patches), key=lambda item: item.prefect_id))
+        if not normalized:
+            raise WorkflowError("No prefect changes were provided.")
+        prefect_ids = [patch.prefect_id.strip() for patch in normalized]
+        if any(not prefect_id for prefect_id in prefect_ids):
+            raise WorkflowError("Prefect ID is required.")
+        if len(prefect_ids) != len(set(prefect_ids)):
+            raise WorkflowError("A prefect may appear only once in a batch patch.")
+        stable_command_id = (command_id or "").strip()
+        if not stable_command_id:
+            raise WorkflowError("A stable command ID is required for a batch patch.")
+        request_payload = {
+            "patches": [
+                {
+                    "prefectId": patch.prefect_id,
+                    "expectedVersion": patch.expected_version,
+                    "changes": {
+                        key: patch.changes[key]
+                        for key in sorted(patch.changes)
+                    },
+                }
+                for patch in normalized
+            ]
+        }
+        request_digest = hashlib.sha256(
+            json.dumps(
+                request_payload,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                default=str,
+            ).encode("utf-8")
+        ).hexdigest()
+        if self._bound:
+            replay = self._registry.replay_command(
+                session_id=self._session_id,
+                workspace_id=self._workspace_id,
+                tab_id=self._tab_id,
+                command_id=stable_command_id,
+                request_digest=request_digest,
+            )
+            if replay is not None:
+                self._initial_view = replay
+                replayed_rows = [
+                    self._prefect_output(self._prefect_record(replay.state, prefect_id))
+                    for prefect_id in prefect_ids
+                ]
+                return {"updated": replayed_rows, "conflicts": [], "errors": []}
+
+        view = self._view()
+        state = view.state
+        records: dict[str, dict[str, Any]] = {}
+        inputs: dict[str, PrefectInput] = {}
+        conflicts: list[dict[str, object]] = []
+        errors: list[dict[str, object]] = []
+        patch_by_id = {patch.prefect_id: patch for patch in normalized}
+        for patch in normalized:
+            try:
+                record = self._prefect_record(state, patch.prefect_id)
+            except WorkflowError as error:
+                errors.append({"prefectId": patch.prefect_id, "message": str(error)})
+                continue
+            records[patch.prefect_id] = record
+            current = self._prefect_output(record)
+            if not record.get("active", True) or int(record.get("version", 1)) != patch.expected_version:
+                conflicts.append(
+                    {
+                        "prefectId": patch.prefect_id,
+                        "latest": current,
+                        "changes": dict(patch.changes),
+                    }
+                )
+                continue
+            try:
+                prefect_input = prefect_input_from_patch(current, patch)
+                self._validate_prefect_input(prefect_input)
+            except WorkflowError as error:
+                errors.append({"prefectId": patch.prefect_id, "message": str(error)})
+            else:
+                inputs[patch.prefect_id] = prefect_input
+
+        if not conflicts and not errors:
+            fixed_day_owners: dict[str, list[str]] = {}
+            for record in state.get("prefects", []):
+                if not record.get("active", True) or record.get("roleCode") != "assistant_head":
+                    continue
+                final_input = inputs.get(str(record["id"]))
+                day = final_input.fixed_general_duty if final_input is not None else str(record.get("fixedGeneralDuty", "NONE"))
+                if day != "NONE":
+                    fixed_day_owners.setdefault(day, []).append(str(record["id"]))
+            duplicate_ids = {
+                prefect_id
+                for owners in fixed_day_owners.values()
+                if len(owners) > 1
+                for prefect_id in owners
+                if prefect_id in patch_by_id
+            }
+            errors.extend(
+                {
+                    "prefectId": prefect_id,
+                    "message": "Another active Assistant Head Study Prefect already owns this fixed weekday.",
+                }
+                for prefect_id in sorted(duplicate_ids)
+            )
+
+        if conflicts or errors:
+            return {"updated": [], "conflicts": conflicts, "errors": errors}
+
+        updated_at = _datetime_text(_now())
+        for patch in normalized:
+            record = records[patch.prefect_id]
+            prefect_input = inputs[patch.prefect_id]
+            record.update(
+                {
+                    "nameEn": prefect_input.name_en.strip() if prefect_input.name_en else None,
+                    "form": prefect_input.form,
+                    "className": prefect_input.class_name.strip(),
+                    "availableDays": self._sorted_days(prefect_input.available_days),
+                    "needsMentoring": bool(prefect_input.needs_mentoring),
+                    "fixedGeneralDuty": prefect_input.fixed_general_duty,
+                    "remarks": prefect_input.remarks.strip(),
+                    "version": patch.expected_version + 1,
+                    "fictional": True,
+                    "updatedAt": updated_at,
+                }
+            )
+        committed = self._commit(
+            view,
+            state,
+            "prefect-batch-patch",
+            command_id=stable_command_id,
+            request_digest=request_digest,
+        )
+        committed_rows = [
+            self._prefect_output(self._prefect_record(committed.state, prefect_id))
+            for prefect_id in prefect_ids
+        ]
+        return {"updated": committed_rows, "conflicts": [], "errors": []}
+
     def validate_prefect_patch(
         self,
         prefect_id: str,
@@ -385,53 +535,16 @@ class GuestWorkspaceAdapter:
     ) -> PrefectInput:
         """Validate one demo row without mutating the session workspace."""
 
-        allowed = {
-            "nameEn",
-            "form",
-            "className",
-            "availableDays",
-            "needsMentoring",
-            "fixedGeneralDuty",
-            "remarks",
-        }
-        if not changes:
-            raise WorkflowError("No prefect changes were provided.")
-        unsupported = sorted(set(changes) - allowed)
-        if unsupported:
-            raise WorkflowError(
-                f"Inline editing is not allowed for: {', '.join(unsupported)}."
-            )
         current = self.prefect(prefect_id)
-        merged = dict(current)
-        merged.update(changes)
-        available_days = merged.get("availableDays", ())
-        if not isinstance(available_days, (list, tuple)) or any(
-            not isinstance(day, str) for day in available_days
-        ):
-            raise WorkflowError("Available days must be a list of weekday codes.")
-        if not isinstance(merged.get("needsMentoring"), bool):
-            raise WorkflowError("needsMentoring must be true or false.")
-        for text_field in ("form", "className", "fixedGeneralDuty", "remarks"):
-            if not isinstance(merged.get(text_field), str):
-                raise WorkflowError(f"{text_field} must be text.")
-        if merged.get("nameEn") is not None and not isinstance(merged.get("nameEn"), str):
-            raise WorkflowError("nameEn must be text or empty.")
         if int(current["version"]) != expected_version:
             raise WorkflowConflictError("This demo prefect changed in another tab.")
-        prefect_input = PrefectInput(
-            name_zh=str(current["nameZh"]),
-            name_en=(str(merged["nameEn"]).strip() or None)
-            if merged.get("nameEn") is not None
-            else None,
-            form=str(merged["form"]),
-            class_name=str(merged["className"]),
-            role_code=str(current["roleCode"]),
-            available_days=tuple(str(day) for day in available_days),
-            needs_mentoring=bool(merged["needsMentoring"]),
-            fixed_general_duty=str(merged["fixedGeneralDuty"]),
-            remarks=str(merged["remarks"]),
-            history_weight=float(current["historyWeight"]),
-            history_duties=int(current["historyDuties"]),
+        prefect_input = prefect_input_from_patch(
+            current,
+            PrefectPatch(
+                prefect_id=prefect_id,
+                changes=changes,
+                expected_version=expected_version,
+            ),
         )
         self._validate_prefect_input(prefect_input)
         view = self._view()
@@ -1894,6 +2007,7 @@ class GuestWorkspaceAdapter:
         operation: str,
         *,
         command_id: str | None = None,
+        request_digest: str | None = None,
     ) -> GuestWorkspaceView:
         if not self._bound:
             raise WorkflowError("The demo workspace is still connecting. Try the action again.")
@@ -1907,6 +2021,7 @@ class GuestWorkspaceAdapter:
                 expected_revision=view.revision,
                 command_id=receipt_id,
                 state=state,
+                request_digest=request_digest,
             )
             self._initial_view = updated
             if self._snapshot_publisher is not None:

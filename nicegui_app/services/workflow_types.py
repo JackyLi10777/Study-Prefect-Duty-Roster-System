@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
@@ -286,6 +287,73 @@ class PrefectInput:
     history_duties: int = 0
 
 
+PREFECT_PATCH_FIELDS = frozenset(
+    {
+        "nameEn",
+        "form",
+        "className",
+        "availableDays",
+        "needsMentoring",
+        "fixedGeneralDuty",
+        "remarks",
+    }
+)
+
+
+@dataclass(frozen=True)
+class PrefectPatch:
+    """One versioned, low-risk prefect-directory edit in a batch intent."""
+
+    prefect_id: str
+    changes: Mapping[str, object]
+    expected_version: int
+
+
+def prefect_input_from_patch(
+    current: Mapping[str, object],
+    patch: PrefectPatch,
+) -> PrefectInput:
+    """Apply the shared inline-field contract without mutating either input."""
+
+    changes = dict(patch.changes)
+    if not changes:
+        raise WorkflowError("No prefect changes were provided.")
+    unsupported = sorted(set(changes) - PREFECT_PATCH_FIELDS)
+    if unsupported:
+        raise WorkflowError(
+            f"Inline editing is not allowed for: {', '.join(unsupported)}."
+        )
+    merged = dict(current)
+    merged.update(changes)
+    available_days = merged.get("availableDays", ())
+    if not isinstance(available_days, (list, tuple)) or any(
+        not isinstance(day, str) for day in available_days
+    ):
+        raise WorkflowError("Available days must be a list of weekday codes.")
+    if not isinstance(merged.get("needsMentoring"), bool):
+        raise WorkflowError("needsMentoring must be true or false.")
+    for text_field in ("form", "className", "fixedGeneralDuty", "remarks"):
+        if not isinstance(merged.get(text_field), str):
+            raise WorkflowError(f"{text_field} must be text.")
+    if merged.get("nameEn") is not None and not isinstance(merged.get("nameEn"), str):
+        raise WorkflowError("nameEn must be text or empty.")
+    return PrefectInput(
+        name_zh=str(current["nameZh"]),
+        name_en=(str(merged["nameEn"]).strip() or None)
+        if merged.get("nameEn") is not None
+        else None,
+        form=str(merged["form"]),
+        class_name=str(merged["className"]),
+        role_code=str(current["roleCode"]),
+        available_days=tuple(str(day) for day in available_days),
+        needs_mentoring=bool(merged["needsMentoring"]),
+        fixed_general_duty=str(merged["fixedGeneralDuty"]),
+        remarks=str(merged["remarks"]),
+        history_weight=float(current["historyWeight"]),
+        history_duties=int(current["historyDuties"]),
+    )
+
+
 ROLE_CODES = frozenset(role.value for role in PrefectRole)
 
 
@@ -307,7 +375,9 @@ __all__ = [
     "LeaveAdjustmentResult",
     "LEGACY_FIXED_WEEKDAY",
     "PeriodSummaryReport",
+    "PREFECT_PATCH_FIELDS",
     "PrefectInput",
+    "PrefectPatch",
     "PrefectPeriodContribution",
     "ReportRosterSource",
     "ROLE_CODES",
@@ -317,4 +387,5 @@ __all__ = [
     "WorkflowError",
     "WorkflowMaintenanceError",
     "WeekScheduleOverrides",
+    "prefect_input_from_patch",
 ]

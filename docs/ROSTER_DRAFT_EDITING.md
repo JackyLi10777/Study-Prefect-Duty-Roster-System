@@ -96,6 +96,7 @@ Published rosters cannot be patched or closed directly. Withdraw an incorrectly 
 - `roster_slot_exceptions` 使用穩定資料庫欄位 `day / post_code / slot_index`，限制每週每格唯一；API 的 `cell_key` 內星期代碼會映射至 `day`，原因及備註均為選填。
 - 公開型別：`WeekScheduleOverrides`、`DraftCellEdit`、`DraftDayEdit`、`DraftSlotStateEdit`。
 - 交易入口：`apply_draft_patch(roster_week_id, expected_week_version, cell_edits, day_edits, slot_edits, reason?, command_id)`。
+- 頁面狀態 owner：`nicegui_app/ui/edit_sessions.py::DraftEditSession`。它保存 reviewed baseline、pending cells／days／slots、selection、move source、undo／redo、dirty count、穩定 command ID 及 conflict reapply；`weekly.py` 只負責呈現及把不可變 patch 交給 workflow。
 - 共用輸出：`RosterSchedulePresentation`，狀態只限 `assigned / vacant / room_closed / unavailable / day_closed`。
 - migration `0014` 上線前必須完成上一 schema 備份、隔離還原及 current-head 恢復基線；舊程式不能對較新 schema 作 code-only rollback。
 

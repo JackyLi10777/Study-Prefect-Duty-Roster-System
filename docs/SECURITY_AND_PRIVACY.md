@@ -177,6 +177,8 @@ startup deliberately returns HTTP 503 with `workflowInitialized=false` and
 controlled recovery and a safe process restart are required before writes can
 resume.
 
+Draft and prefect pages keep uncommitted intent in typed, process-local page-session objects only. They are usability and conflict-recovery owners, not trust boundaries. Admin prefect batch updates use one stable request-bound `command_id`, `BEGIN IMMEDIATE`, pre-mutation validation of every target and optimistic versions for every row; any conflict or invalid field produces zero row mutations. Guest runs the same batch contract against its bounded fictional workspace, and its idempotency receipt stores only request/result digests and revision metadata rather than historical workspace copies. A replay is accepted only when the command ID and request digest match the original intent.
+
 Public Viewer publication uses a durable, version-bound outbox. When a
 published roster is corrected or withdrawn, the same SQLite transaction marks
 every older or possibly delivered share as `revocation_pending` and removes any

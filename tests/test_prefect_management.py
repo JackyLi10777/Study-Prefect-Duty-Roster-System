@@ -15,6 +15,7 @@ from nicegui_app.services.roster_workflow import (
     BackupResult,
     CommittedWriteBackupError,
     PrefectInput,
+    PrefectPatch,
     RosterWorkflow,
     WorkflowConflictError,
     WorkflowError,
@@ -143,6 +144,144 @@ def test_prefect_patch_updates_only_whitelisted_fields_with_cas_and_replay(tmp_p
             expected_version=int(updated["version"]),
         )
 
+
+def test_prefect_batch_patch_is_atomic_and_replays_once(tmp_path) -> None:
+    workflow = _workflow(tmp_path)
+    originals = workflow.prefects()[:2]
+    patches = tuple(
+        PrefectPatch(
+            prefect_id=str(row["id"]),
+            changes={"remarks": f"Atomic review {index}"},
+            expected_version=int(row["version"]),
+        )
+        for index, row in enumerate(originals, start=1)
+    )
+
+    first = workflow.patch_prefects_batch(patches, command_id="prefect-batch-once")
+    backups_after_first = tuple((tmp_path / "backups").glob("*.sqlite3"))
+    replay = workflow.patch_prefects_batch(patches, command_id="prefect-batch-once")
+
+    assert replay == first
+    assert [row["remarks"] for row in first["updated"]] == [
+        "Atomic review 1",
+        "Atomic review 2",
+    ]
+    assert [int(row["version"]) for row in first["updated"]] == [
+        int(row["version"]) + 1 for row in originals
+    ]
+    assert tuple((tmp_path / "backups").glob("*.sqlite3")) == backups_after_first
+
+
+def test_prefect_batch_conflict_or_validation_error_writes_no_rows(tmp_path) -> None:
+    workflow = _workflow(tmp_path)
+    first, second = workflow.prefects()[:2]
+    workflow.patch_prefect(
+        str(second["id"]),
+        {"remarks": "Concurrent update"},
+        expected_version=int(second["version"]),
+        command_id="concurrent-prefect-update",
+    )
+    first_before = workflow.prefect(str(first["id"]))
+
+    conflicted = workflow.patch_prefects_batch(
+        (
+            PrefectPatch(str(first["id"]), {"remarks": "Must not persist"}, int(first["version"])),
+            PrefectPatch(str(second["id"]), {"remarks": "Stale"}, int(second["version"])),
+        ),
+        command_id="conflicted-prefect-batch",
+    )
+    assert conflicted["updated"] == []
+    assert [row["prefectId"] for row in conflicted["conflicts"]] == [str(second["id"])]
+    assert workflow.prefect(str(first["id"])) == first_before
+
+    latest_second = workflow.prefect(str(second["id"]))
+    invalid = workflow.patch_prefects_batch(
+        (
+            PrefectPatch(str(first["id"]), {"remarks": "Still must not persist"}, int(first["version"])),
+            PrefectPatch(str(second["id"]), {"form": "F.7"}, int(latest_second["version"])),
+        ),
+        command_id="invalid-prefect-batch",
+    )
+    assert invalid["updated"] == []
+    assert [row["prefectId"] for row in invalid["errors"]] == [str(second["id"])]
+    assert workflow.prefect(str(first["id"])) == first_before
+
+
+def test_prefect_batch_allows_one_valid_assistant_fixed_day_swap(tmp_path) -> None:
+    workflow = _workflow(tmp_path)
+    assistants = [
+        row for row in workflow.prefects() if row["roleCode"] == "assistant_head"
+    ]
+    first, second = assistants[0], assistants[2]
+    first = workflow.patch_prefect(
+        str(first["id"]),
+        {"fixedGeneralDuty": "MONDAY"},
+        expected_version=int(first["version"]),
+        command_id="prepare-first-fixed-day",
+    )
+    second = workflow.patch_prefect(
+        str(second["id"]),
+        {"fixedGeneralDuty": "TUESDAY"},
+        expected_version=int(second["version"]),
+        command_id="prepare-second-fixed-day",
+    )
+
+    result = workflow.patch_prefects_batch(
+        (
+            PrefectPatch(
+                str(first["id"]),
+                {"fixedGeneralDuty": "TUESDAY"},
+                int(first["version"]),
+            ),
+            PrefectPatch(
+                str(second["id"]),
+                {"fixedGeneralDuty": "MONDAY"},
+                int(second["version"]),
+            ),
+        ),
+        command_id="swap-assistant-fixed-days",
+    )
+
+    assert result["conflicts"] == []
+    assert result["errors"] == []
+    assert {
+        str(row["id"]): str(row["fixedGeneralDuty"])
+        for row in result["updated"]
+    } == {
+        str(first["id"]): "TUESDAY",
+        str(second["id"]): "MONDAY",
+    }
+
+
+def test_concurrent_prefect_batches_serialize_without_partial_overwrite(tmp_path) -> None:
+    workflow = _workflow(tmp_path)
+    originals = workflow.prefects()[:2]
+    barrier = Barrier(2)
+
+    def save(label: str) -> dict[str, object]:
+        barrier.wait(timeout=5)
+        return workflow.patch_prefects_batch(
+            tuple(
+                PrefectPatch(
+                    str(row["id"]),
+                    {"remarks": label},
+                    int(row["version"]),
+                )
+                for row in originals
+            ),
+            command_id=f"concurrent-batch-{label}",
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(save, ("alpha", "beta")))
+
+    winners = [result for result in results if result["updated"]]
+    losers = [result for result in results if result["conflicts"]]
+    assert len(winners) == len(losers) == 1
+    assert len(losers[0]["conflicts"]) == 2
+    final_rows = [workflow.prefect(str(row["id"])) for row in originals]
+    assert len({str(row["remarks"]) for row in final_rows}) == 1
+    assert str(final_rows[0]["remarks"]) in {"alpha", "beta"}
 
 def test_role_change_preserves_inactive_legacy_assist_metadata_without_blocking_availability(tmp_path) -> None:
     workflow = _workflow(tmp_path)

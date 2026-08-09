@@ -22,6 +22,7 @@ from nicegui_app.services.prefect_import_assistant import (
 from nicegui_app.services.roster_workflow import (
     PeriodSummaryReport,
     PrefectInput,
+    PrefectPatch,
     WorkflowConflictError,
     WorkflowError,
 )
@@ -31,6 +32,11 @@ from nicegui_app.services.summary_report_export import (
     build_summary_report_pdf,
 )
 from nicegui_app.ui.downloads import deliver_generated_download
+from nicegui_app.ui.edit_sessions import (
+    PrefectDirectoryFilter,
+    PrefectEditSession,
+    filter_prefect_directory,
+)
 from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import day_label, role_label, t
 from nicegui_app.ui.navigation import navigate_to
@@ -67,9 +73,6 @@ from nicegui_app.utils.prefect_import import (
 from roster_policy import SchoolDay
 
 
-_PREFECT_ROLE_ORDER = {"assistant_head": 0, "study_prefect": 1}
-
-
 def _prefect_directory_view(
     prefects: list[dict[str, object]],
     *,
@@ -81,99 +84,30 @@ def _prefect_directory_view(
 ) -> list[dict[str, object]]:
     """Filter and stably sort one shared desktop/mobile directory model."""
 
-    term = query.strip().casefold()
-
-    def matches(item: dict[str, object]) -> bool:
-        if form_filter != "all" and str(item["form"]) != form_filter:
-            return False
-        if role_filter != "all" and str(item["roleCode"]) != role_filter:
-            return False
-        if support_filter == "needs_mentoring" and not bool(item["needsMentoring"]):
-            return False
-        if support_filter == "new" and not (
-            float(item["historyWeight"]) == 0 and int(item["historyDuties"]) == 0
-        ):
-            return False
-        if not term:
-            return True
-        haystack = " ".join(
-            (
-                str(item["nameZh"]),
-                str(item.get("nameEn") or ""),
-                str(item["form"]),
-                str(item["className"]),
-            )
-        ).casefold()
-        return term in haystack
-
-    filtered = [item for item in prefects if matches(item)]
-
-    def grade_key(item: dict[str, object]) -> tuple[int, str]:
-        digits = "".join(character for character in str(item["form"]) if character.isdigit())
-        return (int(digits or 99), str(item["className"]).casefold())
-
-    key_map: dict[str, tuple[Callable[[dict[str, object]], object], bool]] = {
-        "name_asc": (lambda item: str(item["nameZh"]), False),
-        "name_desc": (lambda item: str(item["nameZh"]), True),
-        "grade_asc": (grade_key, False),
-        "grade_desc": (grade_key, True),
-        "role_asc": (lambda item: _PREFECT_ROLE_ORDER.get(str(item["roleCode"]), 99), False),
-        "role_desc": (lambda item: _PREFECT_ROLE_ORDER.get(str(item["roleCode"]), 99), True),
-        "weight_asc": (lambda item: float(item["historyWeight"]), False),
-        "weight_desc": (lambda item: float(item["historyWeight"]), True),
-        "duties_asc": (lambda item: int(item["historyDuties"]), False),
-        "duties_desc": (lambda item: int(item["historyDuties"]), True),
-        "created_asc": (lambda item: str(item.get("createdAt") or ""), False),
-        "created_desc": (lambda item: str(item.get("createdAt") or ""), True),
-    }
-    key, reverse = key_map.get(sort_code, key_map["name_asc"])
-    return sorted(filtered, key=lambda item: (key(item), str(item["id"])), reverse=reverse)
+    return filter_prefect_directory(
+        prefects,
+        PrefectDirectoryFilter(
+            query=query,
+            form=form_filter,
+            role=role_filter,
+            support=support_filter,
+            sort=sort_code,
+        ),
+    )
 
 
 def _apply_prefect_patch_batch(
     workflow: object,
-    patches: tuple[dict[str, object], ...],
+    patches: tuple[PrefectPatch, ...],
+    *,
+    command_id: str,
 ) -> dict[str, object]:
-    """Apply row-scoped CAS writes while returning conflicts without data loss."""
+    """Delegate one user intent to the adapter's atomic transaction boundary."""
 
-    updated: list[dict[str, object]] = []
-    conflicts: list[dict[str, object]] = []
-    errors: list[dict[str, object]] = []
-    invalid: list[dict[str, object]] = []
-    for patch in patches:
-        prefect_id = str(patch["prefectId"])
-        try:
-            workflow.validate_prefect_patch(  # type: ignore[attr-defined]
-                prefect_id,
-                dict(patch["changes"]),
-                expected_version=int(patch["expectedVersion"]),
-            )
-        except WorkflowError as error:
-            invalid.append({"prefectId": prefect_id, "message": str(error)})
-    if invalid:
-        return {"updated": [], "conflicts": [], "errors": invalid}
-    for patch in patches:
-        prefect_id = str(patch["prefectId"])
-        try:
-            updated.append(
-                workflow.patch_prefect(  # type: ignore[attr-defined]
-                    prefect_id,
-                    dict(patch["changes"]),
-                    expected_version=int(patch["expectedVersion"]),
-                    command_id=str(patch["commandId"]),
-                )
-            )
-        except WorkflowConflictError:
-            conflicts.append(
-                {
-                    "prefectId": prefect_id,
-                    "latest": workflow.prefect(prefect_id),  # type: ignore[attr-defined]
-                    "changes": dict(patch["changes"]),
-                }
-            )
-        except WorkflowError as error:
-            errors.append({"prefectId": prefect_id, "message": str(error)})
-    return {"updated": updated, "conflicts": conflicts, "errors": errors}
+    return workflow.patch_prefects_batch(  # type: ignore[attr-defined, no-any-return]
+        patches,
+        command_id=command_id,
+    )
 
 
 def _prefect_file_preview_fingerprint(
@@ -817,97 +751,61 @@ def _render_inline_prefect_directory(
 ) -> None:
     """Render one responsive, buffered directory editor for Admin and Guest."""
 
-    originals = {str(item["id"]): dict(item) for item in prefects}
-    pending: dict[str, dict[str, object]] = {}
-    command_ids: dict[str, str] = {}
-    conflicts: dict[str, dict[str, object]] = {}
-    filter_state = {
-        "query": "",
-        "form": "all",
-        "role": "all",
-        "support": "all",
-        "sort": "name_asc",
-    }
+    edit_session = PrefectEditSession.from_rows(prefects)
     control_refs: dict[str, object] = {}
     day_options = {day.name: day_label(day) for day in SchoolDay}
 
     def stage(prefect_id: str, field: str, value: object) -> None:
-        original_value = originals[prefect_id].get(field)
-        normalized = (
-            [day.name for day in SchoolDay if day.name in set(value or [])]
-            if field == "availableDays"
-            else value
-        )
-        if normalized == original_value:
-            pending.setdefault(prefect_id, {}).pop(field, None)
-            if not pending[prefect_id]:
-                pending.pop(prefect_id, None)
-                command_ids.pop(prefect_id, None)
-        else:
-            pending.setdefault(prefect_id, {})[field] = normalized
-            command_ids[prefect_id] = f"prefect-patch-ui:{uuid4().hex}"
-        conflicts.pop(prefect_id, None)
-        pending_status.refresh()
+        if edit_session.stage(prefect_id, field, value):
+            pending_status.refresh()
 
     def update_filter(key: str, value: object) -> None:
-        filter_state[key] = str(value or "")
+        edit_session.update_filter(key, value)
         directory_rows.refresh()
 
     def discard_conflicted_row(prefect_id: str) -> None:
-        conflict = conflicts.pop(prefect_id, None)
-        if conflict is None:
+        if not edit_session.discard_conflict(prefect_id):
             return
-        originals[prefect_id] = dict(conflict["latest"])
-        pending.pop(prefect_id, None)
-        command_ids.pop(prefect_id, None)
         directory_rows.refresh()
         pending_status.refresh()
 
     def reapply_conflicted_row(prefect_id: str) -> None:
-        conflict = conflicts.pop(prefect_id, None)
-        if conflict is None:
+        if not edit_session.reapply_conflict(prefect_id):
             return
-        originals[prefect_id] = dict(conflict["latest"])
-        command_ids[prefect_id] = f"prefect-patch-ui:{uuid4().hex}"
         directory_rows.refresh()
         pending_status.refresh()
 
     async def save_pending_prefect_rows() -> None:
-        if not pending:
+        if not edit_session.dirty:
             return
-        patches = tuple(
-            {
-                "prefectId": prefect_id,
-                "changes": dict(changes),
-                "expectedVersion": int(originals[prefect_id]["version"]),
-                "commandId": command_ids[prefect_id],
-            }
-            for prefect_id, changes in pending.items()
-        )
         result = await _run_with_progress(
-            lambda: _apply_prefect_patch_batch(workflow, patches),
+            lambda: _apply_prefect_patch_batch(
+                workflow,
+                edit_session.patches(),
+                command_id=edit_session.ensure_command_id(),
+            ),
             title_key="progress_prefect_save_title",
             working_key="progress_prefect_save_working",
             icon="save",
         )
         if result is _OPERATION_FAILED:
             return
-        for updated in result["updated"]:
-            prefect_id = str(updated["id"])
-            originals[prefect_id] = dict(updated)
-            pending.pop(prefect_id, None)
-            command_ids.pop(prefect_id, None)
-        conflicts.clear()
-        for conflict in result["conflicts"]:
-            conflicts[str(conflict["prefectId"])] = dict(conflict)
+        edit_session.apply_save_result(result)
         if result["errors"]:
             ui.notify(
                 t("prefect_inline_validation_notice", count=len(result["errors"])),
                 type="warning",
                 timeout=8_000,
             )
-        elif conflicts:
-            ui.notify(t("prefect_inline_conflict_notice", count=len(conflicts)), type="warning", timeout=8_000)
+        elif edit_session.conflicts:
+            ui.notify(
+                t(
+                    "prefect_inline_conflict_notice",
+                    count=len(edit_session.conflicts),
+                ),
+                type="warning",
+                timeout=8_000,
+            )
         else:
             ui.notify(t("prefect_inline_saved"), type="positive")
         directory_rows.refresh()
@@ -916,8 +814,10 @@ def _render_inline_prefect_directory(
     @ui.refreshable
     def pending_status() -> None:
         with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
-            if pending:
-                ui.label(t("prefect_inline_pending", count=len(pending))).classes(
+            if edit_session.dirty:
+                ui.label(
+                    t("prefect_inline_pending", count=edit_session.pending_count)
+                ).classes(
                     "text-sm font-semibold text-[var(--sy-attention-strong)]"
                 ).props("role=status aria-live=polite")
             else:
@@ -929,20 +829,13 @@ def _render_inline_prefect_directory(
                 icon="save",
                 on_click=save_pending_prefect_rows,
             ).props("color=primary data-testid=save-prefect-inline-changes")
-            if not pending:
+            if not edit_session.dirty:
                 save.disable()
             control_refs["save"] = save
 
     @ui.refreshable
     def directory_rows() -> None:
-        visible = _prefect_directory_view(
-            list(originals.values()),
-            query=filter_state["query"],
-            form_filter=filter_state["form"],
-            role_filter=filter_state["role"],
-            support_filter=filter_state["support"],
-            sort_code=filter_state["sort"],
-        )
+        visible = edit_session.visible_rows()
         ui.label(t("prefect_filter_result_count", count=len(visible))).classes(
             "text-sm text-[var(--sy-muted)]"
         ).props("role=status aria-live=polite")
@@ -956,8 +849,7 @@ def _render_inline_prefect_directory(
         ):
             for item in visible:
                 prefect_id = str(item["id"])
-                merged = dict(item)
-                merged.update(pending.get(prefect_id, {}))
+                merged = edit_session.merged_row(prefect_id)
                 with ui.element("article").classes("sy-prefect-inline-row").props(
                     f'data-prefect-id="{attr(prefect_id)}"'
                 ):
@@ -1022,11 +914,11 @@ def _render_inline_prefect_directory(
                     with ui.column().classes("sy-prefect-inline-metrics gap-1"):
                         ui.label(f"{t('history_weight')} · {item['historyWeight']}")
                         ui.label(f"{t('history_duties')} · {item['historyDuties']}")
-                        if prefect_id in pending:
+                        if prefect_id in edit_session.pending:
                             _tone_badge(t("prefect_inline_unsaved"), "attention")
-                        if prefect_id in conflicts:
+                        if prefect_id in edit_session.conflicts:
                             _tone_badge(t("prefect_inline_conflict"), "danger")
-                            latest = conflicts[prefect_id]["latest"]
+                            latest = edit_session.conflicts[prefect_id]["latest"]
                             ui.label(
                                 t(
                                     "prefect_inline_conflict_detail",
@@ -1036,7 +928,22 @@ def _render_inline_prefect_directory(
                             ui.label(
                                 t(
                                     "prefect_inline_conflict_local",
-                                    fields=", ".join(sorted(pending.get(prefect_id, {}))),
+                                    fields=", ".join(
+                                        t(
+                                            {
+                                                "nameEn": "name_en",
+                                                "form": "form",
+                                                "className": "class_name",
+                                                "availableDays": "availability",
+                                                "needsMentoring": "needs_mentoring",
+                                                "fixedGeneralDuty": "fixed_assist_day",
+                                                "remarks": "remarks",
+                                            }[field]
+                                        )
+                                        for field in sorted(
+                                            edit_session.pending.get(prefect_id, {})
+                                        )
+                                    ),
                                 )
                             ).classes("text-xs text-[var(--sy-muted)]")
                             with ui.row().classes("gap-1 flex-wrap"):

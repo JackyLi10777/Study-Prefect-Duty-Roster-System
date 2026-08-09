@@ -140,12 +140,13 @@ rc16–rc29 是這批能力的歷史來源；rc27 是更深的已驗證 origin �
 - Guest 只獲 `demo_data.read`、`demo_state.modify`、`demo_result.download`、`session_preferences.modify`；AI、匯入、上載、正式備份／還原、Viewer 分享、外部交付及永久寫入均被服務層拒絕。
 - 每分頁取得獨立、有限額、程序記憶體內的虛構工作區。Guest PDF／JSON 標明 `DEMO`，以一次性 `no-store` 下載回傳。Admin 與 Guest 使用同一個有界限生成檔案 registry，但每張票據綁定已核實的 access mode 及 session；Guest 無法跨模式取檔。Guest／Admin 單檔上限分別為 5／64 MiB；registry 總上限 128 MiB，並保留 64 MiB／16 票證予 Admin，避免示範流量阻塞正式交接檔案。
 - Guest 的語言、主題、音樂及音效偏好由 origin 的有限期記憶體 store 保存，因此重新整理或同一 session 轉頁不會回復預設；登出、到期、撤權或程序重啟即清除。管理員偏好仍使用正式使用者儲存。公開入口不讀取或持續同步兩者；只有刻意進入工作區時，明確 `light`／`dark` 可經已簽署、單次、最長 120 秒的交接延續，且目的地已有偏好時不覆寫。兩種身份的 PDF／JSON 均經同一帶憑證下載流程，先核對 HTTP 狀態及精確 MIME，再建立短期 browser object URL；失敗時顯示雙語下一步及支援編號，而不是盲目保存錯誤回應。
+- 公開入口與 `/support` 共用同一個二態太陽／月亮切換元件；手機抽屜由單一 open state 同步 More、固定右上關閉鍵、backdrop、focus trap、`inert` 及 ARIA，快速連按、轉向或轉頁後不會讓選單圖標與實際開關狀態分離。
 - HMAC snapshot codec 及瀏覽器橋接已完成：每次有意義修改後，origin 只把最新、已簽署且綁定 SID／workspace／tab／revision 的 token 推送到該分頁 `sessionStorage`；重新整理時必須連同當次連線 nonce 交回伺服器核實。複製分頁會獲得新 workspace；篡改、錯誤綁定、過期、舊 boot 或重播 token 會被拒絕並回到安全虛構 fixture。乾淨 rc30 的完整 pytest、隔離 Admin／Guest 瀏覽器、手機、效能、寫入、PDF、備份及復原已納入其 14／14 歷史正式報告；rc27 只保留作更深的 origin 歷史回退證據。
 - 完整安全模型及 gate 見 [統一訪客模式安全模型](docs/UNIFIED_GUEST_SECURITY_MODEL.md)。
 
 日常安全次序：
 
-1. 在「風紀名單」核對中文姓名、職務及可值班日。
+1. 在「風紀名單」核對中文姓名、職務及可值班日。低風險欄位可在桌面列或手機卡片直接暫存；按保存後，所有已改列以一個版本化交易整批核對，任一列衝突或無效即零列寫入並保留本頁輸入。中文姓名、職務與封存仍使用確認視窗。
 2. 在「值班表」先登記尚未發布週的請假，選擇「固定星期模式」或「每週靈活模式」，再選擇本週是否有「全天不開放」日；這是指定週次的停開設定，不會改動長期房間規則。
 3. 以與 PDF 相同的「崗位 × 星期」矩陣核對草稿。點擊格子或按 `Enter`／`F2` 可直接搜尋中文姓名、選擇合資格人選或明確設為空缺；所有修改先留在本頁，完成後才按「核對並保存」一次寫入。
 4. 發布前再次核對。**只有發布才會更新 `history_weight` 公平帳本。**

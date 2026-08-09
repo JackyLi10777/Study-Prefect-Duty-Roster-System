@@ -517,7 +517,7 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
         assert required in source
 
     assert "setInterval(" not in source
-    assert source.count("requestAnimationFrame(") == 1
+    assert source.count("requestAnimationFrame(") == 2
     assert (
         "requestAnimationFrame(() => { document.documentElement.dataset.themeReady = 'true'; });"
         in source
@@ -528,6 +528,28 @@ def test_guest_entrance_has_one_clear_login_devotional_and_accessibility_contrac
     assert "navigator.clipboard?.writeText" in source
     assert "導學風紀值班表生成系統" in source
     assert "trust-strip" not in source
+
+
+def test_public_support_theme_control_reuses_the_entrance_theme_contract() -> None:
+    source = _source()
+    support_start = source.index('<button id="supportTheme"')
+    support_end = source.index("const normalizedText", support_start)
+    support = source[support_start:support_end]
+
+    for required in (
+        'class="theme-toggle"',
+        'class="theme-toggle-icon"',
+        'class="theme-icon theme-icon--sun"',
+        'class="theme-icon theme-icon--moon"',
+        "themeButton.dataset.resolvedTheme = resolved",
+        "themeButton.setAttribute('aria-pressed', String(resolved === 'dark'))",
+        "const next = resolvedTheme(themePreference) === 'dark' ? 'light' : 'dark'",
+        "applyTheme(next, { persist: true, animate: true })",
+        "if (themePreference === 'system') applyTheme('system', { persist: false, animate: false })",
+    ):
+        assert required in support
+
+    assert "themeStates[(themeStates.indexOf" not in support
 
 
 def test_welcome_music_attempts_every_visit_and_recovers_after_browser_block() -> None:

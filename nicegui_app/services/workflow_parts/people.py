@@ -8,8 +8,10 @@ from nicegui_app.services.workflow_dependencies import (
     Iterable,
     LeaveAdjustmentRecord,
     LeaveDeclarationRecord,
+    PREFECT_PATCH_FIELDS,
     PrefectAvailabilityRecord,
     PrefectInput,
+    PrefectPatch,
     PrefectRecord,
     PrefectRole,
     RosterWeekRecord,
@@ -21,22 +23,13 @@ from nicegui_app.services.workflow_dependencies import (
     func,
     select,
     update,
+    prefect_input_from_patch,
 )
 from nicegui_app.services.workflow_fencing import fenced_workflow_write
 
 
 class PeopleWorkflowMixin:
-    _PREFECT_PATCH_FIELDS = frozenset(
-        {
-            "nameEn",
-            "form",
-            "className",
-            "availableDays",
-            "needsMentoring",
-            "fixedGeneralDuty",
-            "remarks",
-        }
-    )
+    _PREFECT_PATCH_FIELDS = PREFECT_PATCH_FIELDS
 
     def prefect_loads(self) -> dict[str, float]:
         with self._session() as session:
@@ -249,6 +242,219 @@ class PeopleWorkflowMixin:
             command_id=command_id,
         )
 
+    @fenced_workflow_write
+    def patch_prefects_batch(
+        self,
+        patches: Iterable[PrefectPatch],
+        *,
+        command_id: str | None = None,
+    ) -> dict[str, object]:
+        """Commit one reviewed inline-edit intent atomically.
+
+        Validation, optimistic-version checks, updates, audit evidence, the
+        idempotency receipt, and the backup obligation share one serialized
+        transaction. A conflicting or invalid row therefore leaves every row
+        untouched.
+        """
+
+        normalized = tuple(sorted(tuple(patches), key=lambda item: item.prefect_id))
+        if not normalized:
+            raise WorkflowError("No prefect changes were provided.")
+        prefect_ids = [patch.prefect_id.strip() for patch in normalized]
+        if any(not prefect_id for prefect_id in prefect_ids):
+            raise WorkflowError("Prefect ID is required.")
+        if len(prefect_ids) != len(set(prefect_ids)):
+            raise WorkflowError("A prefect may appear only once in a batch patch.")
+
+        operation_type = "prefects_batch_patched"
+        operation_id = self._operation_command_id(operation_type, command_id)
+        operation_payload = {
+            "patches": [
+                {
+                    "prefectId": patch.prefect_id,
+                    "expectedVersion": patch.expected_version,
+                    "changes": {
+                        key: patch.changes[key]
+                        for key in sorted(patch.changes)
+                    },
+                }
+                for patch in normalized
+            ]
+        }
+        receipt: dict[str, object] | None = None
+        with self._session() as session:
+            self._begin_serialized_write(session)
+            command, receipt = self._claim_operation_command(
+                session,
+                operation_type=operation_type,
+                command_id=operation_id,
+                payload=operation_payload,
+            )
+            if receipt is not None:
+                session.rollback()
+            else:
+                records: dict[str, PrefectRecord] = {}
+                current_rows: dict[str, dict[str, object]] = {}
+                conflicts: list[dict[str, object]] = []
+                errors: list[dict[str, object]] = []
+                inputs: dict[str, PrefectInput] = {}
+                patch_by_id = {patch.prefect_id: patch for patch in normalized}
+
+                for patch in normalized:
+                    record = session.get(PrefectRecord, patch.prefect_id)
+                    if record is None:
+                        errors.append(
+                            {
+                                "prefectId": patch.prefect_id,
+                                "message": "Prefect was not found.",
+                            }
+                        )
+                        continue
+                    records[patch.prefect_id] = record
+                    current = self._prefect_output(session, record)
+                    current_rows[patch.prefect_id] = current
+                    if not record.active or record.version != patch.expected_version:
+                        conflicts.append(
+                            {
+                                "prefectId": patch.prefect_id,
+                                "latest": current,
+                                "changes": dict(patch.changes),
+                            }
+                        )
+                        continue
+                    try:
+                        prefect_input = prefect_input_from_patch(current, patch)
+                        self._validate_prefect_input(prefect_input)
+                    except WorkflowError as error:
+                        errors.append(
+                            {
+                                "prefectId": patch.prefect_id,
+                                "message": str(error),
+                            }
+                        )
+                    else:
+                        inputs[patch.prefect_id] = prefect_input
+
+                if not conflicts and not errors:
+                    fixed_day_owners: dict[str, list[str]] = {}
+                    for record in session.scalars(
+                        select(PrefectRecord).where(
+                            PrefectRecord.active.is_(True),
+                            PrefectRecord.role_code == PrefectRole.ASSISTANT_HEAD.value,
+                        )
+                    ).all():
+                        final_input = inputs.get(record.id)
+                        day = (
+                            final_input.fixed_general_duty
+                            if final_input is not None
+                            else record.fixed_general_duty
+                        )
+                        if day != "NONE":
+                            fixed_day_owners.setdefault(day, []).append(record.id)
+                    duplicate_ids = {
+                        prefect_id
+                        for owners in fixed_day_owners.values()
+                        if len(owners) > 1
+                        for prefect_id in owners
+                        if prefect_id in patch_by_id
+                    }
+                    errors.extend(
+                        {
+                            "prefectId": prefect_id,
+                            "message": "Another active Assistant Head Study Prefect already owns this fixed weekday.",
+                        }
+                        for prefect_id in sorted(duplicate_ids)
+                    )
+
+                if conflicts or errors:
+                    session.rollback()
+                    return {
+                        "updated": [],
+                        "conflicts": conflicts,
+                        "errors": errors,
+                    }
+
+                assistant_ids = [
+                    prefect_id
+                    for prefect_id, prefect_input in inputs.items()
+                    if prefect_input.role_code == PrefectRole.ASSISTANT_HEAD.value
+                ]
+                if assistant_ids:
+                    # Clear the partial unique index before applying a valid
+                    # fixed-weekday swap; versions remain unchanged until the
+                    # final compare-and-set updates below.
+                    session.execute(
+                        update(PrefectRecord)
+                        .where(PrefectRecord.id.in_(assistant_ids))
+                        .values(fixed_general_duty="NONE")
+                    )
+                    session.flush()
+
+                now = self._now()
+                updated_rows: list[dict[str, object]] = []
+                for patch in normalized:
+                    prefect_input = inputs[patch.prefect_id]
+                    claim = session.execute(
+                        update(PrefectRecord)
+                        .where(
+                            PrefectRecord.id == patch.prefect_id,
+                            PrefectRecord.active.is_(True),
+                            PrefectRecord.version == patch.expected_version,
+                        )
+                        .values(
+                            name_en=prefect_input.name_en.strip() if prefect_input.name_en else None,
+                            form=prefect_input.form,
+                            class_name=prefect_input.class_name.strip(),
+                            needs_mentoring=prefect_input.needs_mentoring,
+                            fixed_general_duty=prefect_input.fixed_general_duty,
+                            remarks=prefect_input.remarks.strip(),
+                            version=patch.expected_version + 1,
+                            updated_at=now,
+                        )
+                    )
+                    if claim.rowcount != 1:
+                        raise WorkflowConflictError(
+                            "This prefect record changed in another browser. Refresh and review the latest details before saving."
+                        )
+                    self._replace_availability(
+                        session,
+                        patch.prefect_id,
+                        prefect_input.available_days,
+                    )
+
+                session.flush()
+                for patch in normalized:
+                    record = records[patch.prefect_id]
+                    session.refresh(record)
+                    updated_rows.append(self._prefect_output(session, record))
+                receipt = {
+                    "updated": updated_rows,
+                    "conflicts": [],
+                    "errors": [],
+                }
+                self._audit(
+                    session,
+                    operation_type,
+                    None,
+                    {
+                        "prefectIds": prefect_ids,
+                        "versions": {
+                            str(row["id"]): int(row["version"])
+                            for row in updated_rows
+                        },
+                    },
+                )
+                self._commit_operation_command(
+                    session,
+                    record=command,
+                    result=receipt,
+                    roster_week_id=None,
+                )
+                session.commit()
+        assert receipt is not None
+        self._fulfill_backup_obligation(operation_id)
+        return receipt
+
     def validate_prefect_patch(
         self,
         prefect_id: str,
@@ -259,47 +465,18 @@ class PeopleWorkflowMixin:
     ) -> PrefectInput:
         """Validate one buffered row without creating a command or write."""
 
-        if not changes:
-            raise WorkflowError("No prefect changes were provided.")
-        unsupported = sorted(set(changes) - self._PREFECT_PATCH_FIELDS)
-        if unsupported:
-            raise WorkflowError(
-                f"Inline editing is not allowed for: {', '.join(unsupported)}."
-            )
         current = self.prefect(prefect_id)
-        merged = dict(current)
-        merged.update(changes)
-        available_days = merged.get("availableDays", ())
-        if not isinstance(available_days, (list, tuple)) or any(
-            not isinstance(day, str) for day in available_days
-        ):
-            raise WorkflowError("Available days must be a list of weekday codes.")
-        for boolean_field in ("needsMentoring",):
-            if not isinstance(merged.get(boolean_field), bool):
-                raise WorkflowError(f"{boolean_field} must be true or false.")
-        for text_field in ("form", "className", "fixedGeneralDuty", "remarks"):
-            if not isinstance(merged.get(text_field), str):
-                raise WorkflowError(f"{text_field} must be text.")
-        if merged.get("nameEn") is not None and not isinstance(merged.get("nameEn"), str):
-            raise WorkflowError("nameEn must be text or empty.")
         if check_version and int(current["version"]) != expected_version:
             raise WorkflowConflictError(
                 "This prefect record changed in another browser. Refresh and review the latest details before saving."
             )
-        prefect_input = PrefectInput(
-            name_zh=str(current["nameZh"]),
-            name_en=(str(merged["nameEn"]).strip() or None)
-            if merged.get("nameEn") is not None
-            else None,
-            form=str(merged["form"]),
-            class_name=str(merged["className"]),
-            role_code=str(current["roleCode"]),
-            available_days=tuple(str(day) for day in available_days),
-            needs_mentoring=bool(merged["needsMentoring"]),
-            fixed_general_duty=str(merged["fixedGeneralDuty"]),
-            remarks=str(merged["remarks"]),
-            history_weight=float(current["historyWeight"]),
-            history_duties=int(current["historyDuties"]),
+        prefect_input = prefect_input_from_patch(
+            current,
+            PrefectPatch(
+                prefect_id=prefect_id,
+                changes=changes,
+                expected_version=expected_version,
+            ),
         )
         self._validate_prefect_input(prefect_input)
         with self._session() as session:

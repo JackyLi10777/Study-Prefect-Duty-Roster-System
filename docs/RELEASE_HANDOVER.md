@@ -8,6 +8,7 @@
 > **已核實線上來源（2026-08-09）：** Windows origin 正運行 clean annotated `v1.2.0-rc.52`／`72621076f74caf9568fda1576d62311e0a26043c` 的不可變 bundle；314-file 指紋 `c4f224140c3b2bb935f4d367bf0fccf55800fd28a6a697e66bd261b70e097b6f` 通過 15／15 gate。SQLite 位於 Alembic `0013`；正式備份 `20260808-164321-281874-manual_verified_backup.sqlite3`／SHA-256 `1d542f5aac6b25eff4abf5f79cddd295ebc04a6ef797a7ac8b8f88f22d13928a`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `3bac2eee-246f-4524-9725-4249770017b0` 維持 100% 流量且健康。`v1.2.0-rc.51` 只屬歷史來源，migration `0013` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`，實體離線 BitLocker 復原演練仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
 <!-- SING_YIN_CURRENT_STATUS:END -->
 > **草稿試算表及全天停開（rc52 已部署）：**共用值班呈現模型、整批草稿修改及 migration `0013_roster_day_closures` 已納入頁首所列正式來源。日後回復仍必須以相容 schema 快照、隔離還原及受控發布證據為準，不能只切換程式。
+> **rc54 整合候選（尚未部署）：**`0014_roster_slot_exceptions`、單格不開放、typed 草稿／名單 edit sessions、名單多列原子保存、Public Support 主題一致性及 mobile drawer 單一狀態仍須依本手冊完成 exact-source 15-gate、上一 schema 備份、隔離 migration／restore、Origin／Worker 分段發布與 canonical 驗收。不得把開發期綠燈或本段文字當成線上功能；正式狀態只看上方生成區塊。
 > **rc37／rc38／rc42 版本澄清：**受保護的 `v1.2.0-rc.37` 標籤指向較早 rc36 source，屬 void／未部署版本；`v1.2.0-rc.38` 通過來源閘門但沒有部署；rc42 與 rc43 指向同一 commit／tree，但沒有綁定正式報告且從未部署。三者均不能當成回退目標；正式服務只以本頁頂部生成狀態記錄的 origin、Alembic revision、canonical Worker 及來源變更狀態為準。
 
 我是李創杰，2026–2027 年度首席導學風紀。我把這份手冊與系統一起留給下一任首席導學風紀，希望你不必依賴原開發者，也能安全完成每週排班、處理請假、理解公平紀錄，並把完整資料再交給下一任。以下操作程序以直接指令寫成，方便你在真正工作時逐項核對。

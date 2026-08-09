@@ -56,9 +56,10 @@ def theme_preference() -> str:
 def system_theme_resolution() -> str:
     """Return the last browser-resolved system appearance for this session.
 
-    A neutral light hint is used only for the first render.  The shell compares
-    it with ``prefers-color-scheme`` and performs one early reload when they do
-    not match, so charts, devotional tone and music all use the browser result.
+    A neutral light server hint is used only before the browser resolves an
+    unset preference.  The head applies ``prefers-color-scheme`` before the
+    external theme CSS paints, while the shell updates Quasar and remembers the
+    verified result in place.  No reload is used or allowed for this handoff.
     """
 
     value = str(preference_get("theme_system_resolved", "light"))

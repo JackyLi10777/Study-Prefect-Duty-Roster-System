@@ -16,7 +16,12 @@ from nicegui_app.access_context import (
 )
 from nicegui_app.services.guest_adapter import GuestWorkspaceAdapter
 from nicegui_app.services.guest_workspace import GuestWorkspaceRegistry
-from nicegui_app.services.workflow_types import PrefectInput, WorkflowConflictError, WorkflowError
+from nicegui_app.services.workflow_types import (
+    PrefectInput,
+    PrefectPatch,
+    WorkflowConflictError,
+    WorkflowError,
+)
 
 
 WEEK_START = date(2026, 9, 7)
@@ -417,6 +422,48 @@ def test_guest_directory_crud_is_chinese_name_first_and_import_is_denied() -> No
                 available_days=("MONDAY",),
             )
         )
+
+
+def test_guest_prefect_batch_is_atomic_and_exact_retry_is_idempotent() -> None:
+    adapter = _adapter()
+    originals = adapter.prefects()[:2]
+    patches = tuple(
+        PrefectPatch(
+            prefect_id=str(row["id"]),
+            changes={"remarks": f"Demo batch {index}"},
+            expected_version=int(row["version"]),
+        )
+        for index, row in enumerate(originals, start=1)
+    )
+
+    first = adapter.patch_prefects_batch(patches, command_id="guest-prefect-batch")
+    revision_after_first = adapter._view().revision
+    replay = adapter.patch_prefects_batch(patches, command_id="guest-prefect-batch")
+
+    assert [row["remarks"] for row in first["updated"]] == ["Demo batch 1", "Demo batch 2"]
+    assert replay["updated"] == first["updated"]
+    assert adapter._view().revision == revision_after_first
+
+    current = adapter.prefects()[:2]
+    first_before = adapter.prefect(str(current[0]["id"]))
+    conflicted = adapter.patch_prefects_batch(
+        (
+            PrefectPatch(
+                str(current[0]["id"]),
+                {"remarks": "Must not persist"},
+                int(current[0]["version"]),
+            ),
+            PrefectPatch(
+                str(current[1]["id"]),
+                {"remarks": "Stale"},
+                int(current[1]["version"]) - 1,
+            ),
+        ),
+        command_id="guest-prefect-conflict",
+    )
+    assert conflicted["updated"] == []
+    assert [row["prefectId"] for row in conflicted["conflicts"]] == [str(current[1]["id"])]
+    assert adapter.prefect(str(current[0]["id"])) == first_before
 
 
 def test_guest_import_remains_fail_closed_if_capability_check_returns() -> None:
