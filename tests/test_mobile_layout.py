@@ -353,6 +353,16 @@ def test_preferences_preserve_unfinished_forms_and_language_fails_safe() -> None
     assert "_reload_after_preference_change(toggle_theme)" not in shell
 
 
+def test_theme_browser_verifier_respects_mobile_three_state_semantics() -> None:
+    source = (PROJECT_ROOT / "scripts" / "verify_rc31_theme_controls.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "testId === 'mobile-theme-control'" in source
+    assert "!control.hasAttribute('aria-pressed')" in source
+    assert 'expected_pressed = "" if test_id == "mobile-theme-control"' in source
+
+
 def test_concurrent_statuses_share_one_non_overlapping_stack() -> None:
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
     theme = combined_theme_source()
