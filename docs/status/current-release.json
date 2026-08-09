@@ -3,23 +3,23 @@
   "observed_at": "2026-08-09",
   "state": "live",
   "release": {
-    "tag": "v1.2.0-rc.52",
-    "commit": "72621076f74caf9568fda1576d62311e0a26043c",
-    "bundle": "C:\\SingYinRoster\\releases\\v1.2.0-rc.52-72621076f74c-5c891432a1d8",
-    "source_file_count": 314,
-    "fingerprint_sha256": "c4f224140c3b2bb935f4d367bf0fccf55800fd28a6a697e66bd261b70e097b6f",
+    "tag": "v1.2.0-rc.54",
+    "commit": "f027628c5a0045d8a946be9a3453e041d03367d1",
+    "bundle": "C:\\SingYinRoster\\releases\\v1.2.0-rc.54-f027628c5a00-5c891432a1d8",
+    "source_file_count": 316,
+    "fingerprint_sha256": "738c45917fdcbeeb84a523a1f1cc3179adee693b07e156bdb74fa6f8748b3ef8",
     "formal_gates": {
       "passed": 15,
       "total": 15
     }
   },
   "database": {
-    "alembic_head": "0013",
+    "alembic_head": "0014",
     "rollback_requires_compatible_restore": true
   },
   "recovery": {
-    "backup_file": "20260808-164321-281874-manual_verified_backup.sqlite3",
-    "backup_sha256": "1d542f5aac6b25eff4abf5f79cddd295ebc04a6ef797a7ac8b8f88f22d13928a",
+    "backup_file": "20260809-093349-010387-manual_verified_backup.sqlite3",
+    "backup_sha256": "65e2d9c086b0aa4e9495f17d55ad2d62ea238c049d046debba7b124205166a29",
     "offsite_physical_drill": "pending",
     "checks": [
       "checksum",
@@ -41,14 +41,14 @@
     "pending_backup_obligations": 0
   },
   "worker": {
-    "version_id": "3bac2eee-246f-4524-9725-4249770017b0",
+    "version_id": "053b8f6e-c5ed-4259-ac34-aaefa4dfb23d",
     "source_changed_for_release": true,
     "traffic_percent": 100,
     "health": "passed"
   },
   "historical_predecessor": {
-    "release": "v1.2.0-rc.51",
-    "worker_version_id": "480e1d1a-c711-4608-aa66-c261d443928a",
+    "release": "v1.2.0-rc.52",
+    "worker_version_id": "3bac2eee-246f-4524-9725-4249770017b0",
     "rollback_mode": "controlled-compatible-database-restore"
   },
   "acceptance": {

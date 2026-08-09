@@ -4,13 +4,19 @@ This file records user-visible, operational and release-significant changes. The
 
 ## Unreleased
 
-- Added a source-only rc53 candidate for week-local, per-cell `unavailable` roster exceptions through additive Alembic revision `0014_roster_slot_exceptions`. The generator, shared presentation, web draft, bilingual PDF, public Viewer and Guest adapter now share the same five-state contract and never count a closed cell as required coverage or fairness capacity.
+- No release-significant changes are pending after the rc54 deployment closeout.
+
+## v1.2.0-rc.54 — released, 2026-08-09
+
+- Deployed protected-main commit `f027628c5a0045d8a946be9a3453e041d03367d1` as annotated `v1.2.0-rc.54`. Its 316-file source fingerprint `738c45917fdcbeeb84a523a1f1cc3179adee693b07e156bdb74fa6f8748b3ef8` passed all 15 formal gates; the Windows task now runs immutable bundle `C:\SingYinRoster\releases\v1.2.0-rc.54-f027628c5a00-5c891432a1d8` at Alembic `0014`, with health and readiness green and `writeReady=true`.
+- Created and isolated-restored the previous-schema rollback snapshot `20260809-093342-034683-manual_verified_backup.sqlite3` and the quiescent rc54 recovery baseline `20260809-093349-010387-manual_verified_backup.sqlite3` with SHA-256 `65e2d9c086b0aa4e9495f17d55ad2d62ea238c049d046debba7b124205166a29`; checksum, SQLite integrity, schema, fairness, row counts and restore audit passed. Recovery to rc52 requires its compatible 0013 snapshot and must never be a code-only switch.
+- Staged Worker `053b8f6e-c5ed-4259-ac34-aaefa4dfb23d` at 0%, passed version-specific health／entrance／Viewer smoke, and promoted it to 100%. Canonical root, authenticated Guest workspace entry, Viewer, public `/support` theme control and the Admin redirect boundary were then rechecked without a version override.
+- Added week-local, per-cell `unavailable` roster exceptions through additive Alembic revision `0014_roster_slot_exceptions`. The generator, shared presentation, web draft, bilingual PDF, public Viewer and Guest adapter now share the same five-state contract and never count a closed cell as required coverage or fairness capacity.
 - Extended the existing Excel-style draft matrix with pointer-threshold move／swap, touch two-step movement, roving keyboard navigation, undo／redo, stable retry command IDs, unsaved-change protection and conflict comparison／reapply. Changes remain page-local until one atomic, version-checked save.
 - Added Admin／Guest-parity prefect directory search, filters, stable sorting and allowlisted inline edits. One save now validates all targeted rows and versions as a single atomic batch: Admin uses one database transaction and Guest uses one workspace mutation. Any conflict or invalid field produces zero row writes while preserving the complete local edit session. Identity, role and archival changes remain confirmation-dialog operations.
 - Introduced typed `DraftEditSession` and `PrefectEditSession` owners for pending values, dirty state, stable command IDs, undo／redo where applicable and conflict reapply, reducing route-local mutable-state duplication without moving policy or persistence into the UI.
 - Removed the duplicate sidebar support card, divided the drawer into fixed brand／scrolling navigation／fixed footer regions, and gave the mobile drawer one authoritative requested-open state plus a dedicated fixed Close control. More/menu state, backdrop, focus trap, `inert`, ARIA and cleanup now reconcile together instead of depending on a hidden desktop trigger.
 - Brought the public `/support` appearance control into exact entrance-family parity with the binary sun／moon control, current-state glyph, next-action label, bounded transition and reduced-motion fallback. Replaced invented operation percentages or fixed phases with delayed truthful indeterminate feedback; an AI-labelled wait indicator remains reserved for the optional schema-mapping operation only.
-- This section records source work only. Production remains the verified `v1.2.0-rc.52` release until formal gates, migration backup／restore, protected-main merge and controlled origin／Worker rollout succeed.
 
 ## v1.2.0-rc.52 — released, 2026-08-09
 

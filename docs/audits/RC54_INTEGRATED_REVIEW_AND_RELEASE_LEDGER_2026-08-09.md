@@ -1,10 +1,10 @@
 # rc54 integrated review and release ledger
 
-**Status:** source candidate under verification; not production evidence.
+**Status:** released and deployed; machine closeout complete. Supervised human acceptance and the physical off-site recovery drill remain pending.
 
 **Review date:** 2026-08-09 (Asia/Shanghai, UTC+08:00)
 **Protected-main baseline:** `f6d602131714bd356769cf6ca04c06eba69f12b1`
-**Production truth:** remains owned by `docs/status/current-release.json` and fresh host／Worker evidence. At the start of this review, the generated status still identified `v1.2.0-rc.52`, Alembic `0013` and Worker `3bac2eee-246f-4524-9725-4249770017b0` as live. Nothing in this candidate section changes that claim.
+**Production truth:** remains owned by `docs/status/current-release.json` and fresh host／Worker evidence. At the start of this review, the generated status identified `v1.2.0-rc.52`, Alembic `0013` and Worker `3bac2eee-246f-4524-9725-4249770017b0` as live. The closeout below records the later controlled rc54 deployment; mutable live identifiers are generated from the status source rather than copied into this historical review narrative.
 
 ## Parallel-work integration boundary
 
@@ -84,3 +84,10 @@ The candidate remains blocked from a production-complete claim until all of the 
 8. `current-release.json`, generated status, changelog and release evidence are updated from observed results, not anticipated identifiers.
 
 Supervised Head Study Prefect／teacher-advisor acceptance and the physical off-site recovery drill remain separate human evidence. They must remain visibly pending unless actually performed; they do not authorize fabricating a machine failure, and machine success does not fabricate their sign-off.
+
+## Production closeout evidence
+
+- Protected main, annotated tag `v1.2.0-rc.54` and the deployed Origin all resolve to commit `f027628c5a0045d8a946be9a3453e041d03367d1`; the 316-file release fingerprint is `738c45917fdcbeeb84a523a1f1cc3179adee693b07e156bdb74fa6f8748b3ef8` and the formal report passed 15／15 gates.
+- The controlled Windows deployment migrated the official database from Alembic `0013` to `0014`, proved an isolated previous-schema rollback snapshot, created and isolated-restored a distinct current-schema recovery baseline, and finished with health／readiness green, `writeReady=true`, no maintenance or recovery lock, and zero pending backup obligations.
+- Worker `053b8f6e-c5ed-4259-ac34-aaefa4dfb23d` was uploaded without traffic, staged at 0%, smoke-tested through a version override and promoted to 100%. Canonical root, authenticated Guest session and workbench entry, Viewer, `/support` and the Admin redirect boundary were rechecked after promotion.
+- The first deployment attempt stopped before mutation because the clean release worktree lacked its ignored source venv. The second stopped during private bundle construction because the venv used Codex's embedded Python location; rollback restored the host environment and rc52 task without a database migration. Rebuilding the ignored source venv from the same standard Windows Python family used by rc52 satisfied the existing security contract; no verifier or deployment guard was weakened.

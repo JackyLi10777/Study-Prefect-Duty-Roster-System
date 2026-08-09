@@ -8,22 +8,22 @@
 | 項目 / Item | 已核實值 / Verified value |
 |---|---|
 | 狀態 / State | `live` |
-| Release | `v1.2.0-rc.52` |
-| Production source commit | `72621076f74caf9568fda1576d62311e0a26043c` |
-| Immutable bundle | `C:\SingYinRoster\releases\v1.2.0-rc.52-72621076f74c-5c891432a1d8` |
-| Source evidence | 314 files; `c4f224140c3b2bb935f4d367bf0fccf55800fd28a6a697e66bd261b70e097b6f`; 15/15 gates passed |
+| Release | `v1.2.0-rc.54` |
+| Production source commit | `f027628c5a0045d8a946be9a3453e041d03367d1` |
+| Immutable bundle | `C:\SingYinRoster\releases\v1.2.0-rc.54-f027628c5a00-5c891432a1d8` |
+| Source evidence | 316 files; `738c45917fdcbeeb84a523a1f1cc3179adee693b07e156bdb74fa6f8748b3ef8`; 15/15 gates passed |
 | Windows service | `SingYinRosterSvc`; health `passed`; readiness `passed`; `writeReady=true`; `maintenance=false`; `recoveryRequired=false`; `pendingBackups=0` |
-| Canonical Worker | `3bac2eee-246f-4524-9725-4249770017b0`; 100% traffic; health `passed`; source updated and promoted for this release |
+| Canonical Worker | `053b8f6e-c5ed-4259-ac34-aaefa4dfb23d`; 100% traffic; health `passed`; source updated and promoted for this release |
 
 ## 資料與復原 / Data and recovery
 
 | 項目 / Item | 已核實值 / Verified value |
 |---|---|
-| Alembic head | `0013` |
-| Verified backup | `20260808-164321-281874-manual_verified_backup.sqlite3` |
-| Backup SHA-256 | `1d542f5aac6b25eff4abf5f79cddd295ebc04a6ef797a7ac8b8f88f22d13928a` |
-| Previous application source | `v1.2.0-rc.51` — historical only |
-| Previous Worker rollback version | `480e1d1a-c711-4608-aa66-c261d443928a` |
+| Alembic head | `0014` |
+| Verified backup | `20260809-093349-010387-manual_verified_backup.sqlite3` |
+| Backup SHA-256 | `65e2d9c086b0aa4e9495f17d55ad2d62ea238c049d046debba7b124205166a29` |
+| Previous application source | `v1.2.0-rc.52` — historical only |
+| Previous Worker rollback version | `3bac2eee-246f-4524-9725-4249770017b0` |
 | Rollback contract | Migration-aware controlled restore; never switch old code alone |
 
 ## 驗收 / Acceptance
