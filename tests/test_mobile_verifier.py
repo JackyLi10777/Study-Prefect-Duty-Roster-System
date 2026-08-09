@@ -98,6 +98,7 @@ def test_mobile_verifier_rejects_non_loopback_browser_targets(
 
 def test_mobile_verifier_declares_real_touch_contexts_and_shared_route_matrix() -> None:
     source = (PROJECT_ROOT / "scripts" / "verify_nicegui_mobile.py").read_text(encoding="utf-8")
+    drawer_scroll_contract = source.split("def _assert_drawer_scrolls", 1)[1].split("\ndef ", 1)[0]
 
     for dimensions in (
         'width=390,\n            height=844',
@@ -120,9 +121,16 @@ def test_mobile_verifier_declares_real_touch_contexts_and_shared_route_matrix() 
     assert "item.width < 44 || item.height < 44" in source
     for selector in (".q-toggle", ".q-checkbox", ".q-radio", ".q-item--clickable"):
         assert selector in source
-    assert 'scroll_region = drawer.locator(".sy-sidebar-navigation")' in source
-    assert "scroll_region.evaluate" in source
-    assert "element.scrollTop = 0" in source
+    assert 'scroll_region = drawer.locator(".sy-sidebar-navigation")' in drawer_scroll_contract
+    assert "navigation_focusables = scroll_region.locator" in drawer_scroll_contract
+    assert "final_navigation_control = navigation_focusables.last" in drawer_scroll_contract
+    assert "scroll_region.evaluate" in drawer_scroll_contract
+    assert drawer_scroll_contract.index("element.scrollTop = 0") < drawer_scroll_contract.index(
+        "element.scrollTop = element.scrollHeight"
+    )
+    assert "final_navigation_control.bounding_box()" in drawer_scroll_contract
+    assert "drawer cannot reach its lower navigation items" in drawer_scroll_contract
+    assert "drawer clips its final navigation item" in drawer_scroll_contract
     assert 'get_by_test_id("mobile-more")' in source
     assert "Opening mobile navigation must move focus into the drawer" in source
     assert 'page.keyboard.press("Shift+Tab")' in source

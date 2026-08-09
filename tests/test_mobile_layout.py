@@ -255,12 +255,25 @@ def test_sidebar_uses_fixed_brand_scrollable_navigation_and_compact_footer() -> 
     assert 'page.get_by_test_id("sidebar-feedback").count() == 0' in verifier
     assert "sidebar_feedback_links" not in verifier
     assert 'page.goto(f"{BASE_URL}/support"' in verifier
-    assert "display: flex !important" in command_center
-    assert "flex-direction: column" in command_center
-    assert "height: 100%" in command_center
-    assert "max-height: 100%" in command_center
-    assert "flex: 1 1 auto" in command_center
-    assert "overflow-y: auto" in command_center
+    body_rule = re.search(r"\.sy-sidebar-body\s*\{([^}]*)\}", command_center, re.DOTALL)
+    fixed_rule = re.search(
+        r"\.sy-sidebar-brand,\s*\.sy-sidebar-footer\s*\{([^}]*)\}",
+        command_center,
+        re.DOTALL,
+    )
+    navigation_rule = re.search(
+        r"\.sy-sidebar-navigation\s*\{([^}]*)\}", command_center, re.DOTALL
+    )
+    assert body_rule is not None
+    assert fixed_rule is not None
+    assert navigation_rule is not None
+    assert "display: flex !important" in body_rule.group(1)
+    assert "flex-direction: column" in body_rule.group(1)
+    assert "height: 100%" in body_rule.group(1)
+    assert "max-height: 100%" in body_rule.group(1)
+    assert "flex: 0 0 auto" in fixed_rule.group(1)
+    assert "flex: 1 1 auto" in navigation_rule.group(1)
+    assert "overflow-y: auto" in navigation_rule.group(1)
 
 
 def test_compact_workflow_navigation_is_a_scroll_snap_sequence() -> None:

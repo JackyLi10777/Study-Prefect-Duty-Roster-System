@@ -509,6 +509,12 @@ def _assert_drawer_scrolls(page: Page, *, label: str) -> None:
         raise AssertionError(f"{label} drawer did not cycle Tab to its first control.")
     scroll_region = drawer.locator(".sy-sidebar-navigation")
     scroll_region.wait_for(state="visible", timeout=5_000)
+    navigation_focusables = scroll_region.locator(
+        'a[href]:visible, button:visible, [tabindex]:not([tabindex="-1"]):visible'
+    )
+    if navigation_focusables.count() < 1:
+        raise AssertionError(f"{label} drawer navigation has no keyboard destination.")
+    final_navigation_control = navigation_focusables.last
     metrics = scroll_region.evaluate(
         """(element) => {
           element.scrollTop = 0;
@@ -526,7 +532,7 @@ def _assert_drawer_scrolls(page: Page, *, label: str) -> None:
     if metrics["scrollHeight"] > metrics["clientHeight"] and metrics["after"] <= metrics["before"]:
         raise AssertionError(f"{label} drawer cannot reach its lower navigation items: {metrics}")
     scroll_region_box = scroll_region.bounding_box()
-    last_box = last.bounding_box()
+    last_box = final_navigation_control.bounding_box()
     if (
         scroll_region_box is None
         or last_box is None
