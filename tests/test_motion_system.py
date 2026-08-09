@@ -62,6 +62,15 @@ def test_motion_assets_are_loaded_from_same_origin_only() -> None:
     assert '/assets/motion/sing-yin-motion.js' in motion_module
     assert motion_module.index('sing-yin-icon-story-state.js') < motion_module.index('sing-yin-motion.js')
     assert "http://" not in motion_module and "https://" not in motion_module
+    assert "prefers-reduced-motion: reduce" in motion_module
+    assert "document.createElement('script')" in motion_module
+    assert "script.async = false" in motion_module
+    assert "if (!window.gsap && reducedMotion())" in (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "motion" / "sing-yin-motion.js"
+    ).read_text(encoding="utf-8")
+    assert "dataset.syMotion = 'reduced'" in (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "motion" / "sing-yin-motion.js"
+    ).read_text(encoding="utf-8")
     assert 'url_path="/assets/motion"' in main
     assert 'url_path="/assets/vendor"' in main
     assert 'url_path="/assets/css"' in main

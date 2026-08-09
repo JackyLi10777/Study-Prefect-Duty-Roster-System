@@ -196,10 +196,16 @@
   }
   .sy-mobile-setting-tile .q-focus-helper { display: none !important; }
   .sy-mobile-setting-tile .q-icon[data-sy-icon-motion]::after { content: none !important; }
-  .sy-mobile-setting-tile:focus-visible {
-    outline: 3px solid var(--sy-focus) !important;
-    outline-offset: 2px;
-    border-radius: 14px !important;
+  /* NiceGUI loads Quasar's ``no-outline`` utility in the
+   * ``quasar_importants`` cascade layer. Important declarations in the
+   * earlier ``theme`` layer deliberately outrank that utility while keeping
+   * pointer/touch focus free of a sticky halo. */
+  @layer theme {
+    .sy-mobile-setting-tile:focus-visible {
+      outline: 3px solid var(--sy-focus) !important;
+      outline-offset: 2px !important;
+      border-radius: 14px !important;
+    }
   }
   .sy-mobile-setting-tile:active {
     border-color: color-mix(in srgb, var(--sy-role-action) 48%, var(--sy-line)) !important;

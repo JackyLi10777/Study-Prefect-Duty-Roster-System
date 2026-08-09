@@ -823,6 +823,13 @@
   let bootAttempts = 0;
   const boot = () => {
     if (disposed) return;
+    if (!window.gsap && reducedMotion()) {
+      document.documentElement.dataset.syMotion = 'reduced';
+      hydrateMotion();
+      hydrateIconMotion();
+      hydrateToc();
+      return;
+    }
     if (!window.gsap) {
       bootAttempts += 1;
       if (bootAttempts < 120) {

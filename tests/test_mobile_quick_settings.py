@@ -51,6 +51,7 @@ def test_mobile_setting_tiles_own_shape_focus_and_narrow_reflow() -> None:
     assert "border-radius: 50%" not in tile_css
     assert "border-radius: 999px" not in tile_css
     assert "var(--sy-rotary-shadow)" not in tile_css
+    assert "@layer theme" in mobile
     assert ".sy-mobile-setting-tile:focus-visible" in mobile
     assert ".sy-mobile-setting-tile .q-icon[data-sy-icon-motion]::after" in mobile
     assert "content: none !important" in mobile

@@ -80,19 +80,26 @@ PERFORMANCE_OBSERVER_SCRIPT = r"""
 VISUAL_VIEWPORT_TEST_DOUBLE = r"""
 (() => {
   const target = new EventTarget();
-  const state = {
-    width: window.innerWidth,
-    height: window.innerHeight,
-    offsetLeft: 0,
-    offsetTop: 0,
-    pageLeft: 0,
-    pageTop: 0,
-    scale: 1,
-  };
-  const viewport = Object.assign(target, state);
+  const state = {};
+  const viewport = target;
+  for (const [name, fallback] of Object.entries({
+    width: () => window.innerWidth,
+    height: () => window.innerHeight,
+    offsetLeft: () => 0,
+    offsetTop: () => 0,
+    pageLeft: () => window.scrollX,
+    pageTop: () => window.scrollY,
+    scale: () => 1,
+  })) {
+    Object.defineProperty(viewport, name, {
+      configurable: true,
+      enumerable: true,
+      get: () => state[name] ?? fallback(),
+    });
+  }
   Object.defineProperty(window, 'visualViewport', {configurable: true, value: viewport});
   window.__sySetTestVisualViewport = (values) => {
-    Object.assign(viewport, values || {});
+    Object.assign(state, values || {});
     viewport.dispatchEvent(new Event('resize'));
   };
   const nativeScrollIntoView = Element.prototype.scrollIntoView;
@@ -721,10 +728,19 @@ def _assert_drawer_quick_settings_contract(page: Page, *, label: str) -> None:
     tools.wait_for(state="visible", timeout=5_000)
     metrics = tools.evaluate(
         r"""(root) => {
+          const hiddenByAncestor = element => {
+            for (let current = element; current instanceof Element; current = current.parentElement) {
+              const style = getComputedStyle(current);
+              if (current.inert || current.getAttribute('aria-hidden') === 'true' ||
+                  style.display === 'none' || style.visibility === 'hidden' ||
+                  Number(style.opacity || 1) === 0) return true;
+            }
+            return false;
+          };
           const visible = element => {
             const style = getComputedStyle(element);
             const box = element.getBoundingClientRect();
-            return style.display !== 'none' && style.visibility !== 'hidden' &&
+            return !hiddenByAncestor(element) && style.display !== 'none' && style.visibility !== 'hidden' &&
               Number(style.opacity || 1) > 0 && box.width > 0 && box.height > 0;
           };
           const exposed = element => visible(element) && (
@@ -799,7 +815,12 @@ def _assert_drawer_quick_settings_contract(page: Page, *, label: str) -> None:
     _assert_no_interactive_overlap(page, label=f"{label} quick settings", root=".sy-mobile-drawer-tools")
 
     theme = drawer.get_by_test_id("mobile-theme-control")
-    theme.focus()
+    for _ in range(8):
+        if theme.evaluate("element => document.activeElement === element"):
+            break
+        page.keyboard.press("Tab")
+    else:
+        raise AssertionError(f"{label} cannot reach the theme setting by keyboard.")
     focus_style = theme.evaluate(
         """element => ({
           focusVisible: element.matches(':focus-visible'),
@@ -919,7 +940,12 @@ def _assert_forced_colours(page: Page, *, label: str) -> None:
         raise AssertionError(f"{label} did not enter forced-colours mode.")
     drawer = _open_mobile_drawer(page)
     current = drawer.locator('[aria-current="page"]')
-    current.first.focus()
+    for _ in range(40):
+        if current.first.evaluate("element => document.activeElement === element"):
+            break
+        page.keyboard.press("Tab")
+    else:
+        raise AssertionError(f"{label} cannot reach the current route by keyboard.")
     state = current.first.evaluate(
         """element => ({
           focusVisible: element.matches(':focus-visible'),
@@ -1109,29 +1135,40 @@ def _assert_coarse_pointer_icon_story(page: Page, *, label: str) -> None:
         """() => {
           const host = document.querySelector('[data-testid="mobile-more"]');
           const drawerClose = document.querySelector('[data-testid="mobile-drawer-close"] .q-icon');
+          const tabbar = document.querySelector('[data-testid="mobile-bottom-navigation"]');
+          const tabbarStyle = tabbar ? getComputedStyle(tabbar) : null;
           return host?.getAttribute('aria-expanded') === 'true' &&
-            drawerClose?.textContent?.trim() === 'close';
+            drawerClose?.textContent?.trim() === 'close' &&
+            document.documentElement.classList.contains('sy-mobile-drawer-open') &&
+            tabbar?.inert === true && tabbar?.getAttribute('aria-hidden') === 'true' &&
+            tabbarStyle?.opacity === '0' && tabbarStyle?.pointerEvents === 'none';
         }""",
         timeout=3_000,
     )
     open_state = page.evaluate(
-        """() => ({
-          bottomGlyph: document.querySelector('[data-testid="mobile-more"] .q-icon')?.textContent?.trim(),
-          bottomExposed: document.querySelector('[data-testid="mobile-more"]')?.checkVisibility?.({
-            checkOpacity: true,
-            checkVisibilityCSS: true,
-          }) ?? true,
+        """() => {
+          const bottom = document.querySelector('[data-testid="mobile-more"]');
+          const bottomBar = bottom?.closest('[data-testid="mobile-bottom-navigation"]');
+          const bottomBarStyle = bottomBar ? getComputedStyle(bottomBar) : null;
+          return {
+          bottomGlyph: bottom?.querySelector('.q-icon')?.textContent?.trim(),
+          bottomExposed: Boolean(bottom && bottomBar && !bottomBar.inert &&
+            bottomBar.getAttribute('aria-hidden') !== 'true' &&
+            bottomBarStyle?.display !== 'none' && bottomBarStyle?.visibility !== 'hidden' &&
+            Number(bottomBarStyle?.opacity || 1) > 0),
           closeCount: [...document.querySelectorAll('[aria-controls="main-navigation-drawer"] .q-icon')]
             .filter(icon => icon.textContent?.trim() === 'close')
             .filter(icon => {
               const button = icon.closest('button');
+              if (button?.closest('[aria-hidden="true"], [inert]')) return false;
               const box = button?.getBoundingClientRect();
               const style = button ? getComputedStyle(button) : null;
               return box && style && box.width > 0 && box.height > 0 &&
                 style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) > 0 &&
                 (typeof button.checkVisibility !== 'function' || button.checkVisibility({checkOpacity: true, checkVisibilityCSS: true}));
             }).length,
-        })"""
+          };
+        }"""
     )
     if (
         open_state["bottomExposed"] and open_state["bottomGlyph"] == "close"
@@ -1314,12 +1351,22 @@ def main() -> int:
         )
         _assert_mobile_page(compact_page, "/", label="320px initial dashboard")
         compact_drawer = _open_mobile_drawer(compact_page)
-        compact_tools = compact_drawer.get_by_test_id("mobile-drawer-tools").locator(".sy-mobile-drawer-tool")
-        if compact_tools.count() < 2:
+        compact_tools = compact_drawer.get_by_test_id("mobile-drawer-tools").locator(
+            ".sy-mobile-setting-tile"
+        )
+        required_tool_ids = (
+            "mobile-language-control",
+            "mobile-sound-control",
+            "mobile-theme-control",
+        )
+        if any(compact_drawer.get_by_test_id(test_id).count() != 1 for test_id in required_tool_ids):
             raise AssertionError("320px drawer does not expose language, sound, and appearance controls.")
+        account_tool_count = compact_drawer.get_by_test_id("mobile-administrator-logout").count()
+        if compact_tools.count() != 3 + account_tool_count or account_tool_count not in {0, 1}:
+            raise AssertionError("320px drawer exposes an unexpected quick-setting control set.")
         if compact_drawer.get_by_test_id("mobile-theme-control").count() != 1:
             raise AssertionError("320px drawer does not expose the binary appearance control.")
-        compact_tools.nth(0).click()
+        compact_drawer.get_by_test_id("mobile-language-control").click()
         compact_page.wait_for_function(
             """() => {
               const button = document.querySelector('[data-testid="mobile-more"]');

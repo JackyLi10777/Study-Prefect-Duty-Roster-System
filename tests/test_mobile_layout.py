@@ -389,8 +389,18 @@ def test_mobile_browser_verifier_catches_quick_setting_shape_and_drawer_leaks() 
         "cycles=20",
         "pointerLights",
         "mobile-drawer-close",
+        "hiddenByAncestor",
+        "current.inert || current.getAttribute('aria-hidden') === 'true'",
+        "classList.contains('sy-mobile-drawer-open')",
+        "tabbar?.inert === true",
+        "tabbar?.getAttribute('aria-hidden') === 'true'",
+        "tabbarStyle?.opacity === '0'",
+        "button?.closest('[aria-hidden=\"true\"], [inert]')",
+        'page.keyboard.press("Tab")',
+        "cannot reach the theme setting by keyboard",
     ):
         assert contract in verifier
+    assert "theme.focus()" not in verifier
 
 
 def test_mobile_verifiers_use_real_touch_chrome_and_collect_release_evidence() -> None:
@@ -418,10 +428,17 @@ def test_mobile_verifiers_use_real_touch_chrome_and_collect_release_evidence() -
         assert str(width) in nicegui
         assert str(width) in public
     assert "VISUAL_VIEWPORT_TEST_DOUBLE" in nicegui
+    assert "width: () => window.innerWidth" in nicegui
+    assert "height: () => window.innerHeight" in nicegui
+    assert "get: () => state[name] ?? fallback()" in nicegui
     assert "__sySetTestVisualViewport" in nicegui
     assert "sy-mobile-keyboard-open" in nicegui
     assert "_assert_gsap_failure_static_end_state" in nicegui
     assert "dataset.syMotion === 'unavailable'" in nicegui
+    assert '"mobile-language-control"' in nicegui
+    assert '"mobile-sound-control"' in nicegui
+    assert '"mobile-theme-control"' in nicegui
+    assert 'page.keyboard.press("Tab")' in nicegui
 
 
 def test_public_mobile_verifier_exercises_support_keyboard_and_viewer_context() -> None:
