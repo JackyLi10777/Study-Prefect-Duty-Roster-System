@@ -82,4 +82,5 @@ def test_handover_page_derives_counts_and_sessions_from_the_catalog() -> None:
     assert "13 operator checks" not in messages
     assert "13 項實務核對" not in messages
     assert "session_cards.count() == len(ACCEPTANCE_SESSIONS)" in browser_verifier
+    assert 'session_cards.first.wait_for(state="visible", timeout=10_000)' in browser_verifier
     assert "for check_id in acceptance_check_ids()" in browser_verifier

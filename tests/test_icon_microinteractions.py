@@ -506,6 +506,8 @@ def test_browser_verifier_keeps_navigation_button_stable_while_icon_tells_story(
     verifier = _read("scripts/verify_nicegui_ui.py")
 
     assert 'page.locator(".sy-desktop-drawer-trigger")' in verifier
+    assert 'navigation_trigger = page.get_by_test_id("desktop-drawer-trigger")' in verifier
+    assert '"關閉主要導覽" if navigation_expanded == "true" else "開啟主要導覽"' in verifier
     assert 'data-sy-icon-story-category="persistent"' in verifier
     assert ") == static_navigation_toggle_transform" in verifier
     assert "textContent.trim() === 'menu'" in verifier
