@@ -73,10 +73,11 @@ body {
 }
 
 .sy-sidebar-body {
-  display: grid !important;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  display: flex !important;
+  flex-direction: column;
   width: 100%;
-  height: 100dvh;
+  height: 100%;
+  max-height: 100%;
   min-height: 0;
   padding: 18px 12px 24px !important;
   overflow: hidden !important;
@@ -85,6 +86,7 @@ body {
 
 .sy-sidebar-brand,
 .sy-sidebar-footer {
+  flex: 0 0 auto;
   min-width: 0;
 }
 
@@ -97,6 +99,7 @@ body {
 }
 
 .sy-sidebar-navigation {
+  flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
   overflow-x: hidden;

@@ -255,8 +255,11 @@ def test_sidebar_uses_fixed_brand_scrollable_navigation_and_compact_footer() -> 
     assert 'page.get_by_test_id("sidebar-feedback").count() == 0' in verifier
     assert "sidebar_feedback_links" not in verifier
     assert 'page.goto(f"{BASE_URL}/support"' in verifier
-    assert "grid-template-rows: auto minmax(0, 1fr) auto" in command_center
-    assert "height: 100dvh" in command_center
+    assert "display: flex !important" in command_center
+    assert "flex-direction: column" in command_center
+    assert "height: 100%" in command_center
+    assert "max-height: 100%" in command_center
+    assert "flex: 1 1 auto" in command_center
     assert "overflow-y: auto" in command_center
 
 

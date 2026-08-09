@@ -68,6 +68,8 @@ After that follow-up reached protected main as `4eb421cf4f0d068fb0c52c2d55b117b7
 
 After those corrections reached protected main as `15bcc6599c68ccc7d0ec06bcd393a7cd875e80ed`, the formal run passed the theme, complete UI and runtime-performance gates before the write-pipeline verifier exposed another retired DOM contract. The isolated database contained the imported prefect and its audit event, while the verifier still searched for the deliberately removed desktop table and mobile-card classes. The write-pipeline gate now targets the shared responsive inline directory and its stable row identity. This remains a verifier alignment only; a fresh focused write drill, protected-main checks and complete release gate are required before tagging or deployment.
 
+After the aligned write gate reached protected main as `8233663c57ade6d55d01b935b3e9c232b660051e`, the complete write pipeline passed 8/8 inside the formal run. The following 320px mobile gate then reproduced the reported clipped lower sidebar: the outer drawer claimed no overflow while the inner body was 648px high, its navigation content was 887px high and `overflow: hidden` discarded the lower routes. The shell now gives the fixed brand and footer intrinsic flex space and assigns the remaining bounded height to the independently scrollable navigation region. The mobile verifier targets that real scroll owner, resets it before proving lower-item reachability, and confirms the final control is visible. This product fix must pass the focused 320px browser matrix, protected-main checks and a fresh complete release gate before tagging or deployment.
+
 ## Release blockers and completion rule
 
 The candidate remains blocked from a production-complete claim until all of the following are true:

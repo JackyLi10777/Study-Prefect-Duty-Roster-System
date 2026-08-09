@@ -120,7 +120,9 @@ def test_mobile_verifier_declares_real_touch_contexts_and_shared_route_matrix() 
     assert "item.width < 44 || item.height < 44" in source
     for selector in (".q-toggle", ".q-checkbox", ".q-radio", ".q-item--clickable"):
         assert selector in source
-    assert "drawer.evaluate" in source
+    assert 'scroll_region = drawer.locator(".sy-sidebar-navigation")' in source
+    assert "scroll_region.evaluate" in source
+    assert "element.scrollTop = 0" in source
     assert 'get_by_test_id("mobile-more")' in source
     assert "Opening mobile navigation must move focus into the drawer" in source
     assert 'page.keyboard.press("Shift+Tab")' in source

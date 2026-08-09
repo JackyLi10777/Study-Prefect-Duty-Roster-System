@@ -507,10 +507,11 @@ def _assert_drawer_scrolls(page: Page, *, label: str) -> None:
     page.keyboard.press("Tab")
     if not first.evaluate("element => document.activeElement === element"):
         raise AssertionError(f"{label} drawer did not cycle Tab to its first control.")
-    # NiceGUI applies the requested id/classes to Quasar's scrollable drawer
-    # content node itself, rather than to an extra wrapper around that node.
-    metrics = drawer.evaluate(
+    scroll_region = drawer.locator(".sy-sidebar-navigation")
+    scroll_region.wait_for(state="visible", timeout=5_000)
+    metrics = scroll_region.evaluate(
         """(element) => {
+          element.scrollTop = 0;
           const before = element.scrollTop;
           element.scrollTop = element.scrollHeight;
           return {
@@ -522,19 +523,18 @@ def _assert_drawer_scrolls(page: Page, *, label: str) -> None:
           };
         }"""
     )
-    if metrics["scrollHeight"] > metrics["clientHeight"]:
-        if metrics["after"] <= metrics["before"]:
-            raise AssertionError(f"{label} drawer cannot reach its lower navigation items: {metrics}")
-    else:
-        drawer_box = drawer.bounding_box()
-        last_box = last.bounding_box()
-        if (
-            drawer_box is None
-            or last_box is None
-            or last_box["y"] + last_box["height"]
-            > drawer_box["y"] + drawer_box["height"] + 1
-        ):
-            raise AssertionError(f"{label} compact drawer clips its final navigation item: {metrics}")
+    if metrics["scrollHeight"] > metrics["clientHeight"] and metrics["after"] <= metrics["before"]:
+        raise AssertionError(f"{label} drawer cannot reach its lower navigation items: {metrics}")
+    scroll_region_box = scroll_region.bounding_box()
+    last_box = last.bounding_box()
+    if (
+        scroll_region_box is None
+        or last_box is None
+        or last_box["y"] < scroll_region_box["y"] - 1
+        or last_box["y"] + last_box["height"]
+        > scroll_region_box["y"] + scroll_region_box["height"] + 1
+    ):
+        raise AssertionError(f"{label} drawer clips its final navigation item: {metrics}")
     if metrics["overflowY"] not in {"auto", "scroll"}:
         raise AssertionError(f"{label} drawer does not expose a scrollable overflow mode: {metrics}")
     _assert_touch_targets(page, label=label, root="#main-navigation-drawer")
