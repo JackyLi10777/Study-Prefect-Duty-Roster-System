@@ -207,7 +207,7 @@ def test_receipt_metadata_has_global_bound_and_near_max_state_does_not_multiply(
         max_receipts_per_workspace=20,
     )
     assert registry.max_receipts_global == 80
-    assert registry.receipt_memory_upper_bound_bytes == 80 * 384
+    assert registry.receipt_memory_upper_bound_bytes == 80 * 512
     view = registry.create_workspace(session_id="sid", tab_id="tab", workspace_id="work")
     state = deepcopy(view.state)
     state["padding"] = "x" * min(100_000, registry.max_state_bytes // 2)
@@ -227,6 +227,54 @@ def test_receipt_metadata_has_global_bound_and_near_max_state_does_not_multiply(
     )
     tracemalloc.stop()
     assert growth < len(state["padding"]) * 4
+
+
+def test_request_bound_receipt_replays_after_later_commands_without_state_copy() -> None:
+    registry = GuestWorkspaceRegistry(SECRET, clock=lambda: 1_000)
+    view = registry.create_workspace(session_id="sid", tab_id="tab", workspace_id="work")
+    first_state = deepcopy(view.state)
+    first_state["preferences"]["theme"] = "dark"
+    first = registry.replace_state(
+        session_id="sid",
+        workspace_id="work",
+        tab_id="tab",
+        expected_revision=0,
+        command_id="bound-intent",
+        state=first_state,
+        request_digest="a" * 64,
+    )
+    second_state = deepcopy(first.state)
+    second_state["preferences"]["musicEnabled"] = True
+    latest = registry.replace_state(
+        session_id="sid",
+        workspace_id="work",
+        tab_id="tab",
+        expected_revision=1,
+        command_id="later-intent",
+        state=second_state,
+    )
+
+    replay = registry.replay_command(
+        session_id="sid",
+        workspace_id="work",
+        tab_id="tab",
+        command_id="bound-intent",
+        request_digest="a" * 64,
+    )
+    assert replay is not None
+    assert replay.replayed is True
+    assert replay.applied_revision == 1
+    assert replay.revision == latest.revision == 2
+    assert replay.state["preferences"]["musicEnabled"] is True
+
+    with pytest.raises(GuestWorkspaceError, match="different work"):
+        registry.replay_command(
+            session_id="sid",
+            workspace_id="work",
+            tab_id="tab",
+            command_id="bound-intent",
+            request_digest="b" * 64,
+        )
 
 
 def test_tab_session_capacity_state_bounds_rate_limit_and_cleanup() -> None:

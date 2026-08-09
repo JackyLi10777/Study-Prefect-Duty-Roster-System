@@ -403,9 +403,10 @@ def test_roster_forms_repair_predictable_input_before_background_work() -> None:
     assert "workflow.validate_week_start(selected)" in pages
     assert leave_handler.count('run_method("focus")') == 2
     assert "if not cell_values and not day_values and not slot_values:" in draft_handler
-    assert draft_handler.index("cell_values = tuple(") < draft_handler.index("await _run_with_progress")
-    assert draft_handler.index("day_values = tuple(") < draft_handler.index("await _run_with_progress")
-    assert draft_handler.index("slot_values = tuple(") < draft_handler.index("await _run_with_progress")
+    assert (
+        draft_handler.index("cell_values, day_values, slot_values = edit_session.patch_edits()")
+        < draft_handler.index("await _run_with_progress")
+    )
 
 
 def test_history_priority_slider_marks_match_the_nonlinear_numeric_range() -> None:
@@ -470,9 +471,9 @@ def test_durable_handlers_snapshot_visible_form_values_before_the_first_await() 
         "assignment_id = int(assignment_select.value)",
         'replacement_id = None if replacement_select.value == "__vacant__" else str(replacement_select.value)',
         'reason = str(reason_input.value or "").strip()',
-        "cell_values = tuple(",
-        "day_values = tuple(",
-        "slot_values = tuple(",
+        "cell_values, day_values, slot_values = edit_session.patch_edits()",
+        "patches = edit_session.patches()",
+        "command_id = edit_session.ensure_command_id()",
         'reason = reason_state["value"].strip() or None',
     ):
         assert snapshot in pages
@@ -622,7 +623,7 @@ def test_mobile_drawer_traps_focus_and_hides_background_from_assistive_technolog
     assert "element.inert = true" in shell
     assert "element.setAttribute('aria-hidden', 'true')" in shell
     assert "element.inert = false" in shell
-    assert "setBackgroundInert(open)" in shell
+    assert "setBackgroundInert(isMobile() && open)" in shell
     assert "setBackgroundInert(false)" in shell
 
 

@@ -4,6 +4,7 @@ import ast
 from datetime import date
 
 from nicegui_app.config import PROJECT_ROOT
+from nicegui_app.ui.edit_sessions import DraftEditSession
 from nicegui_app.ui.page_routes.weekly import (
     _generation_requirements_query_key,
     _normalize_draft_candidate_value,
@@ -28,6 +29,9 @@ I18N_SOURCE = (
     / "ui"
     / "i18n_catalog"
     / "stewardship.py"
+).read_text(encoding="utf-8")
+EDIT_SESSION_SOURCE = (
+    PROJECT_ROOT / "nicegui_app" / "ui" / "edit_sessions.py"
 ).read_text(encoding="utf-8")
 WEEKLY_TREE = ast.parse(WEEKLY_SOURCE)
 
@@ -108,10 +112,12 @@ def test_leave_mutations_invalidate_and_refresh_generation_requirements() -> Non
 def test_draft_editor_uses_one_canonical_matrix_and_one_batch_patch() -> None:
     assert "build_roster_presentation(" in WEEKLY_SOURCE
     assert "workflow.roster_schedule_snapshot(roster_week_id)" in WEEKLY_SOURCE
-    assert "DraftCellEdit(cell_key=key, replacement_prefect_id=value)" in WEEKLY_SOURCE
-    assert "DraftDayEdit(day=day, closed=closed)" in WEEKLY_SOURCE
-    assert "DraftSlotStateEdit(" in WEEKLY_SOURCE
-    assert 'state="unavailable" if unavailable else "open"' in WEEKLY_SOURCE
+    assert "edit_session = DraftEditSession(" in WEEKLY_SOURCE
+    assert "cell_values, day_values, slot_values = edit_session.patch_edits()" in WEEKLY_SOURCE
+    assert "DraftCellEdit(cell_key=key, replacement_prefect_id=value)" in EDIT_SESSION_SOURCE
+    assert "DraftDayEdit(day=day, closed=closed)" in EDIT_SESSION_SOURCE
+    assert "DraftSlotStateEdit(" in EDIT_SESSION_SOURCE
+    assert 'state="unavailable" if unavailable else "open"' in EDIT_SESSION_SOURCE
     assert "workflow.apply_draft_patch(" in WEEKLY_SOURCE
     assert "workflow.update_draft_assignment(" not in WEEKLY_SOURCE
     assert 'with_input=True' in WEEKLY_SOURCE
@@ -120,10 +126,10 @@ def test_draft_editor_uses_one_canonical_matrix_and_one_batch_patch() -> None:
 
 
 def test_unsaved_changes_support_undo_discard_and_conflict_preservation() -> None:
-    assert "pending_cells: dict[str, str | None]" in WEEKLY_SOURCE
-    assert "undo_stack:" in WEEKLY_SOURCE
-    assert "redo_stack:" in WEEKLY_SOURCE
-    assert "command_state" in WEEKLY_SOURCE
+    assert "edit_session = DraftEditSession(" in WEEKLY_SOURCE
+    assert "edit_session.undo()" in WEEKLY_SOURCE
+    assert "edit_session.redo()" in WEEKLY_SOURCE
+    assert "edit_session.ensure_command_id()" in WEEKLY_SOURCE
     assert "window.__syDraftDirty" in WEEKLY_SOURCE
     assert "ui.keyboard(" in WEEKLY_SOURCE
     assert 'ignore=["input", "select", "textarea"]' in WEEKLY_SOURCE
@@ -218,6 +224,91 @@ def test_move_and_exchange_are_one_atomic_pending_state() -> None:
     }
 
 
+def test_typed_draft_session_owns_dirty_history_retry_and_conflict_reapply() -> None:
+    session = DraftEditSession(
+        original_assignments={
+            "MONDAY:ROOM_302:0": "prefect-a",
+            "MONDAY:ROOM_303:0": "prefect-b",
+            "TUESDAY:ROOM_302:0": None,
+        },
+        original_unavailable=set(),
+        original_closed_days=set(),
+        reviewed_version=4,
+        _command_factory=lambda: "stable-draft-command",
+    )
+
+    mutation = session.stage_candidate("MONDAY:ROOM_302:0", "prefect-b")
+    assert mutation.kind == "swap"
+    assert mutation.exchanged_cell_key == "MONDAY:ROOM_303:0"
+    assert session.dirty is True
+    assert session.pending_count == 2
+    assert session.ensure_command_id() == "stable-draft-command"
+    assert session.ensure_command_id() == "stable-draft-command"
+
+    assert session.undo() is True
+    assert session.dirty is False
+    assert session.redo() is True
+    assert session.pending_cells["MONDAY:ROOM_302:0"] == "prefect-b"
+
+    assert session.stage_slot("MONDAY:ROOM_302:0", True) is True
+    assert session.slot_is_unavailable("MONDAY:ROOM_302:0") is True
+    assert "MONDAY:ROOM_302:0" not in session.pending_cells
+    assert session.undo() is True
+    assert session.pending_cells["MONDAY:ROOM_302:0"] == "prefect-b"
+
+    session.set_conflict(latest_version=9, changes=["Monday changed"])
+    assert session.reapply_conflict() is True
+    assert session.reviewed_version == 9
+    assert session.command_id is None
+    cell_edits, day_edits, slot_edits = session.patch_edits()
+    assert len(cell_edits) == 2
+    assert day_edits == ()
+    assert slot_edits == ()
+
+
+def test_typed_draft_session_rejects_edits_on_closed_surfaces() -> None:
+    session = DraftEditSession(
+        original_assignments={
+            "MONDAY:ROOM_302:0": "prefect-a",
+            "MONDAY:ROOM_303:0": None,
+            "TUESDAY:ROOM_302:0": "prefect-b",
+        },
+        original_unavailable={"MONDAY:ROOM_303:0"},
+        original_closed_days={"TUESDAY"},
+        reviewed_version=1,
+    )
+
+    assert session.stage_candidate("MONDAY:ROOM_303:0", "prefect-a").kind == "blocked"
+    assert session.stage_candidate("TUESDAY:ROOM_302:0", None).kind == "blocked"
+    assert (
+        session.stage_move("MONDAY:ROOM_302:0", "MONDAY:ROOM_303:0").kind
+        == "blocked"
+    )
+    assert (
+        session.stage_move("TUESDAY:ROOM_302:0", "MONDAY:ROOM_302:0").kind
+        == "blocked"
+    )
+    assert session.dirty is False
+
+
+def test_typed_draft_session_does_not_swap_into_an_unavailable_occupied_slot() -> None:
+    session = DraftEditSession(
+        original_assignments={
+            "MONDAY:ROOM_302:0": "prefect-a",
+            "MONDAY:ROOM_303:0": "prefect-b",
+        },
+        original_unavailable={"MONDAY:ROOM_303:0"},
+        original_closed_days=set(),
+        reviewed_version=1,
+    )
+
+    mutation = session.stage_candidate("MONDAY:ROOM_302:0", "prefect-b")
+
+    assert mutation.kind == "assign"
+    assert mutation.exchanged_cell_key is None
+    assert "MONDAY:ROOM_303:0" not in session.pending_cells
+
+
 def test_vacancy_aliases_normalize_without_treating_blank_input_as_vacant() -> None:
     for alias in ("X", "x", "×", "空缺", "待安排", "Vacant", "unassigned"):
         assert _normalize_draft_candidate_value(alias) == "__vacant__"
@@ -248,7 +339,7 @@ def test_draft_matrix_has_desktop_mobile_and_accessible_interaction_contracts() 
     assert '"pointerup"' in WEEKLY_SOURCE
     assert "distance > 8" in WEEKLY_SOURCE
     assert "visible_navigable_keys = [" in WEEKLY_SOURCE
-    assert 'selected_cell["key"] in visible_navigable_keys' in WEEKLY_SOURCE
+    assert "edit_session.selected_cell in visible_navigable_keys" in WEEKLY_SOURCE
     assert 'draft_conflict_slot_changed", cell=slot_label' in WEEKLY_SOURCE
     assert "event.preventDefault(); event.stopPropagation()" in WEEKLY_SOURCE
     assert '"__vacant__": t("draft_explicit_vacancy")' in WEEKLY_SOURCE

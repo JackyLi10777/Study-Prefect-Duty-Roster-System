@@ -305,6 +305,10 @@ cookie when the session is minted; an existing destination preference always
 wins. Both identities use one credentialed generated-file delivery
 path which checks HTTP status and media type before creating a temporary browser
 download; failures expose a bilingual recovery action and support reference.
+The public entrance and `/support` share the same binary sun/moon theme control.
+On mobile, one requested-open state synchronizes More, the fixed top-right Close
+control, backdrop, focus trap, `inert`, and ARIA through rapid taps, viewport
+changes, reconnect, and route teardown.
 The bounded registry binds every ticket to the verified access mode and session,
 rejects cross-mode replay without consuming the ticket, and reserves capacity
 for Admin so Guest saturation cannot block official generated-file delivery.
@@ -326,7 +330,7 @@ complete risk matrix is in [`UPDATE_WORKFLOW.md`](docs/UPDATE_WORKFLOW.md).
 
 ## Operator workflow
 
-1. Verify Chinese names, roles, classes, available days, and each Assistant Head Study Prefect's fixed Assist weekday when the legacy mode is required.
+1. Verify Chinese names, roles, classes, available days, and each Assistant Head Study Prefect's fixed Assist weekday when the legacy mode is required. Allowlisted low-risk fields can be staged directly in desktop rows or mobile cards. Saving validates every changed row and expected version before one atomic batch; any invalid or stale row means zero rows are written and all local edits remain visible. Chinese identity, role, and archive state retain confirmation dialogs.
 2. Choose **Fixed weekday** or **Flexible weekly** before generating. A new week defaults to Fixed weekday; an existing week reopens with its saved mode.
 3. Record known pre-generation leave for the correct Monday-based week, then select any week-specific **Closed all day** dates before generation. This override does not change the permanent room-opening policy.
 4. Generate and review the draft in the same post-by-week matrix used by the PDF. Click a cell, or press `Enter`／`F2`, to search Chinese names, select an eligible prefect, explicitly create a vacancy, or close one week-local cell as unavailable.

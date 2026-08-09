@@ -58,7 +58,9 @@ from nicegui_app.services.workflow_types import (
     LEGACY_FIXED_WEEKDAY,
     LeaveAdjustmentResult,
     PeriodSummaryReport,
+    PREFECT_PATCH_FIELDS,
     PrefectInput,
+    PrefectPatch,
     PrefectPeriodContribution,
     ROLE_CODES,
     ReportRosterSource,
@@ -68,6 +70,7 @@ from nicegui_app.services.workflow_types import (
     WorkflowError,
     WorkflowMaintenanceError,
     WeekScheduleOverrides,
+    prefect_input_from_patch,
 )
 from roster_core.generator import (
     RosterGenerationError,

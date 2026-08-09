@@ -32,7 +32,10 @@ DEFAULT_MAX_DOWNLOAD_BYTES = 5 * 1024 * 1024
 DEFAULT_MAX_COMMANDS_PER_MINUTE = 60
 DEFAULT_MAX_RECEIPTS_PER_WORKSPACE = 120
 MAX_COMMAND_ID_BYTES = 128
-RECEIPT_METADATA_BUDGET_BYTES = 384
+# Includes the command dictionary key plus three SHA-256 strings for commands
+# that bind both user intent and resulting state.  Keep this explicit upper
+# bound synchronized with the receipt fields so guest capacity remains honest.
+RECEIPT_METADATA_BUDGET_BYTES = 512
 
 
 class GuestWorkspaceError(ValueError):
@@ -340,6 +343,7 @@ class _CommandReceipt:
     payload_digest: str
     applied_revision: int
     result_digest: str
+    request_digest: str | None = None
 
 
 @dataclass
@@ -509,6 +513,7 @@ class GuestWorkspaceRegistry:
         expected_revision: int,
         command_id: str,
         state: Mapping[str, Any],
+        request_digest: str | None = None,
         now: int | None = None,
     ) -> GuestWorkspaceView:
         if not isinstance(command_id, str) or not command_id.strip():
@@ -524,7 +529,10 @@ class GuestWorkspaceRegistry:
             record = self._record(session_id, workspace_id, tab_id, current)
             receipt = record.commands.get(command_id)
             if receipt is not None:
-                if receipt.payload_digest != digest:
+                if request_digest is not None:
+                    if receipt.request_digest != request_digest:
+                        raise GuestWorkspaceError("command_id was reused for different work")
+                elif receipt.payload_digest != digest:
                     raise GuestWorkspaceError("command_id was reused with different content")
                 current_view = self._view(session_id, record)
                 return self._copy_view(
@@ -549,11 +557,47 @@ class GuestWorkspaceRegistry:
                 payload_digest=digest,
                 applied_revision=view.revision,
                 result_digest=hashlib.sha256(_canonical_bytes(view.state)).hexdigest(),
+                request_digest=request_digest,
             )
             if len(record.commands) > self.max_receipts_per_workspace:
                 oldest = next(iter(record.commands))
                 del record.commands[oldest]
             return self._copy_view(view)
+
+    def replay_command(
+        self,
+        *,
+        session_id: str,
+        workspace_id: str,
+        tab_id: str,
+        command_id: str,
+        request_digest: str,
+        now: int | None = None,
+    ) -> GuestWorkspaceView | None:
+        """Return current state when the same bounded intent already committed."""
+
+        if not isinstance(command_id, str) or not command_id.strip():
+            return None
+        if not isinstance(request_digest, str) or len(request_digest) != 64:
+            raise GuestWorkspaceError("request digest is invalid")
+        current = self._now(now)
+        with self._lock:
+            record = self._record(session_id, workspace_id, tab_id, current)
+            receipt = record.commands.get(command_id)
+            if receipt is None:
+                return None
+            if receipt.request_digest != request_digest:
+                raise GuestWorkspaceError("command_id was reused for different work")
+            current_view = self._view(session_id, record)
+            return self._copy_view(
+                GuestWorkspaceView(
+                    **{
+                        **current_view.__dict__,
+                        "replayed": True,
+                        "applied_revision": receipt.applied_revision,
+                    }
+                )
+            )
 
     def seal_snapshot(
         self,

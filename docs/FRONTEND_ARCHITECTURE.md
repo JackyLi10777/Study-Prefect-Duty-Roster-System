@@ -26,6 +26,7 @@ The frontend therefore optimises for:
 | Product paradigm, visual hierarchy, tokens and motion principles | `Professional_Design_System.md` | token, accessibility and design-contract tests |
 | Composition, route-family ownership and migration policy | this document | architecture and component-contract tests |
 | Shared shell DOM and viewport runtime | `nicegui_app/ui/shell.py` | `verify_nicegui_mobile.py`, `verify_nicegui_ui.py` |
+| Draft and prefect page-edit state | `nicegui_app/ui/edit_sessions.py` | draft-grid, prefect-directory and accessibility contract tests |
 | CSS loading order | `nicegui_app/ui/theme_markup.py` | `test_ui_component_contract.py` |
 | Canonical reset composition | `nicegui_app/assets/css/sing-yin-command-center-v2.css` | light/dark desktop/mobile browser evidence |
 | Dashboard task order | `nicegui_app/ui/page_routes/home.py` | `test_dashboard_information_architecture.py` |
@@ -57,6 +58,7 @@ No CSS file, page route or animation runtime may become an owner for authenticat
 
 - Desktop navigation is a `264px` institutional rail; the main canvas uses the remaining viewport. The compact `64px` header contains route identity and global controls only.
 - The drawer is a `100dvh` three-row layout: fixed brand/tools, `minmax(0, 1fr)` scrolling navigation, and a compact copyright footer. The former duplicate feedback card is prohibited; email, repository and reporting actions belong to `/support`.
+- During mobile transitions, one requested-open value owns the More trigger, dedicated top-right close control, backdrop, background `inert`, focus trap and ARIA. The close control is never a toggle and always renders the close glyph. Mutation-driven reconciliation is coalesced through one animation frame and every observer, listener and frame is disposed on route replacement.
 - Shell atmosphere is a compact contextual band with a `90px` rendered minimum. It never competes with the page task.
 - Visual-viewport keyboard mode is enabled only when a focused editable control and a material viewport reduction are both present.
 
@@ -89,12 +91,20 @@ No CSS file, page route or animation runtime may become an owner for authenticat
 - Desktop presents identity, a concise value statement, the three-step product explanation and the entry choice as one composition.
 - Mobile presents one decision-first stack: concise identity and value, then one Admin／Guest action pair. A second administrator heading may remain in the accessibility tree for labelled support content but is visually clipped, not shown as a duplicate card.
 - Mobile supporting order is Daily Verse → welcome music → sign-in help → sharing／feedback. These remain available without competing with the entry decision.
+- The public `/support` theme control uses the same binary sun／moon component and state contract as the entrance. It is not permitted to fall back to a plain text or three-state selector.
+
+### Page edit sessions
+
+- `DraftEditSession` owns reviewed and pending cell／day／slot state, move source, selection, local undo／redo, dirty count, stable save command ID and conflict reapply. `weekly.py` composes the page and delegates these semantics; it must not recreate parallel dictionaries.
+- `PrefectEditSession` owns originals, allowlisted pending patches, filters, stable sorting, dirty count, one save command ID and conflict preservation. `people.py` renders the same merged model as a desktop table or mobile cards.
+- Session objects are browser-page state only. They never become an authorization, eligibility or persistence boundary; Admin and Guest adapters independently validate the complete intent.
+- A prefect multi-row save is atomic at the workflow boundary. All IDs, versions and fields are validated before mutation, and a conflict or validation error returns structured zero-write evidence for the session to display.
 
 ## Motion and dependency policy
 
 CSS owns immediate hover, focus, press and reduced-motion fallbacks. The vendored GSAP Core runtime may coordinate bounded semantic sequences after the interface is usable. Animation code must use transform and opacity, kill replaced timelines, clean up on navigation/reconnect and stop while disabled or busy. ScrollTrigger, framework adapters and extra plugins are not installed unless a measured interaction cannot be implemented accessibly with the existing runtime.
 
-`docs/audits/RC53_SOURCE_AND_MOTION_MANIFEST.md` records the rc53 source boundary, interaction matrix, vocabulary and external motion-source decisions. It is a candidate contract, not production status evidence.
+`docs/audits/RC53_SOURCE_AND_MOTION_MANIFEST.md` records the original rc53 interaction and external-motion decisions. `docs/audits/RC54_INTEGRATED_REVIEW_AND_RELEASE_LEDGER_2026-08-09.md` owns the later parallel-work reconciliation, current audit adjudication and typed-session／atomic-batch boundary. Both are source-candidate evidence, not production status.
 
 ## Change protocol
 

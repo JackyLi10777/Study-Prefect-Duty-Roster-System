@@ -26,6 +26,7 @@ MESSAGES = {'app_name': {'zh-HK': '聖言中學導學風紀值班表生成系統
  'system_status': {'zh-HK': '系統狀態', 'en': 'System status'},
  'route_loading': {'zh-HK': '正在載入下一頁', 'en': 'Loading the next page'},
  'open_navigation': {'zh-HK': '開啟主要導覽', 'en': 'Open main navigation'},
+ 'close_navigation': {'zh-HK': '關閉主要導覽', 'en': 'Close main navigation'},
  'mobile_primary_navigation': {'zh-HK': '手機主要導覽', 'en': 'Mobile primary navigation'},
  'mobile_more': {'zh-HK': '更多', 'en': 'More'},
  'mobile_quick_settings': {'zh-HK': '快速設定', 'en': 'Quick settings'},

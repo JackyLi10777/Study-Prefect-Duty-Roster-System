@@ -629,7 +629,18 @@ const PUBLIC_SUPPORT_HTML = `<!doctype html>
     <header class="support-heading">
       <div class="support-heading-actions">
         <a class="support-back" href="/">← 返回網站入口 <span lang="en">· Return to entrance</span></a>
-        <button id="supportTheme" class="guest-enter" type="button" aria-label="切換外觀 · Change appearance">自動 · Auto</button>
+        <button id="supportTheme" class="theme-toggle" type="button"
+          aria-label="深色模式 · Dark mode" aria-pressed="false"
+          title="深色模式 · Dark mode" data-testid="public-support-theme-control">
+          <svg class="theme-toggle-icon" aria-hidden="true" viewBox="0 0 24 24" width="19" height="19">
+            <g class="theme-icon theme-icon--sun">
+              <circle cx="12" cy="12" r="3.7"></circle>
+              <path d="M12 2.2v2.1M12 19.7v2.1M2.2 12h2.1M19.7 12h2.1M5.1 5.1l1.5 1.5M17.4 17.4l1.5 1.5M18.9 5.1l-1.5 1.5M6.6 17.4l-1.5 1.5"></path>
+            </g>
+            <path class="theme-icon theme-icon--moon" d="M20 15.4A8.2 8.2 0 0 1 8.6 4a8.4 8.4 0 1 0 11.4 11.4Z"></path>
+          </svg>
+          <span id="supportThemeLabel" class="theme-toggle-label">淺色 · Light</span>
+        </button>
       </div>
       <h1>三項資料，建立可追溯的問題報告</h1>
       <p>描述預期、實際情況及最少重現步驟；確認內容後才會提交到本機安全收件匣，並取得追溯碼。</p>
@@ -703,6 +714,7 @@ const copyButton = document.getElementById('supportCopy');
 const emailLink = document.getElementById('supportEmail');
 const submitButton = document.getElementById('supportBuild');
 const themeButton = document.getElementById('supportTheme');
+const themeButtonLabel = document.getElementById('supportThemeLabel');
 const resultTitle = document.getElementById('supportResultTitle');
 const resultGuidance = document.getElementById('supportResultGuidance');
 const resultGuidanceEn = document.getElementById('supportResultGuidanceEn');
@@ -710,26 +722,53 @@ let preparedReport = null;
 
 const THEME_KEY = 'sing-yin-roster-viewer-theme-v1';
 const themeStates = ['system', 'light', 'dark'];
-const themeLabels = { system: '自動 · Auto', light: '淺色 · Light', dark: '深色 · Dark' };
+const systemDarkScheme = matchMedia('(prefers-color-scheme: dark)');
+const reducedThemeMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const themeCopy = {
+  light: { current: '淺色 · Light', next: '深色模式 · Dark mode' },
+  dark: { current: '深色 · Dark', next: '淺色模式 · Light mode' },
+};
 let themePreference = document.documentElement.dataset.themePreference || 'system';
-const applyTheme = (preference, persist = true) => {
+let themeAnimationTimer = 0;
+const resolvedTheme = preference => preference === 'system'
+  ? (systemDarkScheme.matches ? 'dark' : 'light')
+  : preference;
+const applyTheme = (preference, { persist = true, animate = false } = {}) => {
   themePreference = themeStates.includes(preference) ? preference : 'system';
-  const resolved = themePreference === 'system'
-    ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-    : themePreference;
+  const resolved = resolvedTheme(themePreference);
+  const copy = themeCopy[resolved];
   document.documentElement.dataset.themePreference = themePreference;
   document.documentElement.dataset.theme = resolved;
-  themeButton.textContent = themeLabels[themePreference];
-  themeButton.setAttribute('aria-pressed', themePreference === 'system' ? 'false' : 'true');
+  themeButton.dataset.resolvedTheme = resolved;
+  themeButton.dataset.themePreference = themePreference;
+  themeButton.setAttribute('aria-pressed', String(resolved === 'dark'));
+  themeButton.setAttribute('aria-label', copy.next);
+  themeButton.title = copy.next;
+  if (themeButtonLabel) themeButtonLabel.textContent = copy.current;
+  if (themeAnimationTimer) clearTimeout(themeAnimationTimer);
+  delete themeButton.dataset.iconChanging;
+  if (animate && !reducedThemeMotion.matches) {
+    themeButton.dataset.iconChanging = 'true';
+    themeAnimationTimer = window.setTimeout(() => {
+      delete themeButton.dataset.iconChanging;
+      themeAnimationTimer = 0;
+    }, 180);
+  }
   if (persist) try { localStorage.setItem(THEME_KEY, themePreference); } catch {}
 };
-applyTheme(themePreference, false);
-themeButton.addEventListener('click', () => applyTheme(themeStates[(themeStates.indexOf(themePreference) + 1) % themeStates.length]));
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-  if (themePreference === 'system') applyTheme('system', false);
+applyTheme(themePreference, { persist: false, animate: false });
+requestAnimationFrame(() => { document.documentElement.dataset.themeReady = 'true'; });
+themeButton.addEventListener('click', () => {
+  const next = resolvedTheme(themePreference) === 'dark' ? 'light' : 'dark';
+  applyTheme(next, { persist: true, animate: true });
+});
+systemDarkScheme.addEventListener('change', () => {
+  if (themePreference === 'system') applyTheme('system', { persist: false, animate: false });
 });
 window.addEventListener('storage', event => {
-  if (event.key === THEME_KEY) applyTheme(event.newValue || 'system', false);
+  if (event.key === THEME_KEY) {
+    applyTheme(event.newValue || 'system', { persist: false, animate: true });
+  }
 });
 
 const normalizedText = (id, maximum) => document.getElementById(id).value
@@ -1793,7 +1832,7 @@ tbody td {
 .support-shell { width: min(100% - 32px, 860px); margin-inline: auto; padding-top: clamp(28px, 7vw, 72px); }
 .support-heading { display: grid; gap: 10px; margin-bottom: 20px; }
 .support-heading-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.support-heading-actions .guest-enter { width: auto; min-width: 112px; min-height: 44px; justify-content: center; }
+.support-heading-actions .theme-toggle { width: auto; min-width: 132px; min-height: 44px; justify-content: center; }
 .support-heading h1 { margin: 4px 0 0; font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.06; letter-spacing: -0.035em; }
 .support-heading p { max-width: 720px; margin: 0; color: var(--ink-muted); line-height: 1.65; }
 .support-back { width: fit-content; color: var(--action); font-size: 0.76rem; font-weight: 720; }
@@ -1840,7 +1879,7 @@ tbody td {
 
 @media (max-width: 640px) {
   .support-heading-actions { align-items: stretch; }
-  .support-heading-actions .guest-enter { min-width: 0; }
+  .support-heading-actions .theme-toggle { min-width: 0; }
   .support-form { grid-template-columns: 1fr; }
   .support-form label { grid-column: 1 / -1; }
   .support-actions > * { width: 100% !important; justify-content: center; }

@@ -19,13 +19,9 @@ from nicegui_app.services.roster_workflow import (
     LEGACY_FIXED_WEEKDAY,
     WorkflowError,
 )
-from nicegui_app.services.workflow_types import (
-    DraftCellEdit,
-    DraftDayEdit,
-    DraftSlotStateEdit,
-)
 from nicegui_app.ui.access_control import render_roster_share_action, revoke_roster_shares
 from nicegui_app.ui.components import action
+from nicegui_app.ui.edit_sessions import DraftEditSession
 from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import day_label, t
 from nicegui_app.ui.navigation import navigate_to
@@ -114,37 +110,17 @@ def _stage_atomic_draft_selection(
 ) -> str | None:
     """Stage one selection and exchange an occupied same-day cell in the same patch."""
 
-    def effective_prefect_id(candidate_key: str) -> str | None:
-        return pending_cells.get(candidate_key, original_assignments.get(candidate_key))
-
-    def stage_value(candidate_key: str, prefect_id: str | None) -> None:
-        if prefect_id == original_assignments.get(candidate_key):
-            pending_cells.pop(candidate_key, None)
-        else:
-            pending_cells[candidate_key] = prefect_id
-
-    current_id = effective_prefect_id(cell_key)
-    if replacement_prefect_id == current_id:
-        return None
-    day_name = cell_key.partition(":")[0]
-    occupied_cell_key = (
-        next(
-            (
-                candidate_key
-                for candidate_key in original_assignments
-                if candidate_key != cell_key
-                and candidate_key.partition(":")[0] == day_name
-                and effective_prefect_id(candidate_key) == replacement_prefect_id
-            ),
-            None,
-        )
-        if replacement_prefect_id is not None
-        else None
+    session = DraftEditSession(
+        original_assignments=original_assignments,
+        original_unavailable=set(),
+        original_closed_days=set(),
+        reviewed_version=0,
+        pending_cells=pending_cells,
     )
-    stage_value(cell_key, replacement_prefect_id)
-    if occupied_cell_key:
-        stage_value(occupied_cell_key, current_id)
-    return occupied_cell_key
+    return session.stage_candidate(
+        cell_key,
+        replacement_prefect_id,
+    ).exchanged_cell_key
 
 
 def _stage_draft_move(
@@ -156,25 +132,15 @@ def _stage_draft_move(
 ) -> tuple[str | None, str | None]:
     """Stage one atomic move or exchange and return the prior cell values."""
 
-    if source_key == target_key:
-        return None, None
-
-    def effective(cell_key: str) -> str | None:
-        return pending_cells.get(cell_key, original_assignments.get(cell_key))
-
-    def stage(cell_key: str, prefect_id: str | None) -> None:
-        if prefect_id == original_assignments.get(cell_key):
-            pending_cells.pop(cell_key, None)
-        else:
-            pending_cells[cell_key] = prefect_id
-
-    source_prefect_id = effective(source_key)
-    target_prefect_id = effective(target_key)
-    if source_prefect_id is None:
-        return None, target_prefect_id
-    stage(source_key, target_prefect_id)
-    stage(target_key, source_prefect_id)
-    return source_prefect_id, target_prefect_id
+    session = DraftEditSession(
+        original_assignments=original_assignments,
+        original_unavailable=set(),
+        original_closed_days=set(),
+        reviewed_version=0,
+        pending_cells=pending_cells,
+    )
+    mutation = session.stage_move(source_key, target_key)
+    return mutation.source_prefect_id, mutation.target_prefect_id
 
 
 def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
@@ -187,7 +153,6 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         closed_days=week_snapshot.get("closedDays", ()),
         editable=True,
     )
-    reviewed_version = {"value": int(week_snapshot["version"])}
     cells_by_key = {
         cell.cell_key: cell
         for row in presentation.rows
@@ -200,24 +165,10 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         for cell in row.cells
         if cell.cell_key
     }
-    pending_cells: dict[str, str | None] = {}
-    pending_days: dict[str, bool] = {}
-    pending_slots: dict[str, bool] = {}
-    history_state = tuple[
-        dict[str, str | None],
-        dict[str, bool],
-        dict[str, bool],
-    ]
-    undo_stack: list[history_state] = []
-    redo_stack: list[history_state] = []
-    selected_cell: dict[str, str | None] = {"key": None}
-    move_source: dict[str, str | None] = {"key": None}
     candidate_selector_ref: dict[str, Any | None] = {"control": None}
     reason_state: dict[str, str] = {"value": ""}
     announcement_state: dict[str, str] = {"value": ""}
-    command_state: dict[str, str | None] = {"value": None}
     candidate_cache: dict[str, list[dict[str, object]] | None] = {}
-    conflict_state: dict[str, Any] = {"latest_version": None, "changes": []}
     conflict_reapply_ref: dict[str, Any | None] = {"control": None}
     prefect_names = {
         str(cell.prefect_id): str(cell.prefect_name)
@@ -233,6 +184,18 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         for cell_key, cell in cells_by_key.items()
         if cell.state is RosterCellState.UNAVAILABLE
     }
+    original_closed_days = {
+        item.day.name for item in presentation.days if item.state == "day_closed"
+    }
+    edit_session = DraftEditSession(
+        original_assignments=original_assignments,
+        original_unavailable=original_unavailable,
+        original_closed_days=original_closed_days,
+        reviewed_version=int(week_snapshot["version"]),
+    )
+    pending_cells = edit_session.pending_cells
+    pending_days = edit_session.pending_days
+    pending_slots = edit_session.pending_slots
     navigable_keys = [
         cell.cell_key
         for row in presentation.rows
@@ -242,35 +205,13 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
     ]
 
     def day_is_closed(day: SchoolDay) -> bool:
-        if day.name in pending_days:
-            return pending_days[day.name]
-        source = next(item for item in presentation.days if item.day == day)
-        return source.state == "day_closed"
-
-    def current_pending_state() -> history_state:
-        return pending_cells.copy(), pending_days.copy(), pending_slots.copy()
-
-    def restore_pending_state(state: history_state) -> None:
-        cells, days, slots = state
-        pending_cells.clear()
-        pending_cells.update(cells)
-        pending_days.clear()
-        pending_days.update(days)
-        pending_slots.clear()
-        pending_slots.update(slots)
-
-    def snapshot_pending() -> None:
-        undo_stack.append(current_pending_state())
-        redo_stack.clear()
-        command_state["value"] = None
+        return edit_session.day_is_closed(day.name)
 
     def pending_count() -> int:
-        return len(pending_cells) + len(pending_days) + len(pending_slots)
+        return edit_session.pending_count
 
     def slot_is_unavailable(cell_key: str) -> bool:
-        if cell_key in pending_slots:
-            return pending_slots[cell_key]
-        return cell_key in original_unavailable
+        return edit_session.slot_is_unavailable(cell_key)
 
     def cell_display(cell: Any) -> tuple[str, str, str]:
         if slot_is_unavailable(cell.cell_key):
@@ -336,17 +277,17 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         return candidate_cache[cell.cell_key]
 
     def open_cell_editor(cell_key: str) -> None:
-        if move_source["key"] and move_source["key"] != cell_key:
-            stage_move(str(move_source["key"]), cell_key)
+        if edit_session.move_source and edit_session.move_source != cell_key:
+            stage_move(edit_session.move_source, cell_key)
             return
-        selected_cell["key"] = cell_key
+        edit_session.selected_cell = cell_key
         editor.refresh()
         selector = candidate_selector_ref["control"]
         if selector is not None:
             selector.run_method("focus")
 
     def focus_cell(cell_key: str) -> None:
-        selected_cell["key"] = cell_key
+        edit_session.selected_cell = cell_key
         editor.refresh()
         ui.run_javascript(
             "requestAnimationFrame(() => document.querySelector("
@@ -392,19 +333,19 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             if neighbor:
                 focus_cell(neighbor)
         elif key_name == " ":
-            if move_source["key"] == cell_key:
-                move_source["key"] = None
-            elif move_source["key"]:
-                stage_move(str(move_source["key"]), cell_key)
+            if edit_session.move_source == cell_key:
+                edit_session.move_source = None
+            elif edit_session.move_source:
+                stage_move(edit_session.move_source, cell_key)
             elif not slot_is_unavailable(cell_key) and (
                 pending_cells.get(cell_key, original_assignments.get(cell_key)) is not None
             ):
-                move_source["key"] = cell_key
+                edit_session.move_source = cell_key
                 editor.refresh()
         elif key_name in {"enter", "f2"}:
             open_cell_editor(cell_key)
-        elif key_name == "escape" and selected_cell["key"] == cell_key:
-            selected_cell["key"] = None
+        elif key_name == "escape" and edit_session.selected_cell == cell_key:
+            edit_session.selected_cell = None
             editor.refresh()
 
     def handle_pointer_move(event: Any) -> None:
@@ -440,14 +381,8 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         current_id = pending_cells.get(cell_key, original_assignments[cell_key])
         if replacement_id == current_id:
             return
-        snapshot_pending()
-        occupied_cell_key = _stage_atomic_draft_selection(
-            cell_key,
-            replacement_id,
-            original_assignments=original_assignments,
-            pending_cells=pending_cells,
-        )
-        if occupied_cell_key:
+        mutation = edit_session.stage_candidate(cell_key, replacement_id)
+        if mutation.exchanged_cell_key:
             message = t("draft_swap_staged", name=prefect_names.get(replacement_id, ""))
             announcement_state["value"] = message
             ui.notify(message, type="info")
@@ -456,13 +391,13 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         editor.refresh()
 
     def stage_move(source_key: str, target_key: str) -> None:
-        move_source["key"] = None
+        edit_session.move_source = None
         if source_key == target_key or slot_is_unavailable(target_key):
             ui.notify(t("draft_move_invalid_target"), type="warning")
             editor.refresh()
             return
-        source_id = pending_cells.get(source_key, original_assignments.get(source_key))
-        target_id = pending_cells.get(target_key, original_assignments.get(target_key))
+        source_id = edit_session.effective_assignment(source_key)
+        target_id = edit_session.effective_assignment(target_key)
         if source_id is None:
             ui.notify(t("draft_move_source_empty"), type="warning")
             editor.refresh()
@@ -483,56 +418,39 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             ui.notify(t("draft_move_policy_rejected"), type="warning")
             editor.refresh()
             return
-        snapshot_pending()
-        moved_id, exchanged_id = _stage_draft_move(
-            source_key,
-            target_key,
-            original_assignments=original_assignments,
-            pending_cells=pending_cells,
+        mutation = edit_session.stage_move(source_key, target_key)
+        if mutation.kind in {"blocked", "noop", "empty"}:
+            ui.notify(t("draft_move_invalid_target"), type="warning")
+            editor.refresh()
+            return
+        message = (
+            t("draft_exchange_staged")
+            if mutation.kind == "swap"
+            else t("draft_move_staged")
         )
-        selected_cell["key"] = target_key
-        message = t("draft_exchange_staged") if exchanged_id else t("draft_move_staged")
         announcement_state["value"] = message
         ui.notify(message, type="info")
         editor.refresh()
 
+    def toggle_move_source(cell_key: str) -> None:
+        edit_session.move_source = (
+            None if edit_session.move_source == cell_key else cell_key
+        )
+        editor.refresh()
+
     def stage_slot(cell_key: str, unavailable: bool) -> None:
-        original_state = cell_key in original_unavailable
-        snapshot_pending()
-        if unavailable == original_state:
-            pending_slots.pop(cell_key, None)
-        else:
-            pending_slots[cell_key] = unavailable
-        if unavailable:
-            pending_cells.pop(cell_key, None)
-            if move_source["key"] == cell_key:
-                move_source["key"] = None
+        if not edit_session.stage_slot(cell_key, unavailable):
+            return
         announcement_state["value"] = t(
             "draft_slot_state_staged_unavailable"
             if unavailable
             else "draft_slot_state_staged_open"
         )
-        command_state["value"] = None
         editor.refresh()
 
     def stage_day(day: SchoolDay, closed: bool) -> None:
-        original_closed = next(
-            item.state == "day_closed" for item in presentation.days if item.day == day
-        )
-        snapshot_pending()
-        if closed == original_closed:
-            pending_days.pop(day.name, None)
-        else:
-            pending_days[day.name] = closed
-        if closed:
-            for cell_key in tuple(pending_cells):
-                if cell_key.startswith(f"{day.name}:"):
-                    pending_cells.pop(cell_key, None)
-            for cell_key in tuple(pending_slots):
-                if cell_key.startswith(f"{day.name}:"):
-                    pending_slots.pop(cell_key, None)
-            if selected_cell["key"] and selected_cell["key"].startswith(f"{day.name}:"):
-                selected_cell["key"] = None
+        if not edit_session.stage_day(day.name, closed):
+            return
         announcement_state["value"] = t(
             "draft_day_state_staged_closed" if closed else "draft_day_state_staged_open",
             day=day_label(day),
@@ -540,32 +458,19 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         editor.refresh()
 
     def undo_pending() -> None:
-        if not undo_stack:
+        if not edit_session.undo():
             return
-        redo_stack.append(current_pending_state())
-        restore_pending_state(undo_stack.pop())
-        command_state["value"] = None
         announcement_state["value"] = t("draft_undo_announced")
         editor.refresh()
 
     def redo_pending() -> None:
-        if not redo_stack:
+        if not edit_session.redo():
             return
-        undo_stack.append(current_pending_state())
-        restore_pending_state(redo_stack.pop())
-        command_state["value"] = None
         announcement_state["value"] = t("draft_redo_announced")
         editor.refresh()
 
     def discard_pending() -> None:
-        pending_cells.clear()
-        pending_days.clear()
-        pending_slots.clear()
-        undo_stack.clear()
-        redo_stack.clear()
-        command_state["value"] = None
-        move_source["key"] = None
-        selected_cell["key"] = None
+        edit_session.discard()
         reason_state["value"] = ""
         ui.run_javascript("window.__syDraftDirty = false")
         discard_dialog.close()
@@ -581,8 +486,10 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             action_name="compare_draft_conflict",
         )
         if latest is None:
-            conflict_state["latest_version"] = None
-            conflict_state["changes"] = [t("draft_conflict_compare_unavailable")]
+            edit_session.set_conflict(
+                latest_version=None,
+                changes=[t("draft_conflict_compare_unavailable")],
+            )
         else:
             latest_week, latest_assignments = latest
             latest_presentation = build_roster_presentation(
@@ -658,11 +565,13 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                         )
                         slot_label = f"{day_label(slot_cell.day)} · {slot_row.spec.display_label}"
                     changes.append(t("draft_conflict_slot_changed", cell=slot_label))
-            conflict_state["latest_version"] = int(latest_week["version"])
-            conflict_state["changes"] = changes
+            edit_session.set_conflict(
+                latest_version=int(latest_week["version"]),
+                changes=changes,
+            )
         reapply_control = conflict_reapply_ref["control"]
         if reapply_control is not None:
-            if conflict_state.get("latest_version") is None:
+            if edit_session.conflict.latest_version is None:
                 reapply_control.disable()
             else:
                 reapply_control.enable()
@@ -670,11 +579,9 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         conflict_dialog.open()
 
     async def reapply_latest() -> None:
-        latest_version = conflict_state.get("latest_version")
-        if latest_version is None:
+        if not edit_session.reapply_conflict():
             compare_latest()
             return
-        reviewed_version["value"] = int(latest_version)
         conflict_dialog.close()
         await save_pending()
 
@@ -691,7 +598,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             ui.label(t("draft_conflict_comparison_title")).classes(
                 "font-semibold mt-4"
             )
-            changes = list(conflict_state.get("changes") or [])
+            changes = list(edit_session.conflict.changes)
             if not changes:
                 ui.label(t("draft_conflict_no_overlap")).classes(
                     "text-sm leading-6 text-[var(--sy-muted)]"
@@ -714,7 +621,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                 icon="difference",
                 on_click=reapply_latest,
                 variant="attention",
-                disabled=conflict_state.get("latest_version") is None,
+                disabled=edit_session.conflict.latest_version is None,
                 test_id="draft-conflict-reapply",
             )
             action(
@@ -739,28 +646,12 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             )
 
     async def save_pending() -> None:
-        cell_values = tuple(
-            DraftCellEdit(cell_key=key, replacement_prefect_id=value)
-            for key, value in pending_cells.items()
-        )
-        day_values = tuple(
-            DraftDayEdit(day=day, closed=closed)
-            for day, closed in pending_days.items()
-        )
-        slot_values = tuple(
-            DraftSlotStateEdit(
-                cell_key=cell_key,
-                state="unavailable" if unavailable else "open",
-            )
-            for cell_key, unavailable in pending_slots.items()
-        )
+        cell_values, day_values, slot_values = edit_session.patch_edits()
         if not cell_values and not day_values and not slot_values:
             return
-        expected_week_version = reviewed_version["value"]
+        expected_week_version = edit_session.reviewed_version
         reason = reason_state["value"].strip() or None
-        if command_state["value"] is None:
-            command_state["value"] = f"draft-patch-ui:{uuid4().hex}"
-        command_id = str(command_state["value"])
+        command_id = edit_session.ensure_command_id()
         result = await _run_with_progress(
             lambda: workflow.apply_draft_patch(
                 roster_week_id=roster_week_id,
@@ -791,8 +682,8 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             if not day_is_closed(cells_by_key[key].day)
         ]
         active_key = (
-            selected_cell["key"]
-            if selected_cell["key"] in visible_navigable_keys
+            edit_session.selected_cell
+            if edit_session.selected_cell in visible_navigable_keys
             else (visible_navigable_keys[0] if visible_navigable_keys else None)
         )
         with ui.element("section").classes("sy-draft-editor").props(
@@ -806,7 +697,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                 "role=status aria-live=polite aria-atomic=true "
                 "data-testid=draft-grid-announcement"
             )
-            if move_source["key"]:
+            if edit_session.move_source:
                 ui.label(t("draft_move_choose_target")).classes(
                     "sy-draft-move-guidance text-sm font-semibold"
                 ).props("role=status aria-live=polite")
@@ -926,13 +817,13 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                     continue
                                 name, meta, state = cell_display(cell)
                                 classes = f"sy-draft-grid-cell sy-draft-grid-cell--{state}"
-                                if selected_cell["key"] == cell.cell_key:
+                                if edit_session.selected_cell == cell.cell_key:
                                     classes += " sy-draft-grid-cell--selected"
                                 if cell.cell_key in pending_cells:
                                     classes += " sy-draft-grid-cell--pending"
                                 if cell.cell_key in pending_slots:
                                     classes += " sy-draft-grid-cell--pending"
-                                if move_source["key"] == cell.cell_key:
+                                if edit_session.move_source == cell.cell_key:
                                     classes += " sy-draft-grid-cell--move-source"
                                 aria = f"{day_label(cell.day)}, {row.spec.display_label}, {name}"
                                 interaction_props = (
@@ -1031,13 +922,13 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                     cell = next(item for item in row.cells if item.day == day)
                                     name, meta, state = cell_display(cell)
                                     classes = f"sy-draft-mobile-cell sy-draft-mobile-cell--{state}"
-                                    if selected_cell["key"] == cell.cell_key:
+                                    if edit_session.selected_cell == cell.cell_key:
                                         classes += " sy-draft-mobile-cell--selected"
                                     if cell.cell_key in pending_cells:
                                         classes += " sy-draft-mobile-cell--pending"
                                     if cell.cell_key in pending_slots:
                                         classes += " sy-draft-mobile-cell--pending"
-                                    if move_source["key"] == cell.cell_key:
+                                    if edit_session.move_source == cell.cell_key:
                                         classes += " sy-draft-mobile-cell--move-source"
                                     interaction_props = (
                                         'role="gridcell" aria-disabled="true" tabindex="-1"'
@@ -1073,7 +964,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                         )
 
             with ui.element("div").classes("sy-draft-editor-panel"):
-                key = selected_cell["key"]
+                key = edit_session.selected_cell
                 if not key:
                     ui.label(t("draft_select_cell")).classes("font-semibold")
                     ui.label(t("draft_candidate_search_hint")).classes(
@@ -1156,16 +1047,10 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                             )
                             action(
                                 t("draft_move_cancel")
-                                if move_source["key"] == key
+                                if edit_session.move_source == key
                                 else t("draft_move_start"),
-                                icon="close" if move_source["key"] == key else "open_with",
-                                on_click=lambda cell_key=key: (
-                                    move_source.__setitem__(
-                                        "key",
-                                        None if move_source["key"] == cell_key else cell_key,
-                                    ),
-                                    editor.refresh(),
-                                ),
+                                icon="close" if edit_session.move_source == key else "open_with",
+                                on_click=lambda cell_key=key: toggle_move_source(cell_key),
                                 variant="quiet",
                                 disabled=effective_prefect is None,
                                 test_id="draft-move-start",
@@ -1208,7 +1093,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                         icon="undo",
                         on_click=undo_pending,
                         variant="quiet",
-                        disabled=not undo_stack,
+                        disabled=not edit_session.can_undo,
                         test_id="draft-undo",
                     )
                     action(
@@ -1216,7 +1101,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                         icon="redo",
                         on_click=redo_pending,
                         variant="quiet",
-                        disabled=not redo_stack,
+                        disabled=not edit_session.can_redo,
                         test_id="draft-redo",
                     )
                     action(
@@ -1248,12 +1133,12 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             redo_pending()
         elif key_name == "z" and (event.modifiers.ctrl or event.modifiers.meta):
             undo_pending()
-        elif key_name in {"f2", "enter"} and selected_cell["key"] is not None:
+        elif key_name in {"f2", "enter"} and edit_session.selected_cell is not None:
             selector = candidate_selector_ref["control"]
             if selector is not None:
                 selector.run_method("focus")
-        elif key_name == "escape" and selected_cell["key"] is not None:
-            selected_cell["key"] = None
+        elif key_name == "escape" and edit_session.selected_cell is not None:
+            edit_session.selected_cell = None
             editor.refresh()
 
     ui.keyboard(
