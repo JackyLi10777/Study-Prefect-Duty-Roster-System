@@ -882,6 +882,20 @@ class GuestWorkspaceAdapter:
         weeks = self.roster_week_history(page=1, page_size=1)
         return weeks[0] if weeks else None
 
+    def roster_week_for_start(self, week_start: date) -> dict[str, object] | None:
+        """Return the exact temporary week selected in this Guest workspace."""
+
+        self._require_read()
+        matches = [
+            row
+            for row in self._state().get("weeks", [])
+            if str(row.get("weekStart")) == week_start.isoformat()
+            and str(row.get("status")) in {"draft", "published"}
+        ]
+        if not matches:
+            return None
+        return self._week_output(max(matches, key=lambda row: int(row["id"])))
+
     def roster_week_history(
         self,
         *,

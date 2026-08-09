@@ -116,8 +116,11 @@ def test_live_viewer_verifier_covers_the_release_entry_contract() -> None:
     assert 'EXPLICIT_THEME_STATES: Final = ("light", "dark")' in source
     assert 'page.get_by_test_id("public-theme-control")' in source
     assert 'viewport={"width": 1440, "height": 1000}' in source
-    assert 'viewport={"width": 390, "height": 844}' in source
-    assert 'viewport={"width": 320, "height": 760}' in source
+    assert "_new_mobile_context(" in source
+    assert "width=390" in source
+    assert "height=844" in source
+    assert "width=320" in source
+    assert "height=760" in source
     assert 'reduced_motion="reduce"' in source
     assert 'page.locator("#refreshLandingVerse").click()' in source
     assert 'page.locator("#shareSite")' in source

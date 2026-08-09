@@ -155,20 +155,30 @@ def _wait_for_progress_cycle(page: Page) -> None:
     )
 
 
-def _click_mobile_drawer_tool(page: Page, index: int, *, expects_navigation: bool = True) -> None:
-    """Use the real phone preference path instead of hidden desktop controls."""
+def _click_mobile_drawer_control(
+    page: Page,
+    test_id: str,
+    *,
+    expects_navigation: bool = True,
+) -> None:
+    """Use a named phone preference instead of its visual grid position."""
     navigation = page.get_by_test_id("mobile-bottom-navigation")
     navigation.locator(".sy-mobile-tab").last.click()
     drawer = page.locator("#main-navigation-drawer")
     drawer.wait_for(state="visible", timeout=10_000)
-    tools = drawer.get_by_test_id("mobile-drawer-tools").locator(".sy-mobile-drawer-tool")
-    if tools.count() <= index:
-        raise AssertionError(f"Mobile drawer preference {index} is unavailable.")
+    tools = drawer.get_by_test_id("mobile-drawer-tools")
+    control = tools.get_by_test_id(test_id)
+    if control.count() != 1:
+        raise AssertionError(f"Mobile drawer control {test_id!r} is unavailable or duplicated.")
+    control.scroll_into_view_if_needed()
+    control.wait_for(state="visible", timeout=10_000)
+    if not control.is_enabled():
+        raise AssertionError(f"Mobile drawer control {test_id!r} is disabled.")
     if expects_navigation:
         with page.expect_navigation(wait_until="domcontentloaded", timeout=15_000):
-            tools.nth(index).click()
+            control.click()
     else:
-        tools.nth(index).click()
+        control.click()
         page.wait_for_function(
             "document.querySelector('[data-testid=\"mobile-more\"]')?.getAttribute('aria-expanded') === 'true'"
         )
@@ -792,7 +802,7 @@ def main() -> None:
         # appears in only one card.
         assert mobile_cards.filter(has_text=str(adjusted["prefectName"])).count() >= 1
         page.screenshot(path=str(MOBILE_SCREENSHOT), full_page=True)
-        _click_mobile_drawer_tool(page, 0)
+        _click_mobile_drawer_control(page, "mobile-language-control")
         page.wait_for_load_state("domcontentloaded")
         page.get_by_text("Phone view:", exact=False).wait_for(timeout=10_000)
         english_mobile_cards = page.locator('[data-testid="mobile-roster-card"]')
@@ -800,7 +810,7 @@ def main() -> None:
         assert english_mobile_cards.count() == 30
         assert english_mobile_cards.filter(has_text=str(adjusted["prefectName"])).count() >= 1
 
-        _click_mobile_drawer_tool(page, 0)
+        _click_mobile_drawer_control(page, "mobile-language-control")
         page.wait_for_load_state("domcontentloaded")
         page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")
         page.get_by_text("名單管理", exact=True).wait_for(timeout=10_000)

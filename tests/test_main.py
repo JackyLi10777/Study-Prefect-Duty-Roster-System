@@ -157,6 +157,16 @@ def test_nicegui_runtime_uses_the_manifest_selected_product_favicon() -> None:
     assert "SERVICE_WEAVE_FAVICON_PATH" not in source
 
 
+def test_nicegui_runtime_uses_built_in_wind3_without_browser_tailwind() -> None:
+    """The measured mobile startup path must not restore Tailwind's browser compiler."""
+
+    source = (PROJECT_ROOT / "nicegui_app" / "main.py").read_text(encoding="utf-8")
+
+    assert "tailwind=False" in source
+    assert 'unocss="wind3"' in source
+    assert 'unocss="mini"' not in source
+
+
 def test_local_hong_kong_font_system_is_complete_and_offline() -> None:
     root = PROJECT_ROOT / "nicegui_app" / "assets" / "fonts"
     required = {

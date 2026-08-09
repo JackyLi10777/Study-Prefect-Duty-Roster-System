@@ -470,23 +470,25 @@ def _assert_theme_state(
     expected_preference: Literal["system", "light", "dark"],
 ) -> dict[str, Any]:
     expected_dark = expected_theme == "dark"
+    test_id = (
+        "mobile-theme-control"
+        if control.get_attribute("data-testid") == "mobile-theme-control"
+        else "theme-control"
+    )
     page.wait_for_function(
         """([testId, expectedTheme, expectedPreference]) => {
           const control = document.querySelector(`[data-testid="${testId}"]`);
           if (!control) return false;
           const rendered = document.body.classList.contains('body--dark') ? 'dark' : 'light';
+          const pressedStateIsValid = testId === 'mobile-theme-control'
+            ? !control.hasAttribute('aria-pressed')
+            : control.getAttribute('aria-pressed') === String(expectedTheme === 'dark');
           return rendered === expectedTheme &&
             control.dataset.themeResolved === expectedTheme &&
             control.dataset.themePreference === expectedPreference &&
-            control.getAttribute('aria-pressed') === String(expectedTheme === 'dark');
+            pressedStateIsValid;
         }""",
-        arg=[
-            "mobile-theme-control"
-            if control.get_attribute("data-testid") == "mobile-theme-control"
-            else "theme-control",
-            expected_theme,
-            expected_preference,
-        ],
+        arg=[test_id, expected_theme, expected_preference],
         timeout=10_000,
     )
 
@@ -525,7 +527,8 @@ def _assert_theme_state(
         failures.append(f"preference={state['preference']!r}")
     if state["resolved"] != expected_theme:
         failures.append(f"resolved={state['resolved']!r}")
-    if state["pressed"] != str(expected_dark).lower():
+    expected_pressed = "" if test_id == "mobile-theme-control" else str(expected_dark).lower()
+    if state["pressed"] != expected_pressed:
         failures.append(f"aria-pressed={state['pressed']!r}")
     if not expected_label or state["label"] != expected_label or state["title"] != expected_label:
         failures.append("aria-label/title action semantics")

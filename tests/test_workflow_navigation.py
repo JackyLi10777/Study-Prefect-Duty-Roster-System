@@ -22,7 +22,7 @@ def test_roster_child_routes_have_explicit_hierarchy_and_return_destinations() -
     assert "navigate_to(route)" in navigation
     assert "window.history" not in navigation
     assert "aria-current=page" in navigation
-    assert 'WorkflowStep(t("roster_workflow_history"), "/rosters#roster-history"' in weekly
+    assert 'WorkflowStep(t("roster_workflow_history"), "/rosters/history"' in weekly
     assert '"id=roster-history data-testid=roster-history"' in weekly
     current_branch = navigation.split("if is_current:", 1)[1].split("else:", 1)[0]
     assert 'ui.element("div").props("aria-current=step")' in current_branch
@@ -132,8 +132,13 @@ def test_header_controls_share_one_visible_surface_contract() -> None:
     assert ".sy-header-control--logout:hover" in theme
 
 
-def test_existing_week_generation_uses_the_serialized_week_version_key() -> None:
+def test_existing_week_generation_uses_an_exact_bounded_week_query() -> None:
     weekly = _read("nicegui_app/ui/page_routes/weekly.py")
 
-    assert "week_start.isoformat(), 0" in weekly
-    assert "version_by_week.get(week_start, 0)" not in weekly
+    roster_page = weekly.split('@ui.page("/rosters")', 1)[1].split(
+        '@ui.page("/rosters/new")', 1
+    )[0]
+    assert "roster_week_history(page=1, page_size=100)" not in roster_page
+    assert "workflow.roster_week_for_start(" in roster_page
+    assert 'current_week["version"]' in roster_page
+    assert "published_weeks" not in roster_page

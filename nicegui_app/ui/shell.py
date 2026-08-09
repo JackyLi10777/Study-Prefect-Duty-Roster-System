@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from collections.abc import Iterator
+from dataclasses import dataclass
 import json
+from typing import Any
 
 from nicegui import ui
 
@@ -48,6 +50,14 @@ MOBILE_PRIMARY_NAVIGATION = tuple(
     for page in mobile_navigation_for(AccessMode.ADMIN)
 )
 DESKTOP_DRAWER_WIDTH_PX = 264
+
+
+@dataclass(slots=True)
+class MobileSettingTile:
+    """Stable mobile setting anatomy with separate action and state copy."""
+
+    button: Any
+    value_label: Any
 
 
 def _navigation_context(active_path: str, access_mode: AccessMode) -> tuple[int, str, str]:
@@ -494,8 +504,13 @@ async def _sync_preference_controls(
         "document.querySelectorAll('[data-sy-sound-toggle]').forEach(button => "
         f"window.__syIconMotion?.setPersistentGlyph(button, {json.dumps(icon)}, {{animate:true}}));"
     )
-    for button, show_label, tooltip in controls:
-        button.set_text(label if show_label else "")
+    for control in controls:
+        button, show_label, tooltip = control[:3]
+        state_label = control[3] if len(control) > 3 else None
+        if state_label is None:
+            button.set_text(label if show_label else "")
+        else:
+            state_label.set_text(t("mobile_setting_on") if pressed else t("mobile_setting_off"))
         button.props(
             f'icon={icon} aria-label="{attr(label)}" title="{attr(label)}" '
             f'aria-pressed={"true" if pressed else "false"}'
@@ -535,19 +550,36 @@ def _current_theme_control(resolved_theme: str | None = None) -> tuple[str, str,
     )
 
 
+def _mobile_theme_status() -> str:
+    """Describe the stored appearance and its current system resolution."""
+
+    resolved = current_theme()
+    if theme_preference() == "system":
+        return t("mobile_theme_auto_dark" if resolved == "dark" else "mobile_theme_auto_light")
+    return t("mobile_theme_dark" if resolved == "dark" else "mobile_theme_light")
+
+
 async def _sync_theme_controls(controls) -> None:  # type: ignore[no-untyped-def]
     icon, label, is_dark = _current_theme_control()
     await ui.run_javascript(
         "document.querySelectorAll('[data-sy-theme-toggle]').forEach(button => "
         f"window.__syIconMotion?.setPersistentGlyph(button, {json.dumps(icon)}, {{animate:true}}));"
     )
-    for button, show_label, tooltip in controls["buttons"]:
-        button.set_text(label if show_label else "")
+    for control in controls["buttons"]:
+        button, show_label, tooltip = control[:3]
+        state_label = control[3] if len(control) > 3 else None
+        if state_label is None:
+            button.set_text(label if show_label else "")
+        else:
+            state_label.set_text(_mobile_theme_status())
         button.props(
             f'icon={icon} aria-label="{attr(label)}" title="{attr(label)}" '
-            f'aria-pressed={"true" if is_dark else "false"} '
             f'data-theme-preference={theme_preference()} data-theme-resolved={"dark" if is_dark else "light"}'
         )
+        if state_label is None:
+            button.props(f'aria-pressed={"true" if is_dark else "false"}')
+        else:
+            button.props(remove="aria-pressed")
         if tooltip is not None:
             tooltip.set_text(label)
         button.update()
@@ -656,7 +688,11 @@ def _install_theme_control_runtime() -> None:
             for (const button of buttons()) {
               const label = (isDark ? button.dataset.actionLight : button.dataset.actionDark) || '';
               button.dataset.themeResolved = current;
-              button.setAttribute('aria-pressed', String(isDark));
+              if (button.dataset.syThemePressed === 'true') {
+                button.setAttribute('aria-pressed', String(isDark));
+              } else {
+                button.removeAttribute('aria-pressed');
+              }
               button.setAttribute('aria-label', label);
               button.title = label;
               const nextIcon = isDark ? 'dark_mode' : 'light_mode';
@@ -672,6 +708,14 @@ def _install_theme_control_runtime() -> None:
                 const textNode = [...content.childNodes].find(node =>
                   node.nodeType === Node.TEXT_NODE && node.textContent.trim());
                 if (textNode) textNode.textContent = label;
+              }
+              const state = button.querySelector('[data-sy-theme-state]');
+              if (state) {
+                const preference = explicitPreference();
+                const stateKey = preference === 'system'
+                  ? (isDark ? 'stateAutoDark' : 'stateAutoLight')
+                  : (isDark ? 'stateDark' : 'stateLight');
+                state.textContent = button.dataset[stateKey] || '';
               }
             }
           };
@@ -737,11 +781,36 @@ def _install_theme_control_runtime() -> None:
     ui.run_javascript(script)
 
 
-def _header_control_classes(kind: str, *, mobile: bool = False) -> str:
+def _header_control_classes(kind: str) -> str:
     """Return one shared visual anatomy plus a restrained semantic variant."""
 
-    classes = f"sy-header-control sy-header-control--{kind}"
-    return f"{classes} sy-mobile-drawer-tool" if mobile else classes
+    return f"sy-header-control sy-header-control--{kind}"
+
+
+def _render_mobile_setting_tile(
+    *,
+    kind: str,
+    icon: str,
+    title_key: str,
+    value: str,
+    action_label: str,
+    test_id_prop: str,
+    on_click,
+    extra_props: str = "",
+    pressed: bool | None = None,
+) -> MobileSettingTile:  # type: ignore[no-untyped-def]
+    """Render one state-first mobile control without desktop header anatomy."""
+
+    pressed_prop = "" if pressed is None else f' aria-pressed={"true" if pressed else "false"}'
+    button = ui.button(icon=icon, on_click=on_click).props(
+        f'flat no-caps aria-label="{attr(action_label)}" title="{attr(action_label)}" '
+        f'{test_id_prop}{pressed_prop} {extra_props}'.strip()
+    ).classes(f"sy-mobile-setting-tile sy-mobile-setting-tile--{kind}")
+    with button:
+        with ui.element("span").classes("sy-mobile-setting-tile-copy"):
+            ui.label(t(title_key)).classes("sy-mobile-setting-tile-title")
+            value_label = ui.label(value).classes("sy-mobile-setting-tile-value")
+    return MobileSettingTile(button=button, value_label=value_label)
 
 
 def _render_mobile_drawer_tools(
@@ -756,52 +825,80 @@ def _render_mobile_drawer_tools(
     ):
         ui.label(t("mobile_quick_settings")).classes("sy-mobile-drawer-tools-title")
         with ui.element("div").classes("sy-mobile-drawer-tools-grid"):
-            language_text, language_action = language_switch_copy(compact=False)
-            ui.button(
-                language_text,
+            _language_text, language_action = language_switch_copy(compact=False)
+            _render_mobile_setting_tile(
+                kind="language",
                 icon="translate",
+                title_key="mobile_setting_language",
+                value=t(
+                    "mobile_setting_value_chinese"
+                    if current_locale() == "zh-HK"
+                    else "mobile_setting_value_english"
+                ),
+                action_label=language_action,
+                test_id_prop="data-testid=mobile-language-control",
                 on_click=lambda: _reload_after_preference_change(toggle_locale),
-            ).props(
-                f'flat no-caps aria-label="{attr(language_action)}" title="{attr(language_action)}" '
-                'data-testid=mobile-language-control data-sy-icon-motion-role=toggle '
-                'data-sy-icon-story-category=preview data-sy-icon-story-to=language'
-            ).classes(_header_control_classes("language", mobile=True))
+                extra_props=(
+                    "data-sy-icon-motion-role=toggle data-sy-icon-story-category=preview "
+                    "data-sy-icon-story-to=language"
+                ),
+            )
             sound_enabled = sound_feedback_enabled()
             sound_label = t("disable_sound_feedback") if sound_enabled else t("enable_sound_feedback")
-            sound_button = ui.button(
-                sound_label,
+            sound_tile = _render_mobile_setting_tile(
+                kind="sound",
                 icon="volume_up" if sound_enabled else "volume_off",
+                title_key="mobile_setting_sound",
+                value=t("mobile_setting_on" if sound_enabled else "mobile_setting_off"),
+                action_label=sound_label,
+                test_id_prop="data-testid=mobile-sound-control",
                 on_click=lambda: _toggle_sound_feedback_with_preview(sound_controls),
-            ).props(
-                f'flat no-caps aria-label="{attr(sound_label)}" title="{attr(sound_label)}" '
-                f'aria-pressed={"true" if sound_enabled else "false"} data-testid=mobile-sound-control '
-                'data-sy-sound-toggle data-sy-icon-motion-role=toggle data-sy-icon-story-category=persistent'
-            ).classes(_header_control_classes("sound", mobile=True))
-            sound_controls.append((sound_button, True, None))
-            theme_icon, theme_label, is_dark = _current_theme_control()
-            theme_button = ui.button(
-                theme_label,
+                pressed=sound_enabled,
+                extra_props=(
+                    "data-sy-sound-toggle data-sy-icon-motion-role=toggle "
+                    "data-sy-icon-story-category=persistent"
+                ),
+            )
+            sound_controls.append((sound_tile.button, False, None, sound_tile.value_label))
+            theme_icon, theme_label, _is_dark = _current_theme_control()
+            theme_tile = _render_mobile_setting_tile(
+                kind="theme",
                 icon=theme_icon,
+                title_key="mobile_setting_appearance",
+                value=_mobile_theme_status(),
+                action_label=theme_label,
+                test_id_prop="data-testid=mobile-theme-control",
                 on_click=lambda: _toggle_theme_in_place(dark_mode, theme_controls),
-            ).props(
-                f'flat no-caps aria-label="{attr(theme_label)}" title="{attr(theme_label)}" '
-                f'aria-pressed={"true" if is_dark else "false"} data-testid=mobile-theme-control '
-                f'data-sy-theme-toggle data-sy-theme-show-label=true data-theme-preference={theme_preference()} '
-                'data-sy-icon-motion-role=toggle data-sy-icon-motion-mode=persistent-rotary '
-                'data-sy-icon-story-category=persistent '
-                f'data-action-light="{attr(t("theme_switch_to_light"))}" '
-                f'data-action-dark="{attr(t("theme_switch_to_dark"))}"'
-            ).classes(_header_control_classes("theme", mobile=True))
-            theme_controls["buttons"].append((theme_button, True, None))
+                extra_props=(
+                    f'data-sy-theme-toggle data-theme-preference={theme_preference()} '
+                    "data-sy-icon-motion-role=toggle data-sy-icon-motion-mode=persistent-rotary "
+                    "data-sy-icon-story-category=persistent "
+                    f'data-action-light="{attr(t("theme_switch_to_light"))}" '
+                    f'data-action-dark="{attr(t("theme_switch_to_dark"))}" '
+                    f'data-state-auto-light="{attr(t("mobile_theme_auto_light"))}" '
+                    f'data-state-auto-dark="{attr(t("mobile_theme_auto_dark"))}" '
+                    f'data-state-light="{attr(t("mobile_theme_light"))}" '
+                    f'data-state-dark="{attr(t("mobile_theme_dark"))}"'
+                ),
+            )
+            theme_tile.value_label.props("data-sy-theme-state")
+            theme_controls["buttons"].append(
+                (theme_tile.button, False, None, theme_tile.value_label)
+            )
             if access_mode in {AccessMode.ADMIN, AccessMode.GUEST}:
-                ui.button(
-                    t("access_admin_logout"),
+                _render_mobile_setting_tile(
+                    kind="account",
                     icon="logout",
+                    title_key="mobile_setting_account",
+                    value=t(
+                        "mobile_setting_account_guest"
+                        if access_mode is AccessMode.GUEST
+                        else "mobile_setting_account_admin"
+                    ),
+                    action_label=t("access_admin_logout"),
+                    test_id_prop="data-testid=mobile-administrator-logout",
                     on_click=_sign_out,
-                ).props(
-                    f'flat no-caps aria-label="{attr(t("access_admin_logout"))}" '
-                    f'title="{attr(t("access_admin_logout"))}" data-testid=mobile-administrator-logout'
-                ).classes(_header_control_classes("logout", mobile=True))
+                )
 
 
 def _render_mobile_tabbar(
@@ -854,8 +951,14 @@ def _install_mobile_drawer_accessibility() -> None:
           const controller = new AbortController();
           let settleFrame = 0;
           let syncFrame = 0;
+          let breakpointFrame = 0;
           let requestedOpen = null;
           const isMobile = () => matchMedia('(max-width: 900px)').matches;
+          let mobileViewport = isMobile();
+          const root = document.documentElement;
+          const setMobileDrawerIntent = open => {
+            root.classList.toggle('sy-mobile-drawer-intent-open', Boolean(open) && isMobile());
+          };
           button.dataset.syDrawerA11y = 'ready';
           window.__syDrawerA11yOwner = button;
           const currentBackdrop = () => document.querySelector('.q-drawer__backdrop');
@@ -899,7 +1002,9 @@ def _install_mobile_drawer_accessibility() -> None:
           ].filter(element => element instanceof HTMLElement && !currentDrawer()?.contains(element));
           const setBackgroundInert = inert => {
             backgroundElements().forEach(element => {
-              if (inert) {
+              const keyboardOwnsTabbar = element.matches('.sy-mobile-tabbar')
+                && document.documentElement.classList.contains('sy-mobile-keyboard-open');
+              if (inert || keyboardOwnsTabbar) {
                 element.inert = true;
                 element.setAttribute('aria-hidden', 'true');
               } else {
@@ -953,7 +1058,9 @@ def _install_mobile_drawer_accessibility() -> None:
               );
               trigger.dataset.syDrawerVisualOpen = String(transitionOpen);
             });
-            setBackgroundInert(isMobile() && open);
+            const modalOpen = isMobile() && open;
+            setBackgroundInert(modalOpen);
+            document.documentElement.classList.toggle('sy-mobile-drawer-open', modalOpen);
             if (focusDrawer && renderedState) {
               const first = focusable()[0];
               first?.focus({preventScroll: true});
@@ -980,6 +1087,9 @@ def _install_mobile_drawer_accessibility() -> None:
               if (controller.signal.aborted) return;
               const open = sync(focusDrawer && expectedOpen === true);
               if (expectedOpen === undefined || open === expectedOpen || performance.now() - startedAt >= 3000) {
+                if (expectedOpen === false || (expectedOpen === true && !open)) {
+                  setMobileDrawerIntent(false);
+                }
                 requestedOpen = null;
                 sync(focusDrawer && expectedOpen === true);
                 if (expectedOpen === false && returnFocusTarget?.isConnected) {
@@ -1001,11 +1111,13 @@ def _install_mobile_drawer_accessibility() -> None:
                 ? false
                 : !currentIntent;
               settle(expectedOpen, trigger === button && expectedOpen);
+              setMobileDrawerIntent(expectedOpen);
             }, {signal: controller.signal});
           });
           document.addEventListener('click', event => {
             if (!(event.target instanceof Element) || !event.target.closest('.q-drawer__backdrop')) return;
             settle(false, false);
+            setMobileDrawerIntent(false);
           }, {capture: true, signal: controller.signal});
           document.addEventListener('keydown', event => {
             if (!isOpen()) return;
@@ -1029,21 +1141,40 @@ def _install_mobile_drawer_accessibility() -> None:
             }
           }, {signal: controller.signal});
           const reconcileBreakpoint = () => {
-            requestedOpen = null;
-            scheduleSync(false);
+            if (breakpointFrame) cancelAnimationFrame(breakpointFrame);
+            breakpointFrame = requestAnimationFrame(() => {
+              breakpointFrame = 0;
+              const nextMobileViewport = isMobile();
+              const viewportChanged = nextMobileViewport !== mobileViewport;
+              const enteredMobileViewport = nextMobileViewport && !mobileViewport;
+              mobileViewport = nextMobileViewport;
+              requestedOpen = null;
+              if (viewportChanged) setMobileDrawerIntent(false);
+              if (enteredMobileViewport) {
+                const close = document.querySelector('[data-testid="mobile-drawer-close"]');
+                if (close instanceof HTMLElement) close.click();
+                else settle(false, false);
+                return;
+              }
+              scheduleSync(false);
+            });
           };
           window.addEventListener('resize', reconcileBreakpoint, {passive: true, signal: controller.signal});
           window.__syDrawerA11yCleanup = () => {
             if (settleFrame) cancelAnimationFrame(settleFrame);
             if (syncFrame) cancelAnimationFrame(syncFrame);
+            if (breakpointFrame) cancelAnimationFrame(breakpointFrame);
             settleFrame = 0;
             syncFrame = 0;
+            breakpointFrame = 0;
             requestedOpen = null;
+            setMobileDrawerIntent(false);
             observer.disconnect();
             observedShell = null;
             observedBackdrop = null;
             controller.abort();
             setBackgroundInert(false);
+            document.documentElement.classList.remove('sy-mobile-drawer-open');
             if (window.__syDrawerA11yOwner === button) window.__syDrawerA11yOwner = null;
           };
           settle(undefined, false);
@@ -1080,8 +1211,10 @@ def _install_mobile_viewport_accessibility() -> None:
           const setTabbarUnavailable = unavailable => {
             const tabbar = document.querySelector('.sy-mobile-tabbar');
             if (!(tabbar instanceof HTMLElement)) return;
-            tabbar.inert = unavailable;
-            if (unavailable) tabbar.setAttribute('aria-hidden', 'true');
+            const drawerOwnsTabbar = root.classList.contains('sy-mobile-drawer-open');
+            const effectiveUnavailable = unavailable || drawerOwnsTabbar;
+            tabbar.inert = effectiveUnavailable;
+            if (effectiveUnavailable) tabbar.setAttribute('aria-hidden', 'true');
             else tabbar.removeAttribute('aria-hidden');
           };
           const scheduleReveal = target => {
@@ -1206,7 +1339,7 @@ def page_shell(active_path: str) -> Iterator[None]:
     with drawer:
         with ui.column().classes("sy-sidebar-body w-full gap-1 p-4"):
             with ui.element("section").classes("sy-sidebar-brand"):
-                ui.button(icon="close", on_click=drawer.toggle).props(
+                ui.button(icon="close", on_click=drawer.hide).props(
                     f'flat round aria-label="{attr(t("close_navigation"))}" '
                     f'title="{attr(t("close_navigation"))}" aria-controls=main-navigation-drawer '
                     'aria-expanded=false data-testid=mobile-drawer-close data-sy-drawer-trigger=close '
@@ -1218,13 +1351,13 @@ def page_shell(active_path: str) -> Iterator[None]:
                         ui.label(t("service_weave_name")).classes("sy-brand-eyebrow")
                         ui.label(t("app_name")).classes("text-base font-bold leading-tight sy-fg-stable")
                 ui.label(t("service_principle")).classes("sy-brand-principle text-xs italic text-[var(--sy-muted)] mb-5")
+            with ui.element("div").classes("sy-sidebar-navigation"):
                 _render_mobile_drawer_tools(
                     access_mode,
                     dark_mode,
                     theme_controls,
                     sound_controls,
                 )
-            with ui.element("div").classes("sy-sidebar-navigation"):
                 for group_index, (group_key, pages) in enumerate(
                     navigation_groups_for(access_mode), start=1
                 ):
@@ -1341,7 +1474,8 @@ def page_shell(active_path: str) -> Iterator[None]:
                     ).props(
                         f'flat round aria-label="{attr(tooltip)}" title="{attr(tooltip)}" '
                         f'aria-pressed={"true" if is_dark else "false"} data-testid=theme-control '
-                        f'data-sy-theme-toggle data-theme-preference={theme_preference()} '
+                        f'data-sy-theme-toggle data-sy-theme-pressed=true '
+                        f'data-theme-preference={theme_preference()} '
                         'data-sy-icon-motion-role=toggle data-sy-icon-motion-mode=persistent-rotary '
                         'data-sy-icon-story-category=persistent '
                         f'data-action-light="{attr(t("theme_switch_to_light"))}" '

@@ -820,9 +820,82 @@
   };
   window.__disposeSingYinMotion = dispose;
 
+  window.__syIconMotion = Object.freeze({
+    setPersistentGlyph,
+    hydrate: hydrateIconMotion,
+    classify: target => {
+      const host = target instanceof Element
+        ? (target.matches(interactiveIconHostSelector) ? target : target.closest(interactiveIconHostSelector))
+        : null;
+      const icon = host?.querySelector(interactiveIconSelector);
+      if (!(host instanceof HTMLElement) || !(icon instanceof HTMLElement)) return null;
+      return Object.freeze({
+        category: icon.dataset.syIconStoryCategory || 'role',
+        role: icon.dataset.syIconMotion || 'signal',
+        motionMode: host.dataset.syIconMotionMode || icon.dataset.syIconMotionMode || 'role-only',
+        rotationDirection: icon.dataset.syIconRotationDirection || '',
+        previewDegrees: Number(icon.dataset.syIconPreviewDegrees || 0),
+        activationDegrees: Number(icon.dataset.syIconActivationDegrees || 0),
+        source: icon.dataset.syIconName || icon.textContent?.trim() || '',
+        destination: icon.dataset.syIconStoryTo || '',
+      });
+    },
+    storySources: Object.freeze([...iconStoryGlyphs.keys()]),
+    lifecycleSources: Object.freeze([...operationLifecycleGlyphs.keys()]),
+    persistentPairs: Object.freeze([...persistentIconPairs.entries()]),
+    rotationAllowlist: Object.freeze(['settings', 'light_mode', 'dark_mode', 'settings_backup_restore', 'history', 'undo'])
+  });
+
+  const installMutationHydrator = () => {
+    if (mutationObserver || !document.body) return;
+    mutationObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.removedNodes.forEach(removePointersWithin);
+        mutation.removedNodes.forEach(removeTocWithin);
+        mutation.removedNodes.forEach(removeIconMotionWithin);
+        if (mutation.type === 'attributes' && mutation.target instanceof Element) {
+          hydrateIconMotion(mutation.target);
+          const host = mutation.target.matches(interactiveIconHostSelector)
+            ? mutation.target : mutation.target.closest(interactiveIconHostSelector);
+          if (host instanceof HTMLElement) {
+            const state = guardStateFor(host);
+            if (!state?.interactive) {
+              const icon = host.querySelector(interactiveIconSelector);
+              cancelIconTimeline(icon);
+              cancelRotaryTimeline(icon);
+            }
+          }
+        }
+        mutation.addedNodes.forEach((node) => {
+          if (!(node instanceof Element)) return;
+          hydrateMotion(node);
+          hydrateIconMotion(node);
+          hydrateToc(node);
+          if (!reducedMotion() && window.matchMedia(FINE_POINTER_QUERY).matches) hydratePointers(node);
+        });
+      });
+      /* A target section can arrive after its TOC in a streamed NiceGUI patch. */
+      hydrateToc();
+    });
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'aria-disabled', 'aria-busy', 'data-sy-icon-motion-role', 'data-sy-icon-motion-mode', 'data-sy-icon-story-to', 'data-sy-icon-story-category']
+    });
+  };
+
   let bootAttempts = 0;
   const boot = () => {
     if (disposed) return;
+    if (!window.gsap && reducedMotion()) {
+      document.documentElement.dataset.syMotion = 'reduced';
+      hydrateMotion();
+      hydrateIconMotion();
+      hydrateToc();
+      installMutationHydrator();
+      return;
+    }
     if (!window.gsap) {
       bootAttempts += 1;
       if (bootAttempts < 120) {
@@ -887,41 +960,7 @@
       }
     );
 
-    mutationObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.removedNodes.forEach(removePointersWithin);
-        mutation.removedNodes.forEach(removeTocWithin);
-        mutation.removedNodes.forEach(removeIconMotionWithin);
-        if (mutation.type === 'attributes' && mutation.target instanceof Element) {
-          hydrateIconMotion(mutation.target);
-          const host = mutation.target.matches(interactiveIconHostSelector)
-            ? mutation.target : mutation.target.closest(interactiveIconHostSelector);
-          if (host instanceof HTMLElement) {
-            const state = guardStateFor(host);
-            if (!state?.interactive) {
-              const icon = host.querySelector(interactiveIconSelector);
-              cancelIconTimeline(icon);
-              cancelRotaryTimeline(icon);
-            }
-          }
-        }
-        mutation.addedNodes.forEach((node) => {
-          if (!(node instanceof Element)) return;
-          hydrateMotion(node);
-          hydrateIconMotion(node);
-          hydrateToc(node);
-          if (!reducedMotion() && window.matchMedia(FINE_POINTER_QUERY).matches) hydratePointers(node);
-        });
-      });
-      /* A target section can arrive after its TOC in a streamed NiceGUI patch. */
-      hydrateToc();
-    });
-    mutationObserver.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class', 'aria-disabled', 'aria-busy', 'data-sy-icon-motion-role', 'data-sy-icon-motion-mode', 'data-sy-icon-story-to', 'data-sy-icon-story-category']
-    });
+    installMutationHydrator();
     document.fonts?.ready.then(() => {
       if (!disposed) hydrateMotion();
     });
@@ -945,31 +984,6 @@
       }, 260);
     };
     document.addEventListener('click', disclosureHandler, true);
-    window.__syIconMotion = Object.freeze({
-      setPersistentGlyph,
-      hydrate: hydrateIconMotion,
-      classify: target => {
-        const host = target instanceof Element
-          ? (target.matches(interactiveIconHostSelector) ? target : target.closest(interactiveIconHostSelector))
-          : null;
-        const icon = host?.querySelector(interactiveIconSelector);
-        if (!(host instanceof HTMLElement) || !(icon instanceof HTMLElement)) return null;
-        return Object.freeze({
-          category: icon.dataset.syIconStoryCategory || 'role',
-          role: icon.dataset.syIconMotion || 'signal',
-          motionMode: host.dataset.syIconMotionMode || icon.dataset.syIconMotionMode || 'role-only',
-          rotationDirection: icon.dataset.syIconRotationDirection || '',
-          previewDegrees: Number(icon.dataset.syIconPreviewDegrees || 0),
-          activationDegrees: Number(icon.dataset.syIconActivationDegrees || 0),
-          source: icon.dataset.syIconName || icon.textContent?.trim() || '',
-          destination: icon.dataset.syIconStoryTo || '',
-        });
-      },
-      storySources: Object.freeze([...iconStoryGlyphs.keys()]),
-      lifecycleSources: Object.freeze([...operationLifecycleGlyphs.keys()]),
-      persistentPairs: Object.freeze([...persistentIconPairs.entries()]),
-      rotationAllowlist: Object.freeze(['settings', 'light_mode', 'dark_mode', 'settings_backup_restore', 'history', 'undo'])
-    });
   };
 
   if (document.readyState === 'loading') {

@@ -399,6 +399,14 @@ MESSAGES = {'backup_restore': {'zh-HK': '備份還原', 'en': 'Backup restore'},
      'en': '{day} is staged to reopen and has not been saved yet.',
  },
  'draft_day_closed': {'zh-HK': '全天不開放', 'en': 'Closed all day'},
+ 'draft_mobile_day_summary': {
+     'zh-HK': '{pending} 未存・{vacancies} 空缺・{unavailable} 不開放',
+     'en': '{pending} unsaved · {vacancies} vacant · {unavailable} unavailable',
+ },
+ 'draft_mobile_day_closed_summary': {
+     'zh-HK': '全天不開放・{pending} 未存',
+     'en': 'Closed all day · {pending} unsaved',
+ },
  'draft_day_close_confirm_title': {'zh-HK': '關閉 {day} 全部值班？', 'en': 'Close all duties on {day}?'},
  'draft_day_close_confirm_body': {
      'zh-HK': '這會把 {day} 原本開放的 {count} 個值班格合併標示為「全天不開放」。儲存前仍可復原。',

@@ -652,6 +652,16 @@ Phone layout is a deliberate arrangement of the same product, not a compressed d
 - Dense tables use cards, row detail or another scan-safe phone representation generated from the same localized display model. A mobile card may reorder information, but it may not omit names, status, workload, reasons or actions needed for the same decision.
 - Landscape phone layout is a compact phone composition, not an automatic return to the desktop sidebar. Hover is never required; form actions stack in consequence order and touch targets remain separated.
 
+#### Mobile operations contract
+
+- Mobile is a first-class operating composition, not a scaled desktop. The weekly path is week selection → closure／leave → rule summary → readiness → generation; advanced charts stay collapsed until requested.
+- Quick Settings uses four dedicated `MobileSettingTile` rectangles in a 2×2 grid above 320px and one column at 320px or under severe text enlargement. These tiles never inherit desktop rotary classes, circular radii, host rotation, persistent glow or knob shadow. Sound alone uses boolean `aria-pressed`; the system／light／dark appearance cycle exposes state without pretending to be binary.
+- Opening the drawer removes the tab bar both visually and semantically. The fixed top-right close action is the only close control, and focus returns to More after dismissal. Brand and compact footer stay stable while Quick Settings and navigation share one bounded scrolling region.
+- Below 768px, a roster draft shows one weekday at a time with six canonical posts, weekday state summaries and one shared bottom sheet. Between 768px and 900px it may use two weekday cards; above 900px the PDF-like matrix remains authoritative. All variants consume the same `RosterSchedulePresentation` and batch transaction.
+- A phone may expose only one fixed action surface at a time. Generation, the dirty-save dock, bottom navigation, software keyboard and dialog must never overlap; keyboard-open state moves the action into document flow rather than hiding the focused field.
+- Inputs use at least 16px text and interactive targets at least 44px. Pointer-only hover, sticky focus halos and button-body motion are forbidden on coarse pointers. `focus-visible`, forced colours and reduced motion retain a rectangular, static equivalent.
+- Runtime verification covers 320×568, 360×800, 390×844, 412×915, 430×932, 844×390, 768×1024 and 820×1180. Screenshots support comparison but never replace route, focus, overflow, write, cleanup or performance evidence.
+
 ### 6.5 Platform story and architecture evidence
 
 Brand context and technical evidence use two connected pages instead of one oversized showcase.

@@ -102,7 +102,7 @@ No CSS file, page route or animation runtime may become an owner for authenticat
 
 ## Motion and dependency policy
 
-CSS owns immediate hover, focus, press and reduced-motion fallbacks. The vendored GSAP Core runtime may coordinate bounded semantic sequences after the interface is usable. Animation code must use transform and opacity, kill replaced timelines, clean up on navigation/reconnect and stop while disabled or busy. ScrollTrigger, framework adapters and extra plugins are not installed unless a measured interaction cannot be implemented accessibly with the existing runtime.
+CSS owns immediate hover, focus, press and reduced-motion fallbacks. NiceGUI runs with its built-in UnoCSS `wind3` preset and the Tailwind browser compiler disabled; this preserves the existing utility vocabulary without the measured mobile startup compilation task, while semantic CSS layers remain the design authority. The vendored GSAP Core runtime may coordinate bounded semantic sequences after the interface is usable, but it is not requested at all when `prefers-reduced-motion: reduce` is active. Animation code must use transform and opacity, kill replaced timelines, clean up on navigation/reconnect and stop while disabled or busy. ScrollTrigger, framework adapters and extra plugins are not installed unless a measured interaction cannot be implemented accessibly with the existing runtime.
 
 `docs/audits/RC53_SOURCE_AND_MOTION_MANIFEST.md` records the original rc53 interaction and external-motion decisions. `docs/audits/RC54_INTEGRATED_REVIEW_AND_RELEASE_LEDGER_2026-08-09.md` owns the later parallel-work reconciliation, current audit adjudication and typed-session／atomic-batch boundary. Both are source-candidate evidence, not production status.
 

@@ -62,6 +62,30 @@ def test_motion_assets_are_loaded_from_same_origin_only() -> None:
     assert '/assets/motion/sing-yin-motion.js' in motion_module
     assert motion_module.index('sing-yin-icon-story-state.js') < motion_module.index('sing-yin-motion.js')
     assert "http://" not in motion_module and "https://" not in motion_module
+    assert "prefers-reduced-motion: reduce" in motion_module
+    assert "document.createElement('script')" in motion_module
+    assert "script.async = false" in motion_module
+    assert "if (!window.gsap && reducedMotion())" in (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "motion" / "sing-yin-motion.js"
+    ).read_text(encoding="utf-8")
+    assert "dataset.syMotion = 'reduced'" in (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "motion" / "sing-yin-motion.js"
+    ).read_text(encoding="utf-8")
+    motion_source = (
+        PROJECT_ROOT / "nicegui_app" / "assets" / "motion" / "sing-yin-motion.js"
+    ).read_text(encoding="utf-8")
+    reduced_boot = motion_source.split("if (!window.gsap && reducedMotion())", 1)[1].split(
+        "if (!window.gsap)", 1
+    )[0]
+    assert "installMutationHydrator()" in reduced_boot
+    mutation_hydrator = motion_source.split(
+        "const installMutationHydrator = () => {", 1
+    )[1].split("\n  };", 1)[0]
+    assert "new MutationObserver" in mutation_hydrator
+    assert "installMutationHydrator();" not in mutation_hydrator
+    assert motion_source.index("window.__syIconMotion = Object.freeze") < motion_source.index(
+        "if (!window.gsap && reducedMotion())"
+    )
     assert 'url_path="/assets/motion"' in main
     assert 'url_path="/assets/vendor"' in main
     assert 'url_path="/assets/css"' in main

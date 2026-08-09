@@ -440,6 +440,8 @@ def run() -> None:
             reload=False,
             show=open_browser_on_startup(),
             storage_secret=storage_secret,
+            tailwind=False,
+            unocss="wind3",
         )
     finally:
         origin_lease.release()

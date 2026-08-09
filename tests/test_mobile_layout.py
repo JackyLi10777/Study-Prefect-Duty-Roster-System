@@ -11,6 +11,9 @@ from tests.ui_source import combined_page_source, combined_theme_source
 
 def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
+    mobile_css = (PROJECT_ROOT / "nicegui_app" / "assets" / "css" / "sing-yin-mobile-v1.css").read_text(
+        encoding="utf-8"
+    )
     main = (PROJECT_ROOT / "nicegui_app" / "main.py").read_text(encoding="utf-8")
     pages = combined_page_source()
 
@@ -58,6 +61,15 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert "const returnFocusTarget" in drawer_accessibility
     assert "returnFocusTarget.focus({preventScroll: true})" in drawer_accessibility
     assert "const reconcileBreakpoint = () =>" in drawer_accessibility
+    assert "let mobileViewport = isMobile()" in drawer_accessibility
+    assert "const enteredMobileViewport = nextMobileViewport && !mobileViewport" in drawer_accessibility
+    assert "const setMobileDrawerIntent = open =>" in drawer_accessibility
+    assert "if (viewportChanged) setMobileDrawerIntent(false)" in drawer_accessibility
+    assert "setMobileDrawerIntent(expectedOpen)" in drawer_accessibility
+    assert "if (close instanceof HTMLElement) close.click()" in drawer_accessibility
+    assert "let breakpointFrame = 0" in drawer_accessibility
+    assert "if (breakpointFrame) cancelAnimationFrame(breakpointFrame)" in drawer_accessibility
+    assert 'ui.button(icon="close", on_click=drawer.hide)' in shell
     assert "requestedOpen = null" in drawer_accessibility
     assert "scheduleSync(false)" in drawer_accessibility
     assert "document.querySelector('.sy-desktop-drawer-trigger')?.click()" not in shell
@@ -70,6 +82,8 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert "if (settleFrame) cancelAnimationFrame(settleFrame)" in shell
     assert "controller.abort()" in shell
     assert "show-if-above breakpoint=900" in shell
+    assert "html:not(.sy-mobile-drawer-intent-open) #main-navigation-drawer" in mobile_css
+    assert "html:not(.sy-mobile-drawer-intent-open) .q-drawer__backdrop" in mobile_css
     assert shell.index('with ui.element("main")') < shell.index(
         "_render_mobile_tabbar(drawer, active_path, access_mode)"
     )
@@ -157,7 +171,8 @@ def test_mobile_keyboard_uses_visual_viewport_and_disposes_route_listeners() -> 
     assert "signal: controller.signal" in shell
     assert "controller.abort()" in shell
     assert "sy-mobile-keyboard-open" in shell
-    assert "tabbar.inert = unavailable" in shell
+    assert "const effectiveUnavailable = unavailable || drawerOwnsTabbar" in shell
+    assert "tabbar.inert = effectiveUnavailable" in shell
     assert "tabbar.setAttribute('aria-hidden', 'true')" in shell
     assert "setTabbarUnavailable(false)" in shell
     assert "window.clearTimeout(revealTimer)" in shell
@@ -352,6 +367,16 @@ def test_preferences_preserve_unfinished_forms_and_language_fails_safe() -> None
     assert "_reload_after_preference_change(toggle_theme)" not in shell
 
 
+def test_theme_browser_verifier_respects_mobile_three_state_semantics() -> None:
+    source = (PROJECT_ROOT / "scripts" / "verify_rc31_theme_controls.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "testId === 'mobile-theme-control'" in source
+    assert "!control.hasAttribute('aria-pressed')" in source
+    assert 'expected_pressed = "" if test_id == "mobile-theme-control"' in source
+
+
 def test_concurrent_statuses_share_one_non_overlapping_stack() -> None:
     shell = (PROJECT_ROOT / "nicegui_app" / "ui" / "shell.py").read_text(encoding="utf-8")
     theme = combined_theme_source()
@@ -360,3 +385,113 @@ def test_concurrent_statuses_share_one_non_overlapping_stack() -> None:
     assert ".sy-status-stack { position: sticky" in theme
     assert ".sy-practice-banner { position: relative" in theme
     assert ".sy-maintenance-banner { position: relative" in theme
+
+
+def test_mobile_browser_verifier_catches_quick_setting_shape_and_drawer_leaks() -> None:
+    verifier = (PROJECT_ROOT / "scripts" / "verify_nicegui_mobile.py").read_text(
+        encoding="utf-8"
+    )
+
+    for contract in (
+        "_assert_drawer_quick_settings_contract",
+        "borderTopLeftRadius",
+        "single-glyph-column",
+        "duplicate bottom X controls",
+        "element.matches(':focus-visible')",
+        "_assert_no_interactive_overlap",
+        "_assert_drawer_cleanup_cycles",
+        "cycles=20",
+        "pointerLights",
+        "mobile-drawer-close",
+        "hiddenByAncestor",
+        "current.inert || current.getAttribute('aria-hidden') === 'true'",
+        "classList.contains('sy-mobile-drawer-open')",
+        "tabbar?.inert === true",
+        "tabbar?.getAttribute('aria-hidden') === 'true'",
+        "tabbarStyle?.opacity === '0'",
+        "button?.closest('[aria-hidden=\"true\"], [inert]')",
+        'page.keyboard.press("Tab")',
+        "cannot reach the theme setting by keyboard",
+    ):
+        assert contract in verifier
+    assert "theme.focus()" not in verifier
+
+
+def test_mobile_verifiers_use_real_touch_chrome_and_collect_release_evidence() -> None:
+    nicegui = (PROJECT_ROOT / "scripts" / "verify_nicegui_mobile.py").read_text(
+        encoding="utf-8"
+    )
+    public = (PROJECT_ROOT / "scripts" / "verify_public_roster_viewer.py").read_text(
+        encoding="utf-8"
+    )
+
+    for source in (nicegui, public):
+        assert 'os.getenv("SING_YIN_PLAYWRIGHT_CHANNEL", "chrome")' in source
+        assert "SING_YIN_PLAYWRIGHT_ALLOW_BUNDLED_CHROMIUM" in source
+        assert "is_mobile=True" in source
+        assert "has_touch=True" in source
+        assert "device_scale_factor=2" in source
+        assert "largest-contentful-paint" in source
+        assert "layout-shift" in source
+        assert "longtask" in source
+        assert "resourceBytes" in source
+        assert "forced_colors" in source
+        assert "font-size: 200%" in source
+
+    for width in (256, 320, 390, 768, 820, 844, 1024):
+        assert re.search(rf"width\s*=\s*{width}\b", nicegui)
+    for width, height in ((360, 800), (412, 915), (430, 932)):
+        assert re.search(rf"\({width},\s*{height},\s*[\'\"]", nicegui)
+    for width in (320, 360, 390, 412):
+        assert re.search(rf"width\s*=\s*{width}\b", public)
+    for width, height in ((430, 932), (768, 1024), (820, 1180), (844, 390)):
+        assert re.search(rf"\({width},\s*{height},\s*[\'\"]", public)
+    assert "VISUAL_VIEWPORT_TEST_DOUBLE" in nicegui
+    assert "width: () => window.innerWidth" in nicegui
+    assert "height: () => window.innerHeight" in nicegui
+    assert "get: () => state[name] ?? fallback()" in nicegui
+    assert "__sySetTestVisualViewport" in nicegui
+    assert "sy-mobile-keyboard-open" in nicegui
+    assert "_assert_gsap_failure_static_end_state" in nicegui
+    assert "dataset.syMotion === 'unavailable'" in nicegui
+    assert '"mobile-language-control"' in nicegui
+    assert '"mobile-sound-control"' in nicegui
+    assert '"mobile-theme-control"' in nicegui
+    assert 'page.keyboard.press("Tab")' in nicegui
+    assert "collect_page_errors: bool = True" in nicegui
+    assert "if collect_page_errors:" in nicegui
+    gsap_scope = nicegui.split("def _assert_gsap_failure_static_end_state", 1)[1].split(
+        "def ", 1
+    )[0]
+    assert "collect_console_errors=False" in gsap_scope
+    assert "collect_page_errors=False" not in gsap_scope
+
+
+def test_public_mobile_verifier_exercises_support_keyboard_and_viewer_context() -> None:
+    verifier = (PROJECT_ROOT / "scripts" / "verify_public_roster_viewer.py").read_text(
+        encoding="utf-8"
+    )
+
+    for contract in (
+        "_assert_support_keyboard_flow",
+        "supportExpected",
+        "supportActual",
+        "supportSteps",
+        "_assert_viewer_horizontal_context",
+        "scrollWidth",
+        "scrollLeft",
+        "focus-visible",
+        "sticky roster context overlaps",
+        "_assert_200_percent_public_reflow",
+        "desktop.add_init_script(PERFORMANCE_OBSERVER_SCRIPT)",
+        "def _write_performance_evidence()",
+    ):
+        assert contract in verifier
+    collection = verifier.split("def _collect_performance_evidence", 1)[1].split(
+        "def _attach_error_collectors", 1
+    )[0]
+    assert collection.index("PERFORMANCE_EVIDENCE.append(evidence)") < collection.index(
+        'if evidence["cumulativeLayoutShift"] > 0.15:'
+    )
+    finalizer = verifier.split("finally:", 1)[1]
+    assert "_write_performance_evidence()" in finalizer
