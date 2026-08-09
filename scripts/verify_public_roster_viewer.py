@@ -201,12 +201,14 @@ def _assert_mobile_touch_and_reflow(page: Page, *, label: str) -> None:
             const box = element.getBoundingClientRect();
             const clippedAway = style.clip === 'rect(0px, 0px, 0px, 0px)'
               || style.clipPath === 'inset(50%)';
+            const intersectsHorizontally = box.right > 0 && box.left < window.innerWidth;
             return style.display !== 'none'
               && style.visibility !== 'hidden'
               && Number.parseFloat(style.opacity || '1') > 0
               && !clippedAway
               && box.width > 0
               && box.height > 0
+              && intersectsHorizontally
               && box.bottom > 0;
           };
           const controls = [...document.querySelectorAll('button, a[href], summary, input, select, textarea')]
@@ -426,7 +428,11 @@ def _assert_public_support(
     for expected_preference in ("light", "dark"):
         theme_button.click()
         page.wait_for_function(
-            "expected => document.documentElement.dataset.themePreference === expected",
+            """expected => {
+              const root = document.documentElement;
+              return root.dataset.themePreference === expected
+                && root.dataset.theme === expected;
+            }""",
             arg=expected_preference,
         )
     if page.evaluate("() => localStorage.getItem('sing-yin-roster-viewer-theme-v1')") != "dark":
@@ -546,8 +552,12 @@ def _assert_welcome_audio_quiet_navigation(page: Page, *, base_url: str) -> None
     recovery = page.locator("#welcomeAudioRecovery")
     recovery.wait_for(state="visible")
     page.locator("#welcomeAudioQuiet").click()
-    if recovery.is_visible():
-        raise RuntimeError("Quiet welcome-audio choice did not close the recovery choice.")
+    try:
+        recovery.wait_for(state="hidden")
+    except Error as exc:
+        raise RuntimeError(
+            "Quiet welcome-audio choice did not close the recovery choice."
+        ) from exc
     page.route(
         "**/guest",
         lambda route: route.fulfill(

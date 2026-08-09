@@ -506,6 +506,7 @@ def test_public_mobile_verifier_only_reports_text_that_can_actually_be_clipped()
     assert "clipsOverflow(style.overflowY)" in verifier
     assert "['hidden', 'clip', 'scroll', 'auto'].includes(value)" in verifier
     assert "style.clip === 'rect(0px, 0px, 0px, 0px)'" in verifier
+    assert "box.right > 0 && box.left < window.innerWidth" in verifier
     assert "box.bottom > 0" in verifier
     assert (
         "element.scrollWidth > element.clientWidth + 2 || element.scrollHeight > element.clientHeight + 2"
@@ -533,6 +534,8 @@ def test_public_support_theme_seed_executes_before_document_bootstrap() -> None:
     assert "\"\"\"() => localStorage.setItem('sing-yin-roster-viewer-theme-v1', 'dark')\"\"\"" not in verifier
     assert 'for expected_preference in ("light", "dark"):' in verifier
     assert 'for expected_preference in ("system", "light", "dark"):' not in verifier
+    assert "root.dataset.themePreference === expected" in verifier
+    assert "root.dataset.theme === expected" in verifier
 
 
 def test_blocked_welcome_audio_checks_policy_copy_in_the_live_status_region() -> None:
@@ -555,7 +558,8 @@ def test_quiet_welcome_audio_choice_precedes_entry_navigation() -> None:
     assert quiet_flow.index('page.locator("#welcomeAudioQuiet").click()') < quiet_flow.index(
         "page.locator('a[data-entry-role=\"guest\"]:visible').click()"
     )
-    assert 'if recovery.is_visible():' in quiet_flow
+    assert 'recovery.wait_for(state="hidden")' in quiet_flow
+    assert 'if recovery.is_visible():' not in quiet_flow
     assert 'page.route(\n        "**/guest"' in quiet_flow
     assert 'page.locator("#guestDestination").count() != 1' in quiet_flow
     assert 'page.unroute("**/guest")' in quiet_flow
