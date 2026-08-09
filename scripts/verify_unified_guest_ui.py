@@ -816,7 +816,7 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
         )
     mobile_assignment.click()
     mobile_candidate_search = page.locator(
-        f'[data-testid="draft-candidate-search"][data-cell-key="{mobile_cell_key}"]'
+        f'[data-testid="draft-candidate-search-mobile"][data-cell-key="{mobile_cell_key}"]'
     )
     mobile_candidate_search.wait_for(state="visible", timeout=10_000)
     mobile_candidate_search.click()
@@ -835,7 +835,8 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
         state="visible",
         timeout=10_000,
     )
-    page.get_by_test_id("draft-undo").click()
+    page.get_by_test_id("draft-mobile-editor-close").click()
+    page.get_by_test_id("draft-undo-mobile").click()
     page.set_viewport_size({"width": 1440, "height": 1024})
 
     # Restore the removed assignments through the same browser editor before

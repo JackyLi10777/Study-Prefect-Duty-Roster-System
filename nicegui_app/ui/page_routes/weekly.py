@@ -299,10 +299,6 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         edit_session.selected_cell = cell_key
         mobile_dialog_state["open"] = compact
         refresh_editor()
-        if compact:
-            dialog = cell_editor_dialog_ref["control"]
-            if dialog is not None:
-                dialog.open()
         selector_ref = (
             mobile_candidate_selector_ref
             if compact
@@ -1206,7 +1202,9 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                     ),
                 ).props("name=draft-batch-reason autocomplete=off").classes("w-full")
 
-            with ui.dialog().props("persistent") as cell_editor_dialog, ui.card().classes(
+            with ui.dialog(value=mobile_dialog_state["open"]).props(
+                "persistent"
+            ) as cell_editor_dialog, ui.card().classes(
                 "sy-surface sy-draft-editor-sheet"
             ) as cell_editor_sheet:
                 cell_editor_dialog_ref["control"] = cell_editor_dialog
@@ -1435,21 +1433,25 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                     ui.label(t("draft_undo_hint")).classes(
                         "text-xs text-[var(--sy-muted)]"
                     )
-                action(
-                    t("draft_save_all"),
-                    icon="save",
-                    on_click=save_review_dialog.open,
-                    disabled=not count,
-                    test_id="draft-save-all-mobile",
-                )
+                with ui.row().classes("sy-mobile-actions gap-2 flex-wrap"):
+                    action(
+                        t("draft_undo"),
+                        icon="undo",
+                        on_click=undo_pending,
+                        variant="quiet",
+                        disabled=not edit_session.can_undo,
+                        test_id="draft-undo-mobile",
+                    )
+                    action(
+                        t("draft_save_all"),
+                        icon="save",
+                        on_click=save_review_dialog.open,
+                        disabled=not count,
+                        test_id="draft-save-all-mobile",
+                    )
 
     def refresh_editor() -> None:
-        reopen_mobile_editor = mobile_dialog_state["open"]
         editor.refresh()
-        if reopen_mobile_editor:
-            dialog = cell_editor_dialog_ref["control"]
-            if dialog is not None:
-                dialog.open()
 
     def handle_undo_key(event: Any) -> None:
         if not event.action.keydown or event.action.repeat:

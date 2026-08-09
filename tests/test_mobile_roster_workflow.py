@@ -88,7 +88,10 @@ def test_mobile_roster_uses_one_day_phone_view_and_two_column_tablet_view() -> N
 def test_mobile_roster_editor_is_a_shared_sheet_with_one_dirty_dock() -> None:
     assert "data-testid=draft-mobile-day-tabs" in WEEKLY_SOURCE
     assert "data-testid=draft-candidate-search-mobile" in WEEKLY_SOURCE
+    assert 'ui.dialog(value=mobile_dialog_state["open"])' in WEEKLY_SOURCE
+    assert 'reopen_mobile_editor = mobile_dialog_state["open"]' not in WEEKLY_SOURCE
     assert "data-testid=draft-mobile-save-dock" in WEEKLY_SOURCE
+    assert 'test_id="draft-undo-mobile"' in WEEKLY_SOURCE
     assert 'test_id="draft-save-all-mobile-confirm"' in WEEKLY_SOURCE
     assert WEEKLY_SOURCE.count("data-testid=draft-mobile-save-dock") == 1
     assert "cell.focus({preventScroll: true})" in WEEKLY_SOURCE
