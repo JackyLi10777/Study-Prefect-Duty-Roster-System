@@ -951,8 +951,10 @@ def _install_mobile_drawer_accessibility() -> None:
           const controller = new AbortController();
           let settleFrame = 0;
           let syncFrame = 0;
+          let breakpointFrame = 0;
           let requestedOpen = null;
           const isMobile = () => matchMedia('(max-width: 900px)').matches;
+          let mobileViewport = isMobile();
           button.dataset.syDrawerA11y = 'ready';
           window.__syDrawerA11yOwner = button;
           const currentBackdrop = () => document.querySelector('.q-drawer__backdrop');
@@ -1130,15 +1132,30 @@ def _install_mobile_drawer_accessibility() -> None:
             }
           }, {signal: controller.signal});
           const reconcileBreakpoint = () => {
-            requestedOpen = null;
-            scheduleSync(false);
+            if (breakpointFrame) cancelAnimationFrame(breakpointFrame);
+            breakpointFrame = requestAnimationFrame(() => {
+              breakpointFrame = 0;
+              const nextMobileViewport = isMobile();
+              const enteredMobileViewport = nextMobileViewport && !mobileViewport;
+              mobileViewport = nextMobileViewport;
+              requestedOpen = null;
+              if (enteredMobileViewport) {
+                const close = document.querySelector('[data-testid="mobile-drawer-close"]');
+                if (close instanceof HTMLElement) close.click();
+                else settle(false, false);
+                return;
+              }
+              scheduleSync(false);
+            });
           };
           window.addEventListener('resize', reconcileBreakpoint, {passive: true, signal: controller.signal});
           window.__syDrawerA11yCleanup = () => {
             if (settleFrame) cancelAnimationFrame(settleFrame);
             if (syncFrame) cancelAnimationFrame(syncFrame);
+            if (breakpointFrame) cancelAnimationFrame(breakpointFrame);
             settleFrame = 0;
             syncFrame = 0;
+            breakpointFrame = 0;
             requestedOpen = null;
             observer.disconnect();
             observedShell = null;
@@ -1310,7 +1327,7 @@ def page_shell(active_path: str) -> Iterator[None]:
     with drawer:
         with ui.column().classes("sy-sidebar-body w-full gap-1 p-4"):
             with ui.element("section").classes("sy-sidebar-brand"):
-                ui.button(icon="close", on_click=drawer.toggle).props(
+                ui.button(icon="close", on_click=drawer.hide).props(
                     f'flat round aria-label="{attr(t("close_navigation"))}" '
                     f'title="{attr(t("close_navigation"))}" aria-controls=main-navigation-drawer '
                     'aria-expanded=false data-testid=mobile-drawer-close data-sy-drawer-trigger=close '

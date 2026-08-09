@@ -58,6 +58,12 @@ def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
     assert "const returnFocusTarget" in drawer_accessibility
     assert "returnFocusTarget.focus({preventScroll: true})" in drawer_accessibility
     assert "const reconcileBreakpoint = () =>" in drawer_accessibility
+    assert "let mobileViewport = isMobile()" in drawer_accessibility
+    assert "const enteredMobileViewport = nextMobileViewport && !mobileViewport" in drawer_accessibility
+    assert "if (close instanceof HTMLElement) close.click()" in drawer_accessibility
+    assert "let breakpointFrame = 0" in drawer_accessibility
+    assert "if (breakpointFrame) cancelAnimationFrame(breakpointFrame)" in drawer_accessibility
+    assert 'ui.button(icon="close", on_click=drawer.hide)' in shell
     assert "requestedOpen = null" in drawer_accessibility
     assert "scheduleSync(false)" in drawer_accessibility
     assert "document.querySelector('.sy-desktop-drawer-trigger')?.click()" not in shell
