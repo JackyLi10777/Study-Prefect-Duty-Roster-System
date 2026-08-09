@@ -76,13 +76,18 @@ def test_guest_exact_week_lookup_normalizes_serialized_dates() -> None:
 
 def test_mobile_roster_uses_one_day_phone_view_and_two_column_tablet_view() -> None:
     assert "@media (max-width: 767px)" in MOBILE_CSS
-    assert ".sy-draft-mobile--phone" in MOBILE_CSS
+    assert ".sy-draft-mobile-view" in MOBILE_CSS
+    assert ".sy-draft-mobile-day:not(.sy-draft-mobile-day--selected)" in MOBILE_CSS
     assert "display: grid !important" in MOBILE_CSS
     assert "@media (min-width: 768px) and (max-width: 900px)" in MOBILE_CSS
     assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in MOBILE_CSS
     assert "@media (max-width: 900px)" in MOBILE_CSS
     assert ".sy-draft-grid-scroll" in MOBILE_CSS
     assert "display: none !important" in MOBILE_CSS
+    assert "sy-draft-mobile--phone" not in WEEKLY_SOURCE
+    assert "sy-draft-mobile--tablet" not in WEEKLY_SOURCE
+    assert WEEKLY_SOURCE.count("render_mobile_day(day_item)") == 1
+    assert 'data-mobile-day="{attr(day.name)}"' in WEEKLY_SOURCE
 
 
 def test_mobile_roster_editor_is_a_shared_sheet_with_one_dirty_dock() -> None:
@@ -96,6 +101,8 @@ def test_mobile_roster_editor_is_a_shared_sheet_with_one_dirty_dock() -> None:
     assert WEEKLY_SOURCE.count("data-testid=draft-mobile-save-dock") == 1
     assert "cell.focus({preventScroll: true})" in WEEKLY_SOURCE
     assert "cell.scrollIntoView({block: 'nearest', inline: 'nearest'})" in WEEKLY_SOURCE
+    assert "[...document.querySelectorAll(" in WEEKLY_SOURCE
+    assert "item.getClientRects().length" in WEEKLY_SOURCE
     assert "ui.timer(" not in WEEKLY_SOURCE
     assert 'selector.run_method("focus")' in WEEKLY_SOURCE
 

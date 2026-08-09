@@ -112,13 +112,23 @@ def _collect_performance_evidence(page: Page, *, label: str) -> None:
         }"""
     )
     evidence["label"] = label
+    PERFORMANCE_EVIDENCE.append(evidence)
     if evidence["cumulativeLayoutShift"] > 0.15:
         raise RuntimeError(f"{label} exceeds the mobile CLS contract: {evidence}")
     if evidence["longestTask"] > 1_000:
         raise RuntimeError(f"{label} contains a blocking task longer than one second: {evidence}")
     if evidence["resourceBytes"] > 25 * 1024 * 1024:
         raise RuntimeError(f"{label} transferred more than the 25 MiB ceiling: {evidence}")
-    PERFORMANCE_EVIDENCE.append(evidence)
+
+
+def _write_performance_evidence() -> None:
+    if not PERFORMANCE_EVIDENCE:
+        return
+    PERFORMANCE_EVIDENCE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    PERFORMANCE_EVIDENCE_PATH.write_text(
+        json.dumps(PERFORMANCE_EVIDENCE, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
 
 def _attach_error_collectors(
@@ -824,6 +834,7 @@ def main() -> int:
                 viewport={"width": 1440, "height": 1000},
                 color_scheme="light",
             )
+            desktop.add_init_script(PERFORMANCE_OBSERVER_SCRIPT)
             page = desktop.new_page()
             _attach_error_collectors(
                 page,
@@ -1015,10 +1026,6 @@ def main() -> int:
 
         service.revoke_share(receipt.share_id)
         receipt = None
-        PERFORMANCE_EVIDENCE_PATH.write_text(
-            json.dumps(PERFORMANCE_EVIDENCE, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
         print(
             "PASS public gateway in a real Chrome channel: browser-only public/viewer support, entrance/read-only share flow, "
             "320/360/390/412/430px phones, 768/820px tablets, 844x390 landscape, 200% text, forced colours, "
@@ -1034,6 +1041,7 @@ def main() -> int:
         print(f"Performance evidence: {PERFORMANCE_EVIDENCE_PATH}")
         return 0
     finally:
+        _write_performance_evidence()
         if receipt is not None and workflow is not None and service is not None:
             try:
                 service.revoke_share(receipt.share_id)

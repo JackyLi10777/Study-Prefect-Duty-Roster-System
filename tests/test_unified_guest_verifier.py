@@ -159,6 +159,7 @@ def test_unified_guest_verifier_covers_shared_product_and_editorial_parity() -> 
         '.sy-draft-grid-cell--pending:visible',
         'page.get_by_test_id("draft-mobile-editor-close").click()',
         'page.get_by_test_id("draft-undo-mobile").click()',
+        "document.querySelectorAll('.sy-draft-mobile-cell--pending').length === 0",
         '"vacancyAliasEntered": "X"',
         '"officialSqliteUnchanged"',
         "leave-adjustment-reason",

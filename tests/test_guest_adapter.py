@@ -352,8 +352,10 @@ def test_guest_withdrawal_is_memory_only_idempotent_and_reverses_fairness() -> N
         for row in adapter.fairness_rows()
     } == baseline
     assert adapter.roster_week(draft.id)["withdrawalReason"] == ""
+    assert adapter.roster_week_for_start(WEEK_START) is None
     replacement = adapter.generate_and_save_draft(WEEK_START, expected_week_version=0)
     assert replacement.id != draft.id
+    assert adapter.roster_week_for_start(WEEK_START)["id"] == replacement.id
 
 
 def test_guest_directory_crud_is_chinese_name_first_and_import_is_denied() -> None:

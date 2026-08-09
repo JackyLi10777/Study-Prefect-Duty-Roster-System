@@ -1607,7 +1607,10 @@ class RosterLifecycleMixin:
         with self._session() as session:
             row = session.scalar(
                 select(RosterWeekRecord)
-                .where(RosterWeekRecord.week_start == week_start)
+                .where(
+                    RosterWeekRecord.week_start == week_start,
+                    RosterWeekRecord.status.in_(("draft", "published")),
+                )
                 .order_by(RosterWeekRecord.id.desc())
                 .limit(1)
             )

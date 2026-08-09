@@ -837,6 +837,10 @@ def _exercise_weekly_workflow(page: Page, guest_url: str) -> dict[str, object]:
     )
     page.get_by_test_id("draft-mobile-editor-close").click()
     page.get_by_test_id("draft-undo-mobile").click()
+    page.wait_for_function(
+        "() => document.querySelectorAll('.sy-draft-mobile-cell--pending').length === 0",
+        timeout=10_000,
+    )
     page.set_viewport_size({"width": 1440, "height": 1024})
 
     # Restore the removed assignments through the same browser editor before

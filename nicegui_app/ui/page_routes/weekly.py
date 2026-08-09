@@ -313,9 +313,10 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         mobile_dialog_state["open"] = False
         refresh_editor()
         ui.run_javascript(
-            "requestAnimationFrame(() => document.querySelector("
+            "requestAnimationFrame(() => { const cell = [...document.querySelectorAll("
             f"'[data-cell-key=\"{attr(cell_key)}\"]'"
-            ")?.focus())"
+            ")].find(item => item.getClientRects().length && "
+            "getComputedStyle(item).visibility !== 'hidden'); cell?.focus(); })"
         )
 
     def neighboring_cell(cell_key: str, key_name: str) -> str | None:
@@ -707,9 +708,11 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
         refresh_editor()
         if cell_key:
             ui.run_javascript(
-                "requestAnimationFrame(() => { const cell=document.querySelector("
+                "requestAnimationFrame(() => { const cell=[...document.querySelectorAll("
                 f"'[data-cell-key=\"{attr(cell_key)}\"]'"
-                "); if (!cell) return; cell.focus({preventScroll: true}); "
+                ")].find(item => item.getClientRects().length && "
+                "getComputedStyle(item).visibility !== 'hidden'); "
+                "if (!cell) return; cell.focus({preventScroll: true}); "
                 "cell.scrollIntoView({block: 'nearest', inline: 'nearest'}); })"
             )
 
@@ -969,7 +972,11 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
 
                 def render_mobile_day(day_item: Any) -> None:
                     day = day_item.day
-                    with ui.element("section").classes("sy-draft-mobile-day").props(
+                    classes = "sy-draft-mobile-day"
+                    if mobile_day_state["value"] == day.name:
+                        classes += " sy-draft-mobile-day--selected"
+                    with ui.element("section").classes(classes).props(
+                        f'data-mobile-day="{attr(day.name)}" '
                         f'data-testid="draft-mobile-day-{attr(day.name.lower())}"'
                     ):
                         with ui.row().classes("w-full items-center justify-between gap-3"):
@@ -1040,9 +1047,9 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                 )
 
                 ui.label(t("draft_grid_mobile_notice")).classes(
-                    "sy-draft-mobile--phone text-xs leading-5 text-[var(--sy-muted)] px-1"
+                    "sy-draft-mobile-notice text-xs leading-5 text-[var(--sy-muted)] px-1"
                 )
-                with ui.element("div").classes("sy-draft-mobile--phone"):
+                with ui.element("div").classes("sy-draft-mobile-view"):
                     with ui.element("nav").classes("sy-draft-mobile-day-tabs").props(
                         f'aria-label="{attr(t("draft_preview"))}" data-testid=draft-mobile-day-tabs'
                     ):
@@ -1078,17 +1085,6 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                                 ui.label(summary).classes(
                                     "sy-draft-mobile-day-tab-summary"
                                 )
-                    selected_day = next(
-                        (
-                            item
-                            for item in presentation.days
-                            if item.day.name == mobile_day_state["value"]
-                        ),
-                        presentation.days[0],
-                    )
-                    render_mobile_day(selected_day)
-
-                with ui.element("div").classes("sy-draft-mobile--tablet"):
                     for day_item in presentation.days:
                         render_mobile_day(day_item)
 

@@ -438,9 +438,14 @@ def test_mobile_verifiers_use_real_touch_chrome_and_collect_release_evidence() -
         assert "forced_colors" in source
         assert "font-size: 200%" in source
 
-    for width in (320, 360, 390, 412, 430, 768, 820, 844):
-        assert str(width) in nicegui
-        assert str(width) in public
+    for width in (256, 320, 390, 768, 820, 844, 1024):
+        assert re.search(rf"width\s*=\s*{width}\b", nicegui)
+    for width, height in ((360, 800), (412, 915), (430, 932)):
+        assert re.search(rf"\({width},\s*{height},\s*[\'\"]", nicegui)
+    for width in (320, 360, 390, 412):
+        assert re.search(rf"width\s*=\s*{width}\b", public)
+    for width, height in ((430, 932), (768, 1024), (820, 1180), (844, 390)):
+        assert re.search(rf"\({width},\s*{height},\s*[\'\"]", public)
     assert "VISUAL_VIEWPORT_TEST_DOUBLE" in nicegui
     assert "width: () => window.innerWidth" in nicegui
     assert "height: () => window.innerHeight" in nicegui
@@ -453,6 +458,13 @@ def test_mobile_verifiers_use_real_touch_chrome_and_collect_release_evidence() -
     assert '"mobile-sound-control"' in nicegui
     assert '"mobile-theme-control"' in nicegui
     assert 'page.keyboard.press("Tab")' in nicegui
+    assert "collect_page_errors: bool = True" in nicegui
+    assert "if collect_page_errors:" in nicegui
+    gsap_scope = nicegui.split("def _assert_gsap_failure_static_end_state", 1)[1].split(
+        "def ", 1
+    )[0]
+    assert "collect_console_errors=False" in gsap_scope
+    assert "collect_page_errors=False" not in gsap_scope
 
 
 def test_public_mobile_verifier_exercises_support_keyboard_and_viewer_context() -> None:
@@ -471,5 +483,15 @@ def test_public_mobile_verifier_exercises_support_keyboard_and_viewer_context() 
         "focus-visible",
         "sticky roster context overlaps",
         "_assert_200_percent_public_reflow",
+        "desktop.add_init_script(PERFORMANCE_OBSERVER_SCRIPT)",
+        "def _write_performance_evidence()",
     ):
         assert contract in verifier
+    collection = verifier.split("def _collect_performance_evidence", 1)[1].split(
+        "def _attach_error_collectors", 1
+    )[0]
+    assert collection.index("PERFORMANCE_EVIDENCE.append(evidence)") < collection.index(
+        'if evidence["cumulativeLayoutShift"] > 0.15:'
+    )
+    finalizer = verifier.split("finally:", 1)[1]
+    assert "_write_performance_evidence()" in finalizer

@@ -1228,6 +1228,7 @@ def _new_mobile_page(
     forced_colors: str = "none",
     fake_visual_viewport: bool = False,
     collect_console_errors: bool = True,
+    collect_page_errors: bool = True,
 ) -> tuple[Page, BrowserContext]:
     context = browser.new_context(
         viewport={"width": width, "height": height},
@@ -1242,12 +1243,14 @@ def _new_mobile_page(
         context.add_init_script(VISUAL_VIEWPORT_TEST_DOUBLE)
     page = context.new_page()
     if collect_console_errors:
-        _attach_error_collectors(
-            page,
-            label=label,
-            console_errors=console_errors,
-            page_errors=page_errors,
+        page.on(
+            "console",
+            lambda message: console_errors.append(f"{label}: {message.text}")
+            if message.type == "error"
+            else None,
         )
+    if collect_page_errors:
+        page.on("pageerror", lambda error: page_errors.append(f"{label}: {error}"))
     return page, context
 
 

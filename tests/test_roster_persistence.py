@@ -179,9 +179,11 @@ def test_withdrawal_reverses_net_fairness_and_allows_a_new_active_week(
     assert workflow.reconcile_fairness().balanced
     withdrawn = workflow.roster_week(draft.id)
     assert withdrawn["withdrawalReason"] == "Published the wrong reviewed week"
+    assert workflow.roster_week_for_start(WEEK_START) is None
     replacement = workflow.generate_and_save_draft(WEEK_START, expected_week_version=0)
     assert replacement.id != draft.id
     assert replacement.status == "draft"
+    assert workflow.roster_week_for_start(WEEK_START)["id"] == replacement.id
 
 
 def test_withdrawal_reverses_post_publication_substitute_transfer(

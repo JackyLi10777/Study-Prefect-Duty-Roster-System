@@ -3,8 +3,8 @@
    changing the shared shell, domain policy, or transaction model. */
 
 .sy-roster-rules-toggle,
-.sy-draft-mobile--phone,
-.sy-draft-mobile--tablet,
+.sy-draft-mobile-notice,
+.sy-draft-mobile-view,
 .sy-draft-mobile-save-dock,
 .sy-draft-mobile-save-dock--empty {
   display: none;
@@ -195,9 +195,14 @@
 }
 
 @media (max-width: 767px) {
-  .sy-draft-mobile--phone {
+  .sy-draft-mobile-notice,
+  .sy-draft-mobile-view {
     display: grid !important;
     gap: 12px;
+  }
+
+  .sy-draft-mobile-day:not(.sy-draft-mobile-day--selected) {
+    display: none !important;
   }
 
   .sy-draft-mobile-day-tabs {
@@ -213,11 +218,16 @@
 }
 
 @media (min-width: 768px) and (max-width: 900px) {
-  .sy-draft-mobile--tablet {
+  .sy-draft-mobile-view {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
     gap: 14px;
+  }
+
+  .sy-draft-mobile-day-tabs,
+  .sy-draft-mobile-notice {
+    display: none !important;
   }
 
   .sy-draft-mobile-save-dock {

@@ -890,6 +890,7 @@ class GuestWorkspaceAdapter:
             row
             for row in self._state().get("weeks", [])
             if str(row.get("weekStart")) == week_start.isoformat()
+            and str(row.get("status")) in {"draft", "published"}
         ]
         if not matches:
             return None
