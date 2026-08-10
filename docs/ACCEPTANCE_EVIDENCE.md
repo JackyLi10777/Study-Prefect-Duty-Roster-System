@@ -4,12 +4,12 @@
 
 - 合成 SQLite 規模驗證涵蓋 24／52、240／520、2,400／5,200 人／週層級；查詢計劃、statement count、p50／p95、記憶體、DB／WAL 大小及備份時間保存在 `docs/audits/rc44-sqlite-scale.json`。
 <!-- SING_YIN_CURRENT_STATUS:START -->
-> **已核實線上來源（2026-08-09）：** Windows origin 正運行 clean annotated `v1.2.0-rc.54`／`f027628c5a0045d8a946be9a3453e041d03367d1` 的不可變 bundle；316-file 指紋 `738c45917fdcbeeb84a523a1f1cc3179adee693b07e156bdb74fa6f8748b3ef8` 通過 15／15 gate。SQLite 位於 Alembic `0014`；正式備份 `20260809-093349-010387-manual_verified_backup.sqlite3`／SHA-256 `65e2d9c086b0aa4e9495f17d55ad2d62ea238c049d046debba7b124205166a29`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `053b8f6e-c5ed-4259-ac34-aaefa4dfb23d` 維持 100% 流量且健康。`v1.2.0-rc.52` 只屬歷史來源，migration `0014` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`，實體離線 BitLocker 復原演練仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
+> **已核實線上來源（2026-08-10）：** Windows origin 正運行 clean annotated `v1.2.0-rc.57`／`f83bbbb095e5fb2c029ac37add1308f33dd2eb9e` 的不可變 bundle；317-file 指紋 `33e77fb6cddc791b60e2b695db417f29d508b77bba71f143186c4f5591ba916a` 通過 15／15 gate。SQLite 位於 Alembic `0014`；正式備份 `20260810-111743-227200-manual_verified_backup.sqlite3`／SHA-256 `d9603c329c995132d9955bcfbe74aafa46c5b5c6e0393e7f009b76bc2b746a29`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `7951ca55-ffda-4f16-b570-d37486311914` 維持 100% 流量且健康。`v1.2.0-rc.56` 只屬歷史來源，migration `0014` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`，實體離線 BitLocker 復原演練仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
 <!-- SING_YIN_CURRENT_STATUS:END -->
 
 本文件把機器驗證與真人驗收分開。`logs/release-candidate-report.json` 顯示 `pass`，只代表下列自動化證據在隔離虛構資料中通過；它不代表實際名單、學校做法、專用電腦、加密離機位置或外部存取決定已獲真人批准。
 
-> **手機優先來源候選（尚未部署）：** `codex/mobile-first-operations` 由 clean `origin/main@c45aa2c6` 建立；它不改 policy、migration、PDF 或 Worker。候選加入專用手機快速設定方格、drawer／鍵盤與底部導航的單一 ownership、精確有界週次查詢、分頁歷史、單日草稿視圖、共用 bottom sheet 及單一 dirty-save dock。聚焦來源測試已通過；隔離 real-Chrome 矩陣、完整 release gate、PR／tag、Origin 部署及實體 Android Chrome 驗收尚未在本段聲稱完成。現行網站仍只看上方生成狀態。
+> **手機優先操作（rc57 已部署）：** 專用手機快速設定方格、drawer／鍵盤與底部導航的單一 ownership、精確有界週次查詢、分頁歷史、單日草稿視圖、共用 bottom sheet 及單一 dirty-save dock 已進入上方正式版本。正式網址的 real-Chrome 矩陣涵蓋手機、橫屏、平板、200%文字、forced colours及reduced motion；所有記錄路由 CLS 為 `0`，且沒有非預期 browser error。這是機器證據，不取代實體 Android Chrome 及受監督操作驗收。
 
 ### Quiet Command Center frontend reset evidence（2026-08-02; live）
 
