@@ -11,6 +11,7 @@ import shutil
 import sys
 import tempfile
 from typing import Any, Final
+from urllib.parse import urlparse
 
 from playwright.sync_api import Browser, Error, Page, Playwright, sync_playwright
 
@@ -547,17 +548,53 @@ def _assert_only_expected_network_fallback_errors(
     *,
     console_errors: list[str],
     page_errors: list[str],
+    failed_request_urls: list[str],
 ) -> int:
     """Keep the deliberately aborted request separate from real browser failures."""
 
     expected_suffix = "Failed to load resource: net::ERR_CONNECTION_FAILED"
-    unexpected = [error for error in console_errors if not error.endswith(expected_suffix)]
-    if unexpected or page_errors:
-        details = "\n".join([*unexpected, *page_errors])
+    expected_console_errors = [
+        error for error in console_errors if error.endswith(expected_suffix)
+    ]
+    unexpected_console_errors = [
+        error for error in console_errors if not error.endswith(expected_suffix)
+    ]
+    incident_failures = [
+        url for url in failed_request_urls if urlparse(url).path == "/api/support/incidents"
+    ]
+    unexpected_request_failures = [
+        url for url in failed_request_urls if urlparse(url).path != "/api/support/incidents"
+    ]
+    count_mismatch = len(expected_console_errors) != len(incident_failures)
+    if (
+        unexpected_console_errors
+        or unexpected_request_failures
+        or page_errors
+        or count_mismatch
+        or not incident_failures
+    ):
+        mismatch = (
+            [
+                "Expected console/request failure counts differ: "
+                f"{len(expected_console_errors)} != {len(incident_failures)}"
+            ]
+            if count_mismatch
+            else []
+        )
+        missing = ["No failed /api/support/incidents request was recorded."] if not incident_failures else []
+        details = "\n".join(
+            [
+                *unexpected_console_errors,
+                *unexpected_request_failures,
+                *page_errors,
+                *mismatch,
+                *missing,
+            ]
+        )
         raise RuntimeError(
             "Public support network-fallback emitted unexpected browser errors:\n" + details
         )
-    return sum(error.endswith(expected_suffix) for error in console_errors)
+    return len(expected_console_errors)
 
 
 def _assert_welcome_audio_blocked_recovery(page: Page, *, base_url: str) -> None:
@@ -830,11 +867,16 @@ def main() -> int:
             fallback_page = support_context.new_page()
             fallback_console_errors: list[str] = []
             fallback_page_errors: list[str] = []
+            fallback_failed_request_urls: list[str] = []
             _attach_error_collectors(
                 fallback_page,
                 label="public-support-network-fallback",
                 console_errors=fallback_console_errors,
                 page_errors=fallback_page_errors,
+            )
+            fallback_page.on(
+                "requestfailed",
+                lambda request: fallback_failed_request_urls.append(request.url),
             )
             fallback_evidence = _assert_public_support_network_fallback(
                 fallback_page,
@@ -844,6 +886,7 @@ def main() -> int:
                 _assert_only_expected_network_fallback_errors(
                     console_errors=fallback_console_errors,
                     page_errors=fallback_page_errors,
+                    failed_request_urls=fallback_failed_request_urls,
                 )
             )
             support_evidence.append(fallback_evidence)

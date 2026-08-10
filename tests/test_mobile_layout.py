@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import re
 
+import pytest
+
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.ui.i18n import EN, MESSAGES, ZH_HK
 from nicegui_app.ui.page_catalog import PAGE_DEFINITIONS
 from nicegui_app.ui.theme_markup import STYLE_LAYERS
 from tests.ui_source import combined_page_source, combined_theme_source
+from scripts.verify_public_roster_viewer import _assert_only_expected_network_fallback_errors
 
 
 def test_mobile_shell_is_an_adaptive_view_of_the_same_routes() -> None:
@@ -492,6 +495,7 @@ def test_public_mobile_verifier_exercises_support_keyboard_and_viewer_context() 
         "page.unroute(stylesheet, serve_200_percent_styles)",
         "_assert_only_expected_network_fallback_errors",
         "fallback_console_errors",
+        "fallback_failed_request_urls",
         'expected_suffix = "Failed to load resource: net::ERR_CONNECTION_FAILED"',
         'fallback_evidence["expectedNetworkConsoleErrorCount"]',
     ):
@@ -510,6 +514,39 @@ def test_public_mobile_verifier_exercises_support_keyboard_and_viewer_context() 
     )
     finalizer = verifier.split("finally:", 1)[1]
     assert "_write_performance_evidence()" in finalizer
+
+
+def test_public_mobile_verifier_network_fallback_accepts_only_the_incident_request() -> None:
+    expected_error = "Failed to load resource: net::ERR_CONNECTION_FAILED"
+    incident_url = "https://example.test/api/support/incidents"
+
+    assert (
+        _assert_only_expected_network_fallback_errors(
+            console_errors=[expected_error],
+            page_errors=[],
+            failed_request_urls=[incident_url],
+        )
+        == 1
+    )
+
+    with pytest.raises(RuntimeError, match="unexpected browser errors"):
+        _assert_only_expected_network_fallback_errors(
+            console_errors=[expected_error],
+            page_errors=[],
+            failed_request_urls=["https://example.test/assets/app.js"],
+        )
+    with pytest.raises(RuntimeError, match="unexpected browser errors"):
+        _assert_only_expected_network_fallback_errors(
+            console_errors=["Unexpected console failure"],
+            page_errors=[],
+            failed_request_urls=[incident_url],
+        )
+    with pytest.raises(RuntimeError, match="unexpected browser errors"):
+        _assert_only_expected_network_fallback_errors(
+            console_errors=[expected_error],
+            page_errors=["Unexpected page failure"],
+            failed_request_urls=[incident_url],
+        )
 
 
 def test_public_mobile_verifier_only_reports_text_that_can_actually_be_clipped() -> None:
