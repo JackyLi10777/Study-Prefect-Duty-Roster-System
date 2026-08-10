@@ -490,9 +490,18 @@ def test_public_mobile_verifier_exercises_support_keyboard_and_viewer_context() 
         "if not response.ok:",
         "if not stylesheet_was_rewritten:",
         "page.unroute(stylesheet, serve_200_percent_styles)",
+        "_assert_only_expected_network_fallback_errors",
+        "fallback_console_errors",
+        'expected_suffix = "Failed to load resource: net::ERR_CONNECTION_FAILED"',
+        'fallback_evidence["expectedNetworkConsoleErrorCount"]',
     ):
         assert contract in verifier
     assert "page.add_style_tag" not in verifier
+    fallback_collector = verifier.split(
+        'label="public-support-network-fallback"', 1
+    )[1].split(")", 1)[0]
+    assert "console_errors=fallback_console_errors" in fallback_collector
+    assert "page_errors=fallback_page_errors" in fallback_collector
     collection = verifier.split("def _collect_performance_evidence", 1)[1].split(
         "def _attach_error_collectors", 1
     )[0]

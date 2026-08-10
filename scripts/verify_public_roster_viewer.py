@@ -543,6 +543,23 @@ def _assert_public_support_network_fallback(page: Page, *, base_url: str) -> dic
     }
 
 
+def _assert_only_expected_network_fallback_errors(
+    *,
+    console_errors: list[str],
+    page_errors: list[str],
+) -> int:
+    """Keep the deliberately aborted request separate from real browser failures."""
+
+    expected_suffix = "Failed to load resource: net::ERR_CONNECTION_FAILED"
+    unexpected = [error for error in console_errors if not error.endswith(expected_suffix)]
+    if unexpected or page_errors:
+        details = "\n".join([*unexpected, *page_errors])
+        raise RuntimeError(
+            "Public support network-fallback emitted unexpected browser errors:\n" + details
+        )
+    return sum(error.endswith(expected_suffix) for error in console_errors)
+
+
 def _assert_welcome_audio_blocked_recovery(page: Page, *, base_url: str) -> None:
     """Prove an honest fresh-profile NotAllowedError and one-action recovery."""
 
@@ -811,18 +828,25 @@ def main() -> int:
                     )
                 support_page.close()
             fallback_page = support_context.new_page()
+            fallback_console_errors: list[str] = []
+            fallback_page_errors: list[str] = []
             _attach_error_collectors(
                 fallback_page,
                 label="public-support-network-fallback",
-                console_errors=console_errors,
-                page_errors=page_errors,
+                console_errors=fallback_console_errors,
+                page_errors=fallback_page_errors,
             )
-            support_evidence.append(
-                _assert_public_support_network_fallback(
-                    fallback_page,
-                    base_url=settings.base_url,
+            fallback_evidence = _assert_public_support_network_fallback(
+                fallback_page,
+                base_url=settings.base_url,
+            )
+            fallback_evidence["expectedNetworkConsoleErrorCount"] = (
+                _assert_only_expected_network_fallback_errors(
+                    console_errors=fallback_console_errors,
+                    page_errors=fallback_page_errors,
                 )
             )
+            support_evidence.append(fallback_evidence)
             fallback_page.close()
             if support_websockets:
                 raise RuntimeError(f"Public support opened WebSockets: {support_websockets}")
