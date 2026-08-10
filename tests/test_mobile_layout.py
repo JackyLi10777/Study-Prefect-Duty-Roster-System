@@ -487,6 +487,8 @@ def test_public_mobile_verifier_exercises_support_keyboard_and_viewer_context() 
         "def _write_performance_evidence()",
         'stylesheet = "**/viewer.css"',
         "route.fetch()",
+        "if not response.ok:",
+        "if not stylesheet_was_rewritten:",
         "page.unroute(stylesheet, serve_200_percent_styles)",
     ):
         assert contract in verifier

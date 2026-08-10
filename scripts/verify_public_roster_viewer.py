@@ -310,13 +310,21 @@ def _assert_viewer_horizontal_context(page: Page, *, label: str) -> None:
 
 
 def _assert_200_percent_public_reflow(page: Page, *, url: str, label: str) -> None:
+    stylesheet_was_rewritten = False
+
     def serve_200_percent_styles(route: Any) -> None:
+        nonlocal stylesheet_was_rewritten
         response = route.fetch()
+        if not response.ok:
+            raise RuntimeError(
+                f"{label} could not load the same-origin viewer stylesheet: HTTP {response.status}."
+            )
         css = response.text()
         route.fulfill(
             response=response,
             body=f"{css}\nhtml {{ font-size: 200% !important; }}\n",
         )
+        stylesheet_was_rewritten = True
 
     stylesheet = "**/viewer.css"
     page.route(stylesheet, serve_200_percent_styles)
@@ -324,6 +332,11 @@ def _assert_200_percent_public_reflow(page: Page, *, url: str, label: str) -> No
         response = page.goto(url, wait_until="networkidle")
         if response is None or response.status != 200:
             raise RuntimeError(f"{label} returned an unexpected response: {response}")
+        if not stylesheet_was_rewritten:
+            raise RuntimeError(
+                f"{label} did not request the same-origin viewer stylesheet; "
+                "the 200% text contract was not applied."
+            )
         page.evaluate(
             "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))"
         )
