@@ -310,13 +310,27 @@ def _assert_viewer_horizontal_context(page: Page, *, label: str) -> None:
 
 
 def _assert_200_percent_public_reflow(page: Page, *, url: str, label: str) -> None:
-    response = page.goto(url, wait_until="networkidle")
-    if response is None or response.status != 200:
-        raise RuntimeError(f"{label} returned an unexpected response: {response}")
-    page.add_style_tag(content="html { font-size: 200% !important; }")
-    page.evaluate("new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
-    _assert_document_fits_viewport(page, label=label)
-    _assert_mobile_touch_and_reflow(page, label=label)
+    def serve_200_percent_styles(route: Any) -> None:
+        response = route.fetch()
+        css = response.text()
+        route.fulfill(
+            response=response,
+            body=f"{css}\nhtml {{ font-size: 200% !important; }}\n",
+        )
+
+    stylesheet = "**/viewer.css"
+    page.route(stylesheet, serve_200_percent_styles)
+    try:
+        response = page.goto(url, wait_until="networkidle")
+        if response is None or response.status != 200:
+            raise RuntimeError(f"{label} returned an unexpected response: {response}")
+        page.evaluate(
+            "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))"
+        )
+        _assert_document_fits_viewport(page, label=label)
+        _assert_mobile_touch_and_reflow(page, label=label)
+    finally:
+        page.unroute(stylesheet, serve_200_percent_styles)
 
 
 def _assert_guest_landing(page: Page, *, label: str) -> None:

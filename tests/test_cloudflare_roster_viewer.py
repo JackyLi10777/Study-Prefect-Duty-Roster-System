@@ -390,6 +390,24 @@ def test_mobile_public_controls_keep_a_44px_touch_target() -> None:
     assert ".verse-refresh { width: 44px; padding-inline: 0; }" in compact_mobile.group("body")
 
 
+def test_public_shell_reserves_the_viewport_during_async_viewer_state_changes() -> None:
+    source = _source()
+    page_shell = re.search(r"\.page-shell \{(?P<body>.*?)\n\}", source, re.DOTALL)
+    print_shell = re.search(
+        r"@media print \{(?P<body>.*?)\n\}",
+        source,
+        re.DOTALL,
+    )
+
+    assert page_shell is not None
+    assert "min-height: 100vh" in page_shell.group("body")
+    assert "min-height: 100dvh" in page_shell.group("body")
+    assert print_shell is not None
+    assert ".page-shell { width: 100%; min-height: auto; padding: 0; }" in print_shell.group(
+        "body"
+    )
+
+
 def test_mobile_entrance_exposes_admin_and_guest_actions_before_supplementary_content() -> None:
     source = _source()
     desktop_workflow = source.index('class="portal-workflow"')
