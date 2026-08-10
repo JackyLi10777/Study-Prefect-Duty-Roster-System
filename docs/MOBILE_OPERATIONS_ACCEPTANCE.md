@@ -1,6 +1,6 @@
 # 手機操作驗收 / Mobile operations acceptance
 
-本文件描述 `codex/mobile-first-operations` 的候選契約。它不是部署記錄；目前正式版本、schema、Worker 與備份只以 [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md) 為準。
+本文件描述 rc57 已部署的手機操作契約及驗收邊界。正式版本、schema、Worker 與備份只以 [`status/CURRENT_STATUS.md`](status/CURRENT_STATUS.md) 為準；真實 Chrome 自動化矩陣已通過，但實體 Android Chrome 及受監督業務操作仍須由真人完成。
 
 ## 主要真人流程
 

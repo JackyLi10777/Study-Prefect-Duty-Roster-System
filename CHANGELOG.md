@@ -4,7 +4,17 @@ This file records user-visible, operational and release-significant changes. The
 
 ## Unreleased
 
-- No release-significant changes are pending after the rc54 deployment closeout.
+- No release-significant changes are pending after the rc57 deployment closeout.
+
+## v1.2.0-rc.57 — released, 2026-08-10
+
+- Deployed protected-main commit `f83bbbb095e5fb2c029ac37add1308f33dd2eb9e` as annotated `v1.2.0-rc.57`. Its 317-file source fingerprint `33e77fb6cddc791b60e2b695db417f29d508b77bba71f143186c4f5591ba916a` passed all 15 formal gates; the Windows task now runs immutable bundle `C:\SingYinRoster\releases\v1.2.0-rc.57-f83bbbb095e5-5c891432a1d8` at Alembic `0014`, with health and readiness green and `writeReady=true`.
+- Created and isolated-restored previous-version rollback snapshot `20260810-111736-505211-manual_verified_backup.sqlite3`, then established the quiescent rc57 recovery baseline `20260810-111743-227200-manual_verified_backup.sqlite3` with SHA-256 `d9603c329c995132d9955bcfbe74aafa46c5b5c6e0393e7f009b76bc2b746a29`; checksum, SQLite integrity, schema, fairness, row counts and restore audit passed.
+- Staged Worker `7951ca55-ffda-4f16-b570-d37486311914` at 0%, passed version-specific health／entrance／Viewer smoke, and promoted it to 100%. Canonical health, landing, Viewer, Support, Admin redirect and browser-shaped Guest entry were then rechecked without a version override.
+- Completed the mobile-first weekly workflow introduced through rc56: dedicated rectangular quick-setting tiles replace leaked desktop rotary styling, the drawer and bottom navigation now reconcile one authoritative state, and phone／tablet roster generation and draft editing retain the same versioned Admin／Guest transactions as desktop.
+- Stabilized the public Viewer shell with a viewport-height reservation so its delayed content no longer creates layout shift. A real Chrome run across 320, 360, 390, 412 and 430 px phones, 768 and 820 px tablets, 844×390 landscape, 200% text, forced colours and reduced motion recorded CLS `0` on every measured route and no unexpected browser errors.
+- Made the canonical mobile verifier compatible with the production CSP by loading intercepted same-origin Viewer CSS through the normal network path. The deliberate Support network-failure exercise now isolates and records its one expected `ERR_CONNECTION_FAILED` console event while continuing to reject every other console or page error; report input remains preserved and receives a tab-only fallback reference.
+- Machine deployment and browser evidence are complete. Final physical Android Chrome acceptance and the off-site BitLocker recovery drill remain explicit supervised-human tasks rather than automated claims.
 
 ## v1.2.0-rc.54 — released, 2026-08-09
 

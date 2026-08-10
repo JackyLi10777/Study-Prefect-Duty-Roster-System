@@ -1,7 +1,7 @@
 # 更新、驗證與上傳：一個命令完成正確層級
 
 <!-- SING_YIN_CURRENT_STATUS:START -->
-> **已核實線上來源（2026-08-09）：** Windows origin 正運行 clean annotated `v1.2.0-rc.54`／`f027628c5a0045d8a946be9a3453e041d03367d1` 的不可變 bundle；316-file 指紋 `738c45917fdcbeeb84a523a1f1cc3179adee693b07e156bdb74fa6f8748b3ef8` 通過 15／15 gate。SQLite 位於 Alembic `0014`；正式備份 `20260809-093349-010387-manual_verified_backup.sqlite3`／SHA-256 `65e2d9c086b0aa4e9495f17d55ad2d62ea238c049d046debba7b124205166a29`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `053b8f6e-c5ed-4259-ac34-aaefa4dfb23d` 維持 100% 流量且健康。`v1.2.0-rc.52` 只屬歷史來源，migration `0014` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`，實體離線 BitLocker 復原演練仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
+> **已核實線上來源（2026-08-10）：** Windows origin 正運行 clean annotated `v1.2.0-rc.57`／`f83bbbb095e5fb2c029ac37add1308f33dd2eb9e` 的不可變 bundle；317-file 指紋 `33e77fb6cddc791b60e2b695db417f29d508b77bba71f143186c4f5591ba916a` 通過 15／15 gate。SQLite 位於 Alembic `0014`；正式備份 `20260810-111743-227200-manual_verified_backup.sqlite3`／SHA-256 `d9603c329c995132d9955bcfbe74aafa46c5b5c6e0393e7f009b76bc2b746a29`、隔離還原、health、`writeReady=true`、`maintenance=false`、`recoveryRequired=false` 及 `pendingBackups=0` 已核對。Worker 來源已更新，canonical Worker `7951ca55-ffda-4f16-b570-d37486311914` 維持 100% 流量且健康。`v1.2.0-rc.56` 只屬歷史來源，migration `0014` 後不可作 code-only rollback；須使用受控的相容資料庫還原。真人驗收仍為 `pending`，實體離線 BitLocker 復原演練仍為 `pending`。精確狀態及更新規則見[目前系統狀態](status/CURRENT_STATUS.md)。
 <!-- SING_YIN_CURRENT_STATUS:END -->
 > **rc37／rc38 歷史界線：**受保護的 `v1.2.0-rc.37` 指向較早 rc36 source，屬 void／未部署標籤；`v1.2.0-rc.38` 通過來源閘門但沒有通過 Windows 排程帳戶憑證切換，因此沒有取代 rc35。新部署或回退不可把兩者誤當成目前線上版本。
 
