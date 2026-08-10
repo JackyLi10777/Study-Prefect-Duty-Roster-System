@@ -485,8 +485,14 @@ def test_public_mobile_verifier_exercises_support_keyboard_and_viewer_context() 
         "_assert_200_percent_public_reflow",
         "desktop.add_init_script(PERFORMANCE_OBSERVER_SCRIPT)",
         "def _write_performance_evidence()",
+        'stylesheet = "**/viewer.css"',
+        "route.fetch()",
+        "if not response.ok:",
+        "if not stylesheet_was_rewritten:",
+        "page.unroute(stylesheet, serve_200_percent_styles)",
     ):
         assert contract in verifier
+    assert "page.add_style_tag" not in verifier
     collection = verifier.split("def _collect_performance_evidence", 1)[1].split(
         "def _attach_error_collectors", 1
     )[0]

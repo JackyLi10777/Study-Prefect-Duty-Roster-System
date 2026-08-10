@@ -1078,7 +1078,12 @@ button, input, select, textarea { font: inherit; }
 .brand-title { margin: 0; font-size: 1rem; font-weight: 720; }
 .brand-subtitle { margin: 2px 0 0; color: var(--ink-muted); font-size: 0.76rem; }
 
-.page-shell { flex: 1; padding-block: 18px 42px; }
+.page-shell {
+  flex: 1;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-block: 18px 42px;
+}
 
 .access-portal {
   position: relative;
@@ -2168,7 +2173,7 @@ tbody td {
   @page { size: A4 landscape; margin: 10mm; }
   body { min-height: auto; background: #fff; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .site-header, .site-footer { display: none; }
-  .page-shell { width: 100%; padding: 0; }
+  .page-shell { width: 100%; min-height: auto; padding: 0; }
   .roster-card { border-radius: 0; box-shadow: none; }
   .roster-heading { padding: 10mm 8mm 6mm; }
   .roster-meta > div { padding: 4mm 8mm; }
