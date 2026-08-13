@@ -282,7 +282,29 @@ def _wait_for_app_once(page: Page) -> None:
         "() => Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth)"
     )
     if int(overflow) > 1:
-        raise UnifiedGuestVerificationError(f"Horizontal overflow detected at {page.url}: {overflow}px")
+        offenders = page.evaluate(
+            """() => {
+              const viewportWidth = document.documentElement.clientWidth;
+              return Array.from(document.querySelectorAll('body *'))
+                .map(element => {
+                  const bounds = element.getBoundingClientRect();
+                  return {
+                    tag: element.tagName.toLowerCase(),
+                    id: element.id || '',
+                    classes: typeof element.className === 'string' ? element.className : '',
+                    left: Math.round(bounds.left),
+                    right: Math.round(bounds.right),
+                    width: Math.round(bounds.width),
+                  };
+                })
+                .filter(item => item.right > viewportWidth + 1 || item.left < -1)
+                .sort((a, b) => Math.max(b.right - viewportWidth, -b.left) - Math.max(a.right - viewportWidth, -a.left))
+                .slice(0, 8);
+            }"""
+        )
+        raise UnifiedGuestVerificationError(
+            f"Horizontal overflow detected at {page.url}: {overflow}px; offenders={offenders!r}"
+        )
 
 
 def _is_navigation_context_reset(error: PlaywrightError) -> bool:
