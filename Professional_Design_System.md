@@ -1,7 +1,7 @@
 # Professional Design System
 
 **Project:** Sing Yin Study Prefect Duty Roster System  
-**Version:** 2.1 — Quiet Command Center / Woven Clarity refinement
+**Version:** 2.2 — Quiet Command Center / professional-source native port
 **Status:** Active design source of truth  
 **Primary audience:** 負責日常操作的當任首席導學風紀、主要在完成後核對的顧問老師、未來維護者及實作代理人
 
@@ -53,6 +53,40 @@ The executable frontend follows this ownership order:
 `tokens → foundations → layout → compatibility → components → narrative → interaction → motion → mobile → command-center-v2`
 
 `command-center-v2` is the final composition layer for the reset shell and shared cross-page components. It may refine legacy compatibility selectors, but it must not redeclare managed token names, weaken accessibility states, place imagery behind sensitive data or create page-specific component forks. New visual decisions first become semantic tokens or shared component contracts; page CSS is the last resort.
+
+#### Professional-source native-port contract
+
+External design work is evidence, not a second frontend. The source ledger at
+`design_system/external_design_sources.v1.json` records an exact revision, license,
+asset-rights decision, SHA-256 evidence, adoption decision and removal path before a
+reference may influence production. Raw reference repositories stay in the isolated
+Design Reference Lab outside Git and release inputs. They never receive formal data,
+cookies, secrets or internal URLs.
+
+The app uses Carbon's productive／expressive distinction as a timing taxonomy while
+retaining the locally vendored GSAP Core runtime as its sole enhanced animation owner.
+Motion Primitives and the selected Codrops example contribute neutral behaviour ideas
+only; React Bits is a limited concept reference under its MIT + Commons Clause terms;
+MotionSites remains moodboard-only. No React, Tailwind, Motion, Lenis, Three.js,
+upstream media, remote font or tracking origin enters the product.
+
+`productive` motion is 90–180 ms and belongs to controls, filters, fields, tables and
+save-state feedback. `expressive` motion is 260–420 ms and is reserved for bounded
+section or workflow continuity. A page requests one of the approved semantic patterns
+through `motion_pattern`; it does not create a timeline, RAF or observer. The central
+runtime owns trigger, interruption, completion and disposal, and the CSS contract owns
+the static reduced-motion and forced-colours result.
+
+The rollout order remains **B → A → C**:
+
+1. **Operational Rhythm** — Dashboard current step and roster editing stage.
+2. **Quiet Editorial Continuity** — platform／getting-started reading rhythm and shared surfaces.
+3. **Sacred Service Narrative** — devotional routes only after the first two patterns prove useful.
+
+The first three vertical pilots are deliberately small: the Platform operating map,
+Dashboard weekly workbench and roster draft editor. A pilot advances only when it
+improves orientation or task feedback without adding a framework, origin or page-owned
+animation lifecycle. Visual attraction by itself is not an acceptance result.
 
 #### Completion test
 

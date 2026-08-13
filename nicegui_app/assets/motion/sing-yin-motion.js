@@ -33,6 +33,26 @@
     '.sy-architecture-grid',
     '.sy-trust-evidence-grid'
   ].join(',');
+  const motionPatternContracts = Object.freeze({
+    'platform-continuity': Object.freeze({
+      kind: 'expressive',
+      duration: 0.32,
+      stagger: 0.055,
+      from: Object.freeze({ autoAlpha: 0.72, x: -10 })
+    }),
+    'workflow-current': Object.freeze({
+      kind: 'productive',
+      duration: 0.18,
+      stagger: 0.035,
+      from: Object.freeze({ autoAlpha: 0.82, y: 6 })
+    }),
+    'operation-stage': Object.freeze({
+      kind: 'productive',
+      duration: 0.15,
+      stagger: 0,
+      from: Object.freeze({ autoAlpha: 0.86, y: 4 })
+    })
+  });
   /* Pointer light for real links/actions (lift + glow) and calm ambient editorial cards (glow only). */
   const pointerSurfaceSelector = [
     '.sy-dashboard-history-item:has(.q-btn)',
@@ -165,6 +185,7 @@
   const iconStoryTimelines = new Map();
   const iconRotaryTimelines = new Map();
   const iconStoryTouchTimers = new Map();
+  const motionPatternTimelines = new Map();
   const iconStoryState = window.SingYinIconStoryState?.create?.() || null;
   const ACTION_MEMORY_MS = 5 * 60 * 1000;
   let intersectionObserver = null;
@@ -222,6 +243,70 @@
         onComplete: complete
       }
     );
+  };
+
+  const completeMotionPattern = (element) => {
+    delete element.dataset.syMotionPatternPending;
+    element.dataset.syMotionPatternReady = 'true';
+    element.dataset.syMotionPatternComplete = 'true';
+  };
+
+  const animateMotionPattern = (element) => {
+    if (element.dataset.syMotionPatternReady === 'true') return;
+    const contract = motionPatternContracts[element.dataset.syMotionPattern];
+    if (!contract) return;
+    element.dataset.syMotionPatternReady = 'true';
+    element.dataset.syMotionKind = contract.kind;
+    const targets = Array.from(element.querySelectorAll(':scope > [data-sy-motion-item]')).slice(0, 8);
+    const activeTargets = targets.length ? targets : [element];
+    if (reducedMotion() || !window.gsap) {
+      completeMotionPattern(element);
+      return;
+    }
+    motionPatternTimelines.get(element)?.kill();
+    const timeline = window.gsap.timeline({
+      defaults: { overwrite: 'auto' },
+      onComplete: () => {
+        motionPatternTimelines.delete(element);
+        completeMotionPattern(element);
+      }
+    });
+    motionPatternTimelines.set(element, timeline);
+    timeline.fromTo(
+      activeTargets,
+      contract.from,
+      {
+        autoAlpha: 1,
+        x: 0,
+        y: 0,
+        duration: contract.duration,
+        stagger: contract.stagger,
+        ease: contract.kind === 'expressive' ? 'power3.out' : 'power2.out',
+        clearProps: 'transform,opacity,visibility'
+      }
+    );
+  };
+
+  const hydrateMotionPatterns = (root = document) => {
+    queryWithin(root, '[data-sy-motion-pattern]').forEach((element) => {
+      if (element.dataset.syMotionPatternObserved === 'true') return;
+      element.dataset.syMotionPatternObserved = 'true';
+      if (!intersectionObserver || reducedMotion()) {
+        completeMotionPattern(element);
+        return;
+      }
+      element.dataset.syMotionPatternPending = 'true';
+      intersectionObserver.observe(element);
+    });
+  };
+
+  const removeMotionPatternsWithin = (root) => {
+    queryWithin(root, '[data-sy-motion-pattern]').forEach((element) => {
+      const timeline = motionPatternTimelines.get(element);
+      timeline?.kill();
+      motionPatternTimelines.delete(element);
+      intersectionObserver?.unobserve(element);
+    });
   };
 
   const observe = (element, children = false) => {
@@ -805,6 +890,8 @@
     feedbackTimers.clear();
     iconStoryTouchTimers.forEach((timer) => window.clearTimeout(timer));
     iconStoryTouchTimers.clear();
+    motionPatternTimelines.forEach((timeline) => timeline.kill());
+    motionPatternTimelines.clear();
     if (feedbackHandler) window.removeEventListener('sy:feedback', feedbackHandler);
     if (disclosureHandler) document.removeEventListener('click', disclosureHandler, true);
     if (domReadyHandler) document.removeEventListener('DOMContentLoaded', domReadyHandler);
@@ -853,6 +940,7 @@
         mutation.removedNodes.forEach(removePointersWithin);
         mutation.removedNodes.forEach(removeTocWithin);
         mutation.removedNodes.forEach(removeIconMotionWithin);
+        mutation.removedNodes.forEach(removeMotionPatternsWithin);
         if (mutation.type === 'attributes' && mutation.target instanceof Element) {
           hydrateIconMotion(mutation.target);
           const host = mutation.target.matches(interactiveIconHostSelector)
@@ -871,6 +959,7 @@
           hydrateMotion(node);
           hydrateIconMotion(node);
           hydrateToc(node);
+          hydrateMotionPatterns(node);
           if (!reducedMotion() && window.matchMedia(FINE_POINTER_QUERY).matches) hydratePointers(node);
         });
       });
@@ -891,6 +980,7 @@
     if (!window.gsap && reducedMotion()) {
       document.documentElement.dataset.syMotion = 'reduced';
       hydrateMotion();
+      hydrateMotionPatterns();
       hydrateIconMotion();
       hydrateToc();
       installMutationHydrator();
@@ -902,6 +992,11 @@
         window.setTimeout(boot, 30);
       } else {
         document.documentElement.dataset.syMotion = 'unavailable';
+        hydrateMotion();
+        hydrateMotionPatterns();
+        hydrateIconMotion();
+        hydrateToc();
+        installMutationHydrator();
       }
       return;
     }
@@ -910,11 +1005,17 @@
       (entries) => entries.forEach((entry) => {
         if (!entry.isIntersecting) return;
         intersectionObserver?.unobserve(entry.target);
-        animateOnce(entry.target, entry.target.dataset.syMotionChildren === 'true');
+        if (entry.target.dataset.syMotionPatternPending === 'true') {
+          delete entry.target.dataset.syMotionPatternPending;
+          animateMotionPattern(entry.target);
+        } else {
+          animateOnce(entry.target, entry.target.dataset.syMotionChildren === 'true');
+        }
       }),
       { rootMargin: '0px 0px -7% 0px', threshold: 0.12 }
     );
     hydrateMotion();
+    hydrateMotionPatterns();
     hydrateIconMotion();
     hydrateToc();
     interactionAbortController = new AbortController();
@@ -939,6 +1040,12 @@
         if (reduce) {
           iconStoryTouchTimers.forEach(timer => window.clearTimeout(timer));
           iconStoryTouchTimers.clear();
+          motionPatternTimelines.forEach((timeline, element) => {
+            timeline.kill();
+            completeMotionPattern(element);
+          });
+          motionPatternTimelines.clear();
+          document.querySelectorAll('[data-sy-motion-pattern]').forEach(completeMotionPattern);
         }
         document.querySelectorAll(interactiveIconHostSelector).forEach(host => {
           const state = guardStateFor(host);

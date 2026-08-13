@@ -484,7 +484,8 @@ def test_platform_operating_map_has_bounded_motion_and_mobile_flow() -> None:
     motion = _read("nicegui_app/assets/motion/sing-yin-motion.js")
     page = _read("nicegui_app/ui/page_routes/showcase.py")
 
-    assert "data-testid=platform-operating-map" in page
+    assert 'test_id="platform-operating-map"' in page
+    assert 'motion_pattern(\n                "platform-continuity"' in page
     assert '"platform-operating-map-section"' in page
     assert "'.sy-platform-operating-map'" in motion
     assert ".sy-platform-map-node:hover" in css

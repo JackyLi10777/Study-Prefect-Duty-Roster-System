@@ -30,8 +30,38 @@ ActionVariant = Literal["primary", "secondary", "quiet", "attention", "danger"]
 IconStoryCategory = Literal["preview", "persistent", "lifecycle", "role", "static"]
 StatusTone = Literal["action", "stable", "attention", "danger", "neutral"]
 WorkflowState = Literal["active", "done", "pending"]
+MotionPatternName = Literal[
+    "platform-continuity",
+    "workflow-current",
+    "operation-stage",
+]
 _Control = TypeVar("_Control")
 _FIELD_SEQUENCE = count(1)
+
+
+@contextmanager
+def motion_pattern(
+    name: MotionPatternName,
+    *,
+    tag: str = "div",
+    classes: str = "",
+    test_id: str | None = None,
+    labelled_by: str | None = None,
+    props: str = "",
+) -> Iterator[object]:
+    """Expose a semantic motion request without creating a page-owned timeline."""
+
+    prop_tokens = [f"data-sy-motion-pattern={name}"]
+    if test_id:
+        prop_tokens.append(f"data-testid={test_id}")
+    if labelled_by:
+        prop_tokens.append(f"aria-labelledby={labelled_by}")
+    if props:
+        prop_tokens.extend(props.split())
+    with ui.element(tag).classes(f"sy-motion-pattern {classes}".strip()).props(
+        " ".join(prop_tokens)
+    ) as element:
+        yield element
 
 
 def action(
@@ -284,7 +314,9 @@ def workflow_step(
 ) -> None:
     """Render one ordered stage with explicit state and optional action."""
 
-    with ui.element("li").classes(f"sy-flow-step sy-flow-step--{state}"):
+    with ui.element("li").classes(f"sy-flow-step sy-flow-step--{state}").props(
+        f"data-sy-motion-item data-sy-motion-state={state}"
+    ):
         with ui.row().classes("w-full items-start justify-between gap-3"):
             ui.label(f"{number:02d}").classes("sy-flow-index")
             ui.icon(icon).classes("sy-flow-symbol").props("aria-hidden=true")
@@ -394,6 +426,7 @@ def code_sample(
 
 __all__ = (
     "ActionVariant",
+    "MotionPatternName",
     "StatusTone",
     "WorkflowState",
     "action",
@@ -402,6 +435,7 @@ __all__ = (
     "editorial_heading",
     "empty_state",
     "field",
+    "motion_pattern",
     "page_toc",
     "progress_state",
     "reference_pager",

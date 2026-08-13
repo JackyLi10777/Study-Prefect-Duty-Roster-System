@@ -1,0 +1,116 @@
+{
+  "contractVersion": "1.0.0",
+  "generatedAt": "2026-08-13",
+  "quarantineRoot": "D:/SingYinDesignReferenceLab",
+  "policy": {
+    "productRuntime": "NiceGUI / Quasar / GSAP",
+    "runtimeImportDefault": "deny",
+    "prohibitedRuntimes": [
+      "React",
+      "Tailwind CSS",
+      "Motion",
+      "Lenis",
+      "Three.js"
+    ],
+    "formalDataAllowed": false,
+    "externalOriginsAllowed": false
+  },
+  "sources": [
+    {
+      "id": "ibm-carbon-motion",
+      "sourceUrl": "https://github.com/carbon-design-system/carbon",
+      "revision": "aad1d5d053fd6f8584ab58bf7a646cd4e52e0af7",
+      "author": "IBM Carbon Design System",
+      "license": "Apache-2.0",
+      "licenseSha256": "dd96bc278e313c055026e834cdd4484c7d1aecc1e0ae8f5ad9dc58fe15f0a904",
+      "sourceArchiveSha256": "0d82f0b75c6e1101dbc5d08f3793866ad83cecf916d8ded896c0d2af93427ad8",
+      "assetRights": "No upstream images, fonts, icons, or media are copied.",
+      "decision": "adopt-guidance",
+      "adoptedConcepts": [
+        "productive and expressive motion taxonomy",
+        "purpose-led duration selection"
+      ],
+      "runtimeImport": false,
+      "removal": "Delete the manifest record and the isolated carbon checkout; generated product code has no upstream runtime dependency."
+    },
+    {
+      "id": "motion-primitives",
+      "sourceUrl": "https://github.com/ibelick/motion-primitives",
+      "revision": "92586e62a951eb9b6bfd1cc7c8a4e6e2ab6ba17d",
+      "author": "Ibelick",
+      "license": "MIT",
+      "licenseSha256": "8ca1a5ee043f211ca4ab5a1e0533c837f986de340cde2f1f27c0b8b5961ee7d2",
+      "sourceArchiveSha256": "d0357697592097a3e9e2288e4d43b8f236ce791f4befab65c06f26adb2667c5e",
+      "assetRights": "Behaviour reference only; no upstream assets are copied.",
+      "decision": "adapt-behaviour",
+      "adoptedConcepts": [
+        "shared-element continuity",
+        "interruptible panel and toolbar transitions"
+      ],
+      "runtimeImport": false,
+      "removal": "Remove the semantic motion hooks; no React or Motion package is present in the product."
+    },
+    {
+      "id": "react-bits",
+      "sourceUrl": "https://github.com/DavidHDev/react-bits",
+      "revision": "c7109dccb42e06592d1d9bc50bc87204697240e2",
+      "author": "David Haz",
+      "license": "MIT + Commons Clause",
+      "licenseSha256": "ce48406452c86d16998612d3d3b6ee54f5d6a6bb0941348785436ee866f625b5",
+      "sourceArchiveSha256": "3fac4bb3583b2a81aadf73fb678737ae03d26ce07a69e954a427da48c0ae61bd",
+      "assetRights": "Concept reference only; the catalogue, source, assets, and component packaging are not redistributed.",
+      "decision": "reference-limited",
+      "adoptedConcepts": [
+        "small-area interaction pacing"
+      ],
+      "runtimeImport": false,
+      "removal": "Remove this evidence record; no React Bits source or package is included."
+    },
+    {
+      "id": "codrops-rotating-scroll",
+      "sourceUrl": "https://github.com/codrops/RotatingOnScrollAnimations",
+      "revision": "ebbe2c9bd80237d05c709475e47aad171030e21f",
+      "author": "Codrops",
+      "license": "MIT",
+      "licenseSha256": "d00d11a6c00ce378b6809c956a00f61caf756b49cabd408f60f5d7bbd18701f0",
+      "sourceArchiveSha256": "39347f8491701a6dfb6b0088e5f919384ca46d4766a1d8d5e279747b1357a85f",
+      "assetRights": "Narrative behaviour reference only; example media and Lenis are excluded.",
+      "decision": "adapt-behaviour",
+      "adoptedConcepts": [
+        "one-shot narrative sequencing"
+      ],
+      "runtimeImport": false,
+      "removal": "Remove the narrative hook; no example media, smooth-scroll code, or package is included."
+    },
+    {
+      "id": "motionsites-ai",
+      "sourceUrl": "https://motionsites.ai/",
+      "revision": "accessed-2026-08-13",
+      "author": "MotionSites.ai",
+      "license": "No reusable source grant verified",
+      "licenseSha256": null,
+      "sourceArchiveSha256": null,
+      "assetRights": "Moodboard only. No code, images, fonts, video, or 3D assets may enter the product.",
+      "decision": "moodboard-only",
+      "adoptedConcepts": [],
+      "runtimeImport": false,
+      "removal": "Remove this evidence record."
+    },
+    {
+      "id": "gsap",
+      "sourceUrl": "https://github.com/greensock/GSAP",
+      "revision": "3.13.0",
+      "author": "GreenSock",
+      "license": "GSAP Standard License",
+      "licenseSha256": null,
+      "sourceArchiveSha256": null,
+      "assetRights": "Existing locally vendored runtime only; no external media.",
+      "decision": "existing-runtime",
+      "adoptedConcepts": [
+        "single animation lifecycle owner"
+      ],
+      "runtimeImport": true,
+      "removal": "Use the existing vendor removal and static fallback procedure documented in the motion system."
+    }
+  ]
+}

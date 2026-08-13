@@ -28,6 +28,27 @@ from its own localhost origin and does not depend on a runtime CDN request.
 使用。版本化程式及 npm 套件資料保存在 `nicegui_app/assets/vendor/`；網站只從
 本機 localhost 載入，不會在運行時依賴 CDN。
 
+The professional-source native-port work records external design references in
+`design_system/external_design_sources.v1.json`. IBM Carbon (Apache-2.0) informs the
+productive／expressive motion taxonomy; Motion Primitives and the selected Codrops
+RotatingOnScrollAnimations example (MIT) inform neutral interaction behaviour; React
+Bits (MIT + Commons Clause) is a limited concept reference; MotionSites.ai remains
+moodboard-only because no reusable source grant was verified. No source catalogue,
+React／Tailwind runtime, upstream media, font, icon, Lenis code, tracking endpoint or
+remote asset from those references is distributed by this product. Exact revisions,
+license hashes, source-archive hashes, asset decisions and removal procedures are in
+the versioned ledger; raw checkouts stay outside the product repository and release
+inputs.
+
+「專業來源原生移植」工作以 `design_system/external_design_sources.v1.json` 記錄
+外部設計參考。IBM Carbon（Apache-2.0）只提供 productive／expressive 動效分類；
+Motion Primitives 及指定 Codrops RotatingOnScrollAnimations 示例（MIT）只提供中性
+互動行為參考；React Bits（MIT + Commons Clause）只作有限概念參考；因未核實可重用
+原始碼授權，MotionSites.ai 只作 moodboard。本產品不分發上述來源的元件目錄、
+React／Tailwind runtime、媒體、字體、圖標、Lenis 程式、追蹤端點或遠端資產。精確
+revision、授權雜湊、來源封存雜湊、資產裁決及移除方式均寫入版本化清單；原始 checkout
+留在產品倉庫及發布輸入之外。
+
 The shared control family and public gateway include substantially rewritten
 interaction patterns adapted from Uiverse.io under the MIT License. References
 include adamgiebl's “massive-insect-65” button, andrew-demchenk0's

@@ -15,6 +15,7 @@ from nicegui_app.ui.components import (
     code_sample,
     editorial_heading,
     empty_state,
+    motion_pattern,
     page_toc,
     reference_pager,
     responsive_table,
@@ -191,12 +192,15 @@ def platform_page() -> None:
                 "platform_operating_map_title",
                 "platform_operating_map_copy",
             )
-            with ui.element("div").classes("sy-platform-operating-map").props(
-                "data-testid=platform-operating-map role=list"
+            with motion_pattern(
+                "platform-continuity",
+                classes="sy-platform-operating-map",
+                test_id="platform-operating-map",
+                props="role=list",
             ):
                 for index, (icon, title_key, body_key) in enumerate(operating_map, start=1):
                     with ui.element("article").classes("sy-platform-map-node").props(
-                        f"role=listitem data-sequence={index}"
+                        f"role=listitem data-sequence={index} data-sy-motion-item"
                     ):
                         with ui.row().classes("sy-platform-map-node-head items-center gap-3 no-wrap"):
                             ui.icon(icon).classes("sy-platform-map-node-icon").props("aria-hidden=true")

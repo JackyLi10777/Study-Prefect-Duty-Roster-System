@@ -26,6 +26,14 @@
 
 現行前端採用 **Quiet Command Center with Editorial Sacred Restraint**：桌面以清楚的機構式導覽軌、緊湊全域工具列及實體操作面承載日常工作；首頁把當前值班流程放在歷史與每日聖言之前，不製造 KPI、假進度或裝飾警報。手機、平板、200% zoom、深淺模式及中英文仍使用同一語意 DOM、路由、身份與資料契約。設計意圖見 [Professional Design System](Professional_Design_System.md)，composition、CSS layer、route family、viewport runtime 及遷移規則見[前端架構與迭代契約](docs/FRONTEND_ARCHITECTURE.md)。
 
+> **專業來源原生移植（目前為來源候選，尚未發布）：** 新底盤把控制動效收斂為
+> 90–180ms `productive` 與 260–420ms `expressive` 兩類，由現有本機 GSAP runtime
+> 統一擁有生命週期。Platform、Dashboard 及值班表草稿是三個有界試點；沒有加入
+> React、Tailwind、Motion、Lenis、Three.js、遠端 origin 或第三方素材。外部來源的
+> revision、授權、SHA-256、資產權利、採納／拒絕理由及移除方式見
+> [版本化來源清單](design_system/external_design_sources.v1.json)。此段只描述目前分支
+> 的來源狀態；線上版本仍以上方生成狀態為準。
+
 > **手機優先操作（rc57 已部署）：** Android／iPhone 的每週主流程已收斂為「選擇週次 → 停開／請假 → 規則摘要 → 準備狀態 → 生成」。手機抽屜使用四個獨立圓角狀態方格，不再繼承桌面圓形旋鈕；草稿以單日六崗位、星期摘要、共用底部編輯面板及單一未保存操作列呈現，桌面仍保留 PDF 式矩陣。交易、CAS、command ID、公平及 PDF 語意沒有改動。正式網址的真實 Chrome 矩陣已覆蓋 320／360／390／412／430px、844×390 橫向及 768／820px 平板，所有記錄路由 CLS 均為 `0`，沒有非預期 browser error。完整機器證據與仍待實體 Android 完成的真人項目見[手機操作驗收](docs/MOBILE_OPERATIONS_ACCEPTANCE.md)。
 
 [English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)

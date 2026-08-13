@@ -106,6 +106,35 @@ CSS owns immediate hover, focus, press and reduced-motion fallbacks. NiceGUI run
 
 `docs/audits/RC53_SOURCE_AND_MOTION_MANIFEST.md` records the original rc53 interaction and external-motion decisions. `docs/audits/RC54_INTEGRATED_REVIEW_AND_RELEASE_LEDGER_2026-08-09.md` owns the later parallel-work reconciliation, current audit adjudication and typed-session／atomic-batch boundary. Both are source-candidate evidence, not production status.
 
+### Professional-source native-port seam
+
+`design_system/external_design_sources.v1.json` is the machine-readable provenance
+contract. `nicegui_app.ui.external_design_sources.ExternalDesignSourceRecord` loads it
+fail-closed: every source needs a stable revision, license decision, asset-rights
+statement, adoption decision and removal procedure; only the already-vendored GSAP
+record may set `runtimeImport=true`. Reference checkouts remain outside the repository
+and release fingerprint.
+
+`nicegui_app.ui.components.motion_pattern` is the only page-facing enhanced-motion
+request. Pages supply an approved semantic name and accessible container state. The
+single local runtime in `sing-yin-motion.js` owns timelines and reuses the existing
+MutationObserver／IntersectionObserver lifecycle; pages must not allocate another RAF,
+observer or animation runtime. Static CSS is the authoritative final state when GSAP is
+missing, motion is reduced, the element is offscreen, or the route is disposed.
+
+The initial bounded pilots are:
+
+| Route surface | Pattern | Purpose | Explicit non-goals |
+|---|---|---|---|
+| Platform operating map | `platform-continuity`／expressive | reveal order and connection between real workflow stages | no scroll hijack, fake progress or imported media |
+| Dashboard weekly workbench | `workflow-current`／productive | distinguish current stage and next safe action | no movement of the button surface or KPI spectacle |
+| Roster draft editor | `operation-stage`／productive | preserve spatial continuity between editor state, candidates and save feedback | no transaction, callback or policy change |
+
+Token timing is generated from `design_system/tokens.v1.json`: productive 90／150／
+180 ms and expressive 260／320／420 ms. Radius, shadow, surface and easing values remain
+canonical generated tokens; `command-center-v2` may alias them but cannot invent a
+parallel literal scale.
+
 ## Change protocol
 
 1. Identify the operator problem and measurable improvement.

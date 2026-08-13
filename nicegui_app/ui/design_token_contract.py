@@ -39,7 +39,7 @@ def load_design_token_contract() -> dict[str, Any]:
     """Load and validate the versioned token source once per process."""
 
     contract = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
-    if contract.get("contractVersion") != "1.1.0":
+    if contract.get("contractVersion") != "1.2.0":
         raise DesignTokenContractError("Unsupported design-token contract version")
     if contract.get("layerOrder") != ["primitive", "semantic", "component"]:
         raise DesignTokenContractError(

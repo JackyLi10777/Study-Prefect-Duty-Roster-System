@@ -52,6 +52,16 @@ _PUBLIC_CURRENT_RELEASE_DIGEST_LOCATIONS = {
     "fingerprint_sha256": ("release", "fingerprint_sha256"),
     "backup_sha256": ("recovery", "backup_sha256"),
 }
+_DESIGN_SOURCE_LEDGER_RELATIVE_PATH = "design_system/external_design_sources.v1.json"
+_PUBLIC_DESIGN_SOURCE_DIGEST = re.compile(
+    r'^\s*"(?P<field>revision|licenseSha256|sourceArchiveSha256)"\s*:\s*'
+    r'"(?P<digest>[0-9a-f]{40}|[0-9a-f]{64})"\s*,?\s*$'
+)
+_PUBLIC_DESIGN_SOURCE_DIGEST_FIELDS = {
+    "revision": 40,
+    "licenseSha256": 64,
+    "sourceArchiveSha256": 64,
+}
 _CHECK_NAMES = ("dependency_audit", "static_analysis", "secret_scan")
 _SECRET_SCAN_TARGETS = (
     "nicegui_app",
@@ -173,6 +183,43 @@ def _is_public_current_release_digest(
         return False
     expected_length = 40 if field == "commit" else 64
     return len(digest) == expected_length and value == digest
+
+
+def _is_public_design_source_digest(
+    path: str,
+    line_number: object,
+    root: Path = PROJECT_ROOT,
+) -> bool:
+    """Recognize only schema-bound provenance hashes in the design-source ledger."""
+
+    normalized = path.replace("\\", "/").lstrip("./")
+    if normalized != _DESIGN_SOURCE_LEDGER_RELATIVE_PATH:
+        return False
+    relative_path = Path(normalized)
+    try:
+        index = int(line_number) - 1
+        lines = (root / relative_path).read_text(encoding="utf-8").splitlines()
+        line = lines[index]
+        payload = json.loads("\n".join(lines))
+    except (TypeError, ValueError, IndexError, OSError, json.JSONDecodeError):
+        return False
+    if not isinstance(payload, Mapping) or payload.get("contractVersion") != "1.0.0":
+        return False
+    sources = payload.get("sources")
+    if not isinstance(sources, list):
+        return False
+    match = _PUBLIC_DESIGN_SOURCE_DIGEST.fullmatch(line)
+    if match is None:
+        return False
+    field = match.group("field")
+    digest = match.group("digest")
+    if len(digest) != _PUBLIC_DESIGN_SOURCE_DIGEST_FIELDS[field]:
+        return False
+    return sum(
+        1
+        for source in sources
+        if isinstance(source, Mapping) and source.get(field) == digest
+    ) == 1
 
 
 def _render_verified_service_weave_module(payload: bytes) -> str:
@@ -331,6 +378,9 @@ def main() -> int:
                         _is_public_pnpm_integrity(path, item.get("line_number"))
                         or _is_public_audit_digest(path, item.get("line_number"))
                         or _is_public_current_release_digest(
+                            path, item.get("line_number")
+                        )
+                        or _is_public_design_source_digest(
                             path, item.get("line_number")
                         )
                         or (

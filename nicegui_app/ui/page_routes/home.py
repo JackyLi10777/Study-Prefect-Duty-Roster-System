@@ -5,6 +5,7 @@ from __future__ import annotations
 from nicegui import ui
 
 from nicegui_app.config import CANONICAL_PUBLIC_URL
+from nicegui_app.ui.components import action, motion_pattern
 
 from nicegui_app.runtime import get_workflow
 from nicegui_app.ui.devotional import (
@@ -59,12 +60,19 @@ def dashboard_page() -> None:
             with ui.column().classes("gap-0 min-w-0"):
                 ui.label(t("mobile_next_action_label")).classes("sy-mobile-next-action-kicker")
                 ui.label(t(next_title_key)).classes("sy-mobile-next-action-title")
-            ui.button(t(next_action_key), icon="arrow_forward", on_click=next_action).props("color=primary")
+            action(t(next_action_key), icon="arrow_forward", on_click=next_action)
         with ui.row().classes("sy-dashboard-grid w-full items-stretch"):
-            with ui.element("section").classes("sy-workbench grow min-w-0"):
+            with motion_pattern(
+                "workflow-current",
+                tag="section",
+                classes="sy-workbench grow min-w-0",
+                labelled_by="dashboard-workbench-title",
+            ):
                 with ui.row().classes("w-full items-start justify-between gap-5 flex-wrap"):
                     with ui.column().classes("gap-1"):
-                        ui.html(t("workbench_title"), tag="h2").classes("sy-workbench-title")
+                        ui.html(t("workbench_title"), tag="h2").classes("sy-workbench-title").props(
+                            "id=dashboard-workbench-title"
+                        )
                     if not has_prefects:
                         _tone_badge(t("flow_directory_ready"), "attention")
                     elif latest is None:
@@ -94,7 +102,13 @@ def dashboard_page() -> None:
                         _render_flow_step(number=1, title_key="flow_generate", detail_key="flow_generate_detail", state="done", state_key="flow_done", icon="edit_calendar")
                         _render_flow_step(number=2, title_key="flow_review", detail_key="flow_review_detail", state="done", state_key="flow_done", icon="fact_check", action_key="flow_open_published", action=lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}"))
                         _render_flow_step(number=3, title_key="flow_leave", detail_key="flow_leave_detail", state="active", state_key="flow_current", icon="event_busy", action_key="flow_open_adjustment", action=lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}/adjustments"))
-                ui.button(t("first_time_link"), icon="play_circle", on_click=lambda: navigate_to("/getting-started")).props("flat").classes("mt-5")
+                action(
+                    t("first_time_link"),
+                    icon="play_circle",
+                    on_click=lambda: navigate_to("/getting-started"),
+                    variant="quiet",
+                    classes="mt-5",
+                )
             with ui.element("aside").classes("sy-dashboard-history").props(
                 "aria-labelledby=dashboard-history-title data-testid=dashboard-history"
             ):
@@ -193,10 +207,10 @@ def getting_started_page() -> None:
                             "font-mono text-sm font-semibold mt-3 break-all"
                         )
             with ui.row().classes("gap-3 flex-wrap"):
-                ui.button(t("open_prefects"), icon="groups", on_click=lambda: navigate_to("/prefects")).props("outline color=primary")
-                ui.button(t("open_rosters"), icon="calendar_month", on_click=lambda: navigate_to("/rosters")).props("color=primary")
-                ui.button(t("operator_guide"), icon="help", on_click=lambda: navigate_to("/guide")).props("flat")
-                ui.button(t("open_handover_guide"), icon="handshake", on_click=lambda: navigate_to("/handover")).props("flat")
+                action(t("open_prefects"), icon="groups", on_click=lambda: navigate_to("/prefects"), variant="secondary")
+                action(t("open_rosters"), icon="calendar_month", on_click=lambda: navigate_to("/rosters"))
+                action(t("operator_guide"), icon="help", on_click=lambda: navigate_to("/guide"), variant="quiet")
+                action(t("open_handover_guide"), icon="handshake", on_click=lambda: navigate_to("/handover"), variant="quiet")
 
         reference_cards = (
             ("calendar_month", "start_reference_weekly_title", "start_reference_weekly_body", "open_rosters", "/rosters"),
@@ -214,11 +228,13 @@ def getting_started_page() -> None:
                         ui.icon(icon).classes("sy-reference-index-icon").props("aria-hidden=true")
                         ui.label(t(title_key)).classes("sy-reference-index-card-title")
                         ui.label(t(body_key)).classes("sy-reference-index-card-copy")
-                        ui.button(
+                        action(
                             t(action_key),
                             icon="arrow_forward",
                             on_click=lambda destination=route: navigate_to(destination),
-                        ).props("outline color=primary").classes("sy-reference-index-action")
+                            variant="secondary",
+                            classes="sy-reference-index-action",
+                        )
         render_reference_pager(next_=("/guide", "operator_guide"))
 
 

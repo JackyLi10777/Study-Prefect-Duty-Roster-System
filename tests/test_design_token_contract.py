@@ -22,7 +22,7 @@ def test_versioned_contract_uses_primitive_semantic_component_order() -> None:
     contract = load_design_token_contract()
 
     assert SOURCE_PATH.name == "tokens.v1.json"
-    assert contract["contractVersion"] == "1.1.0"
+    assert contract["contractVersion"] == "1.2.0"
     assert contract["name"] == "Sing Yin Luminous Sacred Precision"
     assert contract["layerOrder"] == ["primitive", "semantic", "component"]
     assert contract["layers"]["primitive"]["color"]
