@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,7 +45,13 @@ def test_no_second_frontend_or_motion_runtime_is_added() -> None:
     imported = [source["id"] for source in manifest["sources"] if source["runtimeImport"]]
 
     assert imported == ["gsap"]
-    package_files = list(ROOT.rglob("package.json"))
+    tracked_files = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout.decode("utf-8").split("\0")
+    package_files = [ROOT / path for path in tracked_files if Path(path).name == "package.json"]
     product_manifests = [path for path in package_files if "cloudflare" not in path.parts]
     assert product_manifests == []
 
