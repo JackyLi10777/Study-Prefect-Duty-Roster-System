@@ -1,20 +1,19 @@
 # Sing Yin Study Prefect Duty Roster System - Project Status
 
-**Last Updated:** 2026-08-10
+**Last Updated:** 2026-08-14
 **Project Root:** repository root (`.`)
 <!-- SING_YIN_CURRENT_STATUS:START -->
-> **Verified production truth (2026-08-10):** the live Windows origin is clean annotated `v1.2.0-rc.57` at `f83bbbb095e5fb2c029ac37add1308f33dd2eb9e` and runs an immutable bundle. Its 317-file fingerprint `33e77fb6cddc791b60e2b695db417f29d508b77bba71f143186c4f5591ba916a` passed 15/15 gates. SQLite is at Alembic `0014`; verified backup `20260810-111743-227200-manual_verified_backup.sqlite3` with SHA-256 `d9603c329c995132d9955bcfbe74aafa46c5b5c6e0393e7f009b76bc2b746a29`, isolated restore, health, `writeReady=true`, `maintenance=false`, `recoveryRequired=false`, and `pendingBackups=0` passed. Worker source changed and was promoted; canonical Worker `7951ca55-ffda-4f16-b570-d37486311914` remains healthy at 100% traffic. `v1.2.0-rc.56` is historical source evidence, not a code-only rollback after migration `0014`; recovery requires the controlled compatible database restore. Supervised human acceptance remains `pending`, and the physical off-site BitLocker recovery drill remains `pending`. See [current system status](docs/status/CURRENT_STATUS.md) for the exact state and update contract.
+> **Verified production truth (2026-08-14):** the live Windows origin is clean annotated `v1.2.0-rc.58` at `e90bb8fdb95ca874f668b5a7134853756471635f` and runs an immutable bundle. Its 319-file fingerprint `c57778ce438c1c23c824c444827db7eeb9166d20be3ba3e78f1bb1221fee5283` passed 15/15 gates. SQLite is at Alembic `0014`; verified backup `20260813-161554-736678-manual_verified_backup.sqlite3` with SHA-256 `0e0ee9cc9a592eeea66055e107c461e859f3ccec2791cb06f051e7078c3febc2`, isolated restore, health, `writeReady=true`, `maintenance=false`, `recoveryRequired=false`, and `pendingBackups=0` passed. Worker source did not change; canonical Worker `7951ca55-ffda-4f16-b570-d37486311914` remains healthy at 100% traffic. `v1.2.0-rc.57` is historical source evidence, not a code-only rollback after migration `0014`; recovery requires the controlled compatible database restore. Supervised human acceptance remains `pending`, and the physical off-site BitLocker recovery drill remains `pending`. See [current system status](docs/status/CURRENT_STATUS.md) for the exact state and update contract.
 <!-- SING_YIN_CURRENT_STATUS:END -->
 
-**Professional-source native-port candidate（source only, not deployed, 2026-08-13）：**
-the isolated `codex/professional-source-native-port` branch keeps NiceGUI／Quasar and
-the existing local GSAP Core runtime. It introduces a fail-closed external-source
-ledger, generated productive／expressive motion tokens, a single semantic
-`motion_pattern` seam, and bounded Platform／Dashboard／roster-editor pilots. No
-application API, identity boundary, roster transaction or database schema changes.
-No React, Tailwind, Motion, Lenis, Three.js, upstream media or new network origin is
-included. This paragraph is candidate source evidence only; it does not replace the
-verified rc57 production block and makes no Origin or Worker deployment claim.
+**Professional-source native port（deployed in rc58, 2026-08-14）：**
+the live release keeps NiceGUI／Quasar and the existing local GSAP Core runtime. It
+adds a fail-closed external-source ledger, generated productive／expressive motion
+tokens, one semantic `motion_pattern` seam, and bounded Platform／Dashboard／roster-
+editor pilots. No application API, identity boundary, roster transaction or database
+schema changed; no React, Tailwind, Motion, Lenis, Three.js, upstream media or new
+network origin was added. Exact source, Origin, recovery and unchanged-Worker evidence
+is recorded in the generated production block above and the rc58 changelog entry.
 
 **rc54 integrated release scope（deployed, 2026-08-09 Asia／Shanghai）：** the rc53 spreadsheet and prefect-directory work was reconciled with the public Support theme, atomic Admin／Guest prefect patches, typed edit sessions, truthful progress treatment and the mobile drawer reachability fix. The final protected-main tree passed the complete 15-gate release profile, controlled 0013→0014 migration and recovery proofs, Origin deployment and Worker staged rollout. The generated current-status block above remains the authority for exact live identifiers and pending human evidence.
 

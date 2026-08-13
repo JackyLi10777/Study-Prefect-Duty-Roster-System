@@ -4,7 +4,15 @@ This file records user-visible, operational and release-significant changes. The
 
 ## Unreleased
 
-- No release-significant changes are pending after the rc57 deployment closeout.
+- No release-significant changes are pending after the rc58 deployment closeout.
+
+## v1.2.0-rc.58 — released, 2026-08-14
+
+- Deployed protected-main commit `e90bb8fdb95ca874f668b5a7134853756471635f` as annotated `v1.2.0-rc.58`. Its 319-file source fingerprint `c57778ce438c1c23c824c444827db7eeb9166d20be3ba3e78f1bb1221fee5283` passed all 15 formal gates; the Windows task now runs immutable bundle `C:\SingYinRoster\releases\v1.2.0-rc.58-e90bb8fdb95c-5c891432a1d8` at Alembic `0014`, with database quick check, health and readiness green and `writeReady=true`.
+- Created and isolated-restored rc57 rollback snapshot `20260813-161548-042930-manual_verified_backup.sqlite3` with SHA-256 `ff032d921f767e68dd77912cd80109c410beb83dd185e3ef85390e913b54912c`, then established the quiescent rc58 recovery baseline `20260813-161554-736678-manual_verified_backup.sqlite3` with SHA-256 `0e0ee9cc9a592eeea66055e107c461e859f3ccec2791cb06f051e7078c3febc2` and manifest SHA-256 `374af23dd050073e73a2fafeaf43120db542e3ed7236a630cf2c7aa88d1fb419`; checksum, SQLite integrity, schema, fairness, row counts and restore audit passed.
+- Added the professional-source native motion substrate without changing NiceGUI／Quasar, identity, roster transactions, API or schema: licensed external-source evidence is fail closed; productive／expressive timing and one semantic `motion_pattern` owner now drive bounded Platform, Dashboard and roster-editor pilots; removed nodes clear timelines and motion flags before safe rehydration.
+- Worker executable source, configuration, public assets, package and lock files did not change. The generated design-token contract is outside Wrangler upload inputs, so canonical Worker `7951ca55-ffda-4f16-b570-d37486311914` correctly remains at 100% without a redundant deployment. Canonical health, landing, Viewer, Support, Access redirect, browser-shaped Guest entry and public-entry music recovery were rechecked after the Origin switch.
+- Automated release and online checks are complete. Final physical Android Chrome acceptance and the off-site BitLocker recovery drill remain explicit supervised-human tasks.
 
 ## v1.2.0-rc.57 — released, 2026-08-10
 
