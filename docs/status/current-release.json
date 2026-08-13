@@ -1,13 +1,13 @@
 {
   "schema_version": 2,
-  "observed_at": "2026-08-10",
+  "observed_at": "2026-08-14",
   "state": "live",
   "release": {
-    "tag": "v1.2.0-rc.57",
-    "commit": "f83bbbb095e5fb2c029ac37add1308f33dd2eb9e",
-    "bundle": "C:\\SingYinRoster\\releases\\v1.2.0-rc.57-f83bbbb095e5-5c891432a1d8",
-    "source_file_count": 317,
-    "fingerprint_sha256": "33e77fb6cddc791b60e2b695db417f29d508b77bba71f143186c4f5591ba916a",
+    "tag": "v1.2.0-rc.58",
+    "commit": "e90bb8fdb95ca874f668b5a7134853756471635f",
+    "bundle": "C:\\SingYinRoster\\releases\\v1.2.0-rc.58-e90bb8fdb95c-5c891432a1d8",
+    "source_file_count": 319,
+    "fingerprint_sha256": "c57778ce438c1c23c824c444827db7eeb9166d20be3ba3e78f1bb1221fee5283",
     "formal_gates": {
       "passed": 15,
       "total": 15
@@ -18,8 +18,8 @@
     "rollback_requires_compatible_restore": true
   },
   "recovery": {
-    "backup_file": "20260810-111743-227200-manual_verified_backup.sqlite3",
-    "backup_sha256": "d9603c329c995132d9955bcfbe74aafa46c5b5c6e0393e7f009b76bc2b746a29",
+    "backup_file": "20260813-161554-736678-manual_verified_backup.sqlite3",
+    "backup_sha256": "0e0ee9cc9a592eeea66055e107c461e859f3ccec2791cb06f051e7078c3febc2",
     "offsite_physical_drill": "pending",
     "checks": [
       "checksum",
@@ -42,13 +42,13 @@
   },
   "worker": {
     "version_id": "7951ca55-ffda-4f16-b570-d37486311914",
-    "source_changed_for_release": true,
+    "source_changed_for_release": false,
     "traffic_percent": 100,
     "health": "passed"
   },
   "historical_predecessor": {
-    "release": "v1.2.0-rc.56",
-    "worker_version_id": "e118e783-fd89-489d-9c10-acba67056d50",
+    "release": "v1.2.0-rc.57",
+    "worker_version_id": "7951ca55-ffda-4f16-b570-d37486311914",
     "rollback_mode": "controlled-compatible-database-restore"
   },
   "acceptance": {

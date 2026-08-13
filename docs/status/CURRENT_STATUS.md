@@ -1,29 +1,29 @@
 <!-- Generated from current-release.json by scripts/project_governance.py. Do not edit by hand. -->
 # 目前系統狀態 / Current system status
 
-> 最後核實 / Last verified: **2026-08-10**. This page records observed release truth; a newer repository commit does not imply a newer production deployment.
+> 最後核實 / Last verified: **2026-08-14**. This page records observed release truth; a newer repository commit does not imply a newer production deployment.
 
 ## 正式運行 / Live production
 
 | 項目 / Item | 已核實值 / Verified value |
 |---|---|
 | 狀態 / State | `live` |
-| Release | `v1.2.0-rc.57` |
-| Production source commit | `f83bbbb095e5fb2c029ac37add1308f33dd2eb9e` |
-| Immutable bundle | `C:\SingYinRoster\releases\v1.2.0-rc.57-f83bbbb095e5-5c891432a1d8` |
-| Source evidence | 317 files; `33e77fb6cddc791b60e2b695db417f29d508b77bba71f143186c4f5591ba916a`; 15/15 gates passed |
+| Release | `v1.2.0-rc.58` |
+| Production source commit | `e90bb8fdb95ca874f668b5a7134853756471635f` |
+| Immutable bundle | `C:\SingYinRoster\releases\v1.2.0-rc.58-e90bb8fdb95c-5c891432a1d8` |
+| Source evidence | 319 files; `c57778ce438c1c23c824c444827db7eeb9166d20be3ba3e78f1bb1221fee5283`; 15/15 gates passed |
 | Windows service | `SingYinRosterSvc`; health `passed`; readiness `passed`; `writeReady=true`; `maintenance=false`; `recoveryRequired=false`; `pendingBackups=0` |
-| Canonical Worker | `7951ca55-ffda-4f16-b570-d37486311914`; 100% traffic; health `passed`; source updated and promoted for this release |
+| Canonical Worker | `7951ca55-ffda-4f16-b570-d37486311914`; 100% traffic; health `passed`; source unchanged for this release |
 
 ## 資料與復原 / Data and recovery
 
 | 項目 / Item | 已核實值 / Verified value |
 |---|---|
 | Alembic head | `0014` |
-| Verified backup | `20260810-111743-227200-manual_verified_backup.sqlite3` |
-| Backup SHA-256 | `d9603c329c995132d9955bcfbe74aafa46c5b5c6e0393e7f009b76bc2b746a29` |
-| Previous application source | `v1.2.0-rc.56` — historical only |
-| Previous Worker rollback version | `e118e783-fd89-489d-9c10-acba67056d50` |
+| Verified backup | `20260813-161554-736678-manual_verified_backup.sqlite3` |
+| Backup SHA-256 | `0e0ee9cc9a592eeea66055e107c461e859f3ccec2791cb06f051e7078c3febc2` |
+| Previous application source | `v1.2.0-rc.57` — historical only |
+| Previous Worker rollback version | `7951ca55-ffda-4f16-b570-d37486311914` |
 | Rollback contract | Migration-aware controlled restore; never switch old code alone |
 
 ## 驗收 / Acceptance
