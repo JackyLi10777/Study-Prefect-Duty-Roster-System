@@ -4,7 +4,7 @@
  */
 @layer sy.tokens {
 :root {
-  --sy-design-contract-version: 1.1.0;
+  --sy-design-contract-version: 1.2.0;
   --sy-role-action: #35647C;
   --sy-role-action-strong: #284C60;
   --sy-role-action-soft: #E8F0F3;
@@ -45,6 +45,14 @@
   --sy-motion-press: 90ms;
   --sy-motion-state: 180ms;
   --sy-motion-layer: 260ms;
+  --sy-ease-productive: cubic-bezier(.2, 0, .38, .9);
+  --sy-ease-expressive: cubic-bezier(.4, .14, .3, 1);
+  --sy-motion-productive-fast: 90ms;
+  --sy-motion-productive-standard: 150ms;
+  --sy-motion-productive-slow: 180ms;
+  --sy-motion-expressive-fast: 260ms;
+  --sy-motion-expressive-standard: 320ms;
+  --sy-motion-expressive-slow: 420ms;
   --sy-image-sidebar: url('/assets/atmosphere/sidebar-stewardship-light-v1.webp');
   --sy-image-weekly-pulse: url('/assets/atmosphere/weekly-pulse-light-v1.webp');
   --sy-image-devotional: url('/assets/atmosphere/devotional-sacred-light-v2.webp');
@@ -66,6 +74,11 @@
   --sy-control-highlight: rgba(255, 255, 255, .38);
   --sy-control-shadow: 0 2px 0 rgba(32, 63, 80, .72), 0 8px 18px rgba(40, 76, 96, .18);
   --sy-card-shadow: 0 14px 34px rgba(28, 28, 30, .10);
+  --sy-radius-control: 10px;
+  --sy-radius-panel: 14px;
+  --sy-radius-feature: 17px;
+  --sy-shadow-panel: 0 1px 2px rgba(20, 36, 45, .035), 0 8px 24px rgba(20, 36, 45, .045);
+  --sy-shadow-float: 0 16px 42px rgba(20, 36, 45, .11);
   --sy-control-shadow-hover: 0 3px 0 rgba(32, 63, 80, .74), 0 12px 24px rgba(40, 76, 96, .23);
   --sy-control-outline-shadow: inset 0 1px 0 rgba(255,255,255,.72), 0 1px 2px rgba(28,28,30,.06), 0 6px 14px rgba(40,76,96,.09);
   --sy-button-danger-bg: #963C35;
@@ -121,7 +134,7 @@
   --q-warning: #F0C96A;
 }
 .body--dark {
-  --sy-design-contract-version: 1.1.0;
+  --sy-design-contract-version: 1.2.0;
   --sy-role-action: #9BC2D2;
   --sy-role-action-strong: #47758B;
   --sy-role-action-soft: #1A2B34;
@@ -172,6 +185,11 @@
   --sy-control-highlight: rgba(255, 255, 255, .18);
   --sy-control-shadow: 0 2px 0 rgba(16, 36, 46, .92), 0 9px 20px rgba(0, 0, 0, .34);
   --sy-card-shadow: 0 16px 38px rgba(0, 0, 0, .32);
+  --sy-radius-control: 10px;
+  --sy-radius-panel: 14px;
+  --sy-radius-feature: 17px;
+  --sy-shadow-panel: 0 1px 2px rgba(0, 0, 0, .20), 0 14px 34px rgba(0, 0, 0, .19);
+  --sy-shadow-float: 0 20px 48px rgba(0, 0, 0, .34);
   --sy-control-shadow-hover: 0 3px 0 rgba(16, 36, 46, .94), 0 13px 28px rgba(0, 0, 0, .42);
   --sy-control-outline-shadow: inset 0 1px 0 rgba(255,255,255,.09), 0 1px 2px rgba(0,0,0,.28), 0 7px 16px rgba(0,0,0,.20);
   --sy-button-danger-bg: #9A4A43;

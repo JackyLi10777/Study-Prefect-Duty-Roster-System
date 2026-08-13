@@ -19,6 +19,7 @@ COMPOSITION_LAYERS = {"command-center-v2"}
 
 EXPECTED_COMPONENT_API = {
     "ActionVariant",
+    "MotionPatternName",
     "StatusTone",
     "WorkflowState",
     "action",
@@ -27,6 +28,7 @@ EXPECTED_COMPONENT_API = {
     "editorial_heading",
     "empty_state",
     "field",
+    "motion_pattern",
     "page_toc",
     "progress_state",
     "reference_pager",

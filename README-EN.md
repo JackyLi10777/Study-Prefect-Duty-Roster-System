@@ -41,6 +41,17 @@ Interaction motion is semantic and auditable. Only Settings, the appearance togg
 
 The current frontend follows **Quiet Command Center with Editorial Sacred Restraint**. A clear institutional navigation rail, compact global utility bar, and solid operational surfaces support repeated work; the dashboard places the current roster workflow before history and Daily Verse without inventing KPIs, progress, or alerts. Phone, tablet, 200% zoom, light/dark, and both languages retain the same semantic DOM, routes, identity, and data contracts. See the [Professional Design System](Professional_Design_System.md) for intent and the [frontend architecture and iteration contract](docs/FRONTEND_ARCHITECTURE.md) for composition, CSS-layer, route-family, viewport-runtime, and migration ownership.
 
+> **Professional-source native port (source candidate, not deployed):** the candidate
+> design foundation classifies control feedback as 90–180ms `productive` motion and
+> bounded section continuity as 260–420ms `expressive` motion, all owned by the existing
+> local GSAP runtime. Platform, Dashboard, and the roster draft editor are the three
+> bounded pilots. The candidate adds no React, Tailwind, Motion, Lenis, Three.js, remote
+> origin, or third-party media. Exact source revisions, licenses, SHA-256 evidence,
+> asset-rights decisions, adoption／rejection reasons, and removal paths are recorded in
+> the [versioned source ledger](design_system/external_design_sources.v1.json). This is
+> branch-source evidence only; the generated status block above remains the authority
+> for the deployed version.
+>
 > **Mobile-first operations (deployed in rc57):** the Android／iPhone weekly path is week selection → closure／leave → rule summary → readiness → generation. The drawer uses four dedicated rectangular state tiles rather than desktop rotary controls; phone drafts show one weekday and six posts, weekday summaries, one shared bottom sheet, and one unsaved-change dock. Desktop retains the PDF-like matrix and the same transaction, CAS, command-ID, fairness, and PDF semantics. Real Chrome against the canonical site covered 320／360／390／412／430 px phones, 844×390 landscape, and 768／820 px tablets; every recorded route had CLS `0` and no unexpected browser error. See [mobile operations acceptance](docs/MOBILE_OPERATIONS_ACCEPTANCE.md) for machine evidence and the still-pending physical Android human check.
 
 [Traditional Chinese README](README.md) · [Operator guide](docs/OPERATOR_GUIDE.md)

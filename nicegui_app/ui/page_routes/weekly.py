@@ -20,7 +20,7 @@ from nicegui_app.services.roster_workflow import (
     WorkflowError,
 )
 from nicegui_app.ui.access_control import render_roster_share_action, revoke_roster_shares
-from nicegui_app.ui.components import action
+from nicegui_app.ui.components import action, motion_pattern
 from nicegui_app.ui.edit_sessions import DraftEditSession
 from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import day_label, t
@@ -733,8 +733,11 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
             if edit_session.selected_cell in visible_navigable_keys
             else (visible_navigable_keys[0] if visible_navigable_keys else None)
         )
-        with ui.element("section").classes("sy-draft-editor").props(
-            "data-testid=draft-grid-editor"
+        with motion_pattern(
+            "operation-stage",
+            tag="section",
+            classes="sy-draft-editor",
+            test_id="draft-grid-editor",
         ):
             ui.label(t("draft_schedule_title")).classes("text-xl font-semibold")
             ui.label(t("draft_schedule_intro")).classes(
@@ -1202,7 +1205,7 @@ def _render_draft_grid_editor(workflow: Any, roster_week_id: int) -> None:
                 "persistent"
             ) as cell_editor_dialog, ui.card().classes(
                 "sy-surface sy-draft-editor-sheet"
-            ) as cell_editor_sheet:
+            ).props("data-sy-motion-pattern=operation-stage") as cell_editor_sheet:
                 cell_editor_dialog_ref["control"] = cell_editor_dialog
                 with ui.element("div").classes("sy-draft-editor-sheet-header"):
                     ui.label(t("draft_select_cell")).classes("font-semibold")

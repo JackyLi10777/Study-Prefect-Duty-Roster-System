@@ -28,11 +28,40 @@
   background-color: var(--sy-role-stable-soft) !important;
 }
 
+/* Pages request meaning; the single motion runtime owns timing and cleanup. */
+.sy-motion-pattern {
+  --sy-motion-pattern-duration: var(--sy-motion-productive-standard);
+  --sy-motion-pattern-ease: var(--sy-ease-productive);
+}
+
+.sy-motion-pattern[data-sy-motion-pattern="platform-continuity"] {
+  --sy-motion-pattern-duration: var(--sy-motion-expressive-standard);
+  --sy-motion-pattern-ease: var(--sy-ease-expressive);
+}
+
+.sy-motion-pattern[data-sy-motion-pattern="workflow-current"] [data-sy-motion-state="active"] {
+  border-color: color-mix(in srgb, var(--sy-role-action) 50%, var(--sy-line));
+  box-shadow: inset 3px 0 0 var(--sy-role-action), var(--sy-shadow-panel);
+}
+
+.sy-motion-pattern[data-sy-motion-pattern="operation-stage"] {
+  transition:
+    border-color var(--sy-motion-pattern-duration) var(--sy-motion-pattern-ease),
+    box-shadow var(--sy-motion-pattern-duration) var(--sy-motion-pattern-ease),
+    background-color var(--sy-motion-pattern-duration) var(--sy-motion-pattern-ease);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sy-reference-toc .sy-reference-toc-link,
   .sy-page-engineering .sy-evidence-results,
   .q-expansion-item__content,
   [data-sy-feedback] {
+    transition-duration: .001ms !important;
+  }
+
+  .sy-motion-pattern,
+  .sy-motion-pattern * {
+    animation: none !important;
     transition-duration: .001ms !important;
   }
 }

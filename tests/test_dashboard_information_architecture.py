@@ -21,7 +21,7 @@ def test_dashboard_keeps_one_primary_workbench_and_a_compact_review_rail() -> No
     assert "latest = recent_weeks[0] if recent_weeks else None" in home
     assert "workflow.roster_weeks()" not in home
 
-    first_time_action = re.search(r'^(\s*)ui\.button\(t\("first_time_link"\)', home, re.MULTILINE)
+    first_time_action = re.search(r'^(\s*)action\(\s*\n\s*t\("first_time_link"\)', home, re.MULTILINE)
     history_setup = re.search(
         r"^(\s*)recent_weeks = workflow\.roster_week_history\(page=1, page_size=3\)$",
         home,
@@ -31,7 +31,7 @@ def test_dashboard_keeps_one_primary_workbench_and_a_compact_review_rail() -> No
     assert len(first_time_action.group(1)) > len(history_setup.group(1))
 
     verse_index = home.index('classes("sy-daily-start w-full")')
-    workbench_index = home.index('classes("sy-workbench grow min-w-0")')
+    workbench_index = home.index('"workflow-current"')
     history_index = home.index('classes("sy-dashboard-history")')
     assert workbench_index < history_index < verse_index
 

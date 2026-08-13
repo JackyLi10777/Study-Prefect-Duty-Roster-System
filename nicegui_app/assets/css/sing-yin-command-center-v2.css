@@ -19,11 +19,11 @@
   --sy-v2-panel-muted: #F5F8F8;
   --sy-v2-ink-soft: #42515A;
   --sy-v2-hairline: rgba(40, 76, 96, .15);
-  --sy-v2-radius-control: 10px;
-  --sy-v2-radius-panel: 14px;
-  --sy-v2-radius-feature: 17px;
-  --sy-v2-shadow-panel: 0 1px 2px rgba(20, 36, 45, .035), 0 8px 24px rgba(20, 36, 45, .045);
-  --sy-v2-shadow-float: 0 16px 42px rgba(20, 36, 45, .11);
+  --sy-v2-radius-control: var(--sy-radius-control);
+  --sy-v2-radius-panel: var(--sy-radius-panel);
+  --sy-v2-radius-feature: var(--sy-radius-feature);
+  --sy-v2-shadow-panel: var(--sy-shadow-panel);
+  --sy-v2-shadow-float: var(--sy-shadow-float);
   --sy-v2-header-height: 64px;
   /* Kept in executable parity with shell.py DESKTOP_DRAWER_WIDTH_PX. */
   --sy-v2-rail-width: 264px;
@@ -37,8 +37,8 @@
   --sy-v2-panel-muted: #121B22;
   --sy-v2-ink-soft: #B7C3CA;
   --sy-v2-hairline: rgba(155, 194, 210, .18);
-  --sy-v2-shadow-panel: 0 1px 2px rgba(0, 0, 0, .20), 0 14px 34px rgba(0, 0, 0, .19);
-  --sy-v2-shadow-float: 0 20px 48px rgba(0, 0, 0, .34);
+  --sy-v2-shadow-panel: var(--sy-shadow-panel);
+  --sy-v2-shadow-float: var(--sy-shadow-float);
 }
 
 html,

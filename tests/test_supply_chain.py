@@ -6,6 +6,7 @@ import shutil
 
 from scripts.run_security_checks import (
     _SECRET_SCAN_TARGETS,
+    _is_public_design_source_digest,
     _is_public_audit_digest,
     _is_public_current_release_digest,
     _is_public_pnpm_integrity,
@@ -206,6 +207,72 @@ def test_secret_scan_ignores_only_schema_bound_current_release_digests(
 
     status.write_text("[]\n", encoding="utf-8")
     assert not _is_public_current_release_digest(str(relative_path), 1, tmp_path)
+
+
+def test_secret_scan_ignores_only_schema_bound_design_source_digests(
+    tmp_path: Path,
+) -> None:
+    relative_path = Path("design_system/external_design_sources.v1.json")
+    source = ROOT / relative_path
+    ledger = tmp_path / relative_path
+    ledger.parent.mkdir(parents=True)
+    shutil.copy2(source, ledger)
+    lines = ledger.read_text(encoding="utf-8").splitlines()
+
+    for field in ("revision", "licenseSha256", "sourceArchiveSha256"):
+        line_number = next(
+            index
+            for index, line in enumerate(lines, start=1)
+            if f'"{field}"' in line and "null" not in line
+        )
+        assert _is_public_design_source_digest(
+            str(relative_path), line_number, tmp_path
+        )
+
+    assert not _is_public_design_source_digest(
+        "design_system/unreviewed.json", 1, tmp_path
+    )
+
+    payload = json.loads(ledger.read_text(encoding="utf-8"))
+    payload["sources"][1]["revision"] = payload["sources"][0]["revision"]
+    ledger.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    duplicated_lines = ledger.read_text(encoding="utf-8").splitlines()
+    duplicate_line = next(
+        index
+        for index, line in enumerate(duplicated_lines, start=1)
+        if payload["sources"][0]["revision"] in line
+    )
+    assert not _is_public_design_source_digest(
+        str(relative_path), duplicate_line, tmp_path
+    )
+
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    payload["sources"][0]["licenseSha256"] = "not-a-public-digest"
+    ledger.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    invalid_line = next(
+        index
+        for index, line in enumerate(ledger.read_text(encoding="utf-8").splitlines(), start=1)
+        if '"licenseSha256"' in line
+    )
+    assert not _is_public_design_source_digest(
+        str(relative_path), invalid_line, tmp_path
+    )
+
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    nested_digest = payload["sources"][0]["revision"]
+    payload["sources"][0]["evidence"] = {"revision": nested_digest}
+    ledger.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    nested_lines = ledger.read_text(encoding="utf-8").splitlines()
+    nested_line = next(
+        index
+        for index, line in enumerate(nested_lines, start=1)
+        if '"revision"' in line and len(line) - len(line.lstrip(" ")) == 8
+    )
+    assert not _is_public_design_source_digest(
+        str(relative_path), nested_line, tmp_path
+    )
 
 
 def test_secret_scan_excludes_only_the_exact_manifest_generated_brand_payload(
