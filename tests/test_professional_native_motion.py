@@ -63,6 +63,19 @@ def test_semantic_motion_reuses_the_existing_runtime_lifecycle() -> None:
     assert "motionPatternTimelines.forEach" in runtime
     assert "motionPatternTimelines.clear()" in runtime
     assert "intersectionObserver?.unobserve(element)" in runtime
+    assert "querySelectorAll('[data-sy-motion-item]')" in runtime
+    reset_context = runtime.split("const removeMotionPatternsWithin", 1)[1].split(
+        "const observe", 1
+    )[0]
+    for key in (
+        "syMotionPatternObserved",
+        "syMotionPatternPending",
+        "syMotionPatternReady",
+        "syMotionPatternComplete",
+        "syMotionKind",
+    ):
+        assert f"delete element.dataset.{key}" in reset_context
+    assert "clearProps: 'transform,opacity,visibility'" in reset_context
     unavailable_fallback = runtime.split("syMotion = 'unavailable'", 1)[1].split(
         "return;", 1
     )[0]

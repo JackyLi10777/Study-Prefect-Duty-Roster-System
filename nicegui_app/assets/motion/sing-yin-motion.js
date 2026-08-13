@@ -257,7 +257,7 @@
     if (!contract) return;
     element.dataset.syMotionPatternReady = 'true';
     element.dataset.syMotionKind = contract.kind;
-    const targets = Array.from(element.querySelectorAll(':scope > [data-sy-motion-item]')).slice(0, 8);
+    const targets = Array.from(element.querySelectorAll('[data-sy-motion-item]')).slice(0, 8);
     const activeTargets = targets.length ? targets : [element];
     if (reducedMotion() || !window.gsap) {
       completeMotionPattern(element);
@@ -306,6 +306,13 @@
       timeline?.kill();
       motionPatternTimelines.delete(element);
       intersectionObserver?.unobserve(element);
+      const targets = Array.from(element.querySelectorAll('[data-sy-motion-item]')).slice(0, 8);
+      window.gsap?.set([element, ...targets], { clearProps: 'transform,opacity,visibility' });
+      delete element.dataset.syMotionPatternObserved;
+      delete element.dataset.syMotionPatternPending;
+      delete element.dataset.syMotionPatternReady;
+      delete element.dataset.syMotionPatternComplete;
+      delete element.dataset.syMotionKind;
     });
   };
 

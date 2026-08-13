@@ -33,7 +33,7 @@
 > revision、授權、SHA-256、資產權利、採納／拒絕理由及移除方式見
 > [版本化來源清單](design_system/external_design_sources.v1.json)。此段只描述目前分支
 > 的來源狀態；線上版本仍以上方生成狀態為準。
-
+>
 > **手機優先操作（rc57 已部署）：** Android／iPhone 的每週主流程已收斂為「選擇週次 → 停開／請假 → 規則摘要 → 準備狀態 → 生成」。手機抽屜使用四個獨立圓角狀態方格，不再繼承桌面圓形旋鈕；草稿以單日六崗位、星期摘要、共用底部編輯面板及單一未保存操作列呈現，桌面仍保留 PDF 式矩陣。交易、CAS、command ID、公平及 PDF 語意沒有改動。正式網址的真實 Chrome 矩陣已覆蓋 320／360／390／412／430px、844×390 橫向及 768／820px 平板，所有記錄路由 CLS 均為 `0`，沒有非預期 browser error。完整機器證據與仍待實體 Android 完成的真人項目見[手機操作驗收](docs/MOBILE_OPERATIONS_ACCEPTANCE.md)。
 
 [English README](README-EN.md) · [GitHub repository](https://github.com/JackyLi10777/Study-Prefect-Duty-Roster-System) · [MIT License](LICENSE)

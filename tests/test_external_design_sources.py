@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
+import shutil
 
 import pytest
 
@@ -30,6 +32,9 @@ def test_external_design_sources_are_versioned_and_non_executable_by_default() -
         for record in records
         if record.decision in {"adopt-guidance", "adapt-behaviour", "reference-limited"}
     )
+    gsap = next(record for record in records if record.source_id == "gsap")
+    assert gsap.runtime_artifact_path == "nicegui_app/assets/vendor/gsap-3.13.0.min.js"
+    assert gsap.license_evidence_path == "nicegui_app/assets/vendor/gsap-package.json"
 
 
 def test_reference_only_sources_do_not_claim_asset_rights() -> None:
@@ -50,3 +55,31 @@ def test_manifest_rejects_an_unreviewed_runtime_import(tmp_path) -> None:
 
     with pytest.raises(ExternalDesignSourceContractError, match="Unreviewed executable"):
         load_external_design_sources(candidate)
+
+
+@pytest.mark.parametrize("value", ["false", "true", 0, 1, None])
+def test_manifest_requires_runtime_import_to_be_a_json_boolean(tmp_path, value) -> None:
+    payload = json.loads(SOURCE_MANIFEST_PATH.read_text(encoding="utf-8"))
+    payload["sources"][0]["runtimeImport"] = value
+    candidate = tmp_path / "external-design-sources.json"
+    candidate.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ExternalDesignSourceContractError, match="JSON Boolean"):
+        load_external_design_sources(candidate)
+
+
+def test_runtime_import_is_bound_to_local_artifact_and_licence_hashes(tmp_path: Path) -> None:
+    root = tmp_path / "repository"
+    manifest = root / "design_system" / "external_design_sources.v1.json"
+    runtime_dir = root / "nicegui_app" / "assets" / "vendor"
+    manifest.parent.mkdir(parents=True)
+    runtime_dir.mkdir(parents=True)
+    shutil.copy2(SOURCE_MANIFEST_PATH, manifest)
+    source_root = SOURCE_MANIFEST_PATH.parents[1]
+    for name in ("gsap-3.13.0.min.js", "gsap-package.json"):
+        shutil.copy2(source_root / "nicegui_app" / "assets" / "vendor" / name, runtime_dir / name)
+
+    assert next(record for record in load_external_design_sources(manifest) if record.runtime_import)
+    (runtime_dir / "gsap-3.13.0.min.js").write_text("tampered", encoding="utf-8")
+    with pytest.raises(ExternalDesignSourceContractError, match="runtime artifact digest mismatch"):
+        load_external_design_sources(manifest)

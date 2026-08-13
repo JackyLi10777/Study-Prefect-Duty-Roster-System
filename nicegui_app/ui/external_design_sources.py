@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import json
 from pathlib import Path
 from typing import Literal
@@ -44,6 +45,44 @@ class ExternalDesignSourceRecord:
     adopted_concepts: tuple[str, ...]
     runtime_import: bool
     removal: str
+    runtime_artifact_path: str | None = None
+    license_evidence_path: str | None = None
+
+
+def _verified_file_digest(
+    *,
+    manifest_path: Path,
+    relative_path: object,
+    expected_digest: object,
+    evidence_name: str,
+) -> str:
+    """Verify one repository-relative runtime or licence artifact."""
+
+    if not isinstance(relative_path, str) or not relative_path.strip():
+        raise ExternalDesignSourceContractError(f"GSAP {evidence_name} path is required")
+    if not isinstance(expected_digest, str) or len(expected_digest) != 64:
+        raise ExternalDesignSourceContractError(f"GSAP {evidence_name} SHA-256 is required")
+    try:
+        int(expected_digest, 16)
+    except ValueError as exc:
+        raise ExternalDesignSourceContractError(
+            f"GSAP {evidence_name} SHA-256 is malformed"
+        ) from exc
+
+    repository_root = manifest_path.resolve().parent.parent
+    candidate = (repository_root / relative_path).resolve()
+    try:
+        candidate.relative_to(repository_root)
+    except ValueError as exc:
+        raise ExternalDesignSourceContractError(
+            f"GSAP {evidence_name} must remain inside the repository"
+        ) from exc
+    if not candidate.is_file():
+        raise ExternalDesignSourceContractError(f"GSAP {evidence_name} file is missing")
+    actual_digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
+    if actual_digest != expected_digest.lower():
+        raise ExternalDesignSourceContractError(f"GSAP {evidence_name} digest mismatch")
+    return relative_path
 
 
 def load_external_design_sources(
@@ -65,6 +104,10 @@ def load_external_design_sources(
     records: list[ExternalDesignSourceRecord] = []
     seen_ids: set[str] = set()
     for raw in payload.get("sources", []):
+        if "runtimeImport" in raw and not isinstance(raw["runtimeImport"], bool):
+            raise ExternalDesignSourceContractError(
+                f"Design source {raw.get('id', '<unknown>')} runtimeImport must be a JSON Boolean"
+            )
         required = (
             "id",
             "sourceUrl",
@@ -85,10 +128,25 @@ def load_external_design_sources(
         if source_id in seen_ids:
             raise ExternalDesignSourceContractError(f"Duplicate design source: {source_id}")
         seen_ids.add(source_id)
-        runtime_import = bool(raw["runtimeImport"])
+        runtime_import = raw["runtimeImport"]
         if runtime_import and source_id != _ALLOWED_RUNTIME_SOURCE:
             raise ExternalDesignSourceContractError(
                 f"Unreviewed executable design source is forbidden: {source_id}"
+            )
+        runtime_artifact_path: str | None = None
+        license_evidence_path: str | None = None
+        if runtime_import:
+            runtime_artifact_path = _verified_file_digest(
+                manifest_path=path,
+                relative_path=raw.get("runtimeArtifactPath"),
+                expected_digest=raw.get("sourceArchiveSha256"),
+                evidence_name="runtime artifact",
+            )
+            license_evidence_path = _verified_file_digest(
+                manifest_path=path,
+                relative_path=raw.get("licenseEvidencePath"),
+                expected_digest=raw.get("licenseSha256"),
+                evidence_name="licence evidence",
             )
         records.append(
             ExternalDesignSourceRecord(
@@ -104,6 +162,8 @@ def load_external_design_sources(
                 adopted_concepts=tuple(str(item) for item in raw.get("adoptedConcepts", [])),
                 runtime_import=runtime_import,
                 removal=str(raw["removal"]),
+                runtime_artifact_path=runtime_artifact_path,
+                license_evidence_path=license_evidence_path,
             )
         )
     if not records:

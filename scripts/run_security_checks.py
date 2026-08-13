@@ -208,8 +208,15 @@ def _is_public_design_source_digest(
     sources = payload.get("sources")
     if not isinstance(sources, list):
         return False
+    canonical_lines = json.dumps(payload, ensure_ascii=False, indent=2).splitlines()
+    if lines != canonical_lines:
+        return False
     match = _PUBLIC_DESIGN_SOURCE_DIGEST.fullmatch(line)
     if match is None:
+        return False
+    # Canonical two-space JSON places only direct ``sources[*]`` fields at six
+    # spaces.  Nested or top-level values must never inherit this exemption.
+    if len(line) - len(line.lstrip(" ")) != 6:
         return False
     field = match.group("field")
     digest = match.group("digest")

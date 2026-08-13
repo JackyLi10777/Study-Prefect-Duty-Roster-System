@@ -51,7 +51,7 @@ The current frontend follows **Quiet Command Center with Editorial Sacred Restra
 > the [versioned source ledger](design_system/external_design_sources.v1.json). This is
 > branch-source evidence only; the generated status block above remains the authority
 > for the deployed version.
-
+>
 > **Mobile-first operations (deployed in rc57):** the Android／iPhone weekly path is week selection → closure／leave → rule summary → readiness → generation. The drawer uses four dedicated rectangular state tiles rather than desktop rotary controls; phone drafts show one weekday and six posts, weekday summaries, one shared bottom sheet, and one unsaved-change dock. Desktop retains the PDF-like matrix and the same transaction, CAS, command-ID, fairness, and PDF semantics. Real Chrome against the canonical site covered 320／360／390／412／430 px phones, 844×390 landscape, and 768／820 px tablets; every recorded route had CLS `0` and no unexpected browser error. See [mobile operations acceptance](docs/MOBILE_OPERATIONS_ACCEPTANCE.md) for machine evidence and the still-pending physical Android human check.
 
 [Traditional Chinese README](README.md) · [Operator guide](docs/OPERATOR_GUIDE.md)

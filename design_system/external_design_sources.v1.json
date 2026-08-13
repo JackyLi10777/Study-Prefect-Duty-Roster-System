@@ -102,8 +102,10 @@
       "revision": "3.13.0",
       "author": "GreenSock",
       "license": "GSAP Standard License",
-      "licenseSha256": null,
-      "sourceArchiveSha256": null,
+      "licenseSha256": "3176e00e3521a10d437cd0c771b858c71bc89700e5a5b64a157755805d54731f",
+      "sourceArchiveSha256": "96c01b81f44a3290e2b4532f55e2c9534b2adc43273a19f3756b2cb41f0fd0b6",
+      "runtimeArtifactPath": "nicegui_app/assets/vendor/gsap-3.13.0.min.js",
+      "licenseEvidencePath": "nicegui_app/assets/vendor/gsap-package.json",
       "assetRights": "Existing locally vendored runtime only; no external media.",
       "decision": "existing-runtime",
       "adoptedConcepts": [

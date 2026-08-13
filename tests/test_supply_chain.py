@@ -258,6 +258,22 @@ def test_secret_scan_ignores_only_schema_bound_design_source_digests(
         str(relative_path), invalid_line, tmp_path
     )
 
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    nested_digest = payload["sources"][0]["revision"]
+    payload["sources"][0]["evidence"] = {"revision": nested_digest}
+    ledger.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    nested_lines = ledger.read_text(encoding="utf-8").splitlines()
+    nested_line = next(
+        index
+        for index, line in enumerate(nested_lines, start=1)
+        if '"revision"' in line and len(line) - len(line.lstrip(" ")) == 8
+    )
+    assert not _is_public_design_source_digest(
+        str(relative_path), nested_line, tmp_path
+    )
+
 
 def test_secret_scan_excludes_only_the_exact_manifest_generated_brand_payload(
     tmp_path: Path,
