@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 30
     steps:
       # v4 and v3 tags resolved from their first-party repositories on 2026-07-22.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: github/codeql-action/init@08d09a53f0f5d694f253bd25732e4429c9e9337f # v3
