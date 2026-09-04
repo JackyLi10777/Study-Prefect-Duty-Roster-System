@@ -14,7 +14,7 @@ from nicegui_app.access_context import (
     Principal,
     PrincipalExpiredError,
 )
-from nicegui_app.services.guest_adapter import GuestWorkspaceAdapter
+from nicegui_app.services.guest_adapter import DEMO_POLICY_VERSION, GuestWorkspaceAdapter
 from nicegui_app.services.guest_workspace import GuestWorkspaceRegistry
 from nicegui_app.services.workflow_types import (
     PrefectInput,
@@ -263,6 +263,60 @@ def test_complete_guest_roster_path_uses_real_policy_but_only_demo_fairness() ->
     assert report.fairness_ledger_balanced
     assert "demo_data_only" in report.note_codes
     assert all(row.name_zh and not row.name_zh.isascii() for row in report.contributions)
+
+
+def test_guest_regeneration_refreshes_policy_version_but_publication_preserves_provenance() -> None:
+    registry = GuestWorkspaceRegistry(SECRET)
+    adapter = _adapter(registry)
+    draft = adapter.generate_and_save_draft(WEEK_START)
+
+    view = registry.get_workspace(
+        session_id="guest-session",
+        workspace_id="workspace-1",
+        tab_id="tab-1",
+    )
+    legacy_draft_state = view.state
+    legacy_draft_state["weeks"][0]["policyVersion"] = "guest-demo-legacy"
+    registry.replace_state(
+        session_id="guest-session",
+        workspace_id="workspace-1",
+        tab_id="tab-1",
+        expected_revision=view.revision,
+        command_id="install-legacy-draft-policy",
+        state=legacy_draft_state,
+    )
+
+    regenerated = adapter.generate_and_save_draft(
+        WEEK_START,
+        expected_week_version=draft.version,
+    )
+    refreshed_view = registry.get_workspace(
+        session_id="guest-session",
+        workspace_id="workspace-1",
+        tab_id="tab-1",
+    )
+    assert refreshed_view.state["weeks"][0]["policyVersion"] == DEMO_POLICY_VERSION
+
+    published_state = refreshed_view.state
+    published_state["weeks"][0]["policyVersion"] = "guest-demo-published"
+    registry.replace_state(
+        session_id="guest-session",
+        workspace_id="workspace-1",
+        tab_id="tab-1",
+        expected_revision=refreshed_view.revision,
+        command_id="install-published-policy-provenance",
+        state=published_state,
+    )
+    adapter.publish(draft.id, expected_week_version=regenerated.version)
+
+    with pytest.raises(WorkflowError, match="already published"):
+        adapter.generate_and_save_draft(WEEK_START)
+    final_view = registry.get_workspace(
+        session_id="guest-session",
+        workspace_id="workspace-1",
+        tab_id="tab-1",
+    )
+    assert final_view.state["weeks"][0]["policyVersion"] == "guest-demo-published"
 
 
 def test_guest_post_publication_adjustment_is_policy_checked_and_idempotent() -> None:

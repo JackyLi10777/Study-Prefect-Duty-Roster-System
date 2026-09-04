@@ -7,7 +7,7 @@ from threading import Barrier
 
 import pytest
 
-from nicegui_app.config import PREFECT_SEED_PATH
+from nicegui_app.config import POLICY_VERSION, PREFECT_SEED_PATH
 from nicegui_app.services.roster_workflow import RosterWorkflow, WorkflowConflictError, WorkflowError
 
 
@@ -56,6 +56,44 @@ def test_generation_saves_and_replaces_a_draft_with_automatic_backups(workflow: 
     assert second.backup_path.exists()
     assert len(list(second.backup_path.parent.glob("*.sqlite3"))) == 2
     assert workflow.prefect_loads() == before_loads
+
+
+def test_draft_regeneration_refreshes_policy_version_but_publication_preserves_provenance(
+    workflow: RosterWorkflow,
+) -> None:
+    draft = workflow.generate_and_save_draft(WEEK_START)
+    with sqlite3.connect(workflow.database_path) as connection:
+        connection.execute(
+            "UPDATE roster_weeks SET policy_version = ? WHERE id = ?",
+            ("legacy-policy", draft.id),
+        )
+
+    regenerated = workflow.generate_and_save_draft(
+        WEEK_START,
+        expected_week_version=draft.version,
+    )
+    with sqlite3.connect(workflow.database_path) as connection:
+        refreshed = connection.execute(
+            "SELECT policy_version FROM roster_weeks WHERE id = ?",
+            (draft.id,),
+        ).fetchone()
+    assert refreshed == (POLICY_VERSION,)
+
+    with sqlite3.connect(workflow.database_path) as connection:
+        connection.execute(
+            "UPDATE roster_weeks SET policy_version = ? WHERE id = ?",
+            ("published-policy", draft.id),
+        )
+    workflow.publish(draft.id, expected_week_version=regenerated.version)
+
+    with pytest.raises(WorkflowError, match="already published"):
+        workflow.generate_and_save_draft(WEEK_START)
+    with sqlite3.connect(workflow.database_path) as connection:
+        published = connection.execute(
+            "SELECT policy_version FROM roster_weeks WHERE id = ?",
+            (draft.id,),
+        ).fetchone()
+    assert published == ("published-policy",)
 
 
 def test_draft_generation_command_replays_without_incrementing_version(
