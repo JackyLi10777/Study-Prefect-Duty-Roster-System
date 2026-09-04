@@ -59,20 +59,15 @@ def test_duty_weights_match_school_policy() -> None:
 
 
 def test_room_time_windows_match_school_policy() -> None:
-    assert ROOM_OPENING_TIME_WINDOWS[DutyPost.ASSIST_IN_CHARGE] == ("15:40", "18:30")
-    assert ROOM_OPENING_TIME_WINDOWS[DutyPost.ROOM_302] == ("15:40", "18:30")
-    assert ROOM_OPENING_TIME_WINDOWS[DutyPost.ROOM_303] == ("15:40", "17:00")
-    assert ROOM_OPENING_TIME_WINDOWS[DutyPost.ROOM_202] == ("15:40", "17:00")
+    assert set(ROOM_OPENING_TIME_WINDOWS) == set(DutyPost)
+    assert set(ROOM_OPENING_TIME_WINDOWS.values()) == {("15:40", "17:00")}
     assert DUTY_TIME_WINDOWS is ROOM_OPENING_TIME_WINDOWS
 
 
 def test_service_time_is_distinct_from_room_opening_time() -> None:
     assert set(DUTY_SERVICE_TIME_WINDOWS) == set(DutyPost)
     assert set(DUTY_SERVICE_TIME_WINDOWS.values()) == {("15:40", "17:00")}
-    assert (
-        DUTY_SERVICE_TIME_WINDOWS[DutyPost.ROOM_302]
-        != ROOM_OPENING_TIME_WINDOWS[DutyPost.ROOM_302]
-    )
+    assert DUTY_SERVICE_TIME_WINDOWS is not ROOM_OPENING_TIME_WINDOWS
 
 
 def test_generated_roster_preserves_non_negotiable_rules() -> None:

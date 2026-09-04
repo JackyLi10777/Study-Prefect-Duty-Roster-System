@@ -128,7 +128,7 @@ def test_presentation_serializes_one_dated_matrix_with_private_and_public_bounda
         "version": 3,
         "status": "draft",
     }
-    assert room_302["openingTime"] == {"start": "15:40", "end": "18:30"}
+    assert room_302["openingTime"] == {"start": "15:40", "end": "17:00"}
     assert room_302["serviceTime"] == {"start": "15:40", "end": "17:00"}
     assert room_302["cells"][0]["assignmentId"] == 91
 

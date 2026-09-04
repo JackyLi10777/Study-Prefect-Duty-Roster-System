@@ -277,6 +277,7 @@ class RosterLifecycleMixin:
                     raise WorkflowError("This roster is already published; use a post-publication adjustment instead.")
                 else:
                     week.version += 1
+                    week.policy_version = POLICY_VERSION
                     week.history_priority_multiplier = normalized_multiplier
                     week.assist_assignment_mode = normalized_assist_mode
                     week.generated_at = now

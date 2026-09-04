@@ -363,10 +363,10 @@ The 2026-07-16 verification-efficiency refinement is complete in the source repo
 - New weeks default in the UI to fixed-weekday Assist. assignment (`legacy_fixed_weekday`); existing weeks retain their persisted mode. With an unchanged active AHP directory and availability, canonical weekdays repeat. Recorded leave uses a qualified substitute for the affected duty; generation stops with a clear vacancy explanation when no substitute exists.
 - Flexible weekly Assist. assignment (`flexible_weekly`) uses a deterministic week key, so the same directory, availability, leave and week reproduce the same result. Persistent fairness history remains the primary cost; previous-week weekday repetition is avoided when availability and feasibility allow. Translated labels are presentation only and never become rule inputs.
 - For every prefect, selected availability days are eligible and unselected days are unavailable; neither Assist. mode nor room generation can override this boundary.
-- Room 302: one prefect, Monday-Friday; room opening display is 15:40-18:30, while actual duty/service credit is 15:40-17:00.
+- Room 302: one prefect, Monday-Friday, 15:40-17:00.
 - Room 303: two prefects, Monday-Friday, 15:40-17:00.
 - Room 202: two prefects, Monday/Wednesday/Thursday only, 15:40-17:00.
-- Assist. in charge follows the same 15:40-17:00 actual duty/service window even where the related room-opening display extends to 18:30.
+- Assist. in charge follows the same 15:40-17:00 room-opening and actual duty/service window.
 - No duplicate same-day duty and no consecutive-day duty.
 - Weights: Assist. in charge and Room 302 = 1.0; Room 303 and Room 202 = 1.5.
 - Lower persistent `history_weight` receives higher priority.

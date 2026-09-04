@@ -85,12 +85,12 @@ DUTY_WEIGHTS: dict[DutyPost, float] = {
 }
 
 
-# A room can remain open after the prefect's scheduled service has ended.  Keep
-# these two concepts separate so certificates never turn a room-closing time
-# into service credit.
+# Room availability and scheduled prefect service are separate policy concepts.
+# Their windows currently match, but retaining both mappings prevents future
+# room-opening changes from silently changing service-credit calculations.
 ROOM_OPENING_TIME_WINDOWS: dict[DutyPost, tuple[str, str]] = {
-    DutyPost.ASSIST_IN_CHARGE: ("15:40", "18:30"),
-    DutyPost.ROOM_302: ("15:40", "18:30"),
+    DutyPost.ASSIST_IN_CHARGE: ("15:40", "17:00"),
+    DutyPost.ROOM_302: ("15:40", "17:00"),
     DutyPost.ROOM_303: ("15:40", "17:00"),
     DutyPost.ROOM_202: ("15:40", "17:00"),
 }

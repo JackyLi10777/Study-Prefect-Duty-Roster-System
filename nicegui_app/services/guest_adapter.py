@@ -820,6 +820,7 @@ class GuestWorkspaceAdapter:
             raise WorkflowError("This demo roster is already published; use a demo adjustment instead.")
         else:
             week["version"] = int(week["version"]) + 1
+            week["policyVersion"] = DEMO_POLICY_VERSION
             week["historyPriorityMultiplier"] = float(history_priority_multiplier)
             week["assistAssignmentMode"] = normalized_assist_mode
             week["generatedAt"] = _datetime_text(now)
