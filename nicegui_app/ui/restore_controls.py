@@ -55,6 +55,9 @@ class RestoreControls:
                     "color=negative data-testid=confirm-restore-action"
                 ).classes("min-h-[44px]")
         self.dialog.on_value_change(lambda event: self.clear_consent() if not event.value else None)
+        # Quasar retains its focus trap during the leave transition. Return focus
+        # after hide, not just when the server changes the dialog value.
+        self.dialog.on("hide", js_handler=f"() => document.getElementById('c{self.ready.id}')?.focus()")
         self.sync()
 
     def sync(self) -> None:
