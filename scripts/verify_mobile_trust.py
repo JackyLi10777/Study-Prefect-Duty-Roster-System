@@ -109,7 +109,11 @@ def _check(page, base, case, mode, results, persist):
                         "cold": cold, "firstMounted": first, "coldBudgetClaimed": False})
         persist()
         panel = page.get_by_test_id(retained_id)
-        panel.evaluate("node => { window.__d3bNodes = [...node.querySelectorAll('*')]; }")
+        # The ffa5c4e diagnostic captured only Quasar's two transient ripple
+        # spans disappearing after a button press. Keep every other descendant
+        # in the identity check; GC samples and growth budgets stay unchanged.
+        panel.evaluate("""node => { window.__d3bNodes = [...node.querySelectorAll('*')]
+            .filter(child => !child.closest('.q-ripple')); }""")
         if route == "/engineering":
             panel.evaluate("""node => { window.__d3bControls = [...node.querySelectorAll(
                 '[data-testid$="-filter"], input, [data-testid="engineering-evidence-table"]')]; }""")

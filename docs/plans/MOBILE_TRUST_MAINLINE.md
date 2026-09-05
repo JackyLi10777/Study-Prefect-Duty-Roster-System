@@ -97,3 +97,11 @@ heading links/history and unknown-fragment non-transmission. Cold and retained
 measurements remain separate; the existing growth budgets are unchanged.
 This diagnostic is not the full release matrix. Browser findings remain open
 until a clean exact-source run passes; prior failing artifacts are retained.
+
+The initial `db70b965` browser failure was reproduced at `ffa5c4e`: the only
+disconnected descendants were Quasar's `q-ripple` and `q-ripple__inner--leave`
+animation spans. Stable controls, inputs and the table root remained connected.
+The diagnostic excludes only the ripple subtree from persistent-node identity,
+not from heap/DOM/listener measurement. It retains the original GC, 20 cycles,
+budgets, all other node identities, filter values and post-cycle live callbacks.
+Both failing isolated artifact directories remain available for review.
