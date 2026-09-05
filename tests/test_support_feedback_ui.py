@@ -27,7 +27,7 @@ def test_guest_report_markup_is_browser_only_and_attachment_free() -> None:
     assert "action=" not in markup
     assert "method=" not in markup
     assert "support inbox" not in markup.lower()
-    assert '<details class="sy-support-details">' in markup
+    assert '<details class="sy-support-details" id="sy-support-details"' in markup
     assert 'id="sy-support-browser-result-actions"' in markup
     assert 'id="sy-support-browser-download" disabled' not in markup
     assert '<option value="rosters" selected>' in markup

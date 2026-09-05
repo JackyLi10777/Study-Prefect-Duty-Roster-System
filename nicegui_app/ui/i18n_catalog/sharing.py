@@ -1,6 +1,14 @@
 """Bilingual copy for deliberate, read-only roster sharing."""
 
 MESSAGES = {
+    "access_summary_title": {"zh-HK": "目前存取狀態", "en": "Current access status"},
+    "access_summary_identity": {"zh-HK": "身份", "en": "Identity"},
+    "access_summary_session": {"zh-HK": "工作階段", "en": "Session"},
+    "access_summary_security": {"zh-HK": "權限狀態", "en": "Permission status"},
+    "access_summary_active": {"zh-HK": "目前工作階段有效", "en": "Current session active"},
+    "access_summary_expires_at": {"zh-HK": "到期：{value}", "en": "Expires: {value}"},
+    "access_summary_capabilities": {"zh-HK": "此身份具備 {count} 項權限；操作時仍會重新驗證。", "en": "This identity has {count} capabilities; each operation is rechecked."},
+    "access_technical_controls": {"zh-HK": "技術詳情與分享管理", "en": "Technical details and share management"},
     "access_control": {
         "zh-HK": "存取控制台",
         "en": "Access control",
