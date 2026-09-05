@@ -66,6 +66,7 @@ RELEASE_SOURCE_FILES = (
     # A change to a formal evidence gate invalidates old evidence. Ordinary
     # tests and documentation do not alter the deployed artifact.
     PROJECT_ROOT / "scripts" / "check_repository_hygiene.py",
+    PROJECT_ROOT / "scripts" / "mobile_verification_contract.py",
     PROJECT_ROOT / "scripts" / "run_security_checks.py",
     PROJECT_ROOT / "scripts" / "verify_guest_trial.py",
     PROJECT_ROOT / "scripts" / "verify_nicegui_mobile.py",
