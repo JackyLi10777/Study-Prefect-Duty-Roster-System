@@ -8,13 +8,14 @@
 
 | 來源 | 固定提交／狀態 | 採納及禁止覆蓋項 |
 |---|---|---|
-| protected main | `caac0a0073eacac9e1cde3ca098a9ff7aeb902bc` | PR #122至#128已合併；保留既有統一時間／一致讀取／手機基礎，新增六行共用document及PDF／PNG renderer；不是新模型或正式啟用完成，新分支仍須即時 fetch |
+| protected main | `530ba88de0fe4e0f29135977d384d72b092d9c81` | PR #122至#129已合併；保留既有統一時間／一致讀取／手機基礎，新增六行document／renderer及現模型DraftEditor；不是新模型或正式啟用完成，新分支仍須即時 fetch |
 | 手機／PNG final | `29ac083fd4d1e9a54854c8fe4436573d0c51fd5b`，2026-09-05 核對 clean | 安全PNG交付、匯入保存保護、原生sheet、調整後匯出owner、關閉候選清理及抽屜取消；逐項比對，不整檔套用 |
 | 手機／PNG 新固定checkpoint | `6780eafd036f32c2df78d8d9c944bcb4bdef4f2a`，runtime `0df41ba`；2026-09-05 核對 clean | 已合main8843480；最終clean HEAD於07:00:51 UTC完整重跑六項PASS，補足先前04340f9 full／0df focused的來源差異。390px補任及receipt／Avatar／PDF同v8已回報；137檔仍須按行為整合，不等於主線或部署 |
 | 效能／手機 overhaul | `ecdf7ae` 加未提交工作；尚無最終checkpoint | 等完成SHA；不能用移除PNG／分享橋／測試的版本覆蓋final；保留資產、首屏、名冊、gate改進的行為證據 |
 | 手機驗收契約 | `a175b776`，經PR #124合併為 `2a7c975` | 固定scenario/profile、cold/core原始證據與來源綁定檢查；producer與完整權限／實機矩陣仍待整合，不能當成全站已驗收 |
 | 名冊單人編輯 | `def953c`，經PR #127合併為 `97b0846` | 保留person editor協定、CAS、lazy filter及封存版本保護；新核心分支同步後207項相關檢查通過。PNG來源的people.py須逐行為整合，不用舊整檔覆蓋；未部署 |
 | 六行document／renderer | `55cffb1`，經PR #128合併為 `caac0a0` | 純PDF／PNG與公開安全投影、保留#125單次audit snapshot；新核心分支同步後159項相关檢查通過。UI交付、CP及20行未接入，未部署 |
+| 現模型DraftEditor | `7db8b3b`，經PR #129合併為 `530ba88` | 正式／Guest共用final-state，保留已提交收據、補任及原子讀取；歷史分頁與dialog名稱修正。新核心分支同步後186項相關檢查通過、1項來源適用性skip；未部署 |
 | 本任務 auth修正 | `cb5cccc`，經PR #122合併為 `12d6732` | 背景不poll、返回驗證、到期與撤權、已清理runtime忽略晚到回應 |
 | 本任務 release guard | `f8dbc0f`，經PR #122合併為 `12d6732` | 宣告／執行清單精確一致才pass；不代替整合新gate的部署器更新 |
 | 下載閒置回收 | `2041310`，經PR #123合併為 `2acf98f` | 最終PR head `8939dbb` 的test-and-audit／analyze通過；保留單次票據、配額及mode/session綁定；未部署 |
@@ -28,6 +29,11 @@
 SHA-256 `392a766be2e5717de592a06bfb5f8a2e23c9dc0d1fd676aa71ede0adca0a0d30`；
 已讀取核對報告、HEAD及空白porcelain狀態。來源任務另確認執行前後相同且未改檔。
 `formalReleaseExecuted=false`；這不是手機性能達標、正式release或部署證明。
+
+後續匯出介面C批保留兩條既有GET下載URL與安全控制。來源帳PNG-02曾列POST票據，
+傳輸方式的契約差異仍待收斂，不可因此宣告整項完成；URL相容與請求方式須分別審查。
+90秒期限、session／AccessMode、原子單次消費、精確MIME、no-store／nosniff、配額及
+來源版本檢查不得因保留GET而取消；原生分享15秒確認是另一個生命週期，不能取代下载票據。
 
 ## 需求矩陣
 
