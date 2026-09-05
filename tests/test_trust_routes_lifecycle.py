@@ -123,6 +123,34 @@ def test_engineering_uses_one_snapshot_and_does_not_claim_individual_category_pa
     _run(monkeypatch, check)
 
 
+def test_engineering_retains_each_control_and_callbacks_after_table_reopens(monkeypatch):
+    monkeypatch.setattr(showcase, "load_release_evidence", lambda: ReleaseEvidence(
+        "stale", 13, 13, datetime(2026, 9, 5, 12)))
+    async def check(client):
+        showcase.engineering_page()
+        panel = _find(client, "engineering-coverage-details")
+        panel.set_value(True)
+        controls = {name: _find(client, f"engineering-evidence-{name}-filter")
+                    for name in ("type", "state", "date", "view")}
+        for name, value in {"type": "quality", "state": "stale", "date": "2026-09-05", "view": "table"}.items():
+            controls[name].set_value(value)
+        _repeat(panel, client)
+        for name, value in {"type": "quality", "state": "stale", "date": "2026-09-05", "view": "table"}.items():
+            assert _find(client, f"engineering-evidence-{name}-filter") is controls[name]
+            assert controls[name].value == value
+        controls["date"].set_value("2026-09-04")
+        assert _find(client, "engineering-evidence-empty")
+        controls["date"].set_value("2026-09-05")
+        controls["state"].set_value("fail")
+        assert _find(client, "engineering-evidence-empty")
+        controls["state"].set_value("stale")
+        controls["view"].set_value("summary")
+        assert sum(e._props.get("data-testid") == "engineering-coverage-item" for e in client.elements.values()) == 5
+        controls["type"].set_value("all")
+        assert sum(e._props.get("data-testid") == "engineering-coverage-item" for e in client.elements.values()) == 13
+    _run(monkeypatch, check)
+
+
 @pytest.mark.parametrize("locale", ["zh-HK", "en"])
 @pytest.mark.parametrize("route,section_ids", [
     (showcase.platform_page, ("platform-summary-details", "platform-team-details",

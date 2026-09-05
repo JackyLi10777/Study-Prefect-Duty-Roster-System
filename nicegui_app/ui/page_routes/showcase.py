@@ -535,9 +535,9 @@ def engineering_page() -> None:
                         state_options,
                         value="all",
                         label=t("engineering_coverage_report_status"),
-                    ).classes("sy-evidence-filter")
+                    ).props("data-testid=engineering-evidence-state-filter").classes("sy-evidence-filter")
                     date_filter = ui.input(label=t("engineering_coverage_report_date")).props(
-                        "type=date clearable"
+                        "type=date clearable data-testid=engineering-evidence-date-filter"
                     ).classes("sy-evidence-filter")
                     view_filter = ui.toggle(
                         {
@@ -545,7 +545,7 @@ def engineering_page() -> None:
                             "table": t("engineering_evidence_table"),
                         },
                         value="summary",
-                    ).props(f'aria-label="{attr(t("engineering_evidence_view"))}"').classes(
+                    ).props(f'aria-label="{attr(t("engineering_evidence_view"))}" data-testid=engineering-evidence-view-filter').classes(
                         "sy-evidence-view-toggle"
                     )
 

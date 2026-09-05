@@ -110,6 +110,9 @@ def _check(page, base, case, mode, results, persist):
         persist()
         panel = page.get_by_test_id(retained_id)
         panel.evaluate("node => { window.__d3bNodes = [...node.querySelectorAll('*')]; }")
+        if route == "/engineering":
+            panel.evaluate("""node => { window.__d3bControls = [...node.querySelectorAll(
+                '[data-testid$="-filter"], input, [data-testid="engineering-evidence-table"]')]; }""")
         content = page.get_by_test_id(retained_id + "-content")
         content.evaluate("node => node.tabIndex = -1")
         for _ in range(20):
@@ -121,6 +124,8 @@ def _check(page, base, case, mode, results, persist):
                 results.append({"scenario": "disconnected-descendant-diagnostic", "mode": mode,
                                 "route": route, "nodes": disconnected})
                 persist()
+            if route == "/engineering":
+                assert page.evaluate("window.__d3bControls.every(node => node.isConnected)"), "Control or table root remounted"
             assert not disconnected, f"Retained descendants disconnected: {disconnected}"
         after = _capture_runtime_footprint(page, session, label=route + "-retained")
         _record_growth(first, after, mode=mode + route + "-retained-not-cold", results=results, persist=persist)
@@ -130,6 +135,21 @@ def _check(page, base, case, mode, results, persist):
             expect(page.get_by_test_id("engineering-evidence-table")).to_be_visible()
             expect(page.get_by_test_id("engineering-release-state")).to_have_text(report_state)
             expect(page.get_by_test_id("engineering-release-date")).to_have_text(report_date)
+            # Exercise callbacks again after retention, not just DOM/value identity.
+            page.get_by_test_id("engineering-evidence-view-filter").locator("button").first.click()
+            expect(page.get_by_test_id("engineering-coverage-item")).to_have_count(5)
+            category.click()
+            page.locator(".q-menu .q-item").first.click()
+            expect(page.get_by_test_id("engineering-coverage-item")).to_have_count(13)
+            date = page.get_by_test_id("engineering-evidence-date-filter").locator("input")
+            date.fill("1900-01-01")
+            expect(page.get_by_test_id("engineering-evidence-empty")).to_be_visible()
+            date.fill("")
+            expect(page.get_by_test_id("engineering-coverage-item")).to_have_count(13)
+            state = page.get_by_test_id("engineering-evidence-state-filter")
+            state.click()
+            page.locator(".q-menu .q-item").filter(has_text=report_state).click()
+            expect(page.get_by_test_id("engineering-coverage-item")).to_have_count(13)
         elif route == "/system-architecture":
             expect(_header(question)).to_have_attribute("aria-expanded", "true")
         _fit(page)
@@ -241,4 +261,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
