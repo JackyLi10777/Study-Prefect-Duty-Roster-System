@@ -1193,14 +1193,19 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
     def sync_feedback_generation() -> None:
         feedback_label.run_method("setAttribute", "data-export-generation", str(export_session.generation))
 
+    def set_feedback_state(kind: str) -> None:
+        urgent = kind in {"negative", "warning"}
+        for name, value in (
+            ("role", "alert" if urgent else "status"),
+            ("aria-live", "assertive" if urgent else "polite"),
+            ("aria-busy", str(kind == "ongoing").lower()),
+        ):
+            feedback_label.run_method("setAttribute", name, value)
+
     def show_feedback(message: str, *, type: str = "info", **_options) -> None:
         if not export_session.opened or feedback_label.is_deleted:
             return
-        urgent = type in {"negative", "warning"}
-        feedback_label.props(
-            f"role={'alert' if urgent else 'status'} aria-live={'assertive' if urgent else 'polite'} "
-            f"aria-busy={str(type == 'ongoing').lower()}"
-        )
+        set_feedback_state(type)
         # Download failures also write native textContent. Keep this node's
         # children outside Vue ownership so later server messages cannot update
         # a detached text vnode and silently lose the recovery reference.
@@ -1218,7 +1223,7 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
 
     def reset_feedback() -> None:
         sync_feedback_generation()
-        feedback_label.props("role=status aria-live=polite aria-busy=false")
+        set_feedback_state("info")
         feedback_label.run_method("replaceChildren", t("roster_image_export_notice"))
 
     def native_action(

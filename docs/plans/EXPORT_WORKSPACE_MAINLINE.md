@@ -125,7 +125,20 @@ an empty native element with DOM-owned text for both writers. Server updates use
 safe `replaceChildren` arguments, with the existing generation guards and ARIA
 semantics. No HTML parsing, added element, transport or budget change is involved.
 
-Same-checkpoint browser execution and full verification of this repair are pending.
+The separate signed-only `6a8b83e` run (`sy-export-mainline-cc4at2i1`) reproduced
+the same ownership problem for ARIA: a browser alert followed by a server status
+updated the text but retained `role=alert`. Dynamic role/live/busy updates now
+use native `setAttribute` too. Reopening resets all three with the text. The
+signed verifier explicitly checks this alternation and reset; `--signed-only`
+reports zero lifecycle cycles and never substitutes for the full cold run.
+
+The one-shot share timer also now waits for its unchanged monotonic deadline
+when invoked early, rather than abandoning expiry. A deterministic 14.999-to-15
+second regression proves that boundary. This is consistent with intermittent
+browser expiry failures, but those failures did not capture a clock delta and
+therefore do not independently prove that timing cause.
+
+Same-checkpoint browser execution and full verification of these repairs are pending.
 
 No controlled p75, full WebKit, physical Android/iPhone, WhatsApp or supervised
 encrypted-recovery acceptance is claimed by this batch.

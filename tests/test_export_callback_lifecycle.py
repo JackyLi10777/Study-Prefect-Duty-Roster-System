@@ -446,13 +446,17 @@ def test_server_feedback_replaces_browser_failure_without_vue_text_ownership(har
         label = ui.by_test_id("roster-export-feedback")
         for _ in range(3):
             feedback.notify("working", type="ongoing")
-            assert "role=status aria-live=polite aria-busy=true" in label.props_text
+            assert ("setAttribute", "role", "status") in label.methods
+            assert ("setAttribute", "aria-live", "polite") in label.methods
+            assert ("setAttribute", "aria-busy", "true") in label.methods
             # The real browser failure bridge owns the native node's textContent.
             label.text = "browser fetch failure"
             feedback.notify("capacity rejected\nREQ-FIXTURE", type="warning")
             assert label.text == "capacity rejected\nREQ-FIXTURE"
             assert ("replaceChildren", "capacity rejected\nREQ-FIXTURE") in label.methods
-            assert "role=alert aria-live=assertive aria-busy=false" in label.props_text
+            assert ("setAttribute", "role", "alert") in label.methods
+            assert ("setAttribute", "aria-live", "assertive") in label.methods
+            assert ("setAttribute", "aria-busy", "false") in label.methods
         return None
 
     monkeypatch.setattr(page_shared, "_prepare_export_document", prepare)
