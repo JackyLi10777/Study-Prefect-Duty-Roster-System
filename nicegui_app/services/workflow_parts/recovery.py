@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from functools import lru_cache
+import re
 
 from alembic.config import Config
 from alembic.script import ScriptDirectory
@@ -365,8 +366,12 @@ class RecoveryWorkflowMixin:
             "migrationRequired": migration_required,
         }
 
-    def restore_backup(self, backup_path: Path) -> dict[str, object]:
+    def restore_backup(self, backup_path: Path, *, expected_sha256: str | None = None) -> dict[str, object]:
         """Preflight a snapshot in isolation, then restore with automatic rollback."""
+        if expected_sha256 is not None and (
+            type(expected_sha256) is not str or re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is None
+        ):
+            raise WorkflowError("The reviewed backup checksum is invalid. Review the backup again.")
         try:
             with self.maintenance.maintenance("restore"):
                 managed_directory = self.backup_dir.resolve()
@@ -380,6 +385,8 @@ class RecoveryWorkflowMixin:
                 prepared_path: Path | None = None
                 try:
                     staged_path, verification = self._stage_restore_source(requested_path)
+                    if expected_sha256 is not None and verification["sha256"] != expected_sha256:
+                        raise WorkflowError("The selected backup changed after review. Review and confirm it again.")
                     prepared_path = self._prepare_restore_candidate(
                         staged_path,
                         expected_sha256=str(verification["sha256"]),

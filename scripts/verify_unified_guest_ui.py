@@ -1140,18 +1140,17 @@ def _exercise_handover_reset_restore(page: Page, guest_url: str) -> dict[str, ob
 
     _open_route(page, guest_url, "/settings")
     page.get_by_test_id("restore-ready-action").wait_for(state="visible", timeout=20_000)
+    assert page.get_by_test_id("restore-ready-action").is_disabled()
+    page.get_by_test_id("restore-backup-choice").click()
+    page.get_by_role("option").first.click()
     page.get_by_test_id("restore-ready-action").click()
-    # The handover action already exists before restore, so it cannot be used
-    # as a completion signal. Wait for the intentional settings-page reload;
-    # otherwise a following route change can race the restore callback and be
-    # overwritten by its late ``ui.navigate.reload()``.
-    with page.expect_navigation(
-        url=re.compile(r".*/settings(?:[?#].*)?$"),
-        wait_until="domcontentloaded",
-        timeout=30_000,
-    ):
-        page.get_by_test_id("confirm-restore-action").click()
-    _wait_for_app(page)
+    page.get_by_test_id("restore-confirm-dialog").wait_for(state="visible", timeout=20_000)
+    assert page.get_by_test_id("confirm-restore-action").is_disabled()
+    page.locator("[data-testid='restore-confirmation-text'] input, input[data-testid='restore-confirmation-text']").fill("確認還原備份")
+    page.get_by_test_id("confirm-restore-action").click()
+    # Only the durable result receipt proves completion; review does not reload.
+    page.get_by_test_id("restore-success-receipt").wait_for(state="visible", timeout=30_000)
+    assert not page.get_by_test_id("restore-failure-receipt").is_visible()
     page.get_by_test_id("handover-package-ready-action").wait_for(state="visible", timeout=30_000)
     _assert_fixture_directory(page, guest_url)
     _open_route(page, guest_url, "/")

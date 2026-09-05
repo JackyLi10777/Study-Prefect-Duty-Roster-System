@@ -30,6 +30,7 @@ from nicegui_app.ui.page_shared import (
     _tone_badge,
 )
 from nicegui_app.ui.reference_navigation import render_page_toc, render_reference_pager
+from nicegui_app.ui.restore_controls import RestoreControls
 from nicegui_app.ui.shell import page_shell
 
 @ui.page("/handover")
@@ -463,39 +464,7 @@ async def settings_page() -> None:
                     icon="add_to_drive",
                     on_click=create_verified_backup,
                 ).props("outline data-testid=create-verified-backup-action").classes("mt-3")
-                selected_backup = ui.select(
-                    label=t("select_backup"),
-                    options=backup_options,
-                    value=next(iter(backup_options)),
-                ).classes("w-full mt-4")
-
-                with ui.dialog() as restore_dialog, ui.card().classes("sy-surface w-full max-w-md p-6"):
-                    ui.label(t("confirm_restore")).classes("text-lg font-semibold")
-                    ui.label(t("restore_warning")).classes("text-sm text-[var(--sy-muted)] mt-2")
-
-                    async def restore_selected_backup() -> None:
-                        backup_path = Path(str(selected_backup.value))
-                        restore_dialog.close()
-                        result = await _run_with_progress(
-                            lambda: workflow.restore_backup(backup_path),
-                            title_key="progress_restore_title",
-                            working_key="progress_restore_working",
-                            icon="restore",
-                        )
-                        if result is not _OPERATION_FAILED:
-                            ui.notify(t("backup_restored"), type="positive")
-                            ui.navigate.reload()
-
-                    with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5"):
-                        ui.button(t("cancel"), icon="close", on_click=restore_dialog.close).props("flat")
-                        ui.button(t("confirm_restore"), icon="restore", on_click=restore_selected_backup).props(
-                            "color=negative data-testid=confirm-restore-action"
-                        )
-                ui.button(
-                    t("restore_selected_backup"),
-                    icon="restore",
-                    on_click=restore_dialog.open,
-                ).props("outline data-testid=restore-ready-action").classes("sy-button-attention mt-4")
+                RestoreControls(workflow, backup_options, guest=_is_guest_mode())
             else:
                 _render_empty_state(
                     title_key="no_verified_backup_title",

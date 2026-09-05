@@ -485,7 +485,7 @@ def test_backup_dependent_actions_have_guided_disabled_empty_states() -> None:
     assert "data-testid=restore-disabled-no-backup" in pages
     assert "disable aria-disabled=true" in pages
     assert "data-testid=handover-package-ready-action" in pages
-    assert "data-testid=restore-ready-action" in pages
+    assert "RestoreControls(workflow, backup_options, guest=_is_guest_mode())" in pages
 
 
 def test_empty_state_accepts_context_specific_action_properties() -> None:
@@ -512,8 +512,9 @@ def test_secondary_pages_share_semantic_colour_and_empty_state_grammar() -> None
     assert "sy-empty-state--illustrated" in theme
     assert page_source.count("illustrated=True") == 1
     assert 'classes("sy-dashboard-history-empty")' in page_source
-    assert "sy-button-attention" in page_source
-    assert "color=negative data-testid=confirm-restore-action" in page_source
+    # The extracted restore controls' actual alertdialog and enabled state are
+    # exercised by test_settings_restore_controls, rather than route text.
+    assert "RestoreControls(workflow, backup_options, guest=_is_guest_mode())" in page_source
     assert 'classes(f"sy-acceptance-card-icon sy-fg-{state_tone}")' in page_source
 
 

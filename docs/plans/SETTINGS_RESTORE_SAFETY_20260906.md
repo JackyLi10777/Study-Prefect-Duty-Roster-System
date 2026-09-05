@@ -39,3 +39,17 @@ CI and merge. Full regression evidence must name the exact tested source.
 
 Physical-device and supervised encrypted recovery acceptance remain pending;
 this batch does not enable production or certify the entire mobile matrix.
+
+## Implementation checkpoint evidence
+
+- The initial 19 server guard tests failed against the old restore signatures;
+  all passed after the staged checksum and Guest CAS guards were added.
+- Six real NiceGUI control tests pass, including 20 retained confirmation loops,
+  stale async review suppression and duplicate submission prevention. These are
+  not browser, focus, heap, or physical-device evidence.
+- The focused restore/integrity/Guest/handover set passed 74 tests before later
+  mode/reset negatives and accessibility checks were added. Final exact-source
+  counts and browser/full results remain to be recorded externally.
+- Guest review returns the existing revision and checkpoint presence from one
+  view, with no SHA field. Reviewed restore requires that revision and checkpoint;
+  the existing registry CAS catches a change between validation and commit.

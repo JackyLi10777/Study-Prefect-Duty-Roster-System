@@ -749,6 +749,9 @@ def main() -> None:
 
         page.goto(f"{BASE_URL}/settings", wait_until="domcontentloaded")
         assert page.get_by_test_id("handover-package-ready-action").is_enabled()
+        assert page.get_by_test_id("restore-ready-action").is_disabled()
+        page.get_by_test_id("restore-backup-choice").click()
+        page.get_by_role("option").first.click()
         assert page.get_by_test_id("restore-ready-action").is_enabled()
         assert page.get_by_test_id("handover-package-disabled-no-backup").count() == 0
         assert page.get_by_test_id("restore-disabled-no-backup").count() == 0
