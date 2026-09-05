@@ -145,7 +145,7 @@ def _check(page, base, case, mode, results, persist):
             category.click()
             page.locator(".q-menu .q-item").first.click()
             expect(page.get_by_test_id("engineering-coverage-item")).to_have_count(13)
-            date = page.get_by_test_id("engineering-evidence-date-filter").locator("input")
+            date = page.get_by_test_id("engineering-evidence-date-filter")
             date.fill("1900-01-01")
             expect(page.get_by_test_id("engineering-evidence-empty")).to_be_visible()
             date.fill("")
