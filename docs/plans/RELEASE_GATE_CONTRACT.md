@@ -40,8 +40,21 @@ PowerShell bridge with valid, reduced, reordered, duplicate, malformed and old
 schema reports, including report replacement after validation. No deploy script
 is invoked, and the original database and prior worktrees remain untouched.
 
-Targeted verification: 74 Python/CLI/PowerShell contract and reader/runner tests,
+Targeted verification: 75 Python/CLI/PowerShell contract and reader/runner tests,
 plus 84 existing Windows/Worker deployment regression tests passed. These are
 fictional evidence and script tests, not real deployment or formal acceptance.
 Project governance and whitespace checks passed; the complete update suite
 must still run on the final clean checkpoint before merging.
+
+The first full run on clean `9a102c647d71845de1ef0ba513e67562093bb558`
+passed all six update checks (suite 398704 ms), completed 2026-09-05 13:38 UTC.
+Its unchanged report is retained as `logs/change-verification-9a102c6.json`,
+SHA-256 `c0b5e6d811248ebc866fffd08f706f7f1ba2c275cbbe9daa66ed05e551749b76`.
+This is working-tree/full update evidence, not formal release evidence.
+
+Subsequent review corrected a test-only catch which could swallow the test's
+own snapshot assertion. Assertions now sit outside the expected rejection
+catch; an injected corrupt returned snapshot must fail the real PowerShell
+process. The final 75 focused checks passed including this negative control.
+The previous full pass is not relabeled for the new checkpoint; another full
+run and required remote CI remain mandatory before merge.
