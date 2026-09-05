@@ -37,7 +37,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from nicegui_app.ui.design_token_contract import quasar_palette
-from scripts.verify_nicegui_mobile import _open_mobile_drawer
+from scripts.verify_nicegui_mobile import _expand_mobile_preferences, _open_mobile_drawer
 from scripts.verify_release_candidate import (
     _assert_server_console_clean,
     _free_loopback_port,
@@ -401,6 +401,7 @@ def _theme_control(page: Page, *, viewport_mode: ViewportMode) -> Locator:
         return control
 
     drawer = _open_mobile_drawer(page)
+    _expand_mobile_preferences(page)
     control = drawer.get_by_test_id("mobile-theme-control")
     if control.count() != 1:
         raise ThemeControlVerificationError("Mobile appearance control is not unique.")

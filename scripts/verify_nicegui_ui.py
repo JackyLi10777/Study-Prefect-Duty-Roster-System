@@ -350,6 +350,8 @@ def ensure_rendered_theme(page, target: str) -> None:  # type: ignore[no-untyped
         more.click()
         drawer_tools = page.get_by_test_id("mobile-drawer-tools")
         drawer_tools.wait_for(timeout=10_000)
+        from scripts.verify_nicegui_mobile import _expand_mobile_preferences
+        _expand_mobile_preferences(page)
         control = drawer_tools.get_by_test_id("mobile-theme-control")
         control.wait_for(state="visible", timeout=10_000)
     is_dark = page.locator("body.body--dark").count() == 1

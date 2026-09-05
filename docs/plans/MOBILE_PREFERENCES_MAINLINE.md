@@ -40,3 +40,22 @@ Subsequent D batches must address genuine first-use access technical controls,
 support advanced/history and showcase content, not merely collapsed eager
 expansions. Other remaining mobile pages and quiet audio/idle animation are
 separate scoped follow-ups. D1 does not claim those tasks complete.
+
+## Browser preparation boundary
+
+`verify_mobile_preferences.py` uses new fictional data and isolated origins for
+local-maintenance Admin and real isolated Guest workspaces. Guest-only gateway
+status/logout endpoints are stubbed; this is not signed Admin or actual Worker
+authentication acceptance. Reports bind source before/after, run IDs, raw cold
+20-cycle CDP samples and failure screenshots. The existing heap/DOM/listener
+capture and limits are reused unchanged. Desktop-first late theme, focus on
+Quasar hide, Escape, four narrow/landscape sizes, bilingual reload and the Guest
+exit POST/navigation are separate explicit cases, not a full page matrix.
+
+Existing verifier callers need the new user action too. Only the explicit
+`_expand_mobile_preferences` helper and calls at preference interactions are
+added to `verify_nicegui_mobile`, `verify_rc31_theme_controls`,
+`verify_nicegui_write_pipeline`, `verify_nicegui_ui` and
+`verify_semantic_icon_motion`. No generic page setup, route visit, cold baseline,
+performance collector or threshold is changed. The helper fails normally if
+the disclosure or controls cannot be reached; it has no fallback path.
