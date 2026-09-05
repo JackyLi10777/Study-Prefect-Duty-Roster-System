@@ -54,6 +54,7 @@ def test_getting_started_uses_safe_exact_week_next_action(monkeypatch, has_peopl
         assert _find(client, "start-next-action").text == expected
         assert calls == [week_start]
         panel = _find(client, "start-reference-details")
+        assert "id" not in panel._props, "Keep NiceGUI's internal id for close/focus lifecycle"
         assert not any(e._props.get("data-testid") == "reference-index" for e in client.elements.values())
         panel.set_value(True)
         initial = set(client.elements)
@@ -75,6 +76,7 @@ def test_guide_search_matches_unmounted_answers_and_retains_controls(monkeypatch
         search = _find(client, "guide-search")
         search.set_value(body)
         panel = _find(client, "guide-answer-guide-issue-pdf")
+        assert "id" not in panel._props
         assert panel.visible
         assert not _find(client, "guide-answer-guide-week-start").visible
         assert not _find(client, "guide-no-results").visible
@@ -187,6 +189,7 @@ def test_devotional_late_tone_reads_latest_preference_without_writing(monkeypatc
         assert _find(client, "devotional-return-work").visible
         preference["value"] = "comfort"
         panel = _find(client, "devotional-details")
+        assert "id" not in panel._props
         panel.set_value(True)
         tone = _find(client, "devotional-tone")
         assert tone.value == "comfort" and writes == []

@@ -164,8 +164,9 @@ def getting_started_page() -> None:
                         ui.label(t(body_key)).classes("text-sm leading-6 text-[var(--sy-muted)]")
                         action(t(action_key), icon=icon, on_click=lambda destination=route: navigate_to(destination),
                                variant="quiet")
-        reference_panel = lazy_expansion(t("start_reference_title"), icon="map", test_id="start-reference-details",
-                       render=render_reference).props("id=start-reference-map").classes("max-w-4xl")
+        with ui.element("section").classes("w-full max-w-4xl").props("id=start-reference-map"):
+            reference_panel = lazy_expansion(t("start_reference_title"), icon="map", test_id="start-reference-details",
+                                             render=render_reference)
         navigation.register("start-first-steps", lambda: None)
         navigation.register("start-reference-map", lambda: reference_panel.set_value(True))
         navigation.install()
@@ -256,8 +257,9 @@ def operator_guide_page() -> None:
                     for paragraph in values:
                         ui.label(paragraph).classes("text-sm leading-6 whitespace-pre-line text-[var(--sy-muted)]")
 
-                panels[anchor] = lazy_expansion(title, icon="help_outline",
-                    test_id=f"guide-answer-{anchor}", render=render_answer).props(f"id={anchor}")
+                with ui.element("section").classes("w-full").props(f"id={anchor}"):
+                    panels[anchor] = lazy_expansion(title, icon="help_outline",
+                        test_id=f"guide-answer-{anchor}", render=render_answer)
 
             def filter_answers() -> None:
                 query = str(search.value or "").strip().casefold()[:400]
@@ -338,7 +340,8 @@ def devotional_page() -> None:
                 ui.label(t("devotional_prayer_title")).classes("font-semibold")
                 ui.label(reflection.get("prayer", t("why_we_serve"))).classes("text-sm leading-7 whitespace-pre-line")
                 ui.label(t("devotional_prepare_body")).classes("text-sm leading-7 text-[var(--sy-muted)]")
-        details_panel = lazy_expansion(t("devotional_more"), icon="menu_book", test_id="devotional-details",
-                       render=render_details).classes("max-w-4xl").props("id=devotional-reflection")
+        with ui.element("section").classes("w-full max-w-4xl").props("id=devotional-reflection"):
+            details_panel = lazy_expansion(t("devotional_more"), icon="menu_book", test_id="devotional-details",
+                                          render=render_details)
         navigation.register("devotional-reflection", lambda: details_panel.set_value(True))
         navigation.install()
