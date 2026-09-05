@@ -28,9 +28,9 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from nicegui_app.access_context import AccessMode, Capability, CapabilityPolicy
 from nicegui_app.services.workflow_types import WorkflowError
+from nicegui_app.services.roster_document import capture_roster_document
 from nicegui_app.services.roster_presentation import (
     RosterPresentationError,
-    build_roster_presentation,
 )
 
 
@@ -554,16 +554,11 @@ class PublicRosterShareService:
         CapabilityPolicy.require(mode, Capability.EXTERNAL_DELIVERY)
 
     def _build_snapshot(self, roster_week_id: int) -> dict[str, object]:
-        week, assignments = self.workflow.roster_schedule_snapshot(roster_week_id)
-        if str(week.get("status")) != "published":
-            raise PublicRosterShareError("Only a published roster can receive a public view link.")
         try:
-            public_matrix = build_roster_presentation(
-                week,
-                assignments,
-                editable=False,
-                strict=True,
-            ).to_public_dict()
+            document = capture_roster_document(self.workflow, roster_week_id)
+            if document.snapshot.status != "published":
+                raise PublicRosterShareError("Only a published roster can receive a public view link.")
+            public_matrix = document.presentation.to_public_dict()
         except RosterPresentationError as error:
             raise PublicRosterShareError(str(error)) from error
         return {

@@ -106,6 +106,8 @@ def test_schedule_pdf_uses_the_workflow_atomic_schedule_snapshot(tmp_path, monke
 
     assert export.filename.endswith(f"_v{snapshot_week['version']}_中文.pdf")
     assert export.content.startswith(b"%PDF")
+    assert export.roster_status == snapshot_week["status"]
+    assert export.roster_version == snapshot_week["version"]
 
 
 def test_schedule_pdf_renders_a_whole_day_closure_as_one_distinct_column(tmp_path) -> None:
