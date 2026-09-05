@@ -30,3 +30,22 @@
 - **普通與 CP 各複製一套 workflow**：資格、交易、報告及 Guest 會再度出現多份權威。
 - **僅以三個通用方法為目標**：方法少不等於 Interface 容易理解；大量異構操作仍會推高常用 caller 的認知負擔。
 - **新增完整 event-sourcing／分鐘帳本／遠端服務**：本輪沒有需要重播事件或跨網路計算的需求；有效發布快照已足以準確計算報告。
+
+## Implementation checkpoint — pure policy preparation
+
+`packages/roster_policy/roster_policy/configurable.py` 提供未接入現行 runtime 的純政策編譯器：
+普通／CP 意圖輸入共用日期席位展開、不可變設定、20 行上限及整數時段。
+它不生成當值人員、不持久化設定、不初始化正式庫，也不計算已編排服務總數。
+`tests/test_configurable_roster_policy.py` 的 74 個案例涵蓋預設／自訂時段、房間、
+F1 開關、日期例外、最大列數及輸入隔離；與既有規則、文件、治理測試合計 144 項通過。
+此檢查不是完整 C 階段、正式 release 或部署驗收。
+
+接入共同操作 Module 前，仍必須完成：
+
+- 學年設定修訂、明確採用政策及不可變發布儲存；不能以瀏覽器快取代替持久設定。
+- `ApprovedUnavailable` 的核准引用由 workflow 核實並在發布交易保存；
+  純編譯器只驗證其存在，不能把任意輸入字串當成老師授權。
+- 呈現席位不暴露核准引用，但內部發布證據不可丟棄。
+- `service_minutes` 在關閉列仍表示時段長度；報告只合計有效發布且實際指派的席位，
+  不能直接加總所有編譯列。
+- 與人物資格、同日防重複、完整動態輸出及 Official／Guest Adapter 一起驗證後才切換使用。
