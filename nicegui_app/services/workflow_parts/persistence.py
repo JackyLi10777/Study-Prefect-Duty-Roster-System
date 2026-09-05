@@ -239,6 +239,26 @@ class PersistenceWorkflowMixin:
                         return path
                 operation_type = obligation.operation_type
                 roster_week_id = obligation.roster_week_id
+                reopen_obligation = obligation.status == "completed"
+
+            if reopen_obligation:
+                # A previously verified file can disappear or become invalid.
+                # Reopen the obligation before creating its replacement so both
+                # the snapshot and live receipt refer to the new recovery point.
+                # Otherwise completion skips the already-completed row and leaves
+                # a successful retry pointing at the unusable old file forever.
+                with self._session() as session:
+                    self._begin_serialized_write(session)
+                    obligation = session.scalar(select(BackupObligationRecord).where(
+                        BackupObligationRecord.command_id == command_id,
+                    ))
+                    if obligation is None:
+                        raise WorkflowError("The operation backup obligation was not found.")
+                    obligation.status = "pending"
+                    obligation.backup_path = None
+                    obligation.error = None
+                    obligation.completed_at = None
+                    session.commit()
 
             backup = self._create_and_record_backup(operation_type, roster_week_id)
             if backup.success and backup.path is not None:

@@ -1,40 +1,30 @@
-"""Unconnected SQLite Adapter for prelaunch policy revisions.
+"""Standalone test Adapter using the formal policy tables.
 
 Only the supplied Engine is used. Construction performs no I/O; schema creation
-is an explicit preparatory action, not application bootstrap or a migration.
+is an explicit isolated-test action, not application bootstrap or a migration.
 """
 
 from __future__ import annotations
 
 from sqlalchemy import (
-    CheckConstraint, Column, ForeignKeyConstraint, Integer, MetaData, String, Table, Text,
+    Column, ForeignKeyConstraint, Integer, MetaData, String, Table,
     insert, select, text, update,
 )
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.exc import SQLAlchemyError
+
+from nicegui_app.persistence.models import Base, SchoolYearPolicyCurrentRecord, SchoolYearPolicyRevisionRecord
 
 from roster_core.policy_settings import (
     PolicyCommandConflict, PolicyOperation, PolicyStorageError, PolicyVersionConflict, StoredPolicyRevision,
 )
 
 
+_revisions = SchoolYearPolicyRevisionRecord.__table__
+_current = SchoolYearPolicyCurrentRecord.__table__
+# Only the standalone test Adapter owns this receipt table. Formal commands
+# continue to use operation_commands in their caller-owned transaction.
 _metadata = MetaData()
-_revisions = Table(
-    "prelaunch_policy_revisions", _metadata,
-    Column("year_start", Integer, primary_key=True),
-    Column("revision", Integer, primary_key=True),
-    Column("document", Text, nullable=False),
-    CheckConstraint("year_start BETWEEN 1 AND 9998"),
-    CheckConstraint("revision > 0"),
-)
-_current = Table(
-    "prelaunch_policy_current", _metadata,
-    Column("year_start", Integer, primary_key=True),
-    Column("revision", Integer, nullable=False),
-    ForeignKeyConstraint(
-        ["year_start", "revision"], ["prelaunch_policy_revisions.year_start", "prelaunch_policy_revisions.revision"],
-    ),
-)
 _commands = Table(
     "prelaunch_policy_commands", _metadata,
     Column("command_id", String(64), primary_key=True),
@@ -42,18 +32,19 @@ _commands = Table(
     Column("year_start", Integer, nullable=False),
     Column("revision", Integer, nullable=False),
     ForeignKeyConstraint(
-        ["year_start", "revision"], ["prelaunch_policy_revisions.year_start", "prelaunch_policy_revisions.revision"],
+        ["year_start", "revision"], [_revisions.c.year_start, _revisions.c.revision],
     ),
 )
 
 
 def create_policy_revision_schema(connection: Connection) -> None:
-    """Preparatory schema only, inside an explicitly caller-owned connection.
+    """Create only the two canonical tables for isolated Adapter tests.
 
     The caller configures SQLite foreign keys and owns commit/rollback. No
-    standalone command table is created for the shared operation workflow.
+    standalone command table is created. This is not the full formal schema;
+    application bootstrap and recovery must use the reviewed Alembic chain.
     """
-    _metadata.create_all(connection, tables=[_revisions, _current])
+    Base.metadata.create_all(connection, tables=[_revisions, _current])
 
 
 def _read_policy_revision(
@@ -94,10 +85,11 @@ class SQLitePolicyRepository:
         self._engine = engine
 
     def create_schema(self) -> None:
-        """Initialize only these preparatory tables on the caller's Engine."""
+        """Initialize the isolated test Adapter, never the full application."""
         try:
             with self._engine.connect() as connection:
                 connection.exec_driver_sql("PRAGMA foreign_keys=ON")
+                create_policy_revision_schema(connection)
                 _metadata.create_all(connection)
                 connection.commit()
         except SQLAlchemyError as error:

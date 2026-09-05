@@ -78,7 +78,7 @@ def run_command(storage, command, action):
 def counts(engine):
     with engine.connect() as connection:
         return tuple(connection.scalar(text(f"SELECT COUNT(*) FROM {table}")) for table in (
-            "prelaunch_policy_revisions", "prelaunch_policy_current", "operation_commands",
+            "school_year_policy_revisions", "school_year_policy_current", "operation_commands",
             "audit_events", "backup_obligations",
         ))
 
@@ -93,7 +93,7 @@ def test_policy_and_existing_operation_evidence_share_the_callers_transaction(st
         assert result.revision == 1
         assert session.in_transaction()
         with engine.connect() as observer:
-            assert observer.scalar(text("SELECT COUNT(*) FROM prelaunch_policy_revisions")) == 0
+            assert observer.scalar(text("SELECT COUNT(*) FROM school_year_policy_revisions")) == 0
             assert observer.scalar(text("SELECT COUNT(*) FROM operation_commands")) == 0
         session.commit()
     with Session(engine) as session:

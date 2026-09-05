@@ -179,7 +179,7 @@ def test_candidate_readiness_proves_live_schema_upgrade_without_mutating_source(
         "--expected-source-revision",
         "0012",
         "--expected-candidate-revision",
-        "0014",
+        "0015",
         "--workspace-parent",
         workspace_parent,
         environment_overrides={
@@ -196,7 +196,7 @@ def test_candidate_readiness_proves_live_schema_upgrade_without_mutating_source(
     payload = _payload(result)
     assert payload["status"] == "pass"
     assert payload["sourceSchemaRevision"] == "0012"
-    assert payload["candidateSchemaRevision"] == "0014"
+    assert payload["candidateSchemaRevision"] == "0015"
     assert payload["onlineSnapshot"] is True
     assert payload["migrationProved"] is True
     assert payload["strictReadiness"] is True
@@ -248,7 +248,7 @@ def test_candidate_readiness_rejects_wrong_source_revision_before_workspace_use(
         "--expected-source-revision",
         "0012",
         "--expected-candidate-revision",
-        "0014",
+        "0015",
         "--workspace-parent",
         workspace_parent,
     )

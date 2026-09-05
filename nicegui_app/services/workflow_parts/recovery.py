@@ -9,7 +9,7 @@ from alembic.config import Config
 from alembic.script import ScriptDirectory
 
 from nicegui_app.config import PROJECT_ROOT
-from nicegui_app.persistence.database import current_migration_heads
+from nicegui_app.persistence.database import current_migration_heads, policy_storage_is_valid
 from nicegui_app.services.workflow_dependencies import (
     BackupResult,
     BackupRunRecord,
@@ -71,6 +71,7 @@ _DAY_CLOSURE_TABLES = _V12_PERSISTENCE_TABLES | frozenset(
 _SLOT_EXCEPTION_TABLES = _DAY_CLOSURE_TABLES | frozenset(
     {"roster_slot_exceptions"}
 )
+_POLICY_TABLES = frozenset({"school_year_policy_revisions", "school_year_policy_current"})
 # A backup must satisfy the table contract of the revision it claims to be.
 # Keeping the map explicit forces future table-creating migrations to state
 # which historical revisions legitimately predate the new table.
@@ -83,6 +84,7 @@ _REQUIRED_TABLES_BY_REVISION: dict[str, frozenset[str]] = {
     "0012": _V12_PERSISTENCE_TABLES,
     "0013": _DAY_CLOSURE_TABLES,
     "0014": _SLOT_EXCEPTION_TABLES,
+    "0015": _SLOT_EXCEPTION_TABLES | _POLICY_TABLES,
 }
 
 
@@ -229,6 +231,7 @@ class RecoveryWorkflowMixin:
                     if "backup_obligations" in table_names
                     else 0
                 )
+                policy_valid = policy_storage_is_valid(connection) if _POLICY_TABLES <= table_names else None
             finally:
                 connection.close()
         except sqlite3.Error as error:
@@ -329,6 +332,14 @@ class RecoveryWorkflowMixin:
                 ),
             }
         migration_required = revisions != current_migration_heads()
+        if (_POLICY_TABLES & table_names and policy_valid is not True):
+            return {
+                "valid": False,
+                "reasonCode": "policy_invalid",
+                "integrity": integrity,
+                "sha256": checksum,
+                "error": "Backup policy history or its current pointers are invalid.",
+            }
         if pending_obligations:
             return {
                 "valid": False,

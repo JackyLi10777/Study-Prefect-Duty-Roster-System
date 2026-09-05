@@ -11,6 +11,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -23,6 +24,36 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
     """Base class for the local SQLite schema."""
+
+
+class SchoolYearPolicyRevisionRecord(Base):
+    """Immutable canonical settings history, owned by the formal schema."""
+
+    __tablename__ = "school_year_policy_revisions"
+    __table_args__ = (
+        CheckConstraint("typeof(year_start) = 'integer' AND year_start BETWEEN 1 AND 9998", name="ck_policy_revision_year"),
+        CheckConstraint("typeof(revision) = 'integer' AND revision BETWEEN 1 AND 9223372036854775807", name="ck_policy_revision_number"),
+    )
+
+    year_start: Mapped[int] = mapped_column(Integer, primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    document: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class SchoolYearPolicyCurrentRecord(Base):
+    """One current pointer per initialized school year."""
+
+    __tablename__ = "school_year_policy_current"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["year_start", "revision"],
+            ["school_year_policy_revisions.year_start", "school_year_policy_revisions.revision"],
+            name="fk_policy_current_revision",
+        ),
+    )
+
+    year_start: Mapped[int] = mapped_column(Integer, primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
 class PrefectRecord(Base):
