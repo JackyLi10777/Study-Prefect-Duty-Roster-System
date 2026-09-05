@@ -135,9 +135,10 @@ class BusinessSettings:
             if self.business is not BusinessId.ASSIST_IN_CHARGE:
                 raise ConfigurationError("A room is required for this business, including CP groups.")
         elif not isinstance(self.room, str) or not self.room.strip() or any(
-            ord(char) < 32 or char in "\u0085\u2028\u2029" for char in self.room
+            ord(char) < 32 or 0xD800 <= ord(char) <= 0xDFFF or char in "\u0085\u2028\u2029"
+            for char in self.room
         ):
-            raise ConfigurationError("Room must be nonempty single-line text.")
+            raise ConfigurationError("Room must be nonempty single-line Unicode text.")
         else:
             object.__setattr__(self, "room", self.room.strip())
         if self.business in _WEEKLY_BUSINESSES:
