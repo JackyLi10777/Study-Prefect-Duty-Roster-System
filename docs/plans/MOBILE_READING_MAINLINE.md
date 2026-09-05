@@ -2,7 +2,8 @@
 
 Implementation base: protected main
 `d639326dbd7e438747a78e50f4bb254eddea4a1c`.
-Status: implementation and focused-test checkpoint; browser/full evidence pending.
+Status: scoped Chromium functional evidence passed on the source below;
+final-head browser/full and required CI remain separate evidence checkpoints.
 
 Only `/getting-started`, `/guide` and `/devotional` are in this batch. Preserve
 the Dashboard function and alias byte-for-byte. Do not adopt the frozen donor
@@ -66,4 +67,38 @@ The Dashboard and compatibility alias function bodies match the baseline exactly
 with isolated fictional local-maintenance and Guest data: first-use controls,
 20 retained cycles, eight reflow sizes, search, direct links, history and focus.
 It records cold and first-materialization samples separately; a retained-cycle
-pass is not a cold lifecycle or controlled performance pass. It is not yet run.
+pass is not a cold lifecycle or controlled performance pass.
+
+## Verified functional source
+
+Source `fe3c8a409d4a6c448cad7977461282eacc683d28`, tree
+`b2ff53b991735836b5668d984c06e25f0d4f7fa8`, clean before and after the run.
+Release-input fingerprint
+`19fcadaeb57c84c152a0a0f9b08f4408c38182fd6074335cf419f8364c8ebbbc`
+(339 files). Chromium `152.0.7977.76`, Playwright `1.60.0`.
+
+Report: `C:/Users/lichu/AppData/Local/Temp/sy-mobile-reading-piam6b80/report.json`
+with SHA256 `4711166ADBFA070C79321DE10A434368E698997C51F45BC6DFA292679B59BE17`.
+Isolated run IDs: local maintenance `E2E-3CB26784F941`, Guest
+`E2E-477EDEDF1F1F`. All scoped scenarios passed, zero browser errors.
+This includes the eight width checks, 20 retained opens on each route, absent
+unopened controls, search/reveal/filter preservation, direct anchors, same-anchor
+history, back/forward and return from another page. Unknown test fragments were
+not sent in the observed WebSocket frames. This is not signed-Admin or WebKit
+evidence, a bfcache-specific guarantee, or the full theme/language/mobile matrix.
+
+The first failed run `sy-mobile-reading-x6h3az5j` exposed custom anchor IDs
+overwriting NiceGUI expansion IDs. Anchors now belong to stable outer sections;
+expansion IDs and the existing shared close/focus helper remain unchanged.
+`sy-mobile-reading-a5ct1t3p` exposed an incorrect verifier label-class selector;
+the verifier now checks real direct body children. `sy-mobile-reading-ehnagsfv`
+reproduced duplicate same-anchor history; only changed hashes now push entries.
+Failed evidence directories remain intact. No thresholds were relaxed.
+
+Existing three-page UI checks now explicitly assert cold absence before opening
+details; Guest route readiness waits for permanent search/next-action controls,
+not hidden reference content. No global prewarming was introduced. Dashboard,
+other route assertions, audio, Worker and release/deployment state remain outside
+this change. 91 targeted tests and governance/hygiene checks passed before the
+functional run. Final clean-head evidence belongs in the PR, not retroactively
+in the source-bound report above.
