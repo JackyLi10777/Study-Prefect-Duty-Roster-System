@@ -44,7 +44,12 @@ separate scoped follow-ups. D1 does not claim those tasks complete.
 ## Browser preparation boundary
 
 `verify_mobile_preferences.py` uses new fictional data and isolated origins for
-local-maintenance Admin and real isolated Guest workspaces. Guest-only gateway
+local-maintenance and real isolated Guest workspaces. Local maintenance has no
+account/session logout tile: it expects three controls; Guest expects four.
+The first `5cb8291` run (`sy-mobile-preferences-kuil8ogl`) retained a failing
+four-controls assertion in the maintenance case. The harness assumption was
+corrected to the explicit access contract, without changing application rights.
+Guest-only gateway
 status/logout endpoints are stubbed; this is not signed Admin or actual Worker
 authentication acceptance. Reports bind source before/after, run IDs, raw cold
 20-cycle CDP samples and failure screenshots. The existing heap/DOM/listener

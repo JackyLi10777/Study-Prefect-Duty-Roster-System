@@ -36,7 +36,7 @@ class Element:
         return self
 
 
-@pytest.mark.parametrize("mode", [AccessMode.ADMIN, AccessMode.GUEST])
+@pytest.mark.parametrize("mode", [AccessMode.ADMIN, AccessMode.GUEST, AccessMode.LOCAL_MAINTENANCE])
 def test_preferences_mount_only_on_first_expansion_with_current_values(monkeypatch, mode):
     expansion = Element()
     scripts, rendered = [], []
@@ -66,11 +66,15 @@ def test_preferences_mount_only_on_first_expansion_with_current_values(monkeypat
     for _ in range(20):
         expansion.events["value"](SimpleNamespace(value=True))
         expansion.events["value"](SimpleNamespace(value=False))
-    assert [item["kind"] for item in rendered] == ["language", "sound", "theme", "account"]
+    expected_kinds = ["language", "sound", "theme"]
+    if mode in {AccessMode.ADMIN, AccessMode.GUEST}:
+        expected_kinds.append("account")
+    assert [item["kind"] for item in rendered] == expected_kinds
     assert rendered[0]["value"] == "mobile_setting_value_english"
     assert rendered[1]["pressed"] is True
     assert rendered[2]["value"] == "mobile_theme_dark"
-    assert rendered[3]["value"] == f"mobile_setting_account_{mode.value}"
+    if mode in {AccessMode.ADMIN, AccessMode.GUEST}:
+        assert rendered[3]["value"] == f"mobile_setting_account_{mode.value}"
     assert len(theme_controls["buttons"]) == len(sound_controls) == 1
     assert len(scripts) == 1 and "__syThemeControls" in scripts[0]
     assert "before-hide" in expansion.events

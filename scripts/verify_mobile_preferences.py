@@ -35,6 +35,7 @@ def _collapse(page, preferences):
 
 
 def _check_case(page, base_url, *, mode, results, persist):
+    expected_controls = 4 if mode == "guest" else 3
     page.goto(base_url, wait_until="domcontentloaded")
     _ready(page)
     controls = page.locator(".sy-mobile-setting-tile")
@@ -57,13 +58,13 @@ def _check_case(page, base_url, *, mode, results, persist):
             results.append({"scenario": "cold-drawer", "mode": mode, "controls": 0})
             persist()
         preferences = mobile._expand_mobile_preferences(page)
-        expect(controls).to_have_count(4)
+        expect(controls).to_have_count(expected_controls)
         if cycle == 0:
             page.evaluate("window.__d1Controls = [...document.querySelectorAll('.sy-mobile-setting-tile')]")
         assert page.evaluate("""[...document.querySelectorAll('.sy-mobile-setting-tile')]
             .every((node,index)=>node === window.__d1Controls[index])"""), "Controls were rebuilt"
         _collapse(page, preferences)
-        expect(controls).to_have_count(4)
+        expect(controls).to_have_count(expected_controls)
         page.keyboard.press("Escape")
         expect(drawer).to_be_hidden()
         expect(page.get_by_test_id("mobile-more")).to_be_focused()
@@ -113,7 +114,7 @@ def _check_case(page, base_url, *, mode, results, persist):
         page.set_viewport_size({"width": width, "height": height})
         overflow = page.evaluate("Math.max(0, document.documentElement.scrollWidth-document.documentElement.clientWidth)")
         assert overflow == 0, f"D1 horizontal overflow at {width}"
-        for index in range(4):
+        for index in range(expected_controls):
             size = controls.nth(index).bounding_box()
             assert size and size["width"] >= 44 and size["height"] >= 44
         results.append({"scenario": "reflow", "mode": mode, "width": width, "height": height, "overflow": overflow})
@@ -156,13 +157,13 @@ def main():
             browser = mobile._launch_real_chrome(playwright)
             metadata["browserVersion"] = browser.version
             try:
-                for mode in ("admin", "guest"):
+                for mode in ("local_maintenance", "guest"):
                     case = scratch / mode
                     case.mkdir()
-                    environment = _safe_environment(case, access_mode=mode)
+                    environment = _safe_environment(case, access_mode="guest" if mode == "guest" else "admin")
                     environment["PYTHONPATH"] = os.pathsep.join(sys.path[:3])
                     os.environ.update(environment)
-                    metadata["contexts"].append({"mode": "local-maintenance-admin" if mode == "admin" else "isolated-guest",
+                    metadata["contexts"].append({"mode": "local-maintenance" if mode == "local_maintenance" else "isolated-guest",
                                                  "runId": environment["SING_YIN_E2E_RUN_ID"]})
                     from nicegui_app.services.guest_workspace import demo_fixture
                     from nicegui_app.services.roster_workflow import RosterWorkflow
