@@ -8,7 +8,6 @@ not provisional repository writes or a second receipt system.
 from __future__ import annotations
 
 from collections.abc import Callable
-import json
 import logging
 from pathlib import Path
 from typing import TypeVar
@@ -29,15 +28,6 @@ from roster_policy.policy_codec import encode_weekly_policy
 _T = TypeVar("_T")
 _POLICY_OPERATIONS = {"policy_initialized": "initialize", "policy_saved": "save", "policy_reset": "reset"}
 _LOGGER = logging.getLogger(__name__)
-
-
-def _unique_receipt_fields(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError("Duplicate policy receipt field.")
-        result[key] = value
-    return result
 
 
 class PolicyWorkflowMixin:
@@ -119,7 +109,7 @@ class PolicyWorkflowMixin:
             if command.status != "committed":
                 raise PolicyStorageError("The policy command has no committed result.")
             try:
-                receipt = json.loads(command.result_json, object_pairs_hook=_unique_receipt_fields)
+                receipt = self._decode_operation_receipt(command.result_json)
                 if type(receipt) is not dict or set(receipt) != {"year_start", "revision"}:
                     raise ValueError("Invalid policy receipt shape.")
                 settings = PolicySettings(TransactionPolicyRepository(session, self))

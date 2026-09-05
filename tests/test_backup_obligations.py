@@ -12,6 +12,7 @@ from nicegui_app.services.roster_workflow import (
     BackupResult,
     CommittedWriteBackupError,
     RosterWorkflow,
+    WorkflowError,
     WorkflowMaintenanceError,
 )
 
@@ -66,6 +67,43 @@ def test_lost_completed_snapshot_reopens_obligation_without_replaying_business(t
     assert restored["restoredFrom"] == result.backup_path
     assert workflow.roster_week(draft.id)["status"] == status
     assert workflow.prefect_loads() == loads
+
+
+@pytest.mark.parametrize("operation", ["publish", "withdraw"])
+def test_original_roster_replay_rejects_duplicate_receipt_fields_before_any_side_effect(tmp_path, monkeypatch, operation):
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "strict-receipt.sqlite3", backup_dir=tmp_path / "backups", seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    draft = workflow.generate_and_save_draft(WEEK_START, command_id="draft")
+    published = workflow.publish(draft.id, expected_week_version=draft.version, command_id="publish")
+    if operation == "publish":
+        replay = lambda: workflow.publish(draft.id, expected_week_version=draft.version, command_id="publish")
+    else:
+        workflow.withdraw_published_roster(draft.id, expected_version=published.version, reason="fictional correction", command_id="withdraw")
+        replay = lambda: workflow.withdraw_published_roster(draft.id, expected_version=published.version, reason="fictional correction", command_id="withdraw")
+    with workflow._session() as session:
+        command = session.get(OperationCommandRecord, operation)
+        original = command.result_json
+        # Keep the original last value intact: permissive JSON parsing would
+        # hide this corruption and incorrectly accept the replay as successful.
+        first_field = original[1:].split(",", 1)[0]
+        command.result_json = "{" + first_field + "," + original[1:]
+        session.commit()
+        ledger_count = session.scalar(text("SELECT COUNT(*) FROM fairness_ledger"))
+        command_count = session.scalar(text("SELECT COUNT(*) FROM operation_commands"))
+    loads = workflow.prefect_loads()
+
+    def forbidden_backup(_command):
+        pytest.fail("Invalid receipt replay must not fulfill a backup")
+
+    monkeypatch.setattr(workflow, "_fulfill_backup_obligation", forbidden_backup)
+    with pytest.raises(WorkflowError, match="receipt is invalid"):
+        replay()
+    assert workflow.prefect_loads() == loads
+    with workflow._session() as session:
+        assert session.scalar(text("SELECT COUNT(*) FROM fairness_ledger")) == ledger_count
+        assert session.scalar(text("SELECT COUNT(*) FROM operation_commands")) == command_count
 
 
 def test_startup_repairs_a_committed_write_whose_backup_was_interrupted(

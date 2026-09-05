@@ -146,6 +146,30 @@ class PersistenceWorkflowMixin:
         ).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
 
+    @staticmethod
+    def _decode_operation_receipt(raw: str) -> dict[str, object]:
+        """One strict reader for lookup and replay of durable command results."""
+        def unique_fields(pairs: list[tuple[str, object]]) -> dict[str, object]:
+            result = {}
+            for key, value in pairs:
+                if key in result:
+                    raise ValueError("Duplicate operation receipt field.")
+                result[key] = value
+            return result
+
+        def reject_constant(_value: str) -> None:
+            raise ValueError("Non-JSON operation receipt constant.")
+
+        try:
+            if type(raw) is not str:
+                raise ValueError("Receipt must be stored JSON text.")
+            result = json.loads(raw, object_pairs_hook=unique_fields, parse_constant=reject_constant)
+            if type(result) is not dict:
+                raise ValueError("Receipt must contain an object.")
+            return result
+        except (ValueError, TypeError) as error:
+            raise WorkflowError("The saved operation receipt is invalid.") from error
+
     def _claim_operation_command(
         self,
         session: Session,
@@ -168,13 +192,7 @@ class PersistenceWorkflowMixin:
                 raise WorkflowConflictError(
                     "This command is still being recovered. Refresh after the system is ready."
                 )
-            try:
-                result = json.loads(existing.result_json)
-            except json.JSONDecodeError as error:
-                raise WorkflowError("The saved operation receipt is invalid.") from error
-            if not isinstance(result, dict):
-                raise WorkflowError("The saved operation receipt is invalid.")
-            return existing, result
+            return existing, self._decode_operation_receipt(existing.result_json)
 
         now = self._now()
         record = OperationCommandRecord(

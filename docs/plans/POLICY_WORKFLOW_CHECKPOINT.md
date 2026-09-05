@@ -54,10 +54,27 @@ Guest regression review also covered workspace/Adapter/codec/command validation;
 schema review covered original backup restore, persistence and Assist behavior.
 Governance and whitespace checks pass. Exact-head full and required CI are pending.
 
+The first exact-head full run subsequently passed all six checks on
+`d2252be1f63763b4be0db281c686a3400425aa69` against main
+`d639326dbd7e438747a78e50f4bb254eddea4a1c` (test suite 365375 ms).
+Its byte-preserved report is `logs/change-verification-d2252be-20260905.json`,
+SHA-256 `9b80848d8ded792cf3c0483d4a7b432aac6eda71a20572c8baa7e2842f84bc01`,
+generated `2026-09-05T12:57:21.584183+00:00`, mode `pre-push`,
+profile `full`, `formalReleaseExecuted=false`. This is not evidence for later
+edits: final verification after the normal main sync and review fix is pending.
+
 Independent review fixed receipt lookup accepting a different existing revision:
 lookup now checks the shared canonical request fingerprint and rejects duplicate
 JSON keys. Backup file verification runs after releasing the live read Session.
 Authorization precedes acquisition of a filesystem lease/write fence.
+
+Integration review also reproduced duplicate JSON receipt fields accepted by
+original-command replay despite lookup rejection. Both now use the existing
+Persistence Module's one strict receipt reader; duplicate fields (including
+nested objects), invalid JSON constants and non-object receipts fail closed.
+Original publish/withdraw replay regressions assert rejection before backup I/O
+or any additional command/fairness writes. This shared-runtime correction applies
+to other callers of the existing command registry too, not just policy settings.
 
 ## Shared-runtime recovery correction
 

@@ -272,3 +272,5 @@ def test_unknown_or_malformed_policy_receipt_never_returns_latest_policy(workflo
         session.commit()
     with pytest.raises(PolicyStorageError):
         ui.policy_command_result(command_id="init")
+    with pytest.raises(PolicyStorageError):
+        ui.initialize_policy(2026, command_id="init")
