@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import json
 from typing import Any
 
-from nicegui import ui
+from nicegui import events, ui
 
 from nicegui_app.access_context import AccessMode
 from nicegui_app.application_mode import current_application_mode
@@ -696,7 +696,9 @@ def _install_theme_control_runtime() -> None:
           const buttons = () => [...document.querySelectorAll('[data-sy-theme-toggle]')];
           const resolver = () => document.querySelector('[data-sy-theme-resolver]');
           const explicitPreference = () => {
-            const value = buttons()[0]?.dataset.themePreference;
+            // The persistent header remains authoritative when drawer controls
+            // are mounted later with an older server-rendered preference.
+            const value = (document.querySelector('[data-testid="theme-control"]') || buttons()[0])?.dataset.themePreference;
             return value === 'light' || value === 'dark' ? value : 'system';
           };
           const resolved = () => {
@@ -705,10 +707,12 @@ def _install_theme_control_runtime() -> None:
             return media.matches ? 'dark' : 'light';
           };
           const sync = ({animate = false} = {}) => {
+            const preference = explicitPreference();
             const current = resolved();
             const isDark = current === 'dark';
             document.documentElement.dataset.syResolvedTheme = current;
             for (const button of buttons()) {
+              button.dataset.themePreference = preference;
               const label = (isDark ? button.dataset.actionLight : button.dataset.actionDark) || '';
               button.dataset.themeResolved = current;
               if (button.dataset.syThemePressed === 'true') {
@@ -734,7 +738,6 @@ def _install_theme_control_runtime() -> None:
               }
               const state = button.querySelector('[data-sy-theme-state]');
               if (state) {
-                const preference = explicitPreference();
                 const stateKey = preference === 'system'
                   ? (isDark ? 'stateAutoDark' : 'stateAutoLight')
                   : (isDark ? 'stateDark' : 'stateLight');
@@ -837,91 +840,124 @@ def _render_mobile_setting_tile(
 
 
 def _render_mobile_drawer_tools(
+    dark_mode,
+    theme_controls,
+    sound_controls,
+) -> None:  # type: ignore[no-untyped-def]
+    """Create only the disclosure; preferences are read on its first expansion."""
+    with ui.element("section").classes("sy-mobile-drawer-tools").props(
+        f'aria-label="{attr(t("mobile_quick_settings"))}" data-testid=mobile-drawer-tools'
+    ):
+        with ui.expansion(t("mobile_quick_settings"), value=False).classes(
+            "sy-mobile-preferences w-full"
+        ).props("data-testid=mobile-preferences") as preferences:
+            content = ui.element("div").props("data-testid=mobile-preferences-content")
+        mounted = False
+
+        def mount_preferences(event: events.ValueChangeEventArguments) -> None:
+            nonlocal mounted
+            if not event.value or mounted:
+                return
+            with content:
+                _render_mobile_preference_controls(
+                    current_page_context().principal.mode, dark_mode, theme_controls, sound_controls,
+                )
+            mounted = True
+            # Browser appearance may have changed before these controls existed.
+            ui.run_javascript("window.__syThemeControls?.sync({animate:false});")
+
+        preferences.on_value_change(mount_preferences)
+        preferences.on("before-hide", js_handler=f"""() => {{
+            const root = document.getElementById('c{preferences.id}');
+            const content = root?.querySelector('[data-testid="mobile-preferences-content"]');
+            if (content?.contains(document.activeElement)) {{
+                root.querySelector('.q-expansion-item__container > .q-item')?.focus({{preventScroll:true}});
+            }}
+        }}""")
+
+
+def _render_mobile_preference_controls(
     access_mode: AccessMode,
     dark_mode,
     theme_controls,
     sound_controls,
 ) -> None:  # type: ignore[no-untyped-def]
-    """Keep secondary preferences reachable without crowding the phone header."""
-    with ui.element("section").classes("sy-mobile-drawer-tools").props(
-        f'aria-label="{attr(t("mobile_quick_settings"))}" data-testid=mobile-drawer-tools'
-    ):
-        ui.label(t("mobile_quick_settings")).classes("sy-mobile-drawer-tools-title")
-        with ui.element("div").classes("sy-mobile-drawer-tools-grid"):
-            _language_text, language_action = language_switch_copy(compact=False)
+    """Mount current preference values once; retain controls while collapsed."""
+    with ui.element("div").classes("sy-mobile-drawer-tools-grid"):
+        _language_text, language_action = language_switch_copy(compact=False)
+        _render_mobile_setting_tile(
+            kind="language",
+            icon="translate",
+            title_key="mobile_setting_language",
+            value=t(
+                "mobile_setting_value_chinese"
+                if current_locale() == "zh-HK"
+                else "mobile_setting_value_english"
+            ),
+            action_label=language_action,
+            test_id_prop="data-testid=mobile-language-control",
+            on_click=lambda: _reload_after_preference_change(toggle_locale),
+            extra_props=(
+                "data-sy-icon-motion-role=toggle data-sy-icon-story-category=preview "
+                "data-sy-icon-story-to=language"
+            ),
+        )
+        sound_enabled = sound_feedback_enabled()
+        sound_label = t("disable_sound_feedback") if sound_enabled else t("enable_sound_feedback")
+        sound_tile = _render_mobile_setting_tile(
+            kind="sound",
+            icon="volume_up" if sound_enabled else "volume_off",
+            title_key="mobile_setting_sound",
+            value=t("mobile_setting_on" if sound_enabled else "mobile_setting_off"),
+            action_label=sound_label,
+            test_id_prop="data-testid=mobile-sound-control",
+            on_click=lambda: _toggle_sound_feedback_with_preview(sound_controls),
+            pressed=sound_enabled,
+            extra_props=(
+                "data-sy-sound-toggle data-sy-icon-motion-role=toggle "
+                "data-sy-icon-story-category=persistent"
+            ),
+        )
+        sound_controls.append((sound_tile.button, False, None, sound_tile.value_label))
+        theme_icon, theme_label, _is_dark = _current_theme_control()
+        theme_tile = _render_mobile_setting_tile(
+            kind="theme",
+            icon=theme_icon,
+            title_key="mobile_setting_appearance",
+            value=_mobile_theme_status(),
+            action_label=theme_label,
+            test_id_prop="data-testid=mobile-theme-control",
+            on_click=lambda: _toggle_theme_in_place(dark_mode, theme_controls),
+            extra_props=(
+                f'data-sy-theme-toggle data-theme-preference={theme_preference()} '
+                "data-sy-icon-motion-role=toggle data-sy-icon-motion-mode=persistent-rotary "
+                "data-sy-icon-story-category=persistent "
+                f'data-action-light="{attr(t("theme_switch_to_light"))}" '
+                f'data-action-dark="{attr(t("theme_switch_to_dark"))}" '
+                f'data-state-auto-light="{attr(t("mobile_theme_auto_light"))}" '
+                f'data-state-auto-dark="{attr(t("mobile_theme_auto_dark"))}" '
+                f'data-state-light="{attr(t("mobile_theme_light"))}" '
+                f'data-state-dark="{attr(t("mobile_theme_dark"))}"'
+            ),
+        )
+        theme_tile.value_label.props("data-sy-theme-state")
+        theme_controls["buttons"].append(
+            (theme_tile.button, False, None, theme_tile.value_label)
+        )
+        if access_mode in {AccessMode.ADMIN, AccessMode.GUEST}:
             _render_mobile_setting_tile(
-                kind="language",
-                icon="translate",
-                title_key="mobile_setting_language",
+                kind="account",
+                icon="logout",
+                title_key="mobile_setting_account",
                 value=t(
-                    "mobile_setting_value_chinese"
-                    if current_locale() == "zh-HK"
-                    else "mobile_setting_value_english"
+                    "mobile_setting_account_guest"
+                    if access_mode is AccessMode.GUEST
+                    else "mobile_setting_account_admin"
                 ),
-                action_label=language_action,
-                test_id_prop="data-testid=mobile-language-control",
-                on_click=lambda: _reload_after_preference_change(toggle_locale),
-                extra_props=(
-                    "data-sy-icon-motion-role=toggle data-sy-icon-story-category=preview "
-                    "data-sy-icon-story-to=language"
-                ),
+                action_label=t("access_admin_logout"),
+                test_id_prop="data-testid=mobile-administrator-logout",
+                on_click=_sign_out,
             )
-            sound_enabled = sound_feedback_enabled()
-            sound_label = t("disable_sound_feedback") if sound_enabled else t("enable_sound_feedback")
-            sound_tile = _render_mobile_setting_tile(
-                kind="sound",
-                icon="volume_up" if sound_enabled else "volume_off",
-                title_key="mobile_setting_sound",
-                value=t("mobile_setting_on" if sound_enabled else "mobile_setting_off"),
-                action_label=sound_label,
-                test_id_prop="data-testid=mobile-sound-control",
-                on_click=lambda: _toggle_sound_feedback_with_preview(sound_controls),
-                pressed=sound_enabled,
-                extra_props=(
-                    "data-sy-sound-toggle data-sy-icon-motion-role=toggle "
-                    "data-sy-icon-story-category=persistent"
-                ),
-            )
-            sound_controls.append((sound_tile.button, False, None, sound_tile.value_label))
-            theme_icon, theme_label, _is_dark = _current_theme_control()
-            theme_tile = _render_mobile_setting_tile(
-                kind="theme",
-                icon=theme_icon,
-                title_key="mobile_setting_appearance",
-                value=_mobile_theme_status(),
-                action_label=theme_label,
-                test_id_prop="data-testid=mobile-theme-control",
-                on_click=lambda: _toggle_theme_in_place(dark_mode, theme_controls),
-                extra_props=(
-                    f'data-sy-theme-toggle data-theme-preference={theme_preference()} '
-                    "data-sy-icon-motion-role=toggle data-sy-icon-motion-mode=persistent-rotary "
-                    "data-sy-icon-story-category=persistent "
-                    f'data-action-light="{attr(t("theme_switch_to_light"))}" '
-                    f'data-action-dark="{attr(t("theme_switch_to_dark"))}" '
-                    f'data-state-auto-light="{attr(t("mobile_theme_auto_light"))}" '
-                    f'data-state-auto-dark="{attr(t("mobile_theme_auto_dark"))}" '
-                    f'data-state-light="{attr(t("mobile_theme_light"))}" '
-                    f'data-state-dark="{attr(t("mobile_theme_dark"))}"'
-                ),
-            )
-            theme_tile.value_label.props("data-sy-theme-state")
-            theme_controls["buttons"].append(
-                (theme_tile.button, False, None, theme_tile.value_label)
-            )
-            if access_mode in {AccessMode.ADMIN, AccessMode.GUEST}:
-                _render_mobile_setting_tile(
-                    kind="account",
-                    icon="logout",
-                    title_key="mobile_setting_account",
-                    value=t(
-                        "mobile_setting_account_guest"
-                        if access_mode is AccessMode.GUEST
-                        else "mobile_setting_account_admin"
-                    ),
-                    action_label=t("access_admin_logout"),
-                    test_id_prop="data-testid=mobile-administrator-logout",
-                    on_click=_sign_out,
-                )
 
 
 def _render_mobile_tabbar(
@@ -1375,12 +1411,6 @@ def page_shell(active_path: str) -> Iterator[None]:
                         ui.label(t("app_name")).classes("text-base font-bold leading-tight sy-fg-stable")
                 ui.label(t("service_principle")).classes("sy-brand-principle text-xs italic text-[var(--sy-muted)] mb-5")
             with ui.element("div").classes("sy-sidebar-navigation"):
-                _render_mobile_drawer_tools(
-                    access_mode,
-                    dark_mode,
-                    theme_controls,
-                    sound_controls,
-                )
                 for group_index, (group_key, pages) in enumerate(
                     navigation_groups_for(access_mode), start=1
                 ):
@@ -1415,6 +1445,7 @@ def page_shell(active_path: str) -> Iterator[None]:
                             ).style("color: var(--sy-nav-ink) !important")
                             if page.route == active_path:
                                 button.classes("sy-nav-active").props("aria-current=page")
+                _render_mobile_drawer_tools(dark_mode, theme_controls, sound_controls)
             with ui.element("div").classes("sy-sidebar-footer"):
                 ui.label(t("copyright_notice")).classes("sy-sidebar-footer-copy")
     with ui.header(elevated=False).classes("sy-app-header bg-[var(--sy-surface)] border-b border-[var(--sy-line)]"):

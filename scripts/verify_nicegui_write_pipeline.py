@@ -167,6 +167,8 @@ def _click_mobile_drawer_control(
     drawer = page.locator("#main-navigation-drawer")
     drawer.wait_for(state="visible", timeout=10_000)
     tools = drawer.get_by_test_id("mobile-drawer-tools")
+    from scripts.verify_nicegui_mobile import _expand_mobile_preferences
+    _expand_mobile_preferences(page)
     control = tools.get_by_test_id(test_id)
     if control.count() != 1:
         raise AssertionError(f"Mobile drawer control {test_id!r} is unavailable or duplicated.")
@@ -201,6 +203,8 @@ def _select_mobile_theme(page: Page, value: str) -> None:
     navigation.locator(".sy-mobile-tab").last.click()
     drawer = page.locator("#main-navigation-drawer")
     drawer.wait_for(state="visible", timeout=10_000)
+    from scripts.verify_nicegui_mobile import _expand_mobile_preferences
+    _expand_mobile_preferences(page)
     control = drawer.get_by_test_id("mobile-theme-control")
     assert control.count() == 1
     wants_dark = value == "dark"
