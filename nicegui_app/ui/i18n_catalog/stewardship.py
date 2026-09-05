@@ -1,6 +1,16 @@
 """Bilingual stewardship messages."""
 
-MESSAGES = {'backup_restore': {'zh-HK': '備份還原', 'en': 'Backup restore'},
+MESSAGES = {'start_step_opened': {'zh-HK': '已開啟系統', 'en': 'System opened'},
+ 'start_step_directory_available': {'zh-HK': '已有名冊，請核對內容', 'en': 'Directory available; review its contents'},
+ 'start_step_directory_missing': {'zh-HK': '尚未準備名冊', 'en': 'Directory not yet prepared'},
+ 'guide_search': {'zh-HK': '搜尋操作與問題', 'en': 'Search tasks and problems'},
+ 'guide_search_hint': {'zh-HK': '例如：下載、空缺、登入', 'en': 'For example: download, vacancy, sign-in'},
+ 'guide_all_categories': {'zh-HK': '所有類型', 'en': 'All categories'},
+ 'guide_category': {'zh-HK': '問題類型', 'en': 'Question category'},
+ 'guide_no_results': {'zh-HK': '沒有符合的內容，請修改關鍵字或類型。', 'en': 'No matching answers. Change the search or category.'},
+ 'devotional_more': {'zh-HK': '默想、禱告與經文方向', 'en': 'Reflection, prayer and direction'},
+ 'reading_contents': {'zh-HK': '本頁目錄', 'en': 'On this page'},
+ 'backup_restore': {'zh-HK': '備份還原', 'en': 'Backup restore'},
  'create_verified_backup': {'zh-HK': '立即建立已驗證快照', 'en': 'Create verified snapshot now'},
  'create_verified_backup_notice': {'zh-HK': '如剛才的儲存操作未能完成自動備份，請先核對資料已正確，再在此建立新的復原點。',
                                    'en': 'If a saved action could not finish its automatic backup, first confirm the data is correct, then '

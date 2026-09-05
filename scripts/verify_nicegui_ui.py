@@ -17,7 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from openpyxl import Workbook
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import expect, sync_playwright
 
 from nicegui_app.ui.acceptance_readiness import ACCEPTANCE_SESSIONS, acceptance_check_ids
 from nicegui_app.ui.product_identity import PRODUCT_IDENTITY
@@ -588,6 +588,14 @@ def assert_component_grammar(page, screenshot_path: Path) -> None:  # type: igno
         fixture.evaluate("element => element.remove()")
 
 
+def open_reading_section(page, test_id: str) -> None:  # type: ignore[no-untyped-def]
+    """Explicit first-use interaction, never a generic readiness warmup."""
+    header = page.get_by_test_id(test_id).locator(":scope > .q-expansion-item__container > .q-item")
+    expect(header).to_have_attribute("aria-expanded", "false")
+    header.click()
+    expect(header).to_have_attribute("aria-expanded", "true")
+
+
 def assert_reference_toc(page, *, required_targets: tuple[str, ...]) -> None:  # type: ignore[no-untyped-def]
     """Verify the rendered reference navigation without freezing its section count."""
 
@@ -931,9 +939,11 @@ def main() -> None:
         # frame can make the reading appear clipped even though the final layout
         # is correct.
         page.wait_for_timeout(450)
-        assert page.locator(".sy-devotional-reading-grid .sy-devotional-companion").count() == 3
+        expect(page.get_by_test_id("devotional-tone")).to_have_count(0)
+        open_reading_section(page, "devotional-details")
+        expect(page.get_by_test_id("devotional-details-content").locator("article")).to_have_count(2)
         assert page.get_by_role("button", name="換一篇經文").count() == 1
-        assert page.locator(".sy-devotional-tone-select").count() == 1
+        expect(page.get_by_test_id("devotional-tone")).to_be_visible()
         assert "devotional-sacred-light-v2.webp" in page.locator(".sy-chapel").evaluate(
             "element => getComputedStyle(element, '::after').backgroundImage"
         )
@@ -941,7 +951,6 @@ def main() -> None:
             ".sy-chapel .sy-verse",
             ".sy-chapel .sy-devotional-reference",
             ".sy-chapel .sy-verse-translation--chapel",
-            ".sy-chapel .sy-devotional-page-intro",
         ):
             assert element_contrast_ratio(page.locator(selector)) >= 4.5
         chapel_box = page.locator(".sy-chapel").bounding_box()
@@ -1243,9 +1252,9 @@ def main() -> None:
         assert "sidebar-stewardship-light-v1.webp" in page.locator(".sy-sidebar").evaluate("element => getComputedStyle(element).backgroundImage")
         page.screenshot(path=str(ARCHITECTURE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/guide", wait_until="domcontentloaded")
-        assert "guide-handbook-light-v1.webp" in page.locator(".sy-guide-hero").evaluate(
-            "element => getComputedStyle(element, '::after').backgroundImage"
-        )
+        expect(page.get_by_test_id("guide-search")).to_be_visible()
+        expect(page.get_by_test_id("reference-toc")).to_have_count(0)
+        open_reading_section(page, "reading-contents")
         assert_reference_toc(
             page,
             required_targets=(
@@ -1257,9 +1266,10 @@ def main() -> None:
                 "guide-troubleshooting",
             ),
         )
-        troubleshooting = page.get_by_test_id("guide-troubleshooting")
-        assert troubleshooting.locator(".sy-troubleshooting-head").count() == 1
-        assert troubleshooting.locator(".sy-troubleshooting-row:not(.sy-troubleshooting-head)").count() == 11
+        expect(page.locator('[data-testid^="guide-answer-guide-issue-"]:not([data-testid$="-content"])')).to_have_count(11)
+        expect(page.get_by_test_id("guide-answer-guide-issue-pdf-content").locator(":scope > *")).to_have_count(0)
+        open_reading_section(page, "guide-answer-guide-issue-pdf")
+        expect(page.get_by_test_id("guide-answer-guide-issue-pdf-content").locator(":scope > *")).to_have_count(2)
         assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 2
         page.screenshot(path=str(GUIDE_SCREENSHOT), full_page=True)
         expansion_header = page.locator(".q-expansion-item .q-item").first
@@ -1295,9 +1305,10 @@ def main() -> None:
         )
         assert navigation_toggle_icon.text_content().strip() == "close"
         page.goto(f"{BASE_URL}/getting-started", wait_until="domcontentloaded")
-        page.locator(".sy-onboarding-symbol").wait_for(timeout=10_000)
-        assert page.get_by_test_id("reference-index").locator(".sy-reference-index-card").count() == 3
-        assert "onboarding-desk-light-v1.webp" in page.locator(".sy-onboarding-intro").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
+        expect(page.get_by_test_id("start-next-action")).to_be_visible()
+        expect(page.get_by_test_id("reference-index")).to_have_count(0)
+        open_reading_section(page, "start-reference-details")
+        expect(page.get_by_test_id("reference-index").locator("article")).to_have_count(3)
         page.screenshot(path=str(ONBOARDING_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/rosters/999999", wait_until="domcontentloaded")
         unavailable = page.get_by_test_id("roster-unavailable-state")
@@ -1581,12 +1592,13 @@ def main() -> None:
         assert "devotional-sacred-dark-v2.webp" in page.locator(".sy-chapel").evaluate(
             "element => getComputedStyle(element, '::after').backgroundImage"
         )
-        assert page.locator(".sy-devotional-reading-grid .sy-devotional-companion").count() == 3
+        expect(page.get_by_test_id("devotional-tone")).to_have_count(0)
+        open_reading_section(page, "devotional-details")
+        expect(page.get_by_test_id("devotional-tone")).to_be_visible()
         for selector in (
             ".sy-chapel .sy-verse",
             ".sy-chapel .sy-devotional-reference",
             ".sy-chapel .sy-verse-translation--chapel",
-            ".sy-chapel .sy-devotional-page-intro",
         ):
             assert element_contrast_ratio(page.locator(selector)) >= 4.5
         page.screenshot(path=str(DEVOTIONAL_DARK_SCREENSHOT), full_page=True)
@@ -1616,7 +1628,8 @@ def main() -> None:
         assert "handover-archive-dark-v1.webp" in page.locator(".sy-handover-hero").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
         page.screenshot(path=str(HANDOVER_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/getting-started", wait_until="domcontentloaded")
-        assert "onboarding-desk-dark-v1.webp" in page.locator(".sy-onboarding-intro").evaluate("element => getComputedStyle(element, '::after').backgroundImage")
+        expect(page.get_by_test_id("start-next-action")).to_be_visible()
+        expect(page.get_by_test_id("reference-index")).to_have_count(0)
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
         assert "platform-stewardship-dark-v1.webp" in page.locator(".sy-platform-hero").evaluate(
             "element => getComputedStyle(element, '::before').backgroundImage"
@@ -1657,9 +1670,7 @@ def main() -> None:
         assert "sidebar-stewardship-dark-v1.webp" in page.locator(".sy-sidebar").evaluate("element => getComputedStyle(element).backgroundImage")
         page.screenshot(path=str(ARCHITECTURE_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/guide", wait_until="domcontentloaded")
-        assert "guide-handbook-dark-v1.webp" in page.locator(".sy-guide-hero").evaluate(
-            "element => getComputedStyle(element, '::after').backgroundImage"
-        )
+        expect(page.get_by_test_id("guide-search")).to_be_visible()
         page.screenshot(path=str(GUIDE_DARK_SCREENSHOT), full_page=True)
         page.set_viewport_size({"width": 390, "height": 844})
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
@@ -1703,6 +1714,8 @@ def main() -> None:
         page.screenshot(path=str(ENGINEERING_MOBILE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/guide", wait_until="domcontentloaded")
         page.get_by_text("Operator guide", exact=True).first.wait_for(timeout=10_000)
+        expect(page.get_by_test_id("reference-toc")).to_have_count(0)
+        open_reading_section(page, "reading-contents")
         assert_reference_toc(
             page,
             required_targets=(
@@ -1715,18 +1728,8 @@ def main() -> None:
             ),
         )
         assert page.get_by_test_id("reference-pager").locator(".sy-reference-pager-link").count() == 2
-        troubleshooting_head = page.get_by_test_id("guide-troubleshooting").locator(".sy-troubleshooting-head")
-        head_style = troubleshooting_head.evaluate(
-            "element => { const style = getComputedStyle(element); return {position: style.position, width: style.width, height: style.height, overflow: style.overflow, clipPath: style.clipPath}; }"
-        )
-        assert head_style["position"] == "absolute", head_style
-        assert float(head_style["width"].removesuffix("px")) <= 1, head_style
-        assert float(head_style["height"].removesuffix("px")) <= 1, head_style
-        assert head_style["overflow"] in {"hidden", "clip"}, head_style
-        assert head_style["clipPath"] not in {"none", "auto"}, head_style
-        assert troubleshooting_head.locator('[role="columnheader"]').count() == 3
-        first_issue = page.get_by_test_id("guide-troubleshooting").locator(".sy-troubleshooting-row").nth(1)
-        assert first_issue.evaluate("element => getComputedStyle(element).gridTemplateColumns").count(" ") == 0
+        open_reading_section(page, "guide-answer-guide-issue-vacancy")
+        expect(page.get_by_test_id("guide-answer-guide-issue-vacancy-content")).to_be_visible()
         assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
         page.screenshot(path=str(GUIDE_MOBILE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/prefects", wait_until="domcontentloaded")

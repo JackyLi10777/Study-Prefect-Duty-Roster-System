@@ -103,8 +103,8 @@ ROUTE_MARKERS = {
         "[data-testid='architecture-lifeline-visual']",
         "[data-testid='trust-evidence']",
     ),
-    "/getting-started": ("#start-intro", "[data-testid='reference-index']"),
-    "/guide": ("[data-testid='guide-troubleshooting']",),
+    "/getting-started": ("#start-intro", "[data-testid='start-next-action']"),
+    "/guide": ("[data-testid='guide-search']",),
 }
 
 
