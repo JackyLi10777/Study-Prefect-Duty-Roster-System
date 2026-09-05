@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from roster_policy import is_room_open
+
 from nicegui_app.services.workflow_dependencies import (
     Assignment,
     AuditEventRecord,
@@ -702,11 +704,21 @@ class PersistenceWorkflowMixin:
         assignment: RosterAssignmentRecord,
         *,
         include_same_day_assigned: bool = False,
+        allow_vacant: bool = False,
     ) -> list[dict[str, object]]:
-        if assignment.status != "active" or assignment.prefect_id is None:
+        active = assignment.status == "active" and assignment.prefect_id is not None
+        vacant = assignment.status == "vacant" and assignment.prefect_id is None
+        if not active and not (allow_vacant and vacant):
             raise WorkflowError("Only an active assignment can be changed manually.")
         day = SchoolDay[assignment.day]
         post = DutyPost[assignment.post_code]
+        if allow_vacant:
+            if week.status != "published":
+                raise WorkflowError("Vacancy recovery requires a published roster.")
+            if not is_room_open(post, day) or day in self._closed_days(session, week.id):
+                raise WorkflowError("A closed duty cannot be adjusted.")
+            if (day, post, assignment.slot_index) in self._unavailable_slots(session, week.id):
+                raise WorkflowError("An unavailable duty slot cannot be adjusted.")
         assigned_rows = self._assignment_rows(session, week.id)
         assigned_today = {
             str(row.prefect_id): row
