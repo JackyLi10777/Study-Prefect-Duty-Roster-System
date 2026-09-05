@@ -1,6 +1,14 @@
 """Bilingual people messages."""
 
 MESSAGES = {'directory': {'zh-HK': '名單管理', 'en': 'Directory'},
+ 'prefect_editor_done': {'zh-HK': '完成', 'en': 'Done'},
+ 'prefect_editor_retry': {'zh-HK': '重試確認', 'en': 'Retry acknowledgement'},
+ 'prefect_editor_waiting': {'zh-HK': '正在確認本頁暫存；未確認前請保留此視窗。', 'en': 'Confirming the page buffer. Keep this editor open until acknowledged.'},
+ 'prefect_editor_buffered': {'zh-HK': '完成後保留本頁修改；請再按「核對並保存所有修改」寫入系統。', 'en': 'Done keeps edits on this page. Review and save all changes to persist them.'},
+ 'prefect_editor_retry_notice': {'zh-HK': '未能確認這次輸入，請保留內容並重試。', 'en': 'This input was not acknowledged. Keep the values and retry.'},
+ 'prefect_previous_batch': {'zh-HK': '上一批', 'en': 'Previous batch'},
+ 'prefect_next_batch': {'zh-HK': '下一批', 'en': 'Next batch'},
+ 'prefect_filter_options': {'zh-HK': '篩選及排序', 'en': 'Filter and sort'},
  'ai_import': {'zh-HK': '資料匯入', 'en': 'Data import'},
  'back_to_prefect_directory': {'zh-HK': '返回導學風紀名單', 'en': 'Back to prefect directory'},
  'people_route_hierarchy': {'zh-HK': '名單與公平頁面層次', 'en': 'People and fairness page hierarchy'},

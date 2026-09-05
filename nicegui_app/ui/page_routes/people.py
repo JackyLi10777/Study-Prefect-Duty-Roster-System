@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from datetime import date
 import hashlib
 import inspect
@@ -36,6 +36,11 @@ from nicegui_app.ui.edit_sessions import (
     PrefectDirectoryFilter,
     PrefectEditSession,
     filter_prefect_directory,
+)
+from nicegui_app.ui.person_editor import PersonEditor
+from nicegui_app.ui.person_editor_state import EditorSnapshotRejected, PersonEditorState
+from nicegui_app.ui.prefect_editor_adapter import (
+    PREFECT_EDITOR_SCHEMA, prefect_editor_values, validate_prefect_editor_values,
 )
 from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import day_label, role_label, t
@@ -759,266 +764,257 @@ def _render_inline_prefect_directory(
     prefects: list[dict[str, object]],
     *,
     on_full_edit: Callable[[dict[str, object]], None],
-) -> None:
-    """Render one responsive, buffered directory editor for Admin and Guest."""
+) -> Callable[[], Awaitable[bool]]:
+    """Render bounded read-only results and one lazy, generation-bound editor."""
 
     edit_session = PrefectEditSession.from_rows(prefects)
-    control_refs: dict[str, object] = {}
+    page_state = {"offset": 0, "saving": False}
+    editor_ref: dict[str, PersonEditor] = {}
+    open_snapshot: dict[str, object] = {}
+    status_refs: dict[str, object] = {}
     day_options = {day.name: day_label(day) for day in SchoolDay}
+    last_pending_count = -1
 
-    def stage(prefect_id: str, field: str, value: object) -> None:
-        if edit_session.stage(prefect_id, field, value):
-            pending_status.refresh()
+    def update_pending_status() -> None:
+        nonlocal last_pending_count
+        count = edit_session.pending_count
+        if count == last_pending_count:
+            return
+        last_pending_count = count
+        status_refs["label"].set_text(
+            t("prefect_inline_pending", count=count) if count else t("prefect_inline_clean")
+        )
+        status_refs["save"].set_enabled(bool(count) and not page_state["saving"])
+
+    def stage_snapshot(prefect_id: str, values: Mapping[str, object]) -> None:
+        for field, value in values.items():
+            edit_session.stage(prefect_id, field, value)
+        update_pending_status()
+
+    editor_state = PersonEditorState(stage_snapshot, validate_prefect_editor_values)
 
     def update_filter(key: str, value: object) -> None:
         edit_session.update_filter(key, value)
+        page_state["offset"] = 0
         directory_rows.refresh()
 
     def discard_conflicted_row(prefect_id: str) -> None:
-        if not edit_session.discard_conflict(prefect_id):
-            return
-        directory_rows.refresh()
-        pending_status.refresh()
+        if edit_session.discard_conflict(prefect_id):
+            directory_rows.refresh()
+            update_pending_status()
 
     def reapply_conflicted_row(prefect_id: str) -> None:
-        if not edit_session.reapply_conflict(prefect_id):
-            return
-        directory_rows.refresh()
-        pending_status.refresh()
+        if edit_session.reapply_conflict(prefect_id):
+            directory_rows.refresh()
+            update_pending_status()
 
     async def save_pending_prefect_rows() -> None:
-        if not edit_session.dirty:
+        if not edit_session.dirty or page_state["saving"] or not editor_state.closed:
             return
+        page_state["saving"] = True
+        status_refs["save"].disable()
         patches = edit_session.patches()
         command_id = edit_session.ensure_command_id()
-        result = await _run_with_progress(
-            lambda: _apply_prefect_patch_batch(
-                workflow,
-                patches,
-                command_id=command_id,
-            ),
-            title_key="progress_prefect_save_title",
-            working_key="progress_prefect_save_working",
-            icon="save",
-        )
-        if result is _OPERATION_FAILED:
-            return
-        edit_session.apply_save_result(result)
-        if result["errors"]:
-            ui.notify(
-                t("prefect_inline_validation_notice", count=len(result["errors"])),
-                type="warning",
-                timeout=8_000,
-            )
-        elif edit_session.conflicts:
-            ui.notify(
-                t(
-                    "prefect_inline_conflict_notice",
-                    count=len(edit_session.conflicts),
-                ),
-                type="warning",
-                timeout=8_000,
-            )
-        else:
-            ui.notify(t("prefect_inline_saved"), type="positive")
-        directory_rows.refresh()
-        pending_status.refresh()
-
-    @ui.refreshable
-    def pending_status() -> None:
-        with ui.row().classes("w-full items-center justify-between gap-3 flex-wrap"):
-            if edit_session.dirty:
-                ui.label(
-                    t("prefect_inline_pending", count=edit_session.pending_count)
-                ).classes(
-                    "text-sm font-semibold text-[var(--sy-attention-strong)]"
-                ).props("role=status aria-live=polite")
-            else:
-                ui.label(t("prefect_inline_clean")).classes(
-                    "text-sm text-[var(--sy-muted)]"
-                ).props("role=status aria-live=polite")
-            save = ui.button(
-                t("prefect_inline_save_all"),
+        try:
+            result = await _run_with_progress(
+                lambda: _apply_prefect_patch_batch(workflow, patches, command_id=command_id),
+                title_key="progress_prefect_save_title",
+                working_key="progress_prefect_save_working",
                 icon="save",
-                on_click=save_pending_prefect_rows,
-            ).props("color=primary data-testid=save-prefect-inline-changes")
-            if not edit_session.dirty:
-                save.disable()
-            control_refs["save"] = save
+            )
+            if result is _OPERATION_FAILED:
+                return
+            edit_session.apply_save_result(result)
+            if result["errors"]:
+                ui.notify(t("prefect_inline_validation_notice", count=len(result["errors"])), type="warning", timeout=8_000)
+            elif edit_session.conflicts:
+                ui.notify(t("prefect_inline_conflict_notice", count=len(edit_session.conflicts)), type="warning", timeout=8_000)
+            else:
+                ui.notify(t("prefect_inline_saved"), type="positive")
+            directory_rows.refresh()
+            update_pending_status()
+        finally:
+            page_state["saving"] = False
+            status_refs["save"].set_enabled(edit_session.dirty)
+
+    async def flush_pending_prefect_rows() -> bool:
+        # An active IME/form must finalize through the browser snapshot channel.
+        if not editor_state.closed or page_state["saving"]:
+            return False
+        if edit_session.dirty:
+            await save_pending_prefect_rows()
+        return not edit_session.dirty
+
+    async def open_full_editor(prefect_id: str) -> None:
+        # Capture identity before awaiting the atomic save; never reread selection.
+        if await flush_pending_prefect_rows():
+            try:
+                on_full_edit(workflow.prefect(prefect_id))
+                return
+            except WorkflowError:
+                ui.notify(t("prefect_write_conflict"), type="warning")
+        ui.run_javascript(
+            "const search = document.querySelector('[data-testid=\"prefect-directory-search\"]');"
+            "(search?.matches('input') ? search : search?.querySelector('input'))?.focus({preventScroll: true});"
+        )
+
+    async def receive_editor_snapshot(event: events.GenericEventArguments) -> None:
+        editor = editor_ref["value"]
+        try:
+            receipt, fresh = editor_state.receive(event.args)
+        except EditorSnapshotRejected:
+            editor.reject(event.args, t("prefect_editor_retry_notice"))
+            return
+        editor.acknowledge(receipt)
+        if not fresh or receipt["action"] == "change":
+            return
+        prefect_id = str(receipt["personId"])
+        if edit_session.merged_row(prefect_id) != open_snapshot:
+            directory_rows.refresh()
+        if receipt["action"] == "full_edit":
+            await open_full_editor(prefect_id)
+
+    def options(items: Mapping[str, str]) -> list[dict[str, str]]:
+        return [{"value": value, "label": label} for value, label in items.items()]
+
+    def open_editor(prefect_id: str) -> None:
+        if page_state["saving"] or not editor_state.closed:
+            return
+        if "value" not in editor_ref:
+            with editor_host:
+                editor_ref["value"] = PersonEditor(
+                    labels={
+                        "close": t("close"), "done": t("prefect_editor_done"),
+                        "fullEdit": t("prefect_inline_full_edit"),
+                        "retry": t("prefect_editor_retry"),
+                        "waiting": t("prefect_editor_waiting"),
+                        "buffered": t("prefect_editor_buffered"),
+                    },
+                    fields=[
+                        {"name": "nameEn", "kind": "text", "label": t("name_en")},
+                        {"name": "form", "kind": "choice", "label": t("form"),
+                         "options": options({form: form for form in ("F.3", "F.4", "F.5", "F.6")})},
+                        {"name": "className", "kind": "text", "label": t("class_name")},
+                        {"name": "availableDays", "kind": "multiple", "label": t("availability"),
+                         "options": options(day_options)},
+                        {"name": "needsMentoring", "kind": "boolean", "label": t("needs_mentoring")},
+                        {"name": "fixedGeneralDuty", "kind": "select", "label": t("fixed_assist_day"),
+                         "options": options({"NONE": t("fixed_assist_day_auto"), **day_options})},
+                        {"name": "remarks", "kind": "text", "label": t("remarks")},
+                    ],
+                    on_snapshot=receive_editor_snapshot,
+                )
+        row = edit_session.merged_row(prefect_id)
+        open_snapshot.clear()
+        open_snapshot.update(row)
+        binding = editor_state.bind(
+            prefect_id, values=prefect_editor_values(row),
+            base_version=int(edit_session.originals[prefect_id]["version"]),
+            schema_revision=PREFECT_EDITOR_SCHEMA,
+        )
+        editor_ref["value"].open_person(binding, title=str(row["nameZh"]), subtitle=role_label(str(row["roleCode"])))
 
     @ui.refreshable
     def directory_rows() -> None:
         visible = edit_session.visible_rows()
+        offset = min(int(page_state["offset"]), max(0, ((len(visible) - 1) // 20) * 20))
+        page_state["offset"] = offset
+        shown = visible[offset : offset + 20]
         ui.label(t("prefect_filter_result_count", count=len(visible))).classes(
             "text-sm text-[var(--sy-muted)]"
         ).props("role=status aria-live=polite")
         if not visible:
-            with ui.element("section").classes("sy-empty-state w-full").props("role=status"):
-                ui.icon("person_search").props("aria-hidden=true")
-                ui.label(t("prefect_filter_empty")).classes("font-semibold")
-            return
-        with ui.element("section").classes("sy-prefect-inline-directory").props(
-            f'aria-label="{attr(t("directory"))}" data-testid="prefect-inline-directory"'
-        ):
-            for item in visible:
+            ui.label(t("prefect_filter_empty")).props("role=status")
+        with ui.column().classes("w-full gap-2").props('data-testid="prefect-inline-directory"'):
+            for item in shown:
                 prefect_id = str(item["id"])
-                merged = edit_session.merged_row(prefect_id)
-                with ui.element("article").classes("sy-prefect-inline-row").props(
+                with ui.element("article").classes("w-full p-3 border-b").props(
                     f'data-prefect-id="{attr(prefect_id)}"'
                 ):
-                    with ui.column().classes("sy-prefect-inline-identity gap-1"):
-                        ui.label(str(item["nameZh"])).classes("font-semibold")
-                        ui.label(role_label(str(item["roleCode"]))).classes(
-                            "text-xs text-[var(--sy-muted)]"
-                        )
-                        ui.button(
-                            t("prefect_inline_full_edit"),
-                            icon="manage_accounts",
-                            on_click=lambda row=dict(item): on_full_edit(row),
-                        ).props("flat dense color=primary")
-                    ui.input(
-                        label=t("name_en"),
-                        value=str(merged.get("nameEn") or ""),
-                    ).classes("sy-prefect-inline-field").on_value_change(
-                        lambda event, pid=prefect_id: stage(pid, "nameEn", event.value or None)
-                    )
-                    ui.select(
-                        label=t("form"),
-                        options=["F.3", "F.4", "F.5", "F.6"],
-                        value=str(merged["form"]),
-                    ).classes("sy-prefect-inline-field").on_value_change(
-                        lambda event, pid=prefect_id: stage(pid, "form", event.value)
-                    )
-                    ui.input(
-                        label=t("class_name"),
-                        value=str(merged["className"]),
-                    ).classes("sy-prefect-inline-field").on_value_change(
-                        lambda event, pid=prefect_id: stage(pid, "className", event.value)
-                    )
-                    ui.select(
-                        label=t("availability"),
-                        options=day_options,
-                        value=list(merged["availableDays"]),
-                        multiple=True,
-                    ).props("use-chips").classes("sy-prefect-inline-days").on_value_change(
-                        lambda event, pid=prefect_id: stage(pid, "availableDays", event.value)
-                    )
-                    with ui.column().classes("sy-prefect-inline-support gap-2"):
-                        ui.switch(
-                            t("needs_mentoring"),
-                            value=bool(merged["needsMentoring"]),
-                        ).on_value_change(
-                            lambda event, pid=prefect_id: stage(pid, "needsMentoring", bool(event.value))
-                        )
-                        if str(item["roleCode"]) == "assistant_head":
-                            ui.select(
-                                label=t("fixed_assist_day"),
-                                options={"NONE": t("fixed_assist_day_auto"), **day_options},
-                                value=str(merged["fixedGeneralDuty"]),
-                            ).on_value_change(
-                                lambda event, pid=prefect_id: stage(pid, "fixedGeneralDuty", event.value)
-                            )
-                    ui.input(
-                        label=t("remarks"),
-                        value=str(merged.get("remarks") or ""),
-                    ).classes("sy-prefect-inline-remarks").on_value_change(
-                        lambda event, pid=prefect_id: stage(pid, "remarks", event.value or "")
-                    )
-                    with ui.column().classes("sy-prefect-inline-metrics gap-1"):
-                        ui.label(f"{t('history_weight')} · {item['historyWeight']}")
-                        ui.label(f"{t('history_duties')} · {item['historyDuties']}")
-                        if prefect_id in edit_session.pending:
-                            _tone_badge(t("prefect_inline_unsaved"), "attention")
-                        if prefect_id in edit_session.conflicts:
-                            _tone_badge(t("prefect_inline_conflict"), "danger")
-                            latest = edit_session.conflicts[prefect_id]["latest"]
-                            ui.label(
-                                t(
-                                    "prefect_inline_conflict_detail",
-                                    version=latest["version"],
-                                )
-                            ).classes("text-xs text-[var(--sy-danger-strong)]")
-                            ui.label(
-                                t(
-                                    "prefect_inline_conflict_local",
-                                    fields=", ".join(
-                                        t(_INLINE_FIELD_LABEL_KEYS[field])
-                                        if field in _INLINE_FIELD_LABEL_KEYS
-                                        else field
-                                        for field in sorted(
-                                            edit_session.pending.get(prefect_id, {})
-                                        )
-                                    ),
-                                )
-                            ).classes("text-xs text-[var(--sy-muted)]")
-                            with ui.row().classes("gap-1 flex-wrap"):
-                                ui.button(
-                                    t("prefect_inline_use_latest"),
-                                    icon="refresh",
-                                    on_click=lambda pid=prefect_id: discard_conflicted_row(pid),
-                                ).props("flat dense color=primary")
-                                ui.button(
-                                    t("prefect_inline_reapply"),
-                                    icon="replay",
-                                    on_click=lambda pid=prefect_id: reapply_conflicted_row(pid),
-                                ).props("flat dense color=primary")
+                    with ui.row().classes("w-full justify-between items-center gap-2"):
+                        with ui.column().classes("gap-0"):
+                            ui.label(str(item["nameZh"])).classes("font-semibold")
+                            ui.label(f"{item['form']} {item['className']} · {role_label(str(item['roleCode']))}")
+                        ui.button(t("edit_prefect"), icon="edit",
+                                  on_click=lambda pid=prefect_id: open_editor(pid)).props(
+                            f'outline color=primary data-testid="edit-prefect-{attr(prefect_id)}"'
+                        ).style("min-height:44px")
+                    if prefect_id in edit_session.pending:
+                        _tone_badge(t("prefect_inline_unsaved"), "attention")
+                    if prefect_id in edit_session.conflicts:
+                        _tone_badge(t("prefect_inline_conflict"), "danger")
+                        latest = edit_session.conflicts[prefect_id]["latest"]
+                        ui.label(t("prefect_inline_conflict_detail", version=latest["version"]))
+                        with ui.row().classes("gap-2 flex-wrap"):
+                            ui.button(t("prefect_inline_use_latest"), icon="refresh",
+                                      on_click=lambda pid=prefect_id: discard_conflicted_row(pid)).props("outline")
+                            ui.button(t("prefect_inline_reapply"), icon="replay",
+                                      on_click=lambda pid=prefect_id: reapply_conflicted_row(pid)).props("outline")
+        if len(visible) > 20:
+            def move_batch(delta: int) -> None:
+                page_state["offset"] = offset + delta
+                directory_rows.refresh()
+            with ui.row().classes("w-full justify-between"):
+                previous = ui.button(t("prefect_previous_batch"), on_click=lambda: move_batch(-20)).props(
+                    "outline data-testid=prefect-previous-batch"
+                )
+                following = ui.button(t("prefect_next_batch"), on_click=lambda: move_batch(20)).props(
+                    "outline data-testid=prefect-load-more"
+                )
+                previous.set_enabled(offset > 0)
+                following.set_enabled(offset + 20 < len(visible))
 
-    with ui.card().classes("sy-surface sy-prefect-directory-workbench w-full p-5 mb-4"):
-        ui.label(t("prefect_directory_tools_title")).classes("text-lg font-semibold")
-        ui.label(t("prefect_directory_tools_detail")).classes(
-            "text-sm leading-6 text-[var(--sy-muted)]"
+    editor_host = ui.column().classes("w-full gap-0")
+    with ui.column().classes("w-full gap-3 mb-4"):
+        ui.input(label=t("prefect_search"), placeholder=t("prefect_search_hint")).props(
+            "clearable debounce=180 data-testid=prefect-directory-search"
+        ).classes("w-full").style("font-size:16px").on_value_change(
+            lambda event: update_filter("query", event.value)
         )
-        with ui.row().classes("sy-prefect-filter-bar w-full gap-3 items-end flex-wrap mt-3"):
-            ui.input(label=t("prefect_search"), placeholder=t("prefect_search_hint")).props(
-                "clearable debounce=180"
-            ).classes("grow min-w-[220px]").on_value_change(
-                lambda event: update_filter("query", event.value)
-            )
-            ui.select(
-                label=t("prefect_filter_form"),
-                options={"all": t("all"), "F.3": "F.3", "F.4": "F.4", "F.5": "F.5", "F.6": "F.6"},
-                value="all",
-            ).classes("min-w-[150px]").on_value_change(
-                lambda event: update_filter("form", event.value)
-            )
-            ui.select(
-                label=t("prefect_filter_role"),
-                options={"all": t("all"), "assistant_head": role_label("assistant_head"), "study_prefect": role_label("study_prefect")},
-                value="all",
-            ).classes("min-w-[180px]").on_value_change(
-                lambda event: update_filter("role", event.value)
-            )
-            ui.select(
-                label=t("prefect_filter_support"),
-                options={"all": t("all"), "needs_mentoring": t("needs_mentoring"), "new": t("new_prefect")},
-                value="all",
-            ).classes("min-w-[180px]").on_value_change(
-                lambda event: update_filter("support", event.value)
-            )
-            ui.select(
-                label=t("prefect_sort"),
-                options={
+        with ui.expansion(t("prefect_filter_options"), icon="filter_list").classes("w-full"):
+            for key, label, choices, default in (
+                ("form", "prefect_filter_form", {"all": t("all"), **{form: form for form in ("F.3", "F.4", "F.5", "F.6")}}, "all"),
+                ("role", "prefect_filter_role", {"all": t("all"), "assistant_head": role_label("assistant_head"), "study_prefect": role_label("study_prefect")}, "all"),
+                ("support", "prefect_filter_support", {"all": t("all"), "needs_mentoring": t("needs_mentoring"), "new": t("new_prefect")}, "all"),
+                ("sort", "prefect_sort", {
                     "name_asc": t("sort_name_asc"), "name_desc": t("sort_name_desc"),
                     "grade_asc": t("sort_grade_asc"), "grade_desc": t("sort_grade_desc"),
                     "role_asc": t("sort_role_asc"), "role_desc": t("sort_role_desc"),
                     "weight_asc": t("sort_weight_asc"), "weight_desc": t("sort_weight_desc"),
                     "duties_asc": t("sort_duties_asc"), "duties_desc": t("sort_duties_desc"),
                     "created_asc": t("sort_created_asc"), "created_desc": t("sort_created_desc"),
-                },
-                value="name_asc",
-            ).classes("min-w-[220px]").on_value_change(
-                lambda event: update_filter("sort", event.value)
+                }, "name_asc"),
+            ):
+                ui.select(label=t(label), options=choices, value=default).classes("w-full").on_value_change(
+                    lambda event, filter_key=key: update_filter(filter_key, event.value)
+                )
+        with ui.row().classes("w-full items-center justify-between gap-3").props("data-testid=prefect-save-dock"):
+            status_refs["label"] = ui.label("").props("role=status aria-live=polite")
+            status_refs["save"] = ui.button(t("prefect_inline_save_all"), icon="save",
+                                           on_click=save_pending_prefect_rows).props(
+                "color=primary data-testid=save-prefect-inline-changes"
             )
-        pending_status()
+        update_pending_status()
     directory_rows()
+    return flush_pending_prefect_rows
 
 
 @ui.page("/prefects")
 def prefects_page() -> None:
     workflow = get_workflow()
+    pending_guard: dict[str, Callable[[], Awaitable[bool]]] = {}
+
+    async def flush_directory() -> bool:
+        flush = pending_guard.get("flush")
+        return await flush() if flush is not None else True
+
+    async def add_prefect() -> None:
+        if await flush_directory():
+            _show_prefect_dialog()
+
     with page_shell("/prefects"):
         with ui.row().classes("sy-page-lead w-full items-center justify-end"):
-            ui.button(t("add_prefect"), icon="person_add", on_click=lambda: _show_prefect_dialog()).props("color=primary")
+            ui.button(t("add_prefect"), icon="person_add", on_click=add_prefect).props("color=primary")
         with ui.tabs().classes("w-full sy-fg-action") as tabs:
             directory_tab = ui.tab("directory", label=t("directory"), icon="groups")
             import_tab = ui.tab("ai_import", label=t("ai_import"), icon="upload_file")
@@ -1053,27 +1049,28 @@ def prefects_page() -> None:
                             ).props("outline color=primary data-testid=empty-open-import")
                 options = {item["id"]: f"{item['nameZh']} ({item['form']} {item['className']})" for item in prefects}
                 prefect_versions = {str(item["id"]): int(item["version"]) for item in prefects}
-                archive_command_state: dict[str, str | None] = {"value": None}
+                archive_command_state: dict[str, str | None] = {"value": None, "person_id": None}
                 directory_actions_classes = "sy-directory-actions w-full items-end gap-3 flex-wrap mb-4"
                 if not prefects:
                     directory_actions_classes += " hidden"
                 with ui.row().classes(directory_actions_classes):
                     selected = ui.select(label=t("select_prefect"), options=options, value=next(iter(options), None)).classes("sy-directory-selector min-w-[300px]")
 
-                    def edit_selected() -> None:
-                        if selected.value:
-                            _show_prefect_dialog(workflow.prefect(str(selected.value)))
+                    async def edit_selected() -> None:
+                        prefect_id = str(selected.value or "")
+                        if prefect_id and await flush_directory():
+                            _show_prefect_dialog(workflow.prefect(prefect_id))
 
                     with ui.dialog() as archive_dialog, ui.card().classes("sy-surface w-full max-w-md p-6"):
                         ui.label(t("confirm_archive_prefect")).classes("text-lg font-semibold")
                         ui.label(t("archive_prefect_warning")).classes("text-sm leading-6 text-[var(--sy-muted)] mt-2")
 
                         async def confirm_archive_selected() -> None:
-                            if not selected.value:
+                            prefect_id = archive_command_state["person_id"]
+                            if not prefect_id:
                                 archive_dialog.close()
                                 ui.notify(t("operation_error"), type="negative")
                                 return
-                            prefect_id = str(selected.value)
                             archive_dialog.close()
                             result = await _run_with_progress(
                                 lambda: workflow.archive_prefect(
@@ -1100,10 +1097,15 @@ def prefects_page() -> None:
                                 on_click=confirm_archive_selected,
                             ).props("color=negative data-testid=confirm-archive-prefect")
 
-                    def archive_selected() -> None:
-                        if not selected.value:
+                    async def archive_selected() -> None:
+                        prefect_id = str(selected.value or "")
+                        if not prefect_id:
                             ui.notify(t("operation_error"), type="negative")
                             return
+                        if not await flush_directory():
+                            return
+                        prefect_versions[prefect_id] = int(workflow.prefect(prefect_id)["version"])
+                        archive_command_state["person_id"] = prefect_id
                         archive_command_state["value"] = f"prefect-archive-ui:{uuid4().hex}"
                         archive_dialog.open()
 
@@ -1116,7 +1118,7 @@ def prefects_page() -> None:
                         edit_button.disable()
                         archive_button.disable()
                 if prefects:
-                    _render_inline_prefect_directory(
+                    pending_guard["flush"] = _render_inline_prefect_directory(
                         workflow,
                         prefects,
                         on_full_edit=_show_prefect_dialog,
