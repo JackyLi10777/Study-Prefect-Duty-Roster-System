@@ -1,6 +1,8 @@
 # F2a: one source-owned release gate declaration
 
 Base: protected main `d8adbf55de9a56c515ec666c5e5999619c74f84d`.
+Normal merge adopted protected main `f7686aa273754ee7ed3b4bca2b31de488995c8c6`
+before the final candidate tests; the original worktree remains untouched.
 Status: implementation and focused evidence checkpoint; full evidence pending.
 
 The report reader previously accepted a report that reduced both its declared
@@ -37,3 +39,9 @@ A red regression preceded the fix. Tests execute the real CLI and pure Windows
 PowerShell bridge with valid, reduced, reordered, duplicate, malformed and old
 schema reports, including report replacement after validation. No deploy script
 is invoked, and the original database and prior worktrees remain untouched.
+
+Targeted verification: 74 Python/CLI/PowerShell contract and reader/runner tests,
+plus 84 existing Windows/Worker deployment regression tests passed. These are
+fictional evidence and script tests, not real deployment or formal acceptance.
+Project governance and whitespace checks passed; the complete update suite
+must still run on the final clean checkpoint before merging.
