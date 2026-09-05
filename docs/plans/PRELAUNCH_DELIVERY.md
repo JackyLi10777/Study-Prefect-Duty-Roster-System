@@ -8,7 +8,7 @@
 
 | 來源 | 固定提交／狀態 | 採納及禁止覆蓋項 |
 |---|---|---|
-| protected main | `530ba88de0fe4e0f29135977d384d72b092d9c81` | PR #122至#129已合併；保留既有統一時間／一致讀取／手機基礎，新增六行document／renderer及現模型DraftEditor；不是新模型或正式啟用完成，新分支仍須即時 fetch |
+| protected main | `cb12fd0a2f1d2adca1af7cffacbb150f0c3bd801` | PR #122至#130已合併；保留既有統一時間／一致讀取／手機基礎，新增六行document／renderer、現模型DraftEditor及匯出工作區；不是新模型或正式啟用完成，新分支仍須即時 fetch |
 | 手機／PNG final | `29ac083fd4d1e9a54854c8fe4436573d0c51fd5b`，2026-09-05 核對 clean | 安全PNG交付、匯入保存保護、原生sheet、調整後匯出owner、關閉候選清理及抽屜取消；逐項比對，不整檔套用 |
 | 手機／PNG 新固定checkpoint | `6780eafd036f32c2df78d8d9c944bcb4bdef4f2a`，runtime `0df41ba`；2026-09-05 核對 clean | 已合main8843480；最終clean HEAD於07:00:51 UTC完整重跑六項PASS，補足先前04340f9 full／0df focused的來源差異。390px補任及receipt／Avatar／PDF同v8已回報；137檔仍須按行為整合，不等於主線或部署 |
 | 效能／手機 overhaul | `ecdf7ae` 加未提交工作；尚無最終checkpoint | 等完成SHA；不能用移除PNG／分享橋／測試的版本覆蓋final；保留資產、首屏、名冊、gate改進的行為證據 |
