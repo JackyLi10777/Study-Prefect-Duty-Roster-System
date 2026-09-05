@@ -172,7 +172,13 @@ def _check(page, base, case, mode, results, persist):
         # Focus must work before image completion. Only the following unmeasured
         # history-retention sample waits for first-use Quasar image spinners to
         # finish; cold mount/footprint collection above is not prewarmed.
-        expect(panel.locator(".q-img__loading")).to_have_count(0)
+        # Attribution includes a genuinely lazy image above the heading. Bring
+        # each explicitly opened image into view before awaiting its completion;
+        # an offscreen lazy image is correctly still waiting, not a leak.
+        for illustration in panel.locator(".q-img").all():
+            illustration.scroll_into_view_if_needed()
+            expect(illustration.locator(".q-img__loading")).to_have_count(0)
+        page.locator("#" + anchor).scroll_into_view_if_needed()
         panel.evaluate("node => { window.__d3bAnchorNodes = [...node.querySelectorAll('*')]; }")
         panel_id_target = {
             "/platform": "platform-attribution-section",
