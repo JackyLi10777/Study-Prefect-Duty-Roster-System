@@ -77,8 +77,11 @@ pre-push 命令只證明「已 staged 的變更適合提交／push 並交給 CI�
 Schema 4 報告綁定清單版本與 canonical SHA-256；Python 狀態頁、正式驗證器、
 Windows 和 Worker 部署器共用同一讀取契約。部署器直接使用單次嚴格驗證所得的
 報告快照，不能先驗證一份再重新讀取另一份。歷史報告保留原樣，不能冒充新候選證據。
-此清單目前統一既有 15 項閘門；完整手機原始樣本與 Public／Viewer 門檻的接入
-仍屬正式啟用前待完成工作，不能用這次契約修正宣稱全項驗收完成。
+此清單現有 17 項閘門：既有 15 項加上 `generated_design_tokens` 及
+`generated_service_weave_delivery`。兩個資產檢查只執行生成器的 `--check`，
+不自動修復或重寫檔案；生成器本身亦納入來源指紋。任何輸出缺失或過期都不能通過。
+完整手機原始樣本、獨立瀏覽器矩陣與 Public／Viewer 門檻的接入仍待完成，
+不能用這次資產門檻接入宣稱全項驗收完成。
 
 準備建立 release tag、更新 Windows 正式 bundle 或部署 Worker 時，明確執行：
 
