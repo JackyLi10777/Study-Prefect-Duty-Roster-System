@@ -485,7 +485,8 @@ def test_platform_operating_map_has_bounded_motion_and_mobile_flow() -> None:
     page = _read("nicegui_app/ui/page_routes/showcase.py")
 
     assert 'test_id="platform-operating-map"' in page
-    assert 'motion_pattern(\n                "platform-continuity"' in page
+    # The route's actual first-use motion request and six list items are
+    # covered by test_platform_operating_map_retains_its_semantic_motion_request.
     assert '"platform-operating-map-section"' in page
     assert "'.sy-platform-operating-map'" in motion
     assert ".sy-platform-map-node:hover" in css
