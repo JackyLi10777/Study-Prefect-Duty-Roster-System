@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
+import argparse
 import importlib.metadata
 import json
 import os
@@ -733,13 +734,20 @@ def _assert_signed_admin_get_and_feedback(page: Page, published_id: int) -> None
         route.abort("failed")
     page.route(pattern, block_download)
     try:
-        for _ in range(8):
+        for index in range(8):
             page.evaluate("document.body.dataset.syDownload='pending'")
             with page.expect_request(_is_generated_get, timeout=10_000):
                 dialog.get_by_test_id("download-roster-detail").click()
             page.wait_for_function("document.body.dataset.syDownload === 'failed'")
             _assert_inline_feedback(page, role="alert", message=MESSAGES["download_delivery_failed"][ZH_HK],
                                     label="fetch-failure-top-layer")
+            if index == 0:
+                page.evaluate("""() => Object.defineProperty(navigator, 'share', {
+                    configurable:true, value:async()=>{throw new DOMException('cancelled', 'AbortError');}
+                })""")
+                _prepare_and_confirm_png_share(page, dialog)
+                _assert_inline_feedback(page, role="status", message=MESSAGES["roster_image_share_cancelled"][ZH_HK],
+                                        label="server-status-after-browser-alert")
         assert len(aborted) == 8
         dialog.get_by_test_id("download-roster-detail").click()
         _assert_inline_feedback(page, role="alert", message="REQ-",
@@ -749,10 +757,18 @@ def _assert_signed_admin_get_and_feedback(page: Page, published_id: int) -> None
         page.unroute(pattern, block_download)
     dialog.get_by_test_id("close-roster-export").click()
     expect(dialog).to_be_hidden()
+    page.get_by_test_id("open-roster-export").click()
+    _assert_inline_feedback(page, role="status", message=MESSAGES["roster_image_export_notice"][ZH_HK],
+                            label="reopened-feedback-reset")
+    dialog.get_by_test_id("close-roster-export").click()
+    expect(dialog).to_be_hidden()
 
 
 def main() -> None:
     global BASE_URL, PERFORMANCE_EVIDENCE_PATH, EVIDENCE_METADATA
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--signed-only", action="store_true", help="Run signed delivery diagnostics only; no lifecycle evidence")
+    args = parser.parse_args()
     scratch = Path(tempfile.mkdtemp(prefix="sy-export-mainline-"))
     environment = isolated_environment(scratch, _free_loopback_port())
     environment["PYTHONPATH"] = os.pathsep.join(sys.path[:3])
@@ -785,18 +801,19 @@ def main() -> None:
             EVIDENCE_METADATA["browserVersion"] = browser.version
             try:
                 # Keep the original cold maintenance-page lifecycle context.
-                page, context = mobile._new_mobile_page(browser, width=390, height=844,
-                    label="export-cold", console_errors=errors, page_errors=errors)
-                try:
-                    _assert_export_dialog_png_cleanup_cycles(page,
-                        published_roster_id=fixtures.published_id, label="export", cycles=20)
-                    _assert_png_native_share_outcomes_and_download_fallback(page, label="native-share")
-                    _assert_export_advanced_options_are_lazy(page, label="advanced")
-                except Exception:
-                    page.screenshot(path=str(scratch / "failure.png"), full_page=True)
-                    raise
-                finally:
-                    context.close()
+                if not args.signed_only:
+                    page, context = mobile._new_mobile_page(browser, width=390, height=844,
+                        label="export-cold", console_errors=errors, page_errors=errors)
+                    try:
+                        _assert_export_dialog_png_cleanup_cycles(page,
+                            published_roster_id=fixtures.published_id, label="export", cycles=20)
+                        _assert_png_native_share_outcomes_and_download_fallback(page, label="native-share")
+                        _assert_export_advanced_options_are_lazy(page, label="advanced")
+                    except Exception:
+                        page.screenshot(path=str(scratch / "failure.png"), full_page=True)
+                        raise
+                    finally:
+                        context.close()
                 # Separate signed Admin context so auth/request interception
                 # cannot warm or change the measured twenty-cycle baseline.
                 page, context = mobile._new_mobile_page(browser, width=390, height=844,
@@ -828,8 +845,9 @@ def main() -> None:
         if final_source != source:
             raise AssertionError("Source changed during export verification")
         report = {**EVIDENCE_METADATA, "postVerificationSource": final_source,
-            "status": "pass", "exportCycles": 20, "rawSamples": "raw-samples.json",
-            "outcomes": ["shared", "cancelled", "failed", "unsupported", "download-fallback"],
+            "status": "pass", "exportCycles": 0 if args.signed_only else 20, "rawSamples": "raw-samples.json",
+            "outcomes": [] if args.signed_only else ["shared", "cancelled", "failed", "unsupported", "download-fallback"],
+            "signedOnly": args.signed_only,
             "browserErrorCount": len(errors), "expectedConsoleErrorCount": len(expected_console_errors),
             "routeMatrixExecuted": False}
         (scratch / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")

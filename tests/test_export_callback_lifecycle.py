@@ -282,11 +282,40 @@ def test_confirmation_expiry_requires_new_preparation_and_late_result_is_ignored
     confirm = ui.by_test_id("confirm-fixture")
     lease = share_metadata(confirm)["leaseToken"]
     clock[0] = 15
-    ui.timers[0].callback()
+    asyncio.run(ui.timers[0].callback())
     assert not area.default_slot.children
     confirm.events["click"](share_event(status="started", token="2", lease=lease))
     confirm.events["click"](share_event(status="shared", token="2", lease=lease))
     assert not reports
+    assert ui.notifications[0][0] == "native_share_prepare_expired"
+
+
+def test_confirmation_expiry_waits_for_lease_deadline_if_timer_wakes_early(harness, monkeypatch):
+    ui, _client = harness
+    clock = [0.0]
+    monkeypatch.setattr(page_shared, "perf_counter", lambda: clock[0])
+    area = Element(ui)
+    page_shared._mount_native_share_confirmation(
+        area, share_event(preparedAt=0), test_id="fixture", generation="2",
+        result_guard=lambda token: token == "2", build_handler=lambda *_: "fixture",
+        report_result=lambda _: None,
+    )
+    clock[0] = 14.999
+    waits = []
+
+    async def sleep(remaining):
+        assert area.default_slot.children and not ui.notifications
+        waits.append(remaining)
+        clock[0] = 15.0
+
+    monkeypatch.setattr(page_shared.asyncio, "sleep", sleep)
+    async def fire():
+        result = ui.timers[0].callback()
+        if asyncio.iscoroutine(result):
+            await result
+    asyncio.run(fire())
+    assert waits == [pytest.approx(0.001)]
+    assert not area.default_slot.children
     assert ui.notifications[0][0] == "native_share_prepare_expired"
 
 

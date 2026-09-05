@@ -745,7 +745,14 @@ def _mount_native_share_confirmation(
         if not container.is_deleted:
             container.clear()
 
-    def expired() -> None:
+    async def expired() -> None:
+        # Event-loop timers can wake before a perf_counter deadline. A one-shot
+        # early wake must not abandon expiry and leave confirmation mounted.
+        while lease.active and not lease.started:
+            remaining = lease.expires_at - perf_counter()
+            if remaining <= 0:
+                break
+            await asyncio.sleep(remaining)
         if lease.expire(now=perf_counter()):
             cleanup()
             if not container.is_deleted and result_guard(generation):
