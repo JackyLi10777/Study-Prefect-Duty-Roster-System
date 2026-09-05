@@ -9,3 +9,4 @@
 ## Index
 
 - [ADR-0001: Documentation and architecture governance](0001-documentation-and-architecture-governance.md)
+- [ADR-0002: 日期席位核心與不可變發布版本](0002-dated-roster-core-and-publication-snapshots.md)

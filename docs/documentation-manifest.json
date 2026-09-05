@@ -14,6 +14,7 @@
       "docs/ITERATION_REGISTER.md"
     ],
     "standard": [
+      "CONTEXT.md",
       "Professional_Design_System.md",
       "SECURITY.md",
       "docs/ARCHITECTURE_OVERVIEW.md",
@@ -84,6 +85,7 @@
     "music": "asset-guide"
   },
   "topic_owners": {
+    "roster-domain-language": "CONTEXT.md",
     "current-production-status": "docs/status/CURRENT_STATUS.md",
     "machine-readable-release-state": "docs/status/current-release.json",
     "project-capability-and-delivery-history": "PROJECT_STATUS.md",

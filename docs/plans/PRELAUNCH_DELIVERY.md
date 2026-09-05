@@ -8,18 +8,32 @@
 
 | 來源 | 固定提交／狀態 | 採納及禁止覆蓋項 |
 |---|---|---|
-| protected main | `2a7c975179ce100af8c8af7dd90f77217bb466f5` | PR #122／#123／#124通過必要CI後合併；已有統一時間／auth／release guard／下載閒置回收／手機驗收契約；新分支仍須即時 fetch |
+| protected main | `cb12fd0a2f1d2adca1af7cffacbb150f0c3bd801` | PR #122至#130已合併；保留既有統一時間／一致讀取／手機基礎，新增六行document／renderer、現模型DraftEditor及匯出工作區；不是新模型或正式啟用完成，新分支仍須即時 fetch |
 | 手機／PNG final | `29ac083fd4d1e9a54854c8fe4436573d0c51fd5b`，2026-09-05 核對 clean | 安全PNG交付、匯入保存保護、原生sheet、調整後匯出owner、關閉候選清理及抽屜取消；逐項比對，不整檔套用 |
+| 手機／PNG 新固定checkpoint | `6780eafd036f32c2df78d8d9c944bcb4bdef4f2a`，runtime `0df41ba`；2026-09-05 核對 clean | 已合main8843480；最終clean HEAD於07:00:51 UTC完整重跑六項PASS，補足先前04340f9 full／0df focused的來源差異。390px補任及receipt／Avatar／PDF同v8已回報；137檔仍須按行為整合，不等於主線或部署 |
 | 效能／手機 overhaul | `ecdf7ae` 加未提交工作；尚無最終checkpoint | 等完成SHA；不能用移除PNG／分享橋／測試的版本覆蓋final；保留資產、首屏、名冊、gate改進的行為證據 |
 | 手機驗收契約 | `a175b776`，經PR #124合併為 `2a7c975` | 固定scenario/profile、cold/core原始證據與來源綁定檢查；producer與完整權限／實機矩陣仍待整合，不能當成全站已驗收 |
+| 名冊單人編輯 | `def953c`，經PR #127合併為 `97b0846` | 保留person editor協定、CAS、lazy filter及封存版本保護；新核心分支同步後207項相關檢查通過。PNG來源的people.py須逐行為整合，不用舊整檔覆蓋；未部署 |
+| 六行document／renderer | `55cffb1`，經PR #128合併為 `caac0a0` | 純PDF／PNG與公開安全投影、保留#125單次audit snapshot；新核心分支同步後159項相关檢查通過。UI交付、CP及20行未接入，未部署 |
+| 現模型DraftEditor | `7db8b3b`，經PR #129合併為 `530ba88` | 正式／Guest共用final-state，保留已提交收據、補任及原子讀取；歷史分頁與dialog名稱修正。新核心分支同步後186項相關檢查通過、1項來源適用性skip；未部署 |
 | 本任務 auth修正 | `cb5cccc`，經PR #122合併為 `12d6732` | 背景不poll、返回驗證、到期與撤權、已清理runtime忽略晚到回應 |
 | 本任務 release guard | `f8dbc0f`，經PR #122合併為 `12d6732` | 宣告／執行清單精確一致才pass；不代替整合新gate的部署器更新 |
 | 下載閒置回收 | `2041310`，經PR #123合併為 `2acf98f` | 最終PR head `8939dbb` 的test-and-audit／analyze通過；保留單次票據、配額及mode/session綁定；未部署 |
-| 一致讀取快照 | `7ab0dfc`／`2522680`，本地定向驗證 | SQLite session不等於讀交易；audit／週表／年報共用明確BEGIN，Guest使用單次隔離拷貝；不新增schema；最終全套與CI仍待通過 |
-| 發布後空缺恢復 | `d1fd617`，已正常合入一致性PR #125 | 同一版本化命令補入合資格人員，只credit、不再次debit；獨立full及主線合併定向已通過，與讀快照修正共同驗證後才合併；手機接合另驗收 |
+| 一致讀取快照 | `7ab0dfc`／`2522680`，經PR #125合併為 `8843480` | audit／週表／年報共用明確BEGIN，Guest使用單次隔離拷貝；最終head fae464d完整六項及兩項必要CI通過；移除BEGIN可重現兩個補任途中讀取失敗；未部署 |
+| 發布後空缺恢復 | `d1fd617`，經共同PR #125合併為 `8843480` | 同一版本化命令補入合資格人員，只credit、不再次debit；共同head fae464d完整驗證及必要CI通過；手機接合另驗收，未部署 |
 
 `4dd134e` 與 `ecdf7ae` 的 tree 同為 `04b1af5b41df305a08a7ca2131bebdb2c83b810a`。
 這是共同底稿，不當作兩份功能重播。完整並行整合尚未完成。
+
+`6780eaf` 重跑報告 `generatedAt=2026-09-05T07:00:51.517002+00:00`，
+SHA-256 `392a766be2e5717de592a06bfb5f8a2e23c9dc0d1fd676aa71ede0adca0a0d30`；
+已讀取核對報告、HEAD及空白porcelain狀態。來源任務另確認執行前後相同且未改檔。
+`formalReleaseExecuted=false`；這不是手機性能達標、正式release或部署證明。
+
+後續匯出介面C批保留兩條既有GET下載URL與安全控制。來源帳PNG-02曾列POST票據，
+傳輸方式的契約差異仍待收斂，不可因此宣告整項完成；URL相容與請求方式須分別審查。
+90秒期限、session／AccessMode、原子單次消費、精確MIME、no-store／nosniff、配額及
+來源版本檢查不得因保留GET而取消；原生分享15秒確認是另一個生命週期，不能取代下载票據。
 
 ## 需求矩陣
 
@@ -34,10 +48,10 @@
 | REL-01 | B | 完成報告拒絕漏項／多項／錯序／失敗 | 已合併 | PR #122／12d6732；6個release完成情境；未部署 |
 | REL-02 | B | 資產／Public gate與reader／部署器一致 | 待實作 | 所有gate精確清單、完整執行、失敗注入與清理後可核驗證據 |
 | EDIT-01 | B | 局部編輯、候選清理、匯入dirty保護 | 進行中 | final來源功能；合併版重載、切日、匯入失敗、undo/redo瀏覽器測試 |
-| ADJUST-01 | B | 空缺恢復、版本／command_id、舊表單鎖定 | 進行中 | PR #125收斂服務端修正；仍需發布→換人／空缺→恢復→撤回的手機閉環，服務分鐘及公平不重複 |
+| ADJUST-01 | B | 空缺恢復、版本／command_id、舊表單鎖定 | 進行中 | PR #125／8843480已合併服務端修正；仍需發布→換人／空缺→恢復→撤回的手機閉環，服務分鐘及公平不重複 |
 | EXPORT-01 | B | 原生modal內進度／錯誤、發布後分享控制 | 進行中 | 29ac083含owner修正；合併版延遲、失敗、跨分頁發布後分享測試 |
 | MODEL-01 | C | 新空庫、日期席位、發布版本；persistence/core | 待實作 | 空庫初始化、約束、重啟及備份還原；無舊業務資料遷入 |
-| POLICY-01 | C | 學年政策快照、持久房間／人數／星期／時間 | 待實作 | Room407／406、預設人數、最多20列、設定保存重載及發布快照隔離 |
+| POLICY-01 | C | 學年政策快照、持久房間／人數／星期／時間 | 進行中 | 純compiler之後新增隔離settings persistence準備：Memory／臨時SQLite、修訂／重載／CAS／還原預览；216項定向通過及獨立review。尚未接正式DB、權限／備份／UI或發布快照，詳見checkpoint |
 | POLICY-02 | C | F1持續開關、恢復預設、升學年草稿 | 待實作 | 預設關閉、明確啟用、不自动按考試日期開啟；重設不改已發布結果 |
 | WEEK-01 | C | 普通生成／候選／保存／發布採新模型 | 待實作 | 四業務資格規則；20列100格、關閉、空缺及跨模式衝突 |
 | GUEST-01 | C | 共享規則與隔離adapter、fixture／policy分版 | 待實作 | 虛構資料、不得正式寫入／上傳／AI／備份／原生分享 |
@@ -66,3 +80,12 @@ auth用Chromium／WebKit的受控visibility／時鐘作生命週期檢查，不�
 final任務回報完整寫入流程通過，但全站手機／效能未完成；這不代替整合提交的測試。
 下一步取得overhaul checkpoint，依B的功能群組形成可測試差異，再啟動C的新核心。
 不可因目前網站可打開而關閉HUMAN-01或RECOVERY-01。
+
+新核心準備見 [ADR-0002](../adr/0002-dated-roster-core-and-publication-snapshots.md)：
+可調政策只在隔離分支保存；普通與CP日期席位使用共同純編譯器，但尚未提供新操作頁面、
+排班人員資格、正式分鐘聚合或持久設定。不能由純規則測試推斷C／D階段完成。
+後續首頁存在性檢查應使用有界查詢，避免為 `has_prefects` 建立完整名冊資料；
+這是低負載整合待辦，不改變全域搜尋完整性的要求。
+
+後續 [學年設定資料層 checkpoint](POLICY_SETTINGS_CHECKPOINT.md) 已驗證隔離版本儲存，
+但不改上述正式接線／啟用條件，也不把舊compiler的證據當成新的持久化完整驗證。
