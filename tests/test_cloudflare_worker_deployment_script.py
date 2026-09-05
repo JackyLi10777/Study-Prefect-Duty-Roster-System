@@ -129,7 +129,8 @@ def test_worker_deployment_is_bound_to_an_immutable_published_release() -> None:
 def test_worker_release_gate_identity_comparison_is_order_independent_and_strict_safe() -> None:
     source = _source()
 
-    assert "[int]$releaseReport.schemaVersion -ne 3" in source
+    assert "[int]$releaseReport.schemaVersion -ne $gateEvidence.reportSchemaVersion" in source
+    assert "Assert-ReleaseGateEvidence -Python $sourcePython -Repository $SourceRoot -ReportPath $releaseReportPath" in source
     assert "$postVerificationSource = $releaseReport.postVerificationSource" in source
     assert "[string]$postVerificationSource.sourceFingerprint -cne [string]$releaseReport.sourceFingerprint" in source
     assert "[int]$postVerificationSource.sourceFileCount -ne [int]$releaseReport.sourceFileCount" in source

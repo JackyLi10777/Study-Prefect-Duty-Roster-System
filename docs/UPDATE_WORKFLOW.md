@@ -73,6 +73,13 @@ pre-push 命令只證明「已 staged 的變更適合提交／push 並交給 CI�
 
 ## 只有正式發布才使用 `--release`
 
+必需檢查清單由來源中的 `scripts/release-gates.json` 定義，報告不能自行縮減。
+Schema 4 報告綁定清單版本與 canonical SHA-256；Python 狀態頁、正式驗證器、
+Windows 和 Worker 部署器共用同一讀取契約。部署器直接使用單次嚴格驗證所得的
+報告快照，不能先驗證一份再重新讀取另一份。歷史報告保留原樣，不能冒充新候選證據。
+此清單目前統一既有 15 項閘門；完整手機原始樣本與 Public／Viewer 門檻的接入
+仍屬正式啟用前待完成工作，不能用這次契約修正宣稱全項驗收完成。
+
 準備建立 release tag、更新 Windows 正式 bundle 或部署 Worker 時，明確執行：
 
 ```powershell
@@ -81,7 +88,7 @@ python -X utf8 scripts\verify_update.py --release
 
 這會啟動 `scripts/verify_release_candidate.py`，產生正式 `logs/release-candidate-report.json`。即使工作樹沒有新改動，`--release` 仍可重新產生與目前 source fingerprint 對應的正式證據。瀏覽器元件截圖只寫入 ignored `logs/uiverse-components`；更新已追蹤 visual reference 必須另立明確、可審查的 baseline 變更，不可由一般 gate 暗中覆蓋。
 
-正式報告現使用 schema 3，並記錄 clean source commit／tree、fingerprint／file count、planned annotated tag、required check identities、timestamps、tool versions 及 `humanAcceptanceRequired=true`。每道 gate 完成時及整輪結束時都會重新計算 fingerprint，並把 `postVerificationSource` 與開始時的 commit、tree、file count 及 Git cleanliness 比對；任何 verifier 產生的 tracked／untracked source、提交漂移或 runtime fingerprint 改變都會在第一個 gate 邊界令整體 fail closed。正式 report 必須在最終 protected-main commit 上執行一次；部署器會把 report 與 clean HEAD、remote annotated tag 及 `origin/main` 再對照，並拒絕缺失、數字或字串形式的 `sourceDirty`。Staged、缺少 post-check binding 或舊 schema report 不能啟動正式切換，正式 gate 亦不能代替 deployment 或真人驗收。
+正式報告現使用 schema 4，並記錄 clean source commit／tree、fingerprint／file count、planned annotated tag、required check identities、timestamps、tool versions 及 `humanAcceptanceRequired=true`。每道 gate 完成時及整輪結束時都會重新計算 fingerprint，並把 `postVerificationSource` 與開始時的 commit、tree、file count 及 Git cleanliness 比對；任何 verifier 產生的 tracked／untracked source、提交漂移或 runtime fingerprint 改變都會在第一個 gate 邊界令整體 fail closed。正式 report 必須在最終 protected-main commit 上執行一次；部署器會把 report 與 clean HEAD、remote annotated tag 及 `origin/main` 再對照，並拒絕缺失、數字或字串形式的 `sourceDirty`。Staged、缺少 post-check binding 或舊 schema report 不能啟動正式切換，正式 gate 亦不能代替 deployment 或真人驗收。
 
 `SING_YIN_HOST` 正式只接受已測試的 IPv4 loopback `127.0.0.1`。不要使用 `::1`／`[::1]`：目前 TrustedHostMiddleware 會拒絕相應 bracketed Host，設定驗證會在啟動前直接報錯，避免形成全站 HTTP 400。
 
