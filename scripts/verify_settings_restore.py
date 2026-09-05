@@ -35,6 +35,43 @@ def _server_diagnostics(log: str, *, mode: str) -> dict[str, int]:
     return {"serverErrorCount": 0, "expectedChecksumFailureCount": expected}
 
 
+def _double_dialog_text(page, dialog, case, mode, results, persist):
+    """Observe actual font sizes, including fixed-pixel inputs, independently."""
+    dialog.evaluate("""root => {
+        window.__restoreTextTargets = [...root.querySelectorAll('*')].filter(el =>
+            !el.closest('.q-icon, [aria-hidden=true]') && (el.matches('input,textarea') ||
+            [...el.childNodes].some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim()))
+        ).map(el => ({el, style: el.getAttribute('style'), font: parseFloat(getComputedStyle(el).fontSize)}));
+        for (const target of window.__restoreTextTargets)
+            target.el.style.setProperty('font-size', `${target.font * 2}px`, 'important');
+    }""")
+    try:
+        for width, height in ((256, 760), (320, 760), (360, 800), (390, 844),
+                              (430, 932), (844, 390), (768, 1024), (820, 1180)):
+            page.set_viewport_size({"width": width, "height": height})
+            page.wait_for_timeout(100)
+            fonts = page.evaluate("""window.__restoreTextTargets.map(({el,font},index) => ({
+                index, tag:el.tagName, beforePx:font, afterPx:parseFloat(getComputedStyle(el).fontSize),
+                connected:el.isConnected
+            }))""")
+            overflow = page.evaluate("document.documentElement.scrollWidth > innerWidth")
+            results.append({"mode": mode, "scenario": "alertdialog-measured-text-2x",
+                            "width": width, "height": height, "fonts": fonts, "horizontalOverflow": overflow})
+            persist()
+            assert fonts and any(font["tag"] == "INPUT" for font in fonts)
+            assert all(font["connected"] and font["beforePx"] > 0
+                       and abs(font["afterPx"] - font["beforePx"] * 2) < 0.1 for font in fonts)
+            assert not overflow, f"Measured text reflow failed at {width}"
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.screenshot(path=str(case / "review-measured-text-2x.png"))
+    finally:
+        page.evaluate("""() => {
+            for (const {el,style} of window.__restoreTextTargets)
+                style === null ? el.removeAttribute('style') : el.setAttribute('style',style);
+            delete window.__restoreTextTargets;
+        }""")
+
+
 def _check(page, base, case, mode, results, persist, backup=None):
     page.goto(base + "/settings", wait_until="domcontentloaded")
     _ready(page)
@@ -100,9 +137,10 @@ def _check(page, base, case, mode, results, persist, backup=None):
     _fit(page)
     page.screenshot(path=str(case / "review-text-200.png"))
     text_style.evaluate("node => node.remove()")
+    _double_dialog_text(page, dialog, case, mode, results, persist)
     page.get_by_test_id("restore-cancel-action").click()
     expect(dialog).to_be_hidden()
-    results.append({"mode": mode, "scenario": "eight-viewports-200-percent-text", "status": "pass"})
+    results.append({"mode": mode, "scenario": "eight-viewports-root-font-200-proxy", "status": "pass"})
     persist()
     ready.click()
     expect(dialog).to_be_visible()
