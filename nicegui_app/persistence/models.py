@@ -105,6 +105,37 @@ class PrefectAvailabilityRecord(Base):
     day: Mapped[str] = mapped_column(String(16))
 
 
+class DatedDraftRevisionRecord(Base):
+    """Immutable ordinary draft documents, not old distributable roster weeks."""
+
+    __tablename__ = "dated_draft_revisions"
+    __table_args__ = (
+        CheckConstraint("typeof(version) = 'integer' AND version BETWEEN 1 AND 9223372036854775807", name="ck_dated_draft_version"),
+        ForeignKeyConstraint(["year_start", "policy_revision"],
+                             ["school_year_policy_revisions.year_start", "school_year_policy_revisions.revision"],
+                             name="fk_dated_draft_policy"),
+    )
+    schedule_id: Mapped[str] = mapped_column(String(38), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, primary_key=True)
+    year_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    policy_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    week_start: Mapped[date] = mapped_column(Date, nullable=False)
+    document: Mapped[str] = mapped_column(Text, nullable=False)
+    command_id: Mapped[str] = mapped_column(ForeignKey("operation_commands.command_id"), unique=True, nullable=False)
+
+
+class DatedDraftCurrentRecord(Base):
+    __tablename__ = "dated_draft_current"
+    __table_args__ = (
+        ForeignKeyConstraint(["schedule_id", "version"], ["dated_draft_revisions.schedule_id", "dated_draft_revisions.version"],
+                             name="fk_dated_draft_current"),
+        UniqueConstraint("week_start", name="uq_dated_draft_week"),
+    )
+    schedule_id: Mapped[str] = mapped_column(String(38), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    week_start: Mapped[date] = mapped_column(Date, nullable=False)
+
+
 class RosterWeekRecord(Base):
     __tablename__ = "roster_weeks"
     __table_args__ = (

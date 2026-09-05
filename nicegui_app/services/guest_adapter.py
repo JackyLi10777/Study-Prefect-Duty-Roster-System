@@ -72,6 +72,7 @@ from roster_policy.configurable import WeeklyPolicy
 from nicegui_app.services.guest_policy import (
     GuestPolicyRepository, guest_policy_command_id, policy_reference_revision,
 )
+from nicegui_app.services.guest_dated_drafts import GuestDatedDraftMixin
 from roster_policy import (
     DUTY_SERVICE_TIME_WINDOWS,
     DutyPost,
@@ -187,7 +188,7 @@ def _duty_minutes(post_code: str) -> int:
     return int((end - start).total_seconds() // 60)
 
 
-class GuestWorkspaceAdapter:
+class GuestWorkspaceAdapter(GuestDatedDraftMixin):
     """A bounded guest implementation of the page-facing workspace port."""
 
     def __init__(
@@ -2050,6 +2051,7 @@ class GuestWorkspaceAdapter:
         command_id: str | None = None,
         request_digest: str | None = None,
         policy_result_reference: tuple[int, int] | None = None,
+        draft_result_reference: tuple[str, int] | None = None,
         reset_policy_history: bool = False,
     ) -> GuestWorkspaceView:
         if not self._bound:
@@ -2066,6 +2068,7 @@ class GuestWorkspaceAdapter:
                 state=state,
                 request_digest=request_digest,
                 policy_result_reference=policy_result_reference,
+                draft_result_reference=draft_result_reference,
                 reset_policy_history=reset_policy_history,
             )
             self._initial_view = updated
@@ -2150,6 +2153,8 @@ class GuestWorkspaceAdapter:
 
     @staticmethod
     def _week_record(state: Mapping[str, Any], roster_week_id: int) -> dict[str, Any]:
+        from nicegui_app.services.dated_draft_types import reject_dated_draft
+        reject_dated_draft(roster_week_id)
         week = next(
             (row for row in state.get("weeks", []) if int(row["id"]) == roster_week_id),
             None,

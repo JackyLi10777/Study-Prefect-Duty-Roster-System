@@ -32,6 +32,14 @@ and its existing bounded workspace/receipt registry, never another database.
   Multiple Assist seats are explicitly unsupported in C1; do not ignore a mode
   or silently move a person's fixed weekday. This limitation must be removed
   with its own parity tests before full configurable UI activation.
+- The Assist mode is fixed for a C1 draft; regeneration/adoption do not silently
+  switch it. Successful fixed-mode generation retains the existing first-owner
+  initialization behavior in the same transaction/workspace commit, including
+  the prefect version increment. Rollback or failed Guest CAS/capacity admission
+  must not retain that side effect. Exact replay never reinitializes ownership.
+- Flexible-mode previous-week history chooses the latest actual week across
+  legacy active rosters and dated drafts. Dated wins a same-week tie only; an
+  older dated draft never overrides a newer legacy roster merely by type.
 - At most twenty display rows/one hundred dated cells, including closed rows.
   All stored names are authoritative Chinese. No real names in automated tests.
 
@@ -62,4 +70,32 @@ rule owners. Test-site deployment remains one integrated update after completion
 
 ## Evidence
 
-Contract checkpoint only; implementation and tests are not complete.
+The backend draft Interface is implemented (not activated in UI). Migration
+`0016` owns the dated draft history/current pointer, including a unique command
+reference for each revision. Existing operation receipts/fences/recovery own
+official commits; Guest retains only bounded result references in its existing
+registry. Read-only command-result lookup handles lost delivery without rerunning
+generation. No rows are copied to legacy roster/fairness tables.
+
+Focused integration command (exit 0, 170 passed in 51.45 seconds):
+
+```text
+python -m pytest tests/test_dated_weekly_draft.py tests/test_dated_draft_workflow.py tests/test_guest_dated_drafts.py tests/test_dated_draft_schema.py tests/test_policy_workflow.py tests/test_guest_policy_workflow.py tests/test_school_year_policy_schema.py tests/test_guest_workspace.py tests/test_backup_restore.py tests/test_assist_mode_persistence.py tests/test_v12_persistence_schema.py --maxfail=1 --disable-warnings
+```
+
+Tested: real temporary SQLite and Guest generation/edit/reopen, default/maximum
+matrices, policy pinning/adoption, live eligibility, original receipt replay and
+lookup, redirected-receipt rejection, rollback, concurrent creation, pending
+backup repair, isolated restore, malformed snapshots and policy references,
+legacy export/publish/share/adjust rejection, bounded Guest capacity/CAS/reset
+and receipt eviction, fixed ownership rollback/adoption/exact replay, and latest
+prior-week selection across both sources (including a same-week tie).
+
+The chronology review finding was reproduced red before correction: an older
+dated draft incorrectly superseded a newer legacy roster. Both Adapters now
+compare dates. A pure shared command fingerprint preserves the existing encoding
+without making Guest state validation import the official SQL workflow.
+
+Governance and whitespace checks pass. This is focused implementation evidence,
+not exact-head full verification, required CI, a complete independent review,
+performance certification, mobile acceptance or deployment. Those remain pending.

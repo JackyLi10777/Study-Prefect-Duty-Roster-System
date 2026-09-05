@@ -122,6 +122,9 @@ def database_readiness(database_path: Path) -> str:
                 return "fairness_unreconciled"
             if not policy_storage_is_valid(connection):
                 return "policy_invalid"
+            from nicegui_app.persistence.dated_drafts import dated_drafts_are_valid
+            if not dated_drafts_are_valid(connection):
+                return "dated_draft_invalid"
         finally:
             connection.close()
     except sqlite3.Error:
