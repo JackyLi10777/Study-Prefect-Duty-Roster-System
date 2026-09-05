@@ -5,6 +5,7 @@ import importlib.metadata
 import json
 import os
 from pathlib import Path
+import re
 import sys
 import tempfile
 
@@ -19,6 +20,19 @@ from scripts.verify_mobile_trust import _fit
 from scripts.verify_rc31_theme_controls import _safe_environment
 from scripts.verify_release_candidate import _source_state, _start_server, _stop_server, _wait_until_ready
 from scripts.verify_unified_guest_ui import _install_gateway_stubs
+
+
+def _server_diagnostics(log: str, *, mode: str) -> dict[str, int]:
+    """Reject server-only JS errors and any unexpected business failure."""
+    lines = log.splitlines()
+    errors = [line for line in lines if re.search(r"\bERROR\b|Traceback \(most recent call last\)", line)]
+    failures = [line for line in lines if "event=operator_action_failed " in line]
+    expected = 1 if mode == "local_maintenance" else 0
+    assert not errors, "Unexpected server console error"
+    assert len(failures) == expected, "Unexpected operator failure count"
+    assert all("action=progress_restore_working " in line and "error_type=WorkflowError " in line
+               and "_stage_restore_source" in line for line in failures), "Unexpected operator failure"
+    return {"serverErrorCount": 0, "expectedChecksumFailureCount": expected}
 
 
 def _check(page, base, case, mode, results, persist, backup=None):
@@ -184,6 +198,9 @@ def main():
                             context.close()
                     finally:
                         _stop_server(process, output)
+                    diagnostics = _server_diagnostics((case / "server.log").read_text(encoding="utf-8"), mode=mode)
+                    results.append({"mode": mode, "scenario": "server-diagnostics", **diagnostics})
+                    persist()
             finally:
                 browser.close()
         assert not errors, "Unexpected browser errors"
