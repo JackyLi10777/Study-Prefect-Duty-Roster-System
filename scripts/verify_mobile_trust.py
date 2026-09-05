@@ -115,7 +115,13 @@ def _check(page, base, case, mode, results, persist):
         for _ in range(20):
             _close(panel, content)
             _open(panel)
-            assert page.evaluate("window.__d3bNodes.every(node => node.isConnected)")
+            disconnected = page.evaluate("""window.__d3bNodes.filter(node => !node.isConnected)
+                .map(node => ({tag:node.tagName, classes:node.className}))""")
+            if disconnected:
+                results.append({"scenario": "disconnected-descendant-diagnostic", "mode": mode,
+                                "route": route, "nodes": disconnected})
+                persist()
+            assert not disconnected, f"Retained descendants disconnected: {disconnected}"
         after = _capture_runtime_footprint(page, session, label=route + "-retained")
         _record_growth(first, after, mode=mode + route + "-retained-not-cold", results=results, persist=persist)
         session.detach()
@@ -235,5 +241,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
