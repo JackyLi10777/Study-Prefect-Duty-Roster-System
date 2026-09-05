@@ -6,6 +6,8 @@ import subprocess
 import sys
 from types import SimpleNamespace
 
+import pytest
+
 from scripts import verify_release_candidate
 from scripts.verify_rc31_theme_controls import (
     _close_mobile_drawer,
@@ -23,6 +25,62 @@ from scripts.verify_release_candidate import (
     _deno_motion_command,
     isolated_environment,
 )
+
+
+@pytest.mark.parametrize("defect", [None, "extra", "missing", "duplicate", "order", "failed"])
+def test_completed_release_report_requires_exact_successful_gate_sequence(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, defect: str | None,
+) -> None:
+    report_path = tmp_path / "release-report.json"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    clean_source = {
+        "sourceFingerprint": "a" * 64, "sourceFileCount": 309,
+        "sourceCommit": "b" * 40, "sourceTree": "c" * 40, "sourceDirty": False,
+    }
+    monkeypatch.setattr(verify_release_candidate, "REPORT_PATH", report_path)
+    monkeypatch.setattr(verify_release_candidate.tempfile, "mkdtemp", lambda **_: str(workspace))
+    monkeypatch.setattr(verify_release_candidate, "_source_state", lambda **_: dict(clean_source))
+    monkeypatch.setattr(verify_release_candidate, "_planned_release_tag", lambda: "v1.2.0-rc.999")
+    monkeypatch.setattr(verify_release_candidate, "_tool_versions", lambda: {})
+    monkeypatch.setattr(verify_release_candidate, "_deno_gateway_command", lambda: ["stub"])
+    monkeypatch.setattr(verify_release_candidate, "_deno_motion_command", lambda: ["stub"])
+
+    def check(name, _command, _environment, report, **_):  # type: ignore[no-untyped-def]
+        report["checks"].append({"name": name, "status": "pass", "durationMs": 1})
+
+    def browser_phase(*, scripts, blocked_backup, report, **_):  # type: ignore[no-untyped-def]
+        for script in scripts:
+            check(Path(script).stem, [], {}, report)
+        if not blocked_backup:
+            check("strict_deployment_readiness", [], {}, report)
+            return
+        checks = report["checks"]
+        if defect == "extra":
+            check("new_gate_not_declared", [], {}, report)
+        elif defect == "missing":
+            checks.pop()
+        elif defect == "duplicate":
+            checks[-1] = dict(checks[-2])
+        elif defect == "order":
+            checks[-1], checks[-2] = checks[-2], checks[-1]
+        elif defect == "failed":
+            checks[-1]["status"] = "fail"
+
+    monkeypatch.setattr(verify_release_candidate, "_run_check", check)
+    monkeypatch.setattr(verify_release_candidate, "_run_browser_phase", browser_phase)
+    monkeypatch.setattr(
+        verify_release_candidate, "_run_unified_access_phase",
+        lambda *, report, **_: check("verify_unified_guest_ui", [], {}, report),
+    )
+
+    result = verify_release_candidate.main()
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert result == (0 if defect is None else 1)
+    assert report["status"] == ("pass" if defect is None else "fail")
+    if defect is not None:
+        assert workspace.is_dir(), "failed candidate retains its isolated evidence"
+        assert "release check" in report["failure"].lower()
 
 
 def test_release_verifier_builds_only_explicit_disposable_write_paths(monkeypatch, tmp_path: Path) -> None:

@@ -234,6 +234,23 @@ def _deno_gateway_command() -> list[str]:
     return [executable, "test", "cloudflare/roster_viewer/worker_gateway_test.js"]
 
 
+def _assert_completed_checks(report: dict[str, object]) -> None:
+    """Do not publish a pass which the evidence reader cannot consume."""
+    checks = report.get("checks")
+    if (
+        report.get("requiredCheckIdentities") != list(REQUIRED_CHECK_IDENTITIES)
+        or not isinstance(checks, list)
+        or any(not isinstance(check, dict) for check in checks)
+    ):
+        raise ReleaseVerificationError("Release check declaration is invalid.")
+    if [check.get("name") for check in checks] != list(REQUIRED_CHECK_IDENTITIES):
+        raise ReleaseVerificationError(
+            "Executed release checks do not match the declared identities and order."
+        )
+    if any(check.get("status") != "pass" for check in checks):
+        raise ReleaseVerificationError("Not every required release check passed.")
+
+
 def _deno_motion_command() -> list[str]:
     """Return the executable icon-story state-machine test command."""
     executable = shutil.which("deno")
@@ -528,6 +545,7 @@ def main() -> int:
             initial_source,
             require_stable=True,
         )
+        _assert_completed_checks(report)
         report["status"] = "pass"
         report["finishedAt"] = datetime.now(timezone.utc).isoformat()
         _write_report(report)
