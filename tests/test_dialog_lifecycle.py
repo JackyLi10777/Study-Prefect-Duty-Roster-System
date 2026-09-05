@@ -197,7 +197,11 @@ def test_runtime_created_dialogs_register_cleanup_but_reusable_archive_dialog_do
     archive = people.split("with ui.dialog() as archive_dialog", 1)[1].split("def archive_selected", 1)[0]
 
     assert "_delete_dialog_after_close(dialog, lifetime_owner=progress_owner)" in progress
-    assert "_delete_dialog_after_close(dialog)" in export
+    # Export now reuses a page-owned native shell, but releases all payloads.
+    assert "def release_export_dialog_resources()" in export
+    assert "_clear_png_delivery_view(png_delivery_view[0])" in export
+    assert 'dialog.on("close", lambda _event: finish_export_dialog_close())' in export
+    assert "_delete_dialog_after_close(dialog)" not in export
     assert "_delete_dialog_after_close(dialog)" in prefect
     assert "_delete_dialog_after_close(archive_dialog)" not in archive
 

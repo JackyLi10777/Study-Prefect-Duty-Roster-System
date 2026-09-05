@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import math
 import weakref
 from collections.abc import Callable, MutableMapping
 from datetime import date, timedelta
 from functools import partial
 from time import perf_counter
-from typing import TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
-from nicegui import app, events, run, ui
+from nicegui import app, context, events, run, ui
 
 from nicegui_app.contact import FEEDBACK_EMAIL, FEEDBACK_MAILTO_URL, GITHUB_REPOSITORY_URL, INSTAGRAM_PROFILE_URL
 from nicegui_app.runtime import get_workflow
@@ -20,14 +22,22 @@ from nicegui_app.observability import (
     record_operator_failure,
     record_operator_partial_failure,
 )
-from nicegui_app.services.roster_export import RosterPdfExport, build_fairness_audit_pdf, build_roster_pdf
-from nicegui_app.services.roster_presentation import DAY_ORDER, build_roster_schedule, roster_display_label
-from nicegui_app.services.roster_presentation import RosterCellState, RosterSchedulePresentation
+from nicegui_app.services.roster_export import RosterPdfExport, build_fairness_audit_pdf, build_roster_pdf, render_roster_pdf
+from nicegui_app.services.roster_document import RosterDocument, capture_roster_document
+from nicegui_app.services.roster_export_session import (
+    ExportOptions, ExportRequest, NativeShareLease, NATIVE_SHARE_LEASE_SECONDS, RosterExportSession,
+)
+from nicegui_app.services.roster_presentation import (
+    RosterCellState,
+    RosterSchedulePresentation,
+    build_roster_presentation,
+    roster_display_label,
+)
 from nicegui_app.services.roster_workflow import (
     CommittedWriteBackupError,
     WorkflowConflictError,
 )
-from nicegui_app.ui.html_safety import attr
+from nicegui_app.ui.html_safety import attr, text as html_text
 from nicegui_app.ui.i18n import EN, current_locale, day_label, role_label, t
 from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.components import (
@@ -35,14 +45,23 @@ from nicegui_app.ui.components import (
     empty_state as render_empty_state_component,
     responsive_table as render_responsive_table_component,
     status as render_status_component,
+    native_dialog as semantic_native_dialog,
     workflow_step as render_workflow_step_component,
 )
 from nicegui_app.ui.downloads import deliver_generated_download
 from nicegui_app.ui.operation_gate import claim_durable_operation, release_durable_operation
 from nicegui_app.ui.page_access import is_demo_export
-from nicegui_app.ui.pdf_delivery import build_native_pdf_share_js, can_offer_native_pdf_share
+from nicegui_app.ui.native_file_share import (
+    build_native_file_share_from_data_url_js,
+    build_native_file_share_js,
+    can_offer_native_file_share,
+)
+from nicegui_app.ui.pdf_delivery import can_offer_native_pdf_share
 from nicegui_app.ui.sound import emit_interface_feedback, play_interface_sound
 from roster_policy import ROOM_OPENING_TIME_WINDOWS, DutyPost
+
+if TYPE_CHECKING:
+    from nicegui_app.services.roster_image_export import RosterPngBundle, RosterPngFile
 
 _OPERATION_FAILED = object()
 _OperationResult = TypeVar("_OperationResult")
@@ -191,6 +210,7 @@ async def _run_with_progress(
     icon: str,
     wait_kind: str = "operation",
     on_conflict: Callable[[WorkflowConflictError], None] | None = None,
+    success_feedback: bool = True,
 ) -> _OperationResult | object:
     """Run a durable local operation without leaving the operator guessing.
 
@@ -300,7 +320,8 @@ async def _run_with_progress(
             progress.value = 1.0
             progress.update()
         record_operator_event(action=working_key, outcome="completed", reference=reference, started_at=started_at)
-        play_interface_sound("success")
+        if success_feedback:
+            play_interface_sound("success")
         return result
     finally:
         if dialog is not None:
@@ -485,6 +506,21 @@ def _render_roster_table(presentation: RosterSchedulePresentation) -> None:
                         ui.label(cell_text(cell)).classes("sy-roster-mobile-prefect")
 
 
+async def _prepare_export_document(
+    roster_week_id: int, request: ExportRequest,
+) -> RosterDocument | None:
+    """Reuse the workspace document; only a new or invalidated workspace reads."""
+    if request.document is not None:
+        return request.document
+    workflow = get_workflow()
+    result = await _run_with_progress(
+        lambda: capture_roster_document(workflow, roster_week_id),
+        title_key="progress_export_title", working_key="progress_export_working", icon="description",
+        success_feedback=False,
+    )
+    return None if result is _OPERATION_FAILED else result
+
+
 async def _prepare_roster_pdf(
     roster_week_id: int,
     language: str,
@@ -492,6 +528,7 @@ async def _prepare_roster_pdf(
     include_audit: bool = False,
     show_crest: bool = True,
     show_footer_note: bool = False,
+    document: RosterDocument | None = None,
 ) -> RosterPdfExport | None:
     """Create an in-memory local export rather than writing student data to a public URL."""
     # Resolve the verified page-scoped adapter and export mode while the
@@ -505,6 +542,13 @@ async def _prepare_roster_pdf(
                 workflow, roster_week_id, language=language, practice=practice
             )  # type: ignore[arg-type]
             if include_audit
+            else render_roster_pdf(
+                document,
+                language=language,
+                practice=practice,
+                show_crest=show_crest,
+                show_footer_note=show_footer_note,
+            ) if document is not None
             else build_roster_pdf(
                 workflow,
                 roster_week_id,
@@ -517,29 +561,16 @@ async def _prepare_roster_pdf(
         title_key="progress_export_title",
         working_key="progress_export_working",
         icon="picture_as_pdf",
+        success_feedback=False,
     )
     if export is _OPERATION_FAILED:
         return None
     return export
 
 
-async def _download_roster_pdf(
-    roster_week_id: int,
-    language: str,
-    *,
-    include_audit: bool = False,
-    show_crest: bool = True,
-    show_footer_note: bool = False,
-) -> bool:
-    export = await _prepare_roster_pdf(
-        roster_week_id,
-        language,
-        include_audit=include_audit,
-        show_crest=show_crest,
-        show_footer_note=show_footer_note,
-    )
-    if export is None:
-        return False
+def _deliver_prepared_roster_pdf(export: RosterPdfExport) -> bool:
+    """Deliver exactly the PDF whose snapshot provenance was already checked."""
+
     if not deliver_generated_download(
         export.content,
         export.filename,
@@ -550,8 +581,204 @@ async def _download_roster_pdf(
     return True
 
 
-def _render_pdf_delivery_ready(container, export: RosterPdfExport) -> None:
+def _finish_direct_pdf_delivery(
+    session: RosterExportSession, request: ExportRequest, export: RosterPdfExport,
+) -> bool:
+    """A failed admission or expired identity must not strand the UI as busy."""
+    if not session.accepts(request):
+        return False
+    try:
+        delivered = _deliver_prepared_roster_pdf(export)
+    except Exception:
+        session.fail(request)
+        raise
+    return session.finish_direct_delivery(request, delivered=delivered)
+
+
+def _pdf_delivery_permissions(
+    export: RosterPdfExport,
+    *,
+    practice: bool,
+) -> tuple[bool, bool]:
+    """Return download/native-share policy from the rendered snapshot itself.
+
+    A missing or unfamiliar provenance value fails closed. Draft PDFs remain
+    downloadable for the existing internal checking workflow, but never gain
+    native group sharing; withdrawn PDFs cannot be delivered at all.
+    """
+
+    roster_status = export.roster_status.strip().lower()
+    allow_download = roster_status in {"draft", "published"}
+    allow_native_share = roster_status == "published" and not practice
+    return allow_download, allow_native_share
+
+
+async def _prepare_roster_png_bundle(
+    roster_week_id: int,
+    language: str,
+    *,
+    document: RosterDocument | None = None,
+) -> RosterPngBundle | None:
+    """Build both roster images from one atomic, page-authorized snapshot."""
+
+    # Import lazily so routes which never open this dialog avoid image-renderer
+    # startup work. Capture the verified workflow and access mode before the
+    # renderer enters a worker thread.
+    from nicegui_app.services.roster_image_export import build_roster_png_bundle, render_roster_png_bundle
+
+    workflow = get_workflow()
+    practice = is_demo_export()
+    bundle = await _run_with_progress(
+        lambda: render_roster_png_bundle(document, language=language, practice=practice)
+        if document is not None else build_roster_png_bundle(
+            workflow,
+            roster_week_id,
+            language=language,
+            practice=practice,
+        ),
+        title_key="progress_roster_image_title",
+        working_key="progress_roster_image_working",
+        icon="image",
+        success_feedback=False,
+    )
+    if bundle is _OPERATION_FAILED:
+        return None
+    return bundle
+
+
+def _png_data_url(image: RosterPngFile) -> str:
+    """Return a non-persistent preview URL for one prepared PNG."""
+
+    encoded = base64.b64encode(image.content).decode("ascii")
+    return f"data:{image.media_type};base64,{encoded}"
+
+
+def _download_roster_png(image: RosterPngFile) -> bool:
+    if image.media_type != "image/png" or not can_offer_native_file_share(
+        image.content,
+        media_type=image.media_type,
+    ):
+        raise ValueError("Roster image delivery requires a valid bounded image/png file.")
+    if not deliver_generated_download(
+        image.content,
+        image.filename,
+        media_type=image.media_type,
+    ):
+        return False
+    ui.notify(t("roster_image_downloaded"), type="positive")
+    return True
+
+
+def _mount_native_share_confirmation(
+    container,
+    event: events.GenericEventArguments,
+    *,
+    test_id: str,
+    generation: str,
+    result_guard: Callable[[object], bool],
+    build_handler: Callable[[NativeShareLease, float], str],
+    report_result: Callable[[events.GenericEventArguments], None],
+) -> Callable[[], None] | None:
+    """Mount one expiring second gesture; no file is shared by this server call."""
+    args = event.args if isinstance(event.args, dict) else {}
+    prepared_at = args.get("preparedAt")
+    if type(prepared_at) not in {int, float} or prepared_at < 0:
+        return None
+    try:
+        if not math.isfinite(prepared_at):
+            return None
+    except OverflowError:
+        return None
+    if not result_guard(generation):
+        return None
+    lease = NativeShareLease(generation=generation, expires_at=perf_counter() + NATIVE_SHARE_LEASE_SECONDS)
+    timer = [None]
+    cleaned = [False]
+
+    def cleanup() -> None:
+        if cleaned[0]:
+            return
+        cleaned[0] = True
+        lease.cancel()
+        if timer[0] is not None:
+            timer[0].cancel()
+        if not container.is_deleted:
+            container.clear()
+
+    def expired() -> None:
+        if lease.expire(now=perf_counter()):
+            cleanup()
+            if not container.is_deleted and result_guard(generation):
+                with container:
+                    ui.notify(t("native_share_prepare_expired"), type="info")
+
+    def receive_result(result: events.GenericEventArguments) -> None:
+        if container.is_deleted:
+            cleanup()
+            return
+        payload = result.args if isinstance(result.args, dict) else {}
+        if not lease.active or payload.get("token") != generation or payload.get("lease") != lease.token or not result_guard(generation):
+            return
+        status = payload.get("status")
+        if status == "started":
+            if not lease.started and not lease.start(payload.get("lease"), now=perf_counter()):
+                cleanup()
+            return
+        if status == "expired":
+            if lease.active and not lease.started:
+                with container:
+                    cleanup()
+                    ui.notify(t("native_share_prepare_expired"), type="info")
+            return
+        if status in {"shared", "cancelled"} and not lease.started:
+            return
+        if status in {"shared", "cancelled", "failed", "unsupported"} and lease.finish(payload.get("lease"), now=perf_counter()):
+            # Clearing the confirmation deletes the event sender's slot. Its
+            # persistent container remains the owner of the completion notice.
+            with container:
+                cleanup()
+                report_result(result)
+
+    with container:
+        ui.label(t("native_share_prepare_notice")).classes("text-sm text-[var(--sy-muted)]")
+        with ui.element("div").classes("sy-native-actions mt-2"):
+            confirm = ui.element("button").classes("sy-native-action sy-native-action--primary").props(
+                f'type=button data-testid="confirm-{attr(test_id)}"'
+            )
+            with confirm:
+                ui.label(t("native_share_open_system"))
+            confirm.on(
+                "click", receive_result,
+                js_handler=build_handler(lease, float(prepared_at) + NATIVE_SHARE_LEASE_SECONDS * 1000),
+            )
+            cancel = ui.element("button").classes("sy-native-action").props(
+                f'type=button data-testid="cancel-{attr(test_id)}"'
+            )
+            with cancel:
+                ui.label(t("cancel"))
+            cancel.on("click", cleanup)
+    timer[0] = ui.timer(NATIVE_SHARE_LEASE_SECONDS, expired, once=True)
+    return cleanup
+
+
+def _render_pdf_delivery_ready(
+    container,
+    export: RosterPdfExport,
+    *,
+    allow_native_share: bool = True,
+    delivery_guard: Callable[[], bool] | None = None,
+    share_result_token: str | None = None,
+    share_result_guard: Callable[[object], bool] | None = None,
+) -> Callable[[], None]:
     """Offer native file sharing only for the share-safe group schedule."""
+    allow_native_share = allow_native_share and export.roster_status == "published"
+    share_cleanup: list[Callable[[], None] | None] = [None]
+
+    def clear_confirmation() -> None:
+        if share_cleanup[0] is not None:
+            share_cleanup[0]()
+            share_cleanup[0] = None
+
     container.clear()
     with container:
         with ui.element("section").classes("sy-export-ready w-full mt-4 p-4").props(
@@ -565,6 +792,8 @@ def _render_pdf_delivery_ready(container, export: RosterPdfExport) -> None:
                     ui.label(t("pdf_delivery_ready_notice")).classes("text-sm text-[var(--sy-muted)]")
 
             def download_again() -> None:
+                if delivery_guard is not None and not delivery_guard():
+                    return
                 if not deliver_generated_download(
                     export.content,
                     export.filename,
@@ -575,6 +804,8 @@ def _render_pdf_delivery_ready(container, export: RosterPdfExport) -> None:
 
             def report_share_result(event: events.GenericEventArguments) -> None:
                 args = event.args if isinstance(event.args, dict) else {}
+                if share_result_guard is not None and not share_result_guard(args.get("token")):
+                    return
                 status = str(args.get("status", "failed"))
                 if status == "shared":
                     ui.notify(t("pdf_share_completed"), type="positive")
@@ -586,105 +817,709 @@ def _render_pdf_delivery_ready(container, export: RosterPdfExport) -> None:
                     ui.notify(t("pdf_share_failed"), type="warning", timeout=8000)
 
             with ui.row().classes("sy-mobile-actions w-full gap-2 mt-3"):
-                if can_offer_native_pdf_share(export.content):
+                if allow_native_share and can_offer_native_pdf_share(export.content):
                     share_button = ui.button(t("share_schedule_pdf"), icon="ios_share").props(
                         "color=primary data-testid=share-schedule-pdf"
                     )
-                    share_button.on(
-                        "click",
-                        report_share_result,
-                        js_handler=build_native_pdf_share_js(
-                            content=export.content,
-                            filename=export.filename,
-                            title=t("pdf_share_title"),
-                            text=t("pdf_share_text"),
-                        ),
-                    )
+                    def prepare_share(event: events.GenericEventArguments) -> None:
+                        clear_confirmation()
+                        if delivery_guard is None or not delivery_guard():
+                            return
+                        if share_result_token is None or share_result_guard is None:
+                            return
+                        share_cleanup[0] = _mount_native_share_confirmation(
+                            confirmation_area, event, test_id="share-schedule-pdf",
+                            generation=share_result_token, result_guard=share_result_guard,
+                            build_handler=lambda lease, deadline: build_native_file_share_js(
+                                content=export.content, filename=export.filename, media_type="application/pdf",
+                                title=t("pdf_share_title"), text=t("pdf_share_text"), result_token=share_result_token,
+                                lease_token=lease.token, lease_expires_at=deadline,
+                            ),
+                            report_result=report_share_result,
+                        )
+                    share_button.on("click", prepare_share, js_handler="() => emit({preparedAt: performance.now()})")
                 ui.button(t("download_prepared_pdf"), icon="download", on_click=download_again).props(
                     "outline color=primary data-testid=download-prepared-pdf"
                 )
             ui.label(t("pdf_share_fallback_notice")).classes("text-xs text-[var(--sy-muted)] mt-3")
+            confirmation_area = ui.element("div").classes("w-full mt-3")
+    return clear_confirmation
+
+
+def _render_png_delivery_ready(
+    container,
+    bundle: RosterPngBundle | None,
+    *,
+    allow_download: bool,
+    allow_native_share: bool,
+    practice: bool,
+    view: dict[str, Any] | None = None,
+    delivery_guard: Callable[[], bool] | None = None,
+    share_result_token: str | None = None,
+    share_result_guard: Callable[[object], bool] | None = None,
+) -> dict[str, Any]:
+    """Update one compact preview view without remounting image/share controls.
+
+    The image bytes are assigned directly to native ``img`` elements only after
+    generation.  They are removed again on close, while the small element tree
+    stays available for the next open.  Native buttons keep this frequently used
+    phone flow well below the Quasar portal/listener footprint.
+    """
+
+    if view is None:
+        active_bundle: list[RosterPngBundle | None] = [None]
+        delivery_allowed = [False]
+        current_guard: list[Callable[[], bool] | None] = [None]
+        current_share_guard: list[Callable[[object], bool] | None] = [None]
+        current_share_token: list[str | None] = [None]
+        share_cleanup: list[Callable[[], None] | None] = [None]
+        with container:
+            root = ui.element("section").classes("sy-export-ready w-full mt-4 p-4").props(
+                'aria-live="polite" data-testid="roster-images-ready"'
+            )
+            with root:
+                ui.label(t("roster_images_ready_title")).classes("font-semibold")
+                notice = ui.label("").classes("text-sm text-[var(--sy-muted)]")
+
+                with ui.element("div").classes(
+                    "sy-roster-image-previews w-full grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4"
+                ):
+                    with ui.element("figure").classes("m-0 min-w-0"):
+                        ui.label(t("avatar_preview_title")).classes("text-sm font-semibold mb-2")
+                        avatar_image = ui.element("img").classes(
+                            "sy-roster-avatar-preview mx-auto rounded-full aspect-square w-full max-w-[20rem] object-cover"
+                        ).props(
+                            f'alt="{attr(t("avatar_preview_alt"))}" '
+                            "data-testid=roster-avatar-preview"
+                        )
+                        avatar_filename = ui.label("").classes(
+                            "text-xs text-[var(--sy-muted)] break-all mt-2"
+                        )
+                    with ui.element("figure").classes("m-0 min-w-0"):
+                        ui.label(t("whatsapp_detail_preview_title")).classes("text-sm font-semibold mb-2")
+                        detail_image = ui.element("img").classes(
+                            "w-full max-h-[26rem] object-contain bg-[var(--sy-surface-soft)]"
+                        ).props(
+                            f'alt="{attr(t("whatsapp_detail_preview_alt"))}" '
+                            "data-testid=roster-whatsapp-preview"
+                        )
+                        detail_filename = ui.label("").classes(
+                            "text-xs text-[var(--sy-muted)] break-all mt-2"
+                        ).props("data-testid=roster-whatsapp-filename")
+
+                def download_avatar() -> None:
+                    current = active_bundle[0]
+                    if current is not None and delivery_allowed[0] and (current_guard[0] is None or current_guard[0]()):
+                        _download_roster_png(current.avatar)
+
+                def download_detail() -> None:
+                    current = active_bundle[0]
+                    if current is not None and delivery_allowed[0] and (current_guard[0] is None or current_guard[0]()):
+                        _download_roster_png(current.whatsapp)
+
+                def report_share_result(event: events.GenericEventArguments) -> None:
+                    args = event.args if isinstance(event.args, dict) else {}
+                    if current_share_guard[0] is None or not current_share_guard[0](args.get("token")):
+                        return
+                    status = str(args.get("status", "failed"))
+                    if status == "shared":
+                        ui.notify(t("roster_image_share_completed"), type="positive")
+                    elif status == "cancelled":
+                        ui.notify(t("roster_image_share_cancelled"), type="info")
+                    elif status == "unsupported":
+                        ui.notify(t("roster_image_share_unsupported"), type="warning", timeout=8000)
+                    else:
+                        ui.notify(t("roster_image_share_failed"), type="warning", timeout=8000)
+
+                def native_action(
+                    label: str,
+                    *,
+                    test_id: str,
+                    on_click=None,  # type: ignore[no-untyped-def]
+                    primary: bool = False,
+                ):
+                    button = ui.element("button").classes(
+                        "sy-native-action sy-native-action--primary" if primary else "sy-native-action"
+                    ).props(f'type=button data-testid="{attr(test_id)}"')
+                    with button:
+                        ui.label(label)
+                    if on_click is not None:
+                        button.on("click", on_click)
+                    return button
+
+                with ui.element("div").classes("sy-native-actions w-full mt-4") as actions:
+                    avatar_button = native_action(
+                        t("download_roster_avatar"),
+                        test_id="download-roster-avatar",
+                        on_click=download_avatar,
+                    )
+                    share_button = None
+                    if not practice:
+                        share_button = native_action(
+                            t("share_roster_detail"),
+                            test_id="share-roster-detail",
+                            primary=True,
+                        )
+                        def prepare_share(event: events.GenericEventArguments) -> None:
+                            if share_cleanup[0] is not None:
+                                share_cleanup[0]()
+                                share_cleanup[0] = None
+                            current = active_bundle[0]
+                            if current is None or current.roster_status != "published" or not delivery_allowed[0]:
+                                return
+                            if current_guard[0] is None or not current_guard[0]():
+                                return
+                            if current_share_token[0] is None or current_share_guard[0] is None:
+                                return
+                            share_cleanup[0] = _mount_native_share_confirmation(
+                                confirmation_area, event, test_id="share-roster-detail",
+                                generation=current_share_token[0], result_guard=current_share_guard[0],
+                                build_handler=lambda lease, deadline: build_native_file_share_from_data_url_js(
+                                    preview_selector=f"#c{detail_image.id}", filename_selector=f"#c{detail_filename.id}",
+                                    media_type="image/png", title=t("roster_image_share_title"), text=t("roster_image_share_text"),
+                                    result_token_selector=f"#c{detail_image.id}", lease_token=lease.token, lease_expires_at=deadline,
+                                ),
+                                report_result=report_share_result,
+                            )
+                        share_button.on("click", prepare_share, js_handler="() => emit({preparedAt: performance.now()})")
+                    detail_button = native_action(
+                        t("download_roster_detail"),
+                        test_id="download-roster-detail",
+                        on_click=download_detail,
+                    )
+                confirmation_area = ui.element("div").classes("w-full mt-3")
+
+        view = {
+            "root": root,
+            "notice": notice,
+            "avatar_image": avatar_image,
+            "detail_image": detail_image,
+            "avatar_filename": avatar_filename,
+            "detail_filename": detail_filename,
+            "actions": actions,
+            "avatar_button": avatar_button,
+            "detail_button": detail_button,
+            "share_button": share_button,
+            "active_bundle": active_bundle,
+            "delivery_allowed": delivery_allowed,
+            "delivery_guard": current_guard,
+            "share_result_guard": current_share_guard,
+            "share_result_token": current_share_token,
+            "share_cleanup": share_cleanup,
+            "practice": practice,
+        }
+        _clear_png_delivery_view(view)
+
+    if bundle is None:
+        return view
+
+    if view["share_cleanup"][0] is not None:
+        view["share_cleanup"][0]()
+        view["share_cleanup"][0] = None
+    active_bundle = view["active_bundle"]
+    delivery_allowed = view["delivery_allowed"]
+    active_bundle[0] = bundle
+    delivery_allowed[0] = allow_download
+    view["delivery_guard"][0] = delivery_guard
+    view["share_result_guard"][0] = share_result_guard
+    view["share_result_token"][0] = share_result_token
+    view["detail_image"].run_method("setAttribute", "data-share-token", share_result_token or "")
+    if not allow_download:
+        notice_key = (
+            "roster_image_unavailable_withdrawn"
+            if bundle.roster_status == "withdrawn"
+            else "roster_images_draft_notice"
+        )
+    elif practice:
+        notice_key = "roster_images_practice_notice"
+    else:
+        notice_key = "roster_images_ready_notice"
+    view["notice"].set_text(t(notice_key))
+    view["avatar_image"].run_method("setAttribute", "src", _png_data_url(bundle.avatar))
+    view["detail_image"].run_method("setAttribute", "src", _png_data_url(bundle.whatsapp))
+    view["avatar_filename"].set_text(bundle.avatar.filename)
+    view["detail_filename"].set_text(bundle.whatsapp.filename)
+    view["actions"].set_visibility(allow_download)
+    if allow_download:
+        view["avatar_button"].props(remove="disabled")
+        view["detail_button"].props(remove="disabled")
+    share_button = view["share_button"]
+    if share_button is not None:
+        share_button.set_visibility(
+            allow_download
+            and allow_native_share
+            and can_offer_native_file_share(bundle.whatsapp.content, media_type="image/png")
+        )
+    view["root"].set_visibility(True)
+    return view
+
+
+def _clear_png_delivery_view(view: dict[str, Any] | None) -> None:
+    """Drop all generated bytes while retaining the stable preview component tree."""
+
+    if view is None:
+        return
+    view["active_bundle"][0] = None
+    view["delivery_allowed"][0] = False
+    view["delivery_guard"][0] = None
+    view["share_result_guard"][0] = None
+    view["share_result_token"][0] = None
+    if view["share_cleanup"][0] is not None:
+        view["share_cleanup"][0]()
+        view["share_cleanup"][0] = None
+    view["detail_image"].run_method("removeAttribute", "data-share-token")
+    view["avatar_image"].run_method("removeAttribute", "src")
+    view["detail_image"].run_method("removeAttribute", "src")
+    view["avatar_filename"].set_text("")
+    view["detail_filename"].set_text("")
+    view["actions"].set_visibility(False)
+    share_button = view["share_button"]
+    if share_button is not None:
+        share_button.set_visibility(False)
+    view["root"].set_visibility(False)
 
 
 def _open_roster_export_dialog(roster_week_id: int) -> None:
-    """Keep the share-safe one-page roster distinct from named internal audit data."""
-    is_published = get_workflow().roster_week(roster_week_id)["status"] == "published"
-    with ui.dialog() as dialog, ui.card().classes("sy-surface w-full max-w-2xl p-6"):
-        with ui.row().classes("w-full items-center gap-4"):
-            ui.icon("picture_as_pdf").classes("sy-export-symbol").props("aria-hidden=true")
-            with ui.column().classes("gap-1"):
-                ui.label(t("choose_pdf_export")).classes("text-xl font-semibold")
-                ui.label(t("export_pdf_notice")).classes("text-sm text-[var(--sy-muted)]")
-        prepared_signature: list[tuple[bool, bool] | None] = [None]
+    # Receipt buttons execute in their owning dialog's slot. A native dialog
+    # mounted there is hidden together with the Quasar receipt as it closes.
+    # Keep the cached export sheet page-owned, regardless of its launch point.
+    with context.client.content:
+        _open_page_owned_roster_export_dialog(roster_week_id)
 
-        async def deliver(language: str, *, include_audit: bool = False) -> None:
-            selected_options = (bool(show_crest.value), bool(show_footer_note.value))
-            if include_audit or not is_published:
-                if await _download_roster_pdf(
-                    roster_week_id,
-                    language,
-                    include_audit=include_audit,
-                    show_crest=selected_options[0],
-                    show_footer_note=selected_options[1],
-                ):
-                    dialog.close()
-                return
 
-            export = await _prepare_roster_pdf(
-                roster_week_id,
-                language,
-                show_crest=selected_options[0],
-                show_footer_note=selected_options[1],
+def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
+    """Lazily mount and then reuse one compact native export sheet per page.
+
+    The first click is the only point where the core is mounted. Advanced PDF,
+    language, and audit controls are mounted only if the operator expands them.
+    Closing removes every generated byte and image ``src`` immediately, while
+    retaining the small native shell so repeated mobile use has constant DOM and
+    listener cost.
+    """
+
+    client = context.client
+    registry = getattr(client, "_sy_roster_export_dialogs", None)
+    if not isinstance(registry, dict):
+        registry = {}
+        setattr(client, "_sy_roster_export_dialogs", registry)
+    cached = registry.get(roster_week_id)
+    if isinstance(cached, dict):
+        cached_dialog = cached.get("dialog")
+        cached_open = cached.get("open")
+        if cached_dialog is not None and not cached_dialog.is_deleted and callable(cached_open):
+            cached_open()
+            return
+
+    week = _safe_read_action(
+        lambda: get_workflow().roster_week(roster_week_id), action_name="roster_export_open"
+    )
+    if week is None:
+        return
+    roster_status = str(week["status"])
+    if roster_status == "withdrawn":
+        ui.notify(t("roster_image_unavailable_withdrawn"), type="warning")
+        return
+
+    opened_as_published = roster_status == "published"
+    practice = is_demo_export()
+    default_language = "en" if current_locale() == EN else "zh"
+    language_state = [default_language]
+    show_crest_state = [True]
+    show_footer_note_state = [False]
+    prepared_signature: list[tuple[str, bool, bool] | None] = [None]
+    prepared_bundle: list[RosterPngBundle | None] = [None]
+    png_delivery_view: list[dict[str, Any] | None] = [None]
+    pdf_delivery_area: list[Any | None] = [None]
+    pdf_share_cleanup: list[Callable[[], None] | None] = [None]
+    advanced_built = [False]
+    advanced_open = [False]
+    export_session = RosterExportSession(ExportOptions(language=default_language))
+    close_pending = [False]
+    reopen_requested = [False]
+
+    def native_action(
+        label: str,
+        *,
+        test_id: str,
+        on_click=None,  # type: ignore[no-untyped-def]
+        primary: bool = False,
+        extra_props: str = "",
+    ):
+        classes = "sy-native-action sy-native-action--primary" if primary else "sy-native-action"
+        button = ui.element("button").classes(classes).props(
+            f'type=button data-testid="{attr(test_id)}" {extra_props}'.strip()
+        )
+        with button:
+            ui.label(label)
+        if on_click is not None:
+            button.on("click", on_click)
+        return button
+
+    def selected_signature() -> tuple[str, bool, bool]:
+        return language_state[0], show_crest_state[0], show_footer_note_state[0]
+
+    def reset_delivery_views() -> None:
+        if pdf_share_cleanup[0] is not None:
+            pdf_share_cleanup[0]()
+            pdf_share_cleanup[0] = None
+        _clear_png_delivery_view(png_delivery_view[0])
+        if pdf_delivery_area[0] is not None:
+            pdf_delivery_area[0].clear()
+
+    def invalidate_prepared_export(*, notify: bool = True) -> None:
+        had_prepared = prepared_signature[0] is not None or prepared_bundle[0] is not None
+        export_session.change_options(ExportOptions(*selected_signature()))
+        reset_delivery_views()
+        prepared_signature[0] = None
+        prepared_bundle[0] = None
+        if notify and had_prepared:
+            ui.notify(t("roster_export_options_changed"), type="info")
+
+    async def document_for_request(request: ExportRequest) -> RosterDocument | None:
+        result = await _prepare_export_document(roster_week_id, request)
+        if result is None:
+            export_session.fail(request)
+            return None
+        return result if export_session.accepts(request) else None
+
+    def validate_delivery_revision() -> bool:
+        document = export_session.document
+        if document is None or not export_session.opened:
+            return False
+        # Authorization is rechecked by the page-bound workflow and again by
+        # the download ticket issuer. Never issue a ticket for an old revision.
+        current_week = _safe_read_action(
+            lambda: get_workflow().roster_week(roster_week_id), action_name="roster_export_revision_check"
+        )
+        if current_week is None or not export_session.validate_revision(current_week):
+            export_session.invalidate_source()
+            reset_delivery_views()
+            prepared_bundle[0] = None
+            prepared_signature[0] = None
+            if current_week is not None:
+                ui.notify(t("roster_write_conflict"), type="warning", timeout=8000)
+            return False
+        return True
+
+    async def deliver_pdf(
+        *,
+        include_audit: bool = False,
+        audit_language: str | None = None,
+    ) -> None:
+        if export_session.phase == "preparing":
+            ui.notify(t("operation_already_running"), type="warning")
+            return
+        request = export_session.begin()
+        reset_delivery_views()
+        selected_options = selected_signature()
+        selected_language = audit_language or selected_options[0]
+        document = None if include_audit else await document_for_request(request)
+        if not include_audit and document is None:
+            return
+        export = await _prepare_roster_pdf(
+            roster_week_id,
+            selected_language,
+            include_audit=include_audit,
+            show_crest=selected_options[1],
+            show_footer_note=selected_options[2],
+            document=document,
+        )
+        if export is None:
+            export_session.fail(request)
+            return
+        if not export_session.accepts(request):
+            return
+        if include_audit:
+            if _finish_direct_pdf_delivery(export_session, request, export):
+                close_export_dialog()
+            return
+        assert document is not None
+        if not export_session.complete(request, document) or not validate_delivery_revision():
+            return
+
+        allow_download, allow_native_share = _pdf_delivery_permissions(export, practice=practice)
+        if not allow_download:
+            invalidate_prepared_export(notify=False)
+            ui.notify(t("roster_image_unavailable_withdrawn"), type="warning")
+            return
+        if export.roster_status != "published":
+            if _deliver_prepared_roster_pdf(export):
+                close_export_dialog()
+            return
+
+        prepared_bundle[0] = None
+        _clear_png_delivery_view(png_delivery_view[0])
+        assert pdf_delivery_area[0] is not None
+        pdf_share_cleanup[0] = _render_pdf_delivery_ready(
+            pdf_delivery_area[0],
+            export,
+            allow_native_share=allow_native_share,
+            delivery_guard=validate_delivery_revision,
+            share_result_token=str(request.generation),
+            share_result_guard=export_session.accepts_share_result,
+        )
+        prepared_signature[0] = selected_options
+        ui.notify(t("pdf_delivery_ready_title"), type="positive")
+
+    async def deliver_images() -> None:
+        if export_session.phase == "preparing":
+            ui.notify(t("operation_already_running"), type="warning")
+            return
+        request = export_session.begin()
+        reset_delivery_views()
+        selected_options = selected_signature()
+        document = await document_for_request(request)
+        if document is None:
+            return
+        bundle = await _prepare_roster_png_bundle(roster_week_id, selected_options[0], document=document)
+        if bundle is None:
+            export_session.fail(request)
+            return
+        if not export_session.complete(request, document) or not validate_delivery_revision():
+            return
+
+        bundle_is_formal_published = bundle.roster_status == "published" and not practice
+        allow_download = bundle_is_formal_published or (
+            practice and bundle.roster_status in {"draft", "published"}
+        )
+        prepared_bundle[0] = bundle
+        if allow_download:
+            _download_roster_png(bundle.avatar)
+        if pdf_delivery_area[0] is not None:
+            pdf_delivery_area[0].clear()
+        png_delivery_view[0] = _render_png_delivery_ready(
+            png_delivery_area,
+            bundle,
+            allow_download=allow_download,
+            allow_native_share=bundle_is_formal_published,
+            practice=practice,
+            view=png_delivery_view[0],
+            delivery_guard=validate_delivery_revision,
+            share_result_token=str(request.generation),
+            share_result_guard=export_session.accepts_share_result,
+        )
+        prepared_signature[0] = selected_options
+        if not allow_download:
+            ui.notify(t("roster_images_draft_notice"), type="info")
+
+    def handle_language_change(event: events.GenericEventArguments) -> None:
+        args = event.args if isinstance(event.args, dict) else {}
+        value = str(args.get("value", ""))
+        if value not in {"zh", "en"} or value == language_state[0]:
+            return
+        language_state[0] = value
+        invalidate_prepared_export()
+
+    def handle_checkbox_change(
+        event: events.GenericEventArguments,
+        target: list[bool],
+    ) -> None:
+        args = event.args if isinstance(event.args, dict) else {}
+        value = bool(args.get("checked"))
+        if value == target[0]:
+            return
+        target[0] = value
+        invalidate_prepared_export()
+
+    def build_advanced_options() -> None:
+        if advanced_built[0]:
+            return
+        advanced_built[0] = True
+        with advanced_area:
+            ui.label(t("roster_export_language")).classes("text-sm font-medium")
+            selected_zh = " selected" if language_state[0] == "zh" else ""
+            selected_en = " selected" if language_state[0] == "en" else ""
+            language = ui.html(
+                f'<option value="zh"{selected_zh}>{html_text(t("roster_export_language_zh"))}</option>'
+                f'<option value="en"{selected_en}>{html_text(t("roster_export_language_en"))}</option>',
+                tag="select",
+            ).classes("sy-native-select").props(
+                f'data-testid=roster-export-language aria-label="{attr(t("roster_export_language"))}"'
             )
-            if export is not None:
-                if selected_options != (bool(show_crest.value), bool(show_footer_note.value)):
-                    delivery_area.clear()
-                    prepared_signature[0] = None
-                    ui.notify(t("pdf_options_changed"), type="warning")
-                    return
-                _render_pdf_delivery_ready(delivery_area, export)
-                prepared_signature[0] = selected_options
-                ui.notify(t("pdf_delivery_ready_title"), type="positive")
+            language.on(
+                "change",
+                handle_language_change,
+                js_handler="event => emit({value: event.target.value})",
+            )
 
-        with ui.card().classes("sy-export-option w-full mt-5 p-5"):
-            ui.label(t("group_schedule_export")).classes("text-lg font-semibold")
-            ui.label(t("group_schedule_export_notice")).classes("text-sm text-[var(--sy-muted)] mt-1")
-            with ui.row().classes("w-full gap-6 mt-4 flex-wrap"):
-                show_crest = ui.switch(t("pdf_show_crest"), value=True).props("color=primary")
-                show_footer_note = ui.switch(t("pdf_show_footer_note"), value=False).props("color=primary")
-            ui.label(t("pdf_clean_export_hint")).classes("text-xs text-[var(--sy-muted)] mt-2")
-            with ui.row().classes("sy-mobile-actions w-full gap-2 mt-4"):
-                ui.button(
-                    t("prepare_schedule_zh") if is_published else t("export_schedule_zh"),
-                    icon="picture_as_pdf",
-                    on_click=lambda: deliver("zh"),
-                ).props("color=primary")
-                ui.button(
-                    t("prepare_schedule_en") if is_published else t("export_schedule_en"),
-                    icon="picture_as_pdf",
-                    on_click=lambda: deliver("en"),
-                ).props("outline color=primary")
-            delivery_area = ui.column().classes("w-full gap-0")
+            ui.label(t("group_schedule_export")).classes("text-base font-semibold mt-3")
+            ui.label(t("group_schedule_export_notice")).classes(
+                "text-sm text-[var(--sy-muted)]"
+            )
 
-            def invalidate_prepared_pdf() -> None:
-                if prepared_signature[0] is None:
-                    return
-                delivery_area.clear()
-                prepared_signature[0] = None
-                ui.notify(t("pdf_options_changed"), type="info")
+            def native_checkbox(
+                label: str,
+                *,
+                checked: bool,
+                test_id: str,
+                on_change,  # type: ignore[no-untyped-def]
+            ) -> None:
+                checked_attribute = " checked" if checked else ""
+                control = ui.html(
+                    f'<input type="checkbox" data-testid="{attr(test_id)}"{checked_attribute}>'
+                    f"<span>{html_text(label)}</span>",
+                    tag="label",
+                ).classes("sy-native-check")
+                control.on(
+                    "change",
+                    on_change,
+                    js_handler="event => emit({checked: Boolean(event.target.checked)})",
+                )
 
-            show_crest.on_value_change(lambda _event: invalidate_prepared_pdf())
-            show_footer_note.on_value_change(lambda _event: invalidate_prepared_pdf())
-        with ui.card().classes("sy-export-option sy-export-option--internal w-full mt-3 p-5"):
-            ui.label(t("internal_audit_export")).classes("text-lg font-semibold")
-            ui.label(t("internal_audit_export_notice")).classes("text-sm text-[var(--sy-muted)] mt-1")
-            with ui.row().classes("sy-mobile-actions w-full gap-2 mt-4"):
-                ui.button(t("export_audit_zh"), icon="fact_check", on_click=lambda: deliver("zh", include_audit=True)).props("outline color=primary")
-                ui.button(t("export_audit_en"), icon="fact_check", on_click=lambda: deliver("en", include_audit=True)).props("outline color=primary")
-        with ui.row().classes("sy-mobile-actions w-full justify-end mt-5"):
-            ui.button(t("cancel"), icon="close", on_click=dialog.close).props("flat")
-    _delete_dialog_after_close(dialog)
-    dialog.open()
+            native_checkbox(
+                t("pdf_show_crest"),
+                checked=show_crest_state[0],
+                test_id="pdf-show-crest",
+                on_change=lambda event: handle_checkbox_change(event, show_crest_state),
+            )
+            native_checkbox(
+                t("pdf_show_footer_note"),
+                checked=show_footer_note_state[0],
+                test_id="pdf-show-footer-note",
+                on_change=lambda event: handle_checkbox_change(event, show_footer_note_state),
+            )
+            ui.label(t("pdf_clean_export_hint")).classes("text-xs text-[var(--sy-muted)]")
+            native_action(
+                t("prepare_selected_schedule_pdf"),
+                test_id="prepare-roster-pdf",
+                on_click=deliver_pdf,
+            )
+
+            ui.label(t("internal_audit_export")).classes("text-base font-semibold mt-4")
+            ui.label(t("internal_audit_export_notice")).classes(
+                "text-sm text-[var(--sy-muted)]"
+            )
+            with ui.element("div").classes("sy-native-actions"):
+                native_action(
+                    t("export_audit_zh"),
+                    test_id="export-audit-zh",
+                    on_click=lambda: deliver_pdf(include_audit=True, audit_language="zh"),
+                )
+                native_action(
+                    t("export_audit_en"),
+                    test_id="export-audit-en",
+                    on_click=lambda: deliver_pdf(include_audit=True, audit_language="en"),
+                )
+            pdf_delivery_area[0] = ui.element("div").classes("w-full")
+
+    def toggle_advanced_options() -> None:
+        if not advanced_built[0]:
+            build_advanced_options()
+        advanced_open[0] = not advanced_open[0]
+        advanced_area.set_visibility(advanced_open[0])
+        advanced_button.props(f'aria-expanded={str(advanced_open[0]).lower()}')
+
+    with semantic_native_dialog(
+        title=t("choose_pdf_export"),
+        description=t("export_pdf_notice"),
+        presentation="sheet",
+        test_id="roster-export-dialog",
+    ) as dialog:
+        with ui.element("section").classes("sy-export-option sy-native-export-core w-full p-4"):
+            ui.label(t("roster_image_export_title")).classes("text-base font-semibold")
+            ui.label(t("roster_image_export_notice")).classes(
+                "text-sm text-[var(--sy-muted)]"
+            )
+            with ui.element("div").classes("sy-native-actions mt-3"):
+                prepare_images_button = native_action(
+                    t("generate_download_avatar")
+                    if opened_as_published or practice
+                    else t("generate_draft_image_preview"),
+                    test_id="prepare-roster-images",
+                    on_click=deliver_images,
+                    primary=True,
+                )
+                advanced_button = native_action(
+                    t("pdf_advanced_options"),
+                    test_id="pdf-advanced-options",
+                    on_click=toggle_advanced_options,
+                    extra_props='aria-expanded=false aria-controls="roster-export-advanced-panel"',
+                )
+        advanced_area = ui.element("section").classes(
+            "sy-export-option sy-native-export-advanced w-full p-4"
+        ).props('id="roster-export-advanced-panel" data-testid=roster-export-advanced')
+        advanced_area.set_visibility(False)
+        png_delivery_area = ui.element("div").classes("w-full")
+        with ui.element("div").classes("sy-native-actions sy-native-dialog-footer mt-4"):
+            native_action(
+                t("cancel"),
+                test_id="close-roster-export",
+                on_click=lambda: close_export_dialog(),
+            )
+
+    def release_export_dialog_resources() -> None:
+        prepared_signature[0] = None
+        prepared_bundle[0] = None
+        reset_delivery_views()
+        advanced_open[0] = False
+        advanced_area.set_visibility(False)
+        advanced_button.props("aria-expanded=false")
+
+    def finish_export_dialog_close() -> None:
+        if close_pending[0]:
+            # The session was already closed by our action. Acknowledge before
+            # honoring reopen, so this delayed event can never clear new work.
+            close_pending[0] = False
+            if reopen_requested[0]:
+                reopen_requested[0] = False
+                open_export_dialog()
+                return
+        elif export_session.opened:
+            # Escape/native dismissal closes on the browser before the server.
+            export_session.close()
+            release_export_dialog_resources()
+        else:
+            return
+        ui.run_javascript(
+            "window.setTimeout(() => { const dialog = document.querySelector("
+            f"'#c{dialog.id}'); if (dialog?.open) return; "
+            "const target = dialog?.__syReturnFocus; "
+            "if (target instanceof HTMLElement && target.isConnected) "
+            "target.focus({preventScroll: true}); }, 0)"
+        )
+
+    def close_export_dialog() -> None:
+        if dialog.is_deleted or not export_session.opened:
+            return
+        close_pending[0] = True
+        export_session.close()
+        release_export_dialog_resources()
+        dialog.run_method("close")
+
+    def open_export_dialog() -> None:
+        if close_pending[0]:
+            reopen_requested[0] = True
+            return
+        if dialog.is_deleted or export_session.opened:
+            return
+        current_week = _safe_read_action(
+            lambda: get_workflow().roster_week(roster_week_id), action_name="roster_export_reopen"
+        )
+        if current_week is None:
+            return
+        if current_week["status"] == "withdrawn":
+            ui.notify(t("roster_image_unavailable_withdrawn"), type="warning")
+            return
+        prepare_images_button.default_slot.children[0].set_text(
+            t("generate_download_avatar") if current_week["status"] == "published" or practice
+            else t("generate_draft_image_preview")
+        )
+        export_session.open()
+        ui.run_javascript(
+            "(() => { const dialog = document.querySelector("
+            f"'#c{dialog.id}'); "
+            "if (dialog) dialog.__syReturnFocus = document.activeElement; })()"
+        )
+        dialog.run_method("showModal")
+
+    dialog.on("close", lambda _event: finish_export_dialog_close())
+    dialog.on(
+        "click",
+        lambda _event: close_export_dialog(),
+        js_handler="event => { if (event.target === event.currentTarget) emit({dismissed: true}); }",
+    )
+    registry[roster_week_id] = {"dialog": dialog, "open": open_export_dialog}
+    open_export_dialog()
 
 
 def _tone_badge(text: str, tone: str, *, props: str = ""):
