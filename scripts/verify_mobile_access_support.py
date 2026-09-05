@@ -68,6 +68,8 @@ def _admin(page, base, case, support_dir, results, persist):
     # Explicitly separate legitimate first materialization from retained-cycle growth.
     session = page.context.new_cdp_session(page)
     cold = _capture_runtime_footprint(page, session, label="support-cold")
+    results.append({"scenario": "cold-support-before-first-mount", "footprint": cold})
+    persist()
     details = page.get_by_test_id("support-progressive-details")
     history = page.get_by_test_id("support-history-lookup")
     _open(details)
@@ -77,7 +79,7 @@ def _admin(page, base, case, support_dir, results, persist):
     details.locator("input[type=file]").set_input_files({"name": "fictional.txt", "mimeType": "text/plain", "buffer": b"fictional attachment D2"})
     expect(details.get_by_text("fictional.txt", exact=False).last).to_be_visible()
     _open(history)
-    lookup = page.get_by_test_id("support-lookup-id").locator("input")
+    lookup = page.get_by_test_id("support-lookup-id")
     lookup.fill(incident_id)
     page.get_by_test_id("lookup-support-incident").click()
     expect(page.get_by_test_id("support-lookup-result")).to_be_visible(timeout=20_000)
