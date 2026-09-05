@@ -82,8 +82,6 @@ class RestoreControls:
     def cancel(self) -> None:
         self.clear_consent()
         self.dialog.close()
-        if not self.busy:
-            self.ready.run_method("focus")
 
     def selection_changed(self) -> None:
         self.cancel()
