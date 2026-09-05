@@ -75,7 +75,47 @@ rejected. Default non-export progress behavior and admitted-work claim lifetime
 remain unchanged. Draft/audit PDF admission leaves the sheet open so a delayed
 fetch error can be reported rather than disappearing with an automatic close.
 
-The bounded 20-cycle extraction and additional browser validation are pending.
+## Bounded browser extraction
+
+`scripts/verify_export_workspace_integration.py` extracts only these functions
+from `856d06c:scripts/verify_nicegui_mobile.py`:
+
+| Source function | Scope retained |
+|---|---|
+| `isolated_paths`, `_next_unused_monday`, `_ensure_dynamic_roster_route_fixtures` | Exact isolated paths, bundled fictional seed, real draft/publish service calls |
+| `_capture_runtime_footprint` | Original 250 ms wait, collectGarbage, 100 ms wait, Runtime.getHeapUsage and Memory.getDOMCounters |
+| `_assert_runtime_growth_budget` | Original 20 cycles and 10 MiB heap / 100 DOM nodes / 40 listeners limits |
+| `_install_png_share_counter`, `_prepare_and_confirm_png_share` | One PNG, signature, first gesture cannot share, separate confirmation; reviewed `expect` handle fix retained |
+| `_assert_export_dialog_png_cleanup_cycles` | Original cold baseline before first open, render/download/share/close each cycle, raw samples at 1/10/20, final footprint |
+| `_assert_png_native_share_outcomes_and_download_fallback` | Shared, cancelled, failed, unsupported, downloaded fallback |
+| `_assert_export_advanced_options_are_lazy` | Initially absent controls, expand/mount once and reuse |
+
+Only baseline persistence is added before the unchanged loop, so early failures
+retain it as well. Wait/GC behavior and metric fields are not replaced by mounted
+DOM counts. The original notification-empty wait remains, even though inline
+feedback now avoids those portals. No warm-up or threshold increase is added.
+
+The narrow `_bind_isolated_admin_session` helper comes from the same frozen
+write-pipeline script. It uses an ephemeral key and exact loopback request
+binding. A **separate**, unmeasured Admin context verifies real GET MIME/headers,
+replay, inline native failure, 15-second lease expiry and the real eight-ticket
+session quota (abort fetches before consume; do not modify server limits).
+Expected 410/abort console errors are recognized only for generated-file paths;
+other errors still fail. Ticket URLs are matched in memory, never written into
+the evidence. Generic POST-only matching is not adopted.
+
+The driver records commit/tree/fingerprint/dirty before and after, fixture run ID,
+Python/Playwright/NiceGUI/Pillow/browser versions, raw samples and explicit
+functional-diagnostic/formalReleaseExecuted=false. Every invocation has a fresh
+artifact directory; failures exit nonzero and keep raw evidence. Full route
+matrix, F collector/assembly, D other pages and Worker gates are NOT extracted.
+
+The overlay-specific driver additionally delays its disposable process's real
+renderer by 1.5 seconds to observe a pending render beyond the reveal delay, then
+waits for the real PNG download. This is not a production delay or a performance
+measurement, and does not affect the original 20-cycle driver.
+
+Same-checkpoint browser execution and full verification are pending.
 
 No controlled p75, full WebKit, physical Android/iPhone, WhatsApp or supervised
 encrypted-recovery acceptance is claimed by this batch.
