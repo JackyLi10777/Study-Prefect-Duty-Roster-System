@@ -907,15 +907,18 @@ class GuestWorkspaceAdapter:
         *,
         page: int = 1,
         page_size: int = 24,
+        lookahead: bool = False,
     ) -> list[dict[str, object]]:
         self._require_read()
         if page < 1:
             raise WorkflowError("Roster history page must be at least one.")
         if page_size < 1 or page_size > 100:
             raise WorkflowError("Roster history page size must be between 1 and 100.")
-        ordered = self.roster_weeks()
+        ordered = sorted(self._state().get("weeks", []),
+                         key=lambda row: (str(row["weekStart"]), int(row["id"])), reverse=True)
         start = (page - 1) * page_size
-        return ordered[start : start + page_size]
+        # Project only the bounded slice, rather than every workspace record.
+        return [self._week_output(row) for row in ordered[start : start + page_size + int(bool(lookahead))]]
 
     def roster_week(self, roster_week_id: int) -> dict[str, object]:
         self._require_read()

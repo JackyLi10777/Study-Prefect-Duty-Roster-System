@@ -21,11 +21,14 @@ def test_history_lookahead_never_skips_or_repeats_a_week(tmp_path, mode, count, 
         with workflow._session() as session:
             records = [RosterWeekRecord(week_start=first_week + timedelta(weeks=index),
                                         policy_version="fictional-history",
-                                        generated_at=datetime(2026, 9, 1, tzinfo=timezone.utc))
+                                        generated_at=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                                        created_at=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                                        updated_at=datetime(2026, 9, 1, tzinfo=timezone.utc))
                        for index in range(count)]
             session.add_all(records)
             session.flush()
             ids = [row.id for row in records]
+            session.commit()
     else:
         context = PageContext.create(Principal(mode=AccessMode.GUEST,
             subject="guest:history-fixture", session_id="history-fixture",

@@ -1550,8 +1550,9 @@ class RosterLifecycleMixin:
         *,
         page: int = 1,
         page_size: int = 24,
+        lookahead: bool = False,
     ) -> list[dict[str, object]]:
-        """Return one bounded history page in stable newest-first order."""
+        """Return a stable page, optionally one extra row without changing stride."""
         if page < 1:
             raise WorkflowError("Roster history page must be at least one.")
         if page_size < 1 or page_size > 100:
@@ -1560,7 +1561,7 @@ class RosterLifecycleMixin:
             rows = session.scalars(
                 select(RosterWeekRecord)
                 .order_by(RosterWeekRecord.week_start.desc(), RosterWeekRecord.id.desc())
-                .limit(page_size)
+                .limit(page_size + int(bool(lookahead)))
                 .offset((page - 1) * page_size)
             ).all()
             closures = self._closed_days_by_week(session, (row.id for row in rows))

@@ -3189,7 +3189,8 @@ def roster_history_page(page: int = 1) -> None:
     page_size = 12
     page_rows = workflow.roster_week_history(
         page=current_page,
-        page_size=page_size + 1,
+        page_size=page_size,
+        lookahead=True,
     )
     has_next = len(page_rows) > page_size
     weeks = page_rows[:page_size]

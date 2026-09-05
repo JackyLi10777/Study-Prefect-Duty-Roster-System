@@ -199,20 +199,29 @@ def dialog(
         raise ValueError(f"Unknown dialog presentation: {presentation}")
     if presentation == "status":
         persistent = True
-    props = "persistent" if persistent else ""
+    identifier = next(_FIELD_SEQUENCE)
+    title_id = f"sy-dialog-title-{identifier}"
+    description_id = f"sy-dialog-description-{identifier}"
+    role = "alertdialog" if presentation == "alert" else "dialog"
+    props = (
+        f'role={role} aria-modal=true aria-labelledby="{attr(title_id)}" '
+        f'aria-describedby="{attr(description_id)}"'
+    )
+    if persistent:
+        props += " persistent"
     if presentation == "sheet":
         props += " position=bottom"
-    elif presentation == "alert":
-        props += " role=alertdialog aria-modal=true"
-    else:
-        props += " role=dialog aria-modal=true"
     if test_id:
         props += f" data-testid={test_id}"
     with ui.dialog().props(props.strip()) as element, ui.card().classes(
         f"sy-dialog sy-dialog--{presentation} w-full max-w-lg p-6"
     ):
-        ui.label(title).classes("sy-dialog-title").props("role=heading aria-level=2")
-        ui.label(description).classes("sy-dialog-description")
+        ui.label(title).classes("sy-dialog-title").props(
+            f'id="{attr(title_id)}" role=heading aria-level=2'
+        )
+        ui.label(description).classes("sy-dialog-description").props(
+            f'id="{attr(description_id)}"'
+        )
         if consequence:
             with ui.element("aside").classes("sy-dialog-consequence").props("role=note"):
                 ui.icon("info").props("aria-hidden=true")
