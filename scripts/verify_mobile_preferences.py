@@ -13,7 +13,10 @@ sys.path[:0] = [str(ROOT), str(ROOT / "packages/roster_policy"), str(ROOT / "pac
 
 from playwright.sync_api import expect, sync_playwright
 from scripts import verify_nicegui_mobile as mobile
-from scripts.verify_export_workspace_integration import _capture_runtime_footprint, _assert_runtime_growth_budget
+from scripts.verify_export_workspace_integration import (
+    _capture_runtime_footprint, _assert_runtime_growth_budget,
+    RUNTIME_HEAP_GROWTH_BUDGET_BYTES, RUNTIME_DOM_GROWTH_BUDGET, RUNTIME_LISTENER_GROWTH_BUDGET,
+)
 from scripts.verify_rc31_theme_controls import _safe_environment
 from scripts.verify_release_candidate import _source_state, _start_server, _stop_server, _wait_until_ready
 from scripts.verify_unified_guest_ui import _install_gateway_stubs
@@ -24,12 +27,24 @@ def _ready(page):
     page.wait_for_function("document.querySelector('[data-testid=mobile-more]')?.dataset.syDrawerA11y === 'ready'")
 
 
+def _record_growth(baseline, after, *, mode, results, persist):
+    # Persist both raw endpoints BEFORE the fail-closed assertion can raise.
+    results.append({"scenario": "cycle-final", "mode": mode, "cycles": 20,
+                    "baseline": dict(baseline), "after": dict(after),
+                    "limits": {"heapBytes": RUNTIME_HEAP_GROWTH_BUDGET_BYTES,
+                               "domNodes": RUNTIME_DOM_GROWTH_BUDGET,
+                               "listeners": RUNTIME_LISTENER_GROWTH_BUDGET}})
+    persist()
+    results.append(_assert_runtime_growth_budget(baseline, after, label=mode, cycles=20))
+    persist()
+
+
 def _collapse(page, preferences):
     header = preferences.locator(":scope > .q-expansion-item__container > .q-item")
     preferences.get_by_test_id("mobile-theme-control").focus()
     # Invoke Quasar's real hide method while focus is still inside the content;
     # clicking the header would move focus first and fail to test before-hide.
-    preferences.evaluate("element => getElement(Number(element.id.slice(1))).hide()")
+    preferences.evaluate("element => runMethod(Number(element.id.slice(1)), 'hide', [])")
     expect(header).to_have_attribute("aria-expanded", "false")
     expect(header).to_be_focused()
 
@@ -73,7 +88,7 @@ def _check_case(page, base_url, *, mode, results, persist):
             results.append({"scenario": "cycle", "mode": mode, "cycle": cycle + 1, "footprint": sample})
             persist()
     after = _capture_runtime_footprint(page, session, label=mode)
-    results.append(_assert_runtime_growth_budget(baseline, after, label=mode, cycles=20))
+    _record_growth(baseline, after, mode=mode, results=results, persist=persist)
     session.detach()
     persist()
 

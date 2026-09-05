@@ -119,3 +119,20 @@ window.__syThemeControlsCleanup();
     result = subprocess.run([node, "-", json.dumps({"script": scripts[0], "theme": theme})],
                             input=harness, text=True, encoding="utf-8", capture_output=True, timeout=15)
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize("metric,limit", [("heapBytes", 10 * 1024 * 1024), ("domNodes", 100), ("listeners", 40)])
+def test_growth_failure_preserves_raw_endpoints_and_unchanged_limits(metric, limit):
+    from scripts.verify_mobile_preferences import _record_growth
+
+    baseline = dict(heapBytes=10, domNodes=10, listeners=10)
+    after = {**baseline, metric: 11 + limit}
+    results, snapshots = [], []
+    with pytest.raises(AssertionError, match="exceeds runtime growth budgets"):
+        _record_growth(baseline, after, mode="fictional", results=results,
+                       persist=lambda: snapshots.append(json.loads(json.dumps(results))))
+    assert len(snapshots) == 1
+    raw = snapshots[0][0]
+    assert raw["mode"] == "fictional" and raw["cycles"] == 20
+    assert raw["baseline"] == baseline and raw["after"] == after
+    assert raw["limits"] == dict(heapBytes=10 * 1024 * 1024, domNodes=100, listeners=40)
