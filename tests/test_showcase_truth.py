@@ -20,13 +20,15 @@ def test_engineering_showcase_uses_current_release_evidence_instead_of_stale_cou
     assert 'tag="h2"' in source
 
 
-def test_dashboard_keeps_one_primary_generation_action_and_progressively_discloses_tone_settings() -> None:
+def test_dashboard_keeps_one_state_driven_action_without_loading_devotional_controls() -> None:
     source = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_routes" / "home.py").read_text(encoding="utf-8")
     dashboard = source.split('@ui.page("/dashboard")', 1)[0]
 
-    assert dashboard.count('action_key="create_draft"') == 1
-    assert 'action_key="empty_start_action"' not in dashboard
-    assert dashboard.index('ui.expansion(reflection.get("title"') < dashboard.index("tone_select = ui.select")
+    assert dashboard.count('test_id="dashboard-next-action"') == 1
+    assert "t(next_action.action_key)" in dashboard
+    assert "_render_flow_step(" not in dashboard
+    assert "_dashboard_verse()" not in dashboard
+    assert "tone_select = ui.select" not in dashboard
 
 
 def test_release_evidence_tone_preserves_operator_meaning() -> None:
