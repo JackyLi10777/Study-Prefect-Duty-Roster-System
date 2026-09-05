@@ -114,6 +114,14 @@ class PersistenceWorkflowMixin:
         """Reserve SQLite's writer slot before reading compare-and-set state."""
         session.connection().exec_driver_sql("BEGIN IMMEDIATE")
 
+    @staticmethod
+    def _begin_consistent_read(session: Session) -> None:
+        """Pin one SQLite snapshot before the first SELECT in a fresh session."""
+        # sqlite3 legacy transaction control does not BEGIN on SELECT. A
+        # deferred WAL read transaction keeps successive queries consistent
+        # while allowing another connection's writer to commit.
+        session.connection().exec_driver_sql("BEGIN DEFERRED")
+
     def _operation_command_id(self, operation_type: str, command_id: str | None) -> str:
         actor = current_operation_actor()
         candidate = command_id or (actor.command_id if actor else None) or f"{operation_type}:{uuid4().hex}"

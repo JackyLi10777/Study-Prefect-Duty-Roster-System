@@ -62,10 +62,7 @@ class ReportingWorkflowMixin:
     def roster_fairness_audit_snapshot(self, roster_week_id: int) -> FairnessAuditSnapshot:
         """Capture the audit's roster and cumulative ledger at one committed state."""
         with self._session() as session:
-            # sqlite3 legacy transaction control does not BEGIN on SELECT.
-            # An explicit deferred transaction pins the WAL read snapshot while
-            # allowing publication/withdrawal to commit on another connection.
-            session.connection().exec_driver_sql("BEGIN DEFERRED")
+            self._begin_consistent_read(session)
             week = self._week_or_error(session, roster_week_id)
             return FairnessAuditSnapshot(
                 week=self._roster_week_output(
@@ -92,6 +89,7 @@ class ReportingWorkflowMixin:
             self._require_monday(period_end)
 
         with self._session() as session:
+            self._begin_consistent_read(session)
             week_filter = select(RosterWeekRecord.id).where(RosterWeekRecord.status == "published")
             if period_start is not None:
                 week_filter = week_filter.where(RosterWeekRecord.week_start >= period_start)

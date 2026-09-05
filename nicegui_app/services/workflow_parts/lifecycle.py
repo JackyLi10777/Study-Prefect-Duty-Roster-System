@@ -1700,6 +1700,7 @@ class RosterLifecycleMixin:
     ) -> tuple[dict[str, object], list[dict[str, object]]]:
         """Read one versioned schedule from a single database transaction."""
         with self._session() as session:
+            self._begin_consistent_read(session)
             week = self._week_or_error(session, roster_week_id)
             assignments = self._assignment_rows(session, roster_week_id)
             closed_days = self._closed_days(session, roster_week_id)
