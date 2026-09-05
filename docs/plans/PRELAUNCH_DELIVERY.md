@@ -10,6 +10,7 @@
 |---|---|---|
 | protected main | `8843480f14a8359240a15101b666fb4dee5923f2` | PR #122至#125通過必要CI後合併；已有統一時間／auth／release guard／下載閒置回收／手機驗收契約／一致讀取與空缺補任服務端；新分支仍須即時 fetch |
 | 手機／PNG final | `29ac083fd4d1e9a54854c8fe4436573d0c51fd5b`，2026-09-05 核對 clean | 安全PNG交付、匯入保存保護、原生sheet、調整後匯出owner、關閉候選清理及抽屜取消；逐項比對，不整檔套用 |
+| 手機／PNG 新固定checkpoint | `6780eaf`，runtime `0df41ba`；2026-09-05 核對 clean | 已合main8843480；來源自述full始於04340f9，0df以67 focused及真Chromium補驗，不混稱最終head full。390px補任及receipt／Avatar／PDF同v8已回報；137檔仍須按行為整合，不等於主線或部署 |
 | 效能／手機 overhaul | `ecdf7ae` 加未提交工作；尚無最終checkpoint | 等完成SHA；不能用移除PNG／分享橋／測試的版本覆蓋final；保留資產、首屏、名冊、gate改進的行為證據 |
 | 手機驗收契約 | `a175b776`，經PR #124合併為 `2a7c975` | 固定scenario/profile、cold/core原始證據與來源綁定檢查；producer與完整權限／實機矩陣仍待整合，不能當成全站已驗收 |
 | 本任務 auth修正 | `cb5cccc`，經PR #122合併為 `12d6732` | 背景不poll、返回驗證、到期與撤權、已清理runtime忽略晚到回應 |
