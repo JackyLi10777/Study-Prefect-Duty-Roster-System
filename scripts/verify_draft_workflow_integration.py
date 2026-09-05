@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sqlite3
 import sys
 import tempfile
 
@@ -75,7 +76,18 @@ def main() -> None:
                     candidate.click()
                     sheet.get_by_test_id("draft-mobile-editor-close").click()
                     page.get_by_test_id("draft-save-all-mobile").click()
-                    page.get_by_test_id("draft-save-all-mobile-confirm").click()
+                    # Hold only this disposable DB's write lock so status-dialog
+                    # semantics are observable without changing production delays.
+                    with sqlite3.connect(environment["SING_YIN_DATABASE_PATH"]) as lock:
+                        lock.execute("BEGIN IMMEDIATE")
+                        try:
+                            page.get_by_test_id("draft-save-all-mobile-confirm").click()
+                            progress = page.get_by_test_id("operation-progress-dialog")
+                            expect(progress).to_be_visible(timeout=5_000)
+                            progress_title = progress.locator(".sy-dialog-title").inner_text()
+                            expect(page.get_by_role("dialog", name=progress_title, exact=True)).to_be_visible()
+                        finally:
+                            lock.rollback()
                     page.wait_for_function("window.__syDraftDirty === false")
                     after = workflow.roster_week(draft.id)
                     assert after["version"] == closed.version + 1
@@ -95,6 +107,15 @@ def main() -> None:
                         expect(sheet).to_be_hidden()
                         expect(cell).to_be_focused()
                     observations.append({"scenario": "editor-reuse-focus", "cycles": 20})
+                    day_section = page.get_by_test_id("draft-mobile-day-monday")
+                    day_section.locator("button").first.click()
+                    confirmation = page.get_by_test_id("draft-day-confirm-monday")
+                    expect(confirmation).to_be_visible()
+                    title = confirmation.locator(".sy-dialog-title").inner_text()
+                    expect(page.get_by_role("alertdialog", name=title, exact=True)).to_be_visible()
+                    confirmation.get_by_role("button").first.click()
+                    expect(confirmation).to_be_hidden()
+                    observations.append({"scenario": "named-status-and-alert-dialogs"})
                     for width in (256, 320, 390):
                         page.set_viewport_size({"width": width, "height": 844})
                         page.goto(f"{mobile.BASE_URL}/rosters", wait_until="domcontentloaded")
