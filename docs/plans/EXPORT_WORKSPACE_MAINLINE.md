@@ -27,6 +27,14 @@ This includes PDF, allocation/summary reports, Markdown acceptance worksheets,
 ZIP support bundles and the 64 MiB Admin handover limit. The native-share
 allowlist of PDF/PNG is not applied to generic delivery.
 
+Review confirmed a native-top-layer feedback defect. Therefore `downloads.py`
+adds optional UI feedback and an exact-generation DOM failure target; this is
+an explicit revision of the initial file-level no-change boundary, not a
+transport change. Existing callers use the same default notification path.
+Scoped browser feedback uses JSON serialization and textContent, never HTML,
+ticket URLs, raw exceptions or payload logging. Closing/reopening or options ABA
+rejects late failure and pending-download completion without a background toast.
+
 The frozen source's removal of GET and replacement by fixed-path POST is NOT
 adopted. Its POST-only tests and pipeline matchers are not adopted either. The
 PNG-02 POST-ticket subrequirement remains a separate undecided interface change,
@@ -54,6 +62,19 @@ language catalog. Ready copy now asks the user to confirm the file was saved.
 review concern: a body-portal progress dialog may be behind a native modal top
 layer. It holds only the disposable fixture DB lock and records a screenshot and
 element hit test. A failing result is retained, not classified as a release pass.
+The clean `cc1f43d` diagnostic failed with `inside=false`: progress was visible
+in DOM but behind the native modal. Original evidence is preserved at
+`sy-export-overlay-164yg6wo` (run `E2E-A4929AABF98E`) in the temporary evidence root.
+
+The focused repair reuses the existing export explanation label as a sheet-owned
+status/alert receipt; it does not add a global notification framework or replace
+all dialogs. Capture/render and file/share callbacks receive generation-bound
+feedback. A source-invalidated receipt deliberately uses the new current
+generation, so stale-source warnings remain visible while late results are
+rejected. Default non-export progress behavior and admitted-work claim lifetime
+remain unchanged. Draft/audit PDF admission leaves the sheet open so a delayed
+fetch error can be reported rather than disappearing with an automatic close.
+
 The bounded 20-cycle extraction and additional browser validation are pending.
 
 No controlled p75, full WebKit, physical Android/iPhone, WhatsApp or supervised

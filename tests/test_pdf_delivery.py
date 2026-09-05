@@ -104,4 +104,4 @@ def test_export_dialog_uses_generated_pdf_provenance_not_open_time_status() -> N
     assert "export.roster_status" in pdf_flow
     assert "opened_as_published" not in pdf_flow
     assert "allow_native_share=allow_native_share" in pdf_flow
-    assert "_deliver_prepared_roster_pdf(export)" in pdf_flow
+    assert "_deliver_prepared_roster_pdf(export, feedback=request_feedback)" in pdf_flow

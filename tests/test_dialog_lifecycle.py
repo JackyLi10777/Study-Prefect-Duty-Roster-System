@@ -287,6 +287,56 @@ def test_progress_cancellation_keeps_claim_until_worker_task_settles(monkeypatch
     asyncio.run(scenario())
 
 
+@pytest.mark.parametrize("cancel", [False, True])
+def test_inline_export_progress_has_no_portal_or_late_sound_and_keeps_claim(monkeypatch, cancel):
+    async def scenario():
+        state = {}
+        started, finish = asyncio.Event(), asyncio.Event()
+        active = [True]
+        messages, sounds = [], []
+
+        async def io_bound(_action):
+            started.set()
+            await finish.wait()
+            raise RuntimeError("fictional render failed")
+
+        _stub_progress_dependencies(monkeypatch, state=state,
+                                    ui_double=_ProgressUi(fail_dialog=True), io_bound=io_bound)
+        monkeypatch.setattr(page_shared, "emit_interface_feedback", lambda *args: sounds.append(args))
+        monkeypatch.setattr(page_shared, "play_interface_sound", lambda *args: sounds.append(args))
+
+        def notify(message, **options):
+            if active[0]:
+                messages.append((message, options["type"]))
+
+        feedback = page_shared._ExportFeedback(notify, page_shared.DownloadFailureTarget("c1", "2"))
+        caller = asyncio.create_task(page_shared._run_with_progress(
+            lambda: None, title_key="title", working_key="export", icon="image",
+            success_feedback=False, feedback=feedback,
+        ))
+        await started.wait()
+        assert messages and messages[-1][1] == "ongoing"
+        active[0] = False  # close/reopen has invalidated this request's sink
+        before = list(messages)
+        if cancel:
+            caller.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await caller
+        assert state[OPERATION_LOCK_KEY] == "export"
+        finish.set()
+        if not cancel:
+            assert await caller is page_shared._OPERATION_FAILED
+        for _ in range(10):
+            await asyncio.sleep(0)
+            if OPERATION_LOCK_KEY not in state:
+                break
+        assert OPERATION_LOCK_KEY not in state
+        assert messages == before
+        assert not sounds
+
+    asyncio.run(scenario())
+
+
 def test_progress_dialog_failure_keeps_claim_and_consumes_detached_worker_error(monkeypatch) -> None:
     async def scenario() -> None:
         state: dict[str, object] = {}

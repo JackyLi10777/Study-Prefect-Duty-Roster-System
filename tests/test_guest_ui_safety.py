@@ -194,10 +194,13 @@ def test_guest_generated_file_uses_single_use_server_endpoint(
     assert "URL.revokeObjectURL" in scripts[0]
 
 
+@pytest.mark.parametrize("inline_feedback", [False, True])
 def test_generated_file_capacity_failure_is_reported_to_caller(
     monkeypatch: pytest.MonkeyPatch,
+    inline_feedback: bool,
 ) -> None:
     notifications: list[tuple[object, object]] = []
+    inline_notifications: list[tuple[object, object]] = []
 
     class FullRegistry:
         def issue(self, **_kwargs):  # type: ignore[no-untyped-def]
@@ -216,19 +219,23 @@ def test_generated_file_capacity_failure_is_reported_to_caller(
         b"fictional-demo",
         "SYSS_DEMO_report.json",
         media_type="application/json",
+        feedback=(lambda message, **kwargs: inline_notifications.append((message, kwargs.get("type"))))
+        if inline_feedback else None,
     )
 
     assert delivered is False
-    assert notifications and notifications[-1][1] == "warning"
-    assert "REQ-CAPACITY" in str(notifications[-1][0])
+    selected = inline_notifications if inline_feedback else notifications
+    assert selected and selected[-1][1] == "warning"
+    assert "REQ-CAPACITY" in str(selected[-1][0])
+    assert not (notifications if inline_feedback else inline_notifications)
 
 
 def test_generated_file_callers_do_not_report_success_after_delivery_failure() -> None:
     root = Path(__file__).resolve().parents[1] / "nicegui_app" / "ui"
     source_contracts = {
         root / "page_shared.py": (
-            "if not deliver_generated_download(",
-            'ui.notify(t("pdf_ready"), type="positive")',
+            "if not _deliver_export_file(",
+            '_notify_export(feedback, t("pdf_ready"), type="positive")',
         ),
         root / "page_routes" / "people.py": (
             "if not deliver_generated_download(",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Callable
 import json
 import logging
 
@@ -33,19 +34,35 @@ class GeneratedFile:
     support_reference: str = ""
 
 
+@dataclass(frozen=True)
+class DownloadFailureTarget:
+    """One generation of an already-mounted, sheet-owned status label."""
+
+    element_id: str
+    generation: str
+
+
 def single_use_download_script(
     url: str,
     filename: str,
     failure_message: str,
     *,
     expected_media_type: str,
+    failure_target: DownloadFailureTarget | None = None,
 ) -> str:
     """Fetch one authenticated file, validate it, and surface delivery errors."""
 
+    target = None if failure_target is None else {
+        "id": failure_target.element_id, "generation": failure_target.generation,
+    }
     return (
         "(async() => {"
         "let objectUrl='';"
+        f"const feedbackTarget={json.dumps(target)};"
+        "const activeTarget=()=>{const node=feedbackTarget?document.getElementById(feedbackTarget.id):null;"
+        "return node?.closest('dialog')?.open&&node.dataset.exportGeneration===feedbackTarget.generation?node:null;};"
         "try {"
+        "if(feedbackTarget&&!activeTarget())return;"
         f"const expectedType=String({json.dumps(expected_media_type)}).split(';',1)[0].trim().toLowerCase();"
         f"const response=await fetch({json.dumps(url)},{{credentials:'same-origin',cache:'no-store',headers:{{'Accept':expectedType}}}});"
         "const responseReference=response.headers.get('X-Request-ID')||'';"
@@ -56,6 +73,7 @@ def single_use_download_script(
         "if(!expectedType||actualType!==expectedType)throw new Error(responseReference?`REFERENCE:${responseReference}`:'MEDIA_TYPE');"
         "const blob=await response.blob();"
         "if(!blob.size)throw new Error('EMPTY');"
+        "if(feedbackTarget&&!activeTarget())return;"
         "objectUrl=URL.createObjectURL(blob);"
         "const anchor=document.createElement('a');"
         "anchor.href=objectUrl;"
@@ -64,11 +82,17 @@ def single_use_download_script(
         "document.body.appendChild(anchor);anchor.click();anchor.remove();"
         "document.body.dataset.syDownload='completed';"
         "}catch(error){"
+        "const feedbackNode=activeTarget();"
+        "if(feedbackTarget&&!feedbackNode)return;"
         "document.body.dataset.syDownload='failed';"
         "const reference=String(error?.message||'').startsWith('REFERENCE:')?String(error.message).slice(10):'';"
         f"const base={json.dumps(failure_message)};"
         "const message=reference?`${base}\n${reference}`:base;"
-        "if(window.Quasar?.Notify?.create){window.Quasar.Notify.create({type:'negative',message,timeout:7000,actions:[{icon:'close',color:'white'}]});}else{window.alert(message);}"
+        "if(feedbackTarget){"
+        "feedbackNode.setAttribute('role','alert');feedbackNode.setAttribute('aria-live','assertive');"
+        "feedbackNode.setAttribute('aria-busy','false');feedbackNode.textContent=message;"
+        "feedbackNode.scrollIntoView({block:'nearest'});}"
+        "else if(window.Quasar?.Notify?.create){window.Quasar.Notify.create({type:'negative',message,timeout:7000,actions:[{icon:'close',color:'white'}]});}else{window.alert(message);}"
         "}finally{if(objectUrl)window.setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);}"
         "})();"
     )
@@ -79,6 +103,8 @@ def deliver_generated_download(
     filename: str,
     *,
     media_type: str = "application/octet-stream",
+    feedback: Callable[..., None] | None = None,
+    failure_target: DownloadFailureTarget | None = None,
 ) -> bool:
     """Queue one generated download and report whether delivery could start."""
 
@@ -115,7 +141,7 @@ def deliver_generated_download(
                 generated.access_mode.value,
                 generated.media_type,
             )
-            ui.notify(f'{t("download_delivery_failed")}\n{reference}', type="warning")
+            (feedback or ui.notify)(f'{t("download_delivery_failed")}\n{reference}', type="warning")
             return False
         ui.run_javascript(
             single_use_download_script(
@@ -123,6 +149,7 @@ def deliver_generated_download(
                 generated.filename,
                 t("download_delivery_failed"),
                 expected_media_type=generated.media_type,
+                failure_target=failure_target,
             )
         )
         return True
@@ -130,4 +157,4 @@ def deliver_generated_download(
     return True
 
 
-__all__ = ["GeneratedFile", "deliver_generated_download", "single_use_download_script"]
+__all__ = ["DownloadFailureTarget", "GeneratedFile", "deliver_generated_download", "single_use_download_script"]

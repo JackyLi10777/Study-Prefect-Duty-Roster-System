@@ -61,8 +61,12 @@ def main() -> None:
                         lock.execute("BEGIN EXCLUSIVE")
                         try:
                             dialog.get_by_test_id("prepare-roster-images").click()
-                            progress = page.get_by_test_id("operation-progress-dialog")
+                            progress = dialog.get_by_test_id("roster-export-feedback")
                             expect(progress).to_be_visible(timeout=5000)
+                            expect(progress).to_have_attribute("role", "status")
+                            expect(progress).to_have_attribute("aria-busy", "true")
+                            expect(progress).not_to_be_empty()
+                            assert page.get_by_test_id("operation-progress-dialog").count() == 0
                             hit = progress.evaluate("""element => {
                                 const card = element.querySelector('.sy-dialog-card') || element;
                                 const box = card.getBoundingClientRect();
@@ -70,7 +74,7 @@ def main() -> None:
                                 return {inside: element.contains(top), topTag: top?.tagName,
                                     topTestId: top?.getAttribute('data-testid'),
                                     role: element.getAttribute('role'),
-                                    title: element.querySelector('.sy-dialog-title')?.textContent};
+                                    title: element.querySelector('.sy-dialog-title')?.textContent || element.textContent};
                             }""")
                             observations.append({"scenario": "progress-top-layer", **hit})
                             page.screenshot(path=str(scratch / "progress.png"), full_page=True)

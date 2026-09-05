@@ -366,6 +366,48 @@ def test_guest_never_receives_native_share_prepare_or_confirm_controls(harness, 
     assert not ui.timers
 
 
+@pytest.mark.parametrize("invalidation", ["close_reopen", "options_aba"])
+def test_old_export_feedback_cannot_overwrite_reopened_or_changed_sheet(harness, monkeypatch, invalidation):
+    ui, client = harness
+    session = RosterExportSession()
+    monkeypatch.setattr(page_shared, "RosterExportSession", lambda _options: session)
+
+    async def scenario():
+        ready = asyncio.Event()
+        finish = asyncio.Event()
+
+        async def prepare(_week_id, _request, *, feedback):
+            feedback.notify("working", type="ongoing")
+            ready.set()
+            await finish.wait()
+            feedback.notify("late failure must not appear", type="negative")
+            return None
+
+        monkeypatch.setattr(page_shared, "_prepare_export_document", prepare)
+        page_shared._open_page_owned_roster_export_dialog(42)
+        task = asyncio.create_task(ui.by_test_id("prepare-roster-images").events["click"]())
+        await ready.wait()
+        label = ui.by_test_id("roster-export-feedback")
+        assert label.text == "working"
+        if invalidation == "close_reopen":
+            ui.by_test_id("close-roster-export").events["click"]()
+            client._sy_roster_export_dialogs[42]["dialog"].events["close"](share_event())
+            page_shared._open_page_owned_roster_export_dialog(42)
+        else:
+            ui.by_test_id("pdf-advanced-options").events["click"]()
+            language = ui.by_test_id("roster-export-language")
+            language.events["change"](share_event(value="en"))
+            language.events["change"](share_event(value="zh"))
+        expected = label.text
+        finish.set()
+        await task
+        assert label.text == expected and expected != "working"
+        assert session.phase == "idle"
+        assert not ui.notifications
+
+    asyncio.run(scenario())
+
+
 @pytest.mark.parametrize("format", ["pdf", "png"])
 @pytest.mark.parametrize("new_status", ["published", "withdrawn"])
 def test_other_session_revision_change_prevents_native_confirmation(harness, monkeypatch, format, new_status):
@@ -386,7 +428,7 @@ def test_other_session_revision_change_prevents_native_confirmation(harness, mon
     monkeypatch.setattr(page_shared, "_prepare_export_document", prepare_document)
     monkeypatch.setattr(page_shared, "_prepare_roster_png_bundle", prepare_png)
     monkeypatch.setattr(page_shared, "_prepare_roster_pdf", prepare_pdf)
-    monkeypatch.setattr(page_shared, "_download_roster_png", lambda image: downloads.append(image) or True)
+    monkeypatch.setattr(page_shared, "_download_roster_png", lambda image, **_kwargs: downloads.append(image) or True)
     page_shared._open_page_owned_roster_export_dialog(42)
     if format == "pdf":
         ui.by_test_id("pdf-advanced-options").events["click"]()
@@ -403,3 +445,4 @@ def test_other_session_revision_change_prevents_native_confirmation(harness, mon
     assert session.document is None
     assert not any("confirm-" + test_id in element.props_text for element in ui.elements)
     assert not ui.timers
+    assert ui.by_test_id("roster-export-feedback").text == "roster_write_conflict"

@@ -7,6 +7,7 @@ import base64
 import math
 import weakref
 from collections.abc import Callable, MutableMapping
+from dataclasses import dataclass
 from datetime import date, timedelta
 from functools import partial
 from time import perf_counter
@@ -48,7 +49,7 @@ from nicegui_app.ui.components import (
     native_dialog as semantic_native_dialog,
     workflow_step as render_workflow_step_component,
 )
-from nicegui_app.ui.downloads import deliver_generated_download
+from nicegui_app.ui.downloads import DownloadFailureTarget, deliver_generated_download
 from nicegui_app.ui.operation_gate import claim_durable_operation, release_durable_operation
 from nicegui_app.ui.page_access import is_demo_export
 from nicegui_app.ui.native_file_share import (
@@ -66,6 +67,31 @@ if TYPE_CHECKING:
 _OPERATION_FAILED = object()
 _OperationResult = TypeVar("_OperationResult")
 _ReadResult = TypeVar("_ReadResult")
+
+
+@dataclass(frozen=True)
+class _ExportFeedback:
+    notify: Callable[..., None]
+    download_target: DownloadFailureTarget
+
+
+def _notify_export(feedback: _ExportFeedback | None, message: str, **options) -> None:
+    (feedback.notify if feedback is not None else ui.notify)(message, **options)
+
+
+def _deliver_export_file(content: bytes, filename: str, *, media_type: str,
+                         feedback: _ExportFeedback | None = None) -> bool:
+    options = {} if feedback is None else {
+        "feedback": feedback.notify, "failure_target": feedback.download_target,
+    }
+    try:
+        return deliver_generated_download(content, filename, media_type=media_type, **options)
+    except Exception as error:
+        reference = new_operation_reference()
+        record_operator_failure(error, action="roster_export_delivery", reference=reference,
+                                started_at=perf_counter())
+        _notify_export(feedback, _operation_error_message(reference), type="negative")
+        return False
 _DIALOG_DISMISSAL_SECONDS = 0.35
 _PROGRESS_REVEAL_DELAY_SECONDS = 0.14
 
@@ -186,6 +212,7 @@ def _safe_read_action(
     action: Callable[[], _ReadResult],
     *,
     action_name: str = "ui_read_action",
+    feedback: _ExportFeedback | None = None,
 ) -> _ReadResult | None:
     """Run a short read-only UI action with a support reference on failure."""
     reference = new_operation_reference()
@@ -195,8 +222,9 @@ def _safe_read_action(
         result = action()
     except Exception as error:
         record_operator_failure(error, action=action_name, reference=reference, started_at=started_at)
-        emit_interface_feedback("error")
-        ui.notify(_operation_error_message(reference), type="negative", timeout=8_000)
+        if feedback is None:
+            emit_interface_feedback("error")
+        _notify_export(feedback, _operation_error_message(reference), type="negative", timeout=8_000)
     else:
         record_operator_event(action=action_name, outcome="completed", reference=reference, started_at=started_at)
         return result
@@ -211,6 +239,7 @@ async def _run_with_progress(
     wait_kind: str = "operation",
     on_conflict: Callable[[WorkflowConflictError], None] | None = None,
     success_feedback: bool = True,
+    feedback: _ExportFeedback | None = None,
 ) -> _OperationResult | object:
     """Run a durable local operation without leaving the operator guessing.
 
@@ -221,8 +250,9 @@ async def _run_with_progress(
     """
     operation_state = app.storage.client
     if not claim_durable_operation(operation_state, working_key):
-        emit_interface_feedback("attention")
-        ui.notify(t("operation_already_running"), type="warning", timeout=6_000)
+        if feedback is None:
+            emit_interface_feedback("attention")
+        _notify_export(feedback, t("operation_already_running"), type="warning", timeout=6_000)
         return _OPERATION_FAILED
 
     dialog = None
@@ -249,49 +279,53 @@ async def _run_with_progress(
             return_when=asyncio.FIRST_COMPLETED,
         )
         if not operation_task.done():
-            normalized_wait_kind = "ai" if wait_kind == "ai" else "operation"
-            # NiceGUI creates a hidden canary alongside each portal dialog.
-            # Give that canary a disposable owner, otherwise deleting only the
-            # dialog leaves it (and its finalizer's dialog reference) in this page.
-            with ui.element("div").classes("hidden") as progress_owner, semantic_dialog(
-                title=t(title_key),
-                description=t(working_key),
-                persistent=True,
-                presentation="status",
-                test_id="operation-progress-dialog",
-            ) as dialog:
-                with ui.element("section").classes(
-                    "sy-progress-dialog w-full"
-                ).props(
-                    f"aria-busy=true data-progress-mode=indeterminate data-phase=working "
-                    f"data-wait-kind={normalized_wait_kind}"
-                ) as progress_shell:
-                    with ui.row().classes("items-center gap-3"):
-                        with ui.element("span").classes("sy-progress-dialog-icon").props("aria-hidden=true"):
-                            if normalized_wait_kind == "ai":
-                                ui.spinner(size="sm", color="primary").classes(
-                                    "sy-progress-dialog-thinking"
-                                )
-                            else:
-                                ui.icon(icon).classes("sy-progress-dialog-icon-work")
-                            ui.icon("task_alt").classes("sy-progress-dialog-icon-success")
-                        status = ui.label(t(working_key)).classes(
-                            "sy-progress-dialog-status"
-                        ).props("aria-live=polite")
-                    progress = ui.linear_progress(show_value=False, color="primary").classes("w-full mt-4").props(
-                        f'indeterminate aria-label="{attr(t("progress_indeterminate"))}"'
-                    )
-                    ui.label(t("progress_keep_open")).classes("sy-progress-dialog-note mt-3")
+            if feedback is not None:
+                _notify_export(feedback, t(title_key) + "\n" + t(working_key), type="ongoing")
+            else:
+                normalized_wait_kind = "ai" if wait_kind == "ai" else "operation"
+                # NiceGUI creates a hidden canary alongside each portal dialog.
+                # Give that canary a disposable owner, otherwise deleting only the
+                # dialog leaves it (and its finalizer's dialog reference) in this page.
+                with ui.element("div").classes("hidden") as progress_owner, semantic_dialog(
+                    title=t(title_key),
+                    description=t(working_key),
+                    persistent=True,
+                    presentation="status",
+                    test_id="operation-progress-dialog",
+                ) as dialog:
+                    with ui.element("section").classes(
+                        "sy-progress-dialog w-full"
+                    ).props(
+                        f"aria-busy=true data-progress-mode=indeterminate data-phase=working "
+                        f"data-wait-kind={normalized_wait_kind}"
+                    ) as progress_shell:
+                        with ui.row().classes("items-center gap-3"):
+                            with ui.element("span").classes("sy-progress-dialog-icon").props("aria-hidden=true"):
+                                if normalized_wait_kind == "ai":
+                                    ui.spinner(size="sm", color="primary").classes(
+                                        "sy-progress-dialog-thinking"
+                                    )
+                                else:
+                                    ui.icon(icon).classes("sy-progress-dialog-icon-work")
+                                ui.icon("task_alt").classes("sy-progress-dialog-icon-success")
+                            status = ui.label(t(working_key)).classes(
+                                "sy-progress-dialog-status"
+                            ).props("aria-live=polite")
+                        progress = ui.linear_progress(show_value=False, color="primary").classes("w-full mt-4").props(
+                            f'indeterminate aria-label="{attr(t("progress_indeterminate"))}"'
+                        )
+                        ui.label(t("progress_keep_open")).classes("sy-progress-dialog-note mt-3")
 
-            _delete_dialog_after_close(dialog, lifetime_owner=progress_owner)
-            dialog.open()
-            play_interface_sound("working")
+                _delete_dialog_after_close(dialog, lifetime_owner=progress_owner)
+                dialog.open()
+                play_interface_sound("working")
         result = await asyncio.shield(operation_task)
     except CommittedWriteBackupError as error:
         if dialog is not None:
             dialog.close()
         record_operator_partial_failure(error, action=working_key, reference=reference, started_at=started_at)
-        emit_interface_feedback("attention")
+        if feedback is None:
+            emit_interface_feedback("attention")
         _show_committed_without_backup(
             reference,
             recovery_required=get_workflow().maintenance_status().recovery_required,
@@ -301,16 +335,18 @@ async def _run_with_progress(
         if dialog is not None:
             dialog.close()
         record_operator_event(action=working_key, outcome="conflict", reference=reference, started_at=started_at)
-        emit_interface_feedback("attention")
+        if feedback is None:
+            emit_interface_feedback("attention")
         if on_conflict is None:
-            ui.notify(t("roster_write_conflict"), type="warning", timeout=8_000)
+            _notify_export(feedback, t("roster_write_conflict"), type="warning", timeout=8_000)
         else:
             on_conflict(error)
         return _OPERATION_FAILED
     except Exception as error:
         record_operator_failure(error, action=working_key, reference=reference, started_at=started_at)
-        emit_interface_feedback("error")
-        ui.notify(_operation_error_message(reference), type="negative", timeout=8_000)
+        if feedback is None:
+            emit_interface_feedback("error")
+        _notify_export(feedback, _operation_error_message(reference), type="negative", timeout=8_000)
         return _OPERATION_FAILED
     else:
         if status is not None and progress_shell is not None and progress is not None:
@@ -507,7 +543,7 @@ def _render_roster_table(presentation: RosterSchedulePresentation) -> None:
 
 
 async def _prepare_export_document(
-    roster_week_id: int, request: ExportRequest,
+    roster_week_id: int, request: ExportRequest, *, feedback: _ExportFeedback | None = None,
 ) -> RosterDocument | None:
     """Reuse the workspace document; only a new or invalidated workspace reads."""
     if request.document is not None:
@@ -516,7 +552,7 @@ async def _prepare_export_document(
     result = await _run_with_progress(
         lambda: capture_roster_document(workflow, roster_week_id),
         title_key="progress_export_title", working_key="progress_export_working", icon="description",
-        success_feedback=False,
+        success_feedback=False, feedback=feedback,
     )
     return None if result is _OPERATION_FAILED else result
 
@@ -529,6 +565,7 @@ async def _prepare_roster_pdf(
     show_crest: bool = True,
     show_footer_note: bool = False,
     document: RosterDocument | None = None,
+    feedback: _ExportFeedback | None = None,
 ) -> RosterPdfExport | None:
     """Create an in-memory local export rather than writing student data to a public URL."""
     # Resolve the verified page-scoped adapter and export mode while the
@@ -561,34 +598,35 @@ async def _prepare_roster_pdf(
         title_key="progress_export_title",
         working_key="progress_export_working",
         icon="picture_as_pdf",
-        success_feedback=False,
+        success_feedback=False, feedback=feedback,
     )
     if export is _OPERATION_FAILED:
         return None
     return export
 
 
-def _deliver_prepared_roster_pdf(export: RosterPdfExport) -> bool:
+def _deliver_prepared_roster_pdf(export: RosterPdfExport, *, feedback: _ExportFeedback | None = None) -> bool:
     """Deliver exactly the PDF whose snapshot provenance was already checked."""
 
-    if not deliver_generated_download(
+    if not _deliver_export_file(
         export.content,
         export.filename,
-        media_type="application/pdf",
+        media_type="application/pdf", feedback=feedback,
     ):
         return False
-    ui.notify(t("pdf_ready"), type="positive")
+    _notify_export(feedback, t("pdf_ready"), type="positive")
     return True
 
 
 def _finish_direct_pdf_delivery(
     session: RosterExportSession, request: ExportRequest, export: RosterPdfExport,
+    *, feedback: _ExportFeedback | None = None,
 ) -> bool:
     """A failed admission or expired identity must not strand the UI as busy."""
     if not session.accepts(request):
         return False
     try:
-        delivered = _deliver_prepared_roster_pdf(export)
+        delivered = _deliver_prepared_roster_pdf(export, **({} if feedback is None else {"feedback": feedback}))
     except Exception:
         session.fail(request)
         raise
@@ -618,6 +656,7 @@ async def _prepare_roster_png_bundle(
     language: str,
     *,
     document: RosterDocument | None = None,
+    feedback: _ExportFeedback | None = None,
 ) -> RosterPngBundle | None:
     """Build both roster images from one atomic, page-authorized snapshot."""
 
@@ -639,7 +678,7 @@ async def _prepare_roster_png_bundle(
         title_key="progress_roster_image_title",
         working_key="progress_roster_image_working",
         icon="image",
-        success_feedback=False,
+        success_feedback=False, feedback=feedback,
     )
     if bundle is _OPERATION_FAILED:
         return None
@@ -653,19 +692,19 @@ def _png_data_url(image: RosterPngFile) -> str:
     return f"data:{image.media_type};base64,{encoded}"
 
 
-def _download_roster_png(image: RosterPngFile) -> bool:
+def _download_roster_png(image: RosterPngFile, *, feedback: _ExportFeedback | None = None) -> bool:
     if image.media_type != "image/png" or not can_offer_native_file_share(
         image.content,
         media_type=image.media_type,
     ):
         raise ValueError("Roster image delivery requires a valid bounded image/png file.")
-    if not deliver_generated_download(
+    if not _deliver_export_file(
         image.content,
         image.filename,
-        media_type=image.media_type,
+        media_type=image.media_type, feedback=feedback,
     ):
         return False
-    ui.notify(t("roster_image_downloaded"), type="positive")
+    _notify_export(feedback, t("roster_image_downloaded"), type="positive")
     return True
 
 
@@ -678,6 +717,7 @@ def _mount_native_share_confirmation(
     result_guard: Callable[[object], bool],
     build_handler: Callable[[NativeShareLease, float], str],
     report_result: Callable[[events.GenericEventArguments], None],
+    feedback: _ExportFeedback | None = None,
 ) -> Callable[[], None] | None:
     """Mount one expiring second gesture; no file is shared by this server call."""
     args = event.args if isinstance(event.args, dict) else {}
@@ -710,7 +750,7 @@ def _mount_native_share_confirmation(
             cleanup()
             if not container.is_deleted and result_guard(generation):
                 with container:
-                    ui.notify(t("native_share_prepare_expired"), type="info")
+                    _notify_export(feedback, t("native_share_prepare_expired"), type="info")
 
     def receive_result(result: events.GenericEventArguments) -> None:
         if container.is_deleted:
@@ -728,7 +768,7 @@ def _mount_native_share_confirmation(
             if lease.active and not lease.started:
                 with container:
                     cleanup()
-                    ui.notify(t("native_share_prepare_expired"), type="info")
+                    _notify_export(feedback, t("native_share_prepare_expired"), type="info")
             return
         if status in {"shared", "cancelled"} and not lease.started:
             return
@@ -769,6 +809,7 @@ def _render_pdf_delivery_ready(
     delivery_guard: Callable[[], bool] | None = None,
     share_result_token: str | None = None,
     share_result_guard: Callable[[object], bool] | None = None,
+    feedback: _ExportFeedback | None = None,
 ) -> Callable[[], None]:
     """Offer native file sharing only for the share-safe group schedule."""
     allow_native_share = allow_native_share and export.roster_status == "published"
@@ -794,13 +835,13 @@ def _render_pdf_delivery_ready(
             def download_again() -> None:
                 if delivery_guard is not None and not delivery_guard():
                     return
-                if not deliver_generated_download(
+                if not _deliver_export_file(
                     export.content,
                     export.filename,
-                    media_type="application/pdf",
+                    media_type="application/pdf", feedback=feedback,
                 ):
                     return
-                ui.notify(t("pdf_ready"), type="positive")
+                _notify_export(feedback, t("pdf_ready"), type="positive")
 
             def report_share_result(event: events.GenericEventArguments) -> None:
                 args = event.args if isinstance(event.args, dict) else {}
@@ -808,13 +849,13 @@ def _render_pdf_delivery_ready(
                     return
                 status = str(args.get("status", "failed"))
                 if status == "shared":
-                    ui.notify(t("pdf_share_completed"), type="positive")
+                    _notify_export(feedback, t("pdf_share_completed"), type="positive")
                 elif status == "cancelled":
-                    ui.notify(t("pdf_share_cancelled"), type="info")
+                    _notify_export(feedback, t("pdf_share_cancelled"), type="info")
                 elif status == "unsupported":
-                    ui.notify(t("pdf_share_unsupported"), type="warning", timeout=8000)
+                    _notify_export(feedback, t("pdf_share_unsupported"), type="warning", timeout=8000)
                 else:
-                    ui.notify(t("pdf_share_failed"), type="warning", timeout=8000)
+                    _notify_export(feedback, t("pdf_share_failed"), type="warning", timeout=8000)
 
             with ui.row().classes("sy-mobile-actions w-full gap-2 mt-3"):
                 if allow_native_share and can_offer_native_pdf_share(export.content):
@@ -835,7 +876,7 @@ def _render_pdf_delivery_ready(
                                 title=t("pdf_share_title"), text=t("pdf_share_text"), result_token=share_result_token,
                                 lease_token=lease.token, lease_expires_at=deadline,
                             ),
-                            report_result=report_share_result,
+                            report_result=report_share_result, feedback=feedback,
                         )
                     share_button.on("click", prepare_share, js_handler="() => emit({preparedAt: performance.now()})")
                 ui.button(t("download_prepared_pdf"), icon="download", on_click=download_again).props(
@@ -857,6 +898,7 @@ def _render_png_delivery_ready(
     delivery_guard: Callable[[], bool] | None = None,
     share_result_token: str | None = None,
     share_result_guard: Callable[[object], bool] | None = None,
+    feedback: _ExportFeedback | None = None,
 ) -> dict[str, Any]:
     """Update one compact preview view without remounting image/share controls.
 
@@ -873,6 +915,7 @@ def _render_png_delivery_ready(
         current_share_guard: list[Callable[[object], bool] | None] = [None]
         current_share_token: list[str | None] = [None]
         share_cleanup: list[Callable[[], None] | None] = [None]
+        current_feedback: list[_ExportFeedback | None] = [None]
         with container:
             root = ui.element("section").classes("sy-export-ready w-full mt-4 p-4").props(
                 'aria-live="polite" data-testid="roster-images-ready"'
@@ -910,12 +953,12 @@ def _render_png_delivery_ready(
                 def download_avatar() -> None:
                     current = active_bundle[0]
                     if current is not None and delivery_allowed[0] and (current_guard[0] is None or current_guard[0]()):
-                        _download_roster_png(current.avatar)
+                        _download_roster_png(current.avatar, feedback=current_feedback[0])
 
                 def download_detail() -> None:
                     current = active_bundle[0]
                     if current is not None and delivery_allowed[0] and (current_guard[0] is None or current_guard[0]()):
-                        _download_roster_png(current.whatsapp)
+                        _download_roster_png(current.whatsapp, feedback=current_feedback[0])
 
                 def report_share_result(event: events.GenericEventArguments) -> None:
                     args = event.args if isinstance(event.args, dict) else {}
@@ -923,13 +966,13 @@ def _render_png_delivery_ready(
                         return
                     status = str(args.get("status", "failed"))
                     if status == "shared":
-                        ui.notify(t("roster_image_share_completed"), type="positive")
+                        _notify_export(current_feedback[0], t("roster_image_share_completed"), type="positive")
                     elif status == "cancelled":
-                        ui.notify(t("roster_image_share_cancelled"), type="info")
+                        _notify_export(current_feedback[0], t("roster_image_share_cancelled"), type="info")
                     elif status == "unsupported":
-                        ui.notify(t("roster_image_share_unsupported"), type="warning", timeout=8000)
+                        _notify_export(current_feedback[0], t("roster_image_share_unsupported"), type="warning", timeout=8000)
                     else:
-                        ui.notify(t("roster_image_share_failed"), type="warning", timeout=8000)
+                        _notify_export(current_feedback[0], t("roster_image_share_failed"), type="warning", timeout=8000)
 
                 def native_action(
                     label: str,
@@ -979,7 +1022,7 @@ def _render_png_delivery_ready(
                                     media_type="image/png", title=t("roster_image_share_title"), text=t("roster_image_share_text"),
                                     result_token_selector=f"#c{detail_image.id}", lease_token=lease.token, lease_expires_at=deadline,
                                 ),
-                                report_result=report_share_result,
+                                report_result=report_share_result, feedback=current_feedback[0],
                             )
                         share_button.on("click", prepare_share, js_handler="() => emit({preparedAt: performance.now()})")
                     detail_button = native_action(
@@ -1006,6 +1049,7 @@ def _render_png_delivery_ready(
             "share_result_guard": current_share_guard,
             "share_result_token": current_share_token,
             "share_cleanup": share_cleanup,
+            "feedback": current_feedback,
             "practice": practice,
         }
         _clear_png_delivery_view(view)
@@ -1018,6 +1062,7 @@ def _render_png_delivery_ready(
         view["share_cleanup"][0] = None
     active_bundle = view["active_bundle"]
     delivery_allowed = view["delivery_allowed"]
+    view["feedback"][0] = feedback
     active_bundle[0] = bundle
     delivery_allowed[0] = allow_download
     view["delivery_guard"][0] = delivery_guard
@@ -1060,6 +1105,7 @@ def _clear_png_delivery_view(view: dict[str, Any] | None) -> None:
     if view is None:
         return
     view["active_bundle"][0] = None
+    view["feedback"][0] = None
     view["delivery_allowed"][0] = False
     view["delivery_guard"][0] = None
     view["share_result_guard"][0] = None
@@ -1137,6 +1183,34 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
     close_pending = [False]
     reopen_requested = [False]
 
+    def sync_feedback_generation() -> None:
+        feedback_label.run_method("setAttribute", "data-export-generation", str(export_session.generation))
+
+    def show_feedback(message: str, *, type: str = "info", **_options) -> None:
+        if not export_session.opened or feedback_label.is_deleted:
+            return
+        urgent = type in {"negative", "warning"}
+        feedback_label.props(
+            f"role={'alert' if urgent else 'status'} aria-live={'assertive' if urgent else 'polite'} "
+            f"aria-busy={str(type == 'ongoing').lower()}"
+        )
+        feedback_label.set_text(message)
+        feedback_label.run_method("scrollIntoView", {"block": "nearest"})
+
+    def feedback_for_generation(generation: int | None = None) -> _ExportFeedback:
+        expected = export_session.generation if generation is None else generation
+
+        def guarded(message: str, **options) -> None:
+            if export_session.opened and export_session.generation == expected:
+                show_feedback(message, **options)
+
+        return _ExportFeedback(guarded, DownloadFailureTarget(f"c{feedback_label.id}", str(expected)))
+
+    def reset_feedback() -> None:
+        sync_feedback_generation()
+        feedback_label.props("role=status aria-live=polite aria-busy=false")
+        feedback_label.set_text(t("roster_image_export_notice"))
+
     def native_action(
         label: str,
         *,
@@ -1169,14 +1243,16 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
     def invalidate_prepared_export(*, notify: bool = True) -> None:
         had_prepared = prepared_signature[0] is not None or prepared_bundle[0] is not None
         export_session.change_options(ExportOptions(*selected_signature()))
+        reset_feedback()
         reset_delivery_views()
         prepared_signature[0] = None
         prepared_bundle[0] = None
         if notify and had_prepared:
-            ui.notify(t("roster_export_options_changed"), type="info")
+            show_feedback(t("roster_export_options_changed"), type="info")
 
     async def document_for_request(request: ExportRequest) -> RosterDocument | None:
-        result = await _prepare_export_document(roster_week_id, request)
+        result = await _prepare_export_document(roster_week_id, request,
+                                                feedback=feedback_for_generation(request.generation))
         if result is None:
             export_session.fail(request)
             return None
@@ -1189,15 +1265,17 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
         # Authorization is rechecked by the page-bound workflow and again by
         # the download ticket issuer. Never issue a ticket for an old revision.
         current_week = _safe_read_action(
-            lambda: get_workflow().roster_week(roster_week_id), action_name="roster_export_revision_check"
+            lambda: get_workflow().roster_week(roster_week_id), action_name="roster_export_revision_check",
+            feedback=feedback_for_generation(),
         )
         if current_week is None or not export_session.validate_revision(current_week):
             export_session.invalidate_source()
+            sync_feedback_generation()
             reset_delivery_views()
             prepared_bundle[0] = None
             prepared_signature[0] = None
             if current_week is not None:
-                ui.notify(t("roster_write_conflict"), type="warning", timeout=8000)
+                show_feedback(t("roster_write_conflict"), type="warning", timeout=8000)
             return False
         return True
 
@@ -1207,9 +1285,12 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
         audit_language: str | None = None,
     ) -> None:
         if export_session.phase == "preparing":
-            ui.notify(t("operation_already_running"), type="warning")
+            show_feedback(t("operation_already_running"), type="warning")
             return
         request = export_session.begin()
+        sync_feedback_generation()
+        request_feedback = feedback_for_generation(request.generation)
+        show_feedback(t("progress_export_working"), type="ongoing")
         reset_delivery_views()
         selected_options = selected_signature()
         selected_language = audit_language or selected_options[0]
@@ -1222,7 +1303,7 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
             include_audit=include_audit,
             show_crest=selected_options[1],
             show_footer_note=selected_options[2],
-            document=document,
+            document=document, feedback=request_feedback,
         )
         if export is None:
             export_session.fail(request)
@@ -1230,8 +1311,7 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
         if not export_session.accepts(request):
             return
         if include_audit:
-            if _finish_direct_pdf_delivery(export_session, request, export):
-                close_export_dialog()
+            _finish_direct_pdf_delivery(export_session, request, export, feedback=request_feedback)
             return
         assert document is not None
         if not export_session.complete(request, document) or not validate_delivery_revision():
@@ -1240,11 +1320,10 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
         allow_download, allow_native_share = _pdf_delivery_permissions(export, practice=practice)
         if not allow_download:
             invalidate_prepared_export(notify=False)
-            ui.notify(t("roster_image_unavailable_withdrawn"), type="warning")
+            show_feedback(t("roster_image_unavailable_withdrawn"), type="warning")
             return
         if export.roster_status != "published":
-            if _deliver_prepared_roster_pdf(export):
-                close_export_dialog()
+            _deliver_prepared_roster_pdf(export, feedback=request_feedback)
             return
 
         prepared_bundle[0] = None
@@ -1257,21 +1336,26 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
             delivery_guard=validate_delivery_revision,
             share_result_token=str(request.generation),
             share_result_guard=export_session.accepts_share_result,
+            feedback=request_feedback,
         )
         prepared_signature[0] = selected_options
-        ui.notify(t("pdf_delivery_ready_title"), type="positive")
+        show_feedback(t("pdf_delivery_ready_title"), type="positive")
 
     async def deliver_images() -> None:
         if export_session.phase == "preparing":
-            ui.notify(t("operation_already_running"), type="warning")
+            show_feedback(t("operation_already_running"), type="warning")
             return
         request = export_session.begin()
+        sync_feedback_generation()
+        request_feedback = feedback_for_generation(request.generation)
+        show_feedback(t("progress_export_working"), type="ongoing")
         reset_delivery_views()
         selected_options = selected_signature()
         document = await document_for_request(request)
         if document is None:
             return
-        bundle = await _prepare_roster_png_bundle(roster_week_id, selected_options[0], document=document)
+        bundle = await _prepare_roster_png_bundle(roster_week_id, selected_options[0],
+                                                 document=document, feedback=request_feedback)
         if bundle is None:
             export_session.fail(request)
             return
@@ -1284,7 +1368,7 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
         )
         prepared_bundle[0] = bundle
         if allow_download:
-            _download_roster_png(bundle.avatar)
+            _download_roster_png(bundle.avatar, feedback=request_feedback)
         if pdf_delivery_area[0] is not None:
             pdf_delivery_area[0].clear()
         png_delivery_view[0] = _render_png_delivery_ready(
@@ -1297,10 +1381,11 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
             delivery_guard=validate_delivery_revision,
             share_result_token=str(request.generation),
             share_result_guard=export_session.accepts_share_result,
+            feedback=request_feedback,
         )
         prepared_signature[0] = selected_options
         if not allow_download:
-            ui.notify(t("roster_images_draft_notice"), type="info")
+            show_feedback(t("roster_images_draft_notice"), type="info")
 
     def handle_language_change(event: events.GenericEventArguments) -> None:
         args = event.args if isinstance(event.args, dict) else {}
@@ -1417,9 +1502,9 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
     ) as dialog:
         with ui.element("section").classes("sy-export-option sy-native-export-core w-full p-4"):
             ui.label(t("roster_image_export_title")).classes("text-base font-semibold")
-            ui.label(t("roster_image_export_notice")).classes(
-                "text-sm text-[var(--sy-muted)]"
-            )
+            feedback_label = ui.label(t("roster_image_export_notice")).classes(
+                "text-sm text-[var(--sy-muted)] whitespace-pre-line"
+            ).props("role=status aria-live=polite aria-atomic=true aria-busy=false data-testid=roster-export-feedback")
             with ui.element("div").classes("sy-native-actions mt-3"):
                 prepare_images_button = native_action(
                     t("generate_download_avatar")
@@ -1450,6 +1535,7 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
     def release_export_dialog_resources() -> None:
         prepared_signature[0] = None
         prepared_bundle[0] = None
+        reset_feedback()
         reset_delivery_views()
         advanced_open[0] = False
         advanced_area.set_visibility(False)
@@ -1505,6 +1591,7 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
             else t("generate_draft_image_preview")
         )
         export_session.open()
+        reset_feedback()
         ui.run_javascript(
             "(() => { const dialog = document.querySelector("
             f"'#c{dialog.id}'); "

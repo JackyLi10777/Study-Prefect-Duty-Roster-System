@@ -113,7 +113,7 @@ def test_export_dialog_separates_formal_draft_guest_and_withdrawn_delivery() -> 
     assert "allow_native_share=bundle_is_formal_published" in export_flow
     assert 't("generate_draft_image_preview")' in export_flow
     assert 't("generate_download_avatar")' in export_flow
-    assert "_download_roster_png(bundle.avatar)" in export_flow
+    assert "_download_roster_png(bundle.avatar, feedback=request_feedback)" in export_flow
     for test_id in (
         "roster-export-dialog",
         "roster-export-language",
