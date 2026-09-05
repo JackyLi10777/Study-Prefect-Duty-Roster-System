@@ -17,6 +17,7 @@ This index is the entry point and coverage contract for the documentation set. I
 | 災難復原保管人 | 整部主機損毀後，如何由加密離機副本復原？ | [`OFFSITE_DISASTER_RECOVERY.md`](OFFSITE_DISASTER_RECOVERY.md) |
 | 遠端存取維護者 | Worker、Access、VPC origin 與 Viewer 如何配合？ | [`CLOUDFLARE_REMOTE_ACCESS_SETUP.md`](CLOUDFLARE_REMOTE_ACCESS_SETUP.md) |
 | 開發者 | 一項改動應放在哪個模組，依賴方向是甚麼？ | [`ARCHITECTURE_OVERVIEW.md`](ARCHITECTURE_OVERVIEW.md) → [`NICEGUI_ARCHITECTURE.md`](NICEGUI_ARCHITECTURE.md) |
+| 正式啟用版實作者 | 已批准重構範圍、並行來源及剩餘驗收是甚麼？ | [啟用計劃](plans/20260905-system-integration.md) → [需求追蹤](plans/PRELAUNCH_DELIVERY.md) |
 | 發布者／審查者 | 這次改動需要哪一級驗證及甚麼發布證據？ | [`UPDATE_WORKFLOW.md`](UPDATE_WORKFLOW.md) → [`CODE_ACCEPTANCE_REVIEW.md`](CODE_ACCEPTANCE_REVIEW.md) |
 | 文件維護者 | 文件如何分類、同步、迭代及淘汰？ | [`DOCUMENTATION_SYSTEM.md`](DOCUMENTATION_SYSTEM.md) |
 | UI／UX 維護者 | 元件、token、排版、動效與無障礙規則是甚麼？ | [`../Professional_Design_System.md`](../Professional_Design_System.md) → [`FRONTEND_ARCHITECTURE.md`](FRONTEND_ARCHITECTURE.md) |

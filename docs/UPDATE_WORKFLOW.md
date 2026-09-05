@@ -31,7 +31,13 @@ python -X utf8 scripts\project_governance.py --write
 
 ## 日常唯一入口：先診斷，再核對 staged commit
 
-完成一批改動後，在 `D:\code_v3` 先執行：
+新工作從最新 `origin/main` 建立隔離的 `codex/<task>` 工作樹，PR 直接至 `main`。
+`codex/mainline` 是歷史流程，不再作新分支起點或 PR 目標。
+學校正式啟用前的重構範圍及新空庫決定见
+[正式啟用計劃](plans/20260905-system-integration.md)；需求進度見
+[交付追蹤](plans/PRELAUNCH_DELIVERY.md)。既有技術部署記錄不代表已正式啟用。
+
+完成一批改動後，在本次隔離工作樹先執行：
 
 ```powershell
 python -X utf8 scripts\verify_update.py --plan
