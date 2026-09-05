@@ -5,7 +5,6 @@ import importlib.metadata
 import json
 import os
 from pathlib import Path
-import re
 import sys
 import tempfile
 
@@ -18,17 +17,18 @@ from scripts.verify_export_workspace_integration import _capture_runtime_footpri
 from scripts.verify_mobile_preferences import _ready, _record_growth
 from scripts.verify_mobile_trust import _fit
 from scripts.verify_rc31_theme_controls import _safe_environment
-from scripts.verify_release_candidate import _source_state, _start_server, _stop_server, _wait_until_ready
+from scripts.verify_release_candidate import (
+    _assert_server_console_clean, _source_state, _start_server, _stop_server, _wait_until_ready,
+)
 from scripts.verify_unified_guest_ui import _install_gateway_stubs
 
 
-def _server_diagnostics(log: str, *, mode: str) -> dict[str, int]:
+def _server_diagnostics(log_path: Path, *, mode: str) -> dict[str, int]:
     """Reject server-only JS errors and any unexpected business failure."""
-    lines = log.splitlines()
-    errors = [line for line in lines if re.search(r"\bERROR\b|Traceback \(most recent call last\)", line)]
+    _assert_server_console_clean(log_path)
+    lines = log_path.read_text(encoding="utf-8").splitlines()
     failures = [line for line in lines if "event=operator_action_failed " in line]
     expected = 1 if mode == "local_maintenance" else 0
-    assert not errors, "Unexpected server console error"
     assert len(failures) == expected, "Unexpected operator failure count"
     assert all("action=progress_restore_working " in line and "error_type=WorkflowError " in line
                and "_stage_restore_source" in line for line in failures), "Unexpected operator failure"
@@ -64,6 +64,20 @@ def _double_dialog_text(page, dialog, case, mode, results, persist):
             assert not overflow, f"Measured text reflow failed at {width}"
         page.set_viewport_size({"width": 390, "height": 844})
         page.screenshot(path=str(case / "review-measured-text-2x.png"))
+        phrase = page.locator("[data-testid='restore-confirmation-text'] input, input[data-testid='restore-confirmation-text']")
+        phrase.fill("確認還原備份")
+        expect(page.get_by_test_id("confirm-restore-action")).to_be_enabled()
+        phrase.press("Tab")
+        expect(page.get_by_test_id("restore-cancel-action")).to_be_focused()
+        page.keyboard.press("Tab")
+        expect(page.get_by_test_id("confirm-restore-action")).to_be_focused()
+        page.keyboard.press("Shift+Tab")
+        expect(page.get_by_test_id("restore-cancel-action")).to_be_focused()
+        page.keyboard.press("Enter")
+        expect(dialog).to_be_hidden()
+        expect(page.get_by_test_id("restore-ready-action")).to_be_focused()
+        results.append({"mode": mode, "scenario": "measured-text-2x-keyboard-cancel", "status": "pass"})
+        persist()
     finally:
         page.evaluate("""() => {
             for (const {el,style} of window.__restoreTextTargets)
@@ -138,7 +152,6 @@ def _check(page, base, case, mode, results, persist, backup=None):
     page.screenshot(path=str(case / "review-text-200.png"))
     text_style.evaluate("node => node.remove()")
     _double_dialog_text(page, dialog, case, mode, results, persist)
-    page.get_by_test_id("restore-cancel-action").click()
     expect(dialog).to_be_hidden()
     results.append({"mode": mode, "scenario": "eight-viewports-root-font-200-proxy", "status": "pass"})
     persist()
@@ -173,6 +186,7 @@ def _check(page, base, case, mode, results, persist, backup=None):
             phrase.fill("確認還原備份")
             confirm.click()
             expect(page.get_by_test_id("restore-failure-receipt")).to_be_visible(timeout=30_000)
+            expect(dialog).to_be_hidden()
             expect(page.get_by_test_id("restore-success-receipt")).to_be_hidden()
             page.get_by_test_id("restore-failure-receipt").scroll_into_view_if_needed()
             page.screenshot(path=str(case / "changed-backup-rejected.png"))
@@ -236,7 +250,7 @@ def main():
                             context.close()
                     finally:
                         _stop_server(process, output)
-                    diagnostics = _server_diagnostics((case / "server.log").read_text(encoding="utf-8"), mode=mode)
+                    diagnostics = _server_diagnostics(case / "server.log", mode=mode)
                     results.append({"mode": mode, "scenario": "server-diagnostics", **diagnostics})
                     persist()
             finally:
