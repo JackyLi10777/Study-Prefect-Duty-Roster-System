@@ -72,3 +72,13 @@ threshold or deleting a failing measurement.
 No claim of zero first-screen resource bytes, complete role verification,
 controlled p75, full route matrix, WebKit/device acceptance or production rollout.
 No settings, export/transport, audio, Worker, schema or deployment changes.
+
+## Follow-up F, not implemented by D2
+
+The main mobile release-report validator currently requires coverage, core
+interactions and performance, but does not require lifecycle before/after samples,
+20 cycles or the 10MiB/100-DOM/40-listener budgets. CORE_REPETITIONS task windows
+do not prove those lifecycle limits. F must version the contract to require that
+evidence and define a source-owned baseline; missing evidence must fail formal
+acceptance. D2's retained-not-cold diagnostic must not be promoted to a cold gate
+by a report producer. No release-contract change or formal-pass claim occurs here.
