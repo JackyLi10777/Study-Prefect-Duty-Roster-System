@@ -40,6 +40,11 @@ def test_history_lookahead_never_skips_or_repeats_a_week(tmp_path, mode, count, 
         ids = [workflow.generate_and_save_draft(first_week + timedelta(weeks=index),
                     closed_days=DAYS).id for index in range(count)]
     monkeypatch.setattr(workflow, "roster_weeks", lambda: pytest.fail("History must not request all output rows"))
+    # Reproduce the old UI's mismatch with the unchanged default API: taking
+    # 12 rows from pages whose offset advances by 13 necessarily loses records.
+    old_ui_ids = [row["id"] for page in range(1, 4)
+                  for row in workflow.roster_week_history(page=page, page_size=13)[:12]]
+    assert old_ui_ids != ids[::-1]
     collected = []
     has_next_flags = []
     for page in range(1, 4):

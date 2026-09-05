@@ -86,6 +86,8 @@ def main() -> None:
                             expect(progress).to_be_visible(timeout=5_000)
                             progress_title = progress.locator(".sy-dialog-title").inner_text()
                             expect(page.get_by_role("dialog", name=progress_title, exact=True)).to_be_visible()
+                            expect(progress).to_have_accessible_description(
+                                progress.locator(".sy-dialog-description").inner_text())
                         finally:
                             lock.rollback()
                     page.wait_for_function("window.__syDraftDirty === false")
@@ -113,6 +115,8 @@ def main() -> None:
                     expect(confirmation).to_be_visible()
                     title = confirmation.locator(".sy-dialog-title").inner_text()
                     expect(page.get_by_role("alertdialog", name=title, exact=True)).to_be_visible()
+                    expect(confirmation).to_have_accessible_description(
+                        confirmation.locator(".sy-dialog-description").inner_text())
                     confirmation.get_by_role("button").first.click()
                     expect(confirmation).to_be_hidden()
                     observations.append({"scenario": "named-status-and-alert-dialogs"})

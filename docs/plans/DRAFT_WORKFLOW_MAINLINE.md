@@ -63,3 +63,27 @@ This branch needs its own clean-source full verification, independent diff
 review, corresponding isolated browser checks and required CI. Prior source
 reports are not substitutes. No deployment or formal release acceptance is
 claimed; missing release adapters and physical acceptance stay pending.
+
+## Defects found during this batch's review
+
+- Semantic Quasar dialogs had roles/headings but no accessible-name binding.
+  Unique source-owned title/description IDs now bind `aria-labelledby` and
+  `aria-describedby` for modal, sheet, alert and status variants. Native-dialog
+  title binding remains intact. The pre-fix real-browser check `e5e1a36` failed
+  to find the working dialog by its visible title; that failure is retained in
+  isolated fixture `sy-draft-mainline-eoknx43i`. Unit tests cover all variants.
+- History already had a baseline defect on the parent main: display stride 12
+  was passed to the adapters as page size 13 to detect a following page. Rows
+  13, 26, etc. disappeared between pages. Optional `lookahead=True` now adds one
+  to the query limit, not the offset stride; ordinary API shape/semantics and
+  URLs are unchanged. The formal query remains bounded and the Guest adapter
+  projects only the selected slice. Formal/Guest 25/26/27-record fixtures
+  reproduce the old UI mismatch and verify complete, unique new pagination.
+
+`fd16eac` passed the original bounded Chromium check: one-version reopen and
+assignment, 20 same-sheet open/close cycles with focus restoration, and
+256/320/390px lazy-rule expansion without overflow. `ec4b81c` additionally
+passed named status/alert dialogs. Reports are source-bound functional
+diagnostics in isolated fictional temporary fixtures, not p75/release gates.
+The status probe holds only the disposable database's write lock long enough
+to inspect the real progress dialog; production timing and gates are unchanged.
