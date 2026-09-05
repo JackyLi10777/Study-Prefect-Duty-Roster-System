@@ -433,6 +433,7 @@ def engineering_page() -> None:
         else t("engineering_release_state", state=t(release_state_keys.get(evidence.state, "platform_release_unreadable")))
     )
     evidence_tone = _release_evidence_tone(evidence.state)
+    evidence_date = evidence.finished_at.date().isoformat() if evidence.finished_at else ""
     gate_value = (
         f"{evidence.passed_checks:02d}/{evidence.total_checks:02d}"
         if evidence.total_checks
@@ -458,6 +459,10 @@ def engineering_page() -> None:
             "role=status data-testid=engineering-release-state"
         ).classes(f"font-semibold sy-fg-{evidence_tone}")
         ui.label(evidence_label).classes("text-sm text-[var(--sy-muted)]")
+        ui.label(
+            f'{t("engineering_coverage_report_date")}: '
+            f'{evidence_date or t("engineering_report_date_unavailable")}'
+        ).classes("text-sm text-[var(--sy-muted)]").props("data-testid=engineering-release-date")
         reading_toc(
             (
                 ("engineering-facts-section", "engineering_facts_title"),
@@ -485,7 +490,6 @@ def engineering_page() -> None:
         _trust_section(navigation, "engineering-facts-section", "engineering_facts_title",
                        "engineering-facts-details", render_engineering_facts_section)
 
-        evidence_date = evidence.finished_at.date().isoformat() if evidence.finished_at else "—"
         evidence_records = [
             {
                 "id": f"gate-{index}",
@@ -615,8 +619,9 @@ def engineering_page() -> None:
                     control.on_value_change(lambda _event: render_evidence_results())
                 render_evidence_results()
 
-        _trust_section(navigation, "engineering-evidence-index-section", "engineering_coverage_title",
-                       "engineering-coverage-details", render_engineering_evidence_index_section)
+        coverage = _trust_section(navigation, "engineering-evidence-index-section", "engineering_coverage_title",
+                                  "engineering-coverage-details", render_engineering_evidence_index_section)
+        navigation.register("engineering-evidence-title", lambda: coverage.set_value(True))
 
         def render_engineering_blueprint_section() -> None:
             with ui.element("section").classes("w-full").props(""):
@@ -863,8 +868,9 @@ def system_architecture_page() -> None:
                         test_id="developer-release-command",
                     )
 
-        _trust_section(navigation, "architecture-developer-section", "developer_reference_title",
-                       "architecture-developer-details", render_architecture_developer_section)
+        developer = _trust_section(navigation, "architecture-developer-section", "developer_reference_title",
+                                   "architecture-developer-details", render_architecture_developer_section)
+        navigation.register("developer-reference-title", lambda: developer.set_value(True))
 
         def render_architecture_faq_section() -> None:
             with ui.element("section").classes("sy-architecture-faq w-full").props(

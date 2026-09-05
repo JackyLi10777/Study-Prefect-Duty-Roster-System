@@ -7,6 +7,7 @@ MESSAGES = {'engineering_coverage_title': {'zh-HK': '品質覆蓋範圍', 'en': 
                                      'en': 'Coverage category; this is not proof that an individual check ran or passed.'},
  'engineering_coverage_report_status': {'zh-HK': '整份報告狀態', 'en': 'Overall report status'},
  'engineering_coverage_report_date': {'zh-HK': '整份報告日期', 'en': 'Overall report date'},
+ 'engineering_report_date_unavailable': {'zh-HK': '未提供完成日期', 'en': 'Completion date unavailable'},
  'architecture_lifecycle_summary': {'zh-HK': '準備名冊 → 核對草稿 → 發布 → PDF／PNG／分享 → 版本化調整 → 備份與交接。各階段的責任與恢復方式可按需展開。',
                                     'en': 'Prepare the directory → review a draft → publish → PDF / PNG / sharing → versioned adjustments → backup and handover. Expand each section for ownership and recovery details.'},
  'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服事', 'en': 'SERVICE BY DESIGN'},

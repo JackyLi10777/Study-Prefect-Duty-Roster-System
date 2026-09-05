@@ -171,3 +171,50 @@ def test_architecture_faq_and_commands_are_first_use(monkeypatch):
         assert _find(client, "developer-health-command")
         _repeat(developer, client)
     _run(monkeypatch, check)
+
+
+@pytest.mark.parametrize("state", ["pass", "running", "stale", "fail", "missing", "unreadable"])
+@pytest.mark.parametrize("finished_at", [datetime(2026, 9, 5, 12), None])
+def test_engineering_report_date_is_visible_before_expansion(monkeypatch, state, finished_at):
+    calls = []
+    def load():
+        calls.append(1)
+        return ReleaseEvidence(state, 13, 13, finished_at)
+    monkeypatch.setattr(showcase, "load_release_evidence", load)
+    async def check(client):
+        showcase.engineering_page()
+        assert _find(client, "engineering-release-state").text == "platform_release_" + state
+        label = _find(client, "engineering-release-date")
+        assert label.visible
+        assert ("2026-09-05" if finished_at else "engineering_report_date_unavailable") in label.text
+        panel = _find(client, "engineering-coverage-details")
+        panel.set_value(True)
+        _repeat(panel, client)
+        assert calls == [1]
+    _run(monkeypatch, check)
+
+
+@pytest.mark.parametrize("route,anchor,panel_id", [
+    (showcase.engineering_page, "engineering-evidence-title", "engineering-coverage-details"),
+    (showcase.system_architecture_page, "developer-reference-title", "architecture-developer-details"),
+])
+def test_original_heading_links_reveal_once_without_accepting_unknown_fragments(monkeypatch, route, anchor, panel_id):
+    monkeypatch.setattr(showcase, "load_release_evidence", lambda: ReleaseEvidence("missing", 0, 0, None))
+    async def check(client):
+        route()
+        panel = _find(client, panel_id)
+        navigation = _find(client, "reading-navigation")
+        listener = next(iter(navigation._event_listeners.values()))
+        def navigate(target, sequence):
+            listener.handler(SimpleNamespace(args={"detail": {"anchor": target, "sequence": sequence}}))
+        navigate("fictional-private-fragment", 1)
+        assert not panel.value
+        navigate(anchor, 2)
+        assert panel.value
+        assert any(e._props.get("id") == anchor for e in client.elements.values())
+        initial = set(client.elements)
+        panel.set_value(False)
+        navigate(anchor, 3)
+        assert panel.value and set(client.elements) == initial
+        assert navigation._props["data-reading-ready"] == "3"
+    _run(monkeypatch, check)

@@ -41,7 +41,7 @@ def test_release_evidence_tone_preserves_operator_meaning() -> None:
     assert _release_evidence_tone("unknown") == "attention"
 
 
-def test_engineering_evidence_index_classifies_every_current_release_gate() -> None:
+def test_engineering_evidence_index_classifies_editorial_coverage_categories() -> None:
     source = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_routes" / "showcase.py").read_text(encoding="utf-8")
     engineering_page = source.split('@ui.page("/engineering")', 1)[1].split(
         '@ui.page("/system-architecture")', 1
