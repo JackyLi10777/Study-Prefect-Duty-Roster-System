@@ -4,13 +4,15 @@ import ast
 from datetime import date
 
 from nicegui_app.config import PROJECT_ROOT
-from nicegui_app.ui.edit_sessions import DraftEditSession
+from nicegui_app.services.draft_editor import DraftEditor as DraftEditSession
 from nicegui_app.ui.page_routes.weekly import (
     _generation_requirements_query_key,
+    _invalidate_draft_candidate_cache_for_days,
     _normalize_draft_candidate_value,
     _stage_atomic_draft_selection,
     _stage_draft_move,
 )
+from roster_policy import SchoolDay
 
 
 WEEKLY_SOURCE = (
@@ -31,7 +33,7 @@ I18N_SOURCE = (
     / "stewardship.py"
 ).read_text(encoding="utf-8")
 EDIT_SESSION_SOURCE = (
-    PROJECT_ROOT / "nicegui_app" / "ui" / "edit_sessions.py"
+    PROJECT_ROOT / "nicegui_app" / "services" / "draft_editor.py"
 ).read_text(encoding="utf-8")
 WEEKLY_TREE = ast.parse(WEEKLY_SOURCE)
 
@@ -112,24 +114,25 @@ def test_leave_mutations_invalidate_and_refresh_generation_requirements() -> Non
 def test_draft_editor_uses_one_canonical_matrix_and_one_batch_patch() -> None:
     assert "build_roster_presentation(" in WEEKLY_SOURCE
     assert "workflow.roster_schedule_snapshot(roster_week_id)" in WEEKLY_SOURCE
-    assert "edit_session = DraftEditSession(" in WEEKLY_SOURCE
-    assert "cell_values, day_values, slot_values = edit_session.patch_edits()" in WEEKLY_SOURCE
+    assert "edit_session = DraftEditor(" in WEEKLY_SOURCE
     assert "DraftCellEdit(cell_key=key, replacement_prefect_id=value)" in EDIT_SESSION_SOURCE
     assert "DraftDayEdit(day=day, closed=closed)" in EDIT_SESSION_SOURCE
     assert "DraftSlotStateEdit(" in EDIT_SESSION_SOURCE
     assert 'state="unavailable" if unavailable else "open"' in EDIT_SESSION_SOURCE
-    assert "workflow.apply_draft_patch(" in WEEKLY_SOURCE
+    # Save admission, immutable intent and cancellation settlement are exercised
+    # at the page/controller boundary in test_draft_save_ui_seam.py.
+    assert not any(isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                   and node.func.attr == "reload" for node in ast.walk(_function_named("save_pending")))
     assert "workflow.update_draft_assignment(" not in WEEKLY_SOURCE
     assert 'with_input=True' in WEEKLY_SOURCE
     assert '"__vacant__": t("draft_explicit_vacancy")' in WEEKLY_SOURCE
-    assert 'f\'data-cell-key="{attr(key)}"\'' in WEEKLY_SOURCE
+    assert 'f\'data-cell-key="{attr(cell.cell_key)}" \'' in WEEKLY_SOURCE
 
 
 def test_unsaved_changes_support_undo_discard_and_conflict_preservation() -> None:
-    assert "edit_session = DraftEditSession(" in WEEKLY_SOURCE
+    assert "edit_session = DraftEditor(" in WEEKLY_SOURCE
     assert "edit_session.undo()" in WEEKLY_SOURCE
     assert "edit_session.redo()" in WEEKLY_SOURCE
-    assert "edit_session.ensure_command_id()" in WEEKLY_SOURCE
     assert "window.__syDraftDirty" in WEEKLY_SOURCE
     assert "ui.keyboard(" in WEEKLY_SOURCE
     assert 'ignore=["input", "select", "textarea"]' in WEEKLY_SOURCE
@@ -257,8 +260,10 @@ def test_typed_draft_session_owns_dirty_history_retry_and_conflict_reapply() -> 
     assert session.pending_cells["MONDAY:ROOM_302:0"] == "prefect-b"
 
     session.set_conflict(latest_version=9, changes=["Monday changed"])
-    assert session.reapply_conflict() is True
-    assert session.reviewed_version == 9
+    # A version number alone is not a reviewed base: the new editor requires
+    # the complete latest snapshot before reapplying retained intent.
+    assert session.reapply_conflict() is False
+    assert session.reviewed_version == 4
     assert session.command_id is None
     cell_edits, day_edits, slot_edits = session.patch_edits()
     assert len(cell_edits) == 2
@@ -319,6 +324,50 @@ def test_vacancy_aliases_normalize_without_treating_blank_input_as_vacant() -> N
     assert _normalize_draft_candidate_value("prefect-id") == "prefect-id"
 
 
+def test_candidate_cache_invalidation_covers_adjacent_day_dependencies() -> None:
+    cache: dict[str, object] = {
+        "MONDAY:ROOM_302:1": [{"id": "a"}],
+        "MONDAY:ROOM_303:1": [{"id": "b"}],
+        "TUESDAY:ROOM_302:1": [{"id": "c"}],
+        "FRIDAY:ROOM_202:2": [{"id": "d"}],
+    }
+
+    invalidated = _invalidate_draft_candidate_cache_for_days(
+        cache,
+        {SchoolDay.MONDAY, SchoolDay.FRIDAY},
+    )
+
+    assert invalidated == (
+        "FRIDAY:ROOM_202:2",
+        "MONDAY:ROOM_302:1",
+        "MONDAY:ROOM_303:1",
+        "TUESDAY:ROOM_302:1",
+    )
+    assert cache == {}
+
+
+def test_local_eligibility_mutations_invalidate_only_their_weekday_caches() -> None:
+    for callback_name in (
+        "stage_candidate",
+        "stage_move",
+        "stage_slot",
+        "stage_day",
+        "undo_pending",
+        "redo_pending",
+        "discard_pending",
+    ):
+        callback = _function_named(callback_name)
+        assert "_invalidate_draft_candidate_cache_for_days" in _function_calls(callback)
+
+    for callback_name in ("stage_slot", "undo_pending", "redo_pending", "discard_pending"):
+        callback = _function_named(callback_name)
+        assert "candidate_eligibility_states" in _function_calls(callback)
+        assert "changed_candidate_eligibility_days" in _function_calls(callback)
+
+    compare_latest = _function_named("compare_latest")
+    assert "_invalidate_draft_candidate_cache_for_days" in _function_calls(compare_latest)
+
+
 def test_draft_matrix_has_desktop_mobile_and_accessible_interaction_contracts() -> None:
     for selector in (
         ".sy-draft-grid-desktop",
@@ -338,8 +387,9 @@ def test_draft_matrix_has_desktop_mobile_and_accessible_interaction_contracts() 
     assert '"pointerdown"' in WEEKLY_SOURCE
     assert '"pointerup"' in WEEKLY_SOURCE
     assert "distance > 8" in WEEKLY_SOURCE
-    assert "visible_navigable_keys = [" in WEEKLY_SOURCE
-    assert "edit_session.selected_cell in visible_navigable_keys" in WEEKLY_SOURCE
+    assert "def active_cell_key() -> str | None:" in WEEKLY_SOURCE
+    assert "if edit_session.selected_cell in visible:" in WEEKLY_SOURCE
+    assert 'surface_refreshers["cells"] = update_mounted_cells' in WEEKLY_SOURCE
     assert 'draft_conflict_slot_changed", cell=slot_label' in WEEKLY_SOURCE
     assert "event.preventDefault(); event.stopPropagation()" in WEEKLY_SOURCE
     assert '"__vacant__": t("draft_explicit_vacancy")' in WEEKLY_SOURCE

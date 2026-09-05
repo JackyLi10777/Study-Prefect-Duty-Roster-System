@@ -500,7 +500,15 @@ body .q-badge.sy-status-badge.sy-tone-neutral { color: var(--sy-status-neutral-f
 .sy-history-scale-value { color: var(--sy-ink); font-size: 12px; font-weight: 760; line-height: 1; }
 .sy-history-scale-tick { width: 2px; height: 11px; margin-top: 7px; border-radius: 999px; background: var(--sy-role-action); }
 .sy-history-scale-help { display: block; margin-top: 24px; color: var(--sy-muted); font-size: 12px; line-height: 1.55; }
-.sy-history-priority-chart { height: 164px; margin-top: 8px; padding: 4px 0; border-top: 1px solid var(--sy-line); }
+.sy-history-priority-chart { min-height: 118px; margin-top: 8px; padding: 14px 0 4px; border-top: 1px solid var(--sy-line); }
+.sy-history-priority-meter { display: grid; align-content: center; gap: 14px; }
+.sy-history-priority-meter-row { display: grid; grid-template-columns: minmax(112px, .7fr) minmax(120px, 1.3fr) 44px; align-items: center; gap: 10px; }
+.sy-history-priority-meter-label { color: var(--sy-muted); font-size: 12px; line-height: 1.4; }
+.sy-history-priority-meter-track { height: 14px; overflow: hidden; border-radius: 999px; background: var(--sy-surface-subtle); }
+.sy-history-priority-meter-fill { display: block; height: 100%; border-radius: inherit; transition: width 180ms ease; }
+.sy-history-priority-meter-fill--history { background: var(--sy-role-action); }
+.sy-history-priority-meter-fill--week { background: var(--sy-teal); }
+.sy-history-priority-meter-value { color: var(--sy-ink); font-size: 12px; font-weight: 760; text-align: right; }
 .sy-history-priority-chart-note { color: var(--sy-muted); font-size: 12px; line-height: 1.55; }
 .sy-handover-readiness-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .sy-handover-readiness-card { min-width: 0; padding: 20px; }
@@ -891,7 +899,7 @@ body .q-badge.sy-status-badge.sy-tone-neutral { color: var(--sy-status-neutral-f
 .body--dark .sy-maintenance-banner { color: #FFF1C7; background: #342A18; border-bottom-color: #876A30; box-shadow: 0 7px 22px rgba(0,0,0,.28); }
 @media (max-width: 900px) { .sy-status-stack { position: relative; } .sy-practice-banner { align-items: flex-start; } .sy-header-title { max-width: 27vw; font-size: 15px !important; } .sy-header-tools { border-color: color-mix(in srgb, var(--sy-luminous-edge) 72%, var(--sy-line)); background: var(--sy-material-transient); box-shadow: inset 0 1px 0 color-mix(in srgb, white 24%, transparent), 0 5px 16px rgba(23, 38, 61, .06); } .sy-header-tools .q-btn, .sy-icon-control { min-width: 44px !important; } .sy-header-control--language { min-width: 50px !important; } .sy-header-tools > .sy-status-badge { display: none !important; } }
 @keyframes sy-current-step { from { opacity: .45; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-@media (prefers-reduced-motion: reduce) { *, *:before, *:after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } .q-btn:hover, .sy-sidebar .q-btn:hover, .q-expansion-item .q-item:hover, .sy-pointer-reactive:hover, .sy-pointer-reactive.sy-pointer-ambient:hover, .sy-co-creation-social:hover { transform: none !important; } .sy-route-progress[data-active="true"]::after { width: 100%; animation: none; transform: none; } .sy-pointer-light, .sy-feedback-pulse { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { *, *:before, *:after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } .q-btn:hover, .sy-sidebar .q-btn:hover, .q-expansion-item .q-item:hover, .sy-pointer-reactive:hover, .sy-pointer-reactive.sy-pointer-ambient:hover, .sy-co-creation-social:hover { transform: none !important; } .sy-history-priority-meter-fill { transition: none; } .sy-route-progress[data-active="true"]::after { width: 100%; animation: none; transform: none; } .sy-pointer-light, .sy-feedback-pulse { display: none !important; } }
 @media (hover: none), (pointer: coarse) { .q-tooltip { display: none !important; } }
 .sy-chapel-compact { min-height: 0; max-width: 420px; padding: clamp(26px, 3vw, 34px); box-shadow: 0 18px 42px rgba(10,91,85,.20); }
 .sy-chapel-compact .sy-chapel-seal { top: 26px; right: 26px; width: 54px; }

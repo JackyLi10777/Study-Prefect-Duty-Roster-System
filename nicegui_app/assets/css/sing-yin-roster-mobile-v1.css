@@ -2,12 +2,24 @@
    This route-owned layer adapts the existing roster workflow without
    changing the shared shell, domain policy, or transaction model. */
 
-.sy-roster-rules-toggle,
 .sy-draft-mobile-notice,
 .sy-draft-mobile-view,
 .sy-draft-mobile-save-dock,
 .sy-draft-mobile-save-dock--empty {
   display: none;
+}
+
+.sy-roster-rules-toggle {
+  display: inline-flex;
+  margin-top: 14px;
+}
+
+.sy-roster-step-rules {
+  display: none;
+}
+
+.sy-roster-generation-card.sy-roster-rules-open .sy-roster-step-rules {
+  display: block;
 }
 
 .sy-draft-mobile-save-dock.sy-draft-mobile-save-dock--empty {
@@ -132,10 +144,6 @@
 
   .sy-roster-generation-card.sy-roster-rules-open .sy-roster-step-rules {
     display: block;
-  }
-
-  .sy-roster-advanced-chart {
-    display: none !important;
   }
 
   .sy-draft-grid-scroll,

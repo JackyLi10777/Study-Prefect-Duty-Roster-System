@@ -6,15 +6,47 @@ from pathlib import Path
 import re
 
 import tinycss2
+import pytest
 
 from nicegui_app.ui.theme_markup import STYLE_LAYERS, THEME_HEAD_HTML
 from nicegui_app.ui.i18n import EN, MESSAGES, ZH_HK
+from nicegui_app.ui.components import action, dialog
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 UI_ROOT = PROJECT_ROOT / "nicegui_app" / "ui"
 CSS_ROOT = PROJECT_ROOT / "nicegui_app" / "assets" / "css"
 COMPOSITION_LAYERS = {"command-center-v2"}
+
+
+def test_disabled_action_uses_nicegui_event_gating_not_only_a_visual_prop() -> None:
+    button = action("Unavailable", disabled=True)
+    try:
+        assert button.enabled is False
+        assert button._props["disable"] is True
+        assert button._props["aria-disabled"] == "true"
+        button.enable()
+        assert button.enabled is True
+        assert button._props["disable"] is False
+    finally:
+        button.delete()
+
+
+@pytest.mark.parametrize("presentation", ["modal", "sheet", "alert", "status"])
+def test_semantic_dialogs_bind_unique_accessible_names_and_descriptions(presentation):
+    with dialog(title="Fictional confirmation", description="Review this fictional action",
+                presentation=presentation) as first:
+        with dialog(title="Second confirmation", description="Second description",
+                    presentation=presentation) as second:
+            try:
+                assert first._props["aria-labelledby"] != second._props["aria-labelledby"]
+                assert first._props["aria-describedby"] != second._props["aria-describedby"]
+                assert first._props["role"] == ("alertdialog" if presentation == "alert" else "dialog")
+                if presentation == "status":
+                    assert first._props["persistent"] is True
+            finally:
+                second.delete()
+                first.delete()
 
 
 EXPECTED_COMPONENT_API = {
@@ -29,6 +61,7 @@ EXPECTED_COMPONENT_API = {
     "empty_state",
     "field",
     "motion_pattern",
+    "native_dialog",
     "page_toc",
     "progress_state",
     "reference_pager",

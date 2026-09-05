@@ -113,6 +113,62 @@
   box-shadow: inset 0 1px 0 color-mix(in srgb, white 24%, transparent), 0 18px 46px rgba(23, 38, 61, .12);
 }
 
+.sy-dialog--sheet {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sy-native-dialog {
+  inset: auto 0 0;
+  width: min(100%, 36rem);
+  max-width: 100%;
+  max-height: min(92dvh, 760px);
+  margin: auto auto 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  color: var(--sy-ink);
+  background: transparent;
+}
+
+.sy-native-dialog::backdrop {
+  background: rgba(9, 20, 38, .46);
+}
+
+.sy-native-dialog > .sy-dialog {
+  width: 100%;
+  max-width: 100%;
+  max-height: min(92dvh, 760px);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  border-radius: 22px 22px 0 0;
+}
+
+.sy-choice-chips .q-checkbox,
+.sy-choice-chips .q-btn {
+  min-height: 44px;
+}
+
+.sy-adjustment-selection-summary {
+  padding: 12px 14px;
+  border-inline-start: 3px solid var(--sy-role-action);
+  border-radius: 12px;
+  background: var(--sy-surface-subtle);
+}
+
+@media (max-width: 767px) {
+  .sy-adjustment-submit-dock {
+    position: sticky;
+    z-index: 5;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    padding: 12px;
+    border: 1px solid var(--sy-line);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--sy-surface) 95%, transparent);
+    box-shadow: 0 10px 28px rgba(28, 28, 30, .10);
+  }
+}
+
 .sy-dialog-title {
   color: var(--sy-ink);
   font-size: 21px;
