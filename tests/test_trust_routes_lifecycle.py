@@ -98,6 +98,24 @@ def test_platform_summary_failure_is_explicit_and_does_not_expose_exception(monk
     _run(monkeypatch, check)
 
 
+def test_platform_operating_map_retains_its_semantic_motion_request(monkeypatch):
+    async def check(client):
+        showcase.platform_page()
+        assert not any(e._props.get("data-testid") == "platform-operating-map" for e in client.elements.values())
+        panel = _find(client, "platform-operating-map-details")
+        panel.set_value(True)
+        diagram = _find(client, "platform-operating-map")
+        assert diagram._props["data-sy-motion-pattern"] == "platform-continuity"
+        assert diagram._props["role"] == "list"
+        nodes = diagram.default_slot.children
+        assert len(nodes) == 6
+        assert all(node._props["role"] == "listitem" and "data-sy-motion-item" in node._props for node in nodes)
+        assert [node._props["data-sequence"] for node in nodes] == [str(index) for index in range(1, 7)]
+        _repeat(panel, client)
+        assert _find(client, "platform-operating-map") is diagram
+    _run(monkeypatch, check)
+
+
 def test_engineering_uses_one_snapshot_and_does_not_claim_individual_category_passes(monkeypatch):
     calls = []
     def evidence():

@@ -82,6 +82,10 @@ def _check(page, base, case, mode, results, persist):
             expect(page.get_by_test_id(panel_id + "-content").locator(":scope > *").first).to_be_visible()
             if panel_id == "architecture-faq-details":
                 expect(page.locator(".sy-architecture-faq-answer")).to_have_count(0)
+            if panel_id == "platform-operating-map-details":
+                diagram = page.get_by_test_id("platform-operating-map")
+                expect(diagram).to_have_attribute("data-sy-motion-pattern", "platform-continuity")
+                expect(diagram.locator('[role="listitem"][data-sy-motion-item]')).to_have_count(6)
             _fit(page)
         if route == "/platform":
             expect(page.get_by_test_id("platform-release-state")).to_be_visible()
