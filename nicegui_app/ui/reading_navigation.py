@@ -52,7 +52,8 @@ READING_RUNTIME = r"""(hostId, anchors) => {
         if (!link || !allowed.has(link.getAttribute('data-sy-toc-target')) ||
             event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
-        history.pushState(null, '', link.getAttribute('href'));
+        const hash = '#' + link.getAttribute('data-sy-toc-target');
+        if (location.hash !== hash) history.pushState(null, '', hash);
         navigate();
     }, {signal:controller.signal});
     window.addEventListener('hashchange', navigate, {signal:controller.signal});
