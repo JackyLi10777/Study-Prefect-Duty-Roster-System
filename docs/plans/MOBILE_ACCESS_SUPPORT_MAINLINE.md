@@ -1,9 +1,12 @@
 # D2: retained first-use Access and Support details
 
-Status: prelaunch; focused behavior checks only at this checkpoint. Browser,
-full verification, required CI and real-device acceptance are pending.
+Status: prelaunch. Scoped browser diagnostics and full pre-push verification
+exist for the earlier D2 source below; they do not constitute formal acceptance.
+The main-synchronized checkpoint requires its own browser/full/CI results.
 
-Base: protected main `c1e16e7c5866bd7fe75c6e5bca710070c5b10731`.
+Initial base: protected main `c1e16e7c5866bd7fe75c6e5bca710070c5b10731`.
+Normally merged protected main `0efd5ae656adea6226edd88664f2d609066d4907`
+after PR #133; no frozen-donor cherry-pick or historical report relabeling.
 The original dirty workspace and frozen donor branches remain untouched.
 
 ## Adopted boundaries
@@ -36,6 +39,35 @@ state, 20 reopen cycles, failed-save retry with fictional attachments, receipt,
 history retention and revoked permission at retained operation boundaries.
 Guest Node tests execute the runtime; an HTML parser separately distinguishes
 inert blueprint controls from the live form. These are not browser evidence.
+
+### Preserved earlier-source evidence
+
+Clean source `dd9cebc14d943a5033fc34ac82203145d6975d4e` (tree
+`06a43d487b6daba715b0b6ebbee5828b55dd9a8d`) passed 52 focused tests and all
+six full pre-push checks; the automated suite took 352625 ms. Its full report is
+preserved separately as `logs/change-verification-report-dd9cebc.json`, SHA256
+`48A1E2CC82D8C52455EB0ABF588184BBFCB3FFB81FD877F7BECE855544DF8AFC`.
+
+The same source has scoped Chromium diagnostics in the isolated run artifact
+`sy-mobile-access-support-tocfm5ns/report.json`, SHA256
+`41EBB1D3BABF9432FA59F986F26FAB9ED211B88F6028CB9180374524A0B28163`.
+Contexts were local-maintenance `E2E-F6E2776FCBC7` and isolated Guest
+`E2E-17D491FC5407`, not signed production Admin. The browser exercised unopened
+advanced submission with a persisted local receipt, source defaults, empty
+attachments, exact-ID lookup, retained input/focus over 20 cycles, Access first
+use/reopen, Guest inert/live controls, JSON download/reset/reload and no report
+transmission. It checked 256/320/390/844px reflow and recorded zero browser errors.
+
+First materialization added 993784 heap bytes, **294 DOM nodes and 131 listeners**.
+Subsequent 20 retained cycles added 525692 heap bytes, with DOM/listener counts
+decreasing by 45/4. Both raw endpoints remain recorded separately. Retention
+diagnostics do not replace a cold formal gate; no cold budget has been passed or
+waived. The new main-synchronized source must be rerun, not assigned these results.
+
+Earlier harness failure artifacts remain `sy-mobile-access-support-hs7s4gpz`
+(native input locator) and `sy-mobile-access-support-yadne5rh` (observer expression
+accidentally invoked `fetch(null)`). Neither was resolved by changing a product
+threshold or deleting a failing measurement.
 
 No claim of zero first-screen resource bytes, complete role verification,
 controlled p75, full route matrix, WebKit/device acceptance or production rollout.
