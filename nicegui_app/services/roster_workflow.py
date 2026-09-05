@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from nicegui_app.services.policy_workflow import PolicyWorkflowMixin
+from nicegui_app.services.dated_draft_workflow import DatedDraftWorkflowMixin
 from nicegui_app.services.workflow_dependencies import (
     DEFAULT_BACKUP_DIR,
     DEFAULT_DATABASE_PATH,
@@ -58,6 +59,7 @@ __all__ = [
 
 
 class RosterWorkflow(
+    DatedDraftWorkflowMixin,
     PolicyWorkflowMixin,
     ExternalShareOutboxMixin,
     RosterLifecycleMixin,

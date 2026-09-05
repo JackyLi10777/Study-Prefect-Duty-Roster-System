@@ -51,7 +51,7 @@ def test_current_schema_owns_policy_tables_and_empty_database_is_ready(tmp_path)
     path = tmp_path / "empty.sqlite3"
     sessions = create_session_factory(path)
     try:
-        assert current_migration_heads() == {"0015"}
+        assert current_migration_heads() == {"0016"}
         assert TABLES <= Base.metadata.tables.keys()
         assert TABLES <= required_database_tables()
         assert "prelaunch_policy_commands" not in required_database_tables()
@@ -74,7 +74,7 @@ def test_0015_adds_empty_policy_tables_without_copying_rehearsal_data(tmp_path):
     command.upgrade(config, "head")
     assert database_readiness(path) == "ok"
     with sqlite3.connect(path) as connection:
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0015",)
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == ("0016",)
         assert connection.execute("SELECT COUNT(*) FROM school_year_policy_revisions").fetchone() == (0,)
         assert connection.execute("SELECT COUNT(*) FROM school_year_policy_current").fetchone() == (0,)
         assert connection.execute("SELECT document FROM prelaunch_policy_revisions").fetchone() == (_document("REHEARSAL"),)

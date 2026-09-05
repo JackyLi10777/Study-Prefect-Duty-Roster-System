@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from functools import wraps
+from inspect import signature
 from typing import Callable, ParamSpec, TypeVar, overload
 
 from nicegui_app.services.maintenance import MaintenanceModeError
@@ -34,8 +35,15 @@ def fenced_workflow_write(
             internal_backup=internal_backup,
         )
 
+    method_signature = signature(method)
+
     @wraps(method)
     def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
+        # New backend-only dated drafts are deliberately not legacy week IDs.
+        # Reject before acquiring a lease or admitting an old publish/adjust.
+        from nicegui_app.services.dated_draft_types import reject_dated_draft
+        bound = method_signature.bind_partial(*args, **kwargs)
+        reject_dated_draft(bound.arguments.get("roster_week_id"))
         workflow = args[0]
         try:
             with workflow.maintenance.serialized_operation():

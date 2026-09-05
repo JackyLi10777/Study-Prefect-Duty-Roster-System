@@ -34,7 +34,8 @@ DEFAULT_MAX_RECEIPTS_PER_WORKSPACE = 120
 MAX_COMMAND_ID_BYTES = 128
 # Includes the command dictionary key plus three SHA-256 strings for commands
 # that bind both user intent and resulting state, plus an optional year and
-# signed-64-bit revision reference (never a policy payload). Keep this upper
+# signed-64-bit revision reference OR a 38-character draft ID and revision
+# (never both, and never a document payload). Keep this upper
 # bound synchronized with the receipt fields so guest capacity remains honest.
 RECEIPT_METADATA_BUDGET_BYTES = 512
 
@@ -334,6 +335,7 @@ class GuestWorkspaceView:
     replayed: bool = False
     applied_revision: int | None = None
     policy_result_reference: tuple[int, int] | None = None
+    draft_result_reference: tuple[str, int] | None = None
 
 
 @dataclass(frozen=True)
@@ -351,6 +353,7 @@ class _CommandReceipt:
     result_digest: str
     request_digest: str | None = None
     policy_result_reference: tuple[int, int] | None = None
+    draft_result_reference: tuple[str, int] | None = None
 
 
 @dataclass
@@ -522,6 +525,7 @@ class GuestWorkspaceRegistry:
         state: Mapping[str, Any],
         request_digest: str | None = None,
         policy_result_reference: tuple[int, int] | None = None,
+        draft_result_reference: tuple[str, int] | None = None,
         reset_policy_history: bool = False,
         now: int | None = None,
     ) -> GuestWorkspaceView:
@@ -536,9 +540,14 @@ class GuestWorkspaceRegistry:
         current = self._now(now)
         copied_state = _json_copy(dict(state))
         self._validate_state(copied_state)
+        if policy_result_reference is not None and draft_result_reference is not None:
+            raise GuestWorkspaceError("A command can reference only one result kind.")
         if policy_result_reference is not None:
             from nicegui_app.services.guest_policy import policy_reference_revision
             policy_reference_revision(copied_state, policy_result_reference)
+        if draft_result_reference is not None:
+            from nicegui_app.services.guest_dated_drafts import draft_reference_snapshot
+            draft_reference_snapshot(copied_state, draft_result_reference)
         digest = hashlib.sha256(_canonical_bytes(copied_state)).hexdigest()
         with self._lock:
             record = self._record(session_id, workspace_id, tab_id, current)
@@ -557,6 +566,7 @@ class GuestWorkspaceRegistry:
                             "replayed": True,
                             "applied_revision": receipt.applied_revision,
                             "policy_result_reference": receipt.policy_result_reference,
+                            "draft_result_reference": receipt.draft_result_reference,
                         }
                     )
                 )
@@ -569,18 +579,21 @@ class GuestWorkspaceRegistry:
             if not reset_policy_history:
                 from nicegui_app.services.guest_policy import validate_policy_transition
                 validate_policy_transition(record.state, copied_state)
+                from nicegui_app.services.guest_dated_drafts import validate_draft_transition
+                validate_draft_transition(record.state, copied_state)
             else:
                 # Only explicit demo reset/restore opts into a new practice
                 # history; ordinary writes cannot erase original receipts.
                 record.commands = {
                     key: value for key, value in record.commands.items()
-                    if value.policy_result_reference is None
+                    if value.policy_result_reference is None and value.draft_result_reference is None
                 }
             record.state = copied_state
             record.revision += 1
             view = GuestWorkspaceView(**{
                 **self._view(session_id, record).__dict__,
                 "policy_result_reference": policy_result_reference,
+                "draft_result_reference": draft_result_reference,
             })
             record.commands[command_id] = _CommandReceipt(
                 payload_digest=digest,
@@ -588,6 +601,7 @@ class GuestWorkspaceRegistry:
                 result_digest=hashlib.sha256(_canonical_bytes(view.state)).hexdigest(),
                 request_digest=request_digest,
                 policy_result_reference=policy_result_reference,
+                draft_result_reference=draft_result_reference,
             )
             if len(record.commands) > self.max_receipts_per_workspace:
                 oldest = next(iter(record.commands))
@@ -626,6 +640,7 @@ class GuestWorkspaceRegistry:
                         "replayed": True,
                         "applied_revision": receipt.applied_revision,
                         "policy_result_reference": receipt.policy_result_reference,
+                        "draft_result_reference": receipt.draft_result_reference,
                     }
                 )
             )
@@ -645,6 +660,7 @@ class GuestWorkspaceRegistry:
                 **self._view(session_id, record).__dict__,
                 "replayed": True, "applied_revision": receipt.applied_revision,
                 "policy_result_reference": receipt.policy_result_reference,
+                "draft_result_reference": receipt.draft_result_reference,
             })
 
     def seal_snapshot(
@@ -725,6 +741,8 @@ class GuestWorkspaceRegistry:
                 return self._copy_view(self._view(session_id, record)), False
             from nicegui_app.services.guest_policy import validate_policy_transition
             validate_policy_transition(record.state, snapshot.state)
+            from nicegui_app.services.guest_dated_drafts import validate_draft_transition
+            validate_draft_transition(record.state, snapshot.state)
             record.state = _json_copy(snapshot.state)
             record.revision = snapshot.revision
             # Retain bounded command metadata: a browser reconnect must not make
@@ -838,6 +856,10 @@ class GuestWorkspaceRegistry:
             raise GuestCapacityError("guest state exceeds the snapshot size limit")
         from nicegui_app.services.guest_policy import validate_policy_state
         validate_policy_state(state)
+        from nicegui_app.services.guest_dated_drafts import validate_draft_state
+        drafts = validate_draft_state(state)
+        if len(weeks) + len(drafts) > self.max_weeks:
+            raise GuestCapacityError("guest week limit exceeded")
 
     def _consume_command_budget(self, session: _SessionRecord, current: int) -> None:
         while session.command_times and session.command_times[0] <= current - 60:
@@ -877,6 +899,7 @@ class GuestWorkspaceRegistry:
             replayed=view.replayed,
             applied_revision=view.applied_revision,
             policy_result_reference=view.policy_result_reference,
+            draft_result_reference=view.draft_result_reference,
         )
 
     def _now(self, now: int | None) -> int:

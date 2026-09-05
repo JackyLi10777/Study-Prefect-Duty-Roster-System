@@ -10,6 +10,7 @@ from alembic.script import ScriptDirectory
 
 from nicegui_app.config import PROJECT_ROOT
 from nicegui_app.persistence.database import current_migration_heads, policy_storage_is_valid
+from nicegui_app.persistence.dated_drafts import DATED_DRAFT_TABLES, dated_drafts_are_valid
 from nicegui_app.services.workflow_dependencies import (
     BackupResult,
     BackupRunRecord,
@@ -85,6 +86,7 @@ _REQUIRED_TABLES_BY_REVISION: dict[str, frozenset[str]] = {
     "0013": _DAY_CLOSURE_TABLES,
     "0014": _SLOT_EXCEPTION_TABLES,
     "0015": _SLOT_EXCEPTION_TABLES | _POLICY_TABLES,
+    "0016": _SLOT_EXCEPTION_TABLES | _POLICY_TABLES | DATED_DRAFT_TABLES,
 }
 
 
@@ -232,6 +234,7 @@ class RecoveryWorkflowMixin:
                     else 0
                 )
                 policy_valid = policy_storage_is_valid(connection) if _POLICY_TABLES <= table_names else None
+                dated_drafts_valid = dated_drafts_are_valid(connection) if DATED_DRAFT_TABLES <= table_names else None
             finally:
                 connection.close()
         except sqlite3.Error as error:
@@ -340,6 +343,9 @@ class RecoveryWorkflowMixin:
                 "sha256": checksum,
                 "error": "Backup policy history or its current pointers are invalid.",
             }
+        if DATED_DRAFT_TABLES & table_names and dated_drafts_valid is not True:
+            return {"valid": False, "reasonCode": "dated_draft_invalid", "sha256": checksum,
+                    "error": "Backup dated drafts or their immutable policy references are invalid."}
         if pending_obligations:
             return {
                 "valid": False,
