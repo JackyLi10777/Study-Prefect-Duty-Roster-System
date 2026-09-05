@@ -181,6 +181,19 @@ class DraftPatchResult:
 
 
 @dataclass(frozen=True)
+class FairnessAuditSnapshot:
+    """Detached audit facts captured in one database or guest-workspace read.
+
+    The containers belong to the caller; none retain live storage references.
+    Rendering this value must not perform any further workflow reads.
+    """
+
+    week: dict[str, object]
+    active_assignment_count: int
+    fairness_rows: tuple[dict[str, object], ...]
+
+
+@dataclass(frozen=True)
 class ReportRosterSource:
     """One published roster version used to build a period report."""
 

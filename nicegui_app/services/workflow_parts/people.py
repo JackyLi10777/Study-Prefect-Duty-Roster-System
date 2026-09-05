@@ -16,6 +16,7 @@ from nicegui_app.services.workflow_dependencies import (
     PrefectRole,
     RosterWeekRecord,
     SchoolDay,
+    Session,
     WorkflowConflictError,
     WorkflowError,
     date,
@@ -1004,18 +1005,22 @@ class PeopleWorkflowMixin:
 
     def fairness_rows(self) -> list[dict[str, object]]:
         with self._session() as session:
-            rows = sorted(self._active_prefect_records(session), key=lambda row: (row.history_weight, row.name_zh))
-            return [
-                {
-                    "id": row.id,
-                    "nameZh": row.name_zh,
-                    "form": row.form,
-                    "className": row.class_name,
-                    "historyWeight": row.history_weight,
-                    "historyDuties": row.history_duties,
-                }
-                for row in rows
-            ]
+            return self._fairness_rows(session)
+
+    def _fairness_rows(self, session: Session) -> list[dict[str, object]]:
+        """Reuse the same fairness projection within an existing read snapshot."""
+        rows = sorted(self._active_prefect_records(session), key=lambda row: (row.history_weight, row.name_zh))
+        return [
+            {
+                "id": row.id,
+                "nameZh": row.name_zh,
+                "form": row.form,
+                "className": row.class_name,
+                "historyWeight": row.history_weight,
+                "historyDuties": row.history_duties,
+            }
+            for row in rows
+        ]
 
     def reconcile_fairness(self) -> FairnessReconciliationReport:
         """Compare persistent totals with immutable anchors plus ledger deltas."""

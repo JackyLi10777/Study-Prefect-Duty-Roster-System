@@ -35,6 +35,7 @@ from nicegui_app.services.workflow_types import (
     DraftPatchResult,
     DraftSlotStateEdit,
     DutyAllocationEntry,
+    FairnessAuditSnapshot,
     FairnessDiscrepancy,
     FairnessReconciliationReport,
     FairnessTrendPoint,
@@ -1498,7 +1499,9 @@ class GuestWorkspaceAdapter:
         week = self._week_record(state, roster_week_id)
         if week["status"] != "published":
             raise WorkflowError("Substitute recommendations require a published demo roster.")
-        return self._candidate_outputs(state, week, self._assignment_record(week, assignment_id))
+        return self._candidate_outputs(
+            state, week, self._assignment_record(week, assignment_id), allow_vacant=True,
+        )
 
     def apply_leave_adjustment(
         self,
@@ -1511,6 +1514,10 @@ class GuestWorkspaceAdapter:
         expected_week_version: int | None = None,
     ) -> LeaveAdjustmentResult:
         self._require_modify()
+        if replacement_prefect_id is not None and (
+            not isinstance(replacement_prefect_id, str) or not replacement_prefect_id.strip()
+        ):
+            raise WorkflowError("A replacement prefect ID must not be blank.")
         normalized_reason = (reason or "").strip()
         operation_id = command_id or f"demo-leave:{secrets.token_hex(12)}"
         if len(operation_id) > 64 or not operation_id.strip():
@@ -1537,31 +1544,39 @@ class GuestWorkspaceAdapter:
         if int(week["version"]) != requested_version:
             raise WorkflowConflictError("This demo roster changed in another tab.")
         assignment = self._assignment_record(week, assignment_id)
-        if assignment["status"] != "active" or not assignment.get("prefectId"):
+        was_vacant = assignment["status"] == "vacant" and assignment.get("prefectId") is None
+        if not was_vacant and (assignment["status"] != "active" or not assignment.get("prefectId")):
             raise WorkflowError("This demo assignment is no longer active.")
+        if was_vacant and replacement_prefect_id is None:
+            raise WorkflowError("Select an eligible prefect to fill this vacant duty.")
         candidates = {
-            str(row["id"]): row for row in self._candidate_outputs(state, week, assignment)
+            str(row["id"]): row
+            for row in self._candidate_outputs(state, week, assignment, allow_vacant=True)
         }
         if replacement_prefect_id and replacement_prefect_id not in candidates:
             raise WorkflowError("The selected demo substitute no longer meets roster rules.")
         prefects = {str(row["id"]): row for row in state.get("prefects", [])}
-        original = prefects[str(assignment["prefectId"])]
+        original = prefects.get(str(assignment["prefectId"])) if not was_vacant else None
+        if not was_vacant and original is None:
+            raise WorkflowError("The original demo prefect no longer exists.")
         weight = float(assignment["weight"])
-        self._ensure_history_anchor(original, state)
-        original_name = str(assignment["prefectName"])
-        original["historyWeight"] = round(float(original["historyWeight"]) - weight, 4)
-        original["historyDuties"] = max(0, int(original["historyDuties"]) - 1)
+        original_name = "VACANT" if was_vacant else str(assignment["prefectName"])
+        original_id = assignment.get("prefectId")
         events = state.setdefault("fairnessEvents", [])
-        events.append(
-            {
-                "weekId": roster_week_id,
-                "assignmentId": assignment_id,
-                "prefectId": original["id"],
-                "delta": -weight,
-                "dutyDelta": -1,
-                "eventType": "demo_leave_adjustment_debit",
-            }
-        )
+        if original is not None:
+            self._ensure_history_anchor(original, state)
+            original["historyWeight"] = round(float(original["historyWeight"]) - weight, 4)
+            original["historyDuties"] = max(0, int(original["historyDuties"]) - 1)
+            events.append(
+                {
+                    "weekId": roster_week_id,
+                    "assignmentId": assignment_id,
+                    "prefectId": original["id"],
+                    "delta": -weight,
+                    "dutyDelta": -1,
+                    "eventType": "demo_leave_adjustment_debit",
+                }
+            )
         status = "vacant"
         replacement_name = None
         if replacement_prefect_id:
@@ -1592,6 +1607,7 @@ class GuestWorkspaceAdapter:
         adjustment = {
             "status": status,
             "reason": normalized_reason,
+            "originalPrefectId": original_id,
             "replacementPrefectId": replacement_prefect_id,
             "originalPrefectName": original_name,
             "replacementPrefectName": replacement_name,
@@ -1617,6 +1633,23 @@ class GuestWorkspaceAdapter:
 
     def fairness_rows(self) -> list[dict[str, object]]:
         self._require_read()
+        return self._fairness_rows_from_state(self._state())
+
+    def roster_fairness_audit_snapshot(self, roster_week_id: int) -> FairnessAuditSnapshot:
+        """Project one registry-protected copy without retaining mutable guest state."""
+        self._require_read()
+        state = self._state()
+        week = self._week_record(state, roster_week_id)
+        return FairnessAuditSnapshot(
+            week=self._week_output(week),
+            active_assignment_count=sum(
+                row["status"] == "active" for row in self._sorted_assignments(week)
+            ),
+            fairness_rows=tuple(self._fairness_rows_from_state(state)),
+        )
+
+    @staticmethod
+    def _fairness_rows_from_state(state: Mapping[str, Any]) -> list[dict[str, object]]:
         rows = [
             {
                 "id": row["id"],
@@ -1626,7 +1659,7 @@ class GuestWorkspaceAdapter:
                 "historyWeight": float(row.get("historyWeight", 0.0)),
                 "historyDuties": int(row.get("historyDuties", 0)),
             }
-            for row in self._state().get("prefects", [])
+            for row in state.get("prefects", [])
             if row.get("active", True)
         ]
         return sorted(rows, key=lambda row: (float(row["historyWeight"]), str(row["nameZh"])))
@@ -2370,11 +2403,22 @@ class GuestWorkspaceAdapter:
         assignment: Mapping[str, Any],
         *,
         include_same_day_assigned: bool = False,
+        allow_vacant: bool = False,
     ) -> list[dict[str, object]]:
-        if assignment["status"] != "active" or not assignment.get("prefectId"):
+        active = assignment["status"] == "active" and bool(assignment.get("prefectId"))
+        vacant = assignment["status"] == "vacant" and assignment.get("prefectId") is None
+        if not active and not (allow_vacant and vacant):
             raise WorkflowError("Only an active demo assignment can be changed.")
         day = SchoolDay[str(assignment["day"])]
         post = DutyPost[str(assignment["postCode"])]
+        if allow_vacant:
+            if week["status"] != "published":
+                raise WorkflowError("Vacancy recovery requires a published demo roster.")
+            if not is_room_open(post, day) or day.name in week.get("closedDays", []):
+                raise WorkflowError("A closed duty cannot be adjusted.")
+            cell_key = f"{day.name}:{post.name}:{int(assignment['slotIndex'])}"
+            if any(row["cellKey"] == cell_key for row in week.get("slotExceptions", [])):
+                raise WorkflowError("An unavailable duty slot cannot be adjusted.")
         assigned_today = {
             str(row["prefectId"]): row
             for row in week.get("assignments", [])

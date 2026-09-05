@@ -8,12 +8,15 @@
 
 | 來源 | 固定提交／狀態 | 採納及禁止覆蓋項 |
 |---|---|---|
-| protected main | `12d673225a28014f3c8d580ee2124cccf09c02de` | PR #122通過必要CI後合併；已有統一時間／auth／release guard；新分支仍須即時 fetch |
+| protected main | `2a7c975179ce100af8c8af7dd90f77217bb466f5` | PR #122／#123／#124通過必要CI後合併；已有統一時間／auth／release guard／下載閒置回收／手機驗收契約；新分支仍須即時 fetch |
 | 手機／PNG final | `29ac083fd4d1e9a54854c8fe4436573d0c51fd5b`，2026-09-05 核對 clean | 安全PNG交付、匯入保存保護、原生sheet、調整後匯出owner、關閉候選清理及抽屜取消；逐項比對，不整檔套用 |
 | 效能／手機 overhaul | `ecdf7ae` 加未提交工作；尚無最終checkpoint | 等完成SHA；不能用移除PNG／分享橋／測試的版本覆蓋final；保留資產、首屏、名冊、gate改進的行為證據 |
+| 手機驗收契約 | `a175b776`，經PR #124合併為 `2a7c975` | 固定scenario/profile、cold/core原始證據與來源綁定檢查；producer與完整權限／實機矩陣仍待整合，不能當成全站已驗收 |
 | 本任務 auth修正 | `cb5cccc`，經PR #122合併為 `12d6732` | 背景不poll、返回驗證、到期與撤權、已清理runtime忽略晚到回應 |
 | 本任務 release guard | `f8dbc0f`，經PR #122合併為 `12d6732` | 宣告／執行清單精確一致才pass；不代替整合新gate的部署器更新 |
-| 下載閒置回收 | `2041310`，PR #123，本地驗證 | 完整六項驗證、75項Guest回歸及真實timer檢查通過；CI未完成前不合併；已正常merge最新main |
+| 下載閒置回收 | `2041310`，經PR #123合併為 `2acf98f` | 最終PR head `8939dbb` 的test-and-audit／analyze通過；保留單次票據、配額及mode/session綁定；未部署 |
+| 一致讀取快照 | `7ab0dfc`／`2522680`，本地定向驗證 | SQLite session不等於讀交易；audit／週表／年報共用明確BEGIN，Guest使用單次隔離拷貝；不新增schema；最終全套與CI仍待通過 |
+| 發布後空缺恢復 | `d1fd617`，已正常合入一致性PR #125 | 同一版本化命令補入合資格人員，只credit、不再次debit；獨立full及主線合併定向已通過，與讀快照修正共同驗證後才合併；手機接合另驗收 |
 
 `4dd134e` 與 `ecdf7ae` 的 tree 同為 `04b1af5b41df305a08a7ca2131bebdb2c83b810a`。
 這是共同底稿，不當作兩份功能重播。完整並行整合尚未完成。
@@ -31,14 +34,14 @@
 | REL-01 | B | 完成報告拒絕漏項／多項／錯序／失敗 | 已合併 | PR #122／12d6732；6個release完成情境；未部署 |
 | REL-02 | B | 資產／Public gate與reader／部署器一致 | 待實作 | 所有gate精確清單、完整執行、失敗注入與清理後可核驗證據 |
 | EDIT-01 | B | 局部編輯、候選清理、匯入dirty保護 | 進行中 | final來源功能；合併版重載、切日、匯入失敗、undo/redo瀏覽器測試 |
-| ADJUST-01 | B | 空缺恢復、版本／command_id、舊表單鎖定 | 待實作 | 發布→換人／空缺→恢復→撤回；服務分鐘及公平不重複 |
+| ADJUST-01 | B | 空缺恢復、版本／command_id、舊表單鎖定 | 進行中 | PR #125收斂服務端修正；仍需發布→換人／空缺→恢復→撤回的手機閉環，服務分鐘及公平不重複 |
 | EXPORT-01 | B | 原生modal內進度／錯誤、發布後分享控制 | 進行中 | 29ac083含owner修正；合併版延遲、失敗、跨分頁發布後分享測試 |
 | MODEL-01 | C | 新空庫、日期席位、發布版本；persistence/core | 待實作 | 空庫初始化、約束、重啟及備份還原；無舊業務資料遷入 |
 | POLICY-01 | C | 學年政策快照、持久房間／人數／星期／時間 | 進行中 | 純規則準備 da770cc／41e5259：74個新案例及144項相關檢查通過、獨立review；尚未接入DB／UI。持久修訂、重載、發布隔離及全部輸出仍待完成 |
 | POLICY-02 | C | F1持續開關、恢復預設、升學年草稿 | 待實作 | 預設關閉、明確啟用、不自动按考試日期開啟；重設不改已發布結果 |
 | WEEK-01 | C | 普通生成／候選／保存／發布採新模型 | 待實作 | 四業務資格規則；20列100格、關閉、空缺及跨模式衝突 |
 | GUEST-01 | C | 共享規則與隔離adapter、fixture／policy分版 | 待實作 | 虛構資料、不得正式寫入／上傳／AI／備份／原生分享 |
-| REPORT-01 | C/D | 日期範圍報告、快照分鐘、單次audit讀取 | 待實作 | 普通80／CP185／自訂時間、排除無效安排、調整不重複、人工簽核文案 |
+| REPORT-01 | B/C/D | 日期範圍報告、快照分鐘、單次audit讀取 | 進行中 | B先修並行讀取一致性；普通80／CP185／自訂時間、任意日期範圍、排除無效安排及人工簽核仍待新核心 |
 | PNG-01 | C | 原子snapshot的完整雙圖及PDF；與人數設定一併交付 | 待實作 | 1024RGB／1600×2000、6/20列、長姓名、所有狀態、中英、無metadata、確定性≤5MiB |
 | PNG-02 | B/C | 頭像快捷下載、詳表分享及狀態隔離 | 待實作 | 90秒POST票據、session/mode/重放/過期、併發、5MiB、取消／失敗回退、舊圖提示 |
 | CP-01 | D | CP日期活動、三角色同權、日期不可值班 | 待實作 | 非連續日期、房間可改、人數可改、185分鐘、跨普通同日重複檢查 |
@@ -47,7 +50,7 @@
 | MOBILE-02 | E | 名冊／匯入／Audit | 進行中 | 搜尋全域完整、每批20、單人sheet、dirty不丟失、匯入原子提交 |
 | MOBILE-03 | E | Handover／Settings／Access／Support | 進行中 | 次級資訊延後，恢復確認不縮短，Admin持久／Guest暫存語義保留 |
 | MOBILE-04 | E | 內容頁／Viewer | 進行中 | 單列、延遲掛載、手機按日／打印全表、fragment安全 |
-| IDLE-01 | E | 無流量時過期下載釋放；guest_downloads | 本地驗證 | 2041310／PR #123；16個新增情境、75項Guest回歸、完整驗證；真timer到期後0records/0timer/thread增量0；等待CI |
+| IDLE-01 | E | 無流量時過期下載釋放；guest_downloads | 已合併 | PR #123／2acf98f；16個新增情境、75項Guest回歸、完整驗證及CI；真timer到期後0records/0timer/thread增量0；未部署 |
 | PERF-01 | E | 局部瀏覽器運算、GSAP、observer、靜態資產 | 進行中 | 不下載全名冊、本地預覽不作權威、音頻0B、無boot輪詢、hash cache |
 | PERF-02 | E | 全路由／核心操作／idle驗收 | 待實作 | 原預算、5次p75、>50ms操作窗口、20次生命週期、服務器/手機雙端量測 |
 | RELEASE-01 | F | exact-main完整release及不可變部署 | 待實作 | clean來源、所有gate、schema/backup/Worker對帳；有Worker變更才candidate |
@@ -58,6 +61,8 @@
 
 本任務 2026-09-05 full pre-push 六項通過，明確 `formalReleaseExecuted=false`。
 auth用Chromium／WebKit的受控visibility／時鐘作生命週期檢查，不是實體耗電證據。
+`7ab0dfc` 的audit修正通過完整六項驗證；程序內移除BEGIN時兩個官方並行發布／撤回測試會失敗，恢復後通過。`2522680` 補上週表及年報，同分支較廣回歸124 passed／3個來源不適用skip；原始五個並行反例會混用分派／帳本或在新週發布時觸發KeyError。最終提交仍須再跑完整驗證及CI，不能沿用較早結果宣稱全部完成。
+`f809b4b`（讀快照）及 `d417e31`（空缺補任）分別通過完整六項驗證；同步 `2a7c975` 後分別為165 passed／3 skipped與124 passed。兩者在PR #125正常合併，新增「讀取途中恢復空缺」交界回歸；共同最終提交仍須完整驗證及CI。此收斂僅涉及階段B共用交易／報告核心，不代替手機UI或新模型驗收。
 final任務回報完整寫入流程通過，但全站手機／效能未完成；這不代替整合提交的測試。
 下一步取得overhaul checkpoint，依B的功能群組形成可測試差異，再啟動C的新核心。
 不可因目前網站可打開而關閉HUMAN-01或RECOVERY-01。
