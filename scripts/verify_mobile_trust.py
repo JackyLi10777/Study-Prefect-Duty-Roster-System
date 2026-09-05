@@ -169,6 +169,10 @@ def _check(page, base, case, mode, results, persist):
         panel = page.get_by_test_id(panel_id)
         expect(_header(panel)).to_have_attribute("aria-expanded", "true")
         expect(page.locator("#" + anchor)).to_be_focused()
+        # Focus must work before image completion. Only the following unmeasured
+        # history-retention sample waits for first-use Quasar image spinners to
+        # finish; cold mount/footprint collection above is not prewarmed.
+        expect(panel.locator(".q-img__loading")).to_have_count(0)
         panel.evaluate("node => { window.__d3bAnchorNodes = [...node.querySelectorAll('*')]; }")
         panel_id_target = {
             "/platform": "platform-attribution-section",

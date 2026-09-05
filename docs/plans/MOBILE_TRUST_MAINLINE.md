@@ -105,3 +105,11 @@ The diagnostic excludes only the ripple subtree from persistent-node identity,
 not from heap/DOM/listener measurement. It retains the original GC, 20 cycles,
 budgets, all other node identities, filter values and post-cycle live callbacks.
 Both failing isolated artifact directories remain available for review.
+
+Further diagnostic runs corrected a date-field locator and identified only two
+Quasar image-loading spinners (with their SVG/circle children) disappearing
+during the Platform heading-history sample. Initial heading focus is still
+asserted before image completion; only the subsequent, unmeasured persistent
+history sample waits for those first-use spinners to finish. All remaining
+descendants must retain identity. Cold readiness and footprint collection are
+unchanged, and the intermediate failure artifacts are preserved.
