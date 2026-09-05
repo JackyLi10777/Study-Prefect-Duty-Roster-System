@@ -1,6 +1,7 @@
 """Source-bound D3b Trust diagnostics, not the complete mobile release gate."""
 from __future__ import annotations
 
+import argparse
 import importlib.metadata
 import json
 import os
@@ -159,6 +160,10 @@ def _check(page, base, case, mode, results, persist):
         _fit(page)
         page.screenshot(path=str(case / (route[1:] + "-expanded.png")))
 
+    _check_history(page, base, case, mode, results, persist)
+
+
+def _check_history(page, base, case, mode, results, persist):
     for route, anchor, panel_id in (
         ("/platform", "co-creation-title", "platform-attribution-details"),
         ("/engineering", "engineering-evidence-title", "engineering-coverage-details"),
@@ -175,10 +180,23 @@ def _check(page, base, case, mode, results, persist):
         # Attribution includes a genuinely lazy image above the heading. Bring
         # each explicitly opened image into view before awaiting its completion;
         # an offscreen lazy image is correctly still waiting, not a leak.
-        for illustration in panel.locator(".q-img").all():
+        illustrations = panel.locator(".q-img:visible").all()
+        preparation = {"scenario": "unmeasured-history-preparation", "route": route, "mode": mode,
+                       "visibleImageCount": len(illustrations), "steps": ["initial-heading-focused"]}
+        results.append(preparation)
+        persist()
+        # The existing mobile stylesheet intentionally hides the crest. Do not
+        # force hidden/lazy artwork to download; its DOM is still identity-tested.
+        for index, illustration in enumerate(illustrations, start=1):
             illustration.scroll_into_view_if_needed()
+            preparation["steps"].append(f"scroll-visible-image-{index}")
+            persist()
             expect(illustration.locator(".q-img__loading")).to_have_count(0)
+            preparation["steps"].append(f"image-{index}-complete")
+            persist()
         page.locator("#" + anchor).scroll_into_view_if_needed()
+        preparation["steps"].append("return-to-heading-before-identity-sample")
+        persist()
         panel.evaluate("node => { window.__d3bAnchorNodes = [...node.querySelectorAll('*')]; }")
         panel_id_target = {
             "/platform": "platform-attribution-section",
@@ -216,12 +234,16 @@ def _check(page, base, case, mode, results, persist):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--history-only", action="store_true", help="Unmeasured heading diagnostic only; not the full Trust scenario.")
+    args = parser.parse_args()
     scratch = Path(tempfile.mkdtemp(prefix="sy-mobile-trust-"))
     source = _source_state(refresh_fingerprint=True)
     assert not source["sourceDirty"], "Clean checkpoint required"
     results, errors = [], []
     metadata = {**source, "evidenceKind": "functional-diagnostic", "formalReleaseExecuted": False,
                 "controlledPerformance": False, "routeMatrixExecuted": False,
+                "scenarioScope": "history-only" if args.history_only else "all-trust-diagnostics",
                 "playwrightVersion": importlib.metadata.version("playwright"), "contexts": []}
 
     def persist():
@@ -256,7 +278,7 @@ def main():
                         if mode == "guest":
                             _install_gateway_stubs(context)
                         try:
-                            _check(page, base, case, mode, results, persist)
+                            (_check_history if args.history_only else _check)(page, base, case, mode, results, persist)
                         except Exception:
                             page.screenshot(path=str(case / "failure.png"))
                             raise
