@@ -49,7 +49,7 @@ def test_new_route_requires_a_coverage_decision(tmp_path):
 
 
 def valid_context():
-    return {"schemaVersion": 1, "evidenceKind": "release", "sourceDirty": False,
+    return {"schemaVersion": contract.CONTRACT_VERSION, "evidenceKind": "release", "sourceDirty": False,
             "contractFingerprint": contract.contract_fingerprint(), "sourceFingerprint": "source",
             "profile": deepcopy(contract.PERFORMANCE_PROFILE), "runId": "run", "fixtureId": "fictional",
             "sourceCommit": "a" * 40, "sourceTree": "b" * 40, "browserVersion": "test-version",
@@ -196,7 +196,92 @@ def complete_report():
             row.update(scenarioId=sid, contextId=f"{sid}:context:{i}", navigationId=f"{sid}:navigation:{i}")
         groups.append({"scenarioId": sid, "samples": rows})
     return {**valid_context(), "coverage": complete_coverage(),
-            "coreInteractions": core_rows(), "performance": groups}
+            "coreInteractions": core_rows(), "performance": groups,
+            "lifecycle": lifecycle_rows()}
+
+
+def lifecycle_rows():
+    return [{"target": target, "mode": mode, "route": route,
+             "contextId": f"{target}:{mode}", "runId": "run", "fixtureId": "fictional",
+             "sourceCommit": "a" * 40, "sourceFingerprint": "source",
+             "baselineKind": "before-first-open", "measurementProtocol": "cdp-gc-250-100-v1",
+             "appliedProfile": deepcopy(contract.PERFORMANCE_PROFILE),
+             "status": "pass", "cycles": 20,
+             "before": {"contextId": f"{target}:{mode}", "completedCycles": 0, "timestampMs": 100,
+                        "heapBytes": 1_000_000, "domNodes": 500, "listeners": 200},
+             "after": {"contextId": f"{target}:{mode}", "completedCycles": 20, "timestampMs": 5000,
+                       "heapBytes": 1_000_000, "domNodes": 500, "listeners": 200},
+             "iterations": [{"iteration": i, "opened": True, "closed": True,
+                             "focusRestored": True, "statePreserved": True} for i in range(1, 21)]}
+            for target, route in contract.LIFECYCLE_TARGETS.items() for mode in ("admin", "guest")]
+
+
+def test_lifecycle_missing_from_otherwise_complete_report_is_rejected():
+    report = complete_report()
+    report.pop("lifecycle")
+    assert contract.validate_mobile_release_report(report, fingerprint="source")
+
+
+@pytest.mark.parametrize("metric,limit", [("heapBytes", 10 * 1024 * 1024), ("domNodes", 100), ("listeners", 40)])
+def test_lifecycle_recomputes_growth_and_keeps_original_limits(metric, limit):
+    report = complete_report()
+    row = report["lifecycle"][0]
+    row["after"][metric] = row["before"][metric] + limit
+    assert not contract.validate_mobile_release_report(report, fingerprint="source")
+    row["after"][metric] += 1
+    row["growth"] = {metric: 0}  # A producer's green summary cannot override the endpoints.
+    assert contract.validate_mobile_release_report(report, fingerprint="source")
+
+
+@pytest.mark.parametrize("mutation", ["missing", "duplicate", "extra", "warm", "cycles", "short",
+    "reordered", "failed", "focus", "state", "context", "source", "run", "fixture", "route",
+    "profile", "protocol", "before", "after", "time", "numeric_bool", "nan", "fractional",
+    "same_context", "old_version"])
+def test_lifecycle_rejects_incomplete_mixed_or_unverified_evidence(mutation):
+    report = complete_report()
+    rows = report["lifecycle"]
+    row = rows[0]
+    if mutation == "missing":
+        rows.pop()
+    elif mutation == "duplicate":
+        rows.append(deepcopy(row))
+    elif mutation == "extra":
+        row["target"] = "support-retained-not-cold"
+    elif mutation == "warm":
+        row["baselineKind"] = "after-first-mount"
+    elif mutation == "cycles":
+        row["cycles"] = 19
+    elif mutation == "short":
+        row["iterations"].pop()
+    elif mutation == "reordered":
+        row["iterations"].reverse()
+    elif mutation == "failed":
+        row["status"] = "fail"
+    elif mutation in {"focus", "state"}:
+        row["iterations"][0]["focusRestored" if mutation == "focus" else "statePreserved"] = False
+    elif mutation == "context":
+        row["after"]["contextId"] = "other-context"
+    elif mutation in {"source", "run", "fixture"}:
+        row[{"source": "sourceCommit", "run": "runId", "fixture": "fixtureId"}[mutation]] = "other"
+    elif mutation == "route":
+        row["route"] = "/support"
+    elif mutation == "profile":
+        row["appliedProfile"]["cpuSlowdown"] = 1
+    elif mutation == "protocol":
+        row["measurementProtocol"] = "extra-gc-and-warmup"
+    elif mutation in {"before", "after"}:
+        row[mutation]["completedCycles"] = 1
+    elif mutation == "time":
+        row["after"]["timestampMs"] = row["before"]["timestampMs"]
+    elif mutation in {"numeric_bool", "nan", "fractional"}:
+        row["after"]["domNodes"] = {"numeric_bool": True, "nan": float("nan"), "fractional": 0.5}[mutation]
+    elif mutation == "same_context":
+        rows[1]["contextId"] = row["contextId"]
+        for phase in ("before", "after"):
+            rows[1][phase]["contextId"] = row["contextId"]
+    else:
+        report["schemaVersion"] = 1
+    assert contract.validate_mobile_release_report(report, fingerprint="source")
 
 
 def test_complete_report_is_required_by_single_consumer_entrypoint():
@@ -206,7 +291,7 @@ def test_complete_report_is_required_by_single_consumer_entrypoint():
     assert contract.validate_mobile_release_report(report, fingerprint="source")
 
 
-@pytest.mark.parametrize("key", ["coverage", "coreInteractions", "performance"])
+@pytest.mark.parametrize("key", ["coverage", "coreInteractions", "performance", "lifecycle"])
 def test_green_summary_cannot_replace_raw_evidence(key):
     report = complete_report()
     report[key] = {"status": "pass", "p75": 0}
@@ -297,3 +382,50 @@ def test_numeric_cache_flag_does_not_masquerade_as_boolean():
     rows = samples()
     rows[0]["appliedProfile"]["cacheDisabled"] = 1
     assert contract.validate_performance(rows, surface="nicegui")
+
+
+@pytest.mark.parametrize("value", [None, {}, [None], [{"target": [], "mode": "admin"}], []])
+def test_malformed_lifecycle_is_a_validation_failure_not_an_exception(value):
+    report = complete_report()
+    report["lifecycle"] = value
+    assert contract.validate_mobile_release_report(report, fingerprint="source")
+
+
+@pytest.mark.parametrize("key,value", [("before", None), ("after", {}), ("iterations", [None]),
+    ("cycles", True), ("contextId", []), ("appliedProfile", []), ("sourceFingerprint", "stale")])
+def test_malformed_lifecycle_row_is_rejected(key, value):
+    report = complete_report()
+    report["lifecycle"][0][key] = value
+    assert contract.validate_mobile_release_report(report, fingerprint="source")
+
+
+@pytest.mark.parametrize("metric", ["heapBytes", "domNodes", "listeners"])
+@pytest.mark.parametrize("value", [0, -1, 10 ** 10000, float("inf"), "missing"], ids=["zero", "negative", "huge", "infinite", "string"])
+def test_lifecycle_missing_or_invalid_counters_never_count_as_zero_growth(metric, value):
+    report = complete_report()
+    report["lifecycle"][0]["before"][metric] = value
+    assert contract.validate_mobile_release_report(report, fingerprint="source")
+
+
+def test_lifecycle_integral_cdp_floats_and_negative_growth_are_valid():
+    report = complete_report()
+    for row in report["lifecycle"]:
+        for metric in contract.LIFECYCLE_BUDGETS:
+            row["before"][metric] = float(row["before"][metric])
+            row["after"][metric] = row["before"][metric] - 1
+    assert not contract.validate_mobile_release_report(report, fingerprint="source")
+
+
+def test_lifecycle_policy_is_part_of_source_owned_contract_fingerprint(monkeypatch):
+    original = contract.contract_fingerprint()
+    monkeypatch.setattr(contract, "LIFECYCLE_CYCLES", 19)
+    assert contract.contract_fingerprint() != original
+
+
+def test_lifecycle_cannot_reuse_an_already_exercised_performance_context():
+    report = complete_report()
+    row = report["lifecycle"][0]
+    row["contextId"] = report["performance"][0]["samples"][0]["contextId"]
+    for phase in ("before", "after"):
+        row[phase]["contextId"] = row["contextId"]
+    assert contract.validate_mobile_release_report(report, fingerprint="source")
