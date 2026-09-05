@@ -74,6 +74,7 @@ RELEASE_SOURCE_FILES = (
     PROJECT_ROOT / "scripts" / "generate_design_system_tokens.py",
     PROJECT_ROOT / "scripts" / "generate_service_weave_delivery.py",
     PROJECT_ROOT / "scripts" / "mobile_verification_contract.py",
+    PROJECT_ROOT / "scripts" / "mobile_evidence_collector.py",
     PROJECT_ROOT / "scripts" / "run_security_checks.py",
     PROJECT_ROOT / "scripts" / "verify_guest_trial.py",
     PROJECT_ROOT / "scripts" / "verify_nicegui_mobile.py",

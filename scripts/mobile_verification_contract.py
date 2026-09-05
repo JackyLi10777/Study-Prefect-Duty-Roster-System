@@ -454,6 +454,39 @@ class ScenarioUnavailable(RuntimeError):
     """An unavailable fixture/engine must leave an explicit not_run record."""
 
 
+def observe_case(
+    run_case: Callable[[Scenario, str], bool], scenario: Scenario, profile: str,
+    *, check_integrity: Callable[[], None],
+) -> dict[str, Any]:
+    """Check ownership before and after every attempted gesture, including failures."""
+    row = {"scenarioId": scenario.id, "profileId": profile, "status": "not_run"}
+    try:
+        check_integrity()
+    except Exception:
+        return {**row, "status": "error", "reason": "integrity-stop"}
+    try:
+        if run_case(scenario, profile) is not True:
+            raise AssertionError("semantic assertions not confirmed")
+        row.update(status="pass", readyAssertion=scenario.ready_assertion,
+                   resultAssertion=scenario.result_assertion)
+    except VerificationIntegrityError:
+        row.update(status="error", reason="integrity-stop")
+    except ScenarioUnavailable:
+        row["reason"] = "fixture-or-engine-unavailable"
+    except AssertionError:
+        row.update(status="fail", reason="assertion-failed")
+    except Exception:
+        row.update(status="error", reason="runner-error")
+    # A failing last case must not bypass the final integrity boundary. Keep
+    # only safe result codes; details remain in the isolated runner's log.
+    try:
+        check_integrity()
+    except Exception:
+        row = {"scenarioId": scenario.id, "profileId": profile,
+               "status": "error", "reason": "integrity-stop"}
+    return row
+
+
 def collect_case_results(
     run_case: Callable[[Scenario, str], bool],
     *,
@@ -468,34 +501,13 @@ def collect_case_results(
     results = []
     stopped = False
 
-    def require_integrity() -> None:
-        try:
-            check_integrity()
-        except Exception as error:
-            raise VerificationIntegrityError("unverifiable source or fixture") from error
-
     for scenario in scenarios():
         for profile in required_profiles(scenario):
             row = {"scenarioId": scenario.id, "profileId": profile, "status": "not_run"}
             if stopped:
                 row["reason"] = "integrity-stop"
             else:
-                try:
-                    require_integrity()
-                    if run_case(scenario, profile) is not True:
-                        raise AssertionError("semantic assertions not confirmed")
-                    # Drift during the gesture invalidates its result too.
-                    require_integrity()
-                    row.update(status="pass", readyAssertion=scenario.ready_assertion,
-                               resultAssertion=scenario.result_assertion)
-                except VerificationIntegrityError:
-                    row.update(status="error", reason="integrity-stop")
-                    stopped = True
-                except ScenarioUnavailable:
-                    row["reason"] = "fixture-or-engine-unavailable"
-                except AssertionError:
-                    row.update(status="fail", reason="assertion-failed")
-                except Exception:
-                    row.update(status="error", reason="runner-error")
+                row = observe_case(run_case, scenario, profile, check_integrity=check_integrity)
+                stopped = row.get("reason") == "integrity-stop"
             results.append(row)
     return results
