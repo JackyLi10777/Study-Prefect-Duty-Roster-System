@@ -12,6 +12,9 @@
     const download = root.querySelector('#sy-support-browser-download');
     const copy = root.querySelector('#sy-support-browser-copy');
     const email = root.querySelector('#sy-support-browser-email');
+    const details = root.querySelector('#sy-support-details');
+    const detailsContent = root.querySelector('#sy-support-details-content');
+    const detailsTemplate = details?.querySelector('template');
     if (
       !(form instanceof HTMLFormElement) ||
       !(result instanceof HTMLOutputElement) ||
@@ -19,12 +22,26 @@
       !(error instanceof HTMLElement) ||
       !(download instanceof HTMLButtonElement) ||
       !(copy instanceof HTMLButtonElement) ||
-      !(email instanceof HTMLButtonElement)
+      !(email instanceof HTMLButtonElement) ||
+      !(details instanceof HTMLDetailsElement) ||
+      !(detailsContent instanceof HTMLElement) ||
+      !(detailsTemplate instanceof HTMLTemplateElement)
     ) return false;
     root.dataset.installed = 'true';
     let report = null;
+    let detailsMounted = false;
+    details.addEventListener('toggle', () => {
+      if (details.open && !detailsMounted) {
+        detailsContent.appendChild(detailsTemplate.content);
+        detailsTemplate.remove();
+        detailsMounted = true;
+      } else if (!details.open && detailsContent.contains(document.activeElement)) {
+        details.querySelector('summary')?.focus({preventScroll: true});
+      }
+    });
 
-    const value = id => String(root.querySelector(`#sy-support-${id}`)?.value || '').trim();
+    const defaults = {route: root.dataset.defaultRoute, action: root.dataset.defaultWorkflow};
+    const value = id => String(root.querySelector(`#sy-support-${id}`)?.value ?? defaults[id] ?? '').trim();
     const setActions = enabled => {
       resultActions.hidden = !enabled;
     };
@@ -71,6 +88,11 @@
     form.addEventListener('reset', () => {
       report = null;
       error.textContent = '';
+      result.textContent = '';
+      setActions(false);
+    });
+    form.addEventListener('input', () => {
+      report = null;
       result.textContent = '';
       setActions(false);
     });
