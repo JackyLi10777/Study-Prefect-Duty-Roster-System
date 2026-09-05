@@ -1934,14 +1934,38 @@ class GuestWorkspaceAdapter(GuestDatedDraftMixin):
         self._commit(view, state, "demo-backup")
         return _DemoPath(_DEMO_BACKUP_NAME)
 
-    def restore_backup(self, backup_path: object) -> dict[str, object]:
+    def review_demo_backup(self, backup_path: object) -> dict[str, object]:
+        """Review one memory checkpoint and its CAS revision; not a file digest."""
+        self._require_read()
+        if str(backup_path) != _DEMO_BACKUP_NAME:
+            raise WorkflowError("Only the in-memory demo checkpoint can be reviewed.")
+        view = self._view()
+        if not isinstance(view.state.get("demoBackupState"), dict):
+            raise WorkflowError("The demo checkpoint is missing. Create a new checkpoint first.")
+        return {"demo": True, "workspaceRevision": view.revision,
+                "createdAt": _parse_datetime(view.state.get("demoBackupAt"))}
+
+    def restore_backup(
+        self, backup_path: object, *, expected_sha256: str | None = None,
+        expected_workspace_revision: int | None = None,
+    ) -> dict[str, object]:
         """Restore only an in-memory demo checkpoint; never inspect a path."""
 
         self._require_modify()
+        if expected_sha256 is not None:
+            raise WorkflowError("File checksum verification is not supported for a memory-only demo checkpoint.")
+        if expected_workspace_revision is not None and (
+            type(expected_workspace_revision) is not int or expected_workspace_revision < 0
+        ):
+            raise WorkflowError("The reviewed demo workspace revision is invalid.")
         if str(backup_path) != _DEMO_BACKUP_NAME:
             raise WorkflowError("Only the in-memory demo checkpoint can be restored.")
         view = self._view()
+        if expected_workspace_revision is not None and view.revision != expected_workspace_revision:
+            raise WorkflowConflictError("This demo workspace changed after review. Review and confirm it again.")
         checkpoint = view.state.get("demoBackupState")
+        if expected_workspace_revision is not None and not isinstance(checkpoint, dict):
+            raise WorkflowError("The reviewed demo checkpoint is missing. Create a new checkpoint first.")
         restored = deepcopy(checkpoint) if isinstance(checkpoint, dict) else demo_fixture()
         restored["demoBackupAt"] = _datetime_text(_now())
         restored["demoBackupState"] = deepcopy(checkpoint) if isinstance(checkpoint, dict) else demo_fixture()
