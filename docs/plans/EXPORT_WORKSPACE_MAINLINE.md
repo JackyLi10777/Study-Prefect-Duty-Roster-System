@@ -115,7 +115,17 @@ renderer by 1.5 seconds to observe a pending render beyond the reveal delay, the
 waits for the real PNG download. This is not a production delay or a performance
 measurement, and does not affect the original 20-cycle driver.
 
-Same-checkpoint browser execution and full verification are pending.
+Clean `97243f0` runs retain two failures (`sy-export-mainline-dt5qwwfu` and
+`sy-export-mainline-cqeg6t7e`). Both passed the unchanged cold 20-cycle limits;
+the first stopped at lease feedback, and the second passed lease feedback but
+failed to show the real capacity-rejection reference after browser fetch errors.
+The browser writes native `textContent`; a Vue-owned label can then retain a
+detached text vnode and fail to display later server text. The receipt now has
+an empty native element with DOM-owned text for both writers. Server updates use
+safe `replaceChildren` arguments, with the existing generation guards and ARIA
+semantics. No HTML parsing, added element, transport or budget change is involved.
+
+Same-checkpoint browser execution and full verification of this repair are pending.
 
 No controlled p75, full WebKit, physical Android/iPhone, WhatsApp or supervised
 encrypted-recovery acceptance is claimed by this batch.

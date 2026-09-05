@@ -48,6 +48,8 @@ class Element:
 
     def run_method(self, *args):
         self.methods.append(args)
+        if args[0] == "replaceChildren":
+            self.text = args[1]
 
     def set_text(self, text):
         self.text = text
@@ -406,6 +408,27 @@ def test_old_export_feedback_cannot_overwrite_reopened_or_changed_sheet(harness,
         assert not ui.notifications
 
     asyncio.run(scenario())
+
+
+def test_server_feedback_replaces_browser_failure_without_vue_text_ownership(harness, monkeypatch):
+    ui, _client = harness
+
+    async def prepare(_week_id, _request, *, feedback):
+        label = ui.by_test_id("roster-export-feedback")
+        for _ in range(3):
+            feedback.notify("working", type="ongoing")
+            assert "role=status aria-live=polite aria-busy=true" in label.props_text
+            # The real browser failure bridge owns the native node's textContent.
+            label.text = "browser fetch failure"
+            feedback.notify("capacity rejected\nREQ-FIXTURE", type="warning")
+            assert label.text == "capacity rejected\nREQ-FIXTURE"
+            assert ("replaceChildren", "capacity rejected\nREQ-FIXTURE") in label.methods
+            assert "role=alert aria-live=assertive aria-busy=false" in label.props_text
+        return None
+
+    monkeypatch.setattr(page_shared, "_prepare_export_document", prepare)
+    page_shared._open_page_owned_roster_export_dialog(42)
+    asyncio.run(ui.by_test_id("prepare-roster-images").events["click"]())
 
 
 @pytest.mark.parametrize("format", ["pdf", "png"])

@@ -1194,7 +1194,10 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
             f"role={'alert' if urgent else 'status'} aria-live={'assertive' if urgent else 'polite'} "
             f"aria-busy={str(type == 'ongoing').lower()}"
         )
-        feedback_label.set_text(message)
+        # Download failures also write native textContent. Keep this node's
+        # children outside Vue ownership so later server messages cannot update
+        # a detached text vnode and silently lose the recovery reference.
+        feedback_label.run_method("replaceChildren", message)
         feedback_label.run_method("scrollIntoView", {"block": "nearest"})
 
     def feedback_for_generation(generation: int | None = None) -> _ExportFeedback:
@@ -1209,7 +1212,7 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
     def reset_feedback() -> None:
         sync_feedback_generation()
         feedback_label.props("role=status aria-live=polite aria-busy=false")
-        feedback_label.set_text(t("roster_image_export_notice"))
+        feedback_label.run_method("replaceChildren", t("roster_image_export_notice"))
 
     def native_action(
         label: str,
@@ -1502,7 +1505,7 @@ def _open_page_owned_roster_export_dialog(roster_week_id: int) -> None:
     ) as dialog:
         with ui.element("section").classes("sy-export-option sy-native-export-core w-full p-4"):
             ui.label(t("roster_image_export_title")).classes("text-base font-semibold")
-            feedback_label = ui.label(t("roster_image_export_notice")).classes(
+            feedback_label = ui.element("div").classes(
                 "text-sm text-[var(--sy-muted)] whitespace-pre-line"
             ).props("role=status aria-live=polite aria-atomic=true aria-busy=false data-testid=roster-export-feedback")
             with ui.element("div").classes("sy-native-actions mt-3"):
