@@ -21,6 +21,7 @@ from nicegui_app.release_evidence import (
     release_source_fingerprint,
 )
 from nicegui_app import release_evidence
+from nicegui_app.release_gates import GATE_MANIFEST_BINDING, REQUIRED_CHECK_IDENTITIES
 from scripts import verify_release_candidate
 
 
@@ -36,7 +37,8 @@ def _report(*, fingerprint: str, status: str = "pass") -> dict[str, object]:
         "sourceDirty": False,
         "plannedReleaseTag": "v1.2.0-rc.32",
         "immutableReleaseReference": "refs/tags/v1.2.0-rc.32",
-        "requiredCheckIdentities": ["tests", "browser"],
+        "requiredCheckIdentities": list(REQUIRED_CHECK_IDENTITIES),
+        "gateManifest": dict(GATE_MANIFEST_BINDING),
         "toolVersions": {"python": "3.12.10", "git": "git version 2.50.0"},
         "status": status,
         "startedAt": datetime.now(timezone.utc).isoformat(),
@@ -44,8 +46,7 @@ def _report(*, fingerprint: str, status: str = "pass") -> dict[str, object]:
         "humanAcceptanceRequired": True,
         "humanAcceptanceGuide": "docs/ACCEPTANCE_EVIDENCE.md",
         "checks": [
-            {"name": "tests", "status": "pass", "durationMs": 10},
-            {"name": "browser", "status": "pass", "durationMs": 20},
+            {"name": name, "status": "pass", "durationMs": 10} for name in REQUIRED_CHECK_IDENTITIES
         ],
     }
     report["postVerificationSource"] = {
@@ -276,7 +277,7 @@ def test_current_release_report_is_displayed_as_machine_pass_but_still_requires_
     evidence = load_release_evidence(report_path, current_fingerprint="current")
 
     assert evidence.state == "pass"
-    assert evidence.passed_checks == evidence.total_checks == 2
+    assert evidence.passed_checks == evidence.total_checks == len(REQUIRED_CHECK_IDENTITIES)
     assert evidence.finished_at is not None
     assert evidence.human_acceptance_required is True
 
@@ -372,6 +373,7 @@ def test_release_report_requires_the_exact_complete_check_identity_sequence(tmp_
     report_path.write_text(json.dumps(payload), encoding="utf-8")
     assert load_release_evidence(report_path, current_fingerprint="current").state == "unreadable"
 
+
     payload = _report(fingerprint="current")
     payload["checks"].reverse()
     report_path.write_text(json.dumps(payload), encoding="utf-8")
@@ -379,5 +381,14 @@ def test_release_report_requires_the_exact_complete_check_identity_sequence(tmp_
 
     payload = _report(fingerprint="current")
     payload["immutableReleaseReference"] = "refs/tags/v1.2.0-rc.31"
+    report_path.write_text(json.dumps(payload), encoding="utf-8")
+    assert load_release_evidence(report_path, current_fingerprint="current").state == "unreadable"
+
+
+def test_release_report_cannot_select_its_own_smaller_successful_checklist(tmp_path: Path) -> None:
+    report_path = tmp_path / "reduced.json"
+    payload = _report(fingerprint="current")
+    payload["requiredCheckIdentities"] = ["automated_test_suite"]
+    payload["checks"] = [{"name": "automated_test_suite", "status": "pass", "durationMs": 1}]
     report_path.write_text(json.dumps(payload), encoding="utf-8")
     assert load_release_evidence(report_path, current_fingerprint="current").state == "unreadable"

@@ -482,13 +482,15 @@ try {
     if (-not (Test-Path -LiteralPath $releaseReportPath -PathType Leaf)) {
         throw "The source-bound release report is missing."
     }
-    $releaseReport = Get-Content -LiteralPath $releaseReportPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $releaseTree = Get-GitValue -Repository $SourceRoot -Arguments @("rev-parse", "$releaseCommit`^{tree}")
     $sourcePython = Join-Path $SourceRoot ".venv\Scripts\python.exe"
     if (-not (Test-Path -LiteralPath $sourcePython -PathType Leaf)) {
         throw "The verified source Python environment is missing."
     }
     $currentFingerprint = Get-CurrentReleaseFingerprint -Python $sourcePython -Repository $SourceRoot
+    . (Join-Path $SourceRoot "scripts\release_gate_contract.ps1")
+    $gateEvidence = Assert-ReleaseGateEvidence -Python $sourcePython -Repository $SourceRoot -ReportPath $releaseReportPath
+    $releaseReport = $gateEvidence.report
     $postVerificationSource = $releaseReport.postVerificationSource
     $releaseSourceDirtyIsBoolean = Test-RequiredBooleanProperty `
         -InputObject $releaseReport `
@@ -506,7 +508,7 @@ try {
             -DifferenceObject @($reportCheckNames | Sort-Object)
     )
     if (
-        [int]$releaseReport.schemaVersion -ne 3 -or
+        [int]$releaseReport.schemaVersion -ne $gateEvidence.reportSchemaVersion -or
         [string]$releaseReport.status -cne "pass" -or
         [string]$releaseReport.sourceCommit -cne $releaseCommit -or
         [string]$releaseReport.sourceTree -cne $releaseTree -or
