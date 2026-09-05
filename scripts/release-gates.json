@@ -3,6 +3,8 @@
   "reportSchemaVersion": 4,
   "requiredChecks": [
     "repository_hygiene",
+    "generated_design_tokens",
+    "generated_service_weave_delivery",
     "security_gates",
     "motion_state_machine_tests",
     "cloudflare_gateway_tests",

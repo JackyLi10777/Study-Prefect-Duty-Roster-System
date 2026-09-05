@@ -47,6 +47,10 @@ def _mutate(payload, defect):
         payload["checks"][0]["status"] = "fail"
     elif defect == "malformed-identities":
         payload["requiredCheckIdentities"] = [{"not": "a string"}]
+    elif defect in {"omit-design-assets", "omit-delivery-assets"}:
+        name = "generated_design_tokens" if defect == "omit-design-assets" else "generated_service_weave_delivery"
+        payload["requiredCheckIdentities"].remove(name)
+        payload["checks"] = [check for check in payload["checks"] if check["name"] != name]
     elif defect is not None:
         raise AssertionError(defect)
     return payload
@@ -54,7 +58,7 @@ def _mutate(payload, defect):
 
 DEFECTS = ("self-reduced", "same-reorder", "duplicate", "extra", "missing", "missing-manifest",
            "wrong-manifest", "boolean-version", "old-schema", "missing-timing", "boolean-timing",
-           "negative-timing", "failed", "malformed-identities")
+           "negative-timing", "failed", "malformed-identities", "omit-design-assets", "omit-delivery-assets")
 
 
 @pytest.mark.parametrize("defect", (None, *DEFECTS))
