@@ -324,14 +324,18 @@ def _compile(
 ) -> CompiledSchedule:
     if not isinstance(exceptions, ScheduleExceptions):
         raise ConfigurationError("Schedule exceptions require explicit ScheduleExceptions.")
-    if not set(exceptions.closed_dates).issubset(dates):
+    selected_dates = frozenset(dates)
+    if not set(exceptions.closed_dates).issubset(selected_dates):
         raise ScheduleDateError("A closed date must be one of the selected actual dates.")
     unavailable = {entry.seat for entry in exceptions.unavailable}
-    known_keys = {
-        SeatKey(day, post.business, index)
-        for post in policy.businesses for index in range(1, post.capacity + 1) for day in dates
-    }
-    if not unavailable.issubset(known_keys):
+    capacities = {post.business: post.capacity for post in policy.businesses}
+    # Validate the few exceptions directly instead of materializing a second
+    # complete date/seat matrix solely to test membership.
+    if any(
+        key.duty_date not in selected_dates
+        or key.seat_index > capacities.get(key.business, 0)
+        for key in unavailable
+    ):
         raise ConfigurationError("An unavailable exception must identify an existing date and seat.")
     closed_dates = frozenset(exceptions.closed_dates)
     rows = []
