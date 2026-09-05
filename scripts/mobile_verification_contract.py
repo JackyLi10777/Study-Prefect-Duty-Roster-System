@@ -18,7 +18,7 @@ from typing import Any, Callable, Iterable, Mapping
 
 from nicegui_app.ui.page_catalog import PAGE_DEFINITIONS
 
-CONTRACT_VERSION = 1
+CONTRACT_VERSION = 2
 VIEWPORTS = ((256, 700), (320, 760), (360, 800), (390, 844),
              (430, 932), (844, 390), (768, 1024), (820, 1180))
 ENGINES = ("chromium", "webkit")
@@ -50,6 +50,19 @@ REDIRECTS = {"/dashboard": "/", "/rosters/new": "/rosters",
              "/adjustments": "/rosters"}
 DYNAMIC_ROUTES = ("/rosters/{roster_week_id}",
                   "/rosters/{roster_week_id}/adjustments")
+LIFECYCLE_TARGETS = {
+    "prefect-sheet": "/prefects",
+    "draft-sheet": DYNAMIC_ROUTES[0],
+    "drawer": "/",
+    "export-workspace": DYNAMIC_ROUTES[0],
+}
+LIFECYCLE_MODES = ("admin", "guest")
+LIFECYCLE_CYCLES = 20
+LIFECYCLE_BUDGETS = {"heapBytes": 10 * 1024 * 1024, "domNodes": 100, "listeners": 40}
+LIFECYCLE_BASELINE = "before-first-open"
+# Existing C/D diagnostics: wait 250ms, one collectGarbage, wait 100ms, then read
+# Runtime.getHeapUsage + Memory.getDOMCounters. No warm-up or extra collection.
+LIFECYCLE_MEASUREMENT_PROTOCOL = "cdp-gc-250-100-v1"
 
 
 @dataclass(frozen=True)
@@ -128,7 +141,11 @@ def expected_cases() -> frozenset[tuple[str, str]]:
 def contract_fingerprint() -> str:
     payload = {"version": CONTRACT_VERSION, "scenarios": [asdict(s) for s in scenarios()],
                "cases": sorted(expected_cases()), "performance": PERFORMANCE_PROFILE,
-               "budgets": PERFORMANCE_BUDGETS, "repetitions": CORE_REPETITIONS}
+               "budgets": PERFORMANCE_BUDGETS, "repetitions": CORE_REPETITIONS,
+               "lifecycle": {"targets": LIFECYCLE_TARGETS, "modes": LIFECYCLE_MODES,
+                             "cycles": LIFECYCLE_CYCLES, "budgets": LIFECYCLE_BUDGETS,
+                             "baseline": LIFECYCLE_BASELINE,
+                             "measurementProtocol": LIFECYCLE_MEASUREMENT_PROTOCOL}}
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
 
 
@@ -295,6 +312,7 @@ def validate_mobile_release_report(report: Any, *, fingerprint: str) -> list[str
     performance = report.get("performance")
     errors.extend(validate_coverage(coverage) if isinstance(coverage, list) else ["missing coverage"])
     errors.extend(validate_core_interactions(core) if isinstance(core, list) else ["missing core interactions"])
+    errors.extend(validate_lifecycle(report.get("lifecycle"), context=report))
     if (not isinstance(performance, list) or any(not isinstance(row, Mapping)
             or not isinstance(row.get("scenarioId"), str) for row in performance)):
         return [*errors, "missing/malformed performance groups"]
@@ -319,6 +337,77 @@ def validate_mobile_release_report(report: Any, *, fingerprint: str) -> list[str
             errors.append(f"invalid global {key}")
         elif len(set(values)) != len(values):
             errors.append(f"cold {key} reused across performance targets")
+        if key == "contextId" and isinstance(report.get("lifecycle"), list):
+            lifecycle_contexts = {row["contextId"] for row in report["lifecycle"]
+                                  if isinstance(row, Mapping) and isinstance(row.get("contextId"), str)}
+            if lifecycle_contexts.intersection(value for value in values if isinstance(value, str)):
+                errors.append("lifecycle reused an exercised performance context")
+    return errors
+
+
+def validate_lifecycle(records: Any, *, context: Mapping[str, Any]) -> list[str]:
+    """Require all cold 20-cycle endpoints; recompute, never trust green deltas.
+
+    The producer must collect in one fresh Chromium context per target/mode.
+    Baseline is before the first opening; after is closed after cycle 20. The
+    same profile and fixed measurement protocol apply at both endpoints.
+    Retained-after-first-mount diagnostics cannot certify this contract.
+    """
+    if (not isinstance(records, list) or any(not isinstance(row, Mapping)
+            or not isinstance(row.get("target"), str)
+            or not isinstance(row.get("mode"), str) for row in records)):
+        return ["missing/malformed lifecycle evidence"]
+    expected = {(target, mode) for target in LIFECYCLE_TARGETS for mode in LIFECYCLE_MODES}
+    keys = [(row["target"], row["mode"]) for row in records]
+    errors = []
+    if set(keys) != expected or len(keys) != len(expected):
+        errors.append("missing, unexpected or duplicate lifecycle target/mode")
+    contexts = [row.get("contextId") for row in records]
+    if any(not isinstance(value, str) or not value.strip() for value in contexts):
+        errors.append("invalid lifecycle context identity")
+    elif len(set(contexts)) != len(contexts):
+        errors.append("lifecycle context reused across target/mode")
+    for row in records:
+        label = f"lifecycle:{row['target']}:{row['mode']}"
+        profile = row.get("appliedProfile")
+        if (row.get("route") != LIFECYCLE_TARGETS.get(row["target"])
+                or row.get("baselineKind") != LIFECYCLE_BASELINE
+                or row.get("measurementProtocol") != LIFECYCLE_MEASUREMENT_PROTOCOL
+                or row.get("status") != "pass"
+                or type(row.get("cycles")) is not int or row["cycles"] != LIFECYCLE_CYCLES
+                or not isinstance(profile, Mapping) or profile != PERFORMANCE_PROFILE
+                or profile.get("cacheDisabled") is not True
+                or any(not isinstance(row.get(key), str) or not row[key]
+                       or row[key] != context.get(key)
+                       for key in ("runId", "fixtureId", "sourceCommit", "sourceFingerprint"))):
+            errors.append(f"{label}: invalid source, profile or protocol")
+        iterations = row.get("iterations")
+        if (not isinstance(iterations, list) or len(iterations) != LIFECYCLE_CYCLES
+                or any(not isinstance(item, Mapping) or type(item.get("iteration")) is not int
+                       or item["iteration"] != index
+                       or any(item.get(key) is not True
+                              for key in ("opened", "closed", "focusRestored", "statePreserved"))
+                       for index, item in enumerate(iterations, 1))):
+            errors.append(f"{label}: missing/failed cycle semantics")
+        before, after = row.get("before"), row.get("after")
+        valid = True
+        for phase, sample, count in (("before", before, 0), ("after", after, LIFECYCLE_CYCLES)):
+            if (not isinstance(sample, Mapping)
+                    or sample.get("contextId") != row.get("contextId")
+                    or type(sample.get("completedCycles")) is not int or sample["completedCycles"] != count
+                    or not _finite_nonnegative(sample.get("timestampMs"))
+                    or any(not _finite_nonnegative(sample.get(metric))
+                           or sample[metric] <= 0 or sample[metric] > 2 ** 53 - 1
+                           or int(sample[metric]) != sample[metric] for metric in LIFECYCLE_BUDGETS)):
+                errors.append(f"{label}: invalid {phase} raw footprint")
+                valid = False
+        if not valid:
+            continue
+        if after["timestampMs"] <= before["timestampMs"]:
+            errors.append(f"{label}: reversed/unobserved measurement interval")
+        for metric, budget in LIFECYCLE_BUDGETS.items():
+            if after[metric] - before[metric] > budget:
+                errors.append(f"{label}: growth exceeds budget: {metric}")
     return errors
 
 
