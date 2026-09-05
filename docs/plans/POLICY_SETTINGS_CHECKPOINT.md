@@ -43,6 +43,10 @@ SQLite 在新連線啟用外鍵，以 `BEGIN IMMEDIATE` 同時保存修訂、目
 此接口尚未供 frontend 使用；正式 schema／Alembic 和共同交易 Adapter 的接線仍待完成，
 不將 preparatory `create_schema()` 宣稱為正式啟用的初始化程序。
 
+後續共同交易準備見 [操作 checkpoint](POLICY_OPERATION_CHECKPOINT.md)：
+在 caller 提供的交易內沿用既有審計、命令收據及備份義務，不把本頁的 standalone
+Adapter 直接嵌入正式寫入交易；命令身份亦已收斂至正式操作的 trim／64 字契約。
+
 ## 驗證與仍未交付
 
 本次定向檢查：95 個設定儲存案例、47 個 codec 案例、74 個 compiler 案例通過。

@@ -17,6 +17,8 @@ from inspect import signature
 from typing import Any, Callable, Iterator
 from uuid import uuid4
 
+from roster_core.command_identity import CommandIdentityError, normalize_command_id
+
 from nicegui_app.access_context import AccessMode, PageContext
 
 
@@ -91,17 +93,18 @@ class PageContextWorkflowAdapter:
             # Re-check at the exact workflow boundary; client polling is only UX.
             self._principal.require_active()
             supplied_command = kwargs.get("command_id")
-            if requires_command and not (
-                isinstance(supplied_command, str) and supplied_command.strip()
-            ):
-                raise ValueError(
-                    f"{name} requires one stable command_id for the user intent"
-                )
-            command_id = (
-                supplied_command.strip()
-                if isinstance(supplied_command, str) and supplied_command.strip()
-                else f"ui-{uuid4().hex}"
-            )
+            if requires_command or "command_id" in kwargs:
+                try:
+                    command_id = normalize_command_id(supplied_command)
+                except CommandIdentityError as error:
+                    raise ValueError(
+                        f"{name} requires one valid stable command_id for the user intent"
+                    ) from error
+                # The target and its audited actor must see the same identity;
+                # normalizing only the actor leaves two meanings for a retry.
+                kwargs["command_id"] = command_id
+            else:
+                command_id = f"ui-{uuid4().hex}"
             with bind_operation_actor(replace(self._actor, command_id=command_id)):
                 return attribute(*args, **kwargs)
 

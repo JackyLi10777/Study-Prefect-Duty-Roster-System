@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from roster_policy import is_room_open
+from roster_core.command_identity import CommandIdentityError, normalize_command_id
 
 from nicegui_app.services.workflow_dependencies import (
     Assignment,
@@ -126,11 +127,13 @@ class PersistenceWorkflowMixin:
 
     def _operation_command_id(self, operation_type: str, command_id: str | None) -> str:
         actor = current_operation_actor()
-        candidate = command_id or (actor.command_id if actor else None) or f"{operation_type}:{uuid4().hex}"
-        normalized = candidate.strip()
-        if not normalized or len(normalized) > 64:
-            raise WorkflowError("Operation command ID is invalid.")
-        return normalized
+        candidate = command_id
+        if candidate is None:
+            candidate = (actor.command_id if actor else None) or f"{operation_type}:{uuid4().hex}"
+        try:
+            return normalize_command_id(candidate)
+        except CommandIdentityError as error:
+            raise WorkflowError("Operation command ID is invalid.") from error
 
     @staticmethod
     def _operation_fingerprint(operation_type: str, payload: dict[str, object]) -> str:
