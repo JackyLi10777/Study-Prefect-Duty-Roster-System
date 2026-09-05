@@ -54,17 +54,24 @@ def _read_across_commit(read, mutate, first_read, committed):
         return reader.result(timeout=20)
 
 
-@pytest.mark.parametrize("replacement", [False, True], ids=["vacancy", "replacement"])
+@pytest.mark.parametrize("change", ["vacancy", "replacement", "restore"])
 def test_schedule_snapshot_does_not_mix_version_with_concurrent_adjustment(
-    workflows, monkeypatch, replacement,
+    workflows, monkeypatch, change,
 ):
     reader, writer, draft = workflows
     writer.publish(draft.id, expected_week_version=draft.version)
+    initial_week, initial_assignments = writer.roster_schedule_snapshot(draft.id)
+    assignment = next(row for row in initial_assignments if row["postCode"] == "ROOM_302")
+    if change == "restore":
+        writer.apply_leave_adjustment(
+            roster_week_id=draft.id, assignment_id=int(assignment["id"]),
+            replacement_prefect_id=None, command_id="prepare-schedule-vacancy",
+            expected_week_version=int(initial_week["version"]),
+        )
     before = reader.roster_schedule_snapshot(draft.id)
-    assignment = next(row for row in before[1] if row["postCode"] == "ROOM_302")
     substitute_id = (
         str(writer.recommend_substitutes(draft.id, int(assignment["id"]))[0]["id"])
-        if replacement else None
+        if change != "vacancy" else None
     )
     first_read, committed = Event(), Event()
     original_week_read = reader._week_or_error
@@ -96,16 +103,22 @@ def test_schedule_snapshot_does_not_mix_version_with_concurrent_adjustment(
     assert after[1] != before[1]
 
 
-@pytest.mark.parametrize("change", ["publish", "withdraw", "adjust"])
+@pytest.mark.parametrize("change", ["publish", "withdraw", "adjust", "restore"])
 def test_period_report_keeps_sources_allocations_and_ledger_at_one_commit(
     workflows, monkeypatch, change,
 ):
     reader, writer, draft = workflows
     if change != "publish":
         writer.publish(draft.id, expected_week_version=draft.version)
+    assignment = next(row for row in writer.assignments(draft.id) if row["postCode"] == "ROOM_302")
+    if change == "restore":
+        writer.apply_leave_adjustment(
+            roster_week_id=draft.id, assignment_id=int(assignment["id"]),
+            replacement_prefect_id=None, command_id="prepare-report-vacancy",
+            expected_week_version=int(writer.roster_week(draft.id)["version"]),
+        )
     before = reader.build_period_report()
     before_week = writer.roster_week(draft.id)
-    assignment = next(row for row in writer.assignments(draft.id) if row["postCode"] == "ROOM_302")
     first_read, committed = Event(), Event()
     original_session = reader._session
 
@@ -144,7 +157,7 @@ def test_period_report_keeps_sources_allocations_and_ledger_at_one_commit(
             writer.apply_leave_adjustment(
                 roster_week_id=draft.id,
                 assignment_id=int(assignment["id"]),
-                replacement_prefect_id=None,
+                replacement_prefect_id=str(assignment["prefectId"]) if change == "restore" else None,
                 reason="Fictional concurrent absence", command_id="report-snapshot-adjustment",
                 expected_week_version=int(before_week["version"]),
             )
