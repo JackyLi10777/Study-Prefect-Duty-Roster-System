@@ -73,6 +73,10 @@ class RestoreControls:
         self.request += 1
         self.reviewed = None
         self.phrase.set_value("")
+        # QDialog unmounts its portal children; NiceGUI input.beforeUnmount can
+        # preserve the old client value after the first reset. Re-publish even
+        # when the authoritative Python value is already empty on reopening.
+        self.phrase.update()
         self.sync()
 
     def cancel(self) -> None:
