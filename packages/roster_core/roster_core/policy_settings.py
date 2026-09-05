@@ -1,8 +1,8 @@
-"""Unconnected prelaunch policy revisions shared by Official and Guest storage.
+"""Immutable policy decisions shared by Official and Guest storage.
 
 This Module owns policy validation, reset decisions and command identity. The
 internal storage Seam owns only atomic revision/receipt persistence. Admission,
-authorization and backup obligations belong to the future outer workflow.
+authorization and backup obligations belong to the outer workflow.
 """
 
 from __future__ import annotations
@@ -134,6 +134,21 @@ class StoredPolicyRevision:
 PolicyOperation = Literal["initialize", "save", "reset"]
 
 
+def policy_request_digest(
+    operation: PolicyOperation, year_start: int, expected_revision: int, document: str,
+) -> str:
+    """Fingerprint validated intent and canonical document, including operation.
+
+    Both command creation and durable receipt lookup use this exact encoding;
+    lookup must never attach an existing but unrelated revision to a command.
+    """
+    payload = json.dumps(
+        {"operation": operation, "year_start": year_start, "expected_revision": expected_revision, "policy": document},
+        ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
 class PolicyRepository(Protocol):
     """Internal storage Seam; implementations must replay before checking CAS."""
 
@@ -243,17 +258,13 @@ class PolicySettings:
         if expected_revision >= _MAX_POLICY_REVISION:
             raise PolicySettingsError("Policy revision capacity is exhausted; no new revision can be saved.")
         document = _encoded(policy)
-        payload = json.dumps(
-            {"operation": operation, "year_start": year_start, "expected_revision": expected_revision, "policy": document},
-            ensure_ascii=False, sort_keys=True, separators=(",", ":"),
-        )
-        digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        digest = policy_request_digest(operation, year_start, expected_revision, document)
         stored = self._repository.commit(year_start, expected_revision, document, command_id, digest, operation=operation)
         return _decoded(stored)
 
 
 class MemoryPolicyRepository:
-    """Isolated Guest storage with the same atomic CAS/receipt contract."""
+    """Pure test Adapter; live Guest settings belong to the bounded workspace."""
 
     def __init__(self) -> None:
         self._lock = RLock()

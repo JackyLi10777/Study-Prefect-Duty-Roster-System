@@ -245,10 +245,10 @@ def test_signed_integer_revision_limit_is_readable_but_cannot_be_incremented(rep
         engine, _ = request.getfixturevalue("sqlite_pair")
         with engine.begin() as connection:
             connection.execute(text(
-                "INSERT INTO prelaunch_policy_revisions (year_start, revision, document) VALUES (:year, :revision, :document)"
+                "INSERT INTO school_year_policy_revisions (year_start, revision, document) VALUES (:year, :revision, :document)"
             ), {"year": YEAR, "revision": maximum - 1, "document": document})
             connection.execute(text(
-                "INSERT INTO prelaunch_policy_current (year_start, revision) VALUES (:year, :revision)"
+                "INSERT INTO school_year_policy_current (year_start, revision) VALUES (:year, :revision)"
             ), {"year": YEAR, "revision": maximum - 1})
     settings = PolicySettings(repository)
     last = settings.save(YEAR, custom_policy(), expected_revision=maximum - 1, command_id="last-save")
@@ -376,7 +376,7 @@ def test_sqlite_constructor_is_inert_and_schema_initialization_is_explicit(tmp_p
         assert inspect(engine).get_table_names() == []
         repository.create_schema()
         assert set(inspect(engine).get_table_names()) == {
-            "prelaunch_policy_revisions", "prelaunch_policy_current", "prelaunch_policy_commands",
+            "school_year_policy_revisions", "school_year_policy_current", "prelaunch_policy_commands",
         }
         assert settings.initialize(YEAR, command_id="init").revision == 1
     finally:
@@ -436,7 +436,7 @@ def test_sqlite_failure_after_all_inserts_rolls_back_revision_pointer_and_receip
         event.remove(engine, "after_cursor_execute", fail_receipt)
     assert settings.current(YEAR) == original
     with engine.connect() as connection:
-        for table in ("prelaunch_policy_revisions", "prelaunch_policy_current", "prelaunch_policy_commands"):
+        for table in ("school_year_policy_revisions", "school_year_policy_current", "prelaunch_policy_commands"):
             assert connection.scalar(text(f"SELECT COUNT(*) FROM {table}")) == 1
     assert settings.save(YEAR, custom_policy(), expected_revision=1, command_id="save").revision == 2
 
@@ -469,4 +469,4 @@ def test_sqlite_enforces_declared_foreign_keys_on_fresh_connections(sqlite_pair)
     with engine.connect() as connection:
         assert connection.scalar(text("PRAGMA foreign_keys")) == 1
         with pytest.raises(IntegrityError):
-            connection.execute(text("INSERT INTO prelaunch_policy_current (year_start, revision) VALUES (2027, 99)"))
+            connection.execute(text("INSERT INTO school_year_policy_current (year_start, revision) VALUES (2027, 99)"))

@@ -6,7 +6,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
+from typing import Literal
 
+from roster_core.policy_settings import PolicyRevision
 from roster_policy import AssistAssignmentMode, PrefectRole
 
 
@@ -41,6 +43,21 @@ class BackupResult:
     success: bool
     path: Path | None
     error_message: str | None = None
+
+
+@dataclass(frozen=True)
+class PolicyCommandResult:
+    """A committed settings revision, not a promise that recovery is ready.
+
+    `pending` is a durable business success with a recovery obligation: callers
+    must retain this command identity and repair/retry, not generate a new save.
+    Guest commits only to its expiring workspace and uses `not_applicable`.
+    """
+
+    command_id: str
+    policy_revision: PolicyRevision
+    backup_status: Literal["verified", "pending", "not_applicable"]
+    replayed: bool = False
 
 
 @dataclass(frozen=True)

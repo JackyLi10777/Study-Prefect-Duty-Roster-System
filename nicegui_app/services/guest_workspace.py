@@ -1,6 +1,6 @@
 """Bounded, memory-only workspaces for the unified guest experience.
 
-The service intentionally depends only on the Python standard library.  Guest
+The registry uses the standard library and a pure policy document validator. Guest
 state never touches the official database, backups, files, network, AI
 providers, background jobs, or analytics.
 """
@@ -33,7 +33,8 @@ DEFAULT_MAX_COMMANDS_PER_MINUTE = 60
 DEFAULT_MAX_RECEIPTS_PER_WORKSPACE = 120
 MAX_COMMAND_ID_BYTES = 128
 # Includes the command dictionary key plus three SHA-256 strings for commands
-# that bind both user intent and resulting state.  Keep this explicit upper
+# that bind both user intent and resulting state, plus an optional year and
+# signed-64-bit revision reference (never a policy payload). Keep this upper
 # bound synchronized with the receipt fields so guest capacity remains honest.
 RECEIPT_METADATA_BUDGET_BYTES = 512
 
@@ -52,6 +53,10 @@ class GuestCapacityError(GuestWorkspaceError):
 
 class GuestRevisionConflict(GuestWorkspaceError):
     """Another command changed the same temporary workspace first."""
+
+
+class GuestCommandConflict(GuestWorkspaceError):
+    """A bounded command identity was reused for a different intent."""
 
 
 class GuestRateLimitError(GuestWorkspaceError):
@@ -328,6 +333,7 @@ class GuestWorkspaceView:
     state: dict[str, Any]
     replayed: bool = False
     applied_revision: int | None = None
+    policy_result_reference: tuple[int, int] | None = None
 
 
 @dataclass(frozen=True)
@@ -344,6 +350,7 @@ class _CommandReceipt:
     applied_revision: int
     result_digest: str
     request_digest: str | None = None
+    policy_result_reference: tuple[int, int] | None = None
 
 
 @dataclass
@@ -514,16 +521,24 @@ class GuestWorkspaceRegistry:
         command_id: str,
         state: Mapping[str, Any],
         request_digest: str | None = None,
+        policy_result_reference: tuple[int, int] | None = None,
+        reset_policy_history: bool = False,
         now: int | None = None,
     ) -> GuestWorkspaceView:
         if not isinstance(command_id, str) or not command_id.strip():
             raise GuestWorkspaceError("command_id must not be empty")
-        encoded_command = command_id.encode("utf-8")
+        try:
+            encoded_command = command_id.encode("utf-8")
+        except UnicodeEncodeError as error:
+            raise GuestWorkspaceError("command_id must contain valid Unicode") from error
         if len(encoded_command) > MAX_COMMAND_ID_BYTES:
             raise GuestCapacityError("command_id exceeds the receipt metadata limit")
         current = self._now(now)
         copied_state = _json_copy(dict(state))
         self._validate_state(copied_state)
+        if policy_result_reference is not None:
+            from nicegui_app.services.guest_policy import policy_reference_revision
+            policy_reference_revision(copied_state, policy_result_reference)
         digest = hashlib.sha256(_canonical_bytes(copied_state)).hexdigest()
         with self._lock:
             record = self._record(session_id, workspace_id, tab_id, current)
@@ -531,9 +546,9 @@ class GuestWorkspaceRegistry:
             if receipt is not None:
                 if request_digest is not None:
                     if receipt.request_digest != request_digest:
-                        raise GuestWorkspaceError("command_id was reused for different work")
+                        raise GuestCommandConflict("command_id was reused for different work")
                 elif receipt.payload_digest != digest:
-                    raise GuestWorkspaceError("command_id was reused with different content")
+                    raise GuestCommandConflict("command_id was reused with different content")
                 current_view = self._view(session_id, record)
                 return self._copy_view(
                     GuestWorkspaceView(
@@ -541,6 +556,7 @@ class GuestWorkspaceRegistry:
                             **current_view.__dict__,
                             "replayed": True,
                             "applied_revision": receipt.applied_revision,
+                            "policy_result_reference": receipt.policy_result_reference,
                         }
                     )
                 )
@@ -550,14 +566,28 @@ class GuestWorkspaceRegistry:
                 raise GuestRevisionConflict(
                     f"expected revision {expected_revision}, current revision is {record.revision}"
                 )
+            if not reset_policy_history:
+                from nicegui_app.services.guest_policy import validate_policy_transition
+                validate_policy_transition(record.state, copied_state)
+            else:
+                # Only explicit demo reset/restore opts into a new practice
+                # history; ordinary writes cannot erase original receipts.
+                record.commands = {
+                    key: value for key, value in record.commands.items()
+                    if value.policy_result_reference is None
+                }
             record.state = copied_state
             record.revision += 1
-            view = self._view(session_id, record)
+            view = GuestWorkspaceView(**{
+                **self._view(session_id, record).__dict__,
+                "policy_result_reference": policy_result_reference,
+            })
             record.commands[command_id] = _CommandReceipt(
                 payload_digest=digest,
                 applied_revision=view.revision,
                 result_digest=hashlib.sha256(_canonical_bytes(view.state)).hexdigest(),
                 request_digest=request_digest,
+                policy_result_reference=policy_result_reference,
             )
             if len(record.commands) > self.max_receipts_per_workspace:
                 oldest = next(iter(record.commands))
@@ -587,7 +617,7 @@ class GuestWorkspaceRegistry:
             if receipt is None:
                 return None
             if receipt.request_digest != request_digest:
-                raise GuestWorkspaceError("command_id was reused for different work")
+                raise GuestCommandConflict("command_id was reused for different work")
             current_view = self._view(session_id, record)
             return self._copy_view(
                 GuestWorkspaceView(
@@ -595,9 +625,27 @@ class GuestWorkspaceRegistry:
                         **current_view.__dict__,
                         "replayed": True,
                         "applied_revision": receipt.applied_revision,
+                        "policy_result_reference": receipt.policy_result_reference,
                     }
                 )
             )
+
+    def command_result(
+        self, *, session_id: str, workspace_id: str, tab_id: str, command_id: str,
+        now: int | None = None,
+    ) -> GuestWorkspaceView | None:
+        """Inspect an existing bounded receipt without creating or replaying work."""
+        current = self._now(now)
+        with self._lock:
+            record = self._record(session_id, workspace_id, tab_id, current)
+            receipt = record.commands.get(command_id)
+            if receipt is None:
+                return None
+            return GuestWorkspaceView(**{
+                **self._view(session_id, record).__dict__,
+                "replayed": True, "applied_revision": receipt.applied_revision,
+                "policy_result_reference": receipt.policy_result_reference,
+            })
 
     def seal_snapshot(
         self,
@@ -675,6 +723,8 @@ class GuestWorkspaceRegistry:
                 if _canonical_bytes(snapshot.state) != _canonical_bytes(record.state):
                     raise GuestSnapshotError("snapshot revision does not match live state")
                 return self._copy_view(self._view(session_id, record)), False
+            from nicegui_app.services.guest_policy import validate_policy_transition
+            validate_policy_transition(record.state, snapshot.state)
             record.state = _json_copy(snapshot.state)
             record.revision = snapshot.revision
             # Retain bounded command metadata: a browser reconnect must not make
@@ -786,6 +836,8 @@ class GuestWorkspaceRegistry:
             raise GuestCapacityError("guest week limit exceeded")
         if len(_canonical_bytes(state)) > self.max_state_bytes:
             raise GuestCapacityError("guest state exceeds the snapshot size limit")
+        from nicegui_app.services.guest_policy import validate_policy_state
+        validate_policy_state(state)
 
     def _consume_command_budget(self, session: _SessionRecord, current: int) -> None:
         while session.command_times and session.command_times[0] <= current - 60:
@@ -824,6 +876,7 @@ class GuestWorkspaceRegistry:
             state=deepcopy(view.state),
             replayed=view.replayed,
             applied_revision=view.applied_revision,
+            policy_result_reference=view.policy_result_reference,
         )
 
     def _now(self, now: int | None) -> int:

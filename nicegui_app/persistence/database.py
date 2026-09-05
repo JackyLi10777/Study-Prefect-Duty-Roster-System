@@ -16,6 +16,37 @@ from sqlalchemy.orm import Session, sessionmaker
 from nicegui_app.config import DEFAULT_DATABASE_PATH, PROJECT_ROOT, SQLITE_BUSY_TIMEOUT_MS
 from nicegui_app.persistence.models import Base
 from nicegui_app.persistence.sql_diagnostics import install_sql_diagnostics
+from roster_policy.configurable import ConfigurationError
+from roster_policy.policy_codec import decode_weekly_policy, encode_weekly_policy
+
+
+def policy_storage_is_valid(connection: sqlite3.Connection) -> bool:
+    """Validate canonical history and its pointers within the caller's snapshot.
+
+    Empty policy tables are valid before the first school year is initialized.
+    No defaulting, repair, schema creation or policy-data migration occurs here.
+    """
+    try:
+        current = {}
+        for year, revision in connection.execute("SELECT year_start,revision FROM school_year_policy_current"):
+            if (type(year) is not int or not 1 <= year <= 9998 or year in current
+                    or type(revision) is not int or not 1 <= revision <= 2**63 - 1):
+                return False
+            current[year] = revision
+        history = {}
+        for year, revision, document in connection.execute(
+            "SELECT year_start,revision,document FROM school_year_policy_revisions ORDER BY year_start,revision"
+        ):
+            if (type(year) is not int or not 1 <= year <= 9998
+                    or type(revision) is not int or revision != history.get(year, 0) + 1
+                    or revision > 2**63 - 1 or type(document) is not str):
+                return False
+            if encode_weekly_policy(decode_weekly_policy(document)) != document:
+                return False
+            history[year] = revision
+        return history == current
+    except (ConfigurationError, sqlite3.Error):
+        return False
 
 
 def _fairness_is_reconciled(connection: sqlite3.Connection) -> bool:
@@ -71,6 +102,7 @@ def database_readiness(database_path: Path) -> str:
             timeout=SQLITE_BUSY_TIMEOUT_MS / 1_000,
         )
         try:
+            connection.execute("BEGIN DEFERRED")
             integrity = connection.execute("PRAGMA quick_check").fetchone()
             if not integrity or integrity[0] != "ok":
                 return "failed"
@@ -88,6 +120,8 @@ def database_readiness(database_path: Path) -> str:
                 return "migration_pending"
             if not _fairness_is_reconciled(connection):
                 return "fairness_unreconciled"
+            if not policy_storage_is_valid(connection):
+                return "policy_invalid"
         finally:
             connection.close()
     except sqlite3.Error:
