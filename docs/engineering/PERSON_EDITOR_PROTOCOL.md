@@ -4,6 +4,12 @@ The directory mounts at most 20 read-only cards and creates one editor only when
 a person is selected. The current prefect adapter owns editable field/role
 rules; `PersonEditorState` does not know about posts, rooms, or roster policy.
 
+Search remains visible alongside the number of non-default filters and a clear
+action. The four filter/sort controls are not created until the shared Quasar
+filter sheet is first opened, then retain their server-side control identities.
+Clear resets those four conditions in one result refresh; it preserves search,
+buffered person changes, optimistic versions, and the existing save command.
+
 The editor uses existing Quasar fields inside a native modal `dialog`.
 `showModal()` / `close()` retain the input DOM, unlike a closed Quasar portal.
 Role-specific fields use `v-show`; the six-option weekday picker is native so it
@@ -28,6 +34,9 @@ request a final snapshot and never directly close the editor.
   workflow errors, and Guest workspace isolation remain authoritative.
 - Full edit captures its target before awaiting a buffered save. A failed save
   or conflict keeps the user on the directory and restores search focus.
+- Archive captures the target and the directory's reviewed version after its
+  save barrier. Only an acknowledged save or explicit conflict resolution may
+  advance that version; fetching the latest database row is not a review.
 - Finalized bindings are cleared on the server so remounting a tab cannot reopen
   an old person. Changing people within the directory reuses controls.
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Mapping
+from dataclasses import dataclass
 from datetime import date
 import hashlib
 import inspect
@@ -37,6 +38,7 @@ from nicegui_app.ui.edit_sessions import (
     PrefectEditSession,
     filter_prefect_directory,
 )
+from nicegui_app.ui.components import dialog as semantic_dialog
 from nicegui_app.ui.person_editor import PersonEditor
 from nicegui_app.ui.person_editor_state import EditorSnapshotRejected, PersonEditorState
 from nicegui_app.ui.prefect_editor_adapter import (
@@ -759,12 +761,28 @@ def _render_fairness_panel(workflow) -> None:  # type: ignore[no-untyped-def]
     display_report(workflow.build_period_report())
 
 
+_PREFECT_FILTER_DEFAULTS = {"form": "all", "role": "all", "support": "all", "sort": "name_asc"}
+
+
+def _prefect_active_filter_count(filters: PrefectDirectoryFilter) -> int:
+    """Search is a separate persistent control, not one of the four sheet filters."""
+    return sum(getattr(filters, key) != default for key, default in _PREFECT_FILTER_DEFAULTS.items())
+
+
+@dataclass(frozen=True)
+class PrefectDirectoryGuard:
+    """Expose only the page's save barrier and reviewed versions to other actions."""
+
+    flush: Callable[[], Awaitable[bool]]
+    reviewed_version: Callable[[str], int]
+
+
 def _render_inline_prefect_directory(
     workflow: object,
     prefects: list[dict[str, object]],
     *,
     on_full_edit: Callable[[dict[str, object]], None],
-) -> Callable[[], Awaitable[bool]]:
+) -> PrefectDirectoryGuard:
     """Render bounded read-only results and one lazy, generation-bound editor."""
 
     edit_session = PrefectEditSession.from_rows(prefects)
@@ -772,6 +790,9 @@ def _render_inline_prefect_directory(
     editor_ref: dict[str, PersonEditor] = {}
     open_snapshot: dict[str, object] = {}
     status_refs: dict[str, object] = {}
+    filter_controls: dict[str, object] = {}
+    filter_state: dict[str, object] = {"dialog": None, "syncing": False}
+    filter_summary_refs: dict[str, object] = {}
     day_options = {day.name: day_label(day) for day in SchoolDay}
     last_pending_count = -1
 
@@ -793,10 +814,31 @@ def _render_inline_prefect_directory(
 
     editor_state = PersonEditorState(stage_snapshot, validate_prefect_editor_values)
 
+    def update_filter_summary() -> None:
+        count = _prefect_active_filter_count(edit_session.filters)
+        filter_summary_refs["summary"].set_text(t("prefect_filter_active_count", count=count))
+        filter_summary_refs["clear"].set_enabled(count > 0)
+
     def update_filter(key: str, value: object) -> None:
+        if filter_state["syncing"]:
+            return
         edit_session.update_filter(key, value)
         page_state["offset"] = 0
         directory_rows.refresh()
+        update_filter_summary()
+
+    def clear_filters() -> None:
+        filter_state["syncing"] = True
+        try:
+            for key, value in _PREFECT_FILTER_DEFAULTS.items():
+                edit_session.update_filter(key, value)
+                if key in filter_controls:
+                    filter_controls[key].set_value(value)
+        finally:
+            filter_state["syncing"] = False
+        page_state["offset"] = 0
+        directory_rows.refresh()
+        update_filter_summary()
 
     def discard_conflicted_row(prefect_id: str) -> None:
         if edit_session.discard_conflict(prefect_id):
@@ -928,17 +970,19 @@ def _render_inline_prefect_directory(
         with ui.column().classes("w-full gap-2").props('data-testid="prefect-inline-directory"'):
             for item in shown:
                 prefect_id = str(item["id"])
-                with ui.element("article").classes("w-full p-3 border-b").props(
+                with ui.element("article").classes("w-full p-3 border-b").style(
+                    "min-width:0;max-width:100%;overflow-wrap:anywhere"
+                ).props(
                     f'data-prefect-id="{attr(prefect_id)}"'
                 ):
-                    with ui.row().classes("w-full justify-between items-center gap-2"):
-                        with ui.column().classes("gap-0"):
+                    with ui.row().classes("w-full justify-between items-center gap-2").style("min-width:0"):
+                        with ui.column().classes("gap-0").style("flex:1 1 10rem;min-width:0;max-width:100%"):
                             ui.label(str(item["nameZh"])).classes("font-semibold")
                             ui.label(f"{item['form']} {item['className']} · {role_label(str(item['roleCode']))}")
                         ui.button(t("edit_prefect"), icon="edit",
                                   on_click=lambda pid=prefect_id: open_editor(pid)).props(
                             f'outline color=primary data-testid="edit-prefect-{attr(prefect_id)}"'
-                        ).style("min-height:44px")
+                        ).style("min-height:44px;max-width:100%")
                     if prefect_id in edit_session.pending:
                         _tone_badge(t("prefect_inline_unsaved"), "attention")
                     if prefect_id in edit_session.conflicts:
@@ -964,18 +1008,18 @@ def _render_inline_prefect_directory(
                 previous.set_enabled(offset > 0)
                 following.set_enabled(offset + 20 < len(visible))
 
-    editor_host = ui.column().classes("w-full gap-0")
-    with ui.column().classes("w-full gap-3 mb-4"):
-        ui.input(label=t("prefect_search"), placeholder=t("prefect_search_hint")).props(
-            "clearable debounce=180 data-testid=prefect-directory-search"
-        ).classes("w-full").style("font-size:16px").on_value_change(
-            lambda event: update_filter("query", event.value)
-        )
-        with ui.expansion(t("prefect_filter_options"), icon="filter_list").classes("w-full"):
-            for key, label, choices, default in (
-                ("form", "prefect_filter_form", {"all": t("all"), **{form: form for form in ("F.3", "F.4", "F.5", "F.6")}}, "all"),
-                ("role", "prefect_filter_role", {"all": t("all"), "assistant_head": role_label("assistant_head"), "study_prefect": role_label("study_prefect")}, "all"),
-                ("support", "prefect_filter_support", {"all": t("all"), "needs_mentoring": t("needs_mentoring"), "new": t("new_prefect")}, "all"),
+    def open_filter_sheet() -> None:
+        if filter_state["dialog"] is not None:
+            filter_state["dialog"].open()
+            return
+        with semantic_dialog(
+            title=t("prefect_filter_options"), description=t("prefect_filter_sheet_detail"),
+            test_id="prefect-filter-sheet",
+        ) as filter_dialog:
+            for key, label, choices in (
+                ("form", "prefect_filter_form", {"all": t("all"), **{form: form for form in ("F.3", "F.4", "F.5", "F.6")}}),
+                ("role", "prefect_filter_role", {"all": t("all"), "assistant_head": role_label("assistant_head"), "study_prefect": role_label("study_prefect")}),
+                ("support", "prefect_filter_support", {"all": t("all"), "needs_mentoring": t("needs_mentoring"), "new": t("new_prefect")}),
                 ("sort", "prefect_sort", {
                     "name_asc": t("sort_name_asc"), "name_desc": t("sort_name_desc"),
                     "grade_asc": t("sort_grade_asc"), "grade_desc": t("sort_grade_desc"),
@@ -983,11 +1027,38 @@ def _render_inline_prefect_directory(
                     "weight_asc": t("sort_weight_asc"), "weight_desc": t("sort_weight_desc"),
                     "duties_asc": t("sort_duties_asc"), "duties_desc": t("sort_duties_desc"),
                     "created_asc": t("sort_created_asc"), "created_desc": t("sort_created_desc"),
-                }, "name_asc"),
+                }),
             ):
-                ui.select(label=t(label), options=choices, value=default).classes("w-full").on_value_change(
+                control = ui.select(label=t(label), options=choices, value=getattr(edit_session.filters, key)).classes("w-full").props(f"data-testid=prefect-filter-{key}").on_value_change(
                     lambda event, filter_key=key: update_filter(filter_key, event.value)
                 )
+                filter_controls[key] = control
+            ui.button(t("prefect_editor_done"), icon="done", on_click=filter_dialog.close).props(
+                "color=primary data-testid=close-prefect-filters"
+            )
+        filter_dialog.props(f'position=bottom aria-modal=true aria-label="{attr(t("prefect_filter_options"))}"')
+        filter_state["dialog"] = filter_dialog
+        filter_dialog.open()
+
+    editor_host = ui.column().classes("w-full gap-0")
+    with ui.column().classes("w-full gap-3 mb-4"):
+        ui.input(label=t("prefect_search"), placeholder=t("prefect_search_hint")).props(
+            "clearable debounce=180 data-testid=prefect-directory-search"
+        ).classes("w-full").style("font-size:16px").on_value_change(
+            lambda event: update_filter("query", event.value)
+        )
+        with ui.row().classes("w-full items-center gap-2 flex-wrap"):
+            ui.button(t("prefect_filter_options"), icon="filter_list", on_click=open_filter_sheet).props(
+                "outline data-testid=open-prefect-filters"
+            ).style("min-height:44px;max-width:100%")
+            filter_summary_refs["summary"] = ui.label("").props(
+                "role=status aria-live=polite data-testid=prefect-filter-summary"
+            )
+            filter_summary_refs["clear"] = ui.button(t("prefect_filter_clear"), icon="filter_alt_off",
+                                                     on_click=clear_filters).props(
+                "flat data-testid=clear-prefect-filters"
+            ).style("min-height:44px;max-width:100%")
+        update_filter_summary()
         with ui.row().classes("w-full items-center justify-between gap-3").props("data-testid=prefect-save-dock"):
             status_refs["label"] = ui.label("").props("role=status aria-live=polite")
             status_refs["save"] = ui.button(t("prefect_inline_save_all"), icon="save",
@@ -996,17 +1067,20 @@ def _render_inline_prefect_directory(
             )
         update_pending_status()
     directory_rows()
-    return flush_pending_prefect_rows
+    return PrefectDirectoryGuard(
+        flush=flush_pending_prefect_rows,
+        reviewed_version=lambda prefect_id: int(edit_session.originals[prefect_id]["version"]),
+    )
 
 
 @ui.page("/prefects")
 def prefects_page() -> None:
     workflow = get_workflow()
-    pending_guard: dict[str, Callable[[], Awaitable[bool]]] = {}
+    pending_guard: dict[str, PrefectDirectoryGuard] = {}
 
     async def flush_directory() -> bool:
-        flush = pending_guard.get("flush")
-        return await flush() if flush is not None else True
+        guard = pending_guard.get("directory")
+        return await guard.flush() if guard is not None else True
 
     async def add_prefect() -> None:
         if await flush_directory():
@@ -1048,13 +1122,16 @@ def prefects_page() -> None:
                                 on_click=lambda: tabs.set_value("ai_import"),
                             ).props("outline color=primary data-testid=empty-open-import")
                 options = {item["id"]: f"{item['nameZh']} ({item['form']} {item['className']})" for item in prefects}
-                prefect_versions = {str(item["id"]): int(item["version"]) for item in prefects}
-                archive_command_state: dict[str, str | None] = {"value": None, "person_id": None}
+                archive_command_state: dict[str, str | int | None] = {
+                    "value": None, "person_id": None, "expected_version": None,
+                }
                 directory_actions_classes = "sy-directory-actions w-full items-end gap-3 flex-wrap mb-4"
                 if not prefects:
                     directory_actions_classes += " hidden"
                 with ui.row().classes(directory_actions_classes):
-                    selected = ui.select(label=t("select_prefect"), options=options, value=next(iter(options), None)).classes("sy-directory-selector min-w-[300px]")
+                    selected = ui.select(label=t("select_prefect"), options=options, value=next(iter(options), None)).classes(
+                        "sy-directory-selector"
+                    ).style("flex:1 1 18rem;min-width:0;max-width:100%")
 
                     async def edit_selected() -> None:
                         prefect_id = str(selected.value or "")
@@ -1067,7 +1144,9 @@ def prefects_page() -> None:
 
                         async def confirm_archive_selected() -> None:
                             prefect_id = archive_command_state["person_id"]
-                            if not prefect_id:
+                            expected_version = archive_command_state["expected_version"]
+                            command_id = archive_command_state["value"]
+                            if not prefect_id or type(expected_version) is not int or not command_id:
                                 archive_dialog.close()
                                 ui.notify(t("operation_error"), type="negative")
                                 return
@@ -1075,8 +1154,8 @@ def prefects_page() -> None:
                             result = await _run_with_progress(
                                 lambda: workflow.archive_prefect(
                                     prefect_id,
-                                    expected_version=prefect_versions[prefect_id],
-                                    command_id=str(archive_command_state["value"]),
+                                    expected_version=expected_version,
+                                    command_id=str(command_id),
                                 ),
                                 title_key="progress_prefect_archive_title",
                                 working_key="progress_prefect_archive_working",
@@ -1104,7 +1183,9 @@ def prefects_page() -> None:
                             return
                         if not await flush_directory():
                             return
-                        prefect_versions[prefect_id] = int(workflow.prefect(prefect_id)["version"])
+                        # A database refresh is not a review. Only the row this page
+                        # displayed or successfully saved may authorize the archive.
+                        archive_command_state["expected_version"] = pending_guard["directory"].reviewed_version(prefect_id)
                         archive_command_state["person_id"] = prefect_id
                         archive_command_state["value"] = f"prefect-archive-ui:{uuid4().hex}"
                         archive_dialog.open()
@@ -1118,7 +1199,7 @@ def prefects_page() -> None:
                         edit_button.disable()
                         archive_button.disable()
                 if prefects:
-                    pending_guard["flush"] = _render_inline_prefect_directory(
+                    pending_guard["directory"] = _render_inline_prefect_directory(
                         workflow,
                         prefects,
                         on_full_edit=_show_prefect_dialog,
