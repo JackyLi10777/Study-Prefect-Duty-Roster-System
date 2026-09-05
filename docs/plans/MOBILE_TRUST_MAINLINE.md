@@ -77,3 +77,23 @@ Legacy full-reference browser scenarios now explicitly assert empty first-use
 content and open the required sections before their content checks. Permanent
 Guest readiness selectors no longer wait for hidden detail content. This is not
 generic readiness prewarming and must not be used as cold performance evidence.
+
+## Independent review corrections
+
+After normal synchronization with protected main `33022c9`, independent review
+identified two regressions: the original `engineering-evidence-title` and
+`developer-reference-title` heading fragments no longer revealed first-use
+content, and the Engineering report completion date was absent from the page.
+Fourteen new regression cases failed before the corrections. Both headings now
+have explicit source-owned navigation registrations; the initial summary shows
+the same snapshot's date, or an explicit bilingual unavailable value. No current
+time is substituted. The selected suite now passes 123 cases.
+
+`scripts/verify_mobile_trust.py` is a separate isolated Chromium diagnostic for
+local-maintenance and Guest contexts. It checks cold unmounted content and
+unrequested attribution images, eight reflow sizes, explicit first mounts,
+retained 20-cycle growth and focus, filter/table retention, initial original
+heading links/history and unknown-fragment non-transmission. Cold and retained
+measurements remain separate; the existing growth budgets are unchanged.
+This diagnostic is not the full release matrix. Browser findings remain open
+until a clean exact-source run passes; prior failing artifacts are retained.
