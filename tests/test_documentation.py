@@ -28,6 +28,24 @@ CURRENT_WORKER_SOURCE_CHANGED = CURRENT_RELEASE_STATE["worker"][
 CURRENT_STATUS_START = "<!-- SING_YIN_CURRENT_STATUS:START -->"
 CURRENT_STATUS_END = "<!-- SING_YIN_CURRENT_STATUS:END -->"
 
+
+def test_prelaunch_governance_uses_direct_main_and_separates_release_evidence() -> None:
+    for filename in ("BRANCH_STRATEGY.md", "AI_AGENT_GIT_GUIDE.md"):
+        document = (PROJECT_ROOT / "docs" / filename).read_text(encoding="utf-8")
+        assert "origin/main" in document
+        assert "--staged" in document and "--release" in document
+        assert "codex/mainline" in document  # explicit historical reference
+        assert "origin/codex/mainline" not in document
+        assert "--base codex/mainline" not in document
+    plan = (PROJECT_ROOT / "docs/plans/20260905-system-integration.md").read_text(encoding="utf-8")
+    assert "全新空庫" in plan
+    assert "取消歷史回填" in plan
+    assert "已編排服務時數" in plan
+    tracker = (PROJECT_ROOT / "docs/plans/PRELAUNCH_DELIVERY.md").read_text(encoding="utf-8")
+    identifiers = re.findall(r"^\| ([A-Z]+-\d+) \|", tracker, re.MULTILINE)
+    assert len(identifiers) >= 25
+    assert len(identifiers) == len(set(identifiers))
+
 from tests.ui_source import combined_i18n_source, combined_page_source
 
 

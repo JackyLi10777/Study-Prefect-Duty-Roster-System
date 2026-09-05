@@ -1,76 +1,63 @@
 # Repository branches / 版本分支
 
-This repository keeps deployment generations visible instead of rewriting the
-legacy Streamlit history.
+## Current workflow
 
-## Active branches
+`main` is the sole active integration and release line. Start each task from
+the latest `origin/main`, use an isolated worktree and a `codex/<task>` branch,
+and submit its pull request directly to `main`. One writable worktree has one
+owner. Preserve existing uncommitted work; do not reuse a dirty checkout.
 
-| Branch | Role | Operator |
-|---|---|---|
-| `main` | Protected release line | **Codex only** (via PR merge) |
-| `codex/mainline` | Protected Codex integration line (tracks `main`) | Codex merges reviewed PRs |
-| `collab/agent-workspace` | Clean synchronization baseline only | Codex maintains; agents do not develop here |
-| `collab/<agent>/<task>` | One isolated auxiliary-agent task | One agent → PR to `codex/mainline` |
-| `nicegui-self-hosted` | Platform snapshot at release | Codex |
-| `streamlit-cloud` | Historical Streamlit reference | Read-only |
-
-## Worktree layout
-
-| Local path | Branch |
+| Branch | Role |
 |---|---|
-| `D:\code_v3` | one task-scoped `codex/<task>` based on `codex/mainline` |
-| `D:\code_v3-agent` | one assigned `collab/<agent>/<task>` at a time |
+| `main` | Protected integration line; no direct or force pushes |
+| `codex/<task>` | Isolated implementation or review; PR to `main` |
+| `codex/mainline` | Historical integration line; not a new base or PR target |
+| `collab/agent-workspace`, `collab/*` | Historical collaboration references; preserve existing work |
+| `nicegui-self-hosted` | Matching platform release snapshot |
+| `streamlit-cloud` | Read-only historical Streamlit reference |
 
-AI agents must follow [`docs/AI_AGENT_GIT_GUIDE.md`](AI_AGENT_GIT_GUIDE.md) for
-commit conventions, branch rules, and the PR workflow.
+Full task rules are in [AI Agent Git Guide](AI_AGENT_GIT_GUIDE.md).
+These documentation changes do not change remote protection rules.
 
-## Rules
+## Source and integration rules
 
-- `main` is the current source of truth. It accepts changes through a pull
-  request with successful `test-and-audit` and `analyze` checks; force pushes,
-  deletion and unresolved conversations are blocked for administrators too.
-- While the repository has one human maintainer, the pull-request rule requires
-  zero approvals so the owner is not deadlocked by GitHub's self-approval rule.
-  Add one required approval and CODEOWNERS review before granting a second human
-  or automation account write access.
-- `codex/mainline` is the protected integration queue. Auxiliary agents start
-  from it, submit task-scoped `collab/<agent>/<task>` pull requests, and never
-  share one writable branch or worktree. The baseline
-  `collab/agent-workspace` is protected too and is not an integration
-  destination.
-- `nicegui-self-hosted` records the matching platform edition. Future
-  deployment-only changes may be developed there and merged back to `main`.
-- `streamlit-cloud` is retained for historical comparison and recovery. Do not
-  copy its UI-owned policy logic into the NiceGUI runtime.
-- Never force-push a published branch; GitHub protection enforces this on
-  `main`. Preserve old commits through normal
-  descendants, tags, or an explicitly named archival branch.
-- GitHub Actions requires immutable full-SHA action references. The active
-  `Protect immutable release tags` repository ruleset allows a new `v*` tag to
-  be created after the release gates pass, then blocks updating or deleting
-  that tag. Changing this rule is a security-sensitive repository operation.
-- Runtime credentials, Cloudflare tokens, session secrets, dependency caches,
-  and temporary build directories are not repository artifacts.
+- Fetch before creating a task branch; record its base SHA.
+- Review explicit paths and commit by concern. Never stage an unreviewed
+  `git add -A` or `git add .`.
+- Integrate completed peer work from an immutable SHA and a reviewed functional
+  difference. Do not cherry-pick stale giant patches or overwrite whole modules
+  to resolve competing implementations.
+- Shared changes with the same Git tree are one source, not two independent
+  implementations. Preserve the accepted behavior tests from both sources.
+- If main advances, synchronize by a normal reviewed merge and revalidate.
+  Never rebase or amend already shared history.
+- Keep credentials, runtime databases, logs and unapproved data out of commits.
+- Preserve immutable release tags and historical evidence; never force-push,
+  delete remote branches, or move a release tag as a cleanup shortcut.
+- `nicegui-self-hosted` is not a second implementation line. Update it only
+  when it represents the matching verified platform release.
 
-## Release sequence
+## Verification and release sequence
 
-1. Run `python -X utf8 scripts/verify_update.py`. It classifies the committed
-   change and runs the smallest safe profile; unknown paths fail closed.
-2. If the plan reports a formal runtime release, confirm
-   `logs/release-candidate-report.json` reports all gates passed for the current
-   runtime fingerprint. Do not rerun hygiene or security separately because
-   the formal verifier already owns those gates.
-3. Build the public fictional-data/evidence archive with
-   `python -X utf8 scripts/build_public_archive.py`.
-4. Review staged paths; never use an unreviewed `git add -A`.
-5. Push a topic branch, open a pull request, and wait for `test-and-audit` plus
-   `analyze`. `analyze` covers both the Python application and the Worker
-   JavaScript／TypeScript boundary. Resolve every review conversation before
-   merge.
-6. Merge without force. Update `nicegui-self-hosted` only for a matching
-   platform release after the protected `main` commit and immutable tag agree.
+1. Review and stage intended changes. Run
+   `python -X utf8 scripts/verify_update.py --staged`.
+   This is pre-push verification, not a release drill.
+2. Push the task branch and open a PR directly to `main`. Require
+   `test-and-audit`, `analyze` and every applicable required check; resolve
+   review conversations before merge. Do not use an administrator bypass.
+3. After merge, create a clean release checkout at that exact protected-main
+   commit and run `python -X utf8 scripts/verify_update.py --release`.
+   Bind all evidence to that source; a branch report cannot certify the merge.
+4. Reconcile host, database, verified backup and Worker state before deployment.
+   Use the immutable bundle and controlled recovery workflow, never a code-only
+   rollback across incompatible schemas.
+5. Update the generated current-release state only after observed deployment.
+   CI, a merge, HTTP 200 and a running host do not prove formal school adoption.
 
-The live permission contract and incident recovery path are owned by
-[`SECURITY_AND_PRIVACY.md`](SECURITY_AND_PRIVACY.md). `CODEOWNERS` routes review;
-it does not replace status checks, protected branches, least-privilege tokens,
-verified backups, or immutable release evidence.
+The school has not formally adopted the system. The approved
+[prelaunch plan](plans/20260905-system-integration.md) uses a new formal database
+and separate fictional test data; historical host release records remain
+evidence of their observed technical deployment only.
+
+The [security and privacy contract](SECURITY_AND_PRIVACY.md), immutable Actions
+references, protected main and verified recovery obligations remain in force.
