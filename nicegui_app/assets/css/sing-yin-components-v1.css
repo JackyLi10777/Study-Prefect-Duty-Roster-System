@@ -144,6 +144,81 @@
   border-radius: 22px 22px 0 0;
 }
 
+.sy-native-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.sy-native-action {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border: 1px solid color-mix(in srgb, var(--sy-teal) 54%, var(--sy-line));
+  border-radius: 12px;
+  color: var(--sy-teal);
+  background: var(--sy-surface);
+  font: inherit;
+  font-weight: 680;
+  line-height: 1.35;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.sy-native-action--primary {
+  border-color: var(--sy-teal);
+  color: white;
+  background: var(--sy-teal);
+}
+
+.sy-native-action:focus-visible,
+.sy-native-select:focus-visible,
+.sy-native-check:has(input:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--sy-teal) 36%, transparent);
+  outline-offset: 2px;
+}
+
+.sy-native-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--sy-line);
+  border-radius: 12px;
+  color: var(--sy-ink);
+  background: var(--sy-surface);
+  font: inherit;
+  font-size: 16px;
+}
+
+.sy-native-check {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  color: var(--sy-ink);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.sy-native-check input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--sy-teal);
+}
+
+.sy-native-export-core,
+.sy-native-export-advanced {
+  display: grid;
+  gap: 10px;
+}
+
+.sy-native-dialog-footer {
+  justify-content: flex-end;
+}
+
 .sy-choice-chips .q-checkbox,
 .sy-choice-chips .q-btn {
   min-height: 44px;

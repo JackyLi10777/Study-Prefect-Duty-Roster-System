@@ -90,6 +90,20 @@ def test_document_normalizes_week_dates_and_freezes_policy_times(monkeypatch):
     assert document.presentation.rows[1].spec.service_time == ("15:40", "17:00")
 
 
+def test_export_session_invalidates_before_ticket_when_week_is_withdrawn():
+    from nicegui_app.services.roster_export_session import RosterExportSession
+
+    source = Source()
+    session = RosterExportSession()
+    session.open()
+    assert session.complete(session.begin(), capture_roster_document(source, 42))
+    assert session.validate_revision(source.week)
+    source.week["status"] = "withdrawn"
+    assert not session.validate_revision(source.week)
+    assert session.phase == "stale"
+    assert session.document is None
+
+
 def test_boolean_revision_is_not_silently_rendered_as_version_one():
     source = Source()
     source.week["version"] = True

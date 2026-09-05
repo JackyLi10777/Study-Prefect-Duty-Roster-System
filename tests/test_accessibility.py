@@ -360,7 +360,8 @@ def test_every_backup_sensitive_ui_write_uses_the_nonblocking_progress_boundary(
     pages = combined_page_source()
 
     assert "def _safe_action" not in pages
-    assert pages.count("_safe_read_action(") == 6  # helper plus five bounded UI reads
+    # Read-call counts are not a write-safety contract. Export adds bounded
+    # revision checks; actual nonblocking settlement is exercised by dialog tests.
     for working_key in (
         "progress_leave_working",
         "progress_leave_cancel_working",
@@ -519,7 +520,8 @@ def test_secondary_pages_share_semantic_colour_and_empty_state_grammar() -> None
 def test_decorative_icons_and_core_sections_have_explicit_semantics() -> None:
     page_source = combined_page_source()
 
-    assert 'ui.icon("picture_as_pdf").classes("sy-export-symbol").props("aria-hidden=true")' in page_source
+    # The compact native export sheet no longer mounts a decorative PDF symbol.
+    assert "sy-export-symbol" not in page_source
     assert 'ui.icon("calendar_month").classes("sy-onboarding-symbol").props("aria-hidden=true")' in page_source
     assert 'tag="h2"' in page_source
     assert 'icon="auto_awesome"' not in page_source

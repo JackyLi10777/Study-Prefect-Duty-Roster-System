@@ -197,7 +197,11 @@ def test_runtime_created_dialogs_register_cleanup_but_reusable_archive_dialog_do
     archive = people.split("with ui.dialog() as archive_dialog", 1)[1].split("def archive_selected", 1)[0]
 
     assert "_delete_dialog_after_close(dialog, lifetime_owner=progress_owner)" in progress
-    assert "_delete_dialog_after_close(dialog)" in export
+    # Export now reuses a page-owned native shell, but releases all payloads.
+    assert "def release_export_dialog_resources()" in export
+    assert "_clear_png_delivery_view(png_delivery_view[0])" in export
+    assert 'dialog.on("close", lambda _event: finish_export_dialog_close())' in export
+    assert "_delete_dialog_after_close(dialog)" not in export
     assert "_delete_dialog_after_close(dialog)" in prefect
     assert "_delete_dialog_after_close(archive_dialog)" not in archive
 
@@ -279,6 +283,56 @@ def test_progress_cancellation_keeps_claim_until_worker_task_settles(monkeypatch
             if OPERATION_LOCK_KEY not in state:
                 break
         assert OPERATION_LOCK_KEY not in state
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("cancel", [False, True])
+def test_inline_export_progress_has_no_portal_or_late_sound_and_keeps_claim(monkeypatch, cancel):
+    async def scenario():
+        state = {}
+        started, finish = asyncio.Event(), asyncio.Event()
+        active = [True]
+        messages, sounds = [], []
+
+        async def io_bound(_action):
+            started.set()
+            await finish.wait()
+            raise RuntimeError("fictional render failed")
+
+        _stub_progress_dependencies(monkeypatch, state=state,
+                                    ui_double=_ProgressUi(fail_dialog=True), io_bound=io_bound)
+        monkeypatch.setattr(page_shared, "emit_interface_feedback", lambda *args: sounds.append(args))
+        monkeypatch.setattr(page_shared, "play_interface_sound", lambda *args: sounds.append(args))
+
+        def notify(message, **options):
+            if active[0]:
+                messages.append((message, options["type"]))
+
+        feedback = page_shared._ExportFeedback(notify, page_shared.DownloadFailureTarget("c1", "2"))
+        caller = asyncio.create_task(page_shared._run_with_progress(
+            lambda: None, title_key="title", working_key="export", icon="image",
+            success_feedback=False, feedback=feedback,
+        ))
+        await started.wait()
+        assert messages and messages[-1][1] == "ongoing"
+        active[0] = False  # close/reopen has invalidated this request's sink
+        before = list(messages)
+        if cancel:
+            caller.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await caller
+        assert state[OPERATION_LOCK_KEY] == "export"
+        finish.set()
+        if not cancel:
+            assert await caller is page_shared._OPERATION_FAILED
+        for _ in range(10):
+            await asyncio.sleep(0)
+            if OPERATION_LOCK_KEY not in state:
+                break
+        assert OPERATION_LOCK_KEY not in state
+        assert messages == before
+        assert not sounds
 
     asyncio.run(scenario())
 
