@@ -47,7 +47,7 @@ def _check(page, base, case, mode, results, persist):
         if content_id:
             expect(page.get_by_test_id(content_id)).to_have_count(0)
         else:
-            expect(panel.get_by_test_id(panel_id + "-content").locator(".nicegui-label")).to_have_count(0)
+            expect(panel.get_by_test_id(panel_id + "-content").locator(":scope > *")).to_have_count(0)
         _fit(page)
         page.screenshot(path=str(case / (route[1:] + "-initial.png")))
         session = page.context.new_cdp_session(page)
@@ -77,7 +77,7 @@ def _check(page, base, case, mode, results, persist):
     pdf = page.get_by_test_id("guide-answer-guide-issue-pdf")
     expect(_header(pdf)).to_have_attribute("aria-expanded", "true")
     expect(_header(pdf)).to_be_focused()
-    text = pdf.get_by_test_id("guide-answer-guide-issue-pdf-content").locator(".nicegui-label").first.inner_text()
+    text = pdf.get_by_test_id("guide-answer-guide-issue-pdf-content").locator(":scope > *").first.inner_text()
     search = page.get_by_test_id("guide-search")
     search.fill(text)
     expect(page.get_by_test_id("guide-answer-guide-week-start")).to_be_hidden()
@@ -90,6 +90,10 @@ def _check(page, base, case, mode, results, persist):
     expect(_header(first_answer)).to_be_focused()
     expect(_header(first_answer)).to_have_attribute("aria-expanded", "true")
     expect(search).to_have_value("unmatched-fictional-d3-query")
+    history_length = page.evaluate("history.length")
+    page.locator('[data-sy-toc-target="guide-week-start"]').click()
+    expect(_header(first_answer)).to_be_focused()
+    assert page.evaluate("history.length") == history_length, "Same anchor must not add history"
     page.go_back()
     expect(_header(pdf)).to_be_focused()
     page.go_forward()
@@ -97,6 +101,15 @@ def _check(page, base, case, mode, results, persist):
     search.fill("another-unmatched-d3-query")
     expect(first_answer).to_be_hidden()
     expect(page.get_by_test_id("guide-no-results")).to_be_visible()
+    page.goto(base + "/getting-started", wait_until="domcontentloaded")
+    _ready(page)
+    page.go_back()
+    _ready(page)
+    contents = page.get_by_test_id("reading-contents")
+    if _header(contents).get_attribute("aria-expanded") != "true":
+        _open(contents)
+    page.locator('[data-sy-toc-target="guide-before-publish"]').click()
+    expect(_header(page.get_by_test_id("guide-answer-guide-before-publish"))).to_be_focused()
     results.append({"scenario": "guide-search-hidden-content-deep-link-toc-history-focus", "mode": mode, "status": "pass"})
     persist()
 
