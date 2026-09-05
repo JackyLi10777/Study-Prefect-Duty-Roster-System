@@ -2,9 +2,19 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+
 
 class CommandIdentityError(ValueError):
     """An explicit command cannot identify a stable, storable user intent."""
+
+
+def operation_fingerprint(operation_type: str, payload: dict[str, object]) -> str:
+    """Preserve the existing receipt encoding without importing a SQL Adapter."""
+    encoded = json.dumps({"operationType": operation_type, "payload": payload},
+                         ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def normalize_command_id(value: object) -> str:

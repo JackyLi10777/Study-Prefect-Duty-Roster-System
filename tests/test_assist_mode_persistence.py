@@ -70,7 +70,7 @@ def test_0011_backfills_existing_weeks_and_enforces_stable_codes(tmp_path: Path)
     with sqlite3.connect(database_path) as connection:
         assert connection.execute(
             "SELECT version_num FROM alembic_version"
-        ).fetchone() == ("0015",)
+        ).fetchone() == ("0016",)
         assert connection.execute(
             "SELECT assist_assignment_mode FROM roster_weeks WHERE week_start = ?",
             (WEEK_START.isoformat(),),

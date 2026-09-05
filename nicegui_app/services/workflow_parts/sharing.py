@@ -102,6 +102,8 @@ class ExternalShareOutboxMixin:
     ) -> dict[str, object]:
         """Persist an exact delivery envelope before contacting the gateway."""
 
+        from nicegui_app.services.dated_draft_types import reject_dated_draft
+        reject_dated_draft(roster_week_id)
         operation_id = self._operation_command_id(_OUTBOX_OPERATION, command_id)
         if roster_week_id <= 0 or roster_version <= 0:
             raise WorkflowError("The public share roster reference is invalid.")

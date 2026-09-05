@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from roster_policy import is_room_open
-from roster_core.command_identity import CommandIdentityError, normalize_command_id
+from roster_core.command_identity import CommandIdentityError, normalize_command_id, operation_fingerprint
 
 from nicegui_app.services.workflow_dependencies import (
     Assignment,
@@ -137,14 +137,7 @@ class PersistenceWorkflowMixin:
 
     @staticmethod
     def _operation_fingerprint(operation_type: str, payload: dict[str, object]) -> str:
-        encoded = json.dumps(
-            {"operationType": operation_type, "payload": payload},
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-            default=str,
-        ).encode("utf-8")
-        return hashlib.sha256(encoded).hexdigest()
+        return operation_fingerprint(operation_type, payload)
 
     @staticmethod
     def _decode_operation_receipt(raw: str) -> dict[str, object]:
@@ -817,6 +810,8 @@ class PersistenceWorkflowMixin:
         return outputs
 
     def _week_or_error(self, session: Session, roster_week_id: int) -> RosterWeekRecord:
+        from nicegui_app.services.dated_draft_types import reject_dated_draft
+        reject_dated_draft(roster_week_id)
         week = session.get(RosterWeekRecord, roster_week_id)
         if week is None:
             raise WorkflowError("Roster week was not found.")
