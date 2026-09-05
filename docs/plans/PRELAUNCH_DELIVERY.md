@@ -8,12 +8,12 @@
 
 | 來源 | 固定提交／狀態 | 採納及禁止覆蓋項 |
 |---|---|---|
-| protected main | `c5ab76ed1ec5ee998749703f39906400d0c710c3` | 已有統一時間；新分支仍須即時 fetch |
+| protected main | `12d673225a28014f3c8d580ee2124cccf09c02de` | PR #122通過必要CI後合併；已有統一時間／auth／release guard；新分支仍須即時 fetch |
 | 手機／PNG final | `29ac083fd4d1e9a54854c8fe4436573d0c51fd5b`，2026-09-05 核對 clean | 安全PNG交付、匯入保存保護、原生sheet、調整後匯出owner、關閉候選清理及抽屜取消；逐項比對，不整檔套用 |
 | 效能／手機 overhaul | `ecdf7ae` 加未提交工作；尚無最終checkpoint | 等完成SHA；不能用移除PNG／分享橋／測試的版本覆蓋final；保留資產、首屏、名冊、gate改進的行為證據 |
-| 本任務 auth修正 | `cb5cccc`，本地驗證 | 背景不poll、返回驗證、到期與撤權、已清理runtime忽略晚到回應 |
-| 本任務 release guard | `f8dbc0f`，本地驗證 | 宣告／執行清單精確一致才pass；不代替整合新gate的部署器更新 |
-| 下載閒置回收 | 獨立 `codex/download-idle-expiry-20260905`，進行中 | 不依賴新schema；獨立review、測試和PR，不在來源工作樹直接修改 |
+| 本任務 auth修正 | `cb5cccc`，經PR #122合併為 `12d6732` | 背景不poll、返回驗證、到期與撤權、已清理runtime忽略晚到回應 |
+| 本任務 release guard | `f8dbc0f`，經PR #122合併為 `12d6732` | 宣告／執行清單精確一致才pass；不代替整合新gate的部署器更新 |
+| 下載閒置回收 | `2041310`，PR #123，本地驗證 | 完整六項驗證、75項Guest回歸及真實timer檢查通過；CI未完成前不合併；已正常merge最新main |
 
 `4dd134e` 與 `ecdf7ae` 的 tree 同為 `04b1af5b41df305a08a7ca2131bebdb2c83b810a`。
 這是共同底稿，不當作兩份功能重播。完整並行整合尚未完成。
@@ -25,10 +25,10 @@
 | ID | 階段 | 結果及責任／落點 | 狀態 | 關閉所需證據 |
 |---|---|---|---|---|
 | SRC-01 | A | 固定來源與按行為去重；本表 | 進行中 | 兩來源SHA及cleanliness、差異、測試和剩餘項；overhaul尚未固定 |
-| GOV-01 | A | direct-main工作流；Branch Strategy／AI Guide | 進行中 | 治理及文件測試、PR合併；pre-push與release不混用 |
+| GOV-01 | A | direct-main工作流；Branch Strategy／AI Guide | 已合併 | PR #122／12d6732；41項文件測試、治理及CI通過；pre-push與release不混用 |
 | TIME-01 | A | 全部普通時段15:40–17:00；roster_policy | 已合併 | main c5ab76e；tests/test_roster_policy.py；不等於正式學校啟用 |
-| AUTH-01 | B | 背景登入輪詢／晚到回應；shell | 本地驗證 | cb5cccc；26個Admin/Guest執行實際JS測試；尚待合併 |
-| REL-01 | B | 完成報告拒絕漏項／多項／錯序／失敗 | 本地驗證 | f8dbc0f；6個release完成情境；尚待合併 |
+| AUTH-01 | B | 背景登入輪詢／晚到回應；shell | 已合併 | PR #122／12d6732；26個Admin/Guest執行實際JS測試；未部署 |
+| REL-01 | B | 完成報告拒絕漏項／多項／錯序／失敗 | 已合併 | PR #122／12d6732；6個release完成情境；未部署 |
 | REL-02 | B | 資產／Public gate與reader／部署器一致 | 待實作 | 所有gate精確清單、完整執行、失敗注入與清理後可核驗證據 |
 | EDIT-01 | B | 局部編輯、候選清理、匯入dirty保護 | 進行中 | final來源功能；合併版重載、切日、匯入失敗、undo/redo瀏覽器測試 |
 | ADJUST-01 | B | 空缺恢復、版本／command_id、舊表單鎖定 | 待實作 | 發布→換人／空缺→恢復→撤回；服務分鐘及公平不重複 |
@@ -47,7 +47,7 @@
 | MOBILE-02 | E | 名冊／匯入／Audit | 進行中 | 搜尋全域完整、每批20、單人sheet、dirty不丟失、匯入原子提交 |
 | MOBILE-03 | E | Handover／Settings／Access／Support | 進行中 | 次級資訊延後，恢復確認不縮短，Admin持久／Guest暫存語義保留 |
 | MOBILE-04 | E | 內容頁／Viewer | 進行中 | 單列、延遲掛載、手機按日／打印全表、fragment安全 |
-| IDLE-01 | E | 無流量時過期下載釋放；guest_downloads | 進行中 | 單一one-shot timer、空時0timer、monotonic、取消競爭及capacity測試 |
+| IDLE-01 | E | 無流量時過期下載釋放；guest_downloads | 本地驗證 | 2041310／PR #123；16個新增情境、75項Guest回歸、完整驗證；真timer到期後0records/0timer/thread增量0；等待CI |
 | PERF-01 | E | 局部瀏覽器運算、GSAP、observer、靜態資產 | 進行中 | 不下載全名冊、本地預覽不作權威、音頻0B、無boot輪詢、hash cache |
 | PERF-02 | E | 全路由／核心操作／idle驗收 | 待實作 | 原預算、5次p75、>50ms操作窗口、20次生命週期、服務器/手機雙端量測 |
 | RELEASE-01 | F | exact-main完整release及不可變部署 | 待實作 | clean來源、所有gate、schema/backup/Worker對帳；有Worker變更才candidate |
