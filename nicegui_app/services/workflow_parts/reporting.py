@@ -30,6 +30,7 @@ from nicegui_app.services.workflow_dependencies import (
     Session,
     WorkflowError,
 )
+from nicegui_app.services.workflow_types import FairnessAuditSnapshot
 from roster_policy import DUTY_SERVICE_TIME_WINDOWS
 
 
@@ -57,6 +58,25 @@ def _duty_minutes(post_code: str) -> int:
 
 class ReportingWorkflowMixin:
     """Build explainable period reports without introducing a second ledger."""
+
+    def roster_fairness_audit_snapshot(self, roster_week_id: int) -> FairnessAuditSnapshot:
+        """Capture the audit's roster and cumulative ledger at one committed state."""
+        with self._session() as session:
+            # sqlite3 legacy transaction control does not BEGIN on SELECT.
+            # An explicit deferred transaction pins the WAL read snapshot while
+            # allowing publication/withdrawal to commit on another connection.
+            session.connection().exec_driver_sql("BEGIN DEFERRED")
+            week = self._week_or_error(session, roster_week_id)
+            return FairnessAuditSnapshot(
+                week=self._roster_week_output(
+                    week, self._closed_days(session, roster_week_id),
+                ),
+                active_assignment_count=sum(
+                    row.status == "active"
+                    for row in self._assignment_rows(session, roster_week_id)
+                ),
+                fairness_rows=tuple(self._fairness_rows(session)),
+            )
 
     def build_period_report(
         self,

@@ -35,6 +35,7 @@ from nicegui_app.services.workflow_types import (
     DraftPatchResult,
     DraftSlotStateEdit,
     DutyAllocationEntry,
+    FairnessAuditSnapshot,
     FairnessDiscrepancy,
     FairnessReconciliationReport,
     FairnessTrendPoint,
@@ -1617,6 +1618,23 @@ class GuestWorkspaceAdapter:
 
     def fairness_rows(self) -> list[dict[str, object]]:
         self._require_read()
+        return self._fairness_rows_from_state(self._state())
+
+    def roster_fairness_audit_snapshot(self, roster_week_id: int) -> FairnessAuditSnapshot:
+        """Project one registry-protected copy without retaining mutable guest state."""
+        self._require_read()
+        state = self._state()
+        week = self._week_record(state, roster_week_id)
+        return FairnessAuditSnapshot(
+            week=self._week_output(week),
+            active_assignment_count=sum(
+                row["status"] == "active" for row in self._sorted_assignments(week)
+            ),
+            fairness_rows=tuple(self._fairness_rows_from_state(state)),
+        )
+
+    @staticmethod
+    def _fairness_rows_from_state(state: Mapping[str, Any]) -> list[dict[str, object]]:
         rows = [
             {
                 "id": row["id"],
@@ -1626,7 +1644,7 @@ class GuestWorkspaceAdapter:
                 "historyWeight": float(row.get("historyWeight", 0.0)),
                 "historyDuties": int(row.get("historyDuties", 0)),
             }
-            for row in self._state().get("prefects", [])
+            for row in state.get("prefects", [])
             if row.get("active", True)
         ]
         return sorted(rows, key=lambda row: (float(row["historyWeight"]), str(row["nameZh"])))
