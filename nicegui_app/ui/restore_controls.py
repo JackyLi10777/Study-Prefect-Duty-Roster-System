@@ -94,6 +94,7 @@ class RestoreControls:
         self.clear_consent()
         request = self.request
         self.reviewing = True
+        self.receipt.set_visibility(False)
         self.failure.set_visibility(False)
         self.sync()
 

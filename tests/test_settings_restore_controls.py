@@ -131,3 +131,18 @@ def test_late_review_does_not_reopen_after_selection_change(monkeypatch):
         await pending
         assert not panel.dialog.value and calls == []
     run_case(monkeypatch, check)
+
+
+def test_failed_new_review_does_not_keep_previous_success_visible(monkeypatch):
+    async def check(panel, calls, _):
+        panel.receipt.set_visibility(True)
+        panel.selector.set_value("one.db")
+
+        async def failed_review(action, **kwargs):
+            return controls._OPERATION_FAILED
+
+        monkeypatch.setattr(controls, "_run_with_progress", failed_review)
+        await panel.review_selected()
+        assert panel.failure.visible and not panel.receipt.visible
+        assert not panel.dialog.value and calls == []
+    run_case(monkeypatch, check)
