@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 import os
@@ -40,6 +41,19 @@ from nicegui_app.ui.html_safety import attr, text
 from nicegui_app.ui.i18n import current_locale, t
 from nicegui_app.ui.page_shared import _OPERATION_FAILED, _run_with_progress
 from nicegui_app.ui.shell import page_shell
+from nicegui_app.ui.lazy_sections import lazy_expansion
+
+
+@dataclass
+class _SupportDetails:
+    """Defaults exist before controls; retained controls bind to these values."""
+    route: str
+    workflow_action: str
+    impact: str = ""
+    frequency: str = ""
+    last_good: str = ""
+    operation_reference: str = ""
+    request_reference: str = ""
 
 
 _ATTACHMENT_MEDIA_TYPES = {
@@ -139,6 +153,7 @@ def _guest_report_markup(source_path: str = "") -> str:
     <section class="sy-support-browser" data-testid="guest-browser-only-support"
       data-required-message="{attr(t('support_required_error'))}"
       data-copy-failed-message="{attr(t('support_guest_copy_failed'))}"
+      data-default-route="{attr(route_default)}" data-default-workflow="{attr(action_default)}"
       data-email="{attr(FEEDBACK_EMAIL)}" data-locale="{attr(current_locale())}">
       <p class="sy-support-browser-status">{text(t('support_guest_nonpersistent'))}</p>
       <p class="sy-support-browser-copy">{text(t('support_guest_body'))}</p>
@@ -146,8 +161,10 @@ def _guest_report_markup(source_path: str = "") -> str:
         <div class="sy-support-browser-grid">
           {render_fields(required_fields)}
         </div>
-        <details class="sy-support-details">
+        <details class="sy-support-details" id="sy-support-details" data-testid="support-progressive-details">
           <summary>{text(t('support_add_details'))}</summary>
+          <div id="sy-support-details-content"></div>
+          <template>
           <div class="sy-support-browser-grid">
             <label class="sy-support-browser-field" for="sy-support-route"><span>{text(t('support_route_category'))}</span>
               <select id="sy-support-route">{route_options}</select></label>
@@ -155,6 +172,7 @@ def _guest_report_markup(source_path: str = "") -> str:
               <select id="sy-support-action">{action_options}</select></label>
             {render_fields(optional_fields)}
           </div>
+          </template>
         </details>
         <p id="sy-support-browser-error" class="sy-field-error" role="alert" aria-live="polite"></p>
         <div class="sy-support-browser-actions">
@@ -190,34 +208,41 @@ def _render_admin_support(source_path: str) -> None:
             expected = ui.textarea(label=t("support_expected")).props("maxlength=4000 autogrow").classes("w-full")
             actual = ui.textarea(label=t("support_actual")).props("maxlength=4000 autogrow").classes("w-full")
             reproduction = ui.textarea(label=t("support_reproduction")).props("maxlength=6000 autogrow").classes("w-full")
-        with ui.expansion(t("support_add_details"), icon="add_circle_outline").classes("sy-support-details w-full"):
+        details = _SupportDetails(route_default, action_default)
+        attachment_summary = None
+
+        def render_details() -> None:
+            nonlocal attachment_summary
+            current_page_context().require(Capability.PERSISTENT_WRITE)
             with ui.element("div").classes("sy-support-form-grid w-full"):
-                route = ui.select(
+                ui.select(
                     label=t("support_route_category"),
                     options={value: _option_label(value) for value in sorted(ALLOWED_ROUTE_CATEGORIES)},
                     value=route_default,
-                ).classes("w-full")
-                workflow_action = ui.select(
+                ).bind_value(details, "route").classes("w-full")
+                ui.select(
                     label=t("support_workflow_action"),
                     options={value: _option_label(value) for value in sorted(ALLOWED_WORKFLOW_ACTIONS)},
                     value=action_default,
-                ).classes("w-full")
-                impact = ui.textarea(label=t("support_impact") + f" ({t('optional')})").props("maxlength=4000 autogrow").classes("w-full")
-                frequency = ui.input(label=t("support_frequency") + f" ({t('optional')})").props("maxlength=500").classes("w-full")
-                last_good = ui.input(label=t("support_last_good") + f" ({t('optional')})").props("maxlength=1000").classes("w-full")
-                operation_reference = ui.input(label=t("support_operation_reference") + f" ({t('optional')})").props(
+                ).bind_value(details, "workflow_action").classes("w-full")
+                ui.textarea(label=t("support_impact") + f" ({t('optional')})").bind_value(details, "impact").props("maxlength=4000 autogrow").classes("w-full")
+                ui.input(label=t("support_frequency") + f" ({t('optional')})").bind_value(details, "frequency").props("maxlength=500").classes("w-full")
+                ui.input(label=t("support_last_good") + f" ({t('optional')})").bind_value(details, "last_good").props("maxlength=1000").classes("w-full")
+                ui.input(label=t("support_operation_reference") + f" ({t('optional')})").bind_value(details, "operation_reference").props(
                     "maxlength=11 autocomplete=off"
                 ).classes("w-full")
-                request_reference = ui.input(label=t("support_request_reference") + f" ({t('optional')})").props(
+                ui.input(label=t("support_request_reference") + f" ({t('optional')})").bind_value(details, "request_reference").props(
                     "maxlength=12 autocomplete=off"
                 ).classes("w-full")
 
             attachment_summary = ui.column().classes("w-full gap-1")
 
             async def accept_attachment(event: events.UploadEventArguments) -> None:
+                current_page_context().require(Capability.PERSISTENT_WRITE)
                 suffix = Path(event.file.name).suffix.lower()
                 media_type = _ATTACHMENT_MEDIA_TYPES.get(suffix)
                 content = await event.file.read()
+                current_page_context().require(Capability.PERSISTENT_WRITE)
                 if media_type is None or len(content) > MAX_ATTACHMENT_BYTES or len(attachments) >= MAX_ATTACHMENTS:
                     ui.notify(t("support_attachment_rejected"), type="negative")
                     return
@@ -247,6 +272,8 @@ def _render_admin_support(source_path: str) -> None:
                 auto_upload=True,
             ).props("accept=.txt,.json,.png").classes("w-full")
 
+        lazy_expansion(t("support_add_details"), icon="add_circle_outline",
+                       test_id="support-progressive-details", render=render_details).classes("sy-support-details")
         result_area = ui.column().classes("w-full")
         consent = ui.checkbox(t("support_consent"))
         with ui.dialog() as preview_dialog, ui.card().classes("sy-dialog w-full max-w-xl p-6"):
@@ -264,8 +291,8 @@ def _render_admin_support(source_path: str) -> None:
                 ui.notify(t("support_required_error"), type="negative")
                 return None
             try:
-                _safe_optional_reference(operation_reference.value, OP_REFERENCE_PATTERN)
-                _safe_optional_reference(request_reference.value, REQ_REFERENCE_PATTERN)
+                _safe_optional_reference(details.operation_reference, OP_REFERENCE_PATTERN)
+                _safe_optional_reference(details.request_reference, REQ_REFERENCE_PATTERN)
             except IncidentValidationError:
                 ui.notify(t("support_reference_error"), type="negative")
                 return None
@@ -279,14 +306,14 @@ def _render_admin_support(source_path: str) -> None:
                 expected.value,
                 actual.value,
                 reproduction.value,
-                impact.value,
-                frequency.value,
-                last_good.value,
+                details.impact,
+                details.frequency,
+                details.last_good,
             ))
             preview_summary.text = t(
                 "support_preview_summary",
-                route=_option_label(str(route.value)),
-                action=_option_label(str(workflow_action.value)),
+                route=_option_label(str(details.route)),
+                action=_option_label(str(details.workflow_action)),
                 characters=characters,
                 attachments=len(attachments),
             )
@@ -306,24 +333,24 @@ def _render_admin_support(source_path: str) -> None:
                 active_context = current_page_context()
                 active_context.require(Capability.PERSISTENT_WRITE)
                 page_request_reference = active_context.request_reference.strip().upper()
-                request_references = list(_safe_optional_reference(request_reference.value, REQ_REFERENCE_PATTERN))
+                request_references = list(_safe_optional_reference(details.request_reference, REQ_REFERENCE_PATTERN))
                 if REQ_REFERENCE_PATTERN.fullmatch(page_request_reference) and page_request_reference not in request_references:
                     request_references.append(page_request_reference)
                 report = IncidentReportInput(
                     source="admin_ui",
                     actor_mode="admin",
-                    route_category=str(route.value),
-                    workflow_action=str(workflow_action.value),
+                    route_category=str(details.route),
+                    workflow_action=str(details.workflow_action),
                     expected_behavior=str(expected.value or ""),
                     actual_behavior=str(actual.value or ""),
                     reproduction_steps=steps,
-                    impact=str(impact.value or ""),
-                    frequency=str(frequency.value or ""),
-                    last_known_good=str(last_good.value or ""),
-                    operation_references=tuple({operation_id, *_safe_optional_reference(operation_reference.value, OP_REFERENCE_PATTERN)}),
+                    impact=str(details.impact or ""),
+                    frequency=str(details.frequency or ""),
+                    last_known_good=str(details.last_good or ""),
+                    operation_references=tuple({operation_id, *_safe_optional_reference(details.operation_reference, OP_REFERENCE_PATTERN)}),
                     request_references=tuple(request_references),
                     safe_error_type="operator_report",
-                    safe_code_locations=(f"route:{route.value}",),
+                    safe_code_locations=(f"route:{details.route}",),
                 )
             except PermissionError as error:
                 reference = record_operator_failure(
@@ -376,7 +403,8 @@ def _render_admin_support(source_path: str) -> None:
             preview_dialog.close()
             consent.value = True
             attachments.clear()
-            attachment_summary.clear()
+            if attachment_summary is not None:
+                attachment_summary.clear()
             ui.notify(t("support_saved"), type="positive")
             result_area.clear()
             with result_area:
@@ -424,7 +452,8 @@ def _render_admin_support(source_path: str) -> None:
             test_id="preview-support-incident",
         ).classes("mt-2")
 
-    with ui.element("section").classes("sy-operations-panel sy-support-lookup w-full"):
+    def render_lookup() -> None:
+        current_page_context().require(Capability.PERSISTENT_WRITE)
         ui.label(t("support_lookup_title")).classes("text-lg font-semibold")
         ui.label(t("support_lookup_body")).classes(
             "sy-reading-measure text-sm leading-6 text-[var(--sy-muted)]"
@@ -435,6 +464,7 @@ def _render_admin_support(source_path: str) -> None:
         lookup_result = ui.column().classes("w-full")
 
         async def lookup_incident() -> None:
+            current_page_context().require(Capability.PERSISTENT_WRITE)
             incident_id = str(lookup_id.value or "").strip().upper()
             lookup_result.clear()
             if not INCIDENT_ID_PATTERN.fullmatch(incident_id):
@@ -490,6 +520,9 @@ def _render_admin_support(source_path: str) -> None:
             variant="secondary",
             test_id="lookup-support-incident",
         )
+
+    lazy_expansion(t("support_lookup_title"), icon="manage_search",
+                   test_id="support-history-lookup", render=render_lookup).classes("sy-operations-panel sy-support-lookup")
 
 
 @ui.page("/support")
