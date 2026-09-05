@@ -262,12 +262,12 @@ def test_signed_integer_revision_limit_is_readable_but_cannot_be_incremented(rep
     assert settings.current(YEAR) == last
 
 
-@pytest.mark.parametrize("invalid", [True, False, 1, None, "", " \t", "x" * 129])
+@pytest.mark.parametrize("invalid", [True, False, 1, None, "", " \t", "x" * 65])
 def test_commands_require_nonempty_bounded_text(repository, invalid):
     settings = PolicySettings(repository)
     with pytest.raises(PolicySettingsError):
         settings.initialize(YEAR, command_id=invalid)
-    assert settings.initialize(YEAR, command_id="x" * 128).revision == 1
+    assert settings.initialize(YEAR, command_id="x" * 64).revision == 1
 
 
 def test_commands_require_valid_unicode_but_allow_nonascii_and_nonbmp(repository):
@@ -279,6 +279,14 @@ def test_commands_require_valid_unicode_but_allow_nonascii_and_nonbmp(repository
     valid_id = "政策修訂-𠮷"
     original = settings.initialize(YEAR, command_id=valid_id)
     assert settings.initialize(YEAR, command_id=valid_id) == original
+
+
+def test_command_whitespace_is_normalized_before_storage_and_replay(repository):
+    settings = PolicySettings(repository)
+    original = settings.initialize(YEAR, command_id="  initialize\t")
+    assert settings.initialize(YEAR, command_id="initialize") == original
+    assert settings.initialize(YEAR, command_id="\ninitialize ") == original
+    assert settings.current(YEAR).revision == 1
 
 
 def test_malformed_nested_typed_input_is_a_settings_error_before_storage(repository):
@@ -318,7 +326,7 @@ def test_missing_year_and_history_are_not_defaulted(repository):
 
 
 def test_corrupt_stored_json_is_storage_error_not_silent_default(repository):
-    repository.commit(YEAR, 0, '{"unsupported": true}', "corrupt-test", "0" * 64)
+    repository.commit(YEAR, 0, '{"unsupported": true}', "corrupt-test", "0" * 64, operation="initialize")
     settings = PolicySettings(repository)
     with pytest.raises(PolicyStorageError):
         settings.current(YEAR)

@@ -11,7 +11,9 @@ from dataclasses import dataclass, replace
 import hashlib
 import json
 from threading import RLock
-from typing import Protocol
+from typing import Literal, Protocol
+
+from .command_identity import CommandIdentityError, normalize_command_id
 
 from roster_policy.configurable import (
     BusinessId, BusinessSettings, ConfigurationError, DutyTimes, TimeWindow, WeeklyPolicy, default_weekly_policy,
@@ -52,13 +54,11 @@ def _revision(value: int) -> None:
         raise PolicySettingsError("Policy revision must be a positive signed 64-bit integer.")
 
 
-def _command(value: str) -> None:
-    if type(value) is not str or not value.strip() or len(value) > 128:
-        raise PolicySettingsError("Command ID must be nonempty text of at most 128 characters.")
+def _command(value: str) -> str:
     try:
-        value.encode("utf-8")
-    except UnicodeEncodeError as error:
-        raise PolicySettingsError("Command ID must contain valid Unicode text.") from error
+        return normalize_command_id(value)
+    except CommandIdentityError as error:
+        raise PolicySettingsError("Policy command ID is invalid.") from error
 
 
 @dataclass(frozen=True)
@@ -131,6 +131,9 @@ class StoredPolicyRevision:
     document: str
 
 
+PolicyOperation = Literal["initialize", "save", "reset"]
+
+
 class PolicyRepository(Protocol):
     """Internal storage Seam; implementations must replay before checking CAS."""
 
@@ -138,7 +141,7 @@ class PolicyRepository(Protocol):
 
     def commit(
         self, year_start: int, expected_revision: int, document: str,
-        command_id: str, request_digest: str,
+        command_id: str, request_digest: str, *, operation: PolicyOperation,
     ) -> StoredPolicyRevision: ...
 
 
@@ -232,11 +235,11 @@ class PolicySettings:
         return self._commit("reset", preview.year_start, preview.expected_revision, expected.target_policy, command_id)
 
     def _commit(
-        self, operation: str, year_start: int, expected_revision: int,
+        self, operation: PolicyOperation, year_start: int, expected_revision: int,
         policy: WeeklyPolicy, command_id: str,
     ) -> PolicyRevision:
         _year(year_start)
-        _command(command_id)
+        command_id = _command(command_id)
         if expected_revision >= _MAX_POLICY_REVISION:
             raise PolicySettingsError("Policy revision capacity is exhausted; no new revision can be saved.")
         document = _encoded(policy)
@@ -245,7 +248,7 @@ class PolicySettings:
             ensure_ascii=False, sort_keys=True, separators=(",", ":"),
         )
         digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
-        stored = self._repository.commit(year_start, expected_revision, document, command_id, digest)
+        stored = self._repository.commit(year_start, expected_revision, document, command_id, digest, operation=operation)
         return _decoded(stored)
 
 
@@ -265,7 +268,7 @@ class MemoryPolicyRepository:
 
     def commit(
         self, year_start: int, expected_revision: int, document: str,
-        command_id: str, request_digest: str,
+        command_id: str, request_digest: str, *, operation: PolicyOperation,
     ) -> StoredPolicyRevision:
         with self._lock:
             receipt = self._commands.get(command_id)
