@@ -1,22 +1,16 @@
-"""Client-side delivery helpers for a locally generated roster PDF.
-
-The PDF is prepared by Python, but ``navigator.share`` must run directly from
-the user's second button press so the browser still has transient activation.
-No PDF bytes are uploaded to a third-party service by this module.
-"""
+"""Backward-compatible PDF wrappers around the generated-file share bridge."""
 
 from __future__ import annotations
 
-import base64
-import json
-
-
-MAX_NATIVE_SHARE_BYTES = 5 * 1024 * 1024
-
+from nicegui_app.ui.native_file_share import (
+    MAX_NATIVE_SHARE_BYTES,
+    build_native_file_share_js,
+    can_offer_native_file_share,
+)
 
 def can_offer_native_pdf_share(content: bytes) -> bool:
     """Keep the client-side share payload bounded while download stays available."""
-    return bool(content) and len(content) <= MAX_NATIVE_SHARE_BYTES
+    return can_offer_native_file_share(content, media_type="application/pdf")
 
 
 def build_native_pdf_share_js(*, content: bytes, filename: str, title: str, text: str) -> str:
@@ -27,33 +21,17 @@ def build_native_pdf_share_js(*, content: bytes, filename: str, title: str, text
     Callers must use this as NiceGUI's ``js_handler`` rather than invoking it
     after a Python round trip.
     """
-    if not can_offer_native_pdf_share(content):
-        raise ValueError("PDF is empty or too large for the native-share bridge.")
-
-    payload = json.dumps(
-        {"filename": filename, "title": title, "text": text},
-        ensure_ascii=False,
-        separators=(",", ":"),
+    return build_native_file_share_js(
+        content=content,
+        filename=filename,
+        media_type="application/pdf",
+        title=title,
+        text=text,
     )
-    encoded = json.dumps(base64.b64encode(content).decode("ascii"))
-    return f"""async () => {{
-        const metadata = {payload};
-        try {{
-            const binary = atob({encoded});
-            const bytes = new Uint8Array(binary.length);
-            for (let index = 0; index < binary.length; index += 1) {{
-                bytes[index] = binary.charCodeAt(index);
-            }}
-            const file = new File([bytes], metadata.filename, {{type: 'application/pdf'}});
-            if (typeof navigator.share !== 'function' ||
-                typeof navigator.canShare !== 'function' ||
-                !navigator.canShare({{files: [file]}})) {{
-                emit({{status: 'unsupported'}});
-                return;
-            }}
-            await navigator.share({{files: [file], title: metadata.title, text: metadata.text}});
-            emit({{status: 'shared'}});
-        }} catch (error) {{
-            emit({{status: error && error.name === 'AbortError' ? 'cancelled' : 'failed'}});
-        }}
-    }}"""
+
+
+__all__ = (
+    "MAX_NATIVE_SHARE_BYTES",
+    "build_native_pdf_share_js",
+    "can_offer_native_pdf_share",
+)
