@@ -30,6 +30,7 @@ ActionVariant = Literal["primary", "secondary", "quiet", "attention", "danger"]
 IconStoryCategory = Literal["preview", "persistent", "lifecycle", "role", "static"]
 StatusTone = Literal["action", "stable", "attention", "danger", "neutral"]
 WorkflowState = Literal["active", "done", "pending"]
+DialogPresentation = Literal["modal", "sheet", "alert", "status"]
 MotionPatternName = Literal[
     "platform-continuity",
     "workflow-current",
@@ -88,9 +89,9 @@ def action(
         "danger": "color=negative",
     }[variant]
     if busy:
-        props += " loading disable aria-busy=true"
+        props += " loading aria-busy=true"
     elif disabled:
-        props += " disable aria-disabled=true"
+        props += " aria-disabled=true"
     if test_id:
         props += f" data-testid={test_id}"
     if motion_role:
@@ -102,6 +103,11 @@ def action(
     button = ui.button(text, icon=icon, on_click=on_click).props(props).classes(
         f"sy-action sy-action--{variant} {classes}".strip()
     )
+    if busy or disabled:
+        # Keep NiceGUI's server-side event gate in sync with Quasar's visual
+        # state. A literal ``disable`` prop alone leaves ``button.enabled``
+        # true, so a later ``enable()`` cannot transition the control.
+        button.disable()
     return button
 
 
@@ -179,21 +185,87 @@ def dialog(
     consequence: str | None = None,
     persistent: bool = False,
     test_id: str | None = None,
+    presentation: DialogPresentation = "modal",
 ) -> Iterator[object]:
-    """Create an accessible dialog shell and yield its action/body region."""
+    """Create an accessible, explicitly presented dialog shell.
 
-    props = "persistent" if persistent else ""
+    Mobile placement follows the presentation instead of globally converting
+    every dialog into a bottom sheet.  Lightweight choices may opt into
+    ``sheet``; destructive confirmations use ``alert``; non-interactive work
+    in progress uses the persistent ``status`` presentation.
+    """
+
+    if presentation not in {"modal", "sheet", "alert", "status"}:
+        raise ValueError(f"Unknown dialog presentation: {presentation}")
+    if presentation == "status":
+        persistent = True
+    identifier = next(_FIELD_SEQUENCE)
+    title_id = f"sy-dialog-title-{identifier}"
+    description_id = f"sy-dialog-description-{identifier}"
+    role = "alertdialog" if presentation == "alert" else "dialog"
+    props = (
+        f'role={role} aria-modal=true aria-labelledby="{attr(title_id)}" '
+        f'aria-describedby="{attr(description_id)}"'
+    )
+    if persistent:
+        props += " persistent"
+    if presentation == "sheet":
+        props += " position=bottom"
     if test_id:
         props += f" data-testid={test_id}"
-    with ui.dialog().props(props.strip()) as element, ui.card().classes("sy-dialog w-full max-w-lg p-6"):
-        ui.label(title).classes("sy-dialog-title").props("role=heading aria-level=2")
-        ui.label(description).classes("sy-dialog-description")
+    with ui.dialog().props(props.strip()) as element, ui.card().classes(
+        f"sy-dialog sy-dialog--{presentation} w-full max-w-lg p-6"
+    ):
+        ui.label(title).classes("sy-dialog-title").props(
+            f'id="{attr(title_id)}" role=heading aria-level=2'
+        )
+        ui.label(description).classes("sy-dialog-description").props(
+            f'id="{attr(description_id)}"'
+        )
         if consequence:
             with ui.element("aside").classes("sy-dialog-consequence").props("role=note"):
                 ui.icon("info").props("aria-hidden=true")
                 ui.label(consequence)
         with ui.element("div").classes("sy-dialog-content w-full"):
             yield element
+
+
+@contextmanager
+def native_dialog(
+    *,
+    title: str,
+    description: str,
+    test_id: str | None = None,
+    presentation: DialogPresentation = "modal",
+) -> Iterator[object]:
+    """Create a browser-native modal whose subtree never enters a portal.
+
+    Native ``<dialog>`` supplies modal focus containment, Escape handling and
+    inert background semantics. It is used for large runtime-created sheets
+    whose binary previews would otherwise be remounted through Quasar's portal
+    on every open/close cycle.
+    """
+
+    if presentation not in {"modal", "sheet", "alert"}:
+        raise ValueError(f"Unknown native dialog presentation: {presentation}")
+    title_id = f"sy-native-dialog-title-{next(_FIELD_SEQUENCE)}"
+    props = f'role=dialog aria-modal=true aria-labelledby="{attr(title_id)}"'
+    if presentation == "alert":
+        props = props.replace("role=dialog", "role=alertdialog")
+    if test_id:
+        props += f" data-testid={test_id}"
+    with ui.element("dialog").classes(
+        f"sy-native-dialog sy-native-dialog--{presentation}"
+    ).props(props) as element:
+        with ui.card().classes(
+            f"sy-dialog sy-dialog--{presentation} w-full max-w-lg p-6"
+        ):
+            ui.label(title).classes("sy-dialog-title").props(
+                f'id="{attr(title_id)}" role=heading aria-level=2'
+            )
+            ui.label(description).classes("sy-dialog-description")
+            with ui.element("div").classes("sy-dialog-content w-full"):
+                yield element
 
 
 def empty_state(
@@ -436,6 +508,7 @@ __all__ = (
     "empty_state",
     "field",
     "motion_pattern",
+    "native_dialog",
     "page_toc",
     "progress_state",
     "reference_pager",

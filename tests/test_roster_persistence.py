@@ -3,7 +3,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 import sqlite3
-from threading import Barrier
+from threading import Barrier, Event
 
 import pytest
 
@@ -217,6 +217,9 @@ def test_withdrawal_reverses_net_fairness_and_allows_a_new_active_week(
     assert workflow.reconcile_fairness().balanced
     withdrawn = workflow.roster_week(draft.id)
     assert withdrawn["withdrawalReason"] == "Published the wrong reviewed week"
+    snapshot_week, _snapshot_assignments = workflow.roster_schedule_snapshot(draft.id)
+    assert snapshot_week["withdrawalReason"] == "Published the wrong reviewed week"
+    assert snapshot_week["withdrawnAt"] == withdrawn["withdrawnAt"]
     assert workflow.roster_week_for_start(WEEK_START) is None
     replacement = workflow.generate_and_save_draft(WEEK_START, expected_week_version=0)
     assert replacement.id != draft.id
@@ -513,6 +516,69 @@ def test_concurrent_distinct_adjustments_have_one_version_winner(workflow: Roste
     assert len(conflicts) == 1
     assert workflow.leave_adjustment_count(draft.id) == 1
     assert workflow.reconcile_fairness().balanced
+
+
+def test_schedule_snapshot_is_repeatable_while_a_wal_writer_commits(
+    workflow: RosterWorkflow,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    draft = workflow.generate_and_save_draft(WEEK_START)
+    workflow.publish(draft.id, expected_week_version=draft.version)
+    before_week = workflow.roster_week(draft.id)
+    before_assignment = workflow.assignments(draft.id)[0]
+    snapshot_reached_assignments = Event()
+    allow_snapshot_to_continue = Event()
+    original_assignment_rows = workflow._assignment_rows
+
+    def paused_assignment_rows(session, roster_week_id):
+        snapshot_reached_assignments.set()
+        if not allow_snapshot_to_continue.wait(timeout=5):
+            raise AssertionError("Concurrent snapshot test did not release its assignment read.")
+        return original_assignment_rows(session, roster_week_id)
+
+    monkeypatch.setattr(workflow, "_assignment_rows", paused_assignment_rows)
+
+    def commit_concurrent_change() -> None:
+        with sqlite3.connect(workflow.database_path, timeout=2) as connection:
+            connection.execute("PRAGMA busy_timeout = 2000")
+            connection.execute(
+                "UPDATE roster_weeks SET version = version + 1 WHERE id = ?",
+                (draft.id,),
+            )
+            connection.execute(
+                "UPDATE roster_assignments SET prefect_name_snapshot = ? WHERE id = ?",
+                ("並發更新", int(before_assignment["id"])),
+            )
+            connection.commit()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        snapshot_future = executor.submit(workflow.roster_schedule_snapshot, draft.id)
+        assert snapshot_reached_assignments.wait(timeout=5)
+        writer_future = executor.submit(commit_concurrent_change)
+        try:
+            # WAL readers must not reserve the writer slot. The writer commits
+            # while the snapshot is paused between its first and second SELECT.
+            writer_future.result(timeout=3)
+        finally:
+            allow_snapshot_to_continue.set()
+        snapshot_week, snapshot_assignments = snapshot_future.result(timeout=5)
+
+    snapshotted_assignment = next(
+        item
+        for item in snapshot_assignments
+        if item["id"] == before_assignment["id"]
+    )
+    assert snapshot_week["version"] == before_week["version"]
+    assert snapshotted_assignment["prefectName"] == before_assignment["prefectName"]
+
+    with sqlite3.connect(workflow.database_path) as connection:
+        current = connection.execute(
+            "SELECT w.version, a.prefect_name_snapshot "
+            "FROM roster_weeks AS w JOIN roster_assignments AS a "
+            "ON a.roster_week_id = w.id WHERE w.id = ? AND a.id = ?",
+            (draft.id, int(before_assignment["id"])),
+        ).fetchone()
+    assert current == (int(before_week["version"]) + 1, "並發更新")
 
 
 def test_manual_draft_change_stays_policy_valid_auditable_and_does_not_post_fairness(workflow: RosterWorkflow) -> None:

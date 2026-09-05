@@ -162,6 +162,46 @@ class DraftSlotStateEdit:
 
 
 @dataclass(frozen=True)
+class DraftCellTarget:
+    """The final state of one cell, rather than ordered partial mutations."""
+
+    cell_key: str
+    state: str
+    prefect_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.state not in {"assigned", "vacant", "unavailable"}:
+            raise WorkflowError("A draft target must be assigned, vacant or unavailable.")
+        if self.state == "assigned":
+            if not isinstance(self.prefect_id, str) or not self.prefect_id.strip():
+                raise WorkflowError("An assigned target requires a prefect identifier.")
+        elif self.prefect_id is not None:
+            raise WorkflowError("A vacant or unavailable target cannot contain a prefect.")
+
+
+@dataclass(frozen=True)
+class DraftPatchCommand:
+    """Frozen user intent: every retry includes the same reason and payload."""
+
+    roster_week_id: int
+    expected_week_version: int
+    command_id: str
+    targets: tuple[DraftCellTarget, ...] = ()
+    days: tuple[DraftDayEdit, ...] = ()
+    reason: str | None = None
+
+    def workflow_arguments(self) -> dict[str, object]:
+        cells = tuple(DraftCellEdit(target.cell_key, target.prefect_id)
+                      for target in self.targets if target.state != "unavailable")
+        slots = tuple(DraftSlotStateEdit(target.cell_key, "unavailable" if target.state == "unavailable" else "open")
+                      for target in self.targets)
+        return {"roster_week_id": self.roster_week_id,
+                "expected_week_version": self.expected_week_version,
+                "command_id": self.command_id, "cell_edits": cells,
+                "day_edits": self.days, "slot_edits": slots, "reason": self.reason}
+
+
+@dataclass(frozen=True)
 class WeekScheduleOverrides:
     """Stable-code schedule exceptions stored with one roster week."""
 
