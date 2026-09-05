@@ -8,11 +8,12 @@
 
 | 來源 | 固定提交／狀態 | 採納及禁止覆蓋項 |
 |---|---|---|
-| protected main | `cfc57d70e47ee7027d6c8022b78f81b5638f88ac` | PR #122至#126通過必要CI後合併；已有統一時間／auth／release guard／下載閒置回收／手機驗收契約／一致讀取與空缺補任服務端／狀態驅動Dashboard；新分支仍須即時 fetch |
+| protected main | `97b0846c81afd54715a9a3249c5d108be5328b53` | PR #122至#127通過必要CI後合併；已有統一時間／auth／release guard／下載閒置回收／手機驗收契約／一致讀取與空缺補任服務端／Dashboard／名冊單人編輯；新分支仍須即時 fetch |
 | 手機／PNG final | `29ac083fd4d1e9a54854c8fe4436573d0c51fd5b`，2026-09-05 核對 clean | 安全PNG交付、匯入保存保護、原生sheet、調整後匯出owner、關閉候選清理及抽屜取消；逐項比對，不整檔套用 |
 | 手機／PNG 新固定checkpoint | `6780eafd036f32c2df78d8d9c944bcb4bdef4f2a`，runtime `0df41ba`；2026-09-05 核對 clean | 已合main8843480；最終clean HEAD於07:00:51 UTC完整重跑六項PASS，補足先前04340f9 full／0df focused的來源差異。390px補任及receipt／Avatar／PDF同v8已回報；137檔仍須按行為整合，不等於主線或部署 |
 | 效能／手機 overhaul | `ecdf7ae` 加未提交工作；尚無最終checkpoint | 等完成SHA；不能用移除PNG／分享橋／測試的版本覆蓋final；保留資產、首屏、名冊、gate改進的行為證據 |
 | 手機驗收契約 | `a175b776`，經PR #124合併為 `2a7c975` | 固定scenario/profile、cold/core原始證據與來源綁定檢查；producer與完整權限／實機矩陣仍待整合，不能當成全站已驗收 |
+| 名冊單人編輯 | `def953c`，經PR #127合併為 `97b0846` | 保留person editor協定、CAS、lazy filter及封存版本保護；新核心分支同步後207項相關檢查通過。PNG來源的people.py須逐行為整合，不用舊整檔覆蓋；未部署 |
 | 本任務 auth修正 | `cb5cccc`，經PR #122合併為 `12d6732` | 背景不poll、返回驗證、到期與撤權、已清理runtime忽略晚到回應 |
 | 本任務 release guard | `f8dbc0f`，經PR #122合併為 `12d6732` | 宣告／執行清單精確一致才pass；不代替整合新gate的部署器更新 |
 | 下載閒置回收 | `2041310`，經PR #123合併為 `2acf98f` | 最終PR head `8939dbb` 的test-and-audit／analyze通過；保留單次票據、配額及mode/session綁定；未部署 |
