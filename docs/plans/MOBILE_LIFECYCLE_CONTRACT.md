@@ -1,7 +1,11 @@
 # F1: required lifecycle evidence
 
 Development preparation only; no release approval or deployment.
-Base: protected main `0efd5ae656adea6226edd88664f2d609066d4907`.
+Initial base: protected main `0efd5ae656adea6226edd88664f2d609066d4907`.
+Normally merged main `d639326dbd7e438747a78e50f4bb254eddea4a1c` after D2
+PR #134; runtime contract changes remain those independently reviewed at
+`c3fafbec0c5779970abfd0df97b3fd111a321cdd`. Final-source verification must be
+recorded separately, not inferred from the earlier focused results.
 Original dirty and frozen source worktrees remain untouched.
 
 ## Reproduced gap
