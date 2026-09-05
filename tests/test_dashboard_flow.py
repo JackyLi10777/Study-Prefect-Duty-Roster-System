@@ -48,7 +48,28 @@ def test_previous_or_future_history_never_selects_the_primary_flow(start, status
         latest_week=week(status, start=start),
     )
     assert result.destination == "/rosters"
-    assert result.status_key == "flow_no_roster"
+    assert result.status_key == "dashboard_no_active_week"
+    assert result.action_key == "create_draft"
+
+
+def test_missing_active_week_does_not_claim_no_history_when_later_week_is_latest():
+    # The exact lookup omits withdrawn weeks. A later history item cannot prove
+    # whether the selected week was never started or was subsequently withdrawn.
+    result = resolve_dashboard_next_action(
+        has_prefects=True, week_start=WEEK, selected_week=None,
+        latest_week=week("published", start=date(2026, 9, 14)),
+    )
+    assert result.status_key == "dashboard_no_active_week"
+    assert (result.action_key, result.destination) == ("create_draft", "/rosters")
+
+
+def test_no_active_week_copy_is_neutral_in_both_languages():
+    from nicegui_app.ui.i18n import MESSAGES
+
+    assert MESSAGES["dashboard_no_active_week"] == {
+        "zh-HK": "所選週目前沒有有效週表",
+        "en": "No active roster for the selected week",
+    }
 
 
 def test_exact_active_lookup_takes_precedence_over_latest_history():
@@ -85,6 +106,7 @@ def test_mismatched_active_lookup_cannot_open_another_week():
         selected_week=week("published", start=date(2026, 8, 31)),
     )
     assert result.destination == "/rosters"
+    assert result.status_key == "dashboard_no_active_week"
 
 
 @pytest.mark.parametrize("identifier", [None, 0, -1, True, "42", "42/adjustments"])

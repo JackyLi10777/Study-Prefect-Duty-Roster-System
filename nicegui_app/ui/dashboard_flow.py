@@ -43,7 +43,7 @@ def resolve_dashboard_next_action(
         record = latest_week
     if record is None or str(record.get("weekStart")) != week_start.isoformat():
         return DashboardNextAction(
-            "flow_no_roster", "action", "create_draft", "/rosters", "edit_calendar"
+            "dashboard_no_active_week", "action", "create_draft", "/rosters", "edit_calendar"
         )
     status = record.get("status")
     if status == "withdrawn":
