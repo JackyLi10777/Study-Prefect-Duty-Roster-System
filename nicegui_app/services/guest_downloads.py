@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 import re
 import secrets
-from threading import RLock
+from threading import RLock, Timer
 import time
 
 from nicegui_app.access_context import AccessMode
@@ -54,6 +55,7 @@ class _DownloadRecord:
     content: bytes
     media_type: str
     expires_at: int
+    retention_deadline: float
 
 
 class GuestDownloadRegistry:
@@ -103,6 +105,9 @@ class GuestDownloadRegistry:
         self.reserved_admin_downloads = reserved_admin_downloads
         self._records: dict[str, _DownloadRecord] = {}
         self._lock = RLock()
+        self._cleanup_timer: Timer | None = None
+        self._cleanup_deadline: float | None = None
+        self._cleanup_generation = 0
 
     def issue(
         self,
@@ -174,7 +179,9 @@ class GuestDownloadRegistry:
                 content=bytes(content),
                 media_type=media_type,
                 expires_at=expires_at,
+                retention_deadline=time.monotonic() + self.ttl_seconds,
             )
+            self._schedule_cleanup_locked()
         return GuestDownloadTicket(token=token, expires_at=expires_at)
 
     def consume(
@@ -195,14 +202,16 @@ class GuestDownloadRegistry:
             if record is None:
                 self._purge_expired(current)
                 raise GuestDownloadError("guest download is unavailable")
-            if record.expires_at <= current:
+            if record.expires_at <= current or record.retention_deadline <= time.monotonic():
                 self._records.pop(token, None)
+                self._schedule_cleanup_locked()
                 raise GuestDownloadError("guest download has expired")
             if record.access_mode is not access_mode:
                 raise GuestDownloadError("guest download is unavailable")
             if not secrets.compare_digest(record.session_id, session_id):
                 raise GuestDownloadError("guest download is unavailable")
             self._records.pop(token, None)
+            self._schedule_cleanup_locked()
         return GuestDownloadPayload(
             filename=record.filename,
             content=record.content,
@@ -219,14 +228,82 @@ class GuestDownloadRegistry:
             ]
             for token in tokens:
                 self._records.pop(token, None)
+            self._schedule_cleanup_locked()
         return len(tokens)
 
-    def _purge_expired(self, now: int) -> None:
+    def _purge_expired(self, now: int | None = None) -> None:
+        """Release expired bytes while the caller holds the registry lock.
+
+        Explicit ``now`` values retain their existing ticket-validation meaning.
+        Idle cleanup uses monotonic age, so synthetic test timestamps or a
+        backwards wall-clock adjustment cannot retain a payload indefinitely.
+        """
+
+        monotonic_now = time.monotonic()
         expired = [
-            token for token, record in self._records.items() if record.expires_at <= now
+            token
+            for token, record in self._records.items()
+            if (now is not None and record.expires_at <= now)
+            or record.retention_deadline <= monotonic_now
         ]
         for token in expired:
             self._records.pop(token, None)
+        # Also reschedule on a failed issue after expiry freed only some slots.
+        self._schedule_cleanup_locked()
+
+    def _schedule_cleanup_locked(self) -> None:
+        """Keep one daemon wakeup for the nearest deadline, or none when empty."""
+
+        deadline = min(
+            (record.retention_deadline for record in self._records.values()),
+            default=None,
+        )
+        if self._cleanup_timer is not None and deadline == self._cleanup_deadline:
+            return
+        self._cleanup_generation += 1
+        if self._cleanup_timer is not None:
+            self._cleanup_timer.cancel()
+        self._cleanup_timer = None
+        self._cleanup_deadline = None
+        if deadline is None:
+            return
+        timer: Timer | None = None
+        try:
+            timer = Timer(
+                max(0.0, deadline - time.monotonic()),
+                self._cleanup_expired,
+                args=(self._cleanup_generation,),
+            )
+            timer.daemon = True
+            self._cleanup_timer = timer
+            self._cleanup_deadline = deadline
+            timer.start()
+        except Exception as error:
+            # If a worker cannot be started, retain neither bytes nor a ticket
+            # whose idle expiry cannot be guaranteed. No payload is logged.
+            if timer is not None:
+                timer.cancel()
+            self._cleanup_timer = None
+            self._cleanup_deadline = None
+            self._cleanup_generation += 1
+            self._records.clear()
+            logging.getLogger(__name__).error("event=generated_download_cleanup_failed")
+            raise GuestDownloadCapacityError("generated download cleanup is unavailable") from error
+
+    def _cleanup_expired(self, generation: int) -> None:
+        with self._lock:
+            # Timer.cancel cannot stop a callback already waiting for this lock.
+            # An old callback must never replace a newly scheduled wakeup.
+            if generation != self._cleanup_generation:
+                return
+            self._cleanup_timer = None
+            self._cleanup_deadline = None
+            try:
+                self._purge_expired()
+            except GuestDownloadCapacityError:
+                # Scheduling already released every payload and logged a fixed
+                # failure event. There is no request to receive this exception.
+                return
 
     @staticmethod
     def _validate_access_mode(access_mode: AccessMode) -> None:
