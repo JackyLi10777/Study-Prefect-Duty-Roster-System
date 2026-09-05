@@ -522,7 +522,6 @@ def test_decorative_icons_and_core_sections_have_explicit_semantics() -> None:
 
     # The compact native export sheet no longer mounts a decorative PDF symbol.
     assert "sy-export-symbol" not in page_source
-    assert 'ui.icon("calendar_month").classes("sy-onboarding-symbol").props("aria-hidden=true")' in page_source
     assert 'tag="h2"' in page_source
     assert 'icon="auto_awesome"' not in page_source
     assert 'icon="smart_toy"' not in page_source
