@@ -1,6 +1,16 @@
 """Bilingual platform messages."""
 
-MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服事', 'en': 'SERVICE BY DESIGN'},
+MESSAGES = {'engineering_coverage_title': {'zh-HK': '品質覆蓋範圍', 'en': 'Quality coverage categories'},
+ 'engineering_coverage_copy': {'zh-HK': '以下分類說明需要關注的品質範圍，不是各分類獨立通過的證明。頁首顯示同一份來源綁定報告的整體狀態；篩選狀態及日期同樣指這份報告。',
+                              'en': 'These categories describe areas to consider, not independently passed results. The page header shows the overall state of one source-bound report; status and date filters refer to that same report.'},
+ 'engineering_coverage_record_copy': {'zh-HK': '品質覆蓋分類；不代表此項已獨立執行或通過驗證。',
+                                     'en': 'Coverage category; this is not proof that an individual check ran or passed.'},
+ 'engineering_coverage_report_status': {'zh-HK': '整份報告狀態', 'en': 'Overall report status'},
+ 'engineering_coverage_report_date': {'zh-HK': '整份報告日期', 'en': 'Overall report date'},
+ 'engineering_report_date_unavailable': {'zh-HK': '未提供完成日期', 'en': 'Completion date unavailable'},
+ 'architecture_lifecycle_summary': {'zh-HK': '準備名冊 → 核對草稿 → 發布 → PDF／PNG／分享 → 版本化調整 → 備份與交接。各階段的責任與恢復方式可按需展開。',
+                                    'en': 'Prepare the directory → review a draft → publish → PDF / PNG / sharing → versioned adjustments → backup and handover. Expand each section for ownership and recovery details.'},
+ 'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服事', 'en': 'SERVICE BY DESIGN'},
  'platform_intro': {'zh-HK': '我把每週排班、公平解釋、復原與交接整理成一套安靜而可信的校務服務。這一頁說明我們為何建造、如何分工，以及哪些證據讓下一任可以放心接手。',
                     'en': 'I shaped weekly rostering, fairness explanation, recovery, and handover into one calm and trustworthy school '
                           'service. This page explains why we built it, how responsibilities are organised, and what evidence helps the '
@@ -81,9 +91,9 @@ MESSAGES = {'platform_kicker': {'zh-HK': 'SERVICE BY DESIGN／以設計承擔服
  'platform_resource_handover': {'zh-HK': '交接準備', 'en': 'Handover readiness'},
  'architecture_platform_link_note': {'zh-HK': '想先了解團隊、能力分工與服務方案？', 'en': 'Looking for the team, capability model, and service portfolio?'},
  'engineering_kicker': {'zh-HK': 'ENGINEERING PROOF／工程證據', 'en': 'ENGINEERING PROOF'},
- 'engineering_intro': {'zh-HK': '按測試、發布、備份及復原證據核對系統承諾；每項證據均列明責任邊界、目前狀態及失敗後的回復方法。',
-                       'en': 'Review system commitments through test, release, backup, and recovery evidence. Each item identifies its '
-                             'owner, current state, and recovery path.'},
+ 'engineering_intro': {'zh-HK': '頁首顯示一份來源綁定報告的整體狀態與完成日期。按需展開品質覆蓋範圍、責任邊界及恢復流程；分類本身不代表驗證已通過。',
+                       'en': 'The header shows the overall state and completion date of one source-bound report. Expand quality '
+                             'coverage, ownership, and recovery details as needed; categories alone do not prove checks passed.'},
  'engineering_badge': {'zh-HK': '正式版本工程概覽', 'en': 'Formal-release engineering overview'},
  'engineering_evidence_kicker': {'zh-HK': 'EVIDENCE INDEX／證據索引', 'en': 'EVIDENCE INDEX'},
  'engineering_evidence_title': {'zh-HK': '以類型、狀態與日期查找發布證據',
