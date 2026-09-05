@@ -24,7 +24,9 @@ from nicegui_app.ui.page_shared import (
     _tone_badge,
 )
 from nicegui_app.ui.preferences import preference_get
-from nicegui_app.ui.reference_navigation import render_page_toc, render_reference_pager
+from nicegui_app.ui.lazy_sections import lazy_expansion
+from nicegui_app.ui.reference_navigation import render_reference_pager
+from nicegui_app.ui.reading_navigation import ReadingNavigation, reading_toc
 from nicegui_app.ui.shell import page_shell
 
 @ui.page("/")
@@ -103,18 +105,26 @@ def dashboard_alias() -> None:
 
 @ui.page("/getting-started")
 def getting_started_page() -> None:
+    workflow = get_workflow()
+    week_start = _next_monday()
+    has_prefects = bool(workflow.prefects())
+    selected_week = workflow.roster_week_for_start(week_start)
+    recent = workflow.roster_week_history(page=1, page_size=1)
+    next_action = resolve_dashboard_next_action(
+        has_prefects=has_prefects, week_start=week_start,
+        selected_week=selected_week, latest_week=recent[0] if recent else None,
+    )
     with page_shell("/getting-started"):
-        with ui.element("section").classes("sy-onboarding-intro w-full max-w-4xl").props("id=start-intro"):
+        navigation = ReadingNavigation()
+        with ui.element("section").classes("w-full max-w-4xl").props("id=start-intro"):
             with ui.column().classes("gap-2"):
                 ui.label(t("new_user_intro")).classes("text-[var(--sy-muted)] max-w-2xl")
-            ui.icon("calendar_month").classes("sy-onboarding-symbol").props("aria-hidden=true")
-        render_page_toc(
-            (
-                ("start-first-steps", "start_toc_first_steps"),
-                ("start-reference-map", "start_toc_reference_map"),
-            )
-        )
-        with ui.element("section").classes("sy-onboarding-steps grid gap-4 w-full").props(
+            ui.label(t(next_action.status_key)).classes("font-semibold mt-3")
+            with ui.row().classes("gap-3 flex-wrap mt-3"):
+                action(t(next_action.action_key), icon=next_action.icon,
+                       on_click=lambda: navigate_to(next_action.destination), test_id="start-next-action")
+                action(t("operator_guide"), icon="help", on_click=lambda: navigate_to("/guide"), variant="quiet")
+        with ui.element("section").classes("flex flex-col gap-4 w-full max-w-4xl").props(
             f'id=start-first-steps aria-label="{attr(t("start_toc_first_steps"))}"'
         ):
             steps = (
@@ -122,43 +132,43 @@ def getting_started_page() -> None:
                 ("new_user_step_prepare", "new_user_step_prepare_detail"),
                 ("new_user_step_week", "new_user_step_week_detail"),
             )
-            for title_key, detail_key in steps:
-                with ui.card().classes("sy-surface w-full max-w-3xl p-5"):
+            step_states = (
+                "start_step_opened",
+                "start_step_directory_available" if has_prefects else "start_step_directory_missing",
+                next_action.status_key,
+            )
+            for (title_key, detail_key), state_key in zip(steps, step_states, strict=True):
+                with ui.element("article").classes("w-full max-w-3xl py-4 border-b border-[var(--sy-line)]"):
                     ui.label(t(title_key)).classes("text-lg font-semibold")
+                    ui.label(t(state_key)).classes("text-sm font-semibold text-[var(--sy-muted)]")
                     ui.label(t(detail_key)).classes("text-sm text-[var(--sy-muted)] mt-1")
                     if title_key == "new_user_step_start":
                         ui.label(f"{t('public_address_label')}: {CANONICAL_PUBLIC_URL}").classes(
                             "font-mono text-sm font-semibold mt-3 break-all"
                         )
-            with ui.row().classes("gap-3 flex-wrap"):
-                action(t("open_prefects"), icon="groups", on_click=lambda: navigate_to("/prefects"), variant="secondary")
-                action(t("open_rosters"), icon="calendar_month", on_click=lambda: navigate_to("/rosters"))
-                action(t("operator_guide"), icon="help", on_click=lambda: navigate_to("/guide"), variant="quiet")
-                action(t("open_handover_guide"), icon="handshake", on_click=lambda: navigate_to("/handover"), variant="quiet")
+
+        reading_toc((("start-first-steps", "start_toc_first_steps"),
+                     ("start-reference-map", "start_toc_reference_map")))
 
         reference_cards = (
             ("calendar_month", "start_reference_weekly_title", "start_reference_weekly_body", "open_rosters", "/rosters"),
             ("support", "start_reference_recovery_title", "start_reference_recovery_body", "operator_guide", "/guide"),
             ("verified_user", "start_reference_trust_title", "start_reference_trust_body", "platform", "/platform"),
         )
-        with ui.element("section").classes("sy-reference-index w-full max-w-5xl").props(
-            f'id=start-reference-map aria-label="{attr(t("start_reference_title"))}" data-testid=reference-index'
-        ):
-            ui.label(t("start_reference_title")).classes("sy-reference-index-title")
-            ui.label(t("start_reference_copy")).classes("sy-reference-index-copy")
-            with ui.element("div").classes("sy-reference-index-grid"):
+        def render_reference() -> None:
+            with ui.column().classes("w-full").props("data-testid=reference-index"):
+                ui.label(t("start_reference_copy")).classes("sy-reference-index-copy")
                 for icon, title_key, body_key, action_key, route in reference_cards:
-                    with ui.element("article").classes("sy-reference-index-card"):
-                        ui.icon(icon).classes("sy-reference-index-icon").props("aria-hidden=true")
-                        ui.label(t(title_key)).classes("sy-reference-index-card-title")
-                        ui.label(t(body_key)).classes("sy-reference-index-card-copy")
-                        action(
-                            t(action_key),
-                            icon="arrow_forward",
-                            on_click=lambda destination=route: navigate_to(destination),
-                            variant="secondary",
-                            classes="sy-reference-index-action",
-                        )
+                    with ui.element("article").classes("w-full py-4 border-b border-[var(--sy-line)]"):
+                        ui.label(t(title_key)).classes("font-semibold")
+                        ui.label(t(body_key)).classes("text-sm leading-6 text-[var(--sy-muted)]")
+                        action(t(action_key), icon=icon, on_click=lambda destination=route: navigate_to(destination),
+                               variant="quiet")
+        reference_panel = lazy_expansion(t("start_reference_title"), icon="map", test_id="start-reference-details",
+                       render=render_reference).props("id=start-reference-map").classes("max-w-4xl")
+        navigation.register("start-first-steps", lambda: None)
+        navigation.register("start-reference-map", lambda: reference_panel.set_value(True))
+        navigation.install()
         render_reference_pager(next_=("/guide", "operator_guide"))
 
 
@@ -205,51 +215,75 @@ def operator_guide_page() -> None:
         ("guide_issue_support_seen", "guide_issue_support_meaning", "guide_issue_support_next"),
     )
     with page_shell("/guide"):
-        with ui.element("section").classes("sy-guide-hero w-full").props(
+        navigation = ReadingNavigation()
+        with ui.element("section").classes("w-full max-w-4xl").props(
             f'aria-label="{attr(t("operator_guide"))}"'
         ):
             with ui.column().classes("gap-2 max-w-3xl"):
                 ui.label(t("guide_intro")).classes("text-[var(--sy-muted)] leading-7")
-        render_page_toc(
-            (
-                ("guide-week-start", "guide_group_week_start_title"),
-                ("guide-before-publish", "guide_group_before_publish_title"),
-                ("guide-after-publish", "guide_group_after_publish_title"),
-                ("guide-fairness-review", "guide_group_fairness_review_title"),
-                ("guide-annual-handover", "guide_group_annual_handover_title"),
-                ("guide-troubleshooting", "guide_troubleshooting_title"),
-            )
+        # Search includes unmounted answers; only this small translated index is
+        # eager, not hidden answer controls or a second full table.
+        entries = [
+            (anchor, anchor, t(title_key), (t(body_key),))
+            for anchor, _group_key, sections in groups for title_key, body_key in sections
+        ]
+        entries.extend(
+            (f"guide-issue-{seen.removeprefix('guide_issue_').removesuffix('_seen')}",
+             "guide-troubleshooting", t(seen), (t(meaning), t(next_step)))
+            for seen, meaning, next_step in issues
         )
-        for anchor, group_title_key, sections in groups:
-            with ui.element("section").classes("sy-guide-group w-full max-w-4xl").props(f"id={anchor}"):
-                ui.label(t(group_title_key)).classes("sy-guide-group-title")
-                with ui.column().classes("w-full gap-2"):
-                    for title_key, body_key in sections:
-                        with ui.expansion(t(title_key), icon="help").classes("sy-surface w-full"):
-                            ui.label(t(body_key)).classes("p-4 text-sm leading-6 text-[var(--sy-muted)]")
-        with ui.element("section").classes("sy-guide-troubleshooting w-full max-w-5xl").props(
-            f'id=guide-troubleshooting aria-label="{attr(t("guide_troubleshooting_title"))}" '
-            'data-testid=guide-troubleshooting'
-        ):
-            ui.label(t("guide_troubleshooting_title")).classes("sy-guide-group-title")
-            ui.label(t("guide_troubleshooting_copy")).classes("sy-reference-index-copy")
-            with ui.element("div").classes("sy-troubleshooting-table").props(
-                f'role=table aria-label="{attr(t("guide_troubleshooting_title"))}"'
-            ):
-                with ui.element("div").classes("sy-troubleshooting-row sy-troubleshooting-head").props("role=row"):
-                    for heading_key in ("guide_issue_seen", "guide_issue_meaning", "guide_issue_next"):
-                        ui.label(t(heading_key)).classes("sy-troubleshooting-cell").props("role=columnheader")
-                for seen_key, meaning_key, next_key in issues:
-                    with ui.element("div").classes("sy-troubleshooting-row").props("role=row"):
-                        ui.label(t(seen_key)).classes("sy-troubleshooting-cell sy-troubleshooting-symptom").props(
-                            f'role=cell data-label="{t("guide_issue_seen")}"'
-                        )
-                        ui.label(t(meaning_key)).classes("sy-troubleshooting-cell").props(
-                            f'role=cell data-label="{t("guide_issue_meaning")}"'
-                        )
-                        ui.label(t(next_key)).classes("sy-troubleshooting-cell").props(
-                            f'role=cell data-label="{t("guide_issue_next")}"'
-                        )
+        with ui.column().classes("w-full max-w-4xl gap-2"):
+            search = ui.input(label=t("guide_search"), placeholder=t("guide_search_hint")).props(
+                "clearable maxlength=400 debounce=150 data-testid=guide-search"
+            ).classes("w-full")
+            category = ui.select(
+                {"all": t("guide_all_categories"), **{anchor: t(key) for anchor, key, _ in groups},
+                 "guide-troubleshooting": t("guide_troubleshooting_title")},
+                value="all", label=t("guide_category"),
+            ).props("data-testid=guide-category").classes("w-full")
+            reading_toc(tuple((anchor, key) for anchor, key, _ in groups) +
+                        (("guide-troubleshooting", "guide_troubleshooting_title"),))
+            no_results = ui.label(t("guide_no_results")).props(
+                "role=status aria-live=polite data-testid=guide-no-results"
+            ).classes("text-sm text-[var(--sy-muted)]")
+            no_results.set_visibility(False)
+            panels = {}
+            for anchor, group, title, paragraphs in entries:
+                if anchor == "guide-issue-vacancy":
+                    ui.element("div").props("id=guide-troubleshooting data-testid=guide-troubleshooting")
+
+                def render_answer(values=paragraphs) -> None:
+                    for paragraph in values:
+                        ui.label(paragraph).classes("text-sm leading-6 whitespace-pre-line text-[var(--sy-muted)]")
+
+                panels[anchor] = lazy_expansion(title, icon="help_outline",
+                    test_id=f"guide-answer-{anchor}", render=render_answer).props(f"id={anchor}")
+
+            def filter_answers() -> None:
+                query = str(search.value or "").strip().casefold()[:400]
+                visible_count = 0
+                for anchor, group, title, paragraphs in entries:
+                    visible = (category.value == "all" or category.value == group) and (
+                        not query or query in " ".join((title, *paragraphs)).casefold()
+                    )
+                    panels[anchor].set_visibility(visible)
+                    visible_count += int(visible)
+                no_results.set_visibility(visible_count == 0)
+
+            search.on_value_change(lambda _: filter_answers())
+            category.on_value_change(lambda _: filter_answers())
+
+            def reveal_answer(anchor: str) -> None:
+                # A linked answer can be revealed without destroying a search.
+                # The next deliberate filter change restores ordinary results.
+                panels[anchor].set_visibility(True)
+                panels[anchor].set_value(True)
+                no_results.set_visibility(False)
+
+            for anchor in panels:
+                navigation.register(anchor, lambda target=anchor: reveal_answer(target))
+            navigation.register("guide-troubleshooting", lambda: reveal_answer("guide-issue-vacancy"))
+            navigation.install()
         _render_feedback_channel(compact=True)
         ui.button(t("open_system_architecture"), icon="account_tree", on_click=lambda: navigate_to("/system-architecture")).props("flat").classes("self-start")
         render_reference_pager(previous=("/getting-started", "getting_started"), next_=("/handover", "handover"))
@@ -263,58 +297,48 @@ def devotional_page() -> None:
     reference = verse.reference_zh if locale_is_zh else verse.reference_en
     scripture = verse.scripture_zh if locale_is_zh else verse.scripture_en
     reflection = verse.reflection_zh if locale_is_zh else verse.reflection_en
-    tone_preference = str(preference_get("devotional_tone", "auto"))
-    if tone_preference not in {"auto", "guidance", "comfort"}:
-        tone_preference = "auto"
     with page_shell("/devotional"):
+        navigation = ReadingNavigation()
         with ui.element("section").classes("sy-chapel sy-devotional-page w-full").props(
             f'aria-label="{attr(t("daily_verse"))}"'
         ):
             with ui.row().classes("sy-devotional-page-head w-full items-start justify-between gap-5 flex-wrap"):
-                with ui.column().classes("gap-1 max-w-2xl"):
-                    with ui.row().classes("items-center gap-3"):
-                        ui.icon("auto_stories").classes("sy-devotional-page-icon").props("aria-hidden=true")
-                        ui.label(t("daily_verse")).classes("sy-kicker")
-                    ui.label(t("devotional_page_intro")).classes("sy-devotional-page-intro")
+                ui.label(t("daily_verse")).classes("text-lg font-semibold")
                 with ui.row().classes("sy-devotional-page-controls items-end gap-3 flex-wrap"):
-                    tone_select = ui.select(
-                        label=t("devotional_tone_label"),
-                        options={
-                            "auto": t("devotional_tone_auto"),
-                            "guidance": t("devotional_tone_guidance"),
-                            "comfort": t("devotional_tone_comfort"),
-                        },
-                        value=tone_preference,
-                    ).props("dense outlined options-dense").classes("sy-devotional-tone-select")
-                    tone_select.on_value_change(lambda event: _set_devotional_tone(str(event.value)))
                     ui.button(
                         t("refresh_verse"),
                         icon="refresh",
                         on_click=_refresh_dashboard_verse,
                     ).props("outline").classes("sy-devotional-page-refresh")
+                    ui.button(t("devotional_return_work"), icon="calendar_month",
+                              on_click=lambda: _navigate_with_feedback("/")).props(
+                        "color=primary data-testid=devotional-return-work"
+                    )
             with ui.element("article").classes("sy-devotional-reading mt-8"):
                 ui.label(scripture).classes("sy-verse")
                 ui.label(reference).classes("sy-devotional-reference")
                 ui.label(t("verse_translation_label")).classes("sy-verse-translation sy-verse-translation--chapel")
 
-        with ui.element("section").classes("sy-devotional-reading-grid w-full").props(
-            f'aria-label="{attr(t("reflection"))}"'
-        ):
-            with ui.element("article").classes("sy-devotional-companion sy-devotional-companion--reflection"):
-                ui.icon("menu_book").classes("sy-devotional-companion-icon").props("aria-hidden=true")
-                ui.label(t("devotional_reflection_title")).classes("sy-devotional-companion-kicker")
-                ui.label(reflection.get("title", "")).classes("sy-devotional-companion-title")
-                ui.label(reflection.get("body", "")).classes("sy-devotional-companion-copy")
-            with ui.element("article").classes("sy-devotional-companion sy-devotional-companion--prayer"):
-                ui.icon("spa").classes("sy-devotional-companion-icon").props("aria-hidden=true")
-                ui.label(t("devotional_prayer_title")).classes("sy-devotional-companion-kicker")
-                ui.label(reflection.get("prayer", t("why_we_serve"))).classes("sy-devotional-prayer")
-            with ui.element("article").classes("sy-devotional-companion sy-devotional-companion--action"):
-                ui.icon("east").classes("sy-devotional-companion-icon").props("aria-hidden=true")
-                ui.label(t("devotional_prepare_title")).classes("sy-devotional-companion-title")
-                ui.label(t("devotional_prepare_body")).classes("sy-devotional-companion-copy")
-                ui.button(
-                    t("devotional_return_work"),
-                    icon="calendar_month",
-                    on_click=lambda: _navigate_with_feedback("/"),
-                ).props("outline").classes("mt-3 self-start")
+        def render_details() -> None:
+            tone_preference = str(preference_get("devotional_tone", "auto"))
+            if tone_preference not in {"auto", "guidance", "comfort"}:
+                tone_preference = "auto"
+            ui.label(t("devotional_tone_label")).classes("font-semibold")
+            # Initialize before attaching the deliberate user-change callback.
+            tone_select = ui.radio({
+                "auto": t("devotional_tone_auto"), "guidance": t("devotional_tone_guidance"),
+                "comfort": t("devotional_tone_comfort"),
+            }, value=tone_preference).props("inline data-testid=devotional-tone")
+            tone_select.on_value_change(lambda event: _set_devotional_tone(str(event.value)))
+            with ui.element("article").classes("w-full py-4 border-t border-[var(--sy-line)]"):
+                ui.label(t("devotional_reflection_title")).classes("font-semibold")
+                ui.label(reflection.get("title", "")).classes("text-lg font-semibold")
+                ui.label(reflection.get("body", "")).classes("text-sm leading-7 whitespace-pre-line")
+            with ui.element("article").classes("w-full py-4 border-t border-[var(--sy-line)]"):
+                ui.label(t("devotional_prayer_title")).classes("font-semibold")
+                ui.label(reflection.get("prayer", t("why_we_serve"))).classes("text-sm leading-7 whitespace-pre-line")
+                ui.label(t("devotional_prepare_body")).classes("text-sm leading-7 text-[var(--sy-muted)]")
+        details_panel = lazy_expansion(t("devotional_more"), icon="menu_book", test_id="devotional-details",
+                       render=render_details).classes("max-w-4xl").props("id=devotional-reflection")
+        navigation.register("devotional-reflection", lambda: details_panel.set_value(True))
+        navigation.install()
