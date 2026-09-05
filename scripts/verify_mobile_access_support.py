@@ -143,8 +143,14 @@ def _guest(page, base, case, support_dir, results, persist):
     expect(root.locator("#sy-support-route")).to_have_count(0)
     assert root.locator("template").evaluate("node => node.content.querySelectorAll('select,textarea').length") == 5
     expect(root.locator("input[type=file]")).to_have_count(0)
-    page.evaluate("""window.__d2Fetch = 0; const original = window.fetch.bind(window);
-        window.fetch = (...args) => { window.__d2Fetch++; return original(...args); };""")
+    page.evaluate("""() => {
+        window.__d2Fetch = []; const original = window.fetch.bind(window);
+        window.fetch = (...args) => {
+            const path = new URL(args[0] instanceof Request ? args[0].url : args[0], location.href).pathname;
+            window.__d2Fetch.push(path === '/auth/status' ? 'session-status' : 'other');
+            return original(...args);
+        };
+    }""")
     for name in ("expected", "actual", "steps"):
         root.locator(f"#sy-support-{name}").fill("Fictional D2 private " + name)
 
@@ -170,7 +176,10 @@ def _guest(page, base, case, support_dir, results, persist):
         assert page.evaluate("window.__d2GuestField === document.querySelector('#sy-support-impact')")
     payload = download()
     assert payload["impact"] == "Fictional D2 private last impact"
-    assert page.evaluate("window.__d2Fetch") == 0 and not transmitted
+    network = {"fetchCategories": page.evaluate("window.__d2Fetch"), "reportFrameSent": bool(transmitted)}
+    results.append({"scenario": "guest-report-network", **network})
+    persist()
+    assert all(item == "session-status" for item in network["fetchCategories"]) and not transmitted
     assert set((support_dir / "inbox").glob("INC-*")) == existing
     root.locator("button[type=reset]").click()
     expect(impact).to_have_value("")
