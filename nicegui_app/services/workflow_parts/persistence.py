@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from roster_policy import is_room_open
+
 from nicegui_app.services.workflow_dependencies import (
     Assignment,
     AuditEventRecord,
@@ -113,6 +115,14 @@ class PersistenceWorkflowMixin:
     def _begin_serialized_write(session: Session) -> None:
         """Reserve SQLite's writer slot before reading compare-and-set state."""
         session.connection().exec_driver_sql("BEGIN IMMEDIATE")
+
+    @staticmethod
+    def _begin_consistent_read(session: Session) -> None:
+        """Pin one SQLite snapshot before the first SELECT in a fresh session."""
+        # sqlite3 legacy transaction control does not BEGIN on SELECT. A
+        # deferred WAL read transaction keeps successive queries consistent
+        # while allowing another connection's writer to commit.
+        session.connection().exec_driver_sql("BEGIN DEFERRED")
 
     def _operation_command_id(self, operation_type: str, command_id: str | None) -> str:
         actor = current_operation_actor()
@@ -702,11 +712,21 @@ class PersistenceWorkflowMixin:
         assignment: RosterAssignmentRecord,
         *,
         include_same_day_assigned: bool = False,
+        allow_vacant: bool = False,
     ) -> list[dict[str, object]]:
-        if assignment.status != "active" or assignment.prefect_id is None:
+        active = assignment.status == "active" and assignment.prefect_id is not None
+        vacant = assignment.status == "vacant" and assignment.prefect_id is None
+        if not active and not (allow_vacant and vacant):
             raise WorkflowError("Only an active assignment can be changed manually.")
         day = SchoolDay[assignment.day]
         post = DutyPost[assignment.post_code]
+        if allow_vacant:
+            if week.status != "published":
+                raise WorkflowError("Vacancy recovery requires a published roster.")
+            if not is_room_open(post, day) or day in self._closed_days(session, week.id):
+                raise WorkflowError("A closed duty cannot be adjusted.")
+            if (day, post, assignment.slot_index) in self._unavailable_slots(session, week.id):
+                raise WorkflowError("An unavailable duty slot cannot be adjusted.")
         assigned_rows = self._assignment_rows(session, week.id)
         assigned_today = {
             str(row.prefect_id): row

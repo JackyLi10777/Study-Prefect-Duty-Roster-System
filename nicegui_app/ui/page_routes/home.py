@@ -5,7 +5,8 @@ from __future__ import annotations
 from nicegui import ui
 
 from nicegui_app.config import CANONICAL_PUBLIC_URL
-from nicegui_app.ui.components import action, motion_pattern
+from nicegui_app.ui.components import action
+from nicegui_app.ui.dashboard_flow import resolve_dashboard_next_action
 
 from nicegui_app.runtime import get_workflow
 from nicegui_app.ui.devotional import (
@@ -18,8 +19,8 @@ from nicegui_app.ui.i18n import ZH_HK, current_locale, t
 from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.page_shared import (
     _navigate_with_feedback,
+    _next_monday,
     _render_feedback_channel,
-    _render_flow_step,
     _tone_badge,
 )
 from nicegui_app.ui.preferences import preference_get
@@ -29,102 +30,50 @@ from nicegui_app.ui.shell import page_shell
 @ui.page("/")
 def dashboard_page() -> None:
     workflow = get_workflow()
-    verse = _dashboard_verse()
-    locale_is_zh = current_locale() == ZH_HK
-    reference = verse.reference_zh if locale_is_zh else verse.reference_en
-    scripture = verse.scripture_zh if locale_is_zh else verse.scripture_en
-    reflection = verse.reflection_zh if locale_is_zh else verse.reflection_en
+    week_start = _next_monday()
     has_prefects = bool(workflow.prefects())
-    recent_weeks = workflow.roster_week_history(page=1, page_size=3)
+    selected_week = workflow.roster_week_for_start(week_start)
+    recent_weeks = workflow.roster_week_history(page=1, page_size=1)
     latest = recent_weeks[0] if recent_weeks else None
-    if not has_prefects:
-        next_title_key = "flow_directory"
-        next_action_key = "open_prefects"
-        next_action = lambda: _navigate_with_feedback("/prefects")
-    elif latest is None or latest["status"] == "withdrawn":
-        next_title_key = "flow_generate"
-        next_action_key = "create_draft"
-        next_action = lambda: _navigate_with_feedback("/rosters")
-    elif latest["status"] == "draft":
-        next_title_key = "flow_review"
-        next_action_key = "flow_open_draft"
-        next_action = lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}")
-    else:
-        next_title_key = "flow_leave"
-        next_action_key = "flow_open_adjustment"
-        next_action = lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}/adjustments")
+    next_action = resolve_dashboard_next_action(
+        has_prefects=has_prefects,
+        week_start=week_start,
+        selected_week=selected_week,
+        latest_week=latest,
+    )
     with page_shell("/"):
-        with ui.element("section").classes("sy-mobile-next-action w-full").props(
-            f'aria-label="{attr(t("mobile_next_action_label"))}"'
-        ):
-            with ui.column().classes("gap-0 min-w-0"):
-                ui.label(t("mobile_next_action_label")).classes("sy-mobile-next-action-kicker")
-                ui.label(t(next_title_key)).classes("sy-mobile-next-action-title")
-            action(t(next_action_key), icon="arrow_forward", on_click=next_action)
         with ui.row().classes("sy-dashboard-grid w-full items-stretch"):
-            with motion_pattern(
-                "workflow-current",
-                tag="section",
-                classes="sy-workbench grow min-w-0",
-                labelled_by="dashboard-workbench-title",
+            with ui.element("section").classes("sy-workbench grow min-w-0").props(
+                "aria-labelledby=dashboard-workbench-title data-testid=dashboard-current-week"
             ):
-                with ui.row().classes("w-full items-start justify-between gap-5 flex-wrap"):
-                    with ui.column().classes("gap-1"):
-                        ui.html(t("workbench_title"), tag="h2").classes("sy-workbench-title").props(
-                            "id=dashboard-workbench-title"
-                        )
-                    if not has_prefects:
-                        _tone_badge(t("flow_directory_ready"), "attention")
-                    elif latest is None:
-                        _tone_badge(t("flow_no_roster"), "action")
-                    elif latest["status"] == "draft":
-                        _tone_badge(t("flow_draft_ready"), "action")
-                    elif latest["status"] == "withdrawn":
-                        _tone_badge(t("withdrawn"), "attention")
-                    else:
-                        _tone_badge(t("flow_published_ready"), "stable")
-                with ui.element("ol").classes("sy-flow mt-7").props(
-                    f'aria-label="{attr(t("workbench_title"))}"'
-                ):
-                    if not has_prefects:
-                        _render_flow_step(number=1, title_key="flow_directory", detail_key="flow_directory_detail", state="active", state_key="flow_current", icon="group_add", action_key="open_prefects", action=lambda: _navigate_with_feedback("/prefects"))
-                        _render_flow_step(number=2, title_key="flow_generate", detail_key="flow_generate_detail", state="pending", state_key="flow_waiting", icon="edit_calendar")
-                        _render_flow_step(number=3, title_key="flow_review", detail_key="flow_review_detail", state="pending", state_key="flow_waiting", icon="fact_check")
-                    elif latest is None or latest["status"] == "withdrawn":
-                        _render_flow_step(number=1, title_key="flow_generate", detail_key="flow_generate_detail", state="active", state_key="flow_current", icon="edit_calendar", action_key="create_draft", action=lambda: _navigate_with_feedback("/rosters"))
-                        _render_flow_step(number=2, title_key="flow_review", detail_key="flow_review_detail", state="pending", state_key="flow_waiting", icon="fact_check")
-                        _render_flow_step(number=3, title_key="flow_leave", detail_key="flow_leave_detail", state="pending", state_key="flow_waiting", icon="event_busy")
-                    elif latest["status"] == "draft":
-                        _render_flow_step(number=1, title_key="flow_generate", detail_key="flow_generate_detail", state="done", state_key="flow_done", icon="edit_calendar")
-                        _render_flow_step(number=2, title_key="flow_review", detail_key="flow_review_detail", state="active", state_key="flow_current", icon="fact_check", action_key="flow_open_draft", action=lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}"))
-                        _render_flow_step(number=3, title_key="flow_leave", detail_key="flow_leave_detail", state="pending", state_key="flow_waiting", icon="event_busy")
-                    else:
-                        _render_flow_step(number=1, title_key="flow_generate", detail_key="flow_generate_detail", state="done", state_key="flow_done", icon="edit_calendar")
-                        _render_flow_step(number=2, title_key="flow_review", detail_key="flow_review_detail", state="done", state_key="flow_done", icon="fact_check", action_key="flow_open_published", action=lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}"))
-                        _render_flow_step(number=3, title_key="flow_leave", detail_key="flow_leave_detail", state="active", state_key="flow_current", icon="event_busy", action_key="flow_open_adjustment", action=lambda item=latest: _navigate_with_feedback(f"/rosters/{item['id']}/adjustments"))
+                with ui.column().classes("gap-3 min-w-0"):
+                    ui.html(t("workbench_title"), tag="h2").classes("sy-workbench-title").props(
+                        "id=dashboard-workbench-title"
+                    )
+                    ui.label(f"{t('week_start')}: {week_start.isoformat()}").classes(
+                        "text-sm text-[var(--sy-muted)]"
+                    ).props("data-testid=dashboard-week-start")
+                    _tone_badge(t(next_action.status_key), next_action.tone)
                 action(
-                    t("first_time_link"),
-                    icon="play_circle",
-                    on_click=lambda: navigate_to("/getting-started"),
-                    variant="quiet",
-                    classes="mt-5",
+                    t(next_action.action_key),
+                    icon=next_action.icon,
+                    on_click=lambda: _navigate_with_feedback(next_action.destination),
+                    test_id="dashboard-next-action",
+                    classes="mt-4 w-full",
                 )
             with ui.element("aside").classes("sy-dashboard-history").props(
                 "aria-labelledby=dashboard-history-title data-testid=dashboard-history"
             ):
                 with ui.row().classes("sy-dashboard-history-header w-full items-start justify-between gap-3"):
                     with ui.column().classes("gap-1 min-w-0"):
-                        ui.html(t("current_rosters"), tag="h2").classes("sy-dashboard-history-title").props(
+                        ui.html(t("roster_workflow_history"), tag="h2").classes("sy-dashboard-history-title").props(
                             "id=dashboard-history-title"
                         )
-                    if recent_weeks:
-                        _tone_badge(t("dashboard_history_count", count=len(recent_weeks)), "neutral")
                 if not recent_weeks:
                     with ui.element("div").classes("sy-dashboard-history-empty").props("role=status"):
                         ui.icon("event_note").classes("sy-dashboard-history-empty-icon").props("aria-hidden=true")
                         with ui.column().classes("gap-1 min-w-0"):
-                            ui.label(t("empty_roster_title")).classes("sy-dashboard-history-empty-title")
-                            ui.label(t("empty_roster_detail")).classes("sy-dashboard-history-empty-copy")
+                            ui.label(t("no_rosters")).classes("sy-dashboard-history-empty-title")
                 else:
                     with ui.element("ul").classes("sy-dashboard-history-list"):
                         for week in recent_weeks:
@@ -132,44 +81,19 @@ def dashboard_page() -> None:
                                 with ui.row().classes("w-full items-start justify-between gap-3 no-wrap"):
                                     with ui.column().classes("gap-1 min-w-0"):
                                         ui.label(str(week["weekStart"])).classes("sy-dashboard-history-week")
-                                        ui.label(f"{t('version')} {week['version']}").classes("sy-dashboard-history-meta")
                                     status = str(week["status"])
                                     _tone_badge(
                                         t("published") if status == "published" else t("withdrawn") if status == "withdrawn" else t("draft"),
                                         "stable" if status == "published" else "attention" if status == "withdrawn" else "action",
                                     )
-                                ui.button(
+                                action(
                                     t("view"),
                                     icon="arrow_forward",
                                     on_click=lambda item=week: navigate_to(f"/rosters/{item['id']}"),
-                                ).props("flat").classes("sy-dashboard-history-action")
-        with ui.element("section").classes("sy-daily-start w-full").props(
-            f'aria-label="{attr(t("daily_verse"))}"'
-        ):
-            with ui.row().classes("w-full items-start gap-4 flex-wrap"):
-                ui.icon("menu_book").classes("sy-daily-start-icon").props("aria-hidden=true")
-                with ui.column().classes("grow min-w-[240px] gap-1"):
-                    ui.label(t("daily_verse")).classes("sy-daily-start-kicker")
-                    ui.label(scripture).classes("sy-daily-start-verse")
-                    ui.label(reference).classes("sy-daily-start-reference")
-                    ui.label(t("verse_translation_label")).classes("sy-verse-translation")
-                with ui.column().classes("sy-devotional-controls gap-2 items-end"):
-                    tone_preference = str(preference_get("devotional_tone", "auto"))
-                    ui.button(t("refresh_verse"), icon="refresh", on_click=_refresh_dashboard_verse).props("flat").classes("sy-daily-start-refresh")
-            with ui.expansion(reflection.get("title", ""), icon="auto_stories").classes("sy-daily-start-reflection mt-3"):
-                tone_select = ui.select(
-                    label=t("devotional_tone_label"),
-                    options={
-                        "auto": t("devotional_tone_auto"),
-                        "guidance": t("devotional_tone_guidance"),
-                        "comfort": t("devotional_tone_comfort"),
-                    },
-                    value=tone_preference if tone_preference in {"auto", "guidance", "comfort"} else "auto",
-                ).props("dense outlined options-dense").classes("sy-devotional-tone-select mb-3")
-                tone_select.on_value_change(lambda event: _set_devotional_tone(str(event.value)))
-                ui.label(reflection.get("body", "")).classes("text-sm leading-6 text-[var(--sy-muted)] p-1")
-                if reflection.get("prayer"):
-                    ui.label(f"{t('prayer')}: {reflection['prayer']}").classes("mt-3 text-sm italic text-[var(--sy-muted)]")
+                                    variant="quiet",
+                                    test_id="dashboard-history-action",
+                                    classes="sy-dashboard-history-action",
+                                )
 
 
 @ui.page("/dashboard")

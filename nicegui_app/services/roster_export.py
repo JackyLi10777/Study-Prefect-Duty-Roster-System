@@ -13,7 +13,7 @@ from datetime import date, datetime, timedelta
 from io import BytesIO
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Mapping
+from typing import TYPE_CHECKING, Literal, Mapping, Protocol, Sequence
 from xml.sax.saxutils import escape as xml_escape
 
 from reportlab.lib import colors
@@ -31,6 +31,7 @@ from nicegui_app.services.roster_presentation import (
     RosterCellState,
     build_roster_presentation,
 )
+from nicegui_app.services.workflow_types import FairnessAuditSnapshot
 from roster_policy import DutyPost, SchoolDay
 
 if TYPE_CHECKING:
@@ -38,6 +39,13 @@ if TYPE_CHECKING:
 
 
 ExportLanguage = Literal["zh", "en"]
+
+
+class FairnessAuditSource(Protocol):
+    """Minimum read port required to export an internally consistent audit."""
+
+    def roster_fairness_audit_snapshot(self, roster_week_id: int) -> FairnessAuditSnapshot: ...
+
 
 ENGLISH_MONTH_ABBREVIATIONS = (
     "JAN",
@@ -127,17 +135,16 @@ def build_roster_pdf(
 
 
 def build_fairness_audit_pdf(
-    workflow: "RosterWorkflow", roster_week_id: int, *, language: ExportLanguage = "zh", practice: bool = False
+    workflow: FairnessAuditSource, roster_week_id: int, *, language: ExportLanguage = "zh", practice: bool = False
 ) -> RosterPdfExport:
     """Render a clearly marked internal-only, named fairness ledger summary."""
-    week = workflow.roster_week(roster_week_id)
+    snapshot = workflow.roster_fairness_audit_snapshot(roster_week_id)
+    week = snapshot.week
     fonts = _register_cjk_fonts()
     styles = _styles(fonts)
     output = BytesIO()
     document = _document(output, week_start=week["weekStart"], title=_audit_title(language), orientation="portrait")
-    fairness_rows = workflow.fairness_rows()
-    active_assignments = [row for row in workflow.assignments(roster_week_id) if row["status"] == "active"]
-    summary = _audit_summary(week["weekStart"], str(week["status"]), len(active_assignments), language)
+    summary = _audit_summary(week["weekStart"], str(week["status"]), snapshot.active_assignment_count, language)
     story = [
         Paragraph(_audit_title(language), styles["title"]),
         Paragraph(summary, styles["subtitle"]),
@@ -146,7 +153,7 @@ def build_fairness_audit_pdf(
         Paragraph(_internal_marker(language), styles["internal_marker"]),
         Spacer(1, 4 * mm),
         Paragraph(_audit_section_title(language), styles["section"]),
-        _audit_table(fairness_rows, language, styles),
+        _audit_table(snapshot.fairness_rows, language, styles),
         Spacer(1, 5 * mm),
         Paragraph(_audit_explanation(language), styles["note"]),
         Spacer(1, 3 * mm),
@@ -338,7 +345,7 @@ def _coerce_week_start(value: object) -> date:
     raise TypeError("Roster week start must be a date or ISO date string.")
 
 
-def _audit_table(rows: list[dict[str, object]], language: ExportLanguage, styles: dict[str, ParagraphStyle]) -> Table:
+def _audit_table(rows: Sequence[Mapping[str, object]], language: ExportLanguage, styles: dict[str, ParagraphStyle]) -> Table:
     headers = (
         ("中文姓名", "Form", "Class", "累計點數", "累計次數")
         if language == "zh"
