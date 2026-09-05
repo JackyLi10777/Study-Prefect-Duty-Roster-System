@@ -524,26 +524,8 @@ def test_deployment_script_refreshes_origin_main_before_ancestor_checks() -> Non
 
 def test_deployment_script_requires_the_current_release_gate_fingerprint() -> None:
     source = _source()
-    required_checks = (
-        "repository_hygiene",
-        "security_gates",
-        "cloudflare_gateway_tests",
-        "motion_state_machine_tests",
-        "automated_test_suite",
-        "python_compile",
-        "dependency_integrity",
-        "verify_nicegui_ui",
-        "verify_runtime_performance",
-        "verify_nicegui_write_pipeline",
-        "verify_nicegui_mobile",
-        "strict_deployment_readiness",
-        "verify_unified_guest_ui",
-        "verify_nicegui_partial_backup",
-        "rc31_theme_control_browser",
-    )
-
-    for check in required_checks:
-        assert f'"{check}"' in source
+    assert "$requiredChecks = @($gateEvidence.requiredChecks)" in source
+    assert '"repository_hygiene"' not in source, "Do not restore a separate deployment checklist"
     assert "$requiredCheckCount = $requiredChecks.Count" in source
     assert "$reportChecks.Count -ne $requiredCheckCount" in source
     assert "$passedNames.Count -ne $requiredCheckCount" in source
@@ -553,7 +535,8 @@ def test_deployment_script_requires_the_current_release_gate_fingerprint() -> No
     assert 'json.dumps({"fingerprint": fingerprint, "fileCount": file_count})' not in source
     assert "sourceFingerprint" in source
     assert "sourceFileCount" in source
-    assert "[int]$releaseReport.schemaVersion -ne 3" in source
+    assert "[int]$releaseReport.schemaVersion -ne $gateEvidence.reportSchemaVersion" in source
+    assert "Assert-ReleaseGateEvidence -Python $sourcePython -Repository $SourceRoot -ReportPath $releaseReportPath" in source
     assert "$postVerificationSource = $releaseReport.postVerificationSource" in source
     assert "[string]$postVerificationSource.sourceFingerprint -cne [string]$releaseReport.sourceFingerprint" in source
     assert "[int]$postVerificationSource.sourceFileCount -ne [int]$releaseReport.sourceFileCount" in source

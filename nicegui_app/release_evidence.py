@@ -6,17 +6,19 @@ from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
 import hashlib
-import json
 import os
 from pathlib import Path, PurePosixPath
 from typing import Iterable, Literal
 
 from nicegui_app.config import POLICY_VERSION, PROJECT_ROOT
+from nicegui_app.release_gates import (
+    RELEASE_REPORT_SCHEMA_VERSION, read_strict_json,
+    validate_gate_declaration, validate_completed_gates,
+)
 
 
 REPORT_PATH = PROJECT_ROOT / "logs" / "release-candidate-report.json"
 PROJECT_ID = "sing-yin-study-prefect-duty-roster"
-RELEASE_REPORT_SCHEMA_VERSION = 3
 RELEASE_SOURCE_ROOTS = (
     PROJECT_ROOT / "nicegui_app",
     PROJECT_ROOT / "packages",
@@ -50,6 +52,9 @@ RELEASE_SOURCE_FILES = (
     PROJECT_ROOT / "scripts" / "check_deployment_readiness.py",
     PROJECT_ROOT / "scripts" / "doctor_windows_remote_access.ps1",
     PROJECT_ROOT / "scripts" / "deploy_windows_release.ps1",
+    PROJECT_ROOT / "scripts" / "deploy_cloudflare_worker.ps1",
+    PROJECT_ROOT / "scripts" / "release_gate_contract.ps1",
+    PROJECT_ROOT / "scripts" / "release-gates.json",
     PROJECT_ROOT / "scripts" / "inspect_support_log.py",
     PROJECT_ROOT / "scripts" / "prepare_cloudflare_remote_access.ps1",
     PROJECT_ROOT / "scripts" / "prepare_windows_host.ps1",
@@ -228,8 +233,9 @@ def load_release_evidence(
     if not report_path.is_file():
         return ReleaseEvidence("missing")
     try:
-        payload = json.loads(report_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        payload = read_strict_json(report_path)
+        validate_gate_declaration(payload)
+    except (OSError, ValueError):
         return ReleaseEvidence("unreadable")
     if not isinstance(payload, dict):
         return ReleaseEvidence("unreadable")
@@ -251,8 +257,6 @@ def load_release_evidence(
         or not isinstance(planned_tag, str)
         or payload.get("immutableReleaseReference") != f"refs/tags/{planned_tag}"
         or not isinstance(required_identities, list)
-        or not required_identities
-        or len(required_identities) != len(set(required_identities))
         or not isinstance(tool_versions, dict)
         or not all(isinstance(value, str) and value for value in tool_versions.values())
     ):
@@ -294,6 +298,10 @@ def load_release_evidence(
     ):
         return ReleaseEvidence("unreadable", passed, total, finished_at)
     if status == "pass" and total > 0 and passed == total and finished_at is not None:
+        try:
+            validate_completed_gates(payload)
+        except ValueError:
+            return ReleaseEvidence("unreadable", passed, total, finished_at)
         return ReleaseEvidence("pass", passed, total, finished_at)
     if status == "fail" or any(item.get("status") == "fail" for item in checks):
         return ReleaseEvidence("fail", passed, total, finished_at)

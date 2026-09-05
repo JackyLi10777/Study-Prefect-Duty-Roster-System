@@ -1724,24 +1724,6 @@ try {
         "Sing Yin Roster controlled Windows release deployment native output"
     )
 
-    $requiredChecks = @(
-        "repository_hygiene",
-        "security_gates",
-        "cloudflare_gateway_tests",
-        "motion_state_machine_tests",
-        "automated_test_suite",
-        "python_compile",
-        "dependency_integrity",
-        "verify_nicegui_ui",
-        "verify_runtime_performance",
-        "verify_nicegui_write_pipeline",
-        "verify_nicegui_mobile",
-        "strict_deployment_readiness",
-        "verify_unified_guest_ui",
-        "verify_nicegui_partial_backup",
-        "rc31_theme_control_browser"
-    )
-    $requiredCheckCount = $requiredChecks.Count
     $startedAt = [DateTimeOffset]::UtcNow
     $releaseCommit = $null
     $previousCommit = $null
@@ -1817,7 +1799,7 @@ try {
     $postApplyGatewayParity = $null
 
     try {
-    Write-Step "Validating the immutable release and $requiredCheckCount-gate evidence"
+    Write-Step "Validating the immutable release and source-owned gate evidence"
     $sourceStatus = Get-GitValue -Repository $SourceRoot -Arguments @(
         "status",
         "--porcelain",
@@ -1852,8 +1834,13 @@ try {
         throw "The verified source Python environment is missing."
     }
     $releaseReportPath = Join-Path $SourceRoot "logs\release-candidate-report.json"
-    $releaseReport = Get-Content -LiteralPath $releaseReportPath -Raw -Encoding UTF8 |
-        ConvertFrom-Json
+    . (Join-Path $SourceRoot "scripts\release_gate_contract.ps1")
+    $gateEvidence = Assert-ReleaseGateEvidence -Python $sourcePython -Repository $SourceRoot -ReportPath $releaseReportPath
+    $requiredChecks = @($gateEvidence.requiredChecks)
+    $requiredCheckCount = $requiredChecks.Count
+    # Consume the exact single-read snapshot validated by Python, not a second
+    # read which could observe an atomically replaced report.
+    $releaseReport = $gateEvidence.report
     $postVerificationSource = $releaseReport.postVerificationSource
     $releaseSourceDirtyIsBoolean = Test-RequiredBooleanProperty `
         -InputObject $releaseReport `
@@ -1876,7 +1863,7 @@ try {
             -DifferenceObject @($reportRequiredChecks | Sort-Object)
     )
     if (
-        [int]$releaseReport.schemaVersion -ne 3 -or
+        [int]$releaseReport.schemaVersion -ne $gateEvidence.reportSchemaVersion -or
         [string]$releaseReport.sourceCommit -cne $releaseCommit -or
         [string]$releaseReport.sourceTree -cne (Get-GitValue -Repository $SourceRoot -Arguments @("rev-parse", "$releaseCommit`^{tree}")) -or
         -not $releaseSourceDirtyIsBoolean -or
