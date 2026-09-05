@@ -693,7 +693,7 @@ class RosterLifecycleMixin:
             if week.status != "published":
                 raise WorkflowError("Substitute recommendations are available only for a published roster.")
             assignment = self._assignment_or_error(session, roster_week_id, assignment_id)
-            return self._eligible_assignment_candidates(session, week, assignment)
+            return self._eligible_assignment_candidates(session, week, assignment, allow_vacant=True)
 
     def draft_assignment_candidates(self, roster_week_id: int, assignment_id: int) -> list[dict[str, object]]:
         """Offer only rule-compliant replacements while a roster is still a draft."""
@@ -1271,6 +1271,10 @@ class RosterLifecycleMixin:
         command_id: str | None = None,
         expected_week_version: int | None = None,
     ) -> LeaveAdjustmentResult:
+        if replacement_prefect_id is not None and (
+            not isinstance(replacement_prefect_id, str) or not replacement_prefect_id.strip()
+        ):
+            raise WorkflowError("A replacement prefect ID must not be blank.")
         normalized_reason = (reason or "").strip()
         operation_type = "leave_adjusted"
         operation_id = self._operation_command_id(operation_type, command_id)
@@ -1356,14 +1360,22 @@ class RosterLifecycleMixin:
                         raise WorkflowConflictError(
                             "This roster was updated in another tab. Refresh it and review the adjustment again."
                         )
-                    if assignment.status != "active" or assignment.prefect_id is None:
+                    was_vacant = assignment.status == "vacant" and assignment.prefect_id is None
+                    if not was_vacant and (assignment.status != "active" or assignment.prefect_id is None):
                         raise WorkflowError("This assignment is no longer active.")
-                    original = session.get(PrefectRecord, assignment.prefect_id)
-                    if original is None:
+                    if was_vacant and replacement_prefect_id is None:
+                        raise WorkflowError("Select an eligible prefect to fill this vacant duty.")
+                    original = (
+                        session.get(PrefectRecord, assignment.prefect_id)
+                        if assignment.prefect_id is not None else None
+                    )
+                    if not was_vacant and original is None:
                         raise WorkflowError("The original prefect no longer exists.")
                     candidates = {
                         candidate["id"]
-                        for candidate in self._eligible_assignment_candidates(session, week, assignment)
+                        for candidate in self._eligible_assignment_candidates(
+                            session, week, assignment, allow_vacant=True,
+                        )
                     }
                     replacement = None
                     if replacement_prefect_id:
@@ -1388,26 +1400,27 @@ class RosterLifecycleMixin:
                             "This roster was updated in another tab. Refresh it and review the adjustment again."
                         )
 
-                    original_name = assignment.prefect_name_snapshot
+                    original_name = "VACANT" if was_vacant else assignment.prefect_name_snapshot
                     original_id = assignment.prefect_id
-                    original.history_weight = round(original.history_weight - assignment.weight, 4)
-                    original.history_duties = max(0, original.history_duties - 1)
-                    original.updated_at = now
-                    session.add(
-                        FairnessLedgerRecord(
-                            prefect_id=original.id,
-                            roster_week_id=week.id,
-                            assignment_id=assignment.id,
-                            delta=-assignment.weight,
-                            duty_delta=-1,
-                            event_type="leave_adjustment_debit",
-                            source_type="leave_adjustment",
-                            source_id=operation_id,
-                            operation_id=operation_id,
-                            reason=normalized_reason,
-                            created_at=now,
+                    if original is not None:
+                        original.history_weight = round(original.history_weight - assignment.weight, 4)
+                        original.history_duties = max(0, original.history_duties - 1)
+                        original.updated_at = now
+                        session.add(
+                            FairnessLedgerRecord(
+                                prefect_id=original.id,
+                                roster_week_id=week.id,
+                                assignment_id=assignment.id,
+                                delta=-assignment.weight,
+                                duty_delta=-1,
+                                event_type="leave_adjustment_debit",
+                                source_type="leave_adjustment",
+                                source_id=operation_id,
+                                operation_id=operation_id,
+                                reason=normalized_reason,
+                                created_at=now,
+                            )
                         )
-                    )
 
                     status = "vacant"
                     replacement_name = None
@@ -1418,6 +1431,7 @@ class RosterLifecycleMixin:
                         assignment.prefect_id = replacement.id
                         assignment.prefect_name_snapshot = replacement.name_zh
                         assignment.prefect_role_snapshot = replacement.role_code
+                        assignment.status = "active"
                         replacement_name = replacement.name_zh
                         status = "replaced"
                         session.add(
