@@ -237,3 +237,41 @@ def test_flexible_history_selects_actual_latest_week_across_both_sources(workflo
         session.commit()
     target = operator.create_dated_weekly_draft(2026, 1, date(2026, 9, 28), command_id="target", assist_mode=AssistAssignmentMode.FLEXIBLE_WEEKLY)
     assert dict(target.snapshot.draft.previous_assist) == dict(zip(SchoolDay, shifted if use_legacy else heads, strict=True))
+
+
+@pytest.mark.parametrize("backend", ["official", "guest"])
+def test_real_published_source_blocks_adjacent_day_and_manual_edit(workflow, backend):
+    from datetime import timedelta
+    from roster_core.dated_draft import DraftError, DutyCommitment
+    from roster_policy import SchoolDay
+    from roster_policy.configurable import BusinessId, ScheduleExceptions, ScheduleMode, SeatKey
+    from nicegui_app.services.guest_workspace import GuestWorkspaceRegistry
+    from tests.test_guest_policy_workflow import SECRET, adapter
+
+    operator = admin(workflow) if backend == "official" else adapter(GuestWorkspaceRegistry(SECRET))
+    operator.initialize_policy(2026, command_id="init")
+    if backend == "official":
+        seed_directory(operator)
+    legacy = operator.generate_and_save_draft(MONDAY, closed_days=tuple(SchoolDay(day) for day in (1, 2, 3, 4)),
+                                                command_id="legacy-create")
+    first = operator.create_dated_weekly_draft(2026, 1, MONDAY, command_id="dated-create",
+                                               exceptions=ScheduleExceptions(closed_dates=(MONDAY,)))
+    assert first.snapshot.draft.occupied == ()  # An unpublished draft is not a commitment.
+    published = operator.publish(legacy.id, expected_week_version=legacy.version, command_id="legacy-publish")
+    assert published.status == "published"
+    rows = [row for row in operator.assignments(legacy.id) if row["status"] == "active" and row["prefectId"]]
+    assert rows and all(row["day"] == "MONDAY" for row in rows)
+    expected = {DutyCommitment(row["prefectId"], MONDAY, ScheduleMode.WEEKLY) for row in rows}
+    result = operator.regenerate_dated_draft(first.snapshot.schedule_id, expected_version=1, command_id="dated-regen")
+    assert set(result.snapshot.draft.occupied) == expected
+    assert not any(cell.prefect_id in {item.person_id for item in expected}
+                   and cell.key.duty_date == MONDAY + timedelta(days=1) for cell in result.snapshot.draft.cells)
+    assert operator.dated_draft_snapshot(first.snapshot.schedule_id) == result.snapshot
+    assert operator.dated_draft_snapshot(first.snapshot.schedule_id, version=1) == first.snapshot
+    for post, business in (("ROOM_302", BusinessId.STUDY_ROOM), ("ASSIST_IN_CHARGE", BusinessId.ASSIST_IN_CHARGE)):
+        who = next(row["prefectId"] for row in rows if row["postCode"] == post)
+        with pytest.raises(DraftError, match="not eligible"):
+            operator.edit_dated_draft(first.snapshot.schedule_id,
+                                       {SeatKey(MONDAY + timedelta(days=1), business, 1): who},
+                                       expected_version=2, command_id="bad-edit-" + post)
+        assert operator.dated_draft_snapshot(first.snapshot.schedule_id) == result.snapshot

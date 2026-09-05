@@ -6,14 +6,14 @@ import json
 import pytest
 
 from roster_core.dated_draft import (
-    DraftError, decode_draft, edit_draft, encode_draft, generate_draft,
+    DraftError, DutyCommitment, decode_draft, edit_draft, encode_draft, generate_draft, validate_draft,
 )
 from roster_core.generator import generate_weekly_roster
 from roster_core.models import Prefect
 from roster_core.policy_settings import PolicyRevision
 from roster_policy import AssistAssignmentMode, DutyPost, PrefectRole, SchoolDay
 from roster_policy.configurable import (
-    BusinessId, DutyTimes, ScheduleExceptions, SeatKey, TimeWindow, WeeklyPolicy,
+    BusinessId, DutyTimes, ScheduleExceptions, ScheduleMode, SeatKey, TimeWindow, WeeklyPolicy,
     default_weekly_policy,
 )
 
@@ -87,7 +87,7 @@ def test_edit_preserves_rules_and_rejects_duplicate_and_consecutive_assignments(
 def test_closed_day_and_external_occupancy_are_constraints():
     selected = ScheduleExceptions(closed_dates=(MONDAY,))
     draft = generate_draft(policy(), MONDAY, people(), exceptions=selected,
-                           occupied=(("fictional-005", MONDAY + timedelta(days=1)),))
+                           occupied=(DutyCommitment("fictional-005", MONDAY + timedelta(days=1), ScheduleMode.WEEKLY),))
     assert all(cell.state == "day_closed" for cell in draft.cells if cell.key.duty_date == MONDAY)
     assert not any(cell.prefect_id == "fictional-005" and cell.key.duty_date == MONDAY + timedelta(days=1) for cell in draft.cells)
 
@@ -147,3 +147,55 @@ def test_search_budget_returns_reviewable_partial_result(monkeypatch):
     draft = generate_draft(policy(study_room={"capacity": 15}), MONDAY, people(8))
     assert any(cell.state == "vacant" for cell in draft.cells)
     module.validate_draft(draft)
+
+
+def test_published_ordinary_monday_prevents_tuesday_assignment_review_regression():
+    exceptions = ScheduleExceptions(closed_dates=(MONDAY,))
+    baseline = generate_draft(policy(), MONDAY, people(), exceptions=exceptions)
+    tuesday = SeatKey(MONDAY + timedelta(days=1), BusinessId.STUDY_ROOM, 1)
+    who = next(cell.prefect_id for cell in baseline.cells if cell.key == tuesday)
+    result = generate_draft(policy(), MONDAY, people(), exceptions=exceptions,
+                            occupied=(DutyCommitment(who, MONDAY, ScheduleMode.WEEKLY),))
+    assert not any(cell.prefect_id == who and cell.key.duty_date == tuesday.duty_date for cell in result.cells)
+
+
+@pytest.mark.parametrize("assist_mode", list(AssistAssignmentMode))
+@pytest.mark.parametrize("business", [BusinessId.STUDY_ROOM, BusinessId.ASSIST_IN_CHARGE])
+@pytest.mark.parametrize("offset", [-1, 0, 1])
+@pytest.mark.parametrize("source_mode", list(ScheduleMode))
+def test_external_commitment_rule_is_shared_by_generation_edit_and_decoder(assist_mode, business, offset, source_mode):
+    target_day = MONDAY + timedelta(days=2)
+    exceptions = ScheduleExceptions(closed_dates=tuple(MONDAY + timedelta(days=day) for day in (0, 1, 3, 4)))
+    baseline = generate_draft(policy(), MONDAY, people(), exceptions=exceptions, assist_mode=assist_mode)
+    key = SeatKey(target_day, business, 1)
+    original = next(cell for cell in baseline.cells if cell.key == key)
+    occupied = (DutyCommitment(original.prefect_id, target_day + timedelta(days=offset), source_mode),)
+    result = generate_draft(policy(), MONDAY, people(), exceptions=exceptions, assist_mode=assist_mode, occupied=occupied)
+    blocked = source_mode is ScheduleMode.WEEKLY or offset == 0
+    actual = next(cell for cell in result.cells if cell.key == key)
+    assert (actual.prefect_id != original.prefect_id) if blocked else (actual == original)
+    assert decode_draft(encode_draft(result)) == result
+    if blocked:
+        assert actual.state == "assigned" or (actual.state == "vacant" and actual.reason)
+        with pytest.raises(DraftError, match="not eligible"):
+            edit_draft(result, {key: original.prefect_id})
+        with pytest.raises(DraftError, match="not eligible"):
+            validate_draft(replace(baseline, occupied=occupied))
+        raw = json.loads(encode_draft(baseline))
+        raw["occupied"] = [[original.prefect_id, occupied[0].duty_date.isoformat(), source_mode.value]]
+        with pytest.raises(DraftError):
+            decode_draft(json.dumps(raw))
+    else:
+        assert edit_draft(result, {key: original.prefect_id}) == result
+
+
+@pytest.mark.parametrize("occupied", [
+    (("fictional-005", MONDAY),),
+    (DutyCommitment("fictional-005", MONDAY, "weekly"),),
+    (DutyCommitment("missing", MONDAY, ScheduleMode.WEEKLY),),
+    (DutyCommitment("fictional-005", MONDAY, ScheduleMode.WEEKLY),
+     DutyCommitment("fictional-005", MONDAY, ScheduleMode.CP)),
+])
+def test_occupancy_never_infers_missing_mode_or_accepts_ambiguous_source(occupied):
+    with pytest.raises(DraftError, match="Occupancy"):
+        generate_draft(policy(), MONDAY, people(), occupied=occupied)

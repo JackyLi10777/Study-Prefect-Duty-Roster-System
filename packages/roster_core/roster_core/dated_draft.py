@@ -16,7 +16,7 @@ import math
 from roster_policy import AssistAssignmentMode, PrefectRole, SchoolDay, is_chinese_display_name
 from roster_policy.configurable import (
     ApprovedUnavailable, BusinessId, CompiledSchedule, ScheduleExceptions,
-    SeatKey, SeatState, compile_weekly,
+    ScheduleMode, SeatKey, SeatState, compile_weekly,
 )
 from roster_policy.policy_codec import decode_weekly_policy, encode_weekly_policy
 from .generator import (
@@ -53,13 +53,20 @@ class DraftCell:
 
 
 @dataclass(frozen=True)
+class DutyCommitment:
+    person_id: str
+    duty_date: date
+    mode: ScheduleMode
+
+
+@dataclass(frozen=True)
 class WeeklyDraft:
     policy_ref: PolicyRevision
     schedule: CompiledSchedule
     people: tuple[Prefect, ...]
     exceptions: ScheduleExceptions
     leaves: tuple[tuple[str, date], ...]
-    occupied: tuple[tuple[str, date], ...]
+    occupied: tuple[DutyCommitment, ...]
     assist_mode: AssistAssignmentMode
     history_multiplier: float
     previous_assist: tuple[tuple[SchoolDay, str], ...]
@@ -109,6 +116,28 @@ def _people(values):
     return tuple(sorted(people, key=lambda person: person.id))
 
 
+def _commitments(values, people, dates):
+    commitments = tuple(values)
+    ids = {person.id for person in people}
+    if any(not isinstance(item, DutyCommitment) or type(item.person_id) is not str
+           or item.person_id not in ids or type(item.duty_date) is not date
+           or item.duty_date not in dates or not isinstance(item.mode, ScheduleMode)
+           for item in commitments):
+        raise DraftError("Occupancy requires a known person, actual schedule date and explicit mode.")
+    if len({(item.person_id, item.duty_date) for item in commitments}) != len(commitments):
+        raise DraftError("Occupancy must not repeat a person/date.")
+    return tuple(sorted(commitments, key=lambda item: (item.person_id, item.duty_date, item.mode.value)))
+
+
+def _excluded_dates(leaves, occupied, dates):
+    # Ordinary no-consecutive duty is a hard rule, including other published
+    # ordinary schedules. CP commitments only block their actual date.
+    return set(leaves) | {
+        (item.person_id, day) for item in occupied for day in dates
+        if abs((day - item.duty_date).days) <= (1 if item.mode is ScheduleMode.WEEKLY else 0)
+    }
+
+
 def _eligible(person, key, excluded):
     role = PrefectRole.ASSISTANT_HEAD if key.business is BusinessId.ASSIST_IN_CHARGE else PrefectRole.STUDY_PREFECT
     return (person.role is role and SchoolDay(key.duty_date.weekday()) in person.available_days
@@ -129,9 +158,9 @@ def validate_draft(draft: WeeklyDraft) -> None:
     if type(draft.history_multiplier) not in (int, float):
         raise DraftError("History multiplier must be numeric, not boolean.")
     _normalized_history_priority_multiplier(draft.history_multiplier)
-    for pairs, label in ((draft.leaves, "Leave"), (draft.occupied, "Occupancy")):
-        if _pairs(pairs, draft.people, draft.schedule.dates, label) != pairs:
-            raise DraftError("Date constraints require canonical order.")
+    if (_pairs(draft.leaves, draft.people, draft.schedule.dates, "Leave") != draft.leaves
+            or _commitments(draft.occupied, draft.people, draft.schedule.dates) != draft.occupied):
+        raise DraftError("Date constraints require canonical order.")
     if (type(draft.previous_assist) is not tuple
             or any(type(item) is not tuple or len(item) != 2 or not isinstance(item[0], SchoolDay)
                    or type(item[1]) is not str or not item[1] for item in draft.previous_assist)
@@ -142,7 +171,7 @@ def validate_draft(draft: WeeklyDraft) -> None:
     if type(draft.cells) is not tuple or len(expected) != len(draft.cells):
         raise DraftError("The draft must preserve every display cell.")
     people = {person.id: person for person in draft.people}
-    excluded = set(draft.leaves) | set(draft.occupied)
+    excluded = _excluded_dates(draft.leaves, draft.occupied, draft.schedule.dates)
     assigned = defaultdict(set)
     for cell, seat in zip(draft.cells, expected, strict=True):
         if not isinstance(cell, DraftCell) or cell.key != seat.key:
@@ -270,7 +299,7 @@ def generate_draft(
         raise DraftError("Assist capacity greater than one is not supported by the current mode contract.")
     people = _people(people)
     leaves = _pairs(leaves, people, schedule.dates, "Leave")
-    occupied = _pairs(occupied, people, schedule.dates, "Occupancy")
+    occupied = _commitments(occupied, people, schedule.dates)
     if type(history_multiplier) not in (int, float):
         raise DraftError("History multiplier must be numeric, not boolean.")
     multiplier = _normalized_history_priority_multiplier(history_multiplier)
@@ -278,7 +307,7 @@ def generate_draft(
         raise DraftError("Select a supported Assist mode.")
     previous = tuple(sorted((previous_assist or {}).items()))
     required = [seat.key for row in schedule.rows for seat in row.seats if seat.state is SeatState.REQUIRED]
-    excluded = set(leaves) | set(occupied)
+    excluded = _excluded_dates(leaves, occupied, schedule.dates)
     assignments, reasons = _solve_regular([key for key in required if key.business is not BusinessId.ASSIST_IN_CHARGE],
                                           people, excluded, multiplier)
     assist_keys = [key for key in required if key.business is BusinessId.ASSIST_IN_CHARGE]
@@ -336,7 +365,7 @@ def edit_draft(draft: WeeklyDraft, changes: Mapping[SeatKey, str | None], *,
         cells.append(cell)
     result = replace(draft, cells=tuple(cells), people=live_people,
                      leaves=draft.leaves if leaves is None else _pairs(leaves, live_people, draft.schedule.dates, "Leave"),
-                     occupied=draft.occupied if occupied is None else _pairs(occupied, live_people, draft.schedule.dates, "Occupancy"))
+                     occupied=draft.occupied if occupied is None else _commitments(occupied, live_people, draft.schedule.dates))
     validate_draft(result)
     return result
 
@@ -385,7 +414,7 @@ def _payload(draft):
         "closed": [day.isoformat() for day in draft.exceptions.closed_dates],
         "unavailable": [[_key(entry.seat), entry.approval_reference] for entry in draft.exceptions.unavailable],
         "leaves": [[identity, day.isoformat()] for identity, day in draft.leaves],
-        "occupied": [[identity, day.isoformat()] for identity, day in draft.occupied],
+        "occupied": [[item.person_id, item.duty_date.isoformat(), item.mode.value] for item in draft.occupied],
         "assistMode": draft.assist_mode.value, "historyMultiplier": draft.history_multiplier,
         "previousAssist": [[int(day), identity] for day, identity in draft.previous_assist],
         "cells": [{"key": _key(cell.key), "state": cell.state, "person": cell.prefect_id,
@@ -432,7 +461,8 @@ def decode_draft(document: str) -> WeeklyDraft:
                                person["mentoring"], person["fixed"], person["remarks"]) for person in raw["people"])
         result = WeeklyDraft(reference, schedule, people, exceptions,
                              tuple((identity, date.fromisoformat(day)) for identity, day in raw["leaves"]),
-                             tuple((identity, date.fromisoformat(day)) for identity, day in raw["occupied"]),
+                             tuple(DutyCommitment(identity, date.fromisoformat(day), ScheduleMode(mode))
+                                   for identity, day, mode in raw["occupied"]),
                              AssistAssignmentMode(raw["assistMode"]), raw["historyMultiplier"],
                              tuple((SchoolDay(day), identity) for day, identity in raw["previousAssist"]),
                              tuple(DraftCell(key(cell["key"]), cell["state"], cell["person"], cell["name"], cell["reason"])

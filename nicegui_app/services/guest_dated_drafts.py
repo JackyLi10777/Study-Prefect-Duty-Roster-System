@@ -3,11 +3,11 @@ from copy import deepcopy
 from datetime import date, timedelta
 import hashlib
 
-from roster_core.dated_draft import accepted_assist_ownership, decode_draft, edit_draft, encode_draft, generate_draft
+from roster_core.dated_draft import DutyCommitment, accepted_assist_ownership, decode_draft, edit_draft, encode_draft, generate_draft
 from roster_core.command_identity import operation_fingerprint
 from roster_core.policy_settings import PolicySettings, PolicyVersionConflict
 from roster_policy import AssistAssignmentMode, SchoolDay
-from roster_policy.configurable import BusinessId, ScheduleExceptions, SeatKey
+from roster_policy.configurable import BusinessId, ScheduleExceptions, ScheduleMode, SeatKey
 from roster_policy.policy_codec import encode_weekly_policy
 from nicegui_app.services.dated_draft_types import DatedDraftCommandResult, DatedDraftSnapshot, draft_identity, draft_version, edit_payload, exception_payload
 from nicegui_app.services.guest_policy import GuestPolicyRepository, guest_policy_command_id, validate_policy_state
@@ -90,7 +90,8 @@ class GuestDatedDraftMixin:
         ids = {person.id for person in people}
         leaves = tuple(sorted((identity, monday + timedelta(days=int(day)))
                               for identity, days in self._leave_days(state, monday).items() for day in days if identity in ids))
-        occupied = tuple(sorted({(row["prefectId"], monday + timedelta(days=int(SchoolDay[row["day"]])))
+        occupied = tuple(DutyCommitment(identity, day, ScheduleMode.WEEKLY) for identity, day in sorted({
+                                 (row["prefectId"], monday + timedelta(days=int(SchoolDay[row["day"]])))
                                  for week in state.get("weeks", [])
                                  if week["weekStart"] == monday.isoformat() and week["status"] == "published"
                                  for row in week.get("assignments", [])

@@ -7,10 +7,10 @@ from pathlib import Path
 from sqlalchemy import select
 
 from roster_core.command_identity import normalize_command_id
-from roster_core.dated_draft import accepted_assist_ownership, decode_draft, edit_draft, encode_draft, generate_draft
+from roster_core.dated_draft import DutyCommitment, accepted_assist_ownership, decode_draft, edit_draft, encode_draft, generate_draft
 from roster_core.policy_settings import PolicySettings, PolicyVersionConflict
 from roster_policy import AssistAssignmentMode, SchoolDay
-from roster_policy.configurable import ScheduleExceptions, SeatKey
+from roster_policy.configurable import ScheduleExceptions, ScheduleMode, SeatKey
 from nicegui_app.persistence.models import (
     BackupObligationRecord, DatedDraftCurrentRecord, DatedDraftRevisionRecord, OperationCommandRecord,
     PrefectRecord, RosterAssignmentRecord, RosterWeekRecord,
@@ -95,8 +95,9 @@ class DatedDraftWorkflowMixin:
         statement = (select(RosterAssignmentRecord).join(RosterWeekRecord)
                      .where(RosterWeekRecord.week_start == monday, RosterWeekRecord.status == "published",
                             RosterAssignmentRecord.status == "active", RosterAssignmentRecord.prefect_id.is_not(None)))
-        occupied = tuple(sorted({(row.prefect_id, monday + timedelta(days=int(SchoolDay[row.day])))
-                                  for row in session.scalars(statement) if row.prefect_id in ids}))
+        occupied = tuple(DutyCommitment(identity, day, ScheduleMode.WEEKLY) for identity, day in sorted({
+            (row.prefect_id, monday + timedelta(days=int(SchoolDay[row.day])))
+            for row in session.scalars(statement) if row.prefect_id in ids}))
         return people, leaves, occupied
 
     def _generate_dated(self, session, reference, monday, *, exceptions, assist_mode, history_multiplier):

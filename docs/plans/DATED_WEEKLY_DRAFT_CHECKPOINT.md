@@ -99,3 +99,33 @@ without making Guest state validation import the official SQL workflow.
 Governance and whitespace checks pass. This is focused implementation evidence,
 not exact-head full verification, required CI, a complete independent review,
 performance certification, mobile acceptance or deployment. Those remain pending.
+
+### Independent review correction: external ordinary adjacency
+
+Review of checkpoint `0689af0a20f3dc765d9902f8c0bd97a25eb300b9`
+found that an external published Monday assignment only blocked Monday, allowing
+the same person on Tuesday. The original regression command failed as expected
+(1 failed, 21 deselected, 0.26 seconds):
+
+```text
+python -m pytest tests/test_dated_weekly_draft.py -k review_regression --maxfail=1 --disable-warnings
+```
+
+Occupancy now requires a mode-tagged `DutyCommitment`. One shared exclusion
+predicate blocks the same and adjacent dates for ordinary commitments, but only
+the same date for CP commitments. Regular generation, both Assist modes, full
+snapshot validation/decoding and manual edits use this predicate. Both storage
+Adapters label their real published ordinary source explicitly as weekly; this
+does not activate CP generation or persistence. Missing modes are never inferred.
+
+The original regression is green. Added tests cover previous/same/next dates,
+regular and Assist posts, both Assist modes, CP adjacent-day positive cases,
+manual edits and forged full snapshots. Official and Guest integration tests run
+real generation -> publication -> dated regeneration, verify unpublished drafts
+do not occupy people, reject manual conflicting edits without changing history,
+and preserve reopening of original immutable revisions.
+
+The focused integration command above now passes **201 tests in 60.41 seconds**.
+The earlier 170-test result is retained as historical checkpoint evidence, not
+substituted for this correction's tests. Independent re-review and exact-head
+full verification/CI remain pending; no deployment occurred.
