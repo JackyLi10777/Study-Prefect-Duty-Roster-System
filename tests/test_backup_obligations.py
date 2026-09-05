@@ -4,7 +4,7 @@ from datetime import date, datetime
 import sqlite3
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from nicegui_app.config import PREFECT_SEED_PATH
 from nicegui_app.persistence.models import BackupObligationRecord, OperationCommandRecord
@@ -12,11 +12,98 @@ from nicegui_app.services.roster_workflow import (
     BackupResult,
     CommittedWriteBackupError,
     RosterWorkflow,
+    WorkflowError,
     WorkflowMaintenanceError,
 )
 
 
 WEEK_START = date(2026, 9, 7)
+
+
+@pytest.mark.parametrize("operation", ["publish", "withdraw"])
+def test_lost_completed_snapshot_reopens_obligation_without_replaying_business(tmp_path, monkeypatch, operation):
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "recovery.sqlite3", backup_dir=tmp_path / "backups", seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    draft = workflow.generate_and_save_draft(WEEK_START, command_id="draft")
+    published = workflow.publish(draft.id, expected_week_version=draft.version, command_id="publish")
+    if operation == "publish":
+        replay = lambda: workflow.publish(draft.id, expected_week_version=draft.version, command_id="publish")
+        status = "published"
+    else:
+        workflow.withdraw_published_roster(draft.id, expected_version=published.version, reason="fictional correction", command_id="withdraw")
+        replay = lambda: workflow.withdraw_published_roster(draft.id, expected_version=published.version, reason="fictional correction", command_id="withdraw")
+        status = "withdrawn"
+    with workflow._session() as session:
+        previous = session.scalar(select(BackupObligationRecord.backup_path).where(BackupObligationRecord.command_id == operation))
+        ledger_count = session.scalar(text("SELECT COUNT(*) FROM fairness_ledger"))
+        command_count = session.scalar(text("SELECT COUNT(*) FROM operation_commands"))
+    loads = workflow.prefect_loads()
+    original_verify = workflow.verify_backup
+    original_create = workflow._create_and_record_backup
+    monkeypatch.setattr(workflow, "verify_backup", lambda path: {"valid": False} if str(path) == previous else original_verify(path))
+    monkeypatch.setattr(workflow, "_create_and_record_backup", lambda *_: BackupResult(False, None, "fictional offline device"))
+    with pytest.raises(CommittedWriteBackupError):
+        workflow._fulfill_backup_obligation(operation)
+    with workflow._session() as session:
+        obligation = session.scalar(select(BackupObligationRecord).where(BackupObligationRecord.command_id == operation))
+        assert obligation.status == "failed"
+        assert obligation.backup_path is None
+    assert workflow.pending_backup_obligation_count() == 1
+    with pytest.raises(WorkflowMaintenanceError, match="read-only"):
+        workflow.generate_and_save_draft(date(2026, 9, 14), command_id="blocked")
+    monkeypatch.setattr(workflow, "_create_and_record_backup", original_create)
+    assert workflow.repair_pending_backup_obligations() == 1
+    result = replay()
+    assert result.backup_path is not None and str(result.backup_path) != previous
+    assert workflow.verify_backup(result.backup_path)["valid"] is True
+    assert workflow.prefect_loads() == loads
+    with workflow._session() as session:
+        assert session.scalar(text("SELECT COUNT(*) FROM fairness_ledger")) == ledger_count
+        assert session.scalar(text("SELECT COUNT(*) FROM operation_commands")) == command_count
+        assert session.scalar(select(BackupObligationRecord.backup_path).where(BackupObligationRecord.command_id == operation)) == str(result.backup_path)
+    restored = workflow.restore_backup(result.backup_path)
+    assert restored["restoredFrom"] == result.backup_path
+    assert workflow.roster_week(draft.id)["status"] == status
+    assert workflow.prefect_loads() == loads
+
+
+@pytest.mark.parametrize("operation", ["publish", "withdraw"])
+def test_original_roster_replay_rejects_duplicate_receipt_fields_before_any_side_effect(tmp_path, monkeypatch, operation):
+    workflow = RosterWorkflow(
+        database_path=tmp_path / "strict-receipt.sqlite3", backup_dir=tmp_path / "backups", seed_path=PREFECT_SEED_PATH,
+    )
+    workflow.bootstrap()
+    draft = workflow.generate_and_save_draft(WEEK_START, command_id="draft")
+    published = workflow.publish(draft.id, expected_week_version=draft.version, command_id="publish")
+    if operation == "publish":
+        replay = lambda: workflow.publish(draft.id, expected_week_version=draft.version, command_id="publish")
+    else:
+        workflow.withdraw_published_roster(draft.id, expected_version=published.version, reason="fictional correction", command_id="withdraw")
+        replay = lambda: workflow.withdraw_published_roster(draft.id, expected_version=published.version, reason="fictional correction", command_id="withdraw")
+    with workflow._session() as session:
+        command = session.get(OperationCommandRecord, operation)
+        original = command.result_json
+        # Keep the original last value intact: permissive JSON parsing would
+        # hide this corruption and incorrectly accept the replay as successful.
+        first_field = original[1:].split(",", 1)[0]
+        command.result_json = "{" + first_field + "," + original[1:]
+        session.commit()
+        ledger_count = session.scalar(text("SELECT COUNT(*) FROM fairness_ledger"))
+        command_count = session.scalar(text("SELECT COUNT(*) FROM operation_commands"))
+    loads = workflow.prefect_loads()
+
+    def forbidden_backup(_command):
+        pytest.fail("Invalid receipt replay must not fulfill a backup")
+
+    monkeypatch.setattr(workflow, "_fulfill_backup_obligation", forbidden_backup)
+    with pytest.raises(WorkflowError, match="receipt is invalid"):
+        replay()
+    assert workflow.prefect_loads() == loads
+    with workflow._session() as session:
+        assert session.scalar(text("SELECT COUNT(*) FROM fairness_ledger")) == ledger_count
+        assert session.scalar(text("SELECT COUNT(*) FROM operation_commands")) == command_count
 
 
 def test_startup_repairs_a_committed_write_whose_backup_was_interrupted(

@@ -48,6 +48,7 @@ from nicegui_app.services.workflow_types import (
     LEGACY_FIXED_WEEKDAY,
     LeaveAdjustmentResult,
     PeriodSummaryReport,
+    PolicyCommandResult,
     PrefectInput,
     PrefectPatch,
     PrefectPeriodContribution,
@@ -66,6 +67,11 @@ from roster_core.generator import (
     validate_assignments,
 )
 from roster_core.models import Assignment, Prefect
+from roster_core.policy_settings import PolicyRevision, PolicySettings, ResetPreview
+from roster_policy.configurable import WeeklyPolicy
+from nicegui_app.services.guest_policy import (
+    GuestPolicyRepository, guest_policy_command_id, policy_reference_revision,
+)
 from roster_policy import (
     DUTY_SERVICE_TIME_WINDOWS,
     DutyPost,
@@ -266,6 +272,64 @@ class GuestWorkspaceAdapter:
     def maintenance_status(self) -> _DemoMaintenanceStatus:
         self._require_read()
         return _DemoMaintenanceStatus()
+
+    def _policy_settings(self) -> PolicySettings:
+        self._require_read()
+        return PolicySettings(GuestPolicyRepository(self._registry, self._view(), self._commit))
+
+    def policy_current(self, year_start: int) -> PolicyRevision:
+        return self._policy_settings().current(year_start)
+
+    def policy_revision(self, year_start: int, revision: int) -> PolicyRevision:
+        return self._policy_settings().revision(year_start, revision)
+
+    def policy_reset_preview(self, year_start: int) -> ResetPreview:
+        return self._policy_settings().preview_reset(year_start)
+
+    def _policy_write(
+        self, action: Callable[[PolicySettings, str], PolicyRevision], *, command_id: str,
+    ) -> PolicyCommandResult:
+        self._require_modify()
+        command_id = guest_policy_command_id(command_id)
+        if not self._bound:
+            raise WorkflowError("The demo workspace is still connecting. Try the action again.")
+        repository = GuestPolicyRepository(self._registry, self._view(), self._commit)
+        revision = action(PolicySettings(repository), command_id)
+        return PolicyCommandResult(command_id, revision, "not_applicable", replayed=repository.replayed)
+
+    def initialize_policy(self, year_start: int, *, command_id: str) -> PolicyCommandResult:
+        return self._policy_write(
+            lambda settings, command: settings.initialize(year_start, command_id=command), command_id=command_id,
+        )
+
+    def save_policy(
+        self, year_start: int, policy: WeeklyPolicy, *, expected_revision: int, command_id: str,
+    ) -> PolicyCommandResult:
+        return self._policy_write(lambda settings, command: settings.save(
+            year_start, policy, expected_revision=expected_revision, command_id=command,
+        ), command_id=command_id)
+
+    def reset_policy(self, preview: ResetPreview, *, command_id: str) -> PolicyCommandResult:
+        return self._policy_write(
+            lambda settings, command: settings.reset(preview, command_id=command), command_id=command_id,
+        )
+
+    def policy_command_result(self, *, command_id: str) -> PolicyCommandResult | None:
+        self._require_read()
+        command_id = guest_policy_command_id(command_id)
+        if not self._bound:
+            raise WorkflowError("The demo workspace is still connecting. Try the action again.")
+        receipt = self._registry.command_result(
+            session_id=self._session_id, workspace_id=self._workspace_id,
+            tab_id=self._tab_id, command_id=command_id,
+        )
+        if receipt is None or receipt.policy_result_reference is None:
+            return None
+        stored = policy_reference_revision(receipt.state, receipt.policy_result_reference)
+        settings = PolicySettings(GuestPolicyRepository(self._registry, receipt, self._commit))
+        return PolicyCommandResult(
+            command_id, settings.revision(stored.year_start, stored.revision), "not_applicable", replayed=True,
+        )
 
     def prefect_loads(self) -> dict[str, float]:
         self._require_read()
@@ -1880,7 +1944,7 @@ class GuestWorkspaceAdapter:
         restored = deepcopy(checkpoint) if isinstance(checkpoint, dict) else demo_fixture()
         restored["demoBackupAt"] = _datetime_text(_now())
         restored["demoBackupState"] = deepcopy(checkpoint) if isinstance(checkpoint, dict) else demo_fixture()
-        self._commit(view, restored, "demo-restore")
+        self._commit(view, restored, "demo-restore", reset_policy_history=True)
         path = _DemoPath(_DEMO_BACKUP_NAME)
         return {
             "restoredFrom": path,
@@ -1949,7 +2013,7 @@ class GuestWorkspaceAdapter:
     def reset_demo_fixture(self) -> dict[str, object]:
         self._require_modify()
         view = self._view()
-        self._commit(view, demo_fixture(), "demo-fixture-reset")
+        self._commit(view, demo_fixture(), "demo-fixture-reset", reset_policy_history=True)
         return {"reset": True, "fixtureVersion": DEMO_FIXTURE_VERSION}
 
     def _require_read(self) -> None:
@@ -1985,6 +2049,8 @@ class GuestWorkspaceAdapter:
         *,
         command_id: str | None = None,
         request_digest: str | None = None,
+        policy_result_reference: tuple[int, int] | None = None,
+        reset_policy_history: bool = False,
     ) -> GuestWorkspaceView:
         if not self._bound:
             raise WorkflowError("The demo workspace is still connecting. Try the action again.")
@@ -1999,6 +2065,8 @@ class GuestWorkspaceAdapter:
                 command_id=receipt_id,
                 state=state,
                 request_digest=request_digest,
+                policy_result_reference=policy_result_reference,
+                reset_policy_history=reset_policy_history,
             )
             self._initial_view = updated
             if self._snapshot_publisher is not None:
