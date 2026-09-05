@@ -28,6 +28,9 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from nicegui_app.config import POLICY_VERSION
+from nicegui_app.release_gates import (
+    GATE_MANIFEST_BINDING, REQUIRED_CHECK_IDENTITIES, validate_completed_gates,
+)
 from nicegui_app.release_evidence import (
     PROJECT_ID,
     RELEASE_REPORT_SCHEMA_VERSION,
@@ -46,23 +49,6 @@ _SERVER_FAILURE_MARKERS = (
 _WORKER_RUNTIME_TEST = (
     "tests/test_cloudflare_roster_viewer.py::"
     "test_worker_runtime_access_crypto_and_proxy_contracts"
-)
-REQUIRED_CHECK_IDENTITIES = (
-    "repository_hygiene",
-    "security_gates",
-    "motion_state_machine_tests",
-    "cloudflare_gateway_tests",
-    "automated_test_suite",
-    "python_compile",
-    "dependency_integrity",
-    "rc31_theme_control_browser",
-    "verify_nicegui_ui",
-    "verify_runtime_performance",
-    "verify_nicegui_write_pipeline",
-    "verify_nicegui_mobile",
-    "strict_deployment_readiness",
-    "verify_unified_guest_ui",
-    "verify_nicegui_partial_backup",
 )
 
 
@@ -236,19 +222,10 @@ def _deno_gateway_command() -> list[str]:
 
 def _assert_completed_checks(report: dict[str, object]) -> None:
     """Do not publish a pass which the evidence reader cannot consume."""
-    checks = report.get("checks")
-    if (
-        report.get("requiredCheckIdentities") != list(REQUIRED_CHECK_IDENTITIES)
-        or not isinstance(checks, list)
-        or any(not isinstance(check, dict) for check in checks)
-    ):
-        raise ReleaseVerificationError("Release check declaration is invalid.")
-    if [check.get("name") for check in checks] != list(REQUIRED_CHECK_IDENTITIES):
-        raise ReleaseVerificationError(
-            "Executed release checks do not match the declared identities and order."
-        )
-    if any(check.get("status") != "pass" for check in checks):
-        raise ReleaseVerificationError("Not every required release check passed.")
+    try:
+        validate_completed_gates(report)
+    except ValueError as error:
+        raise ReleaseVerificationError(str(error)) from error
 
 
 def _deno_motion_command() -> list[str]:
@@ -437,6 +414,7 @@ def main() -> int:
         "plannedReleaseTag": planned_release_tag,
         "immutableReleaseReference": f"refs/tags/{planned_release_tag}",
         "requiredCheckIdentities": list(REQUIRED_CHECK_IDENTITIES),
+        "gateManifest": dict(GATE_MANIFEST_BINDING),
         "toolVersions": _tool_versions(),
         "status": "running",
         "startedAt": datetime.now(timezone.utc).isoformat(),
