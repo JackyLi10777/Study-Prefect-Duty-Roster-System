@@ -78,6 +78,8 @@ def _visible_preview_host(page: Page) -> Locator:
             raise
         mobile_more.click()
         page.get_by_test_id("mobile-drawer-tools").wait_for(state="visible", timeout=5_000)
+        from scripts.verify_nicegui_mobile import _expand_mobile_preferences
+        _expand_mobile_preferences(page)
         return _visible(candidates)
 
 

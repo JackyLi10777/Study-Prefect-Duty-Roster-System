@@ -15,7 +15,7 @@ import re
 from typing import Any
 from urllib.parse import urlsplit
 
-from playwright.sync_api import Browser, BrowserContext, Error, Locator, Page, Playwright, sync_playwright
+from playwright.sync_api import Browser, BrowserContext, Error, Locator, Page, Playwright, expect, sync_playwright
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -720,12 +720,24 @@ def _open_mobile_drawer(page: Page) -> Locator:
     return drawer
 
 
+def _expand_mobile_preferences(page: Page) -> Locator:
+    """Use the real first-use disclosure before interacting with preferences."""
+    preferences = page.get_by_test_id("mobile-preferences")
+    header = preferences.locator(":scope > .q-expansion-item__container > .q-item")
+    if header.get_attribute("aria-expanded") != "true":
+        header.click()
+    expect(header).to_have_attribute("aria-expanded", "true")
+    expect(preferences.get_by_test_id("mobile-theme-control")).to_be_visible(timeout=10_000)
+    return preferences
+
+
 def _assert_drawer_quick_settings_contract(page: Page, *, label: str) -> None:
     """Catch the circular/vertical quick-setting regression seen on real phones."""
 
     drawer = _open_mobile_drawer(page)
     tools = drawer.get_by_test_id("mobile-drawer-tools")
     tools.wait_for(state="visible", timeout=5_000)
+    _expand_mobile_preferences(page)
     metrics = tools.evaluate(
         r"""(root) => {
           const hiddenByAncestor = element => {
@@ -1354,6 +1366,7 @@ def main() -> int:
         )
         _assert_mobile_page(compact_page, "/", label="320px initial dashboard")
         compact_drawer = _open_mobile_drawer(compact_page)
+        _expand_mobile_preferences(compact_page)
         compact_tools = compact_drawer.get_by_test_id("mobile-drawer-tools").locator(
             ".sy-mobile-setting-tile"
         )
@@ -1384,6 +1397,7 @@ def main() -> int:
             timeout=10_000,
         )
         compact_drawer = _open_mobile_drawer(compact_page)
+        _expand_mobile_preferences(compact_page)
         compact_theme_control = compact_drawer.get_by_test_id("mobile-theme-control")
         if compact_theme_control.count() != 1:
             raise AssertionError("320px appearance control is not unique.")
