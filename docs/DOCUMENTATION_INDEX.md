@@ -189,6 +189,10 @@ HTTP 200 alone is not UI evidence; a passing unit suite alone is not release evi
 
 ## 文件完整性維護 / Documentation maintenance checklist
 
+The [mobile preflight checkpoint](audits/MOBILE_PREFLIGHT_CHECKPOINT_2026-09-05.md)
+records isolated source ownership and the strict mobile evidence contract. It
+is development evidence, not a deployment or formal-adoption claim.
+
 When a change is ready for review:
 
 1. Update the authoritative specialist document first.
