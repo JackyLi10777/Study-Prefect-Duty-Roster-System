@@ -102,3 +102,22 @@ other route assertions, audio, Worker and release/deployment state remain outsid
 this change. 91 targeted tests and governance/hygiene checks passed before the
 functional run. Final clean-head evidence belongs in the PR, not retroactively
 in the source-bound report above.
+
+## Integration checkpoint after policy closure
+
+Normal merge of protected main `f7686aa273754ee7ed3b4bca2b31de488995c8c6`
+preserves the independently reviewed policy-closure batch. D3a does not introduce
+or modify that batch's schema changes.
+
+The six-check run on `67dc0187eb112dc25b899ecc44bade0d2e206418` completed with
+five checks passing and the automated suite failing two obsolete source assertions:
+the removed devotional intro/card structure and a minimum of 40 informational
+icon call sites. The complete result is preserved as
+`logs/change-verification-report-67dc018.json`, SHA256
+`B7FD2140E0B909B01071461FC5692873C932910E2506E0C888D308183EE9254D`.
+Actual reading/refresh/reflection/prayer/return behavior now belongs to the real
+NiceGUI lifecycle test; the icon inventory must exactly match its enumerated
+informational call sites rather than require a minimum amount of decoration.
+No runtime performance or accessibility threshold changed. 94 focused tests
+pass after this correction and the normal merge. Final-head browser/full/CI
+verification remains pending and must be recorded against its own source.

@@ -194,6 +194,8 @@ def test_devotional_late_tone_reads_latest_preference_without_writing(monkeypatc
         assert not any(e._props.get("data-testid") == "devotional-tone" for e in client.elements.values())
         assert not any(getattr(e, "text", "") == "same snapshot" for e in client.elements.values())
         assert _find(client, "devotional-return-work").visible
+        assert any(getattr(e, "text", "") == home.t("refresh_verse") for e in client.elements.values())
+        assert any(getattr(e, "text", "") == "fictional verse" for e in client.elements.values())
         preference["value"] = "comfort"
         panel = _find(client, "devotional-details")
         assert "id" not in panel._props
@@ -201,6 +203,9 @@ def test_devotional_late_tone_reads_latest_preference_without_writing(monkeypatc
         tone = _find(client, "devotional-tone")
         assert tone.value == "comfort" and writes == []
         assert any(getattr(e, "text", "") == "same snapshot" for e in client.elements.values())
+        for expected in (home.t("devotional_reflection_title"), home.t("devotional_prayer_title"),
+                         home.t("devotional_prepare_body"), "fictional prayer"):
+            assert any(getattr(e, "text", "") == expected for e in client.elements.values())
         initial = set(client.elements)
         for _ in range(20):
             panel.set_value(False)
