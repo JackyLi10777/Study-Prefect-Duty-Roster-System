@@ -438,6 +438,20 @@ def main() -> int:
             initial_source=initial_source,
         )
         _run_check(
+            "generated_design_tokens",
+            [sys.executable, "-X", "utf8", "scripts/generate_design_system_tokens.py", "--check"],
+            base_environment,
+            report,
+            initial_source=initial_source,
+        )
+        _run_check(
+            "generated_service_weave_delivery",
+            [sys.executable, "-X", "utf8", "scripts/generate_service_weave_delivery.py", "--check"],
+            base_environment,
+            report,
+            initial_source=initial_source,
+        )
+        _run_check(
             "security_gates",
             [sys.executable, "-X", "utf8", "scripts/run_security_checks.py"],
             base_environment,
