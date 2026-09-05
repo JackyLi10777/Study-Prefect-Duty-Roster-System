@@ -17,23 +17,16 @@ def test_dashboard_keeps_one_primary_workbench_and_a_compact_review_rail() -> No
     assert "data-testid=dashboard-history" in home
     assert 'ui.element("ul").classes("sy-dashboard-history-list")' in home
     assert 'ui.element("li").classes("sy-dashboard-history-item")' in home
-    assert "recent_weeks = workflow.roster_week_history(page=1, page_size=3)" in home
+    assert "recent_weeks = workflow.roster_week_history(page=1, page_size=1)" in home
     assert "latest = recent_weeks[0] if recent_weeks else None" in home
     assert "workflow.roster_weeks()" not in home
-
-    first_time_action = re.search(r'^(\s*)action\(\s*\n\s*t\("first_time_link"\)', home, re.MULTILINE)
-    history_setup = re.search(
-        r"^(\s*)recent_weeks = workflow\.roster_week_history\(page=1, page_size=3\)$",
-        home,
-        re.MULTILINE,
-    )
-    assert first_time_action is not None and history_setup is not None
-    assert len(first_time_action.group(1)) > len(history_setup.group(1))
-
-    verse_index = home.index('classes("sy-daily-start w-full")')
-    workbench_index = home.index('"workflow-current"')
-    history_index = home.index('classes("sy-dashboard-history")')
-    assert workbench_index < history_index < verse_index
+    dashboard = home.split("def dashboard_page()", 1)[1].split('@ui.page("/dashboard")', 1)[0]
+    assert "workflow.roster_week_for_start(week_start)" in dashboard
+    assert "resolve_dashboard_next_action(" in dashboard
+    assert dashboard.index("dashboard-current-week") < dashboard.index('classes("sy-dashboard-history")')
+    assert "_dashboard_verse(" not in dashboard
+    assert "_render_flow_step(" not in dashboard
+    assert "sy-mobile-next-action" not in dashboard
 
 
 def test_dashboard_review_rail_uses_solid_surfaces_and_stacks_before_phone_width() -> None:
