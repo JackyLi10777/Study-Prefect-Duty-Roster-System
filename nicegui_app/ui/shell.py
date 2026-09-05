@@ -296,15 +296,28 @@ def _install_auth_status_monitor(access_mode: AccessMode, expires_at) -> None:  
           const channel = 'BroadcastChannel' in window
             ? new BroadcastChannel('sing-yin-guest-session-v1')
             : null;
-          let intervalId = 0;
+          let pollTimer = 0;
           let initialTimer = 0;
           let expiryTimer = 0;
           let checking = false;
           let invalidating = false;
+          let stopped = false;
+
+          const pausePolling = () => {
+            clearTimeout(pollTimer);
+            clearTimeout(initialTimer);
+          };
+
+          const schedulePoll = () => {
+            clearTimeout(pollTimer);
+            if (!stopped && !invalidating && document.visibilityState === 'visible') {
+              pollTimer = window.setTimeout(check, 45_000);
+            }
+          };
 
           const stop = () => {
-            clearInterval(intervalId);
-            clearTimeout(initialTimer);
+            stopped = true;
+            pausePolling();
             clearTimeout(expiryTimer);
             controller.abort();
             document.removeEventListener('visibilitychange', onVisibility);
@@ -417,7 +430,8 @@ def _install_auth_status_monitor(access_mode: AccessMode, expires_at) -> None:  
           };
 
           async function check() {
-            if (checking || invalidating) return;
+            if (stopped || checking || invalidating || document.visibilityState !== 'visible') return;
+            pausePolling();
             checking = true;
             try {
               const response = await fetch('/auth/status', {
@@ -427,12 +441,14 @@ def _install_auth_status_monitor(access_mode: AccessMode, expires_at) -> None:  
                 headers: {'Accept': 'application/json'},
                 signal: controller.signal,
               });
+              if (stopped || invalidating) return;
               if (response.status === 401 || response.status === 403) {
                 await invalidate();
                 return;
               }
               let status = null;
               try { status = await response.json(); } catch {}
+              if (stopped || invalidating) return;
               if (!response.ok || !status) return;
               const expiresAt = Number(status.expiresAt);
               const expired = Number.isFinite(expiresAt) && expiresAt <= Math.floor(Date.now() / 1000);
@@ -444,16 +460,22 @@ def _install_auth_status_monitor(access_mode: AccessMode, expires_at) -> None:  
               document.body.dataset.syAuthStatus = 'verified';
               document.body.dataset.syAuthMode = expectedMode;
             } catch (error) {
-              if (error?.name !== 'AbortError') {
+              if (!stopped && !invalidating && error?.name !== 'AbortError') {
                 document.body.dataset.syAuthStatus = 'temporarily-unavailable';
               }
             } finally {
               checking = false;
+              schedulePoll();
             }
           }
 
           function onVisibility() {
-            if (document.visibilityState === 'visible') check();
+            if (document.visibilityState === 'visible') {
+              check();
+            } else {
+              // Keep the expiry timer and logout channel alive while idle.
+              pausePolling();
+            }
           }
 
           function onPageShow(event) {
@@ -468,8 +490,9 @@ def _install_auth_status_monitor(access_mode: AccessMode, expires_at) -> None:  
           document.addEventListener('visibilitychange', onVisibility);
           window.addEventListener('focus', check);
           window.addEventListener('pageshow', onPageShow);
-          intervalId = window.setInterval(check, 45_000);
-          initialTimer = window.setTimeout(check, 1_200);
+          if (document.visibilityState === 'visible') {
+            initialTimer = window.setTimeout(check, 1_200);
+          }
           scheduleExpiry(principalExpiresAt);
           window.__syAuthStatusCleanup = stop;
           window.__syInvalidateAuthSession = invalidate;

@@ -117,7 +117,7 @@ def test_shared_shell_revalidates_identity_and_clears_guest_tab_state() -> None:
     assert "sessionStorage.clear()" in source
     assert "sing-yin-guest-session-v1" in source
     assert "/api/guest/downloads/cleanup" in source
-    assert "window.setInterval(check, 45_000)" in source
+    assert "window.setTimeout(check, 45_000)" in source
     assert "scheduleExpiry(principalExpiresAt)" in source
     assert "window.addEventListener('pageshow', onPageShow)" in source
     assert "if (event.persisted) check()" in source
