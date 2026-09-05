@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from nicegui_app.services.draft_rules import (
+    DraftState, apply_draft_overlay, draft_candidates, normalize_draft_edits, validate_draft_state,
+)
+
 from nicegui_app.services.workflow_dependencies import (
     ASSIST_ASSIGNMENT_MODE_CODES,
     DraftAssignmentUpdateResult,
@@ -705,52 +709,34 @@ class RosterLifecycleMixin:
             return self._eligible_assignment_candidates(session, week, assignment)
 
     def draft_cell_candidates(
-        self,
-        roster_week_id: int,
-        cell_key: str,
+        self, roster_week_id: int, cell_key: str, *,
+        cell_edits: Iterable[DraftCellEdit] = (),
+        day_edits: Iterable[DraftDayEdit] = (),
+        slot_edits: Iterable[DraftSlotStateEdit] = (),
+        source_key: str | None = None,
     ) -> list[dict[str, object]]:
-        """Return candidates for an assigned or currently vacant stable cell."""
-
-        day, post, slot_index = _parse_cell_key(cell_key)
+        """Evaluate choices against one consistent snapshot plus buffered intent."""
         with self._session() as session:
+            session.connection().exec_driver_sql("BEGIN DEFERRED")
             week = self._week_or_error(session, roster_week_id)
             if week.status != "draft":
                 raise WorkflowError("Manual changes are available only for a draft roster.")
-            existing = session.scalar(
-                select(RosterAssignmentRecord).where(
-                    RosterAssignmentRecord.roster_week_id == roster_week_id,
-                    RosterAssignmentRecord.day == day.name,
-                    RosterAssignmentRecord.post_code == post.name,
-                    RosterAssignmentRecord.slot_index == slot_index,
-                )
+            state = DraftState(
+                {f"{row.day}:{row.post_code}:{row.slot_index}": str(row.prefect_id)
+                 for row in self._assignment_rows(session, roster_week_id)
+                 if row.status == "active" and row.prefect_id},
+                frozenset(self._closed_days(session, roster_week_id)),
+                frozenset(f"{row.day}:{row.post_code}:{row.slot_index}" for row in session.scalars(
+                    select(RosterSlotExceptionRecord).where(RosterSlotExceptionRecord.roster_week_id == roster_week_id))),
             )
-            probe = existing or RosterAssignmentRecord(
-                id=-1,
-                roster_week_id=roster_week_id,
-                day=day.name,
-                post_code=post.name,
-                slot_index=slot_index,
-                prefect_id="__vacant__",
-                prefect_name_snapshot="",
-                prefect_role_snapshot=None,
-                weight=duty_weight(post),
-                status="active",
+            effective = apply_draft_overlay(state, normalize_draft_edits(cell_edits, day_edits, slot_edits))
+            return draft_candidates(
+                effective, cell_key, self._active_prefects(session),
+                leave_days=self._leave_days_for_week(session, week.week_start),
+                fixed_owners=(self._required_legacy_assist_owners(session, week_start=week.week_start)
+                              if week.assist_assignment_mode == LEGACY_FIXED_WEEKDAY else {}),
+                source_key=source_key,
             )
-            candidates = self._eligible_assignment_candidates(
-                session,
-                week,
-                probe,
-                include_same_day_assigned=True,
-            )
-            if week.assist_assignment_mode != LEGACY_FIXED_WEEKDAY or post is not DutyPost.ASSIST_IN_CHARGE:
-                return candidates
-            fixed_owner = self._required_legacy_assist_owners(
-                session,
-                week_start=week.week_start,
-            ).get(day.name)
-            if fixed_owner is None:
-                return candidates
-            return [candidate for candidate in candidates if candidate["id"] == fixed_owner]
 
     @fenced_workflow_write
     def apply_draft_patch(
@@ -784,73 +770,8 @@ class RosterLifecycleMixin:
         if not materialized_cells and not materialized_days and not materialized_slots:
             raise WorkflowError("Choose at least one draft cell, slot state or weekday to change.")
 
-        parsed_cells: list[tuple[DraftCellEdit, SchoolDay, DutyPost, int]] = []
-        seen_cells: set[str] = set()
-        for edit in materialized_cells:
-            day, post, slot_index = _parse_cell_key(edit.cell_key)
-            stable_key = f"{day.name}:{post.name}:{slot_index}"
-            if stable_key in seen_cells:
-                raise WorkflowError("A draft patch cannot change the same cell twice.")
-            if edit.replacement_prefect_id is not None and not edit.replacement_prefect_id.strip():
-                raise WorkflowError(
-                    "An empty prefect identifier is not a vacancy decision; choose a prefect or explicitly clear the cell."
-                )
-            seen_cells.add(stable_key)
-            parsed_cells.append((edit, day, post, slot_index))
-
-        normalized_days: list[tuple[DraftDayEdit, SchoolDay, str | None, str | None]] = []
-        seen_days: set[SchoolDay] = set()
-        for edit in materialized_days:
-            day = _stable_school_day(edit.day)
-            if day in seen_days:
-                raise WorkflowError("A draft patch cannot change the same weekday twice.")
-            reason_code = (edit.reason_code or "").strip() or None
-            note = (edit.note or "").strip() or None
-            if reason_code is not None and reason_code not in _DAY_CLOSURE_REASON_CODES:
-                raise WorkflowError("A day closure must use a stable reason code.")
-            if note is not None and len(note) > 1000:
-                raise WorkflowError("A day closure note is too long.")
-            seen_days.add(day)
-            normalized_days.append((edit, day, reason_code, note))
-
-        normalized_slots: list[
-            tuple[DraftSlotStateEdit, SchoolDay, DutyPost, int, str | None, str | None]
-        ] = []
-        seen_slot_states: set[str] = set()
-        for edit in materialized_slots:
-            day, post, slot_index = _parse_cell_key(edit.cell_key)
-            if not is_room_open(post, day):
-                raise WorkflowError("A fixed room-policy closure cannot be overridden per slot.")
-            stable_key = f"{day.name}:{post.name}:{slot_index}"
-            if stable_key in seen_slot_states:
-                raise WorkflowError("A draft patch cannot change the same slot state twice.")
-            state = str(edit.state).strip().lower()
-            if state not in {"open", "unavailable"}:
-                raise WorkflowError("A draft slot state must be open or unavailable.")
-            reason_code = (edit.reason_code or "").strip() or None
-            note = (edit.note or "").strip() or None
-            if reason_code is not None and reason_code not in _DAY_CLOSURE_REASON_CODES:
-                raise WorkflowError("A slot exception must use a stable reason code.")
-            if note is not None and len(note) > 1000:
-                raise WorkflowError("A slot exception note is too long.")
-            seen_slot_states.add(stable_key)
-            normalized_slots.append((edit, day, post, slot_index, reason_code, note))
-
-        closing_days = {
-            day for edit, day, _, _ in normalized_days if edit.closed
-        }
-        if any(day in closing_days for _, day, _, _ in parsed_cells):
-            raise WorkflowError(
-                "A cell cannot be assigned in the same patch which closes its weekday."
-            )
-        if any(day in closing_days for _, day, _, _, _, _ in normalized_slots):
-            raise WorkflowError(
-                "A slot state cannot be changed in the same patch which closes its weekday."
-            )
-        if seen_cells.intersection(seen_slot_states):
-            raise WorkflowError(
-                "Assigning a prefect and changing the same slot state must be separate reviewed decisions."
-            )
+        normalized = normalize_draft_edits(materialized_cells, materialized_days, materialized_slots)
+        parsed_cells, normalized_days, normalized_slots = normalized.cells, normalized.days, normalized.slots
 
         operation_type = "draft_patch_applied"
         operation_key = self._operation_command_id(operation_type, command_id)
@@ -1071,28 +992,17 @@ class RosterLifecycleMixin:
                 )
                 session.flush()
                 final_rows = self._assignment_rows(session, roster_week_id)
-                self._validate_persisted_assignments(
-                    session,
-                    final_rows,
-                    week_start=week.week_start,
-                    closed_days=final_closed_days,
-                    unavailable_slots=final_unavailable_slots,
-                    require_complete=False,
+                validate_draft_state(
+                    DraftState(
+                        {f"{row.day}:{row.post_code}:{row.slot_index}": str(row.prefect_id)
+                         for row in final_rows if row.status == "active" and row.prefect_id},
+                        frozenset(final_closed_days),
+                        frozenset(f"{day.name}:{post.name}:{slot}" for day, post, slot in final_unavailable_slots),
+                    ), self._active_prefects(session),
+                    leave_days=self._leave_days_for_week(session, week.week_start),
+                    fixed_owners=(self._required_legacy_assist_owners(session, week_start=week.week_start)
+                                  if week.assist_assignment_mode == LEGACY_FIXED_WEEKDAY else {}),
                 )
-
-                if week.assist_assignment_mode == LEGACY_FIXED_WEEKDAY:
-                    fixed_owners = self._required_legacy_assist_owners(
-                        session,
-                        week_start=week.week_start,
-                    )
-                    for row in final_rows:
-                        if row.status != "active" or row.post_code != DutyPost.ASSIST_IN_CHARGE.name:
-                            continue
-                        fixed_owner = fixed_owners.get(row.day)
-                        if fixed_owner is not None and row.prefect_id != fixed_owner:
-                            raise WorkflowError(
-                                "Legacy fixed-weekday mode requires the weekday's assigned Assistant Head Study Prefect."
-                            )
 
                 receipt = {
                     "rosterWeekId": roster_week_id,
@@ -1726,8 +1636,11 @@ class RosterLifecycleMixin:
                     "version": week.version,
                     "historyPriorityMultiplier": week.history_priority_multiplier,
                     "assistAssignmentMode": week.assist_assignment_mode,
+                    "policyVersion": week.policy_version,
                     "generatedAt": week.generated_at,
                     "publishedAt": week.published_at,
+                    "withdrawnAt": week.withdrawn_at,
+                    "withdrawalReason": week.withdrawal_reason,
                     "closedDays": [day.name for day in closed_days],
                     "dayClosures": self._closure_outputs(session, roster_week_id),
                     "slotExceptions": self._slot_exception_outputs(

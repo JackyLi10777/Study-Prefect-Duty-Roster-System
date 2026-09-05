@@ -8,6 +8,10 @@ schedule work.
 
 from __future__ import annotations
 
+from nicegui_app.services.draft_rules import (
+    DraftState, apply_draft_overlay, draft_candidates, normalize_draft_edits, validate_draft_state,
+)
+
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping
 from copy import deepcopy
@@ -954,52 +958,32 @@ class GuestWorkspaceAdapter:
         return self._candidate_outputs(state, week, self._assignment_record(week, assignment_id))
 
     def draft_cell_candidates(
-        self,
-        roster_week_id: int,
-        cell_key: str,
+        self, roster_week_id: int, cell_key: str, *,
+        cell_edits: Iterable[DraftCellEdit] = (),
+        day_edits: Iterable[DraftDayEdit] = (),
+        slot_edits: Iterable[DraftSlotStateEdit] = (),
+        source_key: str | None = None,
     ) -> list[dict[str, object]]:
+        """Use the same final-state evaluator as formal drafts, in memory only."""
         self._require_read()
-        day, post, slot_index = _parse_cell_key(cell_key)
         state = self._state()
         week = self._week_record(state, roster_week_id)
         if week["status"] != "draft":
             raise WorkflowError("Manual changes are available only for a demo draft.")
-        existing = next(
-            (
-                row
-                for row in week.get("assignments", [])
-                if row["day"] == day.name
-                and row["postCode"] == post.name
-                and int(row["slotIndex"]) == slot_index
-            ),
-            None,
+        schedule = DraftState(
+            {f"{row['day']}:{row['postCode']}:{row['slotIndex']}": str(row["prefectId"])
+             for row in week.get("assignments", []) if row["status"] == "active" and row.get("prefectId")},
+            frozenset(SchoolDay[str(day)] for day in week.get("closedDays", [])),
+            frozenset(str(row["cellKey"]) for row in week.get("slotExceptions", [])),
         )
-        probe = existing or {
-            "id": -1,
-            "day": day.name,
-            "postCode": post.name,
-            "slotIndex": slot_index,
-            "prefectId": "__vacant__",
-            "prefectName": "",
-            "weight": float(duty_weight(post)),
-            "status": "active",
-        }
-        candidates = self._candidate_outputs(
-            state,
-            week,
-            probe,
-            include_same_day_assigned=True,
+        effective = apply_draft_overlay(schedule, normalize_draft_edits(cell_edits, day_edits, slot_edits))
+        return draft_candidates(
+            effective, cell_key, self._active_prefects(state),
+            leave_days=self._leave_days(state, date.fromisoformat(str(week["weekStart"]))),
+            fixed_owners=(self._required_legacy_assist_owners(state, week)
+                          if week.get("assistAssignmentMode", LEGACY_FIXED_WEEKDAY) == LEGACY_FIXED_WEEKDAY else {}),
+            source_key=source_key,
         )
-        if (
-            str(week.get("assistAssignmentMode", LEGACY_FIXED_WEEKDAY))
-            != LEGACY_FIXED_WEEKDAY
-            or post is not DutyPost.ASSIST_IN_CHARGE
-        ):
-            return candidates
-        fixed_owner = self._required_legacy_assist_owners(state, week).get(day.name)
-        if fixed_owner is None:
-            return candidates
-        return [candidate for candidate in candidates if candidate["id"] == fixed_owner]
 
     def apply_draft_patch(
         self,
@@ -1026,65 +1010,8 @@ class GuestWorkspaceAdapter:
         if not materialized_cells and not materialized_days and not materialized_slots:
             raise WorkflowError("Choose at least one demo cell, slot state or weekday to change.")
 
-        parsed_cells: list[tuple[DraftCellEdit, SchoolDay, DutyPost, int]] = []
-        seen_cells: set[str] = set()
-        for edit in materialized_cells:
-            day, post, slot_index = _parse_cell_key(edit.cell_key)
-            stable_key = f"{day.name}:{post.name}:{slot_index}"
-            if stable_key in seen_cells:
-                raise WorkflowError("A demo patch cannot change the same cell twice.")
-            if edit.replacement_prefect_id is not None and not edit.replacement_prefect_id.strip():
-                raise WorkflowError(
-                    "An empty prefect identifier is not a vacancy decision."
-                )
-            seen_cells.add(stable_key)
-            parsed_cells.append((edit, day, post, slot_index))
-
-        normalized_days: list[tuple[DraftDayEdit, SchoolDay, str | None, str | None]] = []
-        seen_days: set[SchoolDay] = set()
-        for edit in materialized_days:
-            day = _stable_school_day(edit.day)
-            if day in seen_days:
-                raise WorkflowError("A demo patch cannot change the same weekday twice.")
-            reason_code = (edit.reason_code or "").strip() or None
-            note = (edit.note or "").strip() or None
-            if reason_code is not None and reason_code not in _DAY_CLOSURE_REASON_CODES:
-                raise WorkflowError("A demo day closure must use a stable reason code.")
-            if note is not None and len(note) > 1000:
-                raise WorkflowError("A demo day closure note is too long.")
-            seen_days.add(day)
-            normalized_days.append((edit, day, reason_code, note))
-        closing_days = {day for edit, day, _, _ in normalized_days if edit.closed}
-        if any(day in closing_days for _, day, _, _ in parsed_cells):
-            raise WorkflowError(
-                "A demo cell cannot be assigned while its weekday is being closed."
-            )
-        normalized_slots: list[
-            tuple[DraftSlotStateEdit, SchoolDay, DutyPost, int, str | None, str | None]
-        ] = []
-        seen_slot_states: set[str] = set()
-        for edit in materialized_slots:
-            day, post, slot_index = _parse_cell_key(edit.cell_key)
-            if not is_room_open(post, day):
-                raise WorkflowError("A fixed demo room-policy closure cannot be overridden per slot.")
-            stable_key = f"{day.name}:{post.name}:{slot_index}"
-            if stable_key in seen_slot_states:
-                raise WorkflowError("A demo patch cannot change the same slot state twice.")
-            state_code = str(edit.state).strip().lower()
-            if state_code not in {"open", "unavailable"}:
-                raise WorkflowError("A demo slot state must be open or unavailable.")
-            reason_code = (edit.reason_code or "").strip() or None
-            note = (edit.note or "").strip() or None
-            if reason_code is not None and reason_code not in _DAY_CLOSURE_REASON_CODES:
-                raise WorkflowError("A demo slot exception must use a stable reason code.")
-            if note is not None and len(note) > 1000:
-                raise WorkflowError("A demo slot exception note is too long.")
-            seen_slot_states.add(stable_key)
-            normalized_slots.append((edit, day, post, slot_index, reason_code, note))
-        if any(day in closing_days for _, day, _, _, _, _ in normalized_slots):
-            raise WorkflowError("A demo slot state cannot be changed while its weekday is being closed.")
-        if seen_cells.intersection(seen_slot_states):
-            raise WorkflowError("A demo cell assignment and slot state require separate reviewed decisions.")
+        normalized = normalize_draft_edits(materialized_cells, materialized_days, materialized_slots)
+        parsed_cells, normalized_days, normalized_slots = normalized.cells, normalized.days, normalized.slots
 
         operation_id = (command_id or f"demo-draft-patch:{secrets.token_hex(12)}").strip()
         if not operation_id or len(operation_id) > 64:
@@ -1245,18 +1172,17 @@ class GuestWorkspaceAdapter:
             slot_exceptions[key]
             for key in sorted(slot_exceptions, key=lambda item: (int(item[0]), item[1].name, item[2]))
         ]
-        self._validate_week_assignments(state, week, require_complete=False)
-        if str(week.get("assistAssignmentMode", LEGACY_FIXED_WEEKDAY)) == LEGACY_FIXED_WEEKDAY:
-            fixed_owners = self._required_legacy_assist_owners(state, week)
-            for row in week.get("assignments", []):
-                if row["status"] != "active" or row["postCode"] != DutyPost.ASSIST_IN_CHARGE.name:
-                    continue
-                fixed_owner = fixed_owners.get(str(row["day"]))
-                if fixed_owner is not None and str(row.get("prefectId")) != fixed_owner:
-                    raise WorkflowError(
-                        "Legacy fixed-weekday mode requires the weekday's demo Assistant Head Study Prefect."
-                    )
-
+        validate_draft_state(
+            DraftState(
+                {f"{row['day']}:{row['postCode']}:{row['slotIndex']}": str(row["prefectId"])
+                 for row in week.get("assignments", []) if row["status"] == "active" and row.get("prefectId")},
+                frozenset(SchoolDay[str(day)] for day in week.get("closedDays", [])),
+                frozenset(str(row["cellKey"]) for row in week.get("slotExceptions", [])),
+            ), self._active_prefects(state),
+            leave_days=self._leave_days(state, date.fromisoformat(str(week["weekStart"]))),
+            fixed_owners=(self._required_legacy_assist_owners(state, week)
+                          if week.get("assistAssignmentMode", LEGACY_FIXED_WEEKDAY) == LEGACY_FIXED_WEEKDAY else {}),
+        )
         week["version"] = expected_week_version + 1
         result = {
             "rosterWeekId": roster_week_id,

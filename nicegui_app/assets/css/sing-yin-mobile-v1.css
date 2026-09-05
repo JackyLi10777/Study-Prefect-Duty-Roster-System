@@ -252,7 +252,10 @@
   }
   .sy-main .q-field { width: 100%; max-width: 100%; }
   .sy-main .q-field__control { min-height: 48px; }
-  .sy-main .q-field__native, .sy-main .q-field__input { font-size: 16px; }
+  .sy-main .q-field__native,
+  .sy-main .q-field__input,
+  .q-dialog .q-field__native,
+  .q-dialog .q-field__input { font-size: 16px; }
   .sy-main textarea.q-field__native { line-height: 1.55; }
 
   .sy-page-lead, .sy-roster-detail-head { align-items: stretch !important; flex-direction: column; gap: 12px !important; }
@@ -285,15 +288,39 @@
   .sy-table .q-table__grid-item-title { color: var(--sy-muted); font-size: 12px; font-weight: 680; line-height: 1.4; }
   .sy-table .q-table__grid-item-value { min-width: 0; color: var(--sy-ink); font-size: 14px; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; text-align: left; }
 
-  .q-dialog__inner { align-items: flex-end; padding: 0 !important; }
+  /* Dialog placement is semantic. Critical confirmations and waiting states
+     remain centred; only lightweight editors/choices explicitly opt into a
+     bottom sheet. This prevents every modal from looking equally actionable. */
+  .q-dialog__inner {
+    align-items: center;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+      max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)) !important;
+  }
   .q-dialog__inner > .q-card {
+    width: 100% !important;
+    max-width: min(100%, 36rem) !important;
+    max-height: min(88dvh, 760px);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    border-radius: 20px !important;
+  }
+  .q-dialog__inner--bottom,
+  .q-dialog__inner:has(> .sy-dialog--sheet),
+  .q-dialog__inner:has(> .sy-draft-editor-sheet),
+  .q-dialog__inner:has(> .sy-mobile-editor-sheet) {
+    align-items: flex-end;
+    padding: 0 !important;
+  }
+  .q-dialog__inner--bottom > .q-card,
+  .q-dialog__inner > :is(.sy-dialog--sheet, .sy-draft-editor-sheet, .sy-mobile-editor-sheet) {
     width: 100% !important;
     max-width: 100% !important;
     max-height: min(92dvh, 760px);
-    overflow-y: auto;
-    overscroll-behavior-y: contain;
     padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
     border-radius: 22px 22px 0 0 !important;
+  }
+  .sy-native-dialog > .sy-dialog {
+    padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
   }
   .sy-progress-dialog { min-height: 0; }
 
@@ -308,7 +335,11 @@
 
   [data-testid="summary-report-metrics"] > * { flex: 1 1 calc(50% - 6px); min-width: 0 !important; }
   .sy-fairness-trend-chart { height: 280px !important; }
+  .sy-adjustment-form,
+  .sy-adjustment-step { grid-template-columns: minmax(0, 1fr); min-width: 0; }
   .sy-adjustment-step { padding: 14px; }
+  .sy-adjustment-step .q-field,
+  .sy-adjustment-step .q-field__input { min-width: 0; }
   .sy-adjustment-actions { flex-direction: column; }
   .sy-adjustment-actions .q-btn { width: 100%; min-height: 48px; }
 }
@@ -387,5 +418,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sy-mobile-tabbar,
-  .sy-mobile-setting-tile { transition: none !important; }
+  .sy-mobile-setting-tile,
+  .q-dialog__inner > .q-card { transition: none !important; }
 }

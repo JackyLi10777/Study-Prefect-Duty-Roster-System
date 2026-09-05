@@ -22,6 +22,7 @@ from nicegui_app.observability import (
 )
 from nicegui_app.services.roster_export import RosterPdfExport, build_fairness_audit_pdf, build_roster_pdf
 from nicegui_app.services.roster_presentation import DAY_ORDER, build_roster_schedule, roster_display_label
+from nicegui_app.services.roster_presentation import RosterCellState, RosterSchedulePresentation
 from nicegui_app.services.roster_workflow import (
     CommittedWriteBackupError,
     WorkflowConflictError,
@@ -30,6 +31,7 @@ from nicegui_app.ui.html_safety import attr
 from nicegui_app.ui.i18n import EN, current_locale, day_label, role_label, t
 from nicegui_app.ui.navigation import navigate_to
 from nicegui_app.ui.components import (
+    dialog as semantic_dialog,
     empty_state as render_empty_state_component,
     responsive_table as render_responsive_table_component,
     status as render_status_component,
@@ -53,7 +55,12 @@ def _operation_error_message(reference: str) -> str:
     return f"{t('operation_error')} {t('error_reference', reference=reference)}"
 
 
-def _delete_dialog_after_close(dialog, *, delay_seconds: float = _DIALOG_DISMISSAL_SECONDS) -> None:  # type: ignore[no-untyped-def]
+def _delete_dialog_after_close(
+    dialog,
+    *,
+    delay_seconds: float = _DIALOG_DISMISSAL_SECONDS,
+    lifetime_owner=None,
+) -> None:  # type: ignore[no-untyped-def]
     """Remove a one-shot dialog after its close transition has finished.
 
     NiceGUI dialogs stay in the client element registry when ``close()`` only
@@ -64,12 +71,16 @@ def _delete_dialog_after_close(dialog, *, delay_seconds: float = _DIALOG_DISMISS
     transition behaviour.
     """
     dialog_reference = weakref.ref(dialog)
+    owner_reference = weakref.ref(lifetime_owner) if lifetime_owner is not None else lambda: None
     cleanup_scheduled = False
 
     def delete_dialog() -> None:
         target = dialog_reference()
         if target is not None and not target.is_deleted:
             target.delete()
+        owner = owner_reference()
+        if owner is not None and not owner.is_deleted:
+            owner.delete()
 
     def handle_value_change(event) -> None:  # type: ignore[no-untyped-def]
         nonlocal cleanup_scheduled
@@ -104,23 +115,24 @@ def _release_operation_after_task_settles(
 
 def _show_committed_without_backup(reference: str, *, recovery_required: bool = False) -> None:
     """Explain a committed write accurately and give two safe recovery paths."""
-    with ui.dialog().props("persistent data-testid=committed-without-backup-dialog") as dialog, ui.card().classes(
-        "sy-partial-success-dialog w-full max-w-lg p-6"
-    ):
-        with ui.row().classes("items-start gap-3 no-wrap"):
-            ui.icon("warning_amber").classes("sy-partial-success-icon").props("aria-hidden=true")
-            with ui.column().classes("gap-1"):
-                ui.label(
-                    t("committed_recovery_lock_title")
-                    if recovery_required
-                    else t("committed_without_backup_title")
-                ).classes("text-lg font-semibold")
-                ui.label(
-                    t("committed_recovery_lock_body")
-                    if recovery_required
-                    else t("committed_without_backup_body")
-                ).classes("text-sm leading-6 text-[var(--sy-muted)]")
-                ui.label(t("support_reference_only", reference=reference)).classes("text-xs text-[var(--sy-muted)] mt-2")
+    title = (
+        t("committed_recovery_lock_title")
+        if recovery_required
+        else t("committed_without_backup_title")
+    )
+    body = (
+        t("committed_recovery_lock_body")
+        if recovery_required
+        else t("committed_without_backup_body")
+    )
+    with semantic_dialog(
+        title=title,
+        description=body,
+        consequence=t("support_reference_only", reference=reference),
+        persistent=True,
+        presentation="alert",
+        test_id="committed-without-backup-dialog",
+    ) as dialog:
         with ui.row().classes("sy-mobile-actions w-full justify-end gap-3 mt-5 flex-wrap"):
             ui.button(
                 t("reload_and_review"),
@@ -218,30 +230,40 @@ async def _run_with_progress(
         )
         if not operation_task.done():
             normalized_wait_kind = "ai" if wait_kind == "ai" else "operation"
-            with ui.dialog().props("persistent") as dialog, ui.card().classes(
-                "sy-progress-dialog w-full max-w-sm p-6"
-            ).props(
-                f"aria-busy=true data-progress-mode=indeterminate data-phase=working "
-                f"data-wait-kind={normalized_wait_kind}"
-            ) as progress_shell:
-                with ui.row().classes("items-center gap-3"):
-                    with ui.element("span").classes("sy-progress-dialog-icon").props("aria-hidden=true"):
-                        if normalized_wait_kind == "ai":
-                            ui.spinner(size="sm", color="primary").classes(
-                                "sy-progress-dialog-thinking"
-                            )
-                        else:
-                            ui.icon(icon).classes("sy-progress-dialog-icon-work")
-                        ui.icon("task_alt").classes("sy-progress-dialog-icon-success")
-                    with ui.column().classes("gap-0"):
-                        ui.label(t(title_key)).classes("sy-progress-dialog-title")
-                        status = ui.label(t(working_key)).classes("sy-progress-dialog-status").props("aria-live=polite")
-                progress = ui.linear_progress(show_value=False, color="primary").classes("w-full mt-4").props(
-                    f'indeterminate aria-label="{attr(t("progress_indeterminate"))}"'
-                )
-                ui.label(t("progress_keep_open")).classes("sy-progress-dialog-note mt-3")
+            # NiceGUI creates a hidden canary alongside each portal dialog.
+            # Give that canary a disposable owner, otherwise deleting only the
+            # dialog leaves it (and its finalizer's dialog reference) in this page.
+            with ui.element("div").classes("hidden") as progress_owner, semantic_dialog(
+                title=t(title_key),
+                description=t(working_key),
+                persistent=True,
+                presentation="status",
+                test_id="operation-progress-dialog",
+            ) as dialog:
+                with ui.element("section").classes(
+                    "sy-progress-dialog w-full"
+                ).props(
+                    f"aria-busy=true data-progress-mode=indeterminate data-phase=working "
+                    f"data-wait-kind={normalized_wait_kind}"
+                ) as progress_shell:
+                    with ui.row().classes("items-center gap-3"):
+                        with ui.element("span").classes("sy-progress-dialog-icon").props("aria-hidden=true"):
+                            if normalized_wait_kind == "ai":
+                                ui.spinner(size="sm", color="primary").classes(
+                                    "sy-progress-dialog-thinking"
+                                )
+                            else:
+                                ui.icon(icon).classes("sy-progress-dialog-icon-work")
+                            ui.icon("task_alt").classes("sy-progress-dialog-icon-success")
+                        status = ui.label(t(working_key)).classes(
+                            "sy-progress-dialog-status"
+                        ).props("aria-live=polite")
+                    progress = ui.linear_progress(show_value=False, color="primary").classes("w-full mt-4").props(
+                        f'indeterminate aria-label="{attr(t("progress_indeterminate"))}"'
+                    )
+                    ui.label(t("progress_keep_open")).classes("sy-progress-dialog-note mt-3")
 
-            _delete_dialog_after_close(dialog)
+            _delete_dialog_after_close(dialog, lifetime_owner=progress_owner)
             dialog.open()
             play_interface_sound("working")
         result = await asyncio.shield(operation_task)
@@ -373,27 +395,40 @@ def _render_mobile_roster_cards(rows: list[dict[str, object]]) -> None:
                             ui.label(f"{t('weight')} · {row['weight']}").classes("sy-roster-mobile-meta")
 
 
-def _render_roster_table(roster_week_id: int) -> None:
-    """Render the same post-by-week verification model used by the PDF."""
-
-    workflow = get_workflow()
-    schedule = build_roster_schedule(workflow.assignments(roster_week_id))
-    use_english = current_locale() == EN
+def _render_roster_table(presentation: RosterSchedulePresentation) -> None:
+    """Render one already-snapshotted matrix shared with the export model."""
 
     def cell_text(cell) -> str:  # type: ignore[no-untyped-def]
-        if cell.status == "closed":
+        if cell.state is RosterCellState.DAY_CLOSED:
+            return t("draft_day_closed")
+        if cell.state is RosterCellState.ROOM_CLOSED:
             return t("closed")
-        if cell.status == "vacant":
+        if cell.state is RosterCellState.UNAVAILABLE:
+            return t("draft_slot_unavailable")
+        if cell.state is RosterCellState.VACANT:
             return t("vacant")
         return cell.prefect_name or t("vacant")
 
+    def state_text(cell) -> str:  # type: ignore[no-untyped-def]
+        if cell.state is RosterCellState.ASSIGNED:
+            return t("active")
+        return cell_text(cell)
+
+    def dated_day_label(day) -> str:  # type: ignore[no-untyped-def]
+        if day.duty_date is None:
+            return day_label(day.day)
+        return f"{day_label(day.day)} · {day.duty_date:%Y-%m-%d}"
+
     rows: list[dict[str, object]] = []
-    for schedule_row in schedule:
-        start, end = schedule_row.spec.opening_time
+    for schedule_row in presentation.rows:
+        start, end = schedule_row.spec.service_time
         rows.append(
             {
                 "post": schedule_row.spec.display_label,
                 "time": f"{start}–{end}",
+                "postDisplay": (
+                    f"{schedule_row.spec.display_label} · {start}–{end}"
+                ),
                 **{
                     cell.day.name.lower(): cell_text(cell)
                     for cell in schedule_row.cells
@@ -404,19 +439,19 @@ def _render_roster_table(roster_week_id: int) -> None:
         {
             "name": "post",
             "label": t("duty_position"),
-            "field": "post",
+            "field": "postDisplay",
             "align": "left",
             "classes": "sy-roster-matrix-post",
             "headerClasses": "sy-roster-matrix-post",
         },
         *[
             {
-                "name": day.name.lower(),
-                "label": day_label(day),
-                "field": day.name.lower(),
+                "name": day.day.name.lower(),
+                "label": dated_day_label(day),
+                "field": day.day.name.lower(),
                 "align": "center",
             }
-            for day in DAY_ORDER
+            for day in presentation.days
         ],
     ]
     with ui.element("section").classes("sy-roster-matrix sy-roster-desktop w-full").props(
@@ -430,23 +465,23 @@ def _render_roster_table(roster_week_id: int) -> None:
         f'aria-label="{attr(t("week_roster"))}"'
     ):
         ui.label(t("mobile_roster_notice")).classes("sy-roster-mobile-notice")
-        for day_index, day in enumerate(DAY_ORDER):
+        for day_index, day in enumerate(presentation.days):
             with ui.element("section").classes("sy-roster-mobile-day").props(
-                f'aria-label="{attr(day_label(day))}"'
+                f'aria-label="{attr(dated_day_label(day))}"'
             ):
-                ui.label(day_label(day)).classes("sy-roster-mobile-day-title")
-                for schedule_row in schedule:
+                ui.label(dated_day_label(day)).classes("sy-roster-mobile-day-title")
+                for schedule_row in presentation.rows:
                     cell = schedule_row.cells[day_index]
-                    start, end = schedule_row.spec.opening_time
+                    start, end = schedule_row.spec.service_time
                     label = schedule_row.spec.display_label
                     with ui.element("article").classes(
-                        f"sy-roster-mobile-card sy-roster-mobile-card--{cell.status}"
+                        f"sy-roster-mobile-card sy-roster-mobile-card--{cell.state.value}"
                     ).props('data-testid="mobile-roster-card"'):
                         with ui.row().classes("w-full items-start justify-between gap-3 no-wrap"):
                             with ui.column().classes("gap-1 min-w-0"):
                                 ui.label(label).classes("sy-roster-mobile-post")
                                 ui.label(f"{start}–{end}").classes("sy-roster-mobile-time")
-                            ui.label(t(cell.status)).classes("sy-roster-mobile-status")
+                            ui.label(state_text(cell)).classes("sy-roster-mobile-status")
                         ui.label(cell_text(cell)).classes("sy-roster-mobile-prefect")
 
 

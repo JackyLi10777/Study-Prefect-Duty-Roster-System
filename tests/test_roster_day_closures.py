@@ -179,6 +179,11 @@ def test_close_then_reopen_and_restore_a_day_is_one_replay_safe_patch(
     assert workflow.draft_cell_candidates(
         draft.id,
         "MONDAY:ROOM_302:1",
+    ) == []
+    assert workflow.draft_cell_candidates(
+        draft.id,
+        "MONDAY:ROOM_302:1",
+        day_edits=(DraftDayEdit(day="MONDAY", closed=False),),
     )
     restored = workflow.apply_draft_patch(
         roster_week_id=draft.id,

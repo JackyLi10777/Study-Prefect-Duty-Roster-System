@@ -137,7 +137,8 @@ def test_phone_layout_has_safe_areas_touch_targets_and_scrollable_navigation() -
     assert ".sy-main .q-toggle, .sy-main .q-checkbox, .sy-main .q-radio { min-height: 44px; }" in theme
     assert ".sy-sidebar .q-btn__content { width: 100%; justify-content: flex-start; text-align: left; }" in theme
     assert ".sy-main .q-item.q-item--clickable { min-height: 48px; }" in theme
-    assert ".sy-main .q-field__native, .sy-main .q-field__input { font-size: 16px; }" in theme
+    assert ".sy-main .q-field__native," in theme
+    assert ".q-dialog .q-field__input { font-size: 16px; }" in theme
     assert "max-height: min(92dvh, 760px)" in theme
     assert ".sy-music-dialog-header { position: sticky;" in theme
     assert "@media (max-width: 900px) and (orientation: landscape)" in theme

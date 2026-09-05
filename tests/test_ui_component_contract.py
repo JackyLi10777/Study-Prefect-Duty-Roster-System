@@ -9,12 +9,26 @@ import tinycss2
 
 from nicegui_app.ui.theme_markup import STYLE_LAYERS, THEME_HEAD_HTML
 from nicegui_app.ui.i18n import EN, MESSAGES, ZH_HK
+from nicegui_app.ui.components import action
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 UI_ROOT = PROJECT_ROOT / "nicegui_app" / "ui"
 CSS_ROOT = PROJECT_ROOT / "nicegui_app" / "assets" / "css"
 COMPOSITION_LAYERS = {"command-center-v2"}
+
+
+def test_disabled_action_uses_nicegui_event_gating_not_only_a_visual_prop() -> None:
+    button = action("Unavailable", disabled=True)
+    try:
+        assert button.enabled is False
+        assert button._props["disable"] is True
+        assert button._props["aria-disabled"] == "true"
+        button.enable()
+        assert button.enabled is True
+        assert button._props["disable"] is False
+    finally:
+        button.delete()
 
 
 EXPECTED_COMPONENT_API = {
@@ -29,6 +43,7 @@ EXPECTED_COMPONENT_API = {
     "empty_state",
     "field",
     "motion_pattern",
+    "native_dialog",
     "page_toc",
     "progress_state",
     "reference_pager",

@@ -394,19 +394,13 @@ def test_roster_forms_repair_predictable_input_before_background_work() -> None:
     leave_handler = pages.split("async def declare_leave() -> None:", 1)[1].split(
         "declare_leave_button = action(", 1
     )[0]
-    draft_handler = pages.split("async def save_pending() -> None:", 1)[1].split(
-        "@ui.refreshable", 1
-    )[0]
 
     for key in ("leave_prefect_required", "leave_day_required"):
         assert leave_handler.index(key) < leave_handler.index("_run_with_progress")
     assert "workflow.validate_week_start(selected)" in pages
     assert leave_handler.count('run_method("focus")') == 2
-    assert "if not cell_values and not day_values and not slot_values:" in draft_handler
-    assert (
-        draft_handler.index("cell_values, day_values, slot_values = edit_session.patch_edits()")
-        < draft_handler.index("await _run_with_progress")
-    )
+    # Draft admission and frozen intent are tested through the callable save
+    # seam in test_draft_save_ui_seam, not the removed pending dictionaries.
 
 
 def test_history_priority_slider_marks_match_the_nonlinear_numeric_range() -> None:
@@ -431,9 +425,10 @@ def test_history_priority_has_a_live_accessible_explanation_chart() -> None:
     theme = combined_theme_source()
 
     assert 'data-testid=history-priority-chart' in pages
-    assert '"aria": {' in pages
+    assert 'role=img aria-label=' in pages
     assert 'history_priority_chart_aria' in pages
-    assert 'history_priority_chart.update()' in pages
+    assert 'sy-history-priority-meter' in pages
+    assert 'history_value.set_text' in pages
     assert 'record.get("historyPriorityMultiplier", 1.0)' in pages
     assert "selected_week_record(selected)" in pages
     assert '.sy-history-priority-chart' in theme
@@ -472,7 +467,6 @@ def test_durable_handlers_snapshot_visible_form_values_before_the_first_await() 
         "assignment_id = int(assignment_select.value)",
         'replacement_id = None if replacement_select.value == "__vacant__" else str(replacement_select.value)',
         'reason = str(reason_input.value or "").strip()',
-        "cell_values, day_values, slot_values = edit_session.patch_edits()",
         "patches = edit_session.patches()",
         "command_id = edit_session.ensure_command_id()",
         'reason = reason_state["value"].strip() or None',
