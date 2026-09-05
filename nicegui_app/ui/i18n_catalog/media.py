@@ -28,6 +28,7 @@ MESSAGES = {'workbench_title': {'zh-HK': '本週值班工作台', 'en': "This we
  'flow_open_adjustment': {'zh-HK': '處理本週請假調整', 'en': "Handle this week's absence"},
  'flow_unavailable': {'zh-HK': '完成上一步後可用', 'en': 'Available after the previous step'},
  'flow_no_roster': {'zh-HK': '尚未開始本週週表', 'en': "This week's roster has not started"},
+ 'dashboard_no_active_week': {'zh-HK': '所選週目前沒有有效週表', 'en': 'No active roster for the selected week'},
  'flow_draft_ready': {'zh-HK': '草稿已準備，等待核對', 'en': 'Draft ready for review'},
  'flow_published_ready': {'zh-HK': '週表已發布，可匯出或處理臨時請假', 'en': 'Roster published; export it or handle a late absence'},
  'first_time_link': {'zh-HK': '第一次使用？查看三步入門', 'en': 'First time? See the three-step start'},
