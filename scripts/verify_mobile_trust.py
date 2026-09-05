@@ -179,7 +179,13 @@ def _check(page, base, case, mode, results, persist):
         expect(_header(panel)).to_be_focused()
         page.go_back()
         expect(page.locator("#" + anchor)).to_be_focused()
-        assert page.evaluate("window.__d3bAnchorNodes.every(node => node.isConnected)")
+        disconnected = page.evaluate("""window.__d3bAnchorNodes.filter(node => !node.isConnected)
+            .map(node => ({tag:node.tagName, classes:node.className}))""")
+        if disconnected:
+            results.append({"scenario": "heading-disconnected-descendant-diagnostic", "mode": mode,
+                            "route": route, "nodes": disconnected})
+            persist()
+        assert not disconnected, f"Heading descendants disconnected: {disconnected}"
         page.go_forward()
         expect(_header(panel)).to_be_focused()
         results.append({"scenario": "original-heading-direct-link-history-focus-retained",
