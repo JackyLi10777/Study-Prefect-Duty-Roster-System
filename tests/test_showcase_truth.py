@@ -32,14 +32,13 @@ def test_dashboard_keeps_one_state_driven_action_without_loading_devotional_cont
 
 
 def test_release_evidence_tone_preserves_operator_meaning() -> None:
-    source = (PROJECT_ROOT / "nicegui_app" / "ui" / "page_routes" / "showcase.py").read_text(encoding="utf-8")
+    from nicegui_app.ui.page_routes.showcase import _release_evidence_tone
 
-    assert '"pass": "stable"' in source
-    assert '"running": "action"' in source
-    assert '"fail": "danger"' in source
-    assert '"stale": "attention"' in source
-    assert 'classes(f"sy-engineering-gate-icon sy-fg-{evidence_tone}")' in source
-    assert 'evidence_tone = _release_evidence_tone(evidence.state)' in source
+    for state, expected in {"pass": "stable", "running": "action", "fail": "danger",
+                            "stale": "attention", "missing": "attention", "unreadable": "attention"}.items():
+        assert _release_evidence_tone(state) == expected
+    # Overall report tone is not proof for each editorial coverage category.
+    assert _release_evidence_tone("unknown") == "attention"
 
 
 def test_engineering_evidence_index_classifies_every_current_release_gate() -> None:

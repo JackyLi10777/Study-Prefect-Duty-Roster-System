@@ -2,7 +2,7 @@
 
 Implementation base: protected main
 `7b6e1ec37462e1ade4246b26a71ed31c84f25043` (D3a PR #137).
-Status: contract checkpoint only; no new verification or delivery claim.
+Status: implementation and focused-test checkpoint; scoped browser/full/CI pending.
 
 ## Ownership and preserved boundaries
 
@@ -54,3 +54,26 @@ the current heavy window; D3b is light work until explicitly released.
 
 No full mobile matrix, WebKit, controlled p75, cold lifecycle, physical device,
 WhatsApp, recovery or formal release claim follows from a scoped functional pass.
+
+## Light implementation checkpoint
+
+Nine real-NiceGUI regressions first failed on the base source, showing eager
+Platform data/attribution, missing dedicated overall evidence state, and eager
+Architecture commands/FAQ answers. Fifteen focused lifecycle cases now pass,
+including all three routes' complete bilingual first-use sections and 20 retained
+reopens. The wider selected reading/summary/truth/documentation/accessibility
+suite passes 109 tests. These are not browser or formal release results.
+
+Platform reads its anonymous summary only in its retained section and keeps the
+state visible separately from counts. Engineering uses its one page snapshot for
+all closures; categories have no individual status badges or status/date table
+columns. The preserved status/date filters explicitly refer to the overall
+report. Architecture FAQ headings and individual answers mount in two stages.
+Reading content uses single-column layout and separators; shared global CSS and
+the attribution renderer are unchanged. Original section content, routes, links
+and command examples remain available.
+
+Legacy full-reference browser scenarios now explicitly assert empty first-use
+content and open the required sections before their content checks. Permanent
+Guest readiness selectors no longer wait for hidden detail content. This is not
+generic readiness prewarming and must not be used as cold performance evidence.

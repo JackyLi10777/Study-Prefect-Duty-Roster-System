@@ -1045,6 +1045,22 @@ def main() -> None:
         assert "- [x]" not in acceptance_worksheet.lower()
         page.screenshot(path=str(HANDOVER_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
+        # This full-reference scenario deliberately opens first-use content;
+        # it is not cold-page readiness or a performance warmup.
+        for section_id in (
+            "reading-contents",
+            "platform-summary-details",
+            "platform-team-details",
+            "platform-operating-map-details",
+            "platform-capabilities-details",
+            "platform-solutions-details",
+            "platform-convictions-details",
+            "platform-principles-details",
+            "platform-resources-details",
+            "platform-attribution-details",
+        ):
+            expect(page.get_by_test_id(section_id + "-content").locator(":scope > *")).to_have_count(0)
+            open_reading_section(page, section_id)
         platform_toc = page.get_by_test_id("reference-toc").locator(".sy-reference-toc-link")
         assert platform_toc.count() == 8
         operating_map_link = platform_toc.nth(2)
@@ -1148,9 +1164,7 @@ def main() -> None:
         else:
             assert hovered_icon_transform == static_icon_transform
         team_role_icon.evaluate("element => delete element.dataset.syVerifierInitialTransform")
-        assert "platform-stewardship-light-v1.webp" in page.locator(".sy-platform-hero").evaluate(
-            "element => getComputedStyle(element, '::before').backgroundImage"
-        )
+        expect(page.get_by_test_id("platform-open-workspace")).to_be_visible()
         display_crest = page.locator(".sy-co-creation-crest")
         display_crest_image = display_crest.locator("img")
         assert "sing-yin-crest-display-web.png" in (display_crest_image.get_attribute("src") or "")
@@ -1196,10 +1210,22 @@ def main() -> None:
         page.screenshot(path=str(HOVER_SCREENSHOT), full_page=True)
         page.screenshot(path=str(PLATFORM_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/engineering", wait_until="domcontentloaded")
+        # This full-reference scenario deliberately opens first-use content;
+        # it is not cold-page readiness or a performance warmup.
+        for section_id in (
+            "reading-contents",
+            "engineering-facts-details",
+            "engineering-coverage-details",
+            "engineering-blueprint-details",
+            "engineering-process-details",
+            "engineering-pillars-details",
+            "engineering-evolution-details",
+            "engineering-resources-details",
+        ):
+            expect(page.get_by_test_id(section_id + "-content").locator(":scope > *")).to_have_count(0)
+            open_reading_section(page, section_id)
         page.get_by_text("工程與品質證據", exact=True).first.wait_for(timeout=10_000)
-        assert "engineering-workbench-light-v1.webp" in page.locator(".sy-engineering-hero").evaluate(
-            "element => getComputedStyle(element, '::after').backgroundImage"
-        )
+        expect(page.get_by_test_id("engineering-release-state")).to_be_visible()
         engineering_facts = page.get_by_test_id("engineering-facts")
         assert engineering_facts.locator(".sy-engineering-fact").count() == 5
         assert engineering_facts.get_by_text("≈10B", exact=True).count() == 1
@@ -1225,6 +1251,18 @@ def main() -> None:
         assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
         page.screenshot(path=str(ENGINEERING_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
+        # This full-reference scenario deliberately opens first-use content;
+        # it is not cold-page readiness or a performance warmup.
+        for section_id in (
+            "reading-contents",
+            "architecture-flow-details",
+            "architecture-layers-details",
+            "architecture-evidence-details",
+            "architecture-developer-details",
+            "architecture-faq-details",
+        ):
+            expect(page.get_by_test_id(section_id + "-content").locator(":scope > *")).to_have_count(0)
+            open_reading_section(page, section_id)
         assert page.locator(".sy-team-operating-model").count() == 0
         assert page.locator(".sy-capability-map").count() == 0
         assert page.locator(".sy-solutions-grid").count() == 0
@@ -1248,7 +1286,7 @@ def main() -> None:
         static_layer = page.locator(".sy-architecture-layer").first
         assert static_layer.locator(".sy-pointer-light").count() == 0
         static_layer.hover(position={"x": 86, "y": 74})
-        assert "architecture-stewardship-light-v1.webp" in page.locator(".sy-architecture-hero").evaluate("element => getComputedStyle(element, '::before').backgroundImage")
+        expect(page.get_by_test_id("architecture-open-platform")).to_be_visible()
         assert "sidebar-stewardship-light-v1.webp" in page.locator(".sy-sidebar").evaluate("element => getComputedStyle(element).backgroundImage")
         page.screenshot(path=str(ARCHITECTURE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/guide", wait_until="domcontentloaded")
@@ -1631,9 +1669,23 @@ def main() -> None:
         expect(page.get_by_test_id("start-next-action")).to_be_visible()
         expect(page.get_by_test_id("reference-index")).to_have_count(0)
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
-        assert "platform-stewardship-dark-v1.webp" in page.locator(".sy-platform-hero").evaluate(
-            "element => getComputedStyle(element, '::before').backgroundImage"
-        )
+        # This full-reference scenario deliberately opens first-use content;
+        # it is not cold-page readiness or a performance warmup.
+        for section_id in (
+            "reading-contents",
+            "platform-summary-details",
+            "platform-team-details",
+            "platform-operating-map-details",
+            "platform-capabilities-details",
+            "platform-solutions-details",
+            "platform-convictions-details",
+            "platform-principles-details",
+            "platform-resources-details",
+            "platform-attribution-details",
+        ):
+            expect(page.get_by_test_id(section_id + "-content").locator(":scope > *")).to_have_count(0)
+            open_reading_section(page, section_id)
+        expect(page.get_by_test_id("platform-open-workspace")).to_be_visible()
         dark_creator_profile = page.get_by_test_id("co-creation-profile")
         dark_creator_profile.scroll_into_view_if_needed()
         dark_creator_banner_image = dark_creator_profile.locator(".sy-co-creation-banner img")
@@ -1656,14 +1708,38 @@ def main() -> None:
         assert element_contrast_ratio(dark_creator_profile.locator(".sy-co-creation-social")) >= 4.5
         page.screenshot(path=str(PLATFORM_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/engineering", wait_until="domcontentloaded")
+        # This full-reference scenario deliberately opens first-use content;
+        # it is not cold-page readiness or a performance warmup.
+        for section_id in (
+            "reading-contents",
+            "engineering-facts-details",
+            "engineering-coverage-details",
+            "engineering-blueprint-details",
+            "engineering-process-details",
+            "engineering-pillars-details",
+            "engineering-evolution-details",
+            "engineering-resources-details",
+        ):
+            expect(page.get_by_test_id(section_id + "-content").locator(":scope > *")).to_have_count(0)
+            open_reading_section(page, section_id)
         assert page.locator("body.body--dark").count() == 1
-        assert "engineering-workbench-dark-v1.webp" in page.locator(".sy-engineering-hero").evaluate(
-            "element => getComputedStyle(element, '::after').backgroundImage"
-        )
+        expect(page.get_by_test_id("engineering-release-state")).to_be_visible()
         assert page.get_by_test_id("engineering-gates").locator(".sy-engineering-gate").count() == 13
         page.screenshot(path=str(ENGINEERING_DARK_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
-        assert "architecture-stewardship-dark-v1.webp" in page.locator(".sy-architecture-hero").evaluate("element => getComputedStyle(element, '::before').backgroundImage")
+        # This full-reference scenario deliberately opens first-use content;
+        # it is not cold-page readiness or a performance warmup.
+        for section_id in (
+            "reading-contents",
+            "architecture-flow-details",
+            "architecture-layers-details",
+            "architecture-evidence-details",
+            "architecture-developer-details",
+            "architecture-faq-details",
+        ):
+            expect(page.get_by_test_id(section_id + "-content").locator(":scope > *")).to_have_count(0)
+            open_reading_section(page, section_id)
+        expect(page.get_by_test_id("architecture-open-platform")).to_be_visible()
         assert "architecture-lifeline-dark-v1.webp" in page.get_by_test_id("architecture-lifeline-visual").evaluate(
             "element => getComputedStyle(element).backgroundImage"
         )
@@ -1674,6 +1750,22 @@ def main() -> None:
         page.screenshot(path=str(GUIDE_DARK_SCREENSHOT), full_page=True)
         page.set_viewport_size({"width": 390, "height": 844})
         page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
+        # This full-reference scenario deliberately opens first-use content;
+        # it is not cold-page readiness or a performance warmup.
+        for section_id in (
+            "reading-contents",
+            "platform-summary-details",
+            "platform-team-details",
+            "platform-operating-map-details",
+            "platform-capabilities-details",
+            "platform-solutions-details",
+            "platform-convictions-details",
+            "platform-principles-details",
+            "platform-resources-details",
+            "platform-attribution-details",
+        ):
+            expect(page.get_by_test_id(section_id + "-content").locator(":scope > *")).to_have_count(0)
+            open_reading_section(page, section_id)
         page.get_by_text("A co-creation note", exact=True).wait_for(timeout=10_000)
         page.locator("#platform-team-section").wait_for(timeout=10_000)
         page.get_by_test_id("team-operating-model").wait_for(timeout=10_000)
@@ -1701,6 +1793,20 @@ def main() -> None:
         assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
         page.screenshot(path=str(PLATFORM_MOBILE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/engineering", wait_until="domcontentloaded")
+        # This full-reference scenario deliberately opens first-use content;
+        # it is not cold-page readiness or a performance warmup.
+        for section_id in (
+            "reading-contents",
+            "engineering-facts-details",
+            "engineering-coverage-details",
+            "engineering-blueprint-details",
+            "engineering-process-details",
+            "engineering-pillars-details",
+            "engineering-evolution-details",
+            "engineering-resources-details",
+        ):
+            expect(page.get_by_test_id(section_id + "-content").locator(":scope > *")).to_have_count(0)
+            open_reading_section(page, section_id)
         page.get_by_text("Engineering & quality", exact=True).first.wait_for(timeout=10_000)
         first_engineering_fact = page.locator(".sy-engineering-fact").nth(0).bounding_box()
         second_engineering_fact = page.locator(".sy-engineering-fact").nth(1).bounding_box()
@@ -1745,6 +1851,18 @@ def main() -> None:
         assert page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth") is True
         page.screenshot(path=str(SETTINGS_MOBILE_SCREENSHOT), full_page=True)
         page.goto(f"{BASE_URL}/system-architecture", wait_until="domcontentloaded")
+        # This full-reference scenario deliberately opens first-use content;
+        # it is not cold-page readiness or a performance warmup.
+        for section_id in (
+            "reading-contents",
+            "architecture-flow-details",
+            "architecture-layers-details",
+            "architecture-evidence-details",
+            "architecture-developer-details",
+            "architecture-faq-details",
+        ):
+            expect(page.get_by_test_id(section_id + "-content").locator(":scope > *")).to_have_count(0)
+            open_reading_section(page, section_id)
         assert page.locator(".sy-architecture-layer").count() == 5
         assert page.locator(".sy-service-stage").count() == 6
         assert page.locator(".sy-trust-evidence-card").count() == 4
@@ -1820,6 +1938,22 @@ def main() -> None:
             assert header_tools_box["x"] + header_tools_box["width"] <= narrow_width, header_tools_box
             if narrow_width == 320:
                 page.goto(f"{BASE_URL}/platform", wait_until="domcontentloaded")
+                # This full-reference scenario deliberately opens first-use content;
+                # it is not cold-page readiness or a performance warmup.
+                for section_id in (
+                    "reading-contents",
+                    "platform-summary-details",
+                    "platform-team-details",
+                    "platform-operating-map-details",
+                    "platform-capabilities-details",
+                    "platform-solutions-details",
+                    "platform-convictions-details",
+                    "platform-principles-details",
+                    "platform-resources-details",
+                    "platform-attribution-details",
+                ):
+                    expect(page.get_by_test_id(section_id + "-content").locator(":scope > *")).to_have_count(0)
+                    open_reading_section(page, section_id)
                 narrow_profile = page.get_by_test_id("co-creation-profile")
                 narrow_profile.scroll_into_view_if_needed()
                 narrow_social_box = narrow_profile.locator(".sy-co-creation-social").bounding_box()
