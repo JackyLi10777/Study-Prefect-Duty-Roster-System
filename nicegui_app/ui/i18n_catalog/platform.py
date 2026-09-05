@@ -91,9 +91,9 @@ MESSAGES = {'engineering_coverage_title': {'zh-HK': '品質覆蓋範圍', 'en': 
  'platform_resource_handover': {'zh-HK': '交接準備', 'en': 'Handover readiness'},
  'architecture_platform_link_note': {'zh-HK': '想先了解團隊、能力分工與服務方案？', 'en': 'Looking for the team, capability model, and service portfolio?'},
  'engineering_kicker': {'zh-HK': 'ENGINEERING PROOF／工程證據', 'en': 'ENGINEERING PROOF'},
- 'engineering_intro': {'zh-HK': '按測試、發布、備份及復原證據核對系統承諾；每項證據均列明責任邊界、目前狀態及失敗後的回復方法。',
-                       'en': 'Review system commitments through test, release, backup, and recovery evidence. Each item identifies its '
-                             'owner, current state, and recovery path.'},
+ 'engineering_intro': {'zh-HK': '頁首顯示一份來源綁定報告的整體狀態與完成日期。按需展開品質覆蓋範圍、責任邊界及恢復流程；分類本身不代表驗證已通過。',
+                       'en': 'The header shows the overall state and completion date of one source-bound report. Expand quality '
+                             'coverage, ownership, and recovery details as needed; categories alone do not prove checks passed.'},
  'engineering_badge': {'zh-HK': '正式版本工程概覽', 'en': 'Formal-release engineering overview'},
  'engineering_evidence_kicker': {'zh-HK': 'EVIDENCE INDEX／證據索引', 'en': 'EVIDENCE INDEX'},
  'engineering_evidence_title': {'zh-HK': '以類型、狀態與日期查找發布證據',
