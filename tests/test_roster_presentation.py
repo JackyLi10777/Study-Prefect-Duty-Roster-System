@@ -40,7 +40,10 @@ def test_schedule_keeps_stable_pdf_row_and_weekday_order_with_chinese_names() ->
         ]
     )
 
-    assert tuple(row.spec for row in schedule) == ROSTER_ROWS
+    assert tuple((row.spec.post, row.spec.slot_index, row.spec.display_label) for row in schedule) == tuple(
+        (spec.post, spec.slot_index, spec.display_label) for spec in ROSTER_ROWS
+    )
+    assert all(row.spec.service_time == ("15:40", "17:00") for row in schedule)
     assert tuple(cell.day for cell in schedule[0].cells) == DAY_ORDER
     cell = _cell(schedule, DutyPost.ROOM_302, 1, SchoolDay.MONDAY)
     assert cell.status == "active"

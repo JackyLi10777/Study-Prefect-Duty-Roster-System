@@ -13,7 +13,7 @@ from datetime import date, datetime, timedelta
 from io import BytesIO
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Mapping, Protocol, Sequence
+from typing import TYPE_CHECKING, Iterable, Literal, Mapping, Protocol, Sequence
 from xml.sax.saxutils import escape as xml_escape
 
 from reportlab.lib import colors
@@ -26,9 +26,11 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from nicegui_app.config import DISPLAY_PRINT_CREST_PATH, PROJECT_ROOT
+from nicegui_app.services.roster_document import RosterDocument, capture_roster_document
 from nicegui_app.services.roster_presentation import (
     DAY_TEXT,
     RosterCellState,
+    RosterSchedulePresentation,
     build_roster_presentation,
 )
 from nicegui_app.services.workflow_types import FairnessAuditSnapshot
@@ -81,10 +83,12 @@ DAY_CLOSED_HEADER = colors.HexColor("#596674")
 
 @dataclass(frozen=True)
 class RosterPdfExport:
-    """A locally generated PDF payload ready for operator-initiated delivery."""
+    """A local PDF with mandatory rendered-snapshot provenance."""
 
     filename: str
     content: bytes
+    roster_status: str
+    roster_version: int
 
 
 def build_roster_pdf(
@@ -101,13 +105,35 @@ def build_roster_pdf(
     Labels follow the selected output language.  Prefect names intentionally
     remain the stored Traditional-Chinese names in both modes.
     """
-    week, assignments = workflow.roster_schedule_snapshot(roster_week_id)
+    return render_roster_pdf(
+        capture_roster_document(workflow, roster_week_id),
+        language=language, practice=practice, show_crest=show_crest,
+        show_footer_note=show_footer_note,
+    )
+
+
+def render_roster_pdf(
+    document_input: RosterDocument,
+    *,
+    language: ExportLanguage = "zh",
+    practice: bool = False,
+    show_crest: bool = True,
+    show_footer_note: bool = False,
+) -> RosterPdfExport:
+    """Render one immutable document without performing workflow reads."""
+    if language not in {"zh", "en"}:
+        raise ValueError("Roster PDF language must be zh or en.")
+    week = document_input.snapshot.week
+    assignments = document_input.snapshot.assignments
     fonts = _register_cjk_fonts()
     styles = _styles(fonts)
     output = BytesIO()
     document = _document(output, week_start=week["weekStart"], title=_schedule_title(language), orientation="landscape")
 
-    story = _schedule_header(week["weekStart"], str(week["status"]), language, styles, show_crest=show_crest)
+    story = _schedule_header(
+        document_input.snapshot.week_start, str(week["status"]), language, styles,
+        show_crest=show_crest, version=document_input.snapshot.version,
+    )
     if practice:
         story.extend([Spacer(1, 2 * mm), Paragraph(_practice_marker(language), styles["practice_marker"])])
     story.extend([
@@ -118,6 +144,7 @@ def build_roster_pdf(
             language=language,
             styles=styles,
             landscape_mode=True,
+            presentation=document_input.presentation,
         ),
     ])
     if show_footer_note:
@@ -131,6 +158,8 @@ def build_roster_pdf(
     return RosterPdfExport(
         filename=_schedule_filename(week["weekStart"], language, int(week["version"]), practice),
         content=output.getvalue(),
+        roster_status=str(week["status"]),
+        roster_version=int(week["version"]),
     )
 
 
@@ -164,7 +193,12 @@ def build_fairness_audit_pdf(
         onFirstPage=lambda canvas, doc: _draw_footer(canvas, doc, fonts["medium"], language, practice),
         onLaterPages=lambda canvas, doc: _draw_footer(canvas, doc, fonts["medium"], language, practice),
     )
-    return RosterPdfExport(filename=_audit_filename(week["weekStart"], language, practice), content=output.getvalue())
+    return RosterPdfExport(
+        filename=_audit_filename(week["weekStart"], language, practice),
+        content=output.getvalue(),
+        roster_status=str(week["status"]),
+        roster_version=int(week["version"]),
+    )
 
 
 def _document(
@@ -190,6 +224,7 @@ def _schedule_header(
     language: ExportLanguage,
     styles: dict[str, ParagraphStyle],
     *,
+    version: int | None = None,
     show_crest: bool,
 ) -> list[object]:
     story: list[object] = []
@@ -199,7 +234,7 @@ def _schedule_header(
     story.extend([
         Paragraph(_schedule_title(language), styles["title"]),
         Paragraph(_schedule_subtitle(language), styles["gold_subtitle"]),
-        Paragraph(_week_line(week_start, status, language), styles["subtitle"]),
+        Paragraph(_week_line(week_start, status, language, version=version), styles["subtitle"]),
         Spacer(1, 4 * mm),
         Paragraph(_weekly_label(language), styles["section"]),
     ])
@@ -207,14 +242,15 @@ def _schedule_header(
 
 
 def _schedule_grid(
-    assignments: list[dict[str, object]],
+    assignments: Iterable[Mapping[str, object]],
     week: Mapping[str, object],
     language: ExportLanguage,
     styles: dict[str, ParagraphStyle],
     *,
     landscape_mode: bool,
+    presentation: RosterSchedulePresentation | None = None,
 ) -> Table:
-    presentation = build_roster_presentation(week, assignments)
+    presentation = presentation or build_roster_presentation(week, assignments, strict=True)
     heading = "值班位置" if language == "zh" else "Duty Position"
     rows: list[list[Paragraph]] = [[Paragraph(heading, styles["grid_heading"])] + [
         Paragraph(
@@ -390,7 +426,8 @@ def _schedule_subtitle(language: ExportLanguage) -> str:
     return "導學風紀值班表與工作審核" if language == "zh" else "Study Prefect Duty Roster &amp; Workload Audit"
 
 
-def _week_line(week_start: object, status: str, language: ExportLanguage) -> str:
+def _week_line(week_start: object, status: str, language: ExportLanguage, *, version: int | None = None) -> str:
+    revision = f" v{version}" if version is not None else ""
     if language == "zh":
         state = (
             "已發布"
@@ -399,7 +436,7 @@ def _week_line(week_start: object, status: str, language: ExportLanguage) -> str
             if status == "withdrawn"
             else "草稿－只供核對，不可派發"
         )
-        return f"報告日期：{week_start} ｜ {state}"
+        return f"報告日期：{week_start} ｜ {state}{revision}"
     state = (
         "Published"
         if status == "published"
@@ -407,7 +444,7 @@ def _week_line(week_start: object, status: str, language: ExportLanguage) -> str
         if status == "withdrawn"
         else "Draft — check only; do not distribute"
     )
-    return f"Week commencing: {week_start} | {state}"
+    return f"Week commencing: {week_start} | {state}{revision}"
 
 
 def _weekly_label(language: ExportLanguage) -> str:

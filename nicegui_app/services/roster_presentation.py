@@ -7,7 +7,7 @@ viewer cannot drift in their weekday/row/closed/vacant interpretation.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import Iterable, Literal, Mapping
@@ -58,6 +58,8 @@ class RosterRowSpec:
     post: DutyPost
     slot_index: int
     display_label: str
+    opening_time_window: tuple[str, str] | None = None
+    service_time_window: tuple[str, str] | None = None
 
     @property
     def label_zh(self) -> str:
@@ -73,13 +75,13 @@ class RosterRowSpec:
     def opening_time(self) -> tuple[str, str]:
         """Room availability window retained as non-prominent metadata."""
 
-        return ROOM_OPENING_TIME_WINDOWS[self.post]
+        return self.opening_time_window or ROOM_OPENING_TIME_WINDOWS[self.post]
 
     @property
     def service_time(self) -> tuple[str, str]:
         """Actual prefect duty window shown in matrices and exports."""
 
-        return DUTY_SERVICE_TIME_WINDOWS[self.post]
+        return self.service_time_window or DUTY_SERVICE_TIME_WINDOWS[self.post]
 
 
 ROSTER_ROWS: tuple[RosterRowSpec, ...] = (
@@ -343,9 +345,17 @@ def _build_rows(
     strict: bool,
 ) -> tuple[RosterScheduleRow, ...]:
     indexed: dict[tuple[str, str, int], Mapping[str, object]] = {}
+    valid_keys = {
+        (day.name, spec.post.name, spec.slot_index)
+        for day in DAY_ORDER for spec in ROSTER_ROWS
+    }
     for item in assignments:
         try:
+            if strict and type(item["slotIndex"]) is not int:
+                raise ValueError("A slot index must be an integer.")
             key = (str(item["day"]), str(item["postCode"]), int(item["slotIndex"]))
+            if strict and key not in valid_keys:
+                raise ValueError("The assignment is outside the five-day, six-post matrix.")
         except (KeyError, TypeError, ValueError) as error:
             if strict:
                 raise RosterPresentationError("The roster contains an invalid assignment.") from error
@@ -436,7 +446,10 @@ def _build_rows(
                     editable=editable,
                 )
             )
-        rows.append(RosterScheduleRow(spec, tuple(cells)))
+        frozen_spec = replace(
+            spec, opening_time_window=spec.opening_time, service_time_window=spec.service_time
+        )
+        rows.append(RosterScheduleRow(frozen_spec, tuple(cells)))
     return tuple(rows)
 
 
