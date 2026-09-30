@@ -4,7 +4,7 @@
 # these packages, but a replacement computer needs them before running the
 # isolated browser, PDF-inspection, and automated regression evidence.
 pytest>=9.0,<10
-playwright>=1.58,<2
+playwright>=1.62.0,<2
 pypdf>=6.15,<7
 httpx2>=2.5,<3
 fonttools>=4.63,<5
