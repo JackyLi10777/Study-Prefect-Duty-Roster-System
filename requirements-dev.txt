@@ -10,5 +10,5 @@ httpx2>=2.5,<3
 fonttools>=4.63,<5
 pip-tools>=7.5,<8
 pip-audit>=2.10,<3
-bandit>=1.9,<2
+bandit>=1.9.4,<2
 detect-secrets>=1.5,<2
